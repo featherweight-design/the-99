@@ -2,7 +2,6 @@
 
 import { requireUserId } from "../../lib/auth";
 import { requestSwitchEnv } from "../../lib/switches/request";
-import { collectionEditEnabled } from "../../lib/collection/edit-flag";
 import {
   getHistoryEntry, listHistory, revertDiffers, type HistoryEntry, type HistoryListEntry,
 } from "../../lib/collection/history";
@@ -17,9 +16,8 @@ import { warmCommanderScores } from "../../lib/recs/warm";
 import { CART_DECKS_MAX } from "../../lib/decks/mark-bought";
 
 /**
- * The collection history and revert (collection foundation, sub-project 1, PR 3). Every action
- * here exists only with `COLLECTION_EDIT_ENABLED` on: the history is the ledger's, and the
- * ledger is written only then.
+ * The collection history and revert (collection foundation, sub-project 1, PR 3). The history is
+ * the ledger's.
  */
 
 async function signedInEditor(): Promise<string> {
@@ -30,7 +28,6 @@ async function signedInEditor(): Promise<string> {
 async function signedInEditorEnv(): Promise<{ userId: string; env: NodeJS.ProcessEnv }> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (!collectionEditEnabled(env)) throw new Error("collection editing is off");
   return { userId, env };
 }
 

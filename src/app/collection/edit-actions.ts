@@ -3,7 +3,6 @@
 import { after } from "next/server";
 import { requireUserId } from "../../lib/auth";
 import { requestSwitchEnv } from "../../lib/switches/request";
-import { collectionEditEnabled } from "../../lib/collection/edit-flag";
 import {
   loadEditSheetData, loadPrintingChoices as readPrintingChoices, printingRefKey, resolvePrintings,
   searchCollectionCatalog, type CardHolding, type CatalogCardResult, type PrintingChoice,
@@ -19,9 +18,9 @@ import { isUuid } from "../../lib/uuid";
 import { placedOf, type AddedPlacement } from "../../lib/collection/add-placements";
 
 /**
- * The Add cards sheet and its edit mode (collection screens plan, PR 1). Every action here exists
- * only with `COLLECTION_EDIT_ENABLED` on, because each writes the ledger, and every write is one
- * ledger entry under the action id the client minted when the sheet opened, reused on retry.
+ * The Add cards sheet and its edit mode (collection screens plan, PR 1). Each action writes the
+ * ledger, and every write is one ledger entry under the action id the client minted when the sheet
+ * opened, reused on retry.
  */
 
 async function signedInEditor(): Promise<string> {
@@ -32,7 +31,6 @@ async function signedInEditor(): Promise<string> {
 async function signedInEditorEnv(): Promise<{ userId: string; env: NodeJS.ProcessEnv }> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (!collectionEditEnabled(env)) throw new Error("collection editing is off");
   return { userId, env };
 }
 

@@ -113,8 +113,8 @@ export function CollectionPlaceHead({
   // paint and a label that visibly flips on a later refresh.
   lastUpdatedLabel: string | null;
   /**
-   * `COLLECTION_EDIT_ENABLED`, read by the layout. Off, the head is exactly what main draws: no
-   * `+ Add`, and no slot reserved for one (collection edit §G).
+   * Collection editing (always on since its switch retired; the layout passes it). Off, the head is
+   * exactly what main drew: no `+ Add`, and no slot reserved for one (collection edit §G).
    */
   editEnabled?: boolean;
   /** The ledger holds an entry inside the window: History shows on an empty collection when it does. */

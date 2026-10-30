@@ -298,7 +298,7 @@ describe("rendered on an unrecognised path", () => {
   });
 });
 
-describe("CollectionPlaceHead \u00b7 Add cards (COLLECTION_EDIT_ENABLED)", () => {
+describe("CollectionPlaceHead \u00b7 Add cards (collection editing)", () => {
   function withSwitch(editEnabled: boolean, stats = OWNED) {
     pathname = "/collection";
     return render(<CollectionPlaceHead stats={stats} lastUpdatedLabel="today" editEnabled={editEnabled} />);

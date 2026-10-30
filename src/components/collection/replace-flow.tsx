@@ -109,7 +109,7 @@ export function ReplaceFlow({
   deckCheck?: boolean;
   /** Collection editing is on without the deck check (first run): a replace it finds still lands in History. */
   history?: boolean;
-  /** Collection Sync is on for the reader (collection editing, `collectionEditEnabled`, resolved by the page): the choice draws a third card. */
+  /** Collection Sync is offered (the replace page always passes it): the choice draws a third card. */
   sync?: boolean;
   /** Sync is on AND has an anchor (read by the page): an empty collection then gets the choice, not the first-import shortcut. */
   syncAnchored?: boolean;

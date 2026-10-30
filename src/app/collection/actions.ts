@@ -13,14 +13,11 @@ import { revalidateUserLists } from "../../lib/cache/user-lists";
 import { parseCollectionCsv, type CollectionRow, type ParseError } from "../../lib/manabox/parse";
 import { parsePasteList } from "../../lib/manabox/paste";
 import { matchRows } from "../../lib/collection/match";
-import { loadMatchInputs, replaceCollection } from "../../lib/collection/import";
+import { loadMatchInputs } from "../../lib/collection/import";
 import { aggregateTokenRows, type TokenHolding } from "../../lib/tokens/ownership";
-import {
-  ownedByOracle, pendingItemsToOwnedCounts, writeArrivalsReceipt,
-} from "../../lib/collection/arrivals-write";
+import { writeArrivalsReceipt } from "../../lib/collection/arrivals-write";
 import type { OwnedCounts } from "../../lib/collection/arrivals";
 import { applyCollectionChange, HISTORY_RETENTION_DAYS, parseShortDecks, type ShortDeck } from "../../lib/collection/write";
-import { collectionEditEnabled } from "../../lib/collection/edit-flag";
 import { keptForReview, parseSyncOptions, SYNC_REVIEW_CAP, changedTokenCount, type SyncAnswers, type SyncCounts, type SyncPick, type SyncReviewRow, type Staleness } from "../../lib/collection/sync";
 import { collectionHasHistory, collectionTotals, editedKeysSinceUpload, editsSinceUpload, lastUploadConfirmedAt, readBuiltEntries } from "../../lib/collection/history";
 import { builtLeaving, type BuiltLeaving } from "../../lib/collection/built-leaving";
@@ -191,7 +188,7 @@ export type ConfirmOutcome =
 
 /**
  * How an upload meets the collection: replace it whole, add its counts to it, or sync it (take what the
- * file changed since the last file, keep what the player changed; behind `COLLECTION_EDIT_ENABLED`).
+ * file changed since the last file, keep what the player changed).
  */
 export type UploadMode = "replace" | "add" | "sync";
 
@@ -269,11 +266,10 @@ function tokensOnlySync(items: readonly PendingItem[], sync: { pick: SyncPick } 
   return items.length === 0 && sync?.pick === "tokens" && Array.isArray(tokens) && tokens.length > 0;
 }
 
-function parseMode(mode: unknown, env: NodeJS.ProcessEnv): UploadMode {
+function parseMode(mode: unknown): UploadMode {
   if (mode === undefined || mode === "replace") return "replace";
   if (mode === "add") return "add";
-  // Behind collection editing (a sync writes through the ledger): off, a sync is refused as an unknown mode would be.
-  if (mode === "sync" && collectionEditEnabled(env)) return "sync";
+  if (mode === "sync") return "sync";
   throw new Error("unknown upload mode");
 }
 
@@ -307,8 +303,7 @@ export async function previewUploadChange(
 ): Promise<UploadChangePreview | { missingCard: string[] } | null> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (!collectionEditEnabled(env)) throw new Error("collection editing is off");
-  const kind = parseMode(mode, env);
+  const kind = parseMode(mode);
   const sync = kind === "sync" ? parseSyncOptions(syncOpts) : null;
   const upload = await loadUpload(userId, uploadId);
   // Already confirmed: there is nothing left to choose.
@@ -358,8 +353,8 @@ export async function previewUploadChange(
     default: throw new Error(`upload preview refused: ${result.status}`);
   }
   const s = result.sync;
-  // S14: only a Replace by a player with no upload to be "since", and only with collection edit on.
-  const built = kind === "replace" && lastUpload === null && collectionEditEnabled(env)
+  // S14: only a Replace by a player with no upload to be "since".
+  const built = kind === "replace" && lastUpload === null
     ? builtLeaving(result.rows, await readBuiltEntries(userId))
     : undefined;
   const tagged = s
@@ -416,10 +411,8 @@ export async function confirmUpload(
 ): Promise<ConfirmOutcome> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  const mode = parseMode(opts.mode, env);
+  const mode = parseMode(opts.mode);
   const sync = mode === "sync" ? parseSyncOptions({ pick: opts.pick, answers: opts.answers }) : null;
-  const ledger = collectionEditEnabled(env);
-  if (mode === "add" && !ledger) throw new Error("adding an upload needs collection editing on");
   const upload = await loadUpload(userId, uploadId);
 
   // Already confirmed: the receipt is stored and there is nothing to replace. Returning
@@ -437,19 +430,17 @@ export async function confirmUpload(
   const pendingItems = preview.pendingItems;
   if (pendingItems.length === 0 && !tokensOnlySync(pendingItems, sync, preview.tokens)) throw new Error(NO_MATCHED_CARDS);
 
-  // THE STATE BEFORE, read now because the replace destroys it. The owned counts are read here
-  // on main's path and under the write's own lock on the ledger's (below). These reads are
+  // THE STATE BEFORE, read now because the replace destroys it. The owned counts are read under
+  // the write's own lock (below). These reads are
   // point-in-time and deliberately not serialized against the write: the only race is
   // the same player editing a deck in another tab during their own import, and its cost
   // is a mis-stated line on a receipt — never a wrong claim figure, since every claim
   // figure in the app is recomputed live and the chooser's write re-validates in its own
   // transaction.
-  let ownedBefore: OwnedCounts;
-
   const buyBefore = await loadDeckBuyRows(userId, undefined, undefined, env);
 
   // A preview written before migration 0008 carries no collectorNumber/finish;
-  // replaceCollection coerces both rather than spreading undefined into the insert.
+  // the write coerces both rather than spreading undefined into the insert.
   //
   // The upload row is the lock: the stamp inside that transaction is conditional on
   // `confirmed_at is null`, so a double submit replaces the collection exactly once and
@@ -460,53 +451,39 @@ export async function confirmUpload(
   // when a collection exists, writes nothing, and the choice goes back to the player. The skip
   // is only as safe as "nothing to lose" is true AT THE WRITE.
   //
-  // With COLLECTION_EDIT_ENABLED on, the write goes through the ledger (plan Decision 1): one
-  // entry for the upload, a fresh id per confirm because the upload's own stamp is what makes a
-  // double submit apply once, and the deck check a Replace now carries. Off, it is main's replace.
-  let ownedAfter: OwnedCounts;
-  let nowShort: ShortDeck[] = [];
-  if (ledger) {
-    const result = await applyCollectionChange(
-      userId,
-      sync
-        ? {
-            kind: "sync", items: pendingItems, uploadId, tokens: preview.tokens, ...sync,
-            expectedPlan: typeof opts.planDigest === "string" ? opts.planDigest : undefined,
-          }
-        : { kind: mode as "replace" | "add", items: pendingItems, uploadId, tokens: preview.tokens },
-      {
-        id: randomUUID(), onlyIfEmpty: opts.firstImport, confirmShort: parseShortDecks(opts.confirmShort),
-        ownedCounts: true, env,
-      },
-    );
-    switch (result.status) {
-      case "notEmpty": return { needsConfirm: true, currentCollectionCount: result.owned };
-      case "alreadyConfirmed": return;
-      case "wouldShort": return { wouldShort: result.decks };
-      case "missingCard": return { missingCard: result.names };
-      case "undecided": return { undecided: result.undecided };
-      case "stale": return { stale: true };
-      case "noBase": return { unavailable: result.reason };
-      case "nothingToSync": return { nothingToSync: true };
-      case "applied": break;
-      default: throw new Error(`upload confirm refused: ${result.status}`);
-    }
-    // Both sides read under the write's own lock, so they differ by exactly this upload: the
-    // snapshot above was read before the lock, and an Add's items are only what it added.
-    ownedBefore = result.owned!.before;
-    ownedAfter = result.owned!.after;
-    nowShort = result.short;
-  } else {
-    ownedBefore = await ownedByOracle(userId);
-    const { alreadyConfirmed, notEmpty } = await replaceCollection(userId, pendingItems, {
-      confirmUploadId: uploadId,
-      onlyIfEmpty: opts.firstImport,
-      tokens: preview.tokens,
-    });
-    if (notEmpty !== null) return { needsConfirm: true, currentCollectionCount: notEmpty };
-    if (alreadyConfirmed) return;
-    ownedAfter = pendingItemsToOwnedCounts(pendingItems);
+  // The write goes through the ledger (plan Decision 1): one entry for the upload, a fresh id per
+  // confirm because the upload's own stamp is what makes a double submit apply once, and the deck
+  // check a Replace carries.
+  const result = await applyCollectionChange(
+    userId,
+    sync
+      ? {
+          kind: "sync", items: pendingItems, uploadId, tokens: preview.tokens, ...sync,
+          expectedPlan: typeof opts.planDigest === "string" ? opts.planDigest : undefined,
+        }
+      : { kind: mode as "replace" | "add", items: pendingItems, uploadId, tokens: preview.tokens },
+    {
+      id: randomUUID(), onlyIfEmpty: opts.firstImport, confirmShort: parseShortDecks(opts.confirmShort),
+      ownedCounts: true, env,
+    },
+  );
+  switch (result.status) {
+    case "notEmpty": return { needsConfirm: true, currentCollectionCount: result.owned };
+    case "alreadyConfirmed": return;
+    case "wouldShort": return { wouldShort: result.decks };
+    case "missingCard": return { missingCard: result.names };
+    case "undecided": return { undecided: result.undecided };
+    case "stale": return { stale: true };
+    case "noBase": return { unavailable: result.reason };
+    case "nothingToSync": return { nothingToSync: true };
+    case "applied": break;
+    default: throw new Error(`upload confirm refused: ${result.status}`);
   }
+  // Both sides read under the write's own lock, so they differ by exactly this upload: the
+  // snapshot above was read before the lock, and an Add's items are only what it added.
+  const ownedBefore: OwnedCounts = result.owned!.before;
+  const ownedAfter: OwnedCounts = result.owned!.after;
+  const nowShort: ShortDeck[] = result.short;
 
   // INVALIDATION FIRST, RECEIPT SECOND. The replace has committed, so every cached figure
   // behind every one of these routes is already wrong; the receipt is a nicety by comparison.
@@ -644,11 +621,10 @@ export async function refreshCollectionHeader(): Promise<{
   historyHasEntries: boolean;
 }> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
   const [stats, lastUpdated, historyHasEntries] = await Promise.all([
     getCollectionStats(userId),
     getCollectionLastUpdated(userId),
-    collectionEditEnabled(env) ? collectionHasHistory(userId) : Promise.resolve(false),
+    collectionHasHistory(userId),
   ]);
   // Formatted HERE, on the server, rather than handed to the client as a raw `Date` — the
   // head that renders this is a Client Component and would otherwise recompute the label

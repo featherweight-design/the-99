@@ -11,9 +11,6 @@ vi.mock("../../../lib/switches/request", async () => {
   return { requestSwitchEnv: async () => ENV_VIEW };
 });
 vi.mock("../../../lib/home/summary", () => ({ getCollectionStats: async () => ({ totalCards: 3 }) }));
-const syncOn = vi.hoisted(() => ({ value: false }));
-// Sync follows collection editing now its own switch is retired.
-vi.mock("../../../lib/collection/edit-flag", () => ({ collectionEditEnabled: () => syncOn.value }));
 const hasSyncAnchor = vi.hoisted(() => vi.fn<(userId: string) => Promise<boolean>>(async () => false));
 vi.mock("../../../lib/collection/sync-base", () => ({ hasSyncAnchor: (userId: string) => hasSyncAnchor(userId) }));
 vi.mock("../../../components/collection/replace-flow", () => ({
@@ -35,12 +32,7 @@ describe("/collection/replace", () => {
     expect(section.className.split(/\s+/)).toEqual(expect.arrayContaining(["flex", "flex-1", "flex-col"]));
   });
 
-  it("hands the flow the reader's Sync switch, which is collection editing (collection sync PR 2)", async () => {
-    syncOn.value = false;
-    const { unmount } = render(await ReplacePage({ searchParams: Promise.resolve({}) }));
-    expect(screen.getByTestId("flow").getAttribute("data-sync")).toBe("false");
-    unmount();
-    syncOn.value = true;
+  it("hands the flow Sync, always on (collection sync PR 2)", async () => {
     render(await ReplacePage({ searchParams: Promise.resolve({}) }));
     expect(screen.getByTestId("flow").getAttribute("data-sync")).toBe("true");
   });
@@ -53,15 +45,9 @@ describe("/collection/replace", () => {
       return v;
     };
     hasSyncAnchor.mockReset();
-    syncOn.value = true;
     hasSyncAnchor.mockResolvedValueOnce(true);
     expect(await anchored()).toBe("true");
     hasSyncAnchor.mockResolvedValueOnce(false);
     expect(await anchored()).toBe("false");
-    // Off, no read: the first-import shortcut stands.
-    syncOn.value = false;
-    hasSyncAnchor.mockClear();
-    expect(await anchored()).toBe("false");
-    expect(hasSyncAnchor).not.toHaveBeenCalled();
   });
 });

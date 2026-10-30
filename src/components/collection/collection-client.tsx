@@ -37,7 +37,7 @@ export function CollectionClient({
   pricesFailed?: boolean;
   /** The page's two view-cookie hints. Absent reads as no hint, as `CollectionBrowser` reads it. */
   viewHint?: ViewHint;
-  /** `COLLECTION_EDIT_ENABLED`: the card modal's receipt draws `Edit copies` (collection edit R2 §C). */
+  /** The card modal's receipt draws `Edit copies` (collection edit R2 §C); `/collection` always passes it. */
   collectionEdit?: boolean;
 }) {
   // Decoded once per payload: the same wire identity is the same list, so everything below

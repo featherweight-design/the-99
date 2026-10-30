@@ -13,7 +13,6 @@ import { requireUserId } from "../../../../../lib/auth";
 import { loadSummaryView } from "../../../../../lib/collection/summary-read";
 import { ArrivalsSummary } from "../../../../../components/collection/arrivals-summary";
 import { isUuid } from "../../../../../lib/uuid";
-import { collectionEditEnabled } from "../../../../../lib/collection/edit-flag";
 import { requestSwitchEnv } from "../../../../../lib/switches/request";
 import { formatDeckDate } from "../../../../../lib/decks/format";
 import type { UploadPreview } from "../../../actions";
@@ -29,12 +28,10 @@ export default async function ImportSummaryPage({
   if (!isUuid(uploadId)) notFound();
   const userId = await requireUserId();
 
-  // Read once, per request, and handed to both halves: the read loads each line's chooser and the
-  // receipt draws the line, so the two cannot disagree about whether the feature is on. The read's
-  // claim model takes the same resolved switches.
+  // The read loads each line's chooser and the receipt draws the line. The read's claim model takes the
+  // reader's resolved switches.
   const env = await requestSwitchEnv(userId);
-  const addedCopy = collectionEditEnabled(env);
-  const view = await loadSummaryView(uploadId, userId, { addedCopy, env });
+  const view = await loadSummaryView(uploadId, userId, { addedCopy: true, env });
   if (!view) notFound();
   // An unconfirmed upload has no receipt to show and is not a page: the player is still in the
   // flow, or abandoned it.
@@ -51,7 +48,7 @@ export default async function ImportSummaryPage({
       <ArrivalsSummary
         summary={view.summary}
         contested={view.contested}
-        addedCopy={addedCopy}
+        addedCopy
         chooser={view.chooser}
         sync={view.sync}
         mode={view.mode}

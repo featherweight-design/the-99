@@ -15,8 +15,6 @@
 // dedupe to one query per request; nothing is fetched twice.
 
 import { requireUserId } from "../../../lib/auth";
-import { collectionEditEnabled } from "../../../lib/collection/edit-flag";
-import { requestSwitchEnv } from "../../../lib/switches/request";
 import { getCollectionLastUpdated, getCollectionStats } from "../../../lib/home/summary";
 import { formatLastUpdated } from "../../../lib/collection/browse";
 import { collectionHasHistory } from "../../../lib/collection/history";
@@ -30,16 +28,11 @@ export default async function CollectionListLayout({
   children: React.ReactNode;
 }) {
   const userId = await requireUserId();
-  // The reader's resolved switches (`requestSwitchEnv`), not the environment alone.
-  const env = await requestSwitchEnv(userId);
-  const editEnabled = collectionEditEnabled(env);
-  // The Add cards sheet's way into Precons I own (no-collection entry S18): the line's switch, or the sheet is as shipped.
-  const preconPick = collectionEditEnabled(env);
   const [stats, lastUpdated, historyHasEntries] = await Promise.all([
     getCollectionStats(userId),
     perfRead("collection.lastUpdated", () => getCollectionLastUpdated(userId)),
-    // The History tab's gate on an empty collection; only asked once the ledger is on.
-    editEnabled ? perfRead("collection.hasHistory", () => collectionHasHistory(userId)) : Promise.resolve(false),
+    // The History tab's gate on an empty collection.
+    perfRead("collection.hasHistory", () => collectionHasHistory(userId)),
   ]);
   // Formatted here rather than handed down as a raw `Date`: the head is a Client Component
   // and would otherwise recompute the label against the browser's clock and timezone on
@@ -47,7 +40,7 @@ export default async function CollectionListLayout({
   const lastUpdatedLabel = lastUpdated ? formatLastUpdated(lastUpdated) : null;
   return (
     <>
-      <CollectionPlaceHead stats={stats} lastUpdatedLabel={lastUpdatedLabel} editEnabled={editEnabled} historyHasEntries={historyHasEntries} preconPick={preconPick} scan={editEnabled} wishlistEnabled />
+      <CollectionPlaceHead stats={stats} lastUpdatedLabel={lastUpdatedLabel} editEnabled historyHasEntries={historyHasEntries} preconPick scan wishlistEnabled />
       <CollectionContentScope>{children}</CollectionContentScope>
     </>
   );
