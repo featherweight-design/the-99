@@ -17,6 +17,7 @@ import { claimInviteAction, confirmCodeAction, handOverAction } from "../../app/
 import { confirmFlyerCodeAction, handOverFlyerAction, saveLaunchListAction, startFlyerClaimAction } from "../../app/join/flyer-actions";
 import { FriendCard, type CardFace } from "../social/friend-card";
 import { FORM, NewcomerColumn } from "./newcomer-column";
+import { PendingReporter } from "../shell/pending-reporter";
 import { SocialToast, type SocialToastState } from "../social/social-toast";
 
 export type JoinStart =
@@ -400,7 +401,7 @@ export function JoinFlow({ token, ...props }: JoinFlowProps) {
         actions={
           <>
             <div className={FORM}>
-              <Link href="/sign-up" className={press()}>{flyerCopy.launchedPress}</Link>
+              <Link href="/sign-up" className={press()}>{flyerCopy.launchedPress}<PendingReporter href="/sign-up" /></Link>
             </div>
             <p className={QUIET}>{copy.haveOne} {signIn}</p>
           </>
