@@ -75,7 +75,10 @@ describe("wrapped inputs show focus on their field", () => {
       if (ALLOWED[rel]) continue;
       const source = readFileSync(path, "utf8");
       const tags = inputTags(source);
-      if (tags.some(looseInner)) offenders.push(rel);
+      // A field framed by a TaggedBox (imported and drawn here) takes its focus from that frame
+      // (`cards/tagged-box.tsx` rings the frame on focus-within), so its bare inner input is not loose.
+      const framed = /import\s*\{[^}]*\bTaggedBox\b[^}]*\}/.test(source) && source.includes("<TaggedBox");
+      if (!framed && tags.some(looseInner)) offenders.push(rel);
       // A use, not the import: the import line names it whether or not any field wears it.
       const body = source.split("\n").filter((line) => !line.startsWith("import ")).join("\n");
       if (tags.some((t) => t.includes("AFFIX_INPUT")) && !/AFFIX_FOCUS(?:_INPUT)?\b/.test(body)) unwrapped.push(rel);
