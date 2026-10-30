@@ -86,11 +86,30 @@ describe("What's new on Home", () => {
     expect(screen.getByText(feedCopy.home.newCount(1), { exact: false })).toBeInTheDocument();
   });
 
+  it("rings the next ✕ (2px accent, radius 8) even after a pointer press", async () => {
+    const raf = vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => { cb(0); return 0; });
+    render(<WhatsNew feed={feed([view(1), view(2)])} now={NOW} />);
+    const second = screen.getByRole("button", { name: d.aria(titleOf(2)) });
+    expect(second.className.split(/\s+/)).toEqual(expect.arrayContaining(["rounded-[8px]", "focus-visible:outline-transparent", "focus-visible:shadow-[0_0_0_2px_var(--accent)]"]));
+    // A transparent outline, never none: forced-colors mode drops the shadow and paints the outline in a system color.
+    expect(second.className).not.toContain("focus-visible:outline-none");
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: d.aria(titleOf(1)) })); });
+    expect(document.activeElement).toBe(second);
+    // The ring rides a marker, since :focus-visible does not match after a pointer press; blur clears it.
+    expect(second).toHaveAttribute("data-ring");
+    expect(second.className.split(/\s+/)).toContain("data-[ring]:shadow-[0_0_0_2px_var(--accent)]");
+    act(() => { second.blur(); });
+    expect(second).not.toHaveAttribute("data-ring");
+    raf.mockRestore();
+  });
+
   it("lands on the section's head when its last row goes and the section stays", async () => {
     const raf = vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => { cb(0); return 0; });
     render(<WhatsNew feed={feed([view(1)])} now={NOW} />);
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: d.aria(titleOf(1)) })); });
     expect(document.activeElement?.id).toBe("home-whats-new");
+    // The head takes focus plainly: no forced ring after a pointer press.
+    expect(document.getElementById("home-whats-new")).not.toHaveAttribute("data-ring");
     raf.mockRestore();
   });
 

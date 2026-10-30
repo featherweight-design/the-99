@@ -16,11 +16,24 @@ const d = feedCopy.home.dismiss;
 const HIT =
   "relative pointer-coarse:after:absolute pointer-coarse:after:left-1/2 pointer-coarse:after:top-1/2 pointer-coarse:after:h-[44px] pointer-coarse:after:w-[44px] pointer-coarse:after:-translate-x-1/2 pointer-coarse:after:-translate-y-1/2 pointer-coarse:after:content-['']";
 
+/**
+ * Focuses the ✕ that follows a dismiss with its ring showing, as the boards draw it (Row-States), after a pointer press
+ * too. `:focus-visible` does not match there, and `focus({ focusVisible })` is not supported everywhere, so the ring
+ * rides a `data-ring` marker cleared on blur. A fallback (the section's head) takes focus plainly, never this.
+ */
+export function ringFocus(el: HTMLElement): void {
+  el.dataset.ring = "";
+  el.addEventListener("blur", () => delete el.dataset.ring, { once: true });
+  el.focus();
+}
+
 export function DismissButton({ title, onPress, disabled = false, className = "" }: {
   title: string; onPress: (from: HTMLElement) => void; disabled?: boolean;
   /** The lead's phone nudge (`.d4n.ph .ld .la .x4`, margin-top −2px). */
   className?: string;
 }) {
+  // The ring is a box-shadow over a TRANSPARENT outline, never `outline-none`: forced-colors mode drops shadows and
+  // repaints the outline in a system color, so a keyboard reader in High Contrast still finds the focused ✕.
   return (
     <button
       type="button"
@@ -28,7 +41,7 @@ export function DismissButton({ title, onPress, disabled = false, className = ""
       aria-label={d.aria(title)}
       disabled={disabled}
       onClick={(e) => onPress(e.currentTarget)}
-      className={`z-[1] ml-auto mr-[-10px] flex h-[44px] w-[44px] flex-none cursor-pointer md:mr-[-6px] md:h-[32px] md:w-[32px] items-center justify-center border-0 bg-transparent p-0 text-[13px] text-[color:var(--fg-muted)] hover:text-[color:var(--fg)] disabled:cursor-default ${HIT} ${className}`}
+      className={`z-[1] ml-auto mr-[-10px] flex h-[44px] w-[44px] flex-none cursor-pointer md:mr-[-6px] md:h-[32px] md:w-[32px] items-center justify-center rounded-[8px] border-0 bg-transparent p-0 text-[13px] focus-visible:outline-transparent focus-visible:shadow-[0_0_0_2px_var(--accent)] data-[ring]:outline-2 data-[ring]:outline-solid data-[ring]:outline-transparent data-[ring]:shadow-[0_0_0_2px_var(--accent)] text-[color:var(--fg-muted)] hover:text-[color:var(--fg)] disabled:cursor-default ${HIT} ${className}`}
     >
       <span aria-hidden>✕</span>
     </button>
@@ -76,7 +89,7 @@ export function useFeedDismiss(fallback?: () => HTMLElement | null, onChange?: (
   function dismiss(key: string, from: HTMLElement, move = true) {
     const next = nextDismiss(from);
     put(key, true);
-    if (move) requestAnimationFrame(() => (next ?? fallback?.())?.focus());
+    if (move) requestAnimationFrame(() => (next ? ringFocus(next) : fallback?.()?.focus()));
     void dismissFeedItemAction(key)
       .then((r) => {
         if (!r.ok) throw new Error(r.reason);

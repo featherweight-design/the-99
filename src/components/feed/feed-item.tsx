@@ -147,6 +147,13 @@ function answerText(item: FeedView, friend: string, card: string): { title: stri
   };
 }
 
+/**
+ * Whether a press label carries a friend's name ("See ‹name›’s spares", up to `DISPLAY_NAME_MAX` characters), so it may
+ * wrap. Every other label is a short fixed phrase, drawn on one line as the announcements boards draw it (Home-Rows,
+ * Lead-Story); a 30-character name in one line would run past a 390 row.
+ */
+export const pressWraps = (item: FeedView): boolean => item.kind === "trade-match";
+
 /** The press: a link to the item's place, or a button opening the shipped card detail. Stretched over the row. */
 export function FeedPress({
   item,
@@ -356,7 +363,7 @@ export function FeedItemRow({ item, now, face, onDismiss }: {
               label={item.outbound ? text.press : `${text.press} ›`}
               describedBy={titleId}
               stretch="after:absolute after:inset-0 after:content-['']"
-              className="flex min-h-[32px] min-w-0 items-center font-sans text-[13px] font-medium [overflow-wrap:anywhere] text-[color:var(--accent-text)]"
+              className={`flex min-h-[32px] min-w-0 items-center font-sans text-[13px] font-medium text-[color:var(--accent-text)] ${pressWraps(item) ? "[overflow-wrap:anywhere]" : "whitespace-nowrap"}`}
             />
           )}
           {onDismiss && <DismissButton title={text.title} onPress={onDismiss} />}

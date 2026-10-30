@@ -142,6 +142,22 @@ describe("LeadSlot", () => {
     expect(screen.getByRole("alert").textContent).toContain(spareCopy.request.failed);
   });
 
+  it("draws a fixed label's button 40px (36 from md) on one line from 390, wrapping below it, and lets a friend's name wrap at every width", () => {
+    const set: FeedView = { ...LEAD, key: "set:sos", kind: "new-set", card: null, friend: null, ask: undefined, href: "/collection/sets/sos", name: "Secrets of Strixhaven" };
+    render(<LeadStory item={set} now={NOW} />);
+    const fixed = screen.getByRole("link", { name: /See the set/ }).className.split(/\s+/);
+    expect(fixed).toEqual(expect.arrayContaining(["min-[390px]:h-[40px]", "min-[390px]:whitespace-nowrap", "md:h-[36px]", "min-h-[40px]", "[overflow-wrap:anywhere]"]));
+    expect(fixed).not.toContain("whitespace-nowrap");
+    cleanup();
+    const trade: FeedView = { ...LEAD, key: "item:2", kind: "trade-match", ask: undefined, href: "/friends/pub-peter", friend: { publicId: "pub-peter", displayName: "W".repeat(30) } };
+    render(<LeadStory item={trade} now={NOW} />);
+    const wraps = screen.getByRole("link", { name: /spares/ }).className.split(/\s+/);
+    expect(wraps).toEqual(expect.arrayContaining(["min-h-[40px]", "md:min-h-[36px]", "[overflow-wrap:anywhere]"]));
+    expect(wraps).not.toContain("whitespace-nowrap");
+    expect(wraps).not.toContain("min-[390px]:whitespace-nowrap");
+    expect(wraps).not.toContain("min-[390px]:h-[40px]");
+  });
+
   it("draws nothing with no lead", () => {
     const { container } = render(<LeadSlot lead={null} now={NOW} />);
     expect(container.querySelector("[data-lead-story]")).toBeNull();
