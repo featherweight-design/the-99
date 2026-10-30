@@ -37,8 +37,10 @@ export const SWITCHES = [
   { name: "DECK_NOTES_ENABLED", kind: "feature" },
   { name: "DECK_PRINTINGS_ENABLED", kind: "feature" },
   { name: "DECK_STATS_ENABLED", kind: "feature" },
+  { name: "FEEDBACK_ENABLED", kind: "feature" },
   { name: "FIND_A_DECK_READ_ENABLED", kind: "model", needs: "SWAP_TOOLS_ENABLED" },
   { name: "HELP_ME_CHOOSE_ENABLED", kind: "model" },
+  { name: "FLYER_TRIAL_ENABLED", kind: "feature" },
   { name: "FRIEND_DECKS_ENABLED", kind: "feature", needs: "SOCIAL_FRIENDS_ENABLED" },
   { name: "HOME_FEED_ENABLED", kind: "feature" },
   { name: "HOW_IT_WORKS_ENABLED", kind: "plumbing" },
@@ -116,13 +118,17 @@ export const isOverrideName = (name: string): name is OverrideName => name === A
  * path, where the key parsing may not), so they would describe a column that is not there. Both Vercel projects carry the
  * keys (Production scope) and previews are not built, so that only happens on a local server run without them.
  * `SIGNATURE_CARD_ENABLED` held it from 2026-10-27 and left it with the `friends` entry's signature-card caption line.
- * It holds nothing today; a switch that joins it carries its reason beside it.
+ * `FLYER_TRIAL_ENABLED` and `FEEDBACK_ENABLED` hold it from 2026-10-30, until the first PR that ships a usable surface for each
+ * (flyer: the `/join` page, PR 3; feedback: Report a problem, PR 5). Raised early, an account would see half a trial.
+ * It holds the two above; a switch that joins it carries its reason beside it.
  * The model switches need `ANTHROPIC_API_KEY`, and without it a run ends refused rather than throwing
  * (`src/lib/model/client.ts`, `realMessages`); payment, webhook and cron secrets sit behind no switch;
  * every table a switch reads ships in a migration production applies on deploy.
  */
 export const ALL_FEATURES_EXCLUDED: Readonly<Partial<Record<SwitchName, string>>> = {
-  // Empty. SUGGESTED_CHANGES_V2_ENABLED left on 2026-10-29 (Hugh: switches are on by default for his account), once
+  FEEDBACK_ENABLED: "no feedback surface yet; it joins All features with Report a problem (flyer trial PR 5)",
+  FLYER_TRIAL_ENABLED: "no flyer surface yet; it joins All features with the `/join` page (flyer trial PR 3)",
+  // SUGGESTED_CHANGES_V2_ENABLED left on 2026-10-29 (Hugh: switches are on by default for his account), once
   // its intake, wait, results and apply had shipped; its History view and in-flight tile follow in later PRs.
 };
 

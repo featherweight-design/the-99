@@ -4183,6 +4183,96 @@ export const inviteEdges = pgTable("invite_edges", {
   index("invite_edges_inviter_idx").on(t.inviterUserId).where(sql`${t.inviterUserId} is not null`),
 ]);
 
+// ── Flyer trial (handoff `design/design_handoff_the99_flyer_trial/`): store flyers carry a short code on `/join/<CODE>`.
+
+/**
+ * One printed flyer code (six characters from an unambiguous alphabet, upper case). `label` is the store's name for
+ * Hugh and never reaches a player. A code draws on Hugh's invite count, never makes a friend link to him, and stops
+ * at public launch. `capacity` is the sign-ups it may hold (50); `revoked_at` ends it early. `created_by` is the
+ * admin who made it (kept by the purge, like `flag_groups.created_by`).
+ */
+export const flyerCodes = pgTable("flyer_codes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  code: text("code").notNull().unique(),
+  label: text("label").notNull(),
+  groupId: uuid("group_id").references(() => flagGroups.id, { onDelete: "set null" }),
+  capacity: integer("capacity").notNull().default(50),
+  createdBy: text("created_by").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  revokedAt: timestamp("revoked_at"),
+}, (t) => [
+  check("flyer_codes_capacity_check", sql`${t.capacity} between 1 and 50`),
+  check("flyer_codes_code_check", sql`${t.code} ~ '^[A-HJ-NP-Z2-9]{6}$'`),
+]);
+
+/**
+ * One person's way through a flyer code: `open` (email typed, code sent, holding one of the code's places for ten
+ * minutes), `proven` (the emailed code was right), `spent` (the account was created: `user_id` names it) or
+ * `released` (never proven, or the hold ran out). A claim HOLDS a place while `open` or `proven` and `holds_until`
+ * has not passed; expiry is derived from time and the sweep writes it down. The address is erased on every final
+ * state. `user_id` is the NEW account, so the purge deletes the row with it (which frees its place on the code).
+ */
+export const flyerClaims = pgTable("flyer_claims", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  codeId: uuid("code_id").notNull().references(() => flyerCodes.id, { onDelete: "cascade" }),
+  state: text("state").notNull(),
+  holdsUntil: timestamp("holds_until").notNull(),
+  email: text("email"),
+  clerkInvitationId: text("clerk_invitation_id"),
+  claimSecretHash: text("claim_secret_hash").notNull(),
+  codeHmac: text("code_hmac"),
+  codeExpiresAt: timestamp("code_expires_at"),
+  codeSentAt: timestamp("code_sent_at"),
+  codeTries: integer("code_tries").notNull().default(0),
+  provenAt: timestamp("proven_at"),
+  userId: text("user_id"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  resolvedAt: timestamp("resolved_at"),
+}, (t) => [
+  check("flyer_claims_state_check", sql`${t.state} in ('open', 'proven', 'spent', 'released')`),
+  check("flyer_claims_tries_check", sql`${t.codeTries} between 0 and 5`),
+  // Final states keep no address and say when they ended; a spent claim names its account.
+  check("flyer_claims_final_check", sql`${t.state} not in ('spent', 'released') or (${t.email} is null and ${t.resolvedAt} is not null)`),
+  check("flyer_claims_spent_check", sql`(${t.state} = 'spent') = (${t.userId} is not null)`),
+  index("flyer_claims_code_state_idx").on(t.codeId, t.state),
+  uniqueIndex("flyer_claims_user_idx").on(t.userId).where(sql`${t.userId} is not null`),
+]);
+
+/**
+ * An address left on the launch list by a reader a used-up, revoked or ended flyer turned away: one row per address
+ * (case-folded in `email`), the code it came through (`set null` if the code is ever deleted). Emailed once at
+ * launch, then purged (launch + 30 days). Holds no account column: a stranger's address, not a player's.
+ */
+export const launchList = pgTable("launch_list", {
+  email: text("email").primaryKey(),
+  codeId: uuid("code_id").references(() => flyerCodes.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+/**
+ * Feedback a player sent from inside the app: a problem report (`problem`) or a check-in (`check_in`). `answers` is
+ * the form as typed; `page`, `device`, `digest` and `sentry_event_id` are the context a problem report attaches;
+ * `source` is the entry it came from (`error_screen`, `about`, ...). Read in /admin by name, never by email;
+ * `read_at` is when an admin first opened it. The purge deletes a player's rows with the account.
+ */
+export const playerFeedback = pgTable("feedback", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull(),
+  kind: text("kind").notNull(),
+  answers: jsonb("answers").$type<Record<string, unknown>>().notNull(),
+  page: text("page"),
+  device: text("device"),
+  digest: text("digest"),
+  sentryEventId: text("sentry_event_id"),
+  source: text("source"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  readAt: timestamp("read_at"),
+}, (t) => [
+  check("feedback_kind_check", sql`${t.kind} in ('problem', 'check_in')`),
+  index("feedback_created_idx").on(t.createdAt),
+  index("feedback_user_idx").on(t.userId),
+]);
+
 /**
  * Posts in the magic.wizards.com Announcements category (`src/lib/announcements/`), one row per post, keyed on its
  * Contentful entry id (a slug can change; the id does not). Catalog family: no per-account rows. `lastmod` is the
