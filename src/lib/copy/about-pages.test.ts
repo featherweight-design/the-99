@@ -182,7 +182,7 @@ describe("about pages copy model", () => {
 
   it("gates diagram parts only on registered switches", () => {
     // Retired switches stay a part's historical identity; `visible.ts` maps each to always-on.
-    const RETIRED_IDENTITIES = ["DECK_TOKENS_ENABLED", "LINEUP_ENABLED", "FRIEND_DECKS_ENABLED", "COMMANDERS_PLACE_ENABLED", "HOME_FEED_ENABLED", "SOCIAL_GAMES_ENABLED", "SOCIAL_INVITES_ENABLED", "SOCIAL_WISHLIST_ENABLED", "COLLECTION_EDIT_ENABLED"];
+    const RETIRED_IDENTITIES = ["DECK_TOKENS_ENABLED", "LINEUP_ENABLED", "FRIEND_DECKS_ENABLED", "COMMANDERS_PLACE_ENABLED", "HOME_FEED_ENABLED", "SOCIAL_GAMES_ENABLED", "SOCIAL_INVITES_ENABLED", "SOCIAL_WISHLIST_ENABLED", "COLLECTION_EDIT_ENABLED", "DECK_NOTES_ENABLED"];
     for (const id of ABOUT_RULE_IDS) {
       const named = diagramParts(id).flatMap((p) => [p.switch, ...(p.part === "chips" ? p.chips.map((c) => c.switch) : [])]);
       for (const sw of named.filter((x): x is AboutLineSwitch => x != null).flatMap(switchesOf)) expect([...SWITCH_NAMES, ...RETIRED_IDENTITIES], id).toContain(sw);

@@ -48,7 +48,7 @@ describe("SwitchesList", () => {
 
   it("counts each chip and filters by it, keeping the heads' counts (L2)", () => {
     draw({ FEEDBACK_ENABLED: "true" }, [row({ switchName: "DECK_STATS_ENABLED", scope: "user", userId: "u1", value: "on" })]);
-    expect(chip(/^All/).textContent).toBe("All 33");
+    expect(chip(/^All/).textContent).toBe("All 32");
     expect(chip(/^All/)).toHaveAttribute("aria-checked", "true");
     expect(chip(/^Model features/).textContent).toBe("Model features 8");
     expect(chip(/^Overridden/).textContent).toBe("Overridden 1");
