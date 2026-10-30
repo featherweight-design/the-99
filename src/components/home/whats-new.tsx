@@ -79,7 +79,8 @@ export function WhatsNew({ feed: served, now, faces, className = "" }: { feed: H
       <h2 id="home-whats-new" tabIndex={-1} className={HEAD}>
         {c.head}
         {count > 0 && <em className="tracking-[.14em] text-[color:var(--fg-locked)] not-italic lowercase">{c.newCount(count)}</em>}
-        {chosen && (
+        {/* The way back, wherever the reader has chosen: the ✕ this visit saved an empty choice too (small items 6). */}
+        {(chosen || offerGone) && (
           <Link href="/settings" className="ml-auto flex items-center gap-[4px] font-sans text-[12.5px] tracking-normal text-[color:var(--fg-muted)] normal-case">
             {c.choose}
             <i aria-hidden className="text-[15px] leading-none text-[color:var(--fg-faint)] not-italic">›</i>
@@ -148,13 +149,16 @@ function Rows({ items, now, faces, expanded, onExpand, onDismiss }: {
 
 function Quiet({ on }: { on: FeedKind[] }) {
   // Each kind's own inline form (announcements G1): lowercasing a name would print "secret lair". With no kind on (the
-  // offer closed this visit), the lead alone: there is nothing to name.
+  // offer closed, or every kind turned off in Settings), the off line says why the box is empty (small items 6, item 6).
   const names = nameList(on.map((k) => c.quietName[k]));
   return (
-    <div data-feed-quiet className="flex flex-col gap-[6px] p-[14px]">
+    <div data-feed-quiet={on.length === 0 ? "off" : ""} className="flex flex-col gap-[6px] p-[14px]">
       <p className="m-0 text-[13px] leading-[1.55] text-[color:var(--fg-body)]">
-        <b className="text-[color:var(--fg)]">{c.quietLead}</b>
-        {names && ` ${c.quietRest(names)}`}
+        {on.length === 0 ? (
+          <><b className="text-[color:var(--fg)]">{c.offLead}</b> {c.offRest}</>
+        ) : (
+          <><b className="text-[color:var(--fg)]">{c.quietLead}</b>{names && ` ${c.quietRest(names)}`}</>
+        )}
       </p>
     </div>
   );
@@ -293,20 +297,27 @@ function Offer({ offer, rule, onClosed }: { offer: FeedKind[]; rule: boolean; on
   }
   return (
     <div data-feed-offer="closed" className={rule ? OFFER_RULE : undefined}>
-      <div className="flex items-center gap-[10px] py-[6px] pr-[4px] pl-[14px]">
-        <p className="m-0 min-w-0 flex-1 text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">
+      {/* Stacked (small items 6, 6b): the words on the left, the ✕ in the top right corner (where the opened offer puts
+          it) and Pick ▾ in the bottom right, level with the words' last line. No extra row: the box is as tall as the
+          words, and the right padding keeps them clear of both. */}
+      <div className="relative min-h-[72px] py-[12px] pr-[64px] pl-[14px] md:min-h-[64px] md:pr-[72px]">
+        <p className="m-0 min-w-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">
           <b className="font-medium text-[color:var(--fg)]">{o.lead}</b> {o.rest(offer.map((k) => c.quietName[k]))}
         </p>
+        {/* A wrapper places it: the button carries its own `relative` for the touch hit box. */}
+        <span className="absolute top-[-4px] right-0 flex md:top-[4px] md:right-[4px]">
+          <DismissButton title="" label={o.closeAria} onPress={close} margin="m-0" />
+        </span>
         <button
           type="button"
           aria-expanded={false}
           onClick={() => setOpen(true)}
-          className="flex min-h-[44px] flex-none cursor-pointer items-center gap-[5px] border-0 bg-transparent px-[6px] py-0 font-sans text-[13px] font-medium text-[color:var(--accent-text)] md:min-h-[32px]"
+          // Over the ✕'s 44 hit box on a phone, where the two meet in a 72 box: a press there opens, never hides for good.
+          className="absolute right-[12px] bottom-[10px] z-[2] flex min-h-[32px] cursor-pointer items-center gap-[5px] whitespace-nowrap border-0 bg-transparent px-[6px] py-0 font-sans text-[13px] font-medium text-[color:var(--accent-text)]"
         >
           {o.pick}
           <span aria-hidden>▾</span>
         </button>
-        <DismissButton title="" label={o.closeAria} onPress={close} margin="m-0" />
       </div>
       {failed && (
         <p role="alert" className="m-0 px-[14px] pb-[10px] text-[12.5px] text-[color:var(--danger)]">
