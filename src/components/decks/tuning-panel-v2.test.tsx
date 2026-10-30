@@ -550,6 +550,33 @@ describe("TuningPanel with Suggested changes v2 on: the wait and the results (UI
     expect(screen.queryByRole("button", { name: deckTuningCopy.panel.suggest })).toBeNull();
   });
 
+  it("with the switch off, the read-only v2 run view calls no write action (apply, undo, pick) on mount or render", async () => {
+    const reopened: TuningState = { ...finished, review: { runId: RUN, at, readVersion: 4 } };
+    const actions = v2Actions();
+    const d = { ...deps(), v2: actions };
+    d.read = vi.fn(async () => reopened);
+    await draw(d, null, [2], (node) => (
+      <ReviewRunProvider value={{ tool: "suggested", runId: RUN, past: { at: at.toISOString(), tier: "credit", back: vi.fn() } }}>{node}</ReviewRunProvider>
+    ));
+    await act(async () => {});
+    expect(document.querySelector("[data-sc-run]")!.getAttribute("data-sc-run")).toBe("results");
+    expect(actions.apply).not.toHaveBeenCalled();
+    expect(actions.undo).not.toHaveBeenCalled();
+    expect(actions.pick).not.toHaveBeenCalled();
+  });
+
+  it("with the switch off, a stored v1 run (no stored ask) stays on the v1 view: no v2 bar, its own Add, Reject and Apply all", async () => {
+    const v10 = lines.map((l) => ({ ...l, typeGroup: undefined, role: undefined, picked: undefined, applySet: undefined }));
+    const d = { ...deps(), v2: v2Actions() };
+    d.read = vi.fn(async () => ({ ...okRun(RUN), items: v10, itemsAsk: null }));
+    await draw(d, null);
+    expect(document.querySelector("[data-sc-run]")).toBeNull();
+    expect(document.querySelector("[data-sc-bar]")).toBeNull();
+    expect(screen.getByRole("button", { name: deckTuningCopy.lists.applyAll })).toBeTruthy();
+    expect(screen.getAllByRole("button", { name: deckTuningCopy.lists.add }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("button", { name: deckTuningCopy.lists.reject }).length).toBeGreaterThan(0);
+  });
+
   it("the same stored v2 run with the switch on keeps its Apply bar and pick controls", async () => {
     const d = { ...deps(), v2: v2Actions() };
     d.read = vi.fn(async () => ({ ...finished, review: { runId: RUN, at, readVersion: 4 } }));
