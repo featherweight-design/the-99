@@ -134,19 +134,25 @@ export async function loadEarlyListsBySet(userId: string, sets: readonly Upcomin
       const row = page.precon.row;
       tiles.push({ href: earlyListHref(l.contentfulId, l.position), name: row.name, commanders: row.commanders, identity: row.identity, owned: row.owned, of: row.of });
     }
-    if (tiles.length === 0) continue;
     // Two posts resolving to one set (rare: a post re-published under a new id) are read as one: their lists in post
-    // order, and the larger promise.
-    const held = out[code];
-    const promised = lists[0].promised;
-    out[code] = held
-      ? {
-          lists: [...held.lists, ...tiles],
-          promised: held.promised === null ? promised : promised === null ? held.promised : Math.max(held.promised, promised),
-          released: [...new Set([...(held.released ?? []), ...gaveWay])],
-          releasedLists: (held.releasedLists ?? 0) + gaveWayLists,
-        }
-      : { lists: tiles, promised, released: [...new Set(gaveWay)], releasedLists: gaveWayLists };
+    // order, and the larger promise. A post whose lists have all given way still merges its promise and its released
+    // lists, so a sibling post's set keeps them; a set with no tiles at all reads as none (`lists` empty).
+    out[code] = mergeEarlySet(out[code], { lists: tiles, promised: lists[0].promised, released: gaveWay, releasedLists: gaveWayLists });
   }
   return out;
+}
+
+/**
+ * One post's reading of a set folded into what the set's earlier posts gave: lists in post order, the larger promise,
+ * every released commander and every released list. A post with no tiles still merges, so its promise and its released
+ * lists are never lost to a sibling post that has tiles.
+ */
+export function mergeEarlySet(held: EarlySet | undefined, next: EarlySet): EarlySet {
+  if (!held) return { ...next, released: [...new Set(next.released ?? [])], releasedLists: next.releasedLists ?? 0 };
+  return {
+    lists: [...held.lists, ...next.lists],
+    promised: held.promised === null ? next.promised : next.promised === null ? held.promised : Math.max(held.promised, next.promised),
+    released: [...new Set([...(held.released ?? []), ...(next.released ?? [])])],
+    releasedLists: (held.releasedLists ?? 0) + (next.releasedLists ?? 0),
+  };
 }

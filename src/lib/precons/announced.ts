@@ -3,7 +3,7 @@
  * step over the cached reads, so every time-bound fact (`new`, the countdown's day, `new ·` on a precon tile) is
  * decided once on the server against one `now` and the browser draws exactly what the server drew.
  */
-import { earlyIsNew, type EarlySet } from "../announcements/early-tiles";
+import { earlyIsNew, earlyPosted, type EarlySet } from "../announcements/early-tiles";
 import { announcedOpensByItself, preconIsNew } from "./arrivals";
 import type { PreconArrival } from "./arrivals-read";
 import type { RevealedCommander } from "./revealed";
@@ -42,7 +42,7 @@ export type AnnouncedProps = {
 export function announcedProps(upcoming: UpcomingPayload, now: Date): AnnouncedProps {
   const early = upcoming.early ?? {};
   const held = upcoming.earlySeen ?? [];
-  const earlyNew = (code: string) => earlyIsNew(code, early[code]?.lists.length ?? 0, held);
+  const earlyNew = (code: string) => earlyIsNew(code, earlyPosted(early[code]), held);
   const newCodes = upcoming.sets.filter((s) => announcedOpensByItself([s], "", now) || earlyNew(s.code)).map((s) => s.code);
   return {
     sets: upcoming.sets,

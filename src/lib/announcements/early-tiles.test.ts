@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { earlyIsNew, earlySeenKey, earlySeenKeys, filterEarly, listedCommanderIds, listsToCome, type EarlyTile } from "./early-tiles";
+import { earlyIsNew, earlyPosted, earlySeenKey, earlySeenKeys, filterEarly, listedCommanderIds, listsToCome, type EarlyTile } from "./early-tiles";
 import { earlyListHref } from "./early-list";
 
 const tile = (position: number, name: string, commander: string, identity: string[]): EarlyTile => ({
@@ -61,5 +61,22 @@ describe("filterEarly", () => {
     expect(filterEarly(lists, { q: "angels", colours: [] }, false).map((l) => l.name)).toEqual(["Calling All Angels"]);
     expect(filterEarly(lists, { q: "lathliss", colours: [] }, false).map((l) => l.name)).toEqual(["Reign of Dragons"]);
     expect(filterEarly(lists, { q: "foundations", colours: [] }, true)).toHaveLength(2);
+  });
+});
+
+describe("earlyPosted", () => {
+  const t = (n: number): EarlyTile => ({ href: `/e/${n}`, name: `L${n}`, commanders: [], identity: [], owned: 0, of: 99 });
+
+  it("counts the lists that gave way to their release list with the early ones, and none once no early list remains", () => {
+    expect(earlyPosted(undefined)).toBe(0);
+    expect(earlyPosted({ lists: [t(0), t(1)], promised: 5 })).toBe(2);
+    expect(earlyPosted({ lists: [t(0), t(1), t(2)], promised: 5, releasedLists: 1 })).toBe(4);
+    expect(earlyPosted({ lists: [], promised: 5, releasedLists: 3 })).toBe(0);
+  });
+
+  it("writes the seen key at the posted count, so a list releasing never lowers it", () => {
+    // Seen at 3; one released and a fourth posted leaves three tiles, but four posted.
+    expect(earlySeenKeys({ trc: { lists: [t(0), t(1), t(2)], promised: 5, releasedLists: 1 } })).toEqual(["early:trc:4"]);
+    expect(earlySeenKeys({ trc: { lists: [], promised: 5, releasedLists: 3 } })).toEqual([]);
   });
 });

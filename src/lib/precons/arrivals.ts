@@ -7,7 +7,7 @@
  * for the first time (`PreconArrival`). A baseline stamp (`arrivedAt` null) is never one: it was already there
  * when stamping began.
  */
-import { filterEarly, listedCommanderIds, listsToCome, type EarlySet, type EarlyTile } from "../announcements/early-tiles";
+import { earlyPosted, filterEarly, listedCommanderIds, listsToCome, type EarlySet, type EarlyTile } from "../announcements/early-tiles";
 import { fold } from "./list";
 import type { PreconArrival } from "./arrivals-read";
 import type { RevealedCommander } from "./revealed";
@@ -132,8 +132,8 @@ export type AnnouncedMatch = {
   /** Every commander the set has revealed, the `15`. */
   revealed: number;
   /**
-   * The set's posted early lists (announcements UI 5): `lists` those the filters keep, `posted` every one (the meta's
-   * "3 of 5 lists so far" counts them all), `promised` the post's own count, `listed` the commanders every posted list
+   * The set's posted early lists (announcements UI 5): `lists` those the filters keep, `posted` every one, a list that gave
+   * way to its release list included (the meta's "3 of 5 lists so far" counts them all), `promised` the post's own count, `listed` the commanders every posted list
    * stands for, a list that gave way to its release list included (a revealed one among them is drawn as its list, or
    * not at all, never as waiting), and `toCome` the promised lists neither posted nor stood for by a revealed
    * commander, all read unfiltered. Absent while the set has none.
@@ -168,17 +168,24 @@ export function filterAnnounced(
     // A list that matches keeps its set, as a matching commander does.
     // The empty-set exception is for a set with nothing posted at all: `lists` is already filtered, so a set whose
     // lists the filters all drop is not one, and leaves as a set whose commanders all fail would.
-    const nothing = all.length === 0 && (posted?.lists.length ?? 0) === 0;
-    const stays = nothing ? !active || setMatches : !active || commanders.length > 0 || lists.length > 0;
+    const hasEarly = posted !== undefined && posted.lists.length > 0;
+    const nothing = all.length === 0 && !hasEarly;
+    // A list that gave way to its release list still stands for its commander: not waiting, and not to come.
+    const listed = hasEarly ? listedCommanderIds(posted.lists, posted.released) : new Set<string>();
+    // Only a commander the row will draw keeps the set: with posted lists that is one still waiting for its list
+    // (`waitingCommanders`). A commander stood for by a list is kept by that list matching, or not at all, so a search
+    // that matches only a released list's commander never keeps a row with nothing to show.
+    const drawn = commanders.filter((c) => !listed.has(c.oracleId)).length;
+    const stays = nothing ? !active || setMatches : !active || drawn > 0 || lists.length > 0;
     if (!stays) continue;
     const match: AnnouncedMatch = { set, commanders, matched: commanders.length, revealed: all.length };
-    if (posted && posted.lists.length > 0) {
-      // A list that gave way to its release list still stands for its commander: not waiting, and not to come.
-      const listed = listedCommanderIds(posted.lists, posted.released);
+    if (hasEarly) {
       const waiting = all.filter((c) => !listed.has(c.oracleId)).length;
+      // Posted counts the lists that gave way too (`earlyPosted`): the same count the seen key and the news check read.
+      const count = earlyPosted(posted);
       match.early = {
-        lists, posted: posted.lists.length, promised: posted.promised, listed: [...listed],
-        toCome: listsToCome(posted.lists.length + (posted.releasedLists ?? 0), posted.promised, waiting),
+        lists, posted: count, promised: posted.promised, listed: [...listed],
+        toCome: listsToCome(count, posted.promised, waiting),
       };
     }
     out.push(match);

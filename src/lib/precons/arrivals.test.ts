@@ -282,5 +282,14 @@ describe("filterAnnounced", () => {
     expect([...(m.early?.listed ?? [])].sort()).toEqual(["chapel", "kirk"]);
     // Three promised, one early, one released, none waiting: one to come, not two.
     expect(m.early?.toCome).toBe(1);
+    // The meta counts the released list as posted: "2 of 3 lists so far".
+    expect(m.early?.posted).toBe(2);
+  });
+
+  it("drops a set whose search matches only a commander whose list gave way: nothing of it would be drawn", () => {
+    const early = { trc: { lists: [list(1, "Final Frontier", chapel)], promised: 3, released: ["kirk"], releasedLists: 1 } };
+    expect(filterAnnounced([trc], byCode, { q: "kirk", colours: [] }, early)).toEqual([]);
+    // A search matching the early list's commander keeps the set by that list.
+    expect(filterAnnounced([trc], byCode, { q: "chapel", colours: [] }, early).map((m) => m.early?.lists.length)).toEqual([1]);
   });
 });

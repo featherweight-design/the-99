@@ -59,9 +59,23 @@ export function earlyIsNew(code: string, count: number, held: readonly string[])
   });
 }
 
-/** The keys a Precons visit writes for the early lists it could show: one per set with lists, at its count. */
+/**
+ * How many lists the set has posted, the count every reader of it agrees on (the meta's "3 of 5 lists so far", the
+ * early seen key, the news check, lists to come): the early tiles AND the lists that gave way to their release list, so
+ * a list releasing never lowers the count and hides a later post's news. Zero while no early list remains to draw: a
+ * set whose lists have all given way has no early lists to show, or to be news.
+ */
+export function earlyPosted(s: EarlySet | undefined): number {
+  if (!s || s.lists.length === 0) return 0;
+  return s.lists.length + (s.releasedLists ?? 0);
+}
+
+/** The keys a Precons visit writes for the early lists it could show: one per set with lists, at its posted count. */
 export function earlySeenKeys(early: Readonly<Record<string, EarlySet>>): string[] {
-  return Object.entries(early).flatMap(([code, s]) => (s.lists.length > 0 ? [earlySeenKey(code, s.lists.length)] : []));
+  return Object.entries(early).flatMap(([code, s]) => {
+    const posted = earlyPosted(s);
+    return posted > 0 ? [earlySeenKey(code, posted)] : [];
+  });
 }
 
 /**

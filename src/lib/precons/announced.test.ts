@@ -48,6 +48,15 @@ describe("announcedProps: early lists (announcements G2)", () => {
     expect(announcedProps({ ...seen, early: early(5) }, now).newCodes).toEqual(["fdc"]);
   });
 
+  it("counts released lists in the news check: seen at 3, one released and a fourth posted is still news", () => {
+    const seen = { sets: [set("fdc")], commanders: {}, arrivals: [], earlySeen: ["early:fdc:3"] };
+    const shifted = { fdc: { lists: [tile(0), tile(1), tile(2)], promised: 5, releasedLists: 1 } };
+    expect(announcedProps({ ...seen, early: shifted }, now).newCodes).toEqual(["fdc"]);
+    // Every list released: no early list left to show, so no early news.
+    const gone = { fdc: { lists: [], promised: 5, releasedLists: 4 } };
+    expect(announcedProps({ ...seen, earlySeen: [], early: gone }, now).newCodes).toEqual([]);
+  });
+
   it("keeps the early key apart from `lists:<code>`: neither says anything about the other", () => {
     // Holding the release lists' key never hides the early lists...
     const listsSeen = announcedProps({ sets: [set("fdc")], commanders: {}, arrivals: [], early: early(2), earlySeen: ["lists:fdc", "fdc"] }, now);
