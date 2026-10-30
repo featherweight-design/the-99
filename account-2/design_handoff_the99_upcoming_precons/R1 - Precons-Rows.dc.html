@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Upcoming precons · Precons in rows · 900 and 390</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+.lbl{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#7C8A8C}
+.mono{font-family:'IBM Plex Mono',monospace}
+.disp{font-family:'Metamorphous',serif;font-weight:400}
+.cap{margin:0;font-size:13px;line-height:1.55;color:#95A4A6;text-wrap:pretty}
+.yh{margin:0;display:flex;align-items:baseline;gap:8px;border-bottom:1px solid #1A1F2B;padding-bottom:7px;font-family:'Metamorphous',serif;font-weight:400;font-size:17px;color:#C6D2D3}
+.cnt{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8A8C}
+.new{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;color:#5C86C9;border:1px solid rgba(92,134,201,.45);border-radius:4px;padding:0 5px;line-height:16px}
+.dot{display:inline-block;border-radius:50%}
+</style>
+</helmet>
+<div style="width:1460px;min-height:2600px;box-sizing:border-box;padding:44px 40px 60px;background:#0E0E12;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:44px">
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:1100px">
+    <span class="lbl">Precons page · rows · 900 and 390 · R1</span>
+    <h2 class="disp" style="margin:0;font-size:26px">The same group, read as text</h2>
+    <p class="cap">The view toggle holds: in rows, each set is one dashed row with no art. Rows are the reading view, so the commanders are a list of names, all of them, and nothing scrolls. The precon rows below are as shipped.</p>
+  </div>
+
+  <sc-for list="{{ states }}" as="st" hint-placeholder-count="3">
+    <section style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;flex-direction:column;gap:4px;max-width:1100px;border-top:1px solid #2E3340;padding-top:16px">
+        <div style="display:flex;align-items:baseline;gap:12px"><span class="mono" style="font-size:13px;color:#5C86C9">{{ st.id }}</span><span style="font-size:17px;font-weight:600">{{ st.title }}</span></div>
+        <p class="cap">{{ st.note }}</p>
+      </div>
+      <div style="display:flex;gap:40px;align-items:flex-start">
+        <sc-for list="{{ st.widths }}" as="w" hint-placeholder-count="2">
+          <div style="{{ w.frame }}">
+            <div style="{{ w.body }}">
+              <span class="mono" style="font-size:11px;color:#7C8A8C">{{ st.result }}</span>
+              <sc-if value="{{ st.hasGroup }}" hint-placeholder-val="{{ true }}">
+                <section style="display:flex;flex-direction:column;gap:8px">
+                  <h2 class="yh">Announced <span class="cnt">{{ st.groupCount }}</span></h2>
+                  <sc-for list="{{ w.sets }}" as="s" hint-placeholder-count="2">
+                    <div style="{{ w.row }}">
+                      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+                        <span style="display:flex;align-items:center;gap:8px;min-width:0">
+                          <h3 class="disp" style="{{ w.setName }}">{{ s.name }}</h3>
+                          <sc-if value="{{ s.isNew }}" hint-placeholder-val="{{ false }}"><span class="new">new</span></sc-if>
+                        </span>
+                        <span class="mono" style="{{ w.when }}">{{ s.when }}</span>
+                      </div>
+                      <span class="mono" style="font-size:11px;line-height:1.55;color:#95A4A6">{{ s.names }}</span>
+                      <span class="mono" style="font-size:10.5px;color:#7C8A8C">{{ s.meta }}</span>
+                    </div>
+                  </sc-for>
+                </section>
+              </sc-if>
+              <section style="display:flex;flex-direction:column;gap:8px">
+                <h2 class="yh">2026 <span class="cnt">12 decklists</span></h2>
+                <sc-for list="{{ w.rows }}" as="r" hint-placeholder-count="3">
+                  <div style="{{ w.precon }}">
+                    <div style="{{ w.thumb }}"></div>
+                    <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+                      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+                        <span class="disp" style="{{ w.pname }}">{{ r.nm }}</span>
+                        <span class="mono" style="flex:none;font-size:12px;font-weight:500;color:#C6D2D3"><span style="margin-right:4px;font-size:10px;font-weight:400;color:#7C8A8C">you own</span>{{ r.own }}</span>
+                      </div>
+                      <span class="mono" style="font-size:11px;color:#95A4A6">[commander]</span>
+                      <span class="mono" style="display:flex;align-items:center;gap:6px;font-size:10.5px;color:#7C8A8C"><sc-for list="{{ r.dots }}" as="d" hint-placeholder-count="2"><span class="dot" style="{{ d }}"></span></sc-for>[SET] · Oct 2026</span>
+                    </div>
+                  </div>
+                </sc-for>
+              </section>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1460,"height":2600}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const C = { W: "#F4E9C4", U: "#3A6AA5", B: "#98748F", R: "#C05A3E", G: "#4B7A46" };
+    const dots = (ids, px) => ids.map((k) => ({ width: px + "px", height: px + "px", background: C[k] }));
+    const trcNames = ["Christine Chapel, Combat Medic"].concat(Array.from({ length: 14 }, (_, i) => `[TRC commander ${String(i + 2).padStart(2, "0")}]`));
+    const ST = { name: "Star Trek Commander", isNew: true, when: "in 30 days", names: trcNames.join(" · "), meta: "TRC · releases Nov 13, 2026 · 15 commanders revealed" };
+    const DH = { name: "Darkhold Destiny Commander", isNew: false, when: "in 6 months", names: "Gargantos, the Endbringer", meta: "MDC · releases Apr 9, 2027 · 1 commander revealed" };
+    const DH0 = { ...DH, names: "No commanders revealed yet", meta: "MDC · releases Apr 9, 2027" };
+    const rowsAll = [
+      { nm: "Keen Engineering", own: "31 of 66", k: ["U", "R"] },
+      { nm: "Reign of Dragons", own: "18 of 67", k: ["B", "R", "G"] },
+      { nm: "Calling All Angels", own: "44 of 70", k: ["W"] },
+    ];
+    const mk = (o) => {
+      const st = { result: "197 decklists · newest first", sets: [], ...o };
+      st.hasGroup = st.sets.length > 0;
+      st.widths = [false, true].map((phone) => ({
+        frame: { width: phone ? "390px" : "900px", flex: "none", background: "#121217", border: "1px solid #2E3340", borderRadius: "12px", overflow: "hidden" },
+        body: { display: "flex", flexDirection: "column", gap: "14px", padding: phone ? "14px 16px 24px" : "16px 22px 24px" },
+        row: { border: "1px dashed #424755", borderRadius: phone ? "10px" : "11px", padding: phone ? "10px 12px 11px" : "11px 15px 12px", display: "flex", flexDirection: "column", gap: "4px", minHeight: "44px", boxSizing: "border-box" },
+        setName: { margin: 0, fontFamily: "'Metamorphous',serif", fontWeight: 400, fontSize: phone ? "14.5px" : "16px", lineHeight: 1.3, color: "#C6D2D3" },
+        when: { flex: "none", fontSize: phone ? "11px" : "12px", color: "#B3C0C2" },
+        sets: st.sets,
+        precon: { display: "flex", alignItems: "center", gap: phone ? "11px" : "14px", border: "1px solid #1A1F2B", background: "#18191F", borderRadius: phone ? "10px" : "11px", padding: phone ? "10px 8px 10px 12px" : "11px 12px 11px 15px" },
+        thumb: { flex: "none", width: phone ? "40px" : "44px", height: phone ? "56px" : "61px", borderRadius: "4px", background: "#2D2E35" },
+        pname: { fontSize: phone ? "14.5px" : "16px", lineHeight: 1.3, color: "#C6D2D3", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
+        rows: rowsAll.map((r) => ({ ...r, dots: dots(r.k, phone ? 9 : 11) })),
+      }));
+      return st;
+    };
+    const states = [
+      mk({ id: "R1", title: "Two sets at once, in rows", sets: [ST, DH], groupCount: "2 sets", note: "“in 30 days” takes the place the figure takes on a precon row, so the eye finds the date where it finds “you own”. The date itself is on the third line, beside the code. Star Trek’s fifteen names wrap; at 390 that’s five lines, which is the cost of naming them all in text." }),
+      mk({ id: "R2", title: "One set, nothing revealed, in rows", sets: [DH0], groupCount: "1 set", note: "The names line says so in words. The row keeps its three lines, so it doesn’t jump when the first card is spoiled." }),
+      mk({ id: "R3", title: "No upcoming sets, in rows", note: "As shipped. No heading and no empty group." }),
+    ];
+    return { states };
+  }
+}
+</script>
+</body>
+</html>

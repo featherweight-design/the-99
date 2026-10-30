@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Foil · R2 · states</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C}
+.m{font-family:'IBM Plex Mono',monospace}
+.card{position:relative;aspect-ratio:63/88;overflow:hidden;flex:none}
+.plate{position:absolute;inset:0;background:#0E0E10}
+.face{position:absolute;inset:4.3% 4.8%;border-radius:2.5%;display:flex;flex-direction:column;gap:2.2%;padding:3.2%;box-sizing:border-box}
+.nb{flex:0 0 7%;border-radius:2px;background:rgba(255,255,255,.22)}
+.win{flex:0 0 46%;border-radius:1px}
+.tb{flex:0 0 6%;border-radius:1px;background:rgba(255,255,255,.2)}
+.box{flex:1;border-radius:1px}
+.fl{position:absolute;inset:0;border-radius:inherit;pointer-events:none;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(0,0,0,.3)}
+.fl.foil::before,.fl.etched::before,.fl.foil::after,.fl.etched::after{content:"";position:absolute;inset:0;border-radius:inherit}
+.fl.foil::before{background:linear-gradient(115deg,rgba(255,255,255,0) 8%,rgba(255,110,180,.16) 22%,rgba(255,220,120,.16) 32%,rgba(255,255,255,.26) 39%,rgba(130,240,210,.16) 47%,rgba(120,170,255,.16) 60%,rgba(200,130,255,.14) 74%,rgba(255,255,255,0) 90%)}
+.fl.etched::before{background:linear-gradient(115deg,rgba(214,226,240,0) 12%,rgba(214,226,240,.10) 30%,rgba(236,243,250,.22) 42%,rgba(214,226,240,.10) 54%,rgba(214,226,240,0) 74%)}
+.fl.foil::after,.fl.etched::after{background:linear-gradient(105deg,rgba(255,255,255,0) 30%,rgba(255,255,255,.42) 50%,rgba(255,255,255,0) 70%);transform:translateX(-100%)}
+/* R2 · the large film: same stops, 80% strength, spread 1.5x, follows --fx (0..1) */
+/* R2 · the large film: same stops, 80% strength, spread 1.5x, follows --tx (0..1) */
+@property --tx{syntax:'<number>';inherits:true;initial-value:.5}
+@property --ty{syntax:'<number>';inherits:true;initial-value:.5}
+@property --lift{syntax:'<number>';inherits:true;initial-value:0}
+/* R2 · the large film: same stops, 80% strength, spread 1.5x, slides with --tx (0..1) */
+.lg .fl::before{left:-25%;right:-25%;opacity:.8;transform:translateX(calc((var(--tx) - .5) * -33.333%))}
+/* R2 · the tilt (every large card): +-6deg, perspective 1000px, the side under the pointer lifts toward you.
+   The three vars are registered and TRANSITIONED, so the tilt, the edge, the light and the film all ease together. */
+.lg{--edge:205 210 218;transform:perspective(1000px) rotateX(calc((var(--ty) - .5) * 12deg)) rotateY(calc((.5 - var(--tx)) * 12deg));transition:--tx 300ms cubic-bezier(.22,1,.36,1),--ty 300ms cubic-bezier(.22,1,.36,1),--lift 300ms cubic-bezier(.22,1,.36,1);box-shadow:calc((var(--tx) - .5) * 3px) calc((var(--ty) - .5) * 3px) 0 0 rgb(var(--edge) / calc(var(--lift) * .55)),0 0 0 .5px rgb(255 255 255 / calc(var(--lift) * .12)),var(--depth,0 0 0 transparent)}}
+.lg:not(:hover):not(.on){transition-duration:600ms}
+.lg:hover,.lg.on{--lift:1}
+.gl{position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:var(--lift);background:radial-gradient(circle at calc(var(--tx) * 100%) calc(var(--ty) * 100%),rgba(255,255,255,.20),rgba(255,255,255,.06) 40%,rgba(255,255,255,0) 72%)}
+.rm.lg,.rm.lg:hover{transform:none!important;--lift:0!important}.rm .gl,.rt .gl,.fc .gl{display:none}
+.lg .z{position:absolute;width:14.286%;height:14.286%;z-index:3}
+.lg .z00{left:0.000%;top:0.000%}.lg:has(.z00:hover){--tx:0.071;--ty:0.071;--lift:1}
+.lg .z01{left:14.286%;top:0.000%}.lg:has(.z01:hover){--tx:0.214;--ty:0.071;--lift:1}
+.lg .z02{left:28.571%;top:0.000%}.lg:has(.z02:hover){--tx:0.357;--ty:0.071;--lift:1}
+.lg .z03{left:42.857%;top:0.000%}.lg:has(.z03:hover){--tx:0.5;--ty:0.071;--lift:1}
+.lg .z04{left:57.143%;top:0.000%}.lg:has(.z04:hover){--tx:0.643;--ty:0.071;--lift:1}
+.lg .z05{left:71.429%;top:0.000%}.lg:has(.z05:hover){--tx:0.786;--ty:0.071;--lift:1}
+.lg .z06{left:85.714%;top:0.000%}.lg:has(.z06:hover){--tx:0.929;--ty:0.071;--lift:1}
+.lg .z10{left:0.000%;top:14.286%}.lg:has(.z10:hover){--tx:0.071;--ty:0.214;--lift:1}
+.lg .z11{left:14.286%;top:14.286%}.lg:has(.z11:hover){--tx:0.214;--ty:0.214;--lift:1}
+.lg .z12{left:28.571%;top:14.286%}.lg:has(.z12:hover){--tx:0.357;--ty:0.214;--lift:1}
+.lg .z13{left:42.857%;top:14.286%}.lg:has(.z13:hover){--tx:0.5;--ty:0.214;--lift:1}
+.lg .z14{left:57.143%;top:14.286%}.lg:has(.z14:hover){--tx:0.643;--ty:0.214;--lift:1}
+.lg .z15{left:71.429%;top:14.286%}.lg:has(.z15:hover){--tx:0.786;--ty:0.214;--lift:1}
+.lg .z16{left:85.714%;top:14.286%}.lg:has(.z16:hover){--tx:0.929;--ty:0.214;--lift:1}
+.lg .z20{left:0.000%;top:28.571%}.lg:has(.z20:hover){--tx:0.071;--ty:0.357;--lift:1}
+.lg .z21{left:14.286%;top:28.571%}.lg:has(.z21:hover){--tx:0.214;--ty:0.357;--lift:1}
+.lg .z22{left:28.571%;top:28.571%}.lg:has(.z22:hover){--tx:0.357;--ty:0.357;--lift:1}
+.lg .z23{left:42.857%;top:28.571%}.lg:has(.z23:hover){--tx:0.5;--ty:0.357;--lift:1}
+.lg .z24{left:57.143%;top:28.571%}.lg:has(.z24:hover){--tx:0.643;--ty:0.357;--lift:1}
+.lg .z25{left:71.429%;top:28.571%}.lg:has(.z25:hover){--tx:0.786;--ty:0.357;--lift:1}
+.lg .z26{left:85.714%;top:28.571%}.lg:has(.z26:hover){--tx:0.929;--ty:0.357;--lift:1}
+.lg .z30{left:0.000%;top:42.857%}.lg:has(.z30:hover){--tx:0.071;--ty:0.5;--lift:1}
+.lg .z31{left:14.286%;top:42.857%}.lg:has(.z31:hover){--tx:0.214;--ty:0.5;--lift:1}
+.lg .z32{left:28.571%;top:42.857%}.lg:has(.z32:hover){--tx:0.357;--ty:0.5;--lift:1}
+.lg .z33{left:42.857%;top:42.857%}.lg:has(.z33:hover){--tx:0.5;--ty:0.5;--lift:1}
+.lg .z34{left:57.143%;top:42.857%}.lg:has(.z34:hover){--tx:0.643;--ty:0.5;--lift:1}
+.lg .z35{left:71.429%;top:42.857%}.lg:has(.z35:hover){--tx:0.786;--ty:0.5;--lift:1}
+.lg .z36{left:85.714%;top:42.857%}.lg:has(.z36:hover){--tx:0.929;--ty:0.5;--lift:1}
+.lg .z40{left:0.000%;top:57.143%}.lg:has(.z40:hover){--tx:0.071;--ty:0.643;--lift:1}
+.lg .z41{left:14.286%;top:57.143%}.lg:has(.z41:hover){--tx:0.214;--ty:0.643;--lift:1}
+.lg .z42{left:28.571%;top:57.143%}.lg:has(.z42:hover){--tx:0.357;--ty:0.643;--lift:1}
+.lg .z43{left:42.857%;top:57.143%}.lg:has(.z43:hover){--tx:0.5;--ty:0.643;--lift:1}
+.lg .z44{left:57.143%;top:57.143%}.lg:has(.z44:hover){--tx:0.643;--ty:0.643;--lift:1}
+.lg .z45{left:71.429%;top:57.143%}.lg:has(.z45:hover){--tx:0.786;--ty:0.643;--lift:1}
+.lg .z46{left:85.714%;top:57.143%}.lg:has(.z46:hover){--tx:0.929;--ty:0.643;--lift:1}
+.lg .z50{left:0.000%;top:71.429%}.lg:has(.z50:hover){--tx:0.071;--ty:0.786;--lift:1}
+.lg .z51{left:14.286%;top:71.429%}.lg:has(.z51:hover){--tx:0.214;--ty:0.786;--lift:1}
+.lg .z52{left:28.571%;top:71.429%}.lg:has(.z52:hover){--tx:0.357;--ty:0.786;--lift:1}
+.lg .z53{left:42.857%;top:71.429%}.lg:has(.z53:hover){--tx:0.5;--ty:0.786;--lift:1}
+.lg .z54{left:57.143%;top:71.429%}.lg:has(.z54:hover){--tx:0.643;--ty:0.786;--lift:1}
+.lg .z55{left:71.429%;top:71.429%}.lg:has(.z55:hover){--tx:0.786;--ty:0.786;--lift:1}
+.lg .z56{left:85.714%;top:71.429%}.lg:has(.z56:hover){--tx:0.929;--ty:0.786;--lift:1}
+.lg .z60{left:0.000%;top:85.714%}.lg:has(.z60:hover){--tx:0.071;--ty:0.929;--lift:1}
+.lg .z61{left:14.286%;top:85.714%}.lg:has(.z61:hover){--tx:0.214;--ty:0.929;--lift:1}
+.lg .z62{left:28.571%;top:85.714%}.lg:has(.z62:hover){--tx:0.357;--ty:0.929;--lift:1}
+.lg .z63{left:42.857%;top:85.714%}.lg:has(.z63:hover){--tx:0.5;--ty:0.929;--lift:1}
+.lg .z64{left:57.143%;top:85.714%}.lg:has(.z64:hover){--tx:0.643;--ty:0.929;--lift:1}
+.lg .z65{left:71.429%;top:85.714%}.lg:has(.z65:hover){--tx:0.786;--ty:0.929;--lift:1}
+.lg .z66{left:85.714%;top:85.714%}.lg:has(.z66:hover){--tx:0.929;--ty:0.929;--lift:1}
+.mid .fl::after{transform:translateX(-6%)}
+.pend .fl{opacity:0}
+.rm .fl::before{transform:none!important;transition:none!important}
+.rt .fl::before,.rt .fl::after,.fc .fl::before,.fc .fl::after{display:none}
+.ptr{position:absolute;z-index:4;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.5);pointer-events:none}
+.finger .ptr{width:44px;height:44px;margin:-22px 0 0 -22px;border:none;background:rgba(255,255,255,.28);box-shadow:0 0 0 1px rgba(255,255,255,.5)}
+.focus{outline:2px solid #5C86C9;outline-offset:3px}
+.bar{display:block;height:9px;border-radius:2px;background:rgba(255,255,255,.10)}
+.chip{display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:999px;font-family:'IBM Plex Mono',monospace;font-size:10.5px}
+@keyframes sweep{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+</style>
+</helmet>
+<div style="width:1300px;min-height:1500px;box-sizing:border-box;padding:48px 56px 64px;background:#121217;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:40px"><div style="display:flex;flex-direction:column;gap:8px;max-width:900px"><span class="m" style="font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#7C8A8C">States · R2</span><h1 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:30px;line-height:1.2">Every case the brief lists</h1><p style="margin:0;font-size:14px;line-height:1.55;color:#95A4A6">Large views only. Tiles are R1’s board and are unchanged.</p></div><div style="display:flex;flex-direction:column"><div style="display:grid;grid-template-columns:30px 420px 1fr 1fr;gap:16px;padding:0 0 8px"><span class="k">#</span><span class="k">Condition</span><span class="k">Desktop</span><span class="k">Phone</span></div><div style="display:grid;grid-template-columns:30px 420px 1fr 1fr;gap:16px;padding:10px 0;border-top:1px solid #2E3340"><span style="font-size:12.5px;line-height:1.5;color:#C6D2D3;font-weight:500;">1</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">Shown printing: every owned copy foil, own art</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">film (large) · tilts and follows on hover</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">film (large) · one band on landing · tilts after a hold</span></div><div style="display:grid;grid-template-columns:30px 420px 1fr 1fr;gap:16px;padding:10px 0;border-top:1px solid #2E3340"><span style="font-size:12.5px;line-height:1.5;color:#C6D2D3;font-weight:500;">1b</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">Any card, hovered (desktop) or held and moved (phone)</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">tilt ±6°, hairline edge on the pointer’s side, light at the pointer</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">same, after a 300ms hold</span></div><div style="display:grid;grid-template-columns:30px 420px 1fr 1fr;gap:16px;padding:10px 0;border-top:1px solid #2E3340"><span style="font-size:12.5px;line-height:1.5;color:#C6D2D3;font-weight:500;">1c</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">A flip while tilted</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">tilt eases flat, turn plays, tilt resumes on the next move</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">same</span></div><div style="display:grid;grid-template-columns:30px 420px 1fr 1fr;gap:16px;padding:10px 0;border-top:1px solid #2E3340"><span style="font-size:12.5px;line-height:1.5;color:#C6D2D3;font-weight:500;">2</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">Same, keyboard focus on the face</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">R1 band, once</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">n/a</span></div><div style="display:grid;grid-template-columns:30px 420px 1fr 1fr;gap:16px;padding:10px 0;border-top:1px solid #2E3340"><span style="font-size:12.5px;line-height:1.5;color:#C6D2D3;font-weight:500;">3</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">Every owned copy etched</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">silver film, same motion</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">silver film, same</span></div><div style="display:grid;grid-template-columns:30px 420px 1fr 1fr;gap:16px;padding:10px 0;border-top:1px solid #2E3340"><span style="font-size:12.5px;line-height:1.5;color:#C6D2D3;font-weight:500;">4</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">Mixed holding (<code class="m" style="font-size:11.5px;color:#C6D2D3;background:#1E1F26;padding:1px 5px;border-radius:4px">×3 · 1 foil</code>, foil + etched)</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">plain</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">plain</span></div><div style="display:grid;grid-template-columns:30px 420px 1fr 1fr;gap:16px;padding:10px 0;border-top:1px solid #2E3340"><span style="font-size:12.5px;line-height:1.5;color:#C6D2D3;font-weight:500;">5</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">Picked a plain printing of a foil card</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">film leaves with the face, at once</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">same</span></div><div style="display:grid;grid-template-columns:30px 420px 1fr 1fr;gap:16px;padding:10px 0;border-top:1px solid #2E3340"><span style="font-size:12.5px;line-height:1.5;color:#C6D2D3;font-weight:500;">6</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">Face is another printing’s or the oracle-level art</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">plain</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">plain</span></div><div style="display:grid;grid-template-columns:30px 420px 1fr 1fr;gap:16px;padding:10px 0;border-top:1px solid #2E3340"><span style="font-size:12.5px;line-height:1.5;color:#C6D2D3;font-weight:500;">7</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">Unowned card (suggestion, commander page, not held)</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">plain</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">plain</span></div><div style="display:grid;grid-template-columns:30px 420px 1fr 1fr;gap:16px;padding:10px 0;border-top:1px solid #2E3340"><span style="font-size:12.5px;line-height:1.5;color:#C6D2D3;font-weight:500;">8</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">Opened from a precon tile, box not owned</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">your own resolution decides</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">same</span></div><div style="display:grid;grid-template-columns:30px 420px 1fr 1fr;gap:16px;padding:10px 0;border-top:1px solid #2E3340"><span style="font-size:12.5px;line-height:1.5;color:#C6D2D3;font-weight:500;">9</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">Cold open, face bytes travelling</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">ground, film held; 300ms fade on arrival</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">same</span></div><div style="display:grid;grid-template-columns:30px 420px 1fr 1fr;gap:16px;padding:10px 0;border-top:1px solid #2E3340"><span style="font-size:12.5px;line-height:1.5;color:#C6D2D3;font-weight:500;">10</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">Face art failed</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">film held (<code class="m" style="font-size:11.5px;color:#C6D2D3;background:#1E1F26;padding:1px 5px;border-radius:4px">failed</code>)</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">same</span></div><div style="display:grid;grid-template-columns:30px 420px 1fr 1fr;gap:16px;padding:10px 0;border-top:1px solid #2E3340"><span style="font-size:12.5px;line-height:1.5;color:#C6D2D3;font-weight:500;">11</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">Two-faced foil printing, flipped</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">film on both faces, rides the turn</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">same</span></div><div style="display:grid;grid-template-columns:30px 420px 1fr 1fr;gap:16px;padding:10px 0;border-top:1px solid #2E3340"><span style="font-size:12.5px;line-height:1.5;color:#C6D2D3;font-weight:500;">12</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">Zoom</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">as 1 at 372 × 520</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">as 1 at 318 × 444; band on open; press and move tilts, no hold</span></div><div style="display:grid;grid-template-columns:30px 420px 1fr 1fr;gap:16px;padding:10px 0;border-top:1px solid #2E3340"><span style="font-size:12.5px;line-height:1.5;color:#C6D2D3;font-weight:500;">13</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">Hover preview, foil row</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">tile film, still, no tilt</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">n/a (no hover)</span></div><div style="display:grid;grid-template-columns:30px 420px 1fr 1fr;gap:16px;padding:10px 0;border-top:1px solid #2E3340"><span style="font-size:12.5px;line-height:1.5;color:#C6D2D3;font-weight:500;">14</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">Peek or neighbour plate, foil</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">tile film, still, no tilt</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">tile film, still, no tilt</span></div><div style="display:grid;grid-template-columns:30px 420px 1fr 1fr;gap:16px;padding:10px 0;border-top:1px solid #2E3340"><span style="font-size:12.5px;line-height:1.5;color:#C6D2D3;font-weight:500;">15</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">Reduced motion</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">no tilt, no light; film still, centred</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">same</span></div><div style="display:grid;grid-template-columns:30px 420px 1fr 1fr;gap:16px;padding:10px 0;border-top:1px solid #2E3340"><span style="font-size:12.5px;line-height:1.5;color:#C6D2D3;font-weight:500;">16</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">Reduced transparency</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">no film, no light; 2px <code class="m" style="font-size:11.5px;color:#C6D2D3;background:#1E1F26;padding:1px 5px;border-radius:4px">--fg-muted</code> ring; tilt stays</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">same</span></div><div style="display:grid;grid-template-columns:30px 420px 1fr 1fr;gap:16px;padding:10px 0;border-top:1px solid #2E3340"><span style="font-size:12.5px;line-height:1.5;color:#C6D2D3;font-weight:500;">17</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">Forced colours</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">no film, no light; tilt stays</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">same</span></div><div style="display:grid;grid-template-columns:30px 420px 1fr 1fr;gap:16px;padding:10px 0;border-top:1px solid #2E3340"><span style="font-size:12.5px;line-height:1.5;color:#C6D2D3;font-weight:500;">18</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">Token in details</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">plain (no finish recorded)</span><span style="font-size:12.5px;line-height:1.5;color:#95A4A6;">plain</span></div></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1300,"height":1500}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

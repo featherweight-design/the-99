@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Part · a deck's Games at 1280</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="position:relative;width:1280px;height:760px;display:flex;background:#121217;overflow:hidden;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;border:1px solid #2E3340;border-radius:12px;box-sizing:border-box">
+  <dc-import name="Rail" active="decks" halo="{{ railHalo }}" h="758" hint-size="62px,758px"></dc-import>
+  <main style="flex:1;min-width:0;position:relative;overflow:hidden">
+    <div style="padding:0 30px;height:46px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #1A1F2B;background:#121217"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#7C8A8C">scrolled past the spine ·</span><span style="font-family:'Metamorphous',serif;font-size:15px">Sai’s Workshop</span></div>
+    <nav style="display:flex;align-items:center;gap:22px;padding:12px 30px 0;min-height:44px;border-bottom:1px solid #1A1F2B;box-sizing:border-box">
+      <span style="padding-bottom:12px;font-size:14px;font-weight:500;color:#7C8A8C">Your deck <span style="font-family:'IBM Plex Mono',monospace;font-size:12px">99</span></span>
+      <span style="padding-bottom:12px;font-size:14px;font-weight:500;color:#7C8A8C">Analysis</span>
+      <span style="padding-bottom:12px;font-size:14px;font-weight:500;color:#7C8A8C">Consider <span style="font-family:'IBM Plex Mono',monospace;font-size:12px">40</span></span>
+      <span style="padding-bottom:10px;border-bottom:2px solid #5C86C9;font-size:14px;font-weight:600">Games <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5C86C9">{{ count }}</span></span>
+      <span style="padding-bottom:12px;font-size:14px;font-weight:500;color:#7C8A8C">Versions <span style="font-family:'IBM Plex Mono',monospace;font-size:12px">2</span></span>
+    </nav>
+    <div style="padding:24px 30px;display:flex;gap:36px;align-items:flex-start">
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:18px">
+        <div>
+          <h3 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:24px;line-height:1.2">{{ headline }}</h3>
+          <p style="margin:8px 0 0;font-size:13.5px;color:#95A4A6">{{ sub }}</p>
+        </div>
+        <span style="align-self:flex-start;height:32px;display:flex;align-items:center;padding:0 14px;border-radius:8px;border:1px solid #2E3340;font-size:12.5px;color:#B3C0C2">Log a game</span>
+        <div style="border-top:1px solid #1A1F2B;padding-top:16px;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:baseline;gap:10px"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;color:#7C8A8C">MATCHUPS</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8A8C">{{ recorded }}</span></div>
+          <sc-if value="{{ three }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-size:12.5px;color:#95A4A6">Split by</span>
+              <span style="position:relative;display:inline-flex">
+                <span style="display:flex;gap:2px;padding:2px;border-radius:9px;border:1px solid #2E3340;{{ h10 }}">
+                  <span style="height:28px;display:flex;align-items:center;padding:0 12px;border-radius:7px;background:#2D2E35;font-size:13px;font-weight:600">Commander</span>
+                  <span style="height:28px;display:flex;align-items:center;padding:0 12px;font-size:13px;color:#95A4A6">Colors</span>
+                  <span style="height:28px;display:flex;align-items:center;padding:0 12px;font-size:13px;color:#95A4A6">Friend</span>
+                </span>
+                <sc-if value="{{ m10 }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:calc(100% + 10px);left:0;z-index:20"><dc-import name="Moment" tool="Matchups" line="splits your games by the commander, colors or friend across the table. Counts, never a rate." nibx="110" w="300" hint-size="300px,92px"></dc-import></span></sc-if>
+              </span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;max-width:520px">
+              <sc-for list="{{ matchups }}" as="r" hint-placeholder-count="3">
+                <div style="display:flex;align-items:center;gap:12px;font-size:13.5px"><span style="flex:1;min-width:0;color:#B3C0C2">{{ r.vs }}</span><span style="display:flex;gap:3px"><sc-for list="{{ r.sq }}" as="q" hint-placeholder-count="1"><span style="{{ q.s }}">{{ q.t }}</span></sc-for></span></div>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ one }}" hint-placeholder-val="{{ false }}"><p style="margin:0;font-size:13px;color:#95A4A6;max-width:520px;line-height:1.55">No opponents recorded yet. Add who sat across the table when you log a game, and this splits your games by commander, colors and friend.</p></sc-if>
+        </div>
+      </div>
+      <div style="width:330px;flex:none;display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:baseline;gap:8px"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.14em;color:#7C8A8C">HISTORY</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#5F6D6E">newest first</span></div>
+        <sc-for list="{{ history }}" as="h" hint-placeholder-count="3">
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:8px;background:#181920;border:1px solid #1A1F2B"><span style="{{ h.sq }}">{{ h.r }}</span><span style="flex:1;font-size:13.5px">{{ h.word }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8A8C">{{ h.meta }}</span></div>
+        </sc-for>
+      </div>
+    </div>
+  </main>
+  <sc-if value="{{ m11 }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;left:12px;bottom:62px;z-index:20"><dc-import name="Moment" tool="Playing with friends?" line="Add them from your account menu, under Friends. Then you can seat them when you log a game." nib="down" nibx="14" w="300" hint-size="300px,72px"></dc-import></span></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"moment":{"editor":"enum","options":["none","m10","m11"],"default":"m10"},"$preview":{"width":1280,"height":760}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const m = this.props.moment ?? 'm10';
+    const H = 'box-shadow:0 0 0 2px rgba(92,134,201,.6),0 0 0 6px rgba(92,134,201,.16);';
+    const sqS = (r) => `width:20px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;` +
+      (r === 'W' ? 'background:color-mix(in srgb,#6FA368 22%,#121217);color:#6FA368;border:1px solid #6FA368' : 'background:#16171D;color:#95A4A6;border:1px solid #2E3340');
+    const three = m !== 'm11';
+    const history = three
+      ? [['W', 'Won', '4-player · Oct 14'], ['L', 'Lost', '4-player · Oct 11'], ['W', 'Won', '3-player · Oct 8']]
+      : [['W', 'Won', '4-player · Oct 16']];
+    return {
+      three, one: !three, m10: m === 'm10', m11: m === 'm11', h10: m === 'm10' ? H : '',
+      railHalo: m === 'm11' ? 'account' : 'none',
+      count: three ? '3' : '1',
+      headline: three ? 'Removal is carrying this deck.' : '1–0 · Won',
+      sub: three ? 'Marked in 3 of 3 games: every one you have logged. Record 2–1.' : 'Two more and this turns into something you can act on.',
+      recorded: three ? 'recorded in 3 of 3 games' : 'recorded in 0 of 1 game',
+      matchups: [
+        { vs: 'vs Ghalta, Primal Hunger', sq: [{ t: 'W', s: sqS('W') }, { t: 'L', s: sqS('L') }] },
+        { vs: 'vs Zimone, Infinite Analyst', sq: [{ t: 'W', s: sqS('W') }] }
+      ],
+      history: history.map(([r, word, meta]) => ({ r, word, meta, sq: sqS(r) }))
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #100D0A; }
+  ::selection { background: #CF8745; color: #14110E; }
+  a { color: #CF8745; text-decoration: none; }
+  a:hover { color: #DE9757; }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;padding:40px;background:#100D0A;background-image:radial-gradient(1400px 700px at 30% -300px, rgba(207,135,69,0.06), transparent 70%);min-height:100vh;">
+
+  <section style="max-width:1400px;margin:0 0 26px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#CF8745;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R1</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#8B8270;">Amendment 2 &middot; update a deck by re-import &middot; new flow</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:0 0 10px;color:#EDE6D8;">Import creates. Update replaces. The difference is that update can delete.</h1>
+    <p style="max-width:1040px;font-size:15px;line-height:1.7;color:#C0B8A6;margin:0 0 12px;">The shipped importer says so in a source comment: <i>&ldquo;there is deliberately no dedupe &mdash; updating in place is sync, a different and much larger feature, and quietly becoming it is the failure mode this comment guards against.&rdquo;</i> This amendment is that feature, built deliberately rather than by accident. <b style="color:#EDE6D8;font-weight:600;">Everything about the shape follows from one fact: a first import risks nothing, and an update can remove cards the player placed by hand.</b></p>
+    <p style="max-width:1040px;font-size:15px;line-height:1.7;color:#C0B8A6;margin:0 0 12px;">So: <b style="color:#EDE6D8;font-weight:600;">the diff is always shown</b> and nothing is written until it is confirmed &mdash; the one confirmation step in a product that has refused every other one, and it is earned by the deletions. <b style="color:#EDE6D8;font-weight:600;">Removals are the centre of the screen</b>, not a footnote: they are counted, listed, individually keepable, and the ones the player added by hand are called out as such. <b style="color:#EDE6D8;font-weight:600;">The list is the source of truth</b> &mdash; default is remove, because a player pasting a 106-line list is telling you what the deck is.</p>
+    <p style="max-width:1040px;font-size:14px;line-height:1.7;color:#8B8270;margin:0;">Read <a href="README.md">README.md</a> for the decisions log, <a href="STATES-reimport.md">STATES-reimport.md</a> for the state matrix (18 states, both widths), <a href="deck-reimport · copy strings.ts">deck-reimport &middot; copy strings.ts</a> for production copy, <a href="READINESS.md">READINESS.md</a> for what blocks a green. Mock deck is continuous with the siblings: <b style="color:#C0B8A6;">Kykar Spellslinger</b> at 91 built, and the pasted list resolves to <b style="color:#C0B8A6;">19 in &middot; 7 out &middot; 84 unchanged &middot; 3 we cannot name</b>, one of which the player keeps &mdash; landing the deck at 104, which is amendment 3's <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">Over</span> state on purpose.</p>
+  </section>
+
+  <div style="border:1px solid #3A3229;border-left:3px solid #CF8745;border-radius:12px;background:#18140F;padding:16px 20px;margin-bottom:20px;max-width:1400px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">The five calls the brief asked for</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px 24px;">
+      <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;margin-bottom:5px;">entry point</div><div style="font-size:13px;color:#A59C89;line-height:1.5;"><b style="color:#EDE6D8;font-weight:600;">Both</b> &mdash; the deck card's <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&ctdot;</span> menu and a ghost control beside Export in the builder spine. Same string, one route.</div></div>
+      <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;margin-bottom:5px;">a diff first?</div><div style="font-size:13px;color:#A59C89;line-height:1.5;"><b style="color:#EDE6D8;font-weight:600;">Always.</b> Nothing is written until Apply. The only confirm step in the product, earned by the fact that this one deletes.</div></div>
+      <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;margin-bottom:5px;">how removals read</div><div style="font-size:13px;color:#A59C89;line-height:1.5;"><b style="color:#EDE6D8;font-weight:600;">Listed, not counted.</b> Every removal is a row with a <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Keep</span> toggle; hand-added ones are named as hand-added. No strikethrough, no red.</div></div>
+      <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;margin-bottom:5px;">arrival</div><div style="font-size:13px;color:#A59C89;line-height:1.5;">The shipped strip's geometry, <b style="color:#EDE6D8;font-weight:600;">delta copy instead of total copy</b>: <i>19 in, 6 out</i>. Its own param, its own dismissal, so it fires on the fifth update as well as the first.</div></div>
+      <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;margin-bottom:5px;">celebration</div><div style="font-size:13px;color:#A59C89;line-height:1.5;"><b style="color:#EDE6D8;font-weight:600;">Suppressed</b>, on exactly the rule that suppresses it for a first import and for a fill: the player did not place the last card, a list did.</div></div>
+    </div>
+  </div>
+
+  <div style="border:1px solid #3A3229;border-left:3px solid #DEAA29;border-radius:12px;background:#18140F;padding:16px 20px;margin-bottom:38px;max-width:1400px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#DEAA29;margin-bottom:8px;">What update deliberately cannot do</div>
+    <div style="font-size:13px;color:#A59C89;line-height:1.7;"><b style="color:#EDE6D8;font-weight:600;">It cannot change the commander.</b> A list naming a different commander is a conflict state with two ways out, and neither is a swap: a commander change re-decides the colour identity and the legality of all ninety-nine, which is a new deck wearing an old name. It cannot merge (there is no &ldquo;add these and keep everything&rdquo; mode &mdash; that is the quick-add bar, one card at a time, and it already exists). It cannot rename the deck. And it never runs unattended: no auto-sync, no polling, no remembered source.</div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:56px;max-width:2200px;">
+
+  <!-- ============ A · THE FLOW ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">A &middot; <span style="color:#CF8745;">the flow, and how it differs from a first import</span></div>
+    <div style="background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;max-width:1400px;">
+      <div style="display:flex;gap:10px;align-items:stretch;flex-wrap:wrap;">
+        <div style="flex:1;min-width:200px;background:#1E1A15;border:1px solid #2B241B;border-radius:10px;padding:14px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:7px;">1 &middot; entry</div>
+          <div style="font-size:13px;color:#C0B8A6;line-height:1.5;">From the deck. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&ctdot;</span> menu or spine control &rarr; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/decks/[id]/import</span>.</div>
+          <div style="font-size:12px;color:#8B8270;line-height:1.5;margin-top:8px;">Import starts from <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">/decks/import</span> and from the collection. <b style="color:#A59C89;font-weight:600;">Update only ever starts from a deck</b> &mdash; there is no route to it that does not already know which deck.</div>
+        </div>
+        <div style="flex:1;min-width:200px;background:#1E1A15;border:1px solid #2B241B;border-radius:10px;padding:14px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:7px;">2 &middot; the list</div>
+          <div style="font-size:13px;color:#C0B8A6;line-height:1.5;">The shipped entry surface, two modes, one deletion and one relabel.</div>
+          <div style="font-size:12px;color:#8B8270;line-height:1.5;margin-top:8px;"><b style="color:#A59C89;font-weight:600;">No deck-name field</b> &mdash; the deck has a name. <b style="color:#A59C89;font-weight:600;">No commander picker</b> &mdash; the deck has a commander. Submit reads <i>Compare with this deck</i>, not <i>Create</i>.</div>
+        </div>
+        <div style="flex:1;min-width:200px;background:#1E1A15;border:1px solid #6B482A;border-radius:10px;padding:14px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:7px;">3 &middot; the diff <span style="color:#DEAA29;">&mdash; new</span></div>
+          <div style="font-size:13px;color:#C0B8A6;line-height:1.5;">Four groups, in the order of what is at stake: <b style="color:#EDE6D8;font-weight:600;">out, in, unnamed, unchanged.</b></div>
+          <div style="font-size:12px;color:#8B8270;line-height:1.5;margin-top:8px;">Nothing has been written. Leaving here costs nothing and changes nothing.</div>
+        </div>
+        <div style="flex:1;min-width:200px;background:#1E1A15;border:1px solid #2B241B;border-radius:10px;padding:14px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:7px;">4 &middot; apply</div>
+          <div style="font-size:13px;color:#C0B8A6;line-height:1.5;">One transaction. Adds, removes, unresolved rows replaced, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">auto</span> flags cleared on anything the list names.</div>
+          <div style="font-size:12px;color:#8B8270;line-height:1.5;margin-top:8px;">Then <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">/decks/[id]?updated=19-6</span>.</div>
+        </div>
+        <div style="flex:1;min-width:200px;background:#1E1A15;border:1px solid #2B241B;border-radius:10px;padding:14px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:7px;">5 &middot; arrival</div>
+          <div style="font-size:13px;color:#C0B8A6;line-height:1.5;">The deck, with one strip: <i>Updated from your list &mdash; 19 in, 6 out.</i></div>
+          <div style="font-size:12px;color:#8B8270;line-height:1.5;margin-top:8px;"><b style="color:#A59C89;font-weight:600;">No completion screen and no celebration</b>, on the same rule as a first import.</div>
+        </div>
+      </div>
+      <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:18px;max-width:1000px;"><b style="color:#EDE6D8;font-weight:600;">Step 3 is the whole amendment.</b> Steps 1, 2, 4 and 5 are the shipped import flow with a different verb; step 3 does not exist anywhere in the product, because nothing else in the product deletes the player's work. Everything drawn below that is <i>not</i> step 3 is a shipped component with a changed string.</div>
+    </div>
+  </div>
+
+  <!-- ============ B · ENTRY POINTS ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">B &middot; <span style="color:#CF8745;">two entry points, because the deck lives in two places</span></div>
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:420px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">/decks &middot; the <span style="font-family:'IBM Plex Mono',monospace;">&ctdot;</span> menu, <span style="color:#CF8745;">both widths</span></div>
+        <div style="background:#1E1A15;border:1px solid #2B241B;border-radius:12px;padding:22px;">
+          <div style="display:flex;gap:9px;justify-content:flex-end;">
+            <span style="flex:1;text-align:center;font-size:13px;font-weight:600;color:#EDE6D8;border:1px solid #3A3229;border-radius:8px;padding:9px 0;">Open builder</span>
+            <span style="font-size:13px;color:#A59C89;border:1px solid #2B241B;border-radius:8px;padding:9px 13px;">&ctdot;</span>
+          </div>
+          <div style="margin-top:6px;margin-left:auto;width:200px;background:#1E1A15;border:1px solid #3A3229;border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:4px;box-shadow:0 12px 30px rgba(0,0,0,0.5);">
+            <span style="border-radius:6px;padding:9px 12px;font-size:13px;color:#EDE6D8;background:#29241F;">Update from a list</span>
+            <span style="border-radius:6px;padding:9px 12px;font-size:13px;color:#EDE6D8;">Rename</span>
+            <span style="border-radius:6px;padding:9px 12px;font-size:13px;color:#C6533F;">Delete</span>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:14px;"><b style="color:#EDE6D8;font-weight:600;">First, above Rename, at both widths.</b> The menu is now ordered by consequence &mdash; a list, a word, a deck &mdash; and the new item is the only one of the three the player came here to do. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">deck-card-overflow.tsx</span> gains one <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&lt;a&gt;</span>, and it appears on the phone too. <b style="color:#EDE6D8;font-weight:600;">R2 ruling:</b> R1 said the deck card had no <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&ctdot;</span> at 390px. It shipped on 2026-09-05 at a 44px target, so the premise is gone &mdash; and a menu whose contents differ by width is a second information architecture. Same item, same position, same string; the row is already 44px.</div>
+      </div>
+
+      <div style="width:620px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">/decks/[id] &middot; the spine, <span style="color:#CF8745;">both widths</span></div>
+        <div style="background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:20px 24px;display:flex;align-items:center;gap:18px;">
+          <div style="width:72px;height:100px;border-radius:6px;background:linear-gradient(140deg,#F4E9C4,#3A6AA5 55%,#C05A3E);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);flex:none;"></div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-family:'Cinzel',serif;font-weight:700;font-size:21px;color:#EDE6D8;line-height:1.2;">Kykar Spellslinger</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;margin-top:2px;">Kykar, Wind's Fury &middot; Jeskai</div>
+            <div style="display:flex;align-items:baseline;gap:4px;margin-top:4px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:20px;color:#EDE6D8;">91</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#8B8270;">/ 99</span>
+            </div>
+            <div style="width:170px;height:6px;border-radius:999px;background:#29241F;overflow:hidden;margin-top:6px;"><div style="width:92%;height:100%;background:#DEAA29;"></div></div>
+          </div>
+          <div style="flex:none;display:flex;gap:9px;align-items:center;">
+            <span style="font-size:13px;font-weight:600;color:#EDE6D8;border:1px solid #3A3229;border-radius:8px;padding:10px 16px;">Update from a list</span>
+            <span style="font-size:13px;font-weight:600;color:#14110E;background:#CF8745;border-radius:8px;padding:11px 18px;">Export</span>
+          </div>
+        </div>
+        <div style="margin-top:16px;width:390px;background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:32px 16px 12px;display:flex;flex-direction:column;align-items:center;">
+          <div style="width:48px;height:67px;border-radius:5px;background:linear-gradient(140deg,#F4E9C4,#3A6AA5 55%,#C05A3E);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);"></div>
+          <div style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;color:#EDE6D8;margin-top:8px;">Kykar Spellslinger</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8B8270;margin-top:1px;">Kykar, Wind's Fury &middot; Jeskai</div>
+          <div style="display:flex;align-items:baseline;gap:4px;margin-top:6px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14px;color:#EDE6D8;">91</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:#8B8270;">/ 99</span>
+          </div>
+          <div style="width:100%;height:5px;border-radius:999px;background:#29241F;overflow:hidden;margin-top:4px;"><div style="width:92%;height:100%;background:#DEAA29;"></div></div>
+          <div style="display:flex;gap:8px;margin-top:10px;">
+            <span style="display:flex;align-items:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#CF8745;border:1px solid #3A3229;border-radius:7px;padding:6px 9px;min-height:44px;align-items:center;">&darr; Export</span>
+            <span style="display:flex;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C0B8A6;border:1px solid #3A3229;border-radius:7px;padding:6px 9px;min-height:44px;">Update from a list</span>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:14px;"><b style="color:#EDE6D8;font-weight:600;">Beside Export, not in a menu of its own.</b> The spine has no overflow, and a one-item menu is a menu-shaped button. At desktop it is a <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">GhostButton</span> to Export's brass solid, which is the right order: exporting is what most players do from here.</div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:12px;">At 390px both controls are ghost pills at a <b style="color:#EDE6D8;font-weight:600;">44px hit box</b> on the row Export already occupies. Two pills fit 390px with 40px to spare, and the phone Export is already a ghost link &mdash; so the pair reads as siblings rather than as a demoted primary.</div>
+      </div>
+
+      <div style="width:400px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">Rejected entry points</div>
+        <div style="display:flex;flex-direction:column;gap:12px;font-size:12.5px;color:#A59C89;line-height:1.55;">
+          <div><b style="color:#EDE6D8;font-weight:600;">The decklist toolbar</b> (beside the All / Shopping filter and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Clear all auto</span>). That row is about which cards you are looking at. Update is about the whole deck, which is what the spine is.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">The import route, with a deck picker.</b> Turns one question (&ldquo;which list?&rdquo;) into two and puts the destructive path behind the same button as the safe one. Update is a verb you apply <i>to a deck</i>, from that deck.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">A dropzone in the builder's empty section.</b> An empty deck has nothing to diff, and its entrances are already named by the add-panel addendum's caption. An empty deck's update is just an import.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Phone parity as an <i>alternative</i> to the spine control.</b> The phone menu gets the item (see left) but the spine keeps its control too. One entry point per width would mean the gesture that works on desktop fails on the phone, and the spine is where a player who is already editing the deck looks.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ C · THE LIST STEP ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">C &middot; <span style="color:#CF8745;">step 2 &mdash; the shipped entry surface, minus two things</span></div>
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:760px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">Desktop &middot; <span style="font-family:'IBM Plex Mono',monospace;">/decks/[id]/import</span></div>
+        <div style="background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:44px 48px;">
+          <div style="font-family:'Cinzel',serif;font-weight:700;font-size:28px;color:#EDE6D8;">Update Kykar Spellslinger</div>
+          <div style="font-size:14px;color:#A59C89;margin-top:4px;">Paste the list as it stands now. We will show you what changes before anything is saved.</div>
+          <div style="display:flex;gap:9px;margin:22px 0;">
+            <span style="border-radius:999px;font-size:13px;font-weight:600;color:#14110E;background:#CF8745;border:1px solid #CF8745;padding:9px 16px;min-height:44px;display:inline-flex;align-items:center;">Paste a list</span>
+            <span style="border-radius:999px;font-size:13px;color:#C0B8A6;background:#29241F;border:1px solid #3A3229;padding:9px 16px;min-height:44px;display:inline-flex;align-items:center;">Upload a file</span>
+          </div>
+          <div style="font-size:13px;font-weight:600;color:#EDE6D8;margin-bottom:8px;">Your decklist</div>
+          <div style="height:220px;border-radius:8px;background:#18140F;border:1px solid #3A3229;padding:14px 16px;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#C0B8A6;line-height:1.7;">1 Kykar, Wind's Fury *CMDR*<br>1 Dockside Extortionist<br>1 Mystic Remora<br>1 Rhystic Study<br><span style="color:#6E6654;">&hellip;103 more lines</span></div>
+          <div style="margin-top:16px;display:flex;gap:12px;align-items:center;">
+            <span style="font-size:14px;font-weight:600;color:#14110E;background:#CF8745;border-radius:8px;padding:0 24px;height:44px;display:inline-flex;align-items:center;">Compare with this deck</span>
+            <span style="font-size:13px;color:#8B8270;">Nothing is saved yet.</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:26px;padding-top:20px;border-top:1px solid #2B241B;">
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:7px;">What we do with it</div>
+              <div style="font-size:13px;color:#C0B8A6;line-height:1.6;">The list becomes the deck. Cards in it that you do not have here get added; cards here that it does not name get removed &mdash; and you can keep any of those on the next screen.</div>
+            </div>
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:7px;">What stays put</div>
+              <div style="font-size:13px;color:#C0B8A6;line-height:1.6;">The deck's name and its commander. A list naming a different commander is a different deck, and we will say so rather than swap it.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:390px;flex:none;background:#18140F;border:1px solid #2B241B;border-radius:14px;padding:16px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">390px</div>
+        <div style="background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:16px 18px 24px;">
+          <div style="font-family:'Cinzel',serif;font-weight:700;font-size:20px;color:#EDE6D8;line-height:1.2;">Update Kykar Spellslinger</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8B8270;margin-top:3px;">Paste it. We show you what changes first.</div>
+          <div style="display:flex;gap:8px;margin:16px 0;">
+            <span style="border-radius:999px;font-size:12.5px;font-weight:600;color:#14110E;background:#CF8745;border:1px solid #CF8745;padding:8px 14px;min-height:44px;display:inline-flex;align-items:center;">Paste</span>
+            <span style="border-radius:999px;font-size:12.5px;color:#C0B8A6;background:#29241F;border:1px solid #3A3229;padding:8px 14px;min-height:44px;display:inline-flex;align-items:center;">File</span>
+          </div>
+          <div style="font-size:13px;font-weight:600;color:#EDE6D8;margin-bottom:8px;">Your decklist</div>
+          <div style="height:190px;border-radius:8px;background:#18140F;border:1px solid #3A3229;padding:14px 16px;font-family:'IBM Plex Mono',monospace;font-size:16px;color:#C0B8A6;line-height:1.6;">1 Kykar, Wind's<br>&nbsp;&nbsp;Fury *CMDR*<br>1 Dockside Extor&hellip;<br><span style="color:#6E6654;">&hellip;</span></div>
+          <div style="margin-top:16px;">
+            <span style="display:block;text-align:center;font-size:15px;font-weight:600;color:#14110E;background:#CF8745;border-radius:8px;padding:13px 0;">Compare with this deck</span>
+          </div>
+          <div style="font-size:12.5px;color:#8B8270;line-height:1.55;margin-top:16px;">Nothing is saved until you say so on the next screen.</div>
+        </div>
+      </div>
+
+      <div style="width:400px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">The diff against <span style="font-family:'IBM Plex Mono',monospace;">ImportEntry</span></div>
+        <div style="display:flex;flex-direction:column;gap:10px;font-size:12.5px;color:#A59C89;line-height:1.55;">
+          <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6FA368;flex:none;width:58px;padding-top:2px;">same</span><span>The two mode chips and their whole <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">MODES</span> seam, the textarea, the dropzone, the byte caps, the parsing block, and all seven failure banners with their copy.</span></div>
+          <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C6533F;flex:none;width:58px;padding-top:2px;">gone</span><span>The <b style="color:#EDE6D8;font-weight:600;">deck-name field</b>. The deck has a name, and renaming lives in two places already (the spine, the menu). Update never touches it.</span></div>
+          <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C6533F;flex:none;width:58px;padding-top:2px;">gone</span><span>The <b style="color:#EDE6D8;font-weight:600;">commander picker</b> and its dead-end sibling. The deck has a commander; a list that names a different one is state 14, not a pick.</span></div>
+          <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#DEAA29;flex:none;width:58px;padding-top:2px;">new</span><span>The heading names the deck. The submit label promises a comparison, not a creation, and the line beside it says nothing is saved &mdash; twice on the phone, because the phone submit is a full-width primary that looks final.</span></div>
+          <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#DEAA29;flex:none;width:58px;padding-top:2px;">new</span><span>The two desktop footnotes are rewritten: what update does, and what it will not touch. Same slots, same type, same grid.</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ D · THE DIFF, DESKTOP ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">D &middot; <span style="color:#CF8745;">step 3 &mdash; the diff screen, desktop</span></div>
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:900px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:30px 32px;">
+          <div style="font-family:'Cinzel',serif;font-weight:700;font-size:26px;color:#EDE6D8;">What this list changes</div>
+          <div style="font-size:13.5px;color:#C0B8A6;margin-top:6px;line-height:1.6;">106 lines read from your paste, matched against the 91 cards in <b style="color:#EDE6D8;font-weight:600;">Kykar Spellslinger</b>. Nothing is saved until you apply it.</div>
+
+          <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;">
+            <span style="display:flex;align-items:baseline;gap:7px;border-radius:999px;background:#1E1A15;border:1px solid #3A3229;padding:7px 13px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#DEAA29;">7</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C0B8A6;">out</span></span>
+            <span style="display:flex;align-items:baseline;gap:7px;border-radius:999px;background:#1E1A15;border:1px solid #3A3229;padding:7px 13px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#6FA368;">19</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C0B8A6;">in</span></span>
+            <span style="display:flex;align-items:baseline;gap:7px;border-radius:999px;background:#1E1A15;border:1px solid #3A3229;padding:7px 13px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#DEAA29;">3</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C0B8A6;">we cannot name</span></span>
+            <span style="display:flex;align-items:baseline;gap:7px;border-radius:999px;background:#1E1A15;border:1px solid #2B241B;padding:7px 13px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#8B8270;">84</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;">unchanged</span></span>
+            <span style="margin-left:auto;display:flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8B8270;">91 &rarr; <span style="color:#DEAA29;font-weight:600;">104</span> / 99</span>
+          </div>
+
+          <!-- OUT -->
+          <div style="margin-top:26px;">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding-bottom:10px;border-bottom:1px solid #2B241B;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#DEAA29;">Coming out &middot; 7</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#CF8745;">Keep all 7</div>
+            </div>
+            <div style="font-size:12.5px;color:#C0B8A6;line-height:1.55;margin:10px 0 12px;">Your list does not name these. <b style="color:#EDE6D8;font-weight:600;">Two of them you added by hand</b> &mdash; keep anything you meant to keep.</div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#1E1A15;border:1px solid #2B241B;border-radius:8px;padding:0 6px 0 12px;">
+                <span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span>
+                <span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;">Mystic Remora</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#DEAA29;border:1px solid #6B482A;border-radius:999px;padding:3px 8px;flex:none;">you added this</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6E6654;width:120px;flex:none;">Enchantment</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C0B8A6;border:1px solid #3A3229;border-radius:7px;height:34px;min-width:64px;display:flex;align-items:center;justify-content:center;flex:none;">Keep</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#201C17;border:1px solid #6B482A;border-radius:8px;padding:0 6px 0 12px;">
+                <span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span>
+                <span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;">Smothering Tithe</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#DEAA29;border:1px solid #6B482A;border-radius:999px;padding:3px 8px;flex:none;">you added this</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6E6654;width:120px;flex:none;">Enchantment</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#CF8745;border:1px solid #CF8745;background:rgba(207,135,69,0.10);border-radius:7px;height:34px;min-width:64px;display:flex;align-items:center;justify-content:center;flex:none;">Kept &#10003;</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#1E1A15;border:1px solid #2B241B;border-radius:8px;padding:0 6px 0 12px;">
+                <span style="width:7px;height:7px;border-radius:999px;border:1px dashed #6E6654;background:transparent;flex:none;"></span>
+                <span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;">Mana Drain</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6E6654;width:120px;flex:none;">Instant</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C0B8A6;border:1px solid #3A3229;border-radius:7px;height:34px;min-width:64px;display:flex;align-items:center;justify-content:center;flex:none;">Keep</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#1E1A15;border:1px solid #2B241B;border-radius:8px;padding:0 6px 0 12px;">
+                <span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span>
+                <span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;">Ponder</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8B8270;border:1px solid #2B241B;border-radius:999px;padding:3px 8px;flex:none;">auto</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6E6654;width:120px;flex:none;">Sorcery</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C0B8A6;border:1px solid #3A3229;border-radius:7px;height:34px;min-width:64px;display:flex;align-items:center;justify-content:center;flex:none;">Keep</span>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:center;min-height:44px;background:#18140F;border:1px dashed #3A3229;border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#CF8745;">Show the other 3</div>
+            </div>
+          </div>
+
+          <!-- IN -->
+          <div style="margin-top:26px;">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding-bottom:10px;border-bottom:1px solid #2B241B;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#6FA368;">Going in &middot; 19</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;">14 owned &middot; 5 to buy</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;margin-top:12px;">
+              <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#1E1A15;border:1px solid #2B241B;border-radius:8px;padding:0 12px;">
+                <span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span>
+                <span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;">Dockside Extortionist</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6E6654;width:150px;flex:none;">Creature &mdash; Goblin Pirate</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;flex:none;">line 12</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#1E1A15;border:1px solid #2B241B;border-radius:8px;padding:0 12px;">
+                <span style="width:7px;height:7px;border-radius:999px;border:1px dashed #6E6654;background:transparent;flex:none;"></span>
+                <span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;">Fierce Guardianship</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6E6654;width:150px;flex:none;">Instant</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#DEAA29;border:1px solid #6B482A;border-radius:999px;padding:3px 8px;flex:none;">buy</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;flex:none;">line 31</span>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:center;min-height:44px;background:#18140F;border:1px dashed #3A3229;border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#CF8745;">Show the other 17</div>
+            </div>
+          </div>
+
+          <!-- UNNAMED -->
+          <div style="margin-top:26px;">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding-bottom:10px;border-bottom:1px solid #2B241B;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#DEAA29;">We cannot name these &middot; 3</div>
+            </div>
+            <div style="font-size:12.5px;color:#C0B8A6;line-height:1.55;margin:10px 0 12px;">They come across as lines you can resolve on the deck, exactly as an import's do &mdash; and they replace the 2 unresolved lines this deck is carrying now.</div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#1A160F;border:1px dashed #6B482A;border-radius:8px;padding:0 12px;">
+                <span style="flex:auto;min-width:0;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#C0B8A6;">Lighting Bolt</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;flex:none;">line 44</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#1A160F;border:1px dashed #6B482A;border-radius:8px;padding:0 12px;">
+                <span style="flex:auto;min-width:0;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#C0B8A6;">Sol Rin</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;flex:none;">line 58</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#1A160F;border:1px dashed #6B482A;border-radius:8px;padding:0 12px;">
+                <span style="flex:auto;min-width:0;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#C0B8A6;">Teferi's Protecton</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;flex:none;">line 79</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- UNCHANGED -->
+          <div style="margin-top:26px;">
+            <div style="display:flex;align-items:center;justify-content:center;min-height:44px;background:#18140F;border:1px dashed #3A3229;border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#CF8745;">Show the 84 that do not change</div>
+          </div>
+
+          <!-- APPLY -->
+          <div style="margin-top:26px;padding-top:20px;border-top:1px solid #2B241B;display:flex;align-items:center;gap:14px;">
+            <span style="font-size:14px;font-weight:600;color:#14110E;background:#CF8745;border-radius:8px;padding:0 24px;height:44px;display:inline-flex;align-items:center;">Update the deck &mdash; 19 in, 6 out</span>
+            <span style="font-size:13px;font-weight:600;color:#EDE6D8;border:1px solid #3A3229;border-radius:8px;padding:0 20px;height:44px;display:inline-flex;align-items:center;">Cancel</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8B8270;margin-left:auto;">1 kept &middot; lands at <span style="color:#DEAA29;">104 / 99</span></span>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:420px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">Why this order</div>
+        <div style="display:flex;flex-direction:column;gap:12px;font-size:12.5px;color:#A59C89;line-height:1.55;">
+          <div><b style="color:#EDE6D8;font-weight:600;">Out first.</b> It is the only group with a decision in it and the only one that can lose the player something. A diff that opens with its additions is a diff that buries its deletions.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">In second, and it is a list, not a decision.</b> No per-row toggle: refusing individual additions turns update into a curated merge, which is the quick-add bar's job. Its header carries the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">owned &middot; to buy</span> split, because nineteen new cards can cost money and that is the shipped vocabulary for saying so.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Unnamed third.</b> Not a failure &mdash; the shipped importer already treats an unmatched line as a resolvable row on the deck, and this reuses it whole, including the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">#1A160F</span> plate and dashed border.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Unchanged last, collapsed.</b> Eighty-five rows carrying no decision, above the one control that matters, would be the screen. One disclosure, and it is the only group that has to be asked for.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">The counts are chips, not a table.</b> Same construct as the facet strip, and the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">91 &rarr; 104 / 99</span> figure on the right is the only place the whole screen is summarised as one number.</div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin:20px 0 12px;">The CTA counts down</div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;">Keeping <i>Smothering Tithe</i> moved the button from <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">19 in, 7 out</span> to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">19 in, 6 out</span>, and the line beside it now reads <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">1 kept</span>. <b style="color:#EDE6D8;font-weight:600;">The button states what it will do, live</b> &mdash; it is the last thing the player reads before the only irreversible click in the flow.</div>
+      </div>
+
+      <div style="width:420px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">The removal row, four states</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#6E6654;margin-bottom:6px;">1 &middot; at rest &mdash; will be removed</div>
+            <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#1E1A15;border:1px solid #2B241B;border-radius:8px;padding:0 6px 0 12px;">
+              <span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span>
+              <span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;">Mana Drain</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C0B8A6;border:1px solid #3A3229;border-radius:7px;height:34px;min-width:64px;display:flex;align-items:center;justify-content:center;flex:none;">Keep</span>
+            </div>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#6E6654;margin-bottom:6px;">2 &middot; kept &mdash; the row changes, not just the button</div>
+            <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#201C17;border:1px solid #6B482A;border-radius:8px;padding:0 6px 0 12px;">
+              <span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span>
+              <span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;">Mana Drain</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#CF8745;border:1px solid #CF8745;background:rgba(207,135,69,0.10);border-radius:7px;height:34px;min-width:64px;display:flex;align-items:center;justify-content:center;flex:none;">Kept &#10003;</span>
+            </div>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#6E6654;margin-bottom:6px;">3 &middot; hand-added &mdash; a marker, not a different row</div>
+            <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#1E1A15;border:1px solid #2B241B;border-radius:8px;padding:0 6px 0 12px;">
+              <span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span>
+              <span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;">Mystic Remora</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#DEAA29;border:1px solid #6B482A;border-radius:999px;padding:3px 8px;flex:none;">you added this</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C0B8A6;border:1px solid #3A3229;border-radius:7px;height:34px;min-width:64px;display:flex;align-items:center;justify-content:center;flex:none;">Keep</span>
+            </div>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#6E6654;margin-bottom:6px;">4 &middot; focus &mdash; global :focus-visible, not overridden</div>
+            <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:#1E1A15;border:1px solid #2B241B;border-radius:8px;padding:0 6px 0 12px;outline:2px solid #CF8745;outline-offset:2px;">
+              <span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span>
+              <span style="flex:auto;min-width:0;font-size:13.5px;color:#EDE6D8;">Ponder</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8B8270;border:1px solid #2B241B;border-radius:999px;padding:3px 8px;flex:none;">auto</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C0B8A6;border:1px solid #3A3229;border-radius:7px;height:34px;min-width:64px;display:flex;align-items:center;justify-content:center;flex:none;">Keep</span>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:14px;"><b style="color:#EDE6D8;font-weight:600;">No strikethrough and no red.</b> A struck-through row says the deletion has happened; nothing has happened. The group heading, the count and the sentence carry the fact, and the row stays a legible card with a control on it &mdash; the same principle as the add panel's spent slot, which holds its place and carries <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Undo</span> rather than vanishing.</div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">you added this</span> is shown only where it changes a decision &mdash; a removal. It is <b style="color:#EDE6D8;font-weight:600;">the inverse of the shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">auto</span> tag</b>, and both appear here: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">auto</span> in neutral because the app placed it and losing it costs nothing, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">you added this</span> in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--warning</span> because a person did.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ E · THE DIFF, PHONE ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">E &middot; <span style="color:#CF8745;">step 3 at 390px &mdash; the dock is the whole difference</span></div>
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:390px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:12px;">390px &middot; scrolled to the removals</div>
+        <div style="border:1px solid #2B241B;border-radius:14px;overflow:hidden;background:#14110E;position:relative;height:720px;">
+          <div style="padding:16px 18px 0;">
+            <div style="font-family:'Cinzel',serif;font-weight:700;font-size:20px;color:#EDE6D8;line-height:1.2;">What this list changes</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8B8270;margin-top:4px;line-height:1.5;">106 lines &middot; matched against 91 cards</div>
+            <div style="display:flex;gap:7px;margin-top:14px;flex-wrap:wrap;">
+              <span style="display:flex;align-items:baseline;gap:5px;border-radius:999px;background:#1E1A15;border:1px solid #3A3229;padding:6px 11px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#DEAA29;">7</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C0B8A6;">out</span></span>
+              <span style="display:flex;align-items:baseline;gap:5px;border-radius:999px;background:#1E1A15;border:1px solid #3A3229;padding:6px 11px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#6FA368;">19</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C0B8A6;">in</span></span>
+              <span style="display:flex;align-items:baseline;gap:5px;border-radius:999px;background:#1E1A15;border:1px solid #3A3229;padding:6px 11px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#DEAA29;">3</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C0B8A6;">unnamed</span></span>
+              <span style="display:flex;align-items:baseline;gap:5px;border-radius:999px;background:#1E1A15;border:1px solid #2B241B;padding:6px 11px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#8B8270;">84</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8B8270;">same</span></span>
+            </div>
+
+            <div style="margin-top:20px;padding-bottom:10px;border-bottom:1px solid #2B241B;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.16em;text-transform:uppercase;color:#DEAA29;">Coming out &middot; 7</div>
+            </div>
+            <div style="font-size:12.5px;color:#C0B8A6;line-height:1.5;margin:10px 0 12px;">Your list does not name these. <b style="color:#EDE6D8;font-weight:600;">Two you added by hand.</b></div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#CF8745;margin-bottom:10px;">Keep all 7</div>
+
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <div style="display:flex;align-items:center;gap:9px;min-height:52px;background:#1E1A15;border:1px solid #2B241B;border-radius:8px;padding:0 6px 0 12px;">
+                <span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span>
+                <span style="flex:auto;min-width:0;">
+                  <span style="display:block;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Mystic Remora</span>
+                  <span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#DEAA29;margin-top:2px;">you added this</span>
+                </span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C0B8A6;border:1px solid #3A3229;border-radius:7px;width:56px;height:44px;display:flex;align-items:center;justify-content:center;flex:none;">Keep</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:9px;min-height:52px;background:#201C17;border:1px solid #6B482A;border-radius:8px;padding:0 6px 0 12px;">
+                <span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span>
+                <span style="flex:auto;min-width:0;">
+                  <span style="display:block;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Smothering Tithe</span>
+                  <span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#DEAA29;margin-top:2px;">you added this</span>
+                </span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#CF8745;border:1px solid #CF8745;background:rgba(207,135,69,0.10);border-radius:7px;width:56px;height:44px;display:flex;align-items:center;justify-content:center;flex:none;">&#10003;</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:9px;min-height:52px;background:#1E1A15;border:1px solid #2B241B;border-radius:8px;padding:0 6px 0 12px;">
+                <span style="width:7px;height:7px;border-radius:999px;border:1px dashed #6E6654;background:transparent;flex:none;"></span>
+                <span style="flex:auto;min-width:0;">
+                  <span style="display:block;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Mana Drain</span>
+                  <span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6E6654;margin-top:2px;">Instant</span>
+                </span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C0B8A6;border:1px solid #3A3229;border-radius:7px;width:56px;height:44px;display:flex;align-items:center;justify-content:center;flex:none;">Keep</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:9px;min-height:52px;background:#1E1A15;border:1px solid #2B241B;border-radius:8px;padding:0 6px 0 12px;">
+                <span style="width:7px;height:7px;border-radius:999px;background:#6FA368;flex:none;"></span>
+                <span style="flex:auto;min-width:0;">
+                  <span style="display:block;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Ponder</span>
+                  <span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8B8270;margin-top:2px;">auto &middot; Sorcery</span>
+                </span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C0B8A6;border:1px solid #3A3229;border-radius:7px;width:56px;height:44px;display:flex;align-items:center;justify-content:center;flex:none;">Keep</span>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:center;min-height:44px;background:#18140F;border:1px dashed #3A3229;border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#CF8745;">Show the other 3</div>
+            </div>
+          </div>
+
+          <div style="position:absolute;left:0;right:0;bottom:64px;background:#1A1611;border-top:1px solid #3A3229;padding:12px 16px;">
+            <span style="display:block;text-align:center;font-size:15px;font-weight:600;color:#14110E;background:#CF8745;border-radius:8px;padding:13px 0;">Update &mdash; 19 in, 6 out</span>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:9px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C0B8A6;">Cancel</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;">1 kept &middot; lands at <span style="color:#DEAA29;">104</span></span>
+            </div>
+          </div>
+          <div style="position:absolute;left:0;right:0;bottom:0;height:64px;background:#1A1611;border-top:1px solid #2B241B;display:flex;align-items:flex-start;justify-content:space-around;padding-top:10px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#6E6654;">HOME</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#6E6654;">COLLECTION</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#6E6654;">COMMANDERS</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#CF8745;">DECKS</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:420px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">The phone rules, applied</div>
+        <div style="display:flex;flex-direction:column;gap:12px;font-size:12.5px;color:#A59C89;line-height:1.55;">
+          <div><b style="color:#EDE6D8;font-weight:600;">A route dock, above the tab bar.</b> The add-panel addendum's bottom-of-viewport rule, exactly: three layers, and the reserve is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">dock + var(--tabbar-h) + 12px</span>. The dock is where the decision is, and on a screen whose whole job is one decision it is pinned rather than scrolled to.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Cancel is in the dock, as a text link.</b> Not a second full-width button &mdash; two stacked 44px primaries at the bottom of a phone is a dialog, and this is a page. Escape is the browser back button, which lands on the paste with the list intact.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">The row grows to 52px and the meta drops to a second line</b> &mdash; the shipped Shopping-row shape from the recommendations addendum. Type line yields first; the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">you added this</span> marker and the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">auto</span> tag do not, because they are what the row is for.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">The Keep control is 44&times;44 and loses its word</b> once kept, keeping the tick. At rest it keeps <i>Keep</i>: an unlabelled empty box at the end of a row it is about to delete is not a control anyone should have to guess at.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Groups are capped at four rows plus a disclosure</b> at both widths. Nineteen additions and eighty-four unchanged rows are a scroll, not a decision, and the cap is what keeps the removals and the dock on one screen.</div>
+        </div>
+      </div>
+
+      <div style="width:420px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">Accessibility</div>
+        <div style="display:flex;flex-direction:column;gap:11px;font-size:12.5px;color:#A59C89;line-height:1.55;">
+          <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;flex:none;width:66px;padding-top:2px;">page</span><span>A page, not a dialog &mdash; own route, own URL, back-navigable. No focus trap, no <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-modal</span>. Four <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&lt;section&gt;</span>s with headings, so the groups are a document outline.</span></div>
+          <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;flex:none;width:66px;padding-top:2px;">keep</span><span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-pressed</span> on the toggle &mdash; the same contract as the synergy row's <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">+ / &#10003;</span>. Accessible name: <i>Keep Mystic Remora in the deck</i>.</span></div>
+          <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;flex:none;width:66px;padding-top:2px;">marker</span><span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">you added this</span> is real text inside the row, so it is in the row's reading order rather than an <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-label</span> nobody hears twice.</span></div>
+          <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;flex:none;width:66px;padding-top:2px;">live</span><span>One polite region for the kept count, debounced to one message per settle &mdash; six fast toggles is one announcement. It reads the CTA's own numbers, because the CTA is the thing that changed.</span></div>
+          <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;flex:none;width:66px;padding-top:2px;">apply</span><span>The button's label is its own confirmation, so it needs no <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-describedby</span>. In flight it goes <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-busy</span> and keeps its label &mdash; a disabled focused button blurs, and this is the last control on the page.</span></div>
+          <div style="display:flex;gap:9px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;flex:none;width:66px;padding-top:2px;">colour</span><span>Nothing is carried by colour: every group has a heading and a count, every marker is a word, and the two amber signals both sit beside text.</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ F · EDGE STATES ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">F &middot; <span style="color:#CF8745;">the four states that are not a diff</span></div>
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:430px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">Nothing changed</div>
+        <div style="background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:26px;text-align:center;">
+          <div style="display:flex;gap:6px;justify-content:center;margin-bottom:14px;">
+            <span style="width:9px;height:9px;background:#6B482A;transform:rotate(45deg);"></span>
+            <span style="width:9px;height:9px;background:#6B482A;transform:rotate(45deg);"></span>
+            <span style="width:9px;height:9px;background:#6B482A;transform:rotate(45deg);"></span>
+          </div>
+          <div style="font-family:'Cinzel',serif;font-weight:700;font-size:19px;color:#EDE6D8;">This list is the deck you already have</div>
+          <div style="font-size:13px;color:#C0B8A6;line-height:1.6;margin-top:8px;">All 91 cards match, nothing to add, nothing to take out. We have changed nothing.</div>
+          <div style="margin-top:18px;display:flex;gap:9px;justify-content:center;">
+            <span style="font-size:13px;font-weight:600;color:#EDE6D8;border:1px solid #3A3229;border-radius:8px;padding:0 20px;height:44px;display:inline-flex;align-items:center;">Back to the deck</span>
+            <span style="font-size:13px;color:#CF8745;padding:0 12px;height:44px;display:inline-flex;align-items:center;">Try a different list</span>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:14px;">The crown at its faintest, per the themes handoff's three intensities. <b style="color:#EDE6D8;font-weight:600;">Not an error and not a success</b> &mdash; a null result with two ways out. It also fires when every difference is an unresolved line the deck already carries.</div>
+      </div>
+
+      <div style="width:430px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">A different commander</div>
+        <div style="background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:20px;">
+          <div style="display:flex;gap:12px;align-items:flex-start;background:#201C17;border:1px solid #3A3229;border-left:3px solid #DEAA29;border-radius:10px;padding:16px 18px;">
+            <span style="font-size:17px;color:#DEAA29;line-height:1.2;">&#9888;</span>
+            <div>
+              <div style="font-size:15px;font-weight:600;color:#EDE6D8;line-height:1.4;">That list is a Muldrotha deck</div>
+              <div style="font-size:14px;color:#C0B8A6;line-height:1.6;margin-top:6px;">This deck is built around Kykar, Wind's Fury. Changing the commander re-decides the colours and the legality of all ninety-nine, so we will not swap it out from under you.</div>
+              <div style="display:flex;gap:9px;margin-top:14px;flex-wrap:wrap;">
+                <span style="font-size:13px;font-weight:600;color:#14110E;background:#CF8745;border-radius:8px;padding:0 18px;height:44px;display:inline-flex;align-items:center;">Import it as a new deck</span>
+                <span style="font-size:13px;font-weight:600;color:#EDE6D8;border:1px solid #3A3229;border-radius:8px;padding:0 18px;height:44px;display:inline-flex;align-items:center;">Cancel</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:14px;">The shipped failure banner, verbatim geometry &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--elevated-hover</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--warning</span> left rule, never <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--danger</span>. <b style="color:#EDE6D8;font-weight:600;">The primary way out is the flow that already works:</b> the list becomes its own deck, carrying the text the player already pasted, and they end up with both decks.</div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:12px;">Only fires when the list <i>declares</i> a commander (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">*CMDR*</span> or a <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Commander</span> section) and it is not this deck's. An undeclared list is not a conflict &mdash; it is 104 lines for the commander you already have.</div>
+      </div>
+
+      <div style="width:430px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">Everything out</div>
+        <div style="background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:20px;">
+          <div style="font-family:'Cinzel',serif;font-weight:700;font-size:19px;color:#EDE6D8;">What this list changes</div>
+          <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
+            <span style="display:flex;align-items:baseline;gap:6px;border-radius:999px;background:#1E1A15;border:1px solid #6B482A;padding:6px 12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#DEAA29;">91</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C0B8A6;">out</span></span>
+            <span style="display:flex;align-items:baseline;gap:6px;border-radius:999px;background:#1E1A15;border:1px solid #3A3229;padding:6px 12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#6FA368;">4</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C0B8A6;">in</span></span>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;background:#201C17;border:1px solid #3A3229;border-left:3px solid #DEAA29;border-radius:10px;padding:14px 16px;margin-top:16px;">
+            <span style="font-size:15px;color:#DEAA29;line-height:1.3;">&#9888;</span>
+            <div style="font-size:13px;color:#C0B8A6;line-height:1.55;"><b style="color:#EDE6D8;font-weight:600;">This replaces the whole deck.</b> Four cards in, ninety-one out. If that is not what you meant, the list you pasted is probably a different deck &mdash; import it as its own instead.</div>
+          </div>
+          <div style="margin-top:16px;display:flex;gap:9px;align-items:center;flex-wrap:wrap;">
+            <span style="font-size:13px;font-weight:600;color:#14110E;background:#CF8745;border-radius:8px;padding:0 18px;height:44px;display:inline-flex;align-items:center;">Update the deck &mdash; 4 in, 91 out</span>
+            <span style="font-size:13px;color:#CF8745;padding:0 10px;height:44px;display:inline-flex;align-items:center;">Import as new instead</span>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:14px;"><b style="color:#EDE6D8;font-weight:600;">One extra line and one extra way out, at the threshold where the diff stops being an update.</b> It fires when the removals are more than three quarters of the deck. <b style="color:#EDE6D8;font-weight:600;">Nothing is blocked</b> &mdash; a player rebuilding a deck from scratch is doing something legitimate, and the diff is still the diff.</div>
+      </div>
+
+      <div style="width:430px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">Applying, and a refused write</div>
+        <div style="background:#14110E;border:1px solid #2B241B;border-radius:10px;padding:20px;">
+          <div style="display:flex;gap:6px;margin-bottom:14px;">
+            <span style="width:8px;height:8px;border-radius:999px;background:#CF8745;"></span>
+            <span style="width:8px;height:8px;border-radius:999px;background:#CF8745;opacity:0.6;"></span>
+            <span style="width:8px;height:8px;border-radius:999px;background:#CF8745;opacity:0.3;"></span>
+          </div>
+          <div style="font-family:'Cinzel',serif;font-weight:700;font-size:17px;color:#EDE6D8;">Updating the deck&hellip;</div>
+          <div style="font-size:13px;color:#8B8270;line-height:1.6;margin-top:6px;">One transaction. The whole update lands or none of it does.</div>
+          <div style="height:1px;background:#2B241B;margin:20px 0;"></div>
+          <div style="display:flex;gap:12px;align-items:flex-start;background:#201C17;border:1px solid #3A3229;border-left:3px solid #DEAA29;border-radius:10px;padding:14px 16px;">
+            <span style="font-size:15px;color:#DEAA29;line-height:1.3;">&#9888;</span>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:#EDE6D8;">That did not go through</div>
+              <div style="font-size:13px;color:#C0B8A6;line-height:1.55;margin-top:5px;">Your deck is exactly as it was. Your list is still here &mdash; try again.</div>
+              <span style="display:inline-flex;align-items:center;font-size:13px;font-weight:600;color:#EDE6D8;border:1px solid #3A3229;border-radius:8px;padding:0 18px;height:44px;margin-top:12px;">Try again</span>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:14px;">The shipped parsing block's dots and the shipped failure banner, both reused. <b style="color:#EDE6D8;font-weight:600;">The transaction is the promise the copy is making</b> &mdash; the shipped importer already writes a deck and its unresolved rows in one, for the same reason, and its source comment says why: a deck that exists without them has silently lost the player's data.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ G · ARRIVAL ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">G &middot; <span style="color:#CF8745;">step 5 &mdash; arrival, and how it differs from a first import</span></div>
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:640px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">The two strips, same geometry</div>
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#6E6654;margin-bottom:6px;">shipped &mdash; first import, <span style="font-family:'IBM Plex Mono',monospace;">?imported=1</span></div>
+            <div style="display:flex;align-items:center;gap:11px;background:#1A1611;border-bottom:1px solid #2B241B;padding:12px 30px;">
+              <span style="color:#6FA368;font-size:14px;line-height:1;">&#10003;</span>
+              <span style="flex:1;font-size:13.5px;color:#C0B8A6;">106 lines came over from your list. Here is the deck.</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;">Dismiss &#10005;</span>
+            </div>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#CF8745;margin-bottom:6px;">called &mdash; an update, <span style="font-family:'IBM Plex Mono',monospace;">?updated=19-6</span></div>
+            <div style="display:flex;align-items:center;gap:11px;background:#1A1611;border-bottom:1px solid #2B241B;padding:12px 30px;">
+              <span style="color:#6FA368;font-size:14px;line-height:1;">&#10003;</span>
+              <span style="flex:1;font-size:13.5px;color:#C0B8A6;">Updated from your list &mdash; <b style="color:#EDE6D8;font-weight:600;">19 in, 6 out</b>, 1 you kept.</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;">Dismiss &#10005;</span>
+            </div>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#CF8745;margin-bottom:6px;">called &mdash; 390px</div>
+            <div style="width:390px;display:flex;align-items:center;gap:9px;background:#1A1611;border-bottom:1px solid #2B241B;padding:10px 16px;">
+              <span style="color:#6FA368;font-size:12px;line-height:1;">&#10003;</span>
+              <span style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#C0B8A6;">Updated &mdash; 19 in, 6 out</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8B8270;">&#10005;</span>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:16px;"><b style="color:#EDE6D8;font-weight:600;">Total copy becomes delta copy.</b> A first import's only fact is how much arrived, because there was nothing there before. An update's only interesting fact is what moved &mdash; and the kept clause is there because the player made that decision one screen ago and deserves to see it honoured.</div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:12px;"><b style="color:#EDE6D8;font-weight:600;">A second param, not a second meaning for the first.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">?updated=19-6</span> is parsed strictly &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/^\d+-\d+$/</span>, the same strictness the shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">arrivedFromImport</span> applies to its own value &mdash; and anything else falls back to a countless <i>&ldquo;Updated from your list.&rdquo;</i> rather than printing garbage.</div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:12px;"><b style="color:#EDE6D8;font-weight:600;">And the dismissal is not persisted.</b> This is the one place the shipped pattern cannot be reused: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">arrivalDismissKey(deckId)</span> is already set from the first import, so an update's strip would never show. Arrival is provenance of one navigation &mdash; the strip's own source says so &mdash; so an update's strip lives for that navigation and is gone on the next visit whether it was dismissed or not.</div>
+      </div>
+
+      <div style="width:430px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">Landing at 99 &mdash; <span style="color:#C6533F;">no celebration</span></div>
+        <div style="background:#14110E;border:1px solid #2B241B;border-radius:10px;overflow:hidden;">
+          <div style="display:flex;align-items:center;gap:9px;background:#1A1611;border-bottom:1px solid #2B241B;padding:10px 16px;">
+            <span style="color:#6FA368;font-size:12px;line-height:1;">&#10003;</span>
+            <span style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#C0B8A6;">Updated &mdash; 14 in, 6 out</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8B8270;">&#10005;</span>
+          </div>
+          <div style="padding:20px 16px 16px;display:flex;flex-direction:column;align-items:center;">
+            <div style="width:48px;height:67px;border-radius:5px;background:linear-gradient(140deg,#F4E9C4,#3A6AA5 55%,#C05A3E);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);"></div>
+            <div style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;color:#EDE6D8;margin-top:8px;">Kykar Spellslinger</div>
+            <div style="display:flex;align-items:baseline;gap:4px;margin-top:6px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14px;color:#EDE6D8;">99</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:#8B8270;">/ 99</span>
+            </div>
+            <div style="width:100%;height:5px;border-radius:999px;background:#29241F;overflow:hidden;margin-top:4px;"><div style="width:100%;height:100%;background:#6FA368;"></div></div>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:14px;"><b style="color:#EDE6D8;font-weight:600;">The kaiju does not appear, on the rule that already exists.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">shouldCelebrate</span> is suppressed by <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">arrivedFromImport</span> and by <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">completedByFill</span> for one reason, stated in its own source: <i>the reveal is a receipt for a deck the player built.</i> A list is not a deck the player built, and the update param is read into the same argument &mdash; no new flag, no new key.</div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:12px;">The receipt is the strip plus the counts, which is exactly what the recommendations pass decided about arrivals: <i>no celebration, no moment.</i> The reveal keeps waiting for the first card the player places themselves.</div>
+      </div>
+
+      <div style="width:430px;flex:none;background:#1A1611;border:1px solid #6B482A;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#DEAA29;margin-bottom:14px;">Landing at 104 &mdash; the two amendments meet</div>
+        <div style="background:#14110E;border:1px solid #2B241B;border-radius:10px;overflow:hidden;">
+          <div style="display:flex;align-items:center;gap:9px;background:#1A1611;border-bottom:1px solid #2B241B;padding:10px 16px;">
+            <span style="color:#6FA368;font-size:12px;line-height:1;">&#10003;</span>
+            <span style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#C0B8A6;">Updated &mdash; 19 in, 6 out</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8B8270;">&#10005;</span>
+          </div>
+          <div style="padding:20px 16px 16px;display:flex;flex-direction:column;align-items:center;">
+            <div style="width:48px;height:67px;border-radius:5px;background:linear-gradient(140deg,#F4E9C4,#3A6AA5 55%,#C05A3E);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);"></div>
+            <div style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;color:#EDE6D8;margin-top:8px;">Kykar Spellslinger</div>
+            <div style="display:flex;align-items:baseline;gap:4px;margin-top:6px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14px;color:#DEAA29;">104</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:#8B8270;">/ 99</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:12px;color:#DEAA29;margin-left:4px;">+5</span>
+            </div>
+            <div style="width:100%;height:5px;border-radius:999px;background:#29241F;overflow:hidden;margin-top:4px;display:flex;"><div style="width:95.2%;height:100%;background:#6FA368;"></div><div style="width:4.8%;height:100%;background:#DEAA29;box-shadow:inset 1px 0 0 #14110E;"></div></div>
+            <div style="font-size:12px;color:#C0B8A6;margin-top:8px;line-height:1.5;text-align:center;"><b style="color:#DEAA29;font-weight:600;">Five over the ninety-nine.</b> Cut five and it is legal.</div>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:14px;"><b style="color:#EDE6D8;font-weight:600;">This is the case the lifted cap exists for</b> &mdash; and the reason these two amendments were drawn together. Before amendment 3, this update is refused: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">add-validation</span> stops at 99 and the player's list arrives five cards short with nothing saying which five went missing.</div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:12px;">Amendment 3 owns everything in this frame below the strip. <b style="color:#EDE6D8;font-weight:600;">If it slips, this flow needs a hard stop</b> &mdash; the diff would have to refuse to apply past 99 and say which cards it dropped. That is a redraw, and it is the one dependency between the four.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ H · WHAT APPLY WRITES ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">H &middot; <span style="color:#CF8745;">what Apply actually writes &mdash; the five calls that are not visual</span></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:18px;max-width:1360px;">
+
+      <div style="background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:12px;">1 &middot; the added cards are not <span style="font-family:'IBM Plex Mono',monospace;">auto</span></div>
+        <div style="font-size:13px;color:#A59C89;line-height:1.7;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">auto</span> means <i>the app put this here</i> &mdash; it is what <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Clear all auto</span> sweeps and what the fill controls write. A card the player's own list names is the player's choice, so it lands with <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">auto = false</span>, exactly as a first import's cards do.</div>
+      </div>
+
+      <div style="background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:12px;">2 &middot; and <span style="font-family:'IBM Plex Mono',monospace;">auto</span> is <i>cleared</i> on what the list claims</div>
+        <div style="font-size:13px;color:#A59C89;line-height:1.7;">A card the app placed that the player's list now names is no longer the app's suggestion &mdash; it is in the deck on purpose. <b style="color:#EDE6D8;font-weight:600;">Apply clears the flag on every unchanged card the list names</b>, which means <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Clear all auto</span> afterwards will not delete cards the player just declared. Drawn in the diff: <i>Ponder</i> still wears <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">auto</span> in the removals because the list did <b style="color:#EDE6D8;font-weight:600;">not</b> name it.</div>
+      </div>
+
+      <div style="background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:12px;">3 &middot; unresolved rows are replaced, not merged</div>
+        <div style="font-size:13px;color:#A59C89;line-height:1.7;">The new list's unnamed lines <b style="color:#EDE6D8;font-weight:600;">replace</b> the deck's existing ones inside the same transaction. Merging them accumulates stale rows the player already dealt with, and a line number from an old paste points into a file nobody has any more. The diff says so in the group's own sentence: <i>they replace the 2 unresolved lines this deck is carrying now.</i></div>
+      </div>
+
+      <div style="background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:12px;">4 &middot; kept cards are exempt and stay exactly as they were</div>
+        <div style="font-size:13px;color:#A59C89;line-height:1.7;">A kept card is not re-added and not re-flagged: its row is left alone, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">auto</span> included. If the app placed it and the player keeps it against their own list, it is still the app's suggestion &mdash; and the sweep can still take it.</div>
+      </div>
+
+      <div style="background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:12px;">5 &middot; one transaction, and no dedupe of updates</div>
+        <div style="font-size:13px;color:#A59C89;line-height:1.7;">Adds, removes and unresolved rows all land together or none do &mdash; the same rule and the same reason the shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">importDeck</span> writes a deck and its unresolved rows in one. And the double-submit guard is the shipped one: a synchronous ref, because <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">pending</span> only turns true on the next render and <b style="color:#EDE6D8;font-weight:600;">two clicks in one tick would apply the same update twice</b>.</div>
+      </div>
+
+      <div style="background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:12px;">What is deliberately not written</div>
+        <div style="font-size:13px;color:#A59C89;line-height:1.7;">No import history and no stored source. Nothing records that this deck came from a list, or which one &mdash; provenance is a fact about one navigation, which is the shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">arrival.ts</span> ruling and it holds here. <b style="color:#EDE6D8;font-weight:600;">No undo of an applied update</b>, and that is the gap this handoff would most like a ruling on &mdash; the diff is the confirmation, and it is the only one.</div>
+      </div>
+
+    </div>
+  </div>
+
+  </div>
+</div>
+
+</x-dc>
+</body>
+</html>

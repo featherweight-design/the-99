@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #100D0A; }
+  ::selection { background: #CF8745; color: #14110E; }
+  a { color: #CF8745; text-decoration: none; }
+  a:hover { color: #DE9757; }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;padding:40px;background:#100D0A;background-image:radial-gradient(1400px 700px at 30% -300px, rgba(207,135,69,0.06), transparent 70%);min-height:100vh;">
+
+  <section style="max-width:1400px;margin:0 0 26px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#CF8745;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R1</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#8B8270;">Amendment 1 &middot; the black mana pip &middot; app-wide atom</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:0 0 10px;color:#EDE6D8;">A black disc on a near-black canvas is a hole, not a swatch.</h1>
+    <p style="max-width:1040px;font-size:15px;line-height:1.7;color:#C0B8A6;margin:0 0 12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">--b: #1E1B1A</span> is declared identically in all six themes and every theme's chrome sits within a hair of it. Measured against the three grounds a pip actually renders on, black scores <b style="color:#EDE6D8;font-weight:600;">1.01:1 to 1.27:1</b>. There is nothing subtle about that number: the pip is not dim, it is absent, and it has been absent on all 22 reads of it, across 15 component files, since the theme system landed.</p>
+    <p style="max-width:1040px;font-size:15px;line-height:1.7;color:#C0B8A6;margin:0 0 12px;"><b style="color:#EDE6D8;font-weight:600;">The call is a lifted, hued value, once, and no ring.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">--b</span> becomes <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">#98748F</span> &mdash; a dark violet-grey, one hex, six declarations, the same value in every theme, exactly as the other four WUBRG swatches already are. <b style="color:#EDE6D8;font-weight:600;">R3 revision:</b> R1 lifted to a neutral <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">#837D78</span> and the review found it reads as a second white at pip sizes. R2 added violet at <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">#857A93</span> &mdash; and the R2 audit found that <b style="color:#EDE6D8;font-weight:600;">a shipped test gates this</b>: <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">contract.test.ts:145</span> asserts &Delta;E &ge; 0.1 between every WUBRG pip and every theme's accent, and R2 measured 0.087 against Oil and Iron. R3 pushes the hue on to <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">#98748F</span>, which clears it at 0.115 on both binding themes. It clears 3:1 against the lightest ground a pip lands on and carries the theme's own <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">--bg</span> as its glyph ink at 4.5:1, which is what lets <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">PIP_TEXT</span> die instead of spreading.</p>
+    <p style="max-width:1040px;font-size:14px;line-height:1.7;color:#8B8270;margin:0;">Read <a href="README.md">README.md</a> for the decisions log and the rejected ring, <a href="CONTRAST-black-pip.md">CONTRAST-black-pip.md</a> for the measured ledger across all six themes and every ground, <a href="black-pip · copy strings.ts">black-pip &middot; copy strings.ts</a> for the two accessible-name additions, <a href="READINESS.md">READINESS.md</a> for what blocks a green. Drawn on shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">amonkhet</span> tokens unless a frame says otherwise.</p>
+  </section>
+
+  <div style="border:1px solid #3A3229;border-left:3px solid #CF8745;border-radius:12px;background:#18140F;padding:16px 20px;margin-bottom:38px;max-width:1400px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">The brief's constraint, drawn as written</div>
+    <div style="font-size:13px;color:#A59C89;line-height:1.7;"><b style="color:#EDE6D8;font-weight:600;">One solution, every surface, all six themes, a single token change &mdash; not per-surface patches.</b> So: no <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--pip-text</span>, no <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--pip-ring</span>, no sibling-aware primitive, no per-site override, and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">PIP_TEXT</span> deleted rather than promoted. The 36-key contract keeps 36 keys and one of them changes value.</div>
+  </div>
+
+
+  <div style="max-width:1400px;margin:0 0 38px;background:#1A1611;border:1px solid #6B482A;border-radius:14px;padding:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">R2 &rarr; R3 &mdash; &ldquo;the new pip reads almost identical to white&rdquo;, and the test that gates the fix</div>
+    <div style="font-size:13.5px;color:#C0B8A6;line-height:1.65;margin-bottom:16px;max-width:1060px;">The complaint is not about contrast &mdash; R1's grey sits 3.35:1 below <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--w</span> and &Delta;E 0.34 away from it. It is about <b style="color:#EDE6D8;font-weight:600;">which axis carries the difference</b>. Three of the five pips are separated from white by hue; R1 separated black from white by lightness alone, and at 9&ndash;12px with no glyph two hueless discs are two pale dots of different brightness. <b style="color:#EDE6D8;font-weight:600;">The fix keeps the lightness and adds the hue back</b> &mdash; L 0.2115 against R1's 0.2085, so the contrast ledger moves by at most 0.03. <b style="color:#EDE6D8;font-weight:600;">How much hue is not a taste question:</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">contract.test.ts:145</span> asserts &Delta;E &ge; 0.1 between every WUBRG pip and every theme's accent, iterated over all five pips and all six themes. R2's <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">#857A93</span> measured 0.087 against Oil and Iron and 0.092 against Rune Frost &mdash; <b style="color:#EDE6D8;font-weight:600;">two failing themes, and R1's neutral failed the same gate harder at 0.064.</b> R3 is the value that clears it with headroom.</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div style="display:flex;gap:18px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6E6654;"><span style="width:150px;flex:none;">candidate</span><span style="width:160px;flex:none;">9px &middot; 12px &middot; 22px, beside --w</span><span></span></div>
+      <div style="display:flex;align-items:center;gap:18px;background:#1E1A15;border:1px solid #2B241B;border-radius:10px;padding:12px 14px;">
+   <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6E6654;width:150px;flex:none;">shipped #1E1B1A</span>
+   <span style="display:flex;gap:16px;align-items:center;flex:none;"><span style="display:flex;gap:4px;align-items:center;"><span style="width:9px;height:9px;border-radius:999px;background:#F4E9C4;flex:none;"></span><span style="width:9px;height:9px;border-radius:999px;background:#1E1B1A;flex:none;"></span></span><span style="display:flex;gap:4px;align-items:center;"><span style="width:12px;height:12px;border-radius:999px;background:#F4E9C4;flex:none;"></span><span style="width:12px;height:12px;border-radius:999px;background:#1E1B1A;flex:none;"></span></span><span style="display:flex;gap:4px;align-items:center;"><span style="width:22px;height:22px;border-radius:999px;background:#F4E9C4;color:#C0B8A6;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex:none;">W</span><span style="width:22px;height:22px;border-radius:999px;background:#1E1B1A;color:#C0B8A6;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex:none;">B</span></span></span>
+   <span style="font-size:12.5px;color:#A59C89;line-height:1.5;">The defect: one pip and one hole. 1.01:1 on this surface.</span>
+ </div>
+      <div style="display:flex;align-items:center;gap:18px;background:#1E1A15;border:1px solid #2B241B;border-radius:10px;padding:12px 14px;">
+   <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6E6654;width:150px;flex:none;">R1 #837D78</span>
+   <span style="display:flex;gap:16px;align-items:center;flex:none;"><span style="display:flex;gap:4px;align-items:center;"><span style="width:9px;height:9px;border-radius:999px;background:#F4E9C4;flex:none;"></span><span style="width:9px;height:9px;border-radius:999px;background:#837D78;flex:none;"></span></span><span style="display:flex;gap:4px;align-items:center;"><span style="width:12px;height:12px;border-radius:999px;background:#F4E9C4;flex:none;"></span><span style="width:12px;height:12px;border-radius:999px;background:#837D78;flex:none;"></span></span><span style="display:flex;gap:4px;align-items:center;"><span style="width:22px;height:22px;border-radius:999px;background:#F4E9C4;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex:none;">W</span><span style="width:22px;height:22px;border-radius:999px;background:#837D78;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex:none;">B</span></span></span>
+   <span style="font-size:12.5px;color:#A59C89;line-height:1.5;">Legible, and the review was right &mdash; against cream it reads as a dimmer white. Two lightnesses of the same nothing. Also fails <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">contract.test.ts</span> at &Delta;E 0.064.</span>
+ </div>
+      <div style="display:flex;align-items:center;gap:18px;background:#1E1A15;border:1px solid #6E3A2E;border-radius:10px;padding:12px 14px;">
+   <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C6533F;width:150px;flex:none;">R2 #857A93 &mdash; fails CI</span>
+   <span style="display:flex;gap:16px;align-items:center;flex:none;"><span style="display:flex;gap:4px;align-items:center;"><span style="width:9px;height:9px;border-radius:999px;background:#F4E9C4;flex:none;"></span><span style="width:9px;height:9px;border-radius:999px;background:#857A93;flex:none;"></span></span><span style="display:flex;gap:4px;align-items:center;"><span style="width:12px;height:12px;border-radius:999px;background:#F4E9C4;flex:none;"></span><span style="width:12px;height:12px;border-radius:999px;background:#857A93;flex:none;"></span></span><span style="display:flex;gap:4px;align-items:center;"><span style="width:22px;height:22px;border-radius:999px;background:#F4E9C4;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex:none;">W</span><span style="width:22px;height:22px;border-radius:999px;background:#857A93;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex:none;">B</span></span></span>
+   <span style="font-size:12.5px;color:#A59C89;line-height:1.5;">Hue solves the reading, and <b style="color:#EDE6D8;font-weight:600;">this is the value the R2 audit caught</b>: &Delta;E 0.087 to Oil and Iron's accent against a shipped floor of 0.100. Two themes red.</span>
+ </div>
+      <div style="display:flex;align-items:center;gap:18px;background:#1E1A15;border:1px solid #2B241B;border-radius:10px;padding:12px 14px;">
+   <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6E6654;width:150px;flex:none;">#8E7792 &mdash; on the line</span>
+   <span style="display:flex;gap:16px;align-items:center;flex:none;"><span style="display:flex;gap:4px;align-items:center;"><span style="width:9px;height:9px;border-radius:999px;background:#F4E9C4;flex:none;"></span><span style="width:9px;height:9px;border-radius:999px;background:#8E7792;flex:none;"></span></span><span style="display:flex;gap:4px;align-items:center;"><span style="width:12px;height:12px;border-radius:999px;background:#F4E9C4;flex:none;"></span><span style="width:12px;height:12px;border-radius:999px;background:#8E7792;flex:none;"></span></span><span style="display:flex;gap:4px;align-items:center;"><span style="width:22px;height:22px;border-radius:999px;background:#F4E9C4;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex:none;">W</span><span style="width:22px;height:22px;border-radius:999px;background:#8E7792;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex:none;">B</span></span></span>
+   <span style="font-size:12.5px;color:#A59C89;line-height:1.5;">Passes at exactly 0.100 (0.101 in Rune Frost). Rejected: no headroom, and the theme brief's own lesson is that a value with none fails in all six the day one accent moves.</span>
+ </div>
+      <div style="display:flex;align-items:center;gap:18px;background:#1E1A15;border:1px solid #6B482A;border-radius:10px;padding:12px 14px;">
+   <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;width:150px;flex:none;">R3 #98748F &mdash; called</span>
+   <span style="display:flex;gap:16px;align-items:center;flex:none;"><span style="display:flex;gap:4px;align-items:center;"><span style="width:9px;height:9px;border-radius:999px;background:#F4E9C4;flex:none;"></span><span style="width:9px;height:9px;border-radius:999px;background:#98748F;flex:none;"></span></span><span style="display:flex;gap:4px;align-items:center;"><span style="width:12px;height:12px;border-radius:999px;background:#F4E9C4;flex:none;"></span><span style="width:12px;height:12px;border-radius:999px;background:#98748F;flex:none;"></span></span><span style="display:flex;gap:4px;align-items:center;"><span style="width:22px;height:22px;border-radius:999px;background:#F4E9C4;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex:none;">W</span><span style="width:22px;height:22px;border-radius:999px;background:#98748F;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex:none;">B</span></span></span>
+   <span style="font-size:12.5px;color:#A59C89;line-height:1.5;">&Delta;E 0.115 on both binding themes, 15% clear of the floor. Every other gate improves: ground 3.37, glyph 4.65, dashed 2.23. Costs 0.02 against white and moves the nearest pip from --u to --r at 0.122.</span>
+ </div>
+    </div>
+    <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:16px;max-width:1060px;"><b style="color:#EDE6D8;font-weight:600;">Why violet rather than more darkness.</b> Going darker is the direction the six grounds forbid &mdash; that is the whole defect. Going lighter makes it whiter. The only remaining axis is hue, and violet-magenta is the one the palette has spare: it is black mana's conventional second colour, and at hue 335 it is <b style="color:#EDE6D8;font-weight:600;">&Delta;E 0.115 from the nearest of the six accents</b>, against the 0.100 floor <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">contract.test.ts:145</span> enforces per theme. <b style="color:#EDE6D8;font-weight:600;">Two candidates were rejected on that one number</b> and neither could be told apart from the called value at 9px &mdash; which is why the row above is the argument and the ledger is the referee. <b style="color:#EDE6D8;font-weight:600;">It also fixes the one pair R1 was weakest on:</b> the generic <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">{n}</span> disc, which was 2.20:1 away in Screen Glow on lightness alone and now differs in hue too.</div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:56px;max-width:2200px;">
+
+  <!-- ============ A · THE DEFECT ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">A &middot; <span style="color:#CF8745;">the defect, at the three grounds and at real sizes</span></div>
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:560px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;">Shipped &mdash; <span style="color:#C6533F;">--b #1E1B1A</span> &middot; amonkhet</div>
+
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;align-items:center;gap:14px;background:#14110E;border:1px dashed #3A3229;border-radius:10px;padding:12px 14px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6E6654;width:112px;flex:none;">--bg</span>
+            <span style="display:flex;gap:5px;">
+              <span style="width:26px;height:26px;border-radius:999px;background:#F4E9C4;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;">W</span>
+              <span style="width:26px;height:26px;border-radius:999px;background:#3A6AA5;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;">U</span>
+              <span style="width:26px;height:26px;border-radius:999px;background:#1E1B1A;color:#C0B8A6;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;">B</span>
+              <span style="width:26px;height:26px;border-radius:999px;background:#C05A3E;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;">R</span>
+              <span style="width:26px;height:26px;border-radius:999px;background:#4B7A46;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;">G</span>
+            </span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6533F;margin-left:auto;">1.10:1</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px;background:#1E1A15;border:1px solid #2B241B;border-radius:10px;padding:12px 14px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6E6654;width:112px;flex:none;">--surface</span>
+            <span style="display:flex;gap:5px;">
+              <span style="width:26px;height:26px;border-radius:999px;background:#F4E9C4;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;">W</span>
+              <span style="width:26px;height:26px;border-radius:999px;background:#3A6AA5;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;">U</span>
+              <span style="width:26px;height:26px;border-radius:999px;background:#1E1B1A;color:#C0B8A6;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;">B</span>
+              <span style="width:26px;height:26px;border-radius:999px;background:#C05A3E;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;">R</span>
+              <span style="width:26px;height:26px;border-radius:999px;background:#4B7A46;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;">G</span>
+            </span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6533F;margin-left:auto;">1.01:1</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px;background:#29241F;border:1px solid #3A3229;border-radius:10px;padding:12px 14px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8B8270;width:112px;flex:none;">--elevated</span>
+            <span style="display:flex;gap:5px;">
+              <span style="width:26px;height:26px;border-radius:999px;background:#F4E9C4;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;">W</span>
+              <span style="width:26px;height:26px;border-radius:999px;background:#3A6AA5;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;">U</span>
+              <span style="width:26px;height:26px;border-radius:999px;background:#1E1B1A;color:#C0B8A6;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;">B</span>
+              <span style="width:26px;height:26px;border-radius:999px;background:#C05A3E;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;">R</span>
+              <span style="width:26px;height:26px;border-radius:999px;background:#4B7A46;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;">G</span>
+            </span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6533F;margin-left:auto;">1.11:1</span>
+          </div>
+        </div>
+
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:16px;">Three grounds, three failures, and the middle one &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--surface</span>, the deck card and the decklist row &mdash; is the worst at <b style="color:#C6533F;font-weight:600;">1.01:1</b>. The glyph is legible only because <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">PIP_TEXT</span> put a light ink on it in one file; on <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">mana-pips.tsx</span>, which takes <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--bg</span> for all five, the letter goes too.</div>
+      </div>
+
+      <div style="width:560px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;">Called &mdash; <span style="color:#6FA368;">--b #98748F</span> &middot; amonkhet</div>
+
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;align-items:center;gap:14px;background:#14110E;border:1px dashed #3A3229;border-radius:10px;padding:12px 14px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6E6654;width:112px;flex:none;">--bg</span>
+            <span style="display:flex;gap:5px;">
+              <span style="width:26px;height:26px;border-radius:999px;background:#F4E9C4;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;">W</span>
+              <span style="width:26px;height:26px;border-radius:999px;background:#3A6AA5;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;">U</span>
+              <span style="width:26px;height:26px;border-radius:999px;background:#98748F;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;">B</span>
+              <span style="width:26px;height:26px;border-radius:999px;background:#C05A3E;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;">R</span>
+              <span style="width:26px;height:26px;border-radius:999px;background:#4B7A46;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;">G</span>
+            </span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6FA368;margin-left:auto;">4.69:1</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px;background:#1E1A15;border:1px solid #2B241B;border-radius:10px;padding:12px 14px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6E6654;width:112px;flex:none;">--surface</span>
+            <span style="display:flex;gap:5px;">
+              <span style="width:26px;height:26px;border-radius:999px;background:#F4E9C4;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;">W</span>
+              <span style="width:26px;height:26px;border-radius:999px;background:#3A6AA5;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;">U</span>
+              <span style="width:26px;height:26px;border-radius:999px;background:#98748F;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;">B</span>
+              <span style="width:26px;height:26px;border-radius:999px;background:#C05A3E;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;">R</span>
+              <span style="width:26px;height:26px;border-radius:999px;background:#4B7A46;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;">G</span>
+            </span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6FA368;margin-left:auto;">4.31:1</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px;background:#29241F;border:1px solid #3A3229;border-radius:10px;padding:12px 14px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8B8270;width:112px;flex:none;">--elevated</span>
+            <span style="display:flex;gap:5px;">
+              <span style="width:26px;height:26px;border-radius:999px;background:#F4E9C4;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;">W</span>
+              <span style="width:26px;height:26px;border-radius:999px;background:#3A6AA5;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;">U</span>
+              <span style="width:26px;height:26px;border-radius:999px;background:#98748F;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;">B</span>
+              <span style="width:26px;height:26px;border-radius:999px;background:#C05A3E;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;">R</span>
+              <span style="width:26px;height:26px;border-radius:999px;background:#4B7A46;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;">G</span>
+            </span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6FA368;margin-left:auto;">3.83:1</span>
+          </div>
+        </div>
+
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:16px;"><b style="color:#EDE6D8;font-weight:600;">Black is identified by hue and lightness together, not by darkness alone.</b> It is the darkest of the five, 3.31:1 below white, and the only violet. <b style="color:#EDE6D8;font-weight:600;">R1's neutral grey failed on the first count that matters:</b> at 9&ndash;12px, with no glyph, a warm mid-grey beside a cream <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--w</span> is two pale dots of different lightness &mdash; the same axis, twice. Violet is the hue the palette had spare, and it is black mana's conventional second colour.</div>
+      </div>
+
+      <div style="width:400px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;">Why not a ring</div>
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <div style="background:#18140F;border:1px solid #2B241B;border-radius:10px;padding:14px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#CF8745;margin-bottom:8px;">the ring on a known ground</div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <span style="width:26px;height:26px;border-radius:999px;background:#1E1B1A;box-shadow:0 0 0 1px #6E6654;color:#C0B8A6;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;">B</span>
+              <span style="font-size:12.5px;color:#A59C89;line-height:1.5;">Works. The disc is still 1.01:1 &mdash; what you are reading is the ring, so the swatch has become a hairline outline of a swatch.</span>
+            </div>
+          </div>
+          <div style="background:#18140F;border:1px solid #2B241B;border-radius:10px;padding:14px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C6533F;margin-bottom:8px;">the ring on an unknown ground</div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <span style="width:26px;height:26px;border-radius:999px;background:#1E1B1A;box-shadow:0 0 0 1px #6E6654;color:#C0B8A6;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;position:relative;z-index:1;"></span>
+              <span style="font-size:12.5px;color:#A59C89;line-height:1.5;">Fails, and this is the argument that ends it. A ground-following ring token cannot follow <b style="color:#EDE6D8;font-weight:600;">card art</b>, and pips render over art in three places &mdash; the commander header, the card modal's blurred wash, the deck card thumb.</span>
+            </div>
+          </div>
+          <div style="font-size:12.5px;color:#A59C89;line-height:1.6;">A lifted disc has no ground dependency at all. That is the whole reason it is one token change and a ring is two &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--pip-ring</span> plus a per-surface assignment of it, which is the per-surface patching the brief rules out. The availability pass's row ring stays exactly where it is: it is a <i>selection</i> ring on a filter control, not legibility plumbing.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ B · SIX THEMES ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">B &middot; <span style="color:#CF8745;">all six themes &middot; before and after, on that theme's own surface</span></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(430px,1fr));gap:18px;max-width:1360px;">
+
+      <div style="background:#14110E;border:1px solid #2B241B;border-radius:14px;padding:18px;">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;">
+          <div style="font-family:'Cinzel',serif;font-weight:700;font-size:15px;color:#EDE6D8;">Gilded Stone</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8B8270;">amonkhet &middot; --surface #1E1A15</div>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <div style="flex:1;background:#1E1A15;border:1px solid #2B241B;border-radius:10px;padding:12px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6E6654;margin-bottom:9px;">before</div>
+            <div style="display:flex;gap:5px;">
+              <span style="width:22px;height:22px;border-radius:999px;background:#F4E9C4;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#3A6AA5;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#1E1B1A;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#C05A3E;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#4B7A46;"></span>
+            </div>
+          </div>
+          <div style="flex:1;background:#1E1A15;border:1px solid #6B482A;border-radius:10px;padding:12px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;margin-bottom:9px;">after &middot; 4.31:1</div>
+            <div style="display:flex;gap:5px;">
+              <span style="width:22px;height:22px;border-radius:999px;background:#F4E9C4;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#3A6AA5;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#98748F;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#C05A3E;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#4B7A46;"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:#0E0F14;border:1px solid #181C26;border-radius:14px;padding:18px;">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;">
+          <div style="font-family:'Cinzel',serif;font-weight:700;font-size:15px;color:#E6E8F0;">Neon Rain</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6F7486;">kamigawa &middot; --surface #16181F</div>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <div style="flex:1;background:#16181F;border:1px solid #181C26;border-radius:10px;padding:12px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#606476;margin-bottom:9px;">before</div>
+            <div style="display:flex;gap:5px;">
+              <span style="width:22px;height:22px;border-radius:999px;background:#F4E9C4;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#3A6AA5;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#1E1B1A;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#C05A3E;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#4B7A46;"></span>
+            </div>
+          </div>
+          <div style="flex:1;background:#16181F;border:1px solid #843052;border-radius:10px;padding:12px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:9px;">after &middot; 4.42:1</div>
+            <div style="display:flex;gap:5px;">
+              <span style="width:22px;height:22px;border-radius:999px;background:#F4E9C4;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#3A6AA5;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#98748F;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#C05A3E;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#4B7A46;"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:#101314;border:1px solid #1C2224;border-radius:14px;padding:18px;">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;">
+          <div style="font-family:'Cinzel',serif;font-weight:700;font-size:15px;color:#DDE3E1;">Moonlit</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#737D7B;">innistrad &middot; --surface #191D1E</div>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <div style="flex:1;background:#191D1E;border:1px solid #1C2224;border-radius:10px;padding:12px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#606A68;margin-bottom:9px;">before</div>
+            <div style="display:flex;gap:5px;">
+              <span style="width:22px;height:22px;border-radius:999px;background:#F4E9C4;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#3A6AA5;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#1E1B1A;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#C05A3E;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#4B7A46;"></span>
+            </div>
+          </div>
+          <div style="flex:1;background:#191D1E;border:1px solid #4E6059;border-radius:10px;padding:12px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#8AAFA1;margin-bottom:9px;">after &middot; 4.23:1</div>
+            <div style="display:flex;gap:5px;">
+              <span style="width:22px;height:22px;border-radius:999px;background:#F4E9C4;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#3A6AA5;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#98748F;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#C05A3E;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#4B7A46;"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:#0D0B0E;border:1px solid #19161C;border-radius:14px;padding:18px;">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;">
+          <div style="font-family:'Cinzel',serif;font-weight:700;font-size:15px;color:#E4E2E6;">Oil and Iron</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#78747E;">phyrexia &middot; --surface #151317</div>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <div style="flex:1;background:#151317;border:1px solid #19161C;border-radius:10px;padding:12px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#64616A;margin-bottom:9px;">before</div>
+            <div style="display:flex;gap:5px;">
+              <span style="width:22px;height:22px;border-radius:999px;background:#F4E9C4;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#3A6AA5;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#1E1B1A;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#C05A3E;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#527030;"></span>
+            </div>
+          </div>
+          <div style="flex:1;background:#151317;border:1px solid #213834;border-radius:10px;padding:12px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#52827A;margin-bottom:9px;">after &middot; 4.60:1</div>
+            <div style="display:flex;gap:5px;">
+              <span style="width:22px;height:22px;border-radius:999px;background:#F4E9C4;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#3A6AA5;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#98748F;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#C05A3E;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#527030;"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:#100E15;border:1px solid #1F2933;border-radius:14px;padding:18px;">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;">
+          <div style="font-family:'Cinzel',serif;font-weight:700;font-size:15px;color:#D8DBE0;">Screen Glow</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#646D7E;">duskmourn &middot; --surface #1A1822</div>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <div style="flex:1;background:#1A1822;border:1px solid #1F2933;border-radius:10px;padding:12px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#5D6676;margin-bottom:9px;">before</div>
+            <div style="display:flex;gap:5px;">
+              <span style="width:22px;height:22px;border-radius:999px;background:#F4E9C4;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#3A6AA5;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#1E1B1A;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#C05A3E;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#4B7A46;"></span>
+            </div>
+          </div>
+          <div style="flex:1;background:#1A1822;border:1px solid #2F5A73;border-radius:10px;padding:12px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#49A9DC;margin-bottom:9px;">after &middot; 4.37:1</div>
+            <div style="display:flex;gap:5px;">
+              <span style="width:22px;height:22px;border-radius:999px;background:#F4E9C4;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#3A6AA5;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#98748F;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#C05A3E;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#4B7A46;"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:#121217;border:1px solid #1A1F2B;border-radius:14px;padding:18px;">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;">
+          <div style="font-family:'Cinzel',serif;font-weight:700;font-size:15px;color:#C6D2D3;">Rune Frost</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8A8C;">kaldheim &middot; --surface #1E1F26 &middot; the tightest</div>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <div style="flex:1;background:#1E1F26;border:1px solid #1A1F2B;border-radius:10px;padding:12px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#5F6D6E;margin-bottom:9px;">before</div>
+            <div style="display:flex;gap:5px;">
+              <span style="width:22px;height:22px;border-radius:999px;background:#F4E9C4;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#3A6AA5;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#1E1B1A;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#C05A3E;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#4B7A46;"></span>
+            </div>
+          </div>
+          <div style="flex:1;background:#1E1F26;border:1px solid #2C405F;border-radius:10px;padding:12px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#5C86C9;margin-bottom:9px;">after &middot; 4.09:1</div>
+            <div style="display:flex;gap:5px;">
+              <span style="width:22px;height:22px;border-radius:999px;background:#F4E9C4;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#3A6AA5;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#98748F;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#C05A3E;"></span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#4B7A46;"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div style="max-width:1360px;font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:16px;"><b style="color:#EDE6D8;font-weight:600;">One hex, six themes, no per-theme toning.</b> Four of the five WUBRG swatches are already identical in all six blocks; the fifth, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--g</span>, moved only in Phyrexia and only because it collided with that theme's accent. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">#98748F</span> carries C 0.059 in OKLCH, and its nearest approach to any of the six accents is <b style="color:#EDE6D8;font-weight:600;">&Delta;E 0.115</b> &mdash; against a shipped floor of 0.100, checked per theme by <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">contract.test.ts</span>. The chroma budgets do not bind here: they are stated for surfaces, borders and text, and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--r</span> ships at C 0.138. Toning it per theme would look considered and would put six values where the contract needs one.</div>
+  </div>
+
+  <!-- ============ C · THE CALL SITES ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">C &middot; <span style="color:#CF8745;">the surfaces, after &mdash; 22 reads across 15 files, no edits to any of them</span></div>
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:420px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">Deck card &mdash; <span style="color:#CF8745;">12px pips on --surface</span></div>
+        <div style="background:#1E1A15;border:1px solid #2B241B;border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:18px;">
+          <div style="display:flex;gap:14px;align-items:flex-start;">
+            <div style="width:52px;height:73px;border-radius:8px;background:linear-gradient(140deg,#3A6AA5,#98748F);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);flex:none;"></div>
+            <div style="min-width:0;flex:1;display:flex;flex-direction:column;gap:6px;">
+              <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;">
+                <div style="font-family:'Cinzel',serif;font-weight:600;font-size:18px;color:#EDE6D8;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Dimir Mill</div>
+                <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.06em;border-radius:999px;padding:5px 10px;color:#DEAA29;background:rgba(222,170,41,0.13);">Building</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
+                <span style="width:12px;height:12px;border-radius:999px;background:#3A6AA5;flex:none;"></span>
+                <span style="width:12px;height:12px;border-radius:999px;background:#98748F;flex:none;"></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#A59C89;margin-left:2px;">Dimir</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:15px;color:#EDE6D8;">64<span style="font-weight:400;color:#8B8270;"> / 99</span></span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#A59C89;">51 owned &middot; 13 to buy</span>
+            </div>
+            <div style="height:7px;border-radius:999px;background:#29241F;overflow:hidden;"><div style="width:65%;height:100%;border-radius:999px;background:#DEAA29;"></div></div>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:14px;">The Dimir pair is the case that proved the bug: a two-pip identity where one pip was invisible read as a mono-blue deck. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">deck-card.tsx:125</span> unchanged.</div>
+      </div>
+
+      <div style="width:420px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">Mana cost &mdash; <span style="color:#CF8745;">26px pips, glyph on the disc</span></div>
+        <div style="background:#1A1611;border:1px solid #3A3229;border-radius:12px;padding:18px;">
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">
+            <div style="min-width:0;">
+              <div style="font-family:'Cinzel',serif;font-weight:700;font-size:29px;color:#EDE6D8;line-height:1.1;">Bolas's Citadel</div>
+              <div style="font-size:14px;color:#A59C89;margin-top:6px;">Legendary Artifact</div>
+            </div>
+            <div style="display:flex;gap:5px;flex:none;">
+              <span style="width:26px;height:26px;border-radius:999px;background:#494037;color:#EDE6D8;font-family:'IBM Plex Mono',monospace;font-size:13px;display:flex;align-items:center;justify-content:center;">3</span>
+              <span style="width:26px;height:26px;border-radius:999px;background:#98748F;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;">B</span>
+              <span style="width:26px;height:26px;border-radius:999px;background:#98748F;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;">B</span>
+              <span style="width:26px;height:26px;border-radius:999px;background:#98748F;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;">B</span>
+            </div>
+          </div>
+          <div style="margin-top:16px;display:flex;gap:26px;">
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;">Identity</div>
+              <div style="display:flex;align-items:center;gap:6px;margin-top:5px;"><span style="width:13px;height:13px;border-radius:999px;background:#98748F;"></span><span style="font-size:14px;color:#EDE6D8;">Black</span></div>
+            </div>
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;">You own</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:#CF8745;margin-top:5px;">&times;1 copy</div>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:14px;"><b style="color:#EDE6D8;font-weight:600;">Three black pips in a row is the reason the ink matters.</b> All five WUBRG glyphs now take <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--bg</span>, which is what <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">mana-pips.tsx</span> already writes &mdash; so that file's <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">B</span> becomes legible with no edit at all. The generic <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">{3}</span> beside it stays <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--border-dashed</span> and is 2.23&ndash;3.27:1 darker than the lifted black, depending on theme &mdash; and now differs in hue as well.</div>
+      </div>
+
+      <div style="width:420px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">Filter chips &amp; the pip switch &mdash; <span style="color:#CF8745;">on --elevated</span></div>
+        <div style="background:#1E1A15;border:1px solid #2B241B;border-radius:12px;padding:18px;">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <span style="display:flex;align-items:center;gap:7px;height:32px;padding:0 12px;border-radius:999px;background:#29241F;border:1px solid #3A3229;font-size:12.5px;color:#C0B8A6;"><span style="width:9px;height:9px;border-radius:999px;background:#98748F;"></span>Black</span>
+            <span style="display:flex;align-items:center;gap:7px;height:32px;padding:0 12px;border-radius:999px;background:#29241F;border:1px solid #3A3229;font-size:12.5px;color:#C0B8A6;"><span style="width:9px;height:9px;border-radius:999px;background:#3A6AA5;"></span>Blue</span>
+            <span style="display:flex;align-items:center;gap:7px;height:32px;padding:0 12px;border-radius:999px;background:#29241F;border:1px solid #3A3229;font-size:12.5px;color:#C0B8A6;"><span style="width:9px;height:9px;border-radius:999px;background:#4B7A46;"></span>Green</span>
+          </div>
+          <div style="display:flex;gap:9px;margin-top:18px;align-items:center;">
+            <span style="width:15px;height:15px;border-radius:999px;background:#F4E9C4;opacity:0.4;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.3);"></span>
+            <span style="width:15px;height:15px;border-radius:999px;background:#3A6AA5;box-shadow:0 0 0 2px #CF8745;"></span>
+            <span style="width:15px;height:15px;border-radius:999px;background:#98748F;box-shadow:0 0 0 2px #CF8745;"></span>
+            <span style="width:15px;height:15px;border-radius:999px;background:#C05A3E;opacity:0.4;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.3);"></span>
+            <span style="width:15px;height:15px;border-radius:999px;background:#4B7A46;opacity:0.4;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.3);"></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;margin-left:6px;">Dimir selected</span>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:14px;"><b style="color:#EDE6D8;font-weight:600;">The unselected pip is the state the lift rescues.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">ColorPip</span> renders unselected at <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">opacity 0.40</span>, which took the shipped black to 1.00:1 &mdash; identical to the surface &mdash; a filter control with an invisible option. At 40% the lifted value still holds 1.74:1, and the selected brass ring is unchanged. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">color-pip.tsx</span> untouched.</div>
+      </div>
+
+      <div style="width:420px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">Over art &mdash; <span style="color:#CF8745;">the ground a ring cannot follow</span></div>
+        <div style="border-radius:12px;overflow:hidden;border:1px solid #2B241B;">
+          <div style="height:150px;background:linear-gradient(160deg,#2A2118 0%,#4A3B2A 40%,#1B1712 100%);position:relative;padding:14px;">
+            <div style="position:absolute;top:14px;left:14px;display:flex;gap:4px;">
+              <span style="width:11px;height:11px;border-radius:999px;background:#3A6AA5;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);"></span>
+              <span style="width:11px;height:11px;border-radius:999px;background:#98748F;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);"></span>
+            </div>
+            <div style="position:absolute;bottom:14px;left:14px;right:14px;">
+              <div style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;color:#EDE6D8;text-shadow:0 2px 8px rgba(0,0,0,0.6);">Gonti, Lord of Luxury</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C0B8A6;text-shadow:0 1px 6px rgba(0,0,0,0.7);">Legendary Creature &mdash; Aetherborn Rogue</div>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:14px;">Three surfaces put pips over art &mdash; the commander header, the deck card thumb, the card modal's blurred wash &mdash; and the art is a photograph of a different colour every time. <b style="color:#EDE6D8;font-weight:600;">A ring keyed to a token cannot know what is behind it here.</b> The existing <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">inset 0 0 0 1px rgba(0,0,0,0.35)</span> on these sites stays as a seam and is now a seam <i>around</i> something.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ D · MOBILE ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">D &middot; <span style="color:#CF8745;">390px &mdash; the pip is size-invariant, the ink is not</span></div>
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:390px;flex:none;background:#18140F;border:1px solid #2B241B;border-radius:14px;padding:16px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">Card modal, phone &mdash; 22px pips</div>
+        <div style="background:#18140F;border:1px solid #2B241B;border-radius:10px;padding:14px;">
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">
+            <div style="min-width:0;">
+              <div style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;color:#EDE6D8;line-height:1.15;">Bolas's Citadel</div>
+              <div style="font-size:13px;color:#A59C89;margin-top:4px;">Legendary Artifact</div>
+            </div>
+            <div style="display:flex;gap:4px;flex:none;padding-top:4px;">
+              <span style="width:22px;height:22px;border-radius:999px;background:#494037;color:#EDE6D8;font-family:'IBM Plex Mono',monospace;font-size:12px;display:flex;align-items:center;justify-content:center;">3</span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#98748F;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;">B</span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#98748F;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;">B</span>
+              <span style="width:22px;height:22px;border-radius:999px;background:#98748F;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;">B</span>
+            </div>
+          </div>
+          <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#2B241B;border:1px solid #2B241B;border-radius:10px;overflow:hidden;">
+            <div style="background:#1E1A15;padding:11px 14px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:#8B8270;">Rarity</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#CF8745;margin-top:3px;">Rare</div>
+            </div>
+            <div style="background:#1E1A15;padding:11px 14px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:#8B8270;">Identity</div>
+              <div style="display:flex;align-items:center;gap:6px;margin-top:3px;"><span style="width:12px;height:12px;border-radius:999px;background:#98748F;"></span><span style="font-size:13px;color:#EDE6D8;">Black</span></div>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:14px;">22px is the smallest pip that carries a glyph. The lift is what makes <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--bg</span> ink work at that size &mdash; 4.69:1 against the disc, so the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">B</span> clears the AA floor for body text even though it is a 12px glyph on a coloured field.</div>
+      </div>
+
+      <div style="width:390px;flex:none;background:#18140F;border:1px solid #2B241B;border-radius:14px;padding:16px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">Deck card, phone &mdash; 11px pips, no glyph</div>
+        <div style="background:#1E1A15;border:1px solid #2B241B;border-radius:12px;padding:13px;display:flex;flex-direction:column;gap:11px;">
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <div style="width:42px;height:59px;border-radius:6px;background:linear-gradient(140deg,#3A6AA5,#98748F);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);flex:none;"></div>
+            <div style="min-width:0;flex:1;">
+              <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;">
+                <div style="font-family:'Cinzel',serif;font-weight:600;font-size:15px;color:#EDE6D8;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Dimir Mill</div>
+                <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.06em;border-radius:999px;padding:4px 9px;color:#DEAA29;background:rgba(222,170,41,0.13);">Building</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:7px;margin-top:4px;">
+                <span style="width:11px;height:11px;border-radius:999px;background:#3A6AA5;flex:none;"></span>
+                <span style="width:11px;height:11px;border-radius:999px;background:#98748F;flex:none;"></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#A59C89;margin-left:2px;">Dimir</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:13px;color:#EDE6D8;">64</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#A59C89;">51 owned &middot; 13 to buy</span>
+            </div>
+            <div style="height:6px;border-radius:999px;background:#29241F;overflow:hidden;"><div style="width:65%;height:100%;border-radius:999px;background:#DEAA29;"></div></div>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:14px;">At 11px there is no glyph and the disc is the entire signal, so this is the site with the least margin for error &mdash; and the one where <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">PIP_TEXT</span>'s compensating ink could never have helped, because there is no text to ink.</div>
+      </div>
+
+      <div style="width:420px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">What is deleted</div>
+        <div style="background:#18140F;border:1px solid #2B241B;border-radius:10px;padding:14px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.75;color:#8B8270;">
+          <div style="color:#C6533F;">&minus; const PIP_TEXT: Record&lt;string, string&gt; = {</div>
+          <div style="color:#C6533F;">&minus;&nbsp;&nbsp;W: "var(--bg)", U: "var(--bg)",</div>
+          <div style="color:#C6533F;">&minus;&nbsp;&nbsp;B: "var(--fg-body)",</div>
+          <div style="color:#C6533F;">&minus;&nbsp;&nbsp;R: "var(--bg)", G: "var(--bg)",</div>
+          <div style="color:#C6533F;">&minus; };</div>
+          <div style="height:8px;"></div>
+          <div style="color:#6E6654;">&nbsp;&nbsp;// globals.css, six blocks</div>
+          <div style="color:#C6533F;">&minus; --b: #1E1B1A;</div>
+          <div style="color:#6FA368;">+ --b: #98748F;</div>
+        </div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:14px;"><b style="color:#EDE6D8;font-weight:600;">Six value edits and one deletion is the whole change.</b> No component file is touched, because not one of the 22 reads was ever wrong &mdash; they all read <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">WUBRG_COLOR</span>, which reads <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">var(--b)</span>. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">lightbox.tsx</span> is the one exception and amendment 4 deletes the file outright, so the diff above lands whichever order the two ship in.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ E · CONTRACT ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">E &middot; <span style="color:#CF8745;">contract &middot; a11y &middot; what does not move</span></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:18px;max-width:1360px;">
+      <div style="background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:12px;">Token contract</div>
+        <div style="font-size:13px;color:#A59C89;line-height:1.7;">36 keys in, 36 keys out. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--b</span> keeps its name, its position in the WUBRG family and its <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--color-b</span> alias in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">@theme inline</span>. <b style="color:#EDE6D8;font-weight:600;">The chroma gate is unaffected</b> &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">#98748F</span> measures C 0.059 after 8-bit quantisation, inside a family that already runs to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--r</span>'s 0.138. The chroma budgets in the theme brief are stated for surfaces (&le;0.02), borders (&le;0.04) and text (&le;0.03) and <b style="color:#EDE6D8;font-weight:600;">do not apply to the WUBRG class at all</b> &mdash; R1's "achromatic, so the chroma gate is unaffected" was answering a question that was never open. <b style="color:#EDE6D8;font-weight:600;">The gate that <i>is</i> open is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">contract.test.ts</span>'s pip/accent &Delta;E &ge; 0.1</b>, per theme, and it is the constraint that set this value. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">globals.test.ts</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">contract.test.ts</span> assert key presence, not value, so neither breaks; if either pins the hex, that is the pin to update.</div>
+      </div>
+      <div style="background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:12px;">Accessibility</div>
+        <div style="font-size:13px;color:#A59C89;line-height:1.7;">Pips stay <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-hidden</span> everywhere they are decorative &mdash; the lift is a legibility fix, not a semantics change, and the identity is already in text beside every one of them (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">colorLabel</span>, the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Identity</span> meta field, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">ColorPip</span>'s own <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-label</span>). <b style="color:#EDE6D8;font-weight:600;">Not colour alone, before or after.</b> Two accessible-name strings are added and both are for amendment 4's modal, not for the pip &mdash; see the copy file.</div>
+      </div>
+      <div style="background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:12px;">Not moved</div>
+        <div style="font-size:13px;color:#A59C89;line-height:1.7;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--w</span> / <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--u</span> / <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--r</span> / <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--g</span> &middot; Phyrexia's <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">#527030</span> exception &middot; the generic <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">{n}</span> pip's <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--border-dashed</span> disc and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg</span> glyph &middot; every pip size at every call site &middot; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">ColorPip</span>'s 0.40 opacity and its brass selection ring &middot; the availability row ring &middot; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">commanderGradient</span> / <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">identityGradient</span>, which pick up the new value for free &middot; the suggestion tile's two-colour split fallback.</div>
+      </div>
+    </div>
+  </div>
+
+  </div>
+</div>
+
+</x-dc>
+</body>
+</html>

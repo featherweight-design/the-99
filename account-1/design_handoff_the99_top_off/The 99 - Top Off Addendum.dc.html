@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* The 37-key token contract, transcribed from src/app/globals.css. Low Sun on
+     :root so the page paints its default before any prop resolves; the other
+     five carry their own block, exactly as the stylesheet does. */
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-raised:#211D18; --surface-rail:#1A1611;
+    --surface-sunken:#18140F; --surface-inset:#1B1712; --elevated:#29241F; --elevated-hover:#201C17;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270;
+    --fg-locked:#6E6654; --fg-disabled:#4A4033;
+    --accent:#CF8745; --accent-hover:#DE9757; --accent-strong:#AB6E37;
+    --accent-shadow:#6B482A; --accent-dim:#6B482A; --accent-mid:#AB6E37;
+    --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+    --avail-hard-fg:#D9975C; --avail-over-fg:#C46857; --avail-over-border:#752619;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-raised:#191B22; --surface-rail:#12141B;
+    --surface-sunken:#101219; --surface-inset:#13151C; --elevated:#20222A; --elevated-hover:#181A21;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486;
+    --fg-locked:#606476; --fg-disabled:#3D404E;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-strong:#D33E7E;
+    --accent-shadow:#843052; --accent-dim:#843052; --accent-mid:#D33E7E;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F; --avail-hard-fg:#DF8AA7;
+  }
+  [data-theme="ixalan"] {
+    --bg:#0E1310; --surface:#171E19; --surface-raised:#1A221C; --surface-rail:#121814;
+    --surface-sunken:#101512; --surface-inset:#141B16; --elevated:#212A23; --elevated-hover:#18201A;
+    --border:#1D2620; --border-strong:#2C3830; --border-dashed:#3B4A3F;
+    --fg:#E0E7DE; --fg-body:#B6C2B3; --fg-muted:#98A695; --fg-faint:#808C7C;
+    --fg-locked:#626E5E; --fg-disabled:#3E473A;
+    --accent:#A3C445; --accent-hover:#B2D257; --accent-strong:#85A22F;
+    --accent-shadow:#3E5220; --accent-dim:#3E5220; --accent-mid:#85A22F;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F; --avail-hard-fg:#ABCB5B;
+  }
+  [data-theme="phyrexia"] {
+    --bg:#0D0B0E; --surface:#151317; --surface-raised:#18161A; --surface-rail:#110F13;
+    --surface-sunken:#100E12; --surface-inset:#131115; --elevated:#1E1C20; --elevated-hover:#171519;
+    --border:#19161C; --border-strong:#262329; --border-dashed:#332F36;
+    --fg:#E4E2E6; --fg-body:#B5B2BB; --fg-muted:#9A96A0; --fg-faint:#78747E;
+    --fg-locked:#64616A; --fg-disabled:#403E45;
+    --accent:#52827A; --accent-hover:#629189; --accent-strong:#3E665F;
+    --accent-shadow:#213834; --accent-dim:#213834; --accent-mid:#3E665F;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F; --avail-hard-fg:#77A9A0; --g:#527030;
+  }
+  [data-theme="eldraine"] {
+    --bg:#120E17; --surface:#1B1821; --surface-raised:#1F1C25; --surface-rail:#15121B;
+    --surface-sunken:#131018; --surface-inset:#17141D; --elevated:#26232C; --elevated-hover:#1D1A23;
+    --border:#241D30; --border-strong:#342C41; --border-dashed:#443C52;
+    --fg:#E4DEEE; --fg-body:#B9B2C5; --fg-muted:#9C95A8; --fg-faint:#898395;
+    --fg-locked:#6A6475; --fg-disabled:#443F4D;
+    --accent:#AE88E6; --accent-hover:#BC9BEE; --accent-strong:#8E6AC4;
+    --accent-shadow:#4A3568; --accent-dim:#4A3568; --accent-mid:#8E6AC4;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F; --avail-hard-fg:#B795EA;
+  }
+  [data-theme="kaldheim"] {
+    --bg:#121217; --surface:#1E1F26; --surface-raised:#22232B; --surface-rail:#181920;
+    --surface-sunken:#16171D; --surface-inset:#1A1B22; --elevated:#2D2E35; --elevated-hover:#212229;
+    --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C;
+    --fg-locked:#5F6D6E; --fg-disabled:#3B4647;
+    --accent:#5C86C9; --accent-hover:#6C95D8; --accent-strong:#486BA3;
+    --accent-shadow:#2C405F; --accent-dim:#2C405F; --accent-mid:#486BA3;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F; --avail-hard-fg:#80ABEF;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); }
+  ::selection { background: var(--accent); color: var(--bg); }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+
+<div data-theme="{{ theme }}" style="font-family:'IBM Plex Sans',sans-serif;color:var(--fg);background:var(--bg);padding:40px;min-height:100vh;">
+
+  <section style="max-width:1400px;margin:0 0 26px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">Addendum R1</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:var(--fg-faint);">Top off the last 31 &middot; five gaps from the shipped build &middot; #478</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:0 0 10px;color:var(--fg);text-wrap:pretty;">Four of the five gaps are the phone, and the fifth is a control the handoff forgot to draw.</h1>
+    <p style="max-width:1060px;font-size:15px;line-height:1.7;color:var(--fg-body);margin:0 0 12px;text-wrap:pretty;">An addendum to the shipped handoff, not a replacement. <b style="color:var(--fg);font-weight:600;">Nothing in it is reopened</b> &mdash; <a href="The 99 - Top Off.dc.html">The&nbsp;99&nbsp;-&nbsp;Top&nbsp;Off.dc.html</a>, <a href="README.md">README.md</a>, <a href="STATES-top-off.md">STATES-top-off.md</a>, <a href="LONG-LIST-thirty-one-rows.md">LONG-LIST</a> and <a href="top-off · copy strings.ts">top-off&nbsp;&middot;&nbsp;copy&nbsp;strings.ts</a> are locked and unedited. Everything new lives beside them, prefixed <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">ADDENDUM-</span>. Read <a href="ADDENDUM-README.md">ADDENDUM-README.md</a> for the decisions log, <a href="addendum · copy strings.ts">addendum&nbsp;&middot;&nbsp;copy&nbsp;strings.ts</a> for the eleven new keys and the two edits, <a href="ADDENDUM-READINESS.md">ADDENDUM-READINESS.md</a> for the verdict.</p>
+    <p style="max-width:1060px;font-size:14px;line-height:1.7;color:var(--fg-faint);margin:0;text-wrap:pretty;"><b style="color:var(--fg-body);font-weight:600;">Numbering:</b> the brief calls the shipped handoff R1; the folder's own files say R3, because its three review rounds shipped as one. This is the first round of the addendum either way. <b style="color:var(--fg-body);font-weight:600;">Colour:</b> every value here is <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">var(--*)</span> from <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">globals.css</span> &mdash; the locked canvas predates the rebrand and still carries the retired <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">#C9A24B</span> brass, so <b style="color:var(--fg-body);font-weight:600;">read this file for hues and that one for geometry.</b> Switch the <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">theme</span> prop to check all six.</p>
+  </section>
+
+  <div style="border:1px solid var(--border-strong);border-left:3px solid var(--accent);border-radius:12px;background:var(--surface);padding:18px 22px;margin-bottom:20px;max-width:1400px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;">One rule decides four of the five</div>
+    <div style="font-size:14.5px;color:var(--fg);line-height:1.65;text-wrap:pretty;font-weight:600;max-width:1060px;">At 390px the pinned bar has <i>one</i> mono status line, and its tenant is whichever of three facts the player most needs right now: the cap, the slots that stay open, or the retired dock &mdash; in that order.</div>
+    <div style="font-size:13px;color:var(--fg-body);line-height:1.7;margin-top:11px;text-wrap:pretty;max-width:1060px;">Gaps 4 and 5 are both &ldquo;this line has nowhere to go at 390px&rdquo;, and the shipped bar already has a line of exactly that register sitting on the dock notice. <b style="color:var(--fg);font-weight:600;">The three are mutually exclusive in practice</b> &mdash; at the cap no slots stay open, and below it some do &mdash; so a ladder costs no height at all. It is also the only arrangement where the cap is explained <i>beside the button</i> rather than 167 rows above it.</div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px 24px;max-width:1400px;margin-bottom:38px;">
+    <div style="border:1px solid var(--border);border-radius:12px;background:var(--surface-rail);padding:16px 18px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">1 &middot; the decline (#478)</div><div style="font-size:13px;color:var(--fg-body);line-height:1.6;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">A worded control in the restore's own register &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">Set aside</span>, never a glyph.</b> Removal is a glyph everywhere in this app, so a glyph here is the collision. Eng's <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">declineAria</span> is ratified verbatim.</div></div>
+    <div style="border:1px solid var(--border);border-radius:12px;background:var(--surface-rail);padding:16px 18px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">2 &middot; S25, all declined</div><div style="font-size:13px;color:var(--fg-body);line-height:1.6;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">Not empty, not exhausted &mdash; emptied by choosing, so the only thing to offer is the way back.</b> One line naming the state, and a <b style="color:var(--fg);font-weight:600;">bulk restore</b> in the selection head. Declines persist across a close, so without it 38 taps is the only exit.</div></div>
+    <div style="border:1px solid var(--border);border-radius:12px;background:var(--surface-rail);padding:16px 18px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">3 &middot; the door note at 390px</div><div style="font-size:13px;color:var(--fg-body);line-height:1.6;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">The promise outranks the provenance, and three strings collapse to two.</b> <i>Nothing is added until you say so</i> is carried nowhere else; <i>from your collection</i> is carried by 31 dots and by the head's own button.</div></div>
+    <div style="border:1px solid var(--border);border-radius:12px;background:var(--surface-rail);padding:16px 18px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">4 &middot; slots stay open, at 390px</div><div style="font-size:13px;color:var(--fg-body);line-height:1.6;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">Yes it belongs, and it needs no new string.</b> Measured: the shipped sentence is ~281px at its longest count, inside the bar's 366px. <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">hidden md:block</span> comes off and it takes rung 2 of the ladder.</div></div>
+    <div style="border:1px solid var(--border);border-radius:12px;background:var(--surface-rail);padding:16px 18px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">5 &middot; the cap line</div><div style="font-size:13px;color:var(--fg-body);line-height:1.6;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">To the bar at phone (rung 1), to the selection head at desktop.</b> Both put it above the rows it governs instead of below all 38. Desktop keeps a residual, stated rather than papered over.</div></div>
+    <div style="border:1px solid var(--border-strong);border-left:3px solid var(--accent);border-radius:12px;background:var(--surface);padding:16px 18px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:6px;">Keep all 99 &middot; ratified, two amendments</div><div style="font-size:13px;color:var(--fg-body);line-height:1.6;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">The inline confirm is right and it is the app's only confirm vocabulary.</b> But the confirming button must <b style="color:var(--fg);font-weight:600;">not</b> take <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--danger</span>, and the question must name what is actually lost.</div></div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:56px;max-width:2200px;">
+
+  <!-- ══════════ 1 · THE DECLINE ══════════ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:16px;border-top:1px solid var(--accent);padding-top:18px;">1 &middot; <span style="color:var(--accent);">the decline affordance &mdash; #478</span></div>
+
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:430px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:8px;">The collision, exactly &mdash; <span style="color:var(--danger);">shipped today</span></div>
+        <div style="background:var(--surface-rail);border:1px solid var(--border-strong);border-radius:10px;padding:14px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);margin-bottom:7px;">decklist-row &mdash; deletes a card from the deck</div>
+          <div style="display:flex;align-items:center;gap:10px;min-height:44px;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:0 4px 0 10px;margin-bottom:14px;">
+            <span style="flex:none;width:7px;height:7px;border-radius:999px;background:var(--success);"></span>
+            <span style="flex:auto;min-width:0;font-size:13px;color:var(--fg);">Sol Ring</span>
+            <span style="flex:none;display:flex;align-items:center;justify-content:center;width:36px;min-height:44px;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--border-dashed);">&#215;</span>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);margin-bottom:7px;">top-off-list &mdash; changes only what the list offers</div>
+          <div style="display:flex;align-items:center;gap:10px;min-height:52px;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:0 4px 0 8px;">
+            <span style="flex:none;width:26px;height:26px;border-radius:6px;border:1px solid var(--border-strong);color:var(--fg-faint);font-family:'IBM Plex Mono',monospace;font-size:13px;display:flex;align-items:center;justify-content:center;">+</span>
+            <span style="flex:auto;min-width:0;font-size:12.5px;color:var(--fg);">Shark Typhoon</span>
+            <span style="flex:none;display:flex;align-items:center;justify-content:center;width:36px;min-height:44px;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--fg-locked);">&#215;</span>
+          </div>
+          <div style="border-top:1px solid var(--border);margin-top:14px;padding-top:12px;font-size:12.5px;color:var(--fg-body);line-height:1.65;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">Same glyph, same corner, same 13px, one surface apart</b> &mdash; and one of them is the only irreversible act in the builder that does not ask. The fix cannot be a nicer <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&#215;</span>.</div>
+        </div>
+      </div>
+
+      <div style="width:430px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:8px;">Phone 390 &mdash; <span style="color:var(--accent);">the word rides line 2, and the right edge clears</span></div>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:14px 12px;display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;align-items:center;gap:9px;min-height:52px;background:var(--elevated-hover);border:1px solid var(--accent-shadow);border-radius:7px;padding:0 10px 0 8px;">
+            <span style="flex:none;width:26px;height:26px;border-radius:6px;border:1px solid var(--accent);background:color-mix(in srgb, var(--accent) 12%, transparent);color:var(--accent);font-family:'IBM Plex Mono',monospace;font-size:13px;display:flex;align-items:center;justify-content:center;">&#10003;</span>
+            <span style="flex:auto;min-width:0;display:flex;flex-direction:column;gap:4px;">
+              <span style="display:flex;align-items:center;gap:7px;">
+                <span style="flex:none;width:7px;height:7px;border-radius:999px;border:1px dashed var(--fg-locked);"></span>
+                <span style="flex:auto;min-width:0;font-size:12.5px;color:var(--fg);">Metallurgic Summonings</span>
+                <span style="flex:none;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--warning);border:1px solid var(--accent-shadow);border-radius:4px;padding:1px 6px;">buy $6.10</span>
+              </span>
+              <span style="display:flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:10px;">
+                <span style="display:flex;gap:3px;"><span style="width:13px;height:13px;border-radius:999px;background:var(--border-strong);color:var(--fg-body);font-size:8px;display:flex;align-items:center;justify-content:center;">5</span><span style="width:13px;height:13px;border-radius:999px;background:var(--u);"></span></span>
+                <span style="color:var(--accent);">+34</span>
+                <span style="color:var(--fg-faint);">29%</span>
+                <span style="margin-left:auto;display:flex;align-items:center;min-height:44px;color:var(--fg-faint);"><span style="border-bottom:1px dashed var(--border-dashed);">Set aside</span></span>
+              </span>
+            </span>
+          </div>
+          <div style="display:flex;align-items:center;gap:9px;min-height:52px;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:0 10px 0 8px;">
+            <span style="flex:none;width:26px;height:26px;border-radius:6px;border:1px solid var(--border-strong);color:var(--fg-faint);font-family:'IBM Plex Mono',monospace;font-size:13px;display:flex;align-items:center;justify-content:center;">+</span>
+            <span style="flex:auto;min-width:0;display:flex;flex-direction:column;gap:4px;">
+              <span style="display:flex;align-items:center;gap:7px;">
+                <span style="flex:none;width:7px;height:7px;border-radius:999px;background:var(--success);"></span>
+                <span style="flex:auto;min-width:0;font-size:12.5px;color:var(--fg);">Mizzix&rsquo;s Mastery</span>
+              </span>
+              <span style="display:flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:10px;">
+                <span style="display:flex;gap:3px;"><span style="width:13px;height:13px;border-radius:999px;background:var(--border-strong);color:var(--fg-body);font-size:8px;display:flex;align-items:center;justify-content:center;">2</span><span style="width:13px;height:13px;border-radius:999px;background:var(--r);"></span></span>
+                <span style="color:var(--accent);">+19</span>
+                <span style="color:var(--fg-faint);">14%</span>
+                <span style="margin-left:auto;display:flex;align-items:center;min-height:44px;color:var(--fg-faint);"><span style="border-bottom:1px dashed var(--border-dashed);">Set aside</span></span>
+              </span>
+            </span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;min-height:34px;background:var(--surface-sunken);border:1px solid var(--border);border-radius:7px;padding:0 10px;">
+            <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">not this one</span>
+            <span style="flex:auto;min-width:0;font-size:13px;color:var(--fg-faint);">Cyclonic Rift</span>
+            <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);border-bottom:1px dashed var(--border-dashed);">Show it again</span>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);margin-top:10px;line-height:1.6;">Line 2's right end was empty; the figures are left-grouped. So the control costs no height, and <b style="color:var(--fg-faint);font-weight:600;">the name line gets 45px back</b> &mdash; the 36px box plus its gap &mdash; which is the row's tightest measure.</div>
+      </div>
+
+      <div style="width:940px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:8px;">Desktop &mdash; <span style="color:var(--accent);">a 60px worded slot where the 18px glyph was</span></div>
+        <div style="background:var(--surface-rail);border:1px solid var(--border-strong);border-radius:10px;padding:14px;">
+          <div style="display:flex;align-items:center;gap:10px;padding:0 9px 7px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">
+            <span style="width:18px;flex:none;"></span><span style="width:7px;flex:none;"></span>
+            <span style="flex:auto;min-width:0;">Card</span>
+            <span style="width:40px;flex:none;text-align:right;">Cost</span>
+            <span style="width:84px;flex:none;"></span>
+            <span style="width:56px;flex:none;text-align:right;">Synergy</span>
+            <span style="width:40px;flex:none;text-align:right;">Decks</span>
+            <span style="width:60px;flex:none;"></span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            <div style="display:flex;align-items:center;gap:10px;min-height:34px;background:var(--elevated-hover);border:1px solid var(--accent-shadow);border-radius:7px;padding:0 9px;">
+              <span style="flex:none;width:18px;height:18px;border-radius:5px;border:1px solid var(--accent);background:color-mix(in srgb, var(--accent) 12%, transparent);color:var(--accent);font-family:'IBM Plex Mono',monospace;font-size:11px;display:flex;align-items:center;justify-content:center;">&#10003;</span>
+              <span style="flex:none;width:7px;height:7px;border-radius:999px;background:var(--success);"></span>
+              <span style="flex:auto;min-width:0;font-size:13.5px;color:var(--fg);">Murmuring Mystic</span>
+              <span style="flex:none;width:40px;display:flex;justify-content:flex-end;gap:3px;"><span style="width:12px;height:12px;border-radius:999px;background:var(--border-strong);color:var(--fg-body);font-family:'IBM Plex Mono',monospace;font-size:8px;display:flex;align-items:center;justify-content:center;">2</span><span style="width:12px;height:12px;border-radius:999px;background:var(--u);"></span></span>
+              <span style="flex:none;width:84px;"></span>
+              <span style="flex:none;width:56px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">+47</span>
+              <span style="flex:none;width:40px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">31%</span>
+              <span style="flex:none;width:60px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);"><span style="border-bottom:1px dashed var(--border-dashed);">Set aside</span></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;min-height:34px;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:0 9px;">
+              <span style="flex:none;width:18px;height:18px;border-radius:5px;border:1px solid var(--border-strong);color:var(--fg-faint);font-family:'IBM Plex Mono',monospace;font-size:11px;display:flex;align-items:center;justify-content:center;">+</span>
+              <span style="flex:none;width:7px;height:7px;border-radius:999px;border:1px dashed var(--fg-locked);"></span>
+              <span style="flex:auto;min-width:0;font-size:13.5px;color:var(--fg);">Shark Typhoon</span>
+              <span style="flex:none;width:40px;display:flex;justify-content:flex-end;gap:3px;"><span style="width:12px;height:12px;border-radius:999px;background:var(--border-strong);color:var(--fg-body);font-family:'IBM Plex Mono',monospace;font-size:8px;display:flex;align-items:center;justify-content:center;">5</span><span style="width:12px;height:12px;border-radius:999px;background:var(--u);"></span></span>
+              <span style="flex:none;width:84px;display:flex;justify-content:flex-end;"><span style="white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--warning);border:1px solid var(--accent-shadow);border-radius:4px;padding:1px 6px;">buy $6.10</span></span>
+              <span style="flex:none;width:56px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">+34</span>
+              <span style="flex:none;width:40px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">29%</span>
+              <span style="flex:none;width:60px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);"><span style="border-bottom:1px dashed var(--border-dashed);">Set aside</span></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;min-height:34px;background:var(--surface-sunken);border:1px solid var(--border);border-radius:7px;padding:0 10px;">
+              <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">not this one</span>
+              <span style="flex:auto;min-width:0;font-size:13px;color:var(--fg-faint);">Cyclonic Rift</span>
+              <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);border-bottom:1px dashed var(--border-dashed);">Show it again</span>
+            </div>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);margin-top:10px;line-height:1.6;">The slot grows <b style="color:var(--fg-faint);font-weight:600;">18 &rarr; 60px</b>, so it needs 42: Synergy gives 32 (88&rarr;56) and Decks 12 (52&rarr;40), both sized for a three-character figure and a header word &mdash; <span style="color:var(--fg-faint);">+47</span> is 3 and <span style="color:var(--fg-faint);">31%</span> is 3. <b style="color:var(--fg-faint);font-weight:600;">44 recovered against 42 spent, so 2px goes back to the name column</b>, which pays nothing: it is the one measure the parity floor protects. Three slots before and after, so the gaps do not move. <b style="color:var(--fg-faint);font-weight:600;">Drawn at 940px</b>, the width the locked canvas draws this list at. Derived from the row's own content box, not the frame: <b style="color:var(--fg-faint);font-weight:600;">890px of row inside 910px of border box</b>, minus 305px of furniture and 70px of gaps, leaves the name <b style="color:var(--fg-faint);font-weight:600;">515px</b> &mdash; one line for every name on this list, which is the claim the frame has to be wide enough to make.</div>
+      </div>
+
+      <div style="width:470px;flex:none;background:var(--surface);border:1px solid var(--border-strong);border-left:3px solid var(--accent);border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;">Why a word, and why <i>that</i> word</div>
+        <div style="font-size:13px;color:var(--fg-body);line-height:1.7;text-wrap:pretty;">The handoff drew the declined row in full and never drew the way into it, which is the defect: <b style="color:var(--fg);font-weight:600;">a state with no trigger is a state that does not exist.</b> Eng was right to invent one and right to flag it.<br><br><b style="color:var(--fg);font-weight:600;">But removal is a glyph everywhere in this app</b>, so the trigger cannot be one. The rule this addendum adds: <b style="color:var(--fg);font-weight:600;">no glyph-only control on the candidate list.</b> A glyph on a list of things you have not bought is one surface away from the glyph that deletes a card you have.<br><br><b style="color:var(--fg);font-weight:600;">The declined row already ships the register.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">Show it again</span> is mono 10.5px <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--fg-faint</span> on a dashed underline, and the decline is its exact inverse &mdash; so it wears the same clothes and <b style="color:var(--fg);font-weight:600;">the pair reads as one toggle</b> rather than as an action and its apology.<br><br><b style="color:var(--fg);font-weight:600;">Four carriers now separate it from removal:</b> a word not a glyph; a dashed underline, which is this app's <i>reversible / unsettled</i> vocabulary and which removal never wears; the mono figure register rather than the row's chrome; and at phone a different <i>position</i> entirely &mdash; line 2, not the right edge.<br><br><span style="color:var(--fg-faint);">Rejected: a bordered plate like the game-log delete.</span> That box is a confirm trigger for a destructive act, which is the association being severed.<br><br><span style="color:var(--fg-faint);">Rejected: hover-only at desktop.</span> Unreachable by touch, invisible until found, and it would make the phone and desktop affordances different in kind &mdash; the parity defect one surface over.<br><br><span style="color:var(--fg-faint);">Rejected: swipe.</span> Invisible, keyboard-hostile, and this list is 38 rows of small decisions where an accidental swipe costs a candidate.</div>
+        <div style="border-top:1px solid var(--border);margin-top:16px;padding-top:14px;font-size:12.5px;color:var(--fg-muted);line-height:1.7;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">One string, one lifecycle, three words that never overlap:</b> the control says <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Set aside</span> (a verb), the state it produces says <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">not this one</span> (a preference), and the way back says <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Show it again</span> (a verb). <b style="color:var(--fg);font-weight:600;">Never <i>Remove</i>, <i>Delete</i>, <i>Dismiss</i>, <i>Hide</i>, or <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&#215;</span>.</b><br><br>And <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">list.declineAria</span> &mdash; eng's <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Set {name} aside</span> &mdash; is <b style="color:var(--fg);font-weight:600;">ratified verbatim</b>. It was the right inverse of <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">restoreAria</span>, and the visible label is now the same verb, so the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">ENG-INVENTED</span> marker comes off rather than the string.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════ 2 · S25 ══════════ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:16px;border-top:1px solid var(--accent);padding-top:18px;">2 &middot; <span style="color:var(--accent);">S25 &mdash; every candidate set aside</span></div>
+
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:430px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:8px;">Phone 390 &mdash; <span style="color:var(--accent);">the bulk restore takes its own row</span></div>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:14px 12px;">
+          <div style="background:var(--surface-rail);border:1px solid var(--border-strong);border-radius:10px;padding:12px;margin-bottom:10px;">
+            <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:3px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">The last 31</span>
+              <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);border-bottom:1px dashed var(--border-dashed);">Close</span>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);margin-bottom:11px;">38 candidates &middot; ranked by synergy</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <span style="flex:1;min-width:140px;display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:8px;border:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-locked);opacity:0.5;">Tick the 0 I own</span>
+              <span style="flex:1;min-width:140px;display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:8px;border:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-locked);opacity:0.5;">Clear all ticks</span>
+              <span style="width:100%;display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:8px;border:1px solid var(--border-strong);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);">Show all 38 again</span>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <div style="display:flex;align-items:center;gap:10px;min-height:34px;background:var(--surface-sunken);border:1px solid var(--border);border-radius:7px;padding:0 10px;">
+              <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">not this one</span>
+              <span style="flex:auto;min-width:0;font-size:13px;color:var(--fg-faint);">Murmuring Mystic</span>
+              <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);border-bottom:1px dashed var(--border-dashed);">Show it again</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;min-height:34px;background:var(--surface-sunken);border:1px solid var(--border);border-radius:7px;padding:0 10px;">
+              <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">not this one</span>
+              <span style="flex:auto;min-width:0;font-size:13px;color:var(--fg-faint);">Docent of Perfection</span>
+              <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);border-bottom:1px dashed var(--border-dashed);">Show it again</span>
+            </div>
+            <div style="min-height:32px;display:flex;align-items:center;border:1px dashed var(--border);border-radius:7px;padding:0 11px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">36 more, all set aside</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);margin-top:3px;line-height:1.55;">you&rsquo;ve set all 38 aside &mdash; show any of them again to pick it up</div>
+          </div>
+          <div style="margin-top:12px;background:var(--bg);border-top:1px solid var(--border-strong);padding:11px 0 0;display:flex;flex-direction:column;gap:9px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">31 slots stay open &mdash; you can come back to them</div>
+            <div style="display:flex;align-items:baseline;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;">
+              <span style="color:var(--fg-body);">0 of 31 ticked</span>
+              <span style="margin-left:auto;color:var(--fg-locked);">68 of 99 when added</span>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <span style="flex:auto;display:flex;align-items:center;justify-content:center;min-height:44px;border:1px solid var(--border);border-radius:8px;color:var(--fg-locked);font-size:14px;font-weight:600;">Add cards</span>
+              <span style="flex:none;display:flex;align-items:center;justify-content:center;min-height:44px;padding:0 16px;border:1px solid var(--border-strong);border-radius:8px;color:var(--fg);font-size:14px;">Cancel</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:940px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:8px;">Desktop &mdash; <span style="color:var(--accent);">third ghost in the head, and the head recounts honestly</span></div>
+        <div style="background:var(--surface-rail);border:1px solid var(--border-strong);border-radius:10px;padding:14px;">
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding-bottom:11px;border-bottom:1px solid var(--border);">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;"><span style="color:var(--fg-body);">0 of 31 slots ticked</span><span style="color:var(--fg-locked);"> &middot; 38 candidates, 0 untouched</span></span>
+            <span style="display:inline-flex;align-items:center;height:30px;padding:0 11px;border-radius:8px;border:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-locked);opacity:0.5;">Tick the 0 I own</span>
+            <span style="display:inline-flex;align-items:center;height:30px;padding:0 11px;border-radius:8px;border:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-locked);opacity:0.5;">Clear all ticks</span>
+            <span style="display:inline-flex;align-items:center;height:30px;padding:0 11px;border-radius:8px;border:1px solid var(--border-strong);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);">Show all 38 again</span>
+            <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">ranked &middot; synergy, then inclusion, then name</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:5px;margin-top:9px;">
+            <div style="display:flex;align-items:center;gap:10px;min-height:34px;background:var(--surface-sunken);border:1px solid var(--border);border-radius:7px;padding:0 10px;">
+              <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">not this one</span>
+              <span style="flex:auto;min-width:0;font-size:13px;color:var(--fg-faint);">Murmuring Mystic</span>
+              <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);border-bottom:1px dashed var(--border-dashed);">Show it again</span>
+            </div>
+            <div style="min-height:32px;display:flex;align-items:center;border:1px dashed var(--border);border-radius:7px;padding:0 11px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">37 more rows, all set aside &mdash; the list keeps its length</div>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);margin-top:11px;">you&rsquo;ve set all 38 aside &mdash; show any of them again to pick it up</div>
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;border-top:1px solid var(--border);margin-top:14px;padding-top:14px;">
+            <span style="display:inline-flex;align-items:center;border:1px solid var(--border);border-radius:8px;color:var(--fg-locked);font-size:13px;font-weight:600;padding:10px 18px;">Add cards</span>
+            <span style="display:inline-flex;align-items:center;border:1px solid var(--border-strong);border-radius:8px;color:var(--fg);font-size:13px;padding:10px 16px;">Cancel</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);">68 of 99 when added</span>
+            <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);">31 slots stay open &mdash; you can come back to them</span>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);margin-top:10px;line-height:1.6;">The two fixtures go disabled on their own shipped rules (<span style="color:var(--fg-faint);">tickable&nbsp;===&nbsp;0</span>, <span style="color:var(--fg-faint);">tickedCount&nbsp;===&nbsp;0</span>) and are left in place rather than hidden &mdash; the head does not change shape because the player declined things.</div>
+      </div>
+
+      <div style="width:470px;flex:none;background:var(--surface);border:1px solid var(--border-strong);border-left:3px solid var(--accent);border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;">Emptied by choosing is not empty</div>
+        <div style="font-size:13px;color:var(--fg-body);line-height:1.7;text-wrap:pretty;">Today this state renders <b style="color:var(--fg);font-weight:600;">38 dashed rows, a disabled button, and a sentence that is false</b>: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">nothing ticked &mdash; the list arrives with what you own already ticked</span>. It <i>arrived</i> that way; the player has since set every row aside, and the copy is describing a moment that has passed.<br><br><b style="color:var(--fg);font-weight:600;">It is emphatically not state 13.</b> The pool is not exhausted &mdash; 38 candidates are right there, wearing their own way back. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">lastSlots.short</span> must never print here: <i>your collection ran out</i> would blame the collection for the player's own preferences, which the locked handoff already names as the worst sentence this surface could say.<br><br><b style="color:var(--fg);font-weight:600;">So the line names the state and points at the exit</b>, in the slot the zero-ticked line already owns: a third variant, chosen on <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">declinedHere === pool.length</span>. No new slot, no plate, no error &mdash; nothing has gone wrong.<br><br><b style="color:var(--fg);font-weight:600;">And the bulk restore is not a convenience, it is the exit.</b> Declines are strip state and survive every close, so a player who set 38 aside has poisoned their own list <i>persistently</i>, and the only route back was 38 individual taps. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Show all 38 again</span> is the mirror of <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Clear all ticks</span> and belongs where the bulk controls already live.<br><br><b style="color:var(--fg);font-weight:600;">It appears at one decline, not at 38.</b> Gating it on the all-declined case would hide the general control to serve the extreme one, and a player with six declines wants it just as much.<br><br><span style="color:var(--fg-faint);">The strip and the door do not change.</span> Still <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Choose the last 31</span>, and the reopen note already promises <i>declines and all</i> &mdash; which is now a promise with a way out of it.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════ 3 · DOOR NOTE ══════════ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:16px;border-top:1px solid var(--accent);padding-top:18px;">3 &middot; <span style="color:var(--accent);">the door note at 390px</span></div>
+
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:430px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:8px;"><span style="color:var(--danger);">Shipped</span> &mdash; the desktop sentence at phone width</div>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:14px 12px;">
+          <div style="background:var(--surface-rail);border:1px solid var(--border-strong);border-radius:10px;padding:13px 14px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);margin-bottom:4px;">The last 31</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);margin-bottom:11px;">31 slots open &middot; 38 candidates ranked</div>
+            <span style="display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border:1px solid var(--accent);border-radius:8px;color:var(--accent);font-size:14px;font-weight:600;">Choose the last 31 <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">&darr;</span></span>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);margin-top:9px;line-height:1.55;">31 candidates arrive ticked, all from your collection. Nothing is added until you say so.</div>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);margin-top:10px;line-height:1.6;">Three mono lines under a 44px button, in the register the surface reserves for glosses. Not broken &mdash; just the longest thing on a closed strip, and two of its three clauses are stated again ten pixels away.</div>
+      </div>
+
+      <div style="width:430px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:8px;"><span style="color:var(--accent);">Called</span> &mdash; one line, and the promise survives</div>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:14px 12px;display:flex;flex-direction:column;gap:12px;">
+          <div style="background:var(--surface-rail);border:1px solid var(--border-strong);border-radius:10px;padding:13px 14px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);margin-bottom:4px;">The last 31</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);margin-bottom:11px;">31 slots open &middot; 38 candidates ranked</div>
+            <span style="display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border:1px solid var(--accent);border-radius:8px;color:var(--accent);font-size:14px;font-weight:600;">Choose the last 31 <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">&darr;</span></span>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);margin-top:9px;line-height:1.55;">31 arrive ticked. Nothing is added until you say so.</div>
+          </div>
+          <div style="background:var(--surface-rail);border:1px solid var(--border-strong);border-radius:10px;padding:13px 14px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);margin-bottom:4px;">The last 4</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);margin-bottom:11px;">4 slots open &middot; 11 candidates ranked</div>
+            <span style="display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border:1px solid var(--accent);border-radius:8px;color:var(--accent);font-size:14px;font-weight:600;">Choose the last 4 <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">&darr;</span></span>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);margin-top:9px;line-height:1.55;">Reopens where you left it, declines and all.</div>
+          </div>
+          <div style="background:var(--surface-rail);border:1px solid var(--border-strong);border-radius:10px;padding:13px 14px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);margin-bottom:4px;">The last 12</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);margin-bottom:11px;">12 slots open &middot; 19 candidates ranked</div>
+            <span style="display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border:1px solid var(--accent);border-radius:8px;color:var(--accent);font-size:14px;font-weight:600;">Choose the last 12 <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">&darr;</span></span>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);margin-top:9px;line-height:1.55;">You own none of these. Nothing is added until you say so.</div>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);margin-top:10px;line-height:1.6;">First open, reopen, and the zero-owned first open. <b style="color:var(--fg-faint);font-weight:600;">Every count fits one line</b> &mdash; the longest is 56 characters at ~336px inside the strip's 366px.</div>
+      </div>
+
+      <div style="width:470px;flex:none;background:var(--surface);border:1px solid var(--border-strong);border-left:3px solid var(--accent);border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;">What a short form has to drop, and what it may not</div>
+        <div style="font-size:13px;color:var(--fg-body);line-height:1.7;text-wrap:pretty;">The desktop sentence carries three clauses. <b style="color:var(--fg);font-weight:600;">A shorter one that is still two lines buys nothing</b>, so the test is which clause survives alone.<br><br><b style="color:var(--fg);font-weight:600;">The promise survives.</b> <i>Nothing is added until you say so</i> is the entire reason the review step exists, and it is carried <b style="color:var(--fg);font-weight:600;">nowhere else on the surface</b> &mdash; not in the caption, not on the door, not in the head.<br><br><b style="color:var(--fg);font-weight:600;">The provenance does not need to.</b> <i>all from your collection</i> is carried three more ways the moment the list opens: 31 filled <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--success</span> dots, the head's own <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Tick the 31 I own</span>, and every unticked row's buy tag. The count stays because it is the figure the sentence is about.<br><br><b style="color:var(--fg);font-weight:600;">Three desktop strings collapse to two at phone</b>, which is the part worth auditing. The two reopen variants differ only in an ownership figure, and at 390px <b style="color:var(--fg);font-weight:600;">the closed caption directly above already states the candidate count</b> &mdash; so the phone reopen note drops the figure entirely and keeps the clause that matters, which is that the selection survived. One string, both cases.<br><br><span style="color:var(--fg-faint);">Rejected: truncating with an ellipsis or a &ldquo;more&rdquo; disclosure.</span> A safety promise behind a tap is not a promise.<br><br><span style="color:var(--fg-faint);">Rejected: dropping the note at phone entirely.</span> It is the only thing on the closed strip that says a tap is safe, and phone is where the door is most likely to be tapped by someone who has not read the desktop version.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════ 4 + 5 · THE LADDER ══════════ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:16px;border-top:1px solid var(--accent);padding-top:18px;">4 + 5 &middot; <span style="color:var(--accent);">the bar's one status line &mdash; three tenants, ranked</span></div>
+
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:430px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:8px;">Phone 390 &mdash; <span style="color:var(--accent);">the same slot, three states</span></div>
+        <div style="display:flex;flex-direction:column;gap:14px;">
+
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);margin-bottom:6px;">rung 1 &middot; at the cap &mdash; 31 of 31</div>
+            <div style="background:var(--bg);border:1px solid var(--border-strong);border-radius:10px;padding:11px 12px 13px;display:flex;flex-direction:column;gap:9px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">Untick one to swap another in</div>
+              <div style="display:flex;align-items:baseline;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;">
+                <span style="color:var(--fg-body);">31 of 31 ticked</span>
+                <span style="color:var(--warning);">7 to buy &middot; $61.40</span>
+                <span style="margin-left:auto;color:var(--fg-locked);">99 of 99</span>
+              </div>
+              <div style="display:flex;gap:8px;">
+                <span style="flex:auto;display:flex;align-items:center;justify-content:center;min-height:44px;border:1px solid var(--accent);border-radius:8px;color:var(--accent);font-size:14px;font-weight:600;">Add 31 cards</span>
+                <span style="flex:none;display:flex;align-items:center;justify-content:center;min-height:44px;padding:0 16px;border:1px solid var(--border-strong);border-radius:8px;color:var(--fg);font-size:14px;">Cancel</span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);margin-bottom:6px;">rung 2 &middot; slots stay open &mdash; the common case</div>
+            <div style="background:var(--bg);border:1px solid var(--border-strong);border-radius:10px;padding:11px 12px 13px;display:flex;flex-direction:column;gap:9px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">4 slots stay open &mdash; you can come back to them</div>
+              <div style="display:flex;align-items:baseline;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;">
+                <span style="color:var(--fg-body);">27 of 31 ticked</span>
+                <span style="color:var(--warning);">3 to buy &middot; $42.80</span>
+                <span style="margin-left:auto;color:var(--fg-locked);">95 of 99</span>
+              </div>
+              <div style="display:flex;gap:8px;">
+                <span style="flex:auto;display:flex;align-items:center;justify-content:center;min-height:44px;border:1px solid var(--accent);border-radius:8px;color:var(--accent);font-size:14px;font-weight:600;">Add 27 cards</span>
+                <span style="flex:none;display:flex;align-items:center;justify-content:center;min-height:44px;padding:0 16px;border:1px solid var(--border-strong);border-radius:8px;color:var(--fg);font-size:14px;">Cancel</span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">rung 3 &middot; the pass is exactly full and the cap is not reached</div>
+            <div style="background:var(--bg);border:1px solid var(--border-strong);border-radius:10px;padding:11px 12px 13px;display:flex;flex-direction:column;gap:9px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">Quick-add is back when you close the list</div>
+              <div style="display:flex;align-items:baseline;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;">
+                <span style="color:var(--fg-body);">4 of 4 ticked</span>
+                <span style="margin-left:auto;color:var(--fg-locked);">99 of 99</span>
+              </div>
+              <div style="display:flex;gap:8px;">
+                <span style="flex:auto;display:flex;align-items:center;justify-content:center;min-height:44px;border:1px solid var(--accent);border-radius:8px;color:var(--accent);font-size:14px;font-weight:600;">Add 4 cards</span>
+                <span style="flex:none;display:flex;align-items:center;justify-content:center;min-height:44px;padding:0 16px;border:1px solid var(--border-strong);border-radius:8px;color:var(--fg);font-size:14px;">Cancel</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);margin-top:12px;line-height:1.6;">One line, one register (<span style="color:var(--fg-faint);">mono 10px --fg-locked</span>), one height. <b style="color:var(--fg-faint);font-weight:600;">The bar does not grow</b>, so <span style="color:var(--fg-faint);">onBarHeight</span>'s reservation is unchanged and no row goes under it.</div>
+      </div>
+
+      <div style="width:940px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:8px;">Desktop &mdash; <span style="color:var(--accent);">the cap moves to the head; the assurance stays put</span></div>
+        <div style="background:var(--surface-rail);border:1px solid var(--border-strong);border-radius:10px;padding:14px;">
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding-bottom:11px;border-bottom:1px solid var(--border);">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;"><span style="color:var(--fg-body);">31 of 31 slots ticked</span><span style="color:var(--fg-locked);"> &middot; 38 candidates, 7 untouched</span></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);border-left:1px solid var(--border-strong);padding-left:12px;">Untick one to swap another in</span>
+            <span style="margin-left:auto;display:inline-flex;align-items:center;height:30px;padding:0 11px;border-radius:8px;border:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-locked);opacity:0.5;">Tick the 24 I own</span>
+            <span style="display:inline-flex;align-items:center;height:30px;padding:0 11px;border-radius:8px;border:1px solid var(--border-strong);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);">Clear all ticks</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:5px;margin-top:9px;">
+            <div style="display:flex;align-items:center;gap:10px;min-height:34px;background:var(--elevated-hover);border:1px solid var(--accent-shadow);border-radius:7px;padding:0 9px;">
+              <span style="flex:none;width:18px;height:18px;border-radius:5px;border:1px solid var(--accent);background:color-mix(in srgb, var(--accent) 12%, transparent);color:var(--accent);font-family:'IBM Plex Mono',monospace;font-size:11px;display:flex;align-items:center;justify-content:center;">&#10003;</span>
+              <span style="flex:none;width:7px;height:7px;border-radius:999px;background:var(--success);"></span>
+              <span style="flex:auto;min-width:0;font-size:13.5px;color:var(--fg);">Storm-Kiln Artist</span>
+              <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">+29</span>
+              <span style="flex:none;width:60px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);"><span style="border-bottom:1px dashed var(--border-dashed);">Set aside</span></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;min-height:34px;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:0 9px;opacity:0.55;">
+              <span style="flex:none;width:18px;height:18px;border-radius:5px;border:1px solid var(--border);color:var(--fg-locked);font-family:'IBM Plex Mono',monospace;font-size:11px;display:flex;align-items:center;justify-content:center;">+</span>
+              <span style="flex:none;width:7px;height:7px;border-radius:999px;border:1px dashed var(--fg-locked);"></span>
+              <span style="flex:auto;min-width:0;font-size:13.5px;color:var(--fg);">Thousand-Year Storm</span>
+              <span style="flex:none;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--warning);border:1px solid var(--accent-shadow);border-radius:4px;padding:1px 6px;">buy $4.80</span>
+              <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">+27</span>
+              <span style="flex:none;width:60px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);"><span style="border-bottom:1px dashed var(--border-dashed);">Set aside</span></span>
+            </div>
+            <div style="min-height:32px;display:flex;align-items:center;border:1px dashed var(--border);border-radius:7px;padding:0 11px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">36 more rows &mdash; and the cap is explained above them, not below all 38</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;border-top:1px solid var(--border);margin-top:14px;padding-top:14px;">
+            <span style="display:inline-flex;align-items:center;border:1px solid var(--accent);border-radius:8px;color:var(--accent);font-size:13px;font-weight:600;padding:10px 18px;">Add 31 cards</span>
+            <span style="display:inline-flex;align-items:center;border:1px solid var(--border-strong);border-radius:8px;color:var(--fg);font-size:13px;padding:10px 16px;">Cancel</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);">99 of 99 when added &middot; <span style="color:var(--warning);">7 to buy &middot; $61.40</span></span>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);margin-top:10px;line-height:1.6;">At the cap the assurance is absent by arithmetic &mdash; no slots stay open &mdash; so the head's new clause and the commit row's old one <b style="color:var(--fg-faint);font-weight:600;">can never both be present</b>. The clause takes a <span style="color:var(--fg-faint);">1px --border-strong</span> divider rather than a middot, because it is a different kind of statement from the counts beside it.</div>
+      </div>
+
+      <div style="width:470px;flex:none;display:flex;flex-direction:column;gap:20px;">
+        <div style="background:var(--surface);border:1px solid var(--border-strong);border-left:3px solid var(--accent);border-radius:14px;padding:20px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;">4 &middot; the assurance belongs at 390px, and costs nothing</div>
+          <div style="font-size:13px;color:var(--fg-body);line-height:1.7;text-wrap:pretty;">The brief's instinct is right and worth stating plainly: <b style="color:var(--fg);font-weight:600;">this is the one line a hesitant player most needs, and mobile is where hesitation is highest</b> &mdash; the phone reader has 38 rows below the fold and a bar telling them they are about to add 27 cards.<br><br><b style="color:var(--fg);font-weight:600;">And it needs no new string.</b> Measured at mono 10.5px: the longest form is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">31 slots stay open &mdash; you can come back to them</span>, 45 characters, ~281px inside the bar's 366px. The singular already exists. <b style="color:var(--fg);font-weight:600;">One class comes off</b> (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">hidden md:block</span>) and the line joins the ladder.<br><br>Desktop is untouched: it keeps the line in the commit row at <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">md:ml-auto</span>, where it has its own end of a wide row and displaces nothing.</div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border-strong);border-left:3px solid var(--accent);border-radius:14px;padding:20px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;">5 &middot; the cap, beside the thing it governs</div>
+          <div style="font-size:13px;color:var(--fg-body);line-height:1.7;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">Eng's own copy note already found half of this.</b> The count was cut from the line because it repeated <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">head</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">headMobile</span> &mdash; correct, and ratified. The other half is that the surviving instruction sits <i>below all 38 rows</i>, so the player who taps an inert box at row 3 gets no answer at all.<br><br><b style="color:var(--fg);font-weight:600;">Phone: the pinned bar, rung 1.</b> Pinned means always visible the instant the cap is hit, which is as good as this gets.<br><br><b style="color:var(--fg);font-weight:600;">Desktop: the selection head</b>, after the counts and behind a divider. Desktop has no pinned bar, and the head is the one element that is always directly above the rows.<br><br><b style="color:var(--fg);font-weight:600;">The residual, stated rather than papered over:</b> a desktop player 30 rows down a 1,700px list still cannot see the head. Three carriers already reach them &mdash; the row dims, the tick does nothing, and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">announce.capped</span> speaks on the settle &mdash; and the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-describedby</span> on every inert box is unchanged, so a reader hears it wherever they are. That is a real improvement on <i>explained 167 rows below</i> and it is not a fix.<br><br><span style="color:var(--fg-faint);">Rejected: repeating the line on every inert row.</span> Up to thirty copies of one sentence.<br><br><span style="color:var(--fg-faint);">Rejected: a sticky selection head at desktop.</span> A second pinned element, which the locked LONG-LIST refuses at any width, to solve a case three carriers already cover.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════ KEEP ALL ══════════ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:16px;border-top:1px solid var(--accent);padding-top:18px;">Ratified &middot; <span style="color:var(--accent);">Keep all 99 &mdash; the inline confirm, with two amendments</span></div>
+
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:520px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:8px;">Desktop toolbar &mdash; <span style="color:var(--accent);">at rest, then confirming</span></div>
+        <div style="background:var(--surface-rail);border:1px solid var(--border-strong);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:12px;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span style="display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:999px;background:var(--elevated);border:1px solid var(--border-strong);font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg);">All 99</span>
+            <span style="display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:999px;background:var(--elevated);border:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-body);">Shopping 10</span>
+            <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-locked);">59 cards are yours now</span>
+            <span style="display:inline-flex;align-items:center;border:1px solid var(--border-strong);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-body);padding:6px 12px;">Keep all 40</span>
+            <span style="display:inline-flex;align-items:center;border:1px solid var(--border-strong);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-body);padding:6px 12px;">Clear all auto &middot; 40</span>
+          </div>
+          <div style="border-top:1px solid var(--border);padding-top:12px;display:flex;align-items:center;gap:12px;">
+            <span style="display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:999px;background:var(--elevated);border:1px solid var(--border-strong);font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg);">All 99</span>
+            <span style="display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:999px;background:var(--elevated);border:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-body);">Shopping 10</span>
+            <span style="margin-left:auto;font-size:11.5px;color:var(--fg-body);">Keep all 40? You&rsquo;ll lose the record of where they came from.</span>
+            <span style="display:inline-flex;align-items:center;border:1px solid var(--border-strong);border-radius:7px;font-size:11.5px;color:var(--fg-body);padding:6px 10px;">Keep them</span>
+            <span style="display:inline-flex;align-items:center;border:1px solid var(--border);border-radius:7px;font-size:11.5px;color:var(--fg-body);padding:6px 10px;">Cancel</span>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);margin-top:10px;line-height:1.6;">The question replaces <b style="color:var(--fg-faint);font-weight:600;">both</b> bulk controls, not just the one tapped &mdash; the shipped <span style="color:var(--fg-faint);">busy</span> rule already disables the pair, for the reason its own comment gives: they read the same count and act on the same rows.</div>
+      </div>
+
+      <div style="width:430px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:8px;">Phone 390 &mdash; <span style="color:var(--accent);">the pair already wraps to its own line</span></div>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:14px 12px;display:flex;flex-direction:column;gap:12px;">
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+              <span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:999px;background:var(--elevated);border:1px solid var(--border-strong);font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg);">All 99</span>
+              <span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:999px;background:var(--elevated);border:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-body);">Shopping 10</span>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <span style="flex:1;display:flex;align-items:center;justify-content:center;min-height:44px;border:1px solid var(--border-strong);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-body);">Keep all 40</span>
+              <span style="flex:1;display:flex;align-items:center;justify-content:center;min-height:44px;border:1px solid var(--border-strong);border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-body);">Clear auto &middot; 40</span>
+            </div>
+          </div>
+          <div style="border-top:1px solid var(--border);padding-top:12px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+              <span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:999px;background:var(--elevated);border:1px solid var(--border-strong);font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg);">All 99</span>
+              <span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:999px;background:var(--elevated);border:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-body);">Shopping 10</span>
+            </div>
+            <div style="font-size:12px;color:var(--fg-body);line-height:1.5;margin-bottom:9px;">Keep all 40? The record goes too.</div>
+            <div style="display:flex;gap:8px;">
+              <span style="flex:1;display:flex;align-items:center;justify-content:center;min-height:44px;border:1px solid var(--border-strong);border-radius:8px;font-size:13px;color:var(--fg-body);">Keep them</span>
+              <span style="flex:1;display:flex;align-items:center;justify-content:center;min-height:44px;border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--fg-body);">Cancel</span>
+            </div>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);margin-top:10px;line-height:1.6;">Phone shortens the question rather than wrapping it to three lines, and both answers go to 44px &mdash; the same responsive split the two bulk buttons already carry.</div>
+      </div>
+
+      <div style="width:470px;flex:none;background:var(--surface);border:1px solid var(--border-strong);border-left:3px solid var(--accent);border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;">Ratified &mdash; and the two things to change</div>
+        <div style="font-size:13px;color:var(--fg-body);line-height:1.7;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">The pattern is right and the diagnosis is right.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">game-history-row</span>'s inline confirm is this app's only confirm vocabulary, and its own header comment states the case it was built for: the row is the only correction path, so the question lives in the row rather than in a dialog. <b style="color:var(--fg);font-weight:600;">Keep all is that case exactly</b> &mdash; a bulk act, in a toolbar, with no undo.<br><br><b style="color:var(--fg);font-weight:600;">Amendment 1 &mdash; the confirming button must not take <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--danger</span>.</b> In the game log it is a delete. <b style="color:var(--fg);font-weight:600;">Keeping is a graduation, not a deletion</b> &mdash; it is the ruling the ledger rests on, and it destroys no cards. Danger ink would say <i>this loses cards</i>, which is the one thing it does not do; what it loses is the record. So both answers take <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">BULK_BUTTON_CLASS</span>'s own treatment, and the toolbar goes on recommending neither answer &mdash; which is that constant's stated reason for existing.<br><br><b style="color:var(--fg);font-weight:600;">Amendment 2 &mdash; the question must name what is actually lost, in the words the surface uses.</b> Not <i>the ledger</i>, which is an internal noun that appears nowhere on screen &mdash; the same trap eng caught in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">seedReversal</span>, where <i>the sweep</i> pointed at a control called <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Clear all auto</span>. The ledger's own header says <i>Where these 99 cards came from</i>, so the question says <b style="color:var(--fg);font-weight:600;">the record of where they came from</b>.<br><br><b style="color:var(--fg);font-weight:600;">And the asymmetry is the rule, not an inconsistency:</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Clear all auto</span> gets <b style="color:var(--fg);font-weight:600;">no</b> confirm, because it already ships <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">SweepReceipt</span> with an undo. <i>Confirm where there is no undo; receipt where there is.</i> Two destructive-looking neighbours with different treatments, for a reason a player can feel.<br><br><span style="color:var(--fg-faint);">The better fix, not asked for and not blocking:</span> make keep-all undoable &mdash; restore the auto flags and the pass membership &mdash; and the confirm goes away. That is a server-side inverse mutation and a bigger change than this addendum; it is in READINESS as the thing to want if the confirm proves annoying.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════ CONTRACT ══════════ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:16px;border-top:1px solid var(--accent);padding-top:18px;">Contract &middot; <span style="color:var(--accent);">tokens, targets, a11y, and what this addendum does not add</span></div>
+
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:470px;flex:none;background:var(--surface-rail);border:1px solid var(--border);border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:14px;">Tokens &mdash; <span style="color:var(--accent);">no new token, no new hex, no literal</span></div>
+        <div style="display:flex;flex-direction:column;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;">
+          <div style="display:flex;align-items:center;gap:10px;"><span style="width:16px;height:16px;border-radius:4px;background:var(--fg-faint);flex:none;"></span><span style="color:var(--fg-body);">--fg-faint</span><span style="color:var(--fg-locked);margin-left:auto;">Set aside, Show it again</span></div>
+          <div style="display:flex;align-items:center;gap:10px;"><span style="width:16px;height:16px;border-radius:4px;background:var(--border-dashed);flex:none;"></span><span style="color:var(--fg-body);">--border-dashed</span><span style="color:var(--fg-locked);margin-left:auto;">the underline on both</span></div>
+          <div style="display:flex;align-items:center;gap:10px;"><span style="width:16px;height:16px;border-radius:4px;background:var(--fg-locked);flex:none;"></span><span style="color:var(--fg-body);">--fg-locked</span><span style="color:var(--fg-locked);margin-left:auto;">the ladder's one line, all three tenants</span></div>
+          <div style="display:flex;align-items:center;gap:10px;"><span style="width:16px;height:16px;border-radius:4px;background:var(--border-strong);flex:none;"></span><span style="color:var(--fg-body);">--border-strong</span><span style="color:var(--fg-locked);margin-left:auto;">bulk restore, both confirm answers</span></div>
+          <div style="display:flex;align-items:center;gap:10px;"><span style="width:16px;height:16px;border-radius:4px;background:var(--fg-body);flex:none;"></span><span style="color:var(--fg-body);">--fg-body</span><span style="color:var(--fg-locked);margin-left:auto;">the confirm question, and its answers</span></div>
+          <div style="display:flex;align-items:center;gap:10px;"><span style="width:16px;height:16px;border-radius:4px;background:var(--danger);flex:none;"></span><span style="color:var(--fg-body);">--danger</span><span style="color:var(--fg-locked);margin-left:auto;">still exactly one state &mdash; a refused write</span></div>
+        </div>
+        <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.7;margin-top:16px;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">Nothing here needs a value that is not in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">globals.css</span> at all six themes</b>, and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--danger</span>'s single occupancy is preserved: the keep-all confirm is the one place a confirm could have taken it, and amendment 1 is why it does not.</div>
+      </div>
+
+      <div style="width:560px;flex:none;background:var(--surface-rail);border:1px solid var(--border);border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:14px;">A11y and targets &mdash; <span style="color:var(--accent);">a control the handoff never drew has to be reachable four ways</span></div>
+        <div style="font-size:12.5px;color:var(--fg-muted);line-height:1.75;text-wrap:pretty;">&middot; <b style="color:var(--fg);font-weight:600;">The decline is a real <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&lt;button&gt;</span> outside the row's <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&lt;label&gt;</span></b>, exactly as shipped &mdash; inside it, every tap on the word would toggle the tick as well. Two tab stops per row, in reading order: tick, then decline.<br>&middot; <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">list.declineAria</span> is <b style="color:var(--fg);font-weight:600;">ratified verbatim</b>: <i>&ldquo;Set Shark Typhoon aside&rdquo;</i>. The visible label is the same verb, so the name is a superset of the label and never contradicts it.<br>&middot; <b style="color:var(--fg);font-weight:600;">Targets:</b> phone decline 44px tall on line 2 (the word's own box, not the row's); desktop the word in a 60px slot inside a 34px row, which is the shipped inline-target rule for a desktop text control. Bulk restore 44px phone / 30px desktop, matching its two neighbours. Both confirm answers 44px / 30px, matching <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">game-history-row</span> exactly.<br>&middot; <b style="color:var(--fg);font-weight:600;">The decline is never adjacent to the commit</b> at either width, and the confirm answers are never adjacent to the sweep &mdash; the question replaces both bulk controls, so nothing destructive sits beside <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Keep them</span>.<br>&middot; <b style="color:var(--fg);font-weight:600;">The bulk restore announces</b>, because 38 rows changing shape at once is the largest visual change on the surface: <i>&ldquo;38 candidates back on the list. 0 of 31 ticked.&rdquo;</i> A single decline already announces and is unchanged.<br>&middot; <b style="color:var(--fg);font-weight:600;">The ladder changes nothing spoken.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">announce.capped</span> still fires on the settle and the inert box's <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-describedby</span> still points at the cap line &mdash; which now lives in the head at desktop and the bar at phone, so <b style="color:var(--fg);font-weight:600;">the id moves with it</b> and must stay rendered in both.<br>&middot; <b style="color:var(--fg);font-weight:600;">The confirm takes focus, and returns it.</b> Focus moves to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Keep them</span> when the question opens and back to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Keep all 40</span> on cancel &mdash; the trigger unmounts, and a button that unmounts drops focus to the body.<br>&middot; <b style="color:var(--fg);font-weight:600;">Colour is never the only carrier</b>, unchanged: the decline is a word and an underline; a declined row is an eyebrow, a word and an announcement; the cap is a sentence and an inert glyph.<br>&middot; Focus is the global <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">:focus-visible</span> ring from <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">@layer base</span> &mdash; 2px <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--accent</span> at +2px, not overridden anywhere in this addendum.</div>
+      </div>
+
+      <div style="width:470px;flex:none;background:var(--surface);border:1px solid var(--border-strong);border-left:3px solid var(--accent);border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;">Not added, and not reopened</div>
+        <div style="font-size:13px;color:var(--fg-body);line-height:1.7;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">Not added:</b> no dialog, no modal, no sheet, no toast, no second pinned element, no sticky head, no new row atom, no new glyph, no new token, no new motion, no swipe, no hover-only control, no inner scroller, no confirm on the decline, no confirm on the sweep, and no fourth line in the bar.<br><br><b style="color:var(--fg);font-weight:600;">Not reopened:</b> the door replacing two CTAs, the interleaved pool with owned pre-ticked, the tick cap as the trade, the pass ledger and its per-line reversal, keeping as a graduation, the commit taking the dock's slot, the parity row and its cost track, no inner scroller at either width. <b style="color:var(--fg);font-weight:600;">All locked, all shipped, all unedited.</b><br><br><b style="color:var(--fg);font-weight:600;">Two shipped decisions are ratified rather than changed:</b> eng's <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">declineAria</span> and the cap line's dropped count &mdash; both were right, and both were flagged as pending Design. <b style="color:var(--fg);font-weight:600;">Two are corrected:</b> the decline's form, and where two lines live at 390px.<br><br><b style="color:var(--fg);font-weight:600;">Eleven new keys, split 7 + 4</b> &mdash; seven for the five gaps, four for the ratified keep-all confirm &mdash; plus two edits and three ratifications, all in <a href="addendum · copy strings.ts">addendum &middot; copy strings.ts</a>. <b style="color:var(--fg);font-weight:600;">The split is the audit trail:</b> the seven are Design's calls on gaps this review raised, the four are amendment 2 to a fix eng is shipping separately, so an auditor checking either half never has to subtract. <b style="color:var(--fg);font-weight:600;">The surprise is still how few the gaps took</b> &mdash; the assurance needed none at all, and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">plural</span>, which eng added and flagged, is ratified rather than rewritten.</div>
+      </div>
+
+    </div>
+  </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:2280,&quot;height&quot;:1400},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;,&quot;ixalan&quot;,&quot;phyrexia&quot;,&quot;eldraine&quot;,&quot;kaldheim&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Theme&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    // The token block on :root is Low Sun, so an unresolved prop paints the
+    // default rather than nothing — the same fallback globals.css relies on.
+    return { theme: this.props.theme ?? "amonkhet" };
+  }
+}
+</script>
+</body>
+</html>

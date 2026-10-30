@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0B0E; }
+  a { color: #5C86C9; text-decoration: none; }
+  a:hover { color: #6C95D8; }
+  :root {
+    --bg:#121217; --surface:#1E1F26; --surface-raised:#22232B; --surface-rail:#181920; --surface-sunken:#16171D;
+    --elevated:#2D2E35; --elevated-hover:#212229; --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E; --fg-disabled:#3B4647;
+    --accent:#5C86C9; --accent-hover:#6C95D8; --accent-shadow:#2C405F; --danger:#C6533F; --success:#6FA368; --warning:#E0913C;
+    --avail-hard-fg:#80ABEF; --avail-over-fg:#C86D5B; --avail-over-border:#752619;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:var(--fg);padding:40px;background:#0B0B0E;min-height:100vh;display:flex;flex-direction:column;gap:64px;">
+
+  <section style="max-width:1320px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#0B0B0E;background:#5C86C9;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R1</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:var(--fg-faint);">I got it &middot; canvas 2 of 2 &middot; &sect;C receipt and undo + &sect;D history + &sect;E switch off &middot; 2026-10-09</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:32px;margin:0 0 12px;line-height:1.25;">The receipt is the 1+2 handoff's toast, and the row's slot holds still until the list is read again.</h1>
+    <p style="max-width:1080px;font-size:15px;line-height:1.7;color:var(--fg-body);margin:0 0 12px;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">Call 5 &mdash; the receipt lives in the app's toast slot, not on the row.</b> It's the same component as the 1+2 removal toast (R2 &sect;D). It says what was added, and to which printing and finish, with <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">History</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">Undo</span>. Since it doesn't live on the row, it can't be lost when the row leaves. It's announced politely, and it lasts the toast's 8 seconds, paused while hovered or focused, or until the next write. When the copy went to an older deck, the toast says so in a full sentence, and the row says it too, so the toast going away loses nothing. <b style="color:var(--fg);font-weight:600;">Call 8 &mdash; a row that leaves keeps its slot.</b> It becomes the spent-slot receipt shape: same height, a dashed sunken box, and the name in muted mono. It holds until the list is read again (a tab switch, or coming back to the deck). A row that stays redraws in place and doesn't move to <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">Spoken for</span> until that same read.</p>
+    <p style="max-width:1080px;font-size:15px;line-height:1.7;color:var(--fg-body);margin:0;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">Call 6 &mdash; Undo is pressed on the toast, and it's a revert.</b> The button reads <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">Checking decks&hellip;</span> from the first frame. If a committed deck would read short, the &sect;E warning opens with the verb <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">Undo</span>: <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">Undoing leaves a deck short</span> &middot; <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">Undo anyway</span>. <b style="color:var(--fg);font-weight:600;">The deck the copy was bought for is left out of that check.</b> The player is on its page, undoing its own purchase, and they watch its row come back. Naming it in a warning would say the same thing a second time, on every clean undo. <b style="color:var(--fg);font-weight:600;">Call 7 &mdash; the History entry names its deck</b>, as a link that reads the deck's name today. When the deck is gone, the entry says so in words and keeps Revert, because the copy is still in the collection.</p>
+  </section>
+
+  <section id="c1" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">C1 &middot; C2 &middot; <span style="color:var(--accent);">the write lands &middot; the row leaves &middot; the row stays because an older deck took the copy &middot; partial</span></div>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;max-width:2000px;">
+      <sc-for list="{{ outcomes }}" as="f" hint-placeholder-count="4">
+        <div style="display:flex;flex-direction:column;gap:8px;width:{{ f.w }};">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ f.label }}</div>
+          <div style="width:{{ f.w }};height:{{ f.h }};border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;background:var(--bg);position:relative;">
+            <div style="padding:12px 16px 0;display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:12.5px;font-weight:500;border-radius:999px;padding:4px 11px;color:var(--fg-faint);border:1px solid var(--border-strong);">All 99</span>
+                <span style="font-size:12.5px;font-weight:600;border-radius:999px;padding:4px 11px;background:var(--elevated);border:1px solid var(--border-strong);">Shopping <span style="color:{{ f.countInk }};">{{ f.count }}</span></span>
+                <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:{{ f.countInk }};">{{ f.total }}</span>
+              </div>
+              <sc-for list="{{ f.groups }}" as="g" hint-placeholder-count="2">
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">{{ g.name }} <span style="color:var(--fg-locked);">{{ g.count }}</span></span>
+                  <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="3"><dc-import name="IGI Row" spec="{{ r }}" hint-size="100%,52px"></dc-import></sc-for>
+                </div>
+              </sc-for>
+            </div>
+            <sc-if value="{{ f.ph }}" hint-placeholder-val="{{ true }}"><div style="position:absolute;left:0;right:0;bottom:0;height:74px;border-top:1px solid var(--border);background:var(--surface-rail);"></div></sc-if>
+            <sc-if value="{{ f.hasToast }}" hint-placeholder-val="{{ false }}"><div style="{{ f.toastPos }}"><dc-import name="IGI Toast" spec="{{ f.toast }}" hint-size="100%,60px"></dc-import></div></sc-if>
+          </div>
+          <div style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);">{{ f.note }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section id="c3" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">C3 &middot; <span style="color:var(--accent);">undo &middot; in flight &middot; raising the short-deck warning &middot; completing &middot; failing</span></div>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;max-width:2000px;">
+      <sc-for list="{{ undos }}" as="f" hint-placeholder-count="4">
+        <div style="display:flex;flex-direction:column;gap:8px;width:{{ f.w }};">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ f.label }}</div>
+          <div style="width:{{ f.w }};height:{{ f.h }};border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;background:var(--bg);position:relative;">
+            <div style="padding:12px 16px 0;display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:12.5px;font-weight:500;border-radius:999px;padding:4px 11px;color:var(--fg-faint);border:1px solid var(--border-strong);">All 99</span>
+                <span style="font-size:12.5px;font-weight:600;border-radius:999px;padding:4px 11px;background:var(--elevated);border:1px solid var(--border-strong);">Shopping <span style="color:{{ f.countInk }};">{{ f.count }}</span></span>
+                <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:{{ f.countInk }};">{{ f.total }}</span>
+              </div>
+              <sc-for list="{{ f.groups }}" as="g" hint-placeholder-count="2">
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">{{ g.name }} <span style="color:var(--fg-locked);">{{ g.count }}</span></span>
+                  <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="3"><dc-import name="IGI Row" spec="{{ r }}" hint-size="100%,52px"></dc-import></sc-for>
+                </div>
+              </sc-for>
+            </div>
+            <div style="position:absolute;left:0;right:0;bottom:0;height:74px;border-top:1px solid var(--border);background:var(--surface-rail);"></div>
+            <sc-if value="{{ f.hasToast }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:16px;right:16px;bottom:84px;"><dc-import name="IGI Toast" spec="{{ f.toast }}" hint-size="100%,60px"></dc-import></div></sc-if>
+            <sc-if value="{{ f.warn }}" hint-placeholder-val="{{ false }}">
+              <div style="position:absolute;inset:0;background:rgba(5,5,8,0.62);"></div>
+              <div role="dialog" style="position:absolute;left:0;right:0;bottom:0;border-radius:16px 16px 0 0;background:var(--surface);border-top:1px solid var(--border-strong);padding:10px 18px 18px;display:flex;flex-direction:column;gap:12px;">
+                <span style="align-self:center;width:36px;height:4px;border-radius:2px;background:var(--border-dashed);"></span>
+                <h3 style="margin:4px 0 0;font-family:'Cinzel',serif;font-weight:700;font-size:18px;line-height:1.3;">Undoing leaves a deck short</h3>
+                <p style="margin:0;font-size:13px;line-height:1.55;color:var(--fg-body);">Nothing about the deck changes. It'll show Swords to Plowshares as short and put it on its shopping list.</p>
+                <div style="border-radius:10px;background:var(--bg);border:1px solid var(--border);"><div style="display:flex;align-items:center;gap:12px;padding:0 14px;min-height:48px;"><span style="flex:1;font-size:14px;">HD Atraxa</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--danger);">&#9670; short 1</span></div></div>
+                <div style="display:flex;gap:10px;margin-top:4px;">
+                  <span style="flex:1;height:46px;border:1px solid var(--accent);box-shadow:0 0 0 2px var(--accent);border-radius:10px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;">Cancel</span>
+                  <span style="flex:1;height:46px;border-radius:10px;background:var(--elevated);border:1px solid var(--border-strong);display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;">Undo anyway</span>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+          <div style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);">{{ f.note }}</div>
+        </div>
+      </sc-for>
+      <div style="display:flex;flex-direction:column;gap:8px;width:480px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">C3 &middot; desktop &middot; the warning as a dialog</div>
+        <div role="dialog" style="width:480px;border-radius:14px;background:var(--surface);border:1px solid var(--border-strong);box-shadow:0 24px 60px rgba(0,0,0,0.55);padding:24px 24px 20px;display:flex;flex-direction:column;gap:14px;">
+          <h3 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:20px;line-height:1.3;">Undoing leaves a deck short</h3>
+          <p style="margin:0;font-size:13.5px;line-height:1.55;color:var(--fg-body);">Nothing about the deck changes. It'll show Swords to Plowshares as short and put it on its shopping list.</p>
+          <div style="border-radius:10px;background:var(--bg);border:1px solid var(--border);"><div style="display:flex;align-items:center;gap:12px;padding:0 14px;min-height:44px;"><span style="flex:1;font-size:14px;text-decoration:underline;text-decoration-color:var(--border-strong);text-underline-offset:2px;">HD Atraxa</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--danger);">&#9670; short 1</span></div></div>
+          <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:4px;">
+            <span style="padding:10px 18px;border:1px solid var(--accent);box-shadow:0 0 0 2px var(--accent);border-radius:8px;font-size:14px;">Cancel</span>
+            <span style="padding:10px 18px;border-radius:8px;background:var(--elevated);border:1px solid var(--border-strong);font-size:14px;font-weight:600;">Undo anyway</span>
+          </div>
+        </div>
+        <div style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);">This is <span style="font-family:'IBM Plex Mono',monospace;">ShortDeckWarning</span> as shipped, with one new verb: <span style="font-family:'IBM Plex Mono',monospace;">titleUndo</span> and <span style="font-family:'IBM Plex Mono',monospace;">confirm.undo</span>. It fires here because the copy went to HD Atraxa, so taking it back leaves Atraxa short. HD Gishath, the deck the copy was bought for, is left out of the check. While the dialog is open, the toast's timer is held. Cancel closes both the dialog and the toast's pending state, and the copy stays.</div>
+        <div style="margin-top:14px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">desktop &middot; the toast slot, bottom left of the deck pane</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <sc-for list="{{ deskToasts }}" as="t" hint-placeholder-count="3"><dc-import name="IGI Toast" spec="{{ t }}" hint-size="440px,60px"></dc-import></sc-for>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="c4" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">C4 &middot; <span style="color:var(--accent);">call 8 &middot; the row's transition when it leaves, without reflow</span></div>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="width:640px;border:1px solid var(--border-strong);border-radius:12px;background:var(--bg);padding:14px 16px;display:flex;flex-direction:column;gap:10px;">
+        <sc-for list="{{ transition }}" as="r" hint-placeholder-count="4">
+          <div style="display:grid;grid-template-columns:130px minmax(0,1fr);align-items:center;gap:12px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">{{ r.cap }}</span>
+            <dc-import name="IGI Row" spec="{{ r.spec }}" hint-size="100%,34px"></dc-import>
+          </div>
+        </sc-for>
+      </div>
+      <div style="width:520px;display:flex;flex-direction:column;gap:10px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">
+        <span><b style="color:var(--fg-body);font-weight:600;">One crossfade, 150ms, opacity only.</b> The live row and the held slot share the row's own shell, so the height is the same by construction (H29, the spent-slot rule). Nothing above or below moves. Under reduced motion it's a swap in one frame.</span>
+        <span><b style="color:var(--fg-body);font-weight:600;">The slot isn't a control.</b> It has no Undo of its own, since the toast and History hold that. It's out of the tab order, and the decklist's live region doesn't read it again.</span>
+        <span><b style="color:var(--fg-body);font-weight:600;">What updates at once:</b> the tab count, the group count, the price strip's total and the Mana Pool link. All four read the same list, and none of them changes height. <b style="color:var(--fg-body);font-weight:600;">What waits for the next read:</b> the slot going away, and a stayed row joining <span style="font-family:'IBM Plex Mono',monospace;">Spoken for</span>.</span>
+        <span><b style="color:var(--fg-body);font-weight:600;">Undo while the slot is held</b> swaps the slot back to the live row in place, using the same 150ms fade.</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="d" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">D &middot; <span style="color:var(--accent);">the History entry &middot; the From Shopping tag goes live &middot; reverted from the toast &middot; deck deleted</span></div>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">D1 &middot; desktop &middot; the 900 column on /collection/history</div>
+        <div style="width:900px;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;background:var(--bg);padding:20px 34px 24px;">
+          <sc-for list="{{ days }}" as="day" hint-placeholder-count="2">
+            <div style="margin-bottom:18px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);padding:0 0 8px;border-bottom:1px solid var(--border);">{{ day.label }}</div>
+              <sc-for list="{{ day.entries }}" as="e" hint-placeholder-count="2">
+                <div style="border-bottom:1px solid var(--border);">
+                  <div style="display:grid;grid-template-columns:56px 150px minmax(0,1fr) auto;align-items:center;gap:16px;min-height:60px;padding:8px 0;">
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">{{ e.time }}</span>
+                    <span style="justify-self:start;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:{{ e.tagInk }};border:1px solid {{ e.tagInk }};border-radius:4px;padding:3px 7px;white-space:nowrap;">{{ e.kind }}</span>
+                    <span style="min-width:0;display:flex;flex-direction:column;gap:3px;">
+                      <span style="font-size:14px;color:{{ e.titleInk }};">{{ e.title }} <span style="font-size:12px;color:var(--fg-faint);">{{ e.chev }}</span></span>
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-muted);"><span style="color:{{ e.figInk }};">{{ e.fig }}</span> {{ e.across }}</span>
+                      <sc-if value="{{ e.hasFrom }}" hint-placeholder-val="{{ false }}"><span style="font-size:12.5px;color:var(--fg-muted);">{{ e.fromPre }} <span style="{{ e.fromStyle }}">{{ e.fromLink }}</span>{{ e.fromPost }}</span></sc-if>
+                      <sc-if value="{{ e.hasLink }}" hint-placeholder-val="{{ false }}"><span style="font-size:12.5px;color:var(--fg-muted);">{{ e.linkPre }} <span style="color:var(--accent);text-decoration:underline;text-underline-offset:2px;">{{ e.link }}</span></span></sc-if>
+                    </span>
+                    <span style="font-size:13px;color:{{ e.actInk }};{{ e.actBox }}">{{ e.act }}</span>
+                  </div>
+                  <sc-if value="{{ e.open }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin:0 0 14px 222px;border-radius:10px;background:var(--surface);border:1px solid var(--border);padding:6px 14px;">
+                      <div style="display:flex;align-items:center;gap:12px;min-height:36px;">
+                        <span style="flex:1;font-size:13.5px;">{{ e.cardName }}</span>
+                        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ e.cardSet }}</span>
+                        <span style="width:60px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--success);">{{ e.cardDelta }}</span>
+                      </div>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+        <div style="width:900px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">This is F1's row, unchanged. The tag takes <span style="font-family:'IBM Plex Mono',monospace;">--success</span> solid, the ink of the other two kinds that only add, and it fits the 150px column it was reserved in. <b style="color:var(--fg-body);font-weight:600;">The title is the card</b>, since one press is one card. The figure line is the shared <span style="font-family:'IBM Plex Mono',monospace;">figures()</span>. <b style="color:var(--fg-body);font-weight:600;">The deck line</b> is <span style="font-family:'IBM Plex Mono',monospace;">From HD Gishath's Shopping list</span>, where the deck name is a link resolved from <span style="font-family:'IBM Plex Mono',monospace;">shopping:&lt;deck id&gt;</span> at read time, so a renamed deck reads its new name. <b style="color:var(--fg-body);font-weight:600;">Deleted:</b> <span style="font-family:'IBM Plex Mono',monospace;">From the Shopping list of a deck you've since deleted</span>, with no link. The id can't name a deck that's gone, and the entry doesn't keep a copy of the name. Revert is unchanged, because it only touches the collection. An Undo from the toast is a revert like any other, so the pair links both ways as in F1.</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">D2 &middot; 390</div>
+        <div style="width:390px;border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;background:var(--bg);padding:16px 18px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);padding-bottom:8px;border-bottom:1px solid var(--border);">Today</div>
+          <sc-for list="{{ phoneEntries }}" as="e" hint-placeholder-count="4">
+            <div style="display:flex;gap:10px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--border);">
+              <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;">
+                <span style="display:flex;align-items:center;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.08em;text-transform:uppercase;color:{{ e.tagInk }};border:1px solid {{ e.tagInk }};border-radius:4px;padding:2px 6px;">{{ e.kind }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ e.time }}</span></span>
+                <span style="font-size:14px;color:{{ e.titleInk }};">{{ e.title }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">{{ e.figPhone }}</span>
+                <sc-if value="{{ e.hasFrom }}" hint-placeholder-val="{{ false }}"><span style="font-size:12px;color:var(--fg-muted);">{{ e.fromPre }} <span style="{{ e.fromStyle }}">{{ e.fromLink }}</span>{{ e.fromPost }}</span></sc-if>
+                <sc-if value="{{ e.hasLink }}" hint-placeholder-val="{{ false }}"><span style="font-size:12px;color:var(--accent);">{{ e.linkPhone }}</span></sc-if>
+              </span>
+              <span style="height:44px;display:flex;align-items:center;padding:0 12px;border-radius:9px;font-size:13px;color:{{ e.actInk }};{{ e.actBox }}">{{ e.act }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="width:390px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">This is F2's stack. The deck line is a 13px link on its own line, so on the phone it wraps instead of truncating the deck's name. Pressing it goes to the deck page.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="e" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--warning);padding-top:18px;max-width:1300px;">E &middot; <span style="color:var(--warning);">SHOPPING_MARK_BOUGHT_ENABLED off, or COLLECTION_EDIT_ENABLED off &middot; the row is main's</span></div>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+      <sc-for list="{{ off }}" as="m" hint-placeholder-count="2">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--warning);">{{ m.label }}</div>
+          <div style="width:{{ m.w }};border:1px solid var(--border-strong);border-radius:12px;background:var(--bg);padding:14px 16px;display:flex;flex-direction:column;gap:6px;">
+            <sc-for list="{{ m.rows }}" as="r" hint-placeholder-count="3"><dc-import name="IGI Row" spec="{{ r }}" hint-size="100%,52px"></dc-import></sc-for>
+          </div>
+        </div>
+      </sc-for>
+      <div style="width:460px;border:1px dashed var(--border-dashed);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.6;color:var(--fg-body);">
+        <span><b style="color:var(--fg);font-weight:600;">A</b> &mdash; the buy tag goes back to a plain span: no press, no states, and no hint line in the Shopping head. The details' <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">I got it</span> link is absent. Visually the row was always <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">main</span>'s. Both switches are checked once per page render: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">SHOPPING_MARK_BOUGHT_ENABLED &amp;&amp; COLLECTION_EDIT_ENABLED</span>.</span>
+        <span><b style="color:var(--fg);font-weight:600;">B, C</b> &mdash; never mount. No toast is raised, because no write happens.</span>
+        <span><b style="color:var(--fg);font-weight:600;">D</b> &mdash; no <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">From Shopping</span> entries are written. Entries already written stay in History with their tag and Revert if only <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">SHOPPING_MARK_BOUGHT_ENABLED</span> goes off later. They're collection history, not Shopping UI. With <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">COLLECTION_EDIT_ENABLED</span> off, History itself is absent (1+2 &sect;G).</span>
+        <span><b style="color:var(--fg);font-weight:600;">About</b> &mdash; the entry doesn't render (see the About addendum).</span>
+      </div>
+    </div>
+  </section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const C = {
+      etali: { name: "Etali, Primal Conqueror", pips: ["5", "R", "R"], fig: 29, price: "$6.50" },
+      regisaur: { name: "Regisaur Alpha", pips: ["3", "R", "G"], fig: 44, price: "$1.40" },
+      bronto: { name: "Rampaging Brontodon", pips: ["2", "G", "G"], fig: 8, price: "$0.25" },
+      swords: { name: "Swords to Plowshares", pips: ["W"], fig: 70, price: "$1.84" },
+      bolt: { name: "Lightning Helix", pips: ["R", "W"], fig: 22, price: "$0.45" },
+      approach: { name: "Dragon's Approach", qty: "×3", pips: ["2", "R"], fig: 6, price: "$0.30" },
+      favor: { name: "Etali's Favor", pips: ["2", "R"], fig: null, bare: true },
+      season: { name: "Doubling Season", pips: ["4", "G"], fig: 36, price: "$42.60", over: true },
+    };
+    const r = (k, ph, x = {}) => ({ ...C[k], ph, tools: true, limit: "$10", ...x });
+    const gone = (ph) => ({ ph, gone: "Etali, Primal Conqueror · in your collection" });
+    const phoneFrame = (o) => ({ w: "390px", h: "560px", ph: true, countInk: "var(--fg)", hasToast: !!o.toast, toastPos: "position:absolute;left:16px;right:16px;bottom:84px;", ...o });
+    const creatures = (ph, first, n = "3") => ({ name: "Creatures", count: n, rows: [first, r("regisaur", ph), r("bronto", ph)] });
+    const outcomes = [
+      phoneFrame({ label: "C1 · 390 · Add pressed, write in flight", count: "10", total: "$60.69", groups: [creatures(true, r("etali", true, { ctl: "pending", dim: true }))], note: "The confirm has closed. The row holds at .6 with its buy tag reading adding…, and nothing else on the page has moved yet." }),
+      phoneFrame({ label: "C1 · 390 · written, the row leaves", count: "9", total: "$54.19", countInk: "var(--fg)", groups: [creatures(true, gone(true), "2")], toast: { ph: true, v: "clean" }, note: "The tab count, the group count and the strip's total drop together. The Mana Pool link loses the card too. The row's slot holds at 52px as a spent slot, and the toast names the printing and finish. History opens /collection/history scrolled to this entry, with it expanded." }),
+      phoneFrame({ label: "C1 · 390 · the next read", count: "9", total: "$54.19", groups: [{ name: "Creatures", count: "2", rows: [r("regisaur", true), r("bronto", true)] }], note: "After a tab switch or a return to the deck, the slot is gone and the list is simply shorter. History still has the entry." }),
+      phoneFrame({ label: "C2 · 390 · an older deck took the copy", count: "10", total: "$60.69", groups: [{ name: "Instants", count: "2", rows: [r("bolt", true), r("swords", true, { owned: true, short: "short" })] }], toast: { ph: true, v: "claimed" }, note: "The count and total don't move, because the card is still on this deck's list. The row redraws in place as the claim model now reads it: the owned dot and ◆ short. It joins Spoken for at the next read. The toast never says the deck is done. It names the deck that took the copy, and says what this one still needs." }),
+      phoneFrame({ label: "C2 · 390 · partial, fewer than needed", count: "10", total: "$60.39", groups: [{ name: "Sorceries", count: "2", rows: [r("approach", true, { owned: true, short: "short 2" }), r("favor", true)] }], toast: { ph: true, v: "partial" }, note: "One of three. The row stays put. The total drops by one copy's price, and the marker now says short 2. The buy tag is ready for the next copy." }),
+      { w: "640px", h: "330px", ph: false, label: "C1 · desktop · written, the row leaves (one grid column)", count: "9", total: "$54.19", countInk: "var(--fg)", groups: [{ name: "Creatures", count: "2", rows: [gone(false), r("regisaur", false), r("bronto", false)] }], hasToast: true, toast: { v: "clean" }, toastPos: "position:absolute;left:16px;bottom:16px;", note: "On desktop the toast sits bottom left in the deck pane, the app's existing toast slot, clear of the 2-column grid's right column. The held slot is 34px." },
+    ];
+    const undoFrame = (o) => ({ w: "390px", h: "600px", countInk: "var(--fg)", hasToast: !!o.toast, warn: false, ...o });
+    const undos = [
+      undoFrame({ label: "C3 · 390 · Undo pressed, checking", count: "10", total: "$60.69", groups: [{ name: "Instants", count: "2", rows: [r("bolt", true), r("swords", true, { owned: true, short: "short", ctl: "disabled" })] }], toast: { ph: true, v: "checking" }, note: "From the first frame, Undo reads Checking decks… and History steps aside. This row's buy tag is disabled while the check runs, and the toast's timer is held." }),
+      undoFrame({ label: "C3 · 390 · the warning", count: "10", total: "$60.69", groups: [{ name: "Instants", count: "2", rows: [r("bolt", true), r("swords", true, { owned: true, short: "short", ctl: "disabled" })] }], warn: true, note: "HD Atraxa would read short, so §E opens as its bottom sheet. Cancel takes focus. Undo anyway writes the revert." }),
+      undoFrame({ label: "C3 · 390 · undo in flight", count: "9", total: "$54.19", groups: [creatures(true, gone(true), "2")], toast: { ph: true, v: "undoing" }, note: "No deck would be short (HD Gishath is the source and is left out), so the revert goes straight through: Undoing…" }),
+      undoFrame({ label: "C3 · 390 · undo completes", count: "10", total: "$60.69", groups: [creatures(true, r("etali", true))], toast: { ph: true, v: "undone" }, note: "The slot fades back to the live row in place. The counts and total return, and the toast confirms in one line and goes after 8 seconds. History now shows the pair: From Shopping, marked Reverted, and its Revert." }),
+      undoFrame({ label: "C3 · 390 · undo fails", count: "9", total: "$54.19", groups: [creatures(true, gone(true), "2")], toast: { ph: true, v: "failed" }, note: "Nothing changed: the copy is still owned and the slot still held. Undo is withdrawn, since a second try would likely fail the same way, as the UndoRow rule has it. The toast points to History, where Revert can try again later. role=alert." }),
+    ];
+    const deskToasts = [{ v: "clean" }, { v: "claimed" }, { v: "partial" }];
+    const transition = [
+      { cap: "0 · Add pressed", spec: r("etali", false, { ctl: "pending", dim: true }) },
+      { cap: "write answers · 0ms", spec: r("etali", false, { ctl: "pending", dim: true }) },
+      { cap: "75ms · crossfade", spec: { ...gone(false), fade: 0.55 } },
+      { cap: "150ms · held", spec: gone(false) },
+      { cap: "neighbor below", spec: r("regisaur", false) },
+    ];
+    const succ = "var(--success)";
+    const revertBtn = { act: "Revert", actInk: "var(--fg)", actBox: "padding:7px 14px;border:1px solid var(--border-strong);border-radius:8px;" };
+    const deckLink = "color:var(--accent);text-decoration:underline;text-underline-offset:2px;";
+    const base = { titleInk: "var(--fg)", chev: "▾", open: false, hasFrom: false, hasLink: false, figInk: succ, fromPost: "", ...revertBtn };
+    const fromDeck = { hasFrom: true, fromPre: "From", fromLink: "HD Gishath", fromPost: "'s Shopping list", fromStyle: deckLink };
+    const days = [
+      { label: "Today · 9 Oct", entries: [
+        { ...base, time: "14:22", kind: "Revert", tagInk: "var(--fg-muted)", title: "Undid “From Shopping”", fig: "−1", figInk: "var(--fg-body)", across: "copy of 1 card", hasLink: true, linkPre: "Undid", link: "Etali, Primal Conqueror, 14:20" },
+        { ...base, ...fromDeck, time: "14:20", kind: "From Shopping", tagInk: succ, title: "Etali, Primal Conqueror", titleInk: "var(--fg-muted)", fig: "+1", across: "copy of 1 card", hasLink: true, linkPre: "Reverted by", link: "the revert at 14:22", act: "Reverted", actInk: "var(--fg-faint)", actBox: "" },
+        { ...base, ...fromDeck, time: "13:05", kind: "From Shopping", tagInk: succ, title: "Dragon's Approach", fig: "+1", across: "copy of 1 card", chev: "▴", open: true, cardName: "Dragon's Approach", cardSet: "STX · #96", cardDelta: "+1" },
+        { ...base, time: "11:26", kind: "Edited in details", tagInk: "var(--accent)", title: "Sol Ring · 1 printing changed", fig: "+1", across: "· −1 copies across 1 card" },
+      ]},
+      { label: "2 Oct", entries: [
+        { ...base, time: "19:48", kind: "From Shopping", tagInk: succ, title: "Swords to Plowshares", fig: "+2", across: "copies of 1 card", hasFrom: true, fromPre: "From the Shopping list of a deck you've since deleted", fromLink: "", fromStyle: "" },
+      ]},
+    ];
+    const phoneEntries = [
+      { time: "14:22", kind: "Revert", tagInk: "var(--fg-muted)", title: "Undid “From Shopping”", titleInk: "var(--fg)", figPhone: "−1 copy of 1 card", hasFrom: false, hasLink: true, linkPhone: "Undid: Etali, Primal Conqueror", ...revertBtn },
+      { time: "14:20", kind: "From Shopping", tagInk: succ, title: "Etali, Primal Conqueror", titleInk: "var(--fg-muted)", figPhone: "+1 copy of 1 card", ...fromDeck, hasLink: true, linkPhone: "Reverted at 14:22", act: "Reverted", actInk: "var(--fg-faint)", actBox: "" },
+      { time: "13:05", kind: "From Shopping", tagInk: succ, title: "Dragon's Approach", titleInk: "var(--fg)", figPhone: "+1 copy of 1 card", ...fromDeck, hasLink: false, ...revertBtn },
+      { time: "2 Oct", kind: "From Shopping", tagInk: succ, title: "Swords to Plowshares", titleInk: "var(--fg)", figPhone: "+2 copies of 1 card", hasFrom: true, fromPre: "From the Shopping list of a deck you've since deleted", fromLink: "", fromPost: "", fromStyle: "", hasLink: false, ...revertBtn },
+    ];
+    const offRows = (ph) => [r("etali", ph, { ctl: "none" }), r("season", ph, { ctl: "none" }), r("favor", ph, { ctl: "none" })];
+    const off = [
+      { label: "390 · main", w: "390px", rows: offRows(true) },
+      { label: "desktop cell · main", w: "620px", rows: offRows(false) },
+    ];
+    return { outcomes, undos, deskToasts, transition, days, phoneEntries, off };
+  }
+}
+</script>
+</body>
+</html>

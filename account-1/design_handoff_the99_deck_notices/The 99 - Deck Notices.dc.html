@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-sunken:#18140F; --surface-raised:#211D18; --surface-rail:#1A1611; --elevated:#29241F;
+    --border:#2B241B; --border-strong:#3A3229;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654;
+    --accent:#CF8745; --accent-hover:#DE9757; --success:#6FA368; --danger:#C6533F; --bracket-4:#E6D08A; --fact:#8FA6BE;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-sunken:#101219; --surface-raised:#191B22; --surface-rail:#12141B; --elevated:#20222A;
+    --border:#181C26; --border-strong:#262A35;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476;
+    --accent:#FF4D9A; --accent-hover:#FF62A9;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+
+<div data-theme="{{ theme }}" style="font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--fg);padding:44px 40px 90px;display:flex;flex-direction:column;gap:64px;width:max-content;">
+
+  <div style="max-width:1180px;display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:center;gap:13px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R1</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--fg-faint);">Deck notices · sub-project 9 · /decks and /decks/[id]</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">brief: 2026-09-23-deck-notices.md (PR #898)</span>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:0;line-height:1.15;color:var(--fg);">The world changed under the deck. Say so quietly, and never in the banner's voice.</h1>
+    <p style="font-size:15px;line-height:1.7;color:var(--fg-body);margin:0;max-width:920px;text-wrap:pretty;">One new element: <b style="color:var(--fg);font-weight:600;">the notice</b>, a hairline tag that sits right after the bracket chip on the deck header and the deck tile. It opens <b style="color:var(--fg);font-weight:600;">Notices</b>, a fifth <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">ModalChrome</span> body. Nothing else on the page or in the Analysis tab changes, except one line under Analyze when a card is not legal.</p>
+    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:6px;">
+      <div style="border:1px solid var(--border);border-radius:10px;padding:13px 15px;background:var(--surface);display:flex;flex-direction:column;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">§4.1 · where</span><span style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);">In the chips row, <b style="color:var(--fg-body);font-weight:600;">immediately after the bracket chip</b>. No chip, it takes the chip's slot after the status pill. One place per surface.</span></div>
+      <div style="border:1px solid var(--border);border-radius:10px;padding:13px 15px;background:var(--surface);display:flex;flex-direction:column;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">§4.2 · container</span><span style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);">A <b style="color:var(--fg-body);font-weight:600;">fifth ModalChrome body at 560</b>. It inherits the header rule, the phone sheet from 52px, and the card stack for every name.</span></div>
+      <div style="border:1px solid var(--border);border-radius:10px;padding:13px 15px;background:var(--surface);display:flex;flex-direction:column;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">§4.3 · acknowledgement</span><span style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);"><b style="color:var(--fg-body);font-weight:600;">Reading quiets data notices</b>; re-analyzing clears them. Legality stays until the card leaves.</span></div>
+      <div style="border:1px solid var(--border);border-radius:10px;padding:13px 15px;background:var(--surface);display:flex;flex-direction:column;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">§4.6 · before the synopsis</span><span style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);">The bracket runs; <b style="color:var(--fg-body);font-weight:600;">the overview is withheld</b> while a card is not legal. Said under the button before the press, so no credit is spent.</span></div>
+    </div>
+  </div>
+
+  <section id="1" style="display:flex;flex-direction:column;gap:26px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;">1 · <span style="color:var(--accent);">the notice, on the deck page and on the tile · §3.1</span></div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:26px;max-width:1180px;">
+      <div style="display:flex;flex-direction:column;gap:12px;font-size:13px;line-height:1.65;color:var(--fg-muted);">
+        <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">Anatomy.</b> 24px tall at 1300, 22 at 390, the chip's own heights, radius 6, so it sits level in the chips row. <b style="color:var(--fg);font-weight:600;">No plate</b>: a 1px hairline of its ink at 55% on the ground it stands on. A 6px dot, then the face in mono 11 / 10. Tapping it opens Notices; 44px hit area as the chip has.</p>
+        <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">Two faces, one element.</b> Data only: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fact);">● 3 notices</span> in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fact</span>, the ink card facts already carry, because every data notice is a fact about a card that moved. Any legality entry: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--danger);">● Not legal</span> in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--danger</span>, and the count moves into the sheet. The more serious face wins; there is never a second tag.</p>
+        <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">A deck with no chip</b> can only carry legality: data notices qualify an analysis, and there is none. So the tag takes the chip's slot after the status pill, and the face is always <i>Not legal</i>. The placement rule is one sentence at both surfaces: <i>after the bracket chip, or where it would be</i>.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;font-size:13px;line-height:1.65;color:var(--fg-muted);">
+        <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">Why after the chip, not on it.</b> The chip is one component with two mounts and one meaning; a dot on its corner would change it everywhere, including Home. Beside it, the tag reads as a note about the reading, and is left out cleanly when there is nothing to say.</p>
+        <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">The tile.</b> The tag sits after the chip, <b style="color:var(--fg);font-weight:600;">condensed</b> to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fact);">● 3</span> for data (the tile's link name carries the words) and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--danger);">● Not legal</span> for legality. The tile draws <b style="color:var(--fg);font-weight:600;">unread</b> data notices and any legality; once read, a data notice leaves the tile.</p>
+        <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">Payload:</b> the brief's one boolean becomes one small enum per deck from <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">listDecksWithStats</span>: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">none | unread | notLegal</span>.</p>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:baseline;gap:12px;"><span id="1a" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 8px;">1a</span><span style="font-size:17px;font-weight:600;">Deck page · data notice, unread</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">chip · ● 3 notices</span></div>
+    <div style="display:flex;align-items:flex-start;gap:40px;">
+      <div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;flex:none;"><dc-import name="Deck Page 1300" state="notice" theme="{{ theme }}" hint-size="1300px,640px"></dc-import></div>
+      <div style="border:1px solid var(--border);border-radius:18px;overflow:hidden;flex:none;"><dc-import name="Deck Page 390" state="notice" theme="{{ theme }}" hint-size="390px,1000px"></dc-import></div>
+    </div>
+
+    <div style="display:flex;align-items:baseline;gap:12px;"><span id="1b" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 8px;">1b</span><span style="font-size:17px;font-weight:600;">Deck page · no bracket chip, a card not legal</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">never analyzed · the tag takes the chip's slot · the empty state carries §3.6's line</span></div>
+    <div style="display:flex;align-items:flex-start;gap:40px;">
+      <div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;flex:none;"><dc-import name="Deck Page 1300" state="legalNoChip" theme="{{ theme }}" hint-size="1300px,760px"></dc-import></div>
+      <div style="border:1px solid var(--border);border-radius:18px;overflow:hidden;flex:none;"><dc-import name="Deck Page 390" state="legalNoChip" theme="{{ theme }}" hint-size="390px,1200px"></dc-import></div>
+    </div>
+
+    <div style="display:flex;align-items:baseline;gap:12px;"><span id="1c" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 8px;">1c</span><span style="font-size:17px;font-weight:600;">The tile on /decks · one footer for every deck</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">r2 · the bar on its own line · every tile the same height</span></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;max-width:1180px;">
+      <div style="border:1px solid var(--border);border-radius:10px;padding:13px 15px;background:var(--surface);display:flex;flex-direction:column;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">Row 1 · chips · 22px, never wraps</span><span style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);">Status pill, bracket chip, notice, 8px apart. <b style="color:var(--fg-body);font-weight:600;">One yield when the row is full:</b> a range chip drops its name and keeps its plate and both marks (Home's rule). Only range + <i>Not legal</i> reaches it, below a 366px cell.</span></div>
+      <div style="border:1px solid var(--border);border-radius:10px;padding:13px 15px;background:var(--surface);display:flex;flex-direction:column;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">Row 2 · the bar · 14px, its own line</span><span style="font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">Full width less a <b style="color:var(--fg-body);font-weight:600;">fixed 52px count slot</b> (tabular, right-aligned), so the track is the same length on every tile in a column and the fill is the only thing that moves.</span></div>
+      <div style="border:1px solid var(--border);border-radius:10px;padding:13px 15px;background:var(--surface);display:flex;flex-direction:column;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">Row 3 · detail · 14px, always reserved</span><span style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);">Detail figure left, last played right, at both widths. <b style="color:var(--fg-body);font-weight:600;">Drawn empty when there is nothing</b>, so the footer is a stated 92px and every tile on /decks is 248 + 92.</span></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">1300 · cells 340 · one grid row</span>
+      <div style="display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap;width:1060px;">
+        <div style="display:flex;flex-direction:column;gap:8px;"><dc-import name="Deck Tile" state="noAnalysis" w="{{ 340 }}" built="{{ 87 }}" played="3d ago" theme="{{ theme }}" hint-size="340px,342px"></dc-import><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);max-width:340px;">no analysis · building 87 / 99 · played</span></div>
+        <div style="display:flex;flex-direction:column;gap:8px;"><dc-import name="Deck Tile" state="neither" w="{{ 340 }}"  theme="{{ theme }}" hint-size="340px,342px"></dc-import><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);max-width:340px;">chip alone</span></div>
+        <div style="display:flex;flex-direction:column;gap:8px;"><dc-import name="Deck Tile" state="notice" w="{{ 340 }}" played="yesterday" theme="{{ theme }}" hint-size="340px,342px"></dc-import><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);max-width:340px;">unread data notice</span></div>
+        <div style="display:flex;flex-direction:column;gap:8px;"><dc-import name="Deck Tile" state="notice" w="{{ 340 }}" range="{{ true }}" theme="{{ theme }}" hint-size="340px,342px"></dc-import><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);max-width:340px;">range + notice: fits whole</span></div>
+        <div style="display:flex;flex-direction:column;gap:8px;"><dc-import name="Deck Tile" state="legalChip" w="{{ 340 }}" range="{{ true }}" theme="{{ theme }}" hint-size="340px,342px"></dc-import><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);max-width:340px;">range + Not legal: the range drops its name</span></div>
+        <div style="display:flex;flex-direction:column;gap:8px;"><dc-import name="Deck Tile" state="legalNoChip" w="{{ 340 }}"  theme="{{ theme }}" hint-size="340px,342px"></dc-import><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);max-width:340px;">no chip, Not legal: after the pill</span></div>
+      </div>
+      <span style="margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">390 · cell 358</span>
+      <div style="display:flex;align-items:flex-start;gap:14px;">
+        <div style="display:flex;flex-direction:column;gap:8px;"><dc-import name="Deck Tile" state="noAnalysis" w="{{ 358 }}" built="{{ 87 }}" theme="{{ theme }}" hint-size="358px,342px"></dc-import><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);max-width:358px;">no analysis</span></div>
+        <div style="display:flex;flex-direction:column;gap:8px;"><dc-import name="Deck Tile" state="notice" w="{{ 358 }}" range="{{ true }}" theme="{{ theme }}" hint-size="358px,342px"></dc-import><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);max-width:358px;">unread data notice</span></div>
+        <div style="display:flex;flex-direction:column;gap:8px;"><dc-import name="Deck Tile" state="legalChip" w="{{ 358 }}" range="{{ true }}" theme="{{ theme }}" hint-size="358px,342px"></dc-import><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);max-width:358px;">range + Not legal: marks only below 366</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="2" style="display:flex;flex-direction:column;gap:22px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;">2 · <span style="color:var(--accent);">Notices, the list and every entry · §3.2 · with the About entry</span></div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:26px;max-width:1180px;">
+      <div style="display:flex;flex-direction:column;gap:12px;font-size:13px;line-height:1.65;color:var(--fg-muted);">
+        <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">Container:</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">ModalChrome</span>, width 560, no mark, title <i>Notices</i>, aside <i>since analyzed {date}</i> (the deck's name when there is no analysis). <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">backLabel</span> defaults to the title, so a card opened from it reads <i>← Notices</i>.</p>
+        <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">Group order (§4.5):</b> Not legal in Commander · Outside the commander's colors · Game changers · Two-card combos · Mass land denial · Extra turns · Bracket rules. Legality first because it is a standing state and the only one that asks something of the deck. The bracket groups follow the findings row's own order and carry the findings' own glyphs and labels, so a reader who knows the tab knows this list.</p>
+        <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">Direction</b> is a word in a 64px mono column: <i>added</i> or <i>removed</i>, the same two for every card-scoped kind (the list's, or Spellbook's). <b style="color:var(--fg);font-weight:600;">Never + / −, green or amber</b>: those are the pending banner's marks for your own edits, and borrowing them is exactly the confusion §4.4 forbids. A rules entry reads <i>moved</i>.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;font-size:13px;line-height:1.65;color:var(--fg-muted);">
+        <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">Every card name opens the card</b>: bold <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg</span> on the dotted accent underline, the Overview's <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">CardDetailTrigger</span>, stacked on the sheet. A combo names both pieces joined by <i>+</i>, then Spellbook's own result line. A rules entry names the rule and says what it says now, in words, and lists no cards.</p>
+        <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">Dates (§4.7):</b> yes, on every data entry, mono 10.5 <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-faint</span>, right-aligned: the day the refresh published, as the app writes dates (<i>21 Sept</i>). No "week of": the log has the day. Legality entries carry no date; they are states, not events.</p>
+        <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">No prediction, anywhere.</b> No entry says what it would do to the bracket. The foot says only that the bracket holds until you re-analyze, and offers it.</p>
+      </div>
+    </div>
+    <div style="display:flex;align-items:baseline;gap:12px;"><span id="2a" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 8px;">2a</span><span style="font-size:17px;font-weight:600;">Every kind, both directions</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">a fixture: no deck gets this many at once</span></div>
+    <div style="display:flex;align-items:flex-start;gap:40px;">
+      <dc-import name="Notices Sheet" variant="all" theme="{{ theme }}" hint-size="560px,900px"></dc-import>
+      <div style="width:390px;border:1px solid var(--border);border-radius:18px;overflow:hidden;background:color-mix(in oklab, var(--bg) 72%, black);padding-top:52px;flex:none;"><dc-import name="Notices Sheet" variant="all" phone="{{ true }}" theme="{{ theme }}" hint-size="390px,1000px"></dc-import></div>
+    </div>
+    <div style="display:flex;align-items:baseline;gap:12px;"><span id="2b" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 8px;">2b</span><span style="font-size:17px;font-weight:600;">Opened from 1a, on the page</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">3 notices · the foot offers Re-analyze (list unchanged, so no credit note)</span></div>
+    <div style="display:flex;align-items:flex-start;gap:40px;">
+      <div style="position:relative;width:1300px;height:700px;overflow:hidden;border:1px solid var(--border);border-radius:12px;flex:none;">
+        <dc-import name="Deck Page 1300" state="read" theme="{{ theme }}" hint-size="1300px,640px"></dc-import>
+        <div style="position:absolute;inset:0;background:color-mix(in oklab, var(--bg) 72%, transparent);display:flex;align-items:center;justify-content:center;"><dc-import name="Notices Sheet" variant="data" theme="{{ theme }}" hint-size="560px,420px"></dc-import></div>
+      </div>
+      <div style="position:relative;width:390px;height:844px;overflow:hidden;border:1px solid var(--border);border-radius:18px;flex:none;">
+        <dc-import name="Deck Page 390" state="read" theme="{{ theme }}" hint-size="390px,1000px"></dc-import>
+        <div style="position:absolute;inset:0;background:color-mix(in oklab, var(--bg) 72%, transparent);"><div style="position:absolute;left:0;right:0;top:52px;bottom:0;background:var(--surface-raised);border-radius:14px 14px 0 0;overflow:hidden;"><dc-import name="Notices Sheet" variant="data" phone="{{ true }}" theme="{{ theme }}" hint-size="390px,500px"></dc-import></div></div>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:baseline;gap:12px;"><span id="2c" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 8px;">2c</span><span style="font-size:17px;font-weight:600;">The About entry · deck-notices</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">ships in the launch batch · ABOUT_VERSION 10, no second bump · full slots in ABOUT-entry.md</span></div>
+    <div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:26px;max-width:1180px;">
+      <div style="border:1px solid var(--border);border-radius:11px;overflow:hidden;">
+        <sc-for list="{{ about }}" as="a" hint-placeholder-count="10">
+          <div style="display:grid;grid-template-columns:130px minmax(0,1fr);border-bottom:1px solid var(--border);">
+            <span style="padding:10px 14px;background:var(--surface-sunken);font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">{{ a.k }}</span>
+            <span style="padding:10px 14px;font-size:12.5px;line-height:1.6;color:var(--fg-body);">{{ a.v }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;line-height:1.65;color:var(--fg-muted);">
+        <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">Batch:</b> joins r2's three changes under the same bump, 9 → 10, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">since: 10</span>. Entries 36 → 37. One re-pin of <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">about.version.json</span>.</p>
+        <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">Place:</b> chapter 03, directly after <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">deck-analysis</span>, because it is only readable once that entry has said what the held bracket is.</p>
+        <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">Specimen:</b> the Notices body (2a's 560 fixture, trimmed to four groups) above one chips row with the tag, at the plate width. The brief's §7 had this entry undrawn; it is drawn here at your instruction.</p>
+        <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">Copy:</b> apostrophes <i>’</i>, no em dash; queued for <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/copy-review</span>.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="3" style="display:flex;flex-direction:column;gap:22px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;">3 · <span style="color:var(--accent);">acknowledgement · §3.3</span></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;max-width:1180px;">
+      <sc-for list="{{ ack }}" as="k" hint-placeholder-count="3">
+        <div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px;background:var(--surface);display:flex;flex-direction:column;gap:8px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ k.h }}</span>
+          <span style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);">{{ k.b }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <p style="margin:0;max-width:1100px;font-size:13px;line-height:1.65;color:var(--fg-muted);text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">Why reading, not only re-analysis.</b> Re-analysis of a changed list writes the overview and spends a credit; making it the only way to quiet a notice would charge the player to dismiss news. Reading is the player's decision made: they know, and chose. The quiet tag keeps the list one tap away until a re-analysis makes it history. A new entry after reading brings the dot back.</p>
+    <div style="display:flex;align-items:baseline;gap:12px;"><span id="3a" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 8px;">3a</span><span style="font-size:17px;font-weight:600;">Read, not re-analyzed</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">no dot · --fg-locked on --border · still opens Notices · gone from the tile (1c)</span></div>
+    <div style="display:flex;align-items:flex-start;gap:40px;">
+      <div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;flex:none;"><dc-import name="Deck Page 1300" state="read" theme="{{ theme }}" hint-size="1300px,640px"></dc-import></div>
+      <div style="border:1px solid var(--border);border-radius:18px;overflow:hidden;flex:none;"><dc-import name="Deck Page 390" state="read" theme="{{ theme }}" hint-size="390px,1000px"></dc-import></div>
+    </div>
+  </section>
+
+  <section id="4" style="display:flex;flex-direction:column;gap:22px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;">4 · <span style="color:var(--accent);">the legality entries · §3.4</span></div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:26px;max-width:1180px;font-size:13px;line-height:1.65;color:var(--fg-muted);">
+      <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">Two groups, heads in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--danger</span></b>, no glyph, no date, no direction column: the card name, then the reason on its own line. <b style="color:var(--fg);font-weight:600;">Not legal in Commander.</b> is the one reason the app can state today, since <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">commander_legal</span> folds banned and not_legal together. If engineering keeps Scryfall's value, a banned card reads <i>Banned in Commander.</i> and nothing else moves.</p>
+      <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">Outside the commander's colors</b> names the colors that put the card outside, as pips and words, then the commander's identity: <i>Blue, outside Tovolar's colors (red and green).</i> One foot under the last legality group: <i>These stay until the cards leave the deck. Reading them does not clear them.</i> No remove action: a notice never edits.</p>
+    </div>
+    <div style="display:flex;align-items:baseline;gap:12px;"><span id="4a" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 8px;">4a</span><span style="font-size:17px;font-weight:600;">Never analyzed · legality only (from 1b)</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">aside is the deck's name · no Re-analyze foot</span></div>
+    <div style="display:flex;align-items:flex-start;gap:40px;">
+      <dc-import name="Notices Sheet" variant="legalNoChip" theme="{{ theme }}" hint-size="560px,300px"></dc-import>
+      <div style="width:390px;border:1px solid var(--border);border-radius:18px;overflow:hidden;background:color-mix(in oklab, var(--bg) 72%, black);padding-top:52px;flex:none;"><dc-import name="Notices Sheet" variant="legalNoChip" phone="{{ true }}" theme="{{ theme }}" hint-size="390px,300px"></dc-import></div>
+    </div>
+    <div style="display:flex;align-items:baseline;gap:12px;"><span id="4b" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 8px;">4b</span><span style="font-size:17px;font-weight:600;">Analyzed · a ban landed with the data</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">the tag reads Not legal · the list carries both</span></div>
+    <div style="display:flex;align-items:flex-start;gap:40px;">
+      <dc-import name="Notices Sheet" variant="legalChip" theme="{{ theme }}" hint-size="560px,520px"></dc-import>
+      <div style="border:1px solid var(--border);border-radius:18px;overflow:hidden;flex:none;"><dc-import name="Deck Page 390" state="legalChip" theme="{{ theme }}" hint-size="390px,1000px"></dc-import></div>
+    </div>
+  </section>
+
+  <section id="5" style="display:flex;flex-direction:column;gap:22px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;">5 · <span style="color:var(--accent);">beside the Re-analyze banner · §3.5 · the hardest call, §4.4</span></div>
+    <div style="max-width:1180px;border:1px solid var(--border);border-radius:11px;overflow:hidden;">
+      <div style="display:grid;grid-template-columns:130px minmax(0,1fr) minmax(0,1fr);background:var(--surface-sunken);border-bottom:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);"><span style="padding:10px 14px;"></span><span style="padding:10px 14px;">The banner · you changed the deck</span><span style="padding:10px 14px;border-left:1px solid var(--border);">The notice · the world changed under it</span></div>
+      <sc-for list="{{ versus }}" as="x" hint-placeholder-count="6">
+        <div style="display:grid;grid-template-columns:130px minmax(0,1fr) minmax(0,1fr);border-bottom:1px solid var(--border);font-size:12.5px;line-height:1.55;">
+          <span style="padding:9px 14px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);background:var(--surface-sunken);">{{ x.k }}</span>
+          <span style="padding:9px 14px;color:var(--fg-body);">{{ x.a }}</span>
+          <span style="padding:9px 14px;color:var(--fg-body);border-left:1px solid var(--border);">{{ x.b }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <p style="margin:0;max-width:1100px;font-size:13px;line-height:1.65;color:var(--fg-muted);text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">Inside the Analysis tab nothing is added.</b> The banner stays the only thing in the tab that talks about the reading's age, and its sentence is unchanged. The notice stays in the header, above every tab. <b style="color:var(--fg);font-weight:600;">One bridge, in one direction:</b> when both apply, Notices' foot does not offer a second Re-analyze; it points at the banner (<i>the Re-analyze on the Analysis tab reads both</i>). When only the notice applies there is no banner at all, so the foot is where re-analysis is offered. That is the one new place a Re-analyze appears, and it appears only when the banner cannot.</p>
+
+    <sc-for list="{{ combos }}" as="c" hint-placeholder-count="4">
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 8px;">{{ c.id }}</span><span style="font-size:17px;font-weight:600;">{{ c.title }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ c.note }}</span></div>
+        <div style="display:flex;align-items:flex-start;gap:40px;">
+          <div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;flex:none;"><dc-import name="Deck Page 1300" state="{{ c.state }}" theme="{{ theme }}" hint-size="1300px,760px"></dc-import></div>
+          <div style="border:1px solid var(--border);border-radius:18px;overflow:hidden;flex:none;"><dc-import name="Deck Page 390" state="{{ c.state }}" theme="{{ theme }}" hint-size="390px,1300px"></dc-import></div>
+        </div>
+      </div>
+    </sc-for>
+    <div style="display:flex;align-items:baseline;gap:12px;"><span id="5e" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 8px;">5e</span><span style="font-size:17px;font-weight:600;">Notices, opened on a deck that is also dirty</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">the foot points at the banner instead of offering its own button</span></div>
+    <div style="display:flex;align-items:flex-start;gap:40px;">
+      <dc-import name="Notices Sheet" variant="dirty" theme="{{ theme }}" hint-size="560px,420px"></dc-import>
+      <div style="width:390px;border:1px solid var(--border);border-radius:18px;overflow:hidden;background:color-mix(in oklab, var(--bg) 72%, black);padding-top:52px;flex:none;"><dc-import name="Notices Sheet" variant="dirty" phone="{{ true }}" theme="{{ theme }}" hint-size="390px,460px"></dc-import></div>
+    </div>
+  </section>
+
+  <section id="6" style="display:flex;flex-direction:column;gap:22px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;">6 · <span style="color:var(--accent);">the check before the synopsis · §3.6 · §4.6</span></div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:26px;max-width:1180px;font-size:13px;line-height:1.65;color:var(--fg-muted);">
+      <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">Withheld, not warned.</b> Analysis runs (ruling 7). The overview is not written while any legality entry stands, and the press says so <b style="color:var(--fg);font-weight:600;">before</b> it is made, in the credit note's own slot and form: <i>Reads the bracket only. The overview waits until every card is legal in Commander.</i> It reuses the used-up note's lead, so a player who has seen one knows the other. No credit is spent, and no confirm step sits in front of a free press.</p>
+      <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">Why not a passable warning.</b> A confirm on every press is friction on the free half to protect the paid half, and ruling 6 already says the allowance should not go on an illegal deck. Withholding is reversible in one edit and never blocks one. <b style="color:var(--fg);font-weight:600;">After the read</b>, the Overview says <i>No overview while this deck holds cards that are not legal in Commander.</i> with <i>Write one</i> in the disabled form and <i>See which →</i> opening Notices.</p>
+    </div>
+    <sc-for list="{{ checks }}" as="c" hint-placeholder-count="3">
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 8px;">{{ c.id }}</span><span style="font-size:17px;font-weight:600;">{{ c.title }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ c.note }}</span></div>
+        <div style="display:flex;align-items:flex-start;gap:40px;">
+          <div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;flex:none;"><dc-import name="Deck Page 1300" state="{{ c.state }}" theme="{{ theme }}" hint-size="1300px,760px"></dc-import></div>
+          <div style="border:1px solid var(--border);border-radius:18px;overflow:hidden;flex:none;"><dc-import name="Deck Page 390" state="{{ c.state }}" theme="{{ theme }}" hint-size="390px,1300px"></dc-import></div>
+        </div>
+      </div>
+    </sc-for>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      theme: this.props.theme || "amonkhet",
+      about: [
+        { k: "id", v: "deck-notices" },
+        { k: "Title", v: "When the cards change under a deck" },
+        { k: "Route · opens", v: "/decks · opens a deck" },
+        { k: "Chapter · width", v: "03 · Building the 99 · plate · since 10" },
+        { k: "Caption", v: "The bracket on a deck holds until you re-analyze it, even when the world moves. A card joins or leaves the Game Changer list, a card starts or stops counting as mass land denial or extra turns, Commander Spellbook adds or removes a combo among your cards, or the bracket rules themselves change. When one of those touches a deck’s own cards, a small notice sits after its bracket on the deck page and its tile. Open it to see what changed, card by card, and decide whether to re-analyze." },
+        { k: "Key 1", v: "reading the notices quiets them; they stay one tap away until you re-analyze, and leave the tile." },
+        { k: "Key 2", v: "a notice never re-analyzes, never marks the deck as changed and never says whether the bracket would move." },
+        { k: "Key 3", v: "the Re-analyze banner is about your own edits. A notice is about everything else." },
+        { k: "Key 4", v: "a card that is not legal in Commander, or sits outside your commander’s colors, is a notice too. It stays until the card leaves, and while it stands the overview is not written, so no credit is spent on it." },
+        { k: "Specimen", v: "Notices body (2a, four groups) above one chips row with the tag, plate width. Fixture: fixtures.deckNotices." },
+      ],
+      ack: [
+        { h: "Data · reading quiets it", b: "Opening Notices marks every data entry read. On the page the tag loses its dot and drops to --fg-locked on --border, and still opens the list. On the tile it goes. A later entry brings the dot back." },
+        { h: "Data · re-analysis clears it", b: "Re-analyze advances the deck's mark past every entry it has now seen. The tag leaves the page. The quiet rebuild after a deploy never advances the mark (brief §6)." },
+        { h: "Legality · only the card leaving", b: "Reading takes the dot off, and nothing else: the tag stays Not legal in --danger on the page and the tile until the card leaves the deck, or Scryfall makes it legal again. Re-analysis does not clear it." },
+      ],
+      versus: [
+        { k: "Who", a: "You. Your own edits set dirty.", b: "Scryfall, Spellbook, or a bracket rules change. Never an edit." },
+        { k: "Where", a: "The top of the Analysis tab, and only there.", b: "The header's chips row, after the bracket chip, over every tab; and the tile." },
+        { k: "Form", a: "A rail card with a sentence and a bone Re-analyze. An action.", b: "A 24px hairline tag, no plate, no button. Opens a list. A read." },
+        { k: "Ink", a: "Neutral rail, --fg-body, bone.", b: "--fact, or --danger for legality. Never bone, never accent, never the pending banner's green and amber." },
+        { k: "Words", a: "“Your deck has changes since it was analyzed…”", b: "“3 notices” · “Not legal”. The face never says change or changed; entries say added, removed, moved." },
+        { k: "Goes away", a: "When you re-analyze.", b: "Quiets when read; clears on re-analyze. Legality: when the card leaves." },
+      ],
+      combos: [
+        { id: "5a", state: "neither", title: "Neither", note: "chip alone · no banner" },
+        { id: "5b", state: "dirty", title: "Dirty only", note: "pending banner + the Re-analyze banner · no tag" },
+        { id: "5c", state: "notice", title: "Notice only", note: "tag · no banner: Re-analyze lives in Notices' foot" },
+        { id: "5d", state: "both", title: "Both", note: "tag in the header, banner in the tab, nothing shared" },
+      ],
+      checks: [
+        { id: "6a", state: "legalNoChip", title: "Analyze, a card not legal", note: "the note replaces the credit note · See which → opens Notices" },
+        { id: "6b", state: "checkBanner", title: "Re-analyze, dirty and a card not legal", note: "the banner's note, same line" },
+        { id: "6c", state: "withheld", title: "After: the bracket is read, the overview is withheld", note: "Write one disabled · See which →" },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

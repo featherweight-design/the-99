@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-family:'IBM Plex Sans',sans-serif;display:flex;position:relative;">
+  <sc-if value="{{ labelled }}" hint-placeholder-val="{{ true }}">
+    <aside style="width:88px;flex:none;height:100%;background:var(--surface-rail);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:14px 0;box-sizing:border-box;">
+      <div style="margin-bottom:20px;display:flex;">{{ markRail }}</div>
+      <nav style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <sc-for list="{{ nav }}" as="n" hint-placeholder-count="5">
+          <sc-if value="{{ n.active }}"><span style="width:72px;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:var(--elevated);color:var(--fg);">{{ n.icon }}<span style="font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:12px;letter-spacing:0.06em;">{{ n.label }}</span></span></sc-if>
+          <sc-if value="{{ n.pending }}"><span style="position:relative;width:72px;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:var(--elevated-hover);color:var(--fg);">{{ n.icon }}<span style="font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:12px;letter-spacing:0.06em;">{{ n.label }}</span><span style="position:absolute;left:0;right:0;bottom:1px;display:flex;justify-content:center;">{{ pip }}</span></span></sc-if>
+          <sc-if value="{{ n.rest }}"><span style="width:72px;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--fg-faint);">{{ n.icon }}<span style="font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:12px;letter-spacing:0.06em;">{{ n.label }}</span></span></sc-if>
+        </sc-for>
+      </nav>
+      <span style="margin-top:auto;width:30px;height:30px;border-radius:50%;background:var(--surface);border:1px solid var(--border-strong);box-sizing:border-box;"></span>
+    </aside>
+  </sc-if>
+  <sc-if value="{{ today }}" hint-placeholder-val="{{ false }}">
+    <aside style="width:62px;flex:none;height:100%;background:var(--surface-rail);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:14px 0;box-sizing:border-box;">
+      <div style="margin-bottom:20px;display:flex;">{{ markRail }}</div>
+      <nav style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+        <sc-for list="{{ nav }}" as="n" hint-placeholder-count="5">
+          <sc-if value="{{ n.active }}"><span style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--elevated);color:var(--fg);">{{ n.icon }}</span></sc-if>
+          <sc-if value="{{ n.pending }}"><span style="position:relative;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--elevated-hover);color:var(--fg);">{{ n.icon }}<span style="position:absolute;left:0;right:0;bottom:2px;display:flex;justify-content:center;">{{ pip }}</span></span></sc-if>
+          <sc-if value="{{ n.hover }}"><span style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--elevated-hover);color:var(--fg-faint);">{{ n.icon }}</span></sc-if>
+          <sc-if value="{{ n.rest }}"><span style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--fg-faint);">{{ n.icon }}</span></sc-if>
+        </sc-for>
+      </nav>
+      <span style="margin-top:auto;width:30px;height:30px;border-radius:50%;background:var(--surface);border:1px solid var(--border-strong);box-sizing:border-box;"></span>
+    </aside>
+    <sc-if value="{{ showLabel }}" hint-placeholder-val="{{ false }}">
+      <span style="position:absolute;left:70px;top:{{ labelTop }};z-index:5;height:28px;display:flex;align-items:center;padding:0 10px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface-raised);font-size:12.5px;font-weight:500;color:var(--fg);box-shadow:0 10px 24px rgba(0,0,0,.4);white-space:nowrap;">{{ labelText }}</span>
+    </sc-if>
+  </sc-if>
+  <div style="flex:1;min-width:0;display:flex;flex-direction:column;position:relative;">
+    <sc-if value="{{ measure }}" hint-placeholder-val="{{ true }}">
+      <div style="position:absolute;inset:0;border:1px dashed var(--accent);pointer-events:none;z-index:2;"></div>
+      <span style="position:absolute;top:6px;right:8px;z-index:3;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--bg);background:var(--accent);border-radius:4px;padding:2px 7px;">main · {{ mainW }}px</span>
+    </sc-if>
+    <header style="display:flex;align-items:flex-end;gap:16px;padding:22px 26px 0;">
+      <div style="flex:1;min-width:0;">
+        <p style="margin:0 0 7px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);">4,335 cards · read 2 days ago</p>
+        <h1 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:28px;line-height:1;">Welcome back</h1>
+      </div>
+      <span style="display:flex;align-items:center;gap:8px;height:32px;padding:0 12px;border-radius:8px;border:1px solid var(--border-strong);font-size:12.5px;color:var(--fg-body);white-space:nowrap;">{{ refresh }}Update collection</span>
+      <span style="display:flex;align-items:center;height:32px;padding:0 14px;border-radius:8px;background:var(--fg);color:var(--bg);font-size:12.5px;font-weight:600;white-space:nowrap;">New deck</span>
+    </header>
+    <div style="display:flex;flex-direction:{{ bodyDir }};gap:{{ bodyGap }};padding:{{ bodyPad }};">
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:{{ colGap }};">
+        <section style="display:flex;flex-direction:column;gap:11px;">
+          <h2 style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:400;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Ready to build</h2>
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;">
+            <sc-for list="{{ heroes }}" as="h" hint-placeholder-count="2">
+              <div style="position:relative;min-width:0;overflow:hidden;border-radius:14px;border:1px solid var(--border);background:var(--surface-inset);">
+                <div style="position:relative;height:288px;overflow:hidden;">
+                  <img src="{{ h.art }}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center top;">
+                  <div style="position:absolute;inset:0;background:linear-gradient(to top, color-mix(in srgb, var(--bg) 88%, transparent) 0, color-mix(in srgb, var(--bg) 55%, transparent) 71px, transparent 150px);"></div>
+                  <div style="position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;gap:4px;padding:12px;">
+                    <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+                      <p style="margin:0;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-family:'Cinzel',serif;font-weight:600;font-size:18px;line-height:1.15;text-shadow:0 1px 2px rgba(0,0,0,0.6), 0 0 12px rgba(0,0,0,0.4);">{{ h.name }}</p>
+                      <span style="display:flex;gap:3px;flex:none;"><sc-for list="{{ h.pips }}" as="p"><span style="width:9px;height:9px;border-radius:2px;background:{{ p }};"></span></sc-for></span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+                      <p style="margin:0;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.25;color:var(--fg-body);text-shadow:0 1px 2px rgba(0,0,0,0.6);">{{ h.type }}</p>
+                      <div style="margin-left:auto;flex:none;height:22px;display:flex;align-items:center;padding:0 8px;border-radius:7px;background:var(--bg);border:1px solid var(--border-strong);font-family:'IBM Plex Mono',monospace;font-size:10.5px;"><span style="color:var(--fg);">{{ h.score }}</span><span style="letter-spacing:0.1em;color:var(--fg-faint);"> /100 fit</span></div>
+                    </div>
+                  </div>
+                </div>
+                <div style="padding:14px;border-top:1px solid var(--border);">
+                  <div style="display:flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:11px;white-space:nowrap;overflow:hidden;"><span style="color:var(--fg-faint);">{{ h.pool }} of your cards fit</span><span style="color:var(--accent);">{{ h.inUse }} in use</span></div>
+                  <div style="margin-top:12px;height:32px;border-radius:8px;background:var(--fg);color:var(--bg);display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:600;">See the pool</div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">26 more scored 66 or better</span>
+            <span style="display:flex;align-items:center;height:32px;padding:0 13px;border-radius:8px;border:1px solid var(--border-strong);font-size:12.5px;color:var(--fg);">All commanders</span>
+          </div>
+        </section>
+        <section style="display:flex;flex-direction:column;gap:11px;">
+          <div style="margin-top:6px;display:flex;align-items:baseline;gap:8px;">
+            <h2 style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:400;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Pick up where you left off</h2>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;color:var(--fg-locked);">last touched</span>
+          </div>
+          <div style="display:flex;flex-direction:{{ rowsDir }};flex-wrap:wrap;gap:12px;">
+            <sc-for list="{{ decks }}" as="d" hint-placeholder-count="4">
+              <div style="position:relative;height:72px;min-width:0;flex:{{ rowFlex }};display:flex;align-items:center;overflow:hidden;border-radius:12px;border:1px solid var(--border);background:var(--surface-inset);padding:4px {{ rowPr }} 4px 0;box-sizing:border-box;">
+                <img src="{{ d.art }}" alt="" style="position:absolute;left:0;top:0;width:99px;height:100%;object-fit:cover;">
+                <div style="position:absolute;left:0;top:0;width:99px;height:100%;background:linear-gradient(to right, transparent 55%, var(--surface-inset));"></div>
+                <span style="position:relative;flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;padding-left:{{ rowPl }};">
+                  <span style="display:flex;align-items:baseline;gap:8px;min-width:0;"><span style="min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-family:'Cinzel',serif;font-weight:600;font-size:14.5px;line-height:1.2;">{{ d.name }}</span><span style="margin-left:auto;flex:none;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);">{{ d.stamp }}</span></span>
+                  <span style="display:flex;align-items:center;gap:14px;height:24px;min-width:0;">
+                    <span style="height:19px;flex:none;display:flex;align-items:center;padding:0 7px;border-radius:5px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:{{ d.pillInk }};background:{{ d.pillFill }};border:1px {{ d.pillEdge }} var(--border-strong);">{{ d.status }}</span>
+                    <span style="flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);">{{ d.commander }}</span>
+                  </span>
+                  <span style="display:flex;align-items:center;gap:10px;min-width:0;line-height:1.2;">
+                    <span style="position:relative;flex:1;min-width:0;height:3px;border-radius:2px;overflow:hidden;background:var(--border-strong);"><span style="position:absolute;inset:0;border-radius:2px;background:{{ d.bar }};"></span></span>
+                    <span style="flex:none;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ d.count }}</span>
+                  </span>
+                </span>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+      </div>
+      <div style="width:{{ commitW }};flex:none;display:flex;flex-direction:column;gap:11px;">
+        <h2 style="margin:4px 0 0;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:400;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Commitments</h2>
+        <div style="display:flex;flex-direction:column;gap:11px;padding:14px;border-radius:14px;border:1px solid var(--border);background:var(--surface-inset);">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;"><span style="font-size:13px;color:var(--fg-body);">Cards in use</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);">1,342 of 4,335</span></div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;"><span style="font-size:13px;color:var(--fg-body);">Spoken for twice</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--danger);">3 cards</span></div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;"><span style="font-size:13px;color:var(--fg-body);">To buy, all decks</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--fg);">285 · $985.14</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1300,&quot;height&quot;:830},&quot;vw&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:1300,&quot;tsType&quot;:&quot;number&quot;},&quot;rail&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;labelled&quot;,&quot;today&quot;],&quot;default&quot;:&quot;labelled&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;pending&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;none&quot;,&quot;nav&quot;],&quot;default&quot;:&quot;none&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;hover&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;collection&quot;,&quot;commanders&quot;,&quot;discover&quot;,&quot;decks&quot;],&quot;default&quot;:null,&quot;tsType&quot;:&quot;string&quot;},&quot;measure&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;pip&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;ReactNode&quot;},&quot;markRail&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;ReactNode&quot;},&quot;icons&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props;
+    const h = React.createElement;
+    const vw = p.vw ?? 1300;
+    const labelled = (p.rail ?? "labelled") === "labelled";
+    const railW = labelled ? 88 : 62;
+    const split = vw >= 1180;
+    const icons = p.icons ?? {};
+    const pending = p.pending ?? "none";
+    const hoverKey = p.hover ?? null;
+    const keys = [["home", "Home"], ["collection", "Collection"], ["commanders", "Commanders"], ["discover", "Discover"], ["decks", "Decks"]];
+    const nav = keys.map(([k, label]) => {
+      const active = k === "home", pend = pending === "nav" && k === "commanders", hov = !active && !pend && k === hoverKey;
+      return { label, icon: icons[k], active, pending: pend, hover: hov, rest: !active && !pend && !hov };
+    });
+    const hIdx = keys.findIndex(([k]) => k === hoverKey);
+    const showLabel = !labelled && hIdx >= 0;
+    const labelText = hIdx >= 0 ? keys[hIdx][1] : "";
+    const labelTop = `${78 + 42 * Math.max(hIdx, 0)}px`;
+    const art = (n) => "./art/" + n;
+    const heroes = [
+      { art: art("hero-sokka.png"), name: "Sokka, Tenacious Tactician", pips: ["var(--r)", "var(--u)", "var(--w)"], type: "Legendary Creature — Human Warrior Ally", score: 69, pool: 1631, inUse: 653 },
+      { art: art("hero-master.png"), name: "The Master, Transcendent", pips: ["var(--b)", "var(--g)", "var(--u)"], type: "Legendary Artifact Creature — Mutant", score: 70, pool: 1753, inUse: 643 },
+    ];
+    const pill = (tok, alpha, dashed) => ({ pillInk: `var(${tok === "--fg-body" ? tok : tok})`, pillFill: `color-mix(in srgb, var(${tok}) ${alpha}, var(--bg))`, pillEdge: dashed ? "dashed" : "solid" });
+    const draft = pill("--fg-body", "14%", true), done = pill("--success", "18%"), buy = pill("--accent", "18%");
+    const decks = [
+      { art: art("resume-omnath.png"), name: "HD - Omnath", stamp: "edited yesterday", status: "Draft", ...draft, commander: "Omnath, Locus of Creation", count: "99 / 99 · 67 cards", bar: "var(--fg-body)" },
+      { art: art("resume-wizards.png"), name: "HD - Wizards", stamp: "edited yesterday", status: "Complete", ...done, commander: "Baral, Chief of Compliance", count: "99 / 99", bar: "var(--success)" },
+      { art: art("resume-kilo.png"), name: "HD Tune - Counter Intelligence", stamp: "committed 2d ago", status: "To buy", ...buy, commander: "Kilo, Apogee Mind", count: "99 / 99 · 14 cards", bar: "var(--accent)" },
+      { art: art("resume-aang.png"), name: "HD - Avatar Aang", stamp: "played 2d ago", status: "Complete", ...done, commander: "Avatar Aang // Aang, Master of Elements", count: "99 / 99", bar: "var(--success)" },
+    ];
+    const refresh = h("svg", { width: 14, height: 14, viewBox: "0 0 20 20", fill: "none", stroke: "currentColor", strokeWidth: 1.6, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true }, h("path", { d: "M16.5 10a6.5 6.5 0 1 1-2.1-4.8" }), h("path", { d: "M16.8 3.4v3.2h-3.2" }));
+    return {
+      labelled, today: !labelled, nav, showLabel, labelText, labelTop, pip: p.pip, markRail: p.markRail, refresh, heroes, decks,
+      measure: p.measure ?? true, mainW: vw - railW,
+      bodyDir: split ? "row" : "column", bodyGap: split ? "20px" : "12px", bodyPad: split ? "20px 26px 26px" : "14px 16px 16px",
+      colGap: split ? "11px" : "12px", commitW: split ? "316px" : "auto",
+      rowsDir: split ? "row" : "column", rowFlex: split ? "1 1 calc(50% - 6px)" : "none",
+      rowPr: split ? "18px" : "10px", rowPl: vw >= 1000 ? "116px" : "108px",
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&family=Syncopate:wght@400;700&family=Metamorphous&family=Chakra+Petch:wght@400;600;700&family=Trirong:wght@400;500;600;700&family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; background: #14110E; }
+  a { color: #CF8745; text-decoration: none; }
+  a:hover { color: #DE9757; text-decoration: underline; }
+</style>
+</helmet>
+
+<div style="background:#14110E;color:#C0B8A6;font-family:'IBM Plex Sans',sans-serif;padding:48px 40px 64px;display:flex;flex-direction:column;gap:44px;max-width:1180px;margin:0 auto;">
+
+  <header style="display:flex;flex-direction:column;gap:16px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;">The 99 · Six-theme visual system · Replacement pass</div>
+    <h1 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:38px;line-height:1.15;color:#EDE6D8;">Two themes out, two in</h1>
+    <p style="margin:0;font-size:15.5px;line-height:1.75;max-width:74ch;text-wrap:pretty;">Moonlit and Screen Glow are cut. That leaves four survivors holding four hues, and the question is which two hues the replacements should claim &mdash; measured, not eyeballed, because 15&ndash;25&deg; of separation is what caused this pass in the first place.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.1em;text-transform:uppercase;color:#A59C89;background:#1E1A15;box-shadow:inset 0 0 0 1px #2B241B;border-radius:4px;padding:7px 11px;">plane-anchored &middot; weather-and-hour names</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.1em;text-transform:uppercase;color:#A59C89;background:#1E1A15;box-shadow:inset 0 0 0 1px #2B241B;border-radius:4px;padding:7px 11px;">semantic hues: separated, not avoided</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.1em;text-transform:uppercase;color:#A59C89;background:#1E1A15;box-shadow:inset 0 0 0 1px #2B241B;border-radius:4px;padding:7px 11px;">accent floor 6.0 @ 14px</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.1em;text-transform:uppercase;color:#8FB84A;background:#1E1A15;box-shadow:inset 0 0 0 1px #2B241B;border-radius:4px;padding:7px 11px;">R6 &middot; palettes refit to chroma contract</span>
+    </div>
+  </header>
+
+  <div style="border:1px solid #3A3229;border-left:3px solid #C6533F;border-radius:10px;background:#1E1A15;padding:20px 24px;display:flex;flex-direction:column;gap:10px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#C6533F;">Consequence of the cut</div>
+    <p style="margin:0;font-size:14.5px;line-height:1.7;text-wrap:pretty;">Keeping Oil and Iron and Rune Frost keeps both <code style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#A59C89;">--accent</code> AA failures at 14px &mdash; <b style="color:#EDE6D8;font-weight:600;">4.3</b> and <b style="color:#EDE6D8;font-weight:600;">4.5</b>, the only two in the set. The link-out ruling that routes outbound ink to <code style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#A59C89;">--accent-hover</code> therefore stays permanent rather than transitional. I have set the floor for the two new accents at <b style="color:#EDE6D8;font-weight:600;">6.0</b> so they add no further debt to that account.</p>
+  </div>
+
+  <section style="display:flex;flex-direction:column;gap:22px;">
+    <div style="display:flex;flex-direction:column;gap:7px;">
+      <h2 style="margin:0;font-family:'Cinzel',serif;font-weight:600;font-size:25px;color:#EDE6D8;">1 &middot; The hue map</h2>
+      <p style="margin:0;font-size:14.5px;line-height:1.7;max-width:70ch;">Accent hue in OKLCH, 0&ndash;360. Survivors solid, candidates outlined, semantic tokens as hairlines below the axis.</p>
+    </div>
+
+    <div style="border:1px solid #2B241B;border-radius:12px;background:#1A1611;padding:34px 28px 24px;">
+      <div style="position:relative;height:132px;">
+        <div style="position:absolute;left:0;right:0;top:58px;height:1px;background:#3A3229;"></div>
+        <sc-for list="{{ hueMarks }}" as="m" hint-placeholder-count="7">
+          <div style="{{ m.wrapStyle }}">
+            <div style="{{ m.labelStyle }}">{{ m.name }}</div>
+            <div style="{{ m.dotStyle }}"></div>
+            <div style="{{ m.degStyle }}">{{ m.deg }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6E6654;border-top:1px solid #2B241B;padding-top:10px;">
+        <span>0</span><span>60</span><span>120</span><span>180</span><span>240</span><span>300</span><span>360</span>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;">
+      <div style="border:1px solid #2B241B;border-radius:10px;background:#1A1611;padding:18px 20px;display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;">Survivor spread</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:27px;color:#EDE6D8;">62&deg;</div>
+        <p style="margin:0;font-size:13.5px;line-height:1.65;color:#A59C89;">Tightest gap among the four kept themes &mdash; brass to Neon Rain. This is the number a new theme has to respect.</p>
+      </div>
+      <div style="border:1px solid #2B241B;border-radius:10px;background:#1A1611;padding:18px 20px;display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;">What was cut</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:27px;color:#C6533F;">15&deg;</div>
+        <p style="margin:0;font-size:13.5px;line-height:1.65;color:#A59C89;">Moonlit to Oil and Iron. Below roughly 40&deg; two accents stop reading as different decisions at UI sizes.</p>
+      </div>
+      <div style="border:1px solid #2B241B;border-radius:10px;background:#1A1611;padding:18px 20px;display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;">Open territory</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:27px;color:#EDE6D8;">85&ndash;300&deg;</div>
+        <p style="margin:0;font-size:13.5px;line-height:1.65;color:#A59C89;">One wide corridor between brass and teal, one narrow one between blue and pink. Two slots, two corridors.</p>
+      </div>
+    </div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:24px;">
+    <div style="display:flex;flex-direction:column;gap:7px;">
+      <h2 style="margin:0;font-family:'Cinzel',serif;font-weight:600;font-size:25px;color:#EDE6D8;">2 &middot; The three candidates</h2>
+      <p style="margin:0;font-size:14.5px;line-height:1.7;max-width:70ch;">Each is a complete 35-token palette with a display face, shown against the commander row &mdash; the densest surface in the app and the one where an accent either works or does not.</p>
+    </div>
+
+    <sc-for list="{{ candidates }}" as="c" hint-placeholder-count="3">
+      <div style="{{ c.shellStyle }}">
+        <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:14px;padding:22px 26px 18px;border-bottom:1px solid #2B241B;">
+          <span style="{{ c.badgeStyle }}">{{ c.verdict }}</span>
+          <div style="display:flex;flex-direction:column;gap:3px;">
+            <div style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;color:#EDE6D8;line-height:1.1;">{{ c.name }}</div>
+            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;">
+              <code style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#A59C89;background:#211D18;box-shadow:inset 0 0 0 1px #2B241B;border-radius:3px;padding:3px 6px;">{{ c.idToken }}</code>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#8B8270;">{{ c.plane }} &middot; {{ c.face }}</span>
+            </div>
+          </div>
+          <div style="margin-left:auto;display:flex;gap:22px;">
+            <div style="text-align:right;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:#6E6654;">nearest hue</div>
+              <div style="{{ c.sepStyle }}">{{ c.sep }}</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:#6E6654;">accent @14px</div>
+              <div style="{{ c.ratioStyle }}">{{ c.ratio }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:0;">
+          <div style="{{ c.previewStyle }}">
+            <div style="{{ c.previewHeadStyle }}">{{ c.previewHeading }}</div>
+            <sc-for list="{{ c.rows }}" as="r" hint-placeholder-count="3">
+              <div style="{{ r.rowStyle }}">
+                <span style="{{ r.rankStyle }}">{{ r.rank }}</span>
+                <div style="{{ r.artStyle }}"></div>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;">
+                  <div style="{{ r.nameStyle }}">{{ r.name }}</div>
+                  <div style="{{ r.typeStyle }}">{{ r.type }}</div>
+                  <div style="{{ r.barTrackStyle }}"><div style="{{ r.barFillStyle }}"></div></div>
+                </div>
+                <div style="text-align:right;flex:none;display:flex;flex-direction:column;gap:3px;">
+                  <span style="{{ r.pctStyle }}">{{ r.pct }}</span>
+                  <span style="{{ r.ofStyle }}">{{ r.of }}</span>
+                </div>
+              </div>
+            </sc-for>
+            <div style="{{ c.ctaRowStyle }}">
+              <span style="{{ c.ctaStyle }}">Build this deck</span>
+              <span style="{{ c.linkStyle }}">Buy at Mana Pool &#8599;</span>
+            </div>
+          </div>
+
+          <div style="padding:22px 26px;display:flex;flex-direction:column;gap:18px;border-left:1px solid #2B241B;">
+            <div style="display:flex;flex-direction:column;gap:9px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6E6654;">{{ c.specimenCaption }}</div>
+              <div style="{{ c.specimenStyle }}">{{ c.specimenText }}</div>
+            </div>
+            <p style="margin:0;font-size:14px;line-height:1.7;color:#C0B8A6;text-wrap:pretty;">{{ c.rationale }}</p>
+            <div style="display:flex;flex-direction:column;gap:9px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6E6654;">Ground &middot; ink &middot; accent ramp</div>
+              <div style="display:flex;flex-wrap:wrap;gap:4px;">
+                <sc-for list="{{ c.swatches }}" as="s" hint-placeholder-count="12">
+                  <div style="{{ s.style }}" title="{{ s.title }}"></div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:9px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6E6654;">Semantic separation</div>
+              <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                <sc-for list="{{ c.semantics }}" as="sm" hint-placeholder-count="3">
+                  <span style="{{ sm.style }}">{{ sm.label }}</span>
+                </sc-for>
+              </div>
+              <p style="margin:0;font-size:13px;line-height:1.65;color:#A59C89;text-wrap:pretty;">{{ c.semanticNote }}</p>
+            </div>
+            <div style="{{ c.riskStyle }}">
+              <b style="color:#EDE6D8;font-weight:600;">Risk &mdash; </b>{{ c.risk }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:20px;">
+    <h2 style="margin:0;font-family:'Cinzel',serif;font-weight:600;font-size:25px;color:#EDE6D8;">3 &middot; Side by side, small</h2>
+    <p style="margin:0;font-size:14.5px;line-height:1.7;max-width:70ch;">The four survivors and three candidates at the size accents actually render. Scan for two that read as different decisions rather than two shades of one.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;">
+      <sc-for list="{{ allThemes }}" as="t" hint-placeholder-count="7">
+        <div style="{{ t.tileStyle }}">
+          <div style="{{ t.tileNameStyle }}">{{ t.short }}</div>
+          <div style="{{ t.tileMetaStyle }}">{{ t.role }}</div>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-top:2px;">
+            <div style="{{ t.tileLineStyle }}">Ghired, Conclave Exile</div>
+            <div style="{{ t.tileAccentStyle }}">82% of the ninety-nine</div>
+          </div>
+          <div style="display:flex;gap:3px;margin-top:auto;">
+            <div style="{{ t.chipA }}"></div><div style="{{ t.chipB }}"></div><div style="{{ t.chipC }}"></div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:24px;">
+    <div style="display:flex;flex-direction:column;gap:7px;">
+      <h2 style="margin:0;font-family:'Cinzel',serif;font-weight:600;font-size:25px;color:#EDE6D8;">4 &middot; Renaming the set</h2>
+      <p style="margin:0;font-size:14.5px;line-height:1.7;max-width:74ch;text-wrap:pretty;">Canopy and Witching Hour are in. With three of the four survivors renamed anyway, the naming <em>system</em> is the thing to decide once &mdash; three below, each internally consistent in category, because a set where two names are weather and two are minerals reads as an accident.</p>
+      <p style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.7;color:#8B8270;max-width:74ch;">Sections 1&ndash;3 above use the pre-rename labels &mdash; they are the record of how the candidates were measured and proposed. This section is where the names are decided.</p>
+    </div>
+
+    <div style="border:1px solid #3A3229;border-left:3px solid #6FA368;border-radius:10px;background:#1E1A15;padding:20px 24px;display:flex;flex-direction:column;gap:10px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#6FA368;">Settled &middot; the plane prefix stays</div>
+      <p style="margin:0;font-size:14.5px;line-height:1.7;text-wrap:pretty;">Each theme stays anchored to a plane; the second half is what changes. That anchoring is a real constraint on the name, not decoration &mdash; <b style="color:#EDE6D8;font-weight:600;">a weather name now has to be weather that could occur on that plane</b>, which is what separates this from a list of moods.</p>
+      <p style="margin:0;font-size:14.5px;line-height:1.7;text-wrap:pretty;">One name did not survive that test. <em>Salt Fog</em> was the first draft for New Phyrexia and it reached for a coastal mood on a plane made of oil and metal. It is now <b style="color:#EDE6D8;font-weight:600;">Oil Haze</b> &mdash; still a condition of light, unmistakably Phyrexian, and it avoids a second &lsquo;Rain&rsquo; sitting next to Kamigawa's.</p>
+    </div>
+
+    <sc-for list="{{ namingSystems }}" as="ns" hint-placeholder-count="3">
+      <div style="{{ ns.shellStyle }}">
+        <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:14px;padding:20px 24px 16px;border-bottom:1px solid #2B241B;">
+          <span style="{{ ns.badgeStyle }}">{{ ns.letter }}</span>
+          <div style="display:flex;flex-direction:column;gap:3px;">
+            <div style="font-family:'Cinzel',serif;font-weight:700;font-size:20px;color:#EDE6D8;line-height:1.1;">{{ ns.title }}</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.1em;text-transform:uppercase;color:#8B8270;">{{ ns.category }}</div>
+          </div>
+          <div style="margin-left:auto;text-align:right;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:#6E6654;">survivor renames</div>
+            <div style="{{ ns.churnStyle }}">{{ ns.churn }}</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:10px;padding:18px 24px;">
+          <sc-for list="{{ ns.names }}" as="n" hint-placeholder-count="6">
+            <div style="{{ n.tileStyle }}">
+              <div style="{{ n.planeStyle }}">{{ n.plane }}</div>
+              <div style="{{ n.nameStyle }}">{{ n.name }}</div>
+              <div style="{{ n.wasStyle }}">{{ n.was }}</div>
+              <div style="display:flex;gap:3px;margin-top:auto;">
+                <div style="{{ n.chipA }}"></div><div style="{{ n.chipB }}"></div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <p style="margin:0;padding:0 24px 20px;font-size:13.5px;line-height:1.7;color:#A59C89;text-wrap:pretty;">{{ ns.note }}</p>
+      </div>
+    </sc-for>
+
+    <div style="border:1px solid #3A3229;border-left:3px solid #C6533F;border-radius:10px;background:#1E1A15;padding:20px 24px;display:flex;flex-direction:column;gap:10px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#C6533F;">The one real cost</div>
+      <p style="margin:0;font-size:14.5px;line-height:1.7;text-wrap:pretty;">Display names are free to change &mdash; they live in <code style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#A59C89;">themes &middot; copy strings.ts</code>. Keeping the plane prefix means <b style="color:#EDE6D8;font-weight:600;">four of the six ids need no migration at all</b>: <code style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#A59C89;">amonkhet</code>, <code style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#A59C89;">kamigawa</code>, <code style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#A59C89;">phyrexia</code> and <code style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#A59C89;">kaldheim</code> stay exactly as they are, and the new two take <code style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#A59C89;">ixalan</code> and <code style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#A59C89;">eldraine</code>. That is the practical dividend of the decision.</p>
+      <p style="margin:0;font-size:14.5px;line-height:1.7;text-wrap:pretty;">What still needs writing is the <b style="color:#EDE6D8;font-weight:600;">fallback for the two removals</b>: users sitting on <code style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#A59C89;">innistrad</code> or <code style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#A59C89;">duskmourn</code> have a persisted <code style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#A59C89;">data-theme</code> that will no longer resolve. Map them to their nearest survivor rather than the default &mdash; <code style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#A59C89;">innistrad&nbsp;&rarr;&nbsp;phyrexia</code> and <code style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#A59C89;">duskmourn&nbsp;&rarr;&nbsp;kaldheim</code>, since the pairs were 15&ndash;25&deg; apart, so nobody wakes up to a theme they did not choose.</p>
+    </div>
+  </section>
+
+  <div style="border:1px solid #3A3229;border-left:3px solid #CF8745;border-radius:10px;background:#1E1A15;padding:24px 28px;display:flex;flex-direction:column;gap:14px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;">Recommendation</div>
+    <p style="margin:0;font-size:15.5px;line-height:1.7;"><b style="color:#EDE6D8;font-weight:600;">Names: system B, Weather and hour &mdash; settled.</b> Plane prefix retained. The six ship as <b style="color:#EDE6D8;font-weight:600;">Amonkhet &middot; Low Sun</b>, <b style="color:#EDE6D8;font-weight:600;">Kamigawa &middot; Neon Rain</b>, <b style="color:#EDE6D8;font-weight:600;">New Phyrexia &middot; Oil Haze</b>, <b style="color:#EDE6D8;font-weight:600;">Kaldheim &middot; First Frost</b>, <b style="color:#EDE6D8;font-weight:600;">Ixalan &middot; Canopy</b>, <b style="color:#EDE6D8;font-weight:600;">Eldraine &middot; Witching Hour</b> &mdash; three of the four survivors renamed, two of the six names kept, one plane-fit correction. <b style="color:#EDE6D8;font-weight:600;">Not chosen for churn:</b> system A renames the same number of survivors. It is chosen because it keeps the two names already settled in &sect;2 and because it is the only one of the three systems whose category survives a seventh theme &mdash; there is always another condition of light, whereas the mineral list runs out and the single words collide with UI copy.</p>
+    <p style="margin:0;font-size:15.5px;line-height:1.7;"><b style="color:#EDE6D8;font-weight:600;">Ixalan &middot; Canopy and Eldraine &middot; Witching Hour. Ember Steppe does not ship.</b></p>
+    <p style="margin:0;font-size:14.5px;line-height:1.75;text-wrap:pretty;">Canopy takes the wide corridor at 118&deg; and clears its nearest neighbour by 61&deg; &mdash; the only candidate that matches the survivors' own 62&deg; spread. Witching Hour takes the narrow one at 300&deg; with 35&deg; of clearance to First Frost (the theme named Rune Frost above &sect;4), which is tighter than ideal and carried by two things hue alone cannot do: a genuinely purple ground against First Frost's teal-tinted slate, and a nine-point chroma gap. Those two, side by side, are the first pair in this set that differ on ground temperature as well as accent.</p>
+    <p style="margin:0;font-size:14.5px;line-height:1.75;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">Ember Steppe is the one to drop</b> because it recreates the fault being repaired. At 33&deg; it sits 24&deg; from Low Sun (Gilded Stone above &sect;4) &mdash; closer than Moonlit ever sat to Oil Haze &mdash; and 2&deg; from <code style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#A59C89;">--danger</code>, which is fixed across all six. A destructive-action button and a primary accent within 2&deg; of each other is a worse problem than a redundant theme, and the only lever left is lightness, which is not enough separation to carry meaning.</p>
+    <p style="margin:0;font-size:14.5px;line-height:1.75;text-wrap:pretty;">If you want a warm theme in the set regardless, the honest version is not rust: it is pushing Low Sun itself warmer and giving the vacated slot to a low-chroma bone theme, which separates on chroma rather than hue and so cannot collide with anything. Say the word and I will draw it.</p>
+  </div>
+
+  <footer style="border-top:1px solid #2B241B;padding-top:26px;display:flex;flex-direction:column;gap:9px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;">Still to do once you pick</div>
+    <p style="margin:0;font-size:14.5px;line-height:1.8;">Fold the two winners into <code style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#A59C89;">TOKEN-TABLE.md</code> (35 keys &times; 6) &middot; retire the cut ids from <code style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#A59C89;">themes &middot; copy strings.ts</code> &middot; re-run the ten &sect;3 empty-state surfaces in both new themes &middot; confirm the two new display faces against the 12&ndash;22px band where the Rune Frost weight ruling bit.</p>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;dimUnrecommended&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Presentation&quot;,&quot;label&quot;:&quot;Dim the rejected candidate&quot;},&quot;previewDensity&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;Three rows&quot;,&quot;options&quot;:[&quot;One row&quot;,&quot;Two rows&quot;,&quot;Three rows&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Presentation&quot;,&quot;label&quot;:&quot;Commander rows per candidate&quot;},&quot;showSwatches&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Presentation&quot;,&quot;label&quot;:&quot;Show token swatch strips&quot;}}">
+const SURVIVORS = [
+  {id:"amonkhet", short:"Gilded Stone", hue:57,  accent:"#CF8745", bg:"#14110E", surface:"#1E1A15", border:"#2B241B", fg:"#EDE6D8", body:"#C0B8A6", faint:"#8B8270", face:"'Cinzel', serif"},
+  {id:"kamigawa", short:"Neon Rain",    hue:355, accent:"#FF4D9A", bg:"#0E0F14", surface:"#16181F", border:"#181C26", fg:"#E6E8F0", body:"#B1B6C7", faint:"#6F7486", face:"'Chakra Petch', sans-serif"},
+  {id:"phyrexia", short:"Oil and Iron", hue:180, accent:"#52827A", bg:"#0D0B0E", surface:"#151317", border:"#19161C", fg:"#E4E2E6", body:"#B5B2BB", faint:"#78747E", face:"'Syncopate', sans-serif"},
+  {id:"kaldheim", short:"Rune Frost",   hue:265, accent:"#5C86C9", bg:"#121217", surface:"#1E1F26", border:"#1A1F2B", fg:"#C6D2D3", body:"#B3C0C2", faint:"#7C8A8C", face:"'Metamorphous', serif"},
+];
+
+const CANDIDATES = [
+  {
+    id:"ixalan", name:"Canopy", plane:"Ixalan", face:"Trirong",
+    faceStack:"'Trirong', serif", hue:118, sep:"61\u00b0", ratio:"9.6", verdict:"ship",
+    bg:"#0E1310", surface:"#171E19", raised:"#1A221C", border:"#1D2620", borderStrong:"#2C3830",
+    fg:"#E0E7DE", body:"#B6C2B3", muted:"#98A695", faint:"#808C7C",
+    accent:"#A3C445", accentHover:"#B2D257", accentStrong:"#85A22F", accentDim:"#3E5220",
+    rationale:"Leaf-acid green on a warm green-black. It takes the widest empty corridor in the set and is the only candidate whose nearest neighbour is further than the survivors' own tightest gap. Trirong gives the set its first slab \u2014 unmistakable against Cinzel's caps and Metamorphous's decoration at every size.",
+    semanticNote:"Accent sits 27\u00b0 yellower than --success and two lightness steps above it. Distinguishable, but this is the pair to check on the deck-completion band, where both appear.",
+    risk:"--success is the only token in the same family. Resolved by chroma and lightness, not hue \u2014 worth one real look at a completion reveal before beta."
+  },
+  {
+    id:"eldraine", name:"Witching Hour", plane:"Wilds of Eldraine", face:"Cormorant Garamond",
+    faceStack:"'Cormorant Garamond', serif", hue:300, sep:"35\u00b0", ratio:"6.6", verdict:"ship",
+    bg:"#120E17", surface:"#1B1821", raised:"#1F1C25", border:"#241D30", borderStrong:"#342C41",
+    fg:"#E4DEEE", body:"#B9B2C5", muted:"#9C95A8", faint:"#898395",
+    accent:"#AE88E6", accentHover:"#BC9BEE", accentStrong:"#8E6AC4", accentDim:"#4A3568",
+    rationale:"Violet on plum-black. Hue clearance to First Frost is 35\u00b0 \u2014 tighter than I would like alone, so the separation is also carried by ground temperature and accent chroma. R6 note: the ground now sits at 0.019 OKLCH chroma, not 0.038, to fit the shipped contract. Still opposite First Frost in temperature, but that axis is weaker than first drawn \u2014 the 35\u00b0 and the accent chroma gap do the bulk of the work.",
+    semanticNote:"No semantic token within 90\u00b0. The cleanest candidate on this axis \u2014 nothing in the app's fixed palette is violet.",
+    risk:"Cormorant Garamond is the lightest face in the set. Ship it at 600, never 400, or it will fail the same 12\u201322px band the Rune Frost weight ruling was written for."
+  },
+  {
+    id:"tarkir", name:"Ember Steppe", plane:"Tarkir", face:"Trirong",
+    faceStack:"'Trirong', serif", hue:33, sep:"24\u00b0", ratio:"6.4", verdict:"do not ship",
+    bg:"#140E0C", surface:"#211714", raised:"#251A17", border:"#2A1D19", borderStrong:"#3C2A24",
+    fg:"#EDE1DB", body:"#C6B4AC", muted:"#A9958C", faint:"#83706A",
+    accent:"#E27A62", accentHover:"#EC8B73", accentStrong:"#BE5C46", accentDim:"#6A2E20",
+    rationale:"Dusty rust on warm char. It looks good in isolation and that is the trap \u2014 in isolation is not where themes live. Placed next to Gilded Stone it is 24\u00b0 away, closer than the pair this pass exists to separate.",
+    semanticNote:"Accent lands 2\u00b0 from --danger and 22\u00b0 from --warning, both fixed across all six themes. A primary accent and a destructive action would differ only in lightness.",
+    risk:"This is the fault being repaired, reintroduced. 24\u00b0 from brass, 2\u00b0 from --danger \u2014 destructive and primary actions become the same colour at a glance."
+  },
+];
+
+const ROWS = [
+  {rank:"1", name:"Ghired, Conclave Exile", type:"Legendary Creature \u2014 Human Warrior", pct:"82%", of:"81 / 99", w:82},
+  {rank:"2", name:"Atraxa, Praetors\u2019 Voice", type:"Legendary Creature \u2014 Phyrexian Angel", pct:"74%", of:"73 / 99", w:74},
+  {rank:"3", name:"Yuriko, the Tenno Descendant", type:"Legendary Creature \u2014 Human Ninja", pct:"61%", of:"60 / 99", w:61},
+];
+
+class Component extends DCLogic {
+  renderVals() {
+    const dimUnrecommended = this.props.dimUnrecommended ?? true;
+    const previewDensity = this.props.previewDensity ?? "Three rows";
+    const showSwatches = this.props.showSwatches ?? true;
+
+    const rowCount = previewDensity === "One row" ? 1 : previewDensity === "Two rows" ? 2 : 3;
+    const mono = "'IBM Plex Mono', monospace";
+
+    // Sorted by hue so the above/below stagger alternates between true neighbours —
+    // Ember Steppe (33) and Gilded Stone (57) are 24 apart and must not share a baseline.
+    const marks = [
+      ...SURVIVORS.map(s => ({ name: s.short, deg: s.hue, color: s.accent, solid: true })),
+      ...CANDIDATES.map(c => ({ name: c.name, deg: c.hue, color: c.accent, solid: false }))
+    ].sort((a, b) => a.deg - b.deg);
+
+    const hueMarks = marks.map((m, i) => {
+      const above = i % 2 === 0;
+      const labelTop = above ? 14 : 80;
+      const dot = m.solid
+        ? `background:${m.color};box-shadow:0 0 0 3px #1A1611;`
+        : `background:#1A1611;box-shadow:inset 0 0 0 2px ${m.color},0 0 0 3px #1A1611;`;
+      return {
+        name: m.name, deg: m.deg + "\u00b0",
+        wrapStyle: `position:absolute;left:${(m.deg / 360) * 100}%;top:0;bottom:0;width:0;`,
+        // Markers past ~330deg would push their label out of the chart box; right-align those.
+        labelStyle: `position:absolute;top:${labelTop}px;${m.deg > 330 ? "right:0;transform:translateX(6px);" : "left:50%;transform:translateX(-50%);"}font-family:${mono};font-size:10px;letter-spacing:0.04em;color:${m.solid ? "#C0B8A6" : "#8B8270"};white-space:nowrap;`,
+        dotStyle: `position:absolute;top:51px;left:50%;transform:translateX(-50%);width:13px;height:13px;border-radius:50%;${dot}`,
+        degStyle: `position:absolute;top:${labelTop + 15}px;${m.deg > 330 ? "right:0;transform:translateX(6px);" : "left:50%;transform:translateX(-50%);"}font-family:${mono};font-size:9px;color:#6E6654;white-space:nowrap;`
+      };
+    });
+
+    const candidates = CANDIDATES.map(c => {
+      const dim = dimUnrecommended && c.verdict !== "ship";
+      const ok = c.verdict === "ship";
+      const swatchKeys = [
+        ["bg", c.bg], ["surface", c.surface], ["surfaceRaised", c.raised],
+        ["border", c.border], ["borderStrong", c.borderStrong],
+        ["fg", c.fg], ["fgBody", c.body], ["fgMuted", c.muted], ["fgFaint", c.faint],
+        ["accentDim", c.accentDim], ["accentStrong", c.accentStrong], ["accent", c.accent], ["accentHover", c.accentHover]
+      ];
+      return {
+        id: c.id, name: c.name, plane: c.plane, face: c.face,
+        idToken: 'data-theme="' + c.id + '"',
+        sep: c.sep, ratio: c.ratio, verdict: c.verdict,
+        rationale: c.rationale, risk: c.risk, semanticNote: c.semanticNote,
+        previewHeading: "Commanders you can build",
+        specimenCaption: "Display face \u00b7 " + c.face + " 600",
+        specimenText: "Ninety-nine.",
+        shellStyle: `border:1px solid ${ok ? "#3A3229" : "#2B241B"};border-radius:14px;background:#1A1611;overflow:hidden;opacity:${dim ? 0.62 : 1};`,
+        badgeStyle: `font-family:${mono};font-size:9.5px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:${ok ? "#14110E" : "#EDE6D8"};background:${ok ? "#CF8745" : "#C6533F"};border-radius:4px;padding:6px 10px;`,
+        sepStyle: `font-family:${mono};font-size:19px;color:${parseInt(c.sep) >= 50 ? "#6FA368" : parseInt(c.sep) >= 30 ? "#DEAA29" : "#C6533F"};`,
+        ratioStyle: `font-family:${mono};font-size:19px;color:${parseFloat(c.ratio) >= 6 ? "#6FA368" : "#C6533F"};`,
+        previewStyle: `background:${c.bg};padding:20px 22px 18px;display:flex;flex-direction:column;gap:11px;`,
+        previewHeadStyle: `font-family:${c.faceStack};font-weight:600;font-size:19px;color:${c.fg};letter-spacing:0.01em;`,
+        specimenStyle: `font-family:${c.faceStack};font-weight:600;font-size:26px;line-height:1.2;color:#EDE6D8;`,
+        ctaRowStyle: `display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-top:5px;padding-top:14px;border-top:1px solid ${c.border};`,
+        ctaStyle: `font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:13px;color:${c.bg};background:${c.accent};border-radius:6px;padding:9px 15px;`,
+        linkStyle: `font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:${c.accentHover};text-decoration:underline;text-underline-offset:3px;`,
+        riskStyle: `border-top:1px solid #2B241B;padding-top:14px;font-size:13.5px;line-height:1.65;color:#A59C89;text-wrap:pretty;`,
+        swatches: showSwatches ? swatchKeys.map(([k, v]) => ({
+          title: k + " " + v,
+          style: `width:26px;height:26px;border-radius:4px;background:${v};box-shadow:inset 0 0 0 1px rgba(237,230,216,0.16);`
+        })) : [],
+        semantics: [
+          { label: "success", c: "#6FA368" }, { label: "warning", c: "#E0913C" }, { label: "danger", c: "#C6533F" }
+        ].map(s => ({
+          label: s.label,
+          style: `font-family:${mono};font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:${s.c};box-shadow:inset 0 0 0 1px ${s.c}66;border-radius:4px;padding:5px 9px;`
+        })),
+        rows: ROWS.slice(0, rowCount).map(r => ({
+          rank: r.rank, name: r.name, type: r.type, pct: r.pct, of: r.of,
+          rowStyle: `display:flex;align-items:center;gap:12px;background:${c.surface};box-shadow:inset 0 0 0 1px ${c.border};border-radius:8px;padding:11px 13px;`,
+          rankStyle: `font-family:${c.faceStack};font-weight:600;font-size:15px;color:${c.faint};width:13px;text-align:center;flex:none;`,
+          artStyle: `width:30px;height:42px;flex:none;border-radius:5px;background:repeating-linear-gradient(135deg,${c.raised},${c.raised} 4px,${c.bg} 4px,${c.bg} 8px);box-shadow:inset 0 0 0 1px ${c.borderStrong};`,
+          nameStyle: `font-family:${c.faceStack};font-weight:600;font-size:14px;color:${c.fg};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;`,
+          typeStyle: `font-family:'IBM Plex Sans',sans-serif;font-size:11px;color:${c.muted};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;`,
+          barTrackStyle: `height:4px;border-radius:2px;background:${c.accentDim};margin-top:3px;`,
+          barFillStyle: `height:4px;border-radius:2px;width:${r.w}%;background:${c.accent};`,
+          pctStyle: `font-family:${mono};font-size:16px;font-weight:600;color:${c.accentHover};`,
+          ofStyle: `font-family:${mono};font-size:9.5px;letter-spacing:0.06em;color:${c.faint};`
+        }))
+      };
+    });
+
+    const allThemes = [
+      ...SURVIVORS.map(s => ({ ...s, role: "kept \u00b7 " + s.hue + "\u00b0", isNew: false })),
+      ...CANDIDATES.map(c => ({
+        id: c.id, short: c.name, hue: c.hue, accent: c.accent, accentHover: c.accentHover,
+        bg: c.bg, surface: c.surface, border: c.border, fg: c.fg, body: c.body, faint: c.faint,
+        face: c.faceStack, role: (c.verdict === "ship" ? "proposed \u00b7 " : "rejected \u00b7 ") + c.hue + "\u00b0", isNew: true
+      }))
+    ].map(t => ({
+      short: t.short, role: t.role,
+      tileStyle: `background:${t.bg};box-shadow:inset 0 0 0 1px ${t.border};border-radius:10px;padding:15px 16px;display:flex;flex-direction:column;gap:5px;min-height:148px;`,
+      tileNameStyle: `font-family:${t.face};font-weight:600;font-size:15px;color:${t.fg};line-height:1.2;min-height:36px;`,
+      tileMetaStyle: `font-family:${mono};font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:${t.faint};`,
+      tileLineStyle: `font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;color:${t.body};`,
+      tileAccentStyle: `font-family:${mono};font-size:12px;color:${t.accentHover || t.accent};`,
+      chipA: `width:20px;height:8px;border-radius:2px;background:${t.accent};`,
+      chipB: `width:20px;height:8px;border-radius:2px;background:${t.surface};box-shadow:inset 0 0 0 1px ${t.border};`,
+      chipC: `width:20px;height:8px;border-radius:2px;background:${t.fg};`
+    }));
+
+    const GROUNDS = {
+      brass:  { bg:"#14110E", surface:"#1E1A15", border:"#2B241B", fg:"#EDE6D8", faint:"#8B8270", accent:"#DE9757" },
+      pink:   { bg:"#0E0F14", surface:"#16181F", border:"#181C26", fg:"#E6E8F0", faint:"#6F7486", accent:"#FF62A9" },
+      teal:   { bg:"#0D0B0E", surface:"#151317", border:"#19161C", fg:"#E4E2E6", faint:"#78747E", accent:"#629189" },
+      blue:   { bg:"#121217", surface:"#1E1F26", border:"#1A1F2B", fg:"#C6D2D3", faint:"#7C8A8C", accent:"#6C95D8" },
+      green:  { bg:"#0E1310", surface:"#171E19", border:"#1D2620", fg:"#E0E7DE", faint:"#7E8D79", accent:"#B2D257" },
+      violet: { bg:"#120E17", surface:"#1B1821", border:"#241D30", fg:"#E4DEEE", faint:"#898395", accent:"#BC9BEE" },
+    };
+    const ORDER = ["brass", "pink", "teal", "blue", "green", "violet"];
+    // Only the four survivors have a shipping name. The green and violet slots are new —
+    // nothing "was" anything there, so they cannot be charged a rename.
+    const SHIPPING = { brass:"Gilded Stone", pink:"Neon Rain", teal:"Oil and Iron", blue:"Rune Frost" };
+    const PROPOSED = { green:"Canopy", violet:"Witching Hour" };
+    const PLANES = { brass:"Amonkhet", pink:"Kamigawa", teal:"New Phyrexia", blue:"Kaldheim", green:"Ixalan", violet:"Eldraine" };
+
+    const SYSTEMS = [
+      { letter:"A", title:"Material and finish", category:"Every name a substance",
+        best:false,
+        names:{ brass:"Brasswork", pink:"Neon Tube", teal:"Oil and Iron", blue:"Hoarfrost", green:"Lichen", violet:"Amethyst" },
+        note:"The most honest fit for a data-dense tool \u2014 these are things, not moods, and Oil and Iron survives untouched because it was already built this way. The weakness is headroom: the set is close to exhausting the substances that read as colours, so a seventh theme starts reaching (Verdigris is teal, Ochre is brass) and the category quietly breaks." },
+      { letter:"B", title:"Weather and hour", category:"Every name a condition of light",
+        best:true,
+        names:{ brass:"Low Sun", pink:"Neon Rain", teal:"Oil Haze", blue:"First Frost", green:"Canopy", violet:"Witching Hour" },
+        note:"Ties system A on churn \u2014 both rename three of the four survivors \u2014 so that is not the reason to pick it. The reasons are that it keeps the two names already chosen in \u00a72, and that it is the only category with headroom. Low Sun carries Amonkhet's brass better than Gilded Stone did \u2014 it names the light rather than the material, which is what that theme actually looks like. Oil Haze is the second draft for New Phyrexia; Salt Fog was the first and did not fit the plane. Endlessly extensible: there is always another hour." },
+      { letter:"C", title:"Single word", category:"One word, no compounds",
+        best:false,
+        names:{ brass:"Brass", pink:"Neon", teal:"Oil", blue:"Frost", green:"Canopy", violet:"Vesper" },
+        note:"Best in the picker, worst in prose. At menu width a single word is unambiguous and fast, but the theme name also appears in settings copy and release notes, where \u2018Brass\u2019 and \u2018Frost\u2019 collide with the words the UI already uses for other things. Vesper is also the only name here a player would have to look up." },
+    ];
+
+    const namingSystems = SYSTEMS.map(sys => {
+      const changed = ORDER.filter(k => SHIPPING[k] && sys.names[k] !== SHIPPING[k]).length;
+      return {
+        letter: sys.letter, title: sys.title, category: sys.category, note: sys.note,
+        churn: changed + " of 4",
+        shellStyle: `border:1px solid ${sys.best ? "#3A3229" : "#2B241B"};border-radius:14px;background:#1A1611;overflow:hidden;`,
+        badgeStyle: `font-family:${mono};font-size:12px;font-weight:600;letter-spacing:0.1em;color:${sys.best ? "#14110E" : "#C0B8A6"};background:${sys.best ? "#CF8745" : "#2B241B"};border-radius:5px;padding:7px 12px;`,
+        churnStyle: `font-family:${mono};font-size:19px;color:${changed <= 3 ? "#6FA368" : "#DEAA29"};`,
+        names: ORDER.map(k => {
+          const g = GROUNDS[k];
+          const shipping = SHIPPING[k];
+          const isNew = shipping ? sys.names[k] !== shipping : true;
+          const was = shipping
+            ? (isNew ? "was " + shipping : "unchanged")
+            : (sys.names[k] === PROPOSED[k] ? "new theme" : "new \u00b7 \u00a72 proposed " + PROPOSED[k]);
+          return {
+            name: sys.names[k],
+            plane: PLANES[k],
+            was,
+            planeStyle: `font-family:${mono};font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:${g.faint};`,
+            tileStyle: `background:${g.bg};box-shadow:inset 0 0 0 1px ${g.border};border-radius:9px;padding:14px 15px;display:flex;flex-direction:column;gap:5px;min-height:112px;`,
+            nameStyle: `font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:16px;color:${g.fg};line-height:1.25;`,
+            wasStyle: `font-family:${mono};font-size:9px;letter-spacing:0.08em;text-transform:uppercase;color:${isNew ? g.accent : g.faint};`,
+            chipA: `width:22px;height:7px;border-radius:2px;background:${g.accent};`,
+            chipB: `width:22px;height:7px;border-radius:2px;background:${g.surface};box-shadow:inset 0 0 0 1px ${g.border};`
+          };
+        })
+      };
+    });
+
+    return { hueMarks, candidates, allThemes, namingSystems };
+  }
+}
+</script>
+</body>
+</html>

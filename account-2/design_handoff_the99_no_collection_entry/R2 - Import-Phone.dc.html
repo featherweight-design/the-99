@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Import, own these, phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#FF4D9A}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#6F7486}
+.cap{font-size:12.5px;line-height:1.5;color:#959AAD}
+.ph{width:390px;height:844px;flex:none;background:#0E0F14;border:1px solid #262A35;border-radius:28px;overflow:hidden;display:flex;flex-direction:column;position:relative;box-sizing:border-box;font-family:'IBM Plex Sans',sans-serif}
+.mh{height:52px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid #181C26;background:#12141B}
+.logo{display:flex;flex-direction:column;align-items:center;color:#E6E8F0;font:700 16px 'Chakra Petch',sans-serif;line-height:1}
+.logo i{color:#FF4D9A;font-style:normal;font-size:7px;letter-spacing:1px;margin-bottom:2px}
+.av{width:28px;height:28px;border-radius:50%;border:1px solid #262A35;color:#B1B6C7;font:500 10px 'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center}
+.scroll{flex:1;overflow:hidden;position:relative}
+.tb{height:64px;flex:none;display:flex;justify-content:space-around;align-items:center;border-top:1px solid #181C26;background:#12141B}
+.tbs{width:48px;height:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#959AAD;font:9px 'IBM Plex Mono',monospace}
+.tbs.lk{color:#606476}
+.tbs.cur{color:#E6E8F0}
+.imp{padding:16px 16px 24px}
+.ih{margin:0;font:700 20px 'Chakra Petch',sans-serif;color:#E6E8F0}
+.isub{margin:3px 0 0;font:10px 'IBM Plex Mono',monospace;color:#6F7486}
+.pills{display:flex;gap:8px;margin:16px 0}
+.pill{min-height:44px;padding:0 14px;border-radius:999px;font:12.5px 'IBM Plex Sans',sans-serif;background:#20222A;color:#B1B6C7;border:1px solid #262A35}
+.pill.on{background:#FF4D9A;border-color:#FF4D9A;color:#0E0F14;font-weight:600}
+.lab{display:block;font-size:13px;font-weight:600;color:#E6E8F0;margin-bottom:8px}
+.ta{height:240px;border-radius:8px;padding:14px 16px;box-sizing:border-box;background:#101219;border:1px solid #262A35;font:13px/1.55 'IBM Plex Mono',monospace;color:#B1B6C7;white-space:pre;overflow:hidden}
+.tf{height:46px;border-radius:8px;padding:0 14px;display:flex;align-items:center;box-sizing:border-box;background:#101219;border:1px solid #262A35;font-size:16px;color:#E6E8F0}
+.own{display:flex;align-items:center;gap:10px;margin-top:16px;font-size:13px;line-height:1.45;color:#B1B6C7;padding:2px 0}
+.box{width:18px;height:18px;flex:none;border-radius:4px;border:1.5px solid #6F7486;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#0E0F14}
+.box.on{background:#FF4D9A;border-color:#FF4D9A}
+.new{outline:1.5px dashed rgba(255,77,154,.55);outline-offset:6px;border-radius:4px}
+.bp{width:100%;height:48px;border-radius:8px;border:0;background:#FF4D9A;color:#0E0F14;font:600 15px 'IBM Plex Sans',sans-serif;margin-top:12px}
+.fn{margin:16px 0 0;font-size:12.5px;line-height:1.55;color:#6F7486}
+.art{height:170px;background:radial-gradient(120% 90% at 30% 40%,#3B6C8F 0%,#2B3F66 35%,#5B3A2A 70%,#16181F 100%);position:relative}
+.art:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(14,15,20,0) 50%,#0E0F14 100%)}
+.hd{padding:4px 16px 12px;display:flex;flex-direction:column;gap:6px}
+.title{margin:0;font:700 20px 'Chakra Petch',sans-serif;color:#E6E8F0}
+.id{font:11px 'IBM Plex Mono',monospace;color:#B1B6C7;display:flex;align-items:center;gap:6px}
+.sq{width:8px;height:8px;border-radius:2px;display:inline-block}
+.row1{display:flex;align-items:center;gap:10px}
+.chip{font:11px 'IBM Plex Mono',monospace;padding:3px 7px;border-radius:4px;color:#B1B6C7;background:#20222A}
+.bar{flex:1;height:4px;border-radius:3px;background:#FF4D9A}
+.fig{font:600 13px 'IBM Plex Mono',monospace;color:#E6E8F0}
+.fig small{font-weight:400;color:#6F7486}
+.band{display:flex;align-items:flex-start;gap:9px;padding:10px 16px;background:#12141B;border-top:1px solid #181C26;border-bottom:1px solid #181C26}
+.band .ok{color:#6FA368;font-size:12px;margin-top:3px}
+.bh{margin:0;font-size:13.5px;font-weight:600;color:#E6E8F0}
+.bb{margin:3px 0 0;font-size:12.5px;line-height:1.55;color:#B1B6C7}
+.bm{margin:3px 0 0;font:10.5px 'IBM Plex Mono',monospace;color:#6F7486}
+.dis{margin-left:auto;font:10px 'IBM Plex Mono',monospace;color:#6F7486}
+.band1{display:flex;align-items:center;gap:9px;padding:10px 16px;background:#12141B;border-top:1px solid #181C26;border-bottom:1px solid #181C26;font:10.5px 'IBM Plex Mono',monospace;color:#B1B6C7}
+.tabs{display:flex;gap:20px;padding:0 16px;border-bottom:1px solid #181C26;white-space:nowrap;overflow:hidden}
+.tab{height:42px;display:flex;align-items:center;gap:5px;font-size:14px;color:#959AAD}
+.tab.on{color:#E6E8F0;font-weight:600;box-shadow:inset 0 -2px 0 #FF4D9A}
+.tab em{font-style:normal;font-size:12px;color:#6F7486}
+.tab.on em{color:#FF4D9A}
+.seg{display:flex;margin:12px 16px 8px;border:1px solid #262A35;border-radius:9px;padding:3px}
+.seg span{flex:1;height:32px;display:flex;align-items:center;justify-content:center;gap:5px;border-radius:6px;font-size:13px;color:#B1B6C7}
+.seg span.on{background:#20222A;color:#E6E8F0;font-weight:600}
+.seg .shop{color:#E0913C}
+.gh{display:flex;align-items:baseline;gap:8px;margin:6px 16px 0;padding-bottom:6px;font:600 14px 'IBM Plex Sans',sans-serif;color:#E6E8F0;border-bottom:1px solid #181C26}
+.gh small{font:11px 'IBM Plex Mono',monospace;color:#6F7486;font-weight:400}
+.rows{display:flex;flex-direction:column;gap:5px;padding:8px 16px}
+.cr{height:40px;display:flex;align-items:center;gap:10px;padding:0 10px;border-radius:6px;background:#12141B;font-size:13.5px;color:#E6E8F0}
+.dot{width:8px;height:8px;border-radius:50%;flex:none;box-sizing:border-box}
+.dot.yes{background:#6FA368}
+.dot.no{border:1.5px dotted #6F7486}
+.price{margin-left:auto;font:11px 'IBM Plex Mono',monospace;color:#E0913C;background:rgba(224,145,60,.12);border-radius:4px;padding:2px 6px}
+.pip{margin-left:auto;width:11px;height:11px;border-radius:50%;background:#6FA368}
+.toast{position:absolute;left:16px;right:16px;bottom:16px;display:flex;align-items:center;gap:12px;padding:4px 6px 4px 14px;background:#20222A;border:1px solid #262A35;border-radius:10px;box-shadow:0 12px 40px rgba(0,0,0,.5);z-index:5}
+.toast .tt{flex:1;padding:8px 0;font-size:13.5px;line-height:1.4;color:#E6E8F0}
+.toast .ta2{min-height:44px;padding:0 10px;border:0;background:transparent;color:#FF4D9A;font:600 13.5px 'IBM Plex Sans',sans-serif;text-decoration:underline;text-underline-offset:2px}
+</style>
+</helmet>
+<div style="width:2280px;box-sizing:border-box;padding:40px 56px 56px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:22px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span class="k">Path (a) · import a deck you own · phone 390 · R2 · Kamigawa theme</span>
+    <h2 style="margin:0;font:700 24px 'Chakra Petch',sans-serif">The same checkbox at 390, between Deck name and the full-width button</h2>
+    <p class="cap" style="margin:0;max-width:1700px">The phone keeps the box’s full label: it is one wrapped line of 13px, and a short form would drop what ticking it does. The whole label is the press, and the row hugs its one line. The toast sits above the tab bar, as the shared ToastFrame does.</p>
+  </div>
+  <div style="display:flex;gap:40px">
+    <sc-for list="{{frames}}" as="f" hint-placeholder-count="5">
+      <div style="width:390px;display:flex;flex-direction:column;gap:10px">
+        <span class="k">{{f.label}}</span>
+        <div class="ph">
+          <header class="mh"><span class="logo" aria-hidden="true"><i>◆◆◆</i>99</span><span class="av">HH</span></header>
+          <div class="scroll">
+            <sc-if value="{{f.isImport}}" hint-placeholder-val="{{true}}">
+              <div class="imp">
+                <h1 class="ih">Bring a deck over</h1>
+                <p class="isub">Paste it or drop a file.</p>
+                <div class="pills" role="group" aria-label="Bring a deck over"><button class="pill on" aria-pressed="true" aria-label="Paste a list">Paste</button><button class="pill" aria-pressed="false" aria-label="Upload a file">File</button></div>
+                <label class="lab">Your list</label>
+                <div class="ta">1 Kinnan, Bonder Prodigy *CMDR*
+1 Arcane Signet
+1 Basalt Monolith
+1 Birds of Paradise
+1 Bloom Tender
+1 Delighted Halfling
+1 Elvish Mystic
+1 Faeburrow Elder
+1 Fyndhorn Elves …</div>
+                <label class="lab" style="margin-top:16px">Deck name</label>
+                <div class="tf">Kinnan Ramp</div>
+                <label class="own new"><span class="box {{f.boxCls}}" role="checkbox" aria-checked="{{f.ticked}}">{{f.tick}}</span><span>I own these cards. Add them to my collection.</span></label>
+                <button class="bp" type="button">Import 100 cards</button>
+                <p class="fn">We’ll leave the sideboard behind: Commander doesn’t have one.</p>
+              </div>
+              <sc-if value="{{f.toast}}" hint-placeholder-val="{{false}}"><div class="toast" role="alert"><span class="tt">We couldn’t add those. Your collection is unchanged.</span><button class="ta2" type="button">Try again</button></div></sc-if>
+            </sc-if>
+            <sc-if value="{{f.isDeck}}" hint-placeholder-val="{{false}}">
+              <div class="art" role="img" aria-label="Kinnan, Bonder Prodigy"></div>
+              <div class="hd">
+                <h1 class="title">Kinnan Ramp ✎</h1>
+                <span class="id"><i class="sq" style="background:#6FA368"></i><i class="sq" style="background:#4A8BD6"></i>Kinnan, Bonder Prodigy · Simic</span>
+                <div class="row1"><span class="chip">Draft</span><i class="bar"></i><span class="fig">99 <small>/ 99</small></span></div>
+              </div>
+              <sc-if value="{{f.added}}" hint-placeholder-val="{{true}}">
+                <div class="band new" role="status" style="outline-offset:-4px"><span class="ok" aria-hidden="true">✓</span><div style="flex:1"><p class="bh">All 100 lines came over clean.</p><p class="bb">All 100 cards added to your collection. <a href="#">History</a></p><p class="bm">Imported from your list a moment ago</p></div><button class="dis" type="button" aria-label="Dismiss" style="border:0;background:transparent;font-size:12px;width:44px;height:44px;margin:-12px -12px -12px auto">✕</button></div>
+              </sc-if>
+              <sc-if value="{{f.plain}}" hint-placeholder-val="{{false}}">
+                <div class="band1" role="status"><span style="color:#6FA368">✓</span><span style="flex:1">All 100 came over · from your list, just now</span><button class="dis" type="button" aria-label="Dismiss" style="border:0;background:transparent;font-size:12px;width:44px;height:44px;margin:-12px -12px -12px auto">✕</button></div>
+              </sc-if>
+              <div class="tabs"><span class="tab on">Your deck <em>99</em></span><span class="tab">Analysis</span><span class="tab">Consider <em>84</em></span><span class="tab">Games</span></div>
+              <div class="seg"><span class="on">All 99</span><span class="shop">Shopping {{f.shop}}</span><span>Stats</span><span>Notes</span></div>
+              <div class="gh">Creatures <small>31</small></div>
+              <div class="rows">
+                <sc-for list="{{f.rows}}" as="r" hint-placeholder-count="6"><div class="cr"><span class="dot {{r.dot}}" aria-hidden="true"></span>{{r.n}}<sc-if value="{{r.buy}}" hint-placeholder-val="{{true}}"><span class="price">{{r.p}}</span></sc-if><sc-if value="{{r.own}}" hint-placeholder-val="{{false}}"><i class="pip"></i></sc-if></div></sc-for>
+              </div>
+            </sc-if>
+          </div>
+          <nav class="tb" aria-label="Main">
+            <span class="tbs"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg></span>
+            <span class="tbs"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg></span>
+            <span class="tbs {{f.lk}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 18h16M5 16l-1-9 5 4 3-6 3 6 5-4-1 9z"/></svg></span>
+            <span class="tbs {{f.lk}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8"/><path d="M12 8l3 4-3 4-3-4z"/></svg></span>
+            <span class="tbs cur {{f.lk}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="7" y="4" width="12" height="16" rx="2"/><path d="M5 7v12a2 2 0 002 2h9"/></svg></span>
+          </nav>
+        </div>
+        <span class="cap">{{f.cap}}</span>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2280,"height":1120}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const names = ['Birds of Paradise', 'Bloom Tender', 'Delighted Halfling', 'Elvish Mystic', 'Faeburrow Elder', 'Fyndhorn Elves'];
+    const prices = ['$7.49', '$3.10', '$1.25', '$0.25', '$0.40', '$0.30'];
+    const rows = (owned) => names.map((n, i) => ({ n: n, dot: owned ? 'yes' : 'no', buy: !owned, own: owned, p: prices[i] }));
+    const imp = { isImport: true, isDeck: false, lk: 'lk', toast: false };
+    const deck = { isImport: false, isDeck: true, toast: false };
+    const frames = [
+      Object.assign({}, imp, { label: 'S8 · unticked', ticked: false, boxCls: '', tick: '', cap: 'One new row under Deck name, unticked by default.' }),
+      Object.assign({}, imp, { label: 'S8 · ticked', ticked: true, boxCls: 'on', tick: '✓', cap: 'The button and the waiting state stay shipped.' }),
+      Object.assign({}, deck, { label: 'S10 · cards owned', lk: '', added: true, plain: false, shop: '0', rows: rows(true), cap: 'The phone takes the same three-line strip as desktop, because the History link needs its own line. Shopping reads 0, and the tab bar unlocks.' }),
+      Object.assign({}, imp, { label: 'S11 · refused', ticked: true, boxCls: 'on', tick: '✓', toast: true, cap: 'The toast sits above the tab bar. Nothing was made.' }),
+      Object.assign({}, deck, { label: 'S12 · unticked, as shipped', lk: 'lk', added: false, plain: true, shop: '99', rows: rows(false), cap: 'The shipped one-line strip, every card to buy, the tab bar still locked.' })
+    ];
+    return { frames: frames };
+  }
+}
+</script>
+</body>
+</html>

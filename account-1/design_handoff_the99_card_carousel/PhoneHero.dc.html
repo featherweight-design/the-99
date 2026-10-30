@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="width:390px;height:812px;position:relative;overflow:hidden;background:var(--surface-sunken);border-radius:28px;border:1px solid var(--border-strong);font-family:'IBM Plex Sans',sans-serif;color:var(--fg);">
+  <div style="position:absolute;inset:0;background:{{ cur.grad }};filter:blur(28px);transform:scale(1.25);opacity:0.55;"></div>
+  <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(0,0,0,0.45) 100%);"></div>
+
+  <div style="position:absolute;left:0;right:0;top:0;height:532px;transform:translateX({{ dragX }}px);opacity:{{ heroOp }};">
+    <sc-if value="{{ hasPrev }}" hint-placeholder-val="{{ true }}">
+      <div aria-label="Previous card: {{ prev.name }}" style="position:absolute;left:-213px;top:122px;width:236px;height:330px;border-radius:11px;background:{{ prev.grad }};opacity:{{ peekOp }};box-shadow:0 16px 36px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.3);overflow:hidden;">
+        <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,0.05) 0 6px,transparent 6px 12px);"></div>
+      </div>
+    </sc-if>
+    <div style="position:absolute;left:35px;top:64px;width:320px;height:447px;border-radius:14px;background:{{ cur.grad }};box-shadow:0 24px 50px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(0,0,0,0.3);overflow:hidden;">
+      <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,0.05) 0 6px,transparent 6px 12px);"></div>
+      <div style="position:absolute;left:14px;right:14px;bottom:14px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:rgba(255,255,255,0.8);">card art · {{ cur.name }}</div>
+    </div>
+    <sc-if value="{{ hasNext }}" hint-placeholder-val="{{ true }}">
+      <div aria-label="Next card: {{ next.name }}" style="position:absolute;left:367px;top:122px;width:236px;height:330px;border-radius:11px;background:{{ next.grad }};opacity:{{ peekOp }};box-shadow:0 16px 36px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.3);overflow:hidden;">
+        <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,0.05) 0 6px,transparent 6px 12px);"></div>
+      </div>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{ showCounter }}" hint-placeholder-val="{{ true }}">
+    <div style="position:absolute;top:22px;left:18px;height:32px;padding:0 12px;border-radius:16px;display:flex;align-items:center;background:color-mix(in oklab,var(--bg) 55%,transparent);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);">{{ counter }}</div>
+  </sc-if>
+  <div style="position:absolute;top:22px;right:18px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:color-mix(in oklab,var(--bg) 55%,transparent);font-size:16px;color:var(--fg);">✕</div>
+  <sc-if value="{{ showGrip }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;left:{{ gripX }}px;top:{{ gripY }}px;width:38px;height:38px;border-radius:50%;border:2px solid rgba(255,255,255,0.75);background:rgba(255,255,255,0.14);z-index:3;"></div>
+  </sc-if>
+
+  <div style="position:absolute;left:0;right:0;bottom:0;top:{{ sheetTop }}px;background:var(--surface-rail);border-top:1px solid var(--border-strong);border-radius:18px 18px 0 0;box-shadow:0 -14px 34px rgba(0,0,0,0.45);overflow:hidden;z-index:2;display:flex;flex-direction:column;padding-bottom:{{ inset }}px;">
+    <div style="height:22px;display:flex;justify-content:center;align-items:center;">
+      <div style="width:36px;height:4px;border-radius:2px;background:var(--border-strong);"></div>
+    </div>
+    <div style="padding:0 20px;flex:1;display:flex;flex-direction:column;min-height:0;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+        <div style="min-width:0;">
+          <h3 style="font-family:var(--font-display);font-weight:400;font-size:24px;line-height:1.15;margin:0;color:var(--fg);">{{ cur.name }}</h3>
+          <p style="font-size:13px;margin:4px 0 0;color:var(--fg-muted);">{{ cur.type }}</p>
+        </div>
+        <div style="display:flex;gap:3px;flex:none;padding-top:2px;">
+          <sc-for list="{{ cur.pips }}" as="p" hint-placeholder-count="3">
+            <span style="width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;background:{{ p.bg }};color:#1A1611;">{{ p.s }}</span>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap;">
+        <span style="display:inline-flex;align-items:center;gap:6px;padding:3px;border-radius:6px;border:1px solid var(--border-strong);background:rgba(10,8,6,0.4);font-family:'IBM Plex Mono',monospace;font-size:10.5px;">
+          <span style="color:var(--accent);border:1px solid var(--accent-dim);border-radius:4px;padding:2px 6px;">{{ cur.price }}</span>
+          <span style="color:var(--fg-muted);padding-right:5px;">from {{ cur.from }}</span>
+        </span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-body);"><span style="color:var(--accent);">{{ cur.own }}</span> <span style="color:var(--fg-faint);">·</span> <span style="color:var(--avail);">◆ {{ cur.avail }}</span></span>
+      </div>
+
+      <sc-if value="{{ peek }}" hint-placeholder-val="{{ true }}">
+        <div style="position:relative;margin-top:12px;font-size:13.5px;line-height:1.6;color:var(--fg-body);max-height:64px;overflow:hidden;-webkit-mask-image:linear-gradient(180deg,#000 55%,transparent);mask-image:linear-gradient(180deg,#000 55%,transparent);">{{ cur.oracle }}</div>
+        <div style="margin:auto -20px 0;border-top:1px solid var(--border);min-height:44px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:13.5px;color:var(--fg-body);">All details <span aria-hidden="true" style="color:var(--fg-faint);">▴</span></div>
+      </sc-if>
+
+      <sc-if value="{{ full }}" hint-placeholder-val="{{ false }}">
+        <div style="border-radius:10px;margin-top:16px;padding:14px 16px;font-size:13.5px;line-height:1.6;background:var(--bg);border:1px solid var(--border);color:var(--fg-body);text-wrap:pretty;">{{ cur.oracle }}</div>
+        <div style="border-radius:10px;margin-top:16px;padding:14px 16px;background:var(--bg);border:1px solid var(--border);">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">In your collection</div>
+          <div style="margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:12px;"><span style="color:var(--accent);">{{ cur.own }}</span> <span style="color:var(--fg-faint);">·</span> <span style="color:var(--avail);">◆ {{ cur.avail }}</span></div>
+          <div style="margin-top:14px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">In your decks</div>
+          <div style="margin-top:6px;display:flex;justify-content:space-between;font-size:13px;color:var(--fg-body);"><span style="text-decoration:underline;text-decoration-color:var(--border-strong);text-underline-offset:2px;">HD - Gods</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-muted);">holds 1</span></div>
+        </div>
+        <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:1px;border-radius:10px;overflow:hidden;background:var(--border);border:1px solid var(--border);">
+          <sc-for list="{{ meta }}" as="m" hint-placeholder-count="2">
+            <div style="background:var(--surface-sunken);padding:10px 12px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">{{ m.k }}</div>
+              <div style="font-size:13.5px;margin-top:3px;color:{{ m.ink }};">{{ m.v }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="margin-top:12px;border:1px solid var(--border-strong);border-radius:10px;padding:10px 12px;display:flex;gap:12px;align-items:center;background:var(--surface-raised);">
+          <div style="width:30px;height:42px;border-radius:3px;flex:none;background:{{ cur.grad }};"></div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">Set</div>
+            <div style="font-size:13.5px;margin-top:2px;color:var(--fg);">{{ cur.set }} +2 more</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;margin-top:2px;color:var(--accent);">3 printings you own ▾</div>
+          </div>
+        </div>
+        <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:6px;display:flex;flex-direction:column;">
+          <span style="min-height:44px;display:flex;align-items:center;font-size:13.5px;color:var(--accent);text-decoration:underline;text-underline-offset:3px;">Buy any printing at Mana Pool ↗</span>
+          <span style="min-height:36px;display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--accent);"><span aria-hidden="true">◇◇</span><span style="text-decoration:underline;text-underline-offset:3px;">Find a deck for it →</span></span>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:392,&quot;height&quot;:814},&quot;f&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const f = this.props.f || {};
+    const blank = { name: "", type: "", grad: "var(--surface-raised)", pips: [], oracle: "", price: "", set: "", own: "" };
+    const cur = f.cur || blank;
+    const full = f.mode === "full";
+    const sheetTop = f.sheetTop ?? (full ? 64 : 532);
+    return {
+      cur, prev: f.prev || blank, next: f.next || blank,
+      hasPrev: !!f.prev, hasNext: !!f.next,
+      showCounter: f.total > 1, counter: `${f.pos} of ${f.total}`,
+      peek: !full, full, sheetTop,
+      heroOp: full ? 0.35 : 1, inset: full ? 0 : 34,
+      dragX: f.dragX || 0, peekOp: f.peekOp ?? 0.5,
+      showGrip: f.gripX != null, gripX: f.gripX ?? 0, gripY: f.gripY ?? 300,
+      meta: [{ k: "Rarity", v: cur.rarity, ink: "var(--accent)" }, { k: "Identity", v: cur.identity, ink: "var(--fg)" }, { k: "You own", v: cur.own, ink: "var(--accent)" }],
+    };
+  }
+}
+</script>
+</body>
+</html>

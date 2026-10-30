@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Choice, three cards, phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C}
+.sr{position:absolute;width:1px;height:1px;opacity:0;margin:0}
+.ph{width:390px;flex:none;background:#121217;border:1px solid #2E3340;border-radius:28px;overflow:hidden;display:flex;flex-direction:column}
+.pad{padding:20px 18px;display:flex;flex-direction:column}
+.meta{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:#7C8A8C}
+.h1{margin:12px 0 6px;font-family:'Metamorphous',serif;font-weight:400;font-size:18px;color:#C6D2D3}
+.lede{margin:0 0 20px;font-size:14px;color:#95A4A6}
+.card{position:relative;display:flex;gap:12px;padding:14px;background:#1E1F26;border:1px solid #2E3340;border-radius:12px;box-sizing:border-box}
+.card.on{border-color:#5C86C9;box-shadow:0 0 0 1px #5C86C9}
+.card.focus{box-shadow:0 0 0 2px #5C86C9}
+.card.off{background:#16171D}
+.rad{flex:none;width:22px;height:22px;margin-top:2px;border-radius:50%;border:2px solid #424755;box-sizing:border-box;display:flex;align-items:center;justify-content:center}
+.rad.on{border-color:#5C86C9}
+.rad.on span{width:10px;height:10px;border-radius:50%;background:#5C86C9}
+.rad.off{border-color:#2E3340}
+.cc{display:flex;flex-direction:column;gap:8px;min-width:0;flex:1}
+.ct{font-size:15px;font-weight:600;color:#C6D2D3}
+.cb{font-size:13.5px;line-height:1.55;color:#B3C0C2}
+.fig{font-family:'IBM Plex Mono',monospace;font-size:13px;color:#95A4A6}
+.off .ct{color:#95A4A6}.off .cb{color:#7C8A8C}
+.warn{display:flex;gap:10px;align-items:flex-start;margin-top:6px;padding:12px 14px;background:#212229;border:1px solid #2E3340;border-left:3px solid #E0913C;border-radius:10px;font-size:13.5px;line-height:1.55;color:#B3C0C2}
+.note{display:flex;gap:10px;align-items:flex-start;margin-top:6px;padding:12px 14px;background:#16171D;border-radius:10px;font-size:13.5px;line-height:1.55;color:#95A4A6}
+.why{margin-top:6px;padding:12px 14px;border:1px dashed #424755;border-radius:10px;font-size:13.5px;line-height:1.55;color:#B3C0C2}
+.bar{display:flex;flex-direction:column;gap:10px;padding:14px 18px;background:#181920;border-top:1px solid #2E3340}
+.btnp{height:44px;padding:0 24px;border-radius:8px;background:#C6D2D3;color:#121217;border:0;font:600 14px 'IBM Plex Sans',sans-serif}
+.btnp[disabled]{opacity:.4}
+.btng{height:44px;padding:0 20px;border-radius:8px;background:transparent;color:#C6D2D3;border:1px solid #2E3340;font:600 14px 'IBM Plex Sans',sans-serif}
+.cap{font-size:12.5px;line-height:1.5;color:#95A4A6}
+</style>
+</helmet>
+<div style="width:1800px;box-sizing:border-box;padding:40px 56px 56px;background:#0E0E12;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:22px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span class="k">Choice · phone 390 · R1</span>
+    <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px">The three cards stack, each with its figure</h2>
+    <p class="cap" style="margin:0;max-width:1100px">The shipped phone card, three times, 12px apart. Each keeps its figure so the three still compare; at 390 the step scrolls under the shipped sticky bar, which is the same height as today. The phone title is no longer shortened: “What’s this file for?” fits at 18px.</p>
+  </div>
+  <div style="display:flex;gap:40px;align-items:flex-start">
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">C1 · nothing picked</span>
+      <section class="ph">
+        <div class="pad">
+          <span class="meta">STEP 2 OF 4 · The Vault 10-14-26.csv · 3,570 rows</span>
+          <h1 class="h1" id="p1h">What’s this file for?</h1>
+          <p class="lede">Nothing changes until you confirm on the next screen.</p>
+          <div role="radiogroup" aria-labelledby="p1h" style="display:flex;flex-direction:column;gap:12px">
+            <label class="card"><input class="sr" type="radio" name="p1"><span class="rad"></span><span class="cc"><span class="ct">Replace my collection</span><span class="cb">Your collection becomes exactly this file. Anything not in it leaves.</span><span class="fig">4,616 → 4,345 cards</span><span class="warn"><span aria-hidden="true" style="color:#E0913C">⚠</span><span>4 changes you made in the app since your Oct 2 upload will be overwritten.</span></span></span></label>
+            <label class="card"><input class="sr" type="radio" name="p1"><span class="rad"></span><span class="cc"><span class="ct">Add these cards</span><span class="cb">The file’s quantities are added to yours. Nothing is removed, and your art picks stay.</span><span class="fig">4,616 → 8,961 cards</span><span class="note"><span aria-hidden="true">ⓘ</span><span>You already own 99% of these cards. Adding the file raises those counts.</span></span></span></label>
+            <label class="card"><input class="sr" type="radio" name="p1"><span class="rad"></span><span class="cc"><span class="ct">Sync my collection</span><span class="cb">Takes what changed in the file and keeps what you changed in the app. Where you both changed a card, you choose.</span><span class="fig">4,616 → 4,632 cards</span><span class="note"><span aria-hidden="true">ⓘ</span><span>Keeps the 121 cards you changed in the app since your Oct 2 upload.</span></span></span></label>
+          </div>
+        </div>
+        <div class="bar"><button class="btnp" type="button" disabled>Review the replace →</button><button class="btng" type="button">Cancel</button></div>
+      </section>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">C2 · Sync picked · scrolled to the foot</span>
+      <section class="ph">
+        <div class="pad">
+          <div role="radiogroup" aria-label="What’s this file for?" style="display:flex;flex-direction:column;gap:12px">
+            <label class="card"><input class="sr" type="radio" name="p2"><span class="rad"></span><span class="cc"><span class="ct">Add these cards</span><span class="cb">The file’s quantities are added to yours. Nothing is removed, and your art picks stay.</span><span class="fig">4,616 → 8,961 cards</span><span class="note"><span aria-hidden="true">ⓘ</span><span>You already own 99% of these cards. Adding the file raises those counts.</span></span></span></label>
+            <label class="card on"><input class="sr" type="radio" name="p2" checked><span class="rad on"><span></span></span><span class="cc"><span class="ct">Sync my collection</span><span class="cb">Takes what changed in the file and keeps what you changed in the app. Where you both changed a card, you choose.</span><span class="fig">4,616 → 4,632 cards</span><span class="note"><span aria-hidden="true">ⓘ</span><span>Keeps the 121 cards you changed in the app since your Oct 2 upload.</span></span></span></label>
+          </div>
+        </div>
+        <div class="bar"><button class="btnp" type="button">Review the sync →</button><button class="btng" type="button">Cancel</button></div>
+      </section>
+      <span class="cap" style="max-width:390px">The phone bar has no lead-in sentence, as shipped; the button names the review.</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">C3 · Sync unavailable · past 90 days</span>
+      <section class="ph">
+        <div class="pad">
+          <span class="meta">STEP 2 OF 4 · The Vault 10-14-26.csv · 3,570 rows</span>
+          <h1 class="h1" id="p3h">What’s this file for?</h1>
+          <p class="lede">Nothing changes until you confirm on the next screen.</p>
+          <div role="radiogroup" aria-labelledby="p3h" style="display:flex;flex-direction:column;gap:12px">
+            <label class="card"><input class="sr" type="radio" name="p3"><span class="rad"></span><span class="cc"><span class="ct">Replace my collection</span><span class="cb">Your collection becomes exactly this file. Anything not in it leaves.</span><span class="fig">4,616 → 4,345 cards</span><span class="warn"><span aria-hidden="true" style="color:#E0913C">⚠</span><span>Changes you made in the app may be overwritten. Your last upload was Jun 30, further back than the 90 days of history we keep, so we can’t count them.</span></span></span></label>
+            <label class="card"><input class="sr" type="radio" name="p3"><span class="rad"></span><span class="cc"><span class="ct">Add these cards</span><span class="cb">The file’s quantities are added to yours. Nothing is removed, and your art picks stay.</span><span class="fig">4,616 → 8,961 cards</span></span></label>
+            <label class="card off"><input class="sr" type="radio" name="p3" aria-disabled="true"><span class="rad off"></span><span class="cc"><span class="ct">Sync my collection</span><span class="cb">Takes what changed in the file and keeps what you changed in the app. Where you both changed a card, you choose.</span><span class="why">Sync can’t be used for this file. Your last upload was Jun 30, further back than the 90 days of history we keep, so we can’t tell your changes from the file’s.</span></span></label>
+          </div>
+        </div>
+        <div class="bar"><button class="btnp" type="button" disabled>Review the replace →</button><button class="btng" type="button">Cancel</button></div>
+      </section>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">C4 · focus</span>
+      <section class="ph">
+        <div class="pad">
+          <div role="radiogroup" aria-label="What’s this file for?" style="display:flex;flex-direction:column;gap:12px">
+            <label class="card"><input class="sr" type="radio" name="p4"><span class="rad"></span><span class="cc"><span class="ct">Add these cards</span><span class="cb">The file’s quantities are added to yours. Nothing is removed, and your art picks stay.</span><span class="fig">4,616 → 8,961 cards</span></span></label>
+            <label class="card on focus"><input class="sr" type="radio" name="p4" checked><span class="rad on"><span></span></span><span class="cc"><span class="ct">Sync my collection</span><span class="cb">Takes what changed in the file and keeps what you changed in the app. Where you both changed a card, you choose.</span><span class="fig">4,616 → 4,632 cards</span><span class="note"><span aria-hidden="true">ⓘ</span><span>Keeps the 121 cards you changed in the app since your Oct 2 upload.</span></span></span></label>
+          </div>
+        </div>
+        <div class="bar"><button class="btnp" type="button">Review the sync →</button><button class="btng" type="button">Cancel</button></div>
+      </section>
+      <span class="cap" style="max-width:390px">Each card is a full-width hit target, far over 44px. Focus scrolls the picked card into view above the bar.</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1800,"height":1500}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

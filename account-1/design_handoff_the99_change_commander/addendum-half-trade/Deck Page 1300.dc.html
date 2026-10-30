@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-rail:#1A1611; --surface-sunken:#18140F; --surface-raised:#211D18; --elevated:#29241F; --display:'Cinzel',serif;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654; --fg-disabled:#4A4033;
+    --accent:#CF8745; --accent-hover:#DE9757; --accent-shadow:#6B482A; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+    --bracket-3:#C9AC62;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-rail:#12141B; --surface-sunken:#101219; --surface-raised:#191B22; --elevated:#20222A; --display:'Chakra Petch',sans-serif;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476; --fg-disabled:#3D404E;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-shadow:#843052; --warning:#E0913C;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" data-screen-label="{{ screenLabel }}" style="width:1300px;background:var(--bg);color:var(--fg);font-family:'IBM Plex Sans',sans-serif;">
+
+  <header style="position:relative;min-height:288px;border-bottom:1px solid var(--border);">
+    <div aria-hidden="true" style="position:absolute;left:0;right:0;top:0;height:288px;overflow:hidden;background:var(--bg);">
+      <div style="{{ artDesk }}"></div>
+      <div style="position:absolute;inset:0;background:linear-gradient(90deg, transparent 0px, transparent 325px, color-mix(in oklab, var(--bg) 78%, transparent) 560px, var(--bg) 584px);"></div>
+    </div>
+    <div style="position:absolute;z-index:2;left:16px;bottom:14px;display:flex;align-items:center;gap:8px;">
+      <sc-if value="{{ notJoined }}" hint-placeholder-val="{{ true }}">
+        <span style="display:flex;align-items:center;gap:6px;height:26px;padding:0 9px;border-radius:7px;border:1px solid var(--border-strong);background:var(--bg);font-size:14px;line-height:1;color:var(--fg);">⛶<span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">Card details</span></span>
+      </sc-if>
+      <sc-if value="{{ joined }}" hint-placeholder-val="{{ false }}">
+        <span data-door="joined" style="display:flex;align-items:stretch;height:26px;border-radius:7px;border:1px solid var(--border-strong);background:var(--bg);color:var(--fg);">
+          <span style="display:flex;align-items:center;gap:6px;padding:0 9px;font-size:14px;line-height:1;">⛶<span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">Card details</span></span>
+          <span aria-hidden="true" style="width:1px;background:var(--border-strong);"></span>
+          <span style="display:flex;align-items:center;gap:6px;padding:0 9px;"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--fg)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex:none;"><path d="M4 8h15"></path><path d="M15 4l4 4-4 4"></path><path d="M20 16H5"></path><path d="M9 12l-4 4 4 4"></path></svg><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">{{ doorLabel }}</span></span>
+        </span>
+      </sc-if>
+      <sc-if value="{{ bandDoor }}" hint-placeholder-val="{{ false }}">
+        <span data-door="band" style="display:flex;align-items:center;gap:6px;height:26px;padding:0 9px;border-radius:7px;border:1px solid var(--border-strong);background:var(--bg);color:var(--fg);"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--fg)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex:none;"><path d="M4 8h15"></path><path d="M15 4l4 4-4 4"></path><path d="M20 16H5"></path><path d="M9 12l-4 4 4 4"></path></svg><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">{{ doorLabel }}</span></span>
+      </sc-if>
+    </div>
+    <div style="position:relative;display:flex;align-items:flex-end;min-height:288px;padding:0 24px 18px 592px;gap:18px;">
+      <div style="flex:1 1 280px;min-width:0;display:flex;flex-direction:column;">
+        <div style="display:flex;align-items:center;">
+          <h1 style="margin:0;font-family:var(--display);font-weight:700;font-size:21px;line-height:1.2;color:var(--fg);">{{ deckName }}</h1>
+          <span style="flex:none;margin-left:6px;width:14px;font-size:14px;line-height:1;color:var(--fg-muted);">✎</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:3px;min-width:0;">
+          <span style="display:flex;align-items:center;gap:3px;flex:none;">
+            <sc-for list="{{ pips }}" as="p" hint-placeholder-count="3"><span style="{{ p }}"></span></sc-for>
+          </span>
+          <span style="display:flex;gap:5px;align-items:baseline;min-width:0;overflow:hidden;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);">
+            <span style="flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ cmdName }}</span>
+            <sc-if value="{{ hasPartner }}" hint-placeholder-val="{{ false }}">
+              <span style="flex:none;">+</span>
+              <span style="flex:0 1000 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-bottom:1px solid var(--border-strong);">{{ partnerName }}</span>
+            </sc-if>
+            <span style="flex:none;">· {{ colorLabel }}</span>
+          </span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px;">
+          <span style="{{ pillStyle }}">{{ pillText }}</span>
+          <sc-if value="{{ hasChip }}" hint-placeholder-val="{{ true }}">
+            <span style="display:inline-flex;align-items:center;flex:none;height:24px;padding:0 8px;border-radius:6px;background:color-mix(in srgb, var(--bracket-3) 12%, var(--bg));border:1px solid color-mix(in oklab, var(--bracket-3) 55%, transparent);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--bracket-3);white-space:nowrap;">Upgraded</span>
+          </sc-if>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:9px;">
+          <div style="flex:1;min-width:0;max-width:170px;height:6px;border-radius:999px;background:var(--elevated);overflow:hidden;"><div style="{{ barFill }}"></div></div>
+          <div style="display:flex;align-items:baseline;gap:4px;flex:none;"><span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:15px;color:var(--fg);">{{ body }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--fg-faint);">/ {{ body }}</span></div>
+        </div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:9px;">
+        <sc-if value="{{ rowDoor }}" hint-placeholder-val="{{ false }}">
+          <span data-door="row" style="display:flex;align-items:center;gap:7px;height:32px;padding:0 14px;border-radius:8px;border:1px solid var(--border-strong);font-weight:600;font-size:12.5px;color:var(--fg);"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--fg-muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex:none;"><path d="M4 8h15"></path><path d="M15 4l4 4-4 4"></path><path d="M20 16H5"></path><path d="M9 12l-4 4 4 4"></path></svg>{{ doorLabel }}</span>
+        </sc-if>
+        <sc-if value="{{ menuMode }}" hint-placeholder-val="{{ false }}">
+          <span style="position:relative;display:flex;">
+            <span data-door="menu" style="{{ menuTrigger }}">Edit deck<span aria-hidden="true" style="font-size:10px;color:var(--fg-faint);">▾</span></span>
+            <sc-if value="{{ menuOpen }}" hint-placeholder-val="{{ false }}">
+              <span role="menu" style="position:absolute;right:0;bottom:40px;z-index:5;width:232px;display:flex;flex-direction:column;padding:6px;border-radius:10px;background:var(--surface-raised);border:1px solid var(--border-strong);box-shadow:0 18px 50px rgba(0,0,0,0.6);">
+                <span role="menuitem" style="display:flex;align-items:center;gap:10px;min-height:40px;padding:0 10px;border-radius:7px;background:var(--elevated);font-size:13px;font-weight:500;color:var(--fg);"><span aria-hidden="true" style="display:flex;width:16px;justify-content:center;"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--fg-muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex:none;"><path d="M4 8h15"></path><path d="M15 4l4 4-4 4"></path><path d="M20 16H5"></path><path d="M9 12l-4 4 4 4"></path></svg></span>{{ doorLabel }}</span>
+                <span role="menuitem" style="display:flex;align-items:center;gap:10px;min-height:40px;padding:0 10px;border-radius:7px;font-size:13px;font-weight:500;color:var(--fg);"><span aria-hidden="true" style="width:16px;font-size:13px;color:var(--fg-muted);text-align:center;">≡</span>Update from a list</span>
+              </span>
+            </sc-if>
+          </span>
+        </sc-if>
+        <sc-if value="{{ showUpdate }}" hint-placeholder-val="{{ true }}">
+          <span style="display:flex;align-items:center;height:32px;padding:0 14px;border-radius:8px;border:1px solid var(--border-strong);font-weight:600;font-size:12.5px;color:var(--fg);">Update from a list</span>
+        </sc-if>
+        <span style="display:flex;align-items:center;height:32px;padding:0 14px;border-radius:8px;background:var(--fg);font-weight:600;font-size:12.5px;color:var(--bg);">Export</span>
+        <sc-if value="{{ brew }}" hint-placeholder-val="{{ false }}">
+          <span style="display:flex;align-items:center;height:36px;padding:0 16px;border-radius:8px;border:1px solid var(--border-strong);font-weight:500;font-size:13px;color:var(--fg);">Commit as v1</span>
+        </sc-if>
+      </div>
+    </div>
+  </header>
+
+  <sc-if value="{{ versionLine }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;align-items:center;padding:12px 30px;background:var(--surface-rail);border-bottom:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">v3 · committed 14 Sept</span></div>
+  </sc-if>
+
+  <sc-if value="{{ inline }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:18px 26px 0;">
+      <div style="border-radius:10px;background:var(--surface-rail);padding:15px 17px;border:1px solid var(--border-strong);border-left:3px solid var(--accent);">
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:11px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);">Pending changes: not yet a version</span>
+          <sc-if value="{{ trade }}" hint-placeholder-val="{{ false }}">
+            <span style="display:flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:13px;"><span style="color:var(--success);">+1</span><span style="color:var(--border-strong);">/</span><span style="color:var(--warning);">−1</span></span>
+          </sc-if>
+        </div>
+        <ul style="margin:0 0 14px;padding:0;list-style:none;display:flex;flex-direction:column;gap:5px;max-width:760px;">
+          <li data-commander-line="true" style="display:flex;align-items:center;gap:9px;min-height:34px;">
+            <span style="flex:none;width:13px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">⇄</span>
+            <span style="flex:1;min-width:0;font-size:13px;color:var(--fg);">{{ changeLine }}</span>
+            <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">{{ changeHint }}</span>
+            <sc-if value="{{ hasPrice }}" hint-placeholder-val="{{ false }}">
+              <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--warning);border-radius:4px;padding:1px 5px;border:1px solid var(--accent-shadow);">$2.40</span>
+            </sc-if>
+          </li>
+          <sc-if value="{{ trade }}" hint-placeholder-val="{{ false }}">
+            <li style="display:flex;align-items:center;gap:9px;min-height:34px;">
+              <span style="flex:none;width:13px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--success);">+</span>
+              <span style="flex:1;min-width:0;font-size:13px;color:var(--fg);">{{ tradeInName }}</span>
+              <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">from the command zone</span>
+            </li>
+            <li style="display:flex;align-items:center;gap:9px;min-height:34px;">
+              <span style="flex:none;width:13px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--warning);">−</span>
+              <span style="flex:1;min-width:0;font-size:13px;color:var(--fg);">{{ tradeOutName }}</span>
+              <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">to the command zone</span>
+            </li>
+          </sc-if>
+        </ul>
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;">
+          <span style="display:inline-flex;align-items:center;padding:10px 18px;border-radius:8px;font-weight:600;font-size:13.5px;color:var(--bg);background:var(--fg);">Commit as v4</span>
+          <span style="display:inline-flex;align-items:center;padding:10px 18px;border-radius:8px;font-weight:500;font-size:13.5px;color:var(--fg-muted);border:1px solid var(--border-strong);">Discard</span>
+          <span style="display:inline-flex;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);">review changes</span>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ counts }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:18px 26px 0;">
+      <div style="border-radius:10px;background:var(--surface-rail);padding:15px 17px;border:1px solid var(--border-strong);border-left:3px solid var(--accent);">
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-bottom:10px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);">Pending changes: not yet a version</span>
+          <span style="display:flex;flex-wrap:wrap;align-items:center;gap:14px;">
+            <span style="display:flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:13px;"><span style="color:var(--success);">+12</span><span style="color:var(--border-strong);">/</span><span style="color:var(--warning);">−12</span></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);">25 changes since v3</span>
+          </span>
+        </div>
+        <p data-commander-line="true" style="margin:0 0 6px;max-width:700px;font-size:13px;line-height:1.55;color:var(--fg-body);"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);margin-right:7px;">⇄</span>Marisi, Breaker of the Coil replaces Gishath, Sun's Avatar as commander.</p>
+        <p style="margin:0 0 14px;max-width:700px;font-size:13px;line-height:1.55;color:var(--fg-body);">11 of the 12 are short of spare copies, so this commit will ask for 11 to buy · <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--warning);">$28.60</span>.</p>
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;">
+          <span style="display:inline-flex;align-items:center;padding:10px 18px;border-radius:8px;font-weight:600;font-size:13.5px;color:var(--bg);background:var(--fg);">Review 25 changes</span>
+          <span style="display:inline-flex;align-items:center;padding:10px 18px;border-radius:8px;font-weight:500;font-size:13.5px;color:var(--fg);border:1px solid var(--border-strong);">Commit as v4</span>
+          <span style="display:inline-flex;align-items:center;padding:10px 18px;border-radius:8px;font-weight:500;font-size:13.5px;color:var(--fg-muted);border:1px solid var(--border-strong);">Discard</span>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <div style="padding:12px 30px 0;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:22px;white-space:nowrap;">
+    <span style="display:flex;align-items:baseline;gap:6px;padding-bottom:10px;"><span style="font-size:14px;font-weight:500;color:var(--fg-faint);">Your deck</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">{{ body }}</span></span>
+    <span style="display:flex;align-items:center;padding-bottom:10px;border-bottom:2px solid var(--accent);"><span style="font-size:14px;font-weight:600;color:var(--fg);">Analysis</span></span>
+    <span style="display:flex;align-items:baseline;gap:6px;padding-bottom:10px;"><span style="font-size:14px;font-weight:500;color:var(--fg-faint);">Consider</span></span>
+    <span style="display:flex;align-items:baseline;gap:6px;padding-bottom:10px;"><span style="font-size:14px;font-weight:500;color:var(--fg-faint);">Games</span></span>
+  </div>
+
+  <div style="padding:24px 30px 36px;">
+    <sc-if value="{{ draft }}" hint-placeholder-val="{{ false }}">
+      <div role="status" style="display:flex;align-items:center;gap:18px;padding:14px 16px 14px 20px;border-radius:11px;background:var(--surface-rail);border:1px solid var(--border-strong);">
+        <p style="margin:0;flex:1;min-width:0;font-size:13.5px;line-height:1.5;color:var(--fg-body);">Your deck has changes since it was analyzed, so this bracket might not be accurate.</p>
+        <span style="display:inline-flex;align-items:center;min-height:36px;padding:0 18px;border-radius:8px;background:var(--fg);color:var(--bg);font-weight:600;font-size:13.5px;flex:none;">Re-analyze</span>
+      </div>
+    </sc-if>
+    <sc-if value="{{ quiet }}" hint-placeholder-val="{{ true }}">
+      <div style="height:100px;border:1px dashed var(--border-strong);border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">Analysis tab, as shipped</div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1300,&quot;height&quot;:560},&quot;state&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;single&quot;,&quot;pair&quot;,&quot;brew&quot;,&quot;after&quot;,&quot;afterTrade&quot;,&quot;afterPair&quot;,&quot;afterCounts&quot;,&quot;afterHalfTrade&quot;],&quot;default&quot;:&quot;single&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;controls&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;r1&quot;,&quot;band&quot;,&quot;joined&quot;,&quot;menu&quot;],&quot;default&quot;:&quot;band&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;menuOpen&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.props.state || "single";
+    const mode = this.props.controls || "band";
+    const pair = s === "pair" || s === "afterPair" || s === "afterHalfTrade";
+    const half = s === "afterHalfTrade";
+    const after = ["after", "afterTrade", "afterPair", "afterCounts", "afterHalfTrade"].includes(s);
+    const brew = s === "brew";
+    const trade = s === "afterTrade" || half;
+    const lead = pair ? (after ? "Ishai, Ojutai Dragonspeaker" : "Thrasios, Triton Hero")
+      : s === "after" ? "Mayael the Anima" : trade ? "Pantlaza, Sun-Favored" : s === "afterCounts" ? "Marisi, Breaker of the Coil" : "Gishath, Sun's Avatar";
+    const partner = pair ? (after ? "Reyhan, Last of the Abzan" : "Tymna the Weaver") : "";
+    const art = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(lead)}&format=image&version=art_crop`;
+    const pip = (c) => ({ display: "block", width: 10, height: 10, borderRadius: 2, background: `var(--${c})`, boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.4)" });
+    const lines = {
+      after: ["Gishath, Sun's Avatar → Mayael the Anima", "commander"],
+      afterTrade: ["Gishath, Sun's Avatar → Pantlaza, Sun-Favored", "commander"],
+      afterPair: ["Thrasios & Tymna → Ishai & Reyhan", "commanders"],
+      afterHalfTrade: ["Thrasios & Tymna → Ishai & Reyhan", "commanders"],
+    };
+    const l = lines[s] || lines.after;
+    const toBuy = s === "after" || s === "afterCounts";
+    const pillBase = { display: "flex", alignItems: "center", borderRadius: 6, padding: "3px 8px", fontSize: 11, fontFamily: "'IBM Plex Mono',monospace", border: "1px solid var(--border-strong)", whiteSpace: "nowrap" };
+    const pill = brew ? { ...pillBase, color: "var(--fg-body)", background: "var(--elevated)" }
+      : toBuy ? { ...pillBase, color: "var(--warning)", background: "color-mix(in srgb, var(--warning) 14%, var(--bg))" }
+      : { ...pillBase, color: "var(--success)", background: "color-mix(in srgb, var(--success) 18%, var(--bg))" };
+    const menuOpen = !!this.props.menuOpen;
+    return {
+      theme: this.props.theme || "amonkhet",
+      screenLabel: `Deck page · 1300 · ${s} · ${mode}`,
+      deckName: pair ? "HD - Thrasios & Tymna" : "HD - Gishath",
+      cmdName: lead, hasPartner: pair, partnerName: partner,
+      colorLabel: pair ? "Non-red" : "Naya",
+      pips: (pair ? ["w", "u", "b", "g"] : ["r", "g", "w"]).map(pip),
+      body: pair ? 98 : 99,
+      pillStyle: pill, pillText: brew ? "Draft" : toBuy ? "To buy" : "Complete",
+      barFill: { width: "100%", height: "100%", background: brew ? "var(--fg-body)" : toBuy ? "var(--accent)" : "var(--success)" },
+      hasChip: !after && !brew,
+      versionLine: !after && !brew, draft: after, quiet: !after,
+      inline: after && s !== "afterCounts", counts: s === "afterCounts", trade, brew,
+      changeLine: l[0], changeHint: l[1],
+      tradeInName: half ? "Thrasios, Triton Hero" : "Gishath, Sun's Avatar",
+      tradeOutName: half ? "Reyhan, Last of the Abzan" : "Pantlaza, Sun-Favored", hasPrice: s === "after",
+      doorLabel: pair ? "Change pair" : "Change commander",
+      bandDoor: mode === "band", joined: mode === "joined", notJoined: mode !== "joined", rowDoor: mode === "r1", menuMode: mode === "menu", showUpdate: mode !== "menu",
+      menuOpen, menuTrigger: { display: "flex", alignItems: "center", gap: 8, height: 32, padding: "0 12px 0 14px", borderRadius: 8, border: "1px solid var(--border-strong)", fontWeight: 600, fontSize: 12.5, color: "var(--fg)", background: menuOpen ? "var(--elevated)" : "transparent" },
+      artDesk: {
+        position: "absolute", left: 0, top: 0, bottom: 0, width: 560, opacity: 0.92,
+        backgroundImage: `url("${art}")`, backgroundSize: "cover", backgroundPosition: "center top",
+        WebkitMaskImage: "linear-gradient(90deg, #000 0 58%, transparent 100%)", maskImage: "linear-gradient(90deg, #000 0 58%, transparent 100%)",
+      },
+    };
+  }
+}
+</script>
+</body>
+</html>

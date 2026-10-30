@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Metamorphous&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="kaldheim"] {
+    --bg:#121217; --surface:#1E1F26; --surface-sunken:#16171D; --surface-rail:#18191F; --elevated:#2D2E35;
+    --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E; --fg-disabled:#454E50;
+    --accent:#5C86C9; --accent-hover:#6C95D8; --success:#6FA368; --warning:#E0913C; --danger:#C6533F; --btn:#C9D3D6;
+  }
+  [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-rail:#1A1611; --surface-sunken:#18140F; --elevated:#29241F;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654; --fg-disabled:#4A4033;
+    --accent:#CF8745; --accent-hover:#DE9757; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-rail:#12141B; --surface-sunken:#101219; --elevated:#20222A;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476; --fg-disabled:#3D404E;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'IBM Plex Sans', sans-serif; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" data-screen-label="{{ label }}" style="{{ s.root }}">
+
+  <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;align-items:center;justify-content:space-between;min-height:80px;padding:12px 16px;border-bottom:1px solid var(--border);">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:2px;"><span style="font-size:9px;letter-spacing:2px;color:var(--accent);">◆◆◆</span><span style="display:flex;align-items:baseline;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.3em;color:var(--accent);">THE</span><span style="font-family:'Metamorphous',serif;font-size:26px;line-height:1;color:var(--fg);">99</span></span></div>
+      <span style="width:44px;height:44px;border-radius:12px;border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--accent);">HH</span>
+    </div>
+  </sc-if>
+
+  <!-- Deck page -->
+  <sc-if value="{{ isDeck }}" hint-placeholder-val="{{ true }}">
+    <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+      <div style="position:relative;height:288px;border-bottom:1px solid var(--border);overflow:hidden;">
+        <div style="position:absolute;left:0;top:0;bottom:0;width:340px;background:repeating-linear-gradient(135deg,var(--surface) 0 8px,var(--surface-rail) 8px 16px);"></div>
+        <div style="position:absolute;left:200px;top:0;bottom:0;width:160px;background:linear-gradient(90deg,transparent,var(--bg));"></div>
+        <span style="position:absolute;top:12px;left:14px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-locked);">commander art · left-portrait 340</span>
+        <div style="position:absolute;left:364px;right:24px;bottom:18px;display:flex;align-items:flex-end;gap:18px;">
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+            <h1 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:21px;line-height:1.2;color:var(--fg);text-wrap:pretty;">{{ d.name }} <span style="font-family:'IBM Plex Sans',sans-serif;font-size:14px;color:var(--fg-muted);">✎</span></h1>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:3px;min-width:0;">
+              <span style="display:flex;gap:3px;flex:none;"><sc-for list="{{ d.pips }}" as="pp" hint-placeholder-count="1"><span style="{{ pp }}"></span></sc-for></span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ d.cmdr }} · {{ d.ident }}</span>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
+              <span style="{{ d.pill }}">{{ d.status }}</span>
+              <sc-if value="{{ d.hasBracket }}" hint-placeholder-val="{{ true }}"><span style="display:inline-flex;align-items:center;height:24px;padding:0 8px;border-radius:6px;border:1px solid color-mix(in oklab, var(--warning) 60%, #C9A54A);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#D3B35C;">◇ Upgraded</span></sc-if>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:9px;">
+              <div style="flex:1;min-width:0;max-width:170px;height:6px;border-radius:999px;background:var(--elevated);box-shadow:inset 0 0 0 1px rgba(0,0,0,.4);overflow:hidden;"><div style="{{ d.barFill }}"></div></div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:15px;color:var(--fg);">99<span style="font-weight:400;font-size:13px;color:var(--fg-faint);"> / 99</span></span>
+            </div>
+            
+          </div>
+          <div style="flex:none;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:9px;max-width:250px;">
+            <span style="display:inline-flex;align-items:center;height:32px;padding:0 14px;border-radius:8px;border:1px solid var(--border-strong);font-size:12.5px;color:var(--fg);">Update from a list</span>
+            <span style="display:inline-flex;align-items:center;height:32px;padding:0 14px;border-radius:8px;background:var(--btn, var(--fg));font-size:12.5px;font-weight:600;color:var(--bg);">Export</span>
+            <sc-if value="{{ d.offerCommit }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;height:32px;padding:0 14px;border-radius:8px;border:1px solid var(--accent);font-size:12.5px;font-weight:600;color:var(--accent);">Commit as v1</span></sc-if>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+      <div style="position:relative;height:288px;overflow:hidden;background:repeating-linear-gradient(135deg,var(--surface) 0 8px,var(--surface-rail) 8px 16px);">
+        <div style="position:absolute;left:0;right:0;bottom:0;height:190px;background:linear-gradient(180deg,transparent,var(--bg) 85%);"></div>
+        <span style="position:absolute;top:12px;left:16px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-locked);">commander art · cover</span>
+        <div style="position:absolute;left:18px;right:18px;bottom:12px;padding-right:40px;display:flex;flex-direction:column;gap:6px;">
+          <h1 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:20px;line-height:1.25;color:var(--fg);">{{ d.name }} <span style="font-family:'IBM Plex Sans',sans-serif;font-size:14px;color:var(--fg-muted);">✎</span></h1>
+          <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+            <span style="display:flex;gap:3px;flex:none;"><sc-for list="{{ d.pips }}" as="pp" hint-placeholder-count="1"><span style="{{ pp }}"></span></sc-for></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ d.cmdr }} · {{ d.ident }}</span>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            <span style="{{ d.pill }}">{{ d.status }}</span>
+            <sc-if value="{{ d.hasBracket }}" hint-placeholder-val="{{ true }}"><span style="display:inline-flex;align-items:center;height:22px;padding:0 7px;border-radius:6px;border:1px solid color-mix(in oklab, var(--warning) 60%, #C9A54A);font-family:'IBM Plex Mono',monospace;font-size:10px;color:#D3B35C;">◇ Upgraded</span></sc-if>
+          </div>
+        </div>
+      </div>
+      <div style="border-top:1px solid var(--border);padding:14px 16px 12px;display:flex;flex-direction:column;align-items:center;gap:8px;">
+        <div style="display:flex;width:100%;align-items:center;gap:10px;">
+          <div style="flex:1;min-width:0;height:6px;border-radius:999px;background:var(--elevated);box-shadow:inset 0 0 0 1px rgba(0,0,0,.4);overflow:hidden;"><div style="{{ d.barFill }}"></div></div>
+          <span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14px;color:var(--fg);">99<span style="font-weight:400;color:var(--fg-faint);"> / 99</span></span>
+        </div>
+        
+      </div>
+      <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;padding:4px 16px 14px;">
+        <span style="display:inline-flex;align-items:center;min-height:44px;padding:0 9px;border-radius:7px;border:1px solid var(--border-strong);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg);">Update from a list</span>
+        <span style="display:inline-flex;align-items:center;min-height:44px;padding:0 9px;border-radius:7px;border:1px solid var(--border-strong);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);">↓ Export</span>
+        <sc-if value="{{ d.offerCommit }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;min-height:44px;padding:0 11px;border-radius:7px;border:1px solid var(--accent);font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--accent);">Commit as v1</span></sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ hasSuggest }}" hint-placeholder-val="{{ false }}">
+      <div style="{{ s.stripWrap }}">
+        <div data-comment-target="suggestion-line" style="display:flex;align-items:flex-start;gap:4px;border:1px solid var(--border-strong);border-radius:10px;background:var(--surface-rail);padding:11px 4px 11px 14px;">
+          <div style="{{ s.stripInner }}">
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;">
+              <span style="font-size:13.5px;line-height:1.45;color:var(--fg);text-wrap:pretty;">Looks like this started as <b style="font-weight:600;">{{ sg.precon }}</b>{{ sg.tail }}</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);text-wrap:pretty;">{{ sg.meta }}</span>
+            </div>
+            <span style="{{ s.linkBtn }}">Link it</span>
+          </div>
+          <span style="flex:none;display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;font-size:13px;color:var(--fg-muted);">✕</span>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ hasSuggest2 }}" hint-placeholder-val="{{ false }}">
+      <div style="{{ s.stripWrap }}">
+        <div style="display:flex;flex-direction:column;border:1px solid var(--border-strong);border-radius:10px;background:var(--surface-rail);">
+          <div style="display:flex;align-items:flex-start;gap:4px;padding:11px 4px 8px 14px;">
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;">
+              <span style="font-size:13.5px;line-height:1.45;color:var(--fg);">Looks like this started as one of two precons</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);">link the one it came from</span>
+            </div>
+            <span style="flex:none;display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;font-size:13px;color:var(--fg-muted);">✕</span>
+          </div>
+          <sc-for list="{{ sugs }}" as="sx" hint-placeholder-count="2">
+            <div style="{{ s.sugRow }}">
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;">
+                <span style="font-family:'Metamorphous',serif;font-size:15px;color:var(--fg);">{{ sx.precon }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-muted);text-wrap:pretty;">{{ sx.meta }}</span>
+              </div>
+              <span style="{{ s.linkBtn }}">Link</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <div style="{{ s.tabsRow }}">
+      <sc-for list="{{ deckTabs }}" as="tb" hint-placeholder-count="4">
+        <span style="{{ tb.style }}">{{ tb.name }} <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:400;color:var(--fg-faint);">{{ tb.n }}</span></span>
+      </sc-for>
+    </div>
+
+    <sc-if value="{{ tabDeck }}" hint-placeholder-val="{{ true }}">
+      <div style="{{ s.bodyPad }}">
+        <div style="display:flex;flex-direction:column;gap:6px;opacity:0.5;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">↓ Your deck, as shipped</span>
+          <div style="display:flex;align-items:baseline;gap:8px;padding-bottom:7px;border-bottom:1px solid var(--border);"><span style="font-family:'Metamorphous',serif;font-size:15px;color:var(--fg);">Creatures</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ d.creatures }}</span></div>
+          <div style="{{ s.gGrid }}">
+            <sc-for list="{{ d.listRows }}" as="r" hint-placeholder-count="4">
+              <div style="{{ s.cRow }}"><span style="{{ dotOwn }}"></span><span style="flex:1;min-width:0;font-size:13.5px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r }}</span></div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ tabVersions }}" hint-placeholder-val="{{ false }}">
+      <div style="{{ s.railPad }}">
+        <sc-if value="{{ isBrewRail }}" hint-placeholder-val="{{ false }}">
+          <p style="margin:0 0 4px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);text-wrap:pretty;">Not committed yet. Your first commit is v1, and it diffs against v0.</p>
+        </sc-if>
+        <sc-for list="{{ rail }}" as="r" hint-placeholder-count="4">
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <sc-if value="{{ r.hasPreLabel }}" hint-placeholder-val="{{ false }}">
+              <span style="display:flex;align-items:center;gap:10px;margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);"><span style="flex:1;height:0;border-top:1px dashed var(--border-dashed);"></span>from the precon · before your first commit<span style="flex:1;height:0;border-top:1px dashed var(--border-dashed);"></span></span>
+            </sc-if>
+            <div style="{{ r.box }}">
+              <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;align-items:center;gap:14px;">
+                  <span style="{{ r.numStyle }}">{{ r.num }}</span>
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
+                    <span style="{{ r.noteStyle }}">{{ r.note }}</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ r.meta }}</span>
+                  </div>
+                  <span style="flex:none;display:flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:12px;">
+                    <sc-if value="{{ r.hasAdd }}" hint-placeholder-val="{{ true }}"><span style="color:var(--success);">{{ r.add }}</span></sc-if>
+                    <sc-if value="{{ r.hasSlash }}" hint-placeholder-val="{{ true }}"><span style="color:var(--border-strong);">/</span></sc-if>
+                    <sc-if value="{{ r.hasRem }}" hint-placeholder-val="{{ true }}"><span style="color:var(--warning);">{{ r.rem }}</span></sc-if>
+                    <sc-if value="{{ r.hasWord }}" hint-placeholder-val="{{ false }}"><span style="color:var(--fg-faint);">{{ r.word }}</span></sc-if>
+                  </span>
+                  <sc-if value="{{ r.current }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;padding:2px 7px;border-radius:4px;border:1px solid color-mix(in oklab, var(--accent) 45%, transparent);color:var(--accent);">current</span></sc-if>
+                  <sc-if value="{{ r.notCurrent }}" hint-placeholder-val="{{ true }}"><span style="flex:none;width:62px;"></span></sc-if>
+                </div>
+              </sc-if>
+              <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;align-items:baseline;gap:9px;">
+                  <span style="{{ r.numStyle }}">{{ r.num }}</span>
+                  <sc-if value="{{ r.current }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;padding:1px 6px;border-radius:4px;border:1px solid color-mix(in oklab, var(--accent) 45%, transparent);color:var(--accent);">current</span></sc-if>
+                  <span style="flex:1;"></span>
+                  <span style="flex:none;display:flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;">
+                    <sc-if value="{{ r.hasAdd }}" hint-placeholder-val="{{ true }}"><span style="color:var(--success);">{{ r.add }}</span></sc-if>
+                    <sc-if value="{{ r.hasRem }}" hint-placeholder-val="{{ true }}"><span style="color:var(--warning);">{{ r.rem }}</span></sc-if>
+                    <sc-if value="{{ r.hasWord }}" hint-placeholder-val="{{ false }}"><span style="color:var(--fg-faint);">{{ r.word }}</span></sc-if>
+                  </span>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:4px;margin-top:6px;">
+                  <span style="{{ r.noteStyle }}">{{ r.note }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ r.metaPhone }}</span>
+                </div>
+              </sc-if>
+            </div>
+
+            <sc-if value="{{ r.openDiff }}" hint-placeholder-val="{{ false }}">
+              <div data-comment-target="v1-diff" style="{{ s.panel }}">
+                <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+                  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px;">
+                    <div>
+                      <h3 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:18px;color:var(--fg);">{{ diff.title }}</h3>
+                      <p style="margin:5px 0 0;font-size:13px;color:var(--fg-body);">{{ diff.note }}</p>
+                    </div>
+                    <div style="border-radius:8px;padding:9px 13px;background:var(--surface);border:1px solid var(--border);">
+                      <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:4px;">Mana value</div>
+                      <div style="display:flex;align-items:baseline;gap:5px;font-family:'IBM Plex Mono',monospace;"><span style="font-size:12px;color:var(--fg-locked);">{{ diff.mvFrom }}</span><span style="font-size:10px;color:var(--fg-locked);">→</span><span style="font-size:15px;color:var(--fg-body);">{{ diff.mvTo }}</span></div>
+                    </div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ diff.hasCmdr }}" hint-placeholder-val="{{ false }}"><p style="margin:0 0 12px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ diff.cmdrChange }}</p></sc-if>
+                <div style="display:flex;flex-direction:column;gap:3px;margin-bottom:12px;padding:9px 12px;border-radius:8px;border:1px dashed var(--border-dashed);">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-muted);">against v0 · {{ diff.precon }}, as the box lists it</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);">{{ diff.kept }}</span>
+                </div>
+                <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;gap:6px;margin-bottom:12px;">
+                    <span style="flex:1;display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:999px;background:var(--elevated);font-size:12.5px;font-weight:600;color:var(--fg);">{{ diff.inHead }}</span>
+                    <span style="flex:1;display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:999px;border:1px solid var(--border-strong);font-size:12.5px;font-weight:500;color:var(--fg-faint);">{{ diff.outHead }}</span>
+                  </div>
+                </sc-if>
+                <p style="margin:0 0 12px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ diff.today }}</p>
+                <div style="{{ s.diffCols }}">
+                  <sc-for list="{{ diff.cols }}" as="col" hint-placeholder-count="2">
+                    <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+                      <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}"><h4 style="{{ col.headStyle }}">{{ col.head }}</h4></sc-if>
+                      <sc-for list="{{ col.groups }}" as="g" hint-placeholder-count="2">
+                        <div style="display:flex;flex-direction:column;margin-bottom:13px;">
+                          <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px;"><span style="font-size:12.5px;font-weight:600;color:var(--fg);">{{ g.label }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ g.n }}</span></div>
+                          <div style="display:flex;flex-direction:column;gap:4px;">
+                            <sc-for list="{{ g.rows }}" as="cr" hint-placeholder-count="2">
+                              <div style="{{ s.dRow }}">
+                                <sc-if value="{{ col.isIn }}" hint-placeholder-val="{{ true }}"><span style="{{ cr.dot }}"></span></sc-if>
+                                <span style="flex:1;min-width:0;font-size:13px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ cr.name }}</span>
+                              </div>
+                            </sc-for>
+                          </div>
+                          <sc-if value="{{ g.hasMore }}" hint-placeholder-val="{{ false }}"><span style="padding:6px 0 0 2px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ g.more }}</span></sc-if>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ r.openV0 }}" hint-placeholder-val="{{ false }}">
+              <div data-comment-target="v0-panel" style="{{ s.panel }}">
+                <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+                  <div style="margin-bottom:14px;">
+                    <h3 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:18px;color:var(--fg);">v0 · {{ d.precon }}</h3>
+                    <p style="margin:5px 0 0;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">the precon · {{ d.set }} · released {{ d.rel }} · 100 cards</p>
+                  </div>
+                </sc-if>
+                <div style="display:flex;flex-direction:column;gap:10px;width:100%;border-radius:9px;padding:12px 15px;background:var(--surface-sunken);border:1px dashed var(--border-dashed);">
+                  <p style="margin:0;font-size:12.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;"><b style="font-weight:600;color:var(--fg);">Before your first commit.</b> v0 is {{ d.precon }}’s list as the box sells it, It’s history only: this deck is sleeved as {{ d.currentV }}.</p>
+                  <div style="{{ s.v0Actions }}">
+                    <span style="display:inline-flex;align-items:center;min-height:{{ s.linkH }};font-size:13px;color:var(--accent);">{{ d.openLabel }}</span>
+                    <span data-comment-target="unlink-control" style="display:inline-flex;align-items:center;min-height:{{ s.linkH }};font-size:13px;color:var(--fg-muted);text-decoration:underline;text-decoration-color:var(--border-dashed);text-underline-offset:3px;">Unlink from this precon</span>
+                  </div>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+
+        <sc-if value="{{ hasFoot }}" hint-placeholder-val="{{ false }}">
+          <div data-comment-target="versions-link-row" style="{{ s.footRow }}">
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;">
+              <span style="font-size:13.5px;color:var(--fg);">Built from a precon?</span>
+              <span style="font-size:12.5px;line-height:1.5;color:var(--fg-body);text-wrap:pretty;">Link it, and this history starts from the box as v0. Your cards don’t change.</span>
+            </div>
+            <span style="{{ s.linkBtn }}">Link a precon</span>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+  </sc-if>
+
+  <!-- Open precon -->
+  <sc-if value="{{ isOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="{{ s.openHead }}">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);min-height:22px;display:flex;align-items:center;">‹ Commander precons</span>
+      <div style="display:flex;align-items:flex-start;gap:14px;">
+        <span style="{{ s.bigThumb }}"></span>
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Precon decklist · read-only</span>
+          <h1 style="{{ s.openTitle }}">{{ p.name }}</h1>
+          <span style="font-size:13.5px;line-height:1.45;color:var(--fg-body);">{{ p.cmdr }}</span>
+          <div style="display:flex;align-items:flex-start;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.5;color:var(--fg-faint);">
+            <span style="flex:none;display:flex;gap:4px;padding-top:3px;"><sc-for list="{{ p.pips }}" as="pp" hint-placeholder-count="1"><span style="{{ pp }}"></span></sc-for></span>
+            <span style="flex:1;min-width:0;text-wrap:pretty;">{{ p.meta }}</span>
+          </div>
+        </div>
+        <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+          <div style="flex:none;display:flex;gap:9px;">
+            <span data-comment-target="precon-link-control" style="display:inline-flex;align-items:center;height:40px;padding:0 16px;border-radius:9px;border:1px solid var(--border-strong);font-size:14px;color:var(--fg);">Link a deck</span>
+            <span style="display:inline-flex;align-items:center;height:40px;padding:0 18px;border-radius:9px;background:var(--btn, var(--fg));font-size:14px;font-weight:600;color:var(--bg);">Start a deck from this</span>
+          </div>
+        </sc-if>
+      </div>
+      <div style="{{ s.ownBox }}">
+        <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;">
+          <span style="font-size:14px;color:var(--fg-body);">You own <b style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:15px;color:var(--fg);">{{ p.own }} of {{ p.of }}</b> of its cards</span>
+        </div>
+        <div style="height:3px;border-radius:2px;background:var(--border-strong);overflow:hidden;"><div style="height:3px;width:{{ p.pct }};background:var(--fg-muted);"></div></div>
+        <sc-if value="{{ p.hasLinked }}" hint-placeholder-val="{{ false }}">
+          <div data-comment-target="precon-linked-state" style="{{ s.linkedRow }}">
+            <span style="flex:1;min-width:0;font-size:12.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">Your deck <span style="color:var(--fg);text-decoration:underline;text-decoration-color:color-mix(in oklab, var(--accent) 55%, transparent);text-underline-offset:3px;">{{ p.linked }}</span> was built from this. {{ p.linkedShare }} are still in it.</span>
+            <span style="flex:none;display:inline-flex;align-items:center;min-height:{{ s.linkH }};font-size:12.5px;color:var(--fg-muted);text-decoration:underline;text-decoration-color:var(--border-dashed);text-underline-offset:3px;">Unlink</span>
+          </div>
+        </sc-if>
+        <sc-if value="{{ p.hasShared }}" hint-placeholder-val="{{ false }}">
+          <span style="font-size:12.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">Your deck <span style="color:var(--fg);text-decoration:underline;text-decoration-color:color-mix(in oklab, var(--accent) 55%, transparent);text-underline-offset:3px;">{{ p.shared }}</span> shares {{ p.sharedN }} of its cards.</span>
+        </sc-if>
+      </div>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">By type · press a card for its details</span>
+    </div>
+    <div style="{{ s.bodyPad }}">
+      <div style="display:flex;flex-direction:column;gap:6px;opacity:0.5;">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding-bottom:7px;border-bottom:1px solid var(--border);"><span style="display:flex;align-items:baseline;gap:8px;"><span style="font-family:'Metamorphous',serif;font-size:15px;color:var(--fg);">Creatures</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ p.g1n }}</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);">{{ p.g1note }}</span></div>
+        <div style="{{ s.gGrid }}">
+          <sc-for list="{{ p.rows }}" as="r" hint-placeholder-count="4">
+            <div style="{{ s.cRow }}"><span style="{{ r.dot }}"></span><span style="flex:1;min-width:0;font-size:13.5px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.name }}</span><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ r.print }}</span></div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+    <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+      <div style="margin-top:auto;padding:10px 16px 12px;border-top:1px solid var(--border);background:var(--bg);">
+        <p style="margin:0 0 7px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ p.dock }}</p>
+        <div style="display:flex;gap:8px;">
+          <span style="flex:1;display:flex;align-items:center;justify-content:center;height:48px;border-radius:10px;border:1px solid var(--border-strong);font-size:14px;color:var(--fg);">Link a deck</span>
+          <span style="flex:1.6;display:flex;align-items:center;justify-content:center;height:48px;border-radius:10px;background:var(--btn, var(--fg));font-size:14px;font-weight:600;color:var(--bg);">Start a deck from this</span>
+        </div>
+      </div>
+    </sc-if>
+  </sc-if>
+
+  <!-- Precon list rows -->
+  <sc-if value="{{ isRows }}" hint-placeholder-val="{{ false }}">
+    <div style="{{ s.openHead }}">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);min-height:22px;display:flex;align-items:center;">‹ Decks</span>
+      <h1 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:24px;line-height:1.2;color:var(--fg);">Commander precons</h1>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">185 decklists · newest first</span>
+    </div>
+    <div style="{{ s.rowsWrap }}">
+      <sc-for list="{{ listRows }}" as="r" hint-placeholder-count="4">
+        <div style="{{ s.pRow }}">
+          <span style="flex:none;width:34px;height:48px;border-radius:4px;background:repeating-linear-gradient(135deg,var(--surface) 0 5px,var(--elevated) 5px 10px);box-shadow:inset 0 0 0 1px var(--border-strong);"></span>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;">
+              <span style="{{ s.pName }}">{{ r.name }}</span>
+              <span style="{{ s.pFig }}"><span style="font-size:10px;color:var(--fg-faint);">you own</span> {{ r.fig }}</span>
+            </div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.5;color:var(--fg-muted);">{{ r.cmdr }}</span>
+            <div style="display:flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);"><sc-for list="{{ r.pips }}" as="pp" hint-placeholder-count="1"><span style="{{ pp }}"></span></sc-for><span>{{ r.meta }}</span></div>
+            <sc-for list="{{ r.lines }}" as="ln" hint-placeholder-count="1">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-muted);text-wrap:pretty;">your deck <span style="color:var(--fg);text-decoration:underline;text-decoration-color:color-mix(in oklab, var(--accent) 55%, transparent);text-underline-offset:3px;">{{ ln.deck }}</span>{{ ln.tail }}</span>
+            </sc-for>
+            <sc-if value="{{ r.hasNote }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.5;color:var(--fg-locked);">{{ r.note }}</span></sc-if>
+          </div>
+          <span style="flex:none;align-self:center;font-size:18px;color:var(--fg-muted);">›</span>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <!-- Link confirm (from the suggestion) -->
+  <sc-if value="{{ ovLink }}" hint-placeholder-val="{{ false }}">
+    <div style="{{ s.scrim }}">
+      <div style="{{ s.dialog }}">
+        <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}"><span style="align-self:center;width:36px;height:4px;border-radius:2px;background:var(--border-dashed);"></span></sc-if>
+        <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}"><span style="position:absolute;right:18px;top:18px;width:36px;height:36px;border-radius:50%;border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--fg-muted);">✕</span></sc-if>
+        <div style="display:flex;flex-direction:column;gap:6px;padding-right:44px;">
+          <h3 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:20px;line-height:1.25;color:var(--fg);">Link {{ d.name }} to {{ d.precon }}</h3>
+          <span style="font-size:13px;line-height:1.5;color:var(--fg-body);text-wrap:pretty;">Its history gains a v0, the precon’s list, before v1. Nothing in the deck changes.</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;border:1px solid var(--border);border-radius:9px;background:var(--surface-sunken);padding:10px 12px;">
+          <span style="flex:none;width:34px;height:48px;border-radius:4px;background:repeating-linear-gradient(135deg,var(--surface) 0 5px,var(--elevated) 5px 10px);box-shadow:inset 0 0 0 1px var(--border-strong);"></span>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;">
+            <span style="font-family:'Metamorphous',serif;font-size:15px;color:var(--fg);">{{ d.precon }}</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);">{{ d.set }} · {{ d.rel }} · {{ d.preconCmdr }}</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;border-top:1px solid var(--border);">
+          <sc-for list="{{ linkFacts }}" as="f" hint-placeholder-count="4">
+            <div style="display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--border);">
+              <span style="flex:none;font-size:12.5px;color:var(--fg-muted);">{{ f.k }}</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.5;color:var(--fg-body);text-align:right;">{{ f.v }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="{{ s.dialogFoot }}"><span style="{{ s.cancel }}">Cancel</span><span style="{{ s.primary }}">Link</span></div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- Unlink confirm -->
+  <sc-if value="{{ ovUnlink }}" hint-placeholder-val="{{ false }}">
+    <div style="{{ s.scrim }}">
+      <div data-comment-target="unlink-confirm" style="{{ s.dialog }}">
+        <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}"><span style="align-self:center;width:36px;height:4px;border-radius:2px;background:var(--border-dashed);"></span></sc-if>
+        <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}"><span style="position:absolute;right:18px;top:18px;width:36px;height:36px;border-radius:50%;border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--fg-muted);">✕</span></sc-if>
+        <div style="display:flex;flex-direction:column;gap:6px;padding-right:44px;">
+          <h3 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:20px;line-height:1.25;color:var(--fg);">Unlink {{ d.name }} from {{ d.precon }}?</h3>
+          <span style="font-size:13px;line-height:1.5;color:var(--fg-body);text-wrap:pretty;">v0, the precon’s list, leaves this deck’s history. v1 goes back to having nothing before it.</span>
+        </div>
+        <div style="display:flex;flex-direction:column;border-top:1px solid var(--border);">
+          <sc-for list="{{ unlinkFacts }}" as="f" hint-placeholder-count="3">
+            <div style="display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--border);">
+              <span style="flex:none;font-size:12.5px;color:var(--fg-muted);">{{ f.k }}</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.5;color:var(--fg-body);text-align:right;">{{ f.v }}</span>
+            </div>
+          </sc-for>
+        </div>
+                <div style="{{ s.dialogFoot }}"><span style="{{ s.cancel }}">Cancel</span><span style="{{ s.primary }}">Unlink</span></div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- Pickers -->
+  <sc-if value="{{ ovPick }}" hint-placeholder-val="{{ false }}">
+    <div style="{{ s.scrim }}">
+      <div data-comment-target="link-picker" style="{{ s.dialog }}">
+        <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}"><span style="align-self:center;width:36px;height:4px;border-radius:2px;background:var(--border-dashed);"></span></sc-if>
+        <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}"><span style="position:absolute;right:18px;top:18px;width:36px;height:36px;border-radius:50%;border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--fg-muted);">✕</span></sc-if>
+        <div style="display:flex;flex-direction:column;gap:6px;padding-right:44px;">
+          <h3 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:20px;line-height:1.25;color:var(--fg);">{{ pick.title }}</h3>
+          <span style="font-size:13px;line-height:1.5;color:var(--fg-body);text-wrap:pretty;">{{ pick.lead }}</span>
+        </div>
+        <span style="display:flex;align-items:center;height:{{ s.fieldH }};padding:0 12px;border-radius:8px;border:1px solid var(--border-strong);font-size:13px;color:var(--fg-faint);">{{ pick.search }}</span>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">{{ pick.label }}</span>
+          <sc-for list="{{ pick.rows }}" as="r" hint-placeholder-count="3">
+            <div style="{{ r.box }}">
+              <span style="{{ r.radio }}"><span style="{{ r.radioDot }}"></span></span>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
+                <span style="font-family:'Metamorphous',serif;font-size:14.5px;line-height:1.3;color:var(--fg);">{{ r.name }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-muted);text-wrap:pretty;">{{ r.meta }}</span>
+                <sc-if value="{{ r.hasNote }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);">{{ r.note }}</span></sc-if>
+              </div>
+              <div style="flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:500;color:var(--fg);">{{ r.fig }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);">{{ r.figSub }}</span>
+              </div>
+            </div>
+          </sc-for>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ pick.more }}</span>
+        </div>
+        <span style="font-size:12.5px;line-height:1.5;color:var(--fg-body);text-wrap:pretty;">{{ pick.foot }}</span>
+        <div style="{{ s.dialogFoot }}"><span style="{{ s.cancel }}">Cancel</span><span style="{{ s.primary }}">{{ pick.cta }}</span></div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+    <div style="{{ s.tabbar }}">
+      <sc-for list="{{ tabs }}" as="tb" hint-placeholder-count="5"><span style="{{ tb }}">{{ tb.name }}</span></sc-for>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:900,&quot;height&quot;:1000},&quot;scene&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;suggest&quot;,&quot;suggestSwap&quot;,&quot;suggestTwo&quot;,&quot;linkConfirm&quot;,&quot;linked&quot;,&quot;noSuggest&quot;,&quot;pickPrecon&quot;,&quot;v1diff&quot;,&quot;v0open&quot;,&quot;unlink&quot;,&quot;ciDiff&quot;,&quot;brewV0&quot;,&quot;openPick&quot;,&quot;openLinked&quot;,&quot;openTwo&quot;,&quot;rows&quot;],&quot;default&quot;:&quot;suggest&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;phone&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;kaldheim&quot;,&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;kaldheim&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const phone = !!this.props.phone;
+    const theme = this.props.theme ?? "kaldheim";
+    const scene = this.props.scene ?? "suggest";
+    const M = "'IBM Plex Mono',monospace", D = "'Metamorphous',serif";
+    const PIP = { W: "#F4E9C4", U: "#BFD8EA", B: "#CFC6C2", R: "#E79A6C", G: "#9CC79A", C: "#A8A49F" };
+    const pips = (cs, sz) => cs.split("").map((c) => ({ width: sz, height: sz, borderRadius: "50%", flex: "none", background: PIP[c], boxShadow: "inset 0 0 0 1px rgba(0,0,0,.35)" }));
+    const pz = phone ? 9 : 10;
+    const dotOwn = { flex: "none", width: 8, height: 8, borderRadius: "50%", background: "var(--success)" };
+    const dotNot = { flex: "none", width: 8, height: 8, borderRadius: "50%", border: "1px dashed var(--fg-faint)" };
+
+    const SC = {
+      suggest: { kind: "deck", d: "eu", slot: "suggest", tab: "deck" },
+      suggestSwap: { kind: "deck", d: "ci", slot: "suggest", tab: "deck" },
+      suggestTwo: { kind: "deck", d: "mm", slot: "suggest2", tab: "deck" },
+      linkConfirm: { kind: "deck", d: "eu", slot: "suggest", tab: "deck", ov: "link" },
+      linked: { kind: "deck", d: "eu", slot: "linked", tab: "versions", rail: "linked" },
+      noSuggest: { kind: "deck", d: "zb", slot: null, tab: "versions", rail: "foot" },
+      pickPrecon: { kind: "deck", d: "zb", slot: null, tab: "versions", rail: "foot", ov: "pickPrecon" },
+      v1diff: { kind: "deck", d: "eu", slot: "linked", tab: "versions", rail: "linked", open: "v1" },
+      v0open: { kind: "deck", d: "eu", slot: "linked", tab: "versions", rail: "linked", open: "v0" },
+      unlink: { kind: "deck", d: "eu", slot: "linked", tab: "versions", rail: "linked", open: "v0", ov: "unlink" },
+      ciDiff: { kind: "deck", d: "ci", slot: "linked", tab: "versions", rail: "linked", open: "v1" },
+      brewV0: { kind: "deck", d: "wr", slot: "linked", tab: "versions", rail: "brew" },
+      openPick: { kind: "open", p: "eu", ov: "pickDeck" },
+      openLinked: { kind: "open", p: "eu" },
+      openTwo: { kind: "open", p: "sa" },
+      rows: { kind: "rows" },
+    };
+    const cfg = SC[scene] ?? SC.suggest;
+
+    const DK = {
+      eu: { name: "HD - Eldrazi", cmdr: "Ulalek, Fused Atrocity", ident: "Colorless", colors: "C", status: "Complete", precon: "Eldrazi Unbound", preconCmdr: "Ulalek, Fused Atrocity", set: "CMM", rel: "Aug 2023", shared: 73, of: 85, same: true, creatures: 31,
+        list: ["Bane of Bala Ged", "Conduit of Ruin", "Endless One", "Kozilek, the Great Distortion"],
+        versions: [
+          { n: 4, note: "Two more Eldrazi, two fewer Wastes", date: "14 Sep 2026", mv: "3.71", add: 2, rem: 2 },
+          { n: 3, note: "Kozilek in, Endbringer out", date: "2 Jul 2026", mv: "3.68", add: 1, rem: 1, games: 6 },
+          { n: 2, note: null, date: "30 Mar 2026", mv: "3.64", add: 3, rem: 3, games: 4 },
+          { n: 1, note: "First pass off the box", date: "3 Feb 2026", mv: "3.58", add: 14, rem: 13, games: 3 },
+        ],
+        diff: { mvFrom: "3.49", mvTo: "3.58", kept: "73 of the precon’s 85 cards kept",
+          inG: [["Creatures", 7, ["Bane of Bala Ged", "Conduit of Ruin", "Drowner of Hope", "Void Winnower"], [1, 1, 0, 1]], ["Instants", 2, ["Kozilek’s Return", "Warping Wail"], [1, 1]], ["Artifacts", 3, ["Mind Stone", "Thought Vessel", "Worn Powerstone"], [1, 1, 1]], ["Lands", 2, ["Blast Zone", "Sea Gate Wreckage"], [1, 0]]],
+          outG: [["Creatures", 6, ["Artisan of Kozilek", "Breaker of Armies", "Desolation Twin", "Ulamog’s Crusher"]], ["Sorceries", 2, ["Introduction to Annihilation", "Spawning Pit"]], ["Artifacts", 2, ["Forsaken Monument", "Hedron Archive"]], ["Lands", 3, ["Wastes 15 → 13", "Holdout Settlement", "Unknown Shores"]]] } },
+      ci: { name: "HD Tune - Counter Intelligence", cmdr: "‹Jeskai commander›", ident: "Jeskai", colors: "WUR", status: "Complete", precon: "Counter Intelligence", preconCmdr: "Kilo, Apogee Mind", set: "EOC", rel: "Aug 2025", shared: 64, of: 91, same: false, creatures: 22,
+        list: ["Deceiver Exarch", "Pestermite", "Thrummingbird", "Venser, Shaper Savant"],
+        versions: [
+          { n: 3, note: "Lands pass", date: "20 Sep 2026", mv: "2.94", add: 3, rem: 3 },
+          { n: 2, note: null, date: "11 Aug 2026", mv: "2.97", add: 5, rem: 5, games: 5 },
+          { n: 1, note: "Rebuilt around a new commander", date: "2 Jun 2026", mv: "3.02", add: 27, rem: 27, games: 2 },
+        ],
+        diff: { mvFrom: "3.21", mvTo: "3.02", cmdrChange: "Kilo, Apogee Mind → ‹Jeskai commander›", kept: "64 of the precon’s 91 cards kept",
+          inG: [["Creatures", 9, ["Dualcaster Mage", "Restoration Angel", "Spellseeker", "Snapcaster Mage"], [1, 1, 1, 0]], ["Instants", 8, ["Brainstorm", "Mana Drain", "Path to Exile", "Saw It Coming"], [1, 0, 1, 1]], ["Enchantments", 4, ["Mystic Remora", "Rhystic Study", "Smothering Tithe", "Monastery Mentor"], [1, 1, 1, 1]], ["Lands", 6, ["Flooded Strand", "Hallowed Fountain", "Raugrin Triome", "Steam Vents"], [1, 1, 1, 1]]],
+          outG: [["Creatures", 11, ["Kilo’s precon creature ‹1›", "Kilo’s precon creature ‹2›", "Kilo’s precon creature ‹3›", "Kilo’s precon creature ‹4›"]], ["Instants", 6, ["‹EOC instant 1›", "‹EOC instant 2›", "‹EOC instant 3›", "‹EOC instant 4›"]], ["Artifacts", 5, ["‹EOC artifact 1›", "‹EOC artifact 2›", "‹EOC artifact 3›", "‹EOC artifact 4›"]], ["Lands", 5, ["‹EOC land 1›", "‹EOC land 2›", "‹EOC land 3›", "‹EOC land 4›"]]] } },
+      mm: { name: "HD Tune - Mutant Menace", cmdr: "The Wise Mothman", ident: "Sultai", colors: "UBG", status: "Complete", creatures: 34,
+        list: ["Mutational Advantage", "Feral Ghoul", "Glowing One", "Rampaging Yao Guai"], versions: [] },
+      zb: { name: "HD - Zombies", cmdr: "Ghoulcaller Gisa", ident: "Mono-black", colors: "B", status: "Complete", creatures: 36,
+        list: ["Carrion Feeder", "Gravecrawler", "Diregraf Colossus", "Undead Augur"],
+        versions: [
+          { n: 2, note: "More sac outlets", date: "28 Aug 2026", mv: "2.88", add: 4, rem: 4 },
+          { n: 1, note: "First list", date: "9 Jun 2026", mv: "2.91", add: 0, rem: 0, games: 7 },
+        ] },
+      wr: { name: "Wretched Ranks", cmdr: "Ghoulcaller Gisa", ident: "Mono-black", colors: "B", status: "Draft", precon: "Wretched Ranks", set: "FDC", rel: "2 Oct 2026", creatures: 30, brew: true,
+        list: ["Carrion Feeder", "Diregraf Colossus", "Gravecrawler", "Undead Augur"], versions: [] },
+    };
+    const dk = DK[cfg.d] ?? DK.eu;
+
+    const pill = dk.status === "Draft"
+      ? { display: "inline-flex", alignItems: "center", height: phone ? 22 : 24, padding: "0 8px", borderRadius: 6, background: "color-mix(in oklab, var(--accent) 14%, transparent)", border: "1px solid color-mix(in oklab, var(--accent) 28%, transparent)", fontFamily: M, fontSize: phone ? 10 : 10.5, color: "var(--accent)" }
+      : { display: "inline-flex", alignItems: "center", height: phone ? 22 : 24, padding: "0 8px", borderRadius: 6, background: "color-mix(in oklab, var(--success) 14%, transparent)", border: "1px solid color-mix(in oklab, var(--success) 30%, transparent)", fontFamily: M, fontSize: phone ? 10 : 10.5, color: "var(--success)" };
+    const d = {
+      ...dk, pips: pips(dk.colors, pz), pill, hasBracket: !dk.brew,
+      barFill: { height: "100%", width: "100%", background: dk.brew ? "var(--accent)" : "var(--success)" },
+      offerCommit: !!dk.brew,
+      openLabel: `Open ${dk.precon ?? ""} ›`,
+      listRows: dk.list.slice(0, phone ? 3 : 4),
+      currentV: dk.versions.length ? `v${dk.versions[0].n}` : "its draft",
+    };
+
+    // Versions rail
+    const railKind = cfg.rail;
+    const linkedRail = railKind === "linked" || railKind === "brew";
+    const base = { borderRadius: 9, padding: phone ? "11px 12px" : "12px 14px", minHeight: phone ? 64 : 0 };
+    const rail = [];
+    dk.versions.forEach((v, i) => {
+      const cur = i === 0;
+      const initial = !linkedRail && i === dk.versions.length - 1;
+      const meta = [`committed ${v.date} · 99 cards`, `mv ${v.mv}`];
+      if (!cur && v.games) meta.push(`held ${v.games} games`);
+      rail.push({
+        num: `v${v.n}`,
+        numStyle: { flex: "none", width: phone ? "auto" : 34, fontFamily: M, fontSize: 13, color: cur ? "var(--accent)" : "var(--fg-body)" },
+        note: v.note ?? "no note",
+        noteStyle: { fontSize: phone ? 13 : 13.5, lineHeight: 1.45, color: v.note ? "var(--fg)" : "var(--fg-faint)", fontStyle: v.note ? "normal" : "italic" },
+        meta: meta.join(" · "), metaPhone: `${v.date} · 99 cards · mv ${v.mv}`,
+        hasAdd: !initial && v.add > 0, add: `+${v.add}`, hasRem: !initial && v.rem > 0, rem: `−${v.rem}`,
+        hasSlash: !initial && v.add > 0 && v.rem > 0, hasWord: initial, word: "initial",
+        current: cur, notCurrent: !cur, hasPreLabel: false,
+        box: cur ? { ...base, background: "var(--surface-rail)", border: "1px solid var(--border-strong)", borderLeft: "3px solid var(--accent)" } : { ...base, background: "var(--surface)", border: "1px solid var(--border)" },
+        openDiff: cfg.open === "v1" && v.n === 1, openV0: false,
+      });
+    });
+    if (linkedRail) {
+      rail.push({
+        num: "v0",
+        numStyle: { flex: "none", width: phone ? "auto" : 34, fontFamily: M, fontSize: 13, color: "var(--fg-faint)" },
+        note: `${dk.precon}, as the box lists it`,
+        noteStyle: { fontSize: phone ? 13 : 13.5, lineHeight: 1.45, color: "var(--fg-body)" },
+        meta: `the precon · ${dk.set} · released ${dk.rel} · 100 cards`, metaPhone: `the precon · ${dk.set} · ${dk.rel} · 100 cards`,
+        hasAdd: false, hasRem: false, hasSlash: false, hasWord: true, word: "the box",
+        current: false, notCurrent: true, hasPreLabel: dk.versions.length > 0,
+        box: { ...base, background: "transparent", border: "1px dashed var(--border-dashed)" },
+        openDiff: false, openV0: cfg.open === "v0",
+      });
+    }
+
+    const df = dk.diff;
+    const capG = phone ? 3 : 4;
+    const mkCol = (groups, isIn) => groups.map(([label, n, names, owned]) => {
+      const k = Math.min(n, capG, names.length);
+      return { label, n: `${n}`, rows: names.slice(0, k).map((nm, i) => ({ name: nm, dot: owned && owned[i] === 0 ? dotNot : dotOwn })), hasMore: n > k, more: `${n - k} more` };
+    });
+    const inN = df ? df.inG.reduce((a, g) => a + g[1], 0) : 0;
+    const outN = df ? df.outG.reduce((a, g) => a + g[1], 0) : 0;
+    const v1 = dk.versions.find((v) => v.n === 1);
+    const headStyle = (tone) => ({ margin: "0 0 11px", paddingBottom: 8, borderBottom: "1px solid var(--elevated)", fontFamily: M, fontSize: 10, fontWeight: 400, letterSpacing: "0.14em", textTransform: "uppercase", color: tone });
+    const diff = df ? {
+      title: `v1 · ${v1.date}`, note: v1.note ?? "no note", mvFrom: df.mvFrom, mvTo: df.mvTo,
+      hasCmdr: !!df.cmdrChange, cmdrChange: df.cmdrChange ?? "", precon: dk.precon, kept: df.kept,
+      inHead: `In · ${inN}`, outHead: `Out · ${outN}`, today: "ownership and prices are today’s, not v1’s",
+      cols: (phone ? [["in"]] : [["in"], ["out"]]).map(([side]) => side === "in"
+        ? { head: `In · ${inN}`, headStyle: headStyle("var(--success)"), isIn: true, groups: mkCol(df.inG, true) }
+        : { head: `Out · ${outN}`, headStyle: headStyle("var(--warning)"), isIn: false, groups: mkCol(df.outG, false) }),
+    } : { cols: [] };
+
+    // Suggestion
+    const sg = dk.same === false
+      ? { precon: dk.precon, tail: ", with a different commander.", meta: `${dk.shared} of its ${dk.of} cards are in this deck · led by ${dk.preconCmdr}` }
+      : { precon: dk.precon ?? "", tail: ".", meta: `${dk.shared} of its ${dk.of} cards are in this deck · same commander` };
+    const sugs = [
+      { precon: "Mutant Menace", meta: "PIP · Mar 2024 · same commander · 41 of its 85 cards are in this deck" },
+      { precon: "Sultai Arisen", meta: "TDC · Apr 2025 · led by Teval, Arbiter of Virtue · 52 of its 85 cards are in this deck" },
+    ];
+
+    // Precon page
+    const PP = {
+      eu: { name: "Eldrazi Unbound", cmdr: "Ulalek, Fused Atrocity", colors: "C", meta: "Colorless · CMM · Commander Masters · Aug 2023", own: 74, of: 85, nb: 15, linked: cfg.ov === "pickDeck" ? null : "HD - Eldrazi", linkedShare: "73 of its 85 cards", g1n: 33, g1note: "you own 29 of 33",
+        rows: [["Endbringer", 1], ["Matter Reshaper", 1], ["Reality Smasher", 0], ["Thought-Knot Seer", 1]] },
+      sa: { name: "Sultai Arisen", cmdr: "Teval, Arbiter of Virtue", colors: "UBG", meta: "Sultai · TDC · Tarkir: Dragonstorm Commander · Apr 2025", own: 85, of: 85, nb: 14, linked: "HD Tune - Sultai Arisen", linkedShare: "71 of its 85 cards", shared: "HD Tune - Mutant Menace", sharedN: 52, g1n: 30, g1note: "you own 30 of 30",
+        rows: [["Eternal Witness", 1], ["Hedge Shredder", 1], ["Sidisi, Brood Tyrant", 1], ["Teval’s Judgment", 1]] },
+    };
+    const pd = PP[cfg.p] ?? PP.eu;
+    let num = 210;
+    const p = { ...pd, pips: pips(pd.colors, phone ? 9 : 11), pct: `${Math.round((pd.own / pd.of) * 100)}%`, hasLinked: !!pd.linked, hasShared: !!pd.shared,
+      rows: pd.rows.slice(0, phone ? 3 : 4).map(([name, o]) => ({ name, dot: o ? dotOwn : dotNot, print: `${cfg.p === "sa" ? "TDC" : "CMM"} ${num += 9}` })),
+      dock: pd.linked ? `${pd.name} · your deck ${pd.linked} was built from this` : `${pd.name} · 100 cards · you own ${pd.own} of ${pd.of}` };
+
+    // Pickers
+    const radio = (on) => ({ flex: "none", alignSelf: "center", width: 22, height: 22, borderRadius: "50%", border: on ? "2px solid var(--accent)" : "2px solid var(--border-dashed)", display: "flex", alignItems: "center", justifyContent: "center" });
+    const radioDot = (on) => ({ width: 10, height: 10, borderRadius: "50%", background: on ? "var(--accent)" : "transparent" });
+    const prow = (on) => ({ display: "flex", alignItems: "flex-start", gap: 12, minHeight: phone ? 56 : 52, padding: phone ? "10px 12px" : "10px 13px", borderRadius: 10, background: on ? "var(--surface-rail)" : "var(--surface-sunken)", border: on ? "1px solid var(--accent)" : "1px solid var(--border)" });
+    const PICK = {
+      pickPrecon: { title: "Which precon was HD - Zombies built from?", lead: "Link the precon you started from, and its list becomes v0, before v1.", search: "Search by name, commander or set", label: "Shares the most with this deck",
+        rows: [
+          { name: "Wretched Ranks", meta: "Ghoulcaller Gisa · FDC · 2 Oct 2026 · same commander", fig: "13 of 67", figSub: "in this deck", on: true },
+          { name: "Undead Unleashed", meta: "Wilhelt, the Rotcleaver · MIC · Sep 2021", fig: "9 of 79", figSub: "in this deck" },
+          { name: "Necron Dynasties", meta: "Imotekh the Stormlord · 40K · Oct 2022", fig: "6 of 80", figSub: "in this deck" },
+        ], more: "182 more · search to find one", foot: "Linking adds v0 before v1. Your cards don’t change.", cta: "Link Wretched Ranks" },
+      pickDeck: { title: "Link a deck to Eldrazi Unbound", lead: "Pick the deck you built from this precon. Its list becomes that deck’s v0.", search: "Search your decks", label: "Your decks, most shared first",
+        rows: [
+          { name: "HD - Eldrazi", meta: "Ulalek, Fused Atrocity · same commander", fig: "73 of 85", figSub: "shared", on: true },
+          { name: "HD Tune - Counter Intelligence", meta: "‹Jeskai commander›", note: "built from Counter Intelligence · linking moves it here", fig: "6 of 85", figSub: "shared" },
+          { name: "HD - Omnath", meta: "Omnath, Locus of Creation", fig: "5 of 85", figSub: "shared" },
+        ], more: "18 more decks · search to find one", foot: "Linking adds v0 before v1. Its cards don’t change.", cta: "Link HD - Eldrazi" },
+    };
+    const pk = PICK[cfg.ov] ?? PICK.pickPrecon;
+    const pick = { ...pk, rows: pk.rows.slice(0, 3).map((r) => ({ ...r, hasNote: !!r.note, note: r.note ?? "", box: prow(!!r.on), radio: radio(!!r.on), radioDot: radioDot(!!r.on) })) };
+
+    // List rows
+    const lrow = (name, cmdr, colors, meta, fig, lines, note) => ({ name, cmdr, pips: pips(colors, phone ? 9 : 11), meta, fig, lines, hasNote: !!note, note: note ?? "" });
+    const listRows = [
+      lrow("Eldrazi Unbound", "Ulalek, Fused Atrocity", "C", "CMM · Aug 2023", "74 of 85", [{ deck: "HD - Eldrazi", tail: " · built from this · 73 shared" }]),
+      lrow("Counter Intelligence", "Kilo, Apogee Mind", "WUR", "EOC · Aug 2025", "91 of 91", [{ deck: "HD Tune - Counter Intelligence", tail: " · built from this · 64 shared" }]),
+      lrow("Sultai Arisen", "Teval, Arbiter of Virtue", "UBG", "TDC · Apr 2025", "85 of 85", [{ deck: "HD Tune - Sultai Arisen", tail: " · built from this · 71 shared" }, { deck: "HD Tune - Mutant Menace", tail: " · 52 shared" }]),
+      lrow("Wretched Ranks", "Ghoulcaller Gisa", "B", "FDC · 2 Oct 2026", "18 of 67", [{ deck: "Wretched Ranks", tail: " · built from this · 67 shared" }], null),
+    ];
+
+    const linkFacts = [
+      { k: "v0", v: `${dk.precon} · 100 cards · before v1` },
+      { k: "Shared", v: `${dk.shared} of its ${dk.of}` },
+      { k: "v1", v: "now diffs against v0" },
+    ];
+    const unlinkFacts = [
+      { k: "History", v: "v0 leaves · v1 is first again" },
+    ];
+
+    const tabs = ["Home", "Collection", "Commanders", "Discover", "Decks"].map((name, i) => ({ name, display: "flex", alignItems: "flex-end", justifyContent: "center", height: 64, paddingBottom: 12, fontFamily: M, fontSize: 10, color: i === 4 ? "var(--fg)" : "var(--fg-faint)", background: i === 4 ? "var(--surface)" : "transparent" }));
+    const tabStyle = (on) => ({ display: "inline-flex", alignItems: "center", gap: 6, height: 44, padding: "0 4px", flex: "none", borderBottom: on ? "2px solid var(--fg)" : "2px solid transparent", fontSize: 14, fontWeight: on ? 600 : 400, color: on ? "var(--fg)" : "var(--fg-muted)" });
+    const hasVersionsTab = dk.versions.length > 0 || cfg.slot === "linked";
+    const deckTabs = [
+      { name: "Your deck", n: dk.brew ? "100" : "99", style: tabStyle(cfg.tab === "deck") },
+      { name: "Analysis", n: "", style: tabStyle(false) },
+      { name: "Consider", n: "", style: tabStyle(false) },
+      ...(hasVersionsTab ? [{ name: "Versions", n: linkedRail || cfg.slot === "linked" ? `${dk.versions.length + 1}` : `${dk.versions.length}`, style: tabStyle(cfg.tab === "versions") }] : []),
+    ];
+
+    const ov = cfg.ov;
+    const fixedH = phone && ov ? { height: 844, overflow: "hidden" } : {};
+    const s = {
+      root: { width: phone ? 390 : 900, minHeight: phone ? 820 : (ov ? 820 : 640), ...fixedH, position: "relative", background: "var(--bg)", color: "var(--fg)", fontFamily: "'IBM Plex Sans',sans-serif", display: "flex", flexDirection: "column", paddingBottom: phone ? 0 : 28 },
+      stripWrap: { padding: phone ? "0 16px 4px" : "14px 22px 0" },
+      stripInner: phone ? { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 10 } : { flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 14 },
+      linkBtn: { flex: "none", display: "inline-flex", alignItems: "center", justifyContent: "center", height: phone ? 44 : 36, padding: "0 15px", borderRadius: 8, border: "1px solid var(--accent)", fontSize: 13.5, fontWeight: 600, color: "var(--accent)" },
+      sugRow: phone ? { display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 10, padding: "11px 14px 13px", borderTop: "1px solid var(--border)" } : { display: "flex", alignItems: "center", gap: 14, padding: "10px 14px", borderTop: "1px solid var(--border)" },
+      tabsRow: { flex: "none", display: "flex", gap: phone ? 16 : 22, padding: phone ? "0 16px" : "0 22px", marginTop: 8, borderBottom: "1px solid var(--border)", overflow: "hidden" },
+      bodyPad: { padding: phone ? "14px 16px 20px" : "16px 22px 8px" },
+      railPad: { display: "flex", flexDirection: "column", gap: 6, padding: phone ? "18px 14px 20px" : "14px 22px 8px" },
+      panel: phone ? { padding: "8px 2px 14px" } : { padding: 18, borderRadius: 12, background: "var(--surface-rail)", border: "1px solid var(--elevated)", marginBottom: 16 },
+      diffCols: { display: "flex", flexDirection: phone ? "column" : "row", alignItems: "flex-start", gap: 22 },
+      dRow: { display: "flex", alignItems: "center", gap: 9, minHeight: phone ? 44 : 38, padding: "0 9px", borderRadius: 7, background: "var(--surface)", border: "1px solid var(--border)" },
+      v0Actions: phone ? { display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 0 } : { display: "flex", alignItems: "center", gap: 20 },
+      linkH: phone ? "44px" : "28px",
+      footRow: phone ? { display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 10, marginTop: 8, padding: "12px", borderRadius: 9, border: "1px dashed var(--border-dashed)" } : { display: "flex", alignItems: "center", gap: 14, marginTop: 8, padding: "12px 14px", borderRadius: 9, border: "1px dashed var(--border-dashed)" },
+      gGrid: phone ? { display: "flex", flexDirection: "column", gap: 3 } : { display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: "4px 20px" },
+      cRow: { display: "flex", alignItems: "center", gap: 10, minHeight: phone ? 44 : 36, padding: "0 9px", borderRadius: 7, background: "var(--surface-rail)" },
+      openHead: { padding: phone ? "12px 16px 14px" : "16px 22px 18px", borderBottom: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: 12 },
+      bigThumb: { flex: "none", width: phone ? 46 : 56, height: phone ? 64 : 78, borderRadius: 5, background: "repeating-linear-gradient(135deg,var(--surface) 0 6px,var(--elevated) 6px 12px)", boxShadow: "inset 0 0 0 1px var(--border-strong)" },
+      openTitle: { margin: 0, fontFamily: D, fontWeight: 400, fontSize: phone ? 22 : 26, lineHeight: 1.15, color: "var(--fg)" },
+      ownBox: { display: "flex", flexDirection: "column", gap: 8, borderRadius: 10, border: "1px solid var(--border)", background: "var(--surface-sunken)", padding: phone ? "11px 13px" : "12px 16px" },
+      linkedRow: phone ? { display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 0 } : { display: "flex", alignItems: "baseline", gap: 14 },
+      rowsWrap: { display: "flex", flexDirection: "column", gap: 8, padding: phone ? "16px 16px 24px" : "18px 22px 8px" },
+      pRow: { display: "flex", alignItems: "flex-start", gap: phone ? 11 : 14, borderRadius: phone ? 10 : 11, background: "var(--surface-rail)", border: "1px solid var(--border)", padding: phone ? "10px 8px 10px 12px" : "11px 12px 11px 15px" },
+      pName: { fontFamily: D, fontSize: phone ? 14.5 : 16, lineHeight: 1.3, color: "var(--fg)", minWidth: 0 },
+      pFig: { flex: "none", fontFamily: M, fontSize: phone ? 12 : 13, fontWeight: 500, color: "var(--fg)", whiteSpace: "nowrap" },
+      scrim: { position: "absolute", inset: 0, zIndex: 5, background: "color-mix(in oklab, var(--bg) 74%, transparent)", display: "flex", justifyContent: "center", alignItems: phone ? "flex-end" : "flex-start", paddingTop: phone ? 0 : 60 },
+      dialog: phone
+        ? { position: "relative", width: "100%", borderRadius: "16px 16px 0 0", borderTop: "1px solid var(--border-strong)", background: "var(--surface)", padding: "10px 18px 18px", display: "flex", flexDirection: "column", gap: 14 }
+        : { position: "relative", width: 520, borderRadius: 14, border: "1px solid var(--border-strong)", background: "var(--surface)", padding: "24px 24px 20px", display: "flex", flexDirection: "column", gap: 14, boxShadow: "0 40px 100px rgba(0,0,0,.6)" },
+      fieldH: phone ? "44px" : "36px",
+      dialogFoot: phone ? { display: "flex", gap: 10 } : { display: "flex", gap: 10, justifyContent: "flex-end", paddingTop: 4 },
+      cancel: { flex: phone ? 1 : "none", display: "inline-flex", alignItems: "center", justifyContent: "center", height: phone ? 46 : 40, padding: "0 18px", borderRadius: phone ? 10 : 8, border: "1px solid var(--border-strong)", fontSize: 14, color: "var(--fg)" },
+      primary: { flex: phone ? 1 : "none", display: "inline-flex", alignItems: "center", justifyContent: "center", height: phone ? 46 : 40, padding: "0 20px", borderRadius: phone ? 10 : 8, background: "var(--btn, var(--fg))", fontSize: 14, fontWeight: 600, color: "var(--bg)", whiteSpace: "nowrap" },
+      tabbar: { position: phone && ov ? "absolute" : "relative", left: 0, right: 0, bottom: 0, marginTop: "auto", zIndex: 4, display: "grid", gridTemplateColumns: "repeat(5,1fr)", borderTop: "1px solid var(--border)", background: "var(--surface-sunken)" },
+    };
+
+    return {
+      theme, phone, desktop: !phone, s, d, p, sg, sugs, rail, diff, pick, listRows, linkFacts, unlinkFacts, tabs, deckTabs, dotOwn,
+      label: `Precons R3 · ${scene} · ${phone ? 390 : 900}`,
+      isDeck: cfg.kind === "deck", isOpen: cfg.kind === "open", isRows: cfg.kind === "rows",
+      hasSuggest: cfg.slot === "suggest", hasSuggest2: cfg.slot === "suggest2", hasLinkedLine: cfg.slot === "linked",
+      tabDeck: cfg.tab === "deck", tabVersions: cfg.tab === "versions",
+      isBrewRail: railKind === "brew", hasFoot: railKind === "foot",
+      ovLink: ov === "link", ovUnlink: ov === "unlink", ovPick: ov === "pickPrecon" || ov === "pickDeck",
+    };
+  }
+}
+</script>
+</body>
+</html>

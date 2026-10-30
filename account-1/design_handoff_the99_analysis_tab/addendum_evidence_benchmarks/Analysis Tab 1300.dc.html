@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-rail:#1A1611; --display:'Cinzel',serif; --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46; --surface-sunken:#18140F; --surface-raised:#211D18; --elevated:#29241F;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654; --fg-disabled:#4A4033;
+    --accent:#CF8745; --accent-hover:#DE9757; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+    --bracket-1:#8A857C; --bracket-2:#A89A74; --bracket-3:#C9AC62; --bracket-4:#E6D08A; --bracket-5:#FBEFC6; --fact:#8FA6BE;
+    --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-rail:#12141B; --display:'Chakra Petch',sans-serif; --surface-sunken:#101219; --surface-raised:#191B22; --elevated:#20222A;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476; --fg-disabled:#3D404E;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+  }
+  body { margin: 0; }
+  @keyframes at-wave { 0%, 100% { opacity: 0.22; } 35% { opacity: 1; } 60% { opacity: 1; } }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" data-screen-label="Analysis tab · 1300" style="width:1300px;background:var(--bg);color:var(--fg);font-family:'IBM Plex Sans',sans-serif;">
+
+  <header style="position:relative;min-height:288px;border-bottom:1px solid var(--border);">
+    <div aria-hidden="true" style="position:absolute;left:0;right:0;top:0;height:288px;overflow:hidden;background:var(--bg);">
+      <div style="{{ deck.artDesk }}"></div>
+      <div style="position:absolute;inset:0;background:linear-gradient(90deg, color-mix(in oklab, var(--bg) 0%, transparent) 0px, color-mix(in oklab, var(--bg) 0%, transparent) 325px, color-mix(in oklab, var(--bg) 78%, transparent) 560px, var(--bg) 584px);"></div>
+    </div>
+    <span style="position:absolute;z-index:2;left:16px;bottom:5px;height:44px;display:flex;align-items:center;">
+      <span style="display:flex;align-items:center;gap:6px;height:26px;padding:0 9px;border-radius:7px;border:1px solid var(--border-strong);background:var(--bg);"><span style="color:var(--fg);font-size:14px;line-height:1;">⛶</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1;color:var(--fg);white-space:nowrap;">Card details</span></span>
+    </span>
+    <div style="position:relative;display:flex;align-items:flex-end;min-height:288px;padding:0 24px 18px 592px;gap:18px;">
+      <div style="flex:1 1 280px;min-width:0;display:flex;flex-direction:column;">
+        <div style="display:flex;align-items:center;">
+          <h1 style="margin:0;font-family:var(--display);font-weight:700;font-size:21px;line-height:1.2;color:var(--fg);">{{ deck.name }}</h1>
+          <span style="flex:none;margin-left:6px;width:14px;font-size:14px;line-height:1;color:var(--fg-muted);">✎</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:3px;min-width:0;">
+          <span style="display:flex;align-items:center;gap:3px;flex:none;"><sc-for list="{{ deck.pips }}" as="p" hint-placeholder-count="2"><span style="{{ p.style }}"></span></sc-for></span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);">{{ deck.commander }} · {{ deck.colorLabel }}</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px;">
+          <span style="{{ deck.pillDesk }}">{{ deck.statusLabel }}</span>
+          <sc-if value="{{ hasBand }}" hint-placeholder-val="{{ false }}">{{ band }}</sc-if>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:9px;">
+          <div style="flex:1;min-width:0;max-width:170px;height:6px;border-radius:999px;background:var(--elevated);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.4);overflow:hidden;"><div style="{{ deck.barStyle }}"></div></div>
+          <div style="display:flex;align-items:baseline;gap:4px;flex:none;"><span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:15px;color:var(--fg);">99</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--fg-faint);">/ 99</span></div>
+        </div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:9px;">
+        <span style="display:flex;align-items:center;height:32px;padding:0 14px;border-radius:8px;border:1px solid var(--border-strong);font-weight:600;font-size:12.5px;color:var(--fg);">Update from a list</span>
+        <span style="display:flex;align-items:center;height:32px;padding:0 14px;border-radius:8px;background:var(--fg);font-weight:600;font-size:12.5px;color:var(--bg);">Export</span>
+      </div>
+    </div>
+  </header>
+  <sc-if value="{{ deck.clean }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;align-items:center;padding:12px 30px;background:var(--surface-rail);border-bottom:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ deck.versionLine }}</span></div>
+  </sc-if>
+  <sc-if value="{{ deck.draft }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:18px 26px 0;">
+      <div style="border-radius:10px;background:var(--surface-rail);padding:15px 17px;border:1px solid var(--border-strong);border-left:3px solid var(--accent);">
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-bottom:10px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);">Pending changes: not yet a version</span>
+          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:14px;">
+            <span style="display:flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:13px;"><span style="color:var(--success);">{{ deck.adds }}</span><span style="color:var(--border-strong);">/</span><span style="color:var(--warning);">{{ deck.removes }}</span></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);">{{ deck.since }}</span>
+          </div>
+        </div>
+        <p style="margin:0 0 14px;max-width:700px;font-size:13px;line-height:1.55;color:var(--fg-body);">{{ deck.moneyHead }}<span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--warning);">{{ deck.moneyFig }}</span>{{ deck.moneyTail }}</p>
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;">
+          <span style="display:inline-flex;align-items:center;justify-content:center;padding:10px 18px;border-radius:8px;font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:13.5px;color:var(--bg);background:var(--fg);">{{ deck.reviewCta }}</span>
+          <span style="display:inline-flex;align-items:center;justify-content:center;padding:10px 18px;border-radius:8px;font-family:'IBM Plex Sans',sans-serif;font-weight:500;font-size:13.5px;color:var(--fg);border:1px solid var(--border-strong);">Commit as v{{ deck.nextVersion }}</span>
+          <span style="display:inline-flex;align-items:center;justify-content:center;padding:10px 18px;border-radius:8px;font-family:'IBM Plex Sans',sans-serif;font-weight:500;font-size:13.5px;color:var(--fg-muted);border:1px solid var(--border-strong);">Discard</span>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+  <section style="padding:20px 30px 22px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:12px;">
+    <div style="display:flex;align-items:baseline;gap:10px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-body);">Recommended mix</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">EDHREC averages</span>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <sc-for list="{{ mix }}" as="m" hint-placeholder-count="5">
+        <div style="flex:1;min-width:0;min-height:72px;border-radius:9px;padding:11px 14px;background:var(--surface-sunken);border:1px solid var(--border);display:flex;flex-direction:column;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">{{ m.label }}</span>
+          <span style="margin-top:3px;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:16px;"><span style="{{ m.figStyle }}">{{ m.have }}</span><span style="font-weight:400;font-size:11px;color:var(--fg-faint);"> / {{ m.target }}</span></span>
+          <span style="margin-top:8px;height:5px;border-radius:999px;overflow:hidden;background:var(--elevated);display:block;"><span style="{{ m.barStyle }}"></span></span>
+          <span style="margin-top:6px;display:flex;align-items:baseline;justify-content:space-between;gap:8px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-faint);">{{ m.rec }}</span>
+            <sc-if value="{{ m.short }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);">consider →</span></sc-if>
+            <sc-if value="{{ m.met }}" hint-placeholder-val="{{ true }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--border-dashed);">—</span></sc-if>
+          </span>
+        </div>
+      </sc-for>
+    </div>
+    <span style="display:flex;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);border-bottom:1px solid var(--accent);cursor:pointer;">Why these numbers?</span></span>
+  </section>
+  <div style="padding:12px 30px 0;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:22px;white-space:nowrap;">
+    <span style="display:flex;align-items:baseline;gap:6px;padding-bottom:10px;border-bottom:2px solid transparent;"><span style="font-size:14px;font-weight:500;color:var(--fg-faint);">Your deck</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">99</span></span>
+    <span style="display:flex;align-items:center;gap:7px;padding-bottom:10px;border-bottom:2px solid var(--accent);"><span style="font-size:14px;font-weight:600;color:var(--fg);">Analysis</span></span>
+    <span style="display:flex;align-items:baseline;gap:6px;padding-bottom:10px;border-bottom:2px solid transparent;"><span style="font-size:14px;font-weight:500;color:var(--fg-faint);">Consider</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">64</span></span>
+    <span style="display:flex;align-items:baseline;gap:6px;padding-bottom:10px;border-bottom:2px solid transparent;"><span style="font-size:14px;font-weight:500;color:var(--fg-faint);">Games</span></span>
+    <span style="display:flex;align-items:baseline;gap:6px;padding-bottom:10px;border-bottom:2px solid transparent;"><span style="font-size:14px;font-weight:500;color:var(--fg-faint);">Versions</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">3</span></span>
+  </div>
+
+  <div style="padding:24px 30px 40px;display:flex;flex-direction:column;gap:28px;">
+
+    <sc-if value="{{ staleBanner }}" hint-placeholder-val="{{ false }}">
+      <div role="status" style="display:flex;align-items:center;gap:18px;padding:14px 16px 14px 20px;border-radius:11px;background:var(--surface-rail);border:1px solid var(--border-strong);">
+        <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:0;"><p style="margin:0;font-size:13.5px;line-height:1.5;color:var(--fg-body);text-wrap:pretty;">{{ bannerLine }}</p><sc-if value="{{ hasBannerNote }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.55;color:var(--fg-faint);text-wrap:pretty;">{{ bannerNote }}</span></sc-if></div>
+        <sc-if value="{{ bannerIdle }}" hint-placeholder-val="{{ true }}"><span style="display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:0 18px;border-radius:8px;background:var(--fg);color:var(--bg);font-weight:600;font-size:13.5px;flex:none;white-space:nowrap;">{{ bannerCta }}</span></sc-if><sc-if value="{{ bannerBusy }}" hint-placeholder-val="{{ false }}"><span aria-disabled="true" style="display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:0 16px;border-radius:8px;background:var(--elevated);color:var(--fg-faint);font-weight:600;font-size:13.5px;flex:none;white-space:nowrap;"><span style="display:inline-flex;align-items:center;gap:9px;">{{ pulse }}<span>{{ bannerBusyLabel }}</span></span></span></sc-if>
+      </div>
+    </sc-if>
+
+
+    <sc-if value="{{ fetching }}" hint-placeholder-val="{{ false }}">
+      <div role="status" aria-busy="true" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;min-height:420px;">
+        {{ fetchRow }}
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.06em;color:var(--fg-faint);">Loading…</span>
+      </div>
+    </sc-if>
+    <sc-if value="{{ preAnalysis }}" hint-placeholder-val="{{ false }}">
+      <section style="display:flex;flex-direction:column;gap:8px;">
+        <h3 style="margin:0;font-family:'IBM Plex Mono',monospace;font-weight:400;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">Overview</h3>
+        <div style="display:flex;align-items:flex-start;justify-content:center;gap:40px;padding:28px 24px 18px;">
+          {{ ladder }}
+          <div style="flex:1;min-width:0;max-width:640px;display:flex;flex-direction:column;">
+            <h2 aria-live="polite" style="margin:0;font-family:var(--display);font-weight:700;font-size:26px;line-height:1.25;color:var(--fg);text-wrap:balance;">{{ emptyHead }}</h2>
+            <p style="margin:12px 0 0;max-width:540px;font-size:14.5px;line-height:1.65;color:var(--fg-body);text-wrap:pretty;">{{ emptyBody }}</p>
+            <sc-if value="{{ hasBody2 }}" hint-placeholder-val="{{ false }}"><p style="margin:10px 0 0;max-width:540px;font-size:14.5px;line-height:1.65;color:var(--fg-body);text-wrap:pretty;">{{ emptyBody2 }}</p></sc-if>
+            <div style="margin-top:22px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+              <sc-if value="{{ ctaAnalyze }}" hint-placeholder-val="{{ true }}"><span style="display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 22px;border-radius:8px;background:var(--fg);color:var(--bg);font-weight:600;font-size:14.5px;cursor:pointer;">Analyze</span></sc-if>
+              <sc-if value="{{ ctaRetry }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 22px;border-radius:8px;background:var(--fg);color:var(--bg);font-weight:600;font-size:14.5px;cursor:pointer;">Try again</span></sc-if>
+              <sc-if value="{{ ctaBusy }}" hint-placeholder-val="{{ false }}"><span aria-disabled="true" style="display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 22px;border-radius:8px;background:var(--elevated);color:var(--fg-faint);font-weight:600;font-size:14.5px;">Analyze</span></sc-if>
+              <sc-if value="{{ hasEmptyNote }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.55;color:var(--fg-faint);flex:1 1 300px;max-width:340px;min-width:0;">{{ emptyNote }}</span></sc-if><sc-if value="{{ hasEmptyNote }}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="flex-basis:100%;height:0;"></span></sc-if>
+              <span style="display:inline-flex;align-items:center;min-height:44px;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);cursor:pointer;"><span style="border-bottom:1px dotted var(--accent);">How we make these decisions</span><span>→</span></span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </sc-if>
+    <sc-if value="{{ ready }}" hint-placeholder-val="{{ true }}">
+    <div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:30px;align-items:start;">
+
+      <div style="display:flex;flex-direction:column;gap:26px;min-width:0;">
+        <section style="display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;"><h3 style="margin:0;font-family:'IBM Plex Mono',monospace;font-weight:400;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">Overview</h3><sc-if value="{{ heldBusy }}" hint-placeholder-val="{{ false }}"><span role="status" style="display:inline-flex;align-items:center;gap:8px;">{{ pulse }}<span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);">{{ heldLine }}</span></span></sc-if></div>
+          <sc-if value="{{ methodNotice }}" hint-placeholder-val="{{ false }}"><div data-method-notice="" style="display:flex;align-items:center;gap:20px;margin:2px 0 8px;padding:13px 14px;border-radius:9px;border:1px dashed var(--border-dashed);background:var(--surface-sunken);"><div style="display:flex;align-items:flex-start;gap:11px;flex:1;min-width:0;"><span aria-hidden="true" style="flex:none;display:flex;align-items:center;justify-content:center;width:18px;height:18px;margin-top:1px;border-radius:50%;border:1px solid var(--fg-faint);font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;line-height:1;color:var(--fg-muted);">{{ mIcon }}</span><div style="display:flex;flex-direction:column;gap:4px;min-width:0;"><p role="{{ mRole }}" style="margin:0;font-size:13.5px;line-height:1.5;color:var(--fg-body);text-wrap:pretty;">{{ mLine }}</p><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.55;color:var(--fg-faint);text-wrap:pretty;">{{ mNote }}</span></div></div><sc-if value="{{ mHasCta }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:0 16px;border-radius:8px;border:1px solid var(--border-strong);color:var(--fg);font-weight:500;font-size:13px;flex:none;white-space:nowrap;">{{ mCta }}</span></sc-if></div></sc-if>
+          <sc-if value="{{ overviewBusy }}" hint-placeholder-val="{{ false }}"><div role="status" style="display:flex;align-items:center;gap:10px;min-height:36px;">{{ pulse }}<span style="font-size:13.5px;line-height:1.55;color:var(--fg-muted);text-wrap:pretty;">{{ busyLine }}</span></div></sc-if>
+          <sc-if value="{{ overviewFailed }}" hint-placeholder-val="{{ false }}">
+            <p role="alert" style="margin:0;font-size:13.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">We couldn’t write the overview just now. Nothing about your deck changed.</p>
+            <div style="margin-top:6px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+              <span style="display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:0 16px;border-radius:8px;border:1px solid var(--border-strong);color:var(--fg);font-weight:500;font-size:13px;">Try again</span>
+              <sc-if value="{{ hasOverviewNote }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.55;color:var(--fg-faint);flex:1 1 280px;min-width:0;">{{ overviewNote }}</span></sc-if>
+            </div>
+          </sc-if>
+          <sc-if value="{{ hasHeldCaption }}" hint-placeholder-val="{{ false }}"><div style="margin-top:10px;padding-top:12px;border-top:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);">{{ heldCaption }}</span></div></sc-if>
+          <sc-if value="{{ overviewPresent }}" hint-placeholder-val="{{ false }}"><p style="margin:0;max-width:760px;font-size:15px;line-height:1.7;color:var(--fg-body);text-wrap:pretty;"><sc-for list="{{ summary }}" as="p" hint-placeholder-count="1"><sc-if value="{{ p.card }}" hint-placeholder-val="{{ false }}"><b style="font-weight:600;color:var(--fg);border-bottom:1px dotted var(--accent);cursor:pointer;">{{ p.t }}</b></sc-if><sc-if value="{{ p.plain }}" hint-placeholder-val="{{ true }}">{{ p.t }}</sc-if></sc-for></p></sc-if>
+          <sc-if value="{{ overviewPresent }}" hint-placeholder-val="{{ false }}"><span style="display:flex;margin-top:2px;"><span style="display:inline-flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);cursor:pointer;"><span style="border-bottom:1px dotted var(--accent);">View full overview</span><span>→</span></span></span></sc-if>
+          <sc-if value="{{ overviewAbsent }}" hint-placeholder-val="{{ false }}">
+            <p style="margin:0;font-size:13.5px;line-height:1.55;color:var(--fg-faint);">No overview has been written for this deck yet.</p>
+            <div style="margin-top:6px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+              <sc-if value="{{ writeEnabled }}" hint-placeholder-val="{{ true }}"><span style="display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:0 16px;border-radius:8px;border:1px solid var(--border-strong);color:var(--fg);font-weight:500;font-size:13px;">Write one</span></sc-if>
+              <sc-if value="{{ writeDisabled }}" hint-placeholder-val="{{ false }}"><span aria-disabled="true" style="display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:0 16px;border-radius:8px;border:1px solid var(--border-strong);color:var(--fg-disabled);font-weight:500;font-size:13px;">Write one</span></sc-if>
+              <sc-if value="{{ hasOverviewNote }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.55;color:var(--fg-faint);flex:1 1 280px;min-width:0;">{{ overviewNote }}</span></sc-if>
+            </div>
+          </sc-if>
+          <sc-if value="{{ overviewRefused }}" hint-placeholder-val="{{ false }}">
+            <span style="display:flex;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--danger);border:1px solid var(--danger);border-radius:999px;padding:2px 8px;">not written</span></span>
+            <p style="margin:0;font-size:13.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">We wrote an overview and it did not check out against your list, so we are not showing it. Nothing about your deck changed.</p>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">2 of 3 claims failed checking</span>
+            <div style="margin-top:6px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+              <span style="display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:0 16px;border-radius:8px;border:1px solid var(--border-strong);color:var(--fg);font-weight:500;font-size:13px;">Try again</span>
+              <sc-if value="{{ hasOverviewNote }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.55;color:var(--fg-faint);flex:1 1 280px;min-width:0;">{{ overviewNote }}</span></sc-if>
+            </div>
+          </sc-if>
+        </section>
+
+        <sc-if value="{{ ready }}" hint-placeholder-val="{{ false }}">
+          <section style="display:flex;flex-direction:column;gap:11px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <h3 style="margin:0;font-family:'IBM Plex Mono',monospace;font-weight:400;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">Where you sit, and what moves you</h3>
+              <sc-if value="{{ tagged }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--warning);border:1px solid var(--warning);border-radius:999px;padding:2px 8px;">out of date</span></sc-if>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px;border:1px solid var(--border);border-radius:11px;background:var(--surface);padding:14px;">
+              <sc-for list="{{ climb }}" as="r" hint-placeholder-count="3">
+                <div style="{{ r.boxStyle }}">
+                  <div style="display:grid;grid-template-columns:186px minmax(0,1fr);align-items:center;gap:14px;padding:10px 12px;border-radius:8px;">
+                    <span style="display:flex;align-items:center;gap:9px;">
+                      {{ r.mark }}
+                      <span style="display:flex;flex-direction:column;gap:2px;">
+                        <span style="{{ r.nameStyle }}">{{ r.name }}</span>
+                        <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;"><span style="{{ r.labelStyle }}">{{ r.label }}</span></span>
+                      </span>
+                    </span>
+                    <span style="display:flex;flex-direction:column;gap:6px;">
+                      <sc-if value="{{ r.hasBody }}" hint-placeholder-val="{{ true }}">
+                        <span style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">{{ r.pre }}<b style="font-weight:600;color:var(--fg);">{{ r.strong }}</b>{{ r.post }}</span>
+                      </sc-if>
+                      <sc-if value="{{ r.hasFigures }}" hint-placeholder-val="{{ false }}">
+                        <span style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;">
+                          <sc-for list="{{ r.figures }}" as="f" hint-placeholder-count="1">
+                            <span style="display:inline-flex;align-items:center;gap:7px;">
+                              {{ f.mark }}
+                              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;"><span style="{{ f.inkStyle }}">{{ f.name }}</span></span>
+                              <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;"><span style="{{ f.inkStyle }}">{{ f.have }}</span></span>
+                              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ f.allow }}</span>
+                            </span>
+                          </sc-for>
+                        </span>
+                      </sc-if>
+                      <sc-if value="{{ r.hasPath }}" hint-placeholder-val="{{ false }}">
+                        <span style="display:flex;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);border-bottom:1px dotted var(--accent);cursor:pointer;">what would have to go →</span></span>
+                      </sc-if>
+                    </span>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </section>
+        </sc-if>
+      </div>
+
+      <section style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px;display:flex;flex-direction:column;min-width:0;">
+        <sc-if value="{{ ready }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:center;gap:13px;">
+            <span style="display:flex;align-items:center;gap:6px;flex:none;">{{ chipLow }}<sc-if value="{{ chipSplit }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;opacity:0.7;"><span style="{{ chipInk }}">/</span></span>{{ chipHigh }}</sc-if></span>
+            <span style="display:flex;flex-direction:column;gap:3px;min-width:0;">
+              <span style="font-family:var(--display);font-weight:700;font-size:21px;line-height:1.15;"><span style="{{ chipInk }}">{{ face }}</span></span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ analyzed }}</span>
+            </span>
+          </div>
+          <sc-if value="{{ hasSubline }}" hint-placeholder-val="{{ true }}">
+            <p style="margin:14px 0 0;font-size:13px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">{{ subline }}</p>
+          </sc-if>
+          <sc-if value="{{ answered }}" hint-placeholder-val="{{ false }}">
+            <p style="margin:11px 0 0;font-size:13px;line-height:1.6;color:var(--fg-muted);">{{ subline }}</p>
+            <div style="margin-top:13px;padding-top:12px;border-top:1px solid var(--border);">
+              <p style="margin:0;font-size:13px;line-height:1.6;color:var(--fg-body);">{{ declaredPre }}<b style="font-weight:600;color:var(--fg);">{{ declaredName }}</b>{{ declaredPost }} <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--accent);border-bottom:1px dotted var(--accent);">change</span></p>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ lean }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:13px;padding-top:11px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:5px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-disabled);">How we determined this bracket</span>
+              <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">{{ leanPre }}<span style="color:var(--fg);border-bottom:1px dotted var(--accent);">{{ leanA }}</span>{{ leanMid }}<span style="color:var(--fg);border-bottom:1px dotted var(--accent);">{{ leanB }}</span>{{ leanPost }}</p>
+              <span style="display:flex;margin-top:2px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);border-bottom:1px dotted var(--accent);">see the reasoning</span></span>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ ask }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:13px;padding-top:12px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:9px;">
+              <p style="margin:0;font-size:11.5px;line-height:1.5;color:var(--fg-faint);">Pick one so pods know what to expect.</p>
+              <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                <sc-for list="{{ askChips }}" as="c" hint-placeholder-count="2">
+                  <span style="{{ c.style }}">
+                    <span style="display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 13px 0 8px;border-radius:9px;background:var(--surface-raised);">{{ c.mark }}<span style="font-size:13px;font-weight:600;color:var(--fg);">{{ c.name }}</span></span>
+                  </span>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ versionRow }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:13px;padding-top:12px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:9px;">
+              <div style="display:flex;align-items:flex-end;gap:10px;">
+                <span style="display:inline-flex;flex-direction:column;align-items:center;gap:3px;">{{ vPrev }}<span style="font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">{{ vPrevLabel }}</span></span>
+                <span style="padding-bottom:13px;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--fg-faint);">→</span>
+                <span style="display:inline-flex;flex-direction:column;align-items:center;gap:3px;">{{ vNow }}<span style="font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">{{ vNowLabel }}</span></span>
+              </div>
+              <p style="margin:0;font-size:12.5px;line-height:1.55;color:var(--fg-body);">{{ vPre }}<b style="font-weight:600;color:var(--fg);">{{ vStrong }}</b>{{ vPost }}</p>
+            </div>
+          </sc-if>
+
+          <div style="margin-top:14px;padding-top:11px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:5px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-disabled);">What other players say</span>
+            <sc-if value="{{ popPresent }}" hint-placeholder-val="{{ true }}"><p style="margin:0;font-size:12px;line-height:1.6;color:var(--fg-faint);">Of the <b style="font-weight:600;color:var(--fg-body);">{{ popDeclared }}</b> {{ popSubject }} decks that declared a bracket, <b style="font-weight:600;color:var(--fg-body);">{{ popSaid }}</b> said {{ popName }}.</p></sc-if>
+            <sc-if value="{{ popAbsent }}" hint-placeholder-val="{{ false }}"><p style="margin:0;font-size:12px;line-height:1.6;color:var(--fg-faint);">{{ popAbsentLine }}</p></sc-if>
+          </div>
+        </sc-if>
+      </section>
+    </div>
+
+    </sc-if>
+
+    <sc-if value="{{ ready }}" hint-placeholder-val="{{ false }}">
+      <section style="display:flex;flex-direction:column;gap:11px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <h3 style="margin:0;font-family:'IBM Plex Mono',monospace;font-weight:400;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">What is in this deck</h3>
+          <sc-if value="{{ tagged }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--warning);border:1px solid var(--warning);border-radius:999px;padding:2px 8px;">out of date</span></sc-if>
+          <span style="margin-left:auto;display:inline-flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);"><span style="border-bottom:1px dotted var(--border-dashed);">How we make these decisions</span><span>→</span></span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;">
+          <sc-for list="{{ findings }}" as="f" hint-placeholder-count="5">
+            <sc-if value="{{ f.present }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;flex-direction:column;gap:7px;background:var(--surface);border:1px solid var(--border-strong);border-radius:9px;padding:12px 14px;min-width:0;">
+                <span style="display:flex;align-items:center;gap:7px;">{{ f.mark }}<span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:19px;line-height:1;color:var(--fg);">{{ f.count }}</span></span>
+                <span style="display:flex;align-items:center;flex-wrap:wrap;gap:7px;"><span style="font-size:12px;font-weight:600;color:var(--fg);">{{ f.label }}</span><sc-if value="{{ f.noLimit }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);border:1px solid var(--border-strong);border-radius:999px;padding:2px 6px;">no limit</span></sc-if></span>
+                <span style="font-size:10.5px;line-height:1.45;color:var(--fg-muted);">{{ f.names }}</span>
+                <span style="display:flex;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--accent);border-bottom:1px dotted var(--accent);">{{ f.control }}</span></span>
+              </div>
+            </sc-if>
+            <sc-if value="{{ f.empty }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:7px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:12px 14px;min-width:0;">
+                <span style="display:flex;align-items:center;gap:7px;opacity:0.35;">{{ f.mark }}<span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:19px;line-height:1;color:var(--fg-faint);">0</span></span>
+                <span style="font-size:12px;font-weight:500;color:var(--fg-muted);">{{ f.label }}</span>
+                <span style="font-size:10.5px;color:var(--fg-disabled);">nothing in the list</span>
+              </div>
+            </sc-if>
+          </sc-for>
+        </div>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ hasBench }}" hint-placeholder-val="{{ false }}"><dc-import name="Benchmarks Block" deck="{{ benchDeck }}" stale="{{ benchStale }}" phone="{{ false }}" theme="{{ theme }}" hint-size="1240px,250px"></dc-import></sc-if>
+
+
+              <sc-if value="{{ m.met }}" hint-placeholder-val="{{ true }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--border-dashed);">—</span></sc-if>
+            </span>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+    </sc-if>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1300,&quot;height&quot;:1100},&quot;state&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;idle&quot;,&quot;loading&quot;,&quot;failed&quot;,&quot;failedHeld&quot;,&quot;rangeAsk&quot;,&quot;rangeAnswered&quot;,&quot;single&quot;,&quot;singleLean&quot;,&quot;stale&quot;,&quot;mEligible&quot;,&quot;mWriting&quot;,&quot;mDone&quot;,&quot;mFailedOne&quot;,&quot;mFailedSpent&quot;,&quot;mWithStale&quot;,&quot;bGishath&quot;,&quot;bElves&quot;,&quot;bSultai&quot;,&quot;bSoldiers&quot;,&quot;bCounter&quot;,&quot;bScrappy&quot;,&quot;bThorin&quot;,&quot;bWizards&quot;,&quot;bStale&quot;,&quot;bEmpty&quot;],&quot;default&quot;:&quot;bGishath&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = { fx: null };
+  componentDidMount() {
+    import(new URL("analysis-fixtures.js", document.baseURI).href).then(async (m) => this.setState({ fx: m, art: await m.loadArt() }));
+  }
+  renderVals() {
+    const theme = this.props.theme ?? "amonkhet";
+    if (!this.state.fx) return { theme, deck: {} };
+    return { theme, ...this.state.fx.build(React, this.props.state ?? "bGishath", false, this.state.art) };
+  }
+}
+</script>
+</body>
+</html>

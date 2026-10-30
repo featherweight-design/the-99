@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Metamorphous&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="kaldheim"] {
+    --bg:#121217; --surface:#1E1F26; --surface-sunken:#16171D; --surface-rail:#18191F; --elevated:#2D2E35;
+    --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E;
+    --accent:#5C86C9; --accent-hover:#6C95D8; --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="kaldheim" style="font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--fg);padding:44px 40px 90px;display:flex;flex-direction:column;gap:72px;width:max-content;">
+
+  <div style="max-width:1340px;display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:center;gap:13px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">ROUND · R1</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--fg-faint);">Where an added copy goes</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">brief 2026-10-11 · four rulings closed · engineering proposals open · for audit</span>
+    </div>
+    <h1 style="font-family:'Metamorphous',serif;font-weight:400;font-size:34px;margin:0;line-height:1.15;color:var(--fg);max-width:1100px;">One line where a copy lands: which deck it went to, and Change beside it.</h1>
+    <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-body);max-width:1000px;text-wrap:pretty;">The line sits where each surface already reports the add: Add Cards’ saved state, I got it’s receipt, and the upload summary’s <b style="color:var(--fg);">No longer to buy</b> rows. <b style="color:var(--fg);">Change</b> opens the shipped chooser (ContestedCardRow), which now has a last option, <b style="color:var(--fg);">Keep it free</b>. The fixture is Hugh’s staging Sol Ring: 17 owned, 17 committed decks, and three brews (HD - Kratos, HD - Gishath, HD -Thorin). Frames marked <i>hypothetical</i> use a hand-built shortage on HD - Brago, HD - Eldrazi or HD - Avatar Aang, as the brief asks.</p>
+    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:6px;">
+      <sc-for list="{{ calls }}" as="c" hint-placeholder-count="4">
+        <div style="border:1px solid var(--border);border-radius:10px;padding:13px 15px;background:var(--surface);display:flex;flex-direction:column;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ c.k }}</span><span style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">{{ c.v }}</span></div>
+      </sc-for>
+    </div>
+  </div>
+
+  <section id="C0" style="display:flex;flex-direction:column;gap:22px;max-width:1340px;">
+    <div style="display:flex;align-items:baseline;gap:12px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">§C0</span>
+      <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px;color:var(--fg);">Design’s calls on the five open questions</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;">
+      <sc-for list="{{ answers }}" as="a" hint-placeholder-count="5">
+        <div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px;background:var(--surface-rail);display:flex;flex-direction:column;gap:7px;">
+          <div style="display:flex;align-items:baseline;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);">Q{{ a.n }}</span><span style="font-size:13.5px;font-weight:600;color:var(--fg);">{{ a.q }}</span></div>
+          <span style="font-size:12.5px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">{{ a.a }}</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ a.where }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section id="L0" style="display:flex;flex-direction:column;gap:18px;max-width:1340px;">
+    <div style="display:flex;align-items:baseline;gap:12px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">§L0</span>
+      <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px;color:var(--fg);">The line, every form</h2>
+    </div>
+    <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-body);max-width:1000px;text-wrap:pretty;">Two verbs, and the verb is the claim. <b style="color:var(--fg);">goes to</b> is used only when a deck holds the copy: a committed deck by seniority, or any deck the player picked. <b style="color:var(--fg);">is free for</b> is used when the copy sits loose and brews read it as theirs. That’s true for one brew or for three, so the model never has to pick one. Every form ends in <b style="color:var(--fg);">Change</b>, except the one where nobody needs the copy.</p>
+    <div style="border:1px solid var(--border);border-radius:12px;background:var(--surface-rail);padding:4px 18px;">
+      <sc-for list="{{ forms }}" as="f" hint-placeholder-count="9">
+        <div style="display:grid;grid-template-columns:200px minmax(0,1fr) 260px;gap:18px;align-items:baseline;padding:11px 0;border-top:{{ f.rule }};">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--accent);">{{ f.state }}</span>
+          <span style="font-size:13.5px;line-height:1.5;color:var(--fg);">{{ f.line }}</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);">{{ f.where }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <sc-for list="{{ groups }}" as="grp" hint-placeholder-count="4">
+    <div style="display:flex;flex-direction:column;gap:56px;">
+      <div style="display:flex;flex-direction:column;gap:8px;max-width:1340px;padding-top:12px;border-top:1px solid var(--border-strong);">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--accent);">{{ grp.kicker }}</span>
+        <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:30px;color:var(--fg);">{{ grp.title }}</h2>
+        <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-body);max-width:1000px;text-wrap:pretty;">{{ grp.note }}</p>
+      </div>
+      <sc-for list="{{ grp.sections }}" as="sec" hint-placeholder-count="5">
+        <section id="{{ sec.id }}" style="display:flex;flex-direction:column;gap:22px;">
+          <div style="display:flex;flex-direction:column;gap:8px;max-width:1340px;">
+            <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">§{{ sec.id }}</span>
+              <h3 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:24px;color:var(--fg);">{{ sec.title }}</h3>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">scene {{ sec.scene }} · {{ sec.fixture }}</span>
+            </div>
+            <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-body);max-width:1000px;text-wrap:pretty;">{{ sec.note }}</p>
+          </div>
+          <div style="display:flex;gap:40px;align-items:flex-start;">
+            <div data-screen-label="{{ sec.id }} · 900" style="border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;flex:none;">
+              <dc-import name="Added Copy" scene="{{ sec.scene }}" hint-size="900px,720px"></dc-import>
+            </div>
+            <div data-screen-label="{{ sec.id }} · 390" style="border:1px solid var(--border-strong);border-radius:22px;overflow:hidden;flex:none;">
+              <dc-import name="Added Copy" scene="{{ sec.scene }}" phone="{{ true }}" hint-size="390px,800px"></dc-import>
+            </div>
+          </div>
+        </section>
+      </sc-for>
+    </div>
+  </sc-for>
+
+  <section id="AB" style="display:flex;flex-direction:column;gap:10px;max-width:1340px;padding-top:12px;border-top:1px solid var(--border-strong);">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--accent);">§AB · the About entry</span>
+    <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-body);max-width:1000px;text-wrap:pretty;">The entry is drawn on the About handoff’s per-entry template, in <a href="The%2099%20-%20About%20%C2%B7%20Added%20Copy%20Entry.dc.html">The 99 - About · Added Copy Entry</a> in this handoff. It’s chapter 01, right after the All-decks cart entry, and batches into the same <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;">ABOUT_VERSION</code> bump (since 15).</p>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const calls = [
+      { k: "where the line sits", v: "Where each surface already reports the add, not in a new banner. Add Cards: a Where it went block in the saved state. I got it: the receipt body, replacing claimed and claimedMany. The upload summary: the No longer to buy rows, which already pair a card with a deck." },
+      { k: "two verbs", v: "goes to when a deck holds the copy. is free for when brews read a loose copy as theirs. The line never names one brew for a soft share, but it does name a brew when it’s the only one asking, because only one name is true." },
+      { k: "Change", v: "On Add Cards and in the summary it opens inline under its line, because both have room and the line is the context. On I got it it opens the app’s modal or bottom sheet, because a toast can’t hold a list. The toast is held while it’s open. Picks write on tap, as the shipped chooser does, and Done just closes." },
+      { k: "Keep it free", v: "The last option in the chooser, under a rule. With one copy it’s a select. With more, it carries a stepper, because it’s a count. Elsewhere it shows as one faint fact, 1 kept free, with Change beside it. Changing back is the same chooser: deselect it, or pick a deck." },
+    ];
+    const answers = [
+      { n: 1, q: "A spare copy and several brews", a: "Drawn as engineering leans: name nobody. Sol Ring is free for the 3 brews that need it · Change. In the chooser the three brews read can use it, with hollow marks, and one note says why all three can. Picking one gives it the copy (granted), so that brew gets it and the others buy it. With exactly one brew asking, the line names it: Command Tower is free for HD -Thorin, a brew that needs one. It still says is free for, not goes to, because nothing is held.", where: "§AC3 · §AC4 · §IG2 · §IG5" },
+      { n: 2, q: "One copy or all?", a: "A count, one control per card. With one copy in play, Keep it free is a select like any deck. With two or more, its row carries a − n + stepper, and the heading’s cap reads 1 given · 1 kept free. The stepper can go up to what you own, less commander copies. Tapping the row sets it to 1, and deselecting sets it to 0.", where: "§KF1 · §KF2" },
+      { n: 3, q: "A free copy across a re-upload", a: "It persists, capped at what you own (engineering’s lean). When a replace caps it, the summary says so on that card’s row in plain counts, with Change: You were keeping 2 free. You own 1 now, so 1 is kept free. There’s no warning colour, because nothing was lost that the player didn’t upload. The same sentence, minus the upload, is what a removal that lowers the count shows (the brief’s edge 7).", where: "§US6" },
+      { n: 4, q: "Show it on the deck that needed it?", a: "Yes. On Your deck the row’s availability marker gives way to 1 kept free · Change, in --fg-faint mono. On Shopping the row stays, with its buy tag as shipped, and its owned fact gains · 1 kept free. There’s no verdict word, no warning colour and no icon. The deck still reads the card as missing, which is the point.", where: "§KF3 · §KF4" },
+      { n: 5, q: "I got it: redundant with tookCopy?", a: "One sentence. The shipped claimed sentence already is the line (HD - Brago is older and was short too, so the copy went there), so it stays and gains Change. The new forms take the same slot: It goes to this deck. It’s free, so this deck can use it. So can … No deck needs this copy, so it’s free. Change belongs on the receipt, because Undo takes the copy out of the collection and Change keeps it and moves it. Those are different acts.", where: "§IG1–§IG5" },
+    ];
+    const forms = [
+      { state: "one deck", line: "Sol Ring goes to HD - Brago, which needs one · Change", where: "Add Cards · summary (short: goes to HD - Brago)" },
+      { state: "several decks", line: "2 copies of Sol Ring go to HD - Brago and HD - Eldrazi, one each · Change", where: "Add Cards · summary" },
+      { state: "picked earlier", line: "Command Tower goes to HD -Thorin, which you picked earlier · Change", where: "Add Cards · summary" },
+      { state: "picked now", line: "Sol Ring goes to HD -Thorin, as you picked · Done", where: "after a pick, any surface" },
+      { state: "one brew (soft)", line: "Command Tower is free for HD -Thorin, a brew that needs one · Change", where: "Add Cards · summary" },
+      { state: "brews only (soft)", line: "Sol Ring is free for the 3 brews that need it · Change", where: "Add Cards · summary. Staging today" },
+      { state: "kept free", line: "Sol Ring is kept free. No deck counts it. · Change", where: "Add Cards · summary · deck (1 kept free)" },
+      { state: "nobody needed it", line: "No deck needed Lightning Greaves, so it’s free.", where: "Add Cards foot · I got it body. No Change" },
+      { state: "I got it, elsewhere", line: "HD - Brago is older and was short too, so the copy went there. This deck still needs 1. · Change", where: "receipt (shipped claimed + Change)" },
+    ].map((f, i) => ({ ...f, rule: i ? "1px solid var(--border)" : "none" }));
+    const groups = [
+      { kicker: "Surface 1", title: "Add Cards", note: "The saved state is as shipped, with one block added after the count line: Where it went (or Where they went), one row per card a deck needed. Cards no deck needed get one faint foot line rather than a row each. Change opens the chooser inline under its row. The sheet scrolls, so a long list never pushes Done out of reach.", sections: [
+        { id: "AC1", scene: "ac-one", fixture: "hypothetical · HD - Brago short", title: "One deck", note: "16 Sol Ring owned before, so the most junior committed deck, HD - Brago, was short. The add covers it. The line names Brago and says why in four words, which needs one. The brews behind it stay short and aren’t named, because the line is about where the copy went." },
+        { id: "AC2", scene: "ac-many", fixture: "hypothetical", title: "Several decks, and a deck picked earlier", note: "Five copies of four cards. Each card a deck needed gets a row. Two Sol Rings to two decks is one row, one each. Command Tower fills a reservation the player made earlier, so the row says which you picked earlier, and the default isn’t mistaken for a pick. Lightning Greaves covered nothing, so it’s the faint foot line." },
+        { id: "AC3", scene: "ac-brews", fixture: "staging today · 18th copy", title: "Brews only", note: "Hugh’s staging state. All 17 committed decks hold theirs, so the 18th copy sits loose and all three brews read it as covered. The line names none of them (Q1): is free for the 3 brews that need it. Change shows them." },
+        { id: "AC4", scene: "ac-brew1", fixture: "hypothetical", title: "Exactly one brew", note: "Only HD -Thorin asks for Command Tower. With one claimant the name is true, so it’s named, but the verb stays is free for, because nothing is held. If HD -Thorin is committed, or another deck takes the card first, the line would change, and goes to would be wrong." },
+        { id: "AC5", scene: "ac-none", fixture: "staging-style", title: "Nobody needed it", note: "No block heading and no rows. One faint line under the count says the check happened and found nothing. This also covers the case where every deck that asks already holds a copy: those decks don’t need it, so they aren’t named." },
+        { id: "AC6", scene: "ac-change", fixture: "hypothetical · HD - Brago", title: "Change, opened inline", note: "Change becomes Done and the shipped chooser opens under the row: supply line, heading, options in commit order, marks for the allocation as it stands. The 16 senior committed decks that already have theirs fold into one dashed row (Show), so the chooser opens on the decks the choice actually moves. Keep it free sits last, under a rule, with the note that says what it does." },
+        { id: "AC7", scene: "ac-kept", fixture: "hypothetical · after Keep it free", title: "Kept free", note: "After Keep it free, the row reads Sol Ring is kept free. No deck counts it. Change still opens the chooser. Brago is back to short, and that shows on Brago, not here." },
+      ] },
+      { kicker: "Surface 2", title: "I got it", note: "The receipt toast is as shipped (title, printing line, History, Undo). The body sentence is the line. When the sentence offers a choice, Change follows it inline. The toast is held while the chooser is open, as it is for an undo in flight.", sections: [
+        { id: "IG1", scene: "ig-other", fixture: "hypothetical · from HD - Eldrazi", title: "It went to an older deck", note: "Bought from HD - Eldrazi’s Shopping. HD - Brago is senior and was short too, so it took the copy. The shipped claimed sentence is the line already, so it stays and gains Change. The row stays on Eldrazi’s list, because this deck still needs one." },
+        { id: "IG2", scene: "ig-brews", fixture: "staging today · from HD -Thorin", title: "Bought for a brew, and other brews ask too", note: "The staging case from Thorin’s Shopping. The copy is loose, so Thorin reads it as covered and its row becomes the held slot. Kratos and Gishath read the same copy. The receipt says so in two short sentences, and Change is how the player makes it Thorin’s." },
+        { id: "IG3", scene: "ig-self", fixture: "hypothetical · from HD - Brago", title: "It went to this deck", note: "The expected case gets the shortest sentence. It isn’t silent, because the ruling asks the surface to say where the copy went every time, and Change still offers Keep it free." },
+        { id: "IG4", scene: "ig-none", fixture: "add anyway · spare", title: "Nobody needed it", note: "After the confirm’s stale banner (needs no more, add anyway if this is a spare). There’s no Change, because nothing asks for the copy. Keeping it free would do nothing until a deck asks." },
+        { id: "IG5", scene: "ig-change", fixture: "staging · from HD -Thorin", title: "Change from the receipt", note: "The app’s modal on desktop (520) and the bottom sheet on a phone, with the toast held beneath the scrim. The chooser is the shipped component, with HD -Thorin tagged this deck and not promoted. The three brews read can use it. Picking Thorin writes the reservation on tap. Done closes it, and the toast’s clock starts again." },
+      ] },
+      { kicker: "Surface 3", title: "The upload summary", note: "No new section. No longer to buy already pairs a card with the deck that stopped billing it, so its row becomes the line: the deck column carries the sentence in short form, with Change at the end. Rows that cover several decks collapse into one, so three brews on one copy never read as three copies. The rows become live like the contested rows below them: frozen until Change, then redrawn from the server.", sections: [
+        { id: "US1", scene: "us-one", fixture: "hypothetical · HD - Brago", title: "One deck", note: "goes to HD - Brago. The section note now ends with the invitation, Change where a copy goes, or keep it free, so the rows don’t need to repeat which needs one." },
+        { id: "US2", scene: "us-many", fixture: "hypothetical", title: "Several decks, and one picked earlier", note: "Three rows for four arrivals. Sol Ring’s two copies are one row. Command Tower carries which you picked earlier." },
+        { id: "US3", scene: "us-brews", fixture: "staging-style", title: "Brews only", note: "is free for the 3 brews that need it, and for a single brew, is free for HD -Thorin, a brew. These rows are new. Today a brew’s soft cover isn’t a cleared row, so engineering has to add it to the frozen payload (gap G2)." },
+        { id: "US4", scene: "us-none", fixture: "shipped", title: "Nobody needed it", note: "The shipped nothing-to-report receipt, unchanged. An arrival no deck asked for has nothing to say here." },
+        { id: "US5", scene: "us-change", fixture: "hypothetical · after picking HD -Thorin", title: "Change, opened inline", note: "The row opens into the chooser under it. Here the player picked HD -Thorin, so it’s in --accent, Brago flips to buys it, and the row’s sentence redraws live: goes to HD -Thorin, as you picked." },
+        { id: "US6", scene: "us-kept", fixture: "hypothetical · re-upload", title: "Kept free, and a count the upload capped", note: "Sol Ring kept free stays where the player acted. Its row reads kept free, so HD - Brago still bills it, rather than moving to Still to buy mid-read. Arcane Signet was kept at 2, and the new file has 1, so the count capped. One plain sentence says so (Q3)." },
+      ] },
+      { kicker: "Keep it free", title: "In the chooser, on a deck, on Shopping", note: "The option is the chooser’s last row. Off the chooser, a kept copy is one faint fact wherever the card would otherwise read as owned-but-missing, always with Change beside it. Changing it back means opening the chooser and deselecting Keep it free, or picking a deck. There’s no second control.", sections: [
+        { id: "KF1", scene: "kf-single", fixture: "hypothetical · only HD - Brago needs it", title: "Only one deck needs it (and taking it back)", note: "Opened from the kept fact on Brago’s Shopping row. Two options: HD - Brago and Keep it free, selected. Deselecting Keep it free (or tapping Brago) gives Brago the copy. This is how a copy is taken back. With one deck asking, the chooser still opens, because Keep it free is a real second choice." },
+        { id: "KF2", scene: "kf-count", fixture: "hypothetical · 2 new copies", title: "Two copies: Keep it free is a count", note: "The marks are square because two copies are in play. The Keep it free row carries − 1 + and the cap reads 1 given · 1 kept free. One went to Brago, one is kept. Eldrazi, next in line, buys it." },
+        { id: "KF3", scene: "kf-deck", fixture: "staging · HD -Thorin, 1 kept free", title: "On the deck", note: "Thorin’s Your deck list. Sol Ring’s availability marker gives way to 1 kept free · Change in --fg-faint mono. There’s no verdict word, no warning colour and no icon (Q4). Everything else on the row is as shipped." },
+        { id: "KF4", scene: "kf-shop", fixture: "staging · HD -Thorin, 1 kept free", title: "On Shopping", note: "The row stays, with the shipped buy tag, because the deck still needs a copy (ruling 4). The owned fact reads you own 18 · 17 in other decks · 1 kept free, so the arithmetic adds up on screen, then Change. The cart line takes the same clause." },
+      ] },
+    ];
+    return { calls, answers, forms, groups };
+  }
+}
+</script>
+</body>
+</html>

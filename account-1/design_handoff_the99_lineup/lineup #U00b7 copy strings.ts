@@ -1,0 +1,120 @@
+// Proposed src/lib/copy/lineup.ts. Placeholders until /copy-review.
+// Rules: no verdict words; "select" / "unselect", never "tick"; the word "labels" never appears.
+// Results are raw, with pod sizes; a gap is a count.
+
+const n = (x: number) => x.toLocaleString("en-US");
+const and = (xs: string[]) => (xs.length < 2 ? xs.join("") : `${xs.slice(0, -1).join(", ")} and ${xs[xs.length - 1]}`);
+const pods = (sizes: number[]) => {
+  const s = [...new Set(sizes)].sort((a, b) => a - b);
+  return s.length === 1 ? `pod of ${s[0]}` : `pods of ${s[0]}–${s[s.length - 1]}`;
+};
+
+export const lineupCopy = {
+  view: { tiles: "Tiles", lineup: "Lineup", aria: "Show decks as" },
+  menu: { among: "Among your decks" },
+  filter: {
+    all: "All decks",
+    finished: "Finished only",
+    scopeAll: (decks: number, brews: number) => `${n(decks)} decks · ${n(brews)} ${brews === 1 ? "brew" : "brews"} included`,
+    scopeFinished: (decks: number, brews: number) => `${n(decks)} finished decks · ${n(brews)} ${brews === 1 ? "brew" : "brews"} left out`,
+    one: "1 deck",
+  },
+  one: (deck: string) => `Lineup sets your decks side by side. With one deck, it shows ${deck} on its own, and the charts that need two decks say so.`,
+  recency: {
+    title: "When each deck last played",
+    denom: (played: number, total: number) => `${n(played)} of ${n(total)} played`,
+    won: (w: number, games: number) => `won ${n(w)} of ${n(games)}`,
+    games: (games: number, sizes: number[], span: string) => `${games === 1 ? "1 game" : `${n(games)} games`} · ${pods(sizes)} · ${span}`,
+    ago: (days: number) => (days === 0 ? "today" : days === 1 ? "1 day ago" : `${n(days)} days ago`),
+    deckResult: (w: number, games: number, sizes: number[]) => `won ${n(w)} of ${n(games)} · ${pods(sizes)}`,
+    head: "LAST · RESULTS",
+    never: "Never played",
+    neverCount: (k: number, total: number) => `${n(k)} of ${n(total)}`,
+    noGames: "No games logged yet.",
+    noGamesSub: "Every deck sits under Never played until a game is logged in its Games tab.",
+    caption: "Each square is a game, oldest left. The line runs from the last game to today, the right edge. Results are as logged, with the pod size each game had.",
+    captionEmpty: "Games come from each deck’s Games tab.",
+  },
+  spread: {
+    title: "Brackets and colors",
+    denom: (analyzed: number, total: number) => `${n(analyzed)} of ${n(total)} analyzed`,
+    axis: "ANALYZED BRACKET · A DECK SPANNING TWO SITS ON THE LINE",
+    notAnalyzed: "not analyzed",
+    slotHead: (slot: string, k: number) => `Bracket ${slot} · ${n(k)} ${k === 1 ? "deck" : "decks"}`,
+    declared: (b: number) => `declared ${b}`,
+    colorless: "colorless",
+    noneAlone: (brackets: number[]) => `No deck is at bracket ${brackets.join(" or ")} alone.`,
+    spans: (rows: [string, number][]) => rows.map(([s, k], i) => (i ? `${n(k)} span ${s}` : `${n(k)} ${k === 1 ? "deck spans" : "decks span"} ${s}`)).join(" · ") + ".",
+    notAnalyzedFact: (k: number) => (k ? `${n(k)} not analyzed: a bracket comes from a deck’s Analysis tab.` : "0 not analyzed."),
+    noneAnalyzed: "No deck has been analyzed yet. A bracket comes from a deck’s Analysis tab, so every deck sits under not analyzed. Colors below don’t need one.",
+    colorsHead: "DECKS PLAYING EACH COLOR · ONE SQUARE PER DECK",
+    sizes: { 0: "colorless", 1: "one color", 2: "two", 3: "three", 4: "four", 5: "five" } as Record<number, string>,
+    partner: "one partner deck, counted by its pair’s colors",
+  },
+  shared: {
+    title: "Cards your decks share",
+    denom: (decks: number, cards: number) => `${n(decks)} decks · ${n(cards)} cards`,
+    chipMost: "In the most decks",
+    chipWanted: (k: number) => `Wanted more than you own · ${n(k)}`,
+    want: (decks: number) => `${n(decks)} decks`,
+    own: (owned: number) => `you own ${n(owned)}`,
+    noCopy: (decks: string[], why: string | null, held: number) =>
+      `No copy left for ${and(decks)}${why ? `, ${why}` : ""}. The other ${n(held)} decks hold one each.`,
+    noCopyWhyBrews: (k: number) => (k === 1 ? "the brew" : `the ${k === 3 ? "three" : n(k)} brews`),
+    toCart: (k: number) => `${n(k)} on Shopping for all decks`,
+    legendHeld: "a deck holding a copy you own",
+    legendWanted: "a deck that wants one, with none left",
+    caption: (two: number, five: number) => `${n(two)} cards are in two or more decks, ${n(five)} in five or more. Basic lands not counted. Press a card to open it.`,
+    one: "A card is shared once two decks play it. You have one deck.",
+  },
+  collection: {
+    title: "Your collection, put to work",
+    denom: (copies: number, cards: number) => `${n(copies)} copies · ${n(cards)} cards`,
+    inDeck: "IN A DECK",
+    notInDeck: "NOT IN A DECK",
+    valueIn: "VALUE IN A DECK",
+    unitCopies: "copies · one square is 10",
+    unitValue: "value · one square is $10",
+    fact: (pctCopies: number, pctValue: number) => `${pctCopies}% of your copies are in a deck, and they hold ${pctValue}% of the value.`,
+    wantsHead: "Not in a deck, wanted by your commanders",
+    cut: (pct: number, k: number) => `${pct}% or more · ${n(k)}`,
+    wantCopies: (k: number) => `${n(k)} not in a deck`,
+    wantFor: (deck: string) => `for ${deck}`,
+    wantBasis: (commander: string) => `${commander} decks`,
+    wantPair: "read from the pair’s own list",
+    more: (k: number) => `${n(k)} more · names the deck, and the commander’s share of decks that play the card`,
+    caption: (source: string, age: string) => `Counted once per copy you own. Basic lands not counted. Prices from ${source} · last checked ${age}.`,
+  },
+  among: {
+    title: "This deck among yours",
+    denom: (decks: number) => `${n(decks)} decks`,
+    selectAria: "Choose a deck",
+    defaultHow: "the deck played most recently, until you pick one",
+    fromTile: "picked from its tile’s menu",
+    low: "LOWEST", high: "HIGHEST", head: "DECK · MEDIAN",
+    rows: { manaValue: "Mana value", lands: "Lands", ramp: "Ramp", draw: "Card draw", removal: "Removal", value: "Value" },
+    median: (v: string) => `median ${v}`,
+    others: (k: number) => `the other ${n(k)}`,
+    medianLegend: "the median deck",
+    foot: "Ramp, card draw and removal count the same cards as each deck’s Jobs. Value is each deck’s own, so a card in two decks counts in both.",
+  },
+  proposals: {
+    badge: "PROPOSAL",
+    pairs: {
+      title: "Decks that share the most",
+      denom: "cards in both, of 99",
+      and: "and",
+      shared: (k: number) => `${n(k)} shared`,
+      sameCommander: (c: string) => `same commander, ${c}`,
+      sameColors: (id: string) => `same colors, ${id}`,
+      foot: "From the decklists. Basic lands not counted. Press a pair to see the cards both play.",
+    },
+    scatter: {
+      title: "Curve against lands",
+      denom: (decks: number) => `${n(decks)} decks`,
+      y: "↑ lands",
+      x: "average mana value, nonland →",
+      foot: "One square per deck, in its colors. Dashed lines are the median deck. Press a square to open that deck.",
+    },
+  },
+} as const;

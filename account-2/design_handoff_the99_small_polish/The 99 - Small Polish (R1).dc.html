@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Small polish · R1 · the five calls</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+</style>
+</helmet>
+<div style="width:1280px;min-height:900px;box-sizing:border-box;padding:48px 56px;background:#121217;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:30px">
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#7C8A8C">Small polish · R1 · 2026-10-14 · Kaldheim unless named</span>
+    <h1 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:34px;color:#C6D2D3">Five small fixes, one call each</h1>
+    <p style="margin:0;max-width:760px;font-size:14px;line-height:1.55;color:#95A4A6">Cosmetic only. No new capability, no About entry, no version bump. Each row below is answered in full on its own pair of artboards, phone on the left and desktop on the right.</p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:16px">
+    <div style="display:flex;flex-direction:column;gap:12px;padding:18px;background:#1E1F26;border:1px solid #1A1F2B;border-radius:10px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C">1 · Lock</span>
+      <div style="display:flex;align-items:flex-end;gap:14px;height:56px">
+        <svg width="36" height="42" viewBox="0 0 12 14" aria-hidden="true"><path d="M3 7V4a3 3 0 0 1 6 0v3" fill="none" stroke="#95A4A6" stroke-width="1.6" stroke-linecap="round"></path><path fill="#95A4A6" fill-rule="evenodd" d="M2 6.5h8a2 2 0 0 1 2 2V12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V8.5a2 2 0 0 1 2-2Zm4 1.9a1.2 1.2 0 0 0-.6 2.24v1.16h1.2v-1.16A1.2 1.2 0 0 0 6 8.4Z"></path></svg>
+        <svg width="12" height="14" viewBox="0 0 12 14" aria-hidden="true"><path d="M3 7V4a3 3 0 0 1 6 0v3" fill="none" stroke="#95A4A6" stroke-width="1.6" stroke-linecap="round"></path><path fill="#95A4A6" fill-rule="evenodd" d="M2 6.5h8a2 2 0 0 1 2 2V12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V8.5a2 2 0 0 1 2-2Zm4 1.9a1.2 1.2 0 0 0-.6 2.24v1.16h1.2v-1.16A1.2 1.2 0 0 0 6 8.4Z"></path></svg>
+        <svg width="9" height="11" viewBox="0 0 9 11" aria-hidden="true"><path d="M2.4 5.5V3.1a2.1 2.1 0 0 1 4.2 0v2.4" fill="none" stroke="#95A4A6" stroke-width="1.3" stroke-linecap="round"></path><path fill="#95A4A6" d="M1.5 5h6A1.5 1.5 0 0 1 9 6.5v3A1.5 1.5 0 0 1 7.5 11h-6A1.5 1.5 0 0 1 0 9.5v-3A1.5 1.5 0 0 1 1.5 5Z"></path></svg>
+      </div>
+      <p style="margin:0;font-size:13px;line-height:1.5;color:#B3C0C2"><b style="font-weight:600;color:#C6D2D3">One glyph, three sizes.</b> A solid body and a heavier shackle, the LockMark's language, drawn as one SVG. Padlock and LockMark merge. The bracket stays 9×11, solid with no keyhole. First-run cards move from a divider ink to <code style="font-family:'IBM Plex Mono',monospace;font-size:12px">--fg-locked</code>.</p>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;padding:18px;background:#1E1F26;border:1px solid #1A1F2B;border-radius:10px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C">2 · Placeholder</span>
+      <div style="display:flex;align-items:center;height:56px">
+        <div style="flex:1;display:flex;align-items:center;gap:10px;height:38px;padding:0 12px;background:#16171D;border:1px solid #2E3340;border-radius:8px;font-size:13.5px;color:#7C8A8C">Search</div>
+      </div>
+      <p style="margin:0;font-size:13px;line-height:1.5;color:#B3C0C2"><b style="font-weight:600;color:#C6D2D3">A new <code style="font-family:'IBM Plex Mono',monospace;font-size:12px">--fg-placeholder</code> token.</b> It equals <code style="font-family:'IBM Plex Mono',monospace;font-size:12px">--fg-faint</code> in the four passing themes and is lifted only in Kamigawa (4.89:1) and Phyrexia (4.84:1). None of the 878 <code style="font-family:'IBM Plex Mono',monospace;font-size:12px">--fg-faint</code> uses moves.</p>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;padding:18px;background:#1E1F26;border:1px solid #1A1F2B;border-radius:10px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C">3 · Motion</span>
+      <div style="display:flex;flex-direction:column;justify-content:center;gap:6px;height:56px">
+        <div style="display:flex;align-items:center;gap:6px"><span style="width:44px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8A8C">answer</span><span style="width:60px;height:6px;border-radius:3px;background:#5C86C9"></span></div>
+        <div style="display:flex;align-items:center;gap:6px"><span style="width:44px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8A8C">arrival</span><span style="width:30px;height:6px;border-radius:3px;background:#2E3340"></span><span style="width:96px;height:6px;border-radius:3px;background:#5C86C9"></span></div>
+      </div>
+      <p style="margin:0;font-size:13px;line-height:1.5;color:#B3C0C2"><b style="font-weight:600;color:#C6D2D3">Two classes and one kept curve.</b> Answers to a press open at once on 200ms. Arrivals the reader caused wait 100ms, then 320ms. Card turn, carousel and sheet snap keep their decelerating curve, now a token. Art brightens on hover, no lift. Two figures count up. Show more staggers 40ms, capped at 12.</p>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;padding:18px;background:#1E1F26;border:1px solid #1A1F2B;border-radius:10px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C">4 · Precon skeleton</span>
+      <div style="display:flex;align-items:flex-end;gap:6px;height:56px">
+        <div style="width:30px;height:52px;border-radius:5px;background:#1E1F26;border:1px solid #2E3340;display:flex;flex-direction:column;overflow:hidden"><span style="flex:1;background:#22232B"></span><span style="height:12px"></span></div>
+        <div style="width:30px;height:52px;border-radius:5px;background:#1E1F26;border:1px solid #2E3340;display:flex;flex-direction:column;overflow:hidden"><span style="flex:1;background:#22232B"></span><span style="height:12px"></span></div>
+        <div style="width:30px;height:52px;border-radius:5px;background:#1E1F26;border:1px solid #2E3340;display:flex;flex-direction:column;overflow:hidden"><span style="flex:1;background:#22232B"></span><span style="height:12px"></span></div>
+      </div>
+      <p style="margin:0;font-size:13px;line-height:1.5;color:#B3C0C2"><b style="font-weight:600;color:#C6D2D3">Tiles, not the crown.</b> The real header title and a still chassis, then a year bar and a grid of tile shapes. Rows when the browser's stored view is rows. One shared <code style="font-family:'IBM Plex Mono',monospace;font-size:12px">TileSkeleton</code>, used by Precons first.</p>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;padding:18px;background:#1E1F26;border:1px solid #1A1F2B;border-radius:10px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C">5 · Token tile</span>
+      <div style="display:flex;align-items:flex-end;height:56px">
+        <div style="width:42px;height:56px;border-radius:6px;background:#1E1F26;border:1px solid #1A1F2B;display:flex;flex-direction:column;overflow:hidden"><span style="flex:1;background:#2D2E35"></span><span style="height:8px"></span><span style="height:1px;background:#1A1F2B"></span><span style="height:9px"></span></div>
+      </div>
+      <p style="margin:0;font-size:13px;line-height:1.5;color:#B3C0C2"><b style="font-weight:600;color:#C6D2D3">A foot inside the frame.</b> One state line and one makers line, behind a hairline, inside the border. I have one moves into the makers fold, the one place it can act. Tiles in a row share a height.</p>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:8px;padding:18px 20px;border:1px dashed #424755;border-radius:10px">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C">For the audit</span>
+    <p style="margin:0;font-size:13px;line-height:1.55;color:#B3C0C2">The two calls most worth checking against the brief: item 5 puts I have one one press deeper (inside the makers fold), and item 3 gives sheets the reader opened a 100ms wait while menus and the card zoom get none. Gaps are listed in the README.</p>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

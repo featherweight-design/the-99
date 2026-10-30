@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Metamorphous&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0B0E; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { color: #6C95D8; }
+  :root {
+    --bg:#121217; --surface:#1E1F26; --surface-rail:#181920; --surface-sunken:#16171D; --surface-raised:#212229;
+    --elevated:#2D2E35; --elevated-hover:#34353D; --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E;
+    --accent:#5C86C9; --accent-dim:#34507D; --danger:#C6533F; --success:#6FA368; --warning:#E0913C;
+  }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:var(--fg);background:#0B0B0E;padding:48px 56px 96px;display:flex;flex-direction:column;gap:64px;width:max-content;min-width:1800px;">
+
+  <header style="display:flex;flex-direction:column;gap:14px;max-width:1180px;">
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#0B0B0E;background:var(--accent);border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R1</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.28em;text-transform:uppercase;color:var(--fg-faint);">tuning hub · canvas C of 3 · proposed cuts and history · 2026-10-09</span>
+    </div>
+    <h1 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:34px;line-height:1.25;color:var(--fg);">Proposed cuts: a ranked shortlist, one checkable reason a card, and Cut writes straight to the list. History: one record, newest first, filterable by tool.</h1>
+    <p style="margin:0;max-width:1000px;font-size:14.5px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">Brief §4, §5 and §7. Proposed cuts is free, with an optional Look deeper (1 credit). History reads every tool’s run ledger, starting with deck_suggestion_runs. Same deck as canvases A and B: HD Gishath at 105, six over, four cards locked.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px;">
+      <sc-for list="{{ jump }}" as="j" hint-placeholder-count="10">
+        <a href="#{{ j.id }}" style="font-family:'IBM Plex Mono',monospace;font-size:12px;border:1px solid var(--border-strong);border-radius:6px;padding:5px 10px;">{{ j.id }} · {{ j.label }}</a>
+      </sc-for>
+    </div>
+  </header>
+
+  <sc-for list="{{ cutSections }}" as="s" hint-placeholder-count="3">
+    <section id="{{ s.id }}" style="display:flex;flex-direction:column;gap:18px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:16px;">{{ s.id }} · <span style="color:var(--accent);">{{ s.title }}</span></div>
+      <div style="display:flex;align-items:flex-start;gap:40px;">
+        <sc-for list="{{ s.frames }}" as="f" hint-placeholder-count="2">
+          <div style="display:flex;flex-direction:column;gap:8px;flex:none;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 7px;align-self:flex-start;">{{ f.tag }}</span>
+            <div data-screen-label="{{ f.tag }}" style="width:{{ f.w }}px;background:var(--bg);border:1px solid var(--border-strong);border-radius:{{ f.frameR }}px;padding:{{ f.framePad }};display:flex;flex-direction:column;gap:10px;">
+              <sc-if value="{{ f.d }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;gap:22px;border-bottom:1px solid var(--border);">
+                  <sc-for list="{{ tabsCuts }}" as="t" hint-placeholder-count="5"><span style="font-size:13px;font-weight:{{ t.weight }};color:{{ t.ink }};padding:4px 0 10px;border-bottom:2px solid {{ t.rule }};margin-bottom:-1px;display:flex;align-items:center;gap:7px;"><sc-if value="{{ t.key }}" hint-placeholder-val="{{ false }}"><dc-import name="TuningToolMark" tool="{{ t.key }}" size="14" ink="{{ t.ink }}" hint-size="14px,14px"></dc-import></sc-if>{{ t.label }}</span></sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ f.p }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;justify-content:space-between;"><span style="height:44px;display:flex;align-items:center;font-size:13px;font-weight:500;color:var(--fg-muted);">‹ Tuning</span><span style="display:flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);"><dc-import name="TuningToolMark" tool="cuts" size="14" ink="var(--fg-body)" hint-size="14px,14px"></dc-import>3 of 4 tools</span></div></sc-if>
+
+              <div style="background:var(--surface-sunken);border:1px solid {{ f.panelBorder }};border-radius:{{ f.panelR }}px;padding:{{ f.panelPad }};display:flex;flex-direction:column;gap:14px;">
+                <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">
+                  <h3 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:{{ f.h }}px;color:var(--fg);">Proposed cuts</h3>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">free</span>
+                </div>
+
+                <sc-if value="{{ f.offer }}" hint-placeholder-val="{{ false }}">
+                  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:10px;">
+                    <div style="display:flex;flex-direction:{{ f.dir }};align-items:{{ f.align }};gap:12px;">
+                      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;">
+                        <span style="font-size:13.5px;font-weight:600;color:var(--fg);">Want a closer read?</span>
+                        <span style="font-size:12.5px;line-height:1.5;color:var(--fg-body);text-wrap:pretty;">A deeper look reads your description, notes and games against this shortlist, and says which cuts fit what the deck is for.</span>
+                      </div>
+                      <span role="button" aria-label="Look deeper. Uses 1 credit." style="flex:none;min-height:{{ f.btnH }}px;display:flex;align-items:stretch;justify-content:center;font-size:13px;font-weight:600;color:var(--accent);border:1px solid var(--accent);border-radius:8px;overflow:hidden;">
+                        <span style="flex:1;display:flex;align-items:center;justify-content:center;padding:0 14px;">Look deeper</span>
+                        <span style="display:flex;align-items:center;gap:6px;padding:0 12px;border-left:1px solid var(--accent);font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;"><span style="width:7px;height:7px;transform:rotate(45deg);background:currentColor;"></span>1 credit</span>
+                      </span>
+                    </div>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">2 of 3 credits left · next one at 4:10 PM</span>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ f.deeperRunning }}" hint-placeholder-val="{{ false }}">
+                  <div aria-busy="true" style="background:var(--surface);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;display:flex;flex-direction:{{ f.dir }};align-items:{{ f.align }};gap:12px;">
+                    <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;">
+                      <span style="display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;color:var(--fg);"><span style="width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px rgba(92,134,201,0.22);"></span>Looking deeper…</span>
+                      <span style="font-size:12.5px;line-height:1.5;color:var(--fg-body);">The shortlist below stays, and you can keep cutting while it reads.</span>
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">reading your description, 2 game notes and 8 candidates · 0:07</span>
+                    </div>
+                    <span style="flex:none;min-height:{{ f.btnH }}px;display:flex;align-items:center;justify-content:center;padding:0 16px;font-size:13px;font-weight:500;color:var(--fg-muted);border:1px solid var(--border-strong);border-radius:8px;">Stop</span>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ f.deeper }}" hint-placeholder-val="{{ false }}">
+                  <div style="background:var(--surface);border:1px solid var(--border-strong);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:12px;">
+                    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                      <span style="font-size:13.5px;font-weight:600;color:var(--fg);">Deeper look</span>
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--success);background:rgba(111,163,104,0.12);border-radius:999px;padding:2px 9px;">done</span>
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">read your description, 2 game notes and the 8 candidates below</span>
+                    </div>
+                    <sc-for list="{{ deeperCuts }}" as="x" hint-placeholder-count="3">
+                      <div style="border-top:1px solid var(--border);padding-top:12px;display:flex;flex-direction:column;gap:8px;">
+                        <div style="display:flex;flex-direction:{{ f.dir }};align-items:flex-start;gap:{{ f.tagGap }}px;">
+                          <span style="flex:none;width:86px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:{{ x.tagInk }};border:1px {{ x.tagStyle }} {{ x.tagBorder }};border-radius:999px;padding:2px 0;">{{ x.tag }}</span>
+                          <span style="font-size:12.5px;line-height:1.55;color:{{ x.ink }};text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">{{ x.card }}</b> {{ x.text }}</span>
+                        </div>
+                        <div style="display:flex;gap:5px;flex-wrap:wrap;padding-left:{{ f.indent }}px;">
+                          <sc-for list="{{ x.cites }}" as="c" hint-placeholder-count="2">
+                            <span style="display:flex;align-items:baseline;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;background:var(--surface-sunken);border:1px solid var(--border);border-radius:5px;padding:3px 7px;"><span style="letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">{{ c.src }}</span><span style="color:var(--fg-muted);">{{ c.text }}</span></span>
+                          </sc-for>
+                        </div>
+                      </div>
+                    </sc-for>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);border-top:1px solid var(--border);padding-top:10px;">1 credit used · 1 of 3 left · next one at 4:10 PM</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:10px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);"><span>The shortlist, unchanged</span><span style="flex:1;height:1px;background:var(--border);"></span></div>
+                </sc-if>
+
+                <sc-if value="{{ f.reading }}" hint-placeholder-val="{{ false }}">
+                  <span style="font-size:13.5px;line-height:1.6;color:var(--fg-body);">Ranking your 105 cards. A second, usually less.</span>
+                  <ul style="list-style:none;margin:0;padding:0;border-top:1px solid var(--border);">
+                    <sc-for list="{{ readRows }}" as="r" hint-placeholder-count="4">
+                      <li style="display:flex;align-items:center;gap:10px;min-height:{{ f.rowH }}px;padding:0 2px;border-bottom:1px solid var(--border);">
+                        <span style="width:14px;display:flex;justify-content:center;"><sc-if value="{{ r.done }}" hint-placeholder-val="{{ false }}"><span style="font-size:12px;font-weight:600;color:var(--accent);">✓</span></sc-if><sc-if value="{{ r.pending }}" hint-placeholder-val="{{ true }}"><span style="width:5px;height:5px;border-radius:50%;background:var(--fg-locked);"></span></sc-if></span>
+                        <span style="flex:1;font-size:13px;color:{{ r.ink }};">{{ r.label }}</span>
+                        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ r.count }}</span>
+                      </li>
+                    </sc-for>
+                  </ul>
+                </sc-if>
+
+                <sc-if value="{{ f.list }}" hint-placeholder-val="{{ true }}">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);">{{ f.readLine }}</span>
+                  <p style="margin:0;font-size:{{ f.leadSize }}px;line-height:1.6;color:var(--fg-body);max-width:640px;text-wrap:pretty;"><b style="color:{{ f.leadInk }};font-weight:600;">{{ f.leadB }}</b> {{ f.lead }}</p>
+                  <sc-if value="{{ f.thin }}" hint-placeholder-val="{{ false }}">
+                    <div style="border:1px dashed var(--border-dashed);border-radius:8px;min-height:40px;display:flex;align-items:center;gap:10px;padding:8px 12px;">
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-locked);">–</span>
+                      <span style="flex:1;font-size:12.5px;color:var(--fg-faint);">EDHREC inclusion for Gishath</span>
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">12 decks · too few to rank by</span>
+                    </div>
+                  </sc-if>
+                  <div style="display:flex;flex-direction:column;gap:{{ f.listGap }}px;">
+                    <sc-for list="{{ f.cuts }}" as="c" hint-placeholder-count="5">
+                      <div>
+                        <sc-if value="{{ c.open }}" hint-placeholder-val="{{ true }}">
+                          <div style="background:var(--surface);border:1px solid var(--border);border-radius:{{ f.cardR }}px;padding:{{ f.cardPad }};display:flex;flex-direction:{{ f.dir }};align-items:{{ f.align }};gap:{{ f.cardGap }}px;">
+                            <span style="display:flex;align-items:center;gap:9px;flex:1;min-width:0;">
+                              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);width:16px;text-align:right;">{{ c.n }}</span>
+                              <div style="width:22px;height:31px;flex:none;border-radius:3px;background:repeating-linear-gradient(135deg,var(--border),var(--border) 3px,var(--surface-raised) 3px,var(--surface-raised) 6px);border:1px solid var(--border-strong);"></div>
+                              <span style="font-size:13px;font-weight:600;color:var(--fg);border-bottom:1px dotted var(--accent);">{{ c.name }}</span>
+                            </span>
+                            <span style="display:flex;align-items:baseline;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;background:var(--surface-sunken);border:1px solid var(--border);border-radius:5px;padding:3px 7px;align-self:{{ f.chipAlign }};"><span style="letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">{{ c.src }}</span><span style="color:var(--fg-muted);">{{ c.why }}</span></span>
+                            <span style="display:flex;gap:7px;flex:none;">
+                              <span style="flex:{{ f.btnFlex }};min-height:{{ f.actH }}px;display:flex;align-items:center;justify-content:center;padding:0 13px;font-size:12.5px;font-weight:600;color:var(--accent);border:1px solid var(--accent);border-radius:7px;">Cut</span>
+                              <span style="flex:{{ f.btnFlex }};min-height:{{ f.actH }}px;display:flex;align-items:center;justify-content:center;padding:0 12px;font-size:12.5px;font-weight:500;color:var(--fg-muted);border:1px solid var(--border-strong);border-radius:7px;">Keep</span>
+                            </span>
+                          </div>
+                        </sc-if>
+                        <sc-if value="{{ c.answered }}" hint-placeholder-val="{{ false }}">
+                          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:9px;border-radius:9px;padding:9px 12px;background:{{ c.bg }};border:1px solid {{ c.border }};">
+                            <span style="display:flex;align-items:center;gap:6px;"><sc-if value="{{ c.isCut }}" hint-placeholder-val="{{ false }}"><span style="width:15px;height:15px;border-radius:4px;border:1px solid var(--success);color:var(--success);font-size:9px;display:flex;align-items:center;justify-content:center;">✓</span></sc-if><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:{{ c.labelInk }};">{{ c.label }}</span></span>
+                            <span style="font-size:12.5px;color:{{ c.nameInk }};text-decoration:{{ c.deco }};text-decoration-color:var(--fg-locked);">{{ c.name }}</span>
+                            <span style="margin-left:auto;min-height:32px;display:flex;align-items:center;border-radius:7px;padding:0 11px;font-size:12px;font-weight:500;color:var(--fg-muted);border:1px solid var(--border-strong);">{{ c.undo }}</span>
+                          </div>
+                        </sc-if>
+                      </div>
+                    </sc-for>
+                    <sc-if value="{{ f.more }}" hint-placeholder-val="{{ true }}"><span style="min-height:{{ f.actH }}px;display:flex;align-items:center;font-size:12.5px;font-weight:500;color:var(--accent);">Show 3 more</span></sc-if>
+                  </div>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">Never lists Gishath, Sun’s Avatar or the 4 cards you locked.</span>
+                </sc-if>
+
+                <sc-if value="{{ f.done }}" hint-placeholder-val="{{ false }}">
+                  <div style="background:var(--surface);border:1px solid var(--success);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:4px;">
+                    <span style="font-size:13.5px;font-weight:600;color:var(--fg);">Back to 99 / 99. You cut six.</span>
+                    <span style="font-size:12.5px;line-height:1.55;color:var(--fg-body);">The deck isn’t over any more, so Proposed cuts closes here.</span>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ f.note }}" hint-placeholder-val="{{ false }}">
+                  <div style="background:var(--surface);border:1px solid var(--border-strong);border-radius:10px;padding:12px 14px;display:flex;align-items:flex-start;gap:10px;">
+                    <span style="flex:none;width:18px;height:18px;border-radius:50%;border:1px solid var(--fg-faint);color:var(--fg-faint);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;">i</span>
+                    <span style="font-size:12.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">Every card but Gishath is locked, so there is nothing to cut. Unlock a card on Your deck and it can be ranked here.</span>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ f.failed }}" hint-placeholder-val="{{ false }}">
+                  <div style="background:var(--surface-sunken);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;">
+                    <div style="display:flex;align-items:flex-start;gap:10px;">
+                      <svg role="img" aria-label="Couldn’t rank" viewBox="0 0 16 16" width="18" height="18" style="flex:none;display:block;color:var(--danger);"><path fill-rule="evenodd" fill="currentColor" d="M8 1.2 A6.8 6.8 0 1 0 8 14.8 A6.8 6.8 0 1 0 8 1.2 Z M7.05 4 H8.95 L8.6 9.3 H7.4 Z M8 10.5 A1.15 1.15 0 1 0 8 12.8 A1.15 1.15 0 1 0 8 10.5 Z"></path></svg>
+                      <span style="flex:1;min-width:0;font-family:'Metamorphous',serif;font-size:17px;line-height:1.3;color:var(--fg);">We couldn’t rank this deck’s cards</span>
+                    </div>
+                    <p style="margin:11px 0 0;font-size:13.5px;line-height:1.6;color:var(--fg-body);max-width:660px;">The card catalog didn’t answer. It is usually back within a minute.</p>
+                    <span style="margin-top:9px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">your list is untouched · nothing was spent</span>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ f.foot }}" hint-placeholder-val="{{ true }}">
+                <div style="padding-top:14px;border-top:1px solid var(--border);display:flex;flex-direction:{{ f.dir }};align-items:{{ f.align }};gap:12px;min-height:{{ f.rowBand }}px;">
+                  <sc-if value="{{ f.primary }}" hint-placeholder-val="{{ true }}"><span style="min-height:{{ f.btnH }}px;display:flex;align-items:center;justify-content:center;padding:0 18px;font-size:13.5px;font-weight:600;color:{{ f.primaryInk }};border:1px solid {{ f.primaryBorder }};border-radius:8px;">{{ f.primary }}</span></sc-if>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.5;color:var(--fg-faint);">{{ f.foot }}</span>
+                </div>
+                </sc-if>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+        <div style="width:360px;flex:none;display:flex;flex-direction:column;gap:12px;font-size:13px;line-height:1.65;color:var(--fg-muted);">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);">{{ s.noteHead }}</span>
+          <sc-for list="{{ s.notes }}" as="n" hint-placeholder-count="3">
+            <p style="margin:0;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">{{ n.b }}</b> {{ n.t }}</p>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+  </sc-for>
+
+  <sc-for list="{{ histSections }}" as="s" hint-placeholder-count="3">
+    <section id="{{ s.id }}" style="display:flex;flex-direction:column;gap:18px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:16px;">{{ s.id }} · <span style="color:var(--accent);">{{ s.title }}</span></div>
+      <div style="display:flex;align-items:flex-start;gap:40px;">
+        <sc-for list="{{ s.frames }}" as="f" hint-placeholder-count="2">
+          <div style="display:flex;flex-direction:column;gap:8px;flex:none;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 7px;align-self:flex-start;">{{ f.tag }}</span>
+            <div data-screen-label="{{ f.tag }}" style="width:{{ f.w }}px;background:var(--bg);border:1px solid var(--border-strong);border-radius:{{ f.frameR }}px;padding:{{ f.framePad }};display:flex;flex-direction:column;gap:10px;">
+              <sc-if value="{{ f.d }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;gap:22px;border-bottom:1px solid var(--border);">
+                  <sc-for list="{{ tabsHist }}" as="t" hint-placeholder-count="5"><span style="font-size:13px;font-weight:{{ t.weight }};color:{{ t.ink }};padding:4px 0 10px;border-bottom:2px solid {{ t.rule }};margin-bottom:-1px;display:flex;align-items:center;gap:7px;"><sc-if value="{{ t.key }}" hint-placeholder-val="{{ false }}"><dc-import name="TuningToolMark" tool="{{ t.key }}" size="14" ink="{{ t.ink }}" hint-size="14px,14px"></dc-import></sc-if>{{ t.label }}</span></sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ f.p }}" hint-placeholder-val="{{ false }}"><span style="height:44px;display:flex;align-items:center;font-size:13px;font-weight:500;color:var(--fg-muted);">{{ f.back }}</span></sc-if>
+
+              <div style="background:var(--surface-sunken);border:1px solid var(--border);border-radius:{{ f.panelR }}px;padding:{{ f.panelPad }};display:flex;flex-direction:column;gap:14px;">
+                <sc-if value="{{ f.listView }}" hint-placeholder-val="{{ true }}">
+                  <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">
+                    <h3 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:{{ f.h }}px;color:var(--fg);">History</h3>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ f.sub }}</span>
+                  </div>
+                  <sc-if value="{{ f.rows }}" hint-placeholder-val="{{ true }}">
+                    <div role="radiogroup" style="display:flex;gap:6px;flex-wrap:{{ f.wrap }};overflow-x:auto;scrollbar-width:none;margin-right:{{ f.chipBleed }};padding-right:{{ f.chipPadR }};mask-image:{{ f.chipFade }};-webkit-mask-image:{{ f.chipFade }};">
+                      <sc-for list="{{ f.filters }}" as="c" hint-placeholder-count="4">
+                        <span style="flex:none;min-height:{{ f.chipH }}px;display:flex;align-items:center;font-size:12px;font-weight:{{ c.weight }};color:{{ c.ink }};background:{{ c.bg }};border:1px solid {{ c.border }};border-radius:999px;padding:0 12px;gap:7px;"><sc-if value="{{ c.key }}" hint-placeholder-val="{{ false }}"><dc-import name="TuningToolMark" tool="{{ c.key }}" size="14" ink="{{ c.ink }}" hint-size="14px,14px"></dc-import></sc-if>{{ c.label }}</span>
+                      </sc-for>
+                    </div>
+                    <div role="region" aria-label="Runs" tabindex="0" style="position:relative;max-height:{{ f.scrollH }}px;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:10px;margin:0 -4px;padding:0 4px 18px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);mask-image:linear-gradient(to bottom,#000 calc(100% - 28px),transparent);-webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 28px),transparent);">
+                    <sc-for list="{{ f.groups }}" as="g" hint-placeholder-count="2">
+                      <div style="display:flex;flex-direction:column;gap:6px;">
+                        <span style="position:sticky;top:0;z-index:1;background:var(--surface-sunken);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);padding:8px 2px 6px;">{{ g.month }}</span>
+                        <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="4">
+                          <div style="background:var(--surface);border:1px solid {{ r.border }};border-radius:9px;padding:{{ f.rowPad }};display:grid;grid-template-columns:{{ f.grid }};gap:{{ f.rowGap }};align-items:center;min-height:{{ f.rowMin }}px;">
+                            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);white-space:nowrap;grid-column:{{ f.dateCol }};">{{ r.date }}</span>
+                            <span style="display:flex;align-items:center;gap:7px;width:{{ f.toolW }}px;grid-row:{{ f.toolRow }};font-size:12px;font-weight:500;color:var(--fg-body);"><dc-import name="TuningToolMark" tool="{{ r.key }}" size="14" ink="{{ r.markInk }}" hint-size="14px,14px"></dc-import>{{ r.tool }}</span>
+                            <span style="font-size:12.5px;line-height:1.45;color:var(--fg-body);min-width:0;grid-column:{{ f.sumCol }};">{{ r.summary }}</span>
+                            <span style="justify-self:start;display:inline-flex;align-items:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:{{ r.tierInk }};border:1px solid {{ r.tierBorder }};background:{{ r.tierBg }};border-radius:999px;padding:{{ r.tierPad }};grid-column:{{ f.tierCol }};white-space:nowrap;"><sc-if value="{{ r.tierDiamond }}" hint-placeholder-val="{{ false }}"><span style="width:6px;height:6px;transform:rotate(45deg);background:currentColor;flex:none;"></span></sc-if>{{ r.tier }}</span>
+                            <span style="justify-self:end;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:{{ r.outInk }};background:{{ r.outBg }};border-radius:999px;padding:2px 8px;grid-row:{{ f.outRow }};grid-column:{{ f.outCol }};display:flex;align-items:center;gap:5px;"><sc-if value="{{ r.isFailed }}" hint-placeholder-val="{{ false }}"><svg aria-hidden="true" viewBox="0 0 16 16" width="13" height="13" style="flex:none;display:block;"><path fill-rule="evenodd" fill="currentColor" d="M8 1.2 A6.8 6.8 0 1 0 8 14.8 A6.8 6.8 0 1 0 8 1.2 Z M7.05 4 H8.95 L8.6 9.3 H7.4 Z M8 10.5 A1.15 1.15 0 1 0 8 12.8 A1.15 1.15 0 1 0 8 10.5 Z"></path></svg></sc-if>{{ r.outcome }}</span>
+                          </div>
+                        </sc-for>
+                      </div>
+                    </sc-for>
+                    <span style="min-height:{{ f.chipH }}px;display:flex;align-items:center;font-size:12.5px;font-weight:500;color:var(--accent);">Show 20 more</span>
+                    </div>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);border-top:1px solid var(--border);padding-top:10px;">Kept for as long as the deck is. A free count is recorded once per version of the list.</span>
+                  </sc-if>
+                  <sc-if value="{{ f.empty }}" hint-placeholder-val="{{ false }}">
+                    <div style="border:1px dashed var(--border-dashed);border-radius:10px;padding:18px 16px;display:flex;flex-direction:column;gap:6px;">
+                      <span style="font-size:13.5px;font-weight:600;color:var(--fg-body);">No runs yet</span>
+                      <span style="font-size:12.5px;line-height:1.55;color:var(--fg-faint);text-wrap:pretty;">Every run of every Tuning tool on this deck lands here, newest first, and opens again read-only.</span>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ f.loadFailed }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;align-items:flex-start;gap:10px;">
+                      <svg role="img" aria-label="Couldn’t load" viewBox="0 0 16 16" width="18" height="18" style="flex:none;display:block;color:var(--danger);margin-top:2px;"><path fill-rule="evenodd" fill="currentColor" d="M8 1.2 A6.8 6.8 0 1 0 8 14.8 A6.8 6.8 0 1 0 8 1.2 Z M7.05 4 H8.95 L8.6 9.3 H7.4 Z M8 10.5 A1.15 1.15 0 1 0 8 12.8 A1.15 1.15 0 1 0 8 10.5 Z"></path></svg>
+                      <span style="flex:1;min-width:0;font-size:13.5px;line-height:1.6;color:var(--fg-body);">This deck’s history didn’t load. The runs are kept; only the list failed to arrive.</span>
+                    </div>
+                    <span style="align-self:flex-start;min-height:{{ f.btnH }}px;display:flex;align-items:center;padding:0 18px;font-size:13.5px;font-weight:600;color:var(--accent);border:1px solid var(--accent);border-radius:8px;">Try again</span>
+                  </sc-if>
+                </sc-if>
+
+                <sc-if value="{{ f.opened }}" hint-placeholder-val="{{ false }}">
+                  <sc-if value="{{ f.d }}" hint-placeholder-val="{{ true }}"><span style="font-size:12.5px;font-weight:500;color:var(--fg-muted);">‹ History</span></sc-if>
+                  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                    <dc-import name="TuningToolMark" tool="suggested" size="20" ink="var(--fg-body)" hint-size="20px,20px"></dc-import>
+                    <h3 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:{{ f.h }}px;color:var(--fg);">Suggested changes</h3>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">Oct 3 · 9:12 PM · version 3 · 1 credit</span>
+                  </div>
+                  <div style="border:1px dashed var(--border-dashed);border-radius:9px;padding:9px 12px;font-size:12.5px;line-height:1.55;color:var(--fg-faint);">A past run, read-only. The list has changed by 8 cards since; nothing here can be applied now.</div>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">read from 7 games · 1 game note · 99 cards · your collection</span>
+                  <div style="display:flex;flex-direction:column;gap:6px;">
+                    <sc-for list="{{ pastRows }}" as="r" hint-placeholder-count="3">
+                      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:9px;border-radius:9px;padding:9px 12px;background:{{ r.bg }};border:1px solid {{ r.border }};">
+                        <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:{{ r.labelInk }};width:74px;">{{ r.label }}</span>
+                        <span style="font-size:12.5px;color:var(--fg-body);">{{ r.cut }} <span style="font-family:'IBM Plex Mono',monospace;color:{{ r.arrow }};">→</span> <b style="color:var(--fg);font-weight:600;">{{ r.add }}</b></span>
+                      </div>
+                    </sc-for>
+                  </div>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);border-top:1px solid var(--border);padding-top:10px;">Each swap opens to its full reason and citations, as it read that day.</span>
+                </sc-if>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+        <div style="width:360px;flex:none;display:flex;flex-direction:column;gap:12px;font-size:13px;line-height:1.65;color:var(--fg-muted);">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);">{{ s.noteHead }}</span>
+          <sc-for list="{{ s.notes }}" as="n" hint-placeholder-count="3">
+            <p style="margin:0;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">{{ n.b }}</b> {{ n.t }}</p>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const D = { d: true, p: false, w: 900, frameR: 12, framePad: '18px 24px 22px', panelR: 12, panelPad: '18px 20px', h: 19, dir: 'row', align: 'center', btnFlex: 'none', btnH: 40, actH: 32, cardR: 9, cardPad: '8px 12px', cardGap: 12, listGap: 8, chipAlign: 'center', leadSize: 13.5, rowH: 32, rowBand: 56 };
+    const P = { d: false, p: true, w: 390, frameR: 22, framePad: '10px 16px 20px', panelR: 11, panelPad: '16px 14px', h: 17, dir: 'column', align: 'stretch', btnFlex: '1', btnH: 44, actH: 44, cardR: 10, cardPad: '12px', cardGap: 10, listGap: 10, chipAlign: 'flex-start', leadSize: 13, rowH: 36, rowBand: 0 };
+    const C = (n, name, src, why) => ({ open: true, answered: false, n, name, src, why });
+    const cut = (name) => ({ open: false, answered: true, isCut: true, label: 'cut', name, bg: 'var(--surface)', border: 'var(--success)', labelInk: 'var(--success)', nameInk: 'var(--fg-body)', deco: 'line-through', undo: 'Undo' });
+    const kept = (name) => ({ open: false, answered: true, isCut: false, label: 'kept', name, bg: 'var(--surface-sunken)', border: 'var(--border)', labelInk: 'var(--fg-locked)', nameInk: 'var(--fg-faint)', deco: 'none', undo: 'Show it again' });
+    const all = [
+      C(1, 'Kinjalli’s Caller', 'edhrec', 'in 3% of Gishath decks · your median card 38%'),
+      C(2, 'Explosive Vegetation', 'role', 'ramp 14 · rec 10'),
+      C(3, 'Gaea’s Cradle', 'bracket', 'Game Changer · bracket 3 allows 3, this deck has 4'),
+      C(4, 'Zetalpa, Primal Dawn', 'curve', '8 mana · 9 of 105 cost 7 or more'),
+      C(5, 'Rampaging Brontodon', 'edhrec', 'in 5% of Gishath decks · your median card 38%'),
+    ];
+    const thinList = [
+      C(1, 'Explosive Vegetation', 'role', 'ramp 14 · rec 10'),
+      C(2, 'Gaea’s Cradle', 'bracket', 'Game Changer · bracket 3 allows 3, this deck has 4'),
+      C(3, 'Zetalpa, Primal Dawn', 'curve', '8 mana · 9 of 105 cost 7 or more'),
+      C(4, 'Kodama’s Reach', 'role', 'ramp 14 · rec 10'),
+      C(5, 'Wakening Sun’s Avatar', 'curve', '7 mana · 9 of 105 cost 7 or more'),
+    ];
+    const base = (b, tag, o) => ({ ...b, tag, panelBorder: 'var(--border)', offer: false, deeperRunning: false, deeper: false, tagGap: b.d ? 10 : 6, indent: b.d ? 96 : 0, reading: false, list: true, thin: false, done: false, note: false, failed: false, more: true,
+      readLine: 'read from 105 cards · EDHREC for Gishath, 2,140 decks · your roles and curve · bracket 3',
+      leadB: 'Six over the ninety-nine.', leadInk: 'var(--warning)', lead: 'Eight cards to look at, likeliest cut first. Cut writes to the list straight away.',
+      cuts: all, primary: '', primaryInk: 'var(--accent)', primaryBorder: 'var(--accent)', foot: 'free · 0 cut · 6 to go', ...o });
+    const partly = [cut('Kinjalli’s Caller'), kept('Explosive Vegetation'), cut('Gaea’s Cradle'), all[3], all[4]];
+    const hedgeK = { tag: 'Unchecked', tagInk: 'var(--fg-faint)', tagStyle: 'dashed', tagBorder: 'var(--border-dashed)', ink: 'var(--fg-muted)' };
+    const checkK = { tag: 'Checked', tagInk: 'var(--fg-body)', tagStyle: 'solid', tagBorder: 'var(--border-strong)', ink: 'var(--fg-body)' };
+    const sugK = { tag: 'Suggestion', tagInk: 'var(--accent)', tagStyle: 'solid', tagBorder: 'var(--accent-dim)', ink: 'var(--fg-body)' };
+    const deeperCuts = [
+      { ...sugK, card: 'Zetalpa, Primal Dawn: cut it first.', text: 'You described the deck as Gishath on six, every game; at 8 mana it is the one card here that never comes down before Gishath does.', cites: [{ src: 'you said', text: '“Gishath on six, every game”' }, { src: 'curve', text: '8 mana' }] },
+      { ...checkK, card: 'Rampaging Brontodon: keep it.', text: 'It is a Dinosaur, so Gishath’s trigger can put it onto the battlefield for free; the shortlist ranked it on EDHREC alone.', cites: [{ src: 'card text', text: 'Gishath · checked' }] },
+      { ...hedgeK, card: 'Explosive Vegetation', text: 'may be the better ramp cut than Cultivate: both fetch two lands, and you noted casting Gishath a turn late in 2 of 9 games. Which one matters more is not something we can count.', cites: [{ src: 'note', text: '“a turn late” · 2 of 9' }] },
+    ];
+    const readRows = [
+      { label: 'Your list', count: '105 cards', done: true, pending: false, ink: 'var(--fg)' },
+      { label: 'EDHREC inclusion for Gishath', count: '2,140 decks', done: true, pending: false, ink: 'var(--fg)' },
+      { label: 'Your roles and curve', count: '', done: false, pending: true, ink: 'var(--fg-body)' },
+      { label: 'Bracket flags', count: '', done: false, pending: true, ink: 'var(--fg-body)' },
+    ];
+    const cutSections = [
+      { id: 'C1', title: 'ranking: a short read, shown only if it takes longer than 400ms',
+        frames: [base(D, 'C1 · ranking · desktop 900', { panelBorder: 'var(--accent)', reading: true, list: false, foot: '2 of 4 read · free, nothing is spent' }), base(P, 'C1b · ranking · phone 390', { panelBorder: 'var(--accent)', reading: true, list: false, foot: '2 of 4 read · free' })],
+        noteHead: 'Worth a frame, rarely seen',
+        notes: [
+          { b: 'The call: a loading frame, behind a 400ms delay.', t: 'It reads the catalog and EDHREC, so a cold read can take a second; under 400ms the shortlist simply appears, as Mana Balance’s count does.' },
+          { b: 'The manifest’s own rows,', t: 'ticking on Suggested changes’ stagger. No fan (that is the model’s wait), no Stop (nothing to refund). The 1px --accent border is the same running signal as everywhere.' },
+        ] },
+      { id: 'C2', title: 'the shortlist (results)',
+        frames: [base(D, 'C2 · shortlist · desktop 900', { offer: true }), base(P, 'C2b · shortlist · phone 390', { offer: true })],
+        noteHead: 'One reason each, and it can be checked',
+        notes: [
+          { b: 'Always two more candidates than the overage', t: '(Hugh, feedback): six over, eight candidates, so a player can keep any two of ours and still reach 99. Ranked and numbered, five shown, then Show 3 more. The count does not shrink as cards are cut; it is set when the list is ranked.' },
+          { b: 'Look deeper sits on top,', t: 'as in Mana Balance: the 1 credit segment inside the button, the standing line under it. It reviews this shortlist against the deck’s description, notes and games (C8, C9).' },
+          { b: 'One reason, as one citation chip,', t: 'in Suggested changes’ chip vocabulary with four new source names: EDHREC, ROLE, CURVE, BRACKET. Each value carries its denominator or its comparison (your median card, rec 10, 9 of 105, bracket 3 allows 3). Never a bare “cut this”.' },
+          { b: 'Cut commits immediately,', t: 'like Apply: one card out, an ordinary edit (sets the changes flag, the spine’s count moves, Undo restores it). Not staged, because a cut is one card with no pair to keep in step. Keep collapses the row; Show it again brings it back.' },
+          { b: 'The never-cut guarantee is one sentence', t: 'at the foot, naming the commander and counting the locked cards. They never appear in the list, so there is nothing else to draw.' },
+        ] },
+      { id: 'C3', title: 'part answered: two cut, one kept',
+        frames: [base(D, 'C3 · part answered · desktop 900', { cuts: partly, leadB: 'Four over the ninety-nine.', lead: 'Two cut. The rest stay ranked as they were.', primary: 'Rank again', foot: 'free · 2 cut · 4 to go · ranks the list as it is now' }), base(P, 'C3b · part answered · phone 390', { cuts: partly, leadB: 'Four over the ninety-nine.', lead: 'Two cut. The rest stay ranked as they were.', primary: 'Rank again', foot: 'free · 2 cut · 4 to go' })],
+        noteHead: 'Nothing reorders under the player',
+        notes: [
+          { b: 'Answered rows collapse in their slots', t: '(Suggested changes’ answered row: success frame and ✓ for cut, sunken and --fg-locked for kept). The lead re-counts from the spine’s figure.' },
+          { b: 'Rank again', t: 'appears once something is answered, brass outline in the action row’s corner: free, and it ranks the list as it now is (a cut can change which role is over).' },
+        ] },
+      { id: 'C8', title: 'Look deeper, running (tier 2)',
+        frames: [base(D, 'C8 · looking deeper · desktop 900', { deeperRunning: true }), base(P, 'C8b · looking deeper · phone 390', { deeperRunning: true })],
+        noteHead: 'Same band as Mana Balance’s',
+        notes: [
+          { b: 'The band runs in place', t: 'with the accent border and dot, what it is reading, and elapsed time. The shortlist stays live under it: Cut and Keep still work.' },
+          { b: 'Stop', t: 'is drawn as in B2 and shares its open question (README open 6). Refused and failed take B4 and B5’s shapes, sentence for sentence, with shortlist for count.' },
+        ] },
+      { id: 'C9', title: 'deeper look done: above the shortlist, never over it (tier 2 results)',
+        frames: [base(D, 'C9 · deeper look done · desktop 900', { deeper: true, cuts: partly, leadB: 'Four over the ninety-nine.', lead: 'Two cut. The rest stay ranked as they were.', primary: 'Rank again', foot: 'free · 2 cut · 4 to go' }), base(P, 'C9b · deeper look done · phone 390', { deeper: true, cuts: partly, leadB: 'Four over the ninety-nine.', lead: 'Two cut. The rest stay ranked as they were.', primary: 'Rank again', foot: 'free · 2 cut · 4 to go' })],
+        noteHead: 'It reads the shortlist for fit',
+        notes: [
+          { b: 'Each line is about one candidate, by name,', t: 'with a kind tag (Suggestion, Checked, Unchecked) and Suggested changes’ citations. Cut first and keep are its two verbs; it never adds a card to the list, so the never-cut guarantee holds.' },
+          { b: 'The shortlist below is unchanged', t: 'and keeps its own ranking. The deeper look advises; the player still presses Cut. A combo the deck runs is flagged from Commander Spellbook’s own data, never inferred.' },
+          { b: 'One deeper look per version of the list;', t: 'the band returns after the list changes.' },
+        ] },
+      { id: 'C4', title: 'back to 99: the tool closes itself',
+        frames: [base(D, 'C4 · legal again · desktop 900', { list: false, done: true, foot: '' }), base(P, 'C4b · legal again · phone 390', { list: false, done: true, foot: '' })],
+        noteHead: 'Offered only while over',
+        notes: [
+          { b: 'The sixth cut lands the deck on 99 / 99,', t: 'so the tool is no longer offered (ruling 4). It does not vanish under the player: it finishes in place with one line, and the landing tile goes inert next time (A2). The completion reveal on Your deck fires as the over-99 amendment already rules.' },
+        ] },
+      { id: 'C5', title: 'thin EDHREC data: ranked by roles, curve and bracket, and it says so',
+        frames: [base(D, 'C5 · thin data · desktop 900', { thin: true, cuts: thinList, readLine: 'read from 105 cards · your roles and curve · bracket 3', lead: 'Eight cards to look at, ranked by role, curve and bracket only.' }), base(P, 'C5b · thin data · phone 390', { thin: true, cuts: thinList, readLine: 'read from 105 cards · roles, curve · bracket 3', lead: 'Eight cards, ranked by role, curve and bracket only.' })],
+        noteHead: 'Runs anyway (ruling 6)',
+        notes: [
+          { b: 'The missing signal is a dashed row', t: 'in the manifest’s none-logged shape, with the deck count EDHREC has. The lead names what the ranking used instead. No EDHREC chip appears on any row.' },
+        ] },
+      { id: 'C6', title: 'refused: nothing it is allowed to cut',
+        frames: [base(D, 'C6 · all locked · desktop 900', { list: false, note: true, foot: 'free · nothing to rank' }), base(P, 'C6b · all locked · phone 390', { list: false, note: true, foot: 'nothing to rank' })],
+        noteHead: 'The only refusal it has',
+        notes: [
+          { b: 'Every card but the commander locked:', t: 'Suggested changes’ allLocked case, in the neutral note frame. No --danger, no button. Thin data is never a refusal.' },
+        ] },
+      { id: 'C7', title: 'failed',
+        frames: [base(D, 'C7 · failed · desktop 900', { list: false, failed: true, primary: 'Try again', foot: 'or come back later: the tool will be here' }), base(P, 'C7b · failed · phone 390', { list: false, failed: true, primary: 'Try again', foot: 'or come back later' })],
+        noteHead: 'Suggested changes’ failure shape',
+        notes: [
+          { b: 'The failure icon, heading, one sentence, what survived, Try again', t: 'in the action row’s corner. The ! disc (Hugh, feedback: one icon for every failure tag in the hub) is the panel’s only --danger, labeled Couldn’t rank for screen readers. History’s failed outcome takes the same disc at 13.' },
+        ] },
+    ];
+
+    const HD = { d: true, p: false, w: 900, frameR: 12, framePad: '18px 24px 22px', panelR: 12, panelPad: '18px 20px', h: 19, wrap: 'wrap', chipH: 30, btnH: 40,
+      rowPad: '9px 12px', grid: '110px 104px minmax(0,1fr) 108px 76px', rowGap: '12px', rowMin: 44, scrollH: 420, chipBleed: '0', chipPadR: '0', chipFade: 'none', dateCol: 'auto', toolW: 104, toolRow: 'auto', sumCol: 'auto', tierCol: 'auto', outRow: 'auto', outCol: 'auto', back: '' };
+    const HP = { d: false, p: true, w: 390, frameR: 22, framePad: '10px 16px 20px', panelR: 11, panelPad: '16px 14px', h: 17, wrap: 'nowrap', chipH: 44, btnH: 44,
+      rowPad: '11px 12px', grid: 'auto minmax(0,1fr) auto', rowGap: '6px 10px', rowMin: 60, scrollH: 460, chipBleed: '-14px', chipPadR: '14px', chipFade: 'linear-gradient(to right,#000 calc(100% - 32px),transparent)', dateCol: '2', toolW: 96, toolRow: '1', sumCol: '1 / -1', tierCol: '1 / -1', outRow: '1', outCol: '3', back: '‹ Tuning' };
+    const out = (o) => ({ ok: ['ok', 'var(--fg-faint)', 'transparent'], refused: ['refused', 'var(--fg-body)', 'var(--elevated)'], failed: ['failed', 'var(--danger)', 'transparent'], stopped: ['stopped', 'var(--fg-muted)', 'var(--elevated)'], running: ['running', 'var(--accent)', 'rgba(92,134,201,0.14)'] })[o];
+    const R = (date, tool, tier, summary, o) => { const [outcome, outInk, outBg] = out(o); const key = { Suggested: 'suggested', Mana: 'mana', Cuts: 'cuts' }[tool]; const T = { free: ['free', 'var(--fg-faint)', 'transparent', 'transparent', '0', false], credit: ['1 credit', 'var(--fg-body)', 'transparent', 'transparent', '0', true], deeper: ['deeper look', 'var(--accent)', 'var(--accent-dim)', 'rgba(92,134,201,0.12)', '1px 8px', true] }[tier];
+      return { date, tool, key, isFailed: o === 'failed', markInk: o === 'running' ? 'var(--accent)' : 'var(--fg-body)', summary, outcome, outInk, outBg, tier: T[0], tierInk: T[1], tierBorder: T[2], tierBg: T[3], tierPad: T[4], tierDiamond: T[5], border: o === 'running' ? 'var(--accent)' : 'var(--border)' }; };
+    const oct = [
+      R('Oct 9 · 3:42 PM', 'Suggested', 'credit', 'Reading your deck', 'running'),
+      R('Oct 9 · 3:36 PM', 'Cuts', 'deeper', '3 notes on the shortlist · 1 cut first, 1 keep', 'ok'),
+      R('Oct 9 · 3:30 PM', 'Cuts', 'free', '8 candidates · 2 cut, 1 kept', 'ok'),
+      R('Oct 8 · 8:05 PM', 'Mana', 'deeper', '1 suggestion, 1 checked, 1 unchecked', 'ok'),
+      R('Oct 8 · 8:01 PM', 'Mana', 'deeper', 'found nothing it could check · credit back', 'refused'),
+      R('Oct 7 · 9:40 PM', 'Mana', 'free', 'green short by 3 · 2 added, 2 cut', 'ok'),
+      R('Oct 3 · 9:12 PM', 'Suggested', 'credit', '5 in, 5 out · 2 added, 2 cut, 1 rejected', 'ok'),
+      R('Oct 3 · 9:04 PM', 'Suggested', 'credit', 'didn’t finish · credit back', 'failed'),
+    ];
+    const sep = [
+      R('Sep 28 · 7:15 PM', 'Suggested', 'credit', 'stopped while reading · credit back', 'stopped'),
+      R('Sep 26 · 6:50 PM', 'Suggested', 'credit', '4 in, 4 out · 3 added, 3 cut', 'ok'),
+      R('Sep 21 · 8:30 PM', 'Mana', 'free', 'every color covered', 'ok'),
+      R('Sep 14 · 7:02 PM', 'Suggested', 'credit', '5 in, 5 out · 1 added, 1 cut', 'ok'),
+    ];
+    const filters = (active) => ['All', 'Suggested changes', 'Mana Balance', 'Proposed cuts'].map((label, i) => ({ label, key: ['', 'suggested', 'mana', 'cuts'][i], weight: i === active ? 600 : 500, ink: i === active ? 'var(--bg)' : 'var(--fg-muted)', bg: i === active ? 'var(--fg-body)' : 'transparent', border: i === active ? 'var(--fg-body)' : 'var(--border-strong)' }));
+    const hb = (b, tag, o) => ({ ...b, tag, listView: true, rows: true, empty: false, loadFailed: false, opened: false, sub: 'every run of every tool · newest first', filters: filters(0), groups: [{ month: 'October 2026', rows: oct }, { month: 'September 2026', rows: sep }], ...o });
+    const manaOnly = oct.filter(r => r.tool === 'Mana');
+    const pastRows = [
+      { label: 'applied', cut: 'Rampant Growth', add: 'Nature’s Lore', bg: 'var(--surface)', border: 'var(--success)', labelInk: 'var(--success)', arrow: 'var(--success)' },
+      { label: 'applied', cut: 'Kodama’s Reach', add: 'Three Visits', bg: 'var(--surface)', border: 'var(--success)', labelInk: 'var(--success)', arrow: 'var(--success)' },
+      { label: 'rejected', cut: 'Wildgrowth Walker', add: 'Ranging Raptors', bg: 'var(--surface-sunken)', border: 'var(--border)', labelInk: 'var(--fg-locked)', arrow: 'var(--fg-faint)' },
+      { label: 'rejected', cut: 'Regisaur Alpha', add: 'Etali, Primal Conqueror', bg: 'var(--surface-sunken)', border: 'var(--border)', labelInk: 'var(--fg-locked)', arrow: 'var(--fg-faint)' },
+      { label: 'left open', cut: 'Cultivate', add: 'Farseek', bg: 'var(--surface-sunken)', border: 'var(--border-dashed)', labelInk: 'var(--fg-faint)', arrow: 'var(--fg-faint)' },
+    ];
+    const histSections = [
+      { id: 'H1', title: 'History: one list, every tool, newest first (ready, with a run in flight)',
+        frames: [hb(HD, 'H1 · history · desktop 900', {}), hb(HP, 'H1b · history · phone 390', { groups: [{ month: 'October 2026', rows: oct.slice(0, 5) }] })],
+        noteHead: 'Flat, by month, filterable',
+        notes: [
+          { b: 'A scroll container, not an endless page.', t: 'The list scrolls inside History at 420px desktop / 460px phone, month headings sticky at its top, a 28px fade at its foot so it reads as continuing. Show 20 more sits at the end of the scroll. The filter chips and the foot line stay outside it.' },
+          { b: 'Flat reverse-chronological, under month headings,', t: 'because the question History answers is “what did I run, and when”, across tools. Grouping by tool would split one evening’s work into three places.' },
+          { b: 'A filter, not tabs:', t: 'one choice of All or a tool, each chip led by the tool’s mark, shipped single-select chips (44px on the phone, scrolling in one row). 20 rows a page, Show 20 more.' },
+          { b: 'Each row says three things in fixed slots:', t: 'which tool (its mark and short name in a fixed-width slot: Suggested, Mana, Cuts), which tier (free in plain faint mono; ◆ 1 credit for a Suggested changes run; a filled accent pill, ◆ deeper look, for every Look deeper run of Mana Balance or Proposed cuts, which History lists as its own row beside the free count it read; formerly free + 1 when a free count had a deeper look on it), and the outcome (ok, refused, failed, stopped, running) in the run ledger’s own vocabulary.' },
+          { b: 'ok is quiet on purpose;', t: 'only failed takes --danger and only running takes --accent (with the row’s accent border, matching the landing tile). Refused and stopped are neutral plates.' },
+          { b: 'Free counts are recorded once per version of the list,', t: 'so reopening Mana Balance ten times on an unchanged deck is one row, not ten (README open 3).' },
+        ] },
+      { id: 'H2', title: 'History filtered to one tool, and History empty',
+        frames: [hb(HD, 'H2 · filtered to Mana Balance · desktop 900', { filters: filters(2), groups: [{ month: 'October 2026', rows: manaOnly }] }), hb(HP, 'H2b · empty · phone 390', { rows: false, empty: true, sub: 'every run of every tool' })],
+        noteHead: 'Empty says what will be here',
+        notes: [
+          { b: 'Filtered,', t: 'the month headings stay and the filter chip carries the state. A filter with no rows reads No runs of this tool yet, in the same dashed box.' },
+          { b: 'Empty is one dashed box:', t: 'what lands here and that it reopens. No call to action: the tools are one press back, and History is not the place to sell them.' },
+        ] },
+      { id: 'H3', title: 'a History row opened: that run’s result, read-only (results)',
+        frames: [hb(HD, 'H3 · past run · desktop 900', { listView: false, opened: true }), hb(HP, 'H3b · past run · phone 390', { listView: false, opened: true, back: '‹ History' })],
+        noteHead: 'The only way back to a past result',
+        notes: [
+          { b: 'It opens inside History,', t: 'with ‹ History back (desktop above the heading, phone in the back slot). The heading is the tool’s, the sub line its date, list version and tier.' },
+          { b: 'Read-only, and it says so', t: 'in a dashed note that also counts how far the list has moved since. No Apply, Cut or Look deeper: every verdict shows as it ended (applied, rejected, left open). A row opens to its full reason and citations.' },
+          { b: 'A refused or failed run opens to its one sentence;', t: 'a running run opens the live tool instead (A3).' },
+        ] },
+      { id: 'H4', title: 'History failed to load',
+        frames: [hb(HD, 'H4 · couldn’t load · desktop 900', { rows: false, loadFailed: true }), hb(HP, 'H4b · couldn’t load · phone 390', { rows: false, loadFailed: true })],
+        noteHead: 'Nothing is lost',
+        notes: [
+          { b: 'The runs are ledger rows;', t: 'only the read failed, and the sentence says so. History has no refused state.' },
+        ] },
+    ];
+    const KEY = { 'Suggested changes': 'suggested', 'Mana Balance': 'mana', 'Proposed cuts': 'cuts', 'History': 'history' };
+    const mk = (active) => ['All tools', 'Suggested changes', 'Mana Balance', 'Proposed cuts', 'History'].map((label, i) => ({ label, key: KEY[label] || '', weight: i === active ? 600 : 500, ink: i === active ? 'var(--fg)' : 'var(--fg-muted)', rule: i === active ? 'var(--accent)' : 'transparent' }));
+    const jump = [['C1', 'ranking'], ['C2', 'shortlist'], ['C3', 'part answered'], ['C8', 'deeper, running'], ['C9', 'deeper done'], ['C4', 'back to 99'], ['C5', 'thin data'], ['C6', 'refused'], ['C7', 'failed'], ['H1', 'history'], ['H2', 'filtered, empty'], ['H3', 'a past run'], ['H4', 'couldn’t load']].map(([id, label]) => ({ id, label }));
+    return { deeperCuts, cutSections, histSections, readRows, pastRows, tabsCuts: mk(3), tabsHist: mk(4), jump };
+  }
+}
+</script>
+</body>
+</html>

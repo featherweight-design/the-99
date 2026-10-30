@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Admin invites, desktop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#FF4D9A;text-decoration:none}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#6F7486}
+.cap{font-size:12.5px;line-height:1.55;color:#959AAD;margin:0}
+.dk{width:1300px;height:900px;flex:none;display:flex;background:#0E0F14;border:1px solid #262A35;border-radius:12px;overflow:hidden;position:relative;box-sizing:border-box;font-family:'IBM Plex Sans',sans-serif}
+.rail{width:62px;flex:none;background:#12141B;border-right:1px solid #181C26;display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:4px;box-sizing:border-box}
+.logo{display:flex;flex-direction:column;align-items:center;margin-bottom:16px;color:#E6E8F0;font:700 19px 'Chakra Petch',sans-serif;line-height:1}
+.logo i{color:#FF4D9A;font-style:normal;font-size:8px;letter-spacing:1px;margin-bottom:2px}
+.av{margin-top:auto;width:30px;height:30px;border-radius:50%;border:1px solid #FF4D9A;color:#FF4D9A;font:500 10px 'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center}
+.main{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
+.ah{flex:none;display:flex;flex-direction:column;gap:9px;padding:26px 28px 0;border-bottom:1px solid #181C26}
+.eb{display:flex;align-items:center;gap:10px}
+.eb .e{font:10.5px 'IBM Plex Mono',monospace;letter-spacing:.16em;text-transform:uppercase;color:#6F7486}
+.env{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:999px;border:1px solid #262A35;font:10.5px 'IBM Plex Mono',monospace;color:#E6E8F0}
+.env i{width:6px;height:6px;border-radius:50%;background:#C6533F}
+.bck{margin-left:auto;font-size:13px;color:#FF4D9A}
+.ttl{display:flex;align-items:baseline;gap:10px}
+.ttl h1{margin:0;font:400 28px 'Chakra Petch',sans-serif;color:#E6E8F0}
+.ttl span{font:11.5px 'IBM Plex Mono',monospace;color:#959AAD}
+.sub{margin:0;max-width:720px;font-size:13.5px;line-height:1.6;color:#B1B6C7}
+.tabs{display:flex;gap:24px;margin-top:4px}
+.tab{padding:10px 0 11px;font-size:13.5px;color:#959AAD;border-bottom:2px solid transparent}
+.tab.on{color:#E6E8F0;border-bottom-color:#FF4D9A}
+.tab .nw{margin-left:6px;font:10px 'IBM Plex Mono',monospace;color:#FF4D9A}
+.body{flex:1;overflow:hidden;padding:22px 28px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;font:10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#6F7486;font-weight:500;padding:0 10px 10px;border-bottom:1px solid #262A35}
+th.new{color:#FF4D9A}
+td{padding:12px 10px;border-bottom:1px solid #181C26;color:#B1B6C7;vertical-align:middle}
+td b{color:#E6E8F0;font-weight:500}
+td small{display:block;font:11px 'IBM Plex Mono',monospace;color:#6F7486;margin-top:2px}
+.num{font:12.5px 'IBM Plex Mono',monospace;color:#E6E8F0}
+.num i{font-style:normal;color:#959AAD}
+.num.z{color:#6F7486}
+.srch{height:36px;width:360px;border-radius:7px;border:1px solid #262A35;background:#101219;display:flex;align-items:center;padding:0 12px;font-size:13px;color:#7D8294;margin-bottom:16px}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.tile{border:1px solid #262A35;border-radius:10px;background:#12141B;padding:12px 14px;display:flex;flex-direction:column;gap:4px}
+.tile .l{font:10.5px 'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#6F7486}
+.tile .v{font:600 20px 'IBM Plex Mono',monospace;color:#E6E8F0}
+.tile .s{font:11px 'IBM Plex Mono',monospace;color:#959AAD}
+.tile.new{border-color:#843052}
+.tile.new .l{color:#FF4D9A}
+.sec{margin-top:22px;border:1px solid #262A35;border-radius:12px;background:#12141B;padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+.sec h2{margin:0;font:400 19px 'Chakra Petch',sans-serif;color:#E6E8F0}
+.sec p{margin:0;font-size:13px;line-height:1.55;color:#B1B6C7}
+.fld{display:flex;align-items:flex-end;gap:10px}
+.fld label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:#E6E8F0}
+.in{width:120px;height:38px;border-radius:6px;border:1px solid #FF4D9A;background:#101219;display:flex;align-items:center;padding:0 12px;box-sizing:border-box;font:14px 'IBM Plex Mono',monospace;color:#E6E8F0}
+.in.idle{border-color:#262A35}
+.help{font:11px/1.5 'IBM Plex Mono',monospace;color:#6F7486}
+.pend{font:12px 'IBM Plex Mono',monospace;color:#E0913C}
+.save{height:38px;padding:0 16px;border-radius:6px;border:0;background:#FF4D9A;color:#0E0F14;font:600 13px 'IBM Plex Sans',sans-serif}
+.undo{height:38px;padding:0 14px;border-radius:6px;border:1px solid #262A35;background:transparent;color:#B1B6C7;font:13px 'IBM Plex Sans',sans-serif}
+.who{display:flex;align-items:center;gap:10px;min-height:40px;border-top:1px solid #181C26;font-size:13.5px;color:#B1B6C7}
+.who .f{width:28px;height:28px;border-radius:7px;overflow:hidden;border:1px solid #262A35;flex:none}
+.who .f img{display:block;width:100%;height:100%;object-fit:cover}
+.who .f.wt{border:1.5px dashed #343843;background:transparent}
+.who b{color:#E6E8F0;font-weight:500}
+.who small{font:11px 'IBM Plex Mono',monospace;color:#6F7486}
+.who .r{margin-left:auto;display:flex;align-items:center;gap:14px}
+.tl{min-height:32px;padding:0 4px;border:0;background:transparent;color:#FF4D9A;font:500 13px 'IBM Plex Sans',sans-serif}
+.hist{font:11.5px/1.7 'IBM Plex Mono',monospace;color:#959AAD}
+.tree{display:flex;flex-direction:column}
+.nd{display:flex;align-items:center;gap:10px;height:46px;border-bottom:1px solid #181C26;font-size:13.5px;color:#B1B6C7}
+.ind{display:flex;align-self:stretch;flex:none}
+.ind i{width:26px;flex:none;position:relative}
+.ind i.v::before{content:'';position:absolute;left:12px;top:0;bottom:0;border-left:1px solid #343843}
+.ind i.t::before{content:'';position:absolute;left:12px;top:0;height:50%;width:12px;border-left:1px solid #343843;border-bottom:1px solid #343843;border-bottom-left-radius:6px}
+.ind i.tv::before{content:'';position:absolute;left:12px;top:0;bottom:0;border-left:1px solid #343843}
+.ind i.tv::after{content:'';position:absolute;left:12px;top:50%;width:12px;border-top:1px solid #343843}
+.nd .f{width:28px;height:28px;border-radius:7px;overflow:hidden;border:1px solid #262A35;flex:none}
+.nd .f img{display:block;width:100%;height:100%;object-fit:cover}
+.nd .f.wt{border:1.5px dashed #343843}
+.nd b{color:#E6E8F0;font-weight:500}
+.nd small{font:11px 'IBM Plex Mono',monospace;color:#6F7486}
+.nd .tag{font:10px 'IBM Plex Mono',monospace;letter-spacing:.08em;color:#959AAD;border:1px solid #262A35;border-radius:999px;padding:2px 7px}
+.nd .r{margin-left:auto;display:flex;align-items:center;gap:16px}
+.nd.wait{color:#959AAD}
+.root{font:10.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#6F7486;padding:4px 0 8px;border-bottom:1px solid #262A35}
+.chips{display:flex;gap:8px;margin-left:auto}
+.chip{height:28px;padding:0 10px;border-radius:999px;border:1px solid #262A35;display:flex;align-items:center;font:11px 'IBM Plex Mono',monospace;color:#B1B6C7}
+</style>
+</helmet>
+<div style="width:2760px;min-height:2420px;box-sizing:border-box;padding:40px 56px 56px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:22px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span class="k">R1 · Call 07 · /admin · the shipped head, tables and fields · desktop 1300 · lock 2 (a stock Hugh sets) and lock 3 (the tree)</span>
+    <h2 style="margin:0;font:700 26px 'Chakra Petch',sans-serif">An Invites column, an Invites tile and field per account, a top-up per group, and a tab for the tree</h2>
+    <p class="cap" style="max-width:2600px">The group allowance’s controls, borrowed for a stock: a number field with the help line under it, the amber pending sentence that says what Save will do, Save and Undo, and a history line after. What changes is the meaning, and the words say it: an account’s field SETS how many it holds; a group’s is an action, “Top up invites to N”, that raises each member below N and lowers nobody, and the group keeps no number of its own. The tree is a sixth tab, Invites, because it reads across every account; a waiting invite is revoked there, and only there.</p>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(2,1300px);gap:44px 40px">
+    <sc-for list="{{frames}}" as="f" hint-placeholder-count="4">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span class="k">{{f.label}}</span>
+        <div class="dk">
+          <nav class="rail" aria-label="Main"><span class="logo" aria-hidden="true"><i>◆◆◆</i>99</span><span class="av">HH</span></nav>
+          <div class="main">
+            <header class="ah">
+              <div class="eb"><span class="e">Admin</span><span class="env"><i aria-hidden="true"></i>production</span><sc-if value="{{f.back}}" hint-placeholder-val="{{false}}"><a class="bck" href="#">{{f.backText}}</a></sc-if></div>
+              <div class="ttl"><h1>{{f.title}}</h1><span>{{f.tsub}}</span></div>
+              <p class="sub">{{f.sub}}</p>
+              <nav class="tabs" aria-label="Admin">
+                <sc-for list="{{f.tabs}}" as="t" hint-placeholder-count="6"><a class="{{t.cls}}" href="#">{{t.n}}<span class="nw">{{t.nw}}</span></a></sc-for>
+              </nav>
+            </header>
+            <div class="body">
+
+              <sc-if value="{{f.accounts}}" hint-placeholder-val="{{true}}">
+                <div class="srch">Name, email or Clerk id</div>
+                <table>
+                  <thead><tr><th>Account</th><th>Group</th><th>Credits now</th><th class="new">Invites</th><th class="new">Invited by</th></tr></thead>
+                  <tbody>
+                    <tr><td><b>Hugh</b><small>hugh@featherweight.design</small></td><td>owner</td><td class="num">18 <i>of 20</i></td><td class="num">5</td><td class="num z">founder</td></tr>
+                    <tr><td><b>Chris</b><small>chris.l@example.com</small></td><td>testers</td><td class="num">5 <i>of 5</i></td><td class="num">3</td><td class="num z">founder</td></tr>
+                    <tr><td><b>Colin</b><small>colin.r@example.com</small></td><td>testers</td><td class="num">4 <i>of 5</i></td><td class="num">2 <i>· 1 waiting</i></td><td class="num">Hugh</td></tr>
+                    <tr><td><b>Max</b><small>max.o@example.com</small></td><td>testers</td><td class="num">5 <i>of 5</i></td><td class="num">0 <i>· 1 waiting</i></td><td class="num">Hugh</td></tr>
+                    <tr><td><b>Peter</b><small>peter.k@example.com</small></td><td>testers</td><td class="num">3 <i>of 5</i></td><td class="num z">0</td><td class="num">Colin</td></tr>
+                  </tbody>
+                </table>
+              </sc-if>
+
+              <sc-if value="{{f.account}}" hint-placeholder-val="{{false}}">
+                <div class="tiles">
+                  <div class="tile"><span class="l">Credits now</span><span class="v">4</span><span class="s">4 of 5 left</span></div>
+                  <div class="tile"><span class="l">Spent in Oct</span><span class="v">$0.42</span><span class="s">12 runs</span></div>
+                  <div class="tile"><span class="l">Runs</span><span class="v">12</span><span class="s">this month</span></div>
+                  <div class="tile new"><span class="l">Invites</span><span class="v">2</span><span class="s">1 waiting · 1 spent</span></div>
+                </div>
+                <section class="sec" aria-labelledby="inv">
+                  <h2 id="inv">Invites</h2>
+                  <div class="fld">
+                    <label>Invites left<span class="in">4</span></label>
+                    <button class="save" type="button">Save</button><button class="undo" type="button">Undo</button>
+                  </div>
+                  <span class="help">How many Colin holds now. Only a new account spends one, and nothing but this field refills it.</span>
+                  <span class="pend">Saving sets Colin’s invites from 2 to 4. The one waiting stays waiting.</span>
+                  <div class="who"><span class="f"><img src="/_blob/5f86f9b2bb6fcbee111dae6275f245a2" alt=""></span><span>Invited by <b>Hugh</b></span><small>joined Oct 18</small></div>
+                  <div class="who"><span class="f"><img src="/_blob/40882fd59e89b0d50caff3cf94b5527b" alt=""></span><span>Invited <b>Peter</b></span><small>joined Oct 19</small><span class="r"><a class="tl" href="#">Open ›</a></span></div>
+                  <div class="who"><span class="f wt" aria-hidden="true"></span><span>Waiting · by email · <b>m.chen@example.com</b></span><small>sent Oct 20 · returns Oct 27</small><span class="r"><button class="tl" type="button">Revoke</button></span></div>
+                  <div class="hist">Oct 20 18:12 · Colin sent an invitation: 1 waiting<br>Oct 19 09:40 · Peter joined on Colin’s invite: 4 → 3<br>Oct 14 10:05 · Hugh set Colin’s invites: 1 → 4</div>
+                </section>
+              </sc-if>
+
+              <sc-if value="{{f.group}}" hint-placeholder-val="{{false}}">
+                <section class="sec" style="margin-top:0" aria-labelledby="gc">
+                  <h2 id="gc">Daily credits</h2>
+                  <div class="fld"><label>Daily credits<span class="in idle">5</span></label></div>
+                  <span class="help">Members get this many credits in a rolling 24 hours. Empty means the default.</span>
+                </section>
+                <section class="sec" aria-labelledby="gi">
+                  <h2 id="gi">Top up invites</h2>
+                  <div class="fld">
+                    <label>Top up each member to<span class="in">3</span></label>
+                    <button class="save" type="button">Top up</button><button class="undo" type="button">Undo</button>
+                  </div>
+                  <span class="help">Raises every member holding fewer to this many. Nobody is lowered, and the group keeps no count: a member who joins later gets nothing until the next top-up.</span>
+                  <span class="pend">Topping up raises 3 of 4 members to 3 invites left: Colin (2), Max (0), Peter (0). Chris already holds 3.</span>
+                  <div class="hist">Oct 9 11:20 · Hugh topped up testers to 2: 4 raised</div>
+                </section>
+              </sc-if>
+
+              <sc-if value="{{f.tree}}" hint-placeholder-val="{{false}}">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px"><div class="srch" style="margin:0">Find an account</div><div class="chips"><span class="chip">5 accounts</span><span class="chip">3 invited</span><span class="chip">2 waiting</span></div></div>
+                <div class="root">Founders · accounts from before launch</div>
+                <div class="tree" role="tree" aria-label="Who invited whom">
+                  <div class="nd" role="treeitem"><span class="f"><img src="/_blob/5f86f9b2bb6fcbee111dae6275f245a2" alt=""></span><b>Hugh</b><span class="tag">owner</span><span class="r"><small>5 left · invited 2</small><a class="tl" href="#">Open ›</a></span></div>
+                  <div class="nd" role="treeitem"><span class="ind"><i class="tv"></i></span><span class="f"><img src="/_blob/e8de8813e9f87dac3e5e0e493468c894" alt=""></span><b>Colin</b><small>joined Oct 18</small><span class="r"><small>2 left · invited 1</small><a class="tl" href="#">Open ›</a></span></div>
+                  <div class="nd" role="treeitem"><span class="ind"><i class="v"></i><i class="tv"></i></span><span class="f"><img src="/_blob/40882fd59e89b0d50caff3cf94b5527b" alt=""></span><b>Peter</b><small>joined Oct 19</small><span class="r"><small>0 left</small><a class="tl" href="#">Open ›</a></span></div>
+                  <div class="nd wait" role="treeitem"><span class="ind"><i class="v"></i><i class="t"></i></span><span class="f wt" aria-hidden="true"></span><span>Waiting · by email · m.chen@example.com</span><span class="r"><small>returns Oct 27</small><button class="tl" type="button">Revoke</button></span></div>
+                  <div class="nd" role="treeitem"><span class="ind"><i class="t"></i></span><span class="f"><img src="/_blob/82179c769b4a136f0ca45d7981cc4b3d" alt=""></span><b>Max</b><small>joined Oct 20</small><span class="r"><small>0 left · invited 0</small><a class="tl" href="#">Open ›</a></span></div>
+                  <div class="nd wait" role="treeitem"><span class="ind"><i></i><i class="t"></i></span><span class="f wt" aria-hidden="true"></span><span>Waiting · in person · j.ruiz@example.com</span><span class="r"><small>returns Oct 28</small><button class="tl" type="button">Revoke</button></span></div>
+                  <div class="nd" role="treeitem"><span class="f"><img src="/_blob/9374aee5788c4963032159934cbf2f94" alt=""></span><b>Chris</b><span class="r"><small>3 left · invited 0</small><a class="tl" href="#">Open ›</a></span></div>
+                </div>
+              </sc-if>
+
+            </div>
+          </div>
+        </div>
+        <p class="cap" style="max-width:1300px">{{f.note}}</p>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2760,"height":2420}}'>
+class Component extends DCLogic {
+renderVals() {
+const names = ['Costs', 'Switches', 'Groups', 'Accounts', 'Models', 'Invites'];
+const tabs = (on) => names.map((n) => ({ n, cls: n === on ? 'tab on' : 'tab', nw: n === 'Invites' ? 'new' : '' }));
+const base = { back: false, backText: '', tsub: '', accounts: false, account: false, group: false, tree: false };
+const fr = (o) => Object.assign({}, base, o);
+const frames = [
+fr({ label: 'M1 · Accounts · the Invites and Invited by columns', title: 'Accounts', sub: '5 accounts on production. Names and emails from Clerk; the app stores only the id.', tabs: tabs('Accounts'), accounts: true, note: 'Two columns after Credits now: the stock (with “· N waiting” beside it in the muted mono) and who invited the account, “founder” for one from before launch. Both sort like the others.' }),
+fr({ label: 'M2 · an account · its stock set, its slice of the tree', back: true, backText: '‹ Accounts', title: 'Colin', tsub: 'colin.r@example.com · user_2xK…', sub: 'Group testers. 5 credits a day.', tabs: tabs('Accounts'), account: true, note: 'An Invites tile beside the shipped three, and an Invites section with the account’s one write for invites: a number that sets the stock (0 to 100). Under it, who invited them, whom they invited (each opens that account) and their waiting invites, each with Revoke. The history uses the groups’ line shape.' }),
+fr({ label: 'M3 · a group · Top up invites', back: true, backText: '‹ Groups', title: 'testers', tsub: '4 members', sub: 'Friends trying new features first.', tabs: tabs('Groups'), group: true, note: 'Under the shipped Daily credits, a section of its own, because it is an action and not a setting: the press says Top up, the pending line names who rises and who is left alone, and the history records the raise. The field clears after.' }),
+fr({ label: 'M4 · Invites · the tree', title: 'Invites', sub: 'Who invited whom. Founders are the accounts from before launch; a waiting invite can be revoked here.', tabs: tabs('Invites'), tree: true, note: 'The tab’s page: founders at the root, each account under whoever invited it, joined by the rail lines, with its stock and how many it invited. A waiting invite is a dashed leaf with its address, how it went out and when it returns, and Revoke (which returns it at once). Admin sees addresses; no player ever does.' })
+];
+return { frames };
+}
+}
+</script>
+</body>
+</html>

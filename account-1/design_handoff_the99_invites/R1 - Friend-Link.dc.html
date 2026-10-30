@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Friend link with no account</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#FF4D9A;text-decoration:none}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#6F7486}
+.cap{font-size:12.5px;line-height:1.55;color:#959AAD;margin:0}
+.out{width:1300px;height:820px;flex:none;border:1px solid #262A35;border-radius:12px;overflow:hidden;box-sizing:border-box;background:radial-gradient(1000px 520px at 50% 8%,rgba(255,77,154,.10),transparent 70%),#0E0F14;display:flex;align-items:center;justify-content:center;gap:56px;font-family:'IBM Plex Sans',sans-serif}
+.ph{width:390px;height:844px;flex:none;border:1px solid #262A35;border-radius:28px;overflow:hidden;box-sizing:border-box;background:radial-gradient(600px 360px at 50% 22%,rgba(255,77,154,.12),transparent 70%),#0E0F14;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:0 24px;font-family:'IBM Plex Sans',sans-serif;text-align:center}
+.back{width:300px;height:419px;flex:none;border-radius:17px;box-sizing:border-box;padding:12px;background:#14151B;box-shadow:0 34px 70px rgba(0,0,0,.6),inset 0 0 0 1px #262A35}
+.back .in{width:100%;height:100%;border-radius:10px;box-sizing:border-box;border:1px solid #343843;background:radial-gradient(240px 260px at 50% 46%,rgba(255,77,154,.22),transparent 72%),repeating-linear-gradient(45deg,rgba(255,255,255,.018) 0 6px,transparent 6px 12px),#101219;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+.back .hero{display:flex;flex-direction:column;align-items:center;color:#E6E8F0;font:700 58px 'Chakra Petch',sans-serif;line-height:1}
+.back .hero i{font-style:normal;color:#FF4D9A;font-size:13px;letter-spacing:4px;margin-bottom:6px}
+.back .wd{font:10px 'IBM Plex Mono',monospace;letter-spacing:.4em;color:#FF4D9A}
+.ph .back{transform:scale(.74);transform-origin:top center;margin-bottom:-109px}
+.col{width:380px;display:flex;flex-direction:column;gap:10px}
+.ph .col{width:100%;gap:8px}
+.kick{font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.2em;text-transform:uppercase;color:#FF4D9A}
+.t{margin:0;font:700 26px/1.25 'Chakra Petch',sans-serif;color:#E6E8F0}
+.ph .t{font-size:22px}
+.bdy{margin:0;font-size:15px;line-height:1.6;color:#B1B6C7}
+.ph .bdy{font-size:14px}
+.b1{height:44px;margin-top:10px;padding:0 26px;border-radius:8px;border:0;background:#FF4D9A;color:#0E0F14;font:600 14px 'IBM Plex Sans',sans-serif;align-self:flex-start}
+.ph .b1{width:100%;height:48px;font-size:15px;align-self:stretch}
+.fine{margin:4px 0 0;font:11px/1.6 'IBM Plex Mono',monospace;color:#959AAD}
+.diff{display:grid;grid-template-columns:70px minmax(0,1fr);gap:6px 14px;font:12px/1.55 'IBM Plex Mono',monospace;color:#B1B6C7;border:1px solid #262A35;border-radius:10px;padding:14px 18px;background:#12141B;max-width:1300px}
+.diff .w{color:#6F7486}
+.diff .del{color:#C6533F;text-decoration:line-through}
+.diff .add{color:#6FA368}
+</style>
+</helmet>
+<div style="width:1900px;min-height:1180px;box-sizing:border-box;padding:40px 56px 56px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:22px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span class="k">R1 · Call 08 · /friend/[token], signed out · src/app/friend/[token]/page.tsx · copy change only</span>
+    <h2 style="margin:0;font:700 26px 'Chakra Petch',sans-serif">Path 1 is unchanged; only its fine line now points at an invite</h2>
+    <p class="cap" style="max-width:1780px">The signed-out card stays face down and names nobody, Sign in stays the one press, and the page reads nothing (R1 G2). The one change is <span style="font-family:'IBM Plex Mono',monospace;color:#E6E8F0">signedOutFine</span>: asking for another friend link gets a newcomer nowhere, so the line asks for an invite, which is the thing the sender can now give.</p>
+  </div>
+  <div style="display:flex;gap:40px;align-items:flex-start">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">L1 · desktop · signed out, no account</span>
+      <div class="out">
+        <div class="back" aria-hidden="true"><div class="in"><span class="hero"><i>◆ ◆ ◆</i>99</span><span class="wd">FRIEND REQUEST</span></div></div>
+        <section class="col" aria-labelledby="l1">
+          <span class="kick">The Ninety-Nine</span>
+          <h1 class="t" id="l1">Someone sent you a friend request</h1>
+          <p class="bdy">Sign in to turn the card over and see who it’s from.</p>
+          <button class="b1" type="button">Sign in</button>
+          <p class="fine">No account? The 99 is invite-only. Ask whoever sent this to invite you.</p>
+        </section>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">L1 · phone</span>
+      <div class="ph">
+        <div class="back" aria-hidden="true"><div class="in"><span class="hero"><i>◆ ◆ ◆</i>99</span><span class="wd">FRIEND REQUEST</span></div></div>
+        <section class="col" aria-labelledby="l2">
+          <h1 class="t" id="l2">Someone sent you a friend request</h1>
+          <p class="bdy">Sign in to turn the card over and see who it’s from.</p>
+          <button class="b1" type="button">Sign in</button>
+          <p class="fine">No account? The 99 is invite-only. Ask whoever sent this to invite you.</p>
+        </section>
+      </div>
+    </div>
+  </div>
+  <div class="diff" role="group" aria-label="The copy change">
+    <span class="w">key</span><span>socialCopy.landing.signedOutFine</span>
+    <span class="w">was</span><span class="del">No account? The 99 is invite-only. Ask whoever sent this.</span>
+    <span class="w">now</span><span class="add">No account? The 99 is invite-only. Ask whoever sent this to invite you.</span>
+    <span class="w">why</span><span>The sender sees two cards in Add a friend; “invite” is the word on the one they need. Owed to /copy-review with the rest.</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1900,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

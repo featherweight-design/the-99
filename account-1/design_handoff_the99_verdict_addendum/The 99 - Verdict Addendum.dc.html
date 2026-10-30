@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* Token contract from src/app/globals.css, reproduced verbatim from Round 0's
+     frame so this document resolves the same names the app does. Every colour
+     on the canvas is a var(). --bracket-1..5 is 2e Ignition, adopted Round 0,
+     identical in every theme. --fact is Round 1's one fact-mark ink. */
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-rail:#1A1611; --surface-sunken:#18140F;
+    --surface-raised:#211D18; --surface-inset:#1B1712; --elevated:#29241F; --elevated-hover:#201C17;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654; --fg-disabled:#4A4033;
+    --accent:#CF8745; --accent-hover:#DE9757; --accent-mid:#AB6E37; --accent-shadow:#6B482A;
+    --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+    --display:'Cinzel';
+    --bracket-1:#8A857C; --bracket-2:#A89A74; --bracket-3:#C9AC62; --bracket-4:#E6D08A; --bracket-5:#FBEFC6;
+    --fact:#8FA6BE;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-raised:#191B22; --surface-rail:#12141B; --surface-sunken:#101219; --surface-inset:#13151C;
+    --elevated:#20222A; --elevated-hover:#181A21; --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476; --fg-disabled:#3D404E;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-mid:#D33E7E; --accent-shadow:#843052;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+    --display:'Cinzel';
+    --bracket-1:#8A857C; --bracket-2:#A89A74; --bracket-3:#C9AC62; --bracket-4:#E6D08A; --bracket-5:#FBEFC6;
+    --fact:#8FA6BE;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+
+<div data-theme="{{ theme }}" style="font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--fg);padding:44px 40px 90px;display:flex;flex-direction:column;gap:56px;">
+
+<section style="display:flex;flex-direction:column;gap:20px;">
+    <div style="max-width:1180px;display:flex;flex-direction:column;gap:14px;">
+      <div style="display:flex;align-items:center;gap:13px;flex-wrap:wrap;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R1</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--fg-faint);">The verdict &mdash; addendum rulings &middot; Round 2 of 5</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-disabled);">theme: {{ theme }} &mdash; switch it in Tweaks</span>
+      </div>
+      <h1 style="font-family:var(--display),serif;font-weight:800;font-size:34px;margin:0;line-height:1.14;color:var(--fg);">The receipt is where you are standing. A card is a thing you pick up and put back.</h1>
+      <p style="font-size:15px;line-height:1.7;color:var(--fg-body);margin:0;max-width:900px;text-wrap:pretty;">Four calls came back from the build of Round 2's verdict head and climb (#851, #853). <b style="color:var(--fg);font-weight:600;">No surface is redrawn</b> &mdash; the Round 2 package stands. Two of the four are prose and are stated in full below; the other two needed drawing, and they are the reason this is a package rather than a comment.</p>
+      <p style="font-size:14px;line-height:1.7;color:var(--fg-faint);margin:2px 0 0;max-width:900px;">All four rulings in full: <a href="HANDOFF.md">HANDOFF.md</a>. Parent package: <a href="../design_handoff_the99_verdict/The 99 - The Verdict.dc.html">design_handoff_the99_verdict/</a> &mdash; <b style="color:var(--fg-body);font-weight:600;">where this addendum and that package disagree, this one wins</b>; it is newer than both its files and its drawings. Drawn here: <a href="#5a">5a</a> the sheet stack &middot; <a href="#5b">5b</a> the mark's ink.</p>
+    </div>
+
+    <div style="max-width:1180px;border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:10px;background:var(--surface);padding:16px 20px;display:flex;flex-direction:column;gap:11px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);">The two prose rulings, in full</div>
+      <div style="font-size:13px;color:var(--fg-muted);line-height:1.7;"><b style="color:var(--fg);font-weight:600;">No MarkKey on the Analysis tab.</b> Every glyph there is named in words within its own row, so a key would restate five labels already written five times. <span style="color:var(--fg-faint);">Restated so it can be checked: a fact mark may be drawn without a key only where its fact is named in words in the same row. <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">MarkKey</span> still gains its two new entries for the surfaces that need it &mdash; and a mark riding a bare card name, as in the receipt's tile grid, should be dropped rather than keyed.</span></div>
+      <div style="font-size:13px;color:var(--fg-muted);line-height:1.7;"><b style="color:var(--fg);font-weight:600;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">no cap</span> on a bracket-4 rung, confirmed.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">3 allowed</span> is bracket 3's allowance printed on a rung that is not bracket 3's; <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">limits</span> covers brackets 1 to 3 because those are the only brackets with card limits. <span style="color:var(--fg-faint);">The parent canvas is corrected at its own &sect;4b and &sect;4c &mdash; the one place a drawing was edited rather than ruled over.</span></div>
+    </div>
+
+    <!-- ========== 5a · THE SHEET STACK ========== -->
+    <div id="5a" style="display:flex;flex-direction:column;gap:14px;">
+      <div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:3px 8px;">5a</span>
+        <span style="font-family:var(--display),serif;font-weight:700;font-size:19px;color:var(--fg);">The card modal stacks &mdash; the receipt stays behind it</span>
+        <span style="font-size:13px;color:var(--fg-muted);flex:1;min-width:260px;">Two dismissals, two landings, in the order they were opened. Depth stops at two.</span>
+      </div>
+
+      <div style="display:flex;gap:26px;flex-wrap:wrap;align-items:flex-start;">
+
+        <div style="display:flex;flex-direction:column;gap:9px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">390 &mdash; step 1, the receipt</span>
+          <div style="width:390px;height:520px;position:relative;border:1px solid var(--border);border-radius:12px;background:var(--bg);overflow:hidden;">
+            <div style="padding:14px 16px;display:flex;flex-direction:column;gap:9px;opacity:0.4;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">What is in this deck</span>
+              <span style="height:44px;border:1px solid var(--border);border-radius:9px;background:var(--surface);"></span>
+              <span style="height:44px;border:1px solid var(--border);border-radius:9px;background:var(--surface);"></span>
+            </div>
+            <div style="position:absolute;left:0;right:0;bottom:0;top:52px;background:var(--surface-raised);border-top:1px solid var(--border-strong);border-radius:14px 14px 0 0;display:flex;flex-direction:column;">
+              <div style="padding:13px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:9px;">
+                <svg width="14" height="14" viewBox="0 0 16 16" style="display:block;flex:none;color:var(--fact);"><path d="M9.4 1.5 L4.1 8.8 H7.3 L6.6 14.5 L11.9 7.0 H8.7 Z" fill="currentColor"></path></svg>
+                <span style="font-family:var(--display),serif;font-weight:700;font-size:15px;color:var(--fg);">Game changers</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-faint);">5</span>
+                <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--fg-faint);">&times;</span>
+              </div>
+              <div style="padding:14px 16px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;">
+                <span style="display:flex;flex-direction:column;gap:5px;"><span style="aspect-ratio:5/7;border-radius:6px;border:1px solid var(--border-strong);background:repeating-linear-gradient(135deg,var(--elevated) 0 5px,var(--surface-sunken) 5px 10px);"></span><span style="font-size:11px;color:var(--fg-body);">Rhystic Study</span></span>
+                <span style="display:flex;flex-direction:column;gap:5px;"><span style="aspect-ratio:5/7;border-radius:6px;border:2px solid var(--accent);background:repeating-linear-gradient(135deg,var(--elevated) 0 5px,var(--surface-sunken) 5px 10px);"></span><span style="font-size:11px;color:var(--fg);">Cyclonic Rift</span></span>
+              </div>
+              <div style="margin-top:auto;padding:10px 16px 14px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--accent);">&uarr; tap a tile</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:9px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">390 &mdash; step 2, the card sheet, offset</span>
+          <div style="width:390px;height:520px;position:relative;border:1px solid var(--border);border-radius:12px;background:var(--bg);overflow:hidden;">
+            <div style="padding:14px 16px;display:flex;flex-direction:column;gap:9px;opacity:0.22;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">What is in this deck</span>
+              <span style="height:44px;border:1px solid var(--border);border-radius:9px;background:var(--surface);"></span>
+            </div>
+            <div style="position:absolute;left:0;right:0;bottom:0;top:52px;background:var(--surface-sunken);border-top:1px solid var(--border);border-radius:14px 14px 0 0;display:flex;flex-direction:column;">
+              <div style="padding:13px 16px;display:flex;align-items:center;gap:9px;opacity:0.55;">
+                <svg width="14" height="14" viewBox="0 0 16 16" style="display:block;flex:none;color:var(--fact);"><path d="M9.4 1.5 L4.1 8.8 H7.3 L6.6 14.5 L11.9 7.0 H8.7 Z" fill="currentColor"></path></svg>
+                <span style="font-family:var(--display),serif;font-weight:700;font-size:15px;color:var(--fg-muted);">Game changers</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-faint);">5</span>
+                <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--fg-faint);">&times;</span>
+              </div>
+            </div>
+            <div style="position:absolute;left:0;right:0;bottom:0;top:96px;background:var(--surface-raised);border-top:1px solid var(--border-strong);border-radius:14px 14px 0 0;box-shadow:0 -12px 30px rgba(0,0,0,0.5);display:flex;flex-direction:column;">
+              <div style="padding:13px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:9px;">
+                <span style="font-family:var(--display),serif;font-weight:700;font-size:15px;color:var(--fg);">Cyclonic Rift</span>
+                <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--fg-faint);">&times;</span>
+              </div>
+              <div style="padding:14px 16px;display:flex;gap:14px;align-items:flex-start;">
+                <span style="width:112px;flex:none;aspect-ratio:5/7;border-radius:6px;border:1px solid var(--border-strong);background:repeating-linear-gradient(135deg,var(--elevated) 0 5px,var(--surface-sunken) 5px 10px);"></span>
+                <span style="display:flex;flex-direction:column;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">Instant &middot; 2U</span><span style="font-size:11.5px;color:var(--fg-muted);line-height:1.5;">The shipped card modal, mounted as it is everywhere else in the app.</span></span>
+              </div>
+              <div style="margin-top:auto;padding:10px 16px 14px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--accent);">dismiss &rarr; back to the receipt, not the tab</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="flex:1;min-width:300px;max-width:380px;display:flex;flex-direction:column;gap:12px;font-size:12.5px;color:var(--fg-muted);line-height:1.65;">
+          <div><b style="color:var(--fg);font-weight:600;">The offset is the whole answer to the phone objection.</b> Two sheets in the same rectangle with the same chrome give a reader no way to predict a dismissal. The card sheet sits <b style="color:var(--fg-body);font-weight:600;">44px lower</b>, the receipt's header stays visible above it and steps down to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--surface-sunken</span> &mdash; <b style="color:var(--fg-body);font-weight:600;">you can see the thing you will land on before you dismiss.</b></div>
+          <div><b style="color:var(--fg);font-weight:600;">Closing the receipt on a tile tap was the alternative, and it throws away the reader's place.</b> Five game changers read one at a time becomes ten taps, and a set the reader had not finished is gone on the first check. A receipt is opened to read a set.</div>
+          <div><b style="color:var(--fg);font-weight:600;">Depth stops at two, hard.</b> Nothing in the card modal opens a third sheet &mdash; no related card, no jump to another combo. The <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Commander Spellbook &nearr;</span> link is not a third sheet; it leaves the app. <span style="color:var(--fg-faint);">On desktop the receipt stays behind at full size, one ground step down, no offset needed.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== 5b · THE DIM ========== -->
+    <div id="5b" style="display:flex;flex-direction:column;gap:14px;">
+      <div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:3px 8px;">5b</span>
+        <span style="font-family:var(--display),serif;font-weight:700;font-size:19px;color:var(--fg);">The mark is a graphical object &mdash; 3:1, and the dim rises to 0.65</span>
+      </div>
+      <div style="display:flex;gap:26px;flex-wrap:wrap;align-items:flex-start;">
+        <div style="border:1px solid var(--border);border-radius:11px;background:var(--surface);padding:18px 22px;display:flex;gap:26px;align-items:flex-start;">
+          <div style="display:flex;flex-direction:column;gap:9px;align-items:center;">
+            <span style="display:inline-flex;align-items:center;gap:7px;border:1px solid color-mix(in oklab,var(--bracket-4) 55%,transparent);border-radius:999px;padding:2px 11px 2px 4px;"><svg width="36" height="36" viewBox="0 0 40 40" style="display:block;flex:none;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.5"></path><path d="M20 5.9 L34.1 20 L20 34.1 L5.9 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="0.9" opacity="0.55"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="16" fill="var(--bracket-4)" dx="-0.9" dy="0.5">4</text></svg><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--bracket-4);opacity:0.7;">/</span><svg width="36" height="36" viewBox="0 0 40 40" style="display:block;flex:none;opacity:0.45;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.5"></path><path d="M20 5.9 L34.1 20 L20 34.1 L5.9 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="0.9" opacity="0.55"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="16" fill="var(--bracket-5)" dy="0.5">5</text></svg><span style="font-family:'IBM Plex Sans';font-weight:500;font-size:11.5px;color:var(--bracket-4);">Split</span></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">0.45 &mdash; rank 2 reads 2.30</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:9px;align-items:center;border-left:1px solid var(--border-strong);padding-left:26px;">
+            <span style="display:inline-flex;align-items:center;gap:7px;border:1px solid color-mix(in oklab,var(--bracket-4) 55%,transparent);border-radius:999px;padding:2px 11px 2px 4px;"><svg width="36" height="36" viewBox="0 0 40 40" style="display:block;flex:none;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="1.5"></path><path d="M20 5.9 L34.1 20 L20 34.1 L5.9 20 Z" fill="none" stroke="var(--bracket-4)" stroke-width="0.9" opacity="0.55"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="16" fill="var(--bracket-4)" dx="-0.9" dy="0.5">4</text></svg><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--bracket-4);opacity:0.7;">/</span><svg width="36" height="36" viewBox="0 0 40 40" style="display:block;flex:none;opacity:0.65;"><path d="M20 8.5 L31.5 20 L20 31.5 L8.5 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="1.5"></path><path d="M20 5.9 L34.1 20 L20 34.1 L5.9 20 Z" fill="none" stroke="var(--bracket-5)" stroke-width="0.9" opacity="0.55"></path><text x="20" y="20" text-anchor="middle" dominant-baseline="central" font-family="Cinzel,serif" font-weight="700" font-size="16" fill="var(--bracket-5)" dy="0.5">5</text></svg><span style="font-family:'IBM Plex Sans';font-weight:500;font-size:11.5px;color:var(--bracket-4);">Split</span></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);">0.65 &mdash; rank 2 reads 3.36 &#10003;</span>
+          </div>
+        </div>
+        <div style="flex:1;min-width:300px;max-width:440px;display:flex;flex-direction:column;gap:12px;font-size:12.5px;color:var(--fg-muted);line-height:1.65;">
+          <div><b style="color:var(--fg);font-weight:600;">Chasing 4.5 was whack-a-mole by construction</b> &mdash; lightening rank 1 buys <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--surface</span> and loses <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--surface-raised</span>, and the next ground added restarts it. <b style="color:var(--fg-body);font-weight:600;">The mark is never the sole carrier of its meaning</b>: <i>Optimized or cEDH</i> is written beside it every time, at full opacity, and that string is what must clear 4.5. So the mark is held to 3:1, and rank 1's 4.4768 passes untouched.</div>
+          <div><b style="color:var(--fg);font-weight:600;">0.45 fails the new gate anyway, so it moves.</b> 0.6 lands at ~3.07 &mdash; too thin to spend across six themes and thirteen grounds. <b style="color:var(--fg-body);font-weight:600;">0.65, measured on all thirteen; 0.7 if any miss, and no further.</b> The step still reads as unlit, which was the only thing 0.45 was for.</div>
+          <div><b style="color:var(--fg);font-weight:600;">If 0.7 misses too, the dim is not the tool.</b> The fallback is already in the drawing: the two marks differ in size as well as opacity, so the upper one goes <b style="color:var(--fg-body);font-weight:600;">full opacity, one size step down</b>. No third differentiator, and no tint.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Canvas&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return { theme: this.props.theme ?? "amonkhet" };
+  }
+}
+</script>
+</body>
+</html>

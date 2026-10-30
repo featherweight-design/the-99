@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Stale file warning</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C}
+.sr{position:absolute;width:1px;height:1px;opacity:0;margin:0}
+.scr{background:#121217;border:1px solid #2E3340;border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+.ph{width:390px;flex:none;background:#121217;border:1px solid #2E3340;border-radius:28px;overflow:hidden;display:flex;flex-direction:column}
+.pad{padding:36px 56px 24px;display:flex;flex-direction:column}
+.padp{padding:20px 18px;display:flex;flex-direction:column}
+.meta{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:#7C8A8C}
+.h1{margin:12px 0 6px;font-family:'Metamorphous',serif;font-weight:400;font-size:29px;color:#C6D2D3}
+.h1p{margin:12px 0 6px;font-family:'Metamorphous',serif;font-weight:400;font-size:18px;color:#C6D2D3}
+.lede{margin:0 0 18px;font-size:14px;color:#95A4A6}
+.card{position:relative;display:flex;gap:16px;padding:22px;background:#1E1F26;border:1px solid #2E3340;border-radius:12px;box-sizing:border-box}
+.ph .card{gap:12px;padding:14px}
+.card.on{border-color:#5C86C9;box-shadow:0 0 0 1px #5C86C9}
+.rad{flex:none;width:22px;height:22px;margin-top:2px;border-radius:50%;border:2px solid #424755;box-sizing:border-box;display:flex;align-items:center;justify-content:center}
+.rad.on{border-color:#5C86C9}
+.rad.on span{width:10px;height:10px;border-radius:50%;background:#5C86C9}
+.cc{display:flex;flex-direction:column;gap:8px;min-width:0;flex:1}
+.ct{font-size:17px;font-weight:600;color:#C6D2D3}
+.ph .ct{font-size:15px}
+.cb{font-size:14px;line-height:1.55;color:#B3C0C2}
+.ph .cb{font-size:13.5px}
+.fig{font-family:'IBM Plex Mono',monospace;font-size:13px;color:#95A4A6}
+.warn{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;background:#212229;border:1px solid #2E3340;border-left:3px solid #E0913C;border-radius:10px;font-size:13.5px;line-height:1.55;color:#B3C0C2}
+.note{display:flex;gap:10px;align-items:flex-start;margin-top:6px;padding:12px 14px;background:#16171D;border-radius:10px;font-size:13.5px;line-height:1.55;color:#95A4A6}
+.opt{display:flex;gap:12px;align-items:flex-start;min-height:44px;padding:12px 14px;border:1px solid #2E3340;border-radius:10px;background:#1E1F26;box-sizing:border-box}
+.opt.on{border-color:#5C86C9}
+.opt .t{font-size:14px;font-weight:600;color:#C6D2D3}
+.opt .d{font-size:13px;line-height:1.5;color:#95A4A6}
+.rs{flex:none;width:18px;height:18px;margin-top:1px;border-radius:50%;border:2px solid #424755;box-sizing:border-box;display:flex;align-items:center;justify-content:center}
+.rs.on{border-color:#5C86C9}
+.rs.on span{width:8px;height:8px;border-radius:50%;background:#5C86C9}
+.bar{display:flex;align-items:center;gap:20px;padding:16px 56px;background:#181920;border-top:1px solid #2E3340}
+.barp{display:flex;flex-direction:column;gap:10px;padding:14px 18px;background:#181920;border-top:1px solid #2E3340}
+.btnp{height:44px;padding:0 24px;border-radius:8px;background:#C6D2D3;color:#121217;border:0;font:600 14px 'IBM Plex Sans',sans-serif}
+.btng{height:44px;padding:0 20px;border-radius:8px;background:transparent;color:#C6D2D3;border:1px solid #2E3340;font:600 14px 'IBM Plex Sans',sans-serif}
+.cap{font-size:12.5px;line-height:1.5;color:#95A4A6}
+</style>
+</helmet>
+<div style="width:1800px;box-sizing:border-box;padding:40px 56px 56px;background:#0E0E12;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:22px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span class="k">Stale file · desktop and phone · R1</span>
+    <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px">A banner that says “looks”, and what Sync may take from the file</h2>
+    <p class="cap" style="margin:0;max-width:1180px">The warning heads the step, above all three cards, because an old file is most dangerous under Replace. It never says “is older”: the check reads the file’s cards against your uploads, not its name or date. When Sync is picked under it, a short choice follows the cards (never nested inside one): Only what it adds, picked first; Only its tokens; Everything, removals too. Cancel is the step’s own. Tokens always come with the cards’ choice, by the token lock, so the first two combine; the second is drawn only when it differs.</p>
+  </div>
+
+  <span class="k">S1 · Hugh’s case (the staging fixture): the file’s cards match the Oct 2 upload, and it carries 114 tokens</span>
+  <div style="display:flex;gap:40px;align-items:flex-start">
+    <section class="scr" style="width:1168px;flex:none">
+      <div class="pad">
+        <span class="meta">STEP 2 OF 4 · The Vault 10-1-26.csv · 3,550 rows</span>
+        <h1 class="h1" id="s1h">What’s this file for?</h1>
+        <p class="lede">Nothing changes until you confirm on the next screen.</p>
+        <div class="warn" role="note" style="margin-bottom:18px"><span aria-hidden="true" style="color:#E0913C">⚠</span><span><b style="color:#C6D2D3;font-weight:600">This file looks no newer than your Oct 2 upload.</b> Its cards match that upload exactly. What it does have is 114 tokens your collection hasn’t recorded.</span></div>
+        <div role="radiogroup" aria-labelledby="s1h" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;align-items:start">
+          <label class="card"><input class="sr" type="radio" name="s1"><span class="rad"></span><span class="cc"><span class="ct">Replace my collection</span><span class="cb">Your collection becomes exactly this file. Anything not in it leaves.</span><span class="fig">4,616 → 4,329 cards</span><span class="warn" style="margin-top:6px"><span aria-hidden="true" style="color:#E0913C">⚠</span><span>4 changes you made in the app since your Oct 2 upload will be overwritten.</span></span></span></label>
+          <label class="card"><input class="sr" type="radio" name="s1"><span class="rad"></span><span class="cc"><span class="ct">Add these cards</span><span class="cb">The file’s quantities are added to yours. Nothing is removed, and your art picks stay.</span><span class="fig">4,616 → 8,945 cards</span><span class="note"><span aria-hidden="true">ⓘ</span><span>You already own 100% of these cards. Adding the file raises those counts.</span></span></span></label>
+          <label class="card on"><input class="sr" type="radio" name="s1" checked><span class="rad on"><span></span></span><span class="cc"><span class="ct">Sync my collection</span><span class="cb">Takes what changed in the file and keeps what you changed in the app. Where you both changed a card, you choose.</span><span class="fig">4,616 → 4,616 cards</span><span class="note"><span aria-hidden="true">ⓘ</span><span>Your cards stay as they are. Sync records the file’s 114 tokens.</span></span></span></label>
+        </div>
+      </div>
+      <div class="bar">
+        <span style="font-size:13.5px;color:#B3C0C2">Next: the tokens this sync records. Your cards don’t move.</span>
+        <span style="margin-left:auto;display:flex;gap:12px"><button class="btng" type="button">Cancel</button><button class="btnp" type="button">Review the sync →</button></span>
+      </div>
+    </section>
+    <section class="ph">
+      <div class="padp">
+        <span class="meta">STEP 2 OF 4 · The Vault 10-1-26.csv · 3,550 rows</span>
+        <h1 class="h1p">What’s this file for?</h1>
+        <p class="lede">Nothing changes until you confirm on the next screen.</p>
+        <div class="warn" role="note" style="margin-bottom:14px"><span aria-hidden="true" style="color:#E0913C">⚠</span><span><b style="color:#C6D2D3;font-weight:600">This file looks no newer than your Oct 2 upload.</b> Its cards match that upload exactly. What it does have is 114 tokens your collection hasn’t recorded.</span></div>
+        <div role="radiogroup" aria-label="What’s this file for?" style="display:flex;flex-direction:column;gap:12px">
+          <label class="card"><input class="sr" type="radio" name="s1p"><span class="rad"></span><span class="cc"><span class="ct">Replace my collection</span><span class="cb">Your collection becomes exactly this file. Anything not in it leaves.</span><span class="fig">4,616 → 4,329 cards</span></span></label>
+          <span style="font-size:12px;color:#7C8A8C;text-align:center">· · · Add, then Sync, below · · ·</span>
+        </div>
+      </div>
+    </section>
+  </div>
+  <p class="cap" style="margin:0;max-width:1180px">With nothing to take in cards, Only what it adds and Only its tokens are the same thing, and Everything would only add removals the file can’t justify, so no follow-up choice is drawn: Sync’s note says what it will do. This is the frame for Hugh’s own case: his file’s tokens, with his 4 changes (121 cards) kept. Replace here would remove 112 cards and lower 9.</p>
+
+  <span class="k">S2 · an older file (hand-built): it lacks 16 cards the Oct 2 upload added · Sync picked</span>
+  <div style="display:flex;gap:40px;align-items:flex-start">
+    <section class="scr" style="width:1168px;flex:none">
+      <div class="pad">
+        <span class="meta">STEP 2 OF 4 · The Vault 9-28-26.csv · 3,531 rows</span>
+        <h1 class="h1" id="s2h">What’s this file for?</h1>
+        <p class="lede">Nothing changes until you confirm on the next screen.</p>
+        <div class="warn" role="note" style="margin-bottom:18px"><span aria-hidden="true" style="color:#E0913C">⚠</span><span><b style="color:#C6D2D3;font-weight:600">This file looks older than your Oct 2 upload.</b> It’s missing 16 cards that upload added, which usually means an earlier export. If it’s older, taking everything from it would undo them.</span></div>
+        <div role="radiogroup" aria-labelledby="s2h" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;align-items:start">
+          <label class="card"><input class="sr" type="radio" name="s2"><span class="rad"></span><span class="cc"><span class="ct">Replace my collection</span><span class="cb">Your collection becomes exactly this file. Anything not in it leaves.</span><span class="fig">4,616 → 4,316 cards</span><span class="warn" style="margin-top:6px"><span aria-hidden="true" style="color:#E0913C">⚠</span><span>4 changes you made in the app since your Oct 2 upload will be overwritten.</span></span></span></label>
+          <label class="card"><input class="sr" type="radio" name="s2"><span class="rad"></span><span class="cc"><span class="ct">Add these cards</span><span class="cb">The file’s quantities are added to yours. Nothing is removed, and your art picks stay.</span><span class="fig">4,616 → 8,932 cards</span></span></label>
+          <label class="card on"><input class="sr" type="radio" name="s2" checked><span class="rad on"><span></span></span><span class="cc"><span class="ct">Sync my collection</span><span class="cb">Takes what changed in the file and keeps what you changed in the app. Where you both changed a card, you choose.</span><span class="fig">4,616 → 4,619 cards</span><span class="note"><span aria-hidden="true">ⓘ</span><span>Keeps the 121 cards you changed in the app since your Oct 2 upload.</span></span></span></label>
+        </div>
+        <fieldset style="margin:22px 0 0;padding:0;border:0;display:flex;flex-direction:column;gap:10px">
+          <legend style="padding:0;margin-bottom:10px;font-size:14px;font-weight:600;color:#C6D2D3">What should Sync take from this file?</legend>
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px">
+            <label class="opt on"><input class="sr" type="radio" name="s2o" checked><span class="rs on"><span></span></span><span style="display:flex;flex-direction:column;gap:3px"><span class="t">Only what it adds</span><span class="d">3 new cards and its 114 tokens. Nothing leaves or goes down.</span></span></label>
+            <label class="opt"><input class="sr" type="radio" name="s2o"><span class="rs"></span><span style="display:flex;flex-direction:column;gap:3px"><span class="t">Only its tokens</span><span class="d">Its 114 tokens. Your cards stay as they are.</span></span></label>
+            <label class="opt"><input class="sr" type="radio" name="s2o"><span class="rs"></span><span style="display:flex;flex-direction:column;gap:3px"><span class="t">Everything, removals too</span><span class="d">3 new, 16 leaving, 2 going down, and its 114 tokens.</span></span></label>
+          </div>
+        </fieldset>
+      </div>
+      <div class="bar">
+        <span style="font-size:13.5px;color:#B3C0C2">Next: the 3 cards and 114 tokens this sync takes. Nothing leaves.</span>
+        <span style="margin-left:auto;display:flex;gap:12px"><button class="btng" type="button">Cancel</button><button class="btnp" type="button">Review the sync →</button></span>
+      </div>
+    </section>
+    <section class="ph">
+      <div class="padp">
+        <div role="radiogroup" aria-label="What’s this file for?" style="display:flex;flex-direction:column;gap:12px">
+          <label class="card on"><input class="sr" type="radio" name="s2p" checked><span class="rad on"><span></span></span><span class="cc"><span class="ct">Sync my collection</span><span class="cb">Takes what changed in the file and keeps what you changed in the app. Where you both changed a card, you choose.</span><span class="fig">4,616 → 4,619 cards</span><span class="note"><span aria-hidden="true">ⓘ</span><span>Keeps the 121 cards you changed in the app since your Oct 2 upload.</span></span></span></label>
+        </div>
+        <fieldset style="margin:18px 0 0;padding:0;border:0;display:flex;flex-direction:column;gap:8px">
+          <legend style="padding:0;margin-bottom:8px;font-size:14px;font-weight:600;color:#C6D2D3">What should Sync take from this file?</legend>
+          <label class="opt on"><input class="sr" type="radio" name="s2po" checked><span class="rs on"><span></span></span><span style="display:flex;flex-direction:column;gap:3px"><span class="t">Only what it adds</span><span class="d">3 new cards and its 114 tokens. Nothing leaves or goes down.</span></span></label>
+          <label class="opt"><input class="sr" type="radio" name="s2po"><span class="rs"></span><span style="display:flex;flex-direction:column;gap:3px"><span class="t">Only its tokens</span><span class="d">Its 114 tokens. Your cards stay as they are.</span></span></label>
+          <label class="opt"><input class="sr" type="radio" name="s2po"><span class="rs"></span><span style="display:flex;flex-direction:column;gap:3px"><span class="t">Everything, removals too</span><span class="d">3 new, 16 leaving, 2 going down, and its 114 tokens.</span></span></label>
+        </fieldset>
+      </div>
+      <div class="barp"><button class="btnp" type="button">Review the sync →</button><button class="btng" type="button">Cancel</button></div>
+    </section>
+  </div>
+  <p class="cap" style="margin:0;max-width:1180px">The follow-up appears only with Sync picked and only under the warning; leaving Sync hides it and keeps its answer for Back. Only what it adds is picked when it first appears: it is the one that can’t take anything away, and the player still has to press Review. Sync’s figure and the bar’s lead-in follow the pick. Everything is the plain Sync, and its review then shows the 16 leaving as the shipped Leaving list does. The review heads with one line naming the pick, so it is never a surprise there (see Edge states).</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1800,"height":1700}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

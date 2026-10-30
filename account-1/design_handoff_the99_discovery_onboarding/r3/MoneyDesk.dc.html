@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Part · the Stats view's Money card at 1280</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Source+Serif+4:wght@500&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<section aria-label="Money and ownership, 100 cards" style="width:600px;box-sizing:border-box;padding:20px 22px 22px;border-radius:14px;border:1px solid #2B241B;background:#17140F;font-family:'IBM Plex Sans',sans-serif;display:flex;flex-direction:column;gap:16px">
+  <div style="display:flex;align-items:baseline;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid #2B241B">
+    <h3 style="margin:0;font-family:'Source Serif 4',Georgia,serif;font-weight:500;font-size:19px;color:#EDE6D8">Money and ownership</h3>
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#A59C89">100 cards</span>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px">
+    <div style="display:flex;flex-direction:column;gap:3px"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.12em;color:#8B8270">DECK VALUE</span><span style="font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:600;color:#EDE6D8">$80.23</span><span style="font-size:11.5px;line-height:1.45;color:#8B8270">every priced copy</span></div>
+    <div style="display:flex;flex-direction:column;gap:3px"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.12em;color:#8B8270">OWNED</span><span style="font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:600;color:#EDE6D8">$49.20</span><span style="font-size:11.5px;line-height:1.45;color:#8B8270">71 copies, plus 14 basics</span></div>
+    <div style="display:flex;flex-direction:column;gap:3px"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.12em;color:#8B8270">TO BUY</span><span style="font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:600;color:#DEAA29">$31.03</span><span style="font-size:11.5px;line-height:1.45;color:#8B8270">15 copies, after the ones you own</span></div>
+  </div>
+  <button type="button" style="margin-top:-6px;align-self:flex-start;min-height:28px;display:flex;align-items:center;border:0;padding:0;background:transparent;cursor:pointer" aria-label="{{ aria }}">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#DEAA29;border-bottom:1px solid rgba(222,170,41,.45)">{{ link }}</span><span aria-hidden="true" style="margin-left:8px;font-size:12px;color:#A59C89">⟶</span>
+  </button>
+  <div aria-hidden="true" style="display:grid;grid-template-columns:repeat(20,minmax(0,1fr));gap:4px">
+    <sc-for list="{{ squares }}" as="q" hint-placeholder-count="100"><span style="{{ q }}"></span></sc-for>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"nudge":{"editor":"boolean","default":true},"$preview":{"width":600,"height":350}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const on = this.props.nudge !== false && this.props.nudge !== 'false';
+    const sq = (bg, b) => `aspect-ratio:1;border-radius:3px;box-sizing:border-box;border:1px solid ${b};background:${bg}`;
+    const squares = [
+      ...Array(71).fill(sq('#A59C89', '#A59C89')),
+      ...Array(14).fill(sq('transparent', '#3A3229')),
+      ...Array(15).fill(sq('#DEAA29', '#DEAA29')),
+    ];
+    return {
+      squares,
+      link: on ? 'See the 15 in Shopping, 2 over $8' : 'See the 15 in Shopping',
+      aria: on ? 'See the 15 in Shopping. 2 are over your $8 limit and have cheaper stand-ins.' : 'See the 15 in Shopping',
+    };
+  }
+}
+</script>
+</body>
+</html>

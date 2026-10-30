@@ -1,0 +1,66 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-10-18T06:06:16Z"
+ },
+ "title": "The 99 · R3 addendum · Buying credits and discovery",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1700,
+   "h": 1274,
+   "title": "R3 addendum · the fourteen items"
+  },
+  "Credits-Pack.dc.html": {
+   "x": 0,
+   "y": 1654,
+   "w": 2200,
+   "h": 2590,
+   "title": "1–2 · the pack button, the diamond’s numeral"
+  },
+  "Credits-Balance.dc.html": {
+   "x": 2280,
+   "y": 1654,
+   "w": 2200,
+   "h": 2955,
+   "title": "3, 4, 7 · +N, the support address, the clock clause"
+  },
+  "Credits-Chip.dc.html": {
+   "x": 4560,
+   "y": 1654,
+   "w": 2700,
+   "h": 3019,
+   "title": "5, 6, 8, 11 · the menu chip"
+  },
+  "Credits-Line.dc.html": {
+   "x": 7340,
+   "y": 1654,
+   "w": 2200,
+   "h": 1754,
+   "title": "9–10 · the credit line in Help me choose"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Credits-Pack.dc.html",
+  "Credits-Balance.dc.html",
+  "Credits-Chip.dc.html",
+  "Credits-Line.dc.html"
+ ],
+ "notes": {
+  "bc": {
+   "x": 0,
+   "y": 1394,
+   "text": "Buying credits · addendum-r3",
+   "kind": "title1",
+   "maxW": 9540
+  }
+ },
+ "designSystems": []
+}

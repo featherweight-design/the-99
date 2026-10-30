@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>R2 Friends page, phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#FF4D9A}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#6F7486}
+.cap{font-size:12.5px;line-height:1.55;color:#959AAD;margin:0}
+.ph{width:390px;height:844px;flex:none;background:#0E0F14;border:1px solid #262A35;border-radius:28px;overflow:hidden;display:flex;flex-direction:column;position:relative;box-sizing:border-box;font-family:'IBM Plex Sans',sans-serif}
+.mh{flex:none;display:flex;align-items:center;justify-content:space-between;padding:20px 20px 14px;border-bottom:1px solid #181C26}
+.wm{display:flex;align-items:flex-end;gap:3px}
+.wm span{font:9px 'IBM Plex Mono',monospace;letter-spacing:.4em;color:#FF4D9A;padding-bottom:4px}
+.wm b{font:700 24px 'Chakra Petch',sans-serif;color:#E6E8F0;line-height:1}
+.mav{width:38px;height:38px;border-radius:12px;border:1px solid #FF4D9A;color:#FF4D9A;font:500 12px 'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center;background:#0E0F14;padding:0}
+.scroll{flex:1;overflow:hidden;position:relative}
+.tb{flex:none;height:74px;display:flex;align-items:center;padding:8px 8px 14px;box-sizing:border-box;background:#12141B;border-top:1px solid #181C26}
+.ts{flex:1;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#6F7486;font:9px 'IBM Plex Mono',monospace;letter-spacing:.06em}
+.pg{padding:18px 16px 30px}
+.who{display:flex;align-items:center;gap:14px}
+.mf{position:relative;width:56px;height:56px;flex:none;border-radius:13px;border:1px solid #262A35;background:#16181F;padding:0}
+.mf img{display:block;width:100%;height:100%;object-fit:cover;border-radius:12px}
+.mf .pen{position:absolute;right:-6px;bottom:-6px;width:24px;height:24px;border-radius:50%;background:#20222A;border:1px solid #343843;color:#E6E8F0;display:flex;align-items:center;justify-content:center}
+.mf.none{border:1.5px dashed #343843;background:transparent;color:#959AAD;display:flex;align-items:center;justify-content:center}
+.h1{margin:0;font:700 22px 'Chakra Petch',sans-serif;color:#E6E8F0}
+.me{display:flex;align-items:center;flex-wrap:wrap;gap:0 6px;margin:0;font-size:13.5px;color:#959AAD}
+.me b{color:#E6E8F0;font-weight:600}
+.tl{min-height:44px;padding:0 4px;border:0;background:transparent;color:#FF4D9A;font:500 13.5px 'IBM Plex Sans',sans-serif}
+.bp{width:100%;height:48px;margin-top:12px;border-radius:8px;border:0;background:#FF4D9A;color:#0E0F14;font:600 15px 'IBM Plex Sans',sans-serif}
+.sec{margin-top:24px}
+.sh{display:flex;align-items:center;justify-content:space-between;min-height:44px;border-bottom:1px solid #181C26}
+.fr{display:flex;align-items:center;gap:12px;height:60px;border-bottom:1px solid #181C26}
+.face{width:40px;height:40px;border-radius:10px;border:1px solid #262A35;background:#16181F;color:#B1B6C7;font:500 12px 'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center;flex:none;overflow:hidden}
+.face img{display:block;width:100%;height:100%;object-fit:cover}
+.nm{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
+.fn{font-size:15px;font-weight:500;color:#E6E8F0}
+.fc{font-size:12px;color:#959AAD;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fs{font:10.5px 'IBM Plex Mono',monospace;color:#6F7486;flex:none}
+.more{width:44px;height:44px;border:0;border-radius:8px;background:transparent;color:#959AAD;display:flex;align-items:center;justify-content:center;padding:0;flex:none}
+.empty{margin-top:12px;border:1px dashed #343843;border-radius:12px;padding:20px 18px;display:flex;flex-direction:column;gap:6px}
+.empty b{font:700 16px 'Chakra Petch',sans-serif;color:#E6E8F0}
+.empty span{font-size:13px;line-height:1.55;color:#959AAD}
+.pod{margin-top:12px;border:1px solid #262A35;border-radius:12px;background:#12141B;padding:4px 4px 8px 14px}
+.podh{display:flex;align-items:center;gap:8px}
+.podh div{display:flex;flex-direction:column;gap:1px;min-width:0}
+.podh b{font-size:15px;font-weight:600;color:#E6E8F0}
+.pm{font:10.5px 'IBM Plex Mono',monospace;color:#6F7486}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:6px 10px 0 0}
+.chip{display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 12px 0 3px;border-radius:999px;border:1px solid #262A35;background:#16181F;font-size:13.5px;color:#E6E8F0;box-sizing:border-box}
+.chip .cf{width:28px;height:28px;border-radius:50%;overflow:hidden;flex:none;background:#20222A;color:#959AAD;font:500 9.5px 'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center}
+.chip .cf img{display:block;width:100%;height:100%;object-fit:cover}
+.chip.hx{padding-right:0}
+.cx{width:36px;height:36px;border:0;border-radius:50%;background:transparent;color:#959AAD;font-size:12px;padding:0}
+.chip.add{border-style:dashed;border-color:#343843;background:transparent;color:#B1B6C7;padding:0 12px;font-family:'IBM Plex Sans',sans-serif}
+.own{display:flex;align-items:center;gap:10px;margin-top:4px;min-height:44px;font-size:13.5px;color:#B1B6C7}
+.box{width:20px;height:20px;flex:none;border-radius:4px;border:1.5px solid #6F7486;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#0E0F14}
+.box.on{background:#FF4D9A;border-color:#FF4D9A}
+.bd{position:absolute;inset:0;background:rgba(14,15,20,.72);z-index:3}
+.sht{position:absolute;left:0;right:0;bottom:0;z-index:4;background:#16181F;border-top:1px solid #262A35;border-radius:20px 20px 0 0;padding:20px 20px 26px;box-sizing:border-box}
+.sht.tall{top:120px}
+.grab{width:40px;height:4px;border-radius:2px;background:#262A35;margin:0 auto 6px}
+.dh{display:flex;align-items:center;justify-content:space-between;margin-right:-12px}
+.dh h2{margin:0;font:700 18px 'Chakra Petch',sans-serif;color:#E6E8F0}
+.x{width:44px;height:44px;border:0;background:transparent;color:#959AAD;font-size:15px;padding:0}
+.dsub{margin:0 0 14px;font-size:13px;line-height:1.5;color:#959AAD}
+.sf{height:46px;border-radius:8px;border:1px solid #343843;background:#101219;display:flex;align-items:center;gap:10px;padding:0 12px;color:#6F7486;font-size:16px}
+.sf.on{border-color:#FF4D9A;color:#E6E8F0}
+.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:10px}
+.tile{display:flex;flex-direction:column;gap:6px;padding:0;border:0;background:transparent;text-align:left;color:#B1B6C7;font:13px 'IBM Plex Sans',sans-serif}
+.tile img{display:block;width:100%;height:96px;object-fit:cover;border-radius:8px;border:1px solid #262A35;box-sizing:border-box}
+.res{display:flex;flex-direction:column;margin-top:8px}
+.rr{display:flex;align-items:center;gap:12px;height:56px;border:0;border-bottom:1px solid #20222A;background:transparent;padding:0 4px;text-align:left;color:#E6E8F0;font:14.5px 'IBM Plex Sans',sans-serif}
+.rr img{width:56px;height:40px;object-fit:cover;border-radius:6px;flex:none}
+.pips{display:flex;gap:3px;margin-left:auto}
+.pip{width:10px;height:10px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.45)}
+.pfoot{display:flex;justify-content:space-between;align-items:center;margin-top:12px;font:11px 'IBM Plex Mono',monospace;color:#6F7486}
+</style>
+</helmet>
+<div style="width:1800px;min-height:1300px;box-sizing:border-box;padding:40px 56px 56px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:22px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span class="k">R2 · /friends · phone 390 · the shipped mobile header, tab bar and bottom sheet</span>
+    <h2 style="margin:0;font:700 26px 'Chakra Petch',sans-serif">The same face, the same one place to set it, and the picker as a sheet</h2>
+    <p class="cap" style="max-width:1660px">The head is the face beside the title and name line. The picker is the shipped bottom sheet, drawn tall because a search with a keyboard needs the room; picking closes it. The deck row is two wide here so each tile’s art stays readable.</p>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,390px);gap:40px 40px">
+    <sc-for list="{{frames}}" as="f" hint-placeholder-count="4">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span class="k">{{f.label}}</span>
+        <div class="ph">
+          <header class="mh"><span class="wm"><span>THE</span><b>99</b></span><button class="mav" type="button" aria-label="Account">HH</button></header>
+          <div class="scroll">
+            <div class="pg">
+              <div class="who">
+                <sc-if value="{{f.faceSet}}" hint-placeholder-val="{{true}}">
+                  <button class="mf" type="button" aria-label="Your commander: The Master, Transcendent. Change"><img src="{{f.myArt}}" alt=""><span class="pen" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20l4-1 10-10-3-3L5 16z"/></svg></span></button>
+                </sc-if>
+                <sc-if value="{{f.faceUnset}}" hint-placeholder-val="{{false}}">
+                  <button class="mf none" type="button" aria-label="Choose your commander"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+                </sc-if>
+                <div>
+                  <h1 class="h1">Friends</h1>
+                  <p class="me">Friends see you as <b>Hugh</b><span aria-hidden="true">·</span><button class="tl" type="button">Change</button></p>
+                </div>
+              </div>
+              <sc-if value="{{f.faceUnset}}" hint-placeholder-val="{{false}}"><button class="tl" type="button" style="padding:0">Choose your commander</button></sc-if>
+              <button class="bp" type="button">Add a friend</button>
+              <section class="sec" aria-label="Friends">
+                <div class="sh"><span class="k">{{f.friendsHead}}</span></div>
+                <sc-if value="{{f.friendsEmpty}}" hint-placeholder-val="{{true}}">
+                  <div class="empty"><b>No friends yet</b><span>Friends are added by friend link only: send one, or show its QR code at the table. Nobody can find you by name.</span></div>
+                </sc-if>
+                <sc-for list="{{f.friends}}" as="p" hint-placeholder-count="3">
+                  <div class="fr">
+                    <span class="face" aria-hidden="true"><sc-if value="{{p.art}}" hint-placeholder-val="{{true}}"><img src="{{p.art}}" alt=""></sc-if><sc-if value="{{p.noArt}}" hint-placeholder-val="{{false}}">{{p.ini}}</sc-if></span>
+                    <span class="nm"><span class="fn">{{p.name}}</span><sc-if value="{{p.cmd}}" hint-placeholder-val="{{true}}"><span class="fc">{{p.cmd}}</span></sc-if></span>
+                    <span class="fs">{{p.since}}</span>
+                    <button class="more" type="button" aria-label="{{p.name}} actions" aria-haspopup="menu"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg></button>
+                  </div>
+                </sc-for>
+              </section>
+              <sc-if value="{{f.showPods}}" hint-placeholder-val="{{false}}">
+                <section class="sec" aria-label="Pods">
+                  <div class="sh"><span class="k">Pods · 1</span><button class="tl" type="button">New pod</button></div>
+                  <div class="pod">
+                    <div class="podh"><div><b>Thursday night</b><span class="pm">4 members · yours</span></div><button class="more" type="button" style="margin-left:auto" aria-label="Thursday night actions" aria-haspopup="menu"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg></button></div>
+                    <div class="chips">
+                      <sc-for list="{{chips}}" as="c" hint-placeholder-count="4">
+                        <span class="{{c.cls}}"><span class="cf" aria-hidden="true"><img src="{{c.art}}" alt=""></span>{{c.name}}<sc-if value="{{c.x}}" hint-placeholder-val="{{false}}"><button class="cx" type="button" aria-label="Remove {{c.name}} from Thursday night">✕</button></sc-if></span>
+                      </sc-for>
+                      <button class="chip add" type="button">+ Add friends</button>
+                    </div>
+                    <label class="own"><span class="box on" role="checkbox" aria-checked="true">✓</span><span>Share my spares with this pod</span></label>
+                  </div>
+                </section>
+              </sc-if>
+            </div>
+          </div>
+          <nav class="tb" aria-label="Primary">
+            <span class="ts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg>Home</span>
+            <span class="ts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg>Collection</span>
+            <span class="ts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 18h16M5 16l-1-9 5 4 3-6 3 6 5-4-1 9z"/></svg>Commanders</span>
+            <span class="ts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8l3 4-3 4-3-4z"/></svg>Discover</span>
+            <span class="ts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="7" y="4" width="12" height="16" rx="2"/><path d="M5 7v12a2 2 0 002 2h9"/></svg>Decks</span>
+          </nav>
+          <sc-if value="{{f.picker}}" hint-placeholder-val="{{false}}">
+            <div class="bd" aria-hidden="true"></div>
+            <div class="sht tall" role="dialog" aria-modal="true" aria-labelledby="pk">
+              <div class="grab" aria-hidden="true"></div>
+              <div class="dh"><h2 id="pk">Your commander</h2><button class="x" type="button" aria-label="Close">✕</button></div>
+              <p class="dsub">Friends see its art beside your name. Any commander, owned or not.</p>
+              <div class="{{f.sfCls}}" role="searchbox" aria-label="Search commanders"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg><span>{{f.q}}</span></div>
+              <sc-if value="{{f.showDecks}}" hint-placeholder-val="{{true}}">
+                <p class="k" style="margin:16px 0 0">From your decks</p>
+                <div class="tiles">
+                  <sc-for list="{{tiles}}" as="t" hint-placeholder-count="4">
+                    <button class="tile" type="button"><img src="{{t.art}}" alt=""><span>{{t.name}}</span></button>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{f.showRes}}" hint-placeholder-val="{{false}}">
+                <div class="res" role="listbox" aria-label="Commanders">
+                  <sc-for list="{{res}}" as="r" hint-placeholder-count="5">
+                    <button class="rr" type="button" role="option"><img src="{{r.art}}" alt=""><span>{{r.name}}</span><span class="pips" aria-hidden="true"><sc-for list="{{r.pips}}" as="c" hint-placeholder-count="2"><i class="pip" style="background:{{c.bg}}"></i></sc-for></span></button>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <div class="pfoot"><span>{{f.foot}}</span><sc-if value="{{f.canClear}}" hint-placeholder-val="{{false}}"><button class="tl" type="button">Use initials instead</button></sc-if></div>
+            </div>
+          </sc-if>
+        </div>
+        <p class="cap" style="max-width:390px">{{f.note}}</p>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1800,"height":1300}}'>
+class Component extends DCLogic {
+renderVals() {
+const ART = { 'The Master, Transcendent': 'art/hero-master.png', 'Sokka, Tenacious Tactician': 'art/hero-sokka.png', 'Avatar Aang': 'art/resume-aang.png', 'Omnath, Locus of Creation': 'art/resume-omnath.png', 'Baral, Chief of Compliance': 'art/resume-wizards.png', 'Kilo, Apogee Mind': 'art/resume-kilo.png' };
+const art = (n) => ART[n] || '';
+const C = { W: '#F4E9C4', U: '#3A6AA5', B: '#98748F', R: '#C05A3E', G: '#4B7A46' };
+const pips = (s) => s.split('').filter(Boolean).map((k) => ({ bg: C[k] }));
+const MINE = "The Master, Transcendent";
+const CMD = { Dave: 'Sokka, Tenacious Tactician', Priya: 'Avatar Aang', Sam: 'Omnath, Locus of Creation', Alex: 'Baral, Chief of Compliance', Marcus: 'Kilo, Apogee Mind' };
+const F = (name, since) => { const c = CMD[name]; return { name, ini: name.slice(0, 2).toUpperCase(), cmd: c || '', art: c ? art(c) : '', noArt: !c, since: 'since ' + since }; };
+const six = [F('Alex', 'Aug 30'), F('Dave', 'Oct 2'), F('Jo', 'Sep 14'), F('Marcus', 'Sep 20'), F('Priya', 'Sep 28')];
+const chips = [{ name: 'You', art: art(MINE), x: false, cls: 'chip' }, { name: 'Dave', art: art(CMD.Dave), x: true, cls: 'chip hx' }, { name: 'Priya', art: art(CMD.Priya), x: true, cls: 'chip hx' }, { name: 'Sam', art: art(CMD.Sam), x: true, cls: 'chip hx' }];
+const tiles = ['Avatar Aang', 'Omnath, Locus of Creation', 'Kilo, Apogee Mind', 'Baral, Chief of Compliance'].map((n) => ({ name: n.replace(/'/g, '’').split(',')[0], art: art(n) }));
+const res = [['Avatar Aang', ''], ['Baral, Chief of Compliance', ''], ['Kilo, Apogee Mind', ''], ['Sokka, Tenacious Tactician', ''], ['The Master, Transcendent', '']].map(([n, p]) => ({ name: n, art: art(n), pips: pips(p) }));
+const base = { faceSet: true, faceUnset: false, myArt: art(MINE), friendsEmpty: false, friends: [], showPods: false, picker: false, sfCls: 'sf', q: 'Search commanders', showDecks: true, showRes: false, foot: '', canClear: false };
+const fr = (o) => Object.assign({}, base, o, { friendsHead: 'Friends · ' + (o.friends ? o.friends.length : 0) });
+const frames = [
+fr({ label: 'F1 · empty · no commander yet', faceSet: false, faceUnset: true, friendsEmpty: true, note: 'The dashed tile and one Choose your commander press under the head. Both open the sheet.' }),
+fr({ label: 'F2 · the picker sheet', faceSet: false, faceUnset: true, friendsEmpty: true, picker: true, foot: 'Saved as soon as you pick one.', note: 'Your decks’ commanders first, two wide. One tap picks, saves and closes the sheet.' }),
+fr({ label: 'F3 · searching', friendsEmpty: true, picker: true, sfCls: 'sf on', q: 'a|', showDecks: false, showRes: true, foot: 'Any commander.', canClear: true, note: 'Results replace the deck row. Use initials instead appears once one is set.' }),
+fr({ label: 'F4 · friends and a pod, with faces', friends: six, showPods: true, note: 'Rows carry the face and the commander under the name, truncated with an ellipsis at this width. Chips lead with a 28px face.' })
+];
+return { frames, chips, tiles, res };
+}
+}
+</script>
+</body>
+</html>

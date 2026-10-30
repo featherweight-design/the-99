@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Invite landing, phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#FF4D9A}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#6F7486}
+.cap{font-size:12.5px;line-height:1.55;color:#959AAD;margin:0}
+.ph{width:390px;height:844px;flex:none;background:#0E0F14;border:1px solid #262A35;border-radius:28px;overflow:hidden;display:flex;flex-direction:column;position:relative;box-sizing:border-box;font-family:'IBM Plex Sans',sans-serif}
+.mh{flex:none;display:flex;align-items:center;justify-content:space-between;padding:20px 20px 14px;border-bottom:1px solid #181C26}
+.wm{display:flex;align-items:flex-end;gap:3px}
+.wm span{font:9px 'IBM Plex Mono',monospace;letter-spacing:.4em;color:#FF4D9A;padding-bottom:4px}
+.wm b{font:700 24px 'Chakra Petch',sans-serif;color:#E6E8F0;line-height:1}
+.mav{width:38px;height:38px;border-radius:12px;border:1px solid #FF4D9A;color:#FF4D9A;font:500 12px 'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center;box-sizing:border-box}
+.scroll{flex:1;overflow:hidden;padding:28px 16px}
+.tb{flex:none;height:74px;display:flex;align-items:center;padding:8px 8px 14px;box-sizing:border-box;background:#12141B;border-top:1px solid #181C26}
+.ts{flex:1;height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#6F7486;font:9px 'IBM Plex Mono',monospace;letter-spacing:.06em}
+.card{box-sizing:border-box;border:1px solid #262A35;border-radius:14px;background:#12141B;padding:22px 20px 20px;display:flex;flex-direction:column;gap:10px}
+.iav{width:48px;height:48px;border-radius:14px;border:1px solid #FF4D9A;background:#0E0F14;color:#FF4D9A;font:500 15px 'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center;margin-top:2px}
+.mark{width:48px;height:48px;border-radius:14px;border:1px dashed #343843;color:#6F7486;display:flex;align-items:center;justify-content:center;margin-top:2px}
+.h1{margin:0;font:700 21px 'Chakra Petch',sans-serif;line-height:1.2;color:#E6E8F0}
+.bd{margin:0;font-size:14px;line-height:1.55;color:#B1B6C7}
+.nl{display:flex;align-items:center;gap:6px;margin:0;font-size:13px;color:#959AAD}
+.nl b{color:#E6E8F0;font-weight:600}
+.tl{min-height:44px;padding:0 4px;border:0;background:transparent;color:#FF4D9A;font:500 13px 'IBM Plex Sans',sans-serif}
+.acts{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.b1{height:48px;border-radius:8px;border:0;background:#FF4D9A;color:#0E0F14;font:600 15px 'IBM Plex Sans',sans-serif;display:flex;align-items:center;justify-content:center;text-decoration:none}
+.b2{height:48px;border-radius:8px;border:1px solid #262A35;background:transparent;color:#E6E8F0;font:500 15px 'IBM Plex Sans',sans-serif;display:flex;align-items:center;justify-content:center;text-decoration:none;box-sizing:border-box}
+.fine{margin:4px 0 0;font:11px 'IBM Plex Mono',monospace;color:#6F7486;text-align:center}
+.out{width:390px;height:844px;flex:none;border:1px solid #262A35;border-radius:28px;overflow:hidden;box-sizing:border-box;background:radial-gradient(600px 360px at 50% 22%,rgba(255,77,154,.12),transparent 70%),#0E0F14;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 32px;font-family:'IBM Plex Sans',sans-serif}
+.hero{display:flex;flex-direction:column;align-items:center;color:#E6E8F0;font:700 46px 'Chakra Petch',sans-serif;line-height:1}
+.hero i{font-style:normal;color:#FF4D9A;font-size:12px;letter-spacing:3px;margin-bottom:5px}
+.toast{position:absolute;left:16px;right:16px;bottom:90px;z-index:6;display:flex;align-items:center;gap:12px;border-radius:10px;border:1px solid #262A35;background:#20222A;padding:4px 6px 4px 16px;box-shadow:0 12px 40px rgba(0,0,0,.5)}
+.toast span{flex:1;padding:8px 0;font-size:13.5px;color:#E6E8F0}
+.toast button{height:44px;padding:0 12px;border:0;background:transparent;color:#FF4D9A;font:600 13px 'IBM Plex Sans',sans-serif}
+</style>
+</helmet>
+<div style="width:1800px;min-height:2260px;box-sizing:border-box;padding:40px 56px 56px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:22px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span class="k">Call 06 · /invite/[token] · phone 390 · the likeliest way the page is met: a link tapped in a text, or a QR code scanned at the table</span>
+    <h2 style="margin:0;font:700 26px 'Chakra Petch',sans-serif">The same card, full width, buttons stacked</h2>
+    <p class="cap" style="max-width:1660px">The phone is where this page is mostly opened, so the card sits high, under the header, and the buttons are 48px and full width with Accept on top. Every state, every sentence and every name rule is the desktop’s.</p>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,390px);gap:40px 40px">
+    <sc-for list="{{frames}}" as="f" hint-placeholder-count="8">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span class="k">{{f.label}}</span>
+        <sc-if value="{{f.signedOut}}" hint-placeholder-val="{{false}}">
+          <section class="out" aria-labelledby="so">
+            <span class="hero" aria-hidden="true"><i>◆ ◆ ◆</i>99</span>
+            <p style="margin:14px 0 0;font:11px 'IBM Plex Mono',monospace;letter-spacing:.4em;color:#FF4D9A">THE NINETY-NINE</p>
+            <h1 id="so" style="margin:28px 0 0;font:700 21px 'Chakra Petch',sans-serif;color:#E6E8F0">Someone sent you a friend invite</h1>
+            <p style="margin:8px 0 0;font-size:14.5px;line-height:1.5;color:#B1B6C7">Sign in to see who it’s from and answer it.</p>
+            <a class="b1" href="#" style="margin-top:30px;width:100%;max-width:260px">Sign in</a>
+            <p class="fine" style="margin-top:16px;line-height:1.5">No account? The 99 is invite-only. Ask whoever sent this.</p>
+          </section>
+        </sc-if>
+        <sc-if value="{{f.signedIn}}" hint-placeholder-val="{{true}}">
+          <div class="ph">
+            <header class="mh"><span class="wm"><span>THE</span><b>99</b></span><span class="mav" aria-hidden="true">HH</span></header>
+            <div class="scroll">
+              <section class="card" aria-labelledby="lh">
+                <span class="k">Friend invite</span>
+                <sc-if value="{{f.named}}" hint-placeholder-val="{{true}}"><span class="iav" aria-hidden="true">DA</span></sc-if>
+                <sc-if value="{{f.unnamed}}" hint-placeholder-val="{{false}}"><span class="mark" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"/></svg></span></sc-if>
+                <h1 class="h1" id="lh">{{f.title}}</h1>
+                <sc-if value="{{f.body}}" hint-placeholder-val="{{true}}"><p class="bd">{{f.body}}</p></sc-if>
+                <sc-if value="{{f.nameLine}}" hint-placeholder-val="{{false}}"><p class="nl">Dave will see you as <b>Hugh</b><span aria-hidden="true">·</span><button class="tl" type="button">Change</button></p></sc-if>
+                <div class="acts">
+                  <sc-if value="{{f.a1}}" hint-placeholder-val="{{true}}"><button class="{{f.a1Cls}}" type="button">{{f.a1}}</button></sc-if>
+                  <sc-if value="{{f.a2}}" hint-placeholder-val="{{false}}"><a class="b2" href="#">{{f.a2}}</a></sc-if>
+                </div>
+                <sc-if value="{{f.fine}}" hint-placeholder-val="{{false}}"><p class="fine">{{f.fine}}</p></sc-if>
+              </section>
+            </div>
+            <nav class="tb" aria-label="Primary">
+              <span class="ts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg>Home</span>
+              <span class="ts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg>Collection</span>
+              <span class="ts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 18h16M5 16l-1-9 5 4 3-6 3 6 5-4-1 9z"/></svg>Commanders</span>
+              <span class="ts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8l3 4-3 4-3-4z"/></svg>Discover</span>
+              <span class="ts"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="7" y="4" width="12" height="16" rx="2"/><path d="M5 7v12a2 2 0 002 2h9"/></svg>Decks</span>
+            </nav>
+            <sc-if value="{{f.toast}}" hint-placeholder-val="{{false}}"><div class="toast" role="alert"><span>We couldn’t accept that invite. Try again.</span><button type="button">Try again</button></div></sc-if>
+          </div>
+        </sc-if>
+        <p class="cap" style="max-width:390px">{{f.note}}</p>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1800,"height":2260}}'>
+class Component extends DCLogic {
+renderVals() {
+const base = { signedOut: false, signedIn: true, named: false, unnamed: true, body: '', nameLine: false, a1: '', a1Cls: 'b2', a2: '', fine: '', toast: false };
+const fr = (o) => Object.assign({}, base, o);
+const ended = (label, title, body, note) => fr({ label, title, body, a2: 'Go to Friends', note });
+const frames = [
+fr({ label: 'L1 · signed out', signedOut: true, signedIn: false, note: 'The signed-out landing’s ground and mark. Sign in only.' }),
+fr({ label: 'L2 · open', named: true, unnamed: false, title: 'Dave wants to be friends', body: 'Friends see each other’s display name and nothing else, until one of you shares more.', nameLine: true, a1: 'Accept', a1Cls: 'b1', a2: 'Decline', fine: 'Dave isn’t told if you decline.', note: 'Accept on top, the thumb’s first reach.' }),
+ended('L3 · expired', 'This invite has expired', 'Invite links last 7 days. Ask for a new one.', 'No name.'),
+ended('L4 · redeemed · declined · revoked · not found', 'This invite link no longer works', 'A link works once, and only until it expires or is taken back. Ask for a new one.', 'Four states, one card.'),
+fr({ label: 'L5 · your own link', title: 'This is your own invite link', body: 'Send it to the friend you want to add. It works once, for the first person who opens it.', a1: 'Copy link', a1Cls: 'b1', a2: 'Go to Friends', note: 'Scanning your own QR code to check it lands here.' }),
+fr({ label: 'L6 · already friends', named: true, unnamed: false, title: 'You and Dave are already friends', body: 'Nothing to accept. This link is used up now.', a2: 'Go to Friends', note: 'No Accept.' }),
+fr({ label: 'L7 · after Decline', title: 'Invite declined', body: 'Dave isn’t told. The link no longer works.', a2: 'Go to Home', note: 'Said once, then done.' }),
+fr({ label: 'L8 · Accept failed', named: true, unnamed: false, title: 'Dave wants to be friends', body: 'Friends see each other’s display name and nothing else, until one of you shares more.', nameLine: true, a1: 'Accept', a1Cls: 'b1', a2: 'Decline', toast: true, note: 'The shared toast above the tab bar; the card stays.' })
+];
+return { frames };
+}
+}
+</script>
+</body>
+</html>

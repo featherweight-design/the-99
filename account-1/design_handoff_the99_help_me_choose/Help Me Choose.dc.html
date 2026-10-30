@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-rail:#1A1611; --surface-sunken:#18140F; --surface-raised:#211D18; --elevated:#29241F; --elevated-hover:#201C17;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037; --display:'Cinzel',serif;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654; --fg-disabled:#4A4033;
+    --accent:#CF8745; --accent-hover:#DE9757; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F; --fact:#8FA6BE; --avail-hard-fg:#D9975C;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-rail:#12141B; --surface-sunken:#101219; --surface-raised:#191B22; --elevated:#20222A; --elevated-hover:#181A21;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843; --display:'Chakra Petch',sans-serif;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476; --fg-disabled:#3D404E;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --success:#6FA368; --warning:#E0913C; --danger:#C6533F; --fact:#8FA6BE; --avail-hard-fg:#DF8AA7;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'IBM Plex Sans', sans-serif; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="{{ s.root }}" data-screen-label="{{ label }}">
+
+  <sc-if value="{{ showHeader }}" hint-placeholder-val="{{ true }}">
+    <div style="{{ s.header }}">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ backLabel }}</span>
+      <h1 style="{{ s.h1 }}">{{ title }}</h1>
+      <p style="{{ s.sub }}">{{ sub }}</p>
+    </div>
+  </sc-if>
+
+  <div style="{{ s.body }}">
+
+    <sc-if value="{{ showIntake }}" hint-placeholder-val="{{ true }}">
+      <div style="{{ s.intake }}">
+
+        <div style="display:flex;flex-direction:column;gap:9px;">
+          <label style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">In your own words</label>
+          <div style="{{ s.textarea }}">
+            <sc-if value="{{ hasText }}" hint-placeholder-val="{{ false }}"><span style="color:var(--fg);">{{ text }}</span></sc-if>
+            <sc-if value="{{ noText }}" hint-placeholder-val="{{ true }}"><span style="color:var(--fg-faint);">e.g. Dinosaurs that go big, under $150, bracket 2, built around Regisaur Alpha</span></sc-if>
+          </div>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);">Themes, cards, a budget or a bracket, in any words.</span>
+
+        </div>
+
+        <div style="height:1px;background:var(--border);"></div>
+
+        <div style="display:flex;flex-direction:column;gap:9px;">
+          <label style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Colors</label>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <div style="display:flex;gap:8px;">
+              <sc-for list="{{ pips }}" as="p" hint-placeholder-count="5"><span role="checkbox" aria-label="{{ p.name }}" style="{{ p.style }}"></span></sc-for>
+            </div>
+            <div style="{{ s.seg }}">
+              <sc-for list="{{ modes }}" as="m" hint-placeholder-count="2"><span style="{{ m.style }}">{{ m.label }}</span></sc-for>
+            </div>
+          </div>
+          <span style="font-size:12px;color:var(--fg-faint);">{{ colorsCaption }}</span>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:9px;position:relative;">
+          <label style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Theme</label>
+          <div style="{{ s.field }}">
+            <sc-for list="{{ themes }}" as="t" hint-placeholder-count="0">
+              <span style="display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 7px 0 9px;border-radius:6px;background:var(--elevated);font-size:12.5px;color:var(--fg);">{{ t }}<span style="font-size:11px;color:var(--fg-faint);">✕</span></span>
+            </sc-for>
+            <span style="{{ s.fieldInput }}">{{ themeInput }}</span>
+          </div>
+          <sc-if value="{{ pickerOpen }}" hint-placeholder-val="{{ false }}">
+            <div style="border-radius:10px;background:var(--surface-raised);border:1px solid var(--border-strong);padding:5px;display:flex;flex-direction:column;box-shadow:0 14px 30px rgba(0,0,0,0.45);">
+              <sc-for list="{{ picker }}" as="o" hint-placeholder-count="4">
+                <div style="{{ o.style }}"><span style="{{ o.check }}"></span><span style="flex:1;font-size:13px;color:var(--fg);">{{ o.label }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ o.count }}</span></div>
+              </sc-for>
+            </div>
+          </sc-if>
+          <span style="font-size:12px;color:var(--fg-faint);">EDHREC’s theme tags. Pick more than one if you like.</span>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:9px;">
+          <label style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Budget</label>
+          <div style="{{ s.field }}">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--fg-faint);">$</span>
+            <span style="{{ s.budgetVal }}">{{ budget.value }}</span>
+            
+          </div>
+          <span style="font-size:12px;line-height:1.5;color:var(--fg-faint);">The most you would spend on cards you don’t own. It caps the fill and never ranks.</span>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:9px;">
+          <div style="display:flex;align-items:baseline;gap:10px;">
+            <label style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Bracket</label>
+            
+          </div>
+          <div style="display:flex;gap:6px;">
+            <sc-for list="{{ brackets }}" as="b" hint-placeholder-count="6"><span role="radio" style="{{ b.style }}">{{ b.label }}</span></sc-for>
+          </div>
+          <span style="font-size:12px;color:var(--fg-faint);">{{ bracketCaption }}</span>
+        </div>
+
+        <div style="{{ s.submitWrap }}">
+          <span role="button" aria-disabled="{{ submit.disabled }}" style="{{ s.submitBtn }}">{{ submit.label }}</span>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ showResults }}" hint-placeholder-val="{{ true }}">
+      <div style="{{ s.results }}">
+        <div style="{{ s.answersBar }}">
+          <div style="{{ s.barTop }}">
+            <div style="display:flex;flex-direction:column;gap:9px;min-width:0;flex:1;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">We read this as</span>
+              <sc-if value="{{ noAnswers }}" hint-placeholder-val="{{ false }}"><span style="font-size:13px;color:var(--fg-muted);">No answers given</span></sc-if>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                <sc-for list="{{ chips }}" as="c" hint-placeholder-count="4">
+                  <span style="{{ c.style }}">
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">{{ c.kind }}</span>
+                    <span style="{{ c.vStyle }}">{{ c.value }}</span>
+                    <sc-if value="{{ c.buy }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;white-space:nowrap;border-radius:4px;padding:1px 5px;color:var(--warning);background:color-mix(in oklab, var(--warning) 13%, transparent);">buy<span style="color:var(--border-strong);padding:0 3px;">·</span><span style="color:var(--fg-body);">{{ c.price }}</span></span></sc-if>
+                    <sc-if value="{{ c.noprice }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;white-space:nowrap;border-radius:4px;padding:1px 5px;color:var(--warning);background:color-mix(in oklab, var(--warning) 13%, transparent);">buy<span style="color:var(--border-strong);padding:0 3px;">·</span><span style="color:var(--fg-faint);">no price</span></span></sc-if>
+                    <sc-if value="{{ c.owned }}" hint-placeholder-val="{{ false }}"><span aria-label="Owned" style="width:6px;height:6px;border-radius:50%;background:var(--success);flex:none;"></span></sc-if>
+                    <sc-if value="{{ c.read }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;color:var(--accent);">deeper</span></sc-if>
+                  </span>
+                </sc-for>
+              </div>
+      
+              <sc-if value="{{ words.show }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">{{ words.label }}</span>
+                  <sc-for list="{{ words.list }}" as="w" hint-placeholder-count="2">
+                    <span style="font-size:13px;color:var(--fg-muted);border-bottom:1px dotted var(--border-dashed);">“{{ w }}”</span>
+                  </sc-for>
+                </div>
+              </sc-if>
+      
+                  </div>
+            <div style="{{ s.againBtns }}">
+              <span role="button" style="{{ s.againPrimary }}">Change answers</span>
+              <span role="button" style="{{ s.againGhost }}">Start over</span>
+            </div>
+          </div>
+          <sc-if value="{{ offer.show }}" hint-placeholder-val="{{ false }}">
+            <div style="{{ s.offer }}">
+              <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:0;">
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                  <span style="{{ s.offerTitle }}">{{ offer.title }}</span>
+                  <sc-if value="{{ offer.failTag }}" hint-placeholder-val="{{ false }}"><span style="border-radius:999px;padding:2px 8px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--danger);background:color-mix(in oklab, var(--danger) 12%, transparent);">{{ offer.failTag }}</span></sc-if>
+                  <sc-if value="{{ offer.doneTag }}" hint-placeholder-val="{{ false }}"><span style="border-radius:999px;padding:2px 8px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);background:color-mix(in oklab, var(--accent) 12%, transparent);">{{ offer.doneTag }}</span></sc-if>
+                </div>
+                <span style="{{ s.lead }}">{{ offer.lead }}</span>
+              </div>
+              <div style="{{ s.offerAct }}">
+                <sc-if value="{{ offer.ticket }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <span role="button" aria-label="{{ offer.aria }}" style="{{ offer.tStyle }}">
+                      <span style="{{ offer.stubStyle }}">{{ offer.stub }}</span>
+                      <span>{{ offer.label }}</span>
+                    </span>
+                    <sc-if value="{{ offer.stop }}" hint-placeholder-val="{{ false }}"><span role="button" style="{{ s.stop }}">Stop</span></sc-if>
+                  </div>
+                </sc-if>
+                <span style="{{ s.note }}">{{ offer.note }}</span>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+
+        <sc-if value="{{ res.head }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            <h2 style="{{ s.h2 }}">{{ res.head }}</h2>
+            <p style="{{ s.resSub }}">{{ res.sub }}</p>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ res.note }}" hint-placeholder-val="{{ false }}">
+          <div style="{{ s.narrow }}">
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <span style="{{ s.narrowHead }}">{{ res.note.head }}</span>
+              <span style="{{ s.narrowBody }}">{{ res.note.body }}</span>
+            </div>
+            <div style="{{ s.optList }}">
+              <sc-for list="{{ res.note.options }}" as="o" hint-placeholder-count="2">
+                <span role="button" style="{{ o.style }}">
+                  <span style="display:flex;flex-direction:column;gap:2px;min-width:0;flex:1;">
+                    <span style="{{ o.labelStyle }}">{{ o.label }}</span>
+                    <sc-if value="{{ o.why }}" hint-placeholder-val="{{ false }}"><span style="font-size:11.5px;line-height:1.45;color:var(--fg-faint);">{{ o.why }}</span></sc-if>
+                  </span>
+                  <span style="{{ o.countStyle }}">{{ o.count }}</span>
+                  <span aria-hidden="true" style="{{ o.arrow }}">→</span>
+                </span>
+              </sc-for>
+            </div>
+            <sc-if value="{{ res.note.none }}" hint-placeholder-val="{{ false }}">
+              <span style="font-size:12.5px;color:var(--fg-faint);">Or <span style="color:var(--accent);border-bottom:1px solid color-mix(in oklab, var(--accent) 50%, transparent);">change your answers</span> yourself.</span>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ res.loading }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:10px;" aria-busy="true">
+            <sc-for list="{{ skeletons }}" as="k" hint-placeholder-count="5">
+              <div style="{{ s.skRow }}">
+                <span style="{{ s.thumbSk }}"></span>
+                <span style="flex:1;display:flex;flex-direction:column;gap:9px;"><span style="{{ k.a }}"></span><span style="{{ k.b }}"></span></span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ res.failed }}" hint-placeholder-val="{{ false }}">
+          <div style="{{ s.failBox }}">
+            <span style="{{ s.emptyMark }}">!</span>
+            <span style="{{ s.narrowHead }}">We couldn’t find commanders just now</span>
+            <span style="{{ s.narrowBody }}">Something went wrong on our side. Your answers are kept, and no credit was used.</span>
+            <div style="{{ s.failBtns }}">
+              <span role="button" style="{{ s.bone }}">Try again</span>
+              <span role="button" style="{{ s.failGhost }}">Change answers</span>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ hasBest }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">Best fits</span>
+            <div style="{{ s.bestGrid }}">
+              <sc-for list="{{ best }}" as="r" hint-placeholder-count="3">
+                <div role="button" style="{{ s.bestCard }}">
+                  <div style="{{ r.art }}">
+                    <span style="{{ s.rank }}">{{ r.rank }}</span>
+                  </div>
+                  <div style="{{ s.bestBody }}">
+                    <span style="display:flex;align-items:center;gap:8px;min-width:0;">
+                      <span style="{{ s.bestName }}">{{ r.name }}</span>
+                      <span style="display:flex;gap:4px;flex:none;"><sc-for list="{{ r.pips }}" as="p" hint-placeholder-count="3"><span style="{{ p }}"></span></sc-for></span>
+                    </span>
+                    <span style="display:flex;flex-direction:column;gap:4px;">
+                      <sc-for list="{{ r.figs }}" as="f" hint-placeholder-count="1">
+                        <span style="display:flex;align-items:baseline;gap:7px;flex-wrap:wrap;">
+                          <span style="{{ f.bestPct }}">{{ f.pct }}</span>
+                          <span style="{{ f.bestText }}">{{ f.text }}</span>
+                          <sc-if value="{{ f.lowest }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.12em;color:var(--accent);">SETS RANK</span></sc-if>
+                        </span>
+                      </sc-for>
+                    </span>
+                    <span style="height:1px;background:var(--border);"></span>
+                    <sc-if value="{{ r.ready }}" hint-placeholder-val="{{ true }}">
+                      <span style="{{ s.ownLine }}">
+                        <sc-if value="{{ r.free }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:6px;flex:none;"><span style="width:6px;height:6px;border-radius:50%;background:var(--success);"></span><span style="color:var(--fg-body);">owned · free</span></span></sc-if>
+                        <sc-if value="{{ r.held }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:6px;flex:none;"><span style="width:6px;height:6px;transform:rotate(45deg);background:var(--accent);"></span><span style="color:var(--avail-hard-fg);">none free — in {{ r.heldIn }}</span></span></sc-if>
+                        <sc-if value="{{ r.priced }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-size:9.5px;white-space:nowrap;border-radius:4px;padding:1px 5px;color:var(--warning);background:color-mix(in oklab, var(--warning) 13%, transparent);">buy<span style="color:var(--border-strong);padding:0 3px;">·</span><span style="color:var(--fg-body);">{{ r.price }}</span></span></sc-if>
+                        <span>{{ r.own }}</span>
+                      </span>
+                      <sc-if value="{{ r.extra }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ r.extra }}</span></sc-if>
+                    </sc-if>
+                    <sc-if value="{{ r.loading }}" hint-placeholder-val="{{ false }}">
+                      <span style="display:flex;align-items:center;gap:9px;"><span style="width:90px;height:8px;border-radius:4px;background:var(--elevated);"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">Counting what you own…</span></span>
+                    </sc-if>
+                    <sc-if value="{{ r.failed }}" hint-placeholder-val="{{ false }}">
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);">Couldn’t count what you own. <span style="color:var(--accent);border-bottom:1px solid var(--accent);">Retry</span></span>
+                    </sc-if>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ hasBest }}" hint-placeholder-val="{{ false }}">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-top:6px;">More commanders</span>
+        </sc-if>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <sc-for list="{{ rest }}" as="r" hint-placeholder-count="5">
+            <div role="button" style="{{ s.row }}">
+              <span style="{{ r.thumb }}"></span>
+              <span style="{{ s.rowMain }}">
+                <span style="display:flex;align-items:center;gap:8px;min-width:0;">
+                  <span style="{{ s.rowName }}">{{ r.name }}</span>
+                  <span style="display:flex;gap:4px;flex:none;"><sc-for list="{{ r.pips }}" as="p" hint-placeholder-count="3"><span style="{{ p }}"></span></sc-for></span>
+                </span>
+                <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+                  <span style="display:flex;flex-direction:column;gap:2px;">
+                    <sc-for list="{{ r.figs }}" as="f" hint-placeholder-count="1">
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.45;"><span style="{{ f.pctStyle }}">{{ f.pct }}</span> <span style="{{ f.textStyle }}">{{ f.text }}</span><sc-if value="{{ f.lowest }}" hint-placeholder-val="{{ false }}"><span style="margin-left:6px;font-size:8.5px;letter-spacing:0.12em;color:var(--accent);">SETS RANK</span></sc-if></span>
+                    </sc-for>
+                  </span>
+                </sc-if>
+                <sc-if value="{{ r.ready }}" hint-placeholder-val="{{ true }}">
+                  <span style="{{ s.ownLine }}">
+                    <sc-if value="{{ r.free }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:6px;flex:none;"><span style="width:6px;height:6px;border-radius:50%;background:var(--success);"></span><span style="color:var(--fg-body);">owned · free</span></span></sc-if>
+                    <sc-if value="{{ r.held }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:6px;flex:none;"><span style="width:6px;height:6px;transform:rotate(45deg);background:var(--accent);"></span><span style="color:var(--avail-hard-fg);">none free — in {{ r.heldIn }}</span></span></sc-if>
+                    <sc-if value="{{ r.priced }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-size:9.5px;white-space:nowrap;border-radius:4px;padding:1px 5px;color:var(--warning);background:color-mix(in oklab, var(--warning) 13%, transparent);">buy<span style="color:var(--border-strong);padding:0 3px;">·</span><span style="color:var(--fg-body);">{{ r.price }}</span></span></sc-if>
+                    <span style="color:var(--border-strong);">·</span>
+                    <span>{{ r.own }}</span>
+                  </span>
+                  <sc-if value="{{ r.extra }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ r.extra }}</span></sc-if>
+                </sc-if>
+                <sc-if value="{{ r.loading }}" hint-placeholder-val="{{ false }}">
+                  <span style="display:flex;align-items:center;gap:9px;"><span style="width:120px;height:8px;border-radius:4px;background:var(--elevated);"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">Counting what you own…</span></span>
+                </sc-if>
+                <sc-if value="{{ r.failed }}" hint-placeholder-val="{{ false }}">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);">Couldn’t count what you own. <span style="color:var(--accent);border-bottom:1px solid var(--accent);">Retry</span></span>
+                </sc-if>
+              </span>
+              <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+                <span style="display:flex;flex-direction:column;gap:5px;">
+                  <sc-for list="{{ r.figs }}" as="f" hint-placeholder-count="1">
+                    <span style="display:flex;align-items:baseline;gap:8px;">
+                      <span style="{{ f.pctStyle }}">{{ f.pct }}</span>
+                      <span style="{{ f.textStyle }}">{{ f.text }}</span>
+                      <sc-if value="{{ f.lowest }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.12em;color:var(--accent);">SETS RANK</span></sc-if>
+                    </span>
+                  </sc-for>
+                </span>
+              </sc-if>
+              <span aria-hidden="true" style="font-size:18px;color:var(--fg-faint);">›</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <sc-if value="{{ res.more }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+            <span role="button" style="{{ s.more }}">Show 12 more</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ res.moreLine }}</span>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1300,&quot;height&quot;:960},&quot;scene&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;blank&quot;,&quot;matched&quot;,&quot;leftover&quot;,&quot;reading&quot;,&quot;read&quot;,&quot;failed&quot;,&quot;emptyread&quot;,&quot;spent&quot;,&quot;paused&quot;,&quot;theme&quot;,&quot;themes&quot;,&quot;card&quot;,&quot;themecard&quot;,&quot;unpriced&quot;,&quot;ownership&quot;,&quot;narrow&quot;,&quot;zero&quot;,&quot;loading&quot;,&quot;rowloading&quot;,&quot;listfailed&quot;],&quot;default&quot;:&quot;blank&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;phone&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;screen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;intake&quot;,&quot;results&quot;],&quot;default&quot;:null,&quot;tsType&quot;:&quot;string&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const P = !!this.props.phone;
+    const scene = this.props.scene ?? "blank";
+    const theme = this.props.theme ?? "amonkhet";
+    const mono = "'IBM Plex Mono',monospace";
+    const PIP = { W: "var(--w)", U: "var(--u)", B: "var(--b)", R: "var(--r)", G: "var(--g)" };
+    const NAME = { W: "White", U: "Blue", B: "Black", R: "Red", G: "Green" };
+    const C = {
+      gishath: { name: "Gishath, Sun’s Avatar", ci: ["W", "R", "G"], own: "you own 41 of its 99", buy: "$118", mark: "priced", price: "$6.40" },
+      pantlaza: { name: "Pantlaza, Sun-Favored", ci: ["W", "R", "G"], own: "you own 57 of its 99", buy: "$64", mark: "held", heldIn: "Naya Stampede" },
+      zacama: { name: "Zacama, Primal Calamity", ci: ["W", "R", "G"], own: "you own 38 of its 99", buy: "$131", mark: "priced", price: "$3.10" },
+      etali: { name: "Etali, Primal Conqueror", ci: ["R", "G"], own: "you own 49 of its 99", buy: "$88", mark: "free" },
+      ghalta: { name: "Ghalta, Primal Hunger", ci: ["G"], own: "you own 44 of its 99", buy: "$97", mark: "priced", price: "$1.20" },
+      mayael: { name: "Mayael the Anima", ci: ["W", "R", "G"], own: "you own 33 of its 99", buy: "$140", mark: "priced", price: "$2.80" },
+      xenagos: { name: "Xenagos, God of Revels", ci: ["R", "G"], own: "you own 40 of its 99", buy: "$104", mark: "priced", price: "$2.50" },
+      omnath: { name: "Omnath, Locus of Rage", ci: ["R", "G"], own: "you own 52 of its 99", buy: "$80", mark: "free" },
+      klothys: { name: "Klothys, God of Destiny", ci: ["R", "G"], own: "you own 47 of its 99", buy: "$92", mark: "held", heldIn: "Temple Fires" },
+      atraxa: { name: "Atraxa, Praetors’ Voice", ci: ["W", "U", "B", "G"], own: "you own 58 of its 99", buy: "$176", mark: "priced", price: "$9.30" },
+      kenrith: { name: "Kenrith, the Returned King", ci: ["W", "U", "B", "R", "G"], own: "you own 47 of its 99", buy: "$121", mark: "priced", price: "$1.50" },
+    };
+    const th = (l) => ({ k: "theme", l }), cd = (l, o = {}) => ({ k: "card", l, ...o });
+    const fig = (n, kind, label) => ({ n, pct: kind === "own" ? String(n) : n + "%", text: kind === "theme" ? `of its decks are ${label}` : kind === "card" ? `of its decks run ${label}` : label });
+    const R = (key, figs, o = {}) => ({ key, figs, ...o });
+    const D = "Dinosaurs", RA = "Regisaur Alpha";
+    const SEVERAL = "Each commander ranks by the answer it fits least, so one that’s all Dinosaurs but rarely runs Regisaur Alpha won’t outrank one that does both. Every figure is shown.";
+    const SEVERAL_T = "Each commander ranks by the answer it fits least, so one that’s all Dinosaurs but rarely Enrage won’t outrank one that’s strong at both. Every figure is shown.";
+    const ALL = "Ordered by fit to everything you asked";
+    const tc = (a, b, lab = RA) => [fig(a, "theme", D), fig(b, "card", lab)];
+    const RES = {
+      theme: { count: 31, head: "Ordered by Dinosaurs", sub: "Each figure is the share of that commander’s decks on EDHREC tagged Dinosaurs.", rows: [R("gishath", [fig(91, "theme", D)]), R("pantlaza", [fig(88, "theme", D)]), R("zacama", [fig(74, "theme", D)]), R("etali", [fig(58, "theme", D)]), R("ghalta", [fig(41, "theme", D)]), R("mayael", [fig(22, "theme", D)])] },
+      themes: { count: 14, head: ALL, sub: SEVERAL_T, rows: [R("zacama", [fig(74, "theme", D), fig(52, "theme", "Enrage")]), R("pantlaza", [fig(88, "theme", D), fig(41, "theme", "Enrage")]), R("gishath", [fig(91, "theme", D), fig(34, "theme", "Enrage")]), R("ghalta", [fig(41, "theme", D), fig(29, "theme", "Enrage")]), R("etali", [fig(58, "theme", D), fig(18, "theme", "Enrage")])] },
+      card: { count: 26, head: "Ordered by Regisaur Alpha", sub: "Each figure is how often that commander’s decks on EDHREC run Regisaur Alpha. It goes in the deck whichever you pick.", rows: [R("gishath", [fig(64, "card", RA)]), R("pantlaza", [fig(52, "card", RA)]), R("etali", [fig(48, "card", RA)]), R("ghalta", [fig(44, "card", RA)]), R("zacama", [fig(39, "card", RA)]), R("xenagos", [fig(21, "card", RA)])] },
+      themecard: { count: 18, budget: "$150", head: ALL, sub: SEVERAL, rows: [R("gishath", tc(91, 64)), R("pantlaza", tc(88, 52)), R("etali", tc(58, 48)), R("ghalta", tc(41, 44)), R("zacama", tc(74, 39))] },
+      read: { count: 9, budget: "$150", head: ALL, sub: SEVERAL, rows: [R("pantlaza", [fig(88, "theme", D), fig(44, "theme", "Tokens"), fig(52, "card", RA)]), R("gishath", [fig(91, "theme", D), fig(38, "theme", "Tokens"), fig(64, "card", RA)]), R("zacama", [fig(74, "theme", D), fig(21, "theme", "Tokens"), fig(39, "card", RA)]), R("etali", [fig(58, "theme", D), fig(12, "theme", "Tokens"), fig(48, "card", RA)])] },
+      unpriced: { count: 17, budget: "$150", unpriced: "Ghalta’s Presence", head: ALL, sub: SEVERAL, rows: [R("ghalta", tc(41, 61, "Ghalta’s Presence")), R("gishath", tc(91, 33, "Ghalta’s Presence")), R("pantlaza", tc(88, 29, "Ghalta’s Presence")), R("etali", tc(58, 22, "Ghalta’s Presence"))] },
+      ownAll: { count: "3,301", own: true, head: "Ordered by cards you already have", sub: "You gave no theme or card, so these are commanders, owned or not, whose decks run the most cards you already have. Add a theme or a card for suggestions by fit.", rows: [R("atraxa", [fig(268, "own", "of the 402 cards its decks run are yours")]), R("omnath", [fig(212, "own", "of the 340 cards its decks run are yours")]), R("etali", [fig(198, "own", "of the 331 cards its decks run are yours")]), R("kenrith", [fig(187, "own", "of the 415 cards its decks run are yours")]), R("klothys", [fig(176, "own", "of the 298 cards its decks run are yours")])] },
+      ownRG: { count: 212, own: true, head: "Ordered by cards you already have", sub: "You gave colors but no theme or card, so these are Red and Green commanders, owned or not, whose decks run the most cards you already have. Add a theme or a card for suggestions by fit.", rows: [R("omnath", [fig(212, "own", "of the 340 cards its decks run are yours")]), R("etali", [fig(198, "own", "of the 331 cards its decks run are yours")]), R("klothys", [fig(176, "own", "of the 298 cards its decks run are yours")]), R("ghalta", [fig(161, "own", "of the 287 cards its decks run are yours")]), R("xenagos", [fig(149, "own", "of the 302 cards its decks run are yours")])] },
+      narrow: { count: 1, head: "Ordered by Dinosaurs", sub: "Each figure is the share of that commander’s decks on EDHREC tagged Dinosaurs.", note: { none: false, head: "Only one commander fits all of that", body: "Loosen one answer to see more:", options: [{ label: "Any Red · Green, not exactly", count: "19" }, { label: "Drop Red · Green", count: "31" }] }, rows: [R("etali", [fig(58, "theme", D)])] },
+      zero: { count: 0, head: null, note: { none: true, head: "No commander fits all of that", body: "Each of these would bring some back. Pick one and we’ll search again.", options: [{ label: "Drop bracket 2", why: "Jeweled Lotus is a Game Changer, and bracket 2 allows none.", count: "24" }, { label: "Drop Jeweled Lotus", count: "31" }] }, rows: [] },
+      loading: { count: "", head: "Finding commanders…", sub: "They’ll be ordered by Dinosaurs.", loading: true, rows: [] },
+      failed: { count: "", head: null, failed: true, rows: [] },
+    };
+    RES.rowloading = { ...RES.theme, rows: RES.theme.rows.map((r, i) => i === 2 || i === 3 ? { ...r, loading: true } : i === 5 ? { ...r, failed: true } : r) };
+
+    const base = [th(D), cd(RA, { buy: "$1.10" }), { k: "budget", l: "$150" }, { k: "bracket", l: "2 · Core" }];
+    const LEFT = ["that stomp", "lots of little tokens"];
+    const S_FULL = "Dinosaurs, under $150, bracket 2, built around Regisaur Alpha";
+    const S_LEFT = "Dinosaurs that stomp, under $150, bracket 2, built around Regisaur Alpha, lots of little tokens";
+    const CR = "2 of 3 left · next one at 4:10 PM";
+    const SC = {
+      blank: { res: "ownAll" },
+      matched: { text: S_FULL, chips: base, res: "themecard", budget: "150", bracket: 2 },
+      leftover: { text: S_LEFT, chips: base, words: { label: "Not used", list: LEFT }, offer: "ready", res: "themecard", budget: "150", bracket: 2 },
+      reading: { text: S_LEFT, chips: base, words: { label: "Not used", list: LEFT }, offer: "reading", res: "themecard", budget: "150", bracket: 2 },
+      read: { text: S_LEFT, chips: [...base, { k: "theme", l: "Tokens", read: true }], words: { label: "Still not used", list: ["that stomp"] }, offer: "done", res: "read", budget: "150", bracket: 2 },
+      failed: { text: S_LEFT, chips: base, words: { label: "Not used", list: LEFT }, offer: "failed", res: "themecard", budget: "150", bracket: 2 },
+      emptyread: { text: S_LEFT, chips: base, words: { label: "Still not used", list: LEFT }, offer: "empty", res: "themecard", budget: "150", bracket: 2 },
+      spent: { text: S_LEFT, chips: base, words: { label: "Not used", list: LEFT }, offer: "spent", res: "themecard", budget: "150", bracket: 2 },
+      paused: { text: S_LEFT, chips: base, words: { label: "Not used", list: LEFT }, offer: "paused", res: "themecard", budget: "150", bracket: 2 },
+      theme: { themes: [D], res: "theme", picker: true },
+      themes: { themes: [D, "Enrage"], res: "themes" },
+      card: { text: "Built around Regisaur Alpha", chips: [cd(RA, { buy: "$1.10" })], res: "card" },
+      themecard: { text: S_FULL, chips: base, res: "themecard", budget: "150", bracket: 2 },
+      unpriced: { text: "Dinosaurs under $150 with Ghalta’s Presence", chips: [th(D), cd("Ghalta’s Presence", { noprice: true }), { k: "budget", l: "$150" }], res: "unpriced", budget: "150" },
+      ownership: { colors: ["R", "G"], res: "ownRG" },
+      narrow: { themes: [D], colors: ["R", "G"], exact: true, bracket: 2, bracketOwn: true, res: "narrow" },
+      zero: { text: "Dinosaurs with Jeweled Lotus", chips: [th(D), cd("Jeweled Lotus", { owned: true })], bracket: 2, bracketOwn: true, res: "zero" },
+      loading: { themes: [D], res: "loading" },
+      rowloading: { themes: [D], res: "rowloading" },
+      listfailed: { themes: [D], res: "failed" },
+    };
+    const sc = SC[scene] ?? SC.blank;
+    const res = RES[sc.res];
+    const phoneResultScenes = ["leftover", "reading", "read", "failed", "emptyread", "spent", "paused", "theme", "themes", "card", "themecard", "unpriced", "ownership", "narrow", "zero", "loading", "rowloading", "listfailed"];
+    const screen = this.props.screen ?? (phoneResultScenes.includes(scene) ? "results" : "form");
+    const showIntake = screen !== "results";
+    const showResults = screen === "results";
+
+    // chips
+    const chipSrc = [...((sc.colors ?? []).length ? [{ k: sc.exact ? "exactly" : "colors", l: sc.colors.map((c) => NAME[c]).join(" · ") }] : []), ...(sc.themes ?? []).map((t) => ({ k: "theme", l: t })), ...(sc.chips ?? []), ...(sc.bracketOwn ? [{ k: "bracket", l: "2 · Core" }] : [])];
+    const chips = chipSrc.map((c) => ({
+      kind: c.k, value: c.l, buy: !!c.buy, price: c.buy, noprice: !!c.noprice, owned: !!c.owned, read: !!c.read,
+      style: { display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", height: P ? 32 : 28, padding: "0 8px 0 9px", borderRadius: 6, background: "var(--surface)", border: c.read ? "1px dashed var(--accent)" : "1px solid var(--border-strong)" },
+      vStyle: c.k === "card" ? { fontSize: 12.5, fontWeight: 600, color: "var(--fg)", borderBottom: "1px dotted var(--accent)" } : { fontSize: 12.5, color: "var(--fg-body)" },
+    }));
+    const words = sc.words ? { show: true, ...sc.words } : { show: false, label: "", list: [] };
+
+    // the credit offer
+    const btnBase = { display: "inline-flex", alignItems: "center", gap: 9, height: P ? 44 : 38, padding: "0 14px 0 6px", borderRadius: 999, fontSize: 13.5, fontWeight: 600, whiteSpace: "nowrap", flex: P ? "1 1 auto" : "none", justifyContent: P ? "center" : "flex-start" };
+    const on = { ...btnBase, background: "var(--accent)", color: "var(--bg)" };
+    const off = { ...btnBase, background: "transparent", color: "var(--fg-disabled)", border: "1px solid var(--border-strong)" };
+    const busy = { ...off, color: "var(--fg-muted)" };
+    const pill = { display: "inline-flex", alignItems: "center", height: P ? 30 : 26, padding: "0 10px", borderRadius: 999, fontFamily: mono, fontSize: 10.5, fontWeight: 600, background: "color-mix(in oklab, var(--bg) 22%, transparent)", color: "var(--bg)" };
+    const pillOff = { ...pill, background: "var(--surface)", color: "var(--fg-disabled)", fontWeight: 500 };
+    const TITLE = "Want a closer fit?";
+    const LEAD = "A deeper look weighs everything you wrote, not just the names we matched, and searches again.";
+    const O = {
+      ready: { title: TITLE, lead: LEAD, ticket: true, stub: "1 credit", label: "Look deeper", tStyle: on, stubStyle: pill, note: `${CR}` },
+      reading: { title: "Looking deeper…", lead: "These results stay until the new ones are ready.", ticket: true, stop: true, stub: "1 credit", label: "Looking…", tStyle: busy, stubStyle: { ...pillOff, color: "var(--fg-muted)" }, note: "Stopping gives the credit back." },
+      done: { title: "Deeper look", doneTag: "done", lead: "Answers marked deeper came from it, and these results use them.", note: "1 credit used · 1 of 3 left · next one at 4:10 PM" },
+      failed: { title: TITLE, failTag: "Didn’t finish", lead: "The deeper look didn’t finish, so your credit came back. These are still your first results.", ticket: true, stub: "1 credit", label: "Try again", tStyle: on, stubStyle: pill, note: `${CR}` },
+      empty: { title: "Deeper look", lead: "It found nothing to add to what we’d already matched, so your credit came back. These results stand.", note: `${CR}` },
+      spent: { title: TITLE, lead: LEAD, ticket: true, stub: "0 left", label: "Look deeper", tStyle: off, stubStyle: pillOff, note: "Next credit at 4:10 PM. Deeper looks, overviews and suggestions share these credits." },
+      paused: { title: TITLE, lead: LEAD, ticket: true, stub: "Paused", label: "Look deeper", tStyle: off, stubStyle: pillOff, note: "Paused until October 1. The app has reached its monthly limit. Nothing you did caused this." },
+    };
+    const offerKey = sc.offer ?? (sc.text ? "ready" : null);
+    const offer = offerKey ? { show: true, title: "", lead: "", ticket: false, stop: false, failTag: "", doneTag: "", aria: "", ...O[offerKey] } : { show: false };
+    offer.aria = offer.ticket ? `${offer.stub}. ${offer.label}` : "";
+
+    // controls
+    const lit = sc.colors ?? [];
+    const pips = ["W", "U", "B", "R", "G"].map((c) => ({ name: NAME[c], style: { width: P ? 36 : 28, height: P ? 36 : 28, borderRadius: "50%", background: PIP[c], opacity: lit.includes(c) ? 1 : 0.34, boxShadow: lit.includes(c) ? "0 0 0 2px var(--bg), 0 0 0 3.5px var(--fg)" : "none" } }));
+    const segLive = lit.length > 0;
+    const modes = ["Any", "Exactly"].map((m) => {
+      const sel = (m === "Exactly") === !!sc.exact;
+      return { label: m, style: { display: "flex", alignItems: "center", height: P ? 36 : 28, padding: "0 11px", borderRadius: 6, fontSize: 12.5, fontWeight: sel ? 600 : 400, background: sel && segLive ? "var(--elevated)" : "transparent", color: !segLive ? "var(--fg-disabled)" : sel ? "var(--fg)" : "var(--fg-muted)" } };
+    });
+    const names = lit.map((c) => NAME[c]).join(" and ");
+    const colorsCaption = !segLive ? "No preference: every identity, five-color included." : sc.exact ? `Exactly ${names}, nothing more.` : `Any identity that includes ${names}.`;
+    const themes = sc.themes ?? [];
+    const picker = sc.picker && !P ? [["Dinosaurs", "31 commanders", true], ["Dragons", "118 commanders"], ["Discard", "64 commanders"], ["Devotion", "57 commanders"]].map(([label, count, sel]) => ({ label, count, style: { display: "flex", alignItems: "center", gap: 10, height: 36, padding: "0 10px", borderRadius: 7, background: sel ? "var(--elevated)" : "transparent" }, check: { width: 14, height: 14, borderRadius: 4, border: sel ? "none" : "1.5px solid var(--border-dashed)", background: sel ? "var(--accent)" : "transparent", flex: "none" } })) : [];
+    const budget = { value: "No cap", fromWords: false };
+    const bSel = sc.bracketOwn ? 2 : "any";
+    const BN = { any: "No preference: every bracket.", 1: "1 · Exhibition", 2: "2 · Core", 3: "3 · Upgraded", 4: "4 · Optimized", 5: "5 · cEDH" };
+    const brackets = ["any", 1, 2, 3, 4, 5].map((b) => ({ label: b === "any" ? "Any" : String(b), style: { flex: b === "any" ? "1.6 1 0" : "1 1 0", height: P ? 44 : 34, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 7, fontFamily: b === "any" ? "inherit" : mono, fontSize: 13, fontWeight: bSel === b ? 600 : 400, color: bSel === b ? "var(--fg)" : "var(--fg-muted)", background: bSel === b ? "var(--elevated)" : "var(--surface-sunken)", border: `1px solid ${bSel === b ? "var(--accent)" : "var(--border)"}` } }));
+
+    // results rows
+    const thumbFor = (ci) => {
+      const cols = ci.map((c) => `color-mix(in oklab, ${PIP[c]} 55%, var(--bg))`);
+      const g = cols.length === 1 ? `${cols[0]}, ${cols[0]}` : cols.join(", ");
+      return { flex: "none", width: 40, height: 56, borderRadius: 5, background: `linear-gradient(160deg, ${g})`, boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.08)" };
+    };
+    const rows = (res.rows ?? []).map((r) => {
+      const c = C[r.key];
+      const min = r.figs.length > 1 ? Math.min(...r.figs.map((f) => f.n)) : null;
+      const figs = r.figs.map((f) => {
+        const lowest = min !== null && f.n === min;
+        const lead = min === null || lowest;
+        return { ...f, lowest, pctStyle: { fontFamily: mono, fontSize: P ? 10.5 : 14, fontWeight: 600, color: lead ? "var(--fg)" : "var(--fg-muted)", minWidth: P ? 0 : (res.own ? 34 : 38), textAlign: P ? "left" : "right" }, textStyle: { fontSize: P ? 10.5 : 12.5, fontFamily: P ? mono : "inherit", color: lead ? "var(--fg-body)" : "var(--fg-faint)" } };
+      });
+      const own = `${c.own} · about ${c.buy} to buy${res.budget ? `, inside ${res.budget}` : ""}`;
+      return { ...c, figs, thumb: thumbFor(c.ci), pips: c.ci.map((x) => ({ width: P ? 9 : 11, height: P ? 9 : 11, borderRadius: "50%", background: PIP[x] })), free: c.mark === "free", held: c.mark === "held", priced: c.mark === "priced", own, extra: res.unpriced ? `${res.unpriced}: no price on record, placed anyway` : "", loading: !!r.loading, failed: !!r.failed, ready: !r.loading && !r.failed };
+    });
+    const MARK = { W: "var(--w)", U: "var(--u)", B: "var(--b)", R: "var(--r)", G: "var(--g)" };
+    const artFor = (ci) => ({ position: "relative", height: P ? 88 : 132, background: `linear-gradient(150deg, ${ci.map((c) => `color-mix(in oklab, ${MARK[c]} 60%, var(--bg))`).join(", ")}${ci.length === 1 ? ", var(--bg)" : ""})`, borderBottom: "1px solid var(--border)" });
+    const noteV = res.note ? { ...res.note, options: res.note.options.map((o, i) => { const lead = i === 0; return { ...o, why: o.why ?? "", count: `${o.count} commanders`, style: { display: "flex", alignItems: "center", gap: 12, minHeight: P ? 48 : 44, padding: "8px 12px 8px 14px", borderRadius: 9, textAlign: "left", background: lead ? "var(--elevated)" : "transparent", border: `1px solid ${lead ? "color-mix(in oklab, var(--accent) 55%, transparent)" : "var(--border-strong)"}`, flex: res.note.none || P ? "none" : "none" }, labelStyle: { fontSize: 13.5, fontWeight: 600, color: "var(--fg)", whiteSpace: "nowrap" }, countStyle: { fontFamily: mono, fontSize: 11, color: lead ? "var(--fg-body)" : "var(--fg-faint)", whiteSpace: "nowrap", flex: "none" }, arrow: { fontSize: 13, color: lead ? "var(--accent)" : "var(--fg-faint)", flex: "none" } }; }) } : null;
+    const canBest = rows.length >= 4 && !res.note;
+    const best = canBest ? rows.slice(0, 3).map((r, i) => ({ ...r, rank: String(i + 1), art: artFor(C[(res.rows[i]).key].ci), figs: r.figs.map((f) => ({ ...f, bestPct: { fontFamily: mono, fontSize: P ? 13 : 15, fontWeight: 600, color: f.lowest || r.figs.length === 1 ? "var(--fg)" : "var(--fg-muted)" }, bestText: { fontSize: P ? 12 : 12.5, color: f.lowest || r.figs.length === 1 ? "var(--fg-body)" : "var(--fg-faint)" } })) })) : [];
+    const rest = canBest ? rows.slice(3) : rows;
+    const skeletons = [0, 1, 2, 3, 4].map((i) => ({ a: { width: `${58 - i * 5}%`, height: 11, borderRadius: 5, background: "var(--elevated)" }, b: { width: `${40 + (i % 2) * 12}%`, height: 8, borderRadius: 4, background: "var(--surface-raised)" } }));
+
+    const summary = [
+      ...lit.length ? [{ kind: sc.exact ? "exactly" : "colors", value: lit.map((c) => NAME[c]).join(" · ") }] : [],
+      ...themes.map((t) => ({ kind: "theme", value: t })),
+      ...(sc.chips ?? []).map((c) => ({ kind: c.k, value: c.l })),
+      ...(sc.bracketOwn ? [{ kind: "bracket", value: "2 · Core" }] : []),
+    ].map((a) => ({ ...a, style: { display: "inline-flex", alignItems: "center", gap: 5, height: 26, padding: "0 8px", borderRadius: 6, border: "1px solid var(--border-strong)", fontSize: 12, color: "var(--fg-body)" } }));
+    if (!summary.length) summary.push({ kind: "", value: "No answers given", style: { fontFamily: mono, fontSize: 11, color: "var(--fg-faint)", height: 26, display: "inline-flex", alignItems: "center" } });
+
+    const n = res.count;
+    const onResults = screen === "results";
+    const anyAnswer = !!(sc.text || (sc.themes ?? []).length || lit.length || sc.budget || sc.bracket);
+    const unread = sc.offer === "ready" || sc.offer === "failed" || sc.offer === "spent" || sc.offer === "paused";
+    const submit = { label: "Find commanders", disabled: "false" };
+    const title = onResults ? "Commanders for you" : "Help me choose";
+    const sub = onResults ? (P ? "From your answers." : "Suggested from your answers, best fit first.") : P ? "Every answer is optional." : "Say as much or as little as you like. Every answer is optional, and the more you give, the closer the fit.";
+    const resHead = res.head;
+    const phoneRes = P && onResults;
+
+    const dim = sc.offer === "reading" ? 0.45 : 1;
+    const s = {
+      root: { width: P ? 390 : 1300, minHeight: P ? 844 : 900, background: "var(--bg)", color: "var(--fg)", fontFamily: "'IBM Plex Sans',sans-serif", display: "flex", flexDirection: "column" },
+      header: P ? { padding: "20px 18px 14px", borderBottom: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: 3 } : onResults ? { padding: "34px 40px 26px", display: "flex", flexDirection: "column", gap: 6 } : { width: 680, margin: "0 auto", padding: "34px 0 26px", display: "flex", flexDirection: "column", gap: 6 },
+      h1: { margin: 0, fontFamily: "var(--display)", fontWeight: 700, fontSize: P ? 20 : 28, color: "var(--fg)" },
+      sub: P ? { margin: 0, fontFamily: mono, fontSize: 10, color: "var(--fg-faint)" } : { margin: 0, fontSize: 14, color: "var(--fg-muted)", maxWidth: 640 },
+      body: P ? { display: "flex", flexDirection: "column", flex: 1 } : { display: "flex", flexDirection: "column", alignItems: onResults ? "stretch" : "center", padding: "0 40px 48px" },
+      intake: P ? { display: "flex", flexDirection: "column", gap: 20, padding: "18px 18px", flex: 1 } : { width: 680, display: "flex", flexDirection: "column", gap: 22, padding: "24px 26px", borderRadius: 12, background: "var(--surface-rail)", border: "1px solid var(--border)" },
+      submitWrap: P ? { margin: "4px -18px -18px", padding: "10px 16px 12px", borderTop: "1px solid var(--border)", background: "var(--bg)", display: "flex", flexDirection: "column-reverse", gap: 7 } : { display: "flex", alignItems: "center", gap: 16, paddingTop: 20, borderTop: "1px solid var(--border)" },
+      submitBtn: { height: P ? 48 : 44, whiteSpace: "nowrap", display: "flex", alignItems: "center", justifyContent: "center", padding: "0 24px", borderRadius: 10, background: sc.offer === "reading" ? "transparent" : "var(--fg)", color: sc.offer === "reading" ? "var(--fg-disabled)" : "var(--bg)", border: sc.offer === "reading" ? "1px solid var(--border-strong)" : "none", fontSize: 15, fontWeight: 600, flex: "none" },
+      submitNote: { fontFamily: mono, fontSize: P ? 10.5 : 11, lineHeight: 1.5, color: "var(--fg-faint)", textWrap: "pretty" },
+      answersBar: { display: "flex", flexDirection: "column", gap: 14, padding: P ? "14px" : "16px 18px", borderRadius: 12, background: "var(--surface-rail)", border: "1px solid var(--border)" },
+      againBtns: { display: "flex", gap: 8, flex: "none" },
+      againPrimary: { height: P ? 44 : 36, flex: P ? "1 1 0" : "none", whiteSpace: "nowrap", display: "flex", alignItems: "center", justifyContent: "center", padding: "0 16px", borderRadius: 8, border: "1px solid var(--accent)", color: "var(--accent)", fontSize: 13.5, fontWeight: 600 },
+      againGhost: { height: P ? 44 : 36, flex: P ? "1 1 0" : "none", whiteSpace: "nowrap", display: "flex", alignItems: "center", justifyContent: "center", padding: "0 14px", borderRadius: 8, border: "1px solid var(--border-strong)", color: "var(--fg-body)", fontSize: 13.5 },
+      textarea: { minHeight: P ? 96 : 84, padding: P ? "12px 13px" : "12px 14px", borderRadius: 9, background: "var(--surface-sunken)", border: `1px solid ${sc.text ? "var(--accent)" : "var(--border-strong)"}`, fontSize: P ? 16 : 14, lineHeight: 1.55 },
+      readback: { display: "flex", flexDirection: "column", gap: 10, marginTop: 6, paddingTop: 12, borderTop: "1px dashed var(--border)" },
+      offer: { display: "flex", flexDirection: P ? "column" : "row", alignItems: P ? "stretch" : "center", gap: P ? 12 : 24, padding: P ? "13px 14px" : "14px 16px", borderRadius: 10, background: "color-mix(in oklab, var(--accent) 6%, var(--surface-sunken))", border: "1px solid color-mix(in oklab, var(--accent) 28%, var(--border))" },
+      offerTitle: { fontFamily: "var(--display)", fontWeight: 600, fontSize: P ? 14.5 : 15.5, color: "var(--fg)" },
+      offerAct: { display: "flex", flexDirection: "column", alignItems: P ? "stretch" : "flex-end", gap: 6, flex: "none" },
+      lead: { fontSize: P ? 12.5 : 13, lineHeight: 1.55, color: "var(--fg-body)", textWrap: "pretty", maxWidth: 520 },
+      stop: { height: P ? 44 : 36, display: "inline-flex", alignItems: "center", padding: "0 12px", borderRadius: 8, border: "1px solid var(--border-strong)", fontSize: 13, color: "var(--fg-muted)" },
+      barTop: { display: "flex", flexDirection: P ? "column" : "row", alignItems: P ? "stretch" : "flex-start", gap: P ? 12 : 24 },
+      note: { fontFamily: mono, fontSize: P ? 10 : 10.5, lineHeight: 1.5, color: "var(--fg-faint)", textAlign: P ? "center" : "right", textWrap: "pretty" },
+      seg: { display: "flex", gap: 2, padding: 2, borderRadius: 8, border: "1px solid var(--border-strong)" },
+      field: { display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6, minHeight: P ? 44 : 40, padding: "6px 10px", borderRadius: 9, background: "var(--surface-sunken)", border: "1px solid var(--border-strong)" },
+      fieldInput: { fontSize: P ? 16 : 13.5, color: sc.picker ? "var(--fg)" : "var(--fg-faint)", padding: "0 4px", borderLeft: sc.picker ? "1.5px solid var(--accent)" : "none" },
+      budgetVal: { fontFamily: mono, fontSize: 14, color: sc.budget ? "var(--fg)" : "var(--fg-faint)" },
+      results: P ? { display: "flex", flexDirection: "column", gap: 14, padding: "16px 18px 24px" } : { maxWidth: 1080, display: "flex", flexDirection: "column", gap: 18 },
+      h2: { margin: 0, fontFamily: "var(--display)", fontWeight: 600, fontSize: P ? 15 : 18, color: "var(--fg)" },
+      resSub: { margin: 0, fontSize: P ? 12 : 13, lineHeight: 1.55, color: "var(--fg-muted)", maxWidth: 640 },
+      narrow: res.note && res.note.none ? { display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 18, padding: P ? "36px 18px" : "52px 40px", borderRadius: 14, border: "1px dashed var(--border-strong)" } : { display: "flex", flexDirection: P ? "column" : "row", alignItems: P ? "stretch" : "center", gap: P ? 12 : 22, padding: P ? "13px 14px" : "14px 16px", borderRadius: 11, background: "var(--surface-sunken)", border: "1px solid var(--border-strong)" },
+      narrowHead: { fontFamily: "var(--display)", fontWeight: 600, fontSize: P ? 16 : 19, color: "var(--fg)" },
+      narrowBody: { fontSize: P ? 13 : 13.5, lineHeight: 1.6, color: "var(--fg-body)", maxWidth: 460, textWrap: "pretty" },
+      optList: res.note && res.note.none ? { display: "flex", flexDirection: "column", gap: 8, width: "100%", maxWidth: 440 } : { display: "flex", flexDirection: P ? "column" : "row", gap: 8, marginLeft: P ? 0 : "auto" },
+      emptyMark: { width: 36, height: 36, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: mono, fontWeight: 600, fontSize: 15, color: "var(--warning)", border: "1.5px solid color-mix(in oklab, var(--warning) 55%, transparent)" },
+      failGhost: { height: P ? 44 : 36, whiteSpace: "nowrap", display: "flex", alignItems: "center", justifyContent: "center", padding: "0 16px", borderRadius: 8, border: "1px solid var(--border-strong)", color: "var(--fg-body)", fontSize: 13.5 },
+      failBtns: { display: "flex", flexDirection: P ? "column" : "row", gap: 8, width: P ? "100%" : "auto", marginTop: 4 },
+      bone: { height: P ? 44 : 36, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 16px", borderRadius: 8, background: "var(--fg)", color: "var(--bg)", fontSize: 13.5, fontWeight: 600 },
+      failBox: { display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 10, padding: P ? "36px 18px" : "56px 40px", borderRadius: 14, border: "1px dashed var(--border-strong)" },
+      bestGrid: { display: "grid", gridTemplateColumns: P ? "minmax(0,1fr)" : "repeat(3, minmax(0,1fr))", gap: P ? 10 : 14 },
+      bestCard: { display: "flex", flexDirection: P ? "row" : "column", borderRadius: 12, overflow: "hidden", background: "var(--surface-rail)", border: "1px solid color-mix(in oklab, var(--accent) 30%, var(--border))" },
+      bestBody: { display: "flex", flexDirection: "column", gap: 9, padding: P ? "11px 12px" : "14px 15px 15px", flex: 1, minWidth: 0 },
+      bestName: { fontFamily: "var(--display)", fontWeight: 600, fontSize: P ? 14.5 : 17, color: "var(--fg)", borderBottom: "1px dotted var(--accent)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 },
+      rank: { position: "absolute", left: 10, top: 10, width: 26, height: 26, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: mono, fontWeight: 600, fontSize: 12, background: "var(--bg)", color: "var(--accent)", border: "1px solid color-mix(in oklab, var(--accent) 50%, transparent)" },
+      skRow: { display: "flex", alignItems: "center", gap: 14, padding: P ? "10px 12px" : "12px 15px", borderRadius: 11, background: "var(--surface-rail)", border: "1px solid var(--border)" },
+      thumbSk: { width: 40, height: 56, borderRadius: 5, background: "var(--elevated)", flex: "none" },
+      row: P ? { opacity: dim, display: "flex", alignItems: "center", gap: 11, padding: "10px 12px", borderRadius: 10, background: "var(--surface-rail)", border: "1px solid var(--border)", minHeight: 44 } : { opacity: dim, display: "grid", gridTemplateColumns: "40px minmax(0,1fr) 340px 14px", alignItems: "center", gap: 16, padding: "12px 15px", borderRadius: 11, background: "var(--surface-rail)", border: "1px solid var(--border)" },
+      rowMain: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: P ? 5 : 7 },
+      rowName: { fontFamily: "var(--display)", fontWeight: 600, fontSize: P ? 14 : 16, color: "var(--fg)", borderBottom: "1px dotted var(--accent)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 },
+      ownLine: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: "3px 7px", fontFamily: mono, fontSize: P ? 10 : 11, color: "var(--fg-muted)" },
+      more: { whiteSpace: "nowrap", height: P ? 44 : 36, display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "0 16px", borderRadius: 8, border: "1px solid var(--border-strong)", color: "var(--fg-body)", fontSize: 13.5, flex: P ? "1 1 100%" : "none" },
+    };
+    const moreLine = (typeof n === "number" && n > 12) || n === "3,301" || n === 212 ? "The next 12 count what you own as they load." : "";
+
+    return {
+      theme, phone: P, desktop: !P, s, label: `${P ? "390" : "1300"} · ${scene}${P ? " · " + screen : ""}`,
+      showHeader: true, backLabel: onResults ? "‹ Your answers" : "‹ New deck", title, sub,
+      showIntake, showResults, phoneResults: phoneRes,
+      text: sc.text ?? "", hasText: !!sc.text, noText: !sc.text,
+      showReadback: chips.length > 0 || words.show, noAnswers: chips.length === 0 && !words.show, chips, words, offer,
+      pips, modes, colorsCaption, themes, themeInput: sc.picker ? "D" : themes.length ? "Add another…" : "Add a theme…", pickerOpen: picker.length > 0, picker,
+      budget, brackets, bracketCaption: BN[bSel], bracketFromWords: false,
+      submit,
+      res: { ...res, head: resHead, note: noteV, more: moreLine !== "", moreLine, loading: !!res.loading, failed: !!res.failed },
+      rows, best, rest, hasBest: best.length > 0, skeletons, summary,
+    };
+  }
+}
+</script>
+</body>
+</html>

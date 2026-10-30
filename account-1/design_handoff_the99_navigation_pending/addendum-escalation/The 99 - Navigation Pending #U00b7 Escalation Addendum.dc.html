@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-sunken:#18140F; --surface-rail:#1A1611; --surface-inset:#1B1712; --elevated:#29241F; --elevated-hover:#201C17;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654;
+    --accent:#CF8745; --accent-hover:#DE9757; --accent-strong:#AB6E37; --warning:#DEAA29;
+    --success:#6FA368; --danger:#C6533F; --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-sunken:#101219; --surface-rail:#12141B; --surface-inset:#13151C; --elevated:#20222A; --elevated-hover:#181A21;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-strong:#D33E7E; --warning:#E0913C;
+    --success:#6FA368; --danger:#C6533F; --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  @keyframes pipIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes sweep { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+  @keyframes dots { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--fg);padding:44px 40px 90px;display:flex;flex-direction:column;gap:64px;width:max-content;">
+
+  <div style="max-width:1300px;display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:center;gap:13px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">ADDENDUM</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--fg-faint);">Navigation pending · escalation to the full screen · brief 2026-09-28</span>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:32px;margin:0;line-height:1.15;">The mark first. The route’s own screen at 400ms.</h1>
+    <p style="margin:0;font-size:14.5px;line-height:1.7;color:var(--fg-body);max-width:1000px;text-wrap:pretty;">This reopens one call in the parent handoff: no loading screen is deleted. The pip and the track still answer the press at 120ms. If the navigation is still pending at 400ms, the route’s <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">LoadingScreen</span> fades in over the old page, inside <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">&lt;main&gt;</span>. The parent’s R1 keep/drop list and its copy retire-list are withdrawn. Everything here answers §4 of <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">2026-09-28-navigation-pending-escalation.md</span>. §1 and §3 are drawn as locked.</p>
+    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;">
+      <sc-for list="{{ calls }}" as="c" hint-placeholder-count="4">
+        <div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px;background:var(--surface);display:flex;flex-direction:column;gap:7px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">{{ c.q }}</span>
+          <span style="font-size:14px;font-weight:600;line-height:1.35;color:var(--fg);">{{ c.a }}</span>
+          <span style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">{{ c.why }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <section id="E1" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:12px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 8px;">E1</span>
+      <span style="font-size:15px;font-weight:600;">The clock, from the press</span>
+      <span style="font-size:13px;color:var(--fg-muted);">Ticks show fast-connection first visits at 1300 (§2). Everything right of 400 sees the screen.</span>
+    </div>
+    <div style="position:relative;width:1120px;height:250px;border:1px solid var(--border-strong);border-radius:12px;background:var(--surface-sunken);">
+      <div style="position:absolute;left:60px;top:0;bottom:0;width:1000px;">
+        <sc-for list="{{ grid }}" as="g" hint-placeholder-count="11">
+          <div style="position:absolute;top:18px;bottom:30px;left:{{ g.x }};width:1px;background:var(--border);"></div>
+          <span style="position:absolute;bottom:10px;left:{{ g.x }};transform:translateX(-50%);font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ g.label }}</span>
+        </sc-for>
+        <span style="position:absolute;left:-52px;top:32px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);">mark</span>
+        <div style="position:absolute;left:120px;right:0;top:34px;height:8px;border-radius:2px;background:var(--fg-body);"></div>
+        <span style="position:absolute;left:124px;top:46px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-body);">120 · pip / track</span>
+        <span style="position:absolute;left:-52px;top:72px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);">screen</span>
+        <div style="position:absolute;left:400px;width:150px;top:70px;height:18px;border-radius:2px 0 0 2px;background:linear-gradient(to right, color-mix(in oklab, var(--accent) 0%, transparent), var(--accent-strong));"></div>
+        <div style="position:absolute;left:550px;right:0;top:70px;height:18px;background:var(--accent-strong);"></div>
+        <span style="position:absolute;left:404px;top:92px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-body);">400 fade in · 150ms</span>
+        <span style="position:absolute;left:554px;top:92px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-body);">550 fully shown · no minimum hold</span>
+        <sc-for list="{{ ticks }}" as="t" hint-placeholder-count="15">
+          <div style="position:absolute;left:{{ t.x }};top:120px;width:1px;height:{{ t.h }};background:{{ t.c }};"></div>
+        </sc-for>
+        <sc-for list="{{ tickLabels }}" as="t" hint-placeholder-count="6">
+          <span style="position:absolute;left:{{ t.x }};top:{{ t.y }};font-family:'IBM Plex Mono',monospace;font-size:10px;white-space:nowrap;color:{{ t.c }};">{{ t.label }}</span>
+        </sc-for>
+        <div style="position:absolute;left:31px;width:222px;top:150px;height:1px;background:var(--fg-faint);"></div>
+        <span style="position:absolute;left:31px;top:156px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);">9 routes, 31–253 · nothing, or the mark alone</span>
+        <div style="position:absolute;left:601px;right:0;top:202px;height:6px;border-radius:2px;background:repeating-linear-gradient(90deg, var(--fg-faint) 0 6px, transparent 6px 10px);"></div>
+        <span style="position:absolute;left:601px;top:184px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);">Slow 4G + 4× CPU, repeat: every route 601–981 · /collection, /discover 2.3–2.6s →</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="E2" style="display:flex;flex-direction:column;gap:22px;">
+    <div style="display:flex;align-items:baseline;gap:12px;max-width:1300px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 8px;">E2</span>
+      <span style="font-size:15px;font-weight:600;">The handoff: Home → /commanders on a slow network (~875ms)</span>
+      <span style="font-size:13px;color:var(--fg-muted);max-width:900px;">The screen covers only <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&lt;main&gt;</span>. The rail, the phone header and the tab bar stay up, so the nav pip keeps naming the destination under the screen until the page commits. An in-page track sits inside main, so the screen covers it with no exit of its own. 1300 frames are drawn at ½.</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">1300 · nav rail</span>
+      <div style="display:flex;gap:24px;">
+        <sc-for list="{{ h1300nav }}" as="f" hint-placeholder-count="3">
+          <div style="display:flex;flex-direction:column;gap:8px;width:650px;flex:none;">
+            <div style="display:flex;gap:10px;align-items:baseline;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--fg);">{{ f.t }}</span><span style="font-size:12px;line-height:1.5;color:var(--fg-muted);">{{ f.note }}</span></div>
+            <div style="width:650px;height:415px;border:1px solid var(--border-strong);border-radius:10px;overflow:hidden;"><div style="zoom:0.5;width:1300px;height:830px;"><dc-import name="EscalationFrame" wide="{{ true }}" pending="{{ f.pending }}" active="{{ f.active }}" pending-nav="{{ f.pnav }}" offset="{{ f.offset }}" overlay="{{ f.op }}" heading="{{ f.heading }}" status="{{ f.status }}" still="{{ f.still }}" pip="{{ pip }}" sweep="{{ sweep }}" crown="{{ crown }}" crown-still="{{ crownStill }}" mark-rail="{{ markRail }}" mark-header="{{ markHeader }}" icons="{{ icons }}" hint-size="1300px,830px" style="width:100%;height:100%;"></dc-import></div></div>
+          </div>
+        </sc-for>
+      </div>
+      <span style="margin-top:14px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">1300 · in-page link</span>
+      <div style="display:flex;gap:24px;">
+        <sc-for list="{{ h1300link }}" as="f" hint-placeholder-count="3">
+          <div style="display:flex;flex-direction:column;gap:8px;width:650px;flex:none;">
+            <div style="display:flex;gap:10px;align-items:baseline;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--fg);">{{ f.t }}</span><span style="font-size:12px;line-height:1.5;color:var(--fg-muted);">{{ f.note }}</span></div>
+            <div style="width:650px;height:415px;border:1px solid var(--border-strong);border-radius:10px;overflow:hidden;"><div style="zoom:0.5;width:1300px;height:830px;"><dc-import name="EscalationFrame" wide="{{ true }}" pending="{{ f.pending }}" active="{{ f.active }}" pending-nav="{{ f.pnav }}" offset="{{ f.offset }}" overlay="{{ f.op }}" heading="{{ f.heading }}" status="{{ f.status }}" still="{{ f.still }}" pip="{{ pip }}" sweep="{{ sweep }}" crown="{{ crown }}" crown-still="{{ crownStill }}" mark-rail="{{ markRail }}" mark-header="{{ markHeader }}" icons="{{ icons }}" hint-size="1300px,830px" style="width:100%;height:100%;"></dc-import></div></div>
+          </div>
+        </sc-for>
+      </div>
+      <span style="margin-top:14px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">390 · tab bar, then in-page link (scrolled to it)</span>
+      <div style="display:flex;gap:24px;">
+        <sc-for list="{{ h390 }}" as="f" hint-placeholder-count="6">
+          <div style="display:flex;flex-direction:column;gap:8px;width:390px;flex:none;">
+            <div style="display:flex;gap:10px;align-items:baseline;min-height:36px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--fg);">{{ f.t }}</span><span style="font-size:12px;line-height:1.5;color:var(--fg-muted);">{{ f.note }}</span></div>
+            <div style="width:390px;height:844px;border:1px solid var(--border-strong);border-radius:22px;overflow:hidden;"><dc-import name="EscalationFrame" wide="{{ false }}" pending="{{ f.pending }}" active="{{ f.active }}" pending-nav="{{ f.pnav }}" offset="{{ f.offset }}" overlay="{{ f.op }}" heading="{{ f.heading }}" status="{{ f.status }}" still="{{ f.still }}" pip="{{ pip }}" sweep="{{ sweep }}" crown="{{ crown }}" crown-still="{{ crownStill }}" mark-rail="{{ markRail }}" mark-header="{{ markHeader }}" icons="{{ icons }}" hint-size="390px,844px" style="width:100%;height:100%;"></dc-import></div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <section id="E3" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:12px;max-width:1300px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 8px;">E3</span>
+      <span style="font-size:15px;font-weight:600;">The flash case: pages that land at 430–690ms</span>
+      <span style="font-size:13px;color:var(--fg-muted);max-width:900px;">What each rule does to three fast-connection landings. The cost is content held back past the moment it was ready.</span>
+    </div>
+    <div style="border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;max-width:1300px;">
+      <div style="display:grid;grid-template-columns:240px repeat(3,minmax(0,1fr));gap:0 20px;padding:10px 18px;background:var(--surface-sunken);border-bottom:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">
+        <span>Rule</span><span>/decks, 430 (390 again)</span><span>/decks/[id], 586 (1300 again)</span><span>/decks/[id], 692 (1300 first)</span>
+      </div>
+      <sc-for list="{{ flash }}" as="r" hint-placeholder-count="4">
+        <div style="display:grid;grid-template-columns:240px repeat(3,minmax(0,1fr));gap:0 20px;padding:12px 18px;border-bottom:1px solid var(--border);align-items:baseline;background:{{ r.bg }};">
+          <span style="font-size:13px;font-weight:600;color:var(--fg);">{{ r.rule }}</span>
+          <span style="font-size:12.5px;line-height:1.55;color:var(--fg-body);">{{ r.a }}</span>
+          <span style="font-size:12.5px;line-height:1.55;color:var(--fg-body);">{{ r.b }}</span>
+          <span style="font-size:12.5px;line-height:1.55;color:var(--fg-body);">{{ r.c }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);max-width:1000px;text-wrap:pretty;">A hold makes no difference on a slow network, where every screen is already up for 200ms or more. It only bites on a fast connection, the one case with nothing to hide. The 120ms exit turns (i)’s hard cut into a dissolve. The new page is already mounted and interactive beneath it, because the exiting overlay takes <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">pointer-events: none</span> and drops <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-busy</span> at commit.</p>
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Drawn at 1300, ½ scale · the two ends of the band</span>
+    <div style="display:flex;gap:24px;">
+      <sc-for list="{{ flashFrames }}" as="f" hint-placeholder-count="4">
+        <div style="display:flex;flex-direction:column;gap:8px;width:650px;flex:none;">
+          <div style="display:flex;gap:10px;align-items:baseline;min-height:36px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--fg);">{{ f.t }}</span><span style="font-size:12px;line-height:1.5;color:var(--fg-muted);">{{ f.note }}</span></div>
+          <div style="width:650px;height:415px;border:1px solid var(--border-strong);border-radius:10px;overflow:hidden;"><div style="zoom:0.5;width:1300px;height:830px;"><dc-import name="EscalationFrame" wide="{{ true }}" pending="{{ f.pending }}" active="{{ f.active }}" pending-nav="{{ f.pnav }}" offset="{{ f.offset }}" overlay="{{ f.op }}" heading="{{ f.heading }}" status="{{ f.status }}" still="{{ f.still }}" pip="{{ pip }}" sweep="{{ sweep }}" crown="{{ crown }}" crown-still="{{ crownStill }}" mark-rail="{{ markRail }}" mark-header="{{ markHeader }}" icons="{{ icons }}" hint-size="1300px,830px" style="width:100%;height:100%;"></dc-import></div></div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section id="E4" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:12px;max-width:1300px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 8px;">E4</span>
+      <span style="font-size:15px;font-weight:600;">The overlay over a page, in each of its states</span>
+      <span style="font-size:13px;color:var(--fg-muted);max-width:900px;">At 390, from Home. The overlay is LoadingScreen, unchanged, positioned over the visible part of main: it pins to the viewport, not to main’s scroll height, so a scrolled page still shows the crown centred.</span>
+    </div>
+    <div style="display:flex;gap:24px;">
+      <sc-for list="{{ states }}" as="f" hint-placeholder-count="4">
+        <div style="display:flex;flex-direction:column;gap:8px;width:390px;flex:none;">
+          <div style="display:flex;flex-direction:column;gap:4px;min-height:74px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--fg);">{{ f.t }}</span><span style="font-size:12px;line-height:1.5;color:var(--fg-muted);">{{ f.note }}</span></div>
+          <div style="width:390px;height:844px;border:1px solid var(--border-strong);border-radius:22px;overflow:hidden;"><dc-import name="EscalationFrame" wide="{{ false }}" pending="{{ f.pending }}" active="{{ f.active }}" pending-nav="{{ f.pnav }}" offset="{{ f.offset }}" overlay="{{ f.op }}" heading="{{ f.heading }}" status="{{ f.status }}" still="{{ f.still }}" pip="{{ pip }}" sweep="{{ sweep }}" crown="{{ crown }}" crown-still="{{ crownStill }}" mark-rail="{{ markRail }}" mark-header="{{ markHeader }}" icons="{{ icons }}" hint-size="390px,844px" style="width:100%;height:100%;"></dc-import></div>
+        </div>
+      </sc-for>
+    </div>
+    <span style="margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Every route’s words · shellCopy.loading keeps every key</span>
+    <div style="display:grid;grid-template-columns:repeat(4,300px);gap:14px;">
+      <sc-for list="{{ copy }}" as="c" hint-placeholder-count="11">
+        <div style="display:flex;flex-direction:column;gap:7px;">
+          <div style="height:200px;border:1px solid var(--border-strong);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;background:radial-gradient(360px 200px at 50% 68%, color-mix(in oklab, var(--accent) 8%, transparent), transparent 70%), var(--bg);">
+            {{ crown }}
+            <span style="font-family:'Cinzel',serif;font-weight:700;font-size:19px;margin-top:20px;color:var(--fg);">{{ c.heading }}</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;margin-top:8px;color:var(--fg-faint);">{{ c.status }}</span>
+          </div>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-muted);"><span style="color:var(--fg);">{{ c.key }}</span> · {{ c.routes }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section id="E5" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:12px;max-width:1300px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 8px;">E5</span>
+      <span style="font-size:15px;font-weight:600;">The track: 1px or 1.5px, at 1×</span>
+      <span style="font-size:13px;color:var(--fg-muted);max-width:900px;">Drawn at true size. Judge at 100% canvas zoom on a 1× display.</span>
+    </div>
+    <div style="display:flex;gap:40px;align-items:flex-start;">
+      <sc-for list="{{ thick }}" as="r" hint-placeholder-count="2">
+        <div style="display:flex;flex-direction:column;gap:14px;padding:20px 22px;border:1px solid var(--border);border-radius:12px;background:var(--bg);width:420px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg);">{{ r.label }}</span>
+          <div style="display:flex;align-items:center;gap:16px;">
+            <span style="position:relative;overflow:hidden;display:flex;flex:none;white-space:nowrap;align-items:center;height:32px;padding:0 13px;border-radius:8px;border:1px solid var(--border-strong);background:var(--elevated-hover);font-size:12.5px;color:var(--fg);">All commanders{{ r.node }}</span>
+            <span style="position:relative;overflow:hidden;display:flex;flex:none;white-space:nowrap;align-items:center;height:44px;padding:0 12px;border-radius:10px;border:1px solid var(--border-strong);background:var(--elevated-hover);font-size:13px;color:var(--fg);">All commanders{{ r.node }}</span>
+          </div>
+          <span style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">{{ r.note }}</span>
+        </div>
+      </sc-for>
+      <div style="width:460px;display:flex;flex-direction:column;gap:8px;padding:20px 22px;border:1px solid var(--border-strong);border-radius:12px;background:var(--surface);">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Flag for audit · outside §4</span>
+        <span style="font-size:14px;font-weight:600;">The track now has 280ms to be read, not a loop</span>
+        <span style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">From 120ms to 400ms, the parent’s 1.2s ease-in-out loop covers under a quarter of its path. Its slow start leaves the segment barely past the left edge when the screen covers it. So the loop goes to 900ms linear with a −260ms phase: the segment is already on the button when it fades in, and it crosses once before 400. The pip is unchanged.</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="E6" style="display:flex;flex-direction:column;gap:18px;max-width:1300px;">
+    <div style="display:flex;align-items:baseline;gap:12px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 8px;">E6</span>
+      <span style="font-size:15px;font-weight:600;">Which navigations get the fallback (audit item D)</span>
+    </div>
+    <div style="border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;">
+      <div style="display:grid;grid-template-columns:240px 160px 150px minmax(0,1fr);gap:0 20px;padding:10px 18px;background:var(--surface-sunken);border-bottom:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">
+        <span>Navigation</span><span>Mark at 120</span><span>Screen at 400</span><span>Why · cost</span>
+      </div>
+      <sc-for list="{{ scope }}" as="s" hint-placeholder-count="8">
+        <div style="display:grid;grid-template-columns:240px 160px 150px minmax(0,1fr);gap:0 20px;padding:11px 18px;border-bottom:1px solid var(--border);align-items:baseline;">
+          <span style="font-size:13px;color:var(--fg);">{{ s.kind }}</span>
+          <span style="font-size:12.5px;color:var(--fg-body);">{{ s.mark }}</span>
+          <span style="font-size:12.5px;font-weight:600;color:{{ s.tone }};">{{ s.screen }}</span>
+          <span style="font-size:12.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">{{ s.why }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const theme = this.props.theme ?? "amonkhet";
+    const h = React.createElement;
+    const svg = (...kids) => h("svg", { width: 19, height: 19, viewBox: "0 0 20 20", fill: "none", stroke: "currentColor", strokeWidth: 1.5, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true }, ...kids);
+    const icons = {
+      home: svg(h("path", { d: "M3 9.2 10 3.6l7 5.6V16a1 1 0 0 1-1 1h-3.5v-4.2h-5V17H4a1 1 0 0 1-1-1z" })),
+      collection: svg(...[[3.2, 3.2], [11, 3.2], [3.2, 11], [11, 11]].map(([x, y], i) => h("rect", { key: i, x, y, width: 5.8, height: 5.8, rx: 1.2 }))),
+      commanders: svg(h("path", { d: "M3 14.5 4.4 6l3.2 3.6L10 4l2.4 5.6L15.6 6 17 14.5z" }), h("path", { d: "M3 16.6h14" })),
+      discover: svg(h("circle", { cx: 10, cy: 10, r: 6.8 }), h("path", { d: "M10 6.4 12.8 10 10 13.6 7.2 10z" })),
+      decks: svg(h("rect", { x: 6.6, y: 3.2, width: 10, height: 13, rx: 1.6 }), h("path", { d: "M4.2 5.4A1.6 1.6 0 0 0 3.4 6.8v8.6a1.6 1.6 0 0 0 1.6 1.6h8.2" })),
+    };
+    const pip = h("span", { "aria-hidden": true, style: { display: "block", animation: "pipIn 160ms ease-out 120ms both" } },
+      h("span", { style: { display: "block", width: 4, height: 4, background: "var(--fg)", transform: "rotate(45deg)", animation: "dots 1.2s ease-in-out 280ms infinite" } }));
+    const sw = (th) => h("span", { "aria-hidden": true, style: { position: "absolute", left: 0, right: 0, bottom: 0, height: th, overflow: "hidden", animation: "pipIn 160ms ease-out 120ms both" } },
+      h("span", { style: { display: "block", width: "40%", height: th, background: "var(--fg-muted)", animation: "sweep 900ms linear -260ms infinite" } }));
+    const sweep = sw(1.5);
+    const box = ({ small, large, gap }) => { const s = small * Math.SQRT2, l = large * Math.SQRT2; return { width: s + gap + l + gap + s, height: l, centers: [s / 2, s + gap + l / 2, s + gap + l + gap + s / 2] }; };
+    const diamonds = (g, fill, offsetX = 0, pulse = false) => { const { centers, height } = box(g); const cy = height / 2; const sides = [g.small, g.large, g.small];
+      return h("g", null, ...centers.map((c, i) => { const cx = c + offsetX, side = sides[i]; return h("rect", { key: i, x: cx - side / 2, y: cy - side / 2, width: side, height: side, transform: `rotate(45, ${cx}, ${cy})`, fill, style: pulse ? { animation: "dots 1.2s ease-in-out infinite", animationDelay: `${[0, 0.2, 0.4][i]}s` } : undefined }); })); };
+    const cg = { small: 8, large: 11, gap: 5 }, cb = box(cg);
+    const mkCrown = (pulse) => h("svg", { "aria-hidden": true, viewBox: `0 0 ${cb.width} ${cb.height}`, width: cb.width, height: cb.height, style: { display: "block" } }, diamonds(cg, "var(--accent-strong)", 0, pulse));
+    const crown = mkCrown(true), crownStill = mkCrown(false);
+    const crowned = ({ s, l, size, weight, gap, baselineGap, bottomPad, ls }) => { const g = { small: s, large: l, gap }; const { width: cw, height: ch } = box(g); const tw = Math.max(cw, size * 1.15) + 4; const ty = ch + baselineGap; const th = ty + bottomPad;
+      return h("svg", { role: "img", "aria-label": "The 99", viewBox: `0 0 ${tw} ${th}`, width: tw, height: th, style: { overflow: "visible", display: "block" } }, diamonds(g, "var(--accent)", tw / 2 - cw / 2), h("text", { x: tw / 2, y: ty, textAnchor: "middle", fontFamily: "'Cinzel', serif", fontWeight: weight, fontSize: size, letterSpacing: ls, fill: "var(--fg)" }, "99")); };
+    const markRail = crowned({ s: 6, l: 8.5, size: 23, weight: 900, gap: 3, baselineGap: 22, bottomPad: 5, ls: "-0.01em" });
+    const markHeader = crowned({ s: 5, l: 7, size: 24, weight: 800, gap: 3, baselineGap: 30, bottomPad: 4 });
+
+    const L = {
+      home: ["Setting the table", "counting what you've got…"], collection: ["Reading your collection", "matching to Oracle…"],
+      about: ["Opening the rulebook", "reading what the app does…"], proxies: ["Gathering your proxies", "reading what each deck prints…"],
+      commanders: ["Consulting the council", "ranking by what you own…"], sets: ["Laying out the sets", "counting what you're missing…"],
+      setGrid: ["Dealing the set", "matching your copies to the checklist…"], discover: ["Casting a wider net", "ranking what you don't own…"],
+      decks: ["Shuffling up", "counting the 99…"], deckNew: ["Clearing a space", "gathering candidates…"], deckUpdate: ["Fetching the list", "reading what's in the deck…"],
+    };
+    const F = (o) => ({ pending: "none", active: "home", pnav: "commanders", offset: 0, op: 0, still: false, heading: L[o.key || "commanders"][0], status: L[o.key || "commanders"][1], ...o });
+
+    const calls = [
+      { q: "§4.1 · Flash rule", a: "(i) fade in over 150ms, plus a 120ms fade out at commit. No minimum hold.", why: "A hold only bites on a fast connection, delaying ready content by up to 220ms. The exit dissolve softens the one hard cut (i) leaves, and delays nothing." },
+      { q: "§4.2 · Entry", a: "Opacity 0 → 1 over 150ms, ease-out. No movement or scale. The mark is covered, not faded.", why: "The nav pip sits outside main, so it stays up and keeps naming the destination. The in-page track is inside main, and the screen covers it." },
+      { q: "§4.3 · Track", a: "1.5px.", why: "With 280ms on screen, it has to read at a glance. At 1×, 1px is barely visible under the 1px hairline. 1.5px renders slightly soft at 1× and crisp at 2×." },
+      { q: "§4.4 · Scope", a: "Every route-changing Link, plus route changes started in code. Not same-route filters.", why: "A filter refines the page in view, and blanking it would lose your place. Commit flows and redirects change route after an action, so they earn the confirmation. They need a startTransition at each call site." },
+    ];
+
+    const grid = [0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000].map((v) => ({ x: v + "px", label: v === 1000 ? "1s" : String(v) }));
+    const fast = [["/decks/new/choose", 31], ["replace", 52], ["sets/[code]", 70], ["sets", 90], ["proxies", 99], ["/commanders", 103], ["/discover", 124], ["/about", 151], ["summary", 253], ["/decks/new", 361], ["/collection", 366], ["/decks", 479], ["/commanders/[slug]", 538], ["Home", 641], ["/decks/[id]", 692]];
+    const ticks = fast.map(([, v]) => ({ x: v + "px", h: v > 400 ? "44px" : "26px", c: v > 400 ? "var(--fg)" : "var(--fg-faint)" }));
+    const tickLabels = [
+      { x: "300px", y: "120px", label: "/decks/new 361 · /collection 366", c: "var(--fg-muted)" },
+      { x: "455px", y: "166px", label: "/decks 479", c: "var(--fg)" },
+      { x: "542px", y: "152px", label: "/commanders/[slug] 538", c: "var(--fg)" },
+      { x: "645px", y: "134px", label: "Home 641", c: "var(--fg)" },
+      { x: "696px", y: "120px", label: "/decks/[id] 692 — the flash band", c: "var(--fg)" },
+    ];
+
+    const h1300nav = [
+      F({ t: "120ms", note: "The rail’s Commanders slot takes its pending fill, and the pip fades in. Home is still the page.", pending: "nav" }),
+      F({ t: "475ms", note: "Still pending at 400. The screen is halfway through its 150ms fade over Home. The pip is still up on the rail.", pending: "nav", op: 0.5 }),
+      F({ t: "550ms →", note: "Fully shown until /commanders commits (~875ms). It blocks clicks, and main is aria-busy.", pending: "nav", op: 1 }),
+    ];
+    const h1300link = [
+      F({ t: "120ms", note: "Ready to build’s All commanders: the track starts across the button’s bottom edge.", pending: "link" }),
+      F({ t: "475ms", note: "The screen fades over the page, and the track goes with it. The rail doesn’t light.", pending: "link", op: 0.5 }),
+      F({ t: "550ms →", note: "Fully shown. Focus stays on All commanders beneath.", pending: "link", op: 1 }),
+    ];
+    const h390 = [
+      F({ t: "120ms", note: "Tab bar: Commanders goes --fg, with the pip.", pending: "nav" }),
+      F({ t: "475ms", note: "Mid-fade, between the header and the tab bar.", pending: "nav", op: 0.5 }),
+      F({ t: "550ms →", note: "Shown. The tab bar and its pip stay up.", pending: "nav", op: 1 }),
+      F({ t: "120ms", note: "In-page: the track on All commanders.", pending: "link", offset: 560 }),
+      F({ t: "475ms", note: "Mid-fade. The page is scrolled, so the screen fills the view.", pending: "link", offset: 560, op: 0.5 }),
+      F({ t: "550ms →", note: "Shown, centred in the view, not in main’s scroll height.", pending: "link", offset: 560, op: 1 }),
+    ];
+    const flash = [
+      { rule: "(i) Fade in, 150ms", a: "A 20% wash for 30ms, then a hard cut.", b: "Full for 36ms, then a hard cut: the flash.", c: "Full for 142ms, then a hard cut.", bg: "transparent" },
+      { rule: "(ii) Hold ≥250ms", a: "Cut in at 400, held to 650. Content is late by 220ms.", b: "Held to 650. Content is late by 64ms.", c: "Full for 292ms. No delay.", bg: "transparent" },
+      { rule: "(iii) Both", a: "It never fully shows, so there’s no hold: a wash, then a cut.", b: "Full at 550, held to 800. Content is late by 214ms.", c: "Held to 800. Content is late by 108ms.", bg: "transparent" },
+      { rule: "Chosen · (i) + 120ms exit", a: "A 20% wash dissolves off the new page by 550.", b: "Full for 36ms, then it dissolves over the new page. Content is on time.", c: "Full for 142ms, then it dissolves. Content is on time.", bg: "color-mix(in oklab, var(--accent) 7%, transparent)" },
+    ];
+    const flashFrames = [
+      F({ t: "430ms", note: "Home → /decks lands 30ms into the fade. This is all it ever shows: a 20% wash.", key: "decks", pending: "nav", pnav: "decks", op: 0.2 }),
+      F({ t: "600ms", note: "/decks → Home, uncached (641). The screen has been fully shown since 550.", key: "home", pending: "nav", active: "decks", pnav: "home", op: 1 }),
+      F({ t: "701ms", note: "Home committed at 641, and is live beneath the 120ms dissolve, which is halfway through.", key: "home", op: 0.5 }),
+      F({ t: "761ms", note: "Clear. No hold. The page was usable from 641.", key: "home" }),
+    ];
+    const states = [
+      F({ t: "Entering · 400–550ms", note: "It fades in over the old page. Pointer events are blocked from the first frame, and aria-busy is set on main.", pending: "nav", op: 0.5 }),
+      F({ t: "Shown", note: "LoadingScreen, role=status. The crown pulses.", pending: "nav", op: 1 }),
+      F({ t: "Leaving · 120ms", note: "At commit, over the new page (Home here, from /decks). Pointer events: none. aria-busy is dropped.", key: "home", op: 0.5 }),
+      F({ t: "Still region", note: "Help me choose, the version rail: it cuts in and out with no fade, and the crown is still. Reduced motion keeps the fade and stops the pulse.", pending: "nav", op: 1, still: true }),
+    ];
+    const R = {
+      home: "/", collection: "/collection · /collection/replace · /replace/summary/[uploadId]", about: "/about", proxies: "/collection/proxies",
+      commanders: "/commanders · /commanders/[slug]", sets: "/collection/sets", setGrid: "/collection/sets/[code]", discover: "/discover",
+      decks: "/decks · /decks/[id] · /decks/[id]/changes", deckNew: "/decks/new", deckUpdate: "/decks/[id]/import",
+    };
+    const copy = Object.keys(L).map((k) => ({ key: k, heading: L[k][0], status: L[k][1], routes: R[k] }));
+    const thick = [
+      { label: "1px", node: sw(1), note: "At 1× it sits against a 1px --border-strong hairline and reads as that line flickering, not as something moving." },
+      { label: "1.5px · chosen", node: sw(1.5), note: "It reads as its own mark. It paints two device rows at 1× (slightly soft) and three at 2×. If it smears on device, go to 2px, not back to 1." },
+    ];
+    const keep = "var(--fg)", no = "var(--fg-faint)";
+    const scope = [
+      { kind: "Nav slot Link (rail, tab bar)", mark: "Pip", screen: "Yes", tone: keep, why: "As in the parent handoff. The pip stays visible over the screen." },
+      { kind: "In-page button or row Link", mark: "Track, 1.5px", screen: "Yes", tone: keep, why: "The screen covers the track." },
+      { kind: "Inline text Link", mark: "None", screen: "Yes", tone: keep, why: "Free: it reports like any Link. It draws no mark, because a text run wraps and has no box to hold a pip or a track. The 400ms screen is its confirmation." },
+      { kind: "Route change started in code (commit flow, redirects after an action)", mark: "The action button’s own submitting state", screen: "Yes", tone: keep, why: "They change route after a wait the user has already sat through. Each needs a startTransition and a report into the provider. List the call sites before building." },
+      { kind: "Same-route query Link (filters, views)", mark: "None new", screen: "No", tone: no, why: "Covering the list being refined loses the user’s place. Whatever in-place state the filter chassis draws is unchanged. No wiring." },
+      { kind: "Prefetched static route", mark: "None", screen: "No", tone: no, why: "§5(b): it skips pending, because it’s instant." },
+      { kind: "Back / forward", mark: "None", screen: "No", tone: no, why: "§5(c)." },
+      { kind: "The four kept loading.tsx routes", mark: "None", screen: "Their own, at press", tone: keep, why: "decks/[id], changes, import and choose keep their boundary until the overlay has been built and measured (§3). Then they join the rule." },
+    ];
+    return { theme, icons, pip, sweep, crown, crownStill, markRail, markHeader, calls, grid, ticks, tickLabels, h1300nav, h1300link, h390, flash, flashFrames, states, copy, thick, scope };
+  }
+}
+</script>
+</body>
+</html>

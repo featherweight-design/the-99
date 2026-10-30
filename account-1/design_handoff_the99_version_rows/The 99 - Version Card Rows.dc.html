@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Metamorphous&amp;family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0B0E; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { color: var(--fg); }
+  :root {
+    --bg:#121217; --surface:#1E1F26; --surface-rail:#181920; --surface-sunken:#16171D; --elevated:#2D2E35; --elevated-hover:#212229;
+    --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E;
+    --accent:#5C86C9; --accent-shadow:#2C405F; --success:#6FA368; --warning:#E0913C;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+</style>
+</helmet>
+
+<section id="r1" style="font-family:'IBM Plex Sans',sans-serif;color:var(--fg);padding:40px;background:#0B0B0E;display:flex;flex-direction:column;gap:56px;">
+
+  <div style="display:flex;flex-direction:column;gap:14px;max-width:1300px;">
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#0B0B0E;background:var(--accent);border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R1</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:var(--fg-faint);">version card rows · H31 · 2026-10-03</div>
+    </div>
+    <h1 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:34px;color:var(--fg);">The rows say what you own today. The version stays a record.</h1>
+    <p style="margin:0;max-width:880px;font-size:14.5px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">An In row draws the ownership dot and, when copies are short, the buy tag at today's price. An Out row draws neither. Every row opens the card modal, and on desktop shows the hover preview. A line above the In column says the figures are today's. The rest of the panel is unchanged from what ships, on the Kaldheim theme, redrawn from the 390 and 1300 screenshots.</p>
+  </div>
+
+  <div id="1a" style="display:flex;flex-direction:column;gap:16px;max-width:1300px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--accent);border:1px solid var(--accent-shadow);border-radius:4px;padding:2px 7px;">1a</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);">The calls</span>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,190px) minmax(0,1fr);border:1px solid var(--border-strong);border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55;">
+      <sc-for list="{{ calls }}" as="c" hint-placeholder-count="9">
+        <div style="padding:11px 14px;border-top:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-muted);background:var(--surface-sunken);">{{ c.q }}</div>
+        <div style="padding:11px 14px;border-top:1px solid var(--border);color:var(--fg-body);text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">{{ c.a }}</b> {{ c.why }}</div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start;">
+
+    <div id="1b" style="display:flex;flex-direction:column;gap:12px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--accent);border:1px solid var(--accent-shadow);border-radius:4px;padding:2px 7px;">1b</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);">390 · v3 opened · In</span>
+      </div>
+      <div data-screen-label="1b Phone In" style="width:390px;background:var(--bg);border:1px solid var(--border-strong);border-radius:18px;overflow:hidden;">
+        <div style="padding:12px 16px;background:var(--surface-sunken);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">v3 · committed 2 Oct 2026</div>
+        <div style="display:flex;gap:12px;padding:0 16px;border-bottom:1px solid var(--border);font-size:13px;font-weight:500;color:var(--fg-faint);white-space:nowrap;overflow:hidden;">
+          <span style="padding:14px 0;">Your deck <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">99</span></span>
+          <span style="padding:14px 0;">Analysis</span>
+          <span style="padding:14px 0;">Consider <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">99</span></span>
+          <span style="padding:14px 0;">Games <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">1</span></span>
+          <span style="padding:14px 0;color:var(--fg);font-weight:600;border-bottom:2px solid var(--accent);">Versions <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);">3</span></span>
+        </div>
+        <div style="padding:16px;display:flex;flex-direction:column;gap:12px;">
+          <div style="padding:12px 14px;border-radius:9px;background:var(--surface-rail);border:1px solid var(--border-strong);border-left:3px solid var(--accent);display:flex;flex-direction:column;gap:6px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);">v3</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent-shadow);border-radius:4px;padding:1px 6px;">current</span>
+              <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;"><span style="color:var(--success);">+5</span> <span style="color:var(--warning);">−3</span></span>
+            </div>
+            <div style="font-size:13px;line-height:1.55;color:var(--fg-body);">Cut the slow bending payoffs for cheaper creatures, and one more Plains.</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">2 Oct 2026 · 99 cards · mv 2.64</div>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <span style="flex:1;min-height:44px;display:flex;align-items:center;justify-content:center;border-radius:999px;background:var(--elevated);font-size:12.5px;font-weight:600;color:var(--fg);">In · 5</span>
+            <span style="flex:1;min-height:44px;display:flex;align-items:center;justify-content:center;border-radius:999px;border:1px solid var(--border-strong);font-size:12.5px;font-weight:500;color:var(--fg-faint);">Out · 3</span>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">ownership and prices are today’s, not v3’s</div>
+          <sc-for list="{{ phIn }}" as="grp" hint-placeholder-count="3">
+            <div style="display:flex;flex-direction:column;">
+              <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:6px;"><span style="font-size:12.5px;font-weight:600;color:var(--fg);">{{ grp.label }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ grp.count }}</span></div>
+              <div style="display:flex;flex-direction:column;gap:4px;">
+                <sc-for list="{{ grp.rows }}" as="r" hint-placeholder-count="2">
+                  <div style="display:flex;align-items:center;gap:9px;min-height:44px;padding:0 8px;border-radius:7px;background:var(--surface);border:1px solid var(--border);">
+                    <sc-if value="{{ r.dotOwned }}"><span style="flex:none;width:7px;height:7px;border-radius:50%;background:var(--success);border:1px solid var(--success);"></span></sc-if>
+                    <sc-if value="{{ r.dotUnowned }}"><span style="flex:none;width:7px;height:7px;border-radius:50%;border:1px dashed var(--fg-locked);"></span></sc-if>
+                    <span style="flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12.5px;color:var(--fg);">{{ r.name }}</span>
+                    <sc-if value="{{ r.own }}"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ r.own }}</span></sc-if>
+                    <sc-if value="{{ r.tag }}"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--warning);background:color-mix(in oklab, var(--warning) 13%, transparent);border-radius:4px;padding:1px 5px;">$</span></sc-if>
+                    <span style="flex:none;width:72px;display:flex;justify-content:flex-end;gap:3px;">
+                      <sc-for list="{{ r.pips }}" as="p" hint-placeholder-count="2"><span style="flex:none;width:12px;height:12px;border-radius:50%;background:{{ p.bg }};color:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px rgba(0,0,0,.45);">{{ p.t }}</span></sc-for>
+                    </span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div id="1c" style="display:flex;flex-direction:column;gap:12px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--accent);border:1px solid var(--accent-shadow);border-radius:4px;padding:2px 7px;">1c</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);">390 · v3 opened · Out</span>
+      </div>
+      <div data-screen-label="1c Phone Out" style="width:390px;background:var(--bg);border:1px solid var(--border-strong);border-radius:18px;overflow:hidden;">
+        <div style="padding:16px;display:flex;flex-direction:column;gap:12px;">
+          <div style="padding:12px 14px;border-radius:9px;background:var(--surface-rail);border:1px solid var(--border-strong);border-left:3px solid var(--accent);display:flex;flex-direction:column;gap:6px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);">v3</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent-shadow);border-radius:4px;padding:1px 6px;">current</span>
+              <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;"><span style="color:var(--success);">+5</span> <span style="color:var(--warning);">−3</span></span>
+            </div>
+            <div style="font-size:13px;line-height:1.55;color:var(--fg-body);">Cut the slow bending payoffs for cheaper creatures, and one more Plains.</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">2 Oct 2026 · 99 cards · mv 2.64</div>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <span style="flex:1;min-height:44px;display:flex;align-items:center;justify-content:center;border-radius:999px;border:1px solid var(--border-strong);font-size:12.5px;font-weight:500;color:var(--fg-faint);">In · 5</span>
+            <span style="flex:1;min-height:44px;display:flex;align-items:center;justify-content:center;border-radius:999px;background:var(--elevated);font-size:12.5px;font-weight:600;color:var(--fg);">Out · 3</span>
+          </div>
+          <sc-for list="{{ phOut }}" as="grp" hint-placeholder-count="2">
+            <div style="display:flex;flex-direction:column;">
+              <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:6px;"><span style="font-size:12.5px;font-weight:600;color:var(--fg);">{{ grp.label }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ grp.count }}</span></div>
+              <div style="display:flex;flex-direction:column;gap:4px;">
+                <sc-for list="{{ grp.rows }}" as="r" hint-placeholder-count="2">
+                  <div style="display:flex;align-items:center;gap:9px;min-height:44px;padding:0 8px;border-radius:7px;background:var(--surface);border:1px solid var(--border);">
+                    <span style="flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12.5px;color:var(--fg);">{{ r.name }}</span>
+                    <span style="flex:none;width:72px;display:flex;justify-content:flex-end;gap:3px;">
+                      <sc-for list="{{ r.pips }}" as="p" hint-placeholder-count="2"><span style="flex:none;width:12px;height:12px;border-radius:50%;background:{{ p.bg }};color:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px rgba(0,0,0,.45);">{{ p.t }}</span></sc-for>
+                    </span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.6;color:var(--fg-locked);border-top:1px dashed var(--border-strong);padding-top:10px;">annotation · no line on Out: nothing here carries a figure. A tap opens the card; Prev/Next continues from the last In card into Out.</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="1d" style="display:flex;flex-direction:column;gap:12px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--accent);border:1px solid var(--accent-shadow);border-radius:4px;padding:2px 7px;">1d</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);">390 · v1 opened</span>
+      </div>
+      <div data-screen-label="1d Phone v1" style="width:390px;background:var(--bg);border:1px solid var(--border-strong);border-radius:18px;overflow:hidden;">
+        <div style="padding:16px;display:flex;flex-direction:column;gap:8px;">
+          <div style="padding:12px 14px;border-radius:9px;background:var(--surface-rail);border:1px solid var(--border-strong);border-left:3px solid var(--accent);display:flex;align-items:center;gap:8px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);">v3</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent-shadow);border-radius:4px;padding:1px 6px;">current</span>
+            <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;"><span style="color:var(--success);">+5</span> <span style="color:var(--warning);">−3</span></span>
+          </div>
+          <div style="padding:12px 14px;border-radius:9px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;gap:8px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--fg-body);">v2</span>
+            <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;"><span style="color:var(--success);">+23</span> <span style="color:var(--warning);">−19</span></span>
+          </div>
+          <div style="padding:12px 14px;border-radius:9px;background:var(--surface);border:1px solid var(--border-strong);display:flex;flex-direction:column;gap:6px;">
+            <div style="display:flex;align-items:center;"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--fg-body);">v1</span><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">initial</span></div>
+            <div style="font-size:13px;font-style:italic;color:var(--fg-faint);">no note</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">5 Sep 2026 · 99 cards · mv 2.73</div>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:11px;border-radius:9px;padding:12px 15px;background:var(--surface-sunken);border:1px solid var(--elevated);border-left:3px solid var(--accent);">
+            <span style="flex:none;display:flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--accent);font-family:'Metamorphous',serif;font-size:12px;color:var(--accent);">i</span>
+            <p style="margin:0;font-size:12.5px;line-height:1.55;color:var(--fg-body);"><b style="font-weight:600;color:var(--fg);">Initial</b> — the first list, with nothing before it to compare against.</p>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.6;color:var(--fg-locked);border-top:1px dashed var(--border-strong);padding-top:10px;margin-top:6px;">annotation · unchanged. A v1 has no rows, so it draws no dots, tags or today line. Nothing on this panel changes.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="1e" style="display:flex;flex-direction:column;gap:12px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--accent);border:1px solid var(--accent-shadow);border-radius:4px;padding:2px 7px;">1e</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);">1300 · v3 opened · pointer resting on Bumi</span>
+    </div>
+    <div data-screen-label="1e Desktop v3" style="position:relative;width:1300px;display:flex;background:var(--bg);border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;">
+      <div style="flex:none;width:62px;background:var(--bg);border-right:1px solid var(--border);"></div>
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+        <div style="padding:14px 28px;background:var(--surface-sunken);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">v3 · committed 2 Oct 2026</div>
+        <div style="display:flex;gap:22px;padding:0 28px;border-bottom:1px solid var(--border);font-size:14px;font-weight:500;color:var(--fg-faint);">
+          <span style="padding:18px 0;">Your deck <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">99</span></span>
+          <span style="padding:18px 0;">Analysis</span>
+          <span style="padding:18px 0;">Consider <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">99</span></span>
+          <span style="padding:18px 0;">Games <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">1</span></span>
+          <span style="padding:18px 0;color:var(--fg);font-weight:600;border-bottom:2px solid var(--accent);">Versions <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">3</span></span>
+        </div>
+        <div style="padding:16px 26px 26px;display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;align-items:center;gap:16px;padding:12px 14px;border-radius:9px;background:var(--surface-rail);border:1px solid var(--border-strong);border-left:3px solid var(--accent);">
+            <span style="flex:none;width:30px;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);">v3</span>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;">
+              <span style="font-size:13px;color:var(--fg);">Cut the slow bending payoffs for cheaper creatures, and one more Plains.</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">committed 2 Oct 2026 · 99 cards · mv 2.64</span>
+            </div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;"><span style="color:var(--success);">+5</span> <span style="color:var(--fg-locked);">/</span> <span style="color:var(--warning);">−3</span></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent-shadow);border-radius:4px;padding:2px 7px;">current</span>
+          </div>
+
+          <div style="margin-bottom:14px;padding:18px;border-radius:12px;background:var(--surface-rail);border:1px solid var(--elevated);">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:16px;">
+              <div>
+                <h3 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:18px;color:var(--fg);">v3 · 2 Oct 2026</h3>
+                <p style="margin:5px 0 0;font-size:13px;color:var(--fg-body);">Cut the slow bending payoffs for cheaper creatures, and one more Plains.</p>
+              </div>
+              <div style="display:flex;gap:10px;">
+                <div style="border-radius:8px;padding:9px 13px;background:var(--surface);border:1px solid var(--border);"><div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:4px;">Mana value</div><div style="display:flex;align-items:baseline;gap:5px;font-family:'IBM Plex Mono',monospace;"><span style="font-size:12px;color:var(--fg-locked);">2.70</span><span style="font-size:10px;color:var(--fg-locked);">→</span><span style="font-size:15px;color:var(--fg-body);">2.64</span></div></div>
+              </div>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);margin:-4px 0 14px;">ownership and prices are today’s, not v3’s</div>
+            <div style="display:flex;align-items:flex-start;gap:22px;">
+              <section style="flex:1;min-width:0;display:flex;flex-direction:column;">
+                <h3 style="margin:0 0 11px;padding-bottom:8px;border-bottom:1px solid var(--elevated);font-family:'IBM Plex Mono',monospace;font-weight:400;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--success);">In · 5</h3>
+                <sc-for list="{{ dkIn }}" as="grp" hint-placeholder-count="3">
+                  <div style="margin-bottom:13px;">
+                    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:8px;padding-bottom:7px;border-bottom:1px solid #4A3C4C;"><span style="font-family:'Metamorphous',serif;font-size:15px;color:var(--fg);">{{ grp.label }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ grp.count }}</span></div>
+                    <div style="display:flex;flex-direction:column;gap:4px;">
+                      <sc-for list="{{ grp.rows }}" as="r" hint-placeholder-count="2">
+                        <div style="display:flex;align-items:center;gap:9px;min-height:38px;padding:0 9px;border-radius:7px;background:{{ r.bg }};border:1px solid var(--border);cursor:pointer;">
+                          <sc-if value="{{ r.dotOwned }}"><span style="flex:none;width:7px;height:7px;border-radius:50%;background:var(--success);border:1px solid var(--success);"></span></sc-if>
+                          <sc-if value="{{ r.dotUnowned }}"><span style="flex:none;width:7px;height:7px;border-radius:50%;border:1px dashed var(--fg-locked);"></span></sc-if>
+                          <span style="flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px;color:var(--fg);">{{ r.name }}</span>
+                          <sc-if value="{{ r.own }}"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ r.own }}</span></sc-if>
+                          <sc-if value="{{ r.tag }}"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--warning);background:color-mix(in oklab, var(--warning) 13%, transparent);border-radius:4px;padding:1px 5px;">buy<span style="color:var(--border-strong);padding:0 3px;">·</span><span style="color:var(--fg-body);">{{ r.price }}</span></span></sc-if>
+                          <span style="flex:none;width:72px;display:flex;justify-content:flex-end;gap:3px;">
+                            <sc-for list="{{ r.pips }}" as="p" hint-placeholder-count="2"><span style="flex:none;width:12px;height:12px;border-radius:50%;background:{{ p.bg }};color:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px rgba(0,0,0,.45);">{{ p.t }}</span></sc-for>
+                          </span>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </div>
+                </sc-for>
+              </section>
+              <section style="flex:1;min-width:0;display:flex;flex-direction:column;">
+                <h3 style="margin:0 0 11px;padding-bottom:8px;border-bottom:1px solid var(--elevated);font-family:'IBM Plex Mono',monospace;font-weight:400;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--warning);">Out · 3</h3>
+                <sc-for list="{{ dkOut }}" as="grp" hint-placeholder-count="2">
+                  <div style="margin-bottom:13px;">
+                    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:8px;padding-bottom:7px;border-bottom:1px solid #4A3C4C;"><span style="font-family:'Metamorphous',serif;font-size:15px;color:var(--fg);">{{ grp.label }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ grp.count }}</span></div>
+                    <div style="display:flex;flex-direction:column;gap:4px;">
+                      <sc-for list="{{ grp.rows }}" as="r" hint-placeholder-count="2">
+                        <div style="display:flex;align-items:center;gap:9px;min-height:38px;padding:0 9px;border-radius:7px;background:var(--surface);border:1px solid var(--border);cursor:pointer;">
+                          <span style="flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px;color:var(--fg);">{{ r.name }}</span>
+                          <span style="flex:none;width:72px;display:flex;justify-content:flex-end;gap:3px;">
+                            <sc-for list="{{ r.pips }}" as="p" hint-placeholder-count="2"><span style="flex:none;width:12px;height:12px;border-radius:50%;background:{{ p.bg }};color:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px rgba(0,0,0,.45);">{{ p.t }}</span></sc-for>
+                          </span>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </div>
+                </sc-for>
+              </section>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:16px;padding:12px 14px;border-radius:9px;background:var(--surface);border:1px solid var(--border);">
+            <span style="flex:none;width:30px;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--fg-body);">v2</span>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;">
+              <span style="font-size:13px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">This deck was having a hard time with five colors. Dropped all Swamps for other lands with an extra Plains.</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">committed 16 Sep 2026 · 99 cards · mv 2.70</span>
+            </div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;"><span style="color:var(--success);">+23</span> <span style="color:var(--fg-locked);">/</span> <span style="color:var(--warning);">−19</span></span>
+          </div>
+        </div>
+      </div>
+      <div style="position:absolute;left:404px;top:452px;width:252px;height:352px;border-radius:12px;border:1px solid var(--border-strong);box-shadow:0 18px 40px -12px rgba(0,0,0,0.72);background:repeating-linear-gradient(135deg, #23242C 0 10px, #1C1D24 10px 20px);display:flex;align-items:flex-end;padding:14px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-muted);background:var(--bg);border-radius:4px;padding:3px 7px;">card image · Bumi, King of Three Trials<br>252×352 · the shipped HoverPreviewProvider</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="1f" style="display:flex;flex-direction:column;gap:12px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--accent);border:1px solid var(--accent-shadow);border-radius:4px;padding:2px 7px;">1f</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);">1300 · v1 opened</span>
+    </div>
+    <div data-screen-label="1f Desktop v1" style="width:1300px;display:flex;background:var(--bg);border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;">
+      <div style="flex:none;width:62px;border-right:1px solid var(--border);"></div>
+      <div style="flex:1;min-width:0;padding:16px 26px 26px;display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;align-items:center;gap:16px;padding:12px 14px;border-radius:9px;background:var(--surface);border:1px solid var(--border-strong);">
+          <span style="flex:none;width:30px;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--fg-body);">v1</span>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;">
+            <span style="font-size:13px;font-style:italic;color:var(--fg-faint);">no note</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">committed 5 Sep 2026 · 99 cards · mv 2.73</span>
+          </div>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);padding-right:76px;">initial</span>
+        </div>
+        <div style="padding:18px;border-radius:12px;background:var(--surface-rail);border:1px solid var(--elevated);">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:14px;">
+            <div>
+              <h3 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:18px;color:var(--fg);">v1 · 5 Sep 2026</h3>
+              <p style="margin:5px 0 0;font-size:13px;font-style:italic;color:var(--fg-faint);">no note</p>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.5;text-align:right;color:var(--fg-locked);">99 cards · mv 2.73</div>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:11px;max-width:640px;border-radius:9px;padding:12px 15px;background:var(--surface-sunken);border:1px solid var(--elevated);border-left:3px solid var(--accent);">
+            <span style="flex:none;display:flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--accent);font-family:'Metamorphous',serif;font-size:12px;color:var(--accent);">i</span>
+            <p style="margin:0;font-size:12.5px;line-height:1.55;color:var(--fg-body);"><b style="font-weight:600;color:var(--fg);">Initial</b> — the first list, with nothing before it to compare against.</p>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);padding-top:6px;">annotation · unchanged from what ships. No rows, so no figures and no today line.</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="1g" style="display:flex;flex-direction:column;gap:12px;max-width:1300px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--accent);border:1px solid var(--accent-shadow);border-radius:4px;padding:2px 7px;">1g</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);">States</span>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,0.8fr) minmax(0,1fr) minmax(0,1.1fr) minmax(0,0.8fr) minmax(0,1.6fr);border:1px solid var(--border-strong);border-radius:10px;overflow:hidden;font-size:12.5px;line-height:1.5;">
+      <div style="padding:9px 12px;background:var(--surface-sunken);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">Row</div>
+      <div style="padding:9px 12px;background:var(--surface-sunken);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">Dot</div>
+      <div style="padding:9px 12px;background:var(--surface-sunken);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">Beside name</div>
+      <div style="padding:9px 12px;background:var(--surface-sunken);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">Tag 1300 / 390</div>
+      <div style="padding:9px 12px;background:var(--surface-sunken);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">Frame</div>
+      <div style="padding:9px 12px;background:var(--surface-sunken);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">Note</div>
+      <sc-for list="{{ states }}" as="s" hint-placeholder-count="12">
+        <div style="padding:9px 12px;border-top:1px solid var(--border);color:var(--fg);">{{ s.row }}</div>
+        <div style="padding:9px 12px;border-top:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">{{ s.dot }}</div>
+        <div style="padding:9px 12px;border-top:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">{{ s.beside }}</div>
+        <div style="padding:9px 12px;border-top:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">{{ s.tag }}</div>
+        <div style="padding:9px 12px;border-top:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);">{{ s.frame }}</div>
+        <div style="padding:9px 12px;border-top:1px solid var(--border);color:var(--fg-body);text-wrap:pretty;">{{ s.note }}</div>
+      </sc-for>
+    </div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const PIP = { W: 'var(--w)', U: 'var(--u)', B: 'var(--b)', R: 'var(--r)', G: 'var(--g)' };
+const pips = (c) => [...(c || '').matchAll(/\{([^}]+)\}/g)].map(m => PIP[m[1]] ? { bg: PIP[m[1]], t: '' } : { bg: 'var(--fg-faint)', t: m[1] });
+
+const IN = [
+  { label: 'Creatures', rows: [
+    { name: 'Aang, Swift Savior // Aang and La, Ocean’s Fury', cost: '{1}{W}{U}', s: 'owned' },
+    { name: 'Bumi, King of Three Trials', cost: '{5}{G}', s: 'buy', price: '$2.40', hover: true },
+    { name: 'Persistent Petitioners', cost: '{1}{U}', s: 'partial', own: 'own 1 of 4', price: '$0.35' },
+  ] },
+  { label: 'Instants', rows: [{ name: 'Earthshape', cost: '{2}{W}', s: 'owned' }] },
+  { label: 'Lands', rows: [{ name: 'Plains 6 → 7', cost: '', s: 'owned' }] },
+];
+const OUT = [
+  { label: 'Creatures', rows: [{ name: 'Azula, Cunning Usurper', cost: '{2}{U}{B}{B}' }, { name: 'Fire Lord Zuko', cost: '{R}{W}{B}' }] },
+  { label: 'Lands', rows: [{ name: 'Island 5 → 3', cost: '' }] },
+];
+
+const build = (groups, out, desktop) => groups.map(g => ({
+  label: g.label, count: g.rows.length,
+  rows: g.rows.map(r => ({
+    name: r.name,
+    dotOwned: !out && r.s !== 'buy',
+    dotUnowned: !out && r.s === 'buy',
+    own: r.own || '',
+    tag: !out && !!r.price,
+    price: r.price || '',
+    bg: desktop && r.hover ? 'var(--elevated-hover)' : 'var(--surface)',
+    pips: pips(r.cost),
+  })),
+}));
+
+const CALLS = [
+  { q: '1 · which figures', a: 'The ownership dot and the buy tag.', why: 'No availability marker and no third, committed dot state: those describe a claim by a deck, and a version claims nothing. Owned or short is a fact about your collection, which is all the brief allows.' },
+  { q: '2 · price', a: 'Today’s price, at the review row’s density.', why: 'Desktop `buy · $2.40`, the phone the decklist’s collapsed `$`. The tag prices the copy you would buy today, and the today line says so. It is not a figure about the version.' },
+  { q: '3 · partly owned', a: 'Measured against the version’s count, not the change.', why: 'The dot is filled (you own a copy), `own 1 of 4` sits after the name, and the buy tag follows at its usual per-copy price. This is the review row’s `shortfall` rule, with the number shown.' },
+  { q: '4 · Out rows', a: 'No dot, no tag.', why: 'The name and cost as today, plus the modal and the preview. Whether you own a card the deck dropped is not the question on that row.' },
+  { q: '5 · which versions', a: 'Every version, with one row.', why: 'The figures are today’s on all of them. Limiting them to the newest would make the same card read two ways one row apart.' },
+  { q: '6 · diff note', a: 'Retire `diffNote`; add `todayNote`.', why: '`ownership and prices are today’s, not v3’s`, set above the columns at both widths, and drawn only when In has rows. It sits above the column because it qualifies what comes next.' },
+  { q: '7 · modal list', a: 'Across both columns, In then Out.', why: 'This is the review row’s rule. It holds on the phone too, including the column that is not pressed.' },
+  { q: '8 · phone row', a: '44px, one line.', why: 'Dot, name, `own 1 of 4` when partial, `$`, then the 72px cost track. The name keeps about 150px at 390, and `Persistent Petitioners` fits whole. There is no hover preview on touch: a tap opens the card.' },
+  { q: '9 · About', a: 'No change needed. Hugh’s call.', why: 'The `versions` entry says committing “cuts a version you can read back”. It never said the rows were bare, so it is still true. An optional bullet is in the copy file if he wants one.' },
+];
+
+const STATES = [
+  { row: 'In · owned at the version’s count', dot: 'filled', beside: '—', tag: '—', frame: '1b 1e', note: 'Aang, Earthshape.' },
+  { row: 'In · none owned, priced', dot: 'dashed', beside: '—', tag: 'buy · $2.40 / $', frame: '1b 1e', note: 'Bumi. The shipped BuyTag `row` variant, density full at md+ and collapsed below.' },
+  { row: 'In · none owned, no price', dot: 'dashed', beside: '—', tag: 'buy / $', frame: '—', note: 'The tag’s existing `absent` state. Silence, never a zero.' },
+  { row: 'In · none owned, sold out', dot: 'dashed', beside: '—', tag: 'buy · sold out / $', frame: '—', note: 'The tag’s existing state.' },
+  { row: 'In · partly owned (0 → 4, own 1)', dot: 'filled', beside: 'own 1 of 4', tag: 'buy · $0.35 / $', frame: '1b 1e', note: 'Persistent Petitioners. Compared to `to`. Price is per copy, as on every tag.' },
+  { row: 'In · quantity move, covered (6 → 7)', dot: 'filled', beside: 'pair in the name', tag: '—', frame: '1b 1e', note: 'Plains. A basic is always covered, as the fill rules it. A nonbasic move short of `to` reads `own 2 of 4` plus the tag.' },
+  { row: 'Out · any, quantity moves too', dot: 'none', beside: 'pair in the name', tag: '—', frame: '1c 1e', note: 'No dot spacer. The column has no dots to align with.' },
+  { row: 'Row hovered (desktop)', dot: 'as above', beside: 'as above', tag: 'as above', frame: '1e', note: 'Fill `--elevated-hover` and pointer, as on the review row. Preview at 240ms, beside the pointer.' },
+  { row: 'Row with no art', dot: 'as above', beside: 'as above', tag: 'as above', frame: '—', note: 'No preview, as the provider already rules. The modal still opens.' },
+  { row: 'Row pressed / tapped', dot: '—', beside: '—', tag: '—', frame: '—', note: 'The card modal opens, with Prev/Next across In then Out. The whole row is the target and the name stays the keyboard trigger.' },
+  { row: 'Only cuts (In empty)', dot: '—', beside: '—', tag: '—', frame: '—', note: 'No today line. Out keeps its own heading on the phone, as today.' },
+  { row: 'v1 · no change · unavailable', dot: '—', beside: '—', tag: '—', frame: '1d 1f', note: 'Unchanged: InitialPanel, `noChange`, `diffUnavailable`. No rows, so no figures.' },
+];
+
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      calls: CALLS, states: STATES,
+      phIn: build(IN, false, false), phOut: build(OUT, true, false),
+      dkIn: build(IN, false, true), dkOut: build(OUT, true, true),
+    };
+  }
+}
+</script>
+</body>
+</html>

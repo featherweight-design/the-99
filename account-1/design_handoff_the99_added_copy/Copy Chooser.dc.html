@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Metamorphous&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="kaldheim"] {
+    --bg:#121217; --surface:#1E1F26; --surface-sunken:#16171D; --surface-rail:#18191F; --elevated:#2D2E35;
+    --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E;
+    --accent:#5C86C9; --accent-hover:#6C95D8; --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'IBM Plex Sans', sans-serif; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="padding:12px 13px;border:1px solid var(--border);border-radius:11px;background:var(--surface);color:var(--fg);font-family:'IBM Plex Sans',sans-serif;">
+  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;">
+    <span style="font-size:13.5px;font-weight:600;color:var(--fg);">{{ card }}</span>
+    <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ supply }}</span>
+  </div>
+  <p style="margin:9px 0 7px;font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.13em;color:var(--fg-body);">{{ heading }}<sc-if value="{{ hasCap }}" hint-placeholder-val="{{ false }}"><span style="margin-left:8px;text-transform:none;letter-spacing:0;color:var(--fg-faint);">{{ cap }}</span></sc-if></p>
+  <div role="radiogroup" style="display:flex;flex-direction:column;gap:4px;">
+    <sc-if value="{{ hasFold }}" hint-placeholder-val="{{ true }}">
+      <div style="{{ s.fold }}">
+        <span style="font-size:11px;color:var(--fg-muted);">▸</span>
+        <span style="flex:1;min-width:0;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.5;color:var(--fg-faint);text-wrap:pretty;">{{ fold }}</span>
+        <span style="flex:none;font-size:12.5px;color:var(--accent);">Show</span>
+      </div>
+    </sc-if>
+    <sc-for list="{{ options }}" as="o" hint-placeholder-count="4">
+      <div role="radio" style="{{ o.row }}">
+        <span style="display:flex;align-items:center;gap:11px;min-width:0;flex:1;">
+          <span style="{{ o.mark }}"><span style="{{ o.dot }}"></span></span>
+          <span style="font-size:13px;line-height:1.4;color:var(--fg);min-width:0;">{{ o.name }}<sc-for list="{{ o.tags }}" as="t" hint-placeholder-count="0"><span style="margin-left:6px;padding:1px 5px;border-radius:4px;background:var(--surface-inset, var(--elevated));font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-body);vertical-align:middle;">{{ t }}</span></sc-for></span>
+        </span>
+        <span style="{{ s.meta }}">
+          <sc-if value="{{ o.hasStamp }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ o.stamp }}</span></sc-if>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:{{ o.ink }};">{{ o.outcome }}</span>
+        </span>
+      </div>
+    </sc-for>
+    <div style="height:1px;background:var(--border);margin:4px 2px;"></div>
+    <div role="radio" style="{{ keep.row }}">
+      <span style="display:flex;align-items:center;gap:11px;min-width:0;flex:1;">
+        <span style="{{ keep.mark }}"><span style="{{ keep.dot }}"></span></span>
+        <span style="font-size:13px;line-height:1.4;color:var(--fg);">Keep it free</span>
+      </span>
+      <span style="{{ s.meta }}">
+        <sc-if value="{{ keep.count }}" hint-placeholder-val="{{ false }}">
+          <span style="display:flex;align-items:center;gap:5px;">
+            <span style="{{ s.step }}">−</span>
+            <span style="{{ s.qty }}">{{ keep.n }}</span>
+            <span style="{{ s.step }}">+</span>
+          </span>
+        </sc-if>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:{{ keep.ink }};">{{ keep.outcome }}</span>
+      </span>
+    </div>
+  </div>
+  <p style="margin:8px 0 0;font-size:11px;line-height:1.5;color:var(--fg-faint);text-wrap:pretty;">{{ note }}</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:520,&quot;height&quot;:420},&quot;variant&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;one&quot;,&quot;picked&quot;,&quot;kept&quot;,&quot;single&quot;,&quot;singleKept&quot;,&quot;count&quot;,&quot;brews&quot;,&quot;brewsPicked&quot;],&quot;default&quot;:&quot;one&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;phone&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;kaldheim&quot;],&quot;default&quot;:&quot;kaldheim&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const phone = !!this.props.phone;
+    const theme = this.props.theme ?? "kaldheim";
+    const v = this.props.variant ?? "one";
+    const K = "HD - Kratos", G = "HD - Gishath", T = "HD -Thorin", B = "HD - Brago", E = "HD - Eldrazi";
+    const out = {
+      gets: ["gets it", "var(--success)"],
+      buys: ["buys it", "var(--avail-over-fg, var(--fg-muted))"],
+      can: ["can use it", "var(--fg-muted)"],
+    };
+    const brew = (name, o, extra = []) => ({ name, tags: ["brew", ...extra], stamp: "", o });
+    const V = {
+      one: { card: "Sol Ring", supply: "1 new copy · 20 decks need it", heading: "Give the new copy to", fold: "16 committed decks ahead of HD - Brago have theirs",
+        opts: [{ name: B, tags: [], stamp: "v2 · Oct 3", o: "gets" }, brew(K, "buys"), brew(G, "buys"), brew(T, "buys")], keep: 0 },
+      picked: { card: "Sol Ring", supply: "1 new copy · 20 decks need it", heading: "Give the new copy to", fold: "16 committed decks ahead of HD - Brago have theirs",
+        opts: [{ name: B, tags: [], stamp: "v2 · Oct 3", o: "buys" }, brew(K, "buys"), brew(G, "buys"), { ...brew(T, "gets"), pick: true }], keep: 0 },
+      kept: { card: "Sol Ring", supply: "1 new copy · 20 decks need it", heading: "Give the new copy to", fold: "16 committed decks ahead of HD - Brago have theirs",
+        opts: [{ name: B, tags: [], stamp: "v2 · Oct 3", o: "buys" }, brew(K, "buys"), brew(G, "buys"), brew(T, "buys")], keep: 1 },
+      single: { card: "Arcane Signet", supply: "1 new copy · 1 deck needs it", heading: "Give the new copy to",
+        opts: [{ name: B, tags: [], stamp: "v2 · Oct 3", o: "gets" }], keep: 0 },
+      singleKept: { card: "Arcane Signet", supply: "1 new copy · 1 deck needs it", heading: "Give the new copy to",
+        opts: [{ name: B, tags: [], stamp: "v2 · Oct 3", o: "buys" }], keep: 1 },
+      count: { card: "Sol Ring", supply: "2 new copies · 20 decks need it", heading: "Give the 2 new copies to", cap: "1 given · 1 kept free", copies: 2, fold: "15 committed decks ahead of HD - Brago have theirs",
+        opts: [{ name: B, tags: [], stamp: "v2 · Oct 3", o: "gets" }, { name: E, tags: [], stamp: "v1 · Oct 6", o: "buys" }, brew(K, "buys"), brew(G, "buys"), brew(T, "buys")], keep: 1, count: true },
+      brews: { card: "Sol Ring", supply: "1 new copy · 20 decks need it", heading: "Give the new copy to", fold: "17 committed decks have theirs",
+        opts: [brew(K, "can"), brew(G, "can"), brew(T, "can", ["this deck"])], keep: 0, brewNote: true },
+      brewsPicked: { card: "Sol Ring", supply: "1 new copy · 20 decks need it", heading: "Give the new copy to", fold: "17 committed decks have theirs",
+        opts: [brew(K, "buys"), brew(G, "buys"), { ...brew(T, "gets", ["this deck"]), pick: true }], keep: 0 },
+    };
+    const c = V[v] ?? V.one;
+    const square = (c.copies ?? 1) > 1;
+    const sz = phone ? 18 : 16, dz = phone ? 7 : 6;
+    const mark = (filled, picked) => {
+      const fill = picked ? "var(--accent)" : "var(--fg-body)";
+      return {
+        mark: { flex: "none", width: sz, height: sz, borderRadius: square ? 4 : 999, border: `1px solid ${filled ? fill : "var(--fg-faint)"}`, background: filled ? fill : "transparent", display: "flex", alignItems: "center", justifyContent: "center" },
+        dot: filled ? { display: "block", width: dz, height: dz, borderRadius: square ? 1 : 999, background: "var(--bg)" } : { display: "none" },
+      };
+    };
+    const rowBase = (picked) => ({
+      display: "flex", flexDirection: phone ? "column" : "row", alignItems: phone ? "stretch" : "center", justifyContent: "center",
+      gap: phone ? 1 : 11, padding: "6px 8px", minHeight: phone ? 52 : 44, borderRadius: 7, background: "var(--bg)",
+      border: picked ? "1px solid var(--accent)" : "1px solid transparent", cursor: "pointer",
+    });
+    const options = c.opts.map((o) => {
+      const [outcome, ink] = out[o.o];
+      return { name: o.name, tags: o.tags, hasStamp: !!o.stamp, stamp: o.stamp, outcome, ink, row: rowBase(!!o.pick), ...mark(o.o === "gets", !!o.pick) };
+    });
+    const kOn = c.keep > 0;
+    const keep = { row: rowBase(kOn), ...mark(kOn, kOn), count: !!c.count, n: String(c.keep), outcome: kOn && !c.count ? "kept free" : "", ink: "var(--fg-body)" };
+    const s = {
+      meta: { display: "flex", alignItems: "center", gap: 8, flex: "none", paddingLeft: phone ? 27 : 0 },
+      fold: { display: "flex", alignItems: "center", gap: 9, minHeight: 44, padding: "4px 8px", borderRadius: 7, border: "1px dashed var(--border)" },
+      step: { display: "inline-flex", alignItems: "center", justifyContent: "center", width: phone ? 44 : 28, height: phone ? 44 : 28, borderRadius: 7, border: "1px solid var(--border-strong)", background: "var(--surface-sunken)", fontSize: 14, color: "var(--fg)" },
+      qty: { display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: phone ? 40 : 32, height: phone ? 44 : 28, borderRadius: 7, border: "1px solid var(--border-strong)", fontFamily: "'IBM Plex Mono',monospace", fontSize: 13, color: "var(--fg)" },
+    };
+    const note = c.brewNote
+      ? "A brew holds a copy only once you pick it, so all three can use this one. Pick one to give it the copy. Keep it free and decks that need it still show it missing, and it stays on their Shopping."
+      : "Keep it free and no deck counts that copy. Decks that need it still show it missing, and it stays on their Shopping.";
+    return { theme, s, card: c.card, supply: c.supply, heading: c.heading, hasCap: !!c.cap, cap: c.cap ?? "", hasFold: !!c.fold, fold: c.fold ?? "", options, keep, note };
+  }
+}
+</script>
+</body>
+</html>

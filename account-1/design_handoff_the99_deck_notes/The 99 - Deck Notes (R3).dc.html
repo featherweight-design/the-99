@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Metamorphous&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="kaldheim"] {
+    --bg:#121217; --surface:#1E1F26; --surface-sunken:#16171D; --surface-rail:#18191F; --elevated:#2D2E35;
+    --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E;
+    --accent:#5C86C9; --accent-hover:#6C95D8; --success:#6FA368; --warning:#E0913C; --danger:#C6533F; --btn:#C9D3D6;
+  }
+  [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-sunken:#18140F; --surface-rail:#1A1611; --elevated:#29241F;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654;
+    --accent:#CF8745; --accent-hover:#DE9757; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-sunken:#101219; --surface-rail:#12141B; --elevated:#20222A;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+
+<div data-theme="{{ theme }}" style="font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--fg);padding:44px 40px 90px;display:flex;flex-direction:column;gap:72px;width:max-content;">
+
+  <div id="C0" style="max-width:1340px;display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:center;gap:13px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">ROUND · R3</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--fg-faint);">Deck notes · Your deck · All · Shopping | Stats · Notes</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">R2 feedback 2026-10-11 · R1 and R2 kept beside this file</span>
+    </div>
+    <div style="border:1px solid var(--accent);border-radius:10px;background:color-mix(in oklab, var(--accent) 8%, transparent);padding:13px 16px;max-width:1100px;display:flex;flex-direction:column;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">R3 · three notes</span><span style="font-size:13px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;"><b style="color:var(--fg);">1 · Its own view, beside Stats.</b> The segment becomes <i>All · Shopping | Stats · Notes</i>. All and Shopping are views of the cards; Stats and Notes, after the hairline, are about the deck. All loses nothing, not even the R2 strip. On Notes, as on Stats, the list tools step aside and a mono line takes their place. <b style="color:var(--fg);">2 · An empty state</b> in the Games tab’s shape, with its own mark: a card behind a note slip. <b style="color:var(--fg);">3 · <code style="font-family:'IBM Plex Mono',monospace;">[[ ]]</code> explained</b> in three places: the placeholder, a <code style="font-family:'IBM Plex Mono',monospace;">[[ ]]</code> help button beside the input that opens a tooltip, and the empty state’s second paragraph.</span></div>
+    <h1 style="font-family:'Metamorphous',serif;font-weight:400;font-size:34px;margin:0;line-height:1.15;color:var(--fg);max-width:1100px;">Notes: a view of its own in Your deck, next to Stats. One line each, dated for you.</h1>
+    <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-body);max-width:1000px;text-wrap:pretty;">The segment’s fourth cell reads <i>Notes 5</i>, with the open count in neutral mono, and plain <i>Notes</i> at zero, the Games tab’s rule. The view is the list, full width up to 820px: open notes oldest first, the input under them, then <i>Done (N)</i>. A tag is the card’s name, underlined solid if the deck holds it and dashed if not, and it opens card details. Nothing on it counts down, ages or changes colour. The choice of view is stored like Stats (<code style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">the99:deck-panel</code> gains <code style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">"notes"</code>).</p>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:6px;">
+      <sc-for list="{{ calls }}" as="c" hint-placeholder-count="12">
+        <div style="border:1px solid var(--border);border-radius:10px;padding:13px 15px;background:var(--surface);display:flex;flex-direction:column;gap:6px;"><div style="display:flex;justify-content:space-between;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ c.k }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ c.where }}</span></div><span style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">{{ c.v }}</span></div>
+      </sc-for>
+    </div>
+  </div>
+
+  <sc-for list="{{ sections }}" as="sec" hint-placeholder-count="14">
+    <section id="{{ sec.id }}" data-screen-label="{{ sec.id }} {{ sec.title }}" style="display:flex;flex-direction:column;gap:26px;">
+      <div style="display:flex;flex-direction:column;gap:8px;max-width:1340px;">
+        <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">§{{ sec.id }}</span>
+          <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px;color:var(--fg);">{{ sec.title }}</h2>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">STATES {{ sec.id }} · scene {{ sec.scene }} · {{ sec.deck }}</span>
+        </div>
+        <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-body);max-width:1000px;text-wrap:pretty;">{{ sec.note }}</p>
+      </div>
+      <div style="display:flex;gap:40px;align-items:flex-start;">
+        <div style="border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;flex:none;">
+          <dc-import name="Notes R3" scene="{{ sec.scene }}" theme="{{ theme }}" hint-size="900px,1100px"></dc-import>
+        </div>
+        <div style="border:1px solid var(--border-strong);border-radius:22px;overflow:hidden;flex:none;">
+          <dc-import name="Notes R3" scene="{{ sec.scene }}" phone="{{ true }}" theme="{{ theme }}" hint-size="390px,1500px"></dc-import>
+        </div>
+      </div>
+    </section>
+  </sc-for>
+
+  <section id="AB" data-screen-label="AB About entry" style="display:flex;flex-direction:column;gap:22px;">
+    <div style="display:flex;flex-direction:column;gap:8px;max-width:1340px;">
+      <div style="display:flex;align-items:baseline;gap:12px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">§AB</span>
+        <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px;color:var(--fg);">The About entry</h2>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">per-entry artboard · design_handoff_the99_about</span>
+      </div>
+      <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-body);max-width:1000px;text-wrap:pretty;">Chapter 03, Building the 99, after the deck description’s entry, because it sits directly under it on the page. The caption names <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;">[[</code> in its first paragraph, because a reader won’t find it otherwise. The specimen is the shipped row with one held tag and one dashed. Copy is in <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;">about · notes.ts</code>.</p>
+    </div>
+    <div style="display:flex;gap:40px;align-items:flex-start;">
+      <div style="width:560px;flex:none;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:18px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:12.5px;line-height:1.55;color:var(--fg-body);">
+          <sc-for list="{{ slots }}" as="sl" hint-placeholder-count="9">
+            <div style="{{ sl.cell }}">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">{{ sl.label }}</div>
+              <div style="white-space:pre-line;text-wrap:pretty;">{{ sl.text }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <sc-for list="{{ aboutViews }}" as="v" hint-placeholder-count="2">
+        <div data-screen-label="{{ v.screen }}" style="{{ v.frame }}">
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">03 · Building the 99</span>
+            <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">
+              <h3 style="{{ v.h3 }}">Notes on a deck</h3>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);">/decks/[id] · Your deck</span>
+            </div>
+            <sc-for list="{{ captionParas }}" as="cp" hint-placeholder-count="2"><p style="{{ v.para }}">{{ cp }}</p></sc-for>
+            <div style="display:flex;align-items:flex-start;gap:11px;border-radius:9px;background:var(--surface);border:1px solid var(--border);padding:8px 10px 8px 12px;">
+              <span style="flex:none;width:18px;height:18px;margin-top:2px;border-radius:5px;border:1px solid var(--border-strong);"></span>
+              <span style="flex:1;min-width:0;font-size:13.5px;line-height:1.5;color:var(--fg);">Try <span style="font-weight:500;border-bottom:1px solid var(--fg-faint);">Laboratory Maniac</span> with <span style="font-weight:500;border-bottom:1px dashed var(--fg-faint);">Thassa’s Oracle</span></span>
+              <span style="flex:none;padding-top:3px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);">2 Oct</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:7px;margin-top:4px;">
+              <sc-for list="{{ keyLines }}" as="kl" hint-placeholder-count="4">
+                <div style="display:flex;gap:9px;"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);padding-top:2px;">—</span><span style="{{ v.key }}">{{ kl }}</span></div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;kaldheim&quot;,&quot;options&quot;:[&quot;kaldheim&quot;,&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const theme = this.props.theme ?? "kaldheim";
+    const calls = [
+      { k: "Name", where: "all", v: "Notes, as Hugh asked in the R1 feedback. One item is a note. In code the table is deck_notes and the copy module is deckNotesCopy, so nothing collides with the game log's note or the version's note." },
+      { k: "Q1 · Where in the tab", where: "N0", v: "A fourth cell in the Your deck segment, after Stats: All · Shopping | Stats · Notes. It's a panel like Stats (DeckPanel gains 'notes'): while it's open the list tools step aside, and the right of the row reads 5 open · oldest first. At 390 the cells size to their content (pad 10) and fit in one row of 358px." },
+      { k: "Empty", where: "E1 · E2", v: "The Games tab's shape: a 150px mark (96 on a phone) beside the heading The swap you meant to try., two short paragraphs, and the input with the screen's one bone-filled button. The second paragraph shows a tag. The [[ ]] button beside the input opens a tooltip (E2) on hover or focus at 900 and on press at 390." },
+      { k: "Q2 · Length", where: "C1", v: "140, the game note’s cap, counted on what the row shows, so a tag counts as its name and the brackets are free. At 390 a 140-character note wraps to three lines. The counter appears on focus and turns --warning at 120, as the game note’s does." },
+      { k: "Q3 · Order and dates", where: "W1 · W2", v: "Open: oldest first, a list to work through. Done: newest done first, dated done 9 Oct. Dates are absolute and mono: 2 Oct, with the year added only outside this year. No relative dates, which would turn into ages." },
+      { k: "Q4 · Editing and the date", where: "ED", v: "In place: the row becomes the input. Enter saves, Esc cancels. The date stays the creation date and no edited mark is drawn. updated_at is still written. Tags show as [[Name]] while editing. One that is left untouched keeps its id, and one that is retyped becomes plain text unless it is picked again." },
+      { k: "Q5 · Bulk delete in Done", where: "W2", v: "No. Each done note has its own edit and delete, the same as an open one." },
+      { k: "Q6 · A cap per deck", where: "C2", v: "100 notes, open and done together. One check constraint, one refusal. At the cap, the input becomes a dashed line saying so. Done notes count toward it, which the line says too." },
+      { k: "Q7 · A mark on the card", where: "—", v: "No. The decklist gets no new per-card read. A tag works one way, from a note to card details." },
+      { k: "Q8 · Any card", where: "K2", v: "Yes, any game card, including ones not legal in Commander. In the picker that card’s meta says not legal in Commander, mono --fg-faint, as a fact. It’s needed to remember a banned card." },
+      { k: "Tags", where: "W1", v: "Inline text, 500 weight, --fg, with a 1px underline: solid when the deck holds the card, dashed when it doesn’t, which covers both never held and since removed. There are no chips and no colour. A tag that can’t resolve is plain --fg-body text with no underline. Press opens card details, and on desktop hover shows the shipped preview." },
+      { k: "Done and delete", where: "MD · DL", v: "A 18px box (22 on a phone). Select it to mark done, unselect to reopen. The row stays a beat at --fg-faint, then moves under Done (N). Delete uses DeleteConfirm, as every delete in the app does (Hugh, 2026-09-27). Phone: one ⋯ per row opens Edit and Delete." },
+    ];
+    const sections = [
+      { id: "N0", title: "The segment · All · Shopping | Stats · Notes", scene: "segment", deck: "HD - Wizards", note: "The All view as it ships, with one new cell. Notes 5 sits after Stats, past the hairline, so the card views and the views about the deck stay apart. The count is open notes only, in --fg-faint mono, never Shopping's amber. It's absent at zero. On a phone the four cells size to their content and still fit one 358px row, with 44px targets. Nothing else in the toolbar moves, and the All view gets nothing above its grid." },
+      { id: "E1", title: "Empty · the Notes view", scene: "empty", deck: "HD - Gishath", note: "A draft with nothing written, laid out the way the Games tab's empty state is. On the left, a mark drawn from the brand fan's vocabulary: a card behind a note slip in accent, with three lines, one of them selected and one carrying an accent tag, and [[ ]] in display type. Beside it, the heading, what notes are for, and how a tag works, with Thassa's Oracle drawn as a real tag. The input sits under it with [[ ]] help and a bone Add, the screen's one fill. The row's mono line reads yours only · on this deck, not a version." },
+      { id: "E2", title: "The [[ ]] tooltip", scene: "tip", deck: "HD - Gishath", note: "The [[ ]] button beside the input. At 900 the tooltip opens on hover or focus and closes on Esc or blur. At 390 it opens on press (a toggletip) and closes on a second press or a tap outside. It says how to tag, the order the picker uses, what solid and dashed mean, and that a typed name without a pick stays plain. aria-describedby on the input points at it, so a screen reader hears it from the field too." },
+      { id: "A1", title: "Adding the first note", scene: "adding", deck: "HD - Gishath", note: "Typing straight into the empty state’s input: the empty state stays until the first note is saved. While a note has focus on a phone, the sticky add-card bar and the tab bar hide, so there is one input on screen, not two. With the input focused, the border goes to --accent, the counter appears, and the hint says Enter adds, dated today. On a phone the keyboard’s return key adds and the deck bar compacts. Add and Enter do the same thing: write, clear the field, keep focus. Then the next line can be typed straight away." },
+      { id: "A2", title: "Added", scene: "added", deck: "HD - Gishath", note: "The note lands at the bottom of the open list, because the list is oldest first, so new ones always arrive at the end. It’s dated 11 Oct. The input is empty and still focused. The live region says Note added." },
+      { id: "K1", title: "[[ · the deck’s cards first", scene: "pickDeck", deck: "HD - Wizards", note: "Typing [[ opens a listbox under the input, and the letters after it filter it. In this deck comes first, matched by name from the list the page already holds. Any card follows from the name search after two letters, with the deck’s own matches removed so nothing appears twice. The top row is active. Enter or a press writes the card’s id and name, closes the brackets and adds a space. On a phone the page scrolls the input to the top of what’s visible, so the picker has the space down to the keyboard, up to four rows." },
+      { id: "K2", title: "[[ · any card", scene: "pickAny", deck: "HD - Wizards", note: "Nothing in the deck matches thassa, so that section says so in one line rather than disappearing. Then the first card is still in the same place. Any card rows carry not in this deck in their meta. A card that isn’t legal in Commander adds not legal in Commander (Q8). Esc closes the picker and keeps [[thassa as plain text. A name typed by hand that never gets picked stays plain text (lock 2)." },
+      { id: "W1", title: "With notes · three kinds of tag", scene: "notes", deck: "HD - Wizards", note: "The full page down to the Notes view, in the Your deck tab. Five open, oldest first, with Done (2) closed. Row 1 has Laboratory Maniac, which the deck holds (solid underline), and Thassa’s Oracle, which it doesn’t (dashed). Row 2 has Mystic Sanctuary, which left the deck in v2. Its tag keeps the id and draws dashed, the same as never held, because the row records no history. Row 4 has a tag that can’t resolve, drawn as plain text from its stored name (illustrative). Row 5 is at the 140 cap: three lines at 390, and nothing is clipped." },
+      { id: "W2", title: "Under a real tagline · Done (2) open", scene: "doneOpen", deck: "HD - Avatar Aang", note: "The 112-character description is drawn in the header (clamped to two lines on the art on a phone). The Notes view is a long way below it, so the two never touch. Done (2) is open, newest done first. Done rows have no fill, a selected box, text in --fg-faint and tags in --fg-muted that still open the card, with no strikethrough. Unselect one and it goes back to its creation-date place among the open notes." },
+      { id: "MD", title: "Marking one done", scene: "markDone", deck: "HD - Wizards", note: "Row 1 just selected: the box fills, the text goes to --fg-faint for 600ms, then the row leaves for Done. The count reads Done (3) at once. There’s no motion beyond the shipped collapse, and no success colour. The live region says Marked done. If the write is refused, the box unselects and MutationError reads We couldn’t mark that done. Nothing has changed (STATES D3)." },
+      { id: "ED", title: "Editing in place", scene: "edit", deck: "HD - Wizards", note: "✎ (desktop) or ⋯ › Edit (phone) turns the row into the input, with its text selected to the end. Tags read as [[Name]], with the brackets in mono --fg-faint. Typing [[ opens the same picker. Save and Cancel sit under it, plus Enter and Esc on desktop. The date isn’t touched. Only one row edits at a time: opening another saves nothing and asks nothing, it just cancels the first." },
+      { id: "DL", title: "Delete · DeleteConfirm", scene: "delete", deck: "HD - Wizards", note: "× (desktop) or ⋯ › Delete (phone) opens the shipped DeleteConfirm pane under the trigger: Delete this note? and It goes for good. The deck and its cards are unchanged. Keep it or Delete. A refusal stays in the pane, as the game row’s does. On success the row goes and the live region says Note deleted." },
+      { id: "C1", title: "At the cap · one note", scene: "capNote", deck: "HD - Kratos", note: "140 of 140, counted on the rendered text, so the Blood Artist tag counts as its 12 letters. The counter turns --warning at 120. At 140 the field takes no more, with no error, as the game note works. The draft’s 66-character tagline sits above, untouched." },
+      { id: "C2", title: "At the cap · the deck", scene: "capDeck", deck: "HD - Kratos", note: "12 open and 88 done make 100. The input is replaced by a dashed line: This deck holds 100 notes, the most it keeps. Delete one to add another. Edit, select and unselect still work at the cap. Only add is refused, and the action refuses it as well (STATES N6)." },
+      { id: "M1", title: "Many · 30 open, Done (40)", scene: "many", deck: "HD - Omnath", note: "Open lists show the first six, then Show all 30, so the decklist stays one short scroll away on a phone. Shown all, they stay shown for the visit. Done (40) is closed. Its count is the only thing that grows." },
+      { id: "M2", title: "Many · Done (40) open", scene: "manyDone", deck: "HD - Omnath", note: "Done open shows the six most recently done, then Show all 40 done. There’s no bulk delete (Q5). The open list above keeps its own Show all 30 line." },
+      { id: "RF", title: "A refused save", scene: "refused", deck: "HD - Kratos", note: "The shipped MutationError under the input, in --warning: We couldn’t save that note. It’s still in the box, so you can try again. The text and its tag stay, and the counter stays. The next keypress or Add clears the line. Nothing is added to the list until the server says so." },
+    ];
+    const caption = "Each deck keeps a short list of notes at the top of Your deck: one line each, dated when you add it. Type [[ and the start of a card’s name to tag it. The deck’s own cards come first, then any card, and a tagged name opens that card.\n\nSelect a note when it’s done and it folds under Done. Edit or delete any of them. They belong to the deck, not a version, so they carry over when you commit.";
+    const keyLines = [
+      "A solid underline means the deck holds the card; dashed means it doesn’t, including a card you’ve since taken out.",
+      "One line is 140 characters. A tag counts as its name.",
+      "A deck keeps up to 100 notes, done ones included.",
+      "Notes are yours only. Nothing reads them: not Suggested changes, not the analysis.",
+    ];
+    const slots = [
+      { label: "id", text: "notes" }, { label: "chapter · after", text: "03 · after deck-description" },
+      { label: "since", text: "next ABOUT_VERSION (bump with the PR)" }, { label: "switch", text: "DECK_JOTTINGS_ENABLED (new AboutSwitch member)" },
+      { label: "title", text: "Notes on a deck" }, { label: "route · opens", text: "/decks/[id] · opens a deck’s Your deck tab" },
+      { label: "caption", text: caption, wide: true },
+      { label: "specimen", text: "NoteRow · Try [[Laboratory Maniac]] with [[Thassa’s Oracle]] · 2 Oct", wide: true },
+      { label: "phone", text: "Each row keeps its box and ⋯. The date drops under the text. Typing [[ scrolls the input up so the picker fits above the keyboard.", wide: true },
+    ].map((s) => ({ ...s, cell: s.wide ? { gridColumn: "1 / -1" } : {} }));
+    const view = (w, ph) => ({
+      screen: `AB ${ph ? 390 : 620}`,
+      frame: { width: w, flex: "none", background: "var(--bg)", border: "1px solid var(--border-strong)", borderRadius: ph ? 22 : 12, padding: ph ? "20px 16px" : "26px 28px" },
+      h3: { margin: 0, fontFamily: "'Metamorphous',serif", fontWeight: 400, fontSize: ph ? 19 : 22, color: "var(--fg)" },
+      para: { margin: 0, fontSize: ph ? 13 : 14, lineHeight: 1.65, color: "var(--fg-body)", textWrap: "pretty" },
+      key: { fontSize: ph ? 12.5 : 13, lineHeight: 1.55, color: "var(--fg-muted)", textWrap: "pretty" },
+    });
+    return { theme, calls, sections, slots, captionParas: caption.split("\n\n"), keyLines, aboutViews: [view(620, false), view(390, true)] };
+  }
+}
+</script>
+</body>
+</html>

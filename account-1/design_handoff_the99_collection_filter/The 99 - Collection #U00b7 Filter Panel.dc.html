@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #100D0A; }
+  ::selection { background: #C9A24B; color: #14110E; }
+  a { color: #C9A24B; text-decoration: none; }
+  a:hover { color: #D8B25E; }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;padding:40px;background:#100D0A;background-image:radial-gradient(1400px 700px at 30% -300px, rgba(201,162,75,0.06), transparent 70%);min-height:100vh;">
+
+  <section style="max-width:1400px;margin:0 0 26px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#C9A24B;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">/collection</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#8E8269;">Addendum · set filter panel · feat/printings-and-sets</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:0 0 10px;color:#EDE6D8;">254 set codes in a dropdown is not a filter</h1>
+    <p style="max-width:900px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0;">Today the <b style="color:#EDE6D8;font-weight:600;">Set&nbsp;▾</b> control on <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#A89B84;">filter-bar.tsx</span> is a native <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#A89B84;">&lt;select&gt;</span> of 254 raw lowercase codes — <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#A89B84;">blb</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#A89B84;">clb</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#A89B84;">afr</span> — in whatever order the query returned them. This addendum replaces <b style="color:#EDE6D8;font-weight:600;">that one control</b> with a searchable, multi-select panel: set <b style="color:#EDE6D8;font-weight:600;">names</b>, owned-sets only, a card count per set, newest first. Nothing else on the shipped surface is redesigned — the bar, the chip row and the list are reused as-is. Every state below leads with the phone, desktop beside it.</p>
+  </section>
+
+  <div style="border:1px solid #2A241D;border-radius:14px;background:#1A160F;padding:20px 24px;margin-bottom:38px;max-width:1400px;display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px 26px;">
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Form factor</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;"><b style="color:#EDE6D8;font-weight:600;">Anchored popover</b> under the trigger on desktop; <b style="color:#EDE6D8;font-weight:600;">bottom sheet</b> under 768px. Same panel, two mounts.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Selection</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;"><b style="color:#EDE6D8;font-weight:600;">Multi-select</b>, applied live on every toggle. No Apply button — the list behind you is the preview.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Order</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;">Release date, newest first (locked). Ties broken A→Z by name. Selected sets pin to the top <i>on open only</i>.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Counts</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;">Owned cards per set, respecting the <i>other</i> active filters. A set that reaches 0 stays listed, dimmed and unselectable.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Siblings</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;"><b style="color:#EDE6D8;font-weight:600;">Type ▾</b> converts to the same panel with search off. <b style="color:#EDE6D8;font-weight:600;">Sort ▾</b> becomes a single-select menu, never a listbox.</div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">A11y model</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.5;">Combobox + multi-selectable listbox, <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">aria-activedescendant</span>. Focus never leaves the search field.</div></div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:52px;max-width:1900px;">
+
+  <!-- ===================== TRIGGER ===================== -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #2A241D;padding-top:18px;">The trigger · <span style="color:#C9A24B;">it stays a filter-bar button</span></div>
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:760px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:26px 28px;">
+        <div style="font-family:'Cinzel',serif;font-weight:600;font-size:19px;color:#EDE6D8;margin-bottom:4px;">Trigger states</div>
+        <div style="font-size:13px;color:#A89B84;line-height:1.6;margin-bottom:22px;">Identical geometry to the shipped <span style="font-family:'IBM Plex Mono',monospace;">Type ▾</span> / <span style="font-family:'IBM Plex Mono',monospace;">Sort ▾</span> buttons — <span style="font-family:'IBM Plex Mono',monospace;">#2A241D</span> fill, <span style="font-family:'IBM Plex Mono',monospace;">1px #3A3229</span>, radius <span style="font-family:'IBM Plex Mono',monospace;">8px</span>, padding <span style="font-family:'IBM Plex Mono',monospace;">9×14</span>. The only new thing is that the label can carry the selection.</div>
+        <div style="display:grid;grid-template-columns:120px 1fr;gap:14px 18px;align-items:center;">
+
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;">Rest</div>
+          <div><button style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:8px;padding:9px 14px;cursor:pointer;">Set ▾</button></div>
+
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;">Hover</div>
+          <div><button style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:#EDE6D8;background:#332C23;border:1px solid #4A4033;border-radius:8px;padding:9px 14px;cursor:pointer;">Set ▾</button></div>
+
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;">Focus-visible</div>
+          <div><button style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:8px;padding:9px 14px;outline:2px solid #C9A24B;outline-offset:2px;cursor:pointer;">Set ▾</button></div>
+
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;">Open</div>
+          <div><button style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:#EDE6D8;background:#3A3229;border:1px solid #C9A24B;border-radius:8px;padding:9px 14px;cursor:pointer;">Set ▴</button></div>
+
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;">One selected</div>
+          <div style="display:flex;align-items:center;gap:14px;"><button style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #C9A24B;border-radius:8px;padding:9px 14px;cursor:pointer;max-width:230px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Set: Bloomburrow ▾</button><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6E6353;">name inline, truncated at 230px</span></div>
+
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;">Many selected</div>
+          <div style="display:flex;align-items:center;gap:14px;"><button style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #C9A24B;border-radius:8px;padding:9px 14px;display:inline-flex;align-items:center;gap:8px;cursor:pointer;">Set<span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#14110E;background:#C9A24B;border-radius:999px;padding:1px 7px;">3</span>▾</button><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6E6353;">count pip past one — names live in the chip row</span></div>
+
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;">Disabled</div>
+          <div style="display:flex;align-items:center;gap:14px;"><button disabled="disabled" style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:#6E6353;background:#221D16;border:1px solid #2A241D;border-radius:8px;padding:9px 14px;cursor:not-allowed;">Set ▾</button><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6E6353;">empty collection only — the shell's empty state owns that screen</span></div>
+
+        </div>
+      </div>
+
+      <div style="width:520px;flex:none;display:flex;flex-direction:column;gap:24px;">
+        <div style="background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:24px 26px;">
+          <div style="font-family:'Cinzel',serif;font-weight:600;font-size:19px;color:#EDE6D8;margin-bottom:14px;">Why not keep the native select</div>
+          <div style="font-size:13.5px;color:#C6B79A;line-height:1.65;">A native <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">&lt;select&gt;</span> cannot show a count beside an option, cannot be searched on iOS, cannot hold more than one value without becoming a scrolling multi-list nobody can operate on a phone, and renders 254 rows of <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">blb</span> in OS chrome that ignores the brand entirely. Four of the spec's locked decisions are impossible inside it. That is the whole justification for a custom widget — and the reason the keyboard and screen-reader model below is specced as tightly as the pixels.</div>
+        </div>
+        <div style="background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:24px 26px;">
+          <div style="font-family:'Cinzel',serif;font-weight:600;font-size:19px;color:#EDE6D8;margin-bottom:14px;">Where the selection lives</div>
+          <div style="font-size:13.5px;color:#C6B79A;line-height:1.65;margin-bottom:14px;">In the shipped <b style="color:#EDE6D8;font-weight:600;">chip row</b>, unchanged — one dismissable chip per set, beside the colour and type chips. The trigger only counts; the chips carry the names, and <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">Clear all</span> already clears them.</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:999px;padding:6px 12px;">Bloomburrow <span style="color:#8E8269;">✕</span></span>
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:999px;padding:6px 12px;">Wilds of Eldraine <span style="color:#8E8269;">✕</span></span>
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:999px;padding:6px 12px;">Modern Horizons 3 <span style="color:#8E8269;">✕</span></span>
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;font-weight:500;color:#C9A24B;padding:6px 4px;">Clear all</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================== PANEL ANATOMY ===================== -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #2A241D;padding-top:18px;">The panel · <span style="color:#C9A24B;">anatomy, row states, tokens</span></div>
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:420px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:26px 28px;">
+        <div style="font-family:'Cinzel',serif;font-weight:600;font-size:19px;color:#EDE6D8;margin-bottom:16px;">Popover — desktop</div>
+        <div style="width:340px;background:#1A160F;border:1px solid #3A3229;border-radius:12px;box-shadow:0 24px 60px rgba(0,0,0,0.6);overflow:hidden;">
+          <div style="margin:10px;display:flex;align-items:center;gap:9px;background:#181410;border:1px solid #3A3229;border-radius:8px;padding:9px 12px;">
+            <span style="color:#8E8269;font-size:13px;">⌕</span><span style="font-size:13px;color:#6E6353;">Search sets</span>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;padding:6px 14px 6px;">Newest first</div>
+          <div style="display:flex;align-items:center;gap:11px;padding:9px 14px;min-height:40px;background:#221D16;">
+            <span style="width:16px;height:16px;flex:none;border-radius:4px;background:#14110E;border:1px solid #4A4033;"></span>
+            <span style="flex:1;min-width:0;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Duskmourn: House of Horror</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;font-variant-numeric:tabular-nums;">103</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:11px;padding:9px 14px;min-height:40px;">
+            <span style="width:16px;height:16px;flex:none;border-radius:4px;background:#C9A24B;border:1px solid #C9A24B;display:flex;align-items:center;justify-content:center;font-size:11px;color:#14110E;line-height:1;">✓</span>
+            <span style="flex:1;min-width:0;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Bloomburrow</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;font-variant-numeric:tabular-nums;">142</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:11px;padding:9px 14px;min-height:40px;outline:2px solid #C9A24B;outline-offset:-2px;border-radius:6px;">
+            <span style="width:16px;height:16px;flex:none;border-radius:4px;background:#14110E;border:1px solid #4A4033;"></span>
+            <span style="flex:1;min-width:0;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Modern Horizons 3</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;font-variant-numeric:tabular-nums;">55</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:11px;padding:9px 14px;min-height:40px;opacity:0.42;">
+            <span style="width:16px;height:16px;flex:none;border-radius:4px;background:#14110E;border:1px solid #3A3229;"></span>
+            <span style="flex:1;min-width:0;font-size:13.5px;color:#A89B84;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Adventures in the Forgotten Realms</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;font-variant-numeric:tabular-nums;">0</span>
+          </div>
+          <div style="border-top:1px solid #2A241D;padding:9px 14px;display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">254 sets owned</span>
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;font-weight:500;color:#C9A24B;">Clear</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:18px;font-size:12.5px;color:#A89B84;line-height:1.6;">
+          <div><b style="color:#EDE6D8;font-weight:600;">Row 1</b> hover — <span style="font-family:'IBM Plex Mono',monospace;">#221D16</span>, the collection row's own hover.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Row 2</b> selected — brass box, count lifts to <span style="font-family:'IBM Plex Mono',monospace;">#C6B79A</span>. No fill on the row: a brass band per selection would out-shout the primary action.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Row 3</b> keyboard-active (<span style="font-family:'IBM Plex Mono',monospace;">aria-activedescendant</span>) — inset brass ring, no hover fill, so pointer and keyboard positions never look alike.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Row 4</b> zero under the other active filters — <span style="font-family:'IBM Plex Mono',monospace;">opacity .42</span>, <span style="font-family:'IBM Plex Mono',monospace;">aria-disabled</span>. Still listed: you own it, it just can't show here.</div>
+        </div>
+      </div>
+
+      <div style="width:360px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:26px 28px;">
+        <div style="font-family:'Cinzel',serif;font-weight:600;font-size:19px;color:#EDE6D8;margin-bottom:16px;">Sheet — under 768px</div>
+        <div style="background:#14110E;border:1px solid #2A241D;border-radius:12px;overflow:hidden;">
+          <div style="height:56px;background:#14110E;opacity:0.5;"></div>
+          <div style="background:#1A160F;border-top:1px solid #3A3229;border-radius:16px 16px 0 0;padding-bottom:0;">
+            <div style="display:flex;justify-content:center;padding:9px 0 4px;"><span style="width:36px;height:4px;border-radius:999px;background:#3A3229;"></span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 16px 10px;">
+              <span style="font-family:'Cinzel',serif;font-weight:600;font-size:18px;color:#EDE6D8;">Sets</span>
+              <span style="width:30px;height:30px;border-radius:999px;background:#221D16;border:1px solid #3A3229;display:flex;align-items:center;justify-content:center;color:#A89B84;font-size:13px;">✕</span>
+            </div>
+            <div style="margin:0 16px 10px;display:flex;align-items:center;gap:9px;background:#181410;border:1px solid #3A3229;border-radius:8px;padding:12px 12px;">
+              <span style="color:#8E8269;font-size:14px;">⌕</span><span style="font-size:14px;color:#6E6353;">Search sets</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;min-height:48px;">
+              <span style="width:18px;height:18px;flex:none;border-radius:4px;background:#C9A24B;border:1px solid #C9A24B;display:flex;align-items:center;justify-content:center;font-size:12px;color:#14110E;line-height:1;">✓</span>
+              <span style="flex:1;min-width:0;font-size:14.5px;color:#EDE6D8;">Bloomburrow</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C6B79A;">142</span>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 16px;min-height:48px;">
+              <span style="width:18px;height:18px;flex:none;border-radius:4px;background:#14110E;border:1px solid #4A4033;margin-top:1px;"></span>
+              <span style="flex:1;min-width:0;font-size:14.5px;color:#EDE6D8;line-height:1.35;">Commander Legends: Battle for Baldur's Gate</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8E8269;margin-top:2px;">27</span>
+            </div>
+            <div style="border-top:1px solid #2A241D;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+              <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;font-weight:500;color:#C9A24B;">Clear</span>
+              <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;font-weight:600;color:#14110E;background:#C9A24B;border-radius:8px;padding:10px 22px;">Done</span>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:18px;font-size:12.5px;color:#A89B84;line-height:1.6;">
+          <div><b style="color:#EDE6D8;font-weight:600;">48px</b> rows and <b style="color:#EDE6D8;font-weight:600;">18px</b> boxes — the whole row is the tap target, well past 44px.</div>
+          <div>Long names <b style="color:#EDE6D8;font-weight:600;">wrap to two lines</b> here rather than truncate; the sheet has the width, the popover does not.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">Done</b> only dismisses. Filtering has already happened behind the sheet, one toggle at a time.</div>
+        </div>
+      </div>
+
+      <div style="width:520px;flex:none;display:flex;flex-direction:column;gap:24px;">
+        <div style="background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:24px 26px;">
+          <div style="font-family:'Cinzel',serif;font-weight:600;font-size:19px;color:#EDE6D8;margin-bottom:14px;">Keyboard &amp; screen reader</div>
+          <div style="display:flex;flex-direction:column;gap:11px;">
+            <div style="display:flex;gap:12px;align-items:flex-start;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#C9A24B;background:#221D16;border:1px solid #3A3229;border-radius:5px;padding:3px 7px;flex:none;margin-top:1px;">TAB</span><div style="font-size:13px;color:#C6B79A;line-height:1.55;">Reaches the trigger — one stop, between <i>Type</i> and <i>Sort</i>, exactly where the <span style="font-family:'IBM Plex Mono',monospace;">&lt;select&gt;</span> sat.</div></div>
+            <div style="display:flex;gap:12px;align-items:flex-start;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#C9A24B;background:#221D16;border:1px solid #3A3229;border-radius:5px;padding:3px 7px;flex:none;margin-top:1px;">↵ / ␣ / ↓</span><div style="font-size:13px;color:#C6B79A;line-height:1.55;">Opens the panel and moves focus into the search field. <span style="font-family:'IBM Plex Mono',monospace;">↓</span> also marks the first option active.</div></div>
+            <div style="display:flex;gap:12px;align-items:flex-start;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#C9A24B;background:#221D16;border:1px solid #3A3229;border-radius:5px;padding:3px 7px;flex:none;margin-top:1px;">↑ ↓</span><div style="font-size:13px;color:#C6B79A;line-height:1.55;">Move the active option and scroll it into view. <b style="color:#EDE6D8;font-weight:600;">DOM focus stays in the input</b> — the active row is named by <span style="font-family:'IBM Plex Mono',monospace;">aria-activedescendant</span>, so typing never breaks. No wrap at the ends.</div></div>
+            <div style="display:flex;gap:12px;align-items:flex-start;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#C9A24B;background:#221D16;border:1px solid #3A3229;border-radius:5px;padding:3px 7px;flex:none;margin-top:1px;">␣ / ↵</span><div style="font-size:13px;color:#C6B79A;line-height:1.55;">Toggles the active option. The panel <b style="color:#EDE6D8;font-weight:600;">stays open</b> and the query is <b style="color:#EDE6D8;font-weight:600;">kept</b> — picking three sets from one search is the common act. Disabled (0-count) rows don't toggle.</div></div>
+            <div style="display:flex;gap:12px;align-items:flex-start;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#C9A24B;background:#221D16;border:1px solid #3A3229;border-radius:5px;padding:3px 7px;flex:none;margin-top:1px;">ESC</span><div style="font-size:13px;color:#C6B79A;line-height:1.55;">Closes and returns focus to the trigger. Selections are already applied, so there is nothing to cancel — Esc is dismiss, never undo.</div></div>
+            <div style="display:flex;gap:12px;align-items:flex-start;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#C9A24B;background:#221D16;border:1px solid #3A3229;border-radius:5px;padding:3px 7px;flex:none;margin-top:1px;">TAB ⇥</span><div style="font-size:13px;color:#C6B79A;line-height:1.55;">Desktop: moves to <i>Clear</i>, then out — closing the popover. Mobile: focus is <b style="color:#EDE6D8;font-weight:600;">trapped</b> in the sheet (<span style="font-family:'IBM Plex Mono',monospace;">aria-modal</span>) and cycles search → rows → Clear → Done.</div></div>
+          </div>
+        </div>
+        <div style="background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:24px 26px;">
+          <div style="font-family:'Cinzel',serif;font-weight:600;font-size:19px;color:#EDE6D8;margin-bottom:14px;">Roles &amp; announcements</div>
+          <div style="background:#181410;border:1px solid #2A241D;border-radius:8px;padding:14px 16px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#A89B84;line-height:1.85;margin-bottom:14px;">button[aria-haspopup=dialog][aria-expanded]<br>&nbsp;&nbsp;div[role=dialog][aria-label="Filter by set"]<br>&nbsp;&nbsp;&nbsp;&nbsp;input[role=combobox][aria-controls=set-list]<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[aria-expanded=true][aria-activedescendant=set-blb]<br>&nbsp;&nbsp;&nbsp;&nbsp;ul#set-list[role=listbox][aria-multiselectable=true]<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;li#set-blb[role=option][aria-selected=true]<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;li#set-afr[role=option][aria-disabled=true]</div>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div style="background:#221D16;border:1px solid #3A3229;border-left:3px solid #C9A24B;border-radius:8px;padding:11px 13px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;line-height:1.55;">Option name — “Bloomburrow, 142 cards, selected, 2 of 254”</div>
+            <div style="background:#221D16;border:1px solid #3A3229;border-left:3px solid #C9A24B;border-radius:8px;padding:11px 13px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;line-height:1.55;">On query (polite, debounced 300ms) — “2 sets match bloom”</div>
+            <div style="background:#221D16;border:1px solid #3A3229;border-left:3px solid #C9A24B;border-radius:8px;padding:11px 13px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;line-height:1.55;">On toggle (polite) — “Bloomburrow added. 3 sets, 328 of 2,933 cards shown.”</div>
+          </div>
+          <div style="font-size:12.5px;color:#8E8269;line-height:1.6;margin-top:14px;">The toggle announcement is the same live region the chip row already writes to — one region for the whole filter bar, so two filters changed in quick succession read once, in order, not on top of each other. Contrast: option name <span style="font-family:'IBM Plex Mono',monospace;">#EDE6D8</span> on <span style="font-family:'IBM Plex Mono',monospace;">#1A160F</span> ≈ 12.9:1; count <span style="font-family:'IBM Plex Mono',monospace;">#8E8269</span> ≈ 4.6:1 at 11.5px — supplementary to the name, which carries the meaning alone.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================== STATE 1 · CLOSED ===================== -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;border-top:1px solid #2A241D;padding-top:18px;">1 · Closed · <span style="color:#C9A24B;">nothing selected</span> · the shipped bar, one button relabelled</div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6E6353;margin-bottom:16px;">Set ▾ is now a button, not a &lt;select&gt;. Same size, same place, same order in the row.</div>
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:392px;flex:none;border-radius:46px;padding:12px;background:#0A0806;border:1px solid #2A241D;box-shadow:0 34px 90px rgba(0,0,0,0.55);"><div style="border-radius:34px;overflow:hidden;background:#14110E;position:relative;height:640px;display:flex;flex-direction:column;"><div style="position:absolute;top:11px;left:50%;transform:translateX(-50%);width:120px;height:26px;background:#0A0806;border-radius:0 0 16px 16px;z-index:5;"></div>
+        <div style="padding:34px 16px 10px;border-bottom:1px solid #2A241D;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div><h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;margin:0;color:#EDE6D8;">Collection</h2><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;margin-top:2px;">2,933 cards · 254 sets</div></div>
+            <div style="width:34px;height:34px;border-radius:10px;background:#221D16;border:1px solid #C9A24B;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C9A24B;">AR</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;background:#181410;border:1px solid #3A3229;border-radius:8px;padding:10px 12px;margin-bottom:9px;"><span style="color:#8E8269;font-size:14px;">⌕</span><span style="font-size:13.5px;color:#6E6353;">Search your collection</span></div>
+          <div style="display:flex;gap:8px;overflow:hidden;">
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:8px;padding:8px 13px;white-space:nowrap;">Color ▾</span>
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:8px;padding:8px 13px;white-space:nowrap;">Type ▾</span>
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:8px;padding:8px 13px;white-space:nowrap;">Set ▾</span>
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:8px;padding:8px 13px;white-space:nowrap;">Sort ▾</span>
+          </div>
+        </div>
+        <div style="padding:12px 14px;display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;margin-bottom:2px;"><span>Showing 2,933 of 2,933</span><span>Name ↓</span></div>
+          <div style="display:grid;grid-template-columns:34px 1fr 62px 14px;align-items:center;gap:10px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:11px 12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#C9A24B;">×1</span><span style="min-width:0;"><span style="display:block;font-size:13.5px;font-weight:600;color:#EDE6D8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Abhorrent Oculus</span><span style="display:block;font-size:11.5px;color:#A89B84;">Creature — Eye Horror</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;text-align:right;">DSK</span><span style="color:#4A4033;font-size:12px;">›</span></div>
+          <div style="display:grid;grid-template-columns:34px 1fr 62px 14px;align-items:center;gap:10px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:11px 12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#C9A24B;">×2</span><span style="min-width:0;"><span style="display:block;font-size:13.5px;font-weight:600;color:#EDE6D8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Arcane Signet</span><span style="display:block;font-size:11.5px;color:#A89B84;">Artifact</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;text-align:right;">CLB</span><span style="color:#4A4033;font-size:12px;">›</span></div>
+          <div style="display:grid;grid-template-columns:34px 1fr 62px 14px;align-items:center;gap:10px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:11px 12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#C9A24B;">×1</span><span style="min-width:0;"><span style="display:block;font-size:13.5px;font-weight:600;color:#EDE6D8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Beza, the Bounding Spring</span><span style="display:block;font-size:11.5px;color:#A89B84;">Creature — Elemental Elk</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;text-align:right;">BLB</span><span style="color:#4A4033;font-size:12px;">›</span></div>
+          <div style="display:grid;grid-template-columns:34px 1fr 62px 14px;align-items:center;gap:10px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:11px 12px;opacity:0.55;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#C9A24B;">×1</span><span style="min-width:0;"><span style="display:block;font-size:13.5px;font-weight:600;color:#EDE6D8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Birds of Paradise</span><span style="display:block;font-size:11.5px;color:#A89B84;">Creature — Bird</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;text-align:right;">RVR</span><span style="color:#4A4033;font-size:12px;">›</span></div>
+        </div>
+        <div style="margin-top:auto;border-top:1px solid #2A241D;background:#14110E;display:flex;padding:10px 0 16px;"><span style="flex:1;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#C9A24B;">COLLECTION</span><span style="flex:1;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#6E6353;">COMMANDERS</span><span style="flex:1;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#6E6353;">DECKS</span></div>
+      </div></div>
+
+      <div style="width:940px;flex:none;background:#14110E;border:1px solid #2A241D;border-radius:14px;overflow:hidden;">
+        <div style="padding:16px 20px;border-bottom:1px solid #2A241D;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="flex:1;display:flex;align-items:center;gap:10px;background:#181410;border:1px solid #3A3229;border-radius:8px;padding:10px 14px;"><span style="color:#8E8269;font-size:15px;">⌕</span><span style="font-size:13.5px;color:#6E6353;">Search your collection</span></div>
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:8px;padding:9px 14px;">Color ▾</span>
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:8px;padding:9px 14px;">Type ▾</span>
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:8px;padding:9px 14px;">Set ▾</span>
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:8px;padding:9px 14px;">Sort: Name ▾</span>
+            <div style="display:flex;gap:2px;background:#181410;border:1px solid #3A3229;border-radius:8px;padding:2px;"><span style="width:30px;height:28px;border-radius:6px;background:#C9A24B;color:#14110E;display:flex;align-items:center;justify-content:center;font-size:13px;">≣</span><span style="width:30px;height:28px;border-radius:6px;color:#8E8269;display:flex;align-items:center;justify-content:center;font-size:13px;">▦</span></div>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;"><span>No filters</span><span>Showing 2,933 of 2,933</span></div>
+        </div>
+        <div style="padding:14px 20px 18px;display:flex;flex-direction:column;gap:8px;">
+          <div style="display:grid;grid-template-columns:52px 54px 1fr 150px 92px 18px;align-items:center;gap:12px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:11px 14px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#C9A24B;">×1</span><span style="display:flex;gap:4px;"><span style="width:11px;height:11px;border-radius:999px;background:#4A7FB5;"></span></span><span style="font-size:14px;font-weight:600;color:#EDE6D8;">Abhorrent Oculus</span><span style="font-size:12.5px;color:#A89B84;">Creature — Eye Horror</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">● DSK</span><span style="color:#4A4033;font-size:13px;">›</span></div>
+          <div style="display:grid;grid-template-columns:52px 54px 1fr 150px 92px 18px;align-items:center;gap:12px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:11px 14px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#C9A24B;">×2</span><span style="display:flex;gap:4px;"></span><span style="font-size:14px;font-weight:600;color:#EDE6D8;">Arcane Signet</span><span style="font-size:12.5px;color:#A89B84;">Artifact</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">● CLB</span><span style="color:#4A4033;font-size:13px;">›</span></div>
+          <div style="display:grid;grid-template-columns:52px 54px 1fr 150px 92px 18px;align-items:center;gap:12px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:11px 14px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#C9A24B;">×1</span><span style="display:flex;gap:4px;"><span style="width:11px;height:11px;border-radius:999px;background:#E8E4D6;"></span><span style="width:11px;height:11px;border-radius:999px;background:#6B9E63;"></span></span><span style="font-size:14px;font-weight:600;color:#EDE6D8;">Beza, the Bounding Spring</span><span style="font-size:12.5px;color:#A89B84;">Creature — Elemental Elk</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">● BLB</span><span style="color:#4A4033;font-size:13px;">›</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================== STATE 2 · OPEN, EMPTY SEARCH ===================== -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;border-top:1px solid #2A241D;padding-top:18px;">2 · Open · <span style="color:#C9A24B;">empty search, nothing selected</span> · 254 sets, newest first</div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6E6353;margin-bottom:16px;">The list opens scrolled to the top. No “All sets” row — clearing is the footer's job, and a pseudo-option in a multi-select listbox is a lie to a screen reader.</div>
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:392px;flex:none;border-radius:46px;padding:12px;background:#0A0806;border:1px solid #2A241D;box-shadow:0 34px 90px rgba(0,0,0,0.55);"><div style="border-radius:34px;overflow:hidden;background:#14110E;position:relative;height:640px;display:flex;flex-direction:column;">
+        <div style="position:absolute;top:11px;left:50%;transform:translateX(-50%);width:120px;height:26px;background:#0A0806;border-radius:0 0 16px 16px;z-index:5;"></div>
+        <div style="padding:34px 16px 10px;border-bottom:1px solid #2A241D;opacity:0.32;">
+          <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;margin:0 0 10px;color:#EDE6D8;">Collection</h2>
+          <div style="display:flex;gap:8px;overflow:hidden;"><span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:8px;padding:8px 13px;white-space:nowrap;">Color ▾</span><span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:8px;padding:8px 13px;white-space:nowrap;">Type ▾</span><span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:#EDE6D8;background:#3A3229;border:1px solid #C9A24B;border-radius:8px;padding:8px 13px;white-space:nowrap;">Set ▴</span></div>
+        </div>
+        <div style="flex:1;background:rgba(8,6,4,0.72);"></div>
+        <div style="background:#1A160F;border-top:1px solid #3A3229;border-radius:16px 16px 0 0;box-shadow:0 -20px 50px rgba(0,0,0,0.5);">
+          <div style="display:flex;justify-content:center;padding:9px 0 4px;"><span style="width:36px;height:4px;border-radius:999px;background:#3A3229;"></span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 16px 10px;">
+            <span style="font-family:'Cinzel',serif;font-weight:600;font-size:18px;color:#EDE6D8;">Sets</span>
+            <span style="width:30px;height:30px;border-radius:999px;background:#221D16;border:1px solid #3A3229;display:flex;align-items:center;justify-content:center;color:#A89B84;font-size:13px;">✕</span>
+          </div>
+          <div style="margin:0 16px 8px;display:flex;align-items:center;gap:9px;background:#181410;border:1px solid #3A3229;border-radius:8px;padding:12px;"><span style="color:#8E8269;font-size:14px;">⌕</span><span style="font-size:14px;color:#6E6353;">Search sets</span></div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;padding:4px 16px 4px;">Newest first</div>
+          <div style="max-height:300px;overflow:hidden;">
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;min-height:48px;"><span style="width:18px;height:18px;flex:none;border-radius:4px;background:#14110E;border:1px solid #4A4033;"></span><span style="flex:1;min-width:0;font-size:14.5px;color:#EDE6D8;line-height:1.35;">Duskmourn: House of Horror</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8E8269;">103</span></div>
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;min-height:48px;"><span style="width:18px;height:18px;flex:none;border-radius:4px;background:#14110E;border:1px solid #4A4033;"></span><span style="flex:1;min-width:0;font-size:14.5px;color:#EDE6D8;">Bloomburrow</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8E8269;">142</span></div>
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;min-height:48px;"><span style="width:18px;height:18px;flex:none;border-radius:4px;background:#14110E;border:1px solid #4A4033;"></span><span style="flex:1;min-width:0;font-size:14.5px;color:#EDE6D8;">Bloomburrow Commander</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8E8269;">19</span></div>
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;min-height:48px;"><span style="width:18px;height:18px;flex:none;border-radius:4px;background:#14110E;border:1px solid #4A4033;"></span><span style="flex:1;min-width:0;font-size:14.5px;color:#EDE6D8;">Modern Horizons 3</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8E8269;">55</span></div>
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;min-height:48px;"><span style="width:18px;height:18px;flex:none;border-radius:4px;background:#14110E;border:1px solid #4A4033;"></span><span style="flex:1;min-width:0;font-size:14.5px;color:#EDE6D8;line-height:1.35;">Outlaws of Thunder Junction</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8E8269;">118</span></div>
+            <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 16px;min-height:48px;"><span style="width:18px;height:18px;flex:none;border-radius:4px;background:#14110E;border:1px solid #4A4033;margin-top:1px;"></span><span style="flex:1;min-width:0;font-size:14.5px;color:#EDE6D8;line-height:1.35;">Murders at Karlov Manor</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8E8269;margin-top:2px;">96</span></div>
+          </div>
+          <div style="border-top:1px solid #2A241D;padding:12px 16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6E6353;">254 sets owned</span>
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;font-weight:600;color:#14110E;background:#C9A24B;border-radius:8px;padding:10px 22px;">Done</span>
+          </div>
+        </div>
+      </div></div>
+
+      <div style="width:940px;flex:none;background:#14110E;border:1px solid #2A241D;border-radius:14px;overflow:hidden;position:relative;height:560px;">
+        <div style="padding:16px 20px;border-bottom:1px solid #2A241D;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="flex:1;display:flex;align-items:center;gap:10px;background:#181410;border:1px solid #3A3229;border-radius:8px;padding:10px 14px;"><span style="color:#8E8269;font-size:15px;">⌕</span><span style="font-size:13.5px;color:#6E6353;">Search your collection</span></div>
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:8px;padding:9px 14px;">Color ▾</span>
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:8px;padding:9px 14px;">Type ▾</span>
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:#EDE6D8;background:#3A3229;border:1px solid #C9A24B;border-radius:8px;padding:9px 14px;">Set ▴</span>
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:8px;padding:9px 14px;">Sort: Name ▾</span>
+          </div>
+        </div>
+        <div style="padding:14px 20px;display:flex;flex-direction:column;gap:8px;opacity:0.5;">
+          <div style="height:44px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;"></div>
+          <div style="height:44px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;"></div>
+          <div style="height:44px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;"></div>
+          <div style="height:44px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;"></div>
+        </div>
+        <div style="position:absolute;top:64px;left:552px;width:340px;background:#1A160F;border:1px solid #3A3229;border-radius:12px;box-shadow:0 24px 60px rgba(0,0,0,0.6);overflow:hidden;">
+          <div style="margin:10px;display:flex;align-items:center;gap:9px;background:#181410;border:1px solid #C9A24B;border-radius:8px;padding:9px 12px;outline:2px solid rgba(201,162,75,0.25);"><span style="color:#8E8269;font-size:13px;">⌕</span><span style="font-size:13px;color:#6E6353;">Search sets</span><span style="width:1px;height:15px;background:#C9A24B;margin-left:-4px;"></span></div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;padding:2px 14px 6px;">Newest first</div>
+          <div>
+            <div style="display:flex;align-items:center;gap:11px;padding:9px 14px;min-height:40px;"><span style="width:16px;height:16px;flex:none;border-radius:4px;background:#14110E;border:1px solid #4A4033;"></span><span style="flex:1;min-width:0;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Duskmourn: House of Horror</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">103</span></div>
+            <div style="display:flex;align-items:center;gap:11px;padding:9px 14px;min-height:40px;"><span style="width:16px;height:16px;flex:none;border-radius:4px;background:#14110E;border:1px solid #4A4033;"></span><span style="flex:1;min-width:0;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Bloomburrow</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">142</span></div>
+            <div style="display:flex;align-items:center;gap:11px;padding:9px 14px;min-height:40px;"><span style="width:16px;height:16px;flex:none;border-radius:4px;background:#14110E;border:1px solid #4A4033;"></span><span style="flex:1;min-width:0;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Bloomburrow Commander</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">19</span></div>
+            <div style="display:flex;align-items:center;gap:11px;padding:9px 14px;min-height:40px;"><span style="width:16px;height:16px;flex:none;border-radius:4px;background:#14110E;border:1px solid #4A4033;"></span><span style="flex:1;min-width:0;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Modern Horizons 3</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">55</span></div>
+            <div style="display:flex;align-items:center;gap:11px;padding:9px 14px;min-height:40px;"><span style="width:16px;height:16px;flex:none;border-radius:4px;background:#14110E;border:1px solid #4A4033;"></span><span style="flex:1;min-width:0;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Outlaws of Thunder Junction</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">118</span></div>
+            <div style="display:flex;align-items:center;gap:11px;padding:9px 14px;min-height:40px;"><span style="width:16px;height:16px;flex:none;border-radius:4px;background:#14110E;border:1px solid #4A4033;"></span><span style="flex:1;min-width:0;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Murders at Karlov Manor</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">96</span></div>
+            <div style="display:flex;align-items:center;gap:11px;padding:9px 14px;min-height:40px;"><span style="width:16px;height:16px;flex:none;border-radius:4px;background:#14110E;border:1px solid #4A4033;"></span><span style="flex:1;min-width:0;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">The Lost Caverns of Ixalan</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">87</span></div>
+            <div style="display:flex;align-items:center;gap:11px;padding:9px 14px;min-height:40px;"><span style="width:16px;height:16px;flex:none;border-radius:4px;background:#14110E;border:1px solid #4A4033;"></span><span style="flex:1;min-width:0;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Wilds of Eldraine</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">131</span></div>
+            <div style="height:22px;background:linear-gradient(to bottom, rgba(26,22,15,0), #1A160F);margin-top:-22px;position:relative;"></div>
+          </div>
+          <div style="border-top:1px solid #2A241D;padding:9px 14px;display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">254 sets owned</span>
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;font-weight:500;color:#4A4033;">Clear</span>
+          </div>
+        </div>
+        <div style="position:absolute;bottom:14px;left:20px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6E6353;line-height:1.6;">Popover: 340px wide, anchored to the trigger's left edge, 6px below.<br>List max-height 384px ≈ 9.5 rows — the half row is the scroll cue.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================== STATE 3 · QUERY ===================== -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;border-top:1px solid #2A241D;padding-top:18px;">3 · Open · <span style="color:#C9A24B;">query “{{ queryText }}”</span> · 2 of 254 match</div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6E6353;margin-bottom:16px;">Match is case-insensitive substring on the set <b style="color:#A89B84;">name</b> and on the code, so a player who thinks in codes can still type “blb”. Prefix matches sort above substring matches; release order holds inside each group. Matched characters are not highlighted — a brass sub-string in every row reads as noise at this density.</div>
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:392px;flex:none;border-radius:46px;padding:12px;background:#0A0806;border:1px solid #2A241D;box-shadow:0 34px 90px rgba(0,0,0,0.55);"><div style="border-radius:34px;overflow:hidden;background:#14110E;position:relative;height:640px;display:flex;flex-direction:column;">
+        <div style="position:absolute;top:11px;left:50%;transform:translateX(-50%);width:120px;height:26px;background:#0A0806;border-radius:0 0 16px 16px;z-index:5;"></div>
+        <div style="padding:34px 16px 10px;border-bottom:1px solid #2A241D;opacity:0.32;">
+          <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;margin:0 0 10px;color:#EDE6D8;">Collection</h2>
+          <div style="display:flex;gap:8px;overflow:hidden;"><span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:8px;padding:8px 13px;white-space:nowrap;">Color ▾</span><span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:8px;padding:8px 13px;white-space:nowrap;">Type ▾</span><span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:#EDE6D8;background:#3A3229;border:1px solid #C9A24B;border-radius:8px;padding:8px 13px;white-space:nowrap;">Set ▴</span></div>
+        </div>
+        <div style="flex:1;background:rgba(8,6,4,0.72);"></div>
+        <div style="background:#1A160F;border-top:1px solid #3A3229;border-radius:16px 16px 0 0;box-shadow:0 -20px 50px rgba(0,0,0,0.5);">
+          <div style="display:flex;justify-content:center;padding:9px 0 4px;"><span style="width:36px;height:4px;border-radius:999px;background:#3A3229;"></span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 16px 10px;">
+            <span style="font-family:'Cinzel',serif;font-weight:600;font-size:18px;color:#EDE6D8;">Sets</span>
+            <span style="width:30px;height:30px;border-radius:999px;background:#221D16;border:1px solid #3A3229;display:flex;align-items:center;justify-content:center;color:#A89B84;font-size:13px;">✕</span>
+          </div>
+          <div style="margin:0 16px 8px;display:flex;align-items:center;gap:9px;background:#181410;border:1px solid #C9A24B;border-radius:8px;padding:12px;"><span style="color:#8E8269;font-size:14px;">⌕</span><span style="flex:1;font-size:14px;color:#EDE6D8;">{{ queryText }}</span><span style="width:20px;height:20px;border-radius:999px;background:#2A241D;color:#A89B84;font-size:11px;display:flex;align-items:center;justify-content:center;">✕</span></div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;padding:4px 16px 4px;">2 matches</div>
+          <div>
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;min-height:48px;"><span style="width:18px;height:18px;flex:none;border-radius:4px;background:#14110E;border:1px solid #4A4033;"></span><span style="flex:1;min-width:0;font-size:14.5px;color:#EDE6D8;">Bloomburrow</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8E8269;">142</span></div>
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;min-height:48px;"><span style="width:18px;height:18px;flex:none;border-radius:4px;background:#14110E;border:1px solid #4A4033;"></span><span style="flex:1;min-width:0;font-size:14.5px;color:#EDE6D8;">Bloomburrow Commander</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8E8269;">19</span></div>
+          </div>
+          <div style="border-top:1px solid #2A241D;padding:12px 16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6E6353;">254 sets owned</span>
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;font-weight:600;color:#14110E;background:#C9A24B;border-radius:8px;padding:10px 22px;">Done</span>
+          </div>
+        </div>
+      </div></div>
+
+      <div style="width:940px;flex:none;background:#14110E;border:1px solid #2A241D;border-radius:14px;overflow:hidden;position:relative;height:420px;">
+        <div style="padding:16px 20px;border-bottom:1px solid #2A241D;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="flex:1;display:flex;align-items:center;gap:10px;background:#181410;border:1px solid #3A3229;border-radius:8px;padding:10px 14px;"><span style="color:#8E8269;font-size:15px;">⌕</span><span style="font-size:13.5px;color:#6E6353;">Search your collection</span></div>
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:8px;padding:9px 14px;">Color ▾</span>
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:8px;padding:9px 14px;">Type ▾</span>
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:#EDE6D8;background:#3A3229;border:1px solid #C9A24B;border-radius:8px;padding:9px 14px;">Set ▴</span>
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:8px;padding:9px 14px;">Sort: Name ▾</span>
+          </div>
+        </div>
+        <div style="padding:14px 20px;display:flex;flex-direction:column;gap:8px;opacity:0.5;">
+          <div style="height:44px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;"></div>
+          <div style="height:44px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;"></div>
+        </div>
+        <div style="position:absolute;top:64px;left:552px;width:340px;background:#1A160F;border:1px solid #3A3229;border-radius:12px;box-shadow:0 24px 60px rgba(0,0,0,0.6);overflow:hidden;">
+          <div style="margin:10px;display:flex;align-items:center;gap:9px;background:#181410;border:1px solid #C9A24B;border-radius:8px;padding:9px 12px;"><span style="color:#8E8269;font-size:13px;">⌕</span><span style="flex:1;font-size:13px;color:#EDE6D8;">{{ queryText }}</span><span style="width:18px;height:18px;border-radius:999px;background:#2A241D;color:#A89B84;font-size:10px;display:flex;align-items:center;justify-content:center;">✕</span></div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;padding:2px 14px 6px;">2 matches</div>
+          <div style="display:flex;align-items:center;gap:11px;padding:9px 14px;min-height:40px;outline:2px solid #C9A24B;outline-offset:-2px;border-radius:6px;"><span style="width:16px;height:16px;flex:none;border-radius:4px;background:#14110E;border:1px solid #4A4033;"></span><span style="flex:1;min-width:0;font-size:13.5px;color:#EDE6D8;">Bloomburrow</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">142</span></div>
+          <div style="display:flex;align-items:center;gap:11px;padding:9px 14px;min-height:40px;"><span style="width:16px;height:16px;flex:none;border-radius:4px;background:#14110E;border:1px solid #4A4033;"></span><span style="flex:1;min-width:0;font-size:13.5px;color:#EDE6D8;">Bloomburrow Commander</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">19</span></div>
+          <div style="border-top:1px solid #2A241D;padding:9px 14px;display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">254 sets owned</span>
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;font-weight:500;color:#4A4033;">Clear</span>
+          </div>
+        </div>
+        <div style="position:absolute;bottom:14px;left:20px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6E6353;line-height:1.6;">The panel shrinks to its content — no reserved empty space below two results.<br>Live region: “2 sets match {{ queryText }}”.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================== STATE 4 · NO RESULTS ===================== -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;border-top:1px solid #2A241D;padding-top:18px;">4 · No results · <span style="color:#C9A24B;">query matches no owned set</span></div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6E6353;margin-bottom:16px;">The one place in this control where the voice shows. Because the list is owned-sets-only, “no match” usually means <i>you don't own it</i> rather than <i>you typo'd</i> — the copy says both, and the escape hatch is one tap.</div>
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:392px;flex:none;border-radius:46px;padding:12px;background:#0A0806;border:1px solid #2A241D;box-shadow:0 34px 90px rgba(0,0,0,0.55);"><div style="border-radius:34px;overflow:hidden;background:#14110E;position:relative;height:640px;display:flex;flex-direction:column;">
+        <div style="position:absolute;top:11px;left:50%;transform:translateX(-50%);width:120px;height:26px;background:#0A0806;border-radius:0 0 16px 16px;z-index:5;"></div>
+        <div style="padding:34px 16px 10px;border-bottom:1px solid #2A241D;opacity:0.32;">
+          <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;margin:0 0 10px;color:#EDE6D8;">Collection</h2>
+          <div style="display:flex;gap:8px;overflow:hidden;"><span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:8px;padding:8px 13px;white-space:nowrap;">Color ▾</span><span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:8px;padding:8px 13px;white-space:nowrap;">Type ▾</span><span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:#EDE6D8;background:#3A3229;border:1px solid #C9A24B;border-radius:8px;padding:8px 13px;white-space:nowrap;">Set ▴</span></div>
+        </div>
+        <div style="flex:1;background:rgba(8,6,4,0.72);"></div>
+        <div style="background:#1A160F;border-top:1px solid #3A3229;border-radius:16px 16px 0 0;box-shadow:0 -20px 50px rgba(0,0,0,0.5);">
+          <div style="display:flex;justify-content:center;padding:9px 0 4px;"><span style="width:36px;height:4px;border-radius:999px;background:#3A3229;"></span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 16px 10px;">
+            <span style="font-family:'Cinzel',serif;font-weight:600;font-size:18px;color:#EDE6D8;">Sets</span>
+            <span style="width:30px;height:30px;border-radius:999px;background:#221D16;border:1px solid #3A3229;display:flex;align-items:center;justify-content:center;color:#A89B84;font-size:13px;">✕</span>
+          </div>
+          <div style="margin:0 16px 8px;display:flex;align-items:center;gap:9px;background:#181410;border:1px solid #C9A24B;border-radius:8px;padding:12px;"><span style="color:#8E8269;font-size:14px;">⌕</span><span style="flex:1;font-size:14px;color:#EDE6D8;">eldraen</span><span style="width:20px;height:20px;border-radius:999px;background:#2A241D;color:#A89B84;font-size:11px;display:flex;align-items:center;justify-content:center;">✕</span></div>
+          <div style="padding:26px 22px 22px;text-align:center;">
+            <div style="display:flex;justify-content:center;gap:7px;margin-bottom:14px;"><span style="width:7px;height:7px;background:#3A3229;transform:rotate(45deg);"></span><span style="width:9px;height:9px;background:#3A3229;transform:rotate(45deg);"></span><span style="width:7px;height:7px;background:#3A3229;transform:rotate(45deg);"></span></div>
+            <div style="font-family:'Cinzel',serif;font-weight:600;font-size:17px;color:#EDE6D8;margin-bottom:7px;">Nothing in the pile by that name</div>
+            <div style="font-size:13.5px;color:#A89B84;line-height:1.6;">No owned set matches <b style="color:#C6B79A;font-weight:600;">“eldraen”</b>. Only sets you own are listed here.</div>
+            <span style="display:inline-block;margin-top:16px;font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;font-weight:500;color:#EDE6D8;background:transparent;border:1px solid #3A3229;border-radius:8px;padding:10px 18px;">Clear search</span>
+          </div>
+          <div style="border-top:1px solid #2A241D;padding:12px 16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6E6353;">254 sets owned</span>
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;font-weight:600;color:#14110E;background:#C9A24B;border-radius:8px;padding:10px 22px;">Done</span>
+          </div>
+        </div>
+      </div></div>
+
+      <div style="width:940px;flex:none;background:#14110E;border:1px solid #2A241D;border-radius:14px;overflow:hidden;position:relative;height:420px;">
+        <div style="padding:16px 20px;border-bottom:1px solid #2A241D;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="flex:1;display:flex;align-items:center;gap:10px;background:#181410;border:1px solid #3A3229;border-radius:8px;padding:10px 14px;"><span style="color:#8E8269;font-size:15px;">⌕</span><span style="font-size:13.5px;color:#6E6353;">Search your collection</span></div>
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:8px;padding:9px 14px;">Color ▾</span>
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:8px;padding:9px 14px;">Type ▾</span>
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:#EDE6D8;background:#3A3229;border:1px solid #C9A24B;border-radius:8px;padding:9px 14px;">Set ▴</span>
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:8px;padding:9px 14px;">Sort: Name ▾</span>
+          </div>
+        </div>
+        <div style="padding:14px 20px;display:flex;flex-direction:column;gap:8px;opacity:0.5;">
+          <div style="height:44px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;"></div>
+          <div style="height:44px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;"></div>
+        </div>
+        <div style="position:absolute;top:64px;left:552px;width:340px;background:#1A160F;border:1px solid #3A3229;border-radius:12px;box-shadow:0 24px 60px rgba(0,0,0,0.6);overflow:hidden;">
+          <div style="margin:10px;display:flex;align-items:center;gap:9px;background:#181410;border:1px solid #C9A24B;border-radius:8px;padding:9px 12px;"><span style="color:#8E8269;font-size:13px;">⌕</span><span style="flex:1;font-size:13px;color:#EDE6D8;">eldraen</span><span style="width:18px;height:18px;border-radius:999px;background:#2A241D;color:#A89B84;font-size:10px;display:flex;align-items:center;justify-content:center;">✕</span></div>
+          <div style="padding:20px 20px 22px;text-align:center;">
+            <div style="display:flex;justify-content:center;gap:6px;margin-bottom:12px;"><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);"></span><span style="width:8px;height:8px;background:#3A3229;transform:rotate(45deg);"></span><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);"></span></div>
+            <div style="font-family:'Cinzel',serif;font-weight:600;font-size:15.5px;color:#EDE6D8;margin-bottom:6px;">Nothing in the pile by that name</div>
+            <div style="font-size:12.5px;color:#A89B84;line-height:1.6;">No owned set matches <b style="color:#C6B79A;font-weight:600;">“eldraen”</b>. Only sets you own are listed here.</div>
+            <span style="display:inline-block;margin-top:14px;font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;font-weight:500;color:#EDE6D8;border:1px solid #3A3229;border-radius:8px;padding:8px 16px;">Clear search</span>
+          </div>
+        </div>
+        <div style="position:absolute;bottom:14px;left:20px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6E6353;line-height:1.6;">Footer is dropped in this state — a “254 sets owned / Clear” bar under “no matches” is contradictory.<br>Live region: “No sets match eldraen”. The collection list behind is untouched: an empty search inside the panel filters nothing.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================== STATE 5 · ONE SELECTED ===================== -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;border-top:1px solid #2A241D;padding-top:18px;">5 · One selected · <span style="color:#C9A24B;">Bloomburrow</span> · panel dismissed, filter live</div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6E6353;margin-bottom:16px;">One set: the trigger carries the name, and the chip row carries it too. That duplication is deliberate — the trigger is where you go to change it, the chip is where you go to drop it.</div>
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:392px;flex:none;border-radius:46px;padding:12px;background:#0A0806;border:1px solid #2A241D;box-shadow:0 34px 90px rgba(0,0,0,0.55);"><div style="border-radius:34px;overflow:hidden;background:#14110E;position:relative;height:640px;display:flex;flex-direction:column;">
+        <div style="position:absolute;top:11px;left:50%;transform:translateX(-50%);width:120px;height:26px;background:#0A0806;border-radius:0 0 16px 16px;z-index:5;"></div>
+        <div style="padding:34px 16px 10px;border-bottom:1px solid #2A241D;">
+          <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;margin:0 0 10px;color:#EDE6D8;">Collection</h2>
+          <div style="display:flex;align-items:center;gap:10px;background:#181410;border:1px solid #3A3229;border-radius:8px;padding:10px 12px;margin-bottom:9px;"><span style="color:#8E8269;font-size:14px;">⌕</span><span style="font-size:13.5px;color:#6E6353;">Search your collection</span></div>
+          <div style="display:flex;gap:8px;overflow:hidden;margin-bottom:9px;">
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:8px;padding:8px 13px;white-space:nowrap;">Color ▾</span>
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:8px;padding:8px 13px;white-space:nowrap;">Type ▾</span>
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #C9A24B;border-radius:8px;padding:8px 13px;white-space:nowrap;max-width:170px;overflow:hidden;text-overflow:ellipsis;">Set: Bloomburrow ▾</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;overflow:hidden;">
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:999px;padding:6px 12px;white-space:nowrap;">Bloomburrow <span style="color:#8E8269;">✕</span></span>
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;font-weight:500;color:#C9A24B;white-space:nowrap;">Clear all</span>
+          </div>
+        </div>
+        <div style="padding:12px 14px;display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;margin-bottom:2px;"><span>Showing 142 of 2,933</span><span>Name ↓</span></div>
+          <div style="display:grid;grid-template-columns:34px 1fr 62px 14px;align-items:center;gap:10px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:11px 12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#C9A24B;">×1</span><span style="min-width:0;"><span style="display:block;font-size:13.5px;font-weight:600;color:#EDE6D8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Beza, the Bounding Spring</span><span style="display:block;font-size:11.5px;color:#A89B84;">Creature — Elemental Elk</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;text-align:right;">BLB</span><span style="color:#4A4033;font-size:12px;">›</span></div>
+          <div style="display:grid;grid-template-columns:34px 1fr 62px 14px;align-items:center;gap:10px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:11px 12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#C9A24B;">×1</span><span style="min-width:0;"><span style="display:block;font-size:13.5px;font-weight:600;color:#EDE6D8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Fecund Greenshell</span><span style="display:block;font-size:11.5px;color:#A89B84;">Creature — Turtle Druid</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;text-align:right;">BLB</span><span style="color:#4A4033;font-size:12px;">›</span></div>
+          <div style="display:grid;grid-template-columns:34px 1fr 62px 14px;align-items:center;gap:10px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:11px 12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#C9A24B;">×2</span><span style="min-width:0;"><span style="display:block;font-size:13.5px;font-weight:600;color:#EDE6D8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Hugs, Grisly Guardian</span><span style="display:block;font-size:11.5px;color:#A89B84;">Creature — Bear Warrior</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;text-align:right;">BLB</span><span style="color:#4A4033;font-size:12px;">›</span></div>
+          <div style="display:grid;grid-template-columns:34px 1fr 62px 14px;align-items:center;gap:10px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:11px 12px;opacity:0.5;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#C9A24B;">×1</span><span style="min-width:0;"><span style="display:block;font-size:13.5px;font-weight:600;color:#EDE6D8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Innkeeper's Talent</span><span style="display:block;font-size:11.5px;color:#A89B84;">Enchantment — Class</span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;text-align:right;">BLB</span><span style="color:#4A4033;font-size:12px;">›</span></div>
+        </div>
+        <div style="margin-top:auto;border-top:1px solid #2A241D;background:#14110E;display:flex;padding:10px 0 16px;"><span style="flex:1;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#C9A24B;">COLLECTION</span><span style="flex:1;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#6E6353;">COMMANDERS</span><span style="flex:1;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#6E6353;">DECKS</span></div>
+      </div></div>
+
+      <div style="width:940px;flex:none;background:#14110E;border:1px solid #2A241D;border-radius:14px;overflow:hidden;">
+        <div style="padding:16px 20px;border-bottom:1px solid #2A241D;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="flex:1;display:flex;align-items:center;gap:10px;background:#181410;border:1px solid #3A3229;border-radius:8px;padding:10px 14px;"><span style="color:#8E8269;font-size:15px;">⌕</span><span style="font-size:13.5px;color:#6E6353;">Search your collection</span></div>
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:8px;padding:9px 14px;">Color ▾</span>
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:8px;padding:9px 14px;">Type ▾</span>
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #C9A24B;border-radius:8px;padding:9px 14px;">Set: Bloomburrow ▾</span>
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:8px;padding:9px 14px;">Sort: Name ▾</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;">
+            <div style="display:flex;gap:8px;align-items:center;">
+              <span style="font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:999px;padding:6px 12px;">Bloomburrow <span style="color:#8E8269;">✕</span></span>
+              <span style="font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;font-weight:500;color:#C9A24B;">Clear all</span>
+            </div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">Showing 142 of 2,933</span>
+          </div>
+        </div>
+        <div style="padding:14px 20px 18px;display:flex;flex-direction:column;gap:8px;">
+          <div style="display:grid;grid-template-columns:52px 54px 1fr 150px 92px 18px;align-items:center;gap:12px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:11px 14px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#C9A24B;">×1</span><span style="display:flex;gap:4px;"><span style="width:11px;height:11px;border-radius:999px;background:#E8E4D6;"></span><span style="width:11px;height:11px;border-radius:999px;background:#6B9E63;"></span></span><span style="font-size:14px;font-weight:600;color:#EDE6D8;">Beza, the Bounding Spring</span><span style="font-size:12.5px;color:#A89B84;">Creature — Elemental Elk</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">● BLB</span><span style="color:#4A4033;font-size:13px;">›</span></div>
+          <div style="display:grid;grid-template-columns:52px 54px 1fr 150px 92px 18px;align-items:center;gap:12px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:11px 14px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#C9A24B;">×1</span><span style="display:flex;gap:4px;"><span style="width:11px;height:11px;border-radius:999px;background:#6B9E63;"></span></span><span style="font-size:14px;font-weight:600;color:#EDE6D8;">Fecund Greenshell</span><span style="font-size:12.5px;color:#A89B84;">Creature — Turtle Druid</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">● BLB</span><span style="color:#4A4033;font-size:13px;">›</span></div>
+          <div style="display:grid;grid-template-columns:52px 54px 1fr 150px 92px 18px;align-items:center;gap:12px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;padding:11px 14px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#C9A24B;">×2</span><span style="display:flex;gap:4px;"><span style="width:11px;height:11px;border-radius:999px;background:#5B5566;"></span><span style="width:11px;height:11px;border-radius:999px;background:#6B9E63;"></span></span><span style="font-size:14px;font-weight:600;color:#EDE6D8;">Hugs, Grisly Guardian</span><span style="font-size:12.5px;color:#A89B84;">Creature — Bear Warrior</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">● BLB</span><span style="color:#4A4033;font-size:13px;">›</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================== STATE 6 · MANY SELECTED ===================== -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;border-top:1px solid #2A241D;padding-top:18px;">6 · Many selected · <span style="color:#C9A24B;">3 sets, with Type: Instant also active</span></div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6E6353;margin-bottom:16px;">Reopened: selected sets are pinned into a <b style="color:#A89B84;">Selected</b> group at the top — computed once, on open, so nothing moves under the cursor while you toggle. Counts respect the active <i>Instant</i> filter, which is why Adventures in the Forgotten Realms sits at 0 and cannot be picked.</div>
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:392px;flex:none;border-radius:46px;padding:12px;background:#0A0806;border:1px solid #2A241D;box-shadow:0 34px 90px rgba(0,0,0,0.55);"><div style="border-radius:34px;overflow:hidden;background:#14110E;position:relative;height:640px;display:flex;flex-direction:column;">
+        <div style="position:absolute;top:11px;left:50%;transform:translateX(-50%);width:120px;height:26px;background:#0A0806;border-radius:0 0 16px 16px;z-index:5;"></div>
+        <div style="padding:34px 16px 10px;border-bottom:1px solid #2A241D;opacity:0.32;">
+          <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;margin:0 0 10px;color:#EDE6D8;">Collection</h2>
+          <div style="display:flex;gap:8px;overflow:hidden;"><span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:#EDE6D8;background:#2A241D;border:1px solid #C9A24B;border-radius:8px;padding:8px 13px;white-space:nowrap;">Type: Instant ▾</span><span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:#EDE6D8;background:#3A3229;border:1px solid #C9A24B;border-radius:8px;padding:8px 13px;white-space:nowrap;">Set 3 ▴</span></div>
+        </div>
+        <div style="flex:1;background:rgba(8,6,4,0.72);"></div>
+        <div style="background:#1A160F;border-top:1px solid #3A3229;border-radius:16px 16px 0 0;box-shadow:0 -20px 50px rgba(0,0,0,0.5);">
+          <div style="display:flex;justify-content:center;padding:9px 0 4px;"><span style="width:36px;height:4px;border-radius:999px;background:#3A3229;"></span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 16px 10px;">
+            <span style="font-family:'Cinzel',serif;font-weight:600;font-size:18px;color:#EDE6D8;">Sets <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#14110E;background:#C9A24B;border-radius:999px;padding:1px 8px;vertical-align:middle;">3</span></span>
+            <span style="width:30px;height:30px;border-radius:999px;background:#221D16;border:1px solid #3A3229;display:flex;align-items:center;justify-content:center;color:#A89B84;font-size:13px;">✕</span>
+          </div>
+          <div style="margin:0 16px 8px;display:flex;align-items:center;gap:9px;background:#181410;border:1px solid #3A3229;border-radius:8px;padding:12px;"><span style="color:#8E8269;font-size:14px;">⌕</span><span style="font-size:14px;color:#6E6353;">Search sets</span></div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;padding:4px 16px 4px;">Selected · 3</div>
+          <div>
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;min-height:48px;"><span style="width:18px;height:18px;flex:none;border-radius:4px;background:#C9A24B;border:1px solid #C9A24B;display:flex;align-items:center;justify-content:center;font-size:12px;color:#14110E;line-height:1;">✓</span><span style="flex:1;min-width:0;font-size:14.5px;color:#EDE6D8;">Bloomburrow</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C6B79A;">12</span></div>
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;min-height:48px;"><span style="width:18px;height:18px;flex:none;border-radius:4px;background:#C9A24B;border:1px solid #C9A24B;display:flex;align-items:center;justify-content:center;font-size:12px;color:#14110E;line-height:1;">✓</span><span style="flex:1;min-width:0;font-size:14.5px;color:#EDE6D8;">Modern Horizons 3</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C6B79A;">7</span></div>
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;min-height:48px;"><span style="width:18px;height:18px;flex:none;border-radius:4px;background:#C9A24B;border:1px solid #C9A24B;display:flex;align-items:center;justify-content:center;font-size:12px;color:#14110E;line-height:1;">✓</span><span style="flex:1;min-width:0;font-size:14.5px;color:#EDE6D8;">Wilds of Eldraine</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C6B79A;">9</span></div>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;padding:8px 16px 4px;border-top:1px solid #2A241D;">Newest first</div>
+          <div>
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;min-height:48px;"><span style="width:18px;height:18px;flex:none;border-radius:4px;background:#14110E;border:1px solid #4A4033;"></span><span style="flex:1;min-width:0;font-size:14.5px;color:#EDE6D8;line-height:1.35;">Duskmourn: House of Horror</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8E8269;">8</span></div>
+            <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 16px;min-height:48px;opacity:0.42;"><span style="width:18px;height:18px;flex:none;border-radius:4px;background:#14110E;border:1px solid #3A3229;margin-top:1px;"></span><span style="flex:1;min-width:0;font-size:14.5px;color:#A89B84;line-height:1.35;">Adventures in the Forgotten Realms</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8E8269;margin-top:2px;">0</span></div>
+          </div>
+          <div style="border-top:1px solid #2A241D;padding:12px 16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;font-weight:500;color:#C9A24B;">Clear</span>
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;font-weight:600;color:#14110E;background:#C9A24B;border-radius:8px;padding:10px 22px;">Done</span>
+          </div>
+        </div>
+      </div></div>
+
+      <div style="width:940px;flex:none;background:#14110E;border:1px solid #2A241D;border-radius:14px;overflow:hidden;position:relative;height:560px;">
+        <div style="padding:16px 20px;border-bottom:1px solid #2A241D;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="flex:1;display:flex;align-items:center;gap:10px;background:#181410;border:1px solid #3A3229;border-radius:8px;padding:10px 14px;"><span style="color:#8E8269;font-size:15px;">⌕</span><span style="font-size:13.5px;color:#6E6353;">Search your collection</span></div>
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:8px;padding:9px 14px;">Color ▾</span>
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #C9A24B;border-radius:8px;padding:9px 14px;">Type: Instant ▾</span>
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:#EDE6D8;background:#3A3229;border:1px solid #C9A24B;border-radius:8px;padding:9px 14px;display:inline-flex;align-items:center;gap:8px;">Set<span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#14110E;background:#C9A24B;border-radius:999px;padding:1px 7px;">3</span>▴</span>
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:8px;padding:9px 14px;">Sort: Name ▾</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;">
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <span style="font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:999px;padding:6px 12px;">Instant <span style="color:#8E8269;">✕</span></span>
+              <span style="font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:999px;padding:6px 12px;">Bloomburrow <span style="color:#8E8269;">✕</span></span>
+              <span style="font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:999px;padding:6px 12px;">Modern Horizons 3 <span style="color:#8E8269;">✕</span></span>
+              <span style="font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:999px;padding:6px 12px;">Wilds of Eldraine <span style="color:#8E8269;">✕</span></span>
+              <span style="font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;font-weight:500;color:#C9A24B;">Clear all</span>
+            </div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;white-space:nowrap;">Showing 28 of 2,933</span>
+          </div>
+        </div>
+        <div style="padding:14px 20px;display:flex;flex-direction:column;gap:8px;opacity:0.5;">
+          <div style="height:44px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;"></div>
+          <div style="height:44px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;"></div>
+          <div style="height:44px;background:#1E1A15;border:1px solid #2A241D;border-radius:8px;"></div>
+        </div>
+        <div style="position:absolute;top:64px;left:494px;width:340px;background:#1A160F;border:1px solid #3A3229;border-radius:12px;box-shadow:0 24px 60px rgba(0,0,0,0.6);overflow:hidden;">
+          <div style="margin:10px;display:flex;align-items:center;gap:9px;background:#181410;border:1px solid #C9A24B;border-radius:8px;padding:9px 12px;"><span style="color:#8E8269;font-size:13px;">⌕</span><span style="font-size:13px;color:#6E6353;">Search sets</span></div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;padding:2px 14px 6px;">Selected · 3</div>
+          <div style="display:flex;align-items:center;gap:11px;padding:9px 14px;min-height:40px;"><span style="width:16px;height:16px;flex:none;border-radius:4px;background:#C9A24B;border:1px solid #C9A24B;display:flex;align-items:center;justify-content:center;font-size:11px;color:#14110E;line-height:1;">✓</span><span style="flex:1;min-width:0;font-size:13.5px;color:#EDE6D8;">Bloomburrow</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;">12</span></div>
+          <div style="display:flex;align-items:center;gap:11px;padding:9px 14px;min-height:40px;"><span style="width:16px;height:16px;flex:none;border-radius:4px;background:#C9A24B;border:1px solid #C9A24B;display:flex;align-items:center;justify-content:center;font-size:11px;color:#14110E;line-height:1;">✓</span><span style="flex:1;min-width:0;font-size:13.5px;color:#EDE6D8;">Modern Horizons 3</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;">7</span></div>
+          <div style="display:flex;align-items:center;gap:11px;padding:9px 14px;min-height:40px;"><span style="width:16px;height:16px;flex:none;border-radius:4px;background:#C9A24B;border:1px solid #C9A24B;display:flex;align-items:center;justify-content:center;font-size:11px;color:#14110E;line-height:1;">✓</span><span style="flex:1;min-width:0;font-size:13.5px;color:#EDE6D8;">Wilds of Eldraine</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;">9</span></div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;padding:8px 14px 6px;border-top:1px solid #2A241D;">Newest first</div>
+          <div style="display:flex;align-items:center;gap:11px;padding:9px 14px;min-height:40px;"><span style="width:16px;height:16px;flex:none;border-radius:4px;background:#14110E;border:1px solid #4A4033;"></span><span style="flex:1;min-width:0;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Duskmourn: House of Horror</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">8</span></div>
+          <div style="display:flex;align-items:center;gap:11px;padding:9px 14px;min-height:40px;"><span style="width:16px;height:16px;flex:none;border-radius:4px;background:#14110E;border:1px solid #4A4033;"></span><span style="flex:1;min-width:0;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Outlaws of Thunder Junction</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">11</span></div>
+          <div style="display:flex;align-items:center;gap:11px;padding:9px 14px;min-height:40px;opacity:0.42;"><span style="width:16px;height:16px;flex:none;border-radius:4px;background:#14110E;border:1px solid #3A3229;"></span><span style="flex:1;min-width:0;font-size:13.5px;color:#A89B84;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Adventures in the Forgotten Realms</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">0</span></div>
+          <div style="border-top:1px solid #2A241D;padding:9px 14px;display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">3 of 254 selected</span>
+            <span style="font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;font-weight:500;color:#C9A24B;">Clear</span>
+          </div>
+        </div>
+        <div style="position:absolute;bottom:14px;left:20px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6E6353;line-height:1.6;">Multiple sets are OR'd together; sets AND with every other filter. “Showing 28 of 2,933” is instants across the three sets.<br>Truncation: the popover ellipses long names (full name is the option's accessible name); the sheet wraps to two lines.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================== STATE 7 · KEYBOARD WALK ===================== -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;border-top:1px solid #2A241D;padding-top:18px;">7 · Keyboard focus walk · <span style="color:#C9A24B;">no mouse, no trackpad</span></div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6E6353;margin-bottom:16px;">Four frames, in order. Note that the brass ring in step 3 is <b style="color:#A89B84;">inside</b> the row (active option) while in steps 1 and 4 it is <b style="color:#A89B84;">outside</b> the control (real DOM focus) — the two are never confused.</div>
+    <div style="display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:392px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:12px;">Step 1 · Tab to the trigger</div>
+        <div style="display:flex;gap:9px;align-items:center;background:#14110E;border:1px solid #2A241D;border-radius:10px;padding:14px;">
+          <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:#6E6353;background:#221D16;border:1px solid #2A241D;border-radius:8px;padding:9px 12px;">Type ▾</span>
+          <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #3A3229;border-radius:8px;padding:9px 14px;outline:2px solid #C9A24B;outline-offset:2px;">Set ▾</span>
+          <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:#6E6353;background:#221D16;border:1px solid #2A241D;border-radius:8px;padding:9px 12px;">Sort ▾</span>
+        </div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.6;margin-top:12px;">Announced as <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C6B79A;">“Filter by set, collapsed, button”</span>. With sets already chosen: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C6B79A;">“…, 3 selected”</span>.</div>
+      </div>
+
+      <div style="width:392px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:12px;">Step 2 · Enter opens, focus to search</div>
+        <div style="background:#14110E;border:1px solid #2A241D;border-radius:10px;padding:14px;">
+          <div style="width:100%;background:#1A160F;border:1px solid #3A3229;border-radius:12px;overflow:hidden;">
+            <div style="margin:9px;display:flex;align-items:center;gap:9px;background:#181410;border:1px solid #C9A24B;border-radius:8px;padding:9px 12px;outline:2px solid #C9A24B;outline-offset:2px;"><span style="color:#8E8269;font-size:13px;">⌕</span><span style="font-size:13px;color:#6E6353;">Search sets</span></div>
+            <div style="display:flex;align-items:center;gap:11px;padding:9px 14px;min-height:40px;"><span style="width:16px;height:16px;flex:none;border-radius:4px;background:#14110E;border:1px solid #4A4033;"></span><span style="flex:1;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Duskmourn: House of Horror</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">103</span></div>
+            <div style="display:flex;align-items:center;gap:11px;padding:9px 14px;min-height:40px;"><span style="width:16px;height:16px;flex:none;border-radius:4px;background:#14110E;border:1px solid #4A4033;"></span><span style="flex:1;font-size:13.5px;color:#EDE6D8;">Bloomburrow</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">142</span></div>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.6;margin-top:12px;">No option is active yet — the caret is in the field and nothing is pre-highlighted, so a first keystroke types rather than selects.</div>
+      </div>
+
+      <div style="width:392px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:12px;">Step 3 · ↓ ↓ then Space</div>
+        <div style="background:#14110E;border:1px solid #2A241D;border-radius:10px;padding:14px;">
+          <div style="width:100%;background:#1A160F;border:1px solid #3A3229;border-radius:12px;overflow:hidden;">
+            <div style="margin:9px;display:flex;align-items:center;gap:9px;background:#181410;border:1px solid #C9A24B;border-radius:8px;padding:9px 12px;"><span style="color:#8E8269;font-size:13px;">⌕</span><span style="font-size:13px;color:#6E6353;">Search sets</span></div>
+            <div style="display:flex;align-items:center;gap:11px;padding:9px 14px;min-height:40px;"><span style="width:16px;height:16px;flex:none;border-radius:4px;background:#14110E;border:1px solid #4A4033;"></span><span style="flex:1;font-size:13.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Duskmourn: House of Horror</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">103</span></div>
+            <div style="display:flex;align-items:center;gap:11px;padding:9px 14px;min-height:40px;outline:2px solid #C9A24B;outline-offset:-2px;border-radius:6px;"><span style="width:16px;height:16px;flex:none;border-radius:4px;background:#C9A24B;border:1px solid #C9A24B;display:flex;align-items:center;justify-content:center;font-size:11px;color:#14110E;line-height:1;">✓</span><span style="flex:1;font-size:13.5px;color:#EDE6D8;">Bloomburrow</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;">142</span></div>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.6;margin-top:12px;">The row is selected in place, the panel stays open, the list does <b style="color:#EDE6D8;font-weight:600;">not</b> re-sort. Live region: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C6B79A;">“Bloomburrow added. 1 set, 142 of 2,933 cards shown.”</span></div>
+      </div>
+
+      <div style="width:392px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C9A24B;margin-bottom:12px;">Step 4 · Esc closes, focus returns</div>
+        <div style="display:flex;gap:9px;align-items:center;background:#14110E;border:1px solid #2A241D;border-radius:10px;padding:14px;">
+          <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:#6E6353;background:#221D16;border:1px solid #2A241D;border-radius:8px;padding:9px 12px;">Type ▾</span>
+          <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500;color:#EDE6D8;background:#2A241D;border:1px solid #C9A24B;border-radius:8px;padding:9px 14px;outline:2px solid #C9A24B;outline-offset:2px;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Set: Bloomburrow ▾</span>
+        </div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.6;margin-top:12px;">Focus lands back on the trigger, now reading <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C6B79A;">“Filter by set, Bloomburrow, collapsed”</span>. Next Tab continues into the chip row's dismiss buttons — the new chip is reachable without leaving the keyboard.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================== SIBLINGS ===================== -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;border-top:1px solid #2A241D;padding-top:18px;">Siblings · <span style="color:#C9A24B;">what happens to Type ▾ and Sort ▾</span></div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6E6353;margin-bottom:16px;">Design's call, per the spec's open section. Leaving two native selects beside a custom panel would make the row feel half-built — but they don't all need the same machinery.</div>
+    <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:392px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:24px;">
+        <div style="font-family:'Cinzel',serif;font-weight:600;font-size:19px;color:#EDE6D8;margin-bottom:6px;">Type ▾ — same panel, search off</div>
+        <div style="font-size:13px;color:#A89B84;line-height:1.6;margin-bottom:18px;">~14 card types. Multi-select, counts, no search field, no group headers. One component, a <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">searchable</span> prop.</div>
+        <div style="width:300px;background:#1A160F;border:1px solid #3A3229;border-radius:12px;box-shadow:0 24px 60px rgba(0,0,0,0.6);overflow:hidden;">
+          <div style="display:flex;align-items:center;gap:11px;padding:9px 14px;min-height:40px;"><span style="width:16px;height:16px;flex:none;border-radius:4px;background:#C9A24B;border:1px solid #C9A24B;display:flex;align-items:center;justify-content:center;font-size:11px;color:#14110E;line-height:1;">✓</span><span style="flex:1;font-size:13.5px;color:#EDE6D8;">Instant</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;">204</span></div>
+          <div style="display:flex;align-items:center;gap:11px;padding:9px 14px;min-height:40px;"><span style="width:16px;height:16px;flex:none;border-radius:4px;background:#14110E;border:1px solid #4A4033;"></span><span style="flex:1;font-size:13.5px;color:#EDE6D8;">Creature</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">1,142</span></div>
+          <div style="display:flex;align-items:center;gap:11px;padding:9px 14px;min-height:40px;"><span style="width:16px;height:16px;flex:none;border-radius:4px;background:#14110E;border:1px solid #4A4033;"></span><span style="flex:1;font-size:13.5px;color:#EDE6D8;">Sorcery</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">188</span></div>
+          <div style="display:flex;align-items:center;gap:11px;padding:9px 14px;min-height:40px;"><span style="width:16px;height:16px;flex:none;border-radius:4px;background:#14110E;border:1px solid #4A4033;"></span><span style="flex:1;font-size:13.5px;color:#EDE6D8;">Land</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8E8269;">431</span></div>
+          <div style="border-top:1px solid #2A241D;padding:9px 14px;display:flex;justify-content:flex-end;"><span style="font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;font-weight:500;color:#C9A24B;">Clear</span></div>
+        </div>
+      </div>
+
+      <div style="width:392px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:24px;">
+        <div style="font-family:'Cinzel',serif;font-weight:600;font-size:19px;color:#EDE6D8;margin-bottom:6px;">Sort ▾ — a menu, not a listbox</div>
+        <div style="font-size:13px;color:#A89B84;line-height:1.6;margin-bottom:18px;">Five mutually exclusive options, no counts, no search, no checkboxes. Picking one <b style="color:#EDE6D8;font-weight:600;">closes</b> the menu — the opposite of the Set panel, because there is nothing more to choose.</div>
+        <div style="width:220px;background:#1A160F;border:1px solid #3A3229;border-radius:12px;box-shadow:0 24px 60px rgba(0,0,0,0.6);overflow:hidden;padding:5px 0;">
+          <div style="display:flex;align-items:center;gap:10px;padding:9px 14px;min-height:38px;"><span style="width:13px;color:#C9A24B;font-size:12px;">✓</span><span style="flex:1;font-size:13.5px;color:#EDE6D8;">Name A→Z</span></div>
+          <div style="display:flex;align-items:center;gap:10px;padding:9px 14px;min-height:38px;"><span style="width:13px;"></span><span style="flex:1;font-size:13.5px;color:#EDE6D8;">Name Z→A</span></div>
+          <div style="display:flex;align-items:center;gap:10px;padding:9px 14px;min-height:38px;background:#221D16;"><span style="width:13px;"></span><span style="flex:1;font-size:13.5px;color:#EDE6D8;">Newest set first</span></div>
+          <div style="display:flex;align-items:center;gap:10px;padding:9px 14px;min-height:38px;"><span style="width:13px;"></span><span style="flex:1;font-size:13.5px;color:#EDE6D8;">Mana value ↑</span></div>
+          <div style="display:flex;align-items:center;gap:10px;padding:9px 14px;min-height:38px;"><span style="width:13px;"></span><span style="flex:1;font-size:13.5px;color:#EDE6D8;">Quantity owned ↓</span></div>
+        </div>
+      </div>
+
+      <div style="width:392px;flex:none;background:#1A160F;border:1px solid #2A241D;border-radius:14px;padding:24px;">
+        <div style="font-family:'Cinzel',serif;font-weight:600;font-size:19px;color:#EDE6D8;margin-bottom:14px;">Scope discipline</div>
+        <div style="font-size:13.5px;color:#C6B79A;line-height:1.7;">The <b style="color:#EDE6D8;font-weight:600;">Set</b> panel is the ticket. Type and Sort are drawn here so engineering can see the row's end state and build the panel general enough to serve all three — but they are <b style="color:#EDE6D8;font-weight:600;">follow-up work</b>, not this change. Shipping Set alone leaves two native selects in the row for a release; that is acceptable and expected.<br><br>The <b style="color:#EDE6D8;font-weight:600;">Color</b> control is not converted at all: five WUBRG pips, already custom, already good. It never becomes a panel.</div>
+      </div>
+
+    </div>
+  </div>
+
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;queryText&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;bloom&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Sample data&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return { queryText: this.props.queryText ?? 'bloom' };
+  }
+}
+</script>
+</body>
+</html>

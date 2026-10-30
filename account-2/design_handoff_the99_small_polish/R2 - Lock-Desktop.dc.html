@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Lock glyph · desktop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+</style>
+</helmet>
+<div style="width:1280px;min-height:1500px;box-sizing:border-box;padding:40px 48px;background:#121217;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:34px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#7C8A8C">Lock · desktop · R2</span>
+    <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px">One lock for the nav and the deck</h2>
+    <p style="margin:0;max-width:820px;font-size:13px;line-height:1.55;color:#95A4A6">Padlock and LockMark become one <code style="font-family:'IBM Plex Mono',monospace;font-size:12px">Lock</code> component: <code style="font-family:'IBM Plex Mono',monospace;font-size:12px">size</code> sm 9×12, md 11×14, lg 12×15, and <code style="font-family:'IBM Plex Mono',monospace;font-size:12px">open</code>. It takes its surface's ink exactly as each does today. R2 makes the body taller at every size: lg 9 of 15 (was 7.5 of 14), md 8.2 of 14 (6.5 of 13), sm 7.4 of 12 (6 of 11). The rail's well foot and the first-run page line are lg in <code style="font-family:'IBM Plex Mono',monospace;font-size:12px">--fg-locked</code>.</p>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C">The rail's well foot, six themes · 1× and 2×</span>
+    <div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px">
+      <sc-for list="{{themes}}" as="t" hint-placeholder-count="6">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#7C8A8C">{{t.name}} · {{t.ratio}}:1</span>
+          <div style="display:flex;gap:10px;align-items:stretch;padding:12px;background:{{t.bg}};border-radius:10px">
+            <div style="width:62px;display:flex;flex-direction:column;align-items:center;gap:10px;padding:12px 0;background:{{t.rail}};border-radius:8px">
+              <span style="width:22px;height:22px;border-radius:6px;border:1px solid {{t.strong}}"></span>
+              <span style="width:22px;height:22px;border-radius:6px;border:1px dashed {{t.strong}}"></span>
+              <span style="width:22px;height:22px;border-radius:6px;border:1px dashed {{t.strong}}"></span>
+              <div style="margin-top:3px;display:flex;flex-direction:column;align-items:center;gap:5px">
+                <svg width="12" height="15" viewBox="0 0 12 15" aria-hidden="true"><path d="M3 6.5V4a3 3 0 0 1 6 0v2.5" fill="none" stroke="{{t.locked}}" stroke-width="1.6" stroke-linecap="round"></path><path fill="{{t.locked}}" fill-rule="evenodd" d="M2 6h8a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Zm4 2.4a1.3 1.3 0 0 0-.6 2.45v1.35h1.2v-1.35A1.3 1.3 0 0 0 6 8.4Z"></path></svg>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:{{t.locked}}">Locked</span>
+              </div>
+            </div>
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;background:{{t.rail}};border-radius:8px">
+              <svg width="48" height="60" viewBox="0 0 12 15" aria-hidden="true"><path d="M3 6.5V4a3 3 0 0 1 6 0v2.5" fill="none" stroke="{{t.locked}}" stroke-width="1.6" stroke-linecap="round"></path><path fill="{{t.locked}}" fill-rule="evenodd" d="M2 6h8a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Zm4 2.4a1.3 1.3 0 0 0-.6 2.45v1.35h1.2v-1.35A1.3 1.3 0 0 0 6 8.4Z"></path></svg>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    <p style="margin:0;font-size:11.5px;line-height:1.5;color:#95A4A6">Right of each rail: the same glyph at 4×, to show the geometry. Ratios are <code style="font-family:'IBM Plex Mono',monospace;font-size:11px">--fg-locked</code> on <code style="font-family:'IBM Plex Mono',monospace;font-size:11px">--surface-rail</code>; the glyph is decorative and keeps the 3:1 floor.</p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C">First-run, md and up</span>
+      <div style="display:flex;flex-direction:column;gap:12px;padding:24px 28px;background:#121217;border:1px solid #1A1F2B;border-radius:12px">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#7C8A8C">Step 1 of 3</span>
+        <h3 style="margin:0;font-family:'Metamorphous',serif;font-weight:700;font-size:27px;line-height:1">Add your collection</h3>
+        <p style="margin:0;display:flex;align-items:center;gap:8px;font-size:12.5px;color:#95A4A6">
+          <svg width="12" height="15" viewBox="0 0 12 15" aria-hidden="true" style="flex:none"><path d="M3 6.5V4a3 3 0 0 1 6 0v2.5" fill="none" stroke="#5F6D6E" stroke-width="1.6" stroke-linecap="round"></path><path fill="#5F6D6E" fill-rule="evenodd" d="M2 6h8a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Zm4 2.4a1.3 1.3 0 0 0-.6 2.45v1.35h1.2v-1.35A1.3 1.3 0 0 0 6 8.4Z"></path></svg>
+          Collection, Commanders, Discover and Decks open once your cards are in.
+        </p>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:8px">
+          <div style="display:flex;align-items:center;gap:14px;padding:16px 18px;background:#181920;border:1px solid #1A1F2B;border-radius:10px">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#5F6D6E">2</span>
+            <div style="flex:1;display:flex;flex-direction:column;gap:3px"><span style="font-family:'Metamorphous',serif;font-size:16px;font-weight:600;color:#5F6D6E">Pick a commander or import a deck</span><span style="font-size:12.5px;color:#5F6D6E">Opens once your cards are in</span></div>
+            <svg width="12" height="15" viewBox="0 0 12 15" aria-hidden="true"><path d="M3 6.5V4a3 3 0 0 1 6 0v2.5" fill="none" stroke="#5F6D6E" stroke-width="1.6" stroke-linecap="round"></path><path fill="#5F6D6E" fill-rule="evenodd" d="M2 6h8a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Zm4 2.4a1.3 1.3 0 0 0-.6 2.45v1.35h1.2v-1.35A1.3 1.3 0 0 0 6 8.4Z"></path></svg>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px;padding:16px 18px;background:#181920;border:1px solid #1A1F2B;border-radius:10px">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#5F6D6E">3</span>
+            <div style="flex:1;display:flex;flex-direction:column;gap:3px"><span style="font-family:'Metamorphous',serif;font-size:16px;font-weight:600;color:#5F6D6E">Build the 99</span><span style="font-size:12.5px;color:#5F6D6E">Opens once you pick a commander</span></div>
+            <svg width="12" height="15" viewBox="0 0 12 15" aria-hidden="true"><path d="M3 6.5V4a3 3 0 0 1 6 0v2.5" fill="none" stroke="#5F6D6E" stroke-width="1.6" stroke-linecap="round"></path><path fill="#5F6D6E" fill-rule="evenodd" d="M2 6h8a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Zm4 2.4a1.3 1.3 0 0 0-.6 2.45v1.35h1.2v-1.35A1.3 1.3 0 0 0 6 8.4Z"></path></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C">The deck's lock, same glyph at md · tones unchanged</span>
+      <div style="display:flex;flex-direction:column;gap:0;background:#1E1F26;border:1px solid #1A1F2B;border-radius:10px;overflow:hidden">
+        <div style="display:flex;align-items:center;gap:10px;height:40px;padding:0 14px;border-bottom:1px solid #1A1F2B">
+          <svg width="11" height="14" viewBox="0 0 11 14" aria-hidden="true"><path d="M2.8 6V3.8a2.7 2.7 0 0 1 5.4 0V6" fill="none" stroke="#B3C0C2" stroke-width="1.6" stroke-linecap="round"></path><path fill="#B3C0C2" fill-rule="evenodd" d="M2 5.8h7a2 2 0 0 1 2 2V12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V7.8a2 2 0 0 1 2-2Zm3.5 3.1a1 1 0 1 0 0 2a1 1 0 1 0 0-2Z"></path></svg>
+          <span style="flex:1;font-size:13px;color:#C6D2D3">Sol Ring</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8A8C">closed · --fg-body</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;height:40px;padding:0 14px;border-bottom:1px solid #1A1F2B">
+          <svg width="11" height="14" viewBox="0 0 11 14" aria-hidden="true"><path d="M2.8 6V3.8a2.7 2.7 0 0 1 5.4 0" fill="none" stroke="#7C8A8C" stroke-width="1.6" stroke-linecap="round"></path><path fill="#7C8A8C" fill-rule="evenodd" d="M2 5.8h7a2 2 0 0 1 2 2V12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V7.8a2 2 0 0 1 2-2Zm3.5 3.1a1 1 0 1 0 0 2a1 1 0 1 0 0-2Z"></path></svg>
+          <span style="flex:1;font-size:13px;color:#C6D2D3">Arcane Signet</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8A8C">open · --fg-faint</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;height:40px;padding:0 14px;border-bottom:1px solid #1A1F2B;background:#22232B">
+          <svg width="11" height="14" viewBox="0 0 11 14" aria-hidden="true"><path d="M2.8 6V3.8a2.7 2.7 0 0 1 5.4 0V6" fill="none" stroke="#5C86C9" stroke-width="1.6" stroke-linecap="round"></path><path fill="#5C86C9" fill-rule="evenodd" d="M2 5.8h7a2 2 0 0 1 2 2V12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V7.8a2 2 0 0 1 2-2Zm3.5 3.1a1 1 0 1 0 0 2a1 1 0 1 0 0-2Z"></path></svg>
+          <span style="flex:1;font-size:13px;color:#C6D2D3">Sol Ring</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8A8C">Lock cards mode, closed · --accent</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;height:40px;padding:0 14px;background:#22232B">
+          <svg width="11" height="14" viewBox="0 0 11 14" aria-hidden="true"><path d="M2.8 6V3.8a2.7 2.7 0 0 1 5.4 0" fill="none" stroke="#95A4A6" stroke-width="1.6" stroke-linecap="round"></path><path fill="#95A4A6" fill-rule="evenodd" d="M2 5.8h7a2 2 0 0 1 2 2V12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V7.8a2 2 0 0 1 2-2Zm3.5 3.1a1 1 0 1 0 0 2a1 1 0 1 0 0-2Z"></path></svg>
+          <span style="flex:1;font-size:13px;color:#C6D2D3">Arcane Signet</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8A8C">Lock cards mode, open · --fg-muted</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:center">
+        <button type="button" style="display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 12px;background:transparent;border:1px solid #2E3340;border-radius:8px;font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;color:#95A4A6">
+          <svg width="11" height="14" viewBox="0 0 11 14" aria-hidden="true"><path d="M2.8 6V3.8a2.7 2.7 0 0 1 5.4 0V6" fill="none" stroke="#95A4A6" stroke-width="1.6" stroke-linecap="round"></path><path fill="#95A4A6" fill-rule="evenodd" d="M2 5.8h7a2 2 0 0 1 2 2V12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V7.8a2 2 0 0 1 2-2Zm3.5 3.1a1 1 0 1 0 0 2a1 1 0 1 0 0-2Z"></path></svg>
+          Lock cards
+        </button>
+        <span style="font-size:11.5px;color:#95A4A6">The toolbar's button keeps its <code style="font-family:'IBM Plex Mono',monospace;font-size:11px">ink</code> override.</span>
+      </div>
+      <p style="margin:0;font-size:11.5px;line-height:1.5;color:#95A4A6">What changes for the deck: drawn as SVG instead of three CSS spans, the open state is a missing right leg instead of a shorter arch plus a patch, and the keyhole is cut out. Size, position and every tone rule stay.</p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1500}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      themes: [
+        { name: 'Amonkhet', bg: '#14110E', rail: '#1A1611', strong: '#3A3229', locked: '#6E6654', ratio: '3.16' },
+        { name: 'Kamigawa', bg: '#0E0F14', rail: '#12141B', strong: '#262A35', locked: '#606476', ratio: '3.14' },
+        { name: 'Ixalan', bg: '#0E1310', rail: '#121814', strong: '#2C3830', locked: '#626E5E', ratio: '3.35' },
+        { name: 'Phyrexia', bg: '#0D0B0E', rail: '#110F13', strong: '#262329', locked: '#64616A', ratio: '3.14' },
+        { name: 'Eldraine', bg: '#120E17', rail: '#15121B', strong: '#342C41', locked: '#6A6475', ratio: '3.26' },
+        { name: 'Kaldheim', bg: '#121217', rail: '#181920', strong: '#2E3340', locked: '#5F6D6E', ratio: '3.25' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

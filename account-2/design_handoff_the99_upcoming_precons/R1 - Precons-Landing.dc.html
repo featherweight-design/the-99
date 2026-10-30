@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Upcoming precons · Release day and decklists landing</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+.lbl{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#7C8A8C}
+.mono{font-family:'IBM Plex Mono',monospace}
+.disp{font-family:'Metamorphous',serif;font-weight:400}
+.cap{margin:0;font-size:13px;line-height:1.55;color:#95A4A6;text-wrap:pretty}
+.yh{margin:0;display:flex;align-items:baseline;gap:8px;border-bottom:1px solid #1A1F2B;padding-bottom:7px;font-family:'Metamorphous',serif;font-weight:400;font-size:17px;color:#C6D2D3}
+.cnt{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8A8C}
+.nm2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.3;color:#B3C0C2}
+.dot{display:inline-block;border-radius:50%}
+.shell{display:flex;flex-direction:column;overflow:hidden;border:1px solid #1A1F2B;background:#1E1F26;border-radius:10px}
+.arttl{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#5F6D6E}
+.jump{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6D2D3;text-decoration:underline;text-decoration-color:rgba(92,134,201,.55);text-underline-offset:3px;align-self:flex-start;min-height:24px;display:inline-flex;align-items:center}
+</style>
+</helmet>
+<div style="width:1460px;min-height:4000px;box-sizing:border-box;padding:44px 40px 60px;background:#0E0E12;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:44px">
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:1100px">
+    <span class="lbl">Precons page · from announced to real precons · tiles · 900 and 390 · R1</span>
+    <h2 class="disp" style="margin:0;font-size:26px">Release day, lists arriving, lists landed</h2>
+    <p class="cap">Three moments for Star Trek, in order. Its precons’ names, counts and commanders aren’t known until MTGJSON lists them, so the new tiles carry bracketed names. Darkhold sits below throughout, unchanged.</p>
+  </div>
+
+  <sc-for list="{{ states }}" as="st" hint-placeholder-count="3">
+    <section style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;flex-direction:column;gap:4px;max-width:1100px;border-top:1px solid #2E3340;padding-top:16px">
+        <div style="display:flex;align-items:baseline;gap:12px"><span class="mono" style="font-size:13px;color:#5C86C9">{{ st.id }}</span><span style="font-size:17px;font-weight:600">{{ st.title }}</span></div>
+        <p class="cap">{{ st.note }}</p>
+      </div>
+      <div style="display:flex;gap:40px;align-items:flex-start">
+        <sc-for list="{{ st.widths }}" as="w" hint-placeholder-count="2">
+          <div style="{{ w.frame }}">
+            <div style="{{ w.body }}">
+              <span class="mono" style="font-size:11px;color:#7C8A8C">{{ st.result }}</span>
+              <section style="display:flex;flex-direction:column;gap:10px">
+                <h2 class="yh">Announced <span class="cnt">{{ st.groupCount }}</span></h2>
+                <sc-for list="{{ w.sets }}" as="s" hint-placeholder-count="2">
+                  <div style="{{ w.block }}">
+                    <div style="display:flex;flex-direction:column;gap:3px">
+                      <h3 class="disp" style="{{ w.setName }}">{{ s.name }}</h3>
+                      <sc-for list="{{ s.meta }}" as="m" hint-placeholder-count="1">
+                        <span class="mono" style="font-size:11px;line-height:1.5;color:#7C8A8C">{{ m }}</span>
+                      </sc-for>
+                      <sc-if value="{{ s.jump }}" hint-placeholder-val="{{ false }}"><a href="#y2026" class="jump">{{ s.jump }}</a></sc-if>
+                    </div>
+                    <div style="{{ w.strip }}">
+                      <sc-for list="{{ s.cards }}" as="c" hint-placeholder-count="3">
+                        <div style="{{ w.card }}">
+                          <div style="{{ w.cardArt }}"><span class="arttl">{{ c.cn }}</span></div>
+                          <span class="nm2" style="{{ w.cardName }}">{{ c.nm }}</span>
+                          <span style="display:flex;gap:3px"><sc-for list="{{ c.dots }}" as="d" hint-placeholder-count="1"><span class="dot" style="{{ d }}"></span></sc-for></span>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </div>
+                </sc-for>
+              </section>
+              <section id="y2026" style="display:flex;flex-direction:column;gap:10px">
+                <h2 class="yh">2026 <span class="cnt">{{ st.yearCount }}</span></h2>
+                <div style="{{ w.grid }}">
+                  <sc-for list="{{ w.tiles }}" as="t" hint-placeholder-count="2">
+                    <div class="shell">
+                      <div style="{{ w.tileArt }}"><span class="arttl">commander art</span></div>
+                      <div style="{{ w.caption }}">
+                        <span class="mono" style="font-size:11px;color:#7C8A8C"><sc-if value="{{ t.isNew }}" hint-placeholder-val="{{ false }}"><span style="color:#5C86C9">new · </span></sc-if>you own <span style="font-weight:600;color:#C6D2D3">{{ t.own }}</span></span>
+                        <span style="font-size:12.5px;color:#C6D2D3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.nm }}</span>
+                        <span class="mono" style="display:flex;align-items:center;gap:5px;font-size:10px;color:#7C8A8C"><sc-for list="{{ t.dots }}" as="d" hint-placeholder-count="2"><span class="dot" style="{{ d }}"></span></sc-for>{{ t.meta }}</span>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+              </section>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1460,"height":4000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const C = { W: "#F4E9C4", U: "#3A6AA5", B: "#98748F", R: "#C05A3E", G: "#4B7A46" };
+    const dots = (ids, px) => ids.map((k) => ({ width: px + "px", height: px + "px", background: C[k] }));
+    const trcIds = ["W", "U", "W", "R", "U", "B", "G", "W", "U", "R", "B", "G", "W", "U", "R"];
+    const trc = trcIds.map((k, i) => ({
+      nm: i === 0 ? "Christine Chapel, Combat Medic" : `[TRC commander ${String(i + 1).padStart(2, "0")}]`,
+      cn: i === 0 ? "TRC 78" : `TRC ${String(i * 7 + 2)}`, k: [k],
+    }));
+    const DH = { name: "Darkhold Destiny Commander", cards: [{ nm: "Gargantos, the Endbringer", cn: "MDC art", k: ["B", "G"] }],
+      metaDesk: ["MDC · Apr 9, 2027 · in 6 months · 1 commander revealed"], metaPhone: ["Apr 9, 2027 · in 6 months", "MDC · 1 commander revealed"] };
+    const shipped = [
+      { nm: "Keen Engineering", own: "31 of 66", k: ["U", "R"], meta: "[SET] · Oct 2026" },
+      { nm: "Reign of Dragons", own: "18 of 67", k: ["B", "R", "G"], meta: "[SET] · Oct 2026" },
+      { nm: "Calling All Angels", own: "44 of 70", k: ["W"], meta: "[SET] · Oct 2026" },
+      { nm: "Tramplesaurus Rex", own: "22 of 64", k: ["R", "G"], meta: "[SET] · Oct 2026" },
+    ];
+    const trcDeck = (n, own, k) => ({ nm: `[Star Trek precon ${n}]`, own, k, meta: "TRC · Nov 2026", isNew: true });
+
+    const mk = (o) => {
+      const st = { ...o };
+      st.widths = [false, true].map((phone) => {
+        const artW = phone ? 76 : 84, artH = Math.round((artW * 88) / 63);
+        const tileW = phone ? 174 : 205, tileH = Math.round((tileW * 88) / 63);
+        const tiles = phone ? st.tiles.slice(0, 2) : st.tiles;
+        return {
+          frame: { width: phone ? "390px" : "900px", flex: "none", background: "#121217", border: "1px solid #2E3340", borderRadius: "12px", overflow: "hidden" },
+          body: { display: "flex", flexDirection: "column", gap: "14px", padding: phone ? "14px 16px 24px" : "16px 22px 24px" },
+          block: { border: "1px dashed #424755", borderRadius: "10px", padding: phone ? "11px 12px 12px" : "12px 14px 14px", display: "flex", flexDirection: "column", gap: "10px" },
+          setName: { margin: 0, fontFamily: "'Metamorphous',serif", fontWeight: 400, fontSize: phone ? "15px" : "16px", color: "#C6D2D3" },
+          strip: phone ? { display: "flex", flexWrap: "nowrap", gap: "8px", overflowX: "hidden", marginRight: "-12px" } : { display: "flex", flexWrap: "wrap", gap: "12px 8px" },
+          card: { flex: "none", width: artW + "px", display: "flex", flexDirection: "column", gap: "5px" },
+          cardArt: { width: artW + "px", height: artH + "px", borderRadius: "4px", background: "#2D2E35", display: "flex", alignItems: "center", justifyContent: "center" },
+          cardName: { fontSize: phone ? "10.5px" : "11px", minHeight: phone ? "27px" : "28px" },
+          grid: { display: "grid", gridTemplateColumns: phone ? "repeat(2, minmax(0, 1fr))" : "repeat(4, minmax(0, 1fr))", gap: phone ? "10px" : "12px" },
+          tileArt: { height: tileH + "px", background: "#16171D", borderRadius: phone ? "0 0 9px 9px" : "0 0 10px 10px", display: "flex", alignItems: "center", justifyContent: "center" },
+          caption: { display: "flex", flexDirection: "column", gap: "3px", padding: "7px 9px 9px", minHeight: phone ? "70px" : "65px", boxSizing: "border-box" },
+          sets: st.sets.map((s) => ({ ...s, jump: s.jump || "", meta: phone ? s.metaPhone : s.metaDesk, cards: s.cards.map((c) => ({ ...c, dots: dots(c.k, phone ? 7 : 8) })) })),
+          tiles: tiles.map((t) => ({ ...t, isNew: !!t.isNew, dots: dots(t.k, phone ? 8 : 9) })),
+        };
+      });
+      return st;
+    };
+
+    const states = [
+      mk({ id: "L1", title: "Release day, decklists not listed yet", groupCount: "2 sets", yearCount: "12 decklists", result: "197 decklists · newest first",
+        sets: [{ name: "Star Trek Commander", cards: trc, metaDesk: ["TRC · out Nov 13, 2026 · decklists not listed yet · 15 commanders revealed"], metaPhone: ["Out Nov 13, 2026 · decklists not listed yet", "TRC · 15 commanders revealed"] }, DH],
+        tiles: shipped,
+        note: "Today is Nov 13 (UTC). The set is out but MTGJSON hasn’t listed its decks, so it stays where the reader last saw it, and the countdown becomes “out” with the date. It’s still sorted first, as the soonest. This needs the read to keep a released commander set that has no precons rows (gap G3). Without that change it vanishes today and comes back as tiles later." }),
+      mk({ id: "L2", title: "Some decklists listed, the rest not yet", groupCount: "2 sets", yearCount: "14 decklists", result: "199 decklists · newest first",
+        sets: [{ name: "Star Trek Commander", cards: trc, jump: "2 decklists listed ↓", metaDesk: ["TRC · Nov 13, 2026 · in 6 days · 15 commanders revealed"], metaPhone: ["Nov 13, 2026 · in 6 days", "TRC · 15 commanders revealed"] }, DH],
+        tiles: [trcDeck("A", "9 of 100", ["W", "U"]), trcDeck("B", "4 of 100", ["R", "G"]), shipped[0], shipped[1]],
+        note: "Lists can arrive before the set is out, or one at a time. The block stays while the set is still on the way, and a jump link says how many are listed and takes the reader to them. The listed precons are real tiles in the year, with “new ·” before “you own”. Revealed commanders aren’t matched to decks: the data can’t say which deck a card leads until it is listed, and a card can be in more than one." }),
+      mk({ id: "L3", title: "Decklists landed", groupCount: "1 set", yearCount: "16 decklists", result: "201 decklists · newest first",
+        sets: [DH],
+        tiles: [trcDeck("A", "9 of 100", ["W", "U"]), trcDeck("B", "4 of 100", ["R", "G"]), trcDeck("C", "12 of 100", ["U", "B"]), trcDeck("D", "6 of 100", ["W", "R"])],
+        note: "Out, with at least one list: the block leaves, and Star Trek’s precons lead 2026 as tiles. Each is marked “new” for 14 days from its own arrival, the same for every reader. That needs no new seen key, and it ends on its own. A reader who had seen the announcement sees this. A reader who hadn’t gets one Home line for it (Home H3), not two. Fourteen days later the tiles read exactly as shipped." }),
+    ];
+    return { states };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#14110E; --surface:#1E1A15; --surface-sunken:#18140F; --surface-inset:#1B1712; --elevated:#29241F;
+    --border:#2B241B; --border-strong:#3A3229;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654;
+    --accent:#CF8745; --accent-hover:#DE9757; --success:#6FA368; --danger:#C6533F; --fact:#8FA6BE;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div style="font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--fg);padding:44px 40px 90px;display:flex;flex-direction:column;gap:60px;width:max-content;">
+
+  <div style="max-width:1180px;display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:center;gap:13px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:6px;padding:4px 10px;">ADDENDUM</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--fg-faint);">Deck notices · the tile's marker · Hugh's ruling 2026-09-24</span>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:32px;margin:0;line-height:1.15;">On the tile, a mark. The key says what it means, on every width.</h1>
+    <p style="margin:0;max-width:980px;font-size:14.5px;line-height:1.7;color:var(--fg-body);text-wrap:pretty;">The tile's <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">NoticeTag</span> becomes an <b style="color:var(--fg);font-weight:600;">18px round "!"</b> in the same slot, after the bracket chip or after the pill. The deck header's tag and the Notices sheet are unchanged. The mark is wordless, so it ships glossed the way the card marks were: <b style="color:var(--fg);font-weight:600;">a <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">MarkKey</span> line on /decks, at both widths</b>, drawn whenever a shown tile carries the mark. The tooltip adds to it on desktop and never replaces it. The tile's spoken name is unchanged. The three-row footer is not reflowed.</p>
+    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:6px;">
+      <sc-for list="{{ rules }}" as="r" hint-placeholder-count="4">
+        <div style="border:1px solid var(--border);border-radius:10px;padding:13px 15px;background:var(--surface);display:flex;flex-direction:column;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ r.h }}</span><span style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);">{{ r.b }}</span></div>
+      </sc-for>
+    </div>
+  </div>
+
+  <section id="1" style="display:flex;flex-direction:column;gap:22px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;">1 · <span style="color:var(--accent);">the marker's place on the tile</span></div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:26px;max-width:1180px;font-size:13px;line-height:1.65;color:var(--fg-muted);">
+      <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">Anatomy.</b> An 18px circle, centred in the chips row (22 / 24), 8px after the chip. 1px hairline of its ink at 70%, a 14% tint mixed into <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--surface-inset</span> (the H5 treatment the live tag uses), and the "!" in IBM Plex Mono 600 12px in the ink. The glyph is a graphic, so its bar is 3:1: measured at 3.5:1. A circle, where every chip and pill is radius 6, so it reads as a mark rather than a fourth chip.</p>
+      <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">One glyph, two inks.</b> <b style="color:var(--danger);font-weight:600;">Red</b> for a card not legal (Hugh's ruling). <b style="color:var(--fact);font-weight:600;">--fact</b> for unread data notices: red on news that a list changed would say the deck is broken when it is not. <b style="color:var(--fg);font-weight:600;">Both kinds on one deck draw one red mark</b>, never two: the more serious face wins, as it did with the tag. The tooltip and the spoken name carry both counts.</p>
+    </div>
+    <div style="display:flex;align-items:baseline;gap:12px;"><span id="1a" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 8px;">1a</span><span style="font-size:17px;font-weight:600;">1300 · cells 340</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">none · not legal · data · both · no chip · widest row</span></div>
+    <div style="display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap;width:1100px;">
+      <sc-for list="{{ desk }}" as="t" hint-placeholder-count="6">
+        <div style="display:flex;flex-direction:column;gap:8px;width:340px;">
+          <dc-import name="Tile Marker" state="{{ t.state }}" w="{{ 340 }}" desk="{{ true }}" range="{{ t.range }}" status="{{ t.status }}" played="{{ t.played }}" detail="{{ t.detail }}" hint-size="340px,344px"></dc-import>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);">{{ t.label }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display:flex;align-items:baseline;gap:12px;"><span id="1b" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 8px;">1b</span><span style="font-size:17px;font-weight:600;">390 · cell 358</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">a range and the mark fit whole: the range no longer drops its name at 358</span></div>
+    <div style="display:flex;align-items:flex-start;gap:14px;">
+      <sc-for list="{{ phone }}" as="t" hint-placeholder-count="3">
+        <div style="display:flex;flex-direction:column;gap:8px;width:358px;">
+          <dc-import name="Tile Marker" state="{{ t.state }}" w="{{ 358 }}" desk="{{ false }}" range="{{ t.range }}" status="{{ t.status }}" hint-size="358px,342px"></dc-import>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ t.label }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section id="2" style="display:flex;flex-direction:column;gap:22px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;">2 · <span style="color:var(--accent);">the tooltip, desktop</span></div>
+    <p style="margin:0;max-width:1100px;font-size:13px;line-height:1.65;color:var(--fg-muted);text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">The shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">FactTooltip</span>, with <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">sentence</span></b>: fine pointers only, 400ms open, above by default and flipped when there is no room, portalled, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--elevated</span> bubble at 11.5px, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-hidden</span>. Drawn here at its shipped placement: 6px above the mark, centred on it, clamped inside the tile, so it sits over the identity block for the second it is open. One sentence per mark that says what the mark means and where to look. <b style="color:var(--fg);font-weight:600;">A click on the mark still opens the deck</b>; the mark is not a second control. Keyboard users get the same words from the tile's name, so there is no focus stop on the mark.</p>
+    <div style="display:flex;align-items:flex-start;gap:24px;">
+      <sc-for list="{{ tips }}" as="t" hint-placeholder-count="3">
+        <div style="display:flex;flex-direction:column;gap:8px;width:340px;">
+          <dc-import name="Tile Marker" state="{{ t.state }}" w="{{ 340 }}" desk="{{ true }}" tip="{{ true }}" range="{{ t.range }}" hint-size="340px,344px"></dc-import>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ t.label }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section id="3" style="display:flex;flex-direction:column;gap:22px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;">3 · <span style="color:var(--accent);">how a phone player learns it · the key on /decks</span></div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:26px;max-width:1180px;font-size:13px;line-height:1.65;color:var(--fg-muted);">
+      <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">The existing <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">MarkKey</span>, one new mount.</b> The first full-width item of the tile list (<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">col-span-full</span> in the three-up grid, as <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">CollectionMarkKey</span> does), above the first tile. The real mark at its real size beside a word, mono 10 / 10.5 <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-faint</span>, group label <i>Deck marks</i>. <b style="color:var(--fg);font-weight:600;">Drawn at 1300 too</b>: the key is the gloss and the tooltip is extra, which is the rule the card marks shipped under.</p>
+      <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">Conditional, like <i>buy</i> and <i>proxy</i>.</b> Each entry is drawn only when a tile in the current shelf and filter draws that mark, and the line is absent when none does. A key for a mark nobody can find is clutter, and "not legal" printed over a shelf of legal decks would be false. <b style="color:var(--fg);font-weight:600;">Why not tap-for-tooltip:</b> the tile is one link, and a tap that opens a bubble instead of the deck is a control nobody asked for. The deck header, one tap away, spells the notice out in full.</p>
+    </div>
+    <div style="display:flex;align-items:flex-start;gap:40px;">
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">390 · the list's head (chrome above it schematic)</span>
+        <div data-screen-label="/decks · 390 · key" style="width:390px;border:1px solid var(--border);border-radius:18px;overflow:hidden;background:var(--bg);">
+          <div style="height:52px;display:flex;align-items:center;padding:0 16px;border-bottom:1px solid var(--border);"><span style="font-family:'Cinzel',serif;font-weight:700;font-size:18px;color:var(--fg);">Decks</span><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">12 decks</span></div>
+          <div style="display:flex;flex-direction:column;gap:12px;padding:14px 16px;">
+            <div role="group" aria-label="Deck marks" data-mark-key="true" style="display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">
+              <span style="display:inline-flex;align-items:center;gap:5px;"><span aria-hidden="true" style="{{ keyRed }}">!</span><span>not legal in this deck</span></span>
+              <span style="display:inline-flex;align-items:center;gap:5px;"><span aria-hidden="true" style="{{ keyFact }}">!</span><span>notices since analyzed</span></span>
+            </div>
+            <dc-import name="Tile Marker" state="legal" w="{{ 358 }}" desk="{{ false }}" hint-size="358px,342px"></dc-import>
+            <dc-import name="Tile Marker" state="data" w="{{ 358 }}" desk="{{ false }}" deck="HD - Kinnan" cmd="Kinnan, Bonder Prodigy" hint-size="358px,342px"></dc-import>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">1300 · the grid's first row · one kind on the shelf, one entry</span>
+        <div data-screen-label="/decks · 1300 · key" style="width:1082px;border:1px solid var(--border);border-radius:12px;background:var(--bg);padding:18px 22px;display:grid;grid-template-columns:repeat(3,340px);gap:14px;">
+          <div role="group" aria-label="Deck marks" data-mark-key="true" style="grid-column:1 / -1;display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">
+            <span style="display:inline-flex;align-items:center;gap:5px;"><span aria-hidden="true" style="{{ keyRed }}">!</span><span>not legal in this deck</span></span>
+          </div>
+          <dc-import name="Tile Marker" state="none" w="{{ 340 }}" desk="{{ true }}" played="yesterday" hint-size="340px,344px"></dc-import>
+          <dc-import name="Tile Marker" state="legal" w="{{ 340 }}" desk="{{ true }}" deck="HD - Kinnan" cmd="Kinnan, Bonder Prodigy" hint-size="340px,344px"></dc-import>
+          <dc-import name="Tile Marker" state="none" w="{{ 340 }}" desk="{{ true }}" status="Building" built="{{ 87 }}" deck="HD - Atraxa" cmd="Atraxa, Praetors' Voice" hint-size="340px,344px"></dc-import>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="4" style="display:flex;flex-direction:column;gap:22px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;">4 · <span style="color:var(--accent);">with and without the marker · the rows stay level</span></div>
+    <p style="margin:0;max-width:1100px;font-size:13px;line-height:1.65;color:var(--fg-muted);text-wrap:pretty;">The live #939 footer, unchanged: chips 22 / 24, bar 14, detail 14, gaps 9, padding 11 / 13; 92 below <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">md</span>, 94 from it. The 18px mark sits inside the chips row's height and adds nothing to it. The count's 60px slot keeps the bar one length. Guides mark the three rows.</p>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">1300</span>
+      <div style="display:flex;align-items:flex-start;gap:14px;">
+        <dc-import name="Tile Marker" state="none" w="{{ 340 }}" desk="{{ true }}" guides="{{ true }}" hint-size="340px,344px"></dc-import>
+        <dc-import name="Tile Marker" state="legal" w="{{ 340 }}" desk="{{ true }}" guides="{{ true }}" hint-size="340px,344px"></dc-import>
+        <dc-import name="Tile Marker" state="noChip" w="{{ 340 }}" desk="{{ true }}" guides="{{ true }}" hint-size="340px,344px"></dc-import>
+      </div>
+      <span style="margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">390</span>
+      <div style="display:flex;align-items:flex-start;gap:14px;">
+        <dc-import name="Tile Marker" state="none" w="{{ 358 }}" desk="{{ false }}" guides="{{ true }}" hint-size="358px,342px"></dc-import>
+        <dc-import name="Tile Marker" state="both" w="{{ 358 }}" desk="{{ false }}" range="{{ true }}" guides="{{ true }}" hint-size="358px,342px"></dc-import>
+      </div>
+    </div>
+  </section>
+
+  <section id="5" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;">5 · <span style="color:var(--accent);">spoken</span></div>
+    <div style="max-width:1100px;border:1px solid var(--border);border-radius:11px;overflow:hidden;">
+      <sc-for list="{{ spoken }}" as="s" hint-placeholder-count="5">
+        <div style="display:grid;grid-template-columns:200px minmax(0,1fr);border-bottom:1px solid var(--border);">
+          <span style="padding:10px 14px;background:var(--surface-sunken);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">{{ s.k }}</span>
+          <span style="padding:10px 14px;font-size:12.5px;line-height:1.6;color:var(--fg-body);">{{ s.v }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const key = (ink) => ({ display: "flex", flex: "none", alignItems: "center", justifyContent: "center", width: 18, height: 18, borderRadius: "50%", border: `1px solid color-mix(in oklab, var(${ink}) 70%, transparent)`, background: `color-mix(in oklab, var(${ink}) 14%, var(--bg))`, color: `var(${ink})`, fontFamily: "'IBM Plex Mono',monospace", fontWeight: 600, fontSize: 12, lineHeight: 1 });
+    return {
+      keyRed: key("--danger"), keyFact: key("--fact"),
+      rules: [
+        { h: "Place", b: "The tag's slot: after the bracket chip, or after the pill with no chip. One mark per tile, never two." },
+        { h: "Meaning, findable", b: "A key line on /decks at 390 and 1300, drawn only when a shown tile carries the mark. Tooltip on desktop as well." },
+        { h: "Spoken", b: "Unchanged: the tile link's name already says the notice (noticeSpoken). The mark itself is aria-hidden." },
+        { h: "Footer", b: "#939's three rows untouched. The mark fits inside the chips row; the tile is 248 + 92 / 94 either way." },
+      ],
+      desk: [
+        { state: "none", label: "neither · the row as today", played: "yesterday", detail: "", status: "Complete", range: false },
+        { state: "legal", label: "a card not legal · red", played: "", detail: "", status: "Complete", range: false },
+        { state: "data", label: "unread data notices · --fact", played: "", detail: "", status: "Complete", range: false },
+        { state: "both", label: "both · one red mark; tooltip and name say both", played: "", detail: "", status: "Complete", range: false },
+        { state: "noChip", label: "no analysis, a card not legal · after the pill", played: "", detail: "", status: "To buy", range: false },
+        { state: "legal", label: "widest row · Unresolved + a range + the mark · fits whole at 340", played: "", detail: "", status: "Unresolved", range: true },
+      ],
+      phone: [
+        { state: "legal", label: "not legal", range: false, status: "Complete" },
+        { state: "data", label: "unread data", range: false, status: "Complete" },
+        { state: "both", label: "both, with a range · fits whole", range: true, status: "Complete" },
+      ],
+      tips: [
+        { state: "legal", label: "not legal", range: false },
+        { state: "data", label: "data notices", range: false },
+        { state: "both", label: "both · one box, both counts", range: false },
+      ],
+      spoken: [
+        { k: "Tile link · not legal", v: "HD - Yuriko, Yuriko, the Tiger's Shadow, Dimir, Complete, Optimized, 1 card not legal in this deck, 99 / 99 (shipped cardAria + noticeSpoken, unchanged)" },
+        { k: "Tile link · data", v: "…, Complete, Optimized, 3 notices since this deck was analyzed, 99 / 99" },
+        { k: "Tile link · both", v: "…, Complete, Optimized, 1 card not legal in this deck, 3 notices since this deck was analyzed, 99 / 99 (new: the summary carries both counts)" },
+        { k: "Mark", v: "aria-hidden, no role, no focus stop. The words are the link's." },
+        { k: "Key", v: "role=group, label “Deck marks”; each sample aria-hidden beside its word, so each entry is read once." },
+        { k: "Tooltip", v: "aria-hidden (FactTooltip's rule): the same fact the link already says, in more words." },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

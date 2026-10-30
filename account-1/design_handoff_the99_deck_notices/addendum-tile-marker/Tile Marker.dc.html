@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#14110E; --surface:#1E1A15; --surface-inset:#1B1712; --elevated:#29241F;
+    --border:#2B241B; --border-strong:#3A3229;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654;
+    --accent:#CF8745; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+    --bracket-4:#E6D08A; --fact:#8FA6BE;
+  }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; }
+</style>
+</helmet>
+<div ref="{{ outerRef }}" style="{{ outer }}">
+<article data-screen-label="Deck tile · marker" style="{{ box }}">
+  <div style="position:relative;height:248px;flex:none;overflow:hidden;background:var(--bg);">
+    <div style="{{ art }}"></div>
+    <div style="position:absolute;inset:0;background:linear-gradient(180deg, transparent 0px, transparent 150px, color-mix(in oklab, var(--bg) 80%, transparent) 202px, var(--bg) 248px);"></div>
+    <span style="position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:8px;background:color-mix(in oklab, var(--bg) 70%, transparent);display:flex;align-items:center;justify-content:center;color:var(--fg);font-size:16px;line-height:1;">⋯</span>
+    <div style="position:absolute;left:0;right:0;bottom:0;padding:0 56px 10px 13px;min-width:0;">
+      <h3 style="margin:0;font-family:'Cinzel',serif;font-size:17px;font-weight:600;line-height:1.15;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 4px rgba(0,0,0,0.85);">{{ deckName }}</h3>
+      <span style="margin-top:4px;display:flex;min-width:0;gap:4px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.25;color:var(--fg-body);text-shadow:0 1px 4px rgba(0,0,0,0.85);"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ commander }}</span><span style="flex:none;white-space:nowrap;">· {{ colour }}</span></span>
+    </div>
+  </div>
+  <div data-tile-footer="true" style="{{ footer }}">
+    <span data-deck-chips="true" style="{{ chipsRow }}">
+      <span style="{{ pill }}">{{ status }}</span>
+      <sc-if value="{{ hasChip }}" hint-placeholder-val="{{ true }}">
+        <span style="{{ chipStyle }}"><img alt="" src="../assets/bracket-4-optimized-chip-ink.svg" style="display:block;width:22px;height:22px;flex:none;"><sc-if value="{{ range }}" hint-placeholder-val="{{ false }}"><img alt="" src="../assets/bracket-5-cedh-chip-ink.svg" style="display:block;width:22px;height:22px;flex:none;opacity:0.65;"></sc-if><sc-if value="{{ chipWords }}" hint-placeholder-val="{{ true }}"><span>{{ face }}</span></sc-if></span>
+      </sc-if>
+      <sc-if value="{{ hasMarker }}" hint-placeholder-val="{{ false }}">
+        <span ref="{{ markRef }}" data-notice-marker="{{ markerKind }}" aria-hidden="true" style="{{ marker }}">!</span>
+      </sc-if>
+    </span>
+    <span data-bar-row="true" style="display:flex;align-items:center;gap:10px;height:14px;flex:none;">
+      <span style="position:relative;flex:1;min-width:0;height:3px;border-radius:999px;background:var(--border);"><span style="{{ fill }}"></span></span>
+      <span style="{{ countStyle }}">{{ count }}</span>
+    </span>
+    <span data-detail-row="true" style="display:flex;align-items:center;gap:10px;height:14px;flex:none;min-width:0;font-family:'IBM Plex Mono',monospace;">
+      <span style="min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10.5px;color:var(--fg-faint);">{{ detail }}</span>
+      <span style="flex:none;font-size:10.5px;color:var(--fg-faint);">{{ played }}</span>
+    </span>
+  </div>
+  <sc-if value="{{ guides }}" hint-placeholder-val="{{ false }}">
+    <span aria-hidden="true" style="{{ guideTop }}"></span>
+    <span aria-hidden="true" style="{{ guideBar }}"></span>
+    <span aria-hidden="true" style="{{ guideDetail }}"></span>
+  </sc-if>
+</article>
+<sc-if value="{{ tip }}" hint-placeholder-val="{{ false }}">
+  <span ref="{{ bubbleRef }}" data-testid="notice-tooltip" data-side="above" style="{{ bubble }}">{{ tipText }}</span>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:360,&quot;height&quot;:420},&quot;state&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;none&quot;,&quot;legal&quot;,&quot;data&quot;,&quot;both&quot;,&quot;noChip&quot;],&quot;default&quot;:&quot;legal&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;w&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:340,&quot;tsType&quot;:&quot;number&quot;},&quot;desk&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;range&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;tip&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;guides&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  state = { at: null };
+  outerRef = React.createRef(); markRef = React.createRef(); bubbleRef = React.createRef();
+  componentDidMount() { this.place(); if (document.fonts) document.fonts.ready.then(() => this.place()); }
+  componentDidUpdate() { this.place(); }
+  // FactTooltip's rule: 6px above the mark, centred on it, clamped 4px inside the box.
+  place() {
+    const o = this.outerRef.current, m = this.markRef.current, b = this.bubbleRef.current;
+    if (!o || !m || !b) return;
+    const or = o.getBoundingClientRect(), mr = m.getBoundingClientRect(), br = b.getBoundingClientRect();
+    const w = br.width, mid = mr.left - or.left + mr.width / 2;
+    const left = Math.round(Math.min(Math.max(mid - w / 2, 4), or.width - 4 - w));
+    const top = Math.round(mr.top - or.top - 6 - br.height);
+    const at = this.state.at;
+    if (!at || Math.abs(at.left - left) > 0.5 || Math.abs(at.top - top) > 0.5) this.setState({ at: { left, top } });
+  }
+  renderVals() {
+    const p = this.props;
+    const st = p.state || "legal";
+    const w = p.w || 340;
+    const desk = p.desk ?? true;
+    const noChip = st === "noChip";
+    const legal = st === "legal" || st === "both" || st === "noChip";
+    const data = st === "data";
+    const hasMarker = legal || data;
+    const range = !!p.range && !noChip;
+    const cmd = noChip ? "Tovolar, Dire Overlord" : (p.cmd || "Yuriko, the Tiger's Shadow");
+    const url = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(cmd)}&format=image&version=art_crop`;
+    const status = p.status || (noChip ? "To buy" : "Complete");
+    const tok = status === "Complete" ? "--success" : status === "Unresolved" ? "--warning" : "--fg-muted";
+    const built = p.built ?? 99;
+    const H = desk ? 24 : 22;
+    const ink = legal ? "--danger" : "--fact";
+    const n = p.n || (legal ? 1 : 3);
+    const tipText = st === "both"
+      ? "1 card not legal in this deck, and 3 notices since it was analyzed. Open the deck to see them."
+      : legal ? `${n === 1 ? "1 card" : n + " cards"} not legal in this deck. Open the deck to see which.`
+      : `${n} notices since this deck was analyzed. Open the deck to read them.`;
+    // the footer's own geometry, for the level guides
+    const footTop = 248 + 1 + 11;
+    const guide = (top, hgt) => ({ position: "absolute", left: 0, right: 0, top, height: hgt, background: "color-mix(in oklab, var(--accent) 16%, transparent)", borderTop: "1px dashed var(--accent)", borderBottom: "1px dashed var(--accent)", pointerEvents: "none" });
+    return {
+      outerRef: this.outerRef, markRef: this.markRef, bubbleRef: this.bubbleRef,
+      outer: { position: "relative", width: w },
+      box: { position: "relative", width: w, display: "flex", flexDirection: "column", overflow: "hidden", borderRadius: 14, background: "var(--surface-inset)", border: "1px solid var(--border)", fontFamily: "'IBM Plex Sans',sans-serif", color: "var(--fg)" },
+      art: { position: "absolute", inset: 0, backgroundImage: `url("${url}")`, backgroundSize: "cover", backgroundPosition: "center 20%" },
+      deckName: noChip ? "HD - Tovolar" : (p.deck || "HD - Yuriko"), commander: cmd, colour: noChip ? "Gruul" : "Dimir",
+      footer: { display: "flex", flexDirection: "column", gap: 9, height: desk ? 94 : 92, flex: "none", padding: "11px 13px 13px", borderTop: "1px solid var(--border)", boxSizing: "border-box" },
+      chipsRow: { display: "flex", flexWrap: "nowrap", alignItems: "center", gap: 8, height: H, flex: "none", minWidth: 0 },
+      pill: { display: "flex", height: H, flex: "none", alignItems: "center", borderRadius: 6, padding: "0 8px", fontFamily: "'IBM Plex Mono',monospace", fontSize: 10.5, letterSpacing: "0.06em", color: `var(${tok})`, background: `color-mix(in srgb, var(${tok}) 18%, var(--bg))`, border: "1px solid var(--border-strong)", whiteSpace: "nowrap" },
+      status, hasChip: !noChip, range, chipWords: true, face: range ? "Optimized or cEDH" : "Optimized",
+      chipStyle: { display: "inline-flex", alignItems: "center", gap: 5, flex: "none", height: H, padding: "0 8px 0 2px", borderRadius: 6, background: "color-mix(in srgb, var(--bracket-4) 12%, var(--bg))", border: "1px solid color-mix(in oklab, var(--bracket-4) 55%, transparent)", fontFamily: "'IBM Plex Mono',monospace", fontSize: desk ? 11 : 10, color: "var(--bracket-4)", whiteSpace: "nowrap", boxSizing: "border-box" },
+      hasMarker, markerKind: legal ? "notLegal" : "unread",
+      marker: { display: "flex", flex: "none", alignItems: "center", justifyContent: "center", width: 18, height: 18, borderRadius: "50%", boxSizing: "border-box", border: `1px solid color-mix(in oklab, var(${ink}) 70%, transparent)`, background: `color-mix(in oklab, var(${ink}) 14%, var(--surface-inset))`, color: `var(${ink})`, fontFamily: "'IBM Plex Mono',monospace", fontWeight: 600, fontSize: 12, lineHeight: 1, outline: p.tip ? `2px solid color-mix(in oklab, var(${ink}) 35%, transparent)` : "none", outlineOffset: 2 },
+      fill: { position: "absolute", left: 0, top: 0, bottom: 0, width: `${Math.round((built / 99) * 100)}%`, borderRadius: 999, background: built < 99 ? "var(--fg-muted)" : "var(--success)" },
+      count: `${built} / 99`,
+      countStyle: { width: 60, flex: "none", textAlign: "right", fontFamily: "'IBM Plex Mono',monospace", fontSize: desk ? 12 : 12.5, fontVariantNumeric: "tabular-nums", color: "var(--fg)" },
+      detail: p.detail || "", played: p.played || "",
+      guides: !!p.guides,
+      guideTop: guide(footTop, H), guideBar: guide(footTop + H + 9, 14), guideDetail: guide(footTop + H + 9 + 14 + 9, 14),
+      tip: !!p.tip, tipText,
+      bubble: { position: "absolute", left: this.state.at ? this.state.at.left : 0, top: this.state.at ? this.state.at.top : 0, visibility: this.state.at ? "visible" : "hidden", width: "max-content", maxWidth: 220, boxSizing: "border-box", padding: "6px 9px", borderRadius: 7, background: "var(--elevated)", border: "1px solid var(--border)", color: "var(--fg-body)", fontFamily: "'IBM Plex Sans',sans-serif", fontSize: 11.5, lineHeight: 1.45, boxShadow: "0 4px 14px color-mix(in srgb, var(--bg) 70%, transparent)", zIndex: 5 },
+    };
+  }
+}
+</script>
+</body>
+</html>

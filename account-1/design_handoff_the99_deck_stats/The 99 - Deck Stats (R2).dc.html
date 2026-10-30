@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0A0C; }
+  ::selection { background: #CF8745; color: #14110E; }
+  a { color: #CF8745; text-decoration: none; border-bottom: 1px solid rgba(207,135,69,0.35); }
+  a:hover { color: #DE9757; border-bottom-color: #DE9757; }
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-raised:#211D18; --surface-rail:#1A1611;
+    --surface-sunken:#18140F; --surface-inset:#1B1712; --elevated:#29241F; --elevated-hover:#201C17;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654;
+    --accent:#CF8745; --accent-hover:#DE9757; --accent-strong:#AB6E37; --accent-dim:#6B482A;
+    --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-raised:#191B22; --surface-rail:#12141B;
+    --surface-sunken:#101219; --surface-inset:#13151C; --elevated:#20222A; --elevated-hover:#181A21;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-strong:#D33E7E; --accent-dim:#843052;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="phyrexia"] {
+    --bg:#0D0B0E; --surface:#151317; --surface-raised:#18161A; --surface-rail:#110F13;
+    --surface-sunken:#100E12; --surface-inset:#131115; --elevated:#1E1C20; --elevated-hover:#171519;
+    --border:#19161C; --border-strong:#262329; --border-dashed:#332F36;
+    --fg:#E4E2E6; --fg-body:#B5B2BB; --fg-muted:#9A96A0; --fg-faint:#78747E; --fg-locked:#64616A;
+    --accent:#52827A; --accent-hover:#629189; --accent-strong:#3E665F; --accent-dim:#213834;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#527030;
+  }
+  [data-theme="kaldheim"] {
+    --bg:#121217; --surface:#1E1F26; --surface-raised:#22232B; --surface-rail:#181920;
+    --surface-sunken:#16171D; --surface-inset:#1A1B22; --elevated:#2D2E35; --elevated-hover:#212229;
+    --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E;
+    --accent:#5C86C9; --accent-hover:#6C95D8; --accent-strong:#486BA3; --accent-dim:#2C405F;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="ixalan"] {
+    --bg:#0E1310; --surface:#171E19; --surface-raised:#1A221C; --surface-rail:#121814;
+    --surface-sunken:#101512; --surface-inset:#141B16; --elevated:#212A23; --elevated-hover:#18201A;
+    --border:#1D2620; --border-strong:#2C3830; --border-dashed:#3B4A3F;
+    --fg:#E0E7DE; --fg-body:#B6C2B3; --fg-muted:#98A695; --fg-faint:#808C7C; --fg-locked:#626E5E;
+    --accent:#A3C445; --accent-hover:#B2D257; --accent-strong:#85A22F; --accent-dim:#3E5220;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="eldraine"] {
+    --bg:#120E17; --surface:#1B1821; --surface-raised:#1F1C25; --surface-rail:#15121B;
+    --surface-sunken:#131018; --surface-inset:#17141D; --elevated:#26232C; --elevated-hover:#1D1A23;
+    --border:#241D30; --border-strong:#342C41; --border-dashed:#443C52;
+    --fg:#E4DEEE; --fg-body:#B9B2C5; --fg-muted:#9C95A8; --fg-faint:#898395; --fg-locked:#6A6475;
+    --accent:#AE88E6; --accent-hover:#BC9BEE; --accent-strong:#8E6AC4; --accent-dim:#4A3568;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;padding:40px;background:#0B0A0C;background-image:radial-gradient(1400px 700px at 30% -300px, rgba(207,135,69,0.05), transparent 70%);min-height:100vh;">
+
+  <section style="max-width:1520px;margin:0 0 26px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#CF8745;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">DECK STATS R2</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#8E8269;">the reference idiom, on our four figures</span>
+      <a href="The 99 - Deck Stats (R1).dc.html" style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;">R1 &rarr;</a>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:0 0 12px;text-wrap:pretty;">R1 drew four figures in one strip-sized row. The reference spends real height on two of them and a compact summary bar on the rest &mdash; which is the better call, because two of our four are distributions and a distribution in a 148px row is a sparkline.</h1>
+    <p style="max-width:1180px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;text-wrap:pretty;">So R2 splits the block by <b style="color:#EDE6D8;font-weight:600;">shape rather than by figure count</b>. A <b style="color:#EDE6D8;font-weight:600;">summary bar</b> carries the two scalars &mdash; record and cost &mdash; in the all-decks strip's own register: ring, small-caps label, metric row. Below it, the two distributions each get the room they need: <b style="color:#EDE6D8;font-weight:600;">an axis'd curve chart</b> and <b style="color:#EDE6D8;font-weight:600;">six colour cards</b>. The all-decks altitude is that same summary bar with a ring counting decks instead of games.</p>
+    <p style="max-width:1180px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">Four things were borrowed and three were refused.</b> Borrowed: the y-axis with dashed gridlines, the count printed <i>inside</i> the bar, the <i>N spells</i> caption under the chart, and the per-colour card with a percentage inside its own track. Refused: the <b style="color:#EDE6D8;font-weight:600;">cost-vs-production</b> pair (we compute no pips and no sources &mdash; that is a different app's data model, and drawing the frame without the numbers is how a placeholder ships), the <b style="color:#EDE6D8;font-weight:600;">0&ndash;15 axis</b> (<span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">CURVE_MAX</span> is 7, so ours ends at <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">7+</span> and a 16-column axis would be eight empty columns), and the <b style="color:#EDE6D8;font-weight:600;">blurred-art backdrop</b> (our spine already carries the identity wash; a second one behind a chart costs contrast the figures need).</p>
+    <p style="max-width:1180px;font-size:14px;line-height:1.7;color:#8E8269;margin:0;text-wrap:pretty;">Every ruling in <a href="README.md">README.md</a> still holds except the two amended in &sect;0 below. Same tokens, same copy module, same loader. <a href="PROPERTY-deck-stats.md">PROPERTY</a> &middot; <a href="STATES-deck-stats.md">STATES</a> &middot; <a href="deck-stats &middot; copy strings.ts">copy strings</a>.</p>
+  </section>
+
+  <!-- ─────────────── §0 what changed from R1 ─────────────── -->
+  <section id="s0" style="max-width:1520px;margin-bottom:40px;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px;">
+      <div style="border:1px solid #3A3229;border-left:3px solid #DEAA29;border-radius:12px;background:#161318;padding:16px 20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#DEAA29;margin-bottom:10px;">Amended &middot; percentages are now printed</div>
+        <div style="font-size:13px;color:#A89B84;line-height:1.7;text-wrap:pretty;">R1 refused them because the six colour figures sum past the deck. <b style="color:#EDE6D8;font-weight:600;">The reference shows the refusal was too broad:</b> each colour's share divides by <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">copies</span>, so each percentage is individually true &mdash; it is only their <i>sum</i> that misleads, and the sum is never drawn. So the share prints inside its own track, the count stays beside it as the auditable figure, and the caveat caption still prints unconditionally.</div>
+      </div>
+      <div style="border:1px solid #3A3229;border-left:3px solid #DEAA29;border-radius:12px;background:#161318;padding:16px 20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#DEAA29;margin-bottom:10px;">Amended &middot; the block is taller than a strip</div>
+        <div style="font-size:13px;color:#A89B84;line-height:1.7;text-wrap:pretty;">R1's 148px desktop row is replaced by <b style="color:#EDE6D8;font-weight:600;">~470px</b> in three bands. It still sits at the foot of the Deck panel, under the list, and it still unmounts with it &mdash; but it is no longer pretending to be a strip, which also retires R1's hardest problem: it can no longer be mistaken for the two strips above the tabs.</div>
+      </div>
+      <div style="border:1px solid #3A3229;border-left:3px solid #6FA368;border-radius:12px;background:#161318;padding:16px 20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#6FA368;margin-bottom:10px;">Held &middot; every arithmetic and vocabulary ruling</div>
+        <div style="font-size:13px;color:#A89B84;line-height:1.7;text-wrap:pretty;">Two denominators, never one. No hard 99. Bars scaled to the tallest bucket. <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">7+</span> as a ceiling. Lands reported, never a ninth column. No <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">$0.00</span>, no <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">0&ndash;0&ndash;0</span>, no <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">avg 0</span>. Accent on <i>To buy</i> alone. Each average names its list. The roll-up carries record and colours.</div>
+      </div>
+      <div style="border:1px solid #3A3229;border-left:3px solid #C6533F;border-radius:12px;background:#161318;padding:16px 20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#C6533F;margin-bottom:10px;">Not borrowed &middot; cost vs production</div>
+        <div style="font-size:13px;color:#A89B84;line-height:1.7;text-wrap:pretty;">It is the reference's best idea and <b style="color:#EDE6D8;font-weight:600;">we cannot draw it honestly</b>: it needs pips per colour and mana sources per colour, and <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">stats.ts</span> computes neither &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">colourSpread</span> counts <i>identity</i>, once per colour, lands included. Flagged as a data request in <a href="READINESS.md">READINESS</a>, not drawn as an empty frame.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────── §1 per deck, desktop ─────────────── -->
+  <section id="s1" style="max-width:1520px;margin-bottom:44px;">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:8px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#CF8745;">&sect;1</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;margin:0;">Per deck &middot; desktop</h2>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">1024 column &middot; finished Golgari deck &middot; 100 colour copies, 63 cast, 37 lands</span>
+    </div>
+    <p style="max-width:1180px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 22px;text-wrap:pretty;">Three bands, in the order a player reads them: <b style="color:#EDE6D8;font-weight:600;">the two scalars as a summary bar</b> (a glance), <b style="color:#EDE6D8;font-weight:600;">the curve</b> (the one figure with a shape), <b style="color:#EDE6D8;font-weight:600;">the colours</b> (six small readings). The summary bar is the all-decks strip's register, one altitude down &mdash; which is how the two pages stay recognisably the same component.</p>
+
+    <div data-theme="{{ theme }}" style="width:1024px;background:var(--surface);border:1px solid var(--border-strong);border-radius:12px;padding:20px 30px 24px;">
+      <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+        <span style="font-family:'Cinzel',serif;font-weight:700;font-size:17px;color:var(--fg);">What this deck is</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">four figures, measured against nothing</span>
+      </div>
+
+      <!-- band 1 · summary bar -->
+      <div style="border-radius:11px;background:var(--surface-sunken);border:1px solid var(--border);padding:16px 20px;display:grid;grid-template-columns:auto 1fr auto;gap:26px;align-items:center;">
+        <div style="display:flex;align-items:center;gap:16px;">
+          <div style="width:66px;height:66px;border-radius:50%;border:1px dashed var(--border-dashed);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;color:var(--fg);font-variant-numeric:tabular-nums;">5</div>
+          <div>
+            <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px;">
+              <span style="width:11px;height:11px;border-radius:2px;border:1.5px solid var(--fg-faint);"></span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-body);">Record</span>
+            </div>
+            <div style="display:grid;grid-template-columns:auto auto;gap:3px 18px;">
+              <span style="font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;color:var(--fg-muted);">Won</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--fg);text-align:right;font-variant-numeric:tabular-nums;">3</span>
+              <span style="font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;color:var(--fg-muted);">Lost</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--fg);text-align:right;font-variant-numeric:tabular-nums;">1</span>
+              <span style="font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;color:var(--fg-muted);">Drew</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--fg);text-align:right;font-variant-numeric:tabular-nums;">1</span>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);margin-top:8px;">5 games logged</div>
+          </div>
+        </div>
+
+        <div style="border-left:1px solid var(--border);padding-left:26px;align-self:stretch;display:flex;flex-direction:column;justify-content:center;">
+          <div style="display:flex;align-items:center;gap:7px;margin-bottom:9px;">
+            <span style="width:11px;height:11px;border-radius:50%;border:1.5px solid var(--fg-faint);"></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-body);">Colours at a glance</span>
+          </div>
+          <div style="display:flex;gap:7px;align-items:center;">
+            <span style="width:24px;height:24px;border-radius:50%;background:var(--b);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:#14110E;">B</span>
+            <span style="width:24px;height:24px;border-radius:50%;background:var(--g);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:#14110E;">G</span>
+            <span style="width:24px;height:24px;border-radius:50%;background:var(--fg-muted);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:#14110E;">C</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);margin-left:4px;">the three this deck plays</span>
+          </div>
+        </div>
+
+        <div style="border-left:1px solid var(--border);padding-left:26px;width:274px;align-self:stretch;display:flex;flex-direction:column;justify-content:center;">
+          <div style="display:flex;align-items:baseline;gap:8px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-body);">To buy</span>
+            <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;color:var(--accent);font-variant-numeric:tabular-nums;">3 <span style="font-size:11px;font-weight:400;color:var(--fg-faint);">copies</span></span>
+          </div>
+          <div style="margin-top:8px;height:6px;border-radius:3px;background:var(--elevated);overflow:hidden;">
+            <span style="display:block;width:33%;height:100%;background:var(--accent);border-radius:3px;"></span>
+          </div>
+          <div style="display:flex;align-items:baseline;gap:8px;margin-top:9px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);">2 of 3 priced</span>
+            <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--fg);font-variant-numeric:tabular-nums;">$18.40</span>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-faint);margin-top:7px;line-height:1.5;">after the copies you already own</div>
+        </div>
+      </div>
+
+      <!-- band 2 · curve -->
+      <div style="margin-top:14px;border-radius:11px;background:var(--surface-sunken);border:1px solid var(--border);padding:18px 20px 14px;">
+        <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:14px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-body);">Curve</span>
+          <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">avg <span style="color:var(--fg);font-size:13px;font-variant-numeric:tabular-nums;">3.4</span></span>
+        </div>
+        <div style="display:grid;grid-template-columns:26px minmax(0,1fr);gap:8px;">
+          <div style="position:relative;height:190px;">
+            <span style="position:absolute;top:-5px;right:0;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-faint);">15</span>
+            <span style="position:absolute;top:58px;right:0;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-faint);">10</span>
+            <span style="position:absolute;top:121px;right:0;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-faint);">5</span>
+            <span style="position:absolute;top:184px;right:0;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-faint);">0</span>
+          </div>
+          <div style="position:relative;height:190px;">
+            <span style="position:absolute;left:0;right:0;top:0;border-top:1px dashed var(--border-dashed);"></span>
+            <span style="position:absolute;left:0;right:0;top:63px;border-top:1px dashed var(--border-dashed);"></span>
+            <span style="position:absolute;left:0;right:0;top:126px;border-top:1px dashed var(--border-dashed);"></span>
+            <span style="position:absolute;left:0;right:0;bottom:0;border-top:1px solid var(--border-strong);"></span>
+            <div style="position:absolute;inset:0;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:12px;align-items:end;">
+              <div style="height:25px;border-radius:4px 4px 0 0;background:var(--fg-muted);display:flex;align-items:flex-start;justify-content:center;padding-top:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--surface-sunken);">2</span></div>
+              <div style="height:88px;border-radius:4px 4px 0 0;background:var(--fg-muted);display:flex;align-items:flex-start;justify-content:center;padding-top:7px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--surface-sunken);">7</span></div>
+              <div style="height:151px;border-radius:4px 4px 0 0;background:var(--fg-muted);display:flex;align-items:flex-start;justify-content:center;padding-top:7px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--surface-sunken);">12</span></div>
+              <div style="height:176px;border-radius:4px 4px 0 0;background:var(--fg);display:flex;align-items:flex-start;justify-content:center;padding-top:7px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--surface-sunken);">14</span></div>
+              <div style="height:138px;border-radius:4px 4px 0 0;background:var(--fg-muted);display:flex;align-items:flex-start;justify-content:center;padding-top:7px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--surface-sunken);">11</span></div>
+              <div style="height:100px;border-radius:4px 4px 0 0;background:var(--fg-muted);display:flex;align-items:flex-start;justify-content:center;padding-top:7px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--surface-sunken);">8</span></div>
+              <div style="height:63px;border-radius:4px 4px 0 0;background:var(--fg-muted);display:flex;align-items:flex-start;justify-content:center;padding-top:7px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--surface-sunken);">5</span></div>
+              <div style="height:50px;border-radius:4px 4px 0 0;background:var(--fg-muted);display:flex;align-items:flex-start;justify-content:center;padding-top:7px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--surface-sunken);">4</span></div>
+            </div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:26px minmax(0,1fr);gap:8px;margin-top:22px;">
+          <span></span>
+          <div style="display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:12px;">
+            <span style="text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">0</span>
+            <span style="text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">1</span>
+            <span style="text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">2</span>
+            <span style="text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">3</span>
+            <span style="text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">4</span>
+            <span style="text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">5</span>
+            <span style="text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">6</span>
+            <span style="text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">7+</span>
+          </div>
+        </div>
+        <div style="text-align:center;margin-top:12px;">
+          <div style="font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;color:var(--fg-body);">Mana value</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);margin-top:3px;">63 cast &middot; 37 lands, excluded &middot; live list, both commanders in</div>
+        </div>
+      </div>
+
+      <!-- band 3 · colours -->
+      <div style="margin-top:14px;">
+        <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:10px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-body);">Colours</span>
+          <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">identity, not cost &middot; of 100 cards</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;">
+          <div style="border-radius:11px;background:var(--surface-sunken);border:1px solid var(--border);padding:14px 16px;opacity:0.44;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="width:30px;height:30px;border-radius:50%;background:var(--w);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#14110E;">W</span>
+              <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;font-weight:500;color:var(--fg-body);">White</span>
+            </div>
+            <div style="margin-top:12px;height:22px;border-radius:11px;background:var(--elevated);display:flex;align-items:center;justify-content:center;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">0%</span></div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);margin-top:8px;">0 cards</div>
+          </div>
+          <div style="border-radius:11px;background:var(--surface-sunken);border:1px solid var(--border);padding:14px 16px;opacity:0.44;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="width:30px;height:30px;border-radius:50%;background:var(--u);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#EDE6D8;">U</span>
+              <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;font-weight:500;color:var(--fg-body);">Blue</span>
+            </div>
+            <div style="margin-top:12px;height:22px;border-radius:11px;background:var(--elevated);display:flex;align-items:center;justify-content:center;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">0%</span></div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);margin-top:8px;">0 cards</div>
+          </div>
+          <div style="border-radius:11px;background:var(--surface-sunken);border:1px solid var(--border-strong);padding:14px 16px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="width:30px;height:30px;border-radius:50%;background:var(--b);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#14110E;">B</span>
+              <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;font-weight:500;color:var(--fg);">Black</span>
+            </div>
+            <div style="margin-top:12px;height:22px;border-radius:11px;background:var(--elevated);position:relative;overflow:hidden;">
+              <span style="position:absolute;inset:0 40% 0 0;background:var(--b);border-radius:11px;"></span>
+              <span style="position:absolute;left:0;right:0;top:0;bottom:0;display:flex;align-items:center;justify-content:flex-end;padding-right:10px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;color:var(--fg);">60%</span>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-body);margin-top:8px;">60 cards</div>
+          </div>
+          <div style="border-radius:11px;background:var(--surface-sunken);border:1px solid var(--border);padding:14px 16px;opacity:0.44;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="width:30px;height:30px;border-radius:50%;background:var(--r);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#14110E;">R</span>
+              <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;font-weight:500;color:var(--fg-body);">Red</span>
+            </div>
+            <div style="margin-top:12px;height:22px;border-radius:11px;background:var(--elevated);display:flex;align-items:center;justify-content:center;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">0%</span></div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);margin-top:8px;">0 cards</div>
+          </div>
+          <div style="border-radius:11px;background:var(--surface-sunken);border:1px solid var(--border-strong);padding:14px 16px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="width:30px;height:30px;border-radius:50%;background:var(--g);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#EDE6D8;">G</span>
+              <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;font-weight:500;color:var(--fg);">Green</span>
+            </div>
+            <div style="margin-top:12px;height:22px;border-radius:11px;background:var(--elevated);position:relative;overflow:hidden;">
+              <span style="position:absolute;inset:0 45% 0 0;background:var(--g);border-radius:11px;"></span>
+              <span style="position:absolute;left:0;right:0;top:0;bottom:0;display:flex;align-items:center;justify-content:flex-end;padding-right:10px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;color:var(--fg);">55%</span>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-body);margin-top:8px;">55 cards</div>
+          </div>
+          <div style="border-radius:11px;background:var(--surface-sunken);border:1px solid var(--border-strong);padding:14px 16px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="width:30px;height:30px;border-radius:50%;background:var(--fg-muted);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#14110E;">C</span>
+              <span style="font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;font-weight:500;color:var(--fg);">Colourless</span>
+            </div>
+            <div style="margin-top:12px;height:22px;border-radius:11px;background:var(--elevated);position:relative;overflow:hidden;">
+              <span style="position:absolute;inset:0 91% 0 0;background:var(--fg-muted);border-radius:11px;"></span>
+              <span style="position:absolute;left:0;right:0;top:0;bottom:0;display:flex;align-items:center;justify-content:flex-end;padding-right:10px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;color:var(--fg);">9%</span>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-body);margin-top:8px;">9 cards</div>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);margin-top:11px;">once per colour, so these add past 100</div>
+      </div>
+    </div>
+
+    <p style="max-width:1180px;font-size:13.5px;line-height:1.7;color:#A89B84;margin:18px 0 0;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">The reference's dimming is the answer R1 was missing for a colour the deck does not play.</b> R1 drew a zero row at full strength, which gives an absent colour the same visual weight as a played one. Here the card drops to <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">0.44</span> opacity and its border softens &mdash; still present, still countable, unmistakably not part of this deck. <b style="color:#EDE6D8;font-weight:600;">It is dimmed as a card, never as a pip:</b> the pip keeps its full-strength fill inside the dimmed card, so the filter chassis's ruling survives.</p>
+  </section>
+
+  <!-- ─────────────── §2 per deck, phone ─────────────── -->
+  <section id="s2" style="max-width:1520px;margin-bottom:44px;">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:8px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#CF8745;">&sect;2</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;margin:0;">Per deck &middot; phone</h2>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">390 &middot; three bands stack, colour cards go 2-up</span>
+    </div>
+    <p style="max-width:1180px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 22px;text-wrap:pretty;">The summary bar's three zones become three stacked rows; the curve keeps its axis and loses its gridline labels to a 3-step scale; the colour cards go <b style="color:#EDE6D8;font-weight:600;">two per row, in WUBRG order, reading across</b> &mdash; the reference's arrangement, and it keeps a card wide enough for a 22px track with a legible percentage. Nothing is collapsed behind a disclosure: the whole point of this block is that it is all visible at once.</p>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+      <div data-theme="{{ theme }}" style="width:390px;background:var(--surface);border:1px solid var(--border-strong);border-radius:12px;padding:14px 16px 18px;">
+        <div style="font-family:'Cinzel',serif;font-weight:700;font-size:15px;color:var(--fg);margin-bottom:11px;">What this deck is</div>
+
+        <div style="border-radius:10px;background:var(--surface-sunken);border:1px solid var(--border);padding:13px 14px;">
+          <div style="display:flex;align-items:center;gap:14px;">
+            <div style="width:54px;height:54px;flex:none;border-radius:50%;border:1px dashed var(--border-dashed);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:19px;font-weight:600;color:var(--fg);">5</div>
+            <div style="flex:1;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-body);margin-bottom:6px;">Record</div>
+              <div style="display:flex;gap:16px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg);">3 <span style="font-size:9.5px;color:var(--fg-muted);font-family:'IBM Plex Sans',sans-serif;">won</span></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg);">1 <span style="font-size:9.5px;color:var(--fg-muted);font-family:'IBM Plex Sans',sans-serif;">lost</span></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg);">1 <span style="font-size:9.5px;color:var(--fg-muted);font-family:'IBM Plex Sans',sans-serif;">drew</span></span>
+              </div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-faint);margin-top:6px;">5 games logged</div>
+            </div>
+          </div>
+          <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+            <div style="display:flex;align-items:baseline;gap:8px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-body);">To buy</span>
+              <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;color:var(--accent);">3 <span style="font-size:10px;font-weight:400;color:var(--fg-faint);">copies</span></span>
+            </div>
+            <div style="margin-top:7px;height:6px;border-radius:3px;background:var(--elevated);overflow:hidden;"><span style="display:block;width:33%;height:100%;background:var(--accent);border-radius:3px;"></span></div>
+            <div style="display:flex;align-items:baseline;gap:8px;margin-top:8px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-faint);">2 of 3 priced</span>
+              <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg);">$18.40</span>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-faint);margin-top:6px;">after the copies you already own</div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px;border-radius:10px;background:var(--surface-sunken);border:1px solid var(--border);padding:14px 14px 12px;">
+          <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:12px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-body);">Curve</span>
+            <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">avg <span style="color:var(--fg);font-size:12px;">3.4</span></span>
+          </div>
+          <div style="display:grid;grid-template-columns:20px minmax(0,1fr);gap:6px;">
+            <div style="position:relative;height:130px;">
+              <span style="position:absolute;top:-5px;right:0;font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:var(--fg-faint);">15</span>
+              <span style="position:absolute;top:60px;right:0;font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:var(--fg-faint);">7.5</span>
+              <span style="position:absolute;top:124px;right:0;font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:var(--fg-faint);">0</span>
+            </div>
+            <div style="position:relative;height:130px;">
+              <span style="position:absolute;left:0;right:0;top:0;border-top:1px dashed var(--border-dashed);"></span>
+              <span style="position:absolute;left:0;right:0;top:65px;border-top:1px dashed var(--border-dashed);"></span>
+              <span style="position:absolute;left:0;right:0;bottom:0;border-top:1px solid var(--border-strong);"></span>
+              <div style="position:absolute;inset:0;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px;align-items:end;">
+                <div style="height:20px;border-radius:3px 3px 0 0;background:var(--fg-muted);display:flex;align-items:flex-start;justify-content:center;padding-top:4px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;color:var(--surface-sunken);">2</span></div>
+                <div style="height:61px;border-radius:3px 3px 0 0;background:var(--fg-muted);display:flex;align-items:flex-start;justify-content:center;padding-top:4px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;color:var(--surface-sunken);">7</span></div>
+                <div style="height:104px;border-radius:3px 3px 0 0;background:var(--fg-muted);display:flex;align-items:flex-start;justify-content:center;padding-top:4px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;color:var(--surface-sunken);">12</span></div>
+                <div style="height:121px;border-radius:3px 3px 0 0;background:var(--fg);display:flex;align-items:flex-start;justify-content:center;padding-top:4px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;color:var(--surface-sunken);">14</span></div>
+                <div style="height:95px;border-radius:3px 3px 0 0;background:var(--fg-muted);display:flex;align-items:flex-start;justify-content:center;padding-top:4px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;color:var(--surface-sunken);">11</span></div>
+                <div style="height:69px;border-radius:3px 3px 0 0;background:var(--fg-muted);display:flex;align-items:flex-start;justify-content:center;padding-top:4px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;color:var(--surface-sunken);">8</span></div>
+                <div style="height:43px;border-radius:3px 3px 0 0;background:var(--fg-muted);display:flex;align-items:flex-start;justify-content:center;padding-top:4px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;color:var(--surface-sunken);">5</span></div>
+                <div style="height:35px;border-radius:3px 3px 0 0;background:var(--fg-muted);display:flex;align-items:flex-start;justify-content:center;padding-top:4px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;color:var(--surface-sunken);">4</span></div>
+              </div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:20px minmax(0,1fr);gap:6px;margin-top:20px;">
+            <span></span>
+            <div style="display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px;">
+              <span style="text-align:center;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-faint);">0</span>
+              <span style="text-align:center;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-faint);">1</span>
+              <span style="text-align:center;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-faint);">2</span>
+              <span style="text-align:center;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-faint);">3</span>
+              <span style="text-align:center;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-faint);">4</span>
+              <span style="text-align:center;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-faint);">5</span>
+              <span style="text-align:center;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-faint);">6</span>
+              <span style="text-align:center;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-faint);">7+</span>
+            </div>
+          </div>
+          <div style="text-align:center;margin-top:10px;">
+            <div style="font-family:'IBM Plex Sans',sans-serif;font-size:11.5px;color:var(--fg-body);">Mana value</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-faint);margin-top:3px;line-height:1.5;">63 cast &middot; 37 lands, excluded<br>live list, both commanders in</div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px;">
+          <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:9px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-body);">Colours</span>
+            <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-faint);">of 100 cards</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">
+            <div style="border-radius:10px;background:var(--surface-sunken);border:1px solid var(--border);padding:11px 12px;opacity:0.44;">
+              <div style="display:flex;align-items:center;gap:8px;"><span style="width:26px;height:26px;border-radius:50%;background:var(--w);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#14110E;">W</span><span style="font-size:12px;font-weight:500;color:var(--fg-body);">White</span></div>
+              <div style="margin-top:9px;height:20px;border-radius:10px;background:var(--elevated);display:flex;align-items:center;justify-content:center;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">0%</span></div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);margin-top:7px;">0 cards</div>
+            </div>
+            <div style="border-radius:10px;background:var(--surface-sunken);border:1px solid var(--border);padding:11px 12px;opacity:0.44;">
+              <div style="display:flex;align-items:center;gap:8px;"><span style="width:26px;height:26px;border-radius:50%;background:var(--u);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#EDE6D8;">U</span><span style="font-size:12px;font-weight:500;color:var(--fg-body);">Blue</span></div>
+              <div style="margin-top:9px;height:20px;border-radius:10px;background:var(--elevated);display:flex;align-items:center;justify-content:center;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">0%</span></div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);margin-top:7px;">0 cards</div>
+            </div>
+            <div style="border-radius:10px;background:var(--surface-sunken);border:1px solid var(--border-strong);padding:11px 12px;">
+              <div style="display:flex;align-items:center;gap:8px;"><span style="width:26px;height:26px;border-radius:50%;background:var(--b);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#14110E;">B</span><span style="font-size:12px;font-weight:500;color:var(--fg);">Black</span></div>
+              <div style="margin-top:9px;height:20px;border-radius:10px;background:var(--elevated);position:relative;overflow:hidden;"><span style="position:absolute;inset:0 40% 0 0;background:var(--b);border-radius:10px;"></span><span style="position:absolute;left:0;right:0;top:0;bottom:0;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:var(--fg);">60%</span></div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-body);margin-top:7px;">60 cards</div>
+            </div>
+            <div style="border-radius:10px;background:var(--surface-sunken);border:1px solid var(--border);padding:11px 12px;opacity:0.44;">
+              <div style="display:flex;align-items:center;gap:8px;"><span style="width:26px;height:26px;border-radius:50%;background:var(--r);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#14110E;">R</span><span style="font-size:12px;font-weight:500;color:var(--fg-body);">Red</span></div>
+              <div style="margin-top:9px;height:20px;border-radius:10px;background:var(--elevated);display:flex;align-items:center;justify-content:center;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">0%</span></div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);margin-top:7px;">0 cards</div>
+            </div>
+            <div style="border-radius:10px;background:var(--surface-sunken);border:1px solid var(--border-strong);padding:11px 12px;">
+              <div style="display:flex;align-items:center;gap:8px;"><span style="width:26px;height:26px;border-radius:50%;background:var(--g);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#EDE6D8;">G</span><span style="font-size:12px;font-weight:500;color:var(--fg);">Green</span></div>
+              <div style="margin-top:9px;height:20px;border-radius:10px;background:var(--elevated);position:relative;overflow:hidden;"><span style="position:absolute;inset:0 45% 0 0;background:var(--g);border-radius:10px;"></span><span style="position:absolute;left:0;right:0;top:0;bottom:0;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:var(--fg);">55%</span></div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-body);margin-top:7px;">55 cards</div>
+            </div>
+            <div style="border-radius:10px;background:var(--surface-sunken);border:1px solid var(--border-strong);padding:11px 12px;">
+              <div style="display:flex;align-items:center;gap:8px;"><span style="width:26px;height:26px;border-radius:50%;background:var(--fg-muted);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#14110E;">C</span><span style="font-size:12px;font-weight:500;color:var(--fg);">Colourless</span></div>
+              <div style="margin-top:9px;height:20px;border-radius:10px;background:var(--elevated);position:relative;overflow:hidden;"><span style="position:absolute;inset:0 91% 0 0;background:var(--fg-muted);border-radius:10px;"></span><span style="position:absolute;left:0;right:0;top:0;bottom:0;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:var(--fg);">9%</span></div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-body);margin-top:7px;">9 cards</div>
+            </div>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-faint);margin-top:10px;">once per colour, so these add past 100</div>
+        </div>
+      </div>
+
+      <div style="flex:1;min-width:400px;max-width:560px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6A6152;margin-bottom:9px;">where the percentage sits, and why it moves</div>
+        <table style="width:100%;border-collapse:collapse;font-size:13px;color:#A89B84;">
+          <thead>
+            <tr>
+              <th style="text-align:left;padding:9px 12px;border-bottom:1px solid #3A3229;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;font-weight:400;">Share</th>
+              <th style="text-align:left;padding:9px 12px;border-bottom:1px solid #3A3229;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;font-weight:400;">Desktop</th>
+              <th style="text-align:left;padding:9px 12px;border-bottom:1px solid #3A3229;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;font-weight:400;">Phone</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding:10px 12px;border-bottom:1px solid #241F1A;color:#EDE6D8;">0%</td>
+              <td style="padding:10px 12px;border-bottom:1px solid #241F1A;">centred in the empty track, card at 0.44</td>
+              <td style="padding:10px 12px;border-bottom:1px solid #241F1A;">same</td>
+            </tr>
+            <tr>
+              <td style="padding:10px 12px;border-bottom:1px solid #241F1A;color:#EDE6D8;">1&ndash;99%</td>
+              <td style="padding:10px 12px;border-bottom:1px solid #241F1A;">pinned to the track's right edge, on the track</td>
+              <td style="padding:10px 12px;border-bottom:1px solid #241F1A;">same</td>
+            </tr>
+            <tr>
+              <td style="padding:10px 12px;border-bottom:1px solid #241F1A;color:#EDE6D8;">100%</td>
+              <td style="padding:10px 12px;border-bottom:1px solid #241F1A;">pinned to the right edge, <b style="color:#EDE6D8;font-weight:600;">inside the fill</b> &mdash; ink flips</td>
+              <td style="padding:10px 12px;border-bottom:1px solid #241F1A;">same</td>
+            </tr>
+          </tbody>
+        </table>
+        <p style="font-size:13.5px;line-height:1.7;color:#A89B84;margin:16px 0 0;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">The percentage never sits on the fill, and it never chases it either.</b> The reference puts it inside the coloured run, which works against its mid-tone palette but not against ours: <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--w</span> is a near-white and <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--u</span> a mid-blue, so one ink cannot clear 4.5:1 on both. Placing it on the <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--elevated</span> track gives every percentage the same 13.1:1. <b style="color:#EDE6D8;font-weight:600;">It is pinned to the track's right edge at every width</b> rather than trailing the fill's end: a trailing label has to go somewhere at 95%, and a 261px card would clip it. Pinning also puts six percentages on one vertical line, which is what makes the six cards comparable at a glance. <b style="color:#EDE6D8;font-weight:600;">100% is the single exception</b> &mdash; no track remains, so it sits inside the fill and the ink flips.</p>
+        <p style="font-size:13.5px;line-height:1.7;color:#A89B84;margin:14px 0 0;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">The count is still the auditable figure.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">60 cards</span> under the bar is what a player checks against the list; the percentage is what they compare between colours. Printing both is what lets the caveat caption be a footnote rather than a warning.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────── §3 all decks ─────────────── -->
+  <section id="s3" style="max-width:1520px;margin-bottom:44px;">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:8px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#CF8745;">&sect;3</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;margin:0;">All decks &middot; the summary strip</h2>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">the same register as band 1, one altitude up</span>
+    </div>
+    <p style="max-width:1180px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 22px;text-wrap:pretty;">The reference's all-decks strip is a ring, a small checklist, an identity zone and two metric rows &mdash; and the shape is right, because <b style="color:#EDE6D8;font-weight:600;">a roll-up is a row of scalars by nature</b>. Ours keeps four zones: <b style="color:#EDE6D8;font-weight:600;">the ring counts decks</b>, the record zone sums every deck's, the devotion zone names the colours you actually play, and the fourth zone carries the two figures the reference calls <i>avg</i>. <b style="color:#EDE6D8;font-weight:600;">Where we differ from the reference: no <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">avg cost</span> and no <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">avg curve</span></b> &mdash; there is no <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">sumManaCurves</span>, an average of averages is not a mana value, and cost already has the Commitments card. The zone carries the colour roll-up's top three instead, which is the figure a player cannot get anywhere else.</p>
+
+    <div data-theme="{{ theme }}" style="width:1400px;max-width:100%;background:var(--surface);border:1px solid var(--border-strong);border-radius:12px;padding:20px 26px;display:grid;grid-template-columns:auto 1fr 1fr;gap:26px;align-items:center;margin-bottom:22px;">
+      <div style="display:flex;align-items:center;gap:18px;">
+        <div style="width:76px;height:76px;border-radius:50%;border:1px dashed var(--border-dashed);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:600;color:var(--fg);font-variant-numeric:tabular-nums;">5</div>
+        <div>
+          <div style="display:flex;align-items:center;gap:7px;margin-bottom:9px;">
+            <span style="width:11px;height:11px;border-radius:2px;border:1.5px solid var(--fg-faint);"></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-body);">Your decks</span>
+          </div>
+          <div style="display:grid;grid-template-columns:auto auto;gap:4px 20px;">
+            <span style="font-size:12.5px;color:var(--fg-muted);">Ready to play</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--fg);text-align:right;font-variant-numeric:tabular-nums;">3</span>
+            <span style="font-size:12.5px;color:var(--fg-muted);">Still brewing</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--fg);text-align:right;font-variant-numeric:tabular-nums;">2</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="border-left:1px solid var(--border);padding-left:26px;align-self:stretch;display:flex;flex-direction:column;justify-content:center;">
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:10px;">
+          <span style="width:11px;height:11px;border-radius:2px;border:1.5px solid var(--fg-faint);"></span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-body);">Record</span>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:24px;font-weight:600;color:var(--fg);font-variant-numeric:tabular-nums;">12&ndash;7&ndash;1</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">20 games logged</span>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);margin-top:8px;">wins&ndash;losses&ndash;draws &middot; every deck's record, added</div>
+      </div>
+
+      <div style="border-left:1px solid var(--border);padding-left:26px;align-self:stretch;display:flex;flex-direction:column;justify-content:center;">
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:11px;">
+          <span style="width:11px;height:11px;border-radius:50%;border:1.5px solid var(--fg-faint);"></span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-body);">What you play</span>
+          <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);">of 487 cards</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:7px;">
+          <div style="display:grid;grid-template-columns:24px minmax(0,1fr) 42px;gap:10px;align-items:center;">
+            <span style="width:22px;height:22px;border-radius:50%;background:var(--b);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;color:#14110E;">B</span>
+            <span style="height:6px;border-radius:3px;background:var(--elevated);position:relative;overflow:hidden;"><span style="position:absolute;inset:0 58% 0 0;background:var(--b);border-radius:3px;"></span></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);text-align:right;font-variant-numeric:tabular-nums;">204</span>
+          </div>
+          <div style="display:grid;grid-template-columns:24px minmax(0,1fr) 42px;gap:10px;align-items:center;">
+            <span style="width:22px;height:22px;border-radius:50%;background:var(--g);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;color:#EDE6D8;">G</span>
+            <span style="height:6px;border-radius:3px;background:var(--elevated);position:relative;overflow:hidden;"><span style="position:absolute;inset:0 68% 0 0;background:var(--g);border-radius:3px;"></span></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);text-align:right;font-variant-numeric:tabular-nums;">155</span>
+          </div>
+          <div style="display:grid;grid-template-columns:24px minmax(0,1fr) 42px;gap:10px;align-items:center;">
+            <span style="width:22px;height:22px;border-radius:50%;background:var(--u);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;color:#EDE6D8;">U</span>
+            <span style="height:6px;border-radius:3px;background:var(--elevated);position:relative;overflow:hidden;"><span style="position:absolute;inset:0 73% 0 0;background:var(--u);border-radius:3px;"></span></span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);text-align:right;font-variant-numeric:tabular-nums;">131</span>
+          </div>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:8px;margin-top:9px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);">your three heaviest &middot; once per colour, so these add past 487</span>
+          <a href="#s3" style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9.5px;">all six</a>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6A6152;margin-bottom:9px;">phone &middot; the strip becomes a card, zones stack in the same order</div>
+        <div data-theme="{{ theme }}" style="width:390px;background:var(--surface);border:1px solid var(--border-strong);border-radius:12px;padding:16px 18px 18px;">
+          <div style="display:flex;align-items:center;gap:16px;">
+            <div style="width:62px;height:62px;flex:none;border-radius:50%;border:1px dashed var(--border-dashed);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;color:var(--fg);">5</div>
+            <div style="flex:1;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-body);margin-bottom:7px;">Your decks</div>
+              <div style="display:grid;grid-template-columns:auto auto;gap:3px 14px;">
+                <span style="font-size:12px;color:var(--fg-muted);">Ready to play</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg);text-align:right;">3</span>
+                <span style="font-size:12px;color:var(--fg-muted);">Still brewing</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg);text-align:right;">2</span>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-body);margin-bottom:7px;">Record</div>
+            <div style="display:flex;align-items:baseline;gap:12px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:21px;font-weight:600;color:var(--fg);font-variant-numeric:tabular-nums;">12&ndash;7&ndash;1</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);">20 games logged</span>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-faint);margin-top:6px;">every deck's record, added</div>
+          </div>
+          <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+            <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:9px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-body);">What you play</span>
+              <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-faint);">of 487 cards</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:7px;">
+              <div style="display:grid;grid-template-columns:22px minmax(0,1fr) 40px;gap:9px;align-items:center;">
+                <span style="width:20px;height:20px;border-radius:50%;background:var(--b);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;color:#14110E;">B</span>
+                <span style="height:6px;border-radius:3px;background:var(--elevated);position:relative;overflow:hidden;"><span style="position:absolute;inset:0 58% 0 0;background:var(--b);border-radius:3px;"></span></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);text-align:right;">204</span>
+              </div>
+              <div style="display:grid;grid-template-columns:22px minmax(0,1fr) 40px;gap:9px;align-items:center;">
+                <span style="width:20px;height:20px;border-radius:50%;background:var(--g);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;color:#EDE6D8;">G</span>
+                <span style="height:6px;border-radius:3px;background:var(--elevated);position:relative;overflow:hidden;"><span style="position:absolute;inset:0 68% 0 0;background:var(--g);border-radius:3px;"></span></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);text-align:right;">155</span>
+              </div>
+              <div style="display:grid;grid-template-columns:22px minmax(0,1fr) 40px;gap:9px;align-items:center;">
+                <span style="width:20px;height:20px;border-radius:50%;background:var(--u);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:600;color:#EDE6D8;">U</span>
+                <span style="height:6px;border-radius:3px;background:var(--elevated);position:relative;overflow:hidden;"><span style="position:absolute;inset:0 73% 0 0;background:var(--u);border-radius:3px;"></span></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);text-align:right;">131</span>
+              </div>
+            </div>
+            <div style="display:flex;align-items:baseline;gap:8px;margin-top:9px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-faint);line-height:1.5;">your three heaviest<br>once per colour, so these add past 487</span>
+              <a href="#s3" style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9px;">all six</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex:1;min-width:400px;max-width:600px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6A6152;margin-bottom:9px;">what the ring counts, and the one thing it must not</div>
+        <p style="font-size:13.5px;line-height:1.7;color:#A89B84;margin:0 0 14px;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">The ring is a count, not a gauge.</b> The reference's ring is a dashed circle around a number with no arc, and that restraint is the reason it works: an arc would need a denominator, and <i>how many decks you have</i> has none. <b style="color:#EDE6D8;font-weight:600;">Ours stays dashed and arcless for the same reason</b>, at both altitudes &mdash; 5 decks on Home, 5 games on the deck page.</p>
+        <p style="font-size:13.5px;line-height:1.7;color:#A89B84;margin:0 0 14px;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">Ready to play / still brewing is the deck page's own status vocabulary, summed</b> &mdash; not a new axis. If the status list grows a third value, this zone grows a third row rather than a percentage.</p>
+        <p style="font-size:13.5px;line-height:1.7;color:#A89B84;margin:0 0 14px;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">Three colours, not six, and it says so.</b> Six rows at this altitude is the deck page's cell pasted into a strip; the top three plus <i>your three heaviest</i> and an <i>all six</i> link is the roll-up's job &mdash; a shape, then a way in. The caveat travels with it, because the reason the figures overshoot does not change with altitude.</p>
+        <p style="font-size:13.5px;line-height:1.7;color:#A89B84;margin:0;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">Placement is still the home handoff's call.</b> This strip is specified to sit full-width above Home's two-column body &mdash; which is what the reference does &mdash; but Home is being reshaped by a brief that is not written, so the mount is theirs.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────── §4 states in the new idiom ─────────────── -->
+  <section id="s4" style="max-width:1520px;margin-bottom:20px;">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:8px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#CF8745;">&sect;4</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;margin:0;">The absences, redrawn</h2>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">same rulings as R1, new geometry</span>
+    </div>
+    <p style="max-width:1180px;font-size:14.5px;line-height:1.7;color:#A89B84;margin:0 0 22px;text-wrap:pretty;">A taller block makes absence <i>more</i> conspicuous, not less &mdash; which is why the em dash is now paired with the zone's own label rather than floating in a 152px column. <b style="color:#EDE6D8;font-weight:600;">The ring is the one new absence:</b> at zero games it keeps its dashes and prints <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">0</span>, because <i>how many games you have logged</i> genuinely is zero &mdash; it is the <i>record</i> that is unknown, not the count. That distinction is the whole reason the ring and the record sit in the same zone.</p>
+
+    <div style="display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap;">
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6A6152;margin-bottom:9px;">summary bar &middot; no games, nothing to buy</div>
+        <div data-theme="{{ theme }}" style="width:700px;border-radius:11px;background:var(--surface-sunken);border:1px solid var(--border);padding:16px 20px;display:grid;grid-template-columns:auto 1fr;gap:26px;align-items:center;">
+          <div style="display:flex;align-items:center;gap:16px;">
+            <div style="width:66px;height:66px;border-radius:50%;border:1px dashed var(--border-dashed);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;color:var(--fg-locked);">0</div>
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-body);margin-bottom:7px;">Record</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:19px;font-weight:600;color:var(--fg-locked);">&mdash;</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);margin-top:5px;line-height:1.5;">no games logged</div>
+            </div>
+          </div>
+          <div style="border-left:1px solid var(--border);padding-left:26px;align-self:stretch;display:flex;flex-direction:column;justify-content:center;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-body);margin-bottom:7px;">To buy</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:19px;font-weight:600;color:var(--fg-locked);">&mdash;</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);margin-top:5px;">nothing to buy</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-faint);margin-top:6px;line-height:1.5;">basics are never counted, so this is not <i>finished</i></div>
+          </div>
+        </div>
+        <p style="max-width:700px;font-size:13px;line-height:1.7;color:#8E8269;margin:12px 0 0;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">The To buy bar disappears rather than drawing an empty track.</b> A 0%-filled accent track reads as <i>nothing bought yet</i> &mdash; a progress claim the figure does not make. Same for the ring: dashes and a <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">0</span>, never an arc at zero.</p>
+      </div>
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6A6152;margin-bottom:9px;">curve &middot; nothing cast yet</div>
+        <div data-theme="{{ theme }}" style="width:430px;border-radius:11px;background:var(--surface-sunken);border:1px solid var(--border);padding:18px 20px 14px;">
+          <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:14px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-body);">Curve</span>
+            <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">avg <span style="color:var(--fg-locked);font-size:13px;">&mdash;</span></span>
+          </div>
+          <div style="display:grid;grid-template-columns:26px minmax(0,1fr);gap:8px;">
+            <div style="position:relative;height:120px;">
+              <span style="position:absolute;top:-5px;right:0;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-locked);">5</span>
+              <span style="position:absolute;top:114px;right:0;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-faint);">0</span>
+            </div>
+            <div style="position:relative;height:120px;">
+              <span style="position:absolute;left:0;right:0;top:0;border-top:1px dashed var(--border-dashed);"></span>
+              <span style="position:absolute;left:0;right:0;top:60px;border-top:1px dashed var(--border-dashed);"></span>
+              <span style="position:absolute;left:0;right:0;bottom:0;border-top:1px solid var(--border-strong);"></span>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:26px minmax(0,1fr);gap:8px;margin-top:8px;">
+            <span></span>
+            <div style="display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:12px;">
+              <span style="text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">0</span>
+              <span style="text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">1</span>
+              <span style="text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">2</span>
+              <span style="text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">3</span>
+              <span style="text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">4</span>
+              <span style="text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">5</span>
+              <span style="text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">6</span>
+              <span style="text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">7+</span>
+            </div>
+          </div>
+          <div style="text-align:center;margin-top:12px;">
+            <div style="font-family:'IBM Plex Sans',sans-serif;font-size:12.5px;color:var(--fg-body);">Mana value</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);margin-top:3px;">nothing to cast yet &middot; 38 lands, excluded</div>
+          </div>
+        </div>
+        <p style="max-width:430px;font-size:13px;line-height:1.7;color:#8E8269;margin:12px 0 0;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">An empty plot area, with the axis intact.</b> R1's eight baseline rules were a sparkline's answer; at this size the axis carries it alone, and the y-scale collapses to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">0</span>&ndash;<span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">5</span> at <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-locked</span> so the scale itself reads as unpopulated. <b style="color:#EDE6D8;font-weight:600;">Still <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">avg &mdash;</span>, never <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">avg 0</span>.</b></p>
+      </div>
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#6A6152;margin-bottom:9px;">colour card &middot; the three shares that need a rule</div>
+        <div data-theme="{{ theme }}" style="width:300px;display:flex;flex-direction:column;gap:10px;">
+          <div style="border-radius:11px;background:var(--surface-sunken);border:1px solid var(--border-strong);padding:14px 16px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="width:30px;height:30px;border-radius:50%;background:var(--w);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#14110E;">W</span>
+              <span style="font-size:13.5px;font-weight:500;color:var(--fg);">White</span>
+              <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-faint);">100%</span>
+            </div>
+            <div style="margin-top:12px;height:22px;border-radius:11px;background:var(--elevated);position:relative;overflow:hidden;">
+              <span style="position:absolute;inset:0;background:var(--w);border-radius:11px;"></span>
+              <span style="position:absolute;left:0;right:0;top:0;bottom:0;display:flex;align-items:center;justify-content:flex-end;padding-right:10px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;color:#14110E;">100%</span>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-body);margin-top:8px;">100 cards</div>
+          </div>
+          <div style="border-radius:11px;background:var(--surface-sunken);border:1px solid var(--border-strong);padding:14px 16px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="width:30px;height:30px;border-radius:50%;background:var(--r);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#14110E;">R</span>
+              <span style="font-size:13.5px;font-weight:500;color:var(--fg);">Red</span>
+              <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-faint);">1%</span>
+            </div>
+            <div style="margin-top:12px;height:22px;border-radius:11px;background:var(--elevated);position:relative;overflow:hidden;">
+              <span style="position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--r);border-radius:11px;"></span>
+              <span style="position:absolute;left:0;right:0;top:0;bottom:0;display:flex;align-items:center;justify-content:flex-end;padding-right:10px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;color:var(--fg);">1%</span>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-body);margin-top:8px;">1 card</div>
+          </div>
+          <div style="border-radius:11px;background:var(--surface-sunken);border:1px solid var(--border);padding:14px 16px;opacity:0.44;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="width:30px;height:30px;border-radius:50%;background:var(--u);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#EDE6D8;">U</span>
+              <span style="font-size:13.5px;font-weight:500;color:var(--fg-body);">Blue</span>
+            </div>
+            <div style="margin-top:12px;height:22px;border-radius:11px;background:var(--elevated);display:flex;align-items:center;justify-content:center;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">0%</span></div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);margin-top:8px;">0 cards</div>
+          </div>
+        </div>
+        <p style="max-width:300px;font-size:13px;line-height:1.7;color:#8E8269;margin:12px 0 0;text-wrap:pretty;"><b style="color:#EDE6D8;font-weight:600;">100% keeps its percentage inside the fill</b> &mdash; there is no track left to sit on, so it takes the one contrast-checked exception: ink is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">#14110E</span> on light fills, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg</span> on dark. <b style="color:#EDE6D8;font-weight:600;">A 1% fill keeps a 6px minimum</b>, so one card is a visible mark rather than nothing, and the caption's <i>1 card</i> carries the truth. <b style="color:#EDE6D8;font-weight:600;">0% is the only state that centres its figure</b>, which is what makes the dimmed cards scannable as a group.</p>
+      </div>
+    </div>
+  </section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;,&quot;ixalan&quot;,&quot;phyrexia&quot;,&quot;eldraine&quot;,&quot;kaldheim&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Review&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return { theme: this.props.theme ?? "amonkhet" };
+  }
+}
+</script>
+</body>
+</html>

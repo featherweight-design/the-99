@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --display:'Cinzel',serif; --surface-sunken:#18140F; --surface-raised:#211D18; --elevated:#29241F;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654; --fg-disabled:#4A4033;
+    --accent:#CF8745; --accent-hover:#DE9757; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --display:'Chakra Petch',sans-serif; --surface-sunken:#101219; --surface-raised:#191B22; --elevated:#20222A;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476; --fg-disabled:#3D404E;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+  }
+  body { margin: 0; background: #0B0907; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="background:var(--bg);color:var(--fg);font-family:'IBM Plex Sans',sans-serif;padding:56px 64px 96px;display:flex;flex-direction:column;gap:64px;width:max-content;">
+
+  <header style="display:flex;flex-direction:column;gap:14px;max-width:1100px;">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--accent);">#10 deck tuning · manifest addendum · 2026-09-28</span>
+    <h1 style="margin:0;font-family:var(--display);font-weight:700;font-size:34px;line-height:1.2;">The manifest is a list you read, not a set of boxes you tick.</h1>
+    <p style="margin:0;font-size:15px;line-height:1.65;color:var(--fg-body);max-width:980px;text-wrap:pretty;">Hugh pressed the empty 18px box expecting a checkbox. The box goes, and so do the row borders and fills. Each read becomes a line in a ruled list, led by a text-sized mark: a dot while pending, a ✓ once read. Nothing in the list has a border except the dashed empty-games row, which holds the list's one control. Copy, counts and every state are unchanged.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px;">
+      <a href="#M1" style="font-family:'IBM Plex Mono',monospace;font-size:12px;border:1px solid var(--border-strong);border-radius:6px;padding:5px 10px;">M · the mark and the row</a>
+      <a href="#D1" style="font-family:'IBM Plex Mono',monospace;font-size:12px;border:1px solid var(--border-strong);border-radius:6px;padding:5px 10px;">D · 1300</a>
+      <a href="#P1" style="font-family:'IBM Plex Mono',monospace;font-size:12px;border:1px solid var(--border-strong);border-radius:6px;padding:5px 10px;">P · 390</a>
+    </div>
+  </header>
+
+  <section style="display:flex;flex-direction:column;gap:26px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;">M · <span style="color:var(--accent);">the three calls</span></div>
+    <div style="display:flex;align-items:flex-start;gap:48px;">
+
+      <div id="M1" style="display:flex;flex-direction:column;gap:10px;flex:none;width:560px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 7px;align-self:flex-start;">M1 · before → after · 1300</span>
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;">
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-locked);">before · shipped</span>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <div style="min-height:38px;display:flex;align-items:center;gap:10px;background:var(--elevated);border:1px solid var(--border);border-radius:8px;padding:0 12px;box-sizing:border-box;">
+                <span style="width:16px;height:16px;flex:none;border-radius:4px;border:1px solid var(--accent);box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--accent);">✓</span>
+                <span style="flex:1;font-size:13px;color:var(--fg-body);">Your games</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">9 games</span>
+              </div>
+              <div style="min-height:38px;display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0 12px;box-sizing:border-box;">
+                <span style="width:16px;height:16px;flex:none;border-radius:4px;border:1px solid var(--border-strong);box-sizing:border-box;"></span>
+                <span style="flex:1;font-size:13px;color:var(--fg-body);">This list</span>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">after</span>
+            <div style="display:flex;flex-direction:column;border-top:1px solid var(--border);">
+              <div style="min-height:32px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);padding:0 2px;">
+                <span style="width:14px;flex:none;display:flex;justify-content:center;font-size:12px;font-weight:600;color:var(--accent);">✓</span>
+                <span style="flex:1;font-size:13px;color:var(--fg);">Your games</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">9 games</span>
+              </div>
+              <div style="min-height:32px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);padding:0 2px;">
+                <span style="width:14px;flex:none;display:flex;justify-content:center;"><span style="width:5px;height:5px;border-radius:50%;background:var(--fg-locked);"></span></span>
+                <span style="flex:1;font-size:13px;color:var(--fg-body);">This list</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:520px;flex:none;display:flex;flex-direction:column;gap:12px;font-size:13px;line-height:1.65;color:var(--fg-muted);">
+        <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">1 · The mark: dot → ✓.</b> Pending is a 5px dot in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-locked</span>; read is a 12px ✓ in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--accent</span>, weight 600. Both are glyphs at text size in a 14px slot: no box, no border, no radius, so there is no empty container to fill. A dot is what a list uses before an item, and it swaps for a ✓ the way a line item gets marked off. Not colour alone: the shape changes, and the label steps from <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-body</span> to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg</span>. The dashed row, which is never read, has an en dash.</p>
+        <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">2 · The row: no border, no fill.</b> A bordered, filled 38px row is a tile, and a tile invites a press. Each row is now a line between 1px <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--border</span> rules (one rule above the list, one under each row), 2px inset. The done row loses its <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--elevated</span> fill: the ✓ and the brighter label carry done. No hover, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">cursor: default</span>. The <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&lt;ul&gt;</span> keeps its list semantics; the mark stays <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-hidden</span> and the row gets visually hidden text, <i>read</i> or <i>not read yet</i>, after the label.</p>
+        <p style="margin:0;"><b style="color:var(--fg);font-weight:600;">3 · Heights: the rows stop being targets.</b> Read rows are 32px on desktop, 36px on the phone (min-height, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">py 8px</span>, so a long label wraps rather than clips). They were 38 / 44 only to be pressable, and a row that is tall for no reason reads as one that can be pressed. The dashed row keeps its height because it holds a target: <i>Log a game →</i> is its own box, a true <b style="color:var(--fg);font-weight:600;">44px</b> tall on the phone and <b style="color:var(--fg);font-weight:600;">38px</b> on desktop, 12px side padding, flush to the row's right edge (the row's right padding goes to 0). That fixes the 43px button in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">manifest-rows.tsx:39-45</span>; desktop's dashed row grows 38 → 40px to hold it inside its border.</p>
+      </div>
+    </div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:26px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;">D · <span style="color:var(--accent);">1300: unread, ticking, collapsed</span></div>
+    <div style="display:grid;grid-template-columns:repeat(2,900px);gap:36px 40px;align-items:start;">
+
+      <div id="D1" style="display:flex;flex-direction:column;gap:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 7px;align-self:flex-start;">D1 · unread · ready, nine games</span>
+        <div style="background:var(--surface-sunken);border:1px solid var(--border);border-radius:12px;padding:18px 20px;">
+          <div style="font-family:var(--display);font-weight:600;font-size:19px;">Suggested changes</div>
+          <div style="font-size:13.5px;color:var(--fg-body);line-height:1.65;margin-top:11px;">{{ readyLead }}</div>
+          <div style="display:flex;flex-direction:column;margin-top:14px;border-top:1px solid var(--border);">
+            <sc-for list="{{ unread }}" as="m" hint-placeholder-count="4">
+              <div style="min-height:32px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);padding:0 2px;">
+                <span style="width:14px;flex:none;display:flex;justify-content:center;"><span style="width:5px;height:5px;border-radius:50%;background:var(--fg-locked);"></span></span>
+                <span style="flex:1;font-size:13px;color:var(--fg-body);">{{ m.label }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ m.count }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;align-items:center;gap:16px;margin-top:18px;padding-top:16px;border-top:1px solid var(--border);min-height:56px;box-sizing:border-box;">
+            <span style="font-weight:600;font-size:14px;color:var(--accent);border:1px solid var(--accent);border-radius:8px;padding:11px 20px;">Suggest changes</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">takes a few seconds · nothing changes until you say so</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="D2" style="display:flex;flex-direction:column;gap:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 7px;align-self:flex-start;">D2 · unread · no games logged, the one control</span>
+        <div style="background:var(--surface-sunken);border:1px solid var(--border);border-radius:12px;padding:18px 20px;">
+          <div style="font-family:var(--display);font-weight:600;font-size:19px;">Suggested changes</div>
+          <div style="font-size:13.5px;color:var(--fg-body);line-height:1.65;margin-top:11px;">{{ noGamesLead }}</div>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px;">
+            <div style="min-height:40px;display:flex;align-items:center;gap:10px;border:1px dashed var(--border-dashed);border-radius:8px;padding:0 0 0 12px;box-sizing:border-box;">
+              <span style="width:14px;flex:none;display:flex;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-locked);">–</span>
+              <span style="flex:1;font-size:13px;color:var(--fg-faint);">Your games</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">none logged</span>
+              <span style="height:38px;display:flex;align-items:center;padding:0 12px;font-size:12.5px;font-weight:600;color:var(--accent);">Log a game →</span>
+            </div>
+            <div style="display:flex;flex-direction:column;border-top:1px solid var(--border);">
+              <sc-for list="{{ unreadNoGames }}" as="m" hint-placeholder-count="2">
+                <div style="min-height:32px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);padding:0 2px;">
+                  <span style="width:14px;flex:none;display:flex;justify-content:center;"><span style="width:5px;height:5px;border-radius:50%;background:var(--fg-locked);"></span></span>
+                  <span style="flex:1;font-size:13px;color:var(--fg-body);">{{ m.label }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ m.count }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:16px;margin-top:18px;padding-top:16px;border-top:1px solid var(--border);min-height:56px;box-sizing:border-box;">
+            <span style="font-weight:600;font-size:14px;color:var(--accent);border:1px solid var(--accent);border-radius:8px;padding:11px 20px;">Suggest changes</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">takes a few seconds · nothing changes until you say so</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="D3" style="display:flex;flex-direction:column;gap:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 7px;align-self:flex-start;">D3 · ticking · 2 of 4 read</span>
+        <div style="background:var(--surface-sunken);border:1px solid var(--accent);border-radius:12px;padding:18px 20px;">
+          <div style="font-family:var(--display);font-weight:600;font-size:19px;">Suggested changes</div>
+          <div style="display:flex;align-items:center;gap:20px;margin-top:12px;">
+            <div style="width:84px;height:60px;flex:none;border:1px dashed var(--border-dashed);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);text-align:center;">fan shuffle<br>shipped</div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <span style="font-family:var(--display);font-weight:600;font-size:16px;">Shuffling through your deck…</span>
+              <span style="font-size:13.5px;color:var(--fg-body);line-height:1.6;">{{ loadingLead }}</span>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;margin-top:14px;border-top:1px solid var(--border);">
+            <sc-for list="{{ ticking }}" as="m" hint-placeholder-count="4">
+              <div style="min-height:32px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);padding:0 2px;">
+                <sc-if value="{{ m.done }}" hint-placeholder-val="{{ false }}">
+                  <span style="width:14px;flex:none;display:flex;justify-content:center;font-size:12px;font-weight:600;color:var(--accent);">✓</span>
+                  <span style="flex:1;font-size:13px;color:var(--fg);">{{ m.label }}</span>
+                </sc-if>
+                <sc-if value="{{ m.pending }}" hint-placeholder-val="{{ true }}">
+                  <span style="width:14px;flex:none;display:flex;justify-content:center;"><span style="width:5px;height:5px;border-radius:50%;background:var(--fg-locked);"></span></span>
+                  <span style="flex:1;font-size:13px;color:var(--fg-body);">{{ m.label }}</span>
+                </sc-if>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ m.count }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;margin-top:18px;padding-top:16px;border-top:1px solid var(--border);min-height:56px;box-sizing:border-box;">
+            <span style="font-weight:600;font-size:14px;color:var(--fg-muted);border:1px solid var(--border-strong);border-radius:8px;padding:11px 20px;">Reading…</span>
+            <span style="font-weight:500;font-size:13px;color:var(--fg-muted);border:1px solid var(--border-strong);border-radius:8px;padding:10px 14px;">Stop</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">2 of 4 read</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="D4" style="display:flex;flex-direction:column;gap:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 7px;align-self:flex-start;">D4 · collapsed · results, unchanged</span>
+        <div style="background:var(--surface-sunken);border:1px solid var(--border);border-radius:12px;padding:18px 20px;">
+          <div style="font-family:var(--display);font-weight:600;font-size:19px;">Suggested changes</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);margin-top:9px;">read from 9 games · 2 game notes · 99 cards · the recommended mix · your collection</div>
+          <div style="font-size:13.5px;color:var(--fg-body);line-height:1.65;margin-top:11px;max-width:680px;">Five swaps, each a card out and a card in. Nothing moves until you apply one.</div>
+          <div style="height:58px;margin-top:14px;border:1px dashed var(--border-dashed);border-radius:8px;display:flex;align-items:center;padding:0 12px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">suggestion cards · unchanged, see Placement Addendum v2 A1</div>
+          <div style="display:flex;align-items:center;gap:16px;margin-top:18px;padding-top:16px;border-top:1px solid var(--border);min-height:56px;box-sizing:border-box;">
+            <span style="font-weight:600;font-size:14px;color:var(--accent);border:1px solid var(--accent);border-radius:8px;padding:11px 20px;">Suggest again</span>
+          </div>
+        </div>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">the collapsed line is out of scope and unchanged; drawn so the three densities sit together</span>
+      </div>
+    </div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:26px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;">P · <span style="color:var(--accent);">390: unread, ticking, collapsed</span></div>
+    <div style="display:flex;align-items:flex-start;gap:36px;">
+
+      <div id="P1" style="display:flex;flex-direction:column;gap:10px;flex:none;width:390px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 7px;align-self:flex-start;">P1 · unread · nine games</span>
+        <div style="background:var(--surface-sunken);border:1px solid var(--border);border-radius:11px;padding:16px 14px;">
+          <div style="font-family:var(--display);font-weight:600;font-size:17px;">Suggested changes</div>
+          <div style="font-size:12.5px;color:var(--fg-body);line-height:1.6;margin-top:10px;">{{ readyLead }}</div>
+          <div style="display:flex;flex-direction:column;margin-top:14px;border-top:1px solid var(--border);">
+            <sc-for list="{{ unread }}" as="m" hint-placeholder-count="4">
+              <div style="min-height:36px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);padding:8px 2px;box-sizing:border-box;">
+                <span style="width:14px;flex:none;display:flex;justify-content:center;"><span style="width:5px;height:5px;border-radius:50%;background:var(--fg-locked);"></span></span>
+                <span style="flex:1;min-width:0;font-size:12.5px;line-height:1.35;color:var(--fg-body);">{{ m.label }}</span>
+                <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ m.count }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:9px;margin-top:16px;padding-top:15px;border-top:1px solid var(--border);">
+            <span style="height:44px;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13.5px;color:var(--accent);border:1px solid var(--accent);border-radius:8px;">Suggest changes</span>
+            <span style="text-align:center;font-family:'IBM Plex Mono',monospace;font-size:9.5px;line-height:1.55;color:var(--fg-faint);">takes a few seconds · nothing changes until you say so</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="P2" style="display:flex;flex-direction:column;gap:10px;flex:none;width:390px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 7px;align-self:flex-start;">P2 · unread · no games, 44px link</span>
+        <div style="background:var(--surface-sunken);border:1px solid var(--border);border-radius:11px;padding:16px 14px;">
+          <div style="font-family:var(--display);font-weight:600;font-size:17px;">Suggested changes</div>
+          <div style="font-size:12.5px;color:var(--fg-body);line-height:1.6;margin-top:10px;">{{ noGamesLead }}</div>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px;">
+            <div style="min-height:46px;display:flex;align-items:center;gap:10px;border:1px dashed var(--border-dashed);border-radius:8px;padding:0 0 0 12px;box-sizing:border-box;">
+              <span style="width:14px;flex:none;display:flex;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-locked);">–</span>
+              <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;"><span style="font-size:12.5px;color:var(--fg-faint);">Your games</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">none logged</span></span>
+              <span style="height:44px;flex:none;display:flex;align-items:center;padding:0 12px;font-size:12.5px;font-weight:600;color:var(--accent);">Log a game →</span>
+            </div>
+            <div style="display:flex;flex-direction:column;border-top:1px solid var(--border);">
+              <sc-for list="{{ unreadNoGames }}" as="m" hint-placeholder-count="2">
+                <div style="min-height:36px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);padding:8px 2px;box-sizing:border-box;">
+                  <span style="width:14px;flex:none;display:flex;justify-content:center;"><span style="width:5px;height:5px;border-radius:50%;background:var(--fg-locked);"></span></span>
+                  <span style="flex:1;min-width:0;font-size:12.5px;line-height:1.35;color:var(--fg-body);">{{ m.label }}</span>
+                  <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ m.count }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:9px;margin-top:16px;padding-top:15px;border-top:1px solid var(--border);">
+            <span style="height:44px;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13.5px;color:var(--accent);border:1px solid var(--accent);border-radius:8px;">Suggest changes</span>
+            <span style="text-align:center;font-family:'IBM Plex Mono',monospace;font-size:9.5px;line-height:1.55;color:var(--fg-faint);">takes a few seconds · nothing changes until you say so</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="P3" style="display:flex;flex-direction:column;gap:10px;flex:none;width:390px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 7px;align-self:flex-start;">P3 · ticking · 2 of 4 read</span>
+        <div style="background:var(--surface-sunken);border:1px solid var(--accent);border-radius:11px;padding:16px 14px;">
+          <div style="font-family:var(--display);font-weight:600;font-size:17px;">Suggested changes</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:14px;text-align:center;">
+            <div style="width:72px;height:52px;border:1px dashed var(--border-dashed);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-faint);">fan shuffle</div>
+            <span style="font-family:var(--display);font-weight:600;font-size:15px;">Shuffling through your deck…</span>
+            <span style="font-size:12.5px;color:var(--fg-body);line-height:1.55;">{{ loadingLead }}</span>
+          </div>
+          <div style="display:flex;flex-direction:column;margin-top:14px;border-top:1px solid var(--border);">
+            <sc-for list="{{ ticking }}" as="m" hint-placeholder-count="4">
+              <div style="min-height:36px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);padding:8px 2px;box-sizing:border-box;">
+                <sc-if value="{{ m.done }}" hint-placeholder-val="{{ false }}">
+                  <span style="width:14px;flex:none;display:flex;justify-content:center;font-size:12px;font-weight:600;color:var(--accent);">✓</span>
+                  <span style="flex:1;min-width:0;font-size:12.5px;line-height:1.35;color:var(--fg);">{{ m.label }}</span>
+                </sc-if>
+                <sc-if value="{{ m.pending }}" hint-placeholder-val="{{ true }}">
+                  <span style="width:14px;flex:none;display:flex;justify-content:center;"><span style="width:5px;height:5px;border-radius:50%;background:var(--fg-locked);"></span></span>
+                  <span style="flex:1;min-width:0;font-size:12.5px;line-height:1.35;color:var(--fg-body);">{{ m.label }}</span>
+                </sc-if>
+                <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ m.count }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:9px;margin-top:16px;padding-top:15px;border-top:1px solid var(--border);">
+            <div style="display:flex;gap:8px;">
+              <span style="flex:2;height:44px;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13.5px;color:var(--fg-muted);border:1px solid var(--border-strong);border-radius:8px;">Reading…</span>
+              <span style="flex:1;height:44px;display:flex;align-items:center;justify-content:center;font-weight:500;font-size:13px;color:var(--fg-muted);border:1px solid var(--border-strong);border-radius:8px;">Stop</span>
+            </div>
+            <span style="text-align:center;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);">2 of 4 read</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="P4" style="display:flex;flex-direction:column;gap:10px;flex:none;width:390px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 7px;align-self:flex-start;">P4 · collapsed · unchanged</span>
+        <div style="background:var(--surface-sunken);border:1px solid var(--border);border-radius:11px;padding:16px 14px;">
+          <div style="font-family:var(--display);font-weight:600;font-size:17px;">Suggested changes</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);margin-top:8px;line-height:1.5;">read from 9 games · 2 game notes · 99 cards · the recommended mix · your collection</div>
+          <div style="height:64px;margin-top:14px;border:1px dashed var(--border-dashed);border-radius:9px;display:flex;align-items:center;padding:0 12px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">suggestion cards · unchanged</div>
+          <div style="display:flex;flex-direction:column;gap:9px;margin-top:16px;padding-top:15px;border-top:1px solid var(--border);">
+            <span style="height:44px;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13.5px;color:var(--accent);border:1px solid var(--accent);border-radius:8px;">Suggest again</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;'amonkhet' | 'kamigawa'&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const unread = [
+      { label: 'Your games', count: '9 games' },
+      { label: 'Notes on your games', count: 'on 2 of 9 games' },
+      { label: 'This list', count: '99 cards' },
+      { label: 'What you own, and what a card costs', count: 'your collection' },
+    ];
+    const ticking = unread.map((r, i) => i < 2 ? { ...r, done: true, pending: false } : { ...r, count: '', done: false, pending: true });
+    return {
+      theme: this.props.theme ?? 'amonkhet',
+      unread,
+      ticking,
+      unreadNoGames: [
+        { label: 'This list, against the recommended mix', count: '99 cards' },
+        { label: 'What you own, and what a card costs', count: 'your collection' },
+      ],
+      readyLead: 'Nine games in, and cards in hand has been marked against you in 7 of 9. We will read everything below and suggest up to five swaps, each a card out, a card in, and the reason.',
+      noGamesLead: 'No games logged yet, so we will read this list, the recommended mix and what you own, and suggest up to five swaps. Log a game and suggestions can also cite how the deck played.',
+      loadingLead: 'Reading your deck. This takes a few seconds, and the list below stays on screen when the suggestions arrive.',
+    };
+  }
+}
+</script>
+</body>
+</html>

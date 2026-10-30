@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0B0E; }
+  a { color: #5C86C9; text-decoration: none; }
+  a:hover { color: #6C95D8; }
+  :root {
+    --bg:#121217; --surface:#1E1F26; --surface-raised:#22232B; --surface-rail:#181920; --surface-sunken:#16171D;
+    --elevated:#2D2E35; --elevated-hover:#212229; --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E; --fg-disabled:#3B4647;
+    --accent:#5C86C9; --accent-hover:#6C95D8; --accent-shadow:#2C405F; --accent-dim:#2C405F; --danger:#C6533F; --success:#6FA368; --warning:#E0913C;
+    --avail-over-fg:#C86D5B;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:var(--fg);padding:40px;background:#0B0B0E;min-height:100vh;display:flex;flex-direction:column;gap:64px;">
+
+  <section style="max-width:1320px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#0B0B0E;background:#5C86C9;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R1</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:var(--fg-faint);">Deck printings &middot; canvas 2 of 2 &middot; &sect;B views &middot; &sect;C import and export &middot; &sect;D versions and switch off &middot; 2026-10-09</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:32px;margin:0 0 12px;line-height:1.25;">The art and the price are the evidence. No row, tile or caption gains a mark.</h1>
+    <p style="max-width:1080px;font-size:15px;line-height:1.7;color:var(--fg-body);margin:0;text-wrap:pretty;">A chosen printing is cosmetic, like the art preference, and that preference has never put a mark on a tile. So a choice shows as what it changes: the art on tiles, the card view, the hover preview and the commander head, and the figure on a priced tag. Whether it was chosen or is the default is said in one place, the card's In this deck block. Every hue on a row is already booked (the proxy tag's own ruling), and a twelfth mark on a 52px phone row would be noise about the least urgent fact in the deck.</p>
+  </section>
+
+  <section id="b1" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">B1 &middot; <span style="color:var(--accent);">rows &middot; desktop with the hover preview &middot; 390 &middot; Polyraptor chosen (LCC), the rest default</span></div>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;max-width:1900px;">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="width:900px;border:1px solid var(--border-strong);border-radius:12px;background:var(--bg);padding:16px 18px;position:relative;">
+          <span style="display:block;font-family:'Cinzel',serif;font-size:15px;font-weight:600;padding-bottom:6px;border-bottom:1px solid var(--border);margin-bottom:8px;">Creatures <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:400;color:var(--fg-faint);">35</span></span>
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 10px;">
+            <sc-for list="{{ deskRows }}" as="r" hint-placeholder-count="6"><dc-import name="DP Row" spec="{{ r }}" hint-size="100%,34px"></dc-import></sc-for>
+          </div>
+          <div style="position:absolute;left:250px;top:-40px;width:240px;aspect-ratio:63/88;border-radius:12px;background:linear-gradient(160deg,#4B7A46,#C05A3E 70%,#121217);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35), 0 24px 60px rgba(0,0,0,0.6);z-index:3;display:flex;align-items:flex-end;justify-content:center;padding-bottom:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg);background:rgba(10,8,6,0.72);border-radius:4px;padding:2px 7px;">hover preview &middot; LCC #241</span></div>
+        </div>
+        <div style="width:900px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">Rows are <span style="font-family:'IBM Plex Mono',monospace;">main</span>'s, pixel for pixel. Polyraptor's hover preview (240px, as shipped) shows the deck's printing. Its dot stays filled: the player owns RIX #138, and ownership is by card. Apex Altisaur's tag prices the chosen printing (<span style="font-family:'IBM Plex Mono',monospace;">$8.76</span>), not the cheapest. The row doesn't say which kind of price it is, and the figure is the same fact either way: what this deck's card costs.</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="width:390px;border:1px solid var(--border-strong);border-radius:14px;background:var(--bg);padding:14px 16px;display:flex;flex-direction:column;gap:6px;">
+          <span style="font-size:14px;font-weight:600;">Creatures <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:400;color:var(--fg-faint);">35</span></span>
+          <sc-for list="{{ phRows }}" as="r" hint-placeholder-count="4"><dc-import name="DP Row" spec="{{ r }}" hint-size="100%,52px"></dc-import></sc-for>
+        </div>
+        <div style="width:390px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">The phone has no hover preview. The row is unchanged, and the card's art is one tap away.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="b2" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">B2 &middot; <span style="color:var(--accent);">tiles and the card view &middot; the art follows &middot; nothing else does</span></div>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;max-width:1900px;">
+      <sc-for list="{{ tileSets }}" as="ts" hint-placeholder-count="2">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ ts.label }}</div>
+          <div style="width:{{ ts.w }};border:1px solid var(--border-strong);border-radius:12px;background:var(--bg);padding:16px;display:grid;grid-template-columns:repeat({{ ts.cols }},minmax(0,1fr));gap:12px;">
+            <sc-for list="{{ ts.tiles }}" as="t" hint-placeholder-count="6">
+              <div style="display:flex;flex-direction:column;gap:6px;">
+                <div style="{{ t.art }}">
+                  <sc-if value="{{ t.qty }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:6px;right:6px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--bg);background:var(--accent);border-radius:4px;padding:1px 5px;">&times;{{ t.qty }}</span></sc-if>
+                  <sc-if value="{{ t.buy }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:6px;left:6px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--warning);background:color-mix(in oklab, var(--bg) 92%, transparent);box-shadow:inset 0 0 0 1px color-mix(in oklab, var(--warning) 50%, transparent);border-radius:4px;padding:1px 5px;">{{ t.buy }}</span></sc-if>
+                </div>
+                <span style="font-size:11.5px;line-height:1.3;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ t.name }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-locked);">{{ t.cap }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="width:{{ ts.w }};font-size:12.5px;line-height:1.6;color:var(--fg-muted);">{{ ts.note }}</div>
+        </div>
+      </sc-for>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">the card view &middot; Polyraptor, chosen</div>
+        <div style="width:520px;height:440px;border:1px solid var(--border-strong);border-radius:12px;background:var(--bg);display:flex;align-items:center;justify-content:center;gap:18px;overflow:hidden;">
+          <div style="width:150px;aspect-ratio:63/88;border-radius:10px;background:linear-gradient(160deg,#4B7A46,#2E3340 70%,#121217);opacity:0.45;flex:none;"></div>
+          <div style="width:260px;aspect-ratio:63/88;border-radius:13px;background:linear-gradient(160deg,#4B7A46,#C05A3E 70%,#121217);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35), 0 24px 60px rgba(0,0,0,0.6);flex:none;"></div>
+          <div style="width:150px;aspect-ratio:63/88;border-radius:10px;background:linear-gradient(160deg,#C05A3E,#4B7A46 70%,#121217);opacity:0.45;flex:none;"></div>
+        </div>
+        <div style="width:520px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">The large card is the deck's printing (LCC #241). Its neighbours are their defaults. The zoom (card detail handoff) holds the same printing, and its caption names it: <span style="font-family:'IBM Plex Mono',monospace;">Ixalan Commander &middot; LCC &middot; 241</span>.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="b3" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">B3 &middot; <span style="color:var(--accent);">Shopping &middot; the chosen printing's price &middot; sold out &middot; never stocked &middot; desktop cell and 390</span></div>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+      <sc-for list="{{ shop }}" as="m" hint-placeholder-count="2">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ m.label }}</div>
+          <div style="width:{{ m.w }};border:1px solid var(--border-strong);border-radius:12px;background:var(--bg);padding:14px 16px;display:flex;flex-direction:column;gap:12px;">
+            <sc-for list="{{ m.rows }}" as="r" hint-placeholder-count="5">
+              <div style="display:flex;flex-direction:column;gap:5px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">{{ r.cap }}</span>
+                <dc-import name="DP Row" spec="{{ r.spec }}" hint-size="100%,52px"></dc-import>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+      <div style="width:340px;display:flex;flex-direction:column;gap:10px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">
+        <span><b style="color:var(--fg-body);font-weight:600;">The tag's own vocabulary, nothing new.</b> A chosen printing that's priced shows its figure. Sold out reads <span style="font-family:'IBM Plex Mono',monospace;">buy &middot; sold out</span>, and never stocked is a bare <span style="font-family:'IBM Plex Mono',monospace;">buy</span>. The tag never falls back to another printing's figure: an LCC price beside PRIX art would be the one wrong answer (card detail handoff, price notes).</span>
+        <span><b style="color:var(--fg-body);font-weight:600;">Not on Shopping by choice.</b> A choice the player doesn't own, while they own another printing, puts nothing here. That's Polyraptor in B1. Only by-card ownership puts a row here.</span>
+        <span><b style="color:var(--fg-body);font-weight:600;">The total</b> sums the figures on screen, so it moves with a choice. A sold-out or never-stocked choice drops out of it, as a sold-out card does today. The over-$X marking measures the chosen figure.</span>
+        <span><b style="color:var(--fg-body);font-weight:600;">The Mana Pool link is unchanged</b> and still names cards. Its copy promises no printing, and none is added.</span>
+        <span><b style="color:var(--fg-body);font-weight:600;">I got it.</b> Pressing the tag opens the shipped confirm with the deck's printing preset, so the tile and the price agree. If it's sold out, the preset still holds, as I got it A2 rules. If it's never stocked, the deck's printing is still preset: the choice is the better default (ruling 11), so the confirm doesn't fall back to B1's no-price state. Buying never writes the choice.</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="c1" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">C1 &middot; <span style="color:var(--accent);">import &middot; the shipped arrival strip says it &middot; took them, took some, took none</span></div>
+    <div style="display:flex;flex-direction:column;gap:18px;">
+      <sc-for list="{{ arrivals }}" as="a" hint-placeholder-count="3">
+        <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+          <div style="display:flex;flex-direction:column;gap:6px;width:900px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ a.label }} &middot; desktop</div>
+            <div style="border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;background:var(--bg);">
+              <div style="display:flex;align-items:flex-start;gap:11px;padding:12px 30px;background:var(--surface-rail);border-bottom:1px solid var(--border);">
+                <span style="font-size:14px;line-height:1.5;color:var(--success);">&#10003;</span>
+                <div style="flex:1;display:flex;flex-direction:column;gap:8px;">
+                  <p style="margin:0;font-size:13.5px;line-height:1.5;color:var(--fg-body);">{{ a.desk }}<sc-if value="{{ a.hasMore }}" hint-placeholder-val="{{ false }}"> <span style="color:var(--accent);text-decoration:underline;text-underline-offset:3px;">{{ a.more }}</span></sc-if></p>
+                  <sc-if value="{{ a.open }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;flex-direction:column;border-radius:8px;border:1px solid var(--border);background:var(--surface-sunken);padding:4px 12px;">
+                      <sc-for list="{{ a.lines }}" as="l" hint-placeholder-count="3">
+                        <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;padding:7px 0;border-bottom:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11px;">
+                          <span style="color:var(--fg-body);">{{ l.raw }}</span><span style="color:var(--fg-muted);">{{ l.got }}</span>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                </div>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">Dismiss &#10005;</span>
+              </div>
+              <div style="height:40px;"></div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;width:390px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">390</div>
+            <div style="border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;background:var(--bg);">
+              <div style="display:flex;align-items:flex-start;gap:9px;padding:10px 16px;background:var(--surface-rail);border-bottom:1px solid var(--border);">
+                <span style="font-size:12px;line-height:1.5;color:var(--success);">&#10003;</span>
+                <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.55;color:var(--fg-body);">{{ a.ph }}</span>
+                  <sc-if value="{{ a.hasMore }}" hint-placeholder-val="{{ false }}"><span style="align-self:flex-start;min-height:44px;margin:-12px 0 -14px;display:inline-flex;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--accent);text-decoration:underline;">{{ a.more }}</span></sc-if>
+                </div>
+                <span style="color:var(--fg-faint);">&#10005;</span>
+              </div>
+              <div style="height:24px;"></div>
+            </div>
+            <div style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);">{{ a.note }}</div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section id="c2" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">C2 &middot; <span style="color:var(--accent);">export &middot; the preview names what the file will name &middot; with choices, and with defaults only</span></div>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+      <sc-for list="{{ exports }}" as="e" hint-placeholder-count="2">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ e.label }}</div>
+          <div style="width:560px;border-radius:16px;background:var(--surface-rail);border:1px solid var(--border-strong);overflow:hidden;">
+            <div style="padding:20px 24px 16px;display:flex;align-items:center;justify-content:space-between;">
+              <div><p style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:22px;">Export deck</p><p style="margin:3px 0 0;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">Plain text &middot; Moxfield &middot; Archidekt ready</p></div>
+              <span style="width:32px;height:32px;border-radius:999px;background:var(--surface-raised);border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;color:var(--fg-muted);font-size:14px;">&#10005;</span>
+            </div>
+            <div style="display:flex;gap:8px;padding:0 24px 16px;"><span style="font-size:13px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:8px;padding:8px 16px;">Decklist</span><span style="font-size:13px;font-weight:500;color:var(--fg-muted);border:1px solid var(--border-strong);border-radius:8px;padding:8px 16px;">Shopping list</span></div>
+            <div style="margin:0 24px;">
+              <sc-if value="{{ e.hasNote }}" hint-placeholder-val="{{ true }}"><p style="margin:0 0 10px;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.55;color:var(--fg-faint);">{{ e.note }}</p></sc-if>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.8;color:var(--fg-body);background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px 18px;">
+                <div style="color:var(--fg-faint);">// HD Gishath &mdash; 100 cards</div>
+                <div style="color:var(--accent);">{{ e.cmd }}</div>
+                <div style="color:var(--border-strong);">&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;</div>
+                <sc-for list="{{ e.lines }}" as="l" hint-placeholder-count="8"><div>{{ l }}</div></sc-for>
+                <div style="color:var(--fg-locked);">&hellip;</div>
+              </div>
+            </div>
+            <div style="margin-top:16px;border-top:1px solid var(--border);padding:16px 24px;display:flex;align-items:center;gap:8px;">
+              <span style="font-size:14px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:9px;padding:11px 18px;">Copy to clipboard</span>
+              <span style="font-size:14px;color:var(--fg-body);border:1px solid var(--border-strong);border-radius:9px;padding:11px 18px;">Download .txt</span>
+            </div>
+          </div>
+          <div style="width:560px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">{{ e.foot }}</div>
+        </div>
+      </sc-for>
+      <div style="width:330px;display:flex;flex-direction:column;gap:10px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">
+        <span><b style="color:var(--fg-body);font-weight:600;">The preview is the file.</b> Each line names the deck's printing if one was chosen, else the printing you own (today's rule), else the card alone. The copied text carries no mark for which is which. Moxfield would read a mark as part of the name.</span>
+        <span><b style="color:var(--fg-body);font-weight:600;">One mono line above the preview</b> counts the three sources. It's preview-only, like the <span style="font-family:'IBM Plex Mono',monospace;">//</span> header. It draws only when at least one printing was chosen, so a deck with no choices exports exactly as <span style="font-family:'IBM Plex Mono',monospace;">main</span> does.</span>
+        <span><b style="color:var(--fg-body);font-weight:600;">390:</b> the bottom sheet gets the same line, wrapping to two lines at 10.5px. The Shopping list tab is unchanged: it names cards and quantities for the shop, which carries names only.</span>
+        <span><b style="color:var(--fg-body);font-weight:600;">Round trip.</b> Exporting and re-importing (Update from a list) lands the same printings, because import keeps what a line names (C1).</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="d1" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">D1 &middot; <span style="color:var(--accent);">versions &middot; a choice isn't an edit &middot; versions before the line say so once, inside</span></div>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">the version rail &middot; desktop &middot; v6 current, v4 open</div>
+        <div style="width:760px;border:1px solid var(--border-strong);border-radius:12px;background:var(--bg);padding:14px 26px 22px;display:flex;flex-direction:column;gap:6px;">
+          <sc-for list="{{ rail }}" as="v" hint-placeholder-count="3">
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <div style="{{ v.box }}">
+                <span style="flex:none;width:34px;font-family:'IBM Plex Mono',monospace;font-size:13px;color:{{ v.numInk }};">{{ v.n }}</span>
+                <span style="flex:1;min-width:0;"><span style="display:block;font-size:13.5px;color:var(--fg);">{{ v.note }}</span><span style="display:block;margin-top:2px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ v.meta }}</span></span>
+                <span style="flex:none;display:flex;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:12px;"><span style="color:var(--success);">{{ v.add }}</span><span style="color:var(--border-strong);">/</span><span style="color:var(--warning);">{{ v.rem }}</span></span>
+                <span style="{{ v.marker }}">{{ v.cur }}</span>
+              </div>
+              <sc-if value="{{ v.open }}" hint-placeholder-val="{{ false }}">
+                <div style="border-radius:9px;border:1px solid var(--border);background:var(--surface-sunken);padding:14px 16px;display:flex;flex-direction:column;gap:10px;">
+                  <sc-if value="{{ v.preLine }}" hint-placeholder-val="{{ false }}"><p style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.55;color:var(--fg-faint);">Committed before decks remembered printings, so its cards show their art as it is today.</p></sc-if>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 24px;font-size:13px;">
+                    <sc-for list="{{ v.diff }}" as="d" hint-placeholder-count="4"><span style="color:{{ d.ink }};"><span style="font-family:'IBM Plex Mono',monospace;">{{ d.sign }}</span> {{ d.name }}</span></sc-for>
+                  </div>
+                  <sc-if value="{{ v.hasPrintings }}" hint-placeholder-val="{{ false }}">
+                    <div style="border-top:1px solid var(--border);padding-top:10px;display:flex;flex-direction:column;gap:4px;">
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Printings &middot; 2</span>
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-body);">Polyraptor &nbsp;RIX #138 &rarr; LCC #241</span>
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-body);">Gishath, Sun&rsquo;s Avatar &nbsp;XLN #222 &rarr; LCC #1</span>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+        <div style="width:760px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);"><b style="color:var(--fg-body);font-weight:600;">Brief open 9: the rail doesn't tell the two kinds apart.</b> A version is a record of the list, and every version before the line is the same record it was yesterday. Inside an open older version, one mono line says why its art is today's. It draws only on versions committed before the line, and only once. <b style="color:var(--fg-body);font-weight:600;">A newer version's diff</b> gains a quiet Printings group under the card changes, only when printings differ from the version before. It counts toward no figure on the rail: v6's <span style="font-family:'IBM Plex Mono',monospace;">+2 / &minus;2</span> are cards. The first version after the line has no Printings group, since there's no recorded printing to compare it with.</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;width:420px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">after choosing on a committed deck</div>
+        <div style="border:1px solid var(--border-strong);border-radius:12px;background:var(--bg);padding:16px 18px;display:flex;flex-direction:column;gap:10px;">
+          <span style="font-family:'Cinzel',serif;font-size:18px;font-weight:700;">HD Gishath</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">v6 &middot; 99 / 99 built</span>
+          <div style="height:6px;border-radius:999px;background:var(--border);overflow:hidden;"><div style="width:100%;height:100%;background:var(--accent);"></div></div>
+          <div style="border:1px dashed var(--border-dashed);border-radius:8px;padding:10px 12px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.55;color:var(--fg-locked);">no pending-changes banner &middot; no Commit &middot; no History line &middot; analysis not stale</div>
+        </div>
+        <div style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);">Ruling 1 (Hugh): a printing-only change is cosmetic, like a proxy mark. The head stays as it was, and the block's note says the next commit keeps it. When the player next commits for any reason, the version records every card's printing at that moment, chosen or default.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="d2" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">D2 &middot; <span style="color:var(--accent);">switch off &middot; DECK_PRINTINGS_ENABLED &middot; every surface reads as main &middot; no slot reserved</span></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;max-width:1300px;">
+      <sc-for list="{{ off }}" as="o" hint-placeholder-count="6">
+        <div style="border:1px dashed var(--border-dashed);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:4px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">{{ o.k }}</span>
+          <span style="font-size:13px;line-height:1.55;color:var(--fg-body);">{{ o.v }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const C = {
+      polyraptor: { name: "Polyraptor", pips: ["6", "G", "G"], fig: 42.7, owned: true },
+      apex: { name: "Apex Altisaur", pips: ["7", "G", "G"], fig: 61.1, price: "$8.76" },
+      pantlaza: { name: "Pantlaza, Sun-Favored", pips: ["2", "R", "G", "W"], fig: 73.9, price: "$6.19" },
+      wrathful: { name: "Wrathful Raptors", pips: ["4", "R"], fig: 47.3, owned: true },
+      gwenna: { name: "Gwenna, Eyes of Gaea", pips: ["2", "G"], fig: null, price: "$4.93" },
+      regisaur: { name: "Regisaur Alpha", pips: ["3", "R", "G"], fig: 77.1, owned: true },
+      ghalta: { name: "Ghalta, Primal Hunger", pips: ["10", "G", "G"], fig: 55.2, soldOut: true },
+      etali: { name: "Etali, Primal Conqueror", pips: ["5", "R", "R"], fig: 29.0, bare: true },
+    };
+    const r = (k, ph, x = {}) => ({ ...C[k], ph, ctl: "none", ...x });
+    const deskRows = ["polyraptor", "apex", "pantlaza", "wrathful", "gwenna", "regisaur"].map((k) => r(k, false, k === "polyraptor" ? { hover: true } : {}));
+    const phRows = ["polyraptor", "apex", "pantlaza", "wrathful"].map((k) => r(k, true));
+    const g = (a) => ({ position: "relative", width: "100%", aspectRatio: "63/88", borderRadius: 9, background: `linear-gradient(160deg, ${a[0]}, ${a[1]} 70%, #121217)`, boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)" });
+    const T = [
+      { name: "Polyraptor", a: ["#4B7A46", "#C05A3E"], qty: "", buy: "", cap: "chosen · LCC #241" },
+      { name: "Apex Altisaur", a: ["#4B7A46", "#3A6AA5"], qty: "", buy: "$8.76", cap: "chosen · CMM #282" },
+      { name: "Pantlaza, Sun-Favored", a: ["#C05A3E", "#F4E9C4"], qty: "", buy: "$6.19", cap: "default" },
+      { name: "Wrathful Raptors", a: ["#C05A3E", "#2E3340"], qty: "", buy: "", cap: "default" },
+      { name: "Forest", a: ["#4B7A46", "#E0913C"], qty: "8", buy: "", cap: "chosen · BLB #278" },
+      { name: "Regisaur Alpha", a: ["#C05A3E", "#4B7A46"], qty: "", buy: "", cap: "default" },
+    ];
+    const tiles = T.map((t) => ({ ...t, art: g(t.a) }));
+    const tileSets = [
+      { label: "tiles · desktop · the caption line under each tile is canvas annotation, not UI", w: "760px", cols: 6, tiles, note: "Only the art moves. The buy tag prices the chosen printing (Apex). The ×8 on Forest is the deck's count, and all eight show BLB #278 (one printing per card, ruling 3). The mono line under each tile is annotation for this canvas only." },
+      { label: "tiles · 390", w: "390px", cols: 3, tiles: tiles.slice(0, 6), note: "The same at three across. Nothing about the tile's caption box or its corners changes." },
+    ];
+    const S = (cap, k, x = {}) => ({ cap, k, x });
+    const shopShapes = [
+      S("default · cheapest in stock", "pantlaza"),
+      S("chosen · priced (CMM #282, not the cheapest)", "apex", { over: true }),
+      S("chosen · sold out (PRIX #12s)", "ghalta"),
+      S("chosen · never stocked (SLD #1071)", "etali"),
+      S("chosen · owned printing ≠ chosen · not here", null),
+    ];
+    const shopRows = (ph) => shopShapes.map((s) => s.k ? { cap: s.cap, spec: { ...r(s.k, ph, s.x), tools: true, limit: "$5" } } : { cap: s.cap, spec: { gone: "Polyraptor · not on Shopping: you own RIX #138", ph } });
+    const shop = [
+      { label: "lg and up · one grid cell", w: "620px", rows: shopRows(false) },
+      { label: "390 · below lg", w: "390px", rows: shopRows(true) },
+    ];
+    const arrivals = [
+      { label: "took printings", desk: "All 100 lines came over clean. 64 named a printing, and the deck uses them.", ph: "All 100 came over · 64 with their printing · just now", hasMore: false, open: false, note: "One clause joins the shipped sentence. A line that names a set and number keeps it as the deck's choice." },
+      { label: "took some, couldn't match others", desk: "All 100 lines came over clean. 61 named a printing the deck uses. 3 named one we couldn't find, so those cards use the default.", more: "Show the 3", ph: "All 100 came over · 61 with their printing · 3 printings not found, using the default", hasMore: true, open: true, lines: [
+        { raw: "1 Polyraptor (RIX) 999", got: "no RIX #999 · default" },
+        { raw: "1 Forest (KHM) 4O3", got: "no KHM #4O3 · default" },
+        { raw: "1 Sol Ring (CMX) 1", got: "no set CMX · default" },
+      ], note: "The card always comes over. Only the printing falls back, so this is never an unresolved row. On the phone, Show the 3 opens the same list under the strip." },
+      { label: "carried none", desk: "All 100 lines came over clean. Imported from your list a moment ago.", ph: "All 100 came over · from your list, just now", hasMore: false, open: false, note: "Shipped, unchanged: a list with no set codes says nothing about printings." },
+    ];
+    const lines = ["1 Polyraptor (LCC) 241", "1 Apex Altisaur (CMM) 282", "1 Pantlaza, Sun-Favored (LCC) 4", "1 Regisaur Alpha (RIX) 160", "8 Forest (BLB) 278", "1 Etali, Primal Conqueror (SLD) 1071", "1 Ghalta, Primal Hunger (PRIX) 12s", "1 Gwenna, Eyes of Gaea"];
+    const linesDefault = ["1 Polyraptor (RIX) 138", "1 Apex Altisaur", "1 Pantlaza, Sun-Favored", "1 Regisaur Alpha (RIX) 160", "8 Forest (KHM) 393", "1 Etali, Primal Conqueror", "1 Ghalta, Primal Hunger", "1 Gwenna, Eyes of Gaea"];
+    const exports = [
+      { label: "with chosen printings", hasNote: true, note: "Printings: 14 chosen for this deck · 52 from your Collection · 33 by name only", cmd: "1 Gishath, Sun's Avatar (LCC) 1", lines, foot: "Chosen lines name the chosen printing, owned or not (Polyraptor, Apex). Others name your copy (Regisaur) or the card alone (Gwenna). A sold-out or never-stocked choice is still named (Ghalta, Etali): the file says which printing the deck means, not what's for sale." },
+      { label: "defaults only · as main", hasNote: false, note: "", cmd: "1 Gishath, Sun's Avatar (XLN) 222", lines: linesDefault, foot: "No choice made: no count line, and every line is today's." },
+    ];
+    const box = (cur, open) => ({ display: "flex", alignItems: "center", gap: 14, borderRadius: 9, padding: "12px 14px", background: cur ? "var(--surface-rail)" : "var(--surface)", border: `1px solid ${cur ? "var(--border-strong)" : "var(--border)"}`, ...(cur ? { borderLeft: "3px solid var(--accent)" } : {}) });
+    const marker = (cur) => cur ? { flex: "none", fontFamily: "'IBM Plex Mono',monospace", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--accent)", border: "1px solid var(--accent-shadow)", borderRadius: 4, padding: "2px 7px" } : { flex: "none", width: 62 };
+    const rail = [
+      { n: "v6", note: "Two raptors in, two dorks out", meta: "committed Oct 14 · 100 cards · 3.41 avg", add: "+2", rem: "−2", cur: "current", box: box(true), numInk: "var(--accent)", marker: marker(true), open: true, preLine: false, hasPrintings: true, diff: [{ sign: "+", name: "Polyraptor", ink: "var(--success)" }, { sign: "−", name: "Llanowar Elves", ink: "var(--warning)" }, { sign: "+", name: "Apex Altisaur", ink: "var(--success)" }, { sign: "−", name: "Elvish Mystic", ink: "var(--warning)" }] },
+      { n: "v5", note: "First version after printings shipped", meta: "committed Oct 11 · 100 cards · 3.38 avg", add: "+1", rem: "−1", cur: "", box: box(false), numInk: "var(--fg-body)", marker: marker(false), open: false, preLine: false, hasPrintings: false, diff: [] },
+      { n: "v4", note: "Cut the second wrath", meta: "committed Sep 30 · 100 cards · 3.36 avg", add: "+1", rem: "−1", cur: "", box: box(false), numInk: "var(--fg-body)", marker: marker(false), open: true, preLine: true, hasPrintings: false, diff: [{ sign: "+", name: "Rampaging Raptor", ink: "var(--success)" }, { sign: "−", name: "Austere Command", ink: "var(--warning)" }] },
+    ];
+    const off = [
+      { k: "card details", v: "The In this deck block is the shipped proxy control. No printing row, no slot held." },
+      { k: "art", v: "Rows, tiles, the card view, the hover preview and the commander head resolve as today: your copy, else the catalog." },
+      { k: "price", v: "Every tag and the Shopping total price the cheapest in stock (price-query.ts), as today." },
+      { k: "export", v: "Names the printing you own, as today. No count line." },
+      { k: "import", v: "Reads the set code only to find the name, as today. The arrival strip is the shipped sentence. Printings aren't stored while it's off." },
+      { k: "versions", v: "No Printings group and no older-version line. Choices already made are kept and come back when it's switched on." },
+    ];
+    return { deskRows, phRows, tileSets, shop, arrivals, exports, rail, off };
+  }
+}
+</script>
+</body>
+</html>

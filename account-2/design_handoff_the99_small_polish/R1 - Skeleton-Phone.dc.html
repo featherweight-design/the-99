@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Precon tile skeleton · 390</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+@keyframes breathe{50%{opacity:.55}}
+.breathe{animation:breathe 1.4s ease-in-out infinite}
+</style>
+</helmet>
+<div style="width:390px;min-height:1900px;box-sizing:border-box;padding:28px 0 40px;background:#0C0C10;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:24px">
+  <div style="display:flex;flex-direction:column;gap:6px;padding:0 16px">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#7C8A8C">Precon skeleton · 390 · R1</span>
+    <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:22px">Tiles while the precons load</h2>
+    <p style="margin:0;font-size:12px;line-height:1.5;color:#95A4A6">The crown overlay is gone for this route. The header's words are drawn for real, everything that waits on data is a shape, and the whole of it breathes on the shared loop.</p>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span style="padding:0 16px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8A8C">Tiles · the default view</span>
+    <div style="width:390px;height:844px;overflow:hidden;background:#121217;display:flex;flex-direction:column;position:relative">
+      <header style="display:flex;flex-direction:column;gap:4px;padding:12px 16px;border-bottom:1px solid #1A1F2B">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8A8C">‹ Decks</span>
+        <h1 style="margin:0;font-family:'Metamorphous',serif;font-size:24px;font-weight:400;color:#C6D2D3">Commander precons</h1>
+        <span class="breathe" style="display:block;width:180px;height:11px;margin-top:3px;border-radius:3px;background:#22232B"></span>
+      </header>
+      <div class="breathe" style="display:flex;flex-direction:column;gap:12px;padding:12px 16px 0">
+        <div style="display:flex;gap:8px">
+          <span style="flex:1;height:44px;box-sizing:border-box;border-radius:8px;background:#16171D;border:1px solid #2E3340"></span>
+          <span style="width:88px;height:44px;box-sizing:border-box;border-radius:8px;border:1px solid #2E3340"></span>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span style="width:26px;height:26px;border-radius:50%;background:#22232B"></span><span style="width:26px;height:26px;border-radius:50%;background:#22232B"></span><span style="width:26px;height:26px;border-radius:50%;background:#22232B"></span><span style="width:26px;height:26px;border-radius:50%;background:#22232B"></span><span style="width:26px;height:26px;border-radius:50%;background:#22232B"></span>
+          <span style="flex:1"></span>
+          <span style="width:70px;height:26px;border-radius:6px;background:#22232B"></span>
+        </div>
+        <span style="width:44px;height:14px;margin-top:6px;border-radius:3px;background:#22232B"></span>
+        <ul style="margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+          <sc-for list="{{tiles}}" as="t" hint-placeholder-count="6">
+            <li style="display:flex;flex-direction:column;overflow:hidden;border-radius:9px;border:1px solid #1A1F2B;background:#1E1F26">
+              <span style="display:block;aspect-ratio:63/88;background:#22232B;border-radius:0 0 9px 9px"></span>
+              <span style="display:flex;flex-direction:column;gap:6px;padding:8px 9px 10px">
+                <span style="width:46%;height:8px;border-radius:3px;background:#22232B"></span>
+                <span style="width:{{t.w}};height:11px;border-radius:3px;background:#2D2E35"></span>
+                <span style="display:flex;gap:3px"><span style="width:8px;height:8px;border-radius:50%;background:#22232B"></span><span style="width:8px;height:8px;border-radius:50%;background:#22232B"></span><span style="width:8px;height:8px;border-radius:50%;background:#22232B"></span></span>
+              </span>
+            </li>
+          </sc-for>
+        </ul>
+      </div>
+      <nav style="position:absolute;left:0;right:0;bottom:0;height:62px;background:#181920;border-top:1px solid #1A1F2B;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-items:center;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:#7C8A8C">
+        <span>Home</span><span>Collection</span><span>Commanders</span><span>Discover</span><span style="color:#C6D2D3">Decks</span>
+      </nav>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span style="padding:0 16px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8A8C">Rows · when this browser's stored view is rows</span>
+    <div style="width:390px;height:620px;overflow:hidden;background:#121217;display:flex;flex-direction:column;position:relative">
+      <header style="display:flex;flex-direction:column;gap:4px;padding:12px 16px;border-bottom:1px solid #1A1F2B">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8A8C">‹ Decks</span>
+        <h1 style="margin:0;font-family:'Metamorphous',serif;font-size:24px;font-weight:400;color:#C6D2D3">Commander precons</h1>
+        <span class="breathe" style="display:block;width:180px;height:11px;margin-top:3px;border-radius:3px;background:#22232B"></span>
+      </header>
+      <div class="breathe" style="display:flex;flex-direction:column;gap:8px;padding:12px 16px 0">
+        <div style="display:flex;gap:8px;margin-bottom:4px">
+          <span style="flex:1;height:44px;box-sizing:border-box;border-radius:8px;background:#16171D;border:1px solid #2E3340"></span>
+          <span style="width:88px;height:44px;box-sizing:border-box;border-radius:8px;border:1px solid #2E3340"></span>
+        </div>
+        <span style="width:44px;height:14px;margin:6px 0 2px;border-radius:3px;background:#22232B"></span>
+        <sc-for list="{{tiles}}" as="t" hint-placeholder-count="6">
+          <div style="display:flex;align-items:center;gap:11px;padding:10px 8px 10px 12px;border-radius:10px;border:1px solid #1A1F2B;background:#181920">
+            <span style="flex:none;width:40px;height:56px;border-radius:4px;background:#22232B"></span>
+            <span style="flex:1;display:flex;flex-direction:column;gap:7px"><span style="width:{{t.w}};height:12px;border-radius:3px;background:#2D2E35"></span><span style="width:40%;height:8px;border-radius:3px;background:#22232B"></span></span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:8px;padding:0 16px">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C">What it is made of</span>
+    <p style="margin:0;font-size:12px;line-height:1.55;color:#B3C0C2">Real: the back link and the page title, which never change. Shapes: the count line, the chassis (search, view toggle, the five pips, sort), one year heading, then six tiles at 390, the first screen and a row past it. Each tile is the shipped shell, the 63:88 art box and three caption lines: owned line, name, identity dots. A screen reader hears one status line, "Loading precons", and nothing else.</p>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { tiles: [{ w: '86%' }, { w: '70%' }, { w: '78%' }, { w: '62%' }, { w: '82%' }, { w: '68%' }] };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,58 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-10-22T17:46:54Z"
+ },
+ "title": "The 99 \u00b7 Strategy focus",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1900,
+   "h": 4007,
+   "title": "Main \u00b7 R2 \u00b7 the calls, the Analysis tab with a focus"
+  },
+  "Graph-Options.dc.html": {
+   "x": 1980,
+   "y": 0,
+   "w": 1900,
+   "h": 4655,
+   "title": "Graph Options \u00b7 Piles, ring, strip, bars"
+  },
+  "Focus-Flow.dc.html": {
+   "x": 3960,
+   "y": 0,
+   "w": 1900,
+   "h": 6969,
+   "title": "Focus Flow \u00b7 No focus to two swaps applied"
+  },
+  "Graph-States.dc.html": {
+   "x": 5940,
+   "y": 0,
+   "w": 1900,
+   "h": 4677,
+   "title": "Graph States \u00b7 The graph\u2019s own states"
+  },
+  "About.dc.html": {
+   "x": 7920,
+   "y": 0,
+   "w": 1900,
+   "h": 1498,
+   "title": "About \u00b7 The About entry"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Graph-Options.dc.html",
+  "Focus-Flow.dc.html",
+  "Graph-States.dc.html",
+  "About.dc.html"
+ ],
+ "notes": {},
+ "designSystems": []
+}

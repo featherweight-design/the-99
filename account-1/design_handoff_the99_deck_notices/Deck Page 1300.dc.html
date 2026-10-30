@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-rail:#1A1611; --surface-sunken:#18140F; --surface-raised:#211D18; --surface-inset:#1B1712; --elevated:#29241F; --display:'Cinzel',serif;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654; --fg-disabled:#4A4033;
+    --accent:#CF8745; --accent-hover:#DE9757; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+    --bracket-1:#8A857C; --bracket-2:#A89A74; --bracket-3:#C9AC62; --bracket-4:#E6D08A; --bracket-5:#FBEFC6; --fact:#8FA6BE;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-rail:#12141B; --surface-sunken:#101219; --surface-raised:#191B22; --surface-inset:#13151C; --elevated:#20222A; --display:'Chakra Petch',sans-serif;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476; --fg-disabled:#3D404E;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --warning:#E0913C;
+  }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" data-screen-label="Deck page · 1300" style="width:1300px;background:var(--bg);color:var(--fg);font-family:'IBM Plex Sans',sans-serif;">
+
+  <header style="position:relative;min-height:288px;border-bottom:1px solid var(--border);">
+    <div aria-hidden="true" style="position:absolute;left:0;right:0;top:0;height:288px;overflow:hidden;background:var(--bg);">
+      <div style="{{ artDesk }}"></div>
+      <div style="position:absolute;inset:0;background:linear-gradient(90deg, transparent 0px, transparent 325px, color-mix(in oklab, var(--bg) 78%, transparent) 560px, var(--bg) 584px);"></div>
+    </div>
+    <div style="position:relative;display:flex;align-items:flex-end;min-height:288px;padding:0 24px 18px 592px;gap:18px;">
+      <div style="flex:1 1 280px;min-width:0;display:flex;flex-direction:column;">
+        <div style="display:flex;align-items:center;">
+          <h1 style="margin:0;font-family:var(--display);font-weight:700;font-size:21px;line-height:1.2;color:var(--fg);">{{ deckName }}</h1>
+          <span style="flex:none;margin-left:6px;width:14px;font-size:14px;line-height:1;color:var(--fg-muted);">✎</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:3px;min-width:0;">
+          <span style="display:flex;align-items:center;gap:3px;flex:none;"><span style="{{ pip1 }}"></span><span style="{{ pip2 }}"></span></span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);">{{ commander }}</span>
+        </div>
+        <div data-notice-row="true" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px;">
+          <span style="display:flex;align-items:center;border-radius:6px;padding:3px 8px;font-size:11px;font-family:'IBM Plex Mono',monospace;border:1px solid var(--border-strong);white-space:nowrap;color:var(--success);background:color-mix(in srgb, var(--success) 18%, var(--bg));">Complete</span>
+          <sc-if value="{{ hasChip }}" hint-placeholder-val="{{ true }}">
+            <span style="display:inline-flex;align-items:center;gap:5px;flex:none;height:24px;padding:0 8px 0 2px;border-radius:6px;background:color-mix(in srgb, var(--bracket-4) 12%, var(--bg));border:1px solid color-mix(in oklab, var(--bracket-4) 55%, transparent);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--bracket-4);white-space:nowrap;"><img alt="" src="assets/bracket-4-optimized-chip-ink.svg" style="display:block;width:22px;height:22px;flex:none;">Optimized</span>
+          </sc-if>
+          <sc-if value="{{ tagData }}" hint-placeholder-val="{{ false }}">
+            <span data-notice="data" style="display:inline-flex;align-items:center;gap:6px;flex:none;height:24px;padding:0 9px 0 8px;border-radius:6px;border:1px solid color-mix(in oklab, var(--fact) 55%, transparent);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fact);white-space:nowrap;cursor:pointer;"><span style="width:6px;height:6px;border-radius:50%;background:var(--fact);flex:none;"></span>3 notices</span>
+          </sc-if>
+          <sc-if value="{{ tagRead }}" hint-placeholder-val="{{ false }}">
+            <span data-notice="read" style="display:inline-flex;align-items:center;flex:none;height:24px;padding:0 9px;border-radius:6px;border:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-locked);white-space:nowrap;cursor:pointer;">3 notices</span>
+          </sc-if>
+          <sc-if value="{{ tagLegal }}" hint-placeholder-val="{{ false }}">
+            <span data-notice="legal" style="display:inline-flex;align-items:center;gap:6px;flex:none;height:24px;padding:0 9px 0 8px;border-radius:6px;border:1px solid color-mix(in oklab, var(--danger) 70%, transparent);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--danger);white-space:nowrap;cursor:pointer;"><span style="width:6px;height:6px;border-radius:50%;background:var(--danger);flex:none;"></span>Not legal</span>
+          </sc-if>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:9px;">
+          <div style="flex:1;min-width:0;max-width:170px;height:6px;border-radius:999px;background:var(--elevated);overflow:hidden;"><div style="width:100%;height:100%;background:var(--success);"></div></div>
+          <div style="display:flex;align-items:baseline;gap:4px;flex:none;"><span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:15px;color:var(--fg);">99</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--fg-faint);">/ 99</span></div>
+        </div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:9px;">
+        <span style="display:flex;align-items:center;height:32px;padding:0 14px;border-radius:8px;border:1px solid var(--border-strong);font-weight:600;font-size:12.5px;color:var(--fg);">Update from a list</span>
+        <span style="display:flex;align-items:center;height:32px;padding:0 14px;border-radius:8px;background:var(--fg);font-weight:600;font-size:12.5px;color:var(--bg);">Export</span>
+      </div>
+    </div>
+  </header>
+
+  <sc-if value="{{ clean }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;align-items:center;padding:12px 30px;background:var(--surface-rail);border-bottom:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">v3 · committed 14 Sept</span></div>
+  </sc-if>
+  <sc-if value="{{ draft }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:18px 26px 0;">
+      <div style="border-radius:10px;background:var(--surface-rail);padding:15px 17px;border:1px solid var(--border-strong);border-left:3px solid var(--accent);">
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-bottom:10px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);">Pending changes: not yet a version</span>
+          <span style="display:flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:13px;"><span style="color:var(--success);">+4</span><span style="color:var(--border-strong);">/</span><span style="color:var(--warning);">−4</span></span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);">8 changes since v3</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;">
+          <span style="display:inline-flex;align-items:center;padding:10px 18px;border-radius:8px;font-weight:600;font-size:13.5px;color:var(--bg);background:var(--fg);">Review 8 changes</span>
+          <span style="display:inline-flex;align-items:center;padding:10px 18px;border-radius:8px;font-weight:500;font-size:13.5px;color:var(--fg);border:1px solid var(--border-strong);">Commit as v4</span>
+          <span style="display:inline-flex;align-items:center;padding:10px 18px;border-radius:8px;font-weight:500;font-size:13.5px;color:var(--fg-muted);border:1px solid var(--border-strong);">Discard</span>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <div style="padding:12px 30px 0;border-bottom:1px solid var(--border);display:flex;align-items:baseline;gap:22px;white-space:nowrap;">
+    <span style="display:flex;align-items:baseline;gap:6px;padding-bottom:10px;"><span style="font-size:14px;font-weight:500;color:var(--fg-faint);">Your deck</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">99</span></span>
+    <span style="display:flex;align-items:center;padding-bottom:10px;border-bottom:2px solid var(--accent);"><span style="font-size:14px;font-weight:600;color:var(--fg);">Analysis</span></span>
+    <span style="display:flex;align-items:baseline;gap:6px;padding-bottom:10px;"><span style="font-size:14px;font-weight:500;color:var(--fg-faint);">Consider</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">64</span></span>
+    <span style="display:flex;align-items:baseline;gap:6px;padding-bottom:10px;"><span style="font-size:14px;font-weight:500;color:var(--fg-faint);">Games</span></span>
+    <span style="display:flex;align-items:baseline;gap:6px;padding-bottom:10px;"><span style="font-size:14px;font-weight:500;color:var(--fg-faint);">Versions</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">3</span></span>
+  </div>
+
+  <div style="padding:24px 30px 40px;display:flex;flex-direction:column;gap:28px;">
+    <sc-if value="{{ banner }}" hint-placeholder-val="{{ false }}">
+      <div role="status" style="display:flex;align-items:center;gap:18px;padding:14px 16px 14px 20px;border-radius:11px;background:var(--surface-rail);border:1px solid var(--border-strong);">
+        <p style="margin:0;flex:1;min-width:0;font-size:13.5px;line-height:1.5;color:var(--fg-body);">Your deck has changes since it was analyzed, so this bracket might not be accurate.</p>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.55;color:var(--fg-faint);flex:0 1 300px;min-width:0;text-align:right;">{{ bannerNote }}</span>
+        <span style="display:inline-flex;align-items:center;min-height:36px;padding:0 18px;border-radius:8px;background:var(--fg);color:var(--bg);font-weight:600;font-size:13.5px;flex:none;white-space:nowrap;">Re-analyze</span>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ empty }}" hint-placeholder-val="{{ false }}">
+      <section style="display:flex;flex-direction:column;gap:8px;">
+        <h3 style="margin:0;font-family:'IBM Plex Mono',monospace;font-weight:400;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">Overview</h3>
+        <div style="display:flex;align-items:flex-start;justify-content:center;gap:40px;padding:28px 24px 18px;">
+          <span aria-hidden="true" style="position:relative;display:block;flex:none;width:150px;height:150px;">
+            <img alt="" src="assets/bracket-1-exhibition-ink.svg" style="display:block;position:absolute;left:53px;top:3px;width:44px;height:44px;">
+            <img alt="" src="assets/bracket-2-core-ink.svg" style="display:block;position:absolute;left:100.6px;top:37.5px;width:44px;height:44px;">
+            <img alt="" src="assets/bracket-3-upgraded-ink.svg" style="display:block;position:absolute;left:82.4px;top:93.5px;width:44px;height:44px;">
+            <img alt="" src="assets/bracket-4-optimized-ink.svg" style="display:block;position:absolute;left:23.6px;top:93.5px;width:44px;height:44px;">
+            <img alt="" src="assets/bracket-5-cedh-ink.svg" style="display:block;position:absolute;left:5.4px;top:37.5px;width:44px;height:44px;">
+          </span>
+          <div style="flex:1;min-width:0;max-width:640px;display:flex;flex-direction:column;">
+            <h2 style="margin:0;font-family:var(--display);font-weight:700;font-size:26px;line-height:1.25;color:var(--fg);">Five brackets. Your cards pick which.</h2>
+            <p style="margin:12px 0 0;max-width:540px;font-size:14.5px;line-height:1.65;color:var(--fg-body);text-wrap:pretty;">One pass over your list against the Commander Format Panel's rules, and we'll tell you which brackets your cards permit, and which cards put it there.</p>
+            <div style="margin-top:22px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+              <span style="display:inline-flex;align-items:center;min-height:44px;padding:0 22px;border-radius:8px;background:var(--fg);color:var(--bg);font-weight:600;font-size:14.5px;">Analyze</span>
+              <span data-check="true" style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.55;color:var(--fg-faint);flex:1 1 300px;max-width:340px;min-width:0;">Reads the bracket only. The overview waits until every card is legal in Commander. <span style="color:var(--accent);border-bottom:1px dotted var(--accent);">See which →</span></span>
+              <span aria-hidden="true" style="flex-basis:100%;height:0;"></span>
+              <span style="display:inline-flex;align-items:center;min-height:44px;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);"><span style="border-bottom:1px dotted var(--accent);">How we make these decisions</span><span>→</span></span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ ready }}" hint-placeholder-val="{{ true }}">
+      <div style="display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:30px;align-items:start;">
+        <section style="display:flex;flex-direction:column;gap:8px;">
+          <h3 style="margin:0;font-family:'IBM Plex Mono',monospace;font-weight:400;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">Overview</h3>
+          <sc-if value="{{ overview }}" hint-placeholder-val="{{ true }}">
+            <p style="margin:0;max-width:760px;font-size:15px;line-height:1.7;color:var(--fg-body);text-wrap:pretty;">A Dimir ninja deck that turns unblocked attackers into free spells off <b style="font-weight:600;color:var(--fg);border-bottom:1px dotted var(--accent);">Yuriko, the Tiger's Shadow</b>, with <b style="font-weight:600;color:var(--fg);border-bottom:1px dotted var(--accent);">Thassa's Oracle</b> as the backup finish.</p>
+            <span style="display:flex;margin-top:2px;"><span style="display:inline-flex;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);"><span style="border-bottom:1px dotted var(--accent);">View full synopsis</span><span>→</span></span></span>
+          </sc-if>
+          <sc-if value="{{ withheld }}" hint-placeholder-val="{{ false }}">
+            <p data-check="true" style="margin:0;font-size:13.5px;line-height:1.55;color:var(--fg-faint);">No overview while this deck holds cards that are not legal in Commander.</p>
+            <div style="margin-top:6px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+              <span aria-disabled="true" style="display:inline-flex;align-items:center;min-height:36px;padding:0 16px;border-radius:8px;border:1px solid var(--border-strong);color:var(--fg-disabled);font-weight:500;font-size:13px;">Write one</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);border-bottom:1px dotted var(--accent);">See which →</span>
+            </div>
+          </sc-if>
+        </section>
+        <section style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px;display:flex;flex-direction:column;">
+          <div style="display:flex;align-items:center;gap:13px;">
+            <img alt="" src="assets/bracket-4-optimized-ink.svg" style="display:block;width:36px;height:36px;flex:none;">
+            <span style="display:flex;flex-direction:column;gap:3px;min-width:0;">
+              <span style="font-family:var(--display);font-weight:700;font-size:21px;line-height:1.15;color:var(--bracket-4);">Optimized</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">analyzed 18 Sept</span>
+            </span>
+          </div>
+          <p style="margin:14px 0 0;font-size:13px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">Your cards permit Optimized or cEDH: the two have no card limits between them.</p>
+        </section>
+      </div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1300,&quot;height&quot;:760},&quot;state&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;neither&quot;,&quot;dirty&quot;,&quot;notice&quot;,&quot;both&quot;,&quot;read&quot;,&quot;legalNoChip&quot;,&quot;legalChip&quot;,&quot;checkBanner&quot;,&quot;withheld&quot;],&quot;default&quot;:&quot;notice&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const S = {
+      neither: { chip: 1 },
+      dirty: { chip: 1, draft: 1, banner: 1, note: "credit" },
+      notice: { chip: 1, tag: "data" },
+      both: { chip: 1, tag: "data", draft: 1, banner: 1, note: "credit" },
+      read: { chip: 1, tag: "read" },
+      legalNoChip: { tag: "legal", body: "empty", deck: "tovolar" },
+      legalChip: { chip: 1, tag: "legal" },
+      checkBanner: { chip: 1, tag: "legal", draft: 1, banner: 1, note: "legal" },
+      withheld: { chip: 1, tag: "legal", body: "withheld" },
+    };
+    const s = S[this.props.state] || S.notice;
+    const tov = s.deck === "tovolar";
+    const cmd = tov ? "Tovolar, Dire Overlord" : "Yuriko, the Tiger's Shadow";
+    const art = `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(cmd)}&format=image&version=art_crop`;
+    const pip = (c) => ({ display: "block", width: 10, height: 10, borderRadius: 2, background: `var(--${c})`, boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.4)" });
+    const notes = {
+      credit: "Also writes the overview, using a credit. 2 of 3 left · next one at 2:20 PM.",
+      legal: "Reads the bracket only. The overview waits until every card is legal in Commander.",
+    };
+    return {
+      theme: this.props.theme || "amonkhet",
+      deckName: tov ? "HD - Tovolar" : "HD - Yuriko",
+      commander: `${cmd} · ${tov ? "Gruul" : "Dimir"}`,
+      pip1: pip(tov ? "r" : "u"), pip2: pip(tov ? "g" : "b"),
+      artDesk: {
+        position: "absolute", left: 0, top: 0, bottom: 0, width: 560, opacity: 0.92,
+        backgroundImage: `url("${art}")`, backgroundSize: "cover", backgroundPosition: "center top",
+        WebkitMaskImage: "linear-gradient(90deg, #000 0 58%, transparent 100%)", maskImage: "linear-gradient(90deg, #000 0 58%, transparent 100%)",
+      },
+      hasChip: !!s.chip, tagData: s.tag === "data", tagRead: s.tag === "read", tagLegal: s.tag === "legal",
+      draft: !!s.draft, clean: !s.draft, banner: !!s.banner, bannerNote: notes[s.note] || "",
+      empty: s.body === "empty", ready: s.body !== "empty",
+      overview: s.body !== "withheld", withheld: s.body === "withheld",
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Part · Phone header and tab bar</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@500;600;700&amp;family=Chakra+Petch:wght@500;600;700&amp;family=Trirong:wght@500;600;700&amp;family=Syncopate:wght@400;700&amp;family=Cormorant+Garamond:wght@500;600;700&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width:390px">
+  <sc-if value="{{ isHeader }}" hint-placeholder-val="{{ true }}">
+    <header style="{{ header }}">
+      <div style="display:flex;align-items:flex-end;gap:3px">
+        <span style="{{ the }}">THE</span>
+        <span style="{{ mark }}">99</span>
+      </div>
+      <span style="{{ acct }}">HD</span>
+    </header>
+  </sc-if>
+  <sc-if value="{{ isTabs }}" hint-placeholder-val="{{ false }}">
+    <nav aria-label="Primary" style="{{ bar }}">
+      <sc-for list="{{ items }}" as="it" hint-placeholder-count="5">
+        <a href="#" style="{{ it.style }}">
+          <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="{{ it.d }}"></path></svg>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.06em">{{ it.label }}</span>
+        </a>
+      </sc-for>
+    </nav>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["amonkhet","kamigawa","ixalan","phyrexia","eldraine","kaldheim"],"default":"amonkhet"},"part":{"editor":"enum","options":["header","tabs"],"default":"header"},"locked":{"editor":"boolean","default":false},"$preview":{"width":390,"height":79}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const TH = {
+      amonkhet: { bg:'#14110E', rail:'#1A1611', inset:'#1B1712', border:'#2B241B', fg:'#EDE6D8', faint:'#8B8270', locked:'#6E6654', accent:'#CF8745', disp:"'Cinzel',serif", dw:700 },
+      kamigawa: { bg:'#0E0F14', rail:'#12141B', inset:'#13151C', border:'#181C26', fg:'#E6E8F0', faint:'#6F7486', locked:'#606476', accent:'#FF4D9A', disp:"'Chakra Petch',sans-serif", dw:700 },
+      ixalan:   { bg:'#0E1310', rail:'#121814', inset:'#141B16', border:'#1D2620', fg:'#E0E7DE', faint:'#808C7C', locked:'#626E5E', accent:'#A3C445', disp:"'Trirong',serif", dw:700 },
+      phyrexia: { bg:'#0D0B0E', rail:'#110F13', inset:'#131115', border:'#19161C', fg:'#E4E2E6', faint:'#78747E', locked:'#64616A', accent:'#52827A', disp:"'Syncopate',sans-serif", dw:700 },
+      eldraine: { bg:'#120E17', rail:'#15121B', inset:'#17141D', border:'#241D30', fg:'#E4DEEE', faint:'#898395', locked:'#6A6475', accent:'#AE88E6', disp:"'Cormorant Garamond',serif", dw:700 },
+      kaldheim: { bg:'#121217', rail:'#181920', inset:'#1A1B22', border:'#1A1F2B', fg:'#C6D2D3', faint:'#7C8A8C', locked:'#5F6D6E', accent:'#5C86C9', disp:"'Metamorphous',serif", dw:400 },
+    };
+    const p = this.props;
+    const t = TH[p.theme] || TH.amonkhet;
+    const locked = p.locked === true || p.locked === 'true';
+    const part = p.part || 'header';
+    const defs = [
+      ['Home', 'M3.5 9 10 4l6.5 5v7.5h-4.25v-4.5h-4.5v4.5H3.5z'],
+      ['Collection', 'M3.5 3.5h5v5h-5zM11.5 3.5h5v5h-5zM3.5 11.5h5v5h-5zM11.5 11.5h5v5h-5z'],
+      ['Commanders', 'M3 14 4.5 6l3.5 3.5L10 5l2 4.5L15.5 6 17 14zM3 16.5h14'],
+      ['Discover', 'M10 3a7 7 0 1 0 0 14a7 7 0 1 0 0-14zM10 6.5 13.5 10 10 13.5 6.5 10z'],
+      ['Decks', 'M4 6.5h9.5v10.5H4zM6.5 3.5h9.5v10.5'],
+    ];
+    const items = defs.map(([label, d], i) => ({
+      label, d,
+      style: 'flex:1;height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-radius:12px;text-decoration:none;' +
+        (i === 0 ? `background:${t.inset};color:${t.fg};` : locked && i >= 2 ? `color:${t.locked};opacity:.8;` : `color:${t.faint};`),
+    }));
+    return {
+      isHeader: part === 'header', isTabs: part === 'tabs', items,
+      header: `width:390px;height:79px;box-sizing:border-box;padding:20px 20px 14px;border-bottom:1px solid ${t.border};background:${t.bg};display:flex;align-items:flex-end;justify-content:space-between`,
+      the: `font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.4em;color:${t.accent};padding-bottom:4px`,
+      mark: `font-family:${t.disp};font-weight:${t.dw};font-size:24px;line-height:1;color:${t.fg}`,
+      acct: `display:flex;align-items:center;justify-content:center;width:38px;height:38px;box-sizing:border-box;border-radius:12px;background:${t.bg};border:1px solid ${t.accent};font-family:'IBM Plex Mono',monospace;font-size:13px;color:${t.accent}`,
+      bar: `width:390px;height:74px;box-sizing:border-box;padding:8px 8px 14px;background:${t.rail};border-top:1px solid ${t.border};display:flex`,
+    };
+  }
+}
+</script>
+</body>
+</html>

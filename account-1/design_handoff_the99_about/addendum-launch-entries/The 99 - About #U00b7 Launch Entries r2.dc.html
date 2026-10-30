@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-rail:#1A1611; --surface-sunken:#18140F; --surface-raised:#211D18; --elevated:#29241F; --display:'Cinzel',serif;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654;
+    --accent:#CF8745; --accent-shadow:#6B482A; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F; --avail-hard-fg:#D9975C;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-rail:#12141B; --surface-sunken:#101219; --surface-raised:#191B22; --elevated:#20222A; --display:'Chakra Petch',sans-serif;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476;
+    --accent:#FF4D9A; --accent-shadow:#843052; --warning:#E0913C; --avail-hard-fg:#DF8AA7;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0C10; }
+  a { color: #FF4D9A; text-decoration: none; } a:hover { color: #FF62A9; }
+</style>
+</helmet>
+
+<div style="min-width:1880px;width:max-content;padding:48px 56px 80px;background:#0B0C10;color:#E6E8F0;font-family:'IBM Plex Sans',sans-serif;display:flex;flex-direction:column;gap:48px;">
+
+  <section style="max-width:1560px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#0E0F14;background:#FF4D9A;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">ABOUT · LAUNCH ADDENDUM</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.28em;text-transform:uppercase;color:#7A8095;">five entries · one ABOUT_VERSION bump · R6 rules · A3 and A4 revised 2026-09-25</span>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:31px;margin:0 0 14px;line-height:1.26;max-width:1240px;text-wrap:pretty;">Five entries for the launch update, each on the §G template, each landing in the chapter it belongs to.</h1>
+    <p style="max-width:1240px;font-size:14px;line-height:1.7;color:#E0913C;margin:0 0 14px;text-wrap:pretty;"><b style="font-weight:600;">Revision, 2026-09-25.</b> <a href="#A3">A3</a> Find a deck for it and <a href="#A4">A4</a> Cheaper stand-ins are rewritten to describe the rebuilt ranking: type groups, the land order and mana line, combos and themes. A1, A2 and A5 are unchanged. The earlier file stays beside this one.</p>
+    <p style="max-width:1240px;font-size:15px;line-height:1.72;color:#AEB4C6;margin:0 0 20px;text-wrap:pretty;">Every entry is <b style="color:#E6E8F0;font-weight:600;">since: 10</b>, so one bump (9 → 10) makes all five new at once. R6 decides how a returning reader meets them: the sheet lists titles, the index lists titles and routes, and each entry stays in its own chapter. Left of each entry is its filled template. Right of it is the entry as the page draws it at the wide column (760) and at 390, with its specimen drawn from the shipped component it names.</p>
+    <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;max-width:1560px;">
+      <sc-for list="{{ entries }}" as="e" hint-placeholder-count="5">
+        <a href="#{{ e.anchor }}" style="display:flex;flex-direction:column;gap:6px;border:1px solid #262A35;border-radius:10px;background:#131620;padding:12px 14px;color:inherit;">
+          <span style="display:flex;align-items:center;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#0E0F14;background:#FF4D9A;border-radius:4px;padding:1px 6px;">{{ e.anchor }}</span><span style="font-size:14px;font-weight:600;color:#E6E8F0;">{{ e.title }}</span></span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#9BA1B4;line-height:1.5;">{{ e.chapterShort }}</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6F7486;line-height:1.5;">{{ e.after }}</span>
+        </a>
+      </sc-for>
+    </div>
+  </section>
+
+  <section id="s0" style="max-width:1560px;">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:14px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#FF4D9A;">§0</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;margin:0;">The bump, as a returning reader meets it</h2>
+    </div>
+    <p style="max-width:1240px;font-size:14px;line-height:1.7;color:#9BA1B4;margin:0 0 18px;text-wrap:pretty;">A reader at 9 sees N2: five is more than four, so the sheet lists the first three titles in page order and then <i>and 2 more</i>. The index on /about lists all five. Page order puts <i>Help me choose</i> first because chapter 02 comes before chapter 03. No caption, figure, route or chapter numeral appears in either (S1).</p>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:#7A8095;">N2 · the sheet, wide · 340</span>
+        <div data-theme="{{ theme }}" style="width:340px;background:var(--surface-rail);border:1px solid var(--border-strong);border-radius:14px;box-shadow:0 20px 50px rgba(0,0,0,.5);padding:16px 18px 14px;color:var(--fg);">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+            <span style="width:28px;height:28px;flex:none;border-radius:8px;display:flex;align-items:center;justify-content:center;background:color-mix(in oklab, var(--accent) 16%, transparent);border:1px solid color-mix(in oklab, var(--accent) 45%, transparent);"><span style="width:9px;height:9px;background:var(--accent);transform:rotate(45deg);"></span></span>
+            <h3 style="margin:0;font-family:var(--display);font-weight:700;font-size:17px;color:var(--fg);">5 new in About</h3>
+          </div>
+          <div style="display:flex;flex-direction:column;">
+            <sc-for list="{{ sheetTitles }}" as="t" hint-placeholder-count="3">
+              <span style="padding:8px 0;border-top:1px solid var(--border);font-size:13.5px;line-height:1.4;color:var(--fg-body);">{{ t }}</span>
+            </sc-for>
+            <span style="padding:8px 0;border-top:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">and 2 more</span>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <span style="display:inline-flex;align-items:center;height:36px;padding:0 18px;border-radius:8px;background:var(--fg);color:var(--bg);font-size:13px;font-weight:600;">Show me</span>
+            <span style="display:inline-flex;align-items:center;height:36px;padding:0 18px;border-radius:8px;border:1px solid var(--border-strong);color:var(--fg-muted);font-size:13px;font-weight:500;">Later</span>
+          </div>
+          <p style="margin:10px 0 0;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">Always in your account menu, under About The 99.</p>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:#7A8095;">O1 · the index on /about, wide column · 760</span>
+        <div data-theme="{{ theme }}" style="width:760px;background:var(--bg);border:1px solid var(--border-strong);border-radius:12px;padding:22px 24px;color:var(--fg);">
+          <h1 style="margin:0;font-family:var(--display);font-weight:700;font-size:29px;line-height:1.2;color:var(--fg);">What The 99 does</h1>
+          <p style="margin:10px 0 0;font-size:13.5px;line-height:1.55;color:var(--fg-muted);">One page that explains every mark, figure and status in the app, and where each one lives.</p>
+          <nav style="margin-top:22px;border-radius:10px;border:1px solid var(--border-strong);background:var(--surface);padding:14px 16px 4px;">
+            <h2 style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;letter-spacing:0.08em;color:var(--accent);">5 new since you were last here</h2>
+            <div style="margin-top:8px;display:flex;flex-direction:column;">
+              <sc-for list="{{ entriesInOrder }}" as="e" hint-placeholder-count="5">
+                <div style="display:flex;align-items:baseline;gap:12px;min-height:40px;padding:6px 0;border-top:1px solid var(--border);">
+                  <span style="font-size:14.5px;font-weight:500;color:var(--fg);">{{ e.title }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">{{ e.route }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </nav>
+        </div>
+      </div>
+      <div style="width:330px;display:flex;flex-direction:column;gap:12px;">
+        <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:14px 17px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:8px;">the contents after the bump</div>
+          <div style="font-size:12.5px;color:#9BA1B4;line-height:1.66;text-wrap:pretty;">39 entries become 44. Chapter 02 reads <b style="color:#E6E8F0;font-weight:600;">1 new</b> and chapter 03 <b style="color:#E6E8F0;font-weight:600;">4 new</b>. The search count reads <i>m of 44</i>. R6 §R9's open measurement (is 60% of the rail visible at 1300×820?) is now taken against 44 rows, not 39.</div>
+        </div>
+        <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:14px 17px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:8px;">titles are the words on the buttons</div>
+          <div style="font-size:12.5px;color:#9BA1B4;line-height:1.66;text-wrap:pretty;">The search reads titles only (R1), so each title is the label the reader already pressed in the app: <i>Cheaper stand-ins</i>, <i>Find a deck for it</i>, <i>Lock cards</i> becomes <i>Locked cards</i>, <i>Change commander</i>, <i>Help me choose</i>. Typing what you saw finds the entry.</div>
+        </div>
+        <div style="border:1px solid #262A35;border-radius:10px;background:#12141C;padding:14px 17px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C6533F;margin-bottom:8px;">⚠ one copy question for Hugh</div>
+          <div style="font-size:12.5px;color:#9BA1B4;line-height:1.66;text-wrap:pretty;">Chapter 02's sub says <i>Two lanes</i>. Help me choose is a door into them, not a third lane, so the sub still holds. If Hugh reads it as a third lane, the sub gains a clause. That is a copy change, not a design one.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <sc-for list="{{ entries }}" as="e" hint-placeholder-count="5">
+    <section id="{{ e.anchor }}" style="max-width:1700px;">
+      <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:8px;flex-wrap:wrap;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#FF4D9A;border-radius:5px;padding:3px 8px;">{{ e.anchor }}</span>
+        <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;margin:0;">{{ e.title }}</h2>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#9BA1B4;">joins {{ e.chapterShort }} · {{ e.after }}</span>
+      </div>
+      <p style="max-width:1240px;font-size:14px;line-height:1.7;color:#9BA1B4;margin:0 0 18px;text-wrap:pretty;">{{ e.why }}</p>
+
+      <div style="display:flex;gap:22px;align-items:flex-start;">
+        <div style="display:flex;flex-direction:column;gap:12px;flex:none;">
+          <div style="border:2px solid #FF4D9A;border-radius:14px;background:#141620;padding:16px 18px 18px;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#FF4D9A;border-radius:5px;padding:3px 8px;">T</span>
+              <span style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;color:#E6E8F0;">§G template, filled</span>
+            </div>
+            <div data-theme="{{ theme }}" style="width:560px;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:18px;">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:12.5px;line-height:1.55;color:var(--fg-body);">
+                <sc-for list="{{ e.slots }}" as="s" hint-placeholder-count="11">
+                  <div style="{{ s.cell }}">
+                    <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">{{ s.label }}</div>
+                    <sc-if value="{{ s.isKeys }}" hint-placeholder-val="{{ false }}">
+                      <ol style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;">
+                        <sc-for list="{{ s.keys }}" as="k" hint-placeholder-count="4">
+                          <li style="display:flex;gap:8px;align-items:flex-start;"><span style="width:15px;height:15px;flex:none;margin-top:2px;border-radius:50%;border:1px solid var(--accent);color:var(--accent);font-family:'IBM Plex Mono',monospace;font-size:9px;display:flex;align-items:center;justify-content:center;">{{ k.n }}</span><span>{{ k.t }}</span></li>
+                        </sc-for>
+                      </ol>
+                    </sc-if>
+                    <sc-if value="{{ s.isText }}" hint-placeholder-val="{{ true }}">
+                      <div style="text-wrap:pretty;"><sc-if value="{{ s.code }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">{{ s.code }}</span><span style="color:var(--fg-faint);"> {{ s.after }}</span></sc-if><sc-if value="{{ s.strong }}" hint-placeholder-val="{{ false }}"><span style="color:var(--fg);">{{ s.strong }}</span></sc-if><span>{{ s.text }}</span></div>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+          <div style="width:600px;border:1px solid #262A35;border-radius:10px;background:#12141C;padding:13px 16px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:{{ e.needTone }};margin-bottom:7px;">{{ e.needHead }}</div>
+            <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;">{{ e.need }}</div>
+          </div>
+        </div>
+
+        <sc-for list="{{ e.views }}" as="v" hint-placeholder-count="2">
+          <div style="display:flex;flex-direction:column;gap:8px;flex:none;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:#7A8095;">{{ v.label }}</span>
+            <div data-theme="{{ theme }}" data-screen-label="{{ v.screen }}" style="{{ v.frame }}">
+              <div style="border-top:2px solid var(--accent);padding-top:13px;">
+                <div style="display:flex;flex-wrap:wrap;align-items:baseline;column-gap:10px;row-gap:2px;">
+                  <h3 style="margin:0;font-family:var(--display);font-size:15.5px;font-weight:600;color:var(--fg);"><span style="display:inline-flex;align-items:center;margin-right:8px;border-radius:4px;padding:2px 7px;vertical-align:middle;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:0.08em;background:var(--accent);color:var(--bg);">NEW</span>{{ v.title }}</h3>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">{{ v.route }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ v.opens }}</span>
+                </div>
+                <p style="margin:6px 0 0;font-size:13.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">{{ v.caption }}</p>
+
+                <figure style="margin:10px 0 0;border-radius:8px;border:1px solid var(--border);background:var(--surface-sunken);padding:14px 16px;overflow:hidden;">
+
+                  <sc-if value="{{ v.isStand }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;flex-direction:column;gap:6px;">
+                      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-height:30px;">
+                        <span style="font-size:12.5px;color:var(--fg-body);">Marking cards over</span>
+                        <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;font-weight:600;color:var(--fg);border-bottom:1px dotted var(--accent);">$10</span>
+                        <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;border-radius:999px;padding:2px 7px;color:var(--fg-faint);border:1px solid var(--border-strong);">default</span>
+                        <span style="display:inline-flex;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);white-space:nowrap;"><span style="color:var(--border-strong);">·</span>1 over</span>
+                      </div>
+                      <p style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.5;color:var(--fg-faint);"><span style="color:var(--warning);">⇄</span> on a marked row opens its cheaper stand-ins. Any card’s stand-ins are also in its details.</p>
+                      <div style="margin-top:6px;display:flex;flex-direction:column;border-top:1px solid var(--border);">
+                        <div style="display:flex;align-items:center;gap:9px;min-height:{{ v.rowH }};border-bottom:1px solid var(--border);">
+                          <span style="width:7px;height:7px;flex:none;border-radius:50%;border:1px dashed var(--fg-faint);"></span>
+                          <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;"><span style="font-size:13px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Plateau</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--warning);">over $10</span></span>
+                          <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--warning);background:color-mix(in oklab, var(--warning) 13%, transparent);">buy<span style="color:var(--border-strong);padding:0 3px;">·</span><span style="color:var(--fg-body);">$293.84</span></span>
+                          <span style="flex:none;width:{{ v.hit }};height:{{ v.hit }};display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--warning);">⇄</span>
+                          <span style="flex:none;width:{{ v.hit }};height:{{ v.hit }};display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--fg-faint);">✕</span>
+                        </div>
+                        
+                      </div>
+                      <div style="margin-top:10px;display:flex;flex-direction:column;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg);padding:10px 12px 0;">
+                        <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);margin-bottom:8px;"><span style="color:var(--warning);">⇄</span> Plateau’s stand-ins</span>
+                        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding-bottom:6px;border-bottom:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">same type · lands</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);white-space:nowrap;">best mana first</span></div>
+                        <sc-for list="{{ standRows }}" as="s" hint-placeholder-count="3">
+                          <div style="display:flex;align-items:center;gap:9px;min-height:{{ v.rowH }};padding:6px 0;border-bottom:1px solid var(--border);">
+                            <span style="{{ s.dot }}"></span>
+                            <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;"><span style="font-size:13px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ s.name }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.45;color:var(--fg-muted);text-wrap:pretty;"><span style="color:var(--fg-body);">{{ s.mana }}</span><sc-if value="{{ s.facts }}" hint-placeholder-val="{{ false }}"><span style="color:var(--border-strong);"> · </span>{{ s.facts }}</sc-if></span></span>
+                            <sc-if value="{{ s.free }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 6px;color:var(--success);background:color-mix(in oklab, var(--success) 13%, transparent);">free</span></sc-if>
+                            <sc-if value="{{ s.price }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--warning);background:color-mix(in oklab, var(--warning) 13%, transparent);white-space:nowrap;">buy<span style="color:var(--border-strong);padding:0 3px;">·</span><span style="color:var(--fg-body);">{{ s.price }}</span></span></sc-if>
+                          </div>
+                        </sc-for>
+                        <span style="display:flex;align-items:center;gap:8px;min-height:{{ v.holdH }};padding-left:16px;font-size:12.5px;font-weight:500;color:var(--accent);">Show all 8 lands <span style="font-size:10px;color:var(--fg-faint);">▾</span></span>
+                      </div>
+                    </div>
+                  </sc-if>
+
+                  <sc-if value="{{ v.isFits }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;flex-direction:column;gap:14px;">
+                      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--bg);">
+                        <span style="width:22px;height:31px;flex:none;border-radius:3px;border:1px solid var(--border-strong);background:center / cover no-repeat url('https://api.scryfall.com/cards/named?exact=Basalt%20Monolith&format=image&version=art_crop');"></span>
+                        <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;"><span style="font-size:14px;font-weight:600;color:var(--fg);">Basalt Monolith</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);">colorless · legal in Commander</span></span>
+                        <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-body);">×1 · 1 free</span>
+                      </div>
+                      <div style="display:flex;flex-direction:column;">
+                        <h4 style="margin:0;padding-bottom:6px;border-bottom:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-weight:400;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);display:flex;justify-content:space-between;gap:10px;"><span>could take it</span><span style="letter-spacing:0;text-transform:none;font-size:10px;color:var(--fg-locked);">by each commander’s synergy</span></h4>
+                        <sc-for list="{{ fitRows }}" as="f" hint-placeholder-count="2">
+                          <div style="display:flex;flex-direction:column;gap:5px;padding:10px 0;border-bottom:1px solid var(--border);">
+                            <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+                              <span style="flex:1;min-width:0;font-size:13.5px;color:var(--fg-body);text-decoration:underline;text-underline-offset:2px;text-decoration-color:var(--border-strong);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ f.deck }}</span>
+                              <span style="flex:none;display:inline-flex;align-items:center;justify-content:center;height:{{ v.addH }};min-width:{{ v.addW }};padding:0 12px;border-radius:7px;border:1px solid var(--accent);color:var(--accent);font-size:12px;font-weight:600;">Add</span>
+                            </div>
+                            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.45;color:var(--fg-muted);text-wrap:pretty;"><sc-if value="{{ f.combo }}" hint-placeholder-val="{{ false }}"><span style="color:var(--fg);">Completes a combo with <span style="border-bottom:1px dotted var(--accent);">{{ f.combo }}</span></span></sc-if><sc-if value="{{ f.theme }}" hint-placeholder-val="{{ false }}"><span style="color:var(--fg-body);">{{ f.theme }}</span></sc-if><sc-if value="{{ f.hasNeed }}" hint-placeholder-val="{{ true }}"><span style="color:var(--border-strong);"> · </span><span style="color:var(--fg-locked);">this deck </span>{{ f.need }}</sc-if></span>
+                          </div>
+                        </sc-for>
+                      </div>
+                      <div style="display:flex;flex-direction:column;">
+                        <h4 style="margin:0;padding-bottom:6px;border-bottom:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-weight:400;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">already holds it</h4>
+                        <div style="display:flex;align-items:center;gap:10px;min-height:{{ v.holdH }};border-bottom:1px solid var(--border);"><span style="flex:1;font-size:13px;color:var(--fg-body);text-decoration:underline;text-underline-offset:2px;text-decoration-color:var(--border-strong);">HD - Tymna + Thrasios</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">holds 1</span></div>
+                      </div>
+                    </div>
+                  </sc-if>
+
+                  <sc-if value="{{ v.isLock }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;flex-direction:column;gap:14px;">
+                      <div style="display:flex;flex-direction:column;">
+                        <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);padding-bottom:6px;border-bottom:1px solid var(--border);">at rest</span>
+                        <sc-for list="{{ lockRows }}" as="r" hint-placeholder-count="3">
+                          <div style="display:flex;align-items:center;gap:9px;min-height:{{ v.rowH }};border-bottom:1px solid var(--border);">
+                            <span style="width:7px;height:7px;flex:none;border-radius:50%;background:var(--success);"></span>
+                            <span style="min-width:0;font-size:13px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.name }}</span>
+                            <sc-if value="{{ r.locked }}" hint-placeholder-val="{{ false }}"><span style="position:relative;display:inline-block;width:11px;height:13px;flex:none;color:var(--fg-body);"><span style="position:absolute;left:2px;top:0;width:7px;height:7.5px;border:1.6px solid currentColor;border-bottom:0;border-radius:3.5px 3.5px 0 0;"></span><span style="position:absolute;left:0;top:6.5px;width:11px;height:6.5px;border-radius:2px;background:currentColor;"></span><span style="position:absolute;left:4.5px;top:8.75px;width:2px;height:2px;border-radius:50%;background:var(--bg);"></span></span></sc-if>
+                            <span style="flex:1;"></span>
+                            <span style="flex:none;width:{{ v.hit }};height:{{ v.hit }};display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--fg-faint);">✕</span>
+                          </div>
+                        </sc-for>
+                      </div>
+                      <div style="display:flex;flex-direction:column;">
+                        <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding-bottom:8px;border-bottom:1px solid var(--border);">
+                          <span style="font-size:12.5px;color:var(--fg-body);">Locked cards are never suggested as cuts. <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">2 locked</span></span>
+                          <span style="display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:116px;min-height:{{ v.btnH }};padding:0 12px;border-radius:7px;border:1px solid var(--accent);color:var(--accent);font-family:'IBM Plex Mono',monospace;font-size:12px;"><span style="position:relative;display:inline-block;width:11px;height:13px;color:var(--accent);"><span style="position:absolute;left:2px;top:0;width:7px;height:7.5px;border:1.6px solid currentColor;border-bottom:0;border-radius:3.5px 3.5px 0 0;"></span><span style="position:absolute;left:0;top:6.5px;width:11px;height:6.5px;border-radius:2px;background:currentColor;"></span></span>Done</span>
+                        </div>
+                        <sc-for list="{{ lockRows }}" as="r" hint-placeholder-count="3">
+                          <div style="display:flex;align-items:center;gap:9px;min-height:{{ v.rowH }};border-bottom:1px solid var(--border);">
+                            <span style="width:7px;height:7px;flex:none;border-radius:50%;background:var(--success);"></span>
+                            <span style="flex:1;min-width:0;font-size:13px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ r.name }}</span>
+                            <sc-if value="{{ r.locked }}" hint-placeholder-val="{{ false }}">
+                              <span style="flex:none;width:{{ v.togW }};height:{{ v.togH }};border-radius:6px;display:flex;align-items:center;justify-content:center;border:1px solid var(--accent);background:color-mix(in oklab, var(--accent) 14%, transparent);"><span style="position:relative;display:inline-block;width:11px;height:13px;color:var(--accent);"><span style="position:absolute;left:2px;top:0;width:7px;height:7.5px;border:1.6px solid currentColor;border-bottom:0;border-radius:3.5px 3.5px 0 0;"></span><span style="position:absolute;left:0;top:6.5px;width:11px;height:6.5px;border-radius:2px;background:currentColor;"></span><span style="position:absolute;left:4.5px;top:8.75px;width:2px;height:2px;border-radius:50%;background:var(--bg);"></span></span></span>
+                            </sc-if>
+                            <sc-if value="{{ r.open }}" hint-placeholder-val="{{ true }}">
+                              <span style="flex:none;width:{{ v.togW }};height:{{ v.togH }};border-radius:6px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border-strong);"><span style="position:relative;display:inline-block;width:11px;height:13px;color:var(--fg-muted);transform:translate(0,0);"><span style="position:absolute;left:4.5px;top:-2.5px;width:7px;height:4.5px;border:1.6px solid currentColor;border-bottom:0;border-radius:3.5px 3.5px 0 0;"></span><span style="position:absolute;left:4.5px;top:1px;width:1.6px;height:5.5px;background:currentColor;"></span><span style="position:absolute;left:0;top:6.5px;width:11px;height:6.5px;border-radius:2px;background:currentColor;"></span><span style="position:absolute;left:4.5px;top:8.75px;width:2px;height:2px;border-radius:50%;background:var(--bg);"></span></span></span>
+                            </sc-if>
+                          </div>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </sc-if>
+
+                  <sc-if value="{{ v.isCmdr }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;flex-direction:column;gap:14px;">
+                      <div style="position:relative;height:{{ v.bandH }};border-radius:8px;overflow:hidden;border:1px solid var(--border);background:center 20% / cover no-repeat url('https://api.scryfall.com/cards/named?exact=Gishath%2C%20Sun%27s%20Avatar&format=image&version=art_crop');">
+                        <sc-if value="{{ v.wide }}" hint-placeholder-val="{{ true }}">
+                          <span style="position:absolute;left:12px;bottom:10px;display:flex;align-items:stretch;height:26px;border-radius:7px;border:1px solid var(--border-strong);background:var(--bg);color:var(--fg);">
+                            <span style="display:flex;align-items:center;gap:6px;padding:0 9px;font-size:14px;line-height:1;">⛶<span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">Card details</span></span>
+                            <span style="width:1px;background:var(--border-strong);"></span>
+                            <span style="display:flex;align-items:center;gap:6px;padding:0 9px;font-family:'IBM Plex Mono',monospace;font-size:11px;"><span style="font-size:12px;">⇄</span>Change commander</span>
+                          </span>
+                        </sc-if>
+                        <sc-if value="{{ v.phone }}" hint-placeholder-val="{{ false }}">
+                          <span style="position:absolute;right:10px;bottom:10px;display:flex;flex-direction:column;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg);color:var(--fg);">
+                            <span style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:14px;">⇄</span>
+                            <span style="height:1px;background:var(--border-strong);"></span>
+                            <span style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:14px;">⛶</span>
+                          </span>
+                        </sc-if>
+                      </div>
+                      <sc-for list="{{ cmdrGroups }}" as="g" hint-placeholder-count="2">
+                        <div style="display:flex;flex-direction:column;">
+                          <div style="display:flex;align-items:baseline;justify-content:space-between;padding-bottom:8px;border-bottom:1px solid var(--elevated);"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">{{ g.heading }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">by figure</span></div>
+                          <div style="display:flex;gap:12px;align-items:flex-start;padding:11px 0;border-bottom:1px solid var(--border);">
+                            <span style="width:56px;height:41px;flex:none;border-radius:6px;border:1px solid var(--border-strong);background-color:var(--elevated);background-size:cover;background-position:center;background-image:{{ g.art }};"></span>
+                            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;">
+                              <div style="display:flex;flex-wrap:wrap;align-items:baseline;column-gap:9px;row-gap:3px;">
+                                <span style="font-size:14px;font-weight:600;line-height:1.3;color:var(--fg);border-bottom:1px solid var(--border-strong);">{{ g.name }}</span>
+                                <sc-if value="{{ g.free }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);"><span style="width:6px;height:6px;border-radius:50%;background:var(--success);"></span>free</span></sc-if>
+                                <sc-if value="{{ g.buy }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--warning);background:color-mix(in oklab, var(--warning) 13%, transparent);">buy<span style="color:var(--border-strong);padding:0 3px;">·</span><span style="color:var(--fg-body);">$2.40</span></span></sc-if>
+                              </div>
+                              <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;"><span style="display:flex;gap:3px;"><sc-for list="{{ g.pips }}" as="p" hint-placeholder-count="4"><span style="{{ p.style }}">{{ p.t }}</span></sc-for></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">{{ g.rel }}</span></div>
+                              <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 12px;">
+                                <span style="display:inline-flex;align-items:center;gap:7px;min-height:36px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-body);"><span style="border-bottom:1px dotted var(--fg-faint);">{{ g.figure }}</span><span style="font-size:10px;color:var(--fg-faint);">▾</span></span>
+                                <span style="margin-left:auto;display:inline-flex;align-items:center;height:{{ v.chooseH }};padding:0 14px;border-radius:8px;border:1px solid var(--border-strong);font-size:12.5px;font-weight:600;color:var(--fg);">Choose</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+
+                  <sc-if value="{{ v.isChoose }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;flex-direction:column;gap:8px;">
+                      <sc-for list="{{ chooseRows }}" as="c" hint-placeholder-count="2">
+                        <div style="display:flex;gap:11px;align-items:flex-start;padding:10px 12px;border-radius:11px;border:1px solid var(--border);background:var(--surface-rail);">
+                          <span style="width:44px;height:44px;flex:none;border-radius:8px;border:1px solid var(--border-strong);background-color:var(--elevated);background-size:cover;background-position:center;background-image:{{ c.art }};"></span>
+                          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;">
+                            <div style="display:flex;align-items:center;gap:8px;min-width:0;"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--display);font-weight:600;font-size:15px;color:var(--fg);text-decoration:underline dotted var(--accent);text-underline-offset:3px;">{{ c.name }}</span><span style="display:flex;gap:2px;flex:none;"><sc-for list="{{ c.pips }}" as="p" hint-placeholder-count="3"><span style="{{ p }}"></span></sc-for></span></div>
+                            <div style="display:flex;flex-direction:column;gap:3px;">
+                              <sc-for list="{{ c.figs }}" as="f" hint-placeholder-count="2">
+                                <div style="display:flex;align-items:baseline;gap:8px;font-size:12.5px;"><span style="min-width:38px;text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14px;color:{{ f.ink }};">{{ f.pct }}</span><span style="color:var(--fg-body);min-width:0;">{{ f.text }}<sc-if value="{{ f.rank }}" hint-placeholder-val="{{ false }}"><span style="margin-left:6px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.12em;color:var(--accent);white-space:nowrap;">SETS RANK</span></sc-if></span></div>
+                              </sc-for>
+                            </div>
+                            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:3px 0;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">
+                              <sc-if value="{{ c.free }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:6px;color:var(--fg-body);white-space:nowrap;"><span style="width:6px;height:6px;border-radius:50%;background:var(--success);"></span>owned · free</span></sc-if>
+                              <sc-if value="{{ c.buy }}" hint-placeholder-val="{{ false }}"><span style="font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--warning);background:color-mix(in oklab, var(--warning) 13%, transparent);white-space:nowrap;">buy<span style="color:var(--border-strong);padding:0 3px;">·</span><span style="color:var(--fg-body);">{{ c.price }}</span></span></sc-if>
+                              <span style="white-space:nowrap;"><span style="display:inline-block;width:14px;text-align:center;color:var(--border-strong);">·</span>{{ c.own }}</span>
+                              <span style="white-space:nowrap;"><span style="display:inline-block;width:14px;text-align:center;color:var(--border-strong);">·</span>{{ c.cost }}</span>
+                            </div>
+                          </div>
+                          <span style="align-self:center;font-size:18px;color:var(--fg-faint);">›</span>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+
+                </figure>
+
+                <ol style="margin:8px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:5px;">
+                  <sc-for list="{{ v.keys }}" as="k" hint-placeholder-count="4">
+                    <li style="display:flex;align-items:flex-start;gap:8px;"><span style="width:14px;height:14px;flex:none;margin-top:1px;border-radius:50%;background:var(--bg);border:1px solid var(--accent);color:var(--accent);font-family:'IBM Plex Mono',monospace;font-size:8.5px;display:flex;align-items:center;justify-content:center;">{{ k.n }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);text-wrap:pretty;">{{ k.t }}</span></li>
+                  </sc-for>
+                </ol>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+  </sc-for>
+
+  <section style="max-width:1560px;">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:14px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#FF4D9A;">§6</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;margin:0;">What the build owes before these mount</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;">
+      <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:14px 17px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:8px;">E3 · Cheaper stand-ins (new)</div>
+        <div style="font-size:12.5px;color:#9BA1B4;line-height:1.66;text-wrap:pretty;"><b style="color:#E6E8F0;font-weight:600;">The revised figure shows one type group from the sheet</b>, and the sheet reads its list when it opens. Export its group markup unchanged (<span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">StandInGroup</span>: heading, order note, rows, Show all) and let the sheet render it. The figure passes three rows and a total of 8. Take isn't drawn in the figure, because nothing on /about edits a deck.</div>
+      </div>
+      <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:14px 17px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:8px;">E1 · Find a deck for it</div>
+        <div style="font-size:12.5px;color:#9BA1B4;line-height:1.66;text-wrap:pretty;"><b style="color:#E6E8F0;font-weight:600;">FitsPicker reads its list when it opens</b> (<span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">loadFitsAction</span>) inside <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">ModalChrome</span>, so it can't be mounted inert with fixture props. Export its plate and row markup as they are (<span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">FitsPlate</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">FitsRows</span>) and have the picker render them. That is an extraction, not a fork: one component serves both.</div>
+      </div>
+      <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:14px 17px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:8px;">E2 · Change commander</div>
+        <div style="font-size:12.5px;color:#9BA1B4;line-height:1.66;text-wrap:pretty;"><b style="color:#E6E8F0;font-weight:600;">The sheet reads on open too</b> (<span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">readChangeCandidates</span>). Export its <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">Row</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">GroupHeading</span> unchanged, as <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">CandidateRow</span>. If that is declined, the fallback specimen is the door plus the review page's <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">CommanderSection</span>. That fallback loses the figure, which is the entry's subject.</div>
+      </div>
+      <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:14px 17px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:8px;">mounts as shipped</div>
+        <div style="font-size:12.5px;color:#9BA1B4;line-height:1.66;text-wrap:pretty;"><b style="color:#E6E8F0;font-weight:600;">Locked cards, Help me choose, and Stand-ins' limit line and Shopping row need no change.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">StandInLimit</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">DecklistRow</span> read <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">SwapToolsProvider</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">LockCardsProvider</span>, which take fixture values. <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">ChooseRow</span> is pure. All sit in <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">CardDetailProvider fetchCard={async () =&gt; null}</span>, as <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">ch01-figures.tsx</span> already does.</div>
+      </div>
+    </div>
+  </section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;kamigawa&quot;,&quot;amonkhet&quot;],&quot;default&quot;:&quot;kamigawa&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const theme = this.props.theme ?? "kamigawa";
+    const art = (n) => `url("https://api.scryfall.com/cards/named?exact=${encodeURIComponent(n)}&format=image&version=art_crop")`;
+    const COL = { W: "var(--w)", U: "var(--u)", B: "var(--b)", R: "var(--r)", G: "var(--g)" };
+    const pip = (s) => ({ t: COL[s] ? "" : s, style: { display: "inline-flex", alignItems: "center", justifyContent: "center", width: 13, height: 13, borderRadius: "50%", fontFamily: "'IBM Plex Mono',monospace", fontWeight: 600, fontSize: 8, background: COL[s] || "var(--fg-faint)", color: "var(--bg)", boxShadow: "inset 0 0 0 1px rgba(0,0,0,.45)" } });
+    const idPip = (c) => ({ display: "block", width: 10, height: 10, borderRadius: 2, background: `var(--${c})`, boxShadow: "inset 0 0 0 1px rgba(0,0,0,.4)" });
+    const keys = (arr) => arr.map((t, i) => ({ n: i + 1, t }));
+
+    const E = [
+      {
+        anchor: "A1", kind: "isChoose", order: 1, title: "Help me choose", route: "/decks/new/choose", opens: "",
+        chapterShort: "02 · Finding a commander", after: "after “Commanders worth acquiring, and what each order means”",
+        why: "Chapter 02, not 03. This entry is about getting to a commander when you don't have one. The deck is created afterwards, through the door “Starting a deck” (chapter 03) already covers. Discover, the entry it follows, is the other door into it. Change commander (A5) sits in 03 for the opposite reason: it edits a deck that already exists.",
+        caption: "For a deck you want but have no commander for. Answer as much or as little as you like: colors, a theme, a budget, a bracket, a card to build around, or a sentence in your own words. The results are commanders ordered by how well each fits what you asked, not by what you own, and picking one creates the deck and fills it under the same answers.",
+        specimen: "Two ChooseRows (choose-row.tsx), ordered by a theme and a card, in CardDetailProvider with fetchCard → null. Each row's trial is ready.",
+        fixture: "fixtures.choose · params: themes [Dinosaurs], card Regisaur Alpha, budget 150, bracket 2 · rows: Pantlaza (buy) 74% / 41% sets rank; Gishath (free) 81% / 34% sets rank · trial: owned 38 · buy $112, and owned 52 · buy $64.",
+        keys: [
+          "Each figure is a share of that commander's decks: the share tagged with your theme, or the share that runs your card. The weakest figure orders the row and is marked SETS RANK.",
+          "What you own is shown on the row but never orders it: the commander's own mark, how much of its 99 you own, and roughly what the rest would cost.",
+          "Your sentence is matched for free. A closer read of what's left costs one credit, and the form says so before you spend it.",
+          "When too few commanders fit, the page names the answer that rules out the most, so you can loosen it yourself.",
+        ],
+        phone: "Each row stacks: name and pips, then the figures, then the ownership line. The 44px thumb and the whole-row press stay. The ownership line wraps between its segments, never inside one.",
+        strings: "copy/help-me-choose.ts (results.*)",
+        needHead: "mounts as shipped", needTone: "#6FA368", need: "ChooseRow takes its row, figures and trial as props. The route is /decks/new/choose, the page Discover's link and the new-deck door both open.",
+      },
+      {
+        anchor: "A2", kind: "isLock", order: 2, title: "Locked cards", route: "/decks", opens: "opens a deck",
+        chapterShort: "03 · Building the 99", after: "after “Every mark on a decklist”",
+        why: "Chapter 03, beside the decklist marks. A lock is set on decklist rows and tiles (L4), and read there as a mark. It exists to bind the tools, and the caption names each one it binds, so it doesn't need a chapter 04 entry of its own. The card modal isn't drawn, because L4 rules that it shows nothing about a lock.",
+        caption: "Lock a card and no tool will offer to cut it. Suggested changes won't propose it, cheaper stand-ins skip it, and clearing the fill's auto cards leaves it in place. The ✕ still removes it: a lock binds the app's suggestions, not you. Lock cards, in the deck's toolbar, turns every row's ✕ into a lock until you press Done.",
+        specimen: "Three DecklistRows, drawn twice: at rest, and in the Lock cards mode, where each row's ✕ slot becomes the toggle. Wrapped in LockCardsProvider (mode false, then true) and CardDetailProvider. The mode's line and Done sit above the second set.",
+        fixture: "fixtures.locked · rows: Lotus Petal (locked), Ornithopter (locked), Brainstorm · provider: { mode, toggle: noop, pending: ∅, errors: ∅ } · 2 locked.",
+        keys: [
+          "A locked card shows the lock after its name, in the list and on its tile. Nothing else about the row changes.",
+          "Lock cards turns each ✕ into a lock until you press Done. It is how you lock a card from a phone or a keyboard.",
+          "Clear all auto skips locked cards and says how many stayed. Pull it never takes a copy from a deck where the card is locked.",
+          "Remove a locked card, then press Undo or Put back, and it comes back locked. Any other way back, including a discard, returns it unlocked.",
+        ],
+        phone: "The lock is a 14px mark to the left of the 44px ✕. In the mode, that ✕ box is the toggle. Lock cards is 44px tall, beside Keep and Clear. The name truncates first.",
+        strings: "copy/locked-cards.ts (mode.*, mark.*)",
+        needHead: "mounts as shipped", needTone: "#6FA368", need: "DecklistRow reads the lock from card.locked and the mode from useLockCards(). A fixture provider value is all the figure needs. The four key lines are the audit's L1 to L4, in the reader's words.",
+      },
+      {
+        anchor: "A3", kind: "isFits", order: 3, title: "Find a deck for it", route: "/collection", opens: "opens the card detail",
+        chapterShort: "03 · Building the 99", after: "after “Adding cards”",
+        why: "Chapter 03, after Adding cards, unchanged. Revised for the ranking rebuild: decks are ordered by synergy with each commander, and each gives a reason, either a combo the card completes with that deck's cards or the theme it joins. The key lines describe that and quote no figure.",
+        caption: "A card can belong in a deck you haven't thought of. Find a deck for it, in any card's details, lists the decks you could add it to without breaking their colors. The deck whose commander suits the card best comes first. Each deck gives one reason: a combo the card would complete with cards already in that deck, or the theme it would join. Decks that already hold it are listed after, and Add puts it in the chosen deck's draft.",
+        specimen: "The picker's body: the card plate, the could-take-it group with two rows (one combo reason, one theme reason), and the already-holds group. Needs E1, because the rows aren't exported yet.",
+        fixture: "fixtures.fits · card Basalt Monolith · C · owned 1, 1 free · fits: HD - Kinnan (combo: Kinnan, Bonder Prodigy · need ramp 11 of 10), HD - Gishath (theme: artifacts, 11 others · need ramp 7 of 10) · holds: HD - Tymna + Thrasios ×1 · staple false.",
+        keys: [
+          "Only decks whose colors allow the card, and that don't already run it, are offered.",
+          "Decks are ordered by synergy: how much more often that commander's decks run the card than other decks in the same colors. How many decks run it doesn't set the order.",
+          "Each deck gives its strongest reason. A combo the card completes with that deck's own cards comes first, then the theme it joins. With neither, the deck shows the two shares it was ordered by. A staple that every deck runs says staple instead.",
+          "After the reason comes this deck's count for the card's role against its target, left out when there's no role. Add uses a free copy if you have one. Otherwise the card joins as one to buy.",
+        ],
+        phone: "The picker is a sheet over the card, from 96px. The deck name and Add share a line, with Add at 44px. The reason line wraps underneath, between its segments.",
+        strings: "copy/swap-tools.ts (fits.*)",
+        needHead: "⚠ needs E1", needTone: "#E0913C", need: "FitsPicker loads its list when it opens, inside ModalChrome, so it can't mount inert. Export the plate and row markup as they are, and let the picker render them (§6). One component then serves both.",
+      },
+      {
+        anchor: "A4", kind: "isStand", order: 4, title: "Cheaper stand-ins", route: "/decks", opens: "opens the shopping roll-up",
+        chapterShort: "03 · Building the 99", after: "after “What you would need to buy”",
+        why: "Chapter 03, straight after the Shopping entry, unchanged. Revised for the ranking rebuild: the figure now shows what's behind the ⇄ as well as the door, meaning the first type group and its land rows with their mana lines. That needs E3. The key lines describe the order and quote no limit, price or figure.",
+        caption: "Some cards Shopping asks you to buy cost more than the job they do. A limit per card marks those rows, and a marked row's ⇄ opens cheaper cards that do the same job. Cards of the same type come first, then other types, each led by what suits this commander. A land's stand-ins say what they make and whether they come in untapped, best mana first. Nothing is picked for you, and taking one is an ordinary draft change you can undo.",
+        specimen: "StandInLimit over the over-limit Shopping DecklistRow (Plateau) and its ⇄. Under it is one StandInGroup from the sheet: the same-type lands heading, three rows with their mana lines, and Show all. Inside SwapToolsProvider and CardDetailProvider. Needs E3.",
+        fixture: "fixtures.standIns · provider: deck HD - Gishath, storedLimitCents null · limit: shoppingCount 6, overCount 1 · row: Plateau (land, $293.84, over) · group: lands, 8 total, shown 3 · Sacred Foundry (free, untapped if you pay 2 life), Battlefield Forge (free, untapped · 1 damage), Sunbaked Canyon ($1.12, untapped · 1 life).",
+        keys: [
+          "The line under the price strip is this deck's limit per card. Until you set your own, it says it is the default.",
+          "A row over the limit is marked, and its ⇄ opens the stand-ins. Every card's stand-ins are also linked from its details.",
+          "A stand-in does every job the card does. Cards of the same type come first, a creature for a creature, then other types. Each group is led by the cards this commander's decks favor, and shows a few until you ask for all.",
+          "A land's stand-ins say which colors they make and whether they come in untapped. Untapped comes first, then tapped, then lands that make a color only once, which doesn't count as making it. Each says what it gives up.",
+        ],
+        phone: "Shopping rows are one column. The limit line wraps before its count, never inside it. The ⇄ and ✕ keep 44px, and the name truncates first. Stand-in rows wrap the mana line between segments, and Show all is a 44px row.",
+        strings: "copy/swap-tools.ts (limit.*, row.over, sheet.group.*, sheet.mana.*)",
+        needHead: "⚠ needs E3", needTone: "#E0913C", need: "StandInLimit and DecklistRow mount as shipped with a fixture SwapToolsProvider. The group lives inside the sheet, which reads its list on open. Export StandInGroup (heading, rows, Show all) unchanged, and let the sheet render it (§6).",
+      },
+      {
+        anchor: "A5", kind: "isCmdr", order: 5, title: "Change commander", route: "/decks", opens: "opens a deck",
+        chapterShort: "03 · Building the 99", after: "after “Starting a deck”",
+        why: "Chapter 03, not 02. The brief rules that a swap is an edit (ruling 7): the door is on the deck page, and the change lands in the draft. It follows Starting a deck because both are about who leads the 99. Key line 4 is worded so it stays true once the half-trade ships (see the change-commander addendum): one commander takes the slot.",
+        caption: "Like the 99 but not the leader? Change commander, on the commander's art, lists every commander in exactly this deck's colors, or every pair for a pair deck, with the ones you own first. Each carries one figure: how many of this deck's cards its own decks run. Choosing one is a draft change like any other. It waits in pending changes, and Discard puts the old commander back.",
+        specimen: "ChangeCommanderDoor on the art band, then two candidate rows: one under Yours, one under To buy. Needs E2. Fallback: the door plus CommanderSection.",
+        fixture: "fixtures.changeCommander · deck HD - Gishath (Naya, 64 counted, mv 8) · Marisi (free, 23 of 64, {2}{R}{G}{W}) · Mayael ($2.40, 38 of 64, {R}{G}{W}).",
+        keys: [
+          "Only commanders in exactly this deck's colors are offered, and only pairs for a pair deck, so not one card of the 99 changes.",
+          "The figure counts this deck's cards that the candidate's decks run, leaving out basic lands and the staples every deck runs. Press it to see which cards.",
+          "Candidates you own come first, marked free or held, and the rest carry a price. Mana value is shown beside each but never sets the order.",
+          "When a candidate is already in the 99, it moves to the command zone and the commander it replaces takes its slot, so the deck stays whole.",
+        ],
+        phone: "The sheet is full height. Each row stacks the name, the pips, the figure and Choose, which keeps 44px. The door is the vertical ⇄ / ⛶ pair on the art.",
+        strings: "copy/change-commander.ts (sheet.*)",
+        needHead: "⚠ needs E2", needTone: "#E0913C", need: "ChangeCommanderSheet loads its candidates when it opens. Export Row and GroupHeading unchanged as CandidateRow (§6). ChangeCommanderDoor mounts as shipped inside ChangeCommanderProvider.",
+      },
+    ];
+
+    const slotsOf = (e) => {
+      const full = { gridColumn: "1 / -1" };
+      return [
+        { label: "Title", strong: e.title, text: "", isText: true, cell: {} },
+        { label: "Route", code: e.route, after: e.opens ? `· ${e.opens}` : "", text: "", isText: true, cell: {} },
+        { label: "Chapter", text: `${e.chapterShort}, ${e.after}`, isText: true, cell: {} },
+        { label: "Width", text: "plate: several parts need naming", isText: true, cell: {} },
+        { label: "Caption", text: e.caption, isText: true, cell: full },
+        { label: "Specimen", text: e.specimen, isText: true, cell: full },
+        { label: "Fixture props", text: e.fixture, isText: true, cell: full },
+        { label: "Key lines · 4 of 4", isKeys: true, isText: false, keys: keys(e.keys), cell: full },
+        { label: "Phone reduction", text: e.phone, isText: true, cell: full },
+        { label: "since", text: "10: the launch bump (9 → 10)", isText: true, cell: {} },
+        { label: "Strings from", text: e.strings, isText: true, cell: {} },
+      ];
+    };
+    const view = (e, phone) => ({
+      ...e, [e.kind]: true, phone, wide: !phone, keys: keys(e.keys),
+      label: phone ? "the entry at 390" : "the entry, wide column · 760",
+      screen: `About · ${e.anchor} ${e.title} · ${phone ? 390 : 760}`,
+      frame: { width: phone ? 390 : 760, background: "var(--bg)", color: "var(--fg)", border: "1px solid var(--border-strong)", borderRadius: 12, padding: phone ? "18px 16px 22px" : "22px 24px 26px", fontFamily: "'IBM Plex Sans',sans-serif" },
+      rowH: phone ? "48px" : "36px", hit: phone ? "44px" : "22px", addH: phone ? "44px" : "32px", addW: phone ? "64px" : "0px",
+      holdH: phone ? "44px" : "34px", btnH: phone ? "44px" : "30px", togW: phone ? "44px" : "26px", togH: phone ? "44px" : "22px",
+      bandH: phone ? "150px" : "120px", chooseH: phone ? "44px" : "36px",
+    });
+    const entries = E.map((e) => ({ ...e, slots: slotsOf(e), views: [view(e, false), view(e, true)] }));
+
+    return {
+      theme, entries,
+      entriesInOrder: entries,
+      sheetTitles: entries.slice(0, 3).map((e) => e.title),
+      fitRows: [
+        { deck: "HD - Kinnan", combo: "Kinnan, Bonder Prodigy", theme: null, need: "ramp 11 of 10", hasNeed: true },
+        { deck: "HD - Gishath", combo: null, theme: "Joins 11 other artifact cards", need: "ramp 7 of 10", hasNeed: true },
+      ],
+      standRows: [
+        { name: "Sacred Foundry", mana: "makes white and red, untapped if you pay 2 life", facts: "", free: true, price: "" },
+        { name: "Battlefield Forge", mana: "makes white and red, untapped", facts: "1 damage for either", free: true, price: "" },
+        { name: "Sunbaked Canyon", mana: "makes white and red, untapped", facts: "1 life for either", free: false, price: "$1.12" },
+      ].map((s) => ({ ...s, dot: s.free ? { width: 7, height: 7, flex: "none", borderRadius: "50%", background: "var(--success)" } : { width: 7, height: 7, flex: "none", borderRadius: "50%", border: "1px dashed var(--fg-faint)" } })),
+      lockRows: [
+        { name: "Lotus Petal", locked: true, open: false },
+        { name: "Ornithopter", locked: true, open: false },
+        { name: "Brainstorm", locked: false, open: true },
+      ],
+      cmdrGroups: [
+        { heading: "Yours · 1", name: "Marisi, Breaker of the Coil", free: true, buy: false, art: art("Marisi, Breaker of the Coil"), pips: ["2", "R", "G", "W"].map(pip), rel: "(3 less than Gishath)", figure: "23 of 64 are in its decks" },
+        { heading: "To buy · 1", name: "Mayael the Anima", free: false, buy: true, art: art("Mayael the Anima"), pips: ["R", "G", "W"].map(pip), rel: "(5 less than Gishath)", figure: "38 of 64 are in its decks" },
+      ],
+      chooseRows: [
+        { name: "Pantlaza, Sun-Favored", art: art("Pantlaza, Sun-Favored"), pips: ["r", "g", "w"].map(idPip), buy: true, free: false, price: "$1.10",
+          figs: [{ pct: "74%", text: "of its decks are Dinosaurs", rank: false, ink: "var(--fg)" }, { pct: "41%", text: "of its decks run Regisaur Alpha", rank: true, ink: "var(--fg)" }],
+          own: "you own 38 of its 99", cost: "about $112 to buy, inside $150" },
+        { name: "Gishath, Sun's Avatar", art: art("Gishath, Sun's Avatar"), pips: ["r", "g", "w"].map(idPip), buy: false, free: true, price: "",
+          figs: [{ pct: "81%", text: "of its decks are Dinosaurs", rank: false, ink: "var(--fg)" }, { pct: "34%", text: "of its decks run Regisaur Alpha", rank: true, ink: "var(--fg)" }],
+          own: "you own 52 of its 99", cost: "about $64 to buy, inside $150" },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

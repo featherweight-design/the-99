@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0B0E; }
+  a { color: #5C86C9; text-decoration: none; }
+  a:hover { color: #6C95D8; }
+  :root {
+    --bg:#121217; --surface:#1E1F26; --surface-raised:#22232B; --surface-rail:#181920; --surface-sunken:#16171D;
+    --elevated:#2D2E35; --elevated-hover:#212229; --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E; --fg-disabled:#3B4647;
+    --accent:#5C86C9; --accent-hover:#6C95D8; --accent-shadow:#2C405F; --danger:#C6533F; --success:#6FA368; --warning:#E0913C;
+    --avail-hard-fg:#80ABEF; --avail-over-fg:#C86D5B; --avail-over-border:#752619;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:var(--fg);padding:40px;background:#0B0B0E;min-height:100vh;display:flex;flex-direction:column;gap:64px;">
+
+  <section style="max-width:1320px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#0B0B0E;background:#5C86C9;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R1</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:var(--fg-faint);">I got it &middot; canvas 1 of 2 &middot; &sect;A the control on the row + &sect;B the confirm &middot; 2026-10-09</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:32px;margin:0 0 12px;line-height:1.25;">One bordered control after the buy tag, and a small form that asks what came.</h1>
+    <p style="max-width:1080px;font-size:15px;line-height:1.7;color:var(--fg-body);margin:0 0 12px;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">Call 1 &mdash; the control sits right after the buy tag, before the &#8644; and the &#10005;.</b> It reads as a control, not a tag: a 1px <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">--border-strong</span> box in neutral sans ink, where the tag is a flat <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">--warning</span> wash in mono with no border. From <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">lg</span> it's <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">&#10003; I got it</span>, 22px tall with a 74px minimum width, inside the 34px row. Below <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">lg</span> it's a 30&times;26 <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">&#10003;</span> box in a 44px hit area. The hit area reaches 7px back over the gap beside the buy tag, which isn't interactive, so on the phone the control costs the name 37px, not 53. Every Shopping row gets the control, so the column stays aligned. The 52px and 34px row heights don't change.</p>
+    <p style="max-width:1080px;font-size:15px;line-height:1.7;color:var(--fg-body);margin:0;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">Call 2 &mdash; a popover on desktop, a bottom sheet on the phone, with one form.</b> The popover is 380px wide, anchored under the control and right-aligned to it, so the list stays visible. <b style="color:var(--fg);font-weight:600;">Call 3 &mdash; the printing is <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">PrintingRegion</span> in the choose role, in its sideways-scrolling row layout</b> (the 1+2 handoff's B4m). The preset tile is selected but carries no badge. It's the only tile with the mono line <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">listed $6.50</span>, which says where the preset came from instead of claiming what shipped. <b style="color:var(--fg);font-weight:600;">Call 4 &mdash; quantity is a stepper</b>, with a field you can type into. It's capped at 20, and a spare reads as a quiet clause beside the need.</p>
+  </section>
+
+  <section id="a1" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">A1 &middot; <span style="color:var(--accent);">1300 &middot; the deck page, Shopping, swap tools on &middot; Etali's confirm open</span></div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div style="width:1300px;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;background:var(--bg);display:flex;">
+        <div style="width:62px;flex:none;background:var(--surface-rail);border-right:1px solid var(--border);"></div>
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
+          <div style="display:flex;flex-direction:column;gap:6px;padding:22px 26px 0;border-bottom:1px solid var(--border);">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">Decks / HD Gishath</span>
+            <h2 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:22px;line-height:1.2;">HD Gishath</h2>
+            <div style="display:flex;gap:20px;margin-top:4px;"><span style="padding:8px 0;font-size:13px;font-weight:600;border-bottom:2px solid var(--accent);">Deck</span><span style="padding:8px 0;font-size:13px;color:var(--fg-faint);">Analysis</span><span style="padding:8px 0;font-size:13px;color:var(--fg-faint);">Games</span></div>
+          </div>
+          <div style="display:flex;flex-direction:column;padding:14px 26px 10px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-size:13px;font-weight:500;border-radius:999px;padding:5px 14px;color:var(--fg-faint);border:1px solid var(--border-strong);">All 99</span>
+              <span style="font-size:13px;font-weight:600;border-radius:999px;padding:5px 14px;color:var(--fg);background:var(--elevated);border:1px solid var(--border-strong);">Shopping 10</span>
+              <span style="flex:1;"></span>
+              <span style="font-size:12.5px;font-weight:600;border-radius:999px;padding:5px 13px;background:var(--elevated);border:1px solid var(--border-strong);">By type</span>
+              <span style="font-size:12.5px;border-radius:999px;padding:5px 13px;color:var(--fg-faint);border:1px solid var(--border);">By role</span>
+            </div>
+            <div style="margin-top:10px;display:flex;flex-direction:row-reverse;align-items:baseline;justify-content:space-between;gap:14px;border-radius:9px;border:1px solid var(--border);padding:11px 15px;background:var(--surface-sunken);">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;">$60.69</span>
+              <div style="margin-right:auto;"><p style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-locked);">prices from ManaPool &middot; last checked 3 hours ago</p><div style="margin-top:9px;"><span style="font-size:12.5px;font-weight:500;color:var(--accent);border-bottom:1px solid var(--accent-shadow);">Buy these on ManaPool &#8599;</span></div></div>
+            </div>
+            <div style="margin-top:10px;display:flex;align-items:center;gap:8px;min-height:30px;padding:0 4px;"><span style="font-size:12.5px;color:var(--fg-body);">Marking cards over</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;font-weight:600;border-bottom:1px dotted var(--accent);">$10</span><span style="color:var(--border-strong);">&middot;</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">1 over</span></div>
+          </div>
+          <div style="position:relative;display:flex;flex-direction:column;gap:16px;padding:10px 26px 30px;">
+            <sc-for list="{{ heroGroups }}" as="g" hint-placeholder-count="4">
+              <div style="display:flex;flex-direction:column;gap:6px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">{{ g.name }} <span style="color:var(--fg-locked);">{{ g.count }}</span></span>
+                <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 10px;">
+                  <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="2"><dc-import name="IGI Row R1" spec="{{ r }}" hint-size="100%,34px"></dc-import></sc-for>
+                </div>
+              </div>
+            </sc-for>
+            <div style="position:absolute;top:140px;left:240px;z-index:5;"><dc-import name="IGI Confirm" spec="{{ heroPop }}" hint-size="380px,560px"></dc-import></div>
+          </div>
+        </div>
+      </div>
+      <div style="max-width:1300px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">The popover opens 6px under the control, right edge to right edge, and flips above it when there's no room below. It is <span style="font-family:'IBM Plex Mono',monospace;">role=dialog</span>, not modal: focus moves to the selected printing tile, Escape or a click outside cancels, and focus returns to the control. While it's open the control holds its <span style="font-family:'IBM Plex Mono',monospace;">aria-expanded</span> fill (14% accent), and the row holds its hover ground so the reader can see which row the form belongs to. One confirm is open at a time: opening another row's closes this one.</div>
+    </div>
+  </section>
+
+  <section id="a2" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">A2 &middot; <span style="color:var(--accent);">the row in every shape the brief lists &middot; 390 and one desktop grid cell (588)</span></div>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+      <sc-for list="{{ matrix }}" as="m" hint-placeholder-count="2">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ m.label }}</div>
+          <div style="width:{{ m.w }};border:1px solid var(--border-strong);border-radius:12px;background:var(--bg);padding:14px 16px;display:flex;flex-direction:column;gap:12px;">
+            <sc-for list="{{ m.rows }}" as="r" hint-placeholder-count="6">
+              <div style="display:flex;flex-direction:column;gap:5px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">{{ r.cap }}</span>
+                <dc-import name="IGI Row R1" spec="{{ r.spec }}" hint-size="100%,52px"></dc-import>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+      <div style="width:300px;display:flex;flex-direction:column;gap:10px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">
+        <span><b style="color:var(--fg-body);font-weight:600;">Every neighbor.</b> On the phone, <span style="font-family:'IBM Plex Mono',monospace;">over $10</span> stacks on the tag as shipped, and the control's hit area meets the &#8644;'s at the 9px gap, with no overlap. The name keeps 116px at 390, enough for <span style="font-family:'IBM Plex Mono',monospace;">Doubling Season</span>.</span>
+        <span><b style="color:var(--fg-body);font-weight:600;">Spoken for.</b> The same control. The confirm's need reads the shortfall (<span style="font-family:'IBM Plex Mono',monospace;">The deck needs 1</span>), not the deck's ask.</span>
+        <span><b style="color:var(--fg-body);font-weight:600;">Commander.</b> The control draws. The &#8644; is absent (H28), and the &#10005;'s invisible glyph still holds the column, so the control lines up with every other row's.</span>
+        <span><b style="color:var(--fg-body);font-weight:600;">Sold out, bare buy.</b> The control doesn't read the price. <span style="font-family:'IBM Plex Mono',monospace;">sold out</span> still has a printing behind it, so the preset works. A bare <span style="font-family:'IBM Plex Mono',monospace;">buy</span> opens the confirm with no printing chosen (B1 &middot; no price).</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="a3" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">A3 &middot; <span style="color:var(--accent);">the control's states &middot; rest, hover, focus, press, open, pending, disabled</span></div>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+      <sc-for list="{{ states }}" as="m" hint-placeholder-count="2">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ m.label }}</div>
+          <div style="width:{{ m.w }};border:1px solid var(--border-strong);border-radius:12px;background:var(--bg);padding:14px 16px;display:flex;flex-direction:column;gap:10px;">
+            <sc-for list="{{ m.rows }}" as="r" hint-placeholder-count="7">
+              <div style="display:grid;grid-template-columns:72px minmax(0,1fr);align-items:center;gap:10px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">{{ r.cap }}</span>
+                <dc-import name="IGI Row R1" spec="{{ r.spec }}" hint-size="100%,52px"></dc-import>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+      <div style="width:320px;display:flex;flex-direction:column;gap:10px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">
+        <span><b style="color:var(--fg-body);font-weight:600;">Hover</b> (desktop only): the border and ink go to accent. <b style="color:var(--fg-body);font-weight:600;">Focus</b> is the app's 2px accent ring, offset 2. <b style="color:var(--fg-body);font-weight:600;">Press</b> fills with <span style="font-family:'IBM Plex Mono',monospace;">--elevated</span>. <b style="color:var(--fg-body);font-weight:600;">Open</b> is the lock toggle's 14% accent fill, held while the confirm is up.</span>
+        <span><b style="color:var(--fg-body);font-weight:600;">Pending</b> runs from Add until the write answers. The label becomes <span style="font-family:'IBM Plex Mono',monospace;">Adding&hellip;</span> (the 74px minimum holds it, so nothing shifts), <span style="font-family:'IBM Plex Mono',monospace;">aria-busy</span> is set, and the row sits at .6. A second tap lands on a control that already says it's working, and it's ignored. The write is idempotent per press anyway.</span>
+        <span><b style="color:var(--fg-body);font-weight:600;">Disabled</b> means another write for this card is in flight: an Undo from its receipt, or a confirm for the same card open on another row. The border goes dashed at .4. Each write sends the count the player saw, so a second write in flight would come back stale.</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="b1" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">B1 &middot; <span style="color:var(--accent);">the confirm, desktop popover &middot; every state the brief lists</span></div>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;max-width:1700px;">
+      <sc-for list="{{ pops }}" as="p" hint-placeholder-count="4">
+        <div style="display:flex;flex-direction:column;gap:8px;width:380px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ p.label }}</div>
+          <dc-import name="IGI Confirm" spec="{{ p.spec }}" hint-size="380px,520px"></dc-import>
+          <div style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);">{{ p.note }}</div>
+        </div>
+      </sc-for>
+      <div style="display:flex;flex-direction:column;gap:8px;width:380px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">B1 &middot; cancel</div>
+        <div style="border:1px dashed var(--border-dashed);border-radius:12px;padding:16px 18px;font-size:13px;line-height:1.6;color:var(--fg-body);display:flex;flex-direction:column;gap:8px;">
+          <span>Cancel, Escape, a click outside, or opening another row's confirm all do the same thing: the form closes, nothing is written, and focus goes back to the control.</span>
+          <span>Nothing is remembered. If the player opens it again, the presets are read fresh, including the count they own.</span>
+          <span>Nothing asks "discard?". There's nothing to lose but three presets.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="b2" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">B2 &middot; <span style="color:var(--accent);">390 &middot; the same form as a bottom sheet</span></div>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+      <sc-for list="{{ sheets }}" as="p" hint-placeholder-count="4">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ p.label }}</div>
+          <div style="width:390px;height:760px;border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;background:var(--bg);position:relative;">
+            <div style="padding:14px 16px;display:flex;flex-direction:column;gap:6px;">
+              <sc-for list="{{ phoneBehind }}" as="r" hint-placeholder-count="3"><dc-import name="IGI Row R1" spec="{{ r }}" hint-size="100%,52px"></dc-import></sc-for>
+            </div>
+            <div style="position:absolute;inset:0;background:rgba(5,5,8,0.62);"></div>
+            <div style="position:absolute;left:0;right:0;bottom:0;"><dc-import name="IGI Confirm" spec="{{ p.spec }}" hint-size="390px,600px"></dc-import></div>
+          </div>
+          <div style="width:390px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">{{ p.note }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const C = {
+      etali: { name: "Etali, Primal Conqueror", pips: ["5", "R", "R"], fig: 29, price: "$6.50" },
+      regisaur: { name: "Regisaur Alpha", pips: ["3", "R", "G"], fig: 44, price: "$1.40" },
+      bronto: { name: "Rampaging Brontodon", pips: ["2", "G", "G"], fig: 8, price: "$0.25" },
+      chariot: { name: "Esika's Chariot", pips: ["3", "G"], fig: 31, price: "$4.10", qual: "foil" },
+      lotus: { name: "Jeweled Lotus", pips: ["0"], fig: 12, soldOut: true },
+      season: { name: "Doubling Season", pips: ["4", "G"], fig: 36, price: "$42.60", over: true },
+      approach: { name: "Dragon's Approach", qty: "×3", pips: ["2", "R"], fig: 6, price: "$0.30" },
+      favor: { name: "Etali's Favor", pips: ["2", "R"], fig: null, bare: true },
+      swords: { name: "Swords to Plowshares", pips: ["W"], fig: 70, price: "$1.84", owned: true, short: "short" },
+      gishath: { name: "Gishath, Sun's Avatar", pips: ["5", "R", "G", "W"], fig: null, price: "$3.10", commander: true },
+    };
+    const row = (k, ph, extra = {}) => ({ ...C[k], ph, tools: true, limit: "$10", ...extra });
+    const heroGroups = [
+      { name: "Commander", count: "1", rows: [row("gishath", false)] },
+      { name: "Creatures", count: "3", rows: [row("etali", false, { ctl: "open", hover: true }), row("regisaur", false), row("bronto", false)] },
+      { name: "Artifacts", count: "2", rows: [row("chariot", false), row("lotus", false)] },
+      { name: "Enchantments", count: "1", rows: [row("season", false)] },
+      { name: "Sorceries", count: "2", rows: [row("approach", false), row("favor", false)] },
+      { name: "Spoken for", count: "1", rows: [row("swords", false)] },
+    ];
+    const shapes = (ph) => [
+      { cap: "plain", spec: row("etali", ph) },
+      { cap: "every neighbor · figure, over $10, ring, ⇄", spec: row("season", ph) },
+      { cap: "spoken for", spec: row("swords", ph) },
+      { cap: "commander", spec: row("gishath", ph) },
+      { cap: "sold out", spec: row("lotus", ph) },
+      { cap: "bare buy · never stocked", spec: row("favor", ph) },
+      { cap: "foil-only price", spec: row("chariot", ph) },
+      { cap: "the deck asks ×3", spec: row("approach", ph) },
+    ];
+    const matrix = [
+      { label: "390 · below lg, two lines", w: "390px", rows: shapes(true) },
+      { label: "lg and up · one 588 grid cell", w: "620px", rows: shapes(false) },
+    ];
+    const st = (ph) => ["rest", "hover", "focus", "press", "open", "pending", "disabled"].filter((c) => !(ph && c === "hover")).map((c) => ({ cap: c, spec: row("regisaur", ph, { ctl: c, hover: c === "open", dim: c === "pending" }) }));
+    const states = [
+      { label: "390", w: "460px", rows: st(true) },
+      { label: "desktop cell", w: "690px", rows: st(false) },
+    ];
+    const pops = [
+      { label: "B1 · preset", spec: { v: "preset" }, note: "Printing, finish and quantity are all preset. The listed tile is selected, with no badge. Finish is nonfoil because the printing has a nonfoil price. Quantity is what the row still needs. The mono line under the count shows the count being written, the figure the write sends as the one it expects." },
+      { label: "B1 · a changed printing", spec: { v: "changed" }, note: "The listed tile keeps its listed line, so the way back is visible. The intro reads that it changed, and Back to the listed one restores all three presets. Finish chips follow what the new printing offers." },
+      { label: "B1 · foil-only", spec: { v: "foilOnly" }, note: "The listed printing only comes foil, so Foil is preset and Nonfoil is drawn dashed, unavailable, with the reason beside it. Picking KHM #169 brings Nonfoil back and presets it." },
+      { label: "B1 · one printing", spec: { v: "onePrinting" }, note: "With one printing, the tile row collapses to a single line, as the Add cards sheet skips its step. The finish and the count are still asked." },
+      { label: "B1 · quantity above 1", spec: { v: "qtyMany" }, note: "A card the deck asks three of presets to 3. It's still one holding and one history entry." },
+      { label: "B1 · more than the row needs", spec: { v: "qtyOver" }, note: "The stepper doesn't stop at the need. Above it, a quiet clause counts the spares. There's no warning, because owning a spare is fine. The cap is 20: + goes dim there, and typing 25 clamps to 20 on blur." },
+      { label: "B1 · no printing behind the price", spec: { v: "noPrice" }, note: "A bare buy has no printing to preset. The 1+2 handoff ruled that Add cards has no default printing (the required step), so this does the same: nothing is selected, finish and count wait at .4, and Add stays disabled until a tile is chosen." },
+      { label: "B1 · came back stale", spec: { v: "stale" }, note: "The write sent ×0 as the expected count, and the server had ×1. The same form redraws in place: the banner, the own line re-read, and the count re-based on the new need. Nothing was written, and the player confirms again. Focus moves to the banner (role=status)." },
+      { label: "B1 · failed", spec: { v: "failed" }, note: "Nothing changed. The form stays with every choice intact, and Add retries. The control on the row returns to rest under the open form." },
+      { label: "B1 · pending", spec: { v: "pending" }, note: "From Add until the answer, the fields freeze at .6 with no reflow, Cancel is disabled, and the button reads Adding…. On success the form closes and the receipt takes over (canvas 2)." },
+    ];
+    const phoneBehind = [row("etali", true, { ctl: "open" }), row("regisaur", true), row("season", true)];
+    const sheets = [
+      { label: "B2 · preset", spec: { ph: true, v: "preset" }, note: "The tile row scrolls sideways, as in B4m. Chips and the stepper are 44px. The two buttons sit side by side at 46px, and focus starts on the selected tile." },
+      { label: "B2 · a changed printing", spec: { ph: true, v: "changed" }, note: "Back to the listed one is a 44px target on its own line end." },
+      { label: "B2 · stale", spec: { ph: true, v: "stale" }, note: "The banner pushes the form down rather than covering it. The sheet grows, and the page behind doesn't move." },
+      { label: "B2 · no price", spec: { ph: true, v: "noPrice" }, note: "Add reads Choose a printing first until a tile is chosen." },
+    ];
+    return { heroGroups, heroPop: { v: "preset" }, matrix, states, pops, sheets, phoneBehind };
+  }
+}
+</script>
+</body>
+</html>

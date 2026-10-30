@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Wishlist page, desktop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#FF4D9A}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#6F7486}
+.cap{font-size:12.5px;line-height:1.55;color:#959AAD;margin:0}
+.dk{width:1300px;height:820px;flex:none;display:flex;background:#0E0F14;border:1px solid #262A35;border-radius:12px;overflow:hidden;position:relative;box-sizing:border-box;font-family:'IBM Plex Sans',sans-serif}
+.rail{width:62px;flex:none;background:#12141B;border-right:1px solid #181C26;display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:4px;box-sizing:border-box}
+.logo{display:flex;flex-direction:column;align-items:center;margin-bottom:16px;color:#E6E8F0;font:700 19px 'Chakra Petch',sans-serif;line-height:1}
+.logo i{color:#FF4D9A;font-style:normal;font-size:8px;letter-spacing:1px;margin-bottom:2px}
+.slot{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#6F7486}
+.av{margin-top:auto;width:30px;height:30px;border-radius:50%;border:1px solid #FF4D9A;background:#0E0F14;color:#FF4D9A;font:500 10px 'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center;padding:0}
+.main{flex:1;min-width:0;display:flex;flex-direction:column;position:relative;overflow:hidden}
+.band{display:flex;align-items:center;gap:11px;padding:4px 18px 4px 30px;background:#12141B;border-bottom:1px solid #181C26;flex:none;font-size:13.5px;color:#E6E8F0}
+.band .ok{color:#6FA368;font-size:14px}
+.x{width:44px;height:44px;margin-left:auto;border:0;background:transparent;color:#959AAD;font-size:15px;display:flex;align-items:center;justify-content:center;padding:0;font-family:'IBM Plex Sans',sans-serif;flex:none}
+.pg{width:860px;margin:0 auto;padding:34px 0 60px;box-sizing:border-box}
+.hd{display:flex;align-items:flex-end;justify-content:space-between;gap:24px}
+.h1{margin:0;font:700 28px 'Chakra Petch',sans-serif;color:#E6E8F0}
+.cnt{font:12px 'IBM Plex Mono',monospace;color:#959AAD;margin-top:4px}
+.fl{margin:10px 0 0;font-size:13px;color:#959AAD;display:flex;align-items:center;gap:8px}
+.fl svg{color:#6F7486;flex:none}
+.sf{margin-top:18px;height:44px;border-radius:8px;border:1px solid #343843;background:#101219;display:flex;align-items:center;gap:10px;padding:0 14px;color:#6F7486;font-size:14px;box-sizing:border-box}
+.sf.on{border-color:#FF4D9A;color:#E6E8F0}
+.res{margin-top:6px;border:1px solid #262A35;border-radius:10px;background:#16181F;padding:4px;box-shadow:0 18px 40px rgba(0,0,0,.45)}
+.rr{display:grid;grid-template-columns:30px 1fr 180px 96px;align-items:center;gap:12px;height:52px;padding:0 8px;border-radius:8px}
+.rr.hl{background:#20222A}
+.rr img{width:30px;height:42px;object-fit:cover;border-radius:5px;background:#191B22}
+.rn{font-size:14px;font-weight:600;color:#E6E8F0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rn em{font-style:normal;color:#FF4D9A}
+.rt{font:11px 'IBM Plex Mono',monospace;color:#6F7486;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rb{height:36px;border-radius:8px;border:1px solid #FF4D9A;background:transparent;color:#FF4D9A;font:600 13px 'IBM Plex Sans',sans-serif;padding:0 12px}
+.rb.done{border-color:transparent;color:#6FA368}
+.sec{margin-top:28px}
+.sh{display:flex;align-items:center;justify-content:space-between;min-height:36px;padding-bottom:6px;border-bottom:1px solid #181C26}
+.tl{min-height:32px;padding:0 4px;border:0;background:transparent;color:#FF4D9A;font:500 13px 'IBM Plex Sans',sans-serif}
+.wl{display:grid;grid-template-columns:76px 1fr 132px 44px;align-items:center;gap:16px;min-height:76px;padding:8px 0;border-bottom:1px solid #181C26;box-sizing:border-box}
+.wl.nw{background:linear-gradient(90deg,rgba(255,77,154,.08),transparent 60%)}
+.wl.out{opacity:.35}
+.wa{position:relative;width:76px;height:54px;border-radius:7px;overflow:hidden;border:1px solid #262A35;padding:0;background:#191B22}
+.wa img{display:block;width:100%;height:100%;object-fit:cover}
+.got .wa img{filter:saturate(.55) brightness(.8)}
+.stamp{position:absolute;right:4px;bottom:5px;padding:1px 6px;border:1.5px solid #6FA368;border-radius:4px;color:#6FA368;background:rgba(14,15,20,.85);font:700 10.5px 'Chakra Petch',sans-serif;letter-spacing:.16em;transform:rotate(-8deg)}
+.wi{display:flex;flex-direction:column;gap:5px;min-width:0;align-items:flex-start}
+.wn{border:0;background:transparent;padding:0;text-align:left;font:500 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0;border-bottom:1px dotted #343843}
+.ws{display:flex;align-items:center;gap:8px;font:11.5px 'IBM Plex Mono',monospace;color:#6F7486}
+.ws.g{color:#6FA368}
+.pips{display:flex;gap:3px}
+.pp{width:9px;height:9px;border-radius:2px;border:1px solid #343843;box-sizing:border-box}
+.pp.on{background:#6FA368;border-color:#6FA368}
+.spc{display:inline-flex;align-items:center;gap:7px;height:26px;padding:0 10px 0 3px;border-radius:999px;border:1px solid #262A35;background:#13151C;color:#B1B6C7;font:12px 'IBM Plex Sans',sans-serif}
+.spf{display:flex}
+.spf img{width:20px;height:20px;border-radius:50%;object-fit:cover;border:1.5px solid #13151C;margin-left:-6px;display:block}
+.spf img:first-child{margin-left:0}
+.st{display:flex;align-items:center;height:36px;border:1px solid #262A35;border-radius:8px;overflow:hidden;justify-self:end}
+.sl{font:10px 'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#6F7486;padding:0 4px 0 10px}
+.sb{width:34px;height:36px;border:0;background:transparent;color:#B1B6C7;font:500 16px 'IBM Plex Sans',sans-serif;padding:0}
+.sb.off{color:#3D404E}
+.sv{min-width:22px;text-align:center;font:600 14px 'IBM Plex Mono',monospace;color:#E6E8F0}
+.empty{margin-top:22px;border:1px dashed #343843;border-radius:14px;padding:28px 30px;display:flex;gap:26px;align-items:center}
+.fan{position:relative;width:150px;height:104px;flex:none}
+.fan span{position:absolute;width:74px;height:104px;border-radius:7px;border:1.5px dashed #343843;background:#12141B}
+.fan span:nth-child(1){left:6px;transform:rotate(-9deg)}
+.fan span:nth-child(2){left:38px;transform:rotate(2deg)}
+.fan span:nth-child(3){left:70px;transform:rotate(11deg);border-color:#843052;display:flex;align-items:center;justify-content:center;color:#FF4D9A}
+.et{display:flex;flex-direction:column;gap:6px}
+.et b{font:700 18px 'Chakra Petch',sans-serif;color:#E6E8F0}
+.et span{font-size:13.5px;line-height:1.6;color:#959AAD;max-width:560px}
+.note{margin:0;max-width:1300px}
+</style>
+</helmet>
+<div style="width:2760px;min-height:3200px;box-sizing:border-box;padding:40px 56px 56px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:22px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span class="k">/wishlist · desktop 1300 · the shipped shell, Kamigawa theme · SOCIAL_WISHLIST_ENABLED</span>
+    <h2 style="margin:0;font:700 26px 'Chakra Petch',sans-serif">One page for the cards you want outside any deck: a search to add, Wanted, then Got</h2>
+    <p class="cap" style="max-width:2200px">The page sits in the 860px column the account pages use. Each line is the card’s art, its name (opens card details), what you have against what you want, and a want stepper; ✕ takes the line off. A friend’s spare shows as a chip under the name, the same chip as on deck rows (Spares boards). A line is GOT the moment your collection holds the count: it takes a stamp, turns its have line green and moves to Got until you clear it. The route is new, so the whole page is new; the account menu row is on the Add boards.</p>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(2,1300px);gap:40px 48px">
+    <sc-for list="{{frames}}" as="f" hint-placeholder-count="6">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span class="k">{{f.label}}</span>
+        <div class="dk">
+          <nav class="rail" aria-label="Primary">
+            <span class="logo" aria-hidden="true"><i>◆◆◆</i>99</span>
+            <a class="slot" href="#" aria-label="Home"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg></a>
+            <a class="slot" href="#" aria-label="Collection"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg></a>
+            <a class="slot" href="#" aria-label="Commanders"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 18h16M5 16l-1-9 5 4 3-6 3 6 5-4-1 9z"/></svg></a>
+            <a class="slot" href="#" aria-label="Discover"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8l3 4-3 4-3-4z"/></svg></a>
+            <a class="slot" href="#" aria-label="Decks"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="7" y="4" width="12" height="16" rx="2"/><path d="M5 7v12a2 2 0 002 2h9"/></svg></a>
+            <button class="av" type="button" aria-label="Account">HH</button>
+          </nav>
+          <main class="main">
+            <sc-if value="{{f.band}}" hint-placeholder-val="{{false}}">
+              <div class="band" role="status"><span class="ok" aria-hidden="true">✓</span><span>{{f.bandText}}</span><button class="x" type="button" aria-label="Close">✕</button></div>
+            </sc-if>
+            <div class="pg">
+              <div class="hd">
+                <div>
+                  <h1 class="h1">Wishlist</h1>
+                  <div class="cnt">{{f.countText}}</div>
+                </div>
+              </div>
+              <sc-if value="{{f.friendLine}}" hint-placeholder-val="{{false}}">
+                <p class="fl"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="9" cy="9" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><circle cx="16.5" cy="8" r="2.6"/><path d="M15.5 13.2c2.6-.2 4.5 1.4 5 4.3"/></svg>Your friends can see this list: the cards, how many you want, and what you’ve got. Never what you own.</p>
+              </sc-if>
+              <div class="{{f.sfCls}}" role="combobox" aria-expanded="{{f.ariaExp}}" aria-label="Add a card"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg><span>{{f.q}}</span></div>
+              <sc-if value="{{f.searchOpen}}" hint-placeholder-val="{{false}}">
+                <div class="res" role="listbox" aria-label="Cards">
+                  <sc-for list="{{f.results}}" as="r" hint-placeholder-count="3">
+                    <div class="{{r.cls}}" role="option" aria-selected="false"><img src="{{r.art}}" alt=""><span class="rn">{{r.name}}</span><span class="rt">{{r.meta}}</span><button class="{{r.btnCls}}" type="button">{{r.btn}}</button></div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{f.empty}}" hint-placeholder-val="{{true}}">
+                <div class="empty">
+                  <div class="fan" aria-hidden="true"><span></span><span></span><span><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 4l2.4 5 5.4.6-4 3.7 1.1 5.4L12 16l-4.9 2.7 1.1-5.4-4-3.7 5.4-.6z"/></svg></span></div>
+                  <div class="et"><b>Nothing wanted yet</b><span>{{f.emptyText}}</span></div>
+                </div>
+              </sc-if>
+              <sc-if value="{{f.showWanted}}" hint-placeholder-val="{{true}}">
+                <section class="sec" aria-label="Wanted">
+                  <div class="sh"><span class="k">{{f.wantedHead}}</span></div>
+                  <sc-for list="{{f.wanted}}" as="l" hint-placeholder-count="3">
+                    <div class="{{l.cls}}">
+                      <button class="wa" type="button" aria-label="{{l.name}}, card details"><img src="{{l.art}}" alt=""></button>
+                      <div class="wi">
+                        <button class="wn" type="button">{{l.name}}</button>
+                        <span class="ws"><sc-if value="{{l.showPips}}" hint-placeholder-val="{{false}}"><span class="pips" aria-hidden="true"><sc-for list="{{l.pips}}" as="p" hint-placeholder-count="3"><span class="{{p.cls}}"></span></sc-for></span></sc-if>{{l.sub}}</span>
+                        <sc-if value="{{l.spare}}" hint-placeholder-val="{{false}}">
+                          <button class="spc" type="button" aria-haspopup="dialog"><span class="spf" aria-hidden="true"><sc-for list="{{l.faces}}" as="fc" hint-placeholder-count="1"><img src="{{fc.art}}" alt=""></sc-for></span>{{l.spText}}</button>
+                        </sc-if>
+                      </div>
+                      <div class="st" role="group" aria-label="Copies wanted"><span class="sl">want</span><button class="{{l.minusCls}}" type="button" aria-label="Want one fewer">−</button><span class="sv">{{l.want}}</span><button class="sb" type="button" aria-label="Want one more">+</button></div>
+                      <button class="x" type="button" aria-label="Clear {{l.name}}">✕</button>
+                    </div>
+                  </sc-for>
+                </section>
+              </sc-if>
+              <sc-if value="{{f.showGot}}" hint-placeholder-val="{{false}}">
+                <section class="sec" aria-label="Got">
+                  <div class="sh"><span class="k">{{f.gotHead}}</span><button class="tl" type="button">Clear got</button></div>
+                  <sc-for list="{{f.got}}" as="l" hint-placeholder-count="2">
+                    <div class="{{l.cls}}">
+                      <button class="wa" type="button" aria-label="{{l.name}}, card details, got"><img src="{{l.art}}" alt=""><span class="stamp" aria-hidden="true">GOT</span></button>
+                      <div class="wi">
+                        <button class="wn" type="button">{{l.name}}</button>
+                        <span class="ws g">{{l.sub}}</span>
+                      </div>
+                      <div class="st" role="group" aria-label="Copies wanted"><span class="sl">want</span><button class="{{l.minusCls}}" type="button" aria-label="Want one fewer">−</button><span class="sv">{{l.want}}</span><button class="sb" type="button" aria-label="Want one more">+</button></div>
+                      <button class="x" type="button" aria-label="Clear {{l.name}}">✕</button>
+                    </div>
+                  </sc-for>
+                </section>
+              </sc-if>
+            </div>
+          </main>
+        </div>
+        <p class="cap note">{{f.note}}</p>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2760,"height":3200}}'>
+class Component extends DCLogic {
+renderVals() {
+const A = { zimone: 'art/zimone.png', rootha: 'art/rootha.png', jace: 'art/jace.png', cap: 'art/captain-america.png', sai: 'art/sai.png', heroes: 'art/heroes.png', master: 'art/hero-master.png', sokka: 'art/hero-sokka.png', aang: 'art/resume-aang.png' };
+const pips = (have, want) => Array.from({ length: want }, (_, i) => ({ cls: i < have ? 'pp on' : 'pp' }));
+const W = (name, art, want, have, extra) => Object.assign({ cls: 'wl', name, art, want, sub: have === 0 ? 'none yet' : 'have ' + have + ' of ' + want, showPips: have > 0 && want <= 6, pips: pips(have, want), minusCls: want === 1 ? 'sb off' : 'sb', spare: false, faces: [], spText: '' }, extra || {});
+const G = (name, art, want, have) => ({ cls: 'wl got', name, art, want, sub: have === want ? 'got · have ' + have + ' of ' + want : 'got · have ' + have + ', wanted ' + want, minusCls: want === 1 ? 'sb off' : 'sb' });
+const sp1 = { spare: true, faces: [{ art: A.sokka }], spText: 'Dave has 1 spare' };
+const sp2 = { spare: true, faces: [{ art: A.sokka }, { art: A.aang }], spText: 'Dave and Priya have spares' };
+const wanted = [W('Zimone, Infinite Analyst', A.zimone, 1, 0, sp1), W('Rootha, Mastering the Moment', A.rootha, 3, 1, sp2), W('Jace, Multiverse Architect', A.jace, 2, 0), W('Captain America, Team Leader', A.cap, 1, 0)];
+const got = [G('Sai, Master Thopterist', A.sai, 2, 2), G('Heroes in a Half Shell', A.heroes, 1, 3)];
+const base = { band: false, bandText: '', countText: '', friendLine: false, sfCls: 'sf', q: 'Add a card', searchOpen: false, ariaExp: 'false', results: [], empty: false, emptyText: '', showWanted: false, wantedHead: '', wanted: [], showGot: false, gotHead: '', got: [] };
+const fr = (o) => Object.assign({}, base, o, { wantedHead: 'Wanted · ' + (o.wanted ? o.wanted.length : 0), gotHead: 'Got · ' + (o.got ? o.got.length : 0) });
+const EMPTY = 'Cards you want outside any deck, any printing. Search for one above, or press Want it in any card’s details. A line reads GOT once your collection holds that many, and stays until you clear it.';
+const res = [
+{ cls: 'rr hl', art: A.sai, name: 'Sai, Master Thopterist', meta: 'Creature — Human Artificer · not owned', btn: '✓ Wanted', btnCls: 'rb done' },
+{ cls: 'rr', art: A.master, name: 'The Master, Transcendent', meta: 'Legendary Creature · ×1 owned', btn: 'Want', btnCls: 'rb' },
+{ cls: 'rr', art: A.rootha, name: 'Rootha, Mastering the Moment', meta: 'Legendary Creature · on your list', btn: 'want 3', btnCls: 'rb done' }
+];
+const frames = [
+fr({ label: 'W1 · empty · friends off (or no friends yet)', countText: 'Nothing wanted yet', empty: true, emptyText: EMPTY, note: 'The first screen everyone sees. The search is the page’s own door; the sentence names the other one (Want it in card details) and the one rule worth knowing (GOT). Friends off, or on with no friend yet: no friends line, because nobody can see the list. Nothing here mentions friends, so the page is complete for a player who never adds one.' }),
+fr({ label: 'W2 · empty · friends on, at least one friend', countText: 'Nothing wanted yet', friendLine: true, empty: true, emptyText: EMPTY, note: 'One line joins under the head once you have a friend: who sees the list and what they never see (Q7, no toggle, so the line is a fact, not a setting). It stays on the full page too. No share switch, by the lock.' }),
+fr({ label: 'W3 · the page’s search · adding Sai', countText: '1 card', friendLine: true, sfCls: 'sf on', q: 'ma|', searchOpen: true, ariaExp: 'true', results: res, showWanted: true, wanted: [W('Sai, Master Thopterist', A.sai, 1, 0, { cls: 'wl nw' })], note: 'The shipped card search row (art, name, type, owned), with the deck quick-add’s trailing slot renamed: Want, then ✓ Wanted in --success; a card already on the list reads its want. One press adds at one more than you own and leaves the search open for the next card. Escape or a click outside closes it. The new line arrives at the top of Wanted with a fading pink wash (600ms).' }),
+fr({ label: 'W4 · many lines · quantity, part owned, spares, GOT', countText: '6 cards · 2 got', friendLine: true, showWanted: true, wanted: wanted, showGot: true, got: got, note: 'Wanted is newest first; Got sits under it. Rootha wants 3 and you have 1: have 1 of 3 and a pip per copy. Zimone and Rootha carry the spare chip, because Dave (and Priya) share spares with a pod you are in; pressing it is drawn on the Spares boards. Got lines take the stamp, a dimmer art and a green have line; Heroes was wanted once and you now hold 3. The stepper stays on got lines: raising Sai to 3 moves it back to Wanted. − is held at 1 (✕ is how a line goes).' }),
+fr({ label: 'W5 · ✕ on one line · it leaves at once', countText: '5 cards · 2 got', friendLine: true, showWanted: true, wanted: [wanted[0], wanted[1], W('Jace, Multiverse Architect', A.jace, 2, 0, { cls: 'wl out' }), wanted[3]], showGot: true, got: got, note: 'One press clears a line, got or not, with no confirm: putting it back is one press of Want it. The row fades and collapses (160ms, none under reduced motion) and the count updates. A failed clear puts the row back and raises the shared ToastFrame (We couldn’t clear that. Your wishlist is unchanged.).' }),
+fr({ label: 'W6 · Clear got · the receipt', band: true, bandText: 'Cleared 2 got cards from your wishlist.', countText: '4 cards', friendLine: true, showWanted: true, wanted: wanted, note: 'Clear got clears every got line in one press. It is the only bulk action, because got lines pile up and stay until cleared (Q9). The band is the shipped receipt strip (role=status, bare ✕). With no got line, the Got section is absent rather than empty.' })
+];
+return { frames };
+}
+}
+</script>
+</body>
+</html>

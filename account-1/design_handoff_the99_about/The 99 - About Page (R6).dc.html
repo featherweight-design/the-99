@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;800&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0A0C; }
+  a { color: #FF4D9A; text-decoration: none; border-bottom: 1px solid rgba(255,77,154,0.35); }
+  a:hover { color: #FF62A9; border-bottom-color: #FF62A9; }
+  :root, [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-raised:#191B22; --surface-rail:#12141B;
+    --surface-sunken:#101219; --surface-inset:#13151C; --elevated:#20222A; --elevated-hover:#181A21;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476;
+    --accent:#FF4D9A; --accent-dim:#843052;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-raised:#211D18; --surface-rail:#1A1611;
+    --surface-sunken:#18140F; --surface-inset:#1B1712; --elevated:#29241F; --elevated-hover:#201C17;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654;
+    --accent:#CF8745; --accent-dim:#6B482A;
+  }
+  [data-theme="ixalan"] {
+    --bg:#0E1310; --surface:#171E19; --surface-raised:#1A221C; --surface-rail:#121814;
+    --surface-sunken:#101512; --surface-inset:#141B16; --elevated:#212A23; --elevated-hover:#18201A;
+    --border:#1D2620; --border-strong:#2C3830; --border-dashed:#3B4A3F;
+    --fg:#E0E7DE; --fg-body:#B6C2B3; --fg-muted:#98A695; --fg-faint:#808C7C; --fg-locked:#626E5E;
+    --accent:#A3C445; --accent-dim:#3E5220;
+  }
+  [data-theme="phyrexia"] {
+    --bg:#0D0B0E; --surface:#151317; --surface-raised:#18161A; --surface-rail:#110F13;
+    --surface-sunken:#100E12; --surface-inset:#131115; --elevated:#1E1C20; --elevated-hover:#171519;
+    --border:#19161C; --border-strong:#262329; --border-dashed:#332F36;
+    --fg:#E4E2E6; --fg-body:#B5B2BB; --fg-muted:#9A96A0; --fg-faint:#78747E; --fg-locked:#64616A;
+    --accent:#52827A; --accent-dim:#213834;
+  }
+  [data-theme="kaldheim"] {
+    --bg:#121217; --surface:#1E1F26; --surface-raised:#22232B; --surface-rail:#181920;
+    --surface-sunken:#16171D; --surface-inset:#1A1B22; --elevated:#2D2E35; --elevated-hover:#212229;
+    --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E;
+    --accent:#5C86C9; --accent-dim:#2C405F;
+  }
+  [data-theme="eldraine"] {
+    --bg:#120E17; --surface:#1B1821; --surface-raised:#1F1C25; --surface-rail:#15121B;
+    --surface-sunken:#131018; --surface-inset:#17141D; --elevated:#26232C; --elevated-hover:#1D1A23;
+    --border:#241D30; --border-strong:#342C41; --border-dashed:#443C52;
+    --fg:#E4DEEE; --fg-body:#B9B2C5; --fg-muted:#9C95A8; --fg-faint:#898395; --fg-locked:#6A6475;
+    --accent:#AE88E6; --accent-dim:#4A3568;
+  }
+</style>
+</helmet>
+
+<div data-theme="{{ theme }}" style="font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;padding:40px;background:#0B0A0C;min-height:100vh;">
+
+  <section style="max-width:1700px;margin:0 0 40px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#0E0F14;background:#FF4D9A;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">ABOUT PAGE R6</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.28em;text-transform:uppercase;color:#7A8095;">the sheet &middot; the index &middot; the jump &middot; entry-level contents and search</span>
+    </div>
+    <div style="border:2px solid #FF4D9A;border-radius:14px;background:#141620;padding:24px 28px;">
+      <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:29px;margin:0 0 14px;line-height:1.28;text-wrap:pretty;">No redirect. A reader who is behind gets <span style="color:#FF4D9A;">one sheet over the page they opened</span>, and <span style="color:#FF4D9A;">/about opens on its own new entries</span>. The contents lists all thirty-nine entries, and <span style="color:#FF4D9A;">the search filters that list only</span>. It never needed to hide a page chapter, so nothing goes back to Hugh.</h1>
+      <p style="font-size:14.5px;line-height:1.7;color:#AEB4C6;margin:0 0 18px;max-width:1300px;text-wrap:pretty;">Brief: <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">2026-09-25-about-rethink.md</span> (branch <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">docs/about-rethink</span>). The rulings in &sect;3 are taken as locked, and so are the readings in &sect;4.0: Show me opens the index, Later records nothing, first-run is one line, and Got it retires. The six calls in &sect;5 are answered below. Contract: <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">STATES-about-r6.md</span>. Everything is drawn in viewport frames: <b style="color:#E6E8F0;font-weight:600;">1300&times;820</b> and <b style="color:#E6E8F0;font-weight:600;">390&times;844</b>. Figures are abbreviated to their sunken plate, as drawn in R4 &sect;3.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;">
+        <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:7px;">&sect;5.1 container</div>
+          <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;">It is a card with no scrim. It doesn't take focus, doesn't hold the page and isn't <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">aria-modal</span>. On desktop it sits bottom-left beside the account avatar, where About lives. On a phone it runs full width <b style="color:#E6E8F0;font-weight:600;">above</b> the tab bar and never covers it.</div>
+        </div>
+        <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:7px;">&sect;5.2 limit</div>
+          <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;">Up to four new entries, every title is listed. From five, it lists three and then <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">and N more</span>. So the summary always hides at least two, and never reads &ldquo;and 1 more&rdquo; in place of a title that would fit.</div>
+        </div>
+        <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:7px;">&sect;5.3 the jump</div>
+          <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;">The entry's title line takes <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--elevated</span>, the same fill as the contents' current row, so both mean &ldquo;you are here&rdquo;. It clears when the entry leaves the upper band or another jump lands. It is held in client state, not <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">:target</span>, so a reload never shows it.</div>
+        </div>
+        <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:7px;">&sect;5.4 contents</div>
+          <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;">In the desktop rail every chapter is open, and the list scrolls inside the sticky rail under a search field that stays put. On a phone the list collapses to four chapter rows, and each one opens its own entries. A search opens every chapter that has a match. <b style="color:#E6E8F0;font-weight:600;">This collapses the contents list, never the page.</b></div>
+        </div>
+        <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:7px;">&sect;5.5 the search</div>
+          <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;">It sits under the Contents label at both widths. It matches any part of a title, ignoring case, and prints the matched run bold. When nothing matches, it says so and says the page is untouched: <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">Nothing titled &ldquo;mulligan&rdquo;.</span></div>
+        </div>
+        <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:7px;">&sect;5.6 the old marks</div>
+          <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;"><b style="color:#E6E8F0;font-weight:600;">The eyebrow retires</b>: its sentence becomes the index's heading. The chapter rows keep <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">N new</span>, entry rows in the contents gain <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">new</span>, and the NEW pill on the entry stays.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="s1" style="max-width:1700px;margin-bottom:48px;">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:8px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#FF4D9A;">&sect;1</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;margin:0;">The one-time sheet, over whatever route the reader opened</h2>
+    </div>
+    <p style="max-width:1300px;font-size:14px;line-height:1.7;color:#9BA1B4;margin:0 0 20px;text-wrap:pretty;">Drawn over <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">/decks</span>, whose tiles are sketched as blocks: the route underneath is not the subject, and it stays fully usable. The sheet shows titles only, <b style="color:#E6E8F0;font-weight:600;">in page order</b>, the same order the index uses. It has two buttons and no &#10005;, since Later is the dismiss and two dismissals in one card is the defect <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">sheet.tsx</span> already names. <b style="color:#E6E8F0;font-weight:600;">It is not the app's modal <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">Sheet</span></b>. That one is <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">aria-modal</span> behind a scrim, and this card can be neither.</p>
+
+    <div style="display:flex;flex-direction:column;gap:28px;">
+
+      <div id="1a" style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;">
+        <div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><a href="#1a" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#FF4D9A;border-radius:5px;padding:3px 8px;border-bottom:none;">1a</a><span style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;">Desktop, one new entry (seen 8, version 9)</span></div>
+          <div style="position:relative;width:1300px;height:820px;display:flex;background:var(--bg);border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;">
+            <div style="width:62px;flex:none;background:var(--surface-rail);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:4px;">
+              <span style="font-family:'Cinzel',serif;font-size:15px;font-weight:700;color:var(--accent);margin-bottom:16px;">99</span>
+              <span style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;"><span style="width:17px;height:17px;border-radius:4px;border:1.5px solid var(--fg-faint);"></span></span>
+              <span style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;"><span style="width:17px;height:17px;border-radius:4px;border:1.5px solid var(--fg-faint);"></span></span>
+              <span style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;"><span style="width:17px;height:17px;border-radius:4px;border:1.5px solid var(--fg-faint);"></span></span>
+              <span style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;"><span style="width:17px;height:17px;border-radius:4px;border:1.5px solid var(--fg-faint);"></span></span>
+              <span style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--elevated);"><span style="width:17px;height:17px;border-radius:4px;border:1.5px solid var(--fg);"></span></span>
+              <span style="flex:1;"></span>
+              <span style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border-strong);background:var(--surface);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">HH</span>
+            </div>
+            <div style="flex:1;min-width:0;padding:28px 34px;">
+              <div style="height:30px;width:180px;border-radius:6px;background:var(--elevated);margin-bottom:24px;"></div>
+              <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;">
+                <sc-for list="{{ tiles }}" as="t" hint-placeholder-count="8">
+                  <div style="height:200px;border-radius:10px;border:1px solid var(--border);background:var(--surface);overflow:hidden;">
+                    <div style="height:110px;opacity:0.5;background:{{ t.wash }};"></div>
+                    <div style="padding:12px 14px;display:flex;flex-direction:column;gap:8px;"><div style="height:10px;width:62%;border-radius:3px;background:var(--elevated);"></div><div style="height:8px;width:38%;border-radius:3px;background:var(--surface-inset);border:1px solid var(--border);"></div></div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div role="region" aria-label="New in About" style="position:absolute;left:82px;bottom:20px;width:340px;background:var(--surface-rail);border:1px solid var(--border-strong);border-radius:14px;box-shadow:0 20px 50px rgba(0,0,0,0.5);padding:16px 18px 14px;">
+              <div style="display:flex;align-items:center;gap:10px;"><span aria-hidden="true" style="width:28px;height:28px;flex:none;border-radius:8px;background:color-mix(in oklab, var(--accent) 16%, transparent);border:1px solid color-mix(in oklab, var(--accent) 45%, transparent);display:flex;align-items:center;justify-content:center;"><span style="width:9px;height:9px;transform:rotate(45deg);background:var(--accent);display:block;"></span></span><h2 style="margin:0;font-family:'Cinzel',serif;font-size:17px;font-weight:700;color:var(--fg);">1 new in About</h2></div>
+              <ul style="list-style:none;margin:10px 0 0;padding:0;">
+                <li style="border-top:1px solid var(--border);padding:8px 0;font-size:13.5px;line-height:1.4;color:var(--fg-body);">The other half of a combo</li>
+              </ul>
+              <div style="display:flex;gap:8px;margin-top:10px;">
+                <span style="height:36px;display:inline-flex;align-items:center;padding:0 18px;border-radius:8px;background:var(--fg);color:var(--bg);font-size:13px;font-weight:600;">Show me</span>
+                <span style="height:36px;display:inline-flex;align-items:center;padding:0 18px;border-radius:8px;border:1px solid var(--border-strong);color:var(--fg);font-size:13px;font-weight:600;">Later</span>
+              </div>
+              <div style="margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);">Always in your account menu, under About The 99.</div>
+            </div>
+          </div>
+        </div>
+        <div style="width:330px;display:flex;flex-direction:column;gap:12px;padding-top:34px;">
+          <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:7px;">why bottom-left</div>
+            <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;">The account avatar sits at the foot of the rail, and About is the first row of its menu. The card appears once, so its last line tells the reader where to find the page afterwards, and it sits right beside that place. <b style="color:#E6E8F0;font-weight:600;">Nothing is drawn on the rail, the avatar or the menu</b> (H1 kept). It sits clear of the rail's 62px.</div>
+          </div>
+          <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:7px;">non-blocking, concretely</div>
+            <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;">No scrim, no focus move and no scroll lock. It is a labelled region, announced once through a polite live region. Escape acts as Later while focus is inside the card. Titles are text, not links: the card has one way in, which is Show me.</div>
+          </div>
+          <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#7A8095;margin-bottom:7px;">once</div>
+            <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;">It stays across client navigations until it is answered. A reload or a new tab doesn't bring it back, because the cookie now means &ldquo;sheet shown for N&rdquo;. It never appears on <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">/about</span>, for a signed-out reader, or on any route the gate exempts (&sect;4.0).</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;">
+        <div id="1b">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><a href="#1b" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#FF4D9A;border-radius:5px;padding:3px 8px;border-bottom:none;">1b</a><span style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;">Phone, one new</span></div>
+          <div style="position:relative;width:390px;height:844px;background:var(--bg);border:1px solid var(--border-strong);border-radius:20px;overflow:hidden;">
+            <div style="height:26px;background:var(--surface-rail);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 14px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-locked);">9:41</span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 20px 14px;border-bottom:1px solid var(--border);"><span style="display:flex;align-items:flex-end;gap:3px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.4em;color:var(--accent);padding-bottom:4px;">THE</span><span style="font-family:'Cinzel',serif;font-size:24px;font-weight:700;color:var(--accent);line-height:1;">99</span></span><span style="width:38px;height:38px;border-radius:12px;border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);">HH</span></div>
+            <div style="padding:18px 16px;">
+              <div style="height:24px;width:120px;border-radius:6px;background:var(--elevated);margin-bottom:18px;"></div>
+              <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;">
+                <sc-for list="{{ tiles }}" as="t" hint-placeholder-count="8">
+                  <div style="height:170px;border-radius:10px;border:1px solid var(--border);background:var(--surface);overflow:hidden;"><div style="height:96px;opacity:0.5;background:{{ t.wash }};"></div><div style="padding:10px 12px;display:flex;flex-direction:column;gap:7px;"><div style="height:9px;width:70%;border-radius:3px;background:var(--elevated);"></div><div style="height:7px;width:40%;border-radius:3px;background:var(--surface-inset);border:1px solid var(--border);"></div></div></div>
+                </sc-for>
+              </div>
+            </div>
+            <div role="region" aria-label="New in About" style="position:absolute;left:12px;right:12px;bottom:84px;background:var(--surface-rail);border:1px solid var(--border-strong);border-radius:14px;box-shadow:0 18px 44px rgba(0,0,0,0.55);padding:16px 16px 14px;">
+              <div style="display:flex;align-items:center;gap:10px;"><span aria-hidden="true" style="width:28px;height:28px;flex:none;border-radius:8px;background:color-mix(in oklab, var(--accent) 16%, transparent);border:1px solid color-mix(in oklab, var(--accent) 45%, transparent);display:flex;align-items:center;justify-content:center;"><span style="width:9px;height:9px;transform:rotate(45deg);background:var(--accent);display:block;"></span></span><h2 style="margin:0;font-family:'Cinzel',serif;font-size:17px;font-weight:700;color:var(--fg);">1 new in About</h2></div>
+              <ul style="list-style:none;margin:10px 0 0;padding:0;"><li style="border-top:1px solid var(--border);padding:9px 0;font-size:14px;line-height:1.4;color:var(--fg-body);">The other half of a combo</li></ul>
+              <div style="display:flex;gap:8px;margin-top:8px;"><span style="flex:1;height:44px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:var(--fg);color:var(--bg);font-size:14px;font-weight:600;">Show me</span><span style="flex:1;height:44px;display:flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid var(--border-strong);color:var(--fg);font-size:14px;font-weight:600;">Later</span></div>
+              <div style="margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);">Always in your account menu, under About The 99.</div>
+            </div>
+            <div style="position:absolute;left:0;right:0;bottom:0;height:74px;background:var(--surface-rail);border-top:1px solid var(--border);display:flex;align-items:center;padding:8px 8px 14px;">
+              <sc-for list="{{ tabsDecks }}" as="tb" hint-placeholder-count="5"><div style="flex:1;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:{{ tb.bg }};color:{{ tb.fg }};"><span style="width:17px;height:17px;border-radius:4px;border:1.5px solid currentColor;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;">{{ tb.label }}</span></div></sc-for>
+            </div>
+          </div>
+        </div>
+
+        <div id="1c">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><a href="#1c" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#FF4D9A;border-radius:5px;padding:3px 8px;border-bottom:none;">1c</a><span style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;">Phone, many (seen 1: five new)</span></div>
+          <div style="position:relative;width:390px;height:844px;background:var(--bg);border:1px solid var(--border-strong);border-radius:20px;overflow:hidden;">
+            <div style="height:26px;background:var(--surface-rail);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 14px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-locked);">9:41</span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 20px 14px;border-bottom:1px solid var(--border);"><span style="display:flex;align-items:flex-end;gap:3px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.4em;color:var(--accent);padding-bottom:4px;">THE</span><span style="font-family:'Cinzel',serif;font-size:24px;font-weight:700;color:var(--accent);line-height:1;">99</span></span><span style="width:38px;height:38px;border-radius:12px;border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);">HH</span></div>
+            <div style="padding:18px 16px;">
+              <div style="height:24px;width:120px;border-radius:6px;background:var(--elevated);margin-bottom:18px;"></div>
+              <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;">
+                <sc-for list="{{ tiles }}" as="t" hint-placeholder-count="8">
+                  <div style="height:170px;border-radius:10px;border:1px solid var(--border);background:var(--surface);overflow:hidden;"><div style="height:96px;opacity:0.5;background:{{ t.wash }};"></div><div style="padding:10px 12px;display:flex;flex-direction:column;gap:7px;"><div style="height:9px;width:70%;border-radius:3px;background:var(--elevated);"></div><div style="height:7px;width:40%;border-radius:3px;background:var(--surface-inset);border:1px solid var(--border);"></div></div></div>
+                </sc-for>
+              </div>
+            </div>
+            <div role="region" aria-label="New in About" style="position:absolute;left:12px;right:12px;bottom:84px;background:var(--surface-rail);border:1px solid var(--border-strong);border-radius:14px;box-shadow:0 18px 44px rgba(0,0,0,0.55);padding:16px 16px 14px;">
+              <div style="display:flex;align-items:center;gap:10px;"><span aria-hidden="true" style="width:28px;height:28px;flex:none;border-radius:8px;background:color-mix(in oklab, var(--accent) 16%, transparent);border:1px solid color-mix(in oklab, var(--accent) 45%, transparent);display:flex;align-items:center;justify-content:center;"><span style="width:9px;height:9px;transform:rotate(45deg);background:var(--accent);display:block;"></span></span><h2 style="margin:0;font-family:'Cinzel',serif;font-size:17px;font-weight:700;color:var(--fg);">5 new in About</h2></div>
+              <ul style="list-style:none;margin:10px 0 0;padding:0;">
+                <sc-for list="{{ sheetMany }}" as="s" hint-placeholder-count="3"><li style="border-top:1px solid var(--border);padding:9px 0;font-size:14px;line-height:1.4;color:var(--fg-body);">{{ s }}</li></sc-for>
+                <li style="border-top:1px solid var(--border);padding:9px 0 2px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">and 2 more</li>
+              </ul>
+              <div style="display:flex;gap:8px;margin-top:8px;"><span style="flex:1;height:44px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:var(--fg);color:var(--bg);font-size:14px;font-weight:600;">Show me</span><span style="flex:1;height:44px;display:flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid var(--border-strong);color:var(--fg);font-size:14px;font-weight:600;">Later</span></div>
+              <div style="margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);">Always in your account menu, under About The 99.</div>
+            </div>
+            <div style="position:absolute;left:0;right:0;bottom:0;height:74px;background:var(--surface-rail);border-top:1px solid var(--border);display:flex;align-items:center;padding:8px 8px 14px;">
+              <sc-for list="{{ tabsDecks }}" as="tb" hint-placeholder-count="5"><div style="flex:1;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:{{ tb.bg }};color:{{ tb.fg }};"><span style="width:17px;height:17px;border-radius:4px;border:1.5px solid currentColor;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;">{{ tb.label }}</span></div></sc-for>
+            </div>
+          </div>
+        </div>
+
+        <div id="1d">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><a href="#1d" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#FF4D9A;border-radius:5px;padding:3px 8px;border-bottom:none;">1d</a><span style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;">Phone, first run (seen 0)</span></div>
+          <div style="position:relative;width:390px;height:844px;background:var(--bg);border:1px solid var(--border-strong);border-radius:20px;overflow:hidden;">
+            <div style="height:26px;background:var(--surface-rail);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 14px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-locked);">9:41</span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 20px 14px;border-bottom:1px solid var(--border);"><span style="display:flex;align-items:flex-end;gap:3px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.4em;color:var(--accent);padding-bottom:4px;">THE</span><span style="font-family:'Cinzel',serif;font-size:24px;font-weight:700;color:var(--accent);line-height:1;">99</span></span><span style="width:38px;height:38px;border-radius:12px;border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);">HH</span></div>
+            <div style="padding:18px 16px;">
+              <div style="height:24px;width:150px;border-radius:6px;background:var(--elevated);margin-bottom:14px;"></div>
+              <div style="height:120px;border-radius:10px;border:1px dashed var(--border-dashed);margin-bottom:12px;"></div>
+              <div style="height:120px;border-radius:10px;border:1px dashed var(--border-dashed);"></div>
+            </div>
+            <div role="region" aria-label="About The 99" style="position:absolute;left:12px;right:12px;bottom:84px;background:var(--surface-rail);border:1px solid var(--border-strong);border-radius:14px;box-shadow:0 18px 44px rgba(0,0,0,0.55);padding:16px 16px 14px;">
+              <div style="display:flex;align-items:center;gap:10px;"><span aria-hidden="true" style="width:28px;height:28px;flex:none;border-radius:8px;background:color-mix(in oklab, var(--accent) 16%, transparent);border:1px solid color-mix(in oklab, var(--accent) 45%, transparent);display:flex;align-items:center;justify-content:center;"><span style="width:9px;height:9px;transform:rotate(45deg);background:var(--accent);display:block;"></span></span><h2 style="margin:0;font-family:'Cinzel',serif;font-size:17px;font-weight:700;color:var(--fg);">What The 99 does</h2></div>
+              <p style="margin:8px 0 0;font-size:14px;line-height:1.5;color:var(--fg-body);text-wrap:pretty;">One page that explains every mark, figure and status in the app, and where each one lives.</p>
+              <div style="display:flex;gap:8px;margin-top:12px;"><span style="flex:1;height:44px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:var(--fg);color:var(--bg);font-size:14px;font-weight:600;">Show me</span><span style="flex:1;height:44px;display:flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid var(--border-strong);color:var(--fg);font-size:14px;font-weight:600;">Later</span></div>
+              <div style="margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);">Always in your account menu, under About The 99.</div>
+            </div>
+            <div style="position:absolute;left:0;right:0;bottom:0;height:74px;background:var(--surface-rail);border-top:1px solid var(--border);display:flex;align-items:center;padding:8px 8px 14px;">
+              <sc-for list="{{ tabsHome }}" as="tb" hint-placeholder-count="5"><div style="flex:1;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:{{ tb.bg }};color:{{ tb.fg }};"><span style="width:17px;height:17px;border-radius:4px;border:1.5px solid currentColor;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;">{{ tb.label }}</span></div></sc-for>
+            </div>
+          </div>
+        </div>
+
+        <div style="width:300px;display:flex;flex-direction:column;gap:12px;padding-top:34px;">
+          <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:7px;">never over the tab bar</div>
+            <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">bottom: calc(var(--tabbar-h) + 10px)</span>, with 12px on each side. The brief allows the card to cover the tab bar until the reader dismisses it. This goes further: it never covers the tab bar at all. While it is open, the page reserves its height at the foot so the last content can still scroll clear of it.</div>
+          </div>
+          <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:7px;">the limit, drawn</div>
+            <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;">A reader at seen 1 on version 9 has five new entries. The card lists three, then <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">and 2 more</span>, and the index in <a href="#2a">2a</a> lists all five. The analysis launch adds two more, and because its entries are batched, a reader on version 9 gets <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">2 new</span>, which lists both.</div>
+          </div>
+          <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:7px;">first run</div>
+            <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;">Drawn over Home, which is where a new account lands. It carries the page's own title and one line, with no count and no list, because at seen 0 nothing is new (&sect;6). Show me opens <a href="#2c">2c</a>/<a href="#2d">2d</a>: no index and nothing marked.</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="1e" style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;">
+        <div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><a href="#1e" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#FF4D9A;border-radius:5px;padding:3px 8px;border-bottom:none;">1e</a><span style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;">Desktop: many, and first run, side by side at the card's anchor</span></div>
+          <div style="position:relative;width:1300px;height:420px;display:flex;background:var(--bg);border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;">
+            <div style="width:62px;flex:none;background:var(--surface-rail);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:14px 0;"><span style="flex:1;"></span><span style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border-strong);background:var(--surface);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">HH</span></div>
+            <div style="flex:1;position:relative;">
+              <div style="position:absolute;left:20px;bottom:20px;width:340px;background:var(--surface-rail);border:1px solid var(--border-strong);border-radius:14px;box-shadow:0 20px 50px rgba(0,0,0,0.5);padding:16px 18px 14px;">
+                <div style="display:flex;align-items:center;gap:10px;"><span aria-hidden="true" style="width:28px;height:28px;flex:none;border-radius:8px;background:color-mix(in oklab, var(--accent) 16%, transparent);border:1px solid color-mix(in oklab, var(--accent) 45%, transparent);display:flex;align-items:center;justify-content:center;"><span style="width:9px;height:9px;transform:rotate(45deg);background:var(--accent);display:block;"></span></span><h2 style="margin:0;font-family:'Cinzel',serif;font-size:17px;font-weight:700;color:var(--fg);">5 new in About</h2></div>
+                <ul style="list-style:none;margin:10px 0 0;padding:0;">
+                  <sc-for list="{{ sheetMany }}" as="s" hint-placeholder-count="3"><li style="border-top:1px solid var(--border);padding:8px 0;font-size:13.5px;line-height:1.4;color:var(--fg-body);">{{ s }}</li></sc-for>
+                  <li style="border-top:1px solid var(--border);padding:8px 0 2px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">and 2 more</li>
+                </ul>
+                <div style="display:flex;gap:8px;margin-top:10px;"><span style="height:36px;display:inline-flex;align-items:center;padding:0 18px;border-radius:8px;background:var(--fg);color:var(--bg);font-size:13px;font-weight:600;">Show me</span><span style="height:36px;display:inline-flex;align-items:center;padding:0 18px;border-radius:8px;border:1px solid var(--border-strong);color:var(--fg);font-size:13px;font-weight:600;">Later</span></div>
+                <div style="margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);">Always in your account menu, under About The 99.</div>
+              </div>
+              <div style="position:absolute;left:400px;bottom:20px;width:340px;background:var(--surface-rail);border:1px solid var(--border-strong);border-radius:14px;box-shadow:0 20px 50px rgba(0,0,0,0.5);padding:16px 18px 14px;">
+                <div style="display:flex;align-items:center;gap:10px;"><span aria-hidden="true" style="width:28px;height:28px;flex:none;border-radius:8px;background:color-mix(in oklab, var(--accent) 16%, transparent);border:1px solid color-mix(in oklab, var(--accent) 45%, transparent);display:flex;align-items:center;justify-content:center;"><span style="width:9px;height:9px;transform:rotate(45deg);background:var(--accent);display:block;"></span></span><h2 style="margin:0;font-family:'Cinzel',serif;font-size:17px;font-weight:700;color:var(--fg);">What The 99 does</h2></div>
+                <p style="margin:8px 0 0;font-size:13.5px;line-height:1.5;color:var(--fg-body);text-wrap:pretty;">One page that explains every mark, figure and status in the app, and where each one lives.</p>
+                <div style="display:flex;gap:8px;margin-top:12px;"><span style="height:36px;display:inline-flex;align-items:center;padding:0 18px;border-radius:8px;background:var(--fg);color:var(--bg);font-size:13px;font-weight:600;">Show me</span><span style="height:36px;display:inline-flex;align-items:center;padding:0 18px;border-radius:8px;border:1px solid var(--border-strong);color:var(--fg);font-size:13px;font-weight:600;">Later</span></div>
+                <div style="margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);">Always in your account menu, under About The 99.</div>
+              </div>
+              <div style="position:absolute;left:780px;bottom:24px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);">both are shown at one anchor for comparison &middot; only one is ever on screen</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="s2" style="max-width:1700px;margin-bottom:48px;">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:8px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#FF4D9A;">&sect;2</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;margin:0;">The what's-new index, and the page without it</h2>
+    </div>
+    <p style="max-width:1300px;font-size:14px;line-height:1.7;color:#9BA1B4;margin:0 0 20px;text-wrap:pretty;">It sits under the lede and above chapter 01. Each row carries a title and a route and nothing else (&sect;6): no caption, no figure, no chapter numeral. The whole row is one link to <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">#entry-id</span>. Because of that, the route is printed as text rather than linked, and the entry's own route link does the navigating. It is built from <b style="color:#E6E8F0;font-weight:600;">seen as it stood before this visit</b>, and then the visit is recorded. After a reload the index is gone, which is the trade Hugh accepted.</p>
+
+    <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;margin-bottom:28px;">
+      <div id="2a">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><a href="#2a" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#FF4D9A;border-radius:5px;padding:3px 8px;border-bottom:none;">2a</a><span style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;">Desktop, arrived behind (seen 1): index and the full contents</span></div>
+        <div style="position:relative;width:1300px;height:820px;display:flex;background:var(--bg);border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;">
+          <div style="width:62px;flex:none;background:var(--surface-rail);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:4px;">
+            <span style="font-family:'Cinzel',serif;font-size:15px;font-weight:700;color:var(--accent);margin-bottom:16px;">99</span>
+            <sc-for list="{{ railIcons }}" as="i" hint-placeholder-count="5"><span style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;"><span style="width:17px;height:17px;border-radius:4px;border:1.5px solid var(--fg-faint);"></span></span></sc-for>
+            <span style="flex:1;"></span>
+            <span style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border-strong);background:var(--surface);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">HH</span>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="max-width:1088px;margin:0 auto;display:flex;gap:40px;padding:28px 34px;align-items:flex-start;">
+              <div style="flex:1;min-width:0;max-width:760px;">
+                <h1 style="font-family:'Cinzel',serif;font-weight:700;font-size:29px;line-height:1.2;color:var(--fg);margin:0;">What The 99 does</h1>
+                <p style="margin:10px 0 0;font-size:13.5px;line-height:1.55;color:var(--fg-muted);text-wrap:pretty;">Everything here is scored against the cards you actually own. Four chapters, in the order you would use them. Each entry shows the thing it is describing and links to where it lives.</p>
+                <nav aria-label="New since you were last here" style="margin-top:22px;background:var(--surface);border:1px solid var(--border-strong);border-radius:10px;padding:14px 16px 4px;">
+                  <h2 style="margin:0 0 8px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;letter-spacing:0.08em;color:var(--accent);">5 new since you were last here</h2>
+                  <sc-for list="{{ indexMany }}" as="r" hint-placeholder-count="5">
+                    <a href="#2a" style="display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 12px;min-height:40px;padding:10px 0;border-top:1px solid var(--border);border-bottom:none;"><span style="font-size:14.5px;font-weight:500;color:var(--fg);">{{ r.title }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">{{ r.route }}</span></a>
+                  </sc-for>
+                </nav>
+                <section style="margin-top:28px;border-top:1px solid var(--border);padding-top:18px;">
+                  <h2 style="margin:0;font-family:'Cinzel',serif;font-size:21px;font-weight:700;color:var(--fg);"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">01</span> Your collection</h2>
+                  <p style="margin:4px 0 0;font-size:13px;color:var(--fg-muted);">Everything downstream is scored against what you own, so this is where the app starts.</p>
+                  <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;">
+                    <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;"><h3 style="margin:0;font-family:'Cinzel',serif;font-size:15.5px;font-weight:600;color:var(--fg);">Browse what you own</h3><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/collection</span></div>
+                    <p style="margin:6px 0 0;font-size:13.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">Search by name, narrow by colour, type, set or availability, and read the result as a grid or as rows. Every narrowing is a chip you can see and remove, and the count above the results always says how much of the collection you are looking at.</p>
+                    <div style="margin-top:10px;height:200px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);">figure &middot; as R4 &sect;3</div>
+                  </div>
+                </section>
+              </div>
+              <nav aria-label="Contents" style="width:216px;flex:none;height:764px;display:flex;flex-direction:column;">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">Contents</div>
+                <div style="margin-top:10px;height:34px;display:flex;align-items:center;gap:8px;padding:0 10px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border-strong);"><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--fg-faint);">&#8981;</span><span style="flex:1;font-size:12.5px;color:var(--fg-faint);">Find an entry</span></div>
+                <div data-rail-list="1" style="position:relative;margin-top:10px;flex:1;min-height:0;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border-strong) transparent;display:flex;flex-direction:column;gap:8px;">
+                  <sc-for list="{{ railBehind }}" as="ch" hint-placeholder-count="4">
+                    <div>
+                      <a href="#2a" style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;font-size:13px;border-bottom:none;background:{{ ch.bg }};color:{{ ch.color }};"><span style="flex:1;min-width:0;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ ch.id }}</span> {{ ch.title }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;flex:none;color:{{ ch.figColor }};">{{ ch.fig }}</span></a>
+                      <sc-for list="{{ ch.rows }}" as="row" hint-placeholder-count="4">
+                        <a href="#2a" data-current="{{ row.cur }}" style="display:flex;align-items:baseline;gap:8px;padding:4px 10px 4px 30px;border-radius:6px;font-size:12.5px;line-height:1.35;border-bottom:none;background:{{ row.bg }};color:{{ row.fg }};"><span style="flex:1;min-width:0;">{{ row.pre }}<span style="color:var(--fg);font-weight:600;">{{ row.hit }}</span>{{ row.post }}</span><sc-if value="{{ row.isNew }}"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);">new</span></sc-if></a>
+                      </sc-for>
+                    </div>
+                  </sc-for>
+                </div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="width:330px;display:flex;flex-direction:column;gap:12px;padding-top:34px;">
+        <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:7px;">an index, not a second copy</div>
+          <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;">It shows a title and a route, in page order. It has no limit, because the sheet summarises and the index doesn't. The eyebrow's sentence is now the index's <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">h2</span>, and <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">nav</span> carries that sentence as its label. <b style="color:#E6E8F0;font-weight:600;">The entries stay in their chapters</b>, each with its NEW pill (H3, M1).</div>
+        </div>
+        <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:7px;">the rail, every entry</div>
+          <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;">Chapter rows are 13px, as today. Entry rows are 12.5px, indented under the numeral and <b style="color:#E6E8F0;font-weight:600;">wrapped rather than truncated</b>, because a truncated title hides the words a search would match. The list scrolls inside the rail and keeps the current row in view. The field above it doesn't scroll. <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">N new</span> on a chapter row is accent, and <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">new</span> on an entry row is accent mono. Neither is the plate (W5).</div>
+        </div>
+        <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#7A8095;margin-bottom:7px;">tracking, entry-level now</div>
+          <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">aria-current</span> moves from the chapter to the entry once the entries have rows to carry it. At the top of the page, before any entry reaches the band, the chapter row carries it, as drawn here. Got it and its form are gone from the rail.</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;margin-bottom:28px;">
+      <div id="2b">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><a href="#2b" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#FF4D9A;border-radius:5px;padding:3px 8px;border-bottom:none;">2b</a><span style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;">Phone, arrived behind</span></div>
+        <div style="position:relative;width:390px;height:844px;background:var(--bg);border:1px solid var(--border-strong);border-radius:20px;overflow:hidden;">
+          <div style="height:26px;background:var(--surface-rail);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 14px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-locked);">9:41</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 20px 14px;border-bottom:1px solid var(--border);"><span style="display:flex;align-items:flex-end;gap:3px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.4em;color:var(--accent);padding-bottom:4px;">THE</span><span style="font-family:'Cinzel',serif;font-size:24px;font-weight:700;color:var(--accent);line-height:1;">99</span></span><span style="width:38px;height:38px;border-radius:12px;border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);">HH</span></div>
+          <div style="padding:20px 16px;">
+            <h1 style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;line-height:1.2;color:var(--fg);margin:0;">What The 99 does</h1>
+            <p style="margin:10px 0 0;font-size:13.5px;line-height:1.55;color:var(--fg-muted);text-wrap:pretty;">Everything here is scored against the cards you actually own. Four chapters, in the order you would use them.</p>
+            <nav aria-label="New since you were last here" style="margin-top:18px;background:var(--surface);border:1px solid var(--border-strong);border-radius:10px;padding:12px 14px 2px;">
+              <h2 style="margin:0 0 6px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;letter-spacing:0.08em;color:var(--accent);">5 new since you were last here</h2>
+              <sc-for list="{{ indexMany }}" as="r" hint-placeholder-count="5"><a href="#2b" style="display:flex;flex-direction:column;justify-content:center;gap:2px;min-height:48px;padding:8px 0;border-top:1px solid var(--border);border-bottom:none;"><span style="font-size:14.5px;font-weight:500;line-height:1.35;color:var(--fg);">{{ r.title }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);">{{ r.route }}</span></a></sc-for>
+            </nav>
+            <nav aria-label="Contents" style="margin-top:18px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">Contents</div>
+              <div style="margin-top:8px;height:44px;display:flex;align-items:center;gap:10px;padding:0 12px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border-strong);"><span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:var(--fg-faint);">&#8981;</span><span style="flex:1;font-size:14px;color:var(--fg-faint);">Find an entry</span></div>
+              <div style="margin-top:4px;">
+                <sc-for list="{{ phBehind }}" as="ch" hint-placeholder-count="4">
+                  <div style="border-bottom:1px solid var(--border);"><div style="display:flex;align-items:center;min-height:44px;"><a href="#2b" style="flex:1;display:flex;align-items:center;gap:8px;min-height:44px;font-size:14px;color:var(--accent);border-bottom:none;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ ch.id }}</span>{{ ch.title }}</a><span style="min-width:64px;height:44px;display:flex;align-items:center;justify-content:flex-end;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:{{ ch.figColor }};">{{ ch.fig }}<span style="color:var(--fg-faint);font-size:10px;">{{ ch.chev }}</span></span></div></div>
+                </sc-for>
+              </div>
+            </nav>
+          </div>
+          <div style="position:absolute;left:0;right:0;bottom:0;height:74px;background:var(--surface-rail);border-top:1px solid var(--border);display:flex;align-items:center;padding:8px 8px 14px;">
+            <sc-for list="{{ tabsNone }}" as="tb" hint-placeholder-count="5"><div style="flex:1;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--fg-faint);"><span style="width:17px;height:17px;border-radius:4px;border:1.5px solid currentColor;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;">{{ tb.label }}</span></div></sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div id="2d">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><a href="#2d" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#FF4D9A;border-radius:5px;padding:3px 8px;border-bottom:none;">2d</a><span style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;">Phone, no index (current, or seen 0)</span></div>
+        <div style="position:relative;width:390px;height:844px;background:var(--bg);border:1px solid var(--border-strong);border-radius:20px;overflow:hidden;">
+          <div style="height:26px;background:var(--surface-rail);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 14px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-locked);">9:41</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 20px 14px;border-bottom:1px solid var(--border);"><span style="display:flex;align-items:flex-end;gap:3px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.4em;color:var(--accent);padding-bottom:4px;">THE</span><span style="font-family:'Cinzel',serif;font-size:24px;font-weight:700;color:var(--accent);line-height:1;">99</span></span><span style="width:38px;height:38px;border-radius:12px;border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);">HH</span></div>
+          <div style="padding:20px 16px;">
+            <h1 style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;line-height:1.2;color:var(--fg);margin:0;">What The 99 does</h1>
+            <p style="margin:10px 0 0;font-size:13.5px;line-height:1.55;color:var(--fg-muted);text-wrap:pretty;">Everything here is scored against the cards you actually own. Four chapters, in the order you would use them.</p>
+            <nav aria-label="Contents" style="margin-top:18px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">Contents</div>
+              <div style="margin-top:8px;height:44px;display:flex;align-items:center;gap:10px;padding:0 12px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border-strong);"><span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:var(--fg-faint);">&#8981;</span><span style="flex:1;font-size:14px;color:var(--fg-faint);">Find an entry</span></div>
+              <div style="margin-top:4px;">
+                <sc-for list="{{ phCurrent }}" as="ch" hint-placeholder-count="4">
+                  <div style="border-bottom:1px solid var(--border);"><div style="display:flex;align-items:center;min-height:44px;"><a href="#2d" style="flex:1;display:flex;align-items:center;gap:8px;min-height:44px;font-size:14px;color:var(--accent);border-bottom:none;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ ch.id }}</span>{{ ch.title }}</a><span style="min-width:64px;height:44px;display:flex;align-items:center;justify-content:flex-end;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:{{ ch.figColor }};">{{ ch.fig }}<span style="color:var(--fg-faint);font-size:10px;">{{ ch.chev }}</span></span></div></div>
+                </sc-for>
+              </div>
+            </nav>
+            <section style="margin-top:28px;border-top:1px solid var(--border);padding-top:18px;">
+              <h2 style="margin:0;font-family:'Cinzel',serif;font-size:16px;font-weight:700;color:var(--fg);"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">01</span> Your collection</h2>
+              <p style="margin:4px 0 0;font-size:13px;color:var(--fg-muted);">Everything downstream is scored against what you own, so this is where the app starts.</p>
+              <div style="margin-top:14px;"><div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;"><h3 style="margin:0;font-family:'Cinzel',serif;font-size:15px;font-weight:600;color:var(--fg);">Browse what you own</h3><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);">/collection</span></div><div style="margin-top:8px;height:120px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border);"></div></div>
+            </section>
+          </div>
+          <div style="position:absolute;left:0;right:0;bottom:0;height:74px;background:var(--surface-rail);border-top:1px solid var(--border);display:flex;align-items:center;padding:8px 8px 14px;">
+            <sc-for list="{{ tabsNone }}" as="tb" hint-placeholder-count="5"><div style="flex:1;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--fg-faint);"><span style="width:17px;height:17px;border-radius:4px;border:1.5px solid currentColor;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;">{{ tb.label }}</span></div></sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:320px;display:flex;flex-direction:column;gap:12px;padding-top:34px;">
+        <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:7px;">phone order</div>
+          <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;">The order is h1, lede, index, then contents. Index rows stack the title over the route and are at least 48px tall. The contents list starts collapsed to its four chapter rows. The index already carries what's new, so a chapter row trades its count for <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">N new</span>, as C2 did, and adds a disclosure.</div>
+        </div>
+        <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:7px;">two targets per chapter row</div>
+          <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;">The title is the chapter link, as it is today. The trailing figure and chevron form a 44px disclosure, a <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">button</span> with <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">aria-expanded</span>, which opens that chapter's entries below the row. Opening one doesn't close another.</div>
+        </div>
+        <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#7A8095;margin-bottom:7px;">no index: nothing in its place</div>
+          <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;">A current reader, a reader at seen 0 and a reader who reloads after their visit all get the same page. It has no index, no &ldquo;you're up to date&rdquo;, no marks and no button. The lede runs straight into the contents.</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="2c" style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><a href="#2c" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#FF4D9A;border-radius:5px;padding:3px 8px;border-bottom:none;">2c</a><span style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;">Desktop, no index: current reader, or seen 0</span></div>
+        <div style="position:relative;width:1300px;height:820px;display:flex;background:var(--bg);border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;">
+          <div style="width:62px;flex:none;background:var(--surface-rail);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:4px;">
+            <span style="font-family:'Cinzel',serif;font-size:15px;font-weight:700;color:var(--accent);margin-bottom:16px;">99</span>
+            <sc-for list="{{ railIcons }}" as="i" hint-placeholder-count="5"><span style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;"><span style="width:17px;height:17px;border-radius:4px;border:1.5px solid var(--fg-faint);"></span></span></sc-for>
+            <span style="flex:1;"></span>
+            <span style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border-strong);background:var(--surface);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">HH</span>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="max-width:1088px;margin:0 auto;display:flex;gap:40px;padding:28px 34px;align-items:flex-start;">
+              <div style="flex:1;min-width:0;max-width:760px;">
+                <h1 style="font-family:'Cinzel',serif;font-weight:700;font-size:29px;line-height:1.2;color:var(--fg);margin:0;">What The 99 does</h1>
+                <p style="margin:10px 0 0;font-size:13.5px;line-height:1.55;color:var(--fg-muted);text-wrap:pretty;">Everything here is scored against the cards you actually own. Four chapters, in the order you would use them. Each entry shows the thing it is describing and links to where it lives.</p>
+                <section style="margin-top:28px;border-top:1px solid var(--border);padding-top:18px;">
+                  <h2 style="margin:0;font-family:'Cinzel',serif;font-size:21px;font-weight:700;color:var(--fg);"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">01</span> Your collection</h2>
+                  <p style="margin:4px 0 0;font-size:13px;color:var(--fg-muted);">Everything downstream is scored against what you own, so this is where the app starts.</p>
+                  <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;">
+                    <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;"><h3 style="margin:0;font-family:'Cinzel',serif;font-size:15.5px;font-weight:600;color:var(--fg);">Browse what you own</h3><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/collection</span></div>
+                    <p style="margin:6px 0 0;font-size:13.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">Search by name, narrow by colour, type, set or availability, and read the result as a grid or as rows. Every narrowing is a chip you can see and remove, and the count above the results always says how much of the collection you are looking at.</p>
+                    <div style="margin-top:10px;height:260px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);">figure &middot; as R4 &sect;3</div>
+                  </div>
+                  <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;">
+                    <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;"><h3 style="margin:0;font-family:'Cinzel',serif;font-size:15.5px;font-weight:600;color:var(--fg);">Import a collection</h3><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/collection/replace</span></div>
+                  </div>
+                </section>
+              </div>
+              <nav aria-label="Contents" style="width:216px;flex:none;height:764px;display:flex;flex-direction:column;">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">Contents</div>
+                <div style="margin-top:10px;height:34px;display:flex;align-items:center;gap:8px;padding:0 10px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border-strong);"><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--fg-faint);">&#8981;</span><span style="flex:1;font-size:12.5px;color:var(--fg-faint);">Find an entry</span></div>
+                <div data-rail-list="1" style="position:relative;margin-top:10px;flex:1;min-height:0;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border-strong) transparent;display:flex;flex-direction:column;gap:8px;">
+                  <sc-for list="{{ railCurrent }}" as="ch" hint-placeholder-count="4">
+                    <div>
+                      <a href="#2c" style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;font-size:13px;border-bottom:none;background:{{ ch.bg }};color:{{ ch.color }};"><span style="flex:1;min-width:0;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ ch.id }}</span> {{ ch.title }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;flex:none;color:{{ ch.figColor }};">{{ ch.fig }}</span></a>
+                      <sc-for list="{{ ch.rows }}" as="row" hint-placeholder-count="4">
+                        <a href="#2c" data-current="{{ row.cur }}" style="display:flex;align-items:baseline;gap:8px;padding:4px 10px 4px 30px;border-radius:6px;font-size:12.5px;line-height:1.35;border-bottom:none;background:{{ row.bg }};color:{{ row.fg }};"><span style="flex:1;min-width:0;">{{ row.pre }}<span style="color:var(--fg);font-weight:600;">{{ row.hit }}</span>{{ row.post }}</span><sc-if value="{{ row.isNew }}"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);">new</span></sc-if></a>
+                      </sc-for>
+                    </div>
+                  </sc-for>
+                </div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="width:330px;padding-top:34px;">
+        <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#7A8095;margin-bottom:7px;">exactly W1, plus the entries</div>
+          <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;">No index, no <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">new</span> anywhere in the rail, and no chapter figure. The desktop chapter row drops <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">8 entries</span> now that the entries are listed under it, and the figure slot is only filled by <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">N new</span> or a match count.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="s3" style="max-width:1700px;margin-bottom:48px;">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:8px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#FF4D9A;">&sect;3</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;margin:0;">The jumped-to entry</h2>
+    </div>
+    <p style="max-width:1300px;font-size:14px;line-height:1.7;color:#9BA1B4;margin:0 0 20px;text-wrap:pretty;">Pressed from the index in <a href="#2a">2a</a>: &ldquo;The other half of a combo&rdquo;. The entry lands 20px below the viewport top, the offset chapters already use, and focus moves to its <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">h3</span> (<span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">tabindex=-1</span>). The jump is a hash navigation, so <b style="color:#E6E8F0;font-weight:600;">Back returns to the index</b>, which is how a phone reader reaches the next new entry. Nothing moves in: the wash appears and disappears in one frame, as the page's no-motion rule requires.</p>
+
+    <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;">
+      <div id="3a">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><a href="#3a" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#FF4D9A;border-radius:5px;padding:3px 8px;border-bottom:none;">3a</a><span style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;">Desktop, landed</span></div>
+        <div style="position:relative;width:1300px;height:820px;display:flex;background:var(--bg);border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;">
+          <div style="width:62px;flex:none;background:var(--surface-rail);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:4px;">
+            <span style="font-family:'Cinzel',serif;font-size:15px;font-weight:700;color:var(--accent);margin-bottom:16px;">99</span>
+            <sc-for list="{{ railIcons }}" as="i" hint-placeholder-count="5"><span style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;"><span style="width:17px;height:17px;border-radius:4px;border:1.5px solid var(--fg-faint);"></span></span></sc-for>
+            <span style="flex:1;"></span>
+            <span style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border-strong);background:var(--surface);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">HH</span>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="max-width:1088px;margin:0 auto;display:flex;gap:40px;padding:20px 34px 28px;align-items:flex-start;">
+              <div style="flex:1;min-width:0;max-width:760px;">
+                <div style="border-top:2px solid var(--accent);padding-top:14px;">
+                  <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;margin:0 -10px;padding:8px 10px;border-radius:6px;background:var(--elevated);">
+                    <h3 style="margin:0;font-family:'Cinzel',serif;font-size:15.5px;font-weight:600;color:var(--fg);"><span style="margin-right:8px;display:inline-flex;align-items:center;border-radius:4px;padding:2px 7px;vertical-align:2px;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:0.08em;background:var(--accent);color:var(--bg);">NEW</span>The other half of a combo</h3>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/collection</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">opens your collection</span>
+                  </div>
+                  <p style="margin:6px 0 0;font-size:13.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">Some cards only do something remarkable next to one other card, and the app now says which: on a collection row when you own both halves and no deck has put them together, and on a card the deck you are building is one away from. The card’s own page lists every partner it has, with whether that partner is in the deck, in your collection, or neither.</p>
+                  <div style="margin-top:10px;height:210px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);">figure &middot; as built (#847)</div>
+                  <ol style="list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:5px;">
+                    <sc-for list="{{ comboKeys }}" as="k" hint-placeholder-count="4"><li style="display:flex;gap:8px;align-items:flex-start;"><span style="margin-top:1px;width:14px;height:14px;flex:none;border-radius:50%;border:1px solid var(--accent);background:var(--bg);color:var(--accent);font-family:'IBM Plex Mono',monospace;font-size:9px;display:flex;align-items:center;justify-content:center;">{{ k.n }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);">{{ k.t }}</span></li></sc-for>
+                  </ol>
+                </div>
+                <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;">
+                  <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;"><h3 style="margin:0;font-family:'Cinzel',serif;font-size:15.5px;font-weight:600;color:var(--fg);">Reading the 99 in a different order</h3><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/decks</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">opens a deck</span></div>
+                  <p style="margin:6px 0 0;font-size:13.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">The 99 is always in sections, by role or by type, and the order you pick applies inside them rather than flattening the list.</p>
+                </div>
+              </div>
+              <nav aria-label="Contents" style="width:216px;flex:none;height:772px;display:flex;flex-direction:column;padding-top:4px;">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">Contents</div>
+                <div style="margin-top:10px;height:34px;display:flex;align-items:center;gap:8px;padding:0 10px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border-strong);"><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--fg-faint);">&#8981;</span><span style="flex:1;font-size:12.5px;color:var(--fg-faint);">Find an entry</span></div>
+                <div data-rail-list="1" style="position:relative;margin-top:10px;flex:1;min-height:0;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border-strong) transparent;display:flex;flex-direction:column;gap:8px;">
+                  <sc-for list="{{ railJump }}" as="ch" hint-placeholder-count="4">
+                    <div>
+                      <a href="#3a" style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;font-size:13px;border-bottom:none;background:{{ ch.bg }};color:{{ ch.color }};"><span style="flex:1;min-width:0;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ ch.id }}</span> {{ ch.title }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;flex:none;color:{{ ch.figColor }};">{{ ch.fig }}</span></a>
+                      <sc-for list="{{ ch.rows }}" as="row" hint-placeholder-count="4">
+                        <a href="#3a" data-current="{{ row.cur }}" style="display:flex;align-items:baseline;gap:8px;padding:4px 10px 4px 30px;border-radius:6px;font-size:12.5px;line-height:1.35;border-bottom:none;background:{{ row.bg }};color:{{ row.fg }};"><span style="flex:1;min-width:0;">{{ row.pre }}<span style="color:var(--fg);font-weight:600;">{{ row.hit }}</span>{{ row.post }}</span><sc-if value="{{ row.isNew }}"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);">new</span></sc-if></a>
+                      </sc-for>
+                    </div>
+                  </sc-for>
+                </div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="3b">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><a href="#3b" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#FF4D9A;border-radius:5px;padding:3px 8px;border-bottom:none;">3b</a><span style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;">Phone, landed</span></div>
+        <div style="position:relative;width:390px;height:844px;background:var(--bg);border:1px solid var(--border-strong);border-radius:20px;overflow:hidden;">
+          <div style="height:26px;background:var(--surface-rail);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 14px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-locked);">9:41</span></div>
+          <div style="padding:20px 16px;">
+            <div style="border-top:2px solid var(--accent);margin:0 0 12px;"></div>
+            <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;margin:0 -8px;padding:8px;border-radius:6px;background:var(--elevated);">
+              <h3 style="margin:0;font-family:'Cinzel',serif;font-size:15px;font-weight:600;color:var(--fg);"><span style="margin-right:8px;display:inline-flex;align-items:center;border-radius:4px;padding:2px 7px;vertical-align:2px;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:0.08em;background:var(--accent);color:var(--bg);">NEW</span>The other half of a combo</h3>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);">/collection</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">opens your collection</span>
+            </div>
+            <p style="margin:6px 0 0;font-size:13.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">Some cards only do something remarkable next to one other card, and the app now says which: on a collection row when you own both halves and no deck has put them together, and on a card the deck you are building is one away from. The card’s own page lists every partner it has, with whether that partner is in the deck, in your collection, or neither.</p>
+            <div style="margin-top:10px;height:180px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);">figure &middot; as built</div>
+            <ol style="list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:5px;">
+              <sc-for list="{{ comboKeys }}" as="k" hint-placeholder-count="4"><li style="display:flex;gap:8px;align-items:flex-start;"><span style="margin-top:1px;width:14px;height:14px;flex:none;border-radius:50%;border:1px solid var(--accent);background:var(--bg);color:var(--accent);font-family:'IBM Plex Mono',monospace;font-size:9px;display:flex;align-items:center;justify-content:center;">{{ k.n }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);">{{ k.t }}</span></li></sc-for>
+            </ol>
+          </div>
+          <div style="position:absolute;left:0;right:0;bottom:0;height:74px;background:var(--surface-rail);border-top:1px solid var(--border);display:flex;align-items:center;padding:8px 8px 14px;">
+            <sc-for list="{{ tabsNone }}" as="tb" hint-placeholder-count="5"><div style="flex:1;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--fg-faint);"><span style="width:17px;height:17px;border-radius:4px;border:1.5px solid currentColor;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;">{{ tb.label }}</span></div></sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:320px;display:flex;flex-direction:column;gap:12px;padding-top:34px;">
+        <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:7px;">the mark</div>
+          <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;">Only the title line takes <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--elevated</span>, radius 6, spilling 10px (8px on a phone) into the gutter. <b style="color:#E6E8F0;font-weight:600;">It is not an accent edge.</b> A decklist row's accent edge means an uncommitted change, and this page draws that row as a specimen. The rail's row for the entry carries the same fill, so both say &ldquo;here&rdquo;.</div>
+        </div>
+        <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:7px;">how long</div>
+          <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;">The fill holds while the entry is in the upper 30% band, the band <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">useCurrentChapter</span> already watches. It clears when the entry leaves that band or another jump lands. It isn't timed, because a timer would take the mark away from a reader who is still reading the title. <b style="color:#E6E8F0;font-weight:600;">It is never written anywhere</b>, so it can't persist across visits (M1).</div>
+        </div>
+        <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#7A8095;margin-bottom:7px;">NEW and the wash together</div>
+          <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;">They answer different questions. The pill now leads the title, so it is the first thing read on the line. A new entry's top rule also turns 2px accent, which is what the eye catches when scrolling. Together they say the entry arrived since your last visit. The wash says the jump brought you here. A contents or search jump to an entry that isn't new gets the wash only (<a href="#4e">4e</a>).</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="s4" style="max-width:1700px;margin-bottom:40px;">
+    <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:8px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#FF4D9A;">&sect;4</span>
+      <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;margin:0;">The expanded contents, and its search</h2>
+    </div>
+    <p style="max-width:1300px;font-size:14px;line-height:1.7;color:#9BA1B4;margin:0 0 20px;text-wrap:pretty;">The search runs client-side over the titles the page already holds, and matches any part of a title, ignoring case. It filters the rows of the contents list. Chapter rows with no match drop out of the list while the query stands, and <b style="color:#E6E8F0;font-weight:600;">every chapter on the page stays exactly where it was</b>. Drawn for a reader at seen 1, so the new marks carry through into the results. Enter in the field jumps to the first match, and &darr; moves into the list. The query survives a jump, so Back returns to the same results.</p>
+
+    <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;margin-bottom:28px;">
+      <sc-for list="{{ railSearchFrames }}" as="f" hint-placeholder-count="3">
+        <div id="{{ f.id }}">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><a href="#{{ f.id }}" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#FF4D9A;border-radius:5px;padding:3px 8px;border-bottom:none;">{{ f.id }}</a><span style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;">{{ f.label }}</span></div>
+          <div style="width:264px;height:820px;background:var(--bg);border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;padding:24px 24px 24px;">
+            <nav aria-label="Contents" style="width:216px;height:772px;display:flex;flex-direction:column;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">Contents</div>
+              <div style="margin-top:10px;height:34px;display:flex;align-items:center;gap:8px;padding:0 6px 0 10px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--accent);box-shadow:0 0 0 3px color-mix(in oklab, var(--accent) 16%, transparent);"><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--fg-faint);">&#8981;</span><span style="flex:1;min-width:0;font-size:12.5px;color:var(--fg);">{{ f.q }}<span style="display:inline-block;width:1px;height:14px;vertical-align:-2px;background:var(--accent);margin-left:1px;"></span></span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);flex:none;">{{ f.count }}</span><span style="width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--fg-muted);background:var(--surface-raised);border:1px solid var(--border-strong);flex:none;">&#10005;</span></div>
+              <sc-if value="{{ f.empty }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top:14px;padding:0 10px;">
+                  <div style="font-size:13px;line-height:1.45;color:var(--fg-muted);">Nothing titled &ldquo;{{ f.q }}&rdquo;.</div>
+                  <div style="margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);">The search reads entry titles only. The page is unchanged.</div>
+                  <div style="margin-top:10px;font-size:12.5px;"><span style="color:var(--accent);border-bottom:1px solid color-mix(in oklab, var(--accent) 35%, transparent);">Clear search</span></div>
+                </div>
+              </sc-if>
+              <div data-rail-list="1" style="position:relative;margin-top:10px;flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:8px;">
+                <sc-for list="{{ f.chapters }}" as="ch" hint-placeholder-count="3">
+                  <div>
+                    <a href="#s4" style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;font-size:13px;border-bottom:none;color:var(--fg-muted);"><span style="flex:1;min-width:0;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ ch.id }}</span> {{ ch.title }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;flex:none;color:{{ ch.figColor }};">{{ ch.fig }}</span></a>
+                    <sc-for list="{{ ch.rows }}" as="row" hint-placeholder-count="2">
+                      <a href="#s4" data-current="{{ row.cur }}" style="display:flex;align-items:baseline;gap:8px;padding:4px 10px 4px 30px;border-radius:6px;font-size:12.5px;line-height:1.35;border-bottom:none;background:{{ row.bg }};color:{{ row.fg }};"><span style="flex:1;min-width:0;">{{ row.pre }}<span style="color:var(--fg);font-weight:600;">{{ row.hit }}</span>{{ row.post }}</span><sc-if value="{{ row.isNew }}"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);">new</span></sc-if></a>
+                    </sc-for>
+                  </div>
+                </sc-for>
+              </div>
+            </nav>
+          </div>
+        </div>
+      </sc-for>
+      <div style="width:360px;display:flex;flex-direction:column;gap:12px;padding-top:34px;">
+        <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:7px;">the rail, cropped</div>
+          <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;">Only the rail is drawn here. The page beside it is <a href="#2a">2a</a>, unchanged in every one of these states. The field is <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">SearchField</span> at 34px, focused. Its trailing slot holds <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">4 of 39</span> and the clear &#10005;, the one close control. A chapter row's figure becomes its match count.</div>
+        </div>
+        <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:7px;">the match, without colour</div>
+          <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;">The rest of a result title drops to <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--fg-faint</span>, and the matched run stays <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">--fg</span> at 600. No accent is spent on it: in this rail, accent already means new.</div>
+        </div>
+        <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:7px;">none</div>
+          <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;">It quotes the query back, says the search reads titles only, and <b style="color:#E6E8F0;font-weight:600;">says the page is unchanged</b>. That line is the ruling, printed for the reader. It offers one way out, which is Clear search. It is a polite live region, like the count.</div>
+        </div>
+        <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#7A8095;margin-bottom:7px;">pressed</div>
+          <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;">It jumps exactly like an index row. The pressed row takes the current fill, and the query and results stay, so a second match is one press away. The page it lands on is <a href="#4e">4e</a>.</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;margin-bottom:28px;">
+      <sc-for list="{{ phSearchFrames }}" as="f" hint-placeholder-count="3">
+        <div id="{{ f.id }}">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><a href="#{{ f.id }}" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#FF4D9A;border-radius:5px;padding:3px 8px;border-bottom:none;">{{ f.id }}</a><span style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;">{{ f.label }}</span></div>
+          <div style="position:relative;width:390px;height:844px;background:var(--bg);border:1px solid var(--border-strong);border-radius:20px;overflow:hidden;">
+            <div style="height:26px;background:var(--surface-rail);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 14px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-locked);">9:41</span></div>
+            <div style="padding:14px 16px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);margin-bottom:10px;">&uarr; h1, lede and index above, scrolled past</div>
+              <nav aria-label="Contents">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">Contents</div>
+                <div style="margin-top:8px;height:44px;display:flex;align-items:center;gap:10px;padding:0 8px 0 12px;border-radius:8px;background:var(--surface-sunken);border:1px solid {{ f.fieldBorder }};"><span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:var(--fg-faint);">&#8981;</span><span style="flex:1;min-width:0;font-size:14px;color:{{ f.qColor }};">{{ f.qShown }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);flex:none;">{{ f.count }}</span><sc-if value="{{ f.hasQ }}" hint-placeholder-val="{{ true }}"><span style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--fg-muted);background:var(--surface-raised);border:1px solid var(--border-strong);flex:none;">&#10005;</span></sc-if></div>
+                <sc-if value="{{ f.empty }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top:14px;">
+                    <div style="font-size:14px;line-height:1.45;color:var(--fg-muted);">Nothing titled &ldquo;{{ f.q }}&rdquo;.</div>
+                    <div style="margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.5;color:var(--fg-faint);">The search reads entry titles only. The page is unchanged.</div>
+                    <div style="margin-top:4px;min-height:44px;display:flex;align-items:center;font-size:14px;"><span style="color:var(--accent);border-bottom:1px solid color-mix(in oklab, var(--accent) 35%, transparent);">Clear search</span></div>
+                  </div>
+                </sc-if>
+                <div style="margin-top:4px;">
+                  <sc-for list="{{ f.chapters }}" as="ch" hint-placeholder-count="3">
+                    <div style="border-bottom:1px solid var(--border);">
+                      <div style="display:flex;align-items:center;min-height:44px;"><a href="#s4" style="flex:1;display:flex;align-items:center;gap:8px;min-height:44px;font-size:14px;color:var(--accent);border-bottom:none;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ ch.id }}</span>{{ ch.title }}</a><span style="min-width:64px;height:44px;display:flex;align-items:center;justify-content:flex-end;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:{{ ch.figColor }};">{{ ch.fig }}<span style="color:var(--fg-faint);font-size:10px;">{{ ch.chev }}</span></span></div>
+                      <sc-if value="{{ ch.open }}" hint-placeholder-val="{{ false }}">
+                        <div style="padding-bottom:6px;">
+                          <sc-for list="{{ ch.rows }}" as="row" hint-placeholder-count="2">
+                            <a href="#s4" style="display:flex;align-items:center;gap:10px;min-height:44px;padding:6px 8px 6px 26px;border-radius:6px;font-size:13.5px;line-height:1.35;border-bottom:none;background:{{ row.bg }};color:{{ row.fg }};"><span style="flex:1;min-width:0;">{{ row.pre }}<span style="color:var(--fg);font-weight:600;">{{ row.hit }}</span>{{ row.post }}</span><sc-if value="{{ row.isNew }}"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--accent);">new</span></sc-if></a>
+                          </sc-for>
+                        </div>
+                      </sc-if>
+                    </div>
+                  </sc-for>
+                </div>
+              </nav>
+              <sc-if value="{{ f.showPage }}" hint-placeholder-val="{{ false }}">
+                <section style="margin-top:28px;border-top:1px solid var(--border);padding-top:18px;">
+                  <h2 style="margin:0;font-family:'Cinzel',serif;font-size:16px;font-weight:700;color:var(--fg);"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">01</span> Your collection</h2>
+                  <p style="margin:4px 0 0;font-size:13px;color:var(--fg-muted);">Everything downstream is scored against what you own, so this is where the app starts.</p>
+                  <div style="margin-top:12px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">&darr; every chapter, every entry, unfiltered</div>
+                </section>
+              </sc-if>
+            </div>
+            <div style="position:absolute;left:0;right:0;bottom:0;height:74px;background:var(--surface-rail);border-top:1px solid var(--border);display:flex;align-items:center;padding:8px 8px 14px;">
+              <sc-for list="{{ tabsNone }}" as="tb" hint-placeholder-count="5"><div style="flex:1;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--fg-faint);"><span style="width:17px;height:17px;border-radius:4px;border:1.5px solid currentColor;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;">{{ tb.label }}</span></div></sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+      <div style="width:300px;display:flex;flex-direction:column;gap:12px;padding-top:34px;">
+        <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:7px;">phone, opened</div>
+          <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;"><a href="#4f">4f</a> shows chapter 03 opened by its disclosure. Its fifteen rows are 44px each, indented 26px under the numeral. With every chapter open the list would run about three screens before chapter 01, which is why it starts closed.</div>
+        </div>
+        <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:7px;">phone, searching</div>
+          <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;">A query opens every chapter that has a match and removes the ones without. The disclosures go quiet while it stands, and a chapter row shows its match count. Clearing the query puts back whatever was open before. <a href="#4h">4h</a> shows chapter 01 still there below the empty state, because the page is never touched.</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;">
+      <div id="4e">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><a href="#4e" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0E0F14;background:#FF4D9A;border-radius:5px;padding:3px 8px;border-bottom:none;">4e</a><span style="font-family:'Cinzel',serif;font-weight:700;font-size:16px;">Desktop, a match pressed: &ldquo;Changes, committing, and versions&rdquo;</span></div>
+        <div style="position:relative;width:1300px;height:820px;display:flex;background:var(--bg);border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;">
+          <div style="width:62px;flex:none;background:var(--surface-rail);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:4px;">
+            <span style="font-family:'Cinzel',serif;font-size:15px;font-weight:700;color:var(--accent);margin-bottom:16px;">99</span>
+            <sc-for list="{{ railIcons }}" as="i" hint-placeholder-count="5"><span style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;"><span style="width:17px;height:17px;border-radius:4px;border:1.5px solid var(--fg-faint);"></span></span></sc-for>
+            <span style="flex:1;"></span>
+            <span style="width:30px;height:30px;border-radius:50%;border:1px solid var(--border-strong);background:var(--surface);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">HH</span>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="max-width:1088px;margin:0 auto;display:flex;gap:40px;padding:20px 34px 28px;align-items:flex-start;">
+              <div style="flex:1;min-width:0;max-width:760px;">
+                <div style="border-top:1px solid var(--border);padding-top:14px;">
+                  <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;margin:0 -10px;padding:8px 10px;border-radius:6px;background:var(--elevated);">
+                    <h3 style="margin:0;font-family:'Cinzel',serif;font-size:15.5px;font-weight:600;color:var(--fg);">Changes, committing, and versions</h3>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/decks</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">opens a deck’s Versions tab</span>
+                  </div>
+                  <p style="margin:6px 0 0;font-size:13.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">A deck has a committed list and the changes you are making to it. Every add and cut waits there until you commit, and committing cuts a version you can read back. Cards you have added already count against your collection, which is why editing one deck can make another read short 1.</p>
+                  <div style="margin-top:10px;height:230px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);">figure &middot; as R4 &sect;3</div>
+                  <ol style="list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:5px;">
+                    <sc-for list="{{ versionKeys }}" as="k" hint-placeholder-count="3"><li style="display:flex;gap:8px;align-items:flex-start;"><span style="margin-top:1px;width:14px;height:14px;flex:none;border-radius:50%;border:1px solid var(--accent);background:var(--bg);color:var(--accent);font-family:'IBM Plex Mono',monospace;font-size:9px;display:flex;align-items:center;justify-content:center;">{{ k.n }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);">{{ k.t }}</span></li></sc-for>
+                  </ol>
+                </div>
+                <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;">
+                  <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px;"><h3 style="margin:0;font-family:'Cinzel',serif;font-size:15.5px;font-weight:600;color:var(--fg);">What you would need to buy</h3><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/decks</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">opens the shopping roll-up</span></div>
+                </div>
+              </div>
+              <nav aria-label="Contents" style="width:216px;flex:none;height:772px;display:flex;flex-direction:column;padding-top:4px;">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">Contents</div>
+                <div style="margin-top:10px;height:34px;display:flex;align-items:center;gap:8px;padding:0 6px 0 10px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border-strong);"><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--fg-faint);">&#8981;</span><span style="flex:1;font-size:12.5px;color:var(--fg);">commit</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">4 of 39</span><span style="width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--fg-muted);background:var(--surface-raised);border:1px solid var(--border-strong);">&#10005;</span></div>
+                <div data-rail-list="1" style="position:relative;margin-top:10px;flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:8px;">
+                  <sc-for list="{{ railPressed }}" as="ch" hint-placeholder-count="3">
+                    <div>
+                      <a href="#4e" style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;font-size:13px;border-bottom:none;color:var(--fg-muted);"><span style="flex:1;min-width:0;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ ch.id }}</span> {{ ch.title }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;flex:none;color:{{ ch.figColor }};">{{ ch.fig }}</span></a>
+                      <sc-for list="{{ ch.rows }}" as="row" hint-placeholder-count="2">
+                        <a href="#4e" data-current="{{ row.cur }}" style="display:flex;align-items:baseline;gap:8px;padding:4px 10px 4px 30px;border-radius:6px;font-size:12.5px;line-height:1.35;border-bottom:none;background:{{ row.bg }};color:{{ row.fg }};"><span style="flex:1;min-width:0;">{{ row.pre }}<span style="color:var(--fg);font-weight:600;">{{ row.hit }}</span>{{ row.post }}</span><sc-if value="{{ row.isNew }}"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);">new</span></sc-if></a>
+                      </sc-for>
+                    </div>
+                  </sc-for>
+                </div>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="width:330px;padding-top:34px;display:flex;flex-direction:column;gap:12px;">
+        <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#FF4D9A;margin-bottom:7px;">an entry that isn't new</div>
+          <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;">It gets the wash with no pill: the jump mark alone, as &sect;3 says. The rail keeps <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">commit</span> and its four results. The pressed row is the current row, and the field is blurred because focus has gone to the entry's <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">h3</span>.</div>
+        </div>
+        <div style="border:1px solid #262A35;border-radius:10px;background:#131620;padding:13px 16px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#7A8095;margin-bottom:7px;">phone, pressed</div>
+          <div style="font-size:12.5px;color:#9BA1B4;line-height:1.62;text-wrap:pretty;">The phone lands exactly as in <a href="#3b">3b</a>, with the wash and without the pill. The contents list is in the flow above it and scrolls away, and Back returns to <a href="#4g">4g</a> with the query intact. <b style="color:#E6E8F0;font-weight:600;">There is no floating search.</b> C1's reasoning holds: a reader reading straight through is never given a floating control.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;kamigawa&quot;,&quot;amonkhet&quot;,&quot;ixalan&quot;,&quot;phyrexia&quot;,&quot;kaldheim&quot;,&quot;eldraine&quot;],&quot;default&quot;:&quot;kamigawa&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  componentDidMount() {
+    const go = () => document.querySelectorAll('[data-rail-list]').forEach((l) => {
+      const c = l.querySelector('[data-current="1"]');
+      if (c) l.scrollTop = Math.max(0, c.offsetTop - 120);
+    });
+    setTimeout(go, 80); setTimeout(go, 600);
+  }
+  renderVals() {
+    const E = [
+      ['browse','01','Browse what you own','/collection',1],['import','01','Import a collection','/collection/replace',1],
+      ['post-import','01','What a replace did to your decks','/collection/replace',1],['import-issues','01','Rows the import could not place','/collection/replace',1],
+      ['availability','01','Free, in a draft, committed, over-committed','/collection?avail=inuse,over',1],['sets','01','Set completion: what you are missing','/collection/sets',1],
+      ['buy-tag','01','What a card costs to buy','/collection',1],['card-detail','01','The card itself: printings, art, both faces','/collection',1],
+      ['ready-to-build','02','Ready to build, on Home','/',1],['fit-score','02','How a fit score is made','/commanders',1],
+      ['commander-lane','02','Commanders you can build today','/commanders',1],['discover','02','Commanders worth acquiring, and what each order means','/discover',1],
+      ['role-coverage','02','Why this commander, and what the deck would be made of','/commanders',1],['commander-availability','02','When a card you own isn’t free','/commanders',3],
+      ['partners','02','Partners','/commanders',1],
+      ['deck-page','03','The deck page','/decks',1],['auto-fill','03','How much we fill in for you','/decks',1],
+      ['decklist-marks','03','Every mark on a decklist','/decks',1],['roles','03','Why a card is filed under Ramp','/decks',1],
+      ['informed-build','03','Building toward decks like yours','/decks',8],['combo-awareness','03','The other half of a combo','/collection',9],
+      ['decklist-order','03','Reading the 99 in a different order','/decks',1],['add-cards','03','Adding cards','/decks',1],
+      ['versions','03','Changes, committing, and versions','/decks',1],['shopping','03','What you would need to buy','/decks',1],
+      ['deck-import','03','Bring a deck over, or update one','/decks/import',1],['review-and-commit','03','Reviewing what a commit will cost','/decks',7],
+      ['new-deck','03','Starting a deck','/decks/new',7],['undo-removal','03','Undoing a removal','/decks',1],['export','03','Take the list somewhere else','/decks',1],
+      ['log-a-game','04','Log a game','/decks',1],['log-findings','04','What the log tells you back','/decks',1],
+      ['statuses','04','What a deck’s status badge means','/decks',1],['folders','04','Sorting decks into folders','/decks',1],
+      ['resume','04','Picking up where you left off','/',1],['commitments','04','Where your collection is committed','/',1],
+      ['reservations','04','Which deck gets a shared copy','/decks',1],['proxies','04','Cards you are proxying','/collection/proxies',1],
+      ['themes','04','Themes','/',1],
+    ];
+    const CH = { '01': 'Your collection', '02': 'Finding a commander', '03': 'Building the 99', '04': 'Playing and tuning' };
+    const split = (t, q) => {
+      if (!q) return { pre: t, hit: '', post: '' };
+      const i = t.toLowerCase().indexOf(q.toLowerCase());
+      return i < 0 ? null : { pre: t.slice(0, i), hit: t.slice(i, i + q.length), post: t.slice(i + q.length) };
+    };
+    const isNew = (e, seen) => seen > 0 && e[4] > seen;
+    const build = (seen, q, cur, curCh, phone, open) => Object.keys(CH).map((id) => {
+      const all = E.filter((e) => e[1] === id);
+      const rows = all.map((e) => {
+        const s = split(e[2], q);
+        if (!s) return null;
+        const c = e[0] === cur;
+        return { ...s, isNew: isNew(e, seen), cur: c ? '1' : '0', bg: c ? 'var(--elevated)' : 'transparent',
+          fg: c ? 'var(--fg)' : q ? 'var(--fg-faint)' : phone ? 'var(--fg-body)' : 'var(--fg-muted)' };
+      }).filter(Boolean);
+      const n = all.filter((e) => isNew(e, seen)).length;
+      const isOpen = q ? true : (open || []).includes(id);
+      return {
+        id, title: CH[id], rows,
+        fig: q ? String(rows.length) : n ? n + ' new' : phone ? String(all.length) : '',
+        figColor: !q && n ? 'var(--accent)' : 'var(--fg-faint)',
+        color: id === curCh ? 'var(--fg)' : 'var(--fg-muted)',
+        bg: id === curCh && !cur ? 'var(--elevated)' : 'transparent',
+        open: isOpen, chev: q ? '' : isOpen ? '▴' : '▾',
+      };
+    }).filter((c) => !q || c.rows.length);
+
+    const count = (q) => E.filter((e) => split(e[2], q)).length + ' of 39';
+    const newList = E.filter((e) => isNew(e, 1));
+    const washes = [['--u','--g'],['--r','--g'],['--w','--b'],['--u','--r'],['--b','--g'],['--w','--u'],['--r','--b'],['--g','--w']];
+    const tabs = (active) => ['Home','Collection','Commanders','Discover','Decks'].map((l) => ({
+      label: l, bg: l === active ? 'var(--surface-inset)' : 'transparent', fg: l === active ? 'var(--fg)' : 'var(--fg-faint)' }));
+
+    return {
+      theme: this.props.theme ?? 'kamigawa',
+      tiles: washes.map(([a, b]) => ({ wash: `linear-gradient(135deg, var(${a}), var(${b}))` })),
+      tabsDecks: tabs('Decks'), tabsHome: tabs('Home'), tabsNone: tabs(''),
+      railIcons: [1, 2, 3, 4, 5],
+      sheetMany: newList.slice(0, 3).map((e) => e[2]),
+      indexMany: newList.map((e) => ({ title: e[2], route: e[3] })),
+      railBehind: build(1, '', null, '01'),
+      railCurrent: build(9, '', null, '01'),
+      railJump: build(1, '', 'combo-awareness', '03'),
+      railPressed: build(1, 'commit', 'versions', '03'),
+      phBehind: build(1, '', null, null, true, []),
+      phCurrent: build(9, '', null, null, true, []),
+      comboKeys: [
+        'no counts, anywhere. Detection leaves out combos that need a third piece, so a number beside the sentence would be the first thing on the surface that is not true.',
+        'one partner is named on a row and all of them on the card’s page. Naming one is true whether or not there are others; the list is where the enumerating belongs.',
+        'a combo you have already built says nothing. `you own both` is about two cards sitting apart, and a deck holding both has answered the question.',
+        'it comes from Commander Spellbook, and the card’s page says so behind the heading’s marker rather than under every block.',
+      ].map((t, i) => ({ n: i + 1, t })),
+      versionKeys: [
+        'the changes are reviewable before they land: every add and cut beside the committed list, with nothing counted twice.',
+        'a version carries its own record, so you can see whether a change helped rather than only that it happened.',
+        'a deck you have never committed reads Draft however many cards it has. Commit v1 and it takes the status its list earns.',
+      ].map((t, i) => ({ n: i + 1, t })),
+      railSearchFrames: [
+        { id: '4a', label: 'Rail, matches', q: 'commit', count: count('commit'), empty: false, chapters: build(1, 'commit', null, null) },
+        { id: '4b', label: 'Rail, none', q: 'mulligan', count: '0 of 39', empty: true, chapters: [] },
+        { id: '4c', label: 'Rail, pressed', q: 'commit', count: count('commit'), empty: false, chapters: build(1, 'commit', 'versions', null) },
+      ],
+      phSearchFrames: [
+        { id: '4f', label: 'Phone, a chapter opened', q: '', qShown: 'Find an entry', qColor: 'var(--fg-faint)', hasQ: false, fieldBorder: 'var(--border-strong)', count: '', empty: false, showPage: false, chapters: build(1, '', null, null, true, ['03']) },
+        { id: '4g', label: 'Phone, matches', q: 'commit', qShown: 'commit', qColor: 'var(--fg)', hasQ: true, fieldBorder: 'var(--accent)', count: count('commit'), empty: false, showPage: true, chapters: build(1, 'commit', null, null, true, []) },
+        { id: '4h', label: 'Phone, none', q: 'mulligan', qShown: 'mulligan', qColor: 'var(--fg)', hasQ: true, fieldBorder: 'var(--accent)', count: '0 of 39', empty: true, showPage: true, chapters: [] },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

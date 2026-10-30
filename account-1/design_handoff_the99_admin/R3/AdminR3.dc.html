@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Admin R3 scene</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Metamorphous&amp;family=Cinzel:wght@400;500&amp;family=Chakra+Petch:wght@400;500&amp;family=Trirong:wght@400&amp;family=Syncopate:wght@400&amp;family=Cormorant+Garamond:wght@400;500&amp;family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+.fr{position:relative;display:flex;overflow:hidden;background:var(--bg);color:var(--fg);font-family:'IBM Plex Sans',sans-serif;box-sizing:border-box}
+.fr *{box-sizing:border-box}
+.desk.fr{width:900px;height:820px}
+.phone.fr{width:390px;height:844px;flex-direction:column}
+.desk .ph{display:none !important}
+.phone .dk{display:none !important}
+.mono{font-family:'IBM Plex Mono',monospace}
+.rail{width:62px;flex:none;background:var(--surface-rail);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:18px 0 14px;gap:22px}
+.rail .dia{width:9px;height:9px;transform:rotate(45deg);border:1.5px solid var(--fg-faint)}
+.rail .me{margin-top:auto;width:30px;height:30px;border-radius:50%;background:var(--elevated);border:1px solid var(--accent-hover);display:flex;align-items:center;justify-content:center}
+.rail .me i{width:7px;height:7px;transform:rotate(45deg);background:var(--accent-hover)}
+.col{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0}
+.page{flex:1;min-height:0;overflow-y:auto;scrollbar-width:none}
+.page::-webkit-scrollbar{display:none}
+.head{display:flex;flex-direction:column;gap:9px;border-bottom:1px solid var(--border);padding:26px 28px 0}
+.phone .head{padding:14px 16px 0}
+.eyerow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:10.5px;text-transform:uppercase;letter-spacing:0.16em;color:var(--fg-faint)}
+.env{display:inline-flex;height:22px;align-items:center;gap:6px;border-radius:999px;border:1px solid var(--border-strong);padding:0 8px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg)}
+.env i{width:6px;height:6px;border-radius:50%;background:var(--danger)}
+.back{margin-left:auto;font-size:13px;color:var(--accent)}
+h1.t{margin:0;font-family:var(--display);font-weight:400;font-size:28px;line-height:1.2;color:var(--fg)}
+.phone h1.t{font-size:23px}
+.sub{margin:0;max-width:720px;font-size:13.5px;line-height:1.6;color:var(--fg-body);text-wrap:pretty}
+.phone .sub{font-size:13px}
+.tabs{display:flex;gap:24px;margin-top:4px;overflow:hidden}
+.phone .tabs{gap:15px}
+.tab{height:40px;display:inline-flex;align-items:center;flex:none;font-size:14px;color:var(--fg-muted);border-bottom:2px solid transparent;margin-bottom:-1px}
+.phone .tab{height:42px;font-size:13.5px}
+.tab.on{color:var(--fg);font-weight:500;border-bottom-color:var(--fg)}
+.pad{padding:18px 28px 28px;display:flex;flex-direction:column;gap:12px}
+.phone .pad{padding:14px 16px 24px}
+.field{display:flex;align-items:center;gap:9px;height:38px;border-radius:9px;border:1px solid var(--border-strong);background:var(--surface-sunken);padding:0 6px 0 12px;font-size:14px}
+.phone .field{height:44px;font-size:16px}
+.field.focus{border-color:var(--accent)}
+.field .ico{width:13px;height:13px;border-radius:50%;border:1.5px solid var(--fg-faint);position:relative;flex:none}
+.field .ico:after{content:'';position:absolute;width:5px;height:1.5px;background:var(--fg-faint);right:-5px;bottom:-2px;transform:rotate(45deg)}
+.field .ph{color:var(--fg-faint)}
+.field .val{color:var(--fg);flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.field .ph2{color:var(--fg-faint);flex:1}
+.x{width:32px;height:32px;border:0;background:transparent;color:var(--fg-muted);font-size:15px;display:flex;align-items:center;justify-content:center;flex:none}
+.phone .x{width:40px;height:40px}
+.line{margin:0;font-size:13px;line-height:1.55;color:var(--fg-muted)}
+.line.hit{color:var(--fg-body)}
+.card{border:1px solid var(--border-strong);border-radius:12px;background:var(--surface);overflow:hidden}
+.colhead{display:grid;grid-template-columns:minmax(0,2.1fr) minmax(0,0.6fr) 78px 104px minmax(0,0.7fr) 52px;gap:14px;align-items:center;background:var(--surface-rail);padding:9px 16px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);border-bottom:1px solid var(--border)}
+.arow{border-top:1px solid var(--border);position:relative}
+.arow.first{border-top:0}
+.desk .arow{display:grid;grid-template-columns:minmax(0,2.1fr) minmax(0,0.6fr) 78px 104px minmax(0,0.7fr) 52px;gap:14px;align-items:center;padding:10px 16px;min-height:64px}
+.phone .arow{display:flex;flex-direction:column;gap:5px;padding:11px 8px 11px 14px;min-height:64px}
+.arow.rev{background:var(--surface-raised);box-shadow:inset 0 0 0 1px var(--accent)}
+.acell{display:flex;align-items:center;gap:11px;min-width:0}
+.av{display:inline-flex;align-items:center;justify-content:center;flex:none;border:1px solid var(--accent);background:var(--bg);color:var(--accent);font-family:'IBM Plex Mono',monospace;width:34px;height:34px;border-radius:10px;font-size:11.5px}
+.av.lg{width:44px;height:44px;border-radius:12px;font-size:14px}
+.phone .av.lg{width:48px;height:48px;border-radius:14px;font-size:15px}
+.av.nm i{width:8px;height:8px;transform:rotate(45deg);background:var(--accent)}
+.stack{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.nm1{font-size:14px;font-weight:500;color:var(--fg);overflow-wrap:anywhere}
+.mm{font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.faint{color:var(--fg-faint)}.muted{color:var(--fg-muted)}.body{color:var(--fg-body)}.acc{color:var(--accent)}.fgc{color:var(--fg)}
+.tag{display:inline-flex;align-items:center;height:18px;border-radius:999px;border:1px solid var(--border-strong);padding:0 7px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.08em;color:var(--fg-muted);margin-left:6px;vertical-align:1px}
+.show{flex:none;height:32px;padding:0 12px;border-radius:8px;border:1px solid var(--border-strong);background:transparent;color:var(--fg);font-family:'IBM Plex Sans',sans-serif;font-size:13px}
+.phone .show{height:44px;min-width:64px;padding:0 14px}
+.show.on{border-color:var(--accent);color:var(--accent)}
+.cell{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-body);overflow-wrap:anywhere}
+.cell.r{text-align:right;font-size:13px;color:var(--fg)}
+.pmeta{padding-left:45px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body)}
+.toast{position:absolute;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:14px;border-radius:10px;border:1px solid var(--border-strong);background:var(--elevated);padding:4px 6px 4px 16px;box-shadow:0 12px 40px rgba(0,0,0,0.5);z-index:5}
+.desk .toast{bottom:24px;width:420px;margin-left:31px}
+.phone .toast{bottom:90px;width:358px}
+.toast span{flex:1;min-width:0;padding:8px 0;font-size:13.5px;color:var(--fg);line-height:1.35}
+.tbtn{flex:none;height:36px;padding:0 10px;border:0;background:transparent;color:var(--accent);font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500}
+.phone .tbtn{height:44px}
+.tabbar{height:74px;flex:none;border-top:1px solid var(--border);background:var(--surface-rail);display:flex;justify-content:space-around;align-items:flex-start;padding-top:12px}
+.tabbar span{display:flex;flex-direction:column;align-items:center;gap:7px;font-size:10.5px;color:var(--fg-muted)}
+.tabbar i{width:9px;height:9px;transform:rotate(45deg);border:1.5px solid var(--fg-faint)}
+.sh{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:10px}
+.sh b{font-family:var(--display);font-weight:400;font-size:19px;color:var(--fg)}
+.sh small{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint)}
+.tiles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.phone .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+.tile{border:1px solid var(--border-strong);border-radius:10px;background:var(--surface);padding:11px 12px;display:flex;flex-direction:column;gap:4px}
+.tile small{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint)}
+.tile b{font-weight:500;font-size:18px;color:var(--fg)}
+.tile em{font-style:normal;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted)}
+.who{display:flex;align-items:center;gap:10px;min-height:46px;border-top:1px solid var(--border);padding:6px 14px;font-size:13.5px;color:var(--fg-body)}
+.who.first{border-top:0}
+.who .f{width:26px;height:26px;border-radius:7px;flex:none;border:1px solid var(--border-strong);background:var(--surface-sunken);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted)}
+.who .f.w{border:1.5px dashed var(--border-dashed);background:transparent}
+.who .f.nm i{width:6px;height:6px;transform:rotate(45deg);background:var(--fg-muted)}
+.who b{font-weight:500;color:var(--fg)}
+.who .txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.who small{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint)}
+.lnk{flex:none;min-height:32px;display:inline-flex;align-items:center;padding:0 4px;border:0;background:transparent;color:var(--accent);font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:500}
+.phone .lnk{min-height:44px}
+.hist{display:flex;gap:12px;align-items:baseline;border-top:1px solid var(--border);padding:10px 14px;font-size:13px;color:var(--fg-body)}
+.hist.first{border-top:0}
+.hist time{flex:none;width:118px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint)}
+.phone .hist{flex-direction:column;gap:2px}
+.hist .dot{display:inline-block;width:6px;height:6px;transform:rotate(45deg);background:var(--accent);margin-right:8px;vertical-align:1px}
+.arow.rev .mm{white-space:normal;overflow-wrap:break-word;text-overflow:clip}
+.phone .pend span{flex-basis:100%}
+.inrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.num{width:84px;height:38px;border-radius:9px;border:1px solid var(--border-strong);background:var(--surface-sunken);display:flex;align-items:center;padding:0 12px;font-size:14px}
+.phone .num{height:44px}
+.help{font-size:12.5px;line-height:1.5;color:var(--fg-muted);text-wrap:pretty}
+.trow{position:relative;display:flex;align-items:center;gap:10px;height:46px;border-bottom:1px solid var(--border);font-size:13.5px;color:var(--fg-body);padding-right:12px}
+.phone .trow{height:auto;min-height:52px;gap:8px;padding-right:8px}
+.trow .f{width:28px;height:28px;border-radius:7px;flex:none;border:1px solid var(--border-strong);background:var(--surface-sunken);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted)}
+.phone .trow .f{width:26px;height:26px}
+.trow .f.w{border:1.5px dashed var(--border-dashed);background:transparent}
+.trow .f.nm i{width:6px;height:6px;transform:rotate(45deg);background:var(--fg-muted)}
+.elbow{flex:none;align-self:stretch;position:relative}
+.elbow:after{content:'';position:absolute;right:4px;top:0;height:50%;width:10px;border-left:1px solid var(--border-dashed);border-bottom:1px solid var(--border-dashed);border-bottom-left-radius:6px}
+.trow b{font-weight:500;color:var(--fg)}
+.trow small{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint)}
+.phone .trow small{font-size:10.5px}
+.tlab{padding:10px 14px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);background:var(--surface-rail);border-bottom:1px solid var(--border)}
+.chev{margin-left:auto;font-size:18px;color:var(--fg-muted);flex:none}
+.mrow{display:flex;align-items:center;gap:12px;min-height:52px;padding:8px 16px;border-top:1px solid var(--border)}
+.phone .mrow{min-height:60px;padding:8px 14px}
+.mrow.first{border-top:0}
+.mrow.sel{background:var(--surface-raised)}
+.box{width:22px;height:22px;border-radius:6px;border:2px solid var(--border-dashed);display:flex;align-items:center;justify-content:center;flex:none}
+.box.on{border-color:var(--accent);background:var(--accent)}
+.box.on i{width:7px;height:7px;transform:rotate(45deg);background:var(--bg)}
+.mstate{flex:none;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);white-space:nowrap}
+.mstate.u{color:var(--accent)}.mstate.s{color:var(--fg-body)}
+.pend{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border:1px solid var(--accent);border-radius:10px;background:var(--surface-raised);padding:10px 12px 10px 14px;font-size:13px;line-height:1.5;color:var(--fg)}
+.pend span{flex:1;min-width:200px}
+.btnp{height:34px;padding:0 14px;border-radius:8px;border:0;background:var(--accent);color:var(--bg);font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;font-weight:500}
+.btng{height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--border-strong);background:transparent;color:var(--fg);font-family:'IBM Plex Sans',sans-serif;font-size:13.5px}
+.phone .btnp,.phone .btng{height:44px}
+.lbl{font-size:12.5px;color:var(--fg-muted);margin-bottom:6px;display:block}
+.inp{height:38px;border-radius:9px;border:1px solid var(--border-strong);background:var(--surface-sunken);display:flex;align-items:center;padding:0 12px;font-size:14px;color:var(--fg)}
+.phone .inp{height:44px}
+.orow{display:flex;align-items:center;gap:14px;padding:10px 14px;flex-wrap:wrap}
+.seg{display:inline-flex;border:1px solid var(--border-strong);border-radius:8px;overflow:hidden;flex:none}
+.seg span{height:32px;display:inline-flex;align-items:center;padding:0 12px;font-size:13px;color:var(--fg-muted);border-left:1px solid var(--border-strong)}
+.phone .seg span{height:40px}
+.seg span:first-child{border-left:0}
+.seg span.on{background:var(--surface-raised);color:var(--success);font-weight:500}
+.addb{height:34px;display:inline-flex;align-items:center;padding:0 14px;border-radius:8px;border:1px dashed var(--border-dashed);background:transparent;color:var(--fg);font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;align-self:flex-start}
+.phone .addb{height:44px;align-self:stretch;justify-content:center}
+.res{border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.res div{display:flex;align-items:center;gap:10px;min-height:44px;padding:7px 12px;border-top:1px solid var(--border)}
+.res div.first{border-top:0}
+.res .rl{font-size:13.5px;color:var(--fg)}
+.res .rl.off{color:var(--fg-disabled)}
+.tags{display:inline-flex;gap:6px;flex-wrap:wrap}
+.chipm{height:20px;display:inline-flex;align-items:center;border-radius:999px;border:1px solid var(--accent);color:var(--accent);padding:0 8px;font-family:'IBM Plex Mono',monospace;font-size:10px}
+.sel2{height:38px;border-radius:9px;border:1px solid var(--border-strong);background:var(--surface-sunken);display:inline-flex;align-items:center;gap:30px;padding:0 12px;font-size:14px;color:var(--fg)}
+.phone .sel2{height:44px}
+</style>
+</helmet>
+<div class="fr {{ mode }}" style="{{ rootStyle }}">
+  <sc-if value="{{ desk }}" hint-placeholder-val="{{ true }}">
+    <nav class="rail" aria-label="App">
+      <span class="dia"></span><span class="dia"></span><span class="dia"></span><span class="dia"></span><span class="dia"></span>
+      <span class="me"><i></i></span>
+    </nav>
+  </sc-if>
+  <div class="col">
+    <main class="page">
+      <header class="head">
+        <div class="eyerow">
+          <span class="eyebrow">Admin</span>
+          <span class="env"><i></i>production</span>
+          <sc-if value="{{ backText }}" hint-placeholder-val="{{ false }}"><a class="back" href="#">{{ backText }}</a></sc-if>
+        </div>
+        <sc-if value="{{ title }}" hint-placeholder-val="{{ true }}">
+          <div class="inrow" style="gap:10px"><h1 class="t">{{ title }}</h1><sc-if value="{{ isPicker }}" hint-placeholder-val="{{ false }}"><span class="mono muted" style="font-size:11.5px">PROPOSED_CUTS</span><span class="chipm">model</span></sc-if></div>
+        </sc-if>
+        <sc-if value="{{ headSub }}" hint-placeholder-val="{{ false }}"><p class="sub">{{ headSub }}</p></sc-if>
+        <nav class="tabs" aria-label="Admin pages">
+          <sc-for list="{{ tabs }}" as="tb" hint-placeholder-count="6"><a href="#" class="tab {{ tb.cls }}">{{ tb.t }}</a></sc-for>
+        </nav>
+      </header>
+
+      <sc-if value="{{ isList }}" hint-placeholder-val="{{ true }}">
+        <div class="pad">
+          <p class="sub">6 accounts on production. Names and emails are masked; Show reveals one account and logs it.</p>
+          <div class="field {{ fieldCls }}">
+            <span class="ico"></span>
+            <sc-if value="{{ query }}" hint-placeholder-val="{{ false }}"><span class="val">{{ query }}</span><button class="x" type="button" aria-label="Clear search">✕</button></sc-if>
+            <sc-if value="{{ noQuery }}" hint-placeholder-val="{{ true }}"><span class="ph2">Name, or a whole email</span></sc-if>
+          </div>
+          <sc-if value="{{ searchLine }}" hint-placeholder-val="{{ false }}"><p class="line {{ searchLineCls }}">{{ searchLine }}</p></sc-if>
+          <sc-if value="{{ hasRows }}" hint-placeholder-val="{{ true }}">
+            <div class="card">
+              <div class="colhead dk"><span>Account</span><span>Group</span><span>Credits now</span><span>Invites</span><span>Invited by</span><span style="text-align:right">Oct</span></div>
+              <sc-for list="{{ rows }}" as="r" hint-placeholder-count="6">
+                <div class="arow {{ r.cls }}">
+                  <div class="acell">
+                    <sc-if value="{{ r.noName }}" hint-placeholder-val="{{ false }}"><span class="av nm"><i></i></span></sc-if>
+                    <sc-if value="{{ r.hasInit }}" hint-placeholder-val="{{ true }}"><span class="av">{{ r.init }}</span></sc-if>
+                    <a href="#" class="stack">
+                      <span class="nm1">{{ r.name }}<sc-if value="{{ r.owner }}" hint-placeholder-val="{{ false }}"><span class="tag">owner</span></sc-if></span>
+                      <span class="mm {{ r.emailCls }}">{{ r.email }}</span>
+                      <sc-if value="{{ r.rev }}" hint-placeholder-val="{{ false }}"><span class="mm muted">{{ r.id }}</span><span class="mm acc">Shown and logged · hides at 19:42 UTC</span></sc-if>
+                    </a>
+                    <sc-if value="{{ r.canShow }}" hint-placeholder-val="{{ true }}"><button type="button" class="show {{ r.showCls }}">{{ r.showLabel }}</button></sc-if>
+                  </div>
+                  <span class="cell dk">{{ r.group }}</span>
+                  <span class="cell dk">{{ r.credits }}</span>
+                  <span class="cell dk fgc">{{ r.inv }}</span>
+                  <span class="cell dk {{ r.byCls }}">{{ r.by }}</span>
+                  <span class="cell r dk">{{ r.spend }}</span>
+                  <span class="pmeta ph">{{ r.pmeta }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isAccount }}" hint-placeholder-val="{{ false }}">
+        <div class="pad">
+          <div class="inrow" style="align-items:flex-start;gap:14px;flex-wrap:nowrap">
+            <span class="av lg">CR</span>
+            <div class="stack" style="gap:3px">
+              <h1 class="t" style="overflow-wrap:anywhere">{{ acct.name }}</h1>
+              <span class="mono {{ acct.emailCls }}" style="font-size:11.5px">{{ acct.email }}</span>
+              <sc-if value="{{ acct.rev }}" hint-placeholder-val="{{ false }}"><span class="mono faint" style="font-size:10.5px;word-break:break-all">user_2qF8cK1mZr4Ty9Lw</span></sc-if>
+              <span style="font-size:12.5px;color:var(--fg-body)">5 credits a day.</span>
+              <sc-if value="{{ acct.rev }}" hint-placeholder-val="{{ false }}"><span class="mono acc" style="font-size:10.5px">Shown and logged · hides at 19:42 UTC</span></sc-if>
+            </div>
+            <button type="button" class="show dk {{ acct.showCls }}">{{ acct.showLabel }}</button>
+          </div>
+          <div class="ph"><button type="button" class="show {{ acct.showCls }}">{{ acct.showLabel }}</button></div>
+          <div class="tiles">
+            <div class="tile"><small>Credits now</small><b>5</b><em>5 of 5 left</em></div>
+            <div class="tile"><small>Spent in Oct</small><b>$0.84</b><em>6 runs</em></div>
+            <div class="tile"><small>Runs</small><b>6</b><em>this month</em></div>
+            <div class="tile"><small>Tuning hub</small><b>Drawn</b><em>3 of its tools on</em></div>
+            <div class="tile"><small>Invites</small><b>2</b><em>1 waiting · 1 spent</em></div>
+          </div>
+          <div class="sh"><b>Invites</b><small>2 left</small></div>
+          <div>
+            <span class="lbl">Invites left</span>
+            <div class="inrow"><span class="num">2</span><span class="help" style="flex:1;min-width:220px">How many {{ acct.short }} holds now. Only a new account spends one, and nothing but this field refills it.</span></div>
+          </div>
+          <div class="card">
+            <div class="who first"><span class="f nm"><i></i></span><span class="txt"><span>Invited by <b>You</b></span><small>joined Sep 14</small></span></div>
+            <div class="who"><span class="f">PK</span><span class="txt"><span>Invited <b>Peter K.</b></span><small>joined Sep 30</small></span><a href="#" class="lnk">Open ›</a></div>
+            <div class="who"><span class="f w"></span><span class="txt"><span class="dk">Waiting · by email · <b>n•••@g•••.com</b></span><span class="ph">Waiting · <b>n•••@g•••.com</b></span><small>sent Oct 10 · returns Oct 24</small></span><button type="button" class="lnk">Revoke</button></div>
+          </div>
+          <div class="sh"><b>History</b><small>{{ acct.histMeta }}</small></div>
+          <div class="card">
+            <sc-for list="{{ acct.hist }}" as="h" hint-placeholder-count="4">
+              <div class="hist {{ h.cls }}"><time>{{ h.when }}</time><span><sc-if value="{{ h.log }}" hint-placeholder-val="{{ false }}"><i class="dot"></i></sc-if>{{ h.t }}</span></div>
+            </sc-for>
+          </div>
+          <div class="sh"><b>Group</b><small>one per account</small></div>
+          <div class="card"><div class="orow"><span style="flex:1;font-size:14px">friends</span><button type="button" class="btng">Change group</button></div></div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isTree }}" hint-placeholder-val="{{ false }}">
+        <div class="pad">
+          <div class="inrow dk" style="flex-wrap:nowrap">
+            <div class="field" style="flex:1"><span class="ico"></span><span class="ph2">Find an account by name</span></div>
+            <span class="mono faint" style="font-size:11px;flex:none">6 accounts · 5 invited · 1 waiting</span>
+          </div>
+          <div class="card">
+            <div class="tlab"><span class="dk">Founders · accounts from before launch</span><span class="ph">Founders</span></div>
+            <sc-for list="{{ tree }}" as="n" hint-placeholder-count="7">
+              <div class="trow" style="{{ n.pad }}">
+                <sc-if value="{{ n.child }}" hint-placeholder-val="{{ true }}"><span class="elbow" style="{{ n.elbowW }}"></span></sc-if>
+                <sc-if value="{{ n.waiting }}" hint-placeholder-val="{{ false }}">
+                  <span class="f w"></span>
+                  <span class="stack"><span class="dk">Waiting · by email · n•••@g•••.com</span><span class="ph">Waiting · by email</span><small class="ph">n•••@g•••.com · returns Oct 24</small></span>
+                  <small class="dk">returns Oct 24</small>
+                  <button type="button" class="lnk">Revoke</button>
+                </sc-if>
+                <sc-if value="{{ n.acct }}" hint-placeholder-val="{{ true }}">
+                  <sc-if value="{{ n.noName }}" hint-placeholder-val="{{ false }}"><span class="f nm"><i></i></span></sc-if>
+                  <sc-if value="{{ n.hasInit }}" hint-placeholder-val="{{ true }}"><span class="f">{{ n.init }}</span></sc-if>
+                  <span class="stack" style="flex-direction:row;align-items:center;gap:10px;flex-wrap:wrap">
+                    <b>{{ n.name }}</b>
+                    <sc-if value="{{ n.owner }}" hint-placeholder-val="{{ false }}"><span class="tag dk" style="margin-left:0">owner</span></sc-if>
+                    <small class="dk">{{ n.joined }}</small>
+                    <small class="ph" style="flex-basis:100%">{{ n.pmeta }}</small>
+                  </span>
+                  <small class="dk">{{ n.meta }}</small>
+                  <a href="#" class="lnk dk">Open ›</a>
+                  <span class="chev ph">›</span>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isGroup }}" hint-placeholder-val="{{ false }}">
+        <div class="pad">
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px" class="dk">
+            <div><span class="lbl">Name</span><div class="inp">testers</div></div>
+            <div><span class="lbl">Description</span><div class="inp">Early looks at features</div></div>
+          </div>
+          <div class="sh"><b>Members</b><small>3 selected, 1 not saved</small></div>
+          <div class="field"><span class="ico"></span><span class="ph2">Find an account by name</span></div>
+          <div class="card">
+            <sc-for list="{{ members }}" as="m" hint-placeholder-count="6">
+              <div class="mrow {{ m.cls }}">
+                <span class="box {{ m.boxCls }}"><i></i></span>
+                <span class="stack">
+                  <span style="display:flex;flex-wrap:wrap;align-items:baseline;gap:0 8px"><span class="nm1">{{ m.name }}</span><span class="mm faint">{{ m.email }}</span></span>
+                  <span style="font-size:12px;color:var(--fg-muted)">{{ m.sub }}</span>
+                </span>
+                <span class="mstate dk {{ m.stCls }}">{{ m.state }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div class="pend"><span>Colin R. moves from friends to testers. He gains Overview v2.</span><button type="button" class="btng">Undo</button><button type="button" class="btnp">Save</button></div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isPicker }}" hint-placeholder-val="{{ false }}">
+        <div class="pad">
+          <div class="sh"><b>Accounts</b><small>1 override</small></div>
+          <div class="card">
+            <div class="orow">
+              <span class="stack"><span class="nm1">Max D.</span><span class="mm faint">m•••@p•••.me</span><span style="font-size:12px;color:var(--fg-muted)">Note: trying cuts on his Atraxa list</span></span>
+              <span class="seg"><span class="on">On</span><span>Off</span></span>
+              <button type="button" class="lnk">Clear</button>
+            </div>
+          </div>
+          <button type="button" class="addb">Add an account override</button>
+          <div class="field focus"><span class="ico"></span><span class="ph2">Find an account by name</span></div>
+          <div class="res">
+            <sc-for list="{{ picks }}" as="p" hint-placeholder-count="6">
+              <div class="{{ p.cls }}"><span class="stack"><span class="rl {{ p.lc }}">{{ p.name }}</span><span class="mm faint">{{ p.email }}</span></span><sc-if value="{{ p.taken }}" hint-placeholder-val="{{ false }}"><span class="mm faint" style="flex:none">already set</span></sc-if></div>
+            </sc-for>
+          </div>
+          <div class="sh"><b>Check an account</b></div>
+          <div class="inrow"><span class="sel2">Colin R. <span class="muted">▾</span></span><span style="font-size:13px;color:var(--fg-body)">Off · app-wide override</span></div>
+          <div class="sh"><b>History</b><small>2 events</small></div>
+          <div class="card">
+            <div class="hist first"><time>Oct 12 · 17:20</time><span>You set Max D.: Off → On</span></div>
+            <div class="hist"><time>Oct 11 · 22:05</time><span>You set app-wide: Not set → Off</span></div>
+          </div>
+        </div>
+      </sc-if>
+    </main>
+    <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+      <nav class="tabbar" aria-label="App"><span><i></i>Home</span><span><i></i>Collection</span><span><i></i>Commanders</span><span><i></i>Discover</span><span><i></i>Decks</span></nav>
+    </sc-if>
+  </div>
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div class="toast" role="alert"><span>{{ toast }}</span><button type="button" class="tbtn">Try again</button></div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"scene":{"editor":"enum","options":["list","revealed","hit","miss","searchFailed","revealFailed","account","accountRevealed","tree","group","picker"],"default":"list"},"phone":{"editor":"boolean","default":false},"theme":{"editor":"enum","options":["kaldheim","amonkhet","kamigawa","ixalan","phyrexia","eldraine"],"default":"kaldheim"},"$preview":{"width":900,"height":820}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const T = {"amonkhet": "--bg:#14110E;--surface:#1E1A15;--surface-rail:#1A1611;--surface-raised:#211D18;--surface-sunken:#18140F;--elevated:#29241F;--border:#2B241B;--border-strong:#3A3229;--border-dashed:#494037;--fg:#EDE6D8;--fg-body:#C0B8A6;--fg-muted:#A59C89;--fg-faint:#8B8270;--fg-disabled:#4A4033;--accent:#CF8745;--accent-hover:#DE9757;--danger:#C6533F;--warning:#DEAA29;--success:#6FA368;--display:'Cinzel',serif", "kamigawa": "--bg:#0E0F14;--surface:#16181F;--surface-rail:#12141B;--surface-raised:#191B22;--surface-sunken:#101219;--elevated:#20222A;--border:#181C26;--border-strong:#262A35;--border-dashed:#343843;--fg:#E6E8F0;--fg-body:#B1B6C7;--fg-muted:#959AAD;--fg-faint:#6F7486;--fg-disabled:#3D404E;--accent:#FF4D9A;--accent-hover:#FF62A9;--danger:#C6533F;--warning:#E0913C;--success:#6FA368;--display:'Chakra Petch',sans-serif", "ixalan": "--bg:#0E1310;--surface:#171E19;--surface-rail:#121814;--surface-raised:#1A221C;--surface-sunken:#101512;--elevated:#212A23;--border:#1D2620;--border-strong:#2C3830;--border-dashed:#3B4A3F;--fg:#E0E7DE;--fg-body:#B6C2B3;--fg-muted:#98A695;--fg-faint:#808C7C;--fg-disabled:#3E473A;--accent:#A3C445;--accent-hover:#B2D257;--danger:#C6533F;--warning:#E0913C;--success:#5EA990;--display:'Trirong',serif", "phyrexia": "--bg:#0D0B0E;--surface:#151317;--surface-rail:#110F13;--surface-raised:#18161A;--surface-sunken:#100E12;--elevated:#1E1C20;--border:#19161C;--border-strong:#262329;--border-dashed:#332F36;--fg:#E4E2E6;--fg-body:#B5B2BB;--fg-muted:#9A96A0;--fg-faint:#78747E;--fg-disabled:#403E45;--accent:#52827A;--accent-hover:#629189;--danger:#C6533F;--warning:#E0913C;--success:#6FA368;--display:'Syncopate',sans-serif", "eldraine": "--bg:#120E17;--surface:#1B1821;--surface-rail:#15121B;--surface-raised:#1F1C25;--surface-sunken:#131018;--elevated:#26232C;--border:#241D30;--border-strong:#342C41;--border-dashed:#443C52;--fg:#E4DEEE;--fg-body:#B9B2C5;--fg-muted:#9C95A8;--fg-faint:#898395;--fg-disabled:#443F4D;--accent:#AE88E6;--accent-hover:#BC9BEE;--danger:#C6533F;--warning:#E0913C;--success:#6FA368;--display:'Cormorant Garamond',serif", "kaldheim": "--bg:#121217;--surface:#1E1F26;--surface-rail:#181920;--surface-raised:#22232B;--surface-sunken:#16171D;--elevated:#2D2E35;--border:#1A1F2B;--border-strong:#2E3340;--border-dashed:#424755;--fg:#C6D2D3;--fg-body:#B3C0C2;--fg-muted:#95A4A6;--fg-faint:#7C8A8C;--fg-disabled:#3B4647;--accent:#5C86C9;--accent-hover:#6C95D8;--danger:#C6533F;--warning:#E0913C;--success:#6FA368;--display:'Metamorphous',serif"};
+    const scene = this.props.scene ?? 'list';
+    const phone = !!this.props.phone;
+    const theme = this.props.theme ?? 'kaldheim';
+    const listScenes = ['list','revealed','hit','miss','searchFailed','revealFailed'];
+    const isList = listScenes.includes(scene);
+    const isAccount = scene === 'account' || scene === 'accountRevealed';
+    const isTree = scene === 'tree';
+    const isGroup = scene === 'group';
+    const isPicker = scene === 'picker';
+    const tabKey = isList || isAccount ? 'Accounts' : isTree ? 'Invites' : isGroup ? 'Groups' : 'Switches';
+    const tabs = ['Costs','Switches','Groups','Accounts','Models','Invites'].map((t) => ({ t, cls: t === tabKey ? 'on' : '' }));
+
+    const A = [
+      { k:'you', name:'You', owner:true, init:null, email:'h•••@f•••.design', group:'testers', credits:'10 of 10', inv:'8', by:'founder', byCls:'faint', spend:'$3.40', pinv:'8 invites', pby:'founder' },
+      { k:'colin', name:'Colin R.', full:'Colin Reyes', init:'CR', email:'c•••@g•••.com', fullEmail:'colin.reyes@gmail.com', id:'user_2qF8cK1mZr4Ty9Lw', group:'friends', credits:'5 of 5', inv:'2 · 1 waiting', by:'You', spend:'$0.84', pinv:'2 invites, 1 waiting', pby:'by You' },
+      { k:'chris', name:'chrisplays', init:'CH', email:'c•••@h•••.com', group:'No group', credits:'4 of 5', inv:'0', by:'Max D.', spend:'$0.00', pinv:'0 invites', pby:'by Max D.' },
+      { k:'max', name:'Max D.', init:'MD', email:'m•••@p•••.me', group:'testers', credits:'5 of 5', inv:'1', by:'You', spend:'$0.31', pinv:'1 invite', pby:'by You' },
+      { k:'peter', name:'Peter K.', init:'PK', email:'p•••@o•••.com', group:'friends', credits:'3 of 5', inv:'0', by:'Colin R.', spend:'$1.12', pinv:'0 invites', pby:'by Colin R.' },
+      { k:'anon', name:'Account ·9xQe', init:null, email:'n•••@g•••.com', group:'friends', credits:'5 of 5', inv:'0', by:'Peter K.', spend:'$0.06', pinv:'0 invites', pby:'by Peter K.' }
+    ];
+    let query = '', searchLine = '', searchLineCls = '', fieldCls = '', keys = A.map((a) => a.k), toast = '';
+    const revealedKey = scene === 'revealed' ? 'colin' : null;
+    if (scene === 'hit') { query = 'peter.kowal@outlook.com'; searchLine = 'One account holds this email.'; searchLineCls = 'hit'; fieldCls = 'focus'; keys = ['peter']; }
+    if (scene === 'miss') { query = 'peter.kowal@gmail.com'; searchLine = 'No account holds this email.'; fieldCls = 'focus'; keys = []; }
+    if (scene === 'searchFailed') { query = 'peter.kowal@outlook.com'; searchLine = 'Press Enter to look up this exact email.'; fieldCls = 'focus'; toast = 'Couldn’t look up that email.'; }
+    if (scene === 'revealFailed') { toast = 'Couldn’t show Colin R. Nothing was shown.'; }
+    const rows = keys.map((k, i) => {
+      const a = A.find((x) => x.k === k);
+      const rev = a.k === revealedKey;
+      return {
+        cls: [i === 0 ? 'first' : '', rev ? 'rev' : ''].join(' '),
+        noName: !a.init, hasInit: !!a.init, init: a.init,
+        name: rev ? a.full : a.name, owner: !!a.owner,
+        email: rev ? a.fullEmail : a.email, emailCls: rev ? 'body' : 'faint',
+        rev, id: a.id,
+        canShow: !a.owner, showLabel: rev ? 'Hide' : 'Show', showCls: rev ? 'on' : '',
+        group: a.group, credits: a.credits, inv: a.inv, by: a.by, byCls: a.byCls || 'fgc', spend: a.spend,
+        pmeta: [a.group, a.credits, a.pinv, a.pby, a.spend].join(' · ')
+      };
+    });
+
+    const accRev = scene === 'accountRevealed';
+    const histBase = [
+      { when: 'Oct 15 · 21:04', t: 'You showed Colin R.’s name and email', cls: 'log' },
+      { when: 'Oct 12 · 17:31', t: 'You set Colin R.’s invites: 1 → 2', cls: '' },
+      { when: 'Sep 30 · 02:16', t: 'Peter K. joined on Colin R.’s invite', cls: '' }
+    ];
+    const hist = (accRev ? [{ when: 'Oct 17 · 19:37', t: 'You showed Colin R.’s name and email', cls: 'log' }].concat(histBase) : histBase)
+      .map((h, i) => ({ ...h, log: h.cls === 'log', cls: [h.cls, i === 0 ? 'first' : ''].join(' ') }));
+    const acct = {
+      rev: accRev, name: accRev ? 'Colin Reyes' : 'Colin R.', short: accRev ? 'Colin Reyes' : 'Colin R.',
+      email: accRev ? 'colin.reyes@gmail.com' : 'c•••@g•••.com', emailCls: accRev ? 'body' : 'muted',
+      showLabel: accRev ? 'Hide' : 'Show', showCls: accRev ? 'on' : '',
+      hist, histMeta: hist.length + ' events'
+    };
+
+    const tree = [
+      { d:0, name:'You', owner:true, init:null, joined:'', meta:'8 left · invited 2', pmeta:'owner · 8 left · invited 2' },
+      { d:1, name:'Colin R.', init:'CR', joined:'joined Sep 14', meta:'2 left · invited 1', pmeta:'Sep 14 · 2 left · invited 1' },
+      { d:2, name:'Peter K.', init:'PK', joined:'joined Sep 30', meta:'0 left · invited 1', pmeta:'Sep 30 · 0 left · invited 1' },
+      { d:3, name:'Account ·9xQe', init:null, joined:'joined Oct 9', meta:'0 left · invited 0', pmeta:'Oct 9 · 0 left · invited 0' },
+      { d:2, waiting:true },
+      { d:1, name:'Max D.', init:'MD', joined:'joined Sep 20', meta:'1 left · invited 1', pmeta:'Sep 20 · 1 left · invited 1' },
+      { d:2, name:'chrisplays', init:'CH', joined:'joined Oct 2', meta:'0 left · invited 0', pmeta:'Oct 2 · 0 left · invited 0' }
+    ].map((n) => {
+      const step = phone ? 18 : 26;
+      return {
+        ...n, acct: !n.waiting, waiting: !!n.waiting, owner: !!n.owner,
+        noName: !n.waiting && !n.init, hasInit: !!n.init,
+        child: n.d > 0,
+        pad: 'padding-left:' + (n.d > 0 ? (n.d - 1) * step : 12) + 'px',
+        elbowW: 'width:' + step + 'px'
+      };
+    });
+
+    const members = [
+      { name:'You', email:'h•••@f•••.design', sub:'owner', sel:true, state:'selected', st:'s' },
+      { name:'Max D.', email:'m•••@p•••.me', sub:'in testers', sel:true, state:'selected', st:'s' },
+      { name:'Colin R.', email:'c•••@g•••.com', sub:'moves from friends', sel:true, state:'selected, not saved', st:'u' },
+      { name:'Peter K.', email:'p•••@o•••.com', sub:'in friends', sel:false, state:'unselected', st:'' },
+      { name:'chrisplays', email:'c•••@h•••.com', sub:'no group', sel:false, state:'unselected', st:'' },
+      { name:'Account ·9xQe', email:'n•••@g•••.com', sub:'in friends', sel:false, state:'unselected', st:'' }
+    ].map((m, i) => ({ ...m, cls: [i === 0 ? 'first' : '', m.sel ? 'sel' : ''].join(' '), boxCls: m.sel ? 'on' : '', stCls: m.st }));
+
+    const picks = [
+      { name:'You', email:'h•••@f•••.design' },
+      { name:'Colin R.', email:'c•••@g•••.com' },
+      { name:'chrisplays', email:'c•••@h•••.com' },
+      { name:'Max D.', email:'m•••@p•••.me', taken:true },
+      { name:'Peter K.', email:'p•••@o•••.com' },
+      { name:'Account ·9xQe', email:'n•••@g•••.com' }
+    ].map((p, i) => ({ ...p, taken: !!p.taken, lc: p.taken ? 'off' : '', cls: i === 0 ? 'first' : '' }));
+
+    let title = 'Accounts', headSub = '', backText = '';
+    if (isAccount) { title = ''; backText = '‹ Accounts'; }
+    if (isTree) { title = 'Invites'; headSub = 'Who invited whom. Founders are the accounts from before launch; a waiting invite can be revoked here.'; }
+    if (isGroup) { title = 'testers'; headSub = 'Early looks at features'; backText = '‹ Groups'; }
+    if (isPicker) { title = 'Proposed cuts'; headSub = 'Suggests cards to cut from a full deck.'; backText = '‹ Switches'; }
+
+    return {
+      mode: phone ? 'phone' : 'desk', desk: !phone, phone,
+      rootStyle: T[theme] || T.kaldheim,
+      tabs, title, headSub, backText,
+      isList, isAccount, isTree, isGroup, isPicker,
+      query, noQuery: !query, fieldCls, searchLine, searchLineCls,
+      rows, hasRows: rows.length > 0, toast,
+      acct, tree, members, picks
+    };
+  }
+}
+</script>
+</body>
+</html>

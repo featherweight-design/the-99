@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Discovery R2 · a tool card and Try it</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.lbl{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#8B8270}
+.mono{font-family:'IBM Plex Mono',monospace}
+.disp{font-family:'Cinzel',serif;font-weight:600}
+.cap{margin:0;font-size:14px;line-height:1.6;color:#A59C89;text-wrap:pretty}
+.sec{display:flex;flex-direction:column;gap:16px;border-top:1px solid #3A3229;padding-top:20px}
+.h{display:flex;align-items:baseline;gap:12px}
+.h .id{font-family:'IBM Plex Mono',monospace;font-size:13px;color:#CF8745}
+.h .t{font-size:19px;font-weight:600;color:#EDE6D8}
+.frames{display:flex;gap:40px;align-items:flex-start}
+.w{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;margin-bottom:8px}
+.note{display:flex;flex-direction:column;gap:10px;font-size:13.5px;line-height:1.6;color:#C0B8A6}
+.note b{color:#EDE6D8;font-weight:600}
+.note .k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#8B8270;margin-top:6px}
+</style>
+</helmet>
+<div style="width:1800px;min-height:2720px;box-sizing:border-box;padding:44px 40px 60px;background:#0F0D0B;font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;display:flex;flex-direction:column;gap:40px">
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:1240px">
+    <span class="lbl">Discovery R2 · a showcase tool card, and Try it · 1280 and 390 · Amonkhet</span>
+    <h2 class="disp" style="margin:0;font-size:28px">Try it opens the tool on a deck that fits, or says plainly why none does</h2>
+    <p class="cap">The card is the same at both widths: 354 wide in the 1280 grid, 300 in the phone’s row. Try it names the deck it will open. When no deck fits, the press is replaced by one line saying what the tool needs, and a door when there is somewhere useful to go.</p>
+  </div>
+  <section class="sec">
+    <div class="h"><span class="id">T1</span><span class="t">Anatomy</span></div>
+    <div class="frames">
+      <div><div class="w">1280 · Proposed cuts</div><dc-import name="ToolCard" tool="cuts" cta="card" fit="auto" w="354" h="450" hint-size="354px,450px"></dc-import></div>
+      <div class="note" style="width:420px"><span class="k">1 · The screenshot</span>
+<span>A real screen of the app at 390, cropped 3:2 around the control. It is shipped with the app, captured from a fixture account (E3), never the reader’s own data. The surround dims 28% so the control reads first.</span>
+<span class="k">2 · The halo</span>
+<span>R1’s halo, drawn on the picture: the same mark the reader will see when Try it lands.</span>
+<span class="k">3 · Name and cost</span>
+<span>The tool’s name as the app says it, and its cost chip only where the app already shows one: <span class="mono">free</span>, <span class="mono">1 credit per run</span>, <span class="mono">free · look deeper 1 credit</span> (G13).</span>
+<span class="k">4 · One line</span>
+<span>What it is for, taken from the tool’s own shipped description where it has one. Placeholders for /copy-review.</span>
+<span class="k">5 · Try it</span>
+<span>The whole card is the press (option C, Hugh 2026-10-16). Its accessible name is <span class="mono">Try it on HD - Kratos</span>. The deck is the fitting deck the reader opened most recently (E10).</span>
+<span class="k">6 · The footer</span>
+<span>Where it opens: <span class="mono">Opens HD - Kratos · +2</span> and an arrow in a ring. The count says other decks fit; there is no menu on the card.</span>
+<span class="k">7 · How it works</span>
+<span>Opens this tool’s entry in the Reference, expanded. The card and the entry link both ways.</span></div>
+    </div>
+
+  </section>
+  <section class="sec">
+    <div class="h"><span class="id">T2</span><span class="t">Try it, by how many decks fit · the whole card is the press</span></div>
+    <div class="frames">
+      <div><div class="w">one deck fits</div><dc-import name="ToolCard" tool="standins" cta="card" fit="auto" w="354" h="450" hint-size="354px,450px"></dc-import></div>
+      <div><div class="w">several fit</div><dc-import name="ToolCard" tool="cuts" cta="card" fit="auto" w="354" h="450" hint-size="354px,450px"></dc-import></div>
+      <div><div class="w">none fits, no door</div><dc-import name="ToolCard" tool="topoff" cta="card" fit="auto" w="354" h="450" hint-size="354px,450px"></dc-import></div>
+      <div><div class="w">none fits, with a door</div><dc-import name="ToolCard" tool="spares" cta="card" fit="auto" w="354" h="450" hint-size="354px,450px"></dc-import></div>
+    </div>
+
+  </section>
+  <section class="sec">
+    <div class="h"><span class="id">T2 · 390</span><span class="t">The same cards at 390</span></div>
+    <div class="frames">
+      <div><div class="w">one</div><dc-import name="ToolCard" tool="standins" cta="card" fit="auto" w="300" h="400" hint-size="300px,400px"></dc-import></div>
+      <div><div class="w">several</div><dc-import name="ToolCard" tool="cuts" cta="card" fit="auto" w="300" h="400" hint-size="300px,400px"></dc-import></div>
+      <div><div class="w">none, no door</div><dc-import name="ToolCard" tool="topoff" cta="card" fit="auto" w="300" h="400" hint-size="300px,400px"></dc-import></div>
+      <div><div class="w">none, a door</div><dc-import name="ToolCard" tool="spares" cta="card" fit="auto" w="300" h="400" hint-size="300px,400px"></dc-import></div>
+      <div><div class="w">a credit tool: Try it opens its tile</div><dc-import name="ToolCard" tool="suggested" cta="card" fit="auto" w="300" h="400" hint-size="300px,400px"></dc-import></div>
+    </div>
+
+  </section>
+  <section class="sec">
+    <div class="h"><span class="id">T3</span><span class="t">Where Try it lands</span></div>
+    <div class="frames">
+      <div><div class="w">390 · Proposed cuts on HD - Kratos: the page scrolled to the control, haloed 2.4s</div><dc-import name="PhoneShot" shot="cuts" halo="131,143,128,33" hint-size="390px,520px"></dc-import></div>
+      <div><div class="w">390 · Suggested changes: lands on its tile in Tuning, never runs it</div><dc-import name="PhoneShot" shot="tuning" halo="14,97,362,126" hint-size="390px,520px"></dc-import></div>
+      <div class="note" style="width:420px"><span class="k">The landing</span>
+<span>Try it is a link to the deck page (or the tool’s own page), with the tool named in the address. The page scrolls the control into view and gives it R1’s halo for 2.4 seconds, with no bubble: the card already said what the tool is for.</span>
+<span class="k">Never spends</span>
+<span>A credit tool lands on the tile or press that opens it. The run press inside is never pressed for the reader, and the cost chip on the card matched the tile’s.</span>
+<span class="k">Spends a moment</span>
+<span>Landing on a tool through Try it spends that tool’s R1 moment, since the reader has now met it.</span>
+<span class="k">Switch off</span>
+<span>No card at all. Its group shrinks; a group left with no tools is not drawn. Nothing says a tool is missing.</span></div>
+    </div>
+
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1800,"height":2720}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

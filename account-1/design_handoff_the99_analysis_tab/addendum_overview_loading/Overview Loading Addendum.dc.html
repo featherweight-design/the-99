@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] { --bg:#14110E; --surface:#1E1A15; --border:#2B241B; --border-strong:#3A3229; --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --accent:#CF8745; --accent-hover:#DE9757; --accent-shadow:#6B482A; }
+  [data-theme="kamigawa"] { --bg:#0E0F14; --surface:#16181F; --border:#181C26; --border-strong:#262A35; --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-shadow:#843052; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0907; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="display:flex;flex-direction:column;gap:64px;padding:48px 56px 80px;background:var(--bg);color:var(--fg);font-family:'IBM Plex Sans',sans-serif;min-width:1800px;">
+
+  <header style="display:flex;flex-direction:column;gap:10px;max-width:1100px;">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">The 99 · analysis tab · addendum, 2026-09-25 · the overview’s own loading</span>
+    <h1 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:32px;line-height:1.15;">The overview says it is being written, instead of saying it never was</h1>
+    <p style="margin:0;font-size:14px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">This amends <a href="../The 99 - Analysis Tab.dc.html">the Analysis tab</a>, §2 and §7, and replaces neither. Today, once the bracket lands, the Overview slot falls back to <i>No overview has been written for this deck yet.</i> with <b>Write one</b> disabled while the press is still writing it. That reads as broken. The slot now has four states of its own: <b>analyzing</b>, <b>writing</b>, <b>written</b> and <b>failed</b>. Each is drawn for the first Analyze press and for a re-analysis after edits. Opening the tab is unchanged: one loader (8a) holds the whole tab until the verdict, the overview and the credit lines are all fetched.</p>
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">
+      <span style="padding:4px 9px;border:1px solid var(--border-strong);border-radius:6px;">Analyze / Re-analyze</span><span style="color:var(--fg-faint);">→</span>
+      <a href="#1a" style="padding:4px 9px;border:1px solid var(--border-strong);border-radius:6px;">1a analyzing</a><span style="color:var(--fg-faint);">→ the verdict lands →</span>
+      <a href="#1b" style="padding:4px 9px;border:1px solid var(--border-strong);border-radius:6px;">1b writing</a><span style="color:var(--fg-faint);">→</span>
+      <a href="#1c" style="padding:4px 9px;border:1px solid var(--border-strong);border-radius:6px;">1c written</a><span style="color:var(--fg-faint);">or</span>
+      <a href="#1d" style="padding:4px 9px;border:1px solid var(--border-strong);border-radius:6px;">1d failed</a>
+    </div>
+  </header>
+
+  <section id="1a" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">1a</span><h2 style="margin:0;flex:1;font-size:20px;font-weight:600;white-space:nowrap;">Analyzing, before the verdict</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1380px;">
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">First press: 2b, unchanged</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The empty state’s ring animates and <i>Reading your deck…</i> is the heading, exactly as in 2b. There is no overview slot yet, so there’s nothing in it to explain. The ring hands over to the reading the moment the verdict lands, without waiting for the overview.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">Re-analysis: the banner shows the work</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The banner’s button disables in place, as §A says, but it now visibly works: the pulse and <i>Reading your deck…</i> (the shipped <code>panel.reading</code>) replace <i>Re-analyze</i>, and the credit note goes. The Overview has <b>no loader yet</b> because nothing is writing it. It stays whole and untouched until the verdict lands.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">One mark for “working”, not the bracket loader</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The status leads with three dots on the tab’s own <i>at-wave</i> timing, in <code>--fg-muted</code>. The bracket marks stay the tab’s loader. The Overview’s own status appears only while an overview is actually being written (1b). If the overview is already current for this list (7d), it never appears: the press returns the saved one.</p></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:32px 40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · first press · 2b as shipped</span><div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;"><dc-import name="Analysis Tab 1300" state="loading" theme="{{ theme }}" hint-size="1300px,900px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · first press</span><div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;"><dc-import name="Analysis Tab 390" state="loading" theme="{{ theme }}" hint-size="390px,1200px"></dc-import></div></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:32px 40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · re-analysis after edits · the banner busy · the overview untouched</span><div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;"><dc-import name="Analysis Tab 1300" state="ovReQueued" theme="{{ theme }}" hint-size="1300px,1300px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · the same</span><div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;"><dc-import name="Analysis Tab 390" state="ovReQueued" theme="{{ theme }}" hint-size="390px,2200px"></dc-import></div></div>
+    </div>
+  </section>
+
+  <section id="1b" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">1b</span><h2 style="margin:0;flex:1;font-size:20px;font-weight:600;white-space:nowrap;">Writing, after the verdict has landed</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1380px;">
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">The reading paints; the slot says what’s happening</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The bracket box, climb, findings and mix all draw as soon as the verdict lands. The Overview slot shows the status line, <i>Writing the overview…</i>, and nothing else. There’s no <i>No overview…</i>, no <b>Write one</b>, no credit note (the press drew it already), and no <i>View full overview →</i>.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">Re-analysis: the old overview stays until the new one lands</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The banner goes because the bracket is current. The label row now reads <i>writing a new one for your changes</i>. Nothing pops in above the held text, and when the new overview lands it replaces the paragraph in place with a 150ms crossfade. Emptying the slot first would move the page twice (collapse, then grow) and take away text the reader may be in the middle of.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--accent-shadow);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">No reserved space. One move, once</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The slot is one line tall while it writes (§5: no reserved space). When the overview lands it grows in place, and at 1300 the climb below it moves down once. At 390 the bracket box moves down too. Focus doesn’t move. <b style="color:var(--fg-body);font-weight:600;">For Hugh:</b> the tab-open rule (nothing pops in above painted content) is kept as decided. This one move is the price of showing the verdict before the overview is written.</p></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:32px 40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · first press · the verdict is in, the overview is writing</span><div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;"><dc-import name="Analysis Tab 1300" state="ovWriting" theme="{{ theme }}" hint-size="1300px,1100px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · the same</span><div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;"><dc-import name="Analysis Tab 390" state="ovWriting" theme="{{ theme }}" hint-size="390px,1900px"></dc-import></div></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:32px 40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · re-analysis · the bracket is current, a new overview is writing over the held one</span><div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;"><dc-import name="Analysis Tab 1300" state="ovReWriting" theme="{{ theme }}" hint-size="1300px,1300px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · the same</span><div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;"><dc-import name="Analysis Tab 390" state="ovReWriting" theme="{{ theme }}" hint-size="390px,2200px"></dc-import></div></div>
+    </div>
+  </section>
+
+  <section id="1c" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">1c</span><h2 style="margin:0;flex:1;font-size:20px;font-weight:600;white-space:nowrap;">Written</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1380px;">
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">The shipped overview, in the same slot</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The status line is replaced by the paragraph and <i>View full overview →</i> (the shipped <code>synopsisCopy.entry</code>, which the parent canvas still spells <i>synopsis</i>). A re-analysis ends here too: the new paragraph replaces the held one in place.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">One announcement</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">§E’s <i>Analysis ready…</i> still fires when the verdict lands. When the overview lands, the status region says <i>Overview ready.</i> once. A refused overview (7h) is unchanged and takes this slot instead.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">Leaving and returning</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">If the tab is opened while a write is still running, 8a’s single loader holds as decided. It then paints the reading with the slot already in 1b, so nothing appears above painted content that wasn’t already there.</p></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:32px 40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · written</span><div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;"><dc-import name="Analysis Tab 1300" state="ovWritten" theme="{{ theme }}" hint-size="1300px,1200px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · written</span><div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;"><dc-import name="Analysis Tab 390" state="ovWritten" theme="{{ theme }}" hint-size="390px,2200px"></dc-import></div></div>
+    </div>
+  </section>
+
+  <section id="1d" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">1d</span><h2 style="margin:0;flex:1;font-size:20px;font-weight:600;white-space:nowrap;">Failed</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1380px;">
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">The shipped failure line, nothing new</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">It’s <code>synopsisCopy.failed</code>, <i>We couldn’t write the overview just now. Nothing about your deck changed.</i>, as <code>role="alert"</code>, followed by <b>Try again</b> (outlined, 36 / 44px). There’s no tag and no <code>--danger</code>: <i>not written</i> belongs to a refusal (7h), and this is an outage.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">No credit note on Try again</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The failed write spent nothing, and <b>Try again</b> finishes the same Analyze or Re-analyze press whose note was already drawn. So there’s no <i>Uses a credit</i> line here, on either path. A success spends the one credit that press announced.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">Re-analysis: the held overview stays, labelled</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The bracket is now current and the overview isn’t. Under a hairline, ruling D’s shipped line, <i>This overview was written before your latest changes.</i>, heads the held paragraph. This also answers CREDITS item 3 for this case.</p></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:32px 40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · first press · the write failed</span><div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;"><dc-import name="Analysis Tab 1300" state="ovFailed" theme="{{ theme }}" hint-size="1300px,1100px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · the same</span><div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;"><dc-import name="Analysis Tab 390" state="ovFailed" theme="{{ theme }}" hint-size="390px,1900px"></dc-import></div></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:32px 40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · re-analysis · the new write failed, the held overview stays</span><div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;"><dc-import name="Analysis Tab 1300" state="ovReFailed" theme="{{ theme }}" hint-size="1300px,1300px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · the same</span><div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;"><dc-import name="Analysis Tab 390" state="ovReFailed" theme="{{ theme }}" hint-size="390px,2300px"></dc-import></div></div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() { return { theme: this.props.theme ?? "amonkhet" }; }
+}
+</script>
+</body>
+</html>

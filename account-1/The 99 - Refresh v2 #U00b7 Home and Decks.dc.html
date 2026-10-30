@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #100D0A; }
+  ::selection { background: #C9A24B; color: #14110E; }
+  a { color: #C6B79A; text-decoration: none; border-bottom: 1px solid #8E8269; }
+  a:hover { color: #EDE6D8; }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;background:#100D0A;padding:40px;min-height:100vh;">
+
+<header style="max-width:1180px;margin:0 0 40px;">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#14110E;background:#EDE6D8;border-radius:5px;padding:3px 9px;letter-spacing:0.08em;">3a</span>
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.3em;text-transform:uppercase;color:#8E8269;">Refresh v2 &middot; Home, Decks, the chrome, and the phone</span>
+  </div>
+  <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:36px;line-height:1.15;margin:0 0 16px;color:#EDE6D8;">Two pages, the nav, and the phone.</h1>
+  <p style="max-width:900px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;">Commander detail, the commanders list, the builder and the card modal are withdrawn from the refresh &mdash; they stay as they ship, with a conformance list at the bottom instead of a redesign. Here: Home and Decks refined, the rail with real icons, the six shipped deck statuses, deck actions restored, live filtering with no Apply, and the mobile side of the same chrome.</p>
+  <p style="max-width:900px;font-size:14px;line-height:1.7;color:#8E8269;margin:0;">Art blocks stand in for commander art &mdash; it sits behind every Ready-to-build card and every deck card, cropped to the illustration with a scrim under the type.</p>
+</header>
+
+<div style="display:flex;flex-direction:column;gap:52px;">
+
+  <!-- ============== HOME · DESKTOP ============== -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:14px;border-top:1px solid #C9A24B;padding-top:16px;">Home &middot; <span style="color:#C9A24B;">desktop</span></div>
+    <div style="width:1180px;border:1px solid #2A241D;border-radius:16px;overflow:hidden;background:#14110E;display:flex;height:624px;">
+      <div style="width:62px;flex:none;background:#100D0A;border-right:1px solid #211C16;display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:4px;">
+        <span style="width:26px;height:26px;transform:rotate(45deg);border:1.5px solid #C9A24B;border-radius:4px;margin-bottom:16px;"></span>
+        <span style="width:38px;height:38px;border-radius:10px;background:#241F18;color:#EDE6D8;display:flex;align-items:center;justify-content:center;"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.2 10 3.6l7 5.6V16a1 1 0 0 1-1 1h-3.5v-4.2h-5V17H4a1 1 0 0 1-1-1z"></path></svg></span>
+        <span style="width:38px;height:38px;border-radius:10px;color:#8E8269;display:flex;align-items:center;justify-content:center;"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.2" y="3.2" width="5.8" height="5.8" rx="1.2"></rect><rect x="11" y="3.2" width="5.8" height="5.8" rx="1.2"></rect><rect x="3.2" y="11" width="5.8" height="5.8" rx="1.2"></rect><rect x="11" y="11" width="5.8" height="5.8" rx="1.2"></rect></svg></span>
+        <span style="width:38px;height:38px;border-radius:10px;color:#8E8269;display:flex;align-items:center;justify-content:center;"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14.5 4.4 6l3.2 3.6L10 4l2.4 5.6L15.6 6 17 14.5z"></path><path d="M3 16.6h14"></path></svg></span>
+        <span style="width:38px;height:38px;border-radius:10px;color:#8E8269;display:flex;align-items:center;justify-content:center;"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6.6" y="3.2" width="10" height="13" rx="1.6"></rect><path d="M4.2 5.4A1.6 1.6 0 0 0 3.4 6.8v8.6a1.6 1.6 0 0 0 1.6 1.6h8.2"></path></svg></span>
+        <span style="margin-top:auto;width:30px;height:30px;border-radius:50%;border:1px solid #3A3229;background:#1E1A15;"></span>
+      </div>
+
+      <div style="flex:auto;min-width:0;display:flex;flex-direction:column;">
+        <div style="padding:22px 26px 0;display:flex;align-items:flex-end;gap:16px;">
+          <div style="flex:auto;min-width:0;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:7px;">1,284 cards &middot; read 2 days ago</div>
+            <div style="font-family:'Cinzel',serif;font-weight:700;font-size:28px;color:#EDE6D8;line-height:1;">Welcome back</div>
+          </div>
+          <span style="display:flex;align-items:center;gap:8px;height:32px;padding:0 12px;border:1px solid #3A3229;border-radius:8px;font-size:12.5px;color:#C6B79A;flex:none;"><svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 10a6.5 6.5 0 1 1-2.1-4.8"></path><path d="M16.8 3.4v3.2h-3.2"></path></svg>Update collection</span>
+          <span style="display:flex;align-items:center;height:32px;padding:0 14px;border-radius:8px;background:#EDE6D8;color:#14110E;font-size:12.5px;font-weight:600;flex:none;">New deck</span>
+        </div>
+
+        <div style="flex:auto;min-height:0;display:flex;gap:20px;padding:20px 26px 26px;">
+          <div style="flex:auto;min-width:0;display:flex;flex-direction:column;gap:11px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;">Ready to build</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+              <div style="position:relative;border-radius:14px;overflow:hidden;border:1px solid #2A241D;height:250px;background:linear-gradient(150deg,#2E3B2C,#4A4A33 55%,#2A2430);">
+                <span style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,17,14,0.15) 0%,rgba(20,17,14,0.72) 52%,rgba(20,17,14,0.96) 100%);"></span>
+                <span style="position:absolute;top:11px;left:12px;display:flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;background:rgba(20,17,14,0.82);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#EDE6D8;">74 <span style="color:#8E8269;">/100 fit</span></span>
+                <div style="position:absolute;left:0;right:0;bottom:0;padding:14px;">
+                  <div style="font-family:'Cinzel',serif;font-weight:600;font-size:18px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Atraxa, Praetors&rsquo; Voice</div>
+                  <div style="display:flex;align-items:center;gap:8px;margin-top:7px;">
+                    <span style="display:flex;gap:3px;"><span style="width:9px;height:9px;border-radius:2px;background:#E8E4D6;"></span><span style="width:9px;height:9px;border-radius:2px;background:#4A7FB5;"></span><span style="width:9px;height:9px;border-radius:2px;background:#5B5566;"></span><span style="width:9px;height:9px;border-radius:2px;background:#6B9E63;"></span></span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6B79A;">92 of your cards fit</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C9A24B;">12 in use</span>
+                  </div>
+                  <div style="display:flex;gap:8px;margin-top:12px;">
+                    <span style="display:flex;align-items:center;height:32px;padding:0 14px;border-radius:8px;background:#EDE6D8;color:#14110E;font-size:12.5px;font-weight:600;">Start this deck</span>
+                    <span style="display:flex;align-items:center;height:32px;padding:0 14px;border:1px solid #4A4033;border-radius:8px;font-size:12.5px;color:#EDE6D8;background:rgba(20,17,14,0.5);">See the pool</span>
+                  </div>
+                </div>
+              </div>
+              <div style="position:relative;border-radius:14px;overflow:hidden;border:1px solid #2A241D;height:250px;background:linear-gradient(150deg,#22283A,#2E2A3F 55%,#161520);">
+                <span style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,17,14,0.15) 0%,rgba(20,17,14,0.72) 52%,rgba(20,17,14,0.96) 100%);"></span>
+                <span style="position:absolute;top:11px;left:12px;display:flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;background:rgba(20,17,14,0.82);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#EDE6D8;">71 <span style="color:#8E8269;">/100 fit</span></span>
+                <div style="position:absolute;left:0;right:0;bottom:0;padding:14px;">
+                  <div style="font-family:'Cinzel',serif;font-weight:600;font-size:18px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Yuriko, the Tiger&rsquo;s Shadow</div>
+                  <div style="display:flex;align-items:center;gap:8px;margin-top:7px;">
+                    <span style="display:flex;gap:3px;"><span style="width:9px;height:9px;border-radius:2px;background:#4A7FB5;"></span><span style="width:9px;height:9px;border-radius:2px;background:#5B5566;"></span></span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6B79A;">88 of your cards fit</span>
+                  </div>
+                  <div style="display:flex;gap:8px;margin-top:12px;">
+                    <span style="display:flex;align-items:center;height:32px;padding:0 14px;border-radius:8px;background:#EDE6D8;color:#14110E;font-size:12.5px;font-weight:600;">Start this deck</span>
+                    <span style="display:flex;align-items:center;height:32px;padding:0 14px;border:1px solid #4A4033;border-radius:8px;font-size:12.5px;color:#EDE6D8;background:rgba(20,17,14,0.5);">See the pool</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">7 more scored 70 or better</span>
+              <span style="display:flex;align-items:center;height:32px;padding:0 14px;border:1px solid #3A3229;border-radius:8px;font-size:12.5px;color:#EDE6D8;">All commanders</span>
+            </div>
+
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;margin-top:6px;">Pick up where you left off</div>
+            <div style="display:flex;gap:12px;">
+              <div style="flex:1;min-width:0;display:flex;align-items:center;gap:11px;background:#1B1712;border:1px solid #2A241D;border-radius:12px;padding:10px 12px;">
+                <span style="width:30px;height:42px;border-radius:5px;background:linear-gradient(150deg,#2E3B2C,#4A4A33);flex:none;"></span>
+                <span style="flex:auto;min-width:0;display:flex;flex-direction:column;gap:4px;">
+                  <span style="font-family:'Cinzel',serif;font-weight:600;font-size:14.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Atraxa, Praetors&rsquo; Voice</span>
+                  <span style="display:flex;align-items:center;gap:8px;"><span style="display:flex;align-items:center;height:19px;padding:0 7px;border-radius:5px;background:rgba(201,162,75,0.16);font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C9A24B;">To buy</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;">99 / 99 &middot; 3 unowned</span></span>
+                </span>
+              </div>
+              <div style="flex:1;min-width:0;display:flex;align-items:center;gap:11px;background:#1B1712;border:1px solid #2A241D;border-radius:12px;padding:10px 12px;">
+                <span style="width:30px;height:42px;border-radius:5px;background:linear-gradient(150deg,#22283A,#2E2A3F);flex:none;"></span>
+                <span style="flex:auto;min-width:0;display:flex;flex-direction:column;gap:4px;">
+                  <span style="font-family:'Cinzel',serif;font-weight:600;font-size:14.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Yuriko, the Tiger&rsquo;s Shadow</span>
+                  <span style="display:flex;align-items:center;gap:8px;"><span style="display:flex;align-items:center;height:19px;padding:0 7px;border-radius:5px;background:rgba(198,183,154,0.14);font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C6B79A;">Building</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;">87 / 99</span></span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div style="width:316px;flex:none;display:flex;flex-direction:column;gap:11px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;">Your decks &middot; 6</div>
+            <div style="background:#1B1712;border:1px solid #2A241D;border-radius:14px;overflow:hidden;">
+              <div style="display:flex;align-items:center;gap:10px;padding:10px 13px;border-left:3px solid #C9A24B;border-bottom:1px solid #211C16;">
+                <span style="flex:auto;min-width:0;font-family:'Cinzel',serif;font-weight:600;font-size:14px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Atraxa, Praetors&rsquo; Voice</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C9A24B;flex:none;">To buy</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding:10px 13px;border-left:3px solid #6FA368;border-bottom:1px solid #211C16;">
+                <span style="flex:auto;min-width:0;font-family:'Cinzel',serif;font-weight:600;font-size:14px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Krenko, Mob Boss</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6FA368;flex:none;">Complete</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding:10px 13px;border-left:3px solid #E0913C;border-bottom:1px solid #211C16;">
+                <span style="flex:auto;min-width:0;font-family:'Cinzel',serif;font-weight:600;font-size:14px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Kess, Dissident Mage</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#E0913C;flex:none;">Unresolved</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding:10px 13px;border-left:3px solid #C6533F;border-bottom:1px solid #211C16;">
+                <span style="flex:auto;min-width:0;font-family:'Cinzel',serif;font-weight:600;font-size:14px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Tatyova, Benthic Druid</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C6533F;flex:none;">Over</span>
+              </div>
+              <div style="padding:9px 13px;display:flex;align-items:center;justify-content:space-between;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">2 more</span>
+                <span style="font-size:12.5px;color:#C6B79A;">All decks</span>
+              </div>
+            </div>
+
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;margin-top:4px;">Commitments</div>
+            <div style="background:#1B1712;border:1px solid #2A241D;border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:11px;">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;">
+                <span style="font-size:13px;color:#C6B79A;">Cards in use</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#C9A24B;font-variant-numeric:tabular-nums;">312 of 1,284</span>
+              </div>
+              <div style="display:flex;align-items:baseline;justify-content:space-between;">
+                <span style="font-size:13px;color:#C6B79A;">Spoken for twice</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#C6533F;font-variant-numeric:tabular-nums;">3 cards</span>
+              </div>
+              <div style="display:flex;align-items:baseline;justify-content:space-between;">
+                <span style="font-size:13px;color:#C6B79A;">To buy, all decks</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDE6D8;font-variant-numeric:tabular-nums;">18 &middot; $94.80</span>
+              </div>
+              <span style="display:flex;align-items:center;justify-content:center;height:32px;border:1px solid #3A3229;border-radius:8px;font-size:12.5px;color:#EDE6D8;margin-top:2px;">Review commitments</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <sc-if value="{{ showNotes }}" hint-placeholder-val="{{ true }}">
+      <div style="margin-top:14px;font-size:12.5px;color:#A89B84;line-height:1.6;max-width:1180px;">Changes from 2a: art fills the Ready-to-build cards with a scrim under the type; fit prints as <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">74 /100 fit</span> to match the hero on detail; the deck rail and the new resume pair carry <b style="color:#EDE6D8;font-weight:600;">the six shipped statuses</b>; Commitments gained the shopping total and lost the prose.</div>
+    </sc-if>
+  </div>
+
+  <!-- ============== DECKS · DESKTOP ============== -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:14px;border-top:1px solid #C9A24B;padding-top:16px;">Decks &middot; <span style="color:#C9A24B;">desktop &mdash; live filtering, shipped statuses, actions restored</span></div>
+    <div style="width:1180px;border:1px solid #2A241D;border-radius:16px;overflow:hidden;background:#14110E;display:flex;height:636px;">
+      <div style="width:62px;flex:none;background:#100D0A;border-right:1px solid #211C16;display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:4px;">
+        <span style="width:26px;height:26px;transform:rotate(45deg);border:1.5px solid #C9A24B;border-radius:4px;margin-bottom:16px;"></span>
+        <span style="width:38px;height:38px;border-radius:10px;color:#8E8269;display:flex;align-items:center;justify-content:center;"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.2 10 3.6l7 5.6V16a1 1 0 0 1-1 1h-3.5v-4.2h-5V17H4a1 1 0 0 1-1-1z"></path></svg></span>
+        <span style="width:38px;height:38px;border-radius:10px;color:#8E8269;display:flex;align-items:center;justify-content:center;"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.2" y="3.2" width="5.8" height="5.8" rx="1.2"></rect><rect x="11" y="3.2" width="5.8" height="5.8" rx="1.2"></rect><rect x="3.2" y="11" width="5.8" height="5.8" rx="1.2"></rect><rect x="11" y="11" width="5.8" height="5.8" rx="1.2"></rect></svg></span>
+        <span style="width:38px;height:38px;border-radius:10px;color:#8E8269;display:flex;align-items:center;justify-content:center;"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14.5 4.4 6l3.2 3.6L10 4l2.4 5.6L15.6 6 17 14.5z"></path><path d="M3 16.6h14"></path></svg></span>
+        <span style="width:38px;height:38px;border-radius:10px;background:#241F18;color:#EDE6D8;display:flex;align-items:center;justify-content:center;"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6.6" y="3.2" width="10" height="13" rx="1.6"></rect><path d="M4.2 5.4A1.6 1.6 0 0 0 3.4 6.8v8.6a1.6 1.6 0 0 0 1.6 1.6h8.2"></path></svg></span>
+        <span style="margin-top:auto;width:30px;height:30px;border-radius:50%;border:1px solid #3A3229;background:#1E1A15;"></span>
+      </div>
+
+      <div style="flex:auto;min-width:0;display:flex;flex-direction:column;">
+        <div style="display:flex;align-items:center;gap:12px;padding:16px 22px;border-bottom:1px solid #211C16;">
+          <span style="font-family:'Cinzel',serif;font-weight:700;font-size:20px;color:#EDE6D8;">Decks</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">6 of 6</span>
+          <span style="flex:auto;"></span>
+          <span style="display:flex;border:1px solid #2E2822;border-radius:8px;overflow:hidden;">
+            <span style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:#241F18;color:#EDE6D8;"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="3" width="6" height="6" rx="1"></rect><rect x="11" y="3" width="6" height="6" rx="1"></rect><rect x="3" y="11" width="6" height="6" rx="1"></rect><rect x="11" y="11" width="6" height="6" rx="1"></rect></svg></span>
+            <span style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-left:1px solid #2E2822;color:#A89B84;"><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 5.5h12M4 10h12M4 14.5h12"></path></svg></span>
+          </span>
+          <span style="display:flex;align-items:center;height:32px;padding:0 14px;border:1px solid #3A3229;border-radius:8px;font-size:12.5px;color:#C6B79A;">Sort &middot; last played</span>
+          <span style="display:flex;align-items:center;height:32px;padding:0 14px;border:1px solid #3A3229;border-radius:8px;font-size:12.5px;color:#EDE6D8;">Import</span>
+          <span style="display:flex;align-items:center;height:32px;padding:0 14px;border-radius:8px;background:#EDE6D8;color:#14110E;font-size:12.5px;font-weight:600;">New deck</span>
+        </div>
+
+        <div style="flex:auto;min-height:0;display:flex;">
+          <div style="width:262px;flex:none;border-right:1px solid #211C16;background:#171310;display:flex;flex-direction:column;">
+            <div style="padding:14px 16px 12px;border-bottom:1px solid #211C16;">
+              <div style="display:flex;align-items:center;gap:9px;height:34px;padding:0 11px;background:#100D0A;border:1px solid #3A3229;border-radius:8px;color:#8E8269;">
+                <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="9" cy="9" r="5.4"></circle><path d="m13.2 13.2 3.3 3.3"></path></svg>
+                <span style="font-size:12.5px;">Search decks</span>
+              </div>
+            </div>
+            <div style="flex:auto;min-height:0;">
+              <div style="padding:13px 16px 7px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;">Status</div>
+              <span style="display:flex;align-items:center;gap:10px;height:32px;padding:0 16px;font-size:13px;color:#EDE6D8;border-left:3px solid #8E8269;background:#1E1A15;">Draft</span>
+              <span style="display:flex;align-items:center;gap:10px;height:32px;padding:0 16px;font-size:13px;color:#EDE6D8;border-left:3px solid #C6B79A;background:#1E1A15;">Building</span>
+              <span style="display:flex;align-items:center;gap:10px;height:32px;padding:0 16px;font-size:13px;color:#EDE6D8;border-left:3px solid #C6533F;background:#1E1A15;">Over</span>
+              <span style="display:flex;align-items:center;gap:10px;height:32px;padding:0 16px;font-size:13px;color:#EDE6D8;border-left:3px solid #E0913C;background:#1E1A15;">Unresolved</span>
+              <span style="display:flex;align-items:center;gap:10px;height:32px;padding:0 16px;font-size:13px;color:#EDE6D8;border-left:3px solid #C9A24B;background:#1E1A15;">To buy</span>
+              <span style="display:flex;align-items:center;gap:10px;height:32px;padding:0 16px;font-size:13px;color:#EDE6D8;border-left:3px solid #6FA368;background:#1E1A15;">Complete</span>
+
+              <div style="padding:14px 16px 7px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;border-top:1px solid #211C16;margin-top:12px;">Colour identity</div>
+              <div style="padding:0 16px;display:flex;gap:6px;">
+                <span style="width:28px;height:28px;border-radius:7px;border:1px solid #3A3229;background:#E8E4D6;"></span>
+                <span style="width:28px;height:28px;border-radius:7px;border:1px solid #3A3229;background:#4A7FB5;"></span>
+                <span style="width:28px;height:28px;border-radius:7px;border:1px solid #3A3229;background:#5B5566;"></span>
+                <span style="width:28px;height:28px;border-radius:7px;border:1px solid #3A3229;background:#C05A48;"></span>
+                <span style="width:28px;height:28px;border-radius:7px;border:1px solid #3A3229;background:#6B9E63;"></span>
+              </div>
+
+              <div style="padding:14px 16px 7px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;border-top:1px solid #211C16;margin-top:14px;">Last played</div>
+              <span style="display:flex;align-items:center;gap:10px;height:32px;padding:0 16px;font-size:13px;color:#C6B79A;">This month</span>
+              <span style="display:flex;align-items:center;gap:10px;height:32px;padding:0 16px;font-size:13px;color:#C6B79A;">Never</span>
+            </div>
+            <div style="padding:12px 16px;border-top:1px solid #211C16;display:flex;align-items:center;gap:10px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">all statuses on</span>
+              <span style="margin-left:auto;display:flex;align-items:center;height:32px;padding:0 14px;border:1px solid #3A3229;border-radius:8px;font-size:12.5px;color:#EDE6D8;">Clear</span>
+            </div>
+          </div>
+
+          <div style="flex:auto;min-width:0;padding:18px 22px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-content:start;">
+            <div style="border-radius:14px;overflow:hidden;background:#1B1712;border:1px solid #2A241D;">
+              <div style="position:relative;height:118px;background:linear-gradient(150deg,#2E3B2C,#4A4A33 55%,#2A2430);">
+                <span style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,17,14,0.1),rgba(27,23,18,0.96));"></span>
+                <span style="position:absolute;top:10px;left:11px;display:flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;background:rgba(201,162,75,0.18);border:1px solid rgba(201,162,75,0.5);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#C9A24B;">To buy</span>
+                <span style="position:absolute;top:10px;right:10px;width:26px;height:26px;border-radius:7px;background:rgba(20,17,14,0.7);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6B79A;">&hellip;</span>
+                <div style="position:absolute;left:0;right:0;bottom:0;padding:0 13px 10px;">
+                  <div style="font-family:'Cinzel',serif;font-weight:600;font-size:15px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Atraxa, Praetors&rsquo; Voice</div>
+                </div>
+              </div>
+              <div style="padding:11px 13px 13px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="display:flex;gap:3px;"><span style="width:9px;height:9px;border-radius:2px;background:#E8E4D6;"></span><span style="width:9px;height:9px;border-radius:2px;background:#4A7FB5;"></span><span style="width:9px;height:9px;border-radius:2px;background:#5B5566;"></span><span style="width:9px;height:9px;border-radius:2px;background:#6B9E63;"></span></span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;">4-colour</span>
+                  <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#EDE6D8;font-variant-numeric:tabular-nums;">99 / 99</span>
+                </div>
+                <div style="height:3px;border-radius:2px;background:#2A241D;margin:9px 0 0;position:relative;"><span style="position:absolute;left:0;top:0;bottom:0;width:100%;background:#C9A24B;border-radius:2px;"></span></div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:9px;">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;">3 unowned &middot; $18.40</span>
+                  <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;">2 days ago</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="border-radius:14px;overflow:hidden;background:#1B1712;border:1px solid #2A241D;position:relative;">
+              <div style="position:relative;height:118px;background:linear-gradient(150deg,#4A2A22,#6B3527 60%,#2A1A14);">
+                <span style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,17,14,0.1),rgba(27,23,18,0.96));"></span>
+                <span style="position:absolute;top:10px;left:11px;display:flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;background:rgba(111,163,104,0.18);border:1px solid rgba(111,163,104,0.5);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6FA368;">Complete</span>
+                <span style="position:absolute;top:10px;right:10px;width:26px;height:26px;border-radius:7px;background:#241F18;border:1px solid #3A3229;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#EDE6D8;">&hellip;</span>
+                <div style="position:absolute;left:0;right:0;bottom:0;padding:0 13px 10px;">
+                  <div style="font-family:'Cinzel',serif;font-weight:600;font-size:15px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Krenko, Mob Boss</div>
+                </div>
+              </div>
+              <div style="padding:11px 13px 13px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="width:9px;height:9px;border-radius:2px;background:#C05A48;"></span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;">Mono-red</span>
+                  <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#EDE6D8;font-variant-numeric:tabular-nums;">99 / 99</span>
+                </div>
+                <div style="height:3px;border-radius:2px;background:#2A241D;margin:9px 0 0;position:relative;"><span style="position:absolute;left:0;top:0;bottom:0;width:100%;background:#6FA368;border-radius:2px;"></span></div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:9px;">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;">all owned</span>
+                  <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;">3 days ago</span>
+                </div>
+              </div>
+              <div style="position:absolute;top:40px;right:10px;width:186px;background:#1E1A15;border:1px solid #3A3229;border-radius:10px;box-shadow:0 22px 50px rgba(0,0,0,0.6);overflow:hidden;">
+                <span style="display:flex;align-items:center;height:38px;padding:0 13px;font-size:13px;color:#EDE6D8;">Update from a list</span>
+                <span style="display:flex;align-items:center;height:38px;padding:0 13px;font-size:13px;color:#EDE6D8;border-top:1px solid #241F18;">Rename</span>
+                <span style="display:flex;align-items:center;height:38px;padding:0 13px;font-size:13px;color:#C6533F;border-top:1px solid #241F18;">Delete</span>
+              </div>
+            </div>
+
+            <div style="border-radius:14px;overflow:hidden;background:#1B1712;border:1px solid #2A241D;">
+              <div style="position:relative;height:118px;background:linear-gradient(150deg,#22283A,#2E2A3F 55%,#161520);">
+                <span style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,17,14,0.1),rgba(27,23,18,0.96));"></span>
+                <span style="position:absolute;top:10px;left:11px;display:flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;background:rgba(198,183,154,0.14);border:1px solid #4A4033;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#C6B79A;">Building</span>
+                <span style="position:absolute;top:10px;right:10px;width:26px;height:26px;border-radius:7px;background:rgba(20,17,14,0.7);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6B79A;">&hellip;</span>
+                <div style="position:absolute;left:0;right:0;bottom:0;padding:0 13px 10px;">
+                  <div style="font-family:'Cinzel',serif;font-weight:600;font-size:15px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Yuriko, the Tiger&rsquo;s Shadow</div>
+                </div>
+              </div>
+              <div style="padding:11px 13px 13px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="display:flex;gap:3px;"><span style="width:9px;height:9px;border-radius:2px;background:#4A7FB5;"></span><span style="width:9px;height:9px;border-radius:2px;background:#5B5566;"></span></span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;">Dimir</span>
+                  <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#EDE6D8;font-variant-numeric:tabular-nums;">87 / 99</span>
+                </div>
+                <div style="height:3px;border-radius:2px;background:#2A241D;margin:9px 0 0;position:relative;"><span style="position:absolute;left:0;top:0;bottom:0;width:88%;background:#C6B79A;border-radius:2px;"></span></div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:9px;">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#C9A24B;">4 in use elsewhere</span>
+                  <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;">last week</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="border-radius:14px;overflow:hidden;background:#1B1712;border:1px solid #2A241D;">
+              <div style="position:relative;height:118px;background:linear-gradient(150deg,#2A2430,#43304A 55%,#1A1520);">
+                <span style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,17,14,0.1),rgba(27,23,18,0.96));"></span>
+                <span style="position:absolute;top:10px;left:11px;display:flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;background:rgba(224,145,60,0.18);border:1px solid rgba(224,145,60,0.5);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#E0913C;">Unresolved</span>
+                <span style="position:absolute;top:10px;right:10px;width:26px;height:26px;border-radius:7px;background:rgba(20,17,14,0.7);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6B79A;">&hellip;</span>
+                <div style="position:absolute;left:0;right:0;bottom:0;padding:0 13px 10px;">
+                  <div style="font-family:'Cinzel',serif;font-weight:600;font-size:15px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Kess, Dissident Mage</div>
+                </div>
+              </div>
+              <div style="padding:11px 13px 13px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="display:flex;gap:3px;"><span style="width:9px;height:9px;border-radius:2px;background:#4A7FB5;"></span><span style="width:9px;height:9px;border-radius:2px;background:#5B5566;"></span><span style="width:9px;height:9px;border-radius:2px;background:#C05A48;"></span></span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;">Grixis</span>
+                  <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#EDE6D8;font-variant-numeric:tabular-nums;">99 / 99</span>
+                </div>
+                <div style="height:3px;border-radius:2px;background:#2A241D;margin:9px 0 0;position:relative;"><span style="position:absolute;left:0;top:0;bottom:0;width:100%;background:#E0913C;border-radius:2px;"></span></div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:9px;">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#E0913C;">2 lines unresolved</span>
+                  <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;">3 weeks ago</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="border-radius:14px;overflow:hidden;background:#1B1712;border:1px solid #2A241D;">
+              <div style="position:relative;height:118px;background:linear-gradient(150deg,#2A3438,#3B4A47 55%,#181F22);">
+                <span style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,17,14,0.1),rgba(27,23,18,0.96));"></span>
+                <span style="position:absolute;top:10px;left:11px;display:flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;background:rgba(198,83,63,0.18);border:1px solid rgba(198,83,63,0.5);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#C6533F;">Over</span>
+                <span style="position:absolute;top:10px;right:10px;width:26px;height:26px;border-radius:7px;background:rgba(20,17,14,0.7);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6B79A;">&hellip;</span>
+                <div style="position:absolute;left:0;right:0;bottom:0;padding:0 13px 10px;">
+                  <div style="font-family:'Cinzel',serif;font-weight:600;font-size:15px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Tatyova, Benthic Druid</div>
+                </div>
+              </div>
+              <div style="padding:11px 13px 13px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="display:flex;gap:3px;"><span style="width:9px;height:9px;border-radius:2px;background:#4A7FB5;"></span><span style="width:9px;height:9px;border-radius:2px;background:#6B9E63;"></span></span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;">Simic</span>
+                  <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#EDE6D8;font-variant-numeric:tabular-nums;">104 / 99</span>
+                </div>
+                <div style="height:3px;border-radius:2px;background:#2A241D;margin:9px 0 0;position:relative;"><span style="position:absolute;left:0;top:0;bottom:0;width:100%;background:#C6533F;border-radius:2px;"></span></div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:9px;">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#C6533F;">5 over</span>
+                  <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;">never played</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="border-radius:14px;overflow:hidden;background:#1B1712;border:1px solid #2A241D;">
+              <div style="position:relative;height:118px;background:linear-gradient(150deg,#3A2E22,#5A452C 55%,#241C14);">
+                <span style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,17,14,0.1),rgba(27,23,18,0.96));"></span>
+                <span style="position:absolute;top:10px;left:11px;display:flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;background:rgba(142,130,105,0.16);border:1px solid #3A3229;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#A89B84;">Draft</span>
+                <span style="position:absolute;top:10px;right:10px;width:26px;height:26px;border-radius:7px;background:rgba(20,17,14,0.7);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6B79A;">&hellip;</span>
+                <div style="position:absolute;left:0;right:0;bottom:0;padding:0 13px 10px;">
+                  <div style="font-family:'Cinzel',serif;font-weight:600;font-size:15px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">The Ur-Dragon</div>
+                </div>
+              </div>
+              <div style="padding:11px 13px 13px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="display:flex;gap:3px;"><span style="width:9px;height:9px;border-radius:2px;background:#E8E4D6;"></span><span style="width:9px;height:9px;border-radius:2px;background:#4A7FB5;"></span><span style="width:9px;height:9px;border-radius:2px;background:#5B5566;"></span><span style="width:9px;height:9px;border-radius:2px;background:#C05A48;"></span><span style="width:9px;height:9px;border-radius:2px;background:#6B9E63;"></span></span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;">5-colour</span>
+                  <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#A89B84;font-variant-numeric:tabular-nums;">0 / 99</span>
+                </div>
+                <div style="height:3px;border-radius:2px;background:#2A241D;margin:9px 0 0;"></div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:9px;">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;">created today</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <sc-if value="{{ showNotes }}" hint-placeholder-val="{{ true }}">
+      <div style="margin-top:14px;font-size:12.5px;color:#A89B84;line-height:1.6;max-width:1180px;">All six shipped statuses, each with its own hue &mdash; the pill is the message and the tile itself is the target, so no per-card CTA. Search sits at the top of the filter column, ticking filters immediately, and the only commitment control is Clear. The overflow menu carries the three shipped items &mdash; Update from a list, Rename, Delete.</div>
+    </sc-if>
+  </div>
+
+  <!-- ============== MOBILE ============== -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:14px;border-top:1px solid #C9A24B;padding-top:16px;">The same chrome on the phone &middot; <span style="color:#C9A24B;">390pt &mdash; rail becomes a tab bar, filter column becomes a sheet</span></div>
+    <div style="display:flex;gap:22px;flex-wrap:wrap;">
+
+      <div style="width:390px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:10px;">Home</div>
+        <div style="width:390px;height:800px;border:1px solid #2A241D;border-radius:26px;overflow:hidden;background:#14110E;display:flex;flex-direction:column;">
+          <div style="padding:16px 16px 0;display:flex;align-items:center;gap:10px;">
+            <span style="width:22px;height:22px;transform:rotate(45deg);border:1.5px solid #C9A24B;border-radius:3px;"></span>
+            <span style="flex:auto;"></span>
+            <span style="width:36px;height:36px;border-radius:50%;border:1px solid #3A3229;background:#1E1A15;"></span>
+          </div>
+          <div style="padding:14px 16px 0;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">1,284 cards &middot; read 2 days ago</div>
+            <div style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;color:#EDE6D8;line-height:1.15;">Welcome back</div>
+          </div>
+          <div style="flex:auto;min-height:0;padding:14px 16px 0;display:flex;flex-direction:column;gap:12px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;flex:none;">Ready to build</div>
+            <div style="position:relative;border-radius:14px;overflow:hidden;border:1px solid #2A241D;height:170px;background:linear-gradient(150deg,#2E3B2C,#4A4A33 55%,#2A2430);flex:none;">
+              <span style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,17,14,0.12) 0%,rgba(20,17,14,0.72) 52%,rgba(20,17,14,0.96) 100%);"></span>
+              <span style="position:absolute;top:10px;left:11px;display:flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;background:rgba(20,17,14,0.82);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#EDE6D8;">74 <span style="color:#8E8269;">/100 fit</span></span>
+              <div style="position:absolute;left:0;right:0;bottom:0;padding:13px;">
+                <div style="font-family:'Cinzel',serif;font-weight:600;font-size:17px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Atraxa, Praetors&rsquo; Voice</div>
+                <div style="display:flex;align-items:center;gap:7px;margin-top:6px;">
+                  <span style="display:flex;gap:3px;"><span style="width:8px;height:8px;border-radius:2px;background:#E8E4D6;"></span><span style="width:8px;height:8px;border-radius:2px;background:#4A7FB5;"></span><span style="width:8px;height:8px;border-radius:2px;background:#5B5566;"></span><span style="width:8px;height:8px;border-radius:2px;background:#6B9E63;"></span></span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#C6B79A;">92 fit &middot; <span style="color:#C9A24B;">12 in use</span></span>
+                </div>
+                <div style="display:flex;gap:8px;margin-top:11px;">
+                  <span style="flex:auto;display:flex;align-items:center;justify-content:center;height:44px;border-radius:10px;background:#EDE6D8;color:#14110E;font-size:14px;font-weight:600;">Start this deck</span>
+                  <span style="width:44px;height:44px;border:1px solid #4A4033;border-radius:10px;background:rgba(20,17,14,0.5);display:flex;align-items:center;justify-content:center;color:#EDE6D8;"><svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M7.5 4.5 13 10l-5.5 5.5"></path></svg></span>
+                </div>
+              </div>
+            </div>
+            <div style="position:relative;border-radius:14px;overflow:hidden;border:1px solid #2A241D;height:170px;background:linear-gradient(150deg,#22283A,#2E2A3F 55%,#161520);flex:none;">
+              <span style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,17,14,0.12) 0%,rgba(20,17,14,0.72) 52%,rgba(20,17,14,0.96) 100%);"></span>
+              <span style="position:absolute;top:10px;left:11px;display:flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;background:rgba(20,17,14,0.82);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#EDE6D8;">71 <span style="color:#8E8269;">/100 fit</span></span>
+              <div style="position:absolute;left:0;right:0;bottom:0;padding:13px;">
+                <div style="font-family:'Cinzel',serif;font-weight:600;font-size:17px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Yuriko, the Tiger&rsquo;s Shadow</div>
+                <div style="display:flex;align-items:center;gap:7px;margin-top:6px;">
+                  <span style="display:flex;gap:3px;"><span style="width:8px;height:8px;border-radius:2px;background:#4A7FB5;"></span><span style="width:8px;height:8px;border-radius:2px;background:#5B5566;"></span></span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#C6B79A;">88 fit</span>
+                </div>
+                <div style="display:flex;gap:8px;margin-top:11px;">
+                  <span style="flex:auto;display:flex;align-items:center;justify-content:center;height:44px;border-radius:10px;background:#EDE6D8;color:#14110E;font-size:14px;font-weight:600;">Start this deck</span>
+                  <span style="width:44px;height:44px;border:1px solid #4A4033;border-radius:10px;background:rgba(20,17,14,0.5);display:flex;align-items:center;justify-content:center;color:#EDE6D8;"><svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M7.5 4.5 13 10l-5.5 5.5"></path></svg></span>
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;flex:none;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;">7 more scored 70 or better</span>
+              <span style="margin-left:auto;display:flex;align-items:center;height:36px;padding:0 12px;border:1px solid #3A3229;border-radius:10px;font-size:13px;color:#EDE6D8;">All commanders</span>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;flex:none;">Your decks &middot; 6</div>
+            <div style="background:#1B1712;border:1px solid #2A241D;border-radius:14px;overflow:hidden;flex:none;">
+              <div style="display:flex;align-items:center;gap:10px;padding:12px 13px;border-left:3px solid #C9A24B;border-bottom:1px solid #211C16;min-height:56px;">
+                <span style="width:26px;height:36px;border-radius:4px;background:linear-gradient(150deg,#2E3B2C,#4A4A33);flex:none;"></span>
+                <span style="flex:auto;min-width:0;display:flex;flex-direction:column;gap:3px;">
+                  <span style="font-family:'Cinzel',serif;font-weight:600;font-size:14.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Atraxa, Praetors&rsquo; Voice</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#C9A24B;">To buy &middot; 3 unowned</span>
+                </span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#EDE6D8;flex:none;">99 / 99</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding:12px 13px;border-left:3px solid #6FA368;min-height:56px;">
+                <span style="width:26px;height:36px;border-radius:4px;background:linear-gradient(150deg,#4A2A22,#6B3527);flex:none;"></span>
+                <span style="flex:auto;min-width:0;display:flex;flex-direction:column;gap:3px;">
+                  <span style="font-family:'Cinzel',serif;font-weight:600;font-size:14.5px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Krenko, Mob Boss</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#6FA368;">Complete</span>
+                </span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#EDE6D8;flex:none;">99 / 99</span>
+              </div>
+            </div>
+          </div>
+          <div style="flex:none;border-top:1px solid #211C16;background:#100D0A;padding:8px 8px 14px;display:flex;">
+            <span style="flex:1;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#EDE6D8;background:#1B1712;"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.2 10 3.6l7 5.6V16a1 1 0 0 1-1 1h-3.5v-4.2h-5V17H4a1 1 0 0 1-1-1z"></path></svg><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;">Home</span></span>
+            <span style="flex:1;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#8E8269;"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.2" y="3.2" width="5.8" height="5.8" rx="1.2"></rect><rect x="11" y="3.2" width="5.8" height="5.8" rx="1.2"></rect><rect x="3.2" y="11" width="5.8" height="5.8" rx="1.2"></rect><rect x="11" y="11" width="5.8" height="5.8" rx="1.2"></rect></svg><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;">Collection</span></span>
+            <span style="flex:1;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#8E8269;"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14.5 4.4 6l3.2 3.6L10 4l2.4 5.6L15.6 6 17 14.5z"></path><path d="M3 16.6h14"></path></svg><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;">Commanders</span></span>
+            <span style="flex:1;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#8E8269;"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6.6" y="3.2" width="10" height="13" rx="1.6"></rect><path d="M4.2 5.4A1.6 1.6 0 0 0 3.4 6.8v8.6a1.6 1.6 0 0 0 1.6 1.6h8.2"></path></svg><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;">Decks</span></span>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:390px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:10px;">Decks</div>
+        <div style="width:390px;height:800px;border:1px solid #2A241D;border-radius:26px;overflow:hidden;background:#14110E;display:flex;flex-direction:column;">
+          <div style="padding:16px 16px 0;display:flex;align-items:center;gap:10px;">
+            <span style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;color:#EDE6D8;">Decks</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8E8269;">3 of 6</span>
+            <span style="flex:auto;"></span>
+            <span style="width:36px;height:36px;border:1px solid #3A3229;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#C6B79A;"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="9" cy="9" r="5.4"></circle><path d="m13.2 13.2 3.3 3.3"></path></svg></span>
+            <span style="height:36px;display:flex;align-items:center;gap:7px;padding:0 12px;border:1px solid #C9A24B;border-radius:10px;font-size:13px;color:#EDE6D8;">Filter <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#14110E;background:#C9A24B;border-radius:4px;padding:1px 5px;">2</span></span>
+          </div>
+          <div style="padding:12px 16px 0;display:flex;gap:8px;">
+            <span style="flex:auto;display:flex;align-items:center;justify-content:center;height:44px;border-radius:10px;background:#EDE6D8;color:#14110E;font-size:14px;font-weight:600;">New deck</span>
+            <span style="flex:auto;display:flex;align-items:center;justify-content:center;height:44px;border:1px solid #3A3229;border-radius:10px;font-size:14px;color:#EDE6D8;">Import a deck</span>
+          </div>
+          <div style="padding:12px 16px 0;display:flex;gap:7px;flex-wrap:wrap;">
+            <span style="display:flex;align-items:center;gap:7px;height:28px;padding:0 10px;border-radius:999px;background:#241F18;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6B79A;">Building <span style="color:#8E8269;">&times;</span></span>
+            <span style="display:flex;align-items:center;gap:7px;height:28px;padding:0 10px;border-radius:999px;background:#241F18;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6B79A;">To buy <span style="color:#8E8269;">&times;</span></span>
+            <span style="display:flex;align-items:center;height:28px;padding:0 10px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#A89B84;">Clear</span>
+          </div>
+
+          <div style="flex:auto;min-height:0;padding:14px 16px 0;display:flex;flex-direction:column;gap:12px;">
+            <div style="border-radius:14px;overflow:hidden;background:#1B1712;border:1px solid #2A241D;flex:none;">
+              <div style="position:relative;height:124px;background:linear-gradient(150deg,#2E3B2C,#4A4A33 55%,#2A2430);">
+                <span style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,17,14,0.1),rgba(27,23,18,0.96));"></span>
+                <span style="position:absolute;top:10px;left:11px;display:flex;align-items:center;height:24px;padding:0 9px;border-radius:6px;background:rgba(201,162,75,0.18);border:1px solid rgba(201,162,75,0.5);font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C9A24B;">To buy</span>
+                <span style="position:absolute;top:8px;right:8px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDE6D8;">&hellip;</span>
+                <div style="position:absolute;left:0;right:0;bottom:0;padding:0 13px 10px;">
+                  <div style="font-family:'Cinzel',serif;font-weight:600;font-size:17px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Atraxa, Praetors&rsquo; Voice</div>
+                </div>
+              </div>
+              <div style="padding:11px 13px 13px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="display:flex;gap:3px;"><span style="width:9px;height:9px;border-radius:2px;background:#E8E4D6;"></span><span style="width:9px;height:9px;border-radius:2px;background:#4A7FB5;"></span><span style="width:9px;height:9px;border-radius:2px;background:#5B5566;"></span><span style="width:9px;height:9px;border-radius:2px;background:#6B9E63;"></span></span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">3 unowned &middot; $18.40</span>
+                  <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#EDE6D8;">99 / 99</span>
+                </div>
+                <div style="height:3px;border-radius:2px;background:#2A241D;margin:10px 0 0;position:relative;"><span style="position:absolute;left:0;top:0;bottom:0;width:100%;background:#C9A24B;border-radius:2px;"></span></div>
+              </div>
+            </div>
+
+            <div style="border-radius:14px;overflow:hidden;background:#1B1712;border:1px solid #2A241D;flex:none;">
+              <div style="position:relative;height:124px;background:linear-gradient(150deg,#22283A,#2E2A3F 55%,#161520);">
+                <span style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,17,14,0.1),rgba(27,23,18,0.96));"></span>
+                <span style="position:absolute;top:10px;left:11px;display:flex;align-items:center;height:24px;padding:0 9px;border-radius:6px;background:rgba(198,183,154,0.14);border:1px solid #4A4033;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6B79A;">Building</span>
+                <span style="position:absolute;top:8px;right:8px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#EDE6D8;">&hellip;</span>
+                <div style="position:absolute;left:0;right:0;bottom:0;padding:0 13px 10px;">
+                  <div style="font-family:'Cinzel',serif;font-weight:600;font-size:17px;color:#EDE6D8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Yuriko, the Tiger&rsquo;s Shadow</div>
+                </div>
+              </div>
+              <div style="padding:11px 13px 13px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="display:flex;gap:3px;"><span style="width:9px;height:9px;border-radius:2px;background:#4A7FB5;"></span><span style="width:9px;height:9px;border-radius:2px;background:#5B5566;"></span></span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C9A24B;">4 in use elsewhere</span>
+                  <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#EDE6D8;">87 / 99</span>
+                </div>
+                <div style="height:3px;border-radius:2px;background:#2A241D;margin:10px 0 0;position:relative;"><span style="position:absolute;left:0;top:0;bottom:0;width:88%;background:#C6B79A;border-radius:2px;"></span></div>
+              </div>
+            </div>
+          </div>
+
+          <div style="flex:none;border-top:1px solid #211C16;background:#100D0A;padding:8px 8px 14px;display:flex;">
+            <span style="flex:1;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#8E8269;"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.2 10 3.6l7 5.6V16a1 1 0 0 1-1 1h-3.5v-4.2h-5V17H4a1 1 0 0 1-1-1z"></path></svg><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;">Home</span></span>
+            <span style="flex:1;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#8E8269;"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.2" y="3.2" width="5.8" height="5.8" rx="1.2"></rect><rect x="11" y="3.2" width="5.8" height="5.8" rx="1.2"></rect><rect x="3.2" y="11" width="5.8" height="5.8" rx="1.2"></rect><rect x="11" y="11" width="5.8" height="5.8" rx="1.2"></rect></svg><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;">Collection</span></span>
+            <span style="flex:1;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#8E8269;"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14.5 4.4 6l3.2 3.6L10 4l2.4 5.6L15.6 6 17 14.5z"></path><path d="M3 16.6h14"></path></svg><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;">Commanders</span></span>
+            <span style="flex:1;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#EDE6D8;background:#1B1712;"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6.6" y="3.2" width="10" height="13" rx="1.6"></rect><path d="M4.2 5.4A1.6 1.6 0 0 0 3.4 6.8v8.6a1.6 1.6 0 0 0 1.6 1.6h8.2"></path></svg><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;">Decks</span></span>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:390px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:10px;">Filter sheet &middot; <span style="color:#C9A24B;">live, no apply</span></div>
+        <div style="width:390px;height:800px;border:1px solid #2A241D;border-radius:26px;overflow:hidden;background:#14110E;position:relative;display:flex;flex-direction:column;justify-content:flex-end;">
+          <div style="position:absolute;inset:0;background:rgba(16,13,10,0.74);"></div>
+          <div style="position:relative;background:#1B1712;border-top:1px solid #3A3229;border-radius:22px 22px 0 0;padding:12px 16px 16px;display:flex;flex-direction:column;gap:14px;">
+            <span style="width:38px;height:4px;border-radius:2px;background:#3A3229;align-self:center;"></span>
+            <div style="display:flex;align-items:baseline;gap:10px;">
+              <span style="font-family:'Cinzel',serif;font-weight:600;font-size:18px;color:#EDE6D8;">Filter decks</span>
+              <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">3 of 6 match</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:9px;height:44px;padding:0 12px;background:#100D0A;border:1px solid #3A3229;border-radius:10px;color:#8E8269;">
+              <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="9" cy="9" r="5.4"></circle><path d="m13.2 13.2 3.3 3.3"></path></svg>
+              <span style="font-size:13.5px;">Search decks</span>
+            </div>
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;margin-bottom:9px;">Status</div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <span style="height:36px;display:flex;align-items:center;padding:0 12px;border-radius:999px;border:1px solid #3A3229;font-size:13px;color:#C6B79A;">Draft</span>
+                <span style="height:36px;display:flex;align-items:center;padding:0 12px;border-radius:999px;border:1px solid #C6B79A;background:rgba(198,183,154,0.14);font-size:13px;color:#EDE6D8;">Building</span>
+                <span style="height:36px;display:flex;align-items:center;padding:0 12px;border-radius:999px;border:1px solid #3A3229;font-size:13px;color:#C6B79A;">Over</span>
+                <span style="height:36px;display:flex;align-items:center;padding:0 12px;border-radius:999px;border:1px solid #3A3229;font-size:13px;color:#C6B79A;">Unresolved</span>
+                <span style="height:36px;display:flex;align-items:center;padding:0 12px;border-radius:999px;border:1px solid #C9A24B;background:rgba(201,162,75,0.16);font-size:13px;color:#EDE6D8;">To buy</span>
+                <span style="height:36px;display:flex;align-items:center;padding:0 12px;border-radius:999px;border:1px solid #3A3229;font-size:13px;color:#C6B79A;">Complete</span>
+              </div>
+            </div>
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;margin-bottom:9px;">Colour identity</div>
+              <div style="display:flex;gap:8px;">
+                <span style="width:44px;height:44px;border-radius:11px;border:1px solid #3A3229;background:#E8E4D6;"></span>
+                <span style="width:44px;height:44px;border-radius:11px;border:1px solid #EDE6D8;background:#4A7FB5;"></span>
+                <span style="width:44px;height:44px;border-radius:11px;border:1px solid #3A3229;background:#5B5566;"></span>
+                <span style="width:44px;height:44px;border-radius:11px;border:1px solid #3A3229;background:#C05A48;"></span>
+                <span style="width:44px;height:44px;border-radius:11px;border:1px solid #3A3229;background:#6B9E63;"></span>
+              </div>
+            </div>
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;margin-bottom:9px;">Last played</div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <span style="height:36px;display:flex;align-items:center;padding:0 12px;border-radius:999px;border:1px solid #3A3229;font-size:13px;color:#C6B79A;">This month</span>
+                <span style="height:36px;display:flex;align-items:center;padding:0 12px;border-radius:999px;border:1px solid #3A3229;font-size:13px;color:#C6B79A;">Never</span>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="flex:auto;display:flex;align-items:center;justify-content:center;height:44px;border-radius:10px;background:#EDE6D8;color:#14110E;font-size:14px;font-weight:600;">Show 3 decks</span>
+              <span style="display:flex;align-items:center;height:44px;padding:0 14px;font-size:14px;color:#A89B84;">Clear</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <sc-if value="{{ showNotes }}" hint-placeholder-val="{{ true }}">
+      <div style="margin-top:14px;font-size:12.5px;color:#A89B84;line-height:1.6;max-width:1180px;">Nav order follows the shipped rail &mdash; Home, Collection, Commanders, Decks &mdash; and the rail becomes a four-item tab bar with the same icons. Note the icons contradict one shipped adjudication in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">nav.tsx</span> (diamond and label only), which this refresh proposes to retire. The filter sheet filters as you tap and its button only dismisses &mdash; <b style="color:#EDE6D8;font-weight:600;">swiping it away loses nothing</b>. Every phone target is 44px, and deck cards keep art, status, count and the overflow menu.</div>
+    </sc-if>
+  </div>
+
+  <!-- ============== ZERO STATES ============== -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:14px;border-top:1px solid #C9A24B;padding-top:16px;">Home at zero &middot; <span style="color:#C9A24B;">first run &mdash; collection unread, no decks, rail locked</span></div>
+    <div style="display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start;">
+
+      <div style="width:768px;flex:none;border:1px solid #2A241D;border-radius:16px;overflow:hidden;background:#14110E;display:flex;height:520px;">
+        <div style="width:62px;flex:none;background:#100D0A;border-right:1px solid #211C16;display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:4px;">
+          <span style="width:26px;height:26px;transform:rotate(45deg);border:1.5px solid #C9A24B;border-radius:4px;margin-bottom:16px;"></span>
+          <span style="width:38px;height:38px;border-radius:10px;background:#241F18;color:#EDE6D8;display:flex;align-items:center;justify-content:center;"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.2 10 3.6l7 5.6V16a1 1 0 0 1-1 1h-3.5v-4.2h-5V17H4a1 1 0 0 1-1-1z"></path></svg></span>
+          <span style="width:38px;height:38px;border-radius:10px;color:#4A4033;display:flex;align-items:center;justify-content:center;"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.2" y="3.2" width="5.8" height="5.8" rx="1.2"></rect><rect x="11" y="3.2" width="5.8" height="5.8" rx="1.2"></rect><rect x="3.2" y="11" width="5.8" height="5.8" rx="1.2"></rect><rect x="11" y="11" width="5.8" height="5.8" rx="1.2"></rect></svg></span>
+          <span style="width:38px;height:38px;border-radius:10px;color:#4A4033;display:flex;align-items:center;justify-content:center;"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14.5 4.4 6l3.2 3.6L10 4l2.4 5.6L15.6 6 17 14.5z"></path><path d="M3 16.6h14"></path></svg></span>
+          <span style="width:38px;height:38px;border-radius:10px;color:#4A4033;display:flex;align-items:center;justify-content:center;"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6.6" y="3.2" width="10" height="13" rx="1.6"></rect><path d="M4.2 5.4A1.6 1.6 0 0 0 3.4 6.8v8.6a1.6 1.6 0 0 0 1.6 1.6h8.2"></path></svg></span>
+          <span style="width:34px;height:1px;background:#211C16;margin:8px 0;"></span>
+          <span style="width:14px;height:16px;border:1.5px solid #4A4033;border-radius:3px;"></span>
+          <span style="margin-top:auto;width:30px;height:30px;border-radius:50%;border:1px solid #3A3229;background:#1E1A15;"></span>
+        </div>
+
+        <div style="flex:auto;min-width:0;display:flex;flex-direction:column;background:radial-gradient(640px 340px at 40% -40px, rgba(201,162,75,0.07), transparent 70%);">
+          <div style="padding:26px 28px 0;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:7px;">Step 1 of 3</div>
+            <div style="font-family:'Cinzel',serif;font-weight:700;font-size:27px;color:#EDE6D8;line-height:1;">Welcome to The 99</div>
+          </div>
+
+          <div style="flex:auto;min-height:0;padding:20px 28px 26px;display:flex;flex-direction:column;gap:12px;">
+            <div style="background:#1B1712;border:1px solid #C9A24B;border-radius:14px;padding:18px;display:flex;gap:18px;align-items:center;">
+              <span style="width:74px;height:82px;flex:none;position:relative;">
+                <span style="position:absolute;left:6px;top:12px;width:44px;height:60px;border-radius:5px;border:1px solid #3A3229;background:#211C16;transform:rotate(-14deg);"></span>
+                <span style="position:absolute;left:14px;top:9px;width:44px;height:60px;border-radius:5px;border:1px solid #3A3229;background:#241F18;"></span>
+                <span style="position:absolute;left:24px;top:12px;width:44px;height:60px;border-radius:5px;border:1px solid #C9A24B;background:#1E1A15;transform:rotate(13deg);display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-weight:700;font-size:15px;color:#C9A24B;">99</span>
+              </span>
+              <span style="flex:auto;min-width:0;display:flex;flex-direction:column;gap:7px;">
+                <span style="font-family:'Cinzel',serif;font-weight:600;font-size:19px;color:#EDE6D8;">Add your collection</span>
+                <span style="font-size:13px;color:#A89B84;line-height:1.6;">Drop a CSV export from Moxfield, Archidekt, Deckbox or Manabox. We read owned counts, sets and finishes.</span>
+                <span style="display:flex;gap:8px;margin-top:4px;">
+                  <span style="display:flex;align-items:center;height:32px;padding:0 14px;border-radius:8px;background:#EDE6D8;color:#14110E;font-size:12.5px;font-weight:600;">Upload a CSV</span>
+                  <span style="display:flex;align-items:center;height:32px;padding:0 14px;border:1px solid #3A3229;border-radius:8px;font-size:12.5px;color:#EDE6D8;">Paste a list</span>
+                </span>
+              </span>
+            </div>
+
+            <div style="background:#171310;border:1px solid #211C16;border-radius:14px;padding:15px 18px;display:flex;align-items:center;gap:14px;">
+              <span style="width:22px;height:22px;border-radius:6px;border:1px solid #2A241D;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#4A4033;flex:none;">2</span>
+              <span style="flex:auto;min-width:0;display:flex;flex-direction:column;gap:3px;">
+                <span style="font-family:'Cinzel',serif;font-weight:600;font-size:16px;color:#6A6152;">Pick a commander</span>
+                <span style="font-size:12.5px;color:#4A4033;">Unlocks once a collection is read</span>
+              </span>
+              <span style="width:12px;height:14px;border:1.5px solid #3A3229;border-radius:3px;flex:none;"></span>
+            </div>
+
+            <div style="background:#171310;border:1px solid #211C16;border-radius:14px;padding:15px 18px;display:flex;align-items:center;gap:14px;">
+              <span style="width:22px;height:22px;border-radius:6px;border:1px solid #2A241D;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#4A4033;flex:none;">3</span>
+              <span style="flex:auto;min-width:0;display:flex;flex-direction:column;gap:3px;">
+                <span style="font-family:'Cinzel',serif;font-weight:600;font-size:16px;color:#6A6152;">Build the 99</span>
+                <span style="font-size:12.5px;color:#4A4033;">Unlocks with a commander</span>
+              </span>
+              <span style="width:12px;height:14px;border:1.5px solid #3A3229;border-radius:3px;flex:none;"></span>
+            </div>
+
+            <div style="margin-top:auto;display:flex;align-items:center;gap:10px;padding-top:12px;border-top:1px solid #211C16;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">Already have a deck elsewhere?</span>
+              <span style="display:flex;align-items:center;height:32px;padding:0 14px;border:1px solid #3A3229;border-radius:8px;font-size:12.5px;color:#EDE6D8;">Import a deck</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:390px;flex:none;">
+        <div style="width:390px;height:800px;border:1px solid #2A241D;border-radius:26px;overflow:hidden;background:#14110E;display:flex;flex-direction:column;">
+          <div style="padding:16px 16px 0;display:flex;align-items:center;gap:10px;">
+            <span style="width:22px;height:22px;transform:rotate(45deg);border:1.5px solid #C9A24B;border-radius:3px;"></span>
+            <span style="flex:auto;"></span>
+            <span style="width:36px;height:36px;border-radius:50%;border:1px solid #3A3229;background:#1E1A15;"></span>
+          </div>
+          <div style="padding:16px 16px 0;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">Step 1 of 3</div>
+            <div style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;color:#EDE6D8;line-height:1.15;">Welcome to The 99</div>
+          </div>
+          <div style="flex:auto;min-height:0;padding:16px 16px 0;display:flex;flex-direction:column;gap:11px;">
+            <div style="background:#1B1712;border:1px solid #C9A24B;border-radius:14px;padding:18px 16px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;flex:none;">
+              <span style="width:88px;height:92px;position:relative;">
+                <span style="position:absolute;left:8px;top:14px;width:50px;height:68px;border-radius:6px;border:1px solid #3A3229;background:#211C16;transform:rotate(-14deg);"></span>
+                <span style="position:absolute;left:18px;top:10px;width:50px;height:68px;border-radius:6px;border:1px solid #3A3229;background:#241F18;"></span>
+                <span style="position:absolute;left:30px;top:14px;width:50px;height:68px;border-radius:6px;border:1px solid #C9A24B;background:#1E1A15;transform:rotate(13deg);display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-weight:700;font-size:17px;color:#C9A24B;">99</span>
+              </span>
+              <span style="font-family:'Cinzel',serif;font-weight:600;font-size:19px;color:#EDE6D8;">Add your collection</span>
+              <span style="font-size:13.5px;color:#A89B84;line-height:1.6;">Drop a CSV export from Moxfield, Archidekt, Deckbox or Manabox.</span>
+              <span style="display:flex;flex-direction:column;gap:8px;width:100%;margin-top:2px;">
+                <span style="display:flex;align-items:center;justify-content:center;height:44px;border-radius:10px;background:#EDE6D8;color:#14110E;font-size:14px;font-weight:600;">Upload a CSV</span>
+                <span style="display:flex;align-items:center;justify-content:center;height:44px;border:1px solid #3A3229;border-radius:10px;font-size:14px;color:#EDE6D8;">Paste a list</span>
+              </span>
+            </div>
+            <div style="background:#171310;border:1px solid #211C16;border-radius:14px;padding:14px 15px;display:flex;align-items:center;gap:12px;flex:none;min-height:56px;">
+              <span style="width:22px;height:22px;border-radius:6px;border:1px solid #2A241D;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#4A4033;flex:none;">2</span>
+              <span style="flex:auto;min-width:0;display:flex;flex-direction:column;gap:3px;">
+                <span style="font-family:'Cinzel',serif;font-weight:600;font-size:15px;color:#6A6152;">Pick a commander</span>
+                <span style="font-size:12px;color:#4A4033;">Unlocks once a collection is read</span>
+              </span>
+              <span style="width:12px;height:14px;border:1.5px solid #3A3229;border-radius:3px;flex:none;"></span>
+            </div>
+            <div style="background:#171310;border:1px solid #211C16;border-radius:14px;padding:14px 15px;display:flex;align-items:center;gap:12px;flex:none;min-height:56px;">
+              <span style="width:22px;height:22px;border-radius:6px;border:1px solid #2A241D;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#4A4033;flex:none;">3</span>
+              <span style="flex:auto;min-width:0;display:flex;flex-direction:column;gap:3px;">
+                <span style="font-family:'Cinzel',serif;font-weight:600;font-size:15px;color:#6A6152;">Build the 99</span>
+                <span style="font-size:12px;color:#4A4033;">Unlocks with a commander</span>
+              </span>
+              <span style="width:12px;height:14px;border:1.5px solid #3A3229;border-radius:3px;flex:none;"></span>
+            </div>
+            <span style="display:flex;align-items:center;justify-content:center;height:44px;border:1px solid #3A3229;border-radius:10px;font-size:14px;color:#EDE6D8;flex:none;">Import a deck</span>
+          </div>
+          <div style="flex:none;border-top:1px solid #211C16;background:#100D0A;padding:8px 8px 14px;display:flex;">
+            <span style="flex:1;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#EDE6D8;background:#1B1712;"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.2 10 3.6l7 5.6V16a1 1 0 0 1-1 1h-3.5v-4.2h-5V17H4a1 1 0 0 1-1-1z"></path></svg><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;">Home</span></span>
+            <span style="flex:1;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#4A4033;"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.2" y="3.2" width="5.8" height="5.8" rx="1.2"></rect><rect x="11" y="3.2" width="5.8" height="5.8" rx="1.2"></rect><rect x="3.2" y="11" width="5.8" height="5.8" rx="1.2"></rect><rect x="11" y="11" width="5.8" height="5.8" rx="1.2"></rect></svg><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;">Collection</span></span>
+            <span style="flex:1;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#4A4033;"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14.5 4.4 6l3.2 3.6L10 4l2.4 5.6L15.6 6 17 14.5z"></path><path d="M3 16.6h14"></path></svg><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;">Commanders</span></span>
+            <span style="flex:1;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#4A4033;"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6.6" y="3.2" width="10" height="13" rx="1.6"></rect><path d="M4.2 5.4A1.6 1.6 0 0 0 3.4 6.8v8.6a1.6 1.6 0 0 0 1.6 1.6h8.2"></path></svg><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;">Decks</span></span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <sc-if value="{{ showNotes }}" hint-placeholder-val="{{ true }}">
+      <div style="margin-top:14px;font-size:12.5px;color:#A89B84;line-height:1.6;max-width:1180px;">The shipped three-step checklist, restyled: step 1 is the only live card and carries the screen&rsquo;s one bone-fill button; steps 2 and 3 are <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">#6A6152</span> on <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--surface-rail</span> with a padlock, stating what unlocks them rather than nothing at all. The rail and the tab bar dim their three locked items to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">#4A4033</span> and the rail carries a padlock under its divider. Import a deck is present here too &mdash; a player arriving with a decklist and no CSV is not stuck behind the checklist.</div>
+    </sc-if>
+  </div>
+
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:14px;border-top:1px solid #C9A24B;padding-top:16px;">Decks at zero &middot; <span style="color:#C9A24B;">collection read, no decks yet &mdash; not the filtered empty</span></div>
+    <div style="display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start;">
+
+      <div style="width:768px;flex:none;border:1px solid #2A241D;border-radius:16px;overflow:hidden;background:#14110E;display:flex;height:452px;">
+        <div style="width:62px;flex:none;background:#100D0A;border-right:1px solid #211C16;display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:4px;">
+          <span style="width:26px;height:26px;transform:rotate(45deg);border:1.5px solid #C9A24B;border-radius:4px;margin-bottom:16px;"></span>
+          <span style="width:38px;height:38px;border-radius:10px;color:#8E8269;display:flex;align-items:center;justify-content:center;"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.2 10 3.6l7 5.6V16a1 1 0 0 1-1 1h-3.5v-4.2h-5V17H4a1 1 0 0 1-1-1z"></path></svg></span>
+          <span style="width:38px;height:38px;border-radius:10px;color:#8E8269;display:flex;align-items:center;justify-content:center;"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.2" y="3.2" width="5.8" height="5.8" rx="1.2"></rect><rect x="11" y="3.2" width="5.8" height="5.8" rx="1.2"></rect><rect x="3.2" y="11" width="5.8" height="5.8" rx="1.2"></rect><rect x="11" y="11" width="5.8" height="5.8" rx="1.2"></rect></svg></span>
+          <span style="width:38px;height:38px;border-radius:10px;color:#8E8269;display:flex;align-items:center;justify-content:center;"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14.5 4.4 6l3.2 3.6L10 4l2.4 5.6L15.6 6 17 14.5z"></path><path d="M3 16.6h14"></path></svg></span>
+          <span style="width:38px;height:38px;border-radius:10px;background:#241F18;color:#EDE6D8;display:flex;align-items:center;justify-content:center;"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6.6" y="3.2" width="10" height="13" rx="1.6"></rect><path d="M4.2 5.4A1.6 1.6 0 0 0 3.4 6.8v8.6a1.6 1.6 0 0 0 1.6 1.6h8.2"></path></svg></span>
+          <span style="margin-top:auto;width:30px;height:30px;border-radius:50%;border:1px solid #3A3229;background:#1E1A15;"></span>
+        </div>
+        <div style="flex:auto;min-width:0;display:flex;flex-direction:column;">
+          <div style="display:flex;align-items:center;gap:12px;padding:16px 22px;border-bottom:1px solid #211C16;">
+            <span style="font-family:'Cinzel',serif;font-weight:700;font-size:20px;color:#EDE6D8;">Decks</span>
+            <span style="flex:auto;"></span>
+            <span style="display:flex;align-items:center;height:32px;padding:0 14px;border:1px solid #3A3229;border-radius:8px;font-size:12.5px;color:#EDE6D8;">Import</span>
+            <span style="display:flex;align-items:center;height:32px;padding:0 14px;border-radius:8px;background:#EDE6D8;color:#14110E;font-size:12.5px;font-weight:600;">New deck</span>
+          </div>
+          <div style="flex:auto;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:26px 40px;gap:16px;">
+            <span style="width:130px;height:110px;position:relative;">
+              <span style="position:absolute;left:14px;top:18px;width:62px;height:84px;border-radius:7px;border:1px solid #3A3229;background:#1B1712;transform:rotate(-16deg);"></span>
+              <span style="position:absolute;left:32px;top:13px;width:62px;height:84px;border-radius:7px;border:1px solid #3A3229;background:#211C16;"></span>
+              <span style="position:absolute;left:50px;top:18px;width:62px;height:84px;border-radius:7px;border:1px solid #C9A24B;background:#1B1712;transform:rotate(15deg);display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-weight:700;font-size:20px;color:#C9A24B;">99</span>
+            </span>
+            <span style="font-family:'Cinzel',serif;font-weight:700;font-size:25px;color:#EDE6D8;">No decks yet</span>
+            <span style="font-size:14px;color:#A89B84;line-height:1.65;max-width:430px;">Pick a commander and we assemble the 99 from cards you already own &mdash; then track what is missing.</span>
+            <span style="display:flex;gap:10px;margin-top:2px;">
+              <span style="display:flex;align-items:center;height:32px;padding:0 14px;border-radius:8px;background:#EDE6D8;color:#14110E;font-size:12.5px;font-weight:600;">Browse commanders</span>
+              <span style="display:flex;align-items:center;height:32px;padding:0 14px;border:1px solid #3A3229;border-radius:8px;font-size:12.5px;color:#EDE6D8;">Import a deck</span>
+            </span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;margin-top:2px;">9 commanders buildable from 1,284 cards</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:390px;flex:none;">
+        <div style="width:390px;height:800px;border:1px solid #2A241D;border-radius:26px;overflow:hidden;background:#14110E;display:flex;flex-direction:column;">
+          <div style="padding:16px 16px 0;display:flex;align-items:center;gap:10px;">
+            <span style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;color:#EDE6D8;">Decks</span>
+            <span style="flex:auto;"></span>
+            <span style="width:36px;height:36px;border-radius:50%;border:1px solid #3A3229;background:#1E1A15;"></span>
+          </div>
+          <div style="flex:auto;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px 22px;gap:15px;">
+            <span style="width:118px;height:100px;position:relative;">
+              <span style="position:absolute;left:12px;top:16px;width:56px;height:76px;border-radius:6px;border:1px solid #3A3229;background:#1B1712;transform:rotate(-14deg);"></span>
+              <span style="position:absolute;left:28px;top:11px;width:56px;height:76px;border-radius:6px;border:1px solid #3A3229;background:#211C16;"></span>
+              <span style="position:absolute;left:44px;top:16px;width:56px;height:76px;border-radius:6px;border:1px solid #C9A24B;background:#1B1712;transform:rotate(14deg);display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-weight:700;font-size:18px;color:#C9A24B;">99</span>
+            </span>
+            <span style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;color:#EDE6D8;">No decks yet</span>
+            <span style="font-size:13.5px;color:#A89B84;line-height:1.65;">Pick a commander and we assemble the 99 from cards you already own.</span>
+            <span style="display:flex;flex-direction:column;gap:9px;width:100%;margin-top:4px;">
+              <span style="display:flex;align-items:center;justify-content:center;height:44px;border-radius:10px;background:#EDE6D8;color:#14110E;font-size:14px;font-weight:600;">Browse commanders</span>
+              <span style="display:flex;align-items:center;justify-content:center;height:44px;border:1px solid #3A3229;border-radius:10px;font-size:14px;color:#EDE6D8;">Import a deck</span>
+            </span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">9 commanders buildable from 1,284 cards</span>
+          </div>
+          <div style="flex:none;border-top:1px solid #211C16;background:#100D0A;padding:8px 8px 14px;display:flex;">
+            <span style="flex:1;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#8E8269;"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.2 10 3.6l7 5.6V16a1 1 0 0 1-1 1h-3.5v-4.2h-5V17H4a1 1 0 0 1-1-1z"></path></svg><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;">Home</span></span>
+            <span style="flex:1;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#8E8269;"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.2" y="3.2" width="5.8" height="5.8" rx="1.2"></rect><rect x="11" y="3.2" width="5.8" height="5.8" rx="1.2"></rect><rect x="3.2" y="11" width="5.8" height="5.8" rx="1.2"></rect><rect x="11" y="11" width="5.8" height="5.8" rx="1.2"></rect></svg><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;">Collection</span></span>
+            <span style="flex:1;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#8E8269;"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14.5 4.4 6l3.2 3.6L10 4l2.4 5.6L15.6 6 17 14.5z"></path><path d="M3 16.6h14"></path></svg><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;">Commanders</span></span>
+            <span style="flex:1;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#EDE6D8;background:#1B1712;"><svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6.6" y="3.2" width="10" height="13" rx="1.6"></rect><path d="M4.2 5.4A1.6 1.6 0 0 0 3.4 6.8v8.6a1.6 1.6 0 0 0 1.6 1.6h8.2"></path></svg><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;">Decks</span></span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <sc-if value="{{ showNotes }}" hint-placeholder-val="{{ true }}">
+      <div style="margin-top:14px;font-size:12.5px;color:#A89B84;line-height:1.6;max-width:1180px;">Distinct from <b style="color:#EDE6D8;font-weight:600;">No decks match</b>: that state offers Clear filters, this one offers two routes in. The header keeps New deck and Import even at zero &mdash; the toolbar does not change shape between empty and populated. The mono line under the buttons is the one figure worth printing here, because it is the reason Browse commanders is the primary.</div>
+    </sc-if>
+  </div>
+
+  <!-- ============== CONFORMANCE ============== -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:14px;border-top:1px solid #C9A24B;padding-top:16px;">The pages we are <span style="color:#C9A24B;">not</span> redesigning &mdash; conformance only</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px;max-width:1180px;">
+      <div style="background:#1B1712;border:1px solid #2A241D;border-radius:14px;padding:16px 18px;">
+        <div style="font-family:'Cinzel',serif;font-weight:600;font-size:16px;color:#EDE6D8;margin-bottom:9px;">Commander detail</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;">Role Coverage chips and EDHREC Synergy stay exactly as they are, full sections included. Touch-ups only: the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Order</span> and category controls take the 32px hairline pill, and the rail replaces the page&rsquo;s own back chrome.</div>
+      </div>
+      <div style="background:#1B1712;border:1px solid #2A241D;border-radius:14px;padding:16px 18px;">
+        <div style="font-family:'Cinzel',serif;font-weight:600;font-size:16px;color:#EDE6D8;margin-bottom:9px;">Commanders list</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;">Today&rsquo;s row keeps every figure &mdash; role counts, synergy bar, free and in-use receipts, fit and delta. Touch-ups: one search field sitting with the filters instead of apart from them, live filtering with Clear, and no token query.</div>
+      </div>
+      <div style="background:#1B1712;border:1px solid #2A241D;border-radius:14px;padding:16px 18px;">
+        <div style="font-family:'Cinzel',serif;font-weight:600;font-size:16px;color:#EDE6D8;margin-bottom:9px;">Builder</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;">Stays as it ships and the Tuning panel is withdrawn. Touch-ups: buttons to 32px hairline with one filled primary, and the header status pill uses the six shipped values.</div>
+      </div>
+      <div style="background:#1B1712;border:1px solid #2A241D;border-radius:14px;padding:16px 18px;">
+        <div style="font-family:'Cinzel',serif;font-weight:600;font-size:16px;color:#EDE6D8;margin-bottom:9px;">Card detail</div>
+        <div style="font-size:12.5px;color:#A89B84;line-height:1.65;">No change. It already carries the geometry and the availability atoms, and only inherits the button and field styles.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1320,&quot;height&quot;:900},&quot;showNotes&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Presentation&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    return { showNotes: this.props.showNotes ?? true };
+  }
+}
+</script>
+</body>
+</html>

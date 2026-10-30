@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Upcoming precons R2 · collapsible group and quiet rows</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+.lbl{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#7C8A8C}
+.mono{font-family:'IBM Plex Mono',monospace}
+.disp{font-family:'Metamorphous',serif;font-weight:400}
+.cap{margin:0;font-size:13px;line-height:1.55;color:#95A4A6;text-wrap:pretty}
+.yh{margin:0;display:flex;align-items:baseline;gap:8px;border-bottom:1px solid #1A1F2B;padding-bottom:7px;font-family:'Metamorphous',serif;font-weight:400;font-size:17px;color:#C6D2D3}
+.cnt{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8A8C}
+.new{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;color:#5C86C9;border:1px solid rgba(92,134,201,.45);border-radius:4px;padding:0 5px;line-height:16px}
+.nm2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.3;color:#B3C0C2}
+.dot{display:inline-block;border-radius:50%}
+.shell{display:flex;flex-direction:column;overflow:hidden;border:1px solid #1A1F2B;background:#1E1F26;border-radius:10px}
+.arttl{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#5F6D6E}
+.tog{width:100%;display:flex;align-items:baseline;gap:8px;background:transparent;border:0;border-bottom:1px solid #1A1F2B;padding:0 0 7px;margin:0;cursor:pointer;text-align:left;color:#C6D2D3;font-family:'Metamorphous',serif;font-size:17px;font-weight:400}
+.chev{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#95A4A6}
+</style>
+</helmet>
+<div style="width:1460px;min-height:5600px;box-sizing:border-box;padding:44px 40px 60px;background:#0E0E12;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:44px">
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:1100px">
+    <div style="display:flex;align-items:center;gap:12px"><span class="mono" style="font-size:13px;font-weight:600;color:#121217;background:#5C86C9;border-radius:6px;padding:4px 10px;letter-spacing:.08em">R2</span><span class="lbl">Precons page · 900 and 390</span></div>
+    <h2 class="disp" style="margin:0;font-size:26px">Announced folds away, and rows say less</h2>
+    <p class="cap">Hugh’s R1 notes 1 and 2. The group’s heading is a disclosure, closed unless there’s something new in it, so the decklists sit where they sit today. In rows, a set is a precon-shaped row: one art thumb, three short lines, and the cards only when the row is opened.</p>
+  </div>
+
+  <sc-for list="{{ states }}" as="st" hint-placeholder-count="6">
+    <section style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;flex-direction:column;gap:4px;max-width:1100px;border-top:1px solid #2E3340;padding-top:16px">
+        <div style="display:flex;align-items:baseline;gap:12px"><span class="mono" style="font-size:13px;color:#5C86C9">{{ st.id }}</span><span style="font-size:17px;font-weight:600">{{ st.title }}</span></div>
+        <p class="cap">{{ st.note }}</p>
+      </div>
+      <div style="display:flex;gap:40px;align-items:flex-start">
+        <sc-for list="{{ st.widths }}" as="w" hint-placeholder-count="2">
+          <div style="{{ w.frame }}">
+            <div style="{{ w.body }}">
+              <span class="mono" style="font-size:11px;color:#7C8A8C">197 decklists · newest first</span>
+              <section style="display:flex;flex-direction:column;gap:10px">
+                <h2 style="margin:0">
+                  <button type="button" class="tog" aria-expanded="{{ st.open }}" style="{{ w.tog }}">Announced <span class="cnt">{{ st.count }}</span><sc-if value="{{ st.hasNew }}" hint-placeholder-val="{{ false }}"><span class="new" style="align-self:center">new</span></sc-if><span class="chev">{{ st.chev }}</span></button>
+                </h2>
+                <sc-if value="{{ st.tilesOpen }}" hint-placeholder-val="{{ false }}">
+                  <sc-for list="{{ w.sets }}" as="s" hint-placeholder-count="2">
+                    <div style="{{ w.block }}">
+                      <div style="display:flex;flex-direction:column;gap:3px">
+                        <div style="display:flex;align-items:center;gap:8px"><h3 class="disp" style="{{ w.setName }}">{{ s.name }}</h3><sc-if value="{{ s.isNew }}" hint-placeholder-val="{{ false }}"><span class="new">new</span></sc-if></div>
+                        <sc-for list="{{ s.meta }}" as="m" hint-placeholder-count="1"><span class="mono" style="font-size:11px;line-height:1.5;color:#7C8A8C">{{ m }}</span></sc-for>
+                      </div>
+                      <div style="{{ w.strip }}">
+                        <sc-for list="{{ s.cards }}" as="c" hint-placeholder-count="3">
+                          <div style="{{ w.card }}"><div style="{{ w.cardArt }}"><span class="arttl">{{ c.cn }}</span></div><span class="nm2" style="{{ w.cardName }}">{{ c.nm }}</span><span style="display:flex;gap:3px"><sc-for list="{{ c.dots }}" as="d" hint-placeholder-count="1"><span class="dot" style="{{ d }}"></span></sc-for></span></div>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </sc-for>
+                </sc-if>
+                <sc-if value="{{ st.rowsOpen }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;flex-direction:column;gap:8px">
+                    <sc-for list="{{ w.sets }}" as="s" hint-placeholder-count="2">
+                      <div style="{{ w.row }}">
+                        <div style="display:flex;align-items:center;gap:12px">
+                          <div style="{{ w.thumb }}"><span class="arttl" style="font-size:7.5px">{{ s.thumbLabel }}</span></div>
+                          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+                            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+                              <span style="display:flex;align-items:center;gap:8px;min-width:0"><span class="disp" style="{{ w.rname }}">{{ s.name }}</span><sc-if value="{{ s.isNew }}" hint-placeholder-val="{{ false }}"><span class="new">new</span></sc-if></span>
+                              <span class="mono" style="{{ w.when }}">{{ s.when }} <span style="color:#7C8A8C">{{ s.chev }}</span></span>
+                            </div>
+                            <span class="mono" style="font-size:11px;line-height:1.5;color:#95A4A6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.line2 }}</span>
+                            <span class="mono" style="display:flex;align-items:center;gap:6px;font-size:10.5px;color:#7C8A8C"><sc-for list="{{ s.idDots }}" as="d" hint-placeholder-count="2"><span class="dot" style="{{ d }}"></span></sc-for>{{ s.line3 }}</span>
+                          </div>
+                        </div>
+                        <sc-if value="{{ s.rowOpen }}" hint-placeholder-val="{{ false }}">
+                          <div style="{{ w.rowStrip }}">
+                            <sc-for list="{{ s.cards }}" as="c" hint-placeholder-count="3">
+                              <div style="{{ w.card }}"><div style="{{ w.cardArt }}"><span class="arttl">{{ c.cn }}</span></div><span class="nm2" style="{{ w.cardName }}">{{ c.nm }}</span></div>
+                            </sc-for>
+                          </div>
+                        </sc-if>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </section>
+              <section style="display:flex;flex-direction:column;gap:10px">
+                <h2 class="yh">2026 <span class="cnt">12 decklists</span></h2>
+                <sc-if value="{{ st.tiles }}" hint-placeholder-val="{{ true }}">
+                  <div style="{{ w.grid }}">
+                    <sc-for list="{{ w.tiles }}" as="t" hint-placeholder-count="2">
+                      <div class="shell">
+                        <div style="{{ w.tileArt }}"><span class="arttl">commander art</span></div>
+                        <div style="{{ w.caption }}">
+                          <span class="mono" style="font-size:11px;color:#7C8A8C">you own <span style="font-weight:600;color:#C6D2D3">{{ t.own }}</span></span>
+                          <span style="font-size:12.5px;color:#C6D2D3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.nm }}</span>
+                          <span class="mono" style="display:flex;align-items:center;gap:5px;font-size:10px;color:#7C8A8C"><sc-for list="{{ t.dots }}" as="d" hint-placeholder-count="2"><span class="dot" style="{{ d }}"></span></sc-for>[SET] · Oct 2026</span>
+                        </div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ st.rows }}" hint-placeholder-val="{{ false }}">
+                  <sc-for list="{{ w.tiles }}" as="r" hint-placeholder-count="3">
+                    <div style="{{ w.precon }}">
+                      <div style="{{ w.thumbSolid }}"></div>
+                      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+                        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+                          <span class="disp" style="{{ w.rname }}">{{ r.nm }}</span>
+                          <span class="mono" style="flex:none;font-size:12px;font-weight:500;color:#C6D2D3"><span style="margin-right:4px;font-size:10px;font-weight:400;color:#7C8A8C">you own</span>{{ r.own }}</span>
+                        </div>
+                        <span class="mono" style="font-size:11px;color:#95A4A6">[commander]</span>
+                        <span class="mono" style="display:flex;align-items:center;gap:6px;font-size:10.5px;color:#7C8A8C"><sc-for list="{{ r.dots }}" as="d" hint-placeholder-count="2"><span class="dot" style="{{ d }}"></span></sc-for>[SET] · Oct 2026</span>
+                      </div>
+                    </div>
+                  </sc-for>
+                </sc-if>
+              </section>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1460,"height":5600}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const C = { W: "#F4E9C4", U: "#3A6AA5", B: "#98748F", R: "#C05A3E", G: "#4B7A46" };
+    const dots = (ids, px) => ids.map((k) => ({ width: px + "px", height: px + "px", background: C[k] }));
+    const trcIds = ["W", "U", "W", "R", "U", "B", "G", "W", "U", "R", "B", "G", "W", "U", "R"];
+    const trc = trcIds.map((k, i) => ({ nm: i === 0 ? "Christine Chapel, Combat Medic" : `[TRC commander ${String(i + 1).padStart(2, "0")}]`, cn: i === 0 ? "TRC 78" : `TRC ${i * 7 + 2}`, k: [k] }));
+    const ST = { name: "Star Trek Commander", cards: trc, when: "in 30 days",
+      line2: "Christine Chapel, Combat Medic and 14 more", line3: "TRC · Nov 13, 2026", ids: ["W", "U", "B", "R", "G"], thumbLabel: "TRC 78",
+      metaDesk: ["TRC · Nov 13, 2026 · in 30 days · 15 commanders revealed"], metaPhone: ["Nov 13, 2026 · in 30 days", "TRC · 15 commanders revealed"] };
+    const DH = { name: "Darkhold Destiny Commander", cards: [{ nm: "Gargantos, the Endbringer", cn: "MDC art", k: ["B", "G"] }], when: "in 6 months",
+      line2: "Gargantos, the Endbringer", line3: "MDC · Apr 9, 2027", ids: ["B", "G"], thumbLabel: "MDC",
+      metaDesk: ["MDC · Apr 9, 2027 · in 6 months · 1 commander revealed"], metaPhone: ["Apr 9, 2027 · in 6 months", "MDC · 1 commander revealed"] };
+    const shipped = [
+      { nm: "Keen Engineering", own: "31 of 66", k: ["U", "R"] }, { nm: "Reign of Dragons", own: "18 of 67", k: ["B", "R", "G"] },
+      { nm: "Calling All Angels", own: "44 of 70", k: ["W"] }, { nm: "Tramplesaurus Rex", own: "22 of 64", k: ["R", "G"] },
+    ];
+    const mk = (o) => {
+      const st = { open: false, view: "tiles", sets: [ST, DH], hasNew: false, focus: false, ...o };
+      st.tiles = st.view === "tiles"; st.rows = !st.tiles;
+      st.tilesOpen = st.open && st.tiles; st.rowsOpen = st.open && st.rows;
+      st.chev = st.open ? "▾" : "▸";
+      st.count = st.open ? "2 sets" : "2 sets · next Nov 13";
+      st.widths = [false, true].map((phone) => {
+        const artW = phone ? 76 : 84, artH = Math.round((artW * 88) / 63);
+        const tileH = Math.round(((phone ? 174 : 205) * 88) / 63);
+        return {
+          frame: { width: phone ? "390px" : "900px", flex: "none", background: "#121217", border: "1px solid #2E3340", borderRadius: "12px", overflow: "hidden" },
+          body: { display: "flex", flexDirection: "column", gap: "14px", padding: phone ? "14px 16px 24px" : "16px 22px 24px" },
+          tog: { minHeight: phone ? "44px" : "34px", alignItems: "center", paddingBottom: phone ? "0" : "7px", ...(st.focus ? { outline: "2px solid #5C86C9", outlineOffset: "2px", borderRadius: "4px" } : {}) },
+          block: { border: "1px dashed #424755", borderRadius: "10px", padding: phone ? "11px 12px 12px" : "12px 14px 14px", display: "flex", flexDirection: "column", gap: "10px" },
+          setName: { margin: 0, fontFamily: "'Metamorphous',serif", fontWeight: 400, fontSize: phone ? "15px" : "16px", color: "#C6D2D3" },
+          strip: phone ? { display: "flex", flexWrap: "nowrap", gap: "8px", overflowX: "hidden", marginRight: "-12px" } : { display: "flex", flexWrap: "wrap", gap: "12px 8px" },
+          rowStrip: phone ? { display: "flex", flexWrap: "nowrap", gap: "8px", overflowX: "hidden", margin: "12px -8px 2px 0", paddingTop: "12px", borderTop: "1px dashed #2E3340" } : { display: "flex", flexWrap: "wrap", gap: "12px 8px", marginTop: "12px", paddingTop: "12px", borderTop: "1px dashed #2E3340" },
+          card: { flex: "none", width: artW + "px", display: "flex", flexDirection: "column", gap: "5px" },
+          cardArt: { width: artW + "px", height: artH + "px", borderRadius: "4px", background: "#2D2E35", display: "flex", alignItems: "center", justifyContent: "center" },
+          cardName: { fontSize: phone ? "10.5px" : "11px", minHeight: phone ? "27px" : "28px" },
+          row: { border: "1px dashed #424755", borderRadius: phone ? "10px" : "11px", padding: phone ? "10px 8px 10px 12px" : "11px 12px 11px 15px", display: "flex", flexDirection: "column", gap: phone ? "11px" : "14px" },
+          thumb: { flex: "none", width: phone ? "40px" : "44px", height: phone ? "56px" : "61px", borderRadius: "4px", background: "#2D2E35", display: "flex", alignItems: "center", justifyContent: "center" },
+          thumbSolid: { flex: "none", width: phone ? "40px" : "44px", height: phone ? "56px" : "61px", borderRadius: "4px", background: "#2D2E35" },
+          rname: { fontSize: phone ? "14.5px" : "16px", lineHeight: 1.3, color: "#C6D2D3", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
+          when: { flex: "none", fontSize: phone ? "11px" : "12px", color: "#B3C0C2" },
+          precon: { display: "flex", alignItems: "center", gap: phone ? "11px" : "14px", border: "1px solid #1A1F2B", background: "#18191F", borderRadius: phone ? "10px" : "11px", padding: phone ? "10px 8px 10px 12px" : "11px 12px 11px 15px" },
+          grid: { display: "grid", gridTemplateColumns: phone ? "repeat(2, minmax(0, 1fr))" : "repeat(4, minmax(0, 1fr))", gap: phone ? "10px" : "12px" },
+          tileArt: { height: tileH + "px", background: "#16171D", borderRadius: phone ? "0 0 9px 9px" : "0 0 10px 10px", display: "flex", alignItems: "center", justifyContent: "center" },
+          caption: { display: "flex", flexDirection: "column", gap: "3px", padding: "7px 9px 9px", minHeight: phone ? "70px" : "65px", boxSizing: "border-box" },
+          sets: st.sets.map((s) => ({ ...s, meta: phone ? s.metaPhone : s.metaDesk, isNew: !!s.isNew, rowOpen: !!s.rowOpen, chev: s.rowOpen ? "▾" : "▸",
+            idDots: dots(s.ids, phone ? 9 : 11), cards: s.cards.map((c) => ({ ...c, dots: dots(c.k, phone ? 7 : 8) })) })),
+          tiles: (phone ? shipped.slice(0, 2) : shipped).map((t) => ({ ...t, dots: dots(t.k, phone ? 8 : 9) })),
+        };
+      });
+      return st;
+    };
+    const states = [
+      mk({ id: "C1", title: "Closed: the default", note: "Nothing in the group is new to this reader, so it opens closed and the decklists start one heading lower than they do today. That’s 44px at 390 and 34px at 900. The count says what’s waiting and when the next one lands: “2 sets · next Nov 13”." }),
+      mk({ id: "C2", title: "Open, because something is new", open: true, hasNew: true, sets: [{ ...ST, isNew: true }, DH], note: "It opens by itself on the visit that shows a set this reader hasn’t seen (the same visit marks it seen), and when the reader arrives from the banner’s link (#announced). Otherwise the reader’s own choice wins: a press opens or closes it, remembered per browser as the99:precons:announced. The heading is a real button with aria-expanded, and the group’s content is its controlled region." }),
+      mk({ id: "C3", title: "Focus on the heading", focus: true, note: "The 2px accent ring around the whole heading. Enter or Space opens and closes it. Under reduced motion it opens with no height animation; otherwise it takes 160ms." }),
+      mk({ id: "Q1", title: "Rows, closed", view: "rows", note: "Rows take the same heading and the same default." }),
+      mk({ id: "Q2", title: "Rows, open: one quiet row per set", view: "rows", open: true, note: "R1’s wall of names is gone. Each set is a precon row in a dashed shell, with the precon row’s three lines. Line 1 has the name, then the countdown where a precon has “you own”. Line 2 names the first revealed commander “and 14 more”, where a precon names its commanders. Line 3 has the set’s dots, then the code and date. The thumb is the first revealed card. Darkhold, with one card, reads exactly like a precon row." }),
+      mk({ id: "Q3", title: "Rows, a set opened", view: "rows", open: true, sets: [{ ...ST, rowOpen: true }, DH], note: "Pressing a set row opens its cards under a dashed rule, the same cards as the tile view’s block, each named in text. 900 wraps them and 390 scrolls them in one row. Each row is its own disclosure (a button over the row with aria-expanded), and closed is its default every visit. A set with nothing revealed has no ▸ and doesn’t open: its line 2 reads “No commanders revealed yet” and its thumb is the empty plate." }),
+    ];
+    return { states };
+  }
+}
+</script>
+</body>
+</html>

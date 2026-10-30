@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0B0E; }
+  a { color: #5C86C9; text-decoration: none; }
+  a:hover { color: #6C95D8; }
+  :root {
+    --bg:#121217; --surface:#1E1F26; --surface-raised:#22232B; --surface-rail:#181920; --surface-sunken:#16171D;
+    --elevated:#2D2E35; --elevated-hover:#212229; --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E; --fg-disabled:#3B4647;
+    --accent:#5C86C9; --accent-hover:#6C95D8; --accent-shadow:#2C405F; --accent-dim:#2C405F; --danger:#C6533F; --success:#6FA368; --warning:#E0913C;
+    --avail-hard-fg:#80ABEF; --avail-over-fg:#C86D5B; --avail-over-border:#752619;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:var(--fg);padding:40px;background:#0B0B0E;min-height:100vh;display:flex;flex-direction:column;gap:64px;">
+
+  <section style="max-width:1320px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#0B0B0E;background:#5C86C9;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R2</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:var(--fg-faint);">I got it &middot; canvas 1 of 2 &middot; &sect;A the way in + &sect;B the confirm &middot; 2026-10-09</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:32px;margin:0 0 12px;line-height:1.25;">The row gains nothing. The buy tag it already has becomes the button.</h1>
+    <p style="max-width:1080px;font-size:15px;line-height:1.7;color:var(--fg-body);margin:0 0 12px;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">R1 is withdrawn (Hugh, 2026-10-09):</b> a Shopping row already carries the dot, the name, the figure line, the pips, the availability marker, <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">over $X</span>, the tag, the &#8644; and the &#10005;, and there's no room for a tenth thing. <b style="color:var(--fg);font-weight:600;">Call 1, redrawn: the buy tag is the control.</b> It's the one element on the row that is about buying this card, it's already on every Shopping row, and today it does nothing when pressed. It becomes a <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">&lt;button&gt;</span> with the same plate, word, figure, slot and over ring as shipped. At rest it is pixel for pixel <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">main</span>'s, so no width, no slot and no column moves. Pressing it opens the confirm, and the row's other press (open the card) is unchanged, since <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">openFromRow</span> already ignores buttons.</p>
+    <p style="max-width:1080px;font-size:15px;line-height:1.7;color:var(--fg-body);margin:0;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">How a reader learns it:</b> one mono line joins the &#8644; hint the Shopping head already carries (A1), in the same voice. <b style="color:var(--fg);font-weight:600;">A second way in:</b> the card's details, opened from a Shopping row, gain <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">Bought this card?</span> on the label line of the shipped <i>In your collection</i> receipt (A4). That's the slot where the 1+2 handoff puts <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">Edit copies</span> from /collection, the way the &#8644; hint says <i>any card's stand-ins are also in its details</i>. The confirm (&sect;B) opens in the app's normal modal.</p>
+  </section>
+
+  <section id="a1" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">A1 &middot; <span style="color:var(--accent);">the shipped Shopping view &middot; 1300 with Polyraptor's confirm open &middot; 390 at rest</span></div>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;max-width:1900px;">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="position:relative;width:1300px;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;background:var(--bg);display:flex;">
+          <div style="width:62px;flex:none;background:var(--surface-rail);border-right:1px solid var(--border);"></div>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;padding:16px 26px 28px;">
+            <div style="display:flex;flex-direction:column;gap:6px;border-radius:9px;border:1px solid var(--border);padding:12px 15px;background:var(--surface-sunken);">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;">$122.36</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-locked);">prices from ManaPool &middot; last checked Friday</span>
+              <span style="margin-top:6px;align-self:flex-start;font-size:12.5px;font-weight:500;color:var(--accent);border-bottom:1px solid var(--accent-shadow);">Buy these at Mana Pool &#8599;</span>
+            </div>
+            <div style="margin-top:12px;display:flex;align-items:center;gap:8px;padding:0 4px;"><span style="font-size:12.5px;color:var(--fg-body);">Marking cards over</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;font-weight:600;border-bottom:1px dotted var(--accent);">$5</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);text-decoration:underline;text-decoration-color:var(--border-strong);">reset to $10</span><span style="color:var(--border-strong);">&middot;</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">6 over</span></div>
+            <div style="margin-top:6px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 22px;padding:0 4px;">
+              <span style="display:flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);"><span style="width:18px;text-align:center;font-size:15px;line-height:1;color:var(--warning);">&#8644;</span>cheaper stand-ins</span>
+              <span style="display:flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);"><span style="color:var(--warning);background:color-mix(in oklab, var(--warning) 13%, transparent);border-radius:3px;padding:0 4px;">buy</span>bought it? press to add it</span>
+            </div>
+            <div style="margin-top:16px;font-size:13.5px;color:var(--fg-body);">77 cards this deck wants that your collection can&rsquo;t cover: 59 you don&rsquo;t own, and 18 you own but can&rsquo;t spare.</div>
+            <div style="position:relative;margin-top:14px;min-height:760px;display:flex;flex-direction:column;gap:16px;">
+              <sc-for list="{{ heroGroups }}" as="g" hint-placeholder-count="2">
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                  <span style="font-family:'Cinzel',serif;font-size:15px;font-weight:600;padding-bottom:6px;border-bottom:1px solid var(--border);">{{ g.name }} <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:400;color:var(--fg-faint);">{{ g.count }}</span></span>
+                  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 10px;">
+                    <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="4"><dc-import name="IGI Row" spec="{{ r }}" hint-size="100%,34px"></dc-import></sc-for>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="position:absolute;inset:0;background:rgba(5,5,8,0.62);z-index:4;"></div>
+          <div style="position:absolute;left:50%;top:250px;transform:translateX(-50%);z-index:5;"><dc-import name="IGI Confirm" spec="{{ heroPop }}" hint-size="520px,620px"></dc-import></div>
+        </div>
+        <div style="width:1300px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">Every row is <span style="font-family:'IBM Plex Mono',monospace;">main</span>'s geometry. The only visible differences are the key and Polyraptor's tag, which holds its open state (the wash at 24%) under the scrim. <b style="color:var(--fg-body);font-weight:600;">The confirm is the app's normal modal</b> (Hugh, R2 review): a 520px centred dialog on the shared scrim and <span style="font-family:'IBM Plex Mono',monospace;">--modal-shadow</span>, with the 36px round &#10005;, <span style="font-family:'IBM Plex Mono',monospace;">aria-modal</span> and a focus trap. Focus starts on the selected printing, and Escape, the &#10005; or Cancel return focus to the tag. <b style="color:var(--fg-body);font-weight:600;">The key</b> gains one item beside the &#8644; item. On desktop the items sit in one row, the way the key does in Collection and Deck details, and on the phone they're a two-column grid. Both are now one short phrase, and the &#8644; is drawn at 15px, the row's own size, so the mark matches what it explains. That's a copy change to the shipped &#8644; line, which goes through /copy-review.</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="width:390px;border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;background:var(--bg);padding:14px 16px 18px;display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:13px;font-weight:600;">Marking cards over</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;font-weight:600;border-bottom:1px dotted var(--accent);">$5</span><span style="color:var(--border-strong);">&middot;</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">6 over</span></div>
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:center;gap:6px 12px;padding-bottom:10px;border-bottom:1px solid var(--border);">
+            <span style="display:flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);"><span style="width:18px;text-align:center;font-size:15px;line-height:1;color:var(--warning);">&#8644;</span>cheaper stand-ins</span>
+            <span style="display:flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);"><span style="color:var(--warning);background:color-mix(in oklab, var(--warning) 13%, transparent);border-radius:3px;padding:0 4px;">buy</span>bought it? press to add it</span>
+          </div>
+          <span style="font-size:14px;font-weight:600;">Commander <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:400;color:var(--fg-faint);">1</span></span>
+          <dc-import name="IGI Row" spec="{{ phoneCmd }}" hint-size="100%,52px"></dc-import>
+          <span style="margin-top:6px;font-size:14px;font-weight:600;">Creatures <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:400;color:var(--fg-faint);">35</span></span>
+          <sc-for list="{{ phoneRows }}" as="r" hint-placeholder-count="4"><dc-import name="IGI Row" spec="{{ r }}" hint-size="100%,52px"></dc-import></sc-for>
+        </div>
+        <div style="width:390px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">At 390, the row is exactly what ships. The tag's hit area grows to 44px tall by an invisible 8px above and below, inside the 52px row. <b style="color:var(--fg-body);font-weight:600;">The stack is flipped (Hugh, R2 review): <span style="font-family:'IBM Plex Mono',monospace;">buy</span> on top, <span style="font-family:'IBM Plex Mono',monospace;">over $5</span> under it.</b> The tag is the thing you act on and the limit is a note about it, so the tag leads. It's a change to the shipped row below <span style="font-family:'IBM Plex Mono',monospace;">lg</span>: the order inside the stack flips, and the heights and widths are unchanged. The stack is one target, about 70&times;44, and it doesn't touch the &#8644;'s area.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="a2" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">A2 &middot; <span style="color:var(--accent);">every row shape the brief lists &middot; none of them changes</span></div>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+      <sc-for list="{{ matrix }}" as="m" hint-placeholder-count="2">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ m.label }}</div>
+          <div style="width:{{ m.w }};border:1px solid var(--border-strong);border-radius:12px;background:var(--bg);padding:14px 16px;display:flex;flex-direction:column;gap:12px;">
+            <sc-for list="{{ m.rows }}" as="r" hint-placeholder-count="6">
+              <div style="display:flex;flex-direction:column;gap:5px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">{{ r.cap }}</span>
+                <dc-import name="IGI Row" spec="{{ r.spec }}" hint-size="100%,52px"></dc-import>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+      <div style="width:300px;display:flex;flex-direction:column;gap:10px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">
+        <span><b style="color:var(--fg-body);font-weight:600;">Every neighbour.</b> Nothing is added beside the &#8644;, the &#10005;, the marker or <span style="font-family:'IBM Plex Mono',monospace;">over $X</span>. The tag keeps its over ring and gains a press.</span>
+        <span><b style="color:var(--fg-body);font-weight:600;">Spoken for.</b> The same tag (Walking Ballista in the shipped list). The confirm's need reads the shortfall. The tag's existing sentence, <span style="font-family:'IBM Plex Mono',monospace;">a second copy to buy</span>, becomes the button's description, and its name is <span style="font-family:'IBM Plex Mono',monospace;">I got it: Swords to Plowshares</span>.</span>
+        <span><b style="color:var(--fg-body);font-weight:600;">Commander.</b> Its tag is pressable too. It still has no &#8644; and keeps its hidden &#10005;.</span>
+        <span><b style="color:var(--fg-body);font-weight:600;">Sold out, bare buy.</b> Both are pressable. <span style="font-family:'IBM Plex Mono',monospace;">sold out</span> still has a printing behind it, so the preset holds. A bare <span style="font-family:'IBM Plex Mono',monospace;">buy</span> opens with no printing chosen (B1 &middot; no price).</span>
+        <span><b style="color:var(--fg-body);font-weight:600;">The All tab's collapsed <span style="font-family:'IBM Plex Mono',monospace;">$</span> tag stays inert.</b> The All tab is scanned, not bought from. The card's details are the way in there (A4).</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="a3" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">A3 &middot; <span style="color:var(--accent);">the tag's states &middot; rest, hover, focus, press, open, pending, disabled &middot; no width change in any</span></div>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+      <sc-for list="{{ states }}" as="m" hint-placeholder-count="2">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ m.label }}</div>
+          <div style="width:{{ m.w }};border:1px solid var(--border-strong);border-radius:12px;background:var(--bg);padding:14px 16px;display:flex;flex-direction:column;gap:10px;">
+            <sc-for list="{{ m.rows }}" as="r" hint-placeholder-count="7">
+              <div style="display:grid;grid-template-columns:72px minmax(0,1fr);align-items:center;gap:10px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">{{ r.cap }}</span>
+                <dc-import name="IGI Row" spec="{{ r.spec }}" hint-size="100%,52px"></dc-import>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+      <div style="width:330px;display:flex;flex-direction:column;gap:10px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">
+        <span><b style="color:var(--fg-body);font-weight:600;">Only the plate's wash moves</b>: 13% at rest (shipped), 24% on hover and while open, 30% on press. The ink, word, figure and over ring are unchanged, so the tag never turns into a different object. <b style="color:var(--fg-body);font-weight:600;">Focus</b> is the app's 2px accent ring, offset 2, on the plate's 4px radius.</span>
+        <span><b style="color:var(--fg-body);font-weight:600;">Pending:</b> the figure's own slot reads <span style="font-family:'IBM Plex Mono',monospace;">adding&hellip;</span> in <span style="font-family:'IBM Plex Mono',monospace;">--fg-muted</span>. That's 7 mono characters, inside the 46px slot <span style="font-family:'IBM Plex Mono',monospace;">sold out</span> already sizes. The tag is at .75 with <span style="font-family:'IBM Plex Mono',monospace;">aria-busy</span>, and the row is at .6. A second tap lands on a tag that already says it's working, and it's ignored. The write is idempotent per press anyway.</span>
+        <span><b style="color:var(--fg-body);font-weight:600;">Disabled</b> means another write for this card is in flight (an Undo from its toast). The tag is at .45, still reading its price.</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="a4" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">A4 &middot; <span style="color:var(--accent);">the second way in &middot; the card's details, opened from a Shopping row</span></div>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">desktop modal &middot; right column, the receipt</div>
+        <div style="width:500px;border-radius:16px;background:var(--surface-rail);border:1px solid var(--border-strong);padding:24px 30px;display:flex;flex-direction:column;gap:16px;">
+          <div style="font-family:'Cinzel',serif;font-weight:700;font-size:28px;line-height:1.15;text-transform:uppercase;">Polyraptor</div>
+          <div style="border-radius:12px;border:1px solid var(--border);background:var(--bg);padding:18px 20px;display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">In your collection</span><span role="button" style="margin-left:auto;font-size:14px;color:var(--accent);text-decoration:underline;text-underline-offset:4px;">Bought this card?</span></div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--fg-faint);">none</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;font-size:14.5px;color:var(--accent);"><span style="text-decoration:underline;text-underline-offset:4px;">Buy any printing at Mana Pool &#8599;</span></div>
+        </div>
+        <div style="width:500px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">This is the 1+2 slot: right-aligned on the receipt's label line, in the modal's own link style. <b style="color:var(--fg-body);font-weight:600;">It draws only when the modal was opened from a Shopping row</b>, the same <span style="font-family:'IBM Plex Mono',monospace;">door</span> context that already brings the stand-ins door. It never sits beside <span style="font-family:'IBM Plex Mono',monospace;">Edit copies</span> (which is /collection only). On desktop the confirm opens as a dialog stacked over the card modal, following the stacked-sheets rule. Once it's written, the receipt re-reads in place (<span style="font-family:'IBM Plex Mono',monospace;">none</span> &rarr; <span style="font-family:'IBM Plex Mono',monospace;">&times;1</span>), and the toast confirms over the page as usual.</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">390 &middot; full sheet, the receipt</div>
+        <div style="width:390px;border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;background:var(--surface);padding:16px 20px 22px;display:flex;flex-direction:column;gap:16px;">
+          <div style="border-radius:12px;border:1px solid var(--border);background:var(--bg);padding:16px 18px;display:flex;flex-direction:column;gap:10px;">
+            <div style="display:flex;align-items:center;gap:10px;min-height:44px;margin:-10px 0 -6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">In your collection</span><span role="button" style="margin-left:auto;min-height:44px;display:inline-flex;align-items:center;padding:0 2px;font-size:14px;color:var(--accent);text-decoration:underline;text-underline-offset:4px;">Bought this card?</span></div>
+            <div style="display:flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:14px;"><span style="color:var(--accent);">&times;1</span><span style="color:var(--fg-faint);">&middot;</span><span style="color:var(--danger);">&#9670; short 1</span></div>
+          </div>
+        </div>
+        <div style="width:390px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">This is a spoken-for card (owned, but every copy is claimed). The link is a 44px target on the label line, as <span style="font-family:'IBM Plex Mono',monospace;">Edit copies</span> is in the 1+2 handoff's C1. On the phone the confirm opens as a bottom sheet stacked over the card sheet, following the stacked-sheets rule.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="b1" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">B1 &middot; <span style="color:var(--accent);">the confirm, desktop modal &middot; every state the brief lists</span></div>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;max-width:1700px;">
+      <sc-for list="{{ pops }}" as="p" hint-placeholder-count="4">
+        <div style="display:flex;flex-direction:column;gap:8px;width:520px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ p.label }}</div>
+          <dc-import name="IGI Confirm" spec="{{ p.spec }}" hint-size="520px,600px"></dc-import>
+          <div style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);">{{ p.note }}</div>
+        </div>
+      </sc-for>
+      <div style="display:flex;flex-direction:column;gap:8px;width:520px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">B1 &middot; cancel</div>
+        <div style="border:1px dashed var(--border-dashed);border-radius:12px;padding:16px 18px;font-size:13px;line-height:1.6;color:var(--fg-body);display:flex;flex-direction:column;gap:8px;">
+          <span>Cancel, the &#10005;, Escape or a click on the scrim all do the same thing: the modal closes, nothing is written, and focus returns to the tag.</span>
+          <span>Nothing is remembered. Opening it again reads the presets fresh, including the count owned.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="b2" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">B2 &middot; <span style="color:var(--accent);">390 &middot; the same form as a bottom sheet</span></div>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;">
+      <sc-for list="{{ sheets }}" as="p" hint-placeholder-count="4">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ p.label }}</div>
+          <div style="width:390px;height:760px;border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;background:var(--bg);position:relative;">
+            <div style="padding:14px 16px;display:flex;flex-direction:column;gap:6px;">
+              <sc-for list="{{ phoneBehind }}" as="r" hint-placeholder-count="3"><dc-import name="IGI Row" spec="{{ r }}" hint-size="100%,52px"></dc-import></sc-for>
+            </div>
+            <div style="position:absolute;inset:0;background:rgba(5,5,8,0.62);"></div>
+            <div style="position:absolute;left:0;right:0;bottom:0;"><dc-import name="IGI Confirm" spec="{{ p.spec }}" hint-size="390px,600px"></dc-import></div>
+          </div>
+          <div style="width:390px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">{{ p.note }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const C = {
+      polyraptor: { name: "Polyraptor", pips: ["6", "G", "G"], fig: 42.7, price: "$9.89", over: true },
+      pantlaza: { name: "Pantlaza, Sun-Favored", pips: ["2", "R", "G", "W"], fig: 73.9, price: "$6.19", over: true },
+      apex: { name: "Apex Altisaur", pips: ["7", "G", "G"], fig: 61.1, price: "$8.76", over: true },
+      wrathful: { name: "Wrathful Raptors", pips: ["4", "R"], fig: 47.3, price: "$5.19", over: true },
+      gwenna: { name: "Gwenna, Eyes of Gaea", pips: ["2", "G"], fig: null, price: "$4.93" },
+      nylea: { name: "Nylea, Keen-Eyed", pips: ["3", "G"], fig: null, price: "$4.69" },
+      trapjaw: { name: "Trapjaw Tyrant", pips: ["3", "W", "W"], fig: 22.1, price: "$4.68" },
+      ballista: { name: "Walking Ballista", pips: ["X", "X"], fig: null, price: "$4.24", owned: true, short: "short" },
+      swords: { name: "Swords to Plowshares", pips: ["W"], fig: 70, price: "$1.84", owned: true, short: "short" },
+      gishath: { name: "Gishath, Sun's Avatar", pips: ["5", "R", "G", "W"], fig: null, price: "$3.38", commander: true },
+      lotus: { name: "Jeweled Lotus", pips: ["0"], fig: 12, soldOut: true },
+      favor: { name: "Etali's Favor", pips: ["2", "R"], fig: null, bare: true },
+      chariot: { name: "Esika's Chariot", pips: ["3", "G"], fig: 31, price: "$4.10", qual: "foil" },
+      regisaur: { name: "Regisaur Alpha", pips: ["3", "R", "G"], fig: 77.1, price: "$0.70" },
+    };
+    const row = (k, ph, x = {}) => ({ ...C[k], ph, tools: true, limit: "$5", ...x });
+    const heroGroups = [
+      { name: "Commander", count: "1", rows: [row("gishath", false)] },
+      { name: "Creatures", count: "35", rows: [row("polyraptor", false, { ctl: "open", hover: true }), row("apex", false), row("pantlaza", false), row("wrathful", false), row("gwenna", false), row("nylea", false), row("trapjaw", false), row("ballista", false)] },
+    ];
+    const shapes = (ph) => [
+      { cap: "plain", spec: row("trapjaw", ph) },
+      { cap: "every neighbour · figure, over $5, ring, ⇄", spec: row("polyraptor", ph) },
+      { cap: "spoken for", spec: row("ballista", ph) },
+      { cap: "commander", spec: row("gishath", ph) },
+      { cap: "sold out", spec: row("lotus", ph) },
+      { cap: "bare buy · never stocked", spec: row("favor", ph) },
+      { cap: "foil-only price", spec: row("chariot", ph) },
+    ];
+    const matrix = [
+      { label: "390 · below lg", w: "390px", rows: shapes(true) },
+      { label: "lg and up · one grid cell", w: "620px", rows: shapes(false) },
+    ];
+    const st = (ph) => ["rest", "hover", "focus", "press", "open", "pending", "disabled"].filter((c) => !(ph && c === "hover")).map((c) => ({ cap: c, spec: row("polyraptor", ph, { ctl: c, hover: c === "open", dim: c === "pending" }) }));
+    const states = [
+      { label: "390", w: "460px", rows: st(true) },
+      { label: "desktop cell", w: "690px", rows: st(false) },
+    ];
+    const pops = [
+      { label: "B1 · preset", spec: { v: "preset" }, note: "Printing, finish and quantity are all preset. The printing is the one behind the Shopping price, selected with no badge, and that's the price's only job here. Once bought, what was paid doesn't matter, so the modal shows no price. Tiles are 104px wide, up from 70." },
+      { label: "B1 · a changed printing", spec: { v: "changed" }, note: "The player taps the printing that came, and the selection moves. Finish chips follow what the new printing offers. There's no reset link: tapping the first tile is the way back." },
+      { label: "B1 · foil-only", spec: { v: "foilOnly" }, note: "Foil is preset, and Nonfoil is drawn dashed with the reason. Picking a printing that offers nonfoil brings it back." },
+      { label: "B1 · one printing", spec: { v: "onePrinting" }, note: "With one printing, the tile row collapses to a line, as Add cards skips its step." },
+      { label: "B1 · quantity above 1", spec: { v: "qtyMany" }, note: "It's still one holding and one history entry." },
+      { label: "B1 · more than the row needs", spec: { v: "qtyOver" }, note: "Spares read as a quiet clause. The cap is 20." },
+      { label: "B1 · no printing behind the price", spec: { v: "noPrice" }, note: "There's nothing preset, and a pick is required, following the 1+2 ruling that Add cards has no default. See README open 1." },
+      { label: "B1 · came back stale", spec: { v: "stale" }, note: "Redrawn in place with the count re-based on the new need. Nothing is written until the player confirms again. The expected count still travels with the write. It just isn't printed." },
+      { label: "B1 · failed", spec: { v: "failed" }, note: "Nothing changed, and the choices are kept." },
+      { label: "B1 · pending", spec: { v: "pending" }, note: "Frozen at .6, Cancel disabled. The tag under it reads adding…." },
+    ];
+    const phoneBehind = [row("polyraptor", true, { ctl: "open" }), row("apex", true), row("pantlaza", true)];
+    const sheets = [
+      { label: "B2 · preset", spec: { ph: true, v: "preset" }, note: "The tile row scrolls sideways (B4m). Chips and the stepper are 44px." },
+      { label: "B2 · a changed printing", spec: { ph: true, v: "changed" }, note: "Tiles are 100px wide, so three show and the row scrolls." },
+      { label: "B2 · stale", spec: { ph: true, v: "stale" }, note: "The banner pushes the form down, and the sheet grows." },
+      { label: "B2 · no price", spec: { ph: true, v: "noPrice" }, note: "Add reads Choose a printing until a tile is chosen." },
+    ];
+    return {
+      heroGroups, heroPop: { v: "preset", card: "Polyraptor", prints: [
+        { code: "RIX #138", set: "Rivals of Ixalan", a: ["var(--g)", "var(--g)"] },
+        { code: "LCC #241", set: "Ixalan Commander", a: ["var(--g)", "var(--r)"] },
+        { code: "PRIX #138s", set: "RIX promos", a: ["var(--g)", "var(--w)"], foil: true },
+      ] }, matrix, states, pops, sheets, phoneBehind,
+      phoneCmd: row("gishath", true),
+      phoneRows: [row("polyraptor", true), row("apex", true), row("pantlaza", true), row("wrathful", true)],
+    };
+  }
+}
+</script>
+</body>
+</html>

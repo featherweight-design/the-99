@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="width:390px;height:{{ frameH }}px;position:relative;overflow:hidden;background:#07070A;border-radius:{{ frameR }}px;border:1px solid var(--border-strong);font-family:'IBM Plex Sans',sans-serif;color:var(--fg);">
+  <sc-if value="{{ stacked }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;left:0;right:0;top:0;height:140px;background:var(--surface-rail);opacity:0.55;">
+      <div style="position:absolute;left:0;right:0;top:52px;height:44px;display:flex;align-items:center;gap:8px;padding:0 20px;border-top:1px solid var(--border-strong);border-radius:14px 14px 0 0;background:var(--surface-raised);">
+        <span style="font-size:14px;font-weight:600;color:var(--fg);">Game changers</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">3</span>
+      </div>
+    </div>
+  </sc-if>
+  <div style="position:absolute;left:0;right:0;bottom:0;top:{{ sheetTop }}px;background:var(--surface-sunken);overflow:hidden;border-radius:{{ sheetR }};border-top:{{ sheetBorder }};">
+
+    <sc-if value="{{ full }}" hint-placeholder-val="{{ true }}">
+      <div style="position:relative;overflow:hidden;height:350px;background:var(--surface-sunken);box-shadow:inset 0 -60px 60px -40px rgba(0,0,0,0.55);">
+        <div style="position:absolute;inset:0;background:{{ cur.grad }};filter:blur(22px);transform:scale(1.2);opacity:0.45;"></div>
+        <div style="position:absolute;inset:0;transform:translateX({{ dragX }}px);">
+          <sc-if value="{{ hasPrev }}" hint-placeholder-val="{{ true }}">
+            <div aria-label="Previous card: {{ prev.name }}" style="position:absolute;left:-37px;top:86px;width:128px;height:178px;border-radius:8px;background:{{ prev.grad }};opacity:{{ peekOp }};box-shadow:0 14px 30px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(0,0,0,0.3);overflow:hidden;">
+              <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,0.05) 0 6px,transparent 6px 12px);"></div>
+              <div style="position:absolute;left:8px;right:8px;bottom:8px;font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:rgba(255,255,255,0.75);">art · {{ prev.name }}</div>
+            </div>
+          </sc-if>
+          <div style="position:absolute;left:105px;top:50px;width:180px;height:251px;border-radius:10px;background:{{ cur.grad }};box-shadow:0 20px 40px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.3);overflow:hidden;">
+            <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,0.05) 0 6px,transparent 6px 12px);"></div>
+            <div style="position:absolute;left:10px;right:10px;bottom:10px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:rgba(255,255,255,0.8);">art · {{ cur.name }}</div>
+          </div>
+          <div style="position:absolute;left:105px;width:180px;top:310px;display:flex;justify-content:center;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);border:1px solid var(--accent-dim);border-radius:4px;padding:2px 7px;background:rgba(10,8,6,0.72);">{{ cur.price }}</span>
+          </div>
+          <sc-if value="{{ hasNext }}" hint-placeholder-val="{{ true }}">
+            <div aria-label="Next card: {{ next.name }}" style="position:absolute;left:299px;top:86px;width:128px;height:178px;border-radius:8px;background:{{ next.grad }};opacity:{{ peekOp }};box-shadow:0 14px 30px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(0,0,0,0.3);overflow:hidden;">
+              <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,0.05) 0 6px,transparent 6px 12px);"></div>
+              <div style="position:absolute;left:8px;right:8px;bottom:8px;font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:rgba(255,255,255,0.75);">art · {{ next.name }}</div>
+            </div>
+          </sc-if>
+        </div>
+        <sc-if value="{{ showCounter }}" hint-placeholder-val="{{ true }}">
+          <div style="position:absolute;top:22px;left:18px;height:32px;padding:0 12px;border-radius:16px;display:flex;align-items:center;background:color-mix(in oklab,var(--bg) 55%,transparent);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);">{{ counter }}</div>
+        </sc-if>
+        <div style="position:absolute;top:22px;right:18px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:color-mix(in oklab,var(--bg) 55%,transparent);font-size:16px;color:var(--fg);">✕</div>
+        <sc-if value="{{ showGrip }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;left:{{ gripX }}px;top:170px;width:34px;height:34px;border-radius:50%;border:2px solid rgba(255,255,255,0.7);background:rgba(255,255,255,0.12);"></div>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ compact }}" hint-placeholder-val="{{ false }}">
+      <div style="position:relative;overflow:hidden;padding:44px 20px 14px;display:flex;align-items:flex-end;gap:14px;background:var(--surface-sunken);box-shadow:inset 0 -60px 60px -40px rgba(0,0,0,0.55);">
+        <div style="position:absolute;inset:0;background:{{ cur.grad }};filter:blur(22px);transform:scale(1.2);opacity:0.45;"></div>
+        <div style="position:absolute;top:22px;right:18px;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:color-mix(in oklab,var(--bg) 55%,transparent);font-size:16px;color:var(--fg);">✕</div>
+        <div style="position:relative;flex:none;width:72px;height:100px;border-radius:10px;background:{{ cur.grad }};box-shadow:0 20px 40px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.3);"></div>
+        <div style="position:relative;min-width:0;text-shadow:0 2px 8px rgba(0,0,0,0.5);">
+          <div style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;line-height:1.15;color:var(--fg);">{{ cur.name }}</div>
+          <p style="font-size:13px;margin:4px 0 0;color:var(--fg-muted);">{{ cur.type }}</p>
+          <p style="font-family:'IBM Plex Mono',monospace;font-size:11px;margin:6px 0 0;color:var(--fg-body);">{{ counter }}</p>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ showBody }}" hint-placeholder-val="{{ true }}">
+      <div style="padding:20px;">
+        <sc-if value="{{ full }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:12px;">
+            <div style="min-width:0;">
+              <h3 style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;line-height:1.15;margin:0;color:var(--fg);">{{ cur.name }}</h3>
+              <p style="font-size:13px;margin:4px 0 0;color:var(--fg-muted);">{{ cur.type }}</p>
+            </div>
+            <div style="display:flex;gap:3px;flex:none;">
+              <sc-for list="{{ cur.pips }}" as="p" hint-placeholder-count="3">
+                <span style="width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;background:{{ p.bg }};color:#1A1611;">{{ p.s }}</span>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ compact }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);border:1px solid var(--accent-dim);border-radius:4px;padding:2px 7px;">{{ cur.price }}</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);">from $3.10</span>
+            </div>
+            <div style="display:flex;gap:3px;">
+              <sc-for list="{{ cur.pips }}" as="p" hint-placeholder-count="3">
+                <span style="width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;background:{{ p.bg }};color:#1A1611;">{{ p.s }}</span>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+        <div style="border-radius:10px;margin-top:16px;padding:14px 16px;font-size:13.5px;line-height:1.6;background:var(--bg);border:1px solid var(--border);color:var(--fg-body);text-wrap:pretty;">{{ cur.oracle }}</div>
+        <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:1px;border-radius:10px;overflow:hidden;background:var(--border);border:1px solid var(--border);">
+          <sc-for list="{{ meta }}" as="m" hint-placeholder-count="4">
+            <div style="background:var(--surface-sunken);padding:10px 12px;grid-column:{{ m.span }};">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">{{ m.k }}</div>
+              <div style="font-size:13.5px;margin-top:3px;color:var(--fg);">{{ m.v }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <sc-if value="{{ compact }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:12px;border:1px solid var(--accent-dim);border-radius:10px;padding:12px;background:var(--bg);">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:13.5px;color:var(--fg);">Set <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">· 14 printings you own</span></span>
+              <span style="color:var(--fg-muted);">▴</span>
+            </div>
+            <div style="margin-top:10px;height:36px;border-radius:8px;border:1px solid var(--border-strong);display:flex;align-items:center;padding:0 10px;font-size:13px;color:var(--fg-faint);">Search set or code</div>
+            <div style="margin-top:10px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+              <sc-for list="{{ tiles }}" as="t" hint-placeholder-count="8">
+                <div style="aspect-ratio:63/88;border-radius:5px;background:{{ cur.grad }};opacity:{{ t.op }};outline:{{ t.ring }};outline-offset:1px;"></div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ full }}" hint-placeholder-val="{{ true }}">
+          <div style="margin-top:14px;border-top:1px solid var(--border);min-height:44px;display:flex;align-items:center;font-size:13.5px;color:var(--fg-body);">View on Mana Pool <span style="margin-left:6px;color:var(--fg-faint);">↗</span></div>
+        </sc-if>
+      </div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:392,&quot;height&quot;:814},&quot;f&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const f = this.props.f || {};
+    const blank = { name: "", type: "", grad: "var(--surface-raised)", pips: [], oracle: "", price: "", rarity: "", identity: "", own: "" };
+    const cur = f.cur || blank;
+    const mode = f.mode || "full";
+    const stacked = !!f.stacked;
+    const headerOnly = mode === "header";
+    const compact = mode === "compact";
+    const meta = compact
+      ? [{ k: "Rarity", v: cur.rarity, span: "auto" }, { k: "Identity", v: cur.identity, span: "auto" }, { k: "You own", v: cur.own, span: "1 / span 2" }]
+      : [{ k: "Set", v: cur.set, span: "auto" }, { k: "Rarity", v: cur.rarity, span: "auto" }, { k: "Identity", v: cur.identity, span: "auto" }, { k: "You own", v: cur.own, span: "auto" }];
+    const tiles = Array.from({ length: 8 }, (_, i) => ({ op: i === 2 ? 1 : 0.8, ring: i === 2 ? "2px solid var(--accent)" : "none" }));
+    return {
+      cur, prev: f.prev || blank, next: f.next || blank,
+      hasPrev: !!f.prev, hasNext: !!f.next,
+      showCounter: f.total > 1, counter: `${f.pos} of ${f.total}`,
+      full: !compact, compact, showBody: !headerOnly,
+      dragX: f.dragX || 0, peekOp: f.peekOp ?? 0.5,
+      showGrip: f.gripX != null, gripX: f.gripX ?? 0,
+      stacked, sheetTop: stacked ? 96 : 0, sheetR: stacked ? "14px 14px 0 0" : "0",
+      sheetBorder: stacked ? "1px solid var(--border-strong)" : "0",
+      frameH: headerOnly ? 350 : 812, frameR: headerOnly ? 14 : 28,
+      meta, tiles,
+    };
+  }
+}
+</script>
+</body>
+</html>

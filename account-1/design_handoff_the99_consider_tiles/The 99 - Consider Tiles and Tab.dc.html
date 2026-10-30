@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0B0E; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { color: var(--fg); }
+  :root {
+    --bg:#121217; --surface:#1E1F26; --surface-sunken:#16171D; --elevated-hover:#212229;
+    --border:#1A1F2B; --border-strong:#2E3340;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E;
+    --accent:#5C86C9; --accent-shadow:#2C405F; --success:#6FA368; --warning:#E0913C; --fact:#8FA6BE;
+    --avail-hard-fg:#80ABEF; --avail-over-fg:#C86D5B;
+  }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:var(--fg);padding:40px;background:#0B0B0E;min-height:100vh;display:flex;flex-direction:column;gap:64px;">
+
+  <section style="max-width:1320px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#0B0B0E;background:var(--accent);border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R1</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:var(--fg-faint);">consider tiles and tab &middot; H30 &middot; 2026-10-03</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:32px;margin:0 0 16px;max-width:1100px;">The Consider tile takes the card caption, the art keeps nothing, and every shelf can fold.</h1>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 40px;max-width:1240px;">
+      <sc-for list="{{ answers }}" as="a" hint-placeholder-count="8">
+        <p style="font-size:14px;line-height:1.65;color:var(--fg-body);margin:0;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">{{ a.q }}</b> {{ a.body }}</p>
+      </sc-for>
+    </div>
+    <p style="margin:18px 0 0;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-faint);max-width:1240px;line-height:1.6;">Drawn on kaldheim, the theme in the walk&rsquo;s screenshots. The Tweaks panel switches all six themes and flips the lift line back to its shipped ink. Click any shelf header to fold it. Marks are the shipped CardFactMark and ComboGlyph paths, 16px, --fact.</p>
+  </section>
+
+  <section id="states" style="display:flex;flex-direction:column;gap:22px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">&sect;1 &middot; <span style="color:var(--accent);">the tile, five states &middot; desktop 184 above, phone 173 below</span></div>
+    <div style="display:grid;grid-template-columns:repeat(5,184px);gap:24px;align-items:stretch;">
+      <sc-for list="{{ stateTiles }}" as="s" hint-placeholder-count="5">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ s.label }}</div>
+          <dc-import name="ConsiderTile" t="{{ s.t }}" lift-color="{{ liftColor }}" lift-size="{{ liftSize }}" hint-size="184px,440px" style="flex:1;"></dc-import>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(5,184px);gap:24px;align-items:stretch;">
+      <sc-for list="{{ stateTiles }}" as="s" hint-placeholder-count="5">
+        <div style="width:173px;display:flex;flex-direction:column;"><dc-import name="ConsiderTile" t="{{ s.t }}" phone="{{ true }}" lift-color="{{ liftColor }}" lift-size="{{ liftSize }}" hint-size="173px,450px" style="flex:1;"></dc-import></div>
+      </sc-for>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(5,184px);gap:24px;">
+      <sc-for list="{{ stateTiles }}" as="s" hint-placeholder-count="5">
+        <p style="margin:0;font-size:12px;line-height:1.55;color:var(--fg-muted);text-wrap:pretty;">{{ s.note }}</p>
+      </sc-for>
+    </div>
+    <div style="max-width:1000px;display:grid;grid-template-columns:auto 1fr;gap:6px 18px;font-size:13px;line-height:1.55;color:var(--fg-body);">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);">caption</span><span>CardTileCaption&rsquo;s two lines at its fixed height (50 desktop, 56 phone): the meta line (ownership dot, the one slot, the marks), then the name on one line. The tile&rsquo;s 9px padding replaces the caption&rsquo;s own, so the art, the caption and the body share one left edge.</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);">body</span><span>Below the caption, in order: the type line or the combo partner, the in-use line when there is one, the evidence row, the lift line, the card note, Add. The body is Consider&rsquo;s alone; nothing in it moves into the shared caption.</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);">deleted</span><span>The cost pips (ruling 2), the hover hint <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">details &#8599;</span> (the art and the name are already the two detail triggers), and the art&rsquo;s bottom shadow, which held the pips and the hint off light art and now holds nothing.</span>
+    </div>
+  </section>
+
+  <section id="desktop" style="display:flex;flex-direction:column;gap:14px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">&sect;2 &middot; <span style="color:var(--accent);">desktop 1300 &middot; capped shelf open, Land collapsed, synergy open, unowned open</span></div>
+    <div style="width:1300px;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;background:var(--bg);display:flex;">
+      <div style="width:62px;flex:none;background:var(--surface-sunken);border-right:1px solid var(--border);display:flex;justify-content:center;padding-top:16px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--fg-locked);">rail</div>
+      <div style="flex:1;min-width:0;">
+        <div style="height:56px;display:flex;align-items:stretch;gap:22px;padding:0 30px;border-bottom:1px solid var(--border);">
+          <span style="display:flex;align-items:center;gap:6px;font-size:14px;color:var(--fg-muted);">Your deck <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">99</span></span>
+          <span style="display:flex;align-items:center;font-size:14px;color:var(--fg-muted);">Analysis</span>
+          <span style="display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--fg);box-shadow:inset 0 -2px 0 var(--accent);">Consider <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:400;color:var(--accent);">99</span></span>
+          <span style="display:flex;align-items:center;gap:6px;font-size:14px;color:var(--fg-muted);">Games <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">1</span></span>
+          <span style="display:flex;align-items:center;gap:6px;font-size:14px;color:var(--fg-muted);">Versions <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">2</span></span>
+          <span style="margin-left:auto;display:flex;align-items:center;gap:14px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">94 owned &middot; 5 you don&rsquo;t own</span>
+            <span style="height:34px;display:inline-flex;align-items:center;gap:10px;padding:0 12px;border:1px solid var(--border-strong);border-radius:8px;font-size:13px;">Coverage gaps first &#9662;</span>
+          </span>
+        </div>
+        <div style="padding:16px 30px 24px;">
+          <div style="display:flex;flex-wrap:wrap;gap:6px 16px;margin-bottom:18px;">
+            <sc-for list="{{ keyMarks }}" as="k" hint-placeholder-count="5"><span style="display:inline-flex;align-items:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);"><dc-import name="FactMark" fact="{{ k.g }}" hint-size="16px,16px" style="flex:none;width:16px;height:16px;"></dc-import>{{ k.w }}</span></sc-for>
+          </div>
+          <sc-for list="{{ dShelves }}" as="sh" hint-placeholder-count="4">
+            <section style="margin-bottom:22px;">
+              <div style="display:flex;align-items:center;gap:16px;min-height:44px;border-top:1px solid var(--border-strong);padding-top:10px;margin-bottom:12px;">
+                <button onClick="{{ sh.toggle }}" aria-expanded="{{ sh.open }}" style="display:flex;align-items:baseline;gap:12px;min-width:0;padding:6px 0;background:none;border:none;color:inherit;cursor:pointer;text-align:left;font:inherit;">
+                  <span style="width:14px;flex:none;display:inline-block;font-size:11px;color:var(--fg-muted);transform:rotate({{ sh.rot }});transition:transform 120ms;">&#9656;</span>
+                  <span style="font-size:17px;font-weight:600;letter-spacing:-0.005em;color:var(--fg);white-space:nowrap;">{{ sh.label }}</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);white-space:nowrap;"><span style="color:var(--warning);">{{ sh.warn }}</span>{{ sh.meta }}</span>
+                </button>
+                <sc-if value="{{ sh.showCap }}" hint-placeholder-val="{{ true }}"><button onClick="{{ sh.expand }}" style="margin-left:auto;padding:6px 0;background:none;border:none;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-body);white-space:nowrap;" style-hover="color:var(--fg);text-decoration:underline;">{{ sh.capText }}</button></sc-if>
+              </div>
+              <sc-if value="{{ sh.open }}" hint-placeholder-val="{{ true }}">
+                <div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px;">
+                  <sc-for list="{{ sh.tiles }}" as="t" hint-placeholder-count="6"><dc-import name="ConsiderTile" t="{{ t }}" lift-color="{{ liftColor }}" lift-size="{{ liftSize }}" hint-size="100%,430px"></dc-import></sc-for>
+                </div>
+              </sc-if>
+            </section>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="phone" style="display:flex;flex-direction:column;gap:14px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">&sect;3 &middot; <span style="color:var(--accent);">phone 390 &middot; 2-up kept &middot; the same panel, scrolled</span></div>
+    <div style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap;">
+      <sc-for list="{{ phoneFrames }}" as="pf" hint-placeholder-count="2">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ pf.label }}</div>
+          <div style="width:390px;border:1px solid var(--border-strong);border-radius:22px;overflow:hidden;background:var(--bg);">
+            <div style="height:48px;display:flex;align-items:stretch;gap:18px;padding:0 16px;border-bottom:1px solid var(--border);overflow:hidden;white-space:nowrap;">
+              <span style="display:flex;align-items:center;font-size:14px;color:var(--fg-muted);">Your deck 99</span>
+              <span style="display:flex;align-items:center;font-size:14px;color:var(--fg-muted);">Analysis</span>
+              <span style="display:flex;align-items:center;gap:5px;font-size:14px;font-weight:600;box-shadow:inset 0 -2px 0 var(--accent);">Consider <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:400;color:var(--accent);">99</span></span>
+              <span style="display:flex;align-items:center;font-size:14px;color:var(--fg-muted);">Games 1</span>
+            </div>
+            <div style="padding:12px 16px 20px;">
+              <sc-if value="{{ pf.top }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;">
+                  <span style="height:40px;display:inline-flex;align-items:center;gap:10px;padding:0 12px;border:1px solid var(--border-strong);border-radius:8px;font-size:13px;">Coverage gaps first &#9662;</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);text-align:right;">94 owned &middot; 5 you don&rsquo;t own</span>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:6px 14px;margin-bottom:16px;">
+                  <sc-for list="{{ keyMarks }}" as="k" hint-placeholder-count="5"><span style="display:inline-flex;align-items:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);"><dc-import name="FactMark" fact="{{ k.g }}" hint-size="16px,16px" style="flex:none;width:16px;height:16px;"></dc-import>{{ k.w }}</span></sc-for>
+                </div>
+              </sc-if>
+              <sc-for list="{{ pf.shelves }}" as="sh" hint-placeholder-count="4">
+                <section style="margin-bottom:12px;">
+                  <div style="display:flex;align-items:flex-start;gap:10px;border-top:1px solid var(--border-strong);padding-top:4px;margin-bottom:8px;">
+                    <button onClick="{{ sh.toggle }}" aria-expanded="{{ sh.open }}" style="flex:1;min-width:0;min-height:52px;display:flex;align-items:flex-start;gap:10px;padding:8px 0;background:none;border:none;color:inherit;cursor:pointer;text-align:left;font:inherit;">
+                      <span style="width:14px;flex:none;display:inline-block;margin-top:4px;font-size:11px;color:var(--fg-muted);transform:rotate({{ sh.rot }});transition:transform 120ms;">&#9656;</span>
+                      <span style="min-width:0;display:flex;flex-direction:column;gap:3px;">
+                        <span style="font-size:16px;font-weight:600;line-height:1.3;color:var(--fg);text-wrap:pretty;">{{ sh.label }}</span>
+                        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.4;color:var(--fg-muted);"><span style="color:var(--warning);">{{ sh.warn }}</span>{{ sh.meta }}</span>
+                      </span>
+                    </button>
+                    <sc-if value="{{ sh.showCap }}" hint-placeholder-val="{{ true }}"><button onClick="{{ sh.expand }}" style="flex:none;min-height:44px;margin-top:4px;padding:0 0 0 8px;background:none;border:none;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);white-space:nowrap;">{{ sh.capText }}</button></sc-if>
+                  </div>
+                  <sc-if value="{{ sh.open }}" hint-placeholder-val="{{ true }}">
+                    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:8px;">
+                      <sc-for list="{{ sh.tiles }}" as="t" hint-placeholder-count="2"><dc-import name="ConsiderTile" t="{{ t }}" phone="{{ true }}" lift-color="{{ liftColor }}" lift-size="{{ liftSize }}" hint-size="100%,450px"></dc-import></sc-for>
+                    </div>
+                  </sc-if>
+                </section>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section id="contrast" style="display:flex;flex-direction:column;gap:14px;max-width:1300px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;">&sect;4 &middot; <span style="color:var(--accent);">the lift line&rsquo;s ink, per theme &middot; WCAG ratio on --surface / --elevated-hover, from globals.css</span></div>
+    <p style="margin:0;max-width:1000px;font-size:14px;line-height:1.65;color:var(--fg-body);"><b style="color:var(--fg);font-weight:600;">--fg-muted at mono 10px</b> (up from 9.5), for every lift figure: positive, zero or negative, and the synergy shelf&rsquo;s no-figure line. It reads 5.94 to 6.65:1. It stays quieter than the inclusion figure beside it by one step on the ink ladder: the figure is --fg-body (8.36 to 9.19), tabular, and on the bar&rsquo;s line. The shipped --fg-faint for the zero and negative branch fails on kamigawa (3.81) and phyrexia (4.04), so it moves too: one ink for the line regardless of sign.</p>
+    <table style="border-collapse:collapse;font-family:'IBM Plex Mono',monospace;font-size:12px;width:100%;max-width:1100px;">
+      <thead><tr>
+        <th style="text-align:left;padding:8px 12px;color:var(--fg-faint);font-weight:500;border-bottom:1px solid var(--border-strong);">theme</th>
+        <th style="text-align:left;padding:8px 12px;color:var(--fg-faint);font-weight:500;border-bottom:1px solid var(--border-strong);">shipped &middot; --accent-shadow</th>
+        <th style="text-align:left;padding:8px 12px;color:var(--fg-faint);font-weight:500;border-bottom:1px solid var(--border-strong);">shipped &le;0 &middot; --fg-faint</th>
+        <th style="text-align:left;padding:8px 12px;color:var(--fg);font-weight:600;border-bottom:1px solid var(--border-strong);">proposed &middot; --fg-muted</th>
+        <th style="text-align:left;padding:8px 12px;color:var(--fg-faint);font-weight:500;border-bottom:1px solid var(--border-strong);">inclusion figure &middot; --fg-body</th>
+        <th style="text-align:left;padding:8px 12px;color:var(--fg-faint);font-weight:500;border-bottom:1px solid var(--border-strong);">sample</th>
+      </tr></thead>
+      <tbody>
+        <sc-for list="{{ contrast }}" as="c" hint-placeholder-count="6">
+          <tr>
+            <td style="padding:8px 12px;border-bottom:1px solid var(--border);color:var(--fg);">{{ c.name }}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid var(--border);color:var(--avail-over-fg);">{{ c.sh }} &#10007;</td>
+            <td style="padding:8px 12px;border-bottom:1px solid var(--border);color:{{ c.faintFg }};">{{ c.faint }}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid var(--border);color:var(--success);font-weight:600;">{{ c.muted }} &#10003;</td>
+            <td style="padding:8px 12px;border-bottom:1px solid var(--border);color:var(--fg-body);">{{ c.body }}</td>
+            <td style="padding:6px 12px;border-bottom:1px solid var(--border);"><span style="display:inline-flex;gap:10px;align-items:center;padding:5px 9px;border-radius:6px;background:{{ c.surface }};"><span style="font-size:10px;color:{{ c.bodyHex }};">30%</span><span style="font-size:10px;color:{{ c.mutedHex }};">+17 pts vs. all decks</span></span></td>
+          </tr>
+        </sc-for>
+      </tbody>
+    </table>
+    <p style="margin:0;max-width:1000px;font-size:13px;line-height:1.6;color:var(--fg-muted);">The header&rsquo;s count clause moves from --fg-faint to --fg-muted for the same reason. <span style="font-family:'IBM Plex Mono',monospace;">Show all N</span> moves from --accent (4.46 kaldheim, 4.25 phyrexia at 11px) to --fg-body; it is the second control on the header and no longer needs a hue to be found.</p>
+  </section>
+
+  <section id="table" style="display:flex;flex-direction:column;gap:14px;max-width:1300px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;">&sect;5 &middot; <span style="color:var(--accent);">state table &middot; also in STATES-consider-tiles.md</span></div>
+    <table style="border-collapse:collapse;font-size:12.5px;width:100%;">
+      <thead><tr>
+        <th style="text-align:left;padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);font-weight:500;border-bottom:1px solid var(--border-strong);width:56px;">#</th>
+        <th style="text-align:left;padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);font-weight:500;border-bottom:1px solid var(--border-strong);width:220px;">condition</th>
+        <th style="text-align:left;padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);font-weight:500;border-bottom:1px solid var(--border-strong);">drawn</th>
+      </tr></thead>
+      <tbody>
+        <sc-for list="{{ states }}" as="r" hint-placeholder-count="12">
+          <tr>
+            <td style="padding:8px 10px;border-bottom:1px solid var(--border);font-family:'IBM Plex Mono',monospace;color:var(--accent);vertical-align:top;">{{ r.id }}</td>
+            <td style="padding:8px 10px;border-bottom:1px solid var(--border);color:var(--fg);vertical-align:top;">{{ r.c }}</td>
+            <td style="padding:8px 10px;border-bottom:1px solid var(--border);color:var(--fg-body);line-height:1.55;vertical-align:top;">{{ r.d }}</td>
+          </tr>
+        </sc-for>
+      </tbody>
+    </table>
+  </section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;kaldheim&quot;,&quot;amonkhet&quot;,&quot;kamigawa&quot;,&quot;ixalan&quot;,&quot;eldraine&quot;,&quot;phyrexia&quot;],&quot;default&quot;:&quot;kaldheim&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;liftInk&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;proposed&quot;,&quot;shipped&quot;],&quot;default&quot;:&quot;proposed&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+const THEMES = {
+  amonkhet:{bg:'#14110E',surface:'#1E1A15','surface-sunken':'#18140F','elevated-hover':'#201C17',border:'#2B241B','border-strong':'#3A3229',fg:'#EDE6D8','fg-body':'#C0B8A6','fg-muted':'#A59C89','fg-faint':'#8B8270','fg-locked':'#6E6654',accent:'#CF8745','accent-shadow':'#6B482A',success:'#6FA368',warning:'#DEAA29',fact:'#8FA6BE','avail-hard-fg':'#D9975C','avail-over-fg':'#C46857'},
+  kamigawa:{bg:'#0E0F14',surface:'#16181F','surface-sunken':'#101219','elevated-hover':'#181A21',border:'#181C26','border-strong':'#262A35',fg:'#E6E8F0','fg-body':'#B1B6C7','fg-muted':'#959AAD','fg-faint':'#6F7486','fg-locked':'#606476',accent:'#FF4D9A','accent-shadow':'#843052',success:'#6FA368',warning:'#E0913C',fact:'#8FA6BE','avail-hard-fg':'#DF8AA7','avail-over-fg':'#C26755'},
+  ixalan:{bg:'#0E1310',surface:'#171E19','surface-sunken':'#101512','elevated-hover':'#18201A',border:'#1D2620','border-strong':'#2C3830',fg:'#E0E7DE','fg-body':'#B6C2B3','fg-muted':'#98A695','fg-faint':'#808C7C','fg-locked':'#626E5E',accent:'#A3C445','accent-shadow':'#3E5220',success:'#5EA990',warning:'#E0913C',fact:'#8FA6BE','avail-hard-fg':'#ABCB5B','avail-over-fg':'#C56A58'},
+  eldraine:{bg:'#120E17',surface:'#1B1821','surface-sunken':'#131018','elevated-hover':'#1D1A23',border:'#241D30','border-strong':'#342C41',fg:'#E4DEEE','fg-body':'#B9B2C5','fg-muted':'#9C95A8','fg-faint':'#898395','fg-locked':'#6A6475',accent:'#AE88E6','accent-shadow':'#4A3568',success:'#6FA368',warning:'#E0913C',fact:'#8FA6BE','avail-hard-fg':'#B795EA','avail-over-fg':'#C56A58'},
+  kaldheim:{bg:'#121217',surface:'#1E1F26','surface-sunken':'#16171D','elevated-hover':'#212229',border:'#1A1F2B','border-strong':'#2E3340',fg:'#C6D2D3','fg-body':'#B3C0C2','fg-muted':'#95A4A6','fg-faint':'#7C8A8C','fg-locked':'#5F6D6E',accent:'#5C86C9','accent-shadow':'#2C405F',success:'#6FA368',warning:'#E0913C',fact:'#8FA6BE','avail-hard-fg':'#80ABEF','avail-over-fg':'#C86D5B'},
+  phyrexia:{bg:'#0D0B0E',surface:'#151317','surface-sunken':'#100E12','elevated-hover':'#171519',border:'#19161C','border-strong':'#262329',fg:'#E4E2E6','fg-body':'#B5B2BB','fg-muted':'#9A96A0','fg-faint':'#78747E','fg-locked':'#64616A',accent:'#52827A','accent-shadow':'#213834',success:'#6FA368',warning:'#E0913C',fact:'#8FA6BE','avail-hard-fg':'#77A9A0','avail-over-fg':'#BE6453'},
+};
+const lum = h => { const c=[1,3,5].map(i=>parseInt(h.substr(i,2),16)/255).map(v=>v<=0.03928?v/12.92:((v+0.055)/1.055)**2.4); return 0.2126*c[0]+0.7152*c[1]+0.0722*c[2]; };
+const cr = (a,b) => { const x=lum(a), y=lum(b); return (Math.max(x,y)+0.05)/(Math.min(x,y)+0.05); };
+const pair = (t,k) => `${cr(t[k],t.surface).toFixed(2)} / ${cr(t[k],t['elevated-hover']).toFixed(2)}`;
+const img = n => `https://api.scryfall.com/cards/named?exact=${encodeURIComponent(n)}&format=image&version=normal`;
+
+const SLOT = {
+  hard: { fg:'var(--avail-hard-fg)', edge:'var(--avail-hard-fg)' },
+  soft: { fg:'var(--fg-muted)', edge:'var(--border-strong)' },
+  buy:  { fg:'var(--warning)', edge:'transparent' },
+};
+function tile(o) {
+  const inDeck = !!o.inDeck, owned = o.owned !== false;
+  const slot = o.slot ? SLOT[o.slot] : null;
+  return {
+    name:o.name, img:img(o.img || o.name), pct:o.pct, lift:o.lift,
+    marks: inDeck ? (o.marks||[]).filter(m => m !== 'combo') : (o.marks||[]),
+    secondary: o.combo && !inDeck ? `+ ${o.combo}` : o.type,
+    secFg: inDeck ? 'var(--fg-locked)' : o.combo ? 'var(--fg-body)' : 'var(--fg-faint)',
+    hasInUse: !!o.inUse, inUse:o.inUse || '',
+    hasDot: !inDeck,
+    dotBg: !owned ? 'transparent' : o.committed ? 'var(--avail-hard-fg)' : 'var(--success)',
+    dotLine: owned ? 'solid' : 'dashed',
+    dotEdge: !owned ? 'var(--fg-locked)' : o.committed ? 'var(--avail-hard-fg)' : 'var(--success)',
+    hasSlot: !!slot && !(inDeck && o.slot === 'buy'),
+    slotFg: slot ? slot.fg : '', slotEdge: slot ? slot.edge : '', slotText:o.slotText || '',
+    nameFg: inDeck ? 'var(--fg-muted)' : 'var(--fg)',
+    artFilter: inDeck ? 'grayscale(.6)' : 'none', artOpacity: inDeck ? 0.5 : 1, tileOpacity: 1,
+    barFill: inDeck ? 'var(--accent-shadow)' : 'var(--accent)',
+    pctFg: inDeck ? 'var(--fg-faint)' : 'var(--fg-body)',
+    hasNote: !!o.note, note:o.note || '',
+    inDeck, canAdd: !inDeck, addLabel: owned ? 'Add' : 'Add · to buy',
+  };
+}
+const T = {
+  swords: tile({name:'Swords to Plowshares',type:'Instant',slot:'hard',slotText:'◆ none free',committed:true,pct:30,lift:'−8 pts'}),
+  path: tile({name:'Path to Exile',type:'Instant',slot:'hard',slotText:'◆ none free',committed:true,inUse:'in use: HD - Gods',pct:18,lift:'−12 pts',inDeck:true}),
+  fire: tile({name:'Firebending Lesson',type:'Instant — Lesson',pct:18,lift:'+17 pts vs. all decks'}),
+  counter: tile({name:'Counterspell',type:'Instant',slot:'soft',slotText:'◇ 1 in a draft',pct:15,lift:'−9 pts'}),
+  swan: tile({name:'Swan Song',type:'Instant',slot:'hard',slotText:'◆ none free',committed:true,pct:6,lift:'−5 pts'}),
+  heart: tile({name:'Heartless Act',type:'Instant',pct:6,lift:'+6 pts vs. all decks'}),
+  warp: tile({name:'Chaos Warp',type:'Instant',pct:5,lift:'+4 pts vs. all decks'}),
+  breach: tile({name:'Underworld Breach',type:'Enchantment',marks:['gc','combo'],combo:'Brain Freeze',pct:41,lift:'+38 pts vs. all decks',note:'Your 2nd game changer. Bracket 3 allows 3.'}),
+  sokka: tile({name:'Sokka, Tenacious Tactician',type:'Legendary Creature — Human Warrior Ally',pct:67,lift:'+64 pts vs. all decks'}),
+  tea: tile({name:'Jasmine Dragon Tea Shop',type:'Land',pct:62,lift:'+58 pts vs. all decks'}),
+  hakoda: tile({name:'Hakoda, Selfless Commander',type:'Legendary Creature — Human Warrior Ally',pct:56,lift:'+53 pts vs. all decks'}),
+  zuko: tile({name:'Fire Lord Zuko',type:'Legendary Creature — Human Noble Ally',pct:54,lift:'+51 pts vs. all decks'}),
+  moon: tile({name:'Moonmist',type:'Instant',slot:'hard',slotText:'◆ none free',committed:true,inUse:'in use: HD - Tovolar',pct:46,lift:'+44 pts vs. all decks'}),
+  gleam: tile({name:'Gleaming Splendor',type:'Enchantment',owned:false,slot:'buy',slotText:'$31.05',pct:2,lift:'−3 pts'}),
+  samut: tile({name:'Samut, Tyrant of Naktamun',type:'Legendary Creature — Human Wizard',owned:false,slot:'buy',slotText:'$9.34',pct:1,lift:'−1 pt'}),
+  hound: tile({name:'Flickering Hound',type:'Creature — Dog',owned:false,slot:'buy',slotText:'$8.33',pct:1,lift:'−1 pt'}),
+  staff: tile({name:"Wizard's Staff",type:'Artifact — Equipment',owned:false,slot:'buy',slotText:'$2.59',pct:1,lift:'+0 pts vs. all decks'}),
+  searing: tile({name:'Searing Touch',type:'Instant',owned:false,slot:'buy',slotText:'$1.49',marks:['combo'],combo:'Avatar Aang // Aang, Master of Elements',pct:11,lift:'+11 pts vs. all decks'}),
+};
+const lands = ['Command Tower','Exotic Orchard','City of Brass','Mana Confluence','Path of Ancestry','Reflecting Pool'].map((n,i)=>tile({name:n,type:'Land',pct:[88,61,44,40,37,30][i],lift:`+${[12,9,6,5,8,3][i]} pts vs. all decks`}));
+const SHELVES = [
+  {key:'removal',label:'Removal',meta:'you have 2 of 3 · 7 to consider',total:7,tiles:[T.swords,T.path,T.fire,T.counter,T.swan,T.heart,T.warp]},
+  {key:'land',label:'Land',meta:'you have 36 of 35 · 35 to consider',total:35,tiles:lands},
+  {key:'synergy',label:'Synergy · Avatar Aang // Aang',meta:'ranked by synergy · 79 to consider',total:79,tiles:[T.breach,T.sokka,T.tea,T.hakoda,T.zuko,T.moon]},
+  {key:'unowned',label:'Top picks for Avatar Aang // Aang',warn:'not in your collection',meta:' · 5 to consider',total:5,tiles:[T.gleam,T.samut,T.hound,T.staff,T.searing]},
+];
+
+class Component extends DCLogic {
+  state = { collapsed: { 'd:land':true, 'p1:land':true, 'p1:synergy':true, 'p1:unowned':true, 'p2:removal':true, 'p2:land':true }, expanded: {} };
+  applyTheme() {
+    const t = THEMES[this.props.theme] || THEMES.kaldheim;
+    const r = document.documentElement.style;
+    Object.entries(t).forEach(([k,v]) => r.setProperty(`--${k}`, v));
+  }
+  componentDidMount() { this.applyTheme(); }
+  componentDidUpdate() { this.applyTheme(); }
+  shelves(frame) {
+    const { collapsed, expanded } = this.state;
+    return SHELVES.map(s => {
+      const id = `${frame}:${s.key}`, open = !collapsed[id], exp = !!expanded[id];
+      const capped = s.total > 6;
+      return {
+        label:s.label, warn:s.warn || '', meta:s.meta, open, rot: open ? '90deg' : '0deg',
+        showCap: open && capped, capText: exp ? 'Show fewer' : `Show all ${s.total} →`,
+        tiles: exp ? s.tiles : s.tiles.slice(0,6),
+        toggle: () => this.setState(st => ({ collapsed:{...st.collapsed,[id]:open}, expanded:{...st.expanded,[id]:false} })),
+        expand: () => this.setState(st => ({ expanded:{...st.expanded,[id]:!exp} })),
+      };
+    });
+  }
+  renderVals() {
+    const shipped = this.props.liftInk === 'shipped';
+    return {
+      liftColor: shipped ? 'var(--accent-shadow)' : 'var(--fg-muted)',
+      liftSize: shipped ? 9.5 : 10,
+      dShelves: this.shelves('d'),
+      phoneFrames: [
+        { label:'top of the panel · Removal open and capped, the rest folded', top:true, shelves:this.shelves('p1') },
+        { label:'further down · synergy and the unowned shelf open', top:false, shelves:this.shelves('p2') },
+      ],
+      keyMarks: [{g:'gc',w:'game changer'},{g:'mld',w:'mass land denial'},{g:'turn',w:'extra turns'},{g:'tutor',w:'tutor'},{g:'combo',w:'Two-card combo'}],
+      stateTiles: [
+        {label:'owned', t:T.fire, note:'Solid dot leads the meta line. No chip: every copy is free. The type line holds the secondary line.'},
+        {label:'unowned', t:T.gleam, note:'Dashed dot, and the slot holds the price alone. The word buy goes: the shelf heading and the Add both say it.'},
+        {label:'mark + combo', t:T.breach, note:'All five glyphs share the meta line (§C2). The partner name takes the type line’s place as + Brain Freeze.'},
+        {label:'already in the deck', t:T.path, note:'No dot, art greyed, ∞ and partner drop, the type line returns. The chip stays: sleeved elsewhere still matters.'},
+        {label:'owned, in use', t:T.moon, note:'Committed dot (--avail-hard-fg), the chip in the slot, and the in-use line under the type line, as shipped.'},
+      ],
+      contrast: Object.entries(THEMES).map(([name,t]) => {
+        const f = cr(t['fg-faint'],t.surface);
+        return { name, sh:pair(t,'accent-shadow'), faint:pair(t,'fg-faint'), faintFg: f < 4.5 ? 'var(--avail-over-fg)' : 'var(--fg-muted)', muted:pair(t,'fg-muted'), body:pair(t,'fg-body'), surface:t.surface, bodyHex:t['fg-body'], mutedHex:t['fg-muted'] };
+      }),
+      answers: [
+        {q:'Caption.', body:'CardTileCaption as is: meta line, then the name on one line, at its fixed height. The body below it keeps the type line or combo partner, the in-use line, evidence, lift, the card note and Add.'},
+        {q:'The $ tag.', body:'Stays in the slot, as the figure alone ($31.05). The heading already says not owned; it can’t say what a card costs, which is what a reader compares on that shelf. With no live price it collapses to $, as on the deck tile.'},
+        {q:'Marks and the combo.', body:'§C2 confirmed: the lemniscate joins the four fact marks on the meta line, after the dot and the slot. The partner name stays under the name as + Partner in place of the type line. One glyph, one place.'},
+        {q:'Lift ink.', body:'--fg-muted at mono 10px, every sign: 5.94 to 6.65:1. Quieter than the --fg-body inclusion figure by one ink step, not by failing the bar.'},
+        {q:'Shelf header.', body:'Plex Sans 17/600 (phone 16) in --fg, sentence case, under a full-width rule. The count clause stays beside it in mono 11 --fg-muted; Show all N stays at the right end.'},
+        {q:'Collapse.', body:'The chevron, label and count are one disclosure button. Folded, the header stays and Show all hides. All open by default. The fold persists per deck across reloads and tab changes. Show all does not persist.'},
+        {q:'Phone.', body:'Keeps 2-up. 173px is the caption’s design width (ruling 3). The one-line name saves the second name line the clamp used to reserve, about as much height as the caption adds.'},
+        {q:'About entry.', body:'Not drawn. The tile change is cosmetic under the captions precedent, and a fold with a chevron teaches itself. Hugh’s call.'},
+      ],
+      states: [
+        {id:'c1',c:'Owned, all copies free',d:'Solid --success dot, 8px. Slot empty. Marks if any. Type line in --fg-faint.'},
+        {id:'c2',c:'Owned, a draft wants it (soft)',d:'Solid dot. Slot: AvailabilityMarker density="chip", shipped (◇ 1 in a draft).'},
+        {id:'c3',c:'Owned, held by one deck (hard)',d:'Dot in --avail-hard-fg (OwnershipDot committed). Chip ◆ none free. In-use line under the type line, mono 8.5/600 --avail-hard-fg: in use: {deck}. Several decks: chip alone, as shipped.'},
+        {id:'c4',c:'Owned, over-committed',d:'Committed dot. Over chip. Line in --avail-over-fg: tileOver(n), shipped.'},
+        {id:'c5',c:'Not owned, live price',d:'Dashed hollow dot (--fg-locked). Slot: BuyTag figure only, $31.05 in --warning, no edge. Add reads Add · to buy.'},
+        {id:'c6',c:'Not owned, no live price',d:'Dashed dot. Slot: the collapsed $ (the deck tile’s form). Never a bare buy word.'},
+        {id:'c7',c:'Carries fact marks',d:'16px glyphs in --fact, after the slot on the meta line, FactTooltip on each. Never wrap; the name line below never moves.'},
+        {id:'c8',c:'Completes a combo',d:'∞ joins the marks (after the fact marks). The secondary line reads + {partner} in --fg-body, truncating at the tile edge; sr-only sentence is comboAwarenessCopy.a11y.completes, as shipped.'},
+        {id:'c9',c:'In the deck (applied)',d:'No dot. No buy tag. Chip kept. Fact marks kept; ∞ and + partner drop, type line returns in --fg-locked. Art grayscale .6 / opacity .5. Name --fg-muted. Bar --accent-shadow. ✓ In deck replaces Add.'},
+        {id:'c10',c:'No art',d:'Shipped placeholder; tile at opacity .55. Caption unchanged, so a no-art tile is the same height.'},
+        {id:'l1',c:'Lift > 0',d:'+N pts vs. all decks, mono 10px --fg-muted.'},
+        {id:'l2',c:'Figure 0 or negative',d:'Signed display (−8 pts), same ink and size as l1. Was --fg-faint.'},
+        {id:'l3',c:'Synergy shelf, no figure',d:'synergyCopy.shelf.noSynergy, same ink. Other shelves: nothing.'},
+        {id:'s1',c:'Shelf open, ≤ 6 cards',d:'Header: chevron (pointing down), label, count clause. No Show all. Grid below.'},
+        {id:'s2',c:'Shelf open, > 6 cards (capped)',d:'Show all N → at the right end of the header, mono 11.5 --fg-body. Six tiles.'},
+        {id:'s3',c:'Shelf expanded',d:'The control reads Show fewer. Every tile. Not persisted.'},
+        {id:'s4',c:'Shelf collapsed',d:'Header alone: chevron pointing right, label, the count clause (it already holds N to consider). Show all hidden. Folding clears an expansion; reopening shows six.'},
+        {id:'s5',c:'Fold persistence',d:'localStorage, keyed per deck: the99.consider.folded.{deckId} = shelf keys. Survives reload and tab change. Adding a card cannot touch a folded shelf. A key whose shelf no longer exists is ignored.'},
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

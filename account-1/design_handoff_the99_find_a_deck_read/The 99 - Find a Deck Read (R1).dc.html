@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Metamorphous&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0B0E; }
+  a { color: #5C86C9; text-decoration: none; }
+  a:hover { color: #6C95D8; }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;padding:40px;background:#0B0B0E;min-height:100vh;display:flex;flex-direction:column;gap:64px;width:max-content;">
+
+  <section style="max-width:1340px;display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#0B0B0E;background:#5C86C9;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R1</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#7C8A8C;">card details · find a deck for it · the read · 2026-10-11</div>
+    </div>
+    <h1 style="font-family:'Metamorphous',serif;font-weight:400;font-size:32px;margin:0;line-height:1.3;text-wrap:pretty;max-width:1200px;">The picker becomes the dialog’s other page. The free list is unchanged, the press asks one question, and the read names a few decks, says how in their own cards, and offers one swap each.</h1>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:12px 28px;max-width:1340px;">
+      <sc-for list="{{ calls }}" as="c" hint-placeholder-count="8">
+        <p style="margin:0;font-size:14.5px;line-height:1.65;color:#B3C0C2;text-wrap:pretty;"><b style="color:#C6D2D3;font-weight:600;">{{ c.q }}</b> {{ c.a }}</p>
+      </sc-for>
+    </div>
+  </section>
+
+  <sc-for list="{{ sections }}" as="s" hint-placeholder-count="11">
+    <section id="{{ s.id }}" style="display:flex;flex-direction:column;gap:18px;">
+      <div style="display:flex;align-items:baseline;gap:14px;border-top:1px solid #5C86C9;padding-top:18px;max-width:1360px;flex-wrap:wrap;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#0B0B0E;background:#5C86C9;border-radius:5px;padding:2px 8px;">{{ s.id }}</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#7C8A8C;">{{ s.title }}</span>
+      </div>
+      <p style="margin:0;max-width:1100px;font-size:14px;line-height:1.65;color:#B3C0C2;text-wrap:pretty;">{{ s.note }}</p>
+      <div style="display:flex;gap:40px;align-items:flex-start;">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#5C86C9;">900 · the dialog, 820 × 620</div>
+          <div style="width:900px;height:700px;border:1px solid #2E3340;border-radius:12px;overflow:hidden;background:color-mix(in oklab,#121217 72%,#000);display:flex;align-items:center;justify-content:center;flex:none;">
+            <dc-import name="Find a Deck View R1" state="{{ s.state }}" hint-size="822px,622px"></dc-import>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#5C86C9;">390 · the sheet, from 0</div>
+          <dc-import name="Find a Deck View R1" state="{{ s.state }}" phone="{{ true }}" hint-size="392px,760px"></dc-import>
+        </div>
+      </div>
+    </section>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const calls = [
+      { q: "The view (ruling 2).", a: "“Find a deck for it →” swaps the dialog’s details pane for the picker. On desktop the art column stays and only the right pane changes; on the phone the art band and details give way to the view, from 0. ← {card} sits top-left in the view’s head, ✕ stays top-right and closes the dialog. No resize, no second modal. Stand-ins keep stacking." },
+      { q: "Open 1 · Replace or above?", a: "Above. The press band sits over the free list. Once a read is current, the read takes its place and the free list folds to one row, “Every deck that could take it”, one press away. Before a read, after a failure or a no fit, that fold is open." },
+      { q: "Open 2 · Always visible?", a: "Always, for one candidate or more (lock 8 runs a single candidate, and the read still adds a how and a cut). Same spot every time, under the head. It is absent only in today’s allHold and noneByColors states, and while a current read is on screen." },
+      { q: "Open 3 · An action on the row?", a: "Yes, one: Swap in, which runs takeStandInAction with the read’s cut. It is select/unselect: pressed, it fills and reads Swapped in; pressed again, the swap is undone. No tick. When the last free copy is spoken for, the other rows read Swap in to buy. The free rows keep Add and Add to buy." },
+      { q: "Open 4 · A deck changed?", a: "Shown, marked out of date. A dashed note names the deck that changed (or that the set changed) and offers Read again at one credit. The changed deck’s row is dimmed, tagged “changed since”, and can’t be swapped. The rest stay readable and live." },
+      { q: "Open 5 · The cut?", a: "Its own line, under a rule at the row’s foot: CUT, then the card as a card-open mark. The sentence stays about the plan; the cut is what the swap does." },
+      { q: "Open 6 · The need line?", a: "Left alone. The read does the explaining, and the free row stays exactly today’s (lock 7)." },
+      { q: "Loading.", a: "The band turns accent with three still skeleton rows (no shimmer) where the read will land, and an elapsed clock. The free list stays below, live. Leaving the view doesn’t stop the read; it waits here when the reader comes back." },
+    ];
+    const sections = [
+      { id: "D1", state: "details", title: "card details, the door (as shipped)", note: "The door is unchanged: “Find a deck for it →” in the footer under the Mana Pool link (ringed here only to mark it). Pressing it swaps the pane: the details slide 16px left and fade out while the view fades in from 16px right, 180ms on the sheet-snap curve. Reduced motion is a plain swap. Focus lands on the view’s heading. ← {card}, Escape and hardware Back each return to the details with focus on the door, scroll kept. Prev/Next and the footer are hidden in the view, so the view never pages to another card. A card opened from inside the view (a mark in a sentence, a cut) still stacks over the dialog as before." },
+      { id: "P1", state: "open", title: "the view, with the press · Ajani Unrelenting, 11 decks", note: "The head names the card and its copies, so the plate retires. The press band comes first: one lead line, the filled button “Which deck needs it most?” with its ◆ 1 credit segment, and the shared credit line under it. The free list follows, exactly today’s rows and order." },
+      { id: "P2", state: "loading", title: "loading", note: "About 27K input tokens takes seconds. The band holds the read’s place with three still rows, names how many decks it is reading, and ticks a clock. The free list below stays visible and live: adding from it while the read runs just marks that deck changed when the read lands." },
+      { id: "P3", state: "result", title: "three result rows, one swapped in", note: "Each row: the deck (opens the deck), its commander and where the plan came from, one sentence with the deck’s own cards as card-open marks, and the cut on its own line. HD - Goblins has been swapped in: the button fills, the cut is struck, and the reader’s only free copy is spoken for, so the other two read Swap in to buy. Ajani’s plate line now reads none free. The free list folds under the read." },
+      { id: "P4", state: "thin", title: "fewer than asked, thin · Kwia Vigorbloom, 4 decks", note: "The model named more than it could back up and only one deck held up: under a third, so the credit comes back (lock 4). The row that held up is shown as any other, and a dashed note under it says the credit came back." },
+      { id: "P5", state: "short", title: "fewer than asked, complete · Molten Collapse, 1 deck", note: "One candidate, one row. A complete answer, so the credit is spent. The foot says why there is only one, so a single row never reads as a shortfall." },
+      { id: "P6", state: "nofit", title: "no fit · Tangle Wire, 21 decks", note: "A plain statement in the band’s place, the credit refunded, and the free list open beneath it. No press: the read is current, and running it again on the same decks would say the same." },
+      { id: "P7", state: "failed", title: "failure · Maddening Hex", note: "Cuts’ failed band: the disc-with-! icon, a heading, the refund, Try again with its credit segment. The free list is untouched and open." },
+      { id: "P8", state: "spent", title: "no credit left · Mind’s Eye, 21 decks", note: "The press stays in place, disabled, with the segment gone. The credit line says when the next one comes back and what shares them. The free list, the longest any card draws, is the full answer until then." },
+      { id: "P9", state: "stored", title: "a stored read, reopened", note: "Nothing in any candidate’s input has changed, so the read comes back free. Its sub-line dates it, the foot says reopening is free, and there is no press." },
+      { id: "P10", state: "stale", title: "a stored read, a deck has changed", note: "HD - Goblins was edited after the read. The read stays readable but marked out of date: a dashed note names the deck and offers Read again; the Goblins row is dimmed, tagged “changed since”, and its swap is off. If the set itself changed (a deck added, deleted or newly able to take the card), the note says so instead." },
+    ];
+    return { calls, sections };
+  }
+}
+</script>
+</body>
+</html>

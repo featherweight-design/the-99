@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sync review with conflicts, phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C}
+.m{font-family:'IBM Plex Mono',monospace}
+.sr{position:absolute;width:1px;height:1px;opacity:0;margin:0}
+.ph{width:390px;flex:none;background:#121217;border:1px solid #2E3340;border-radius:28px;overflow:hidden;display:flex;flex-direction:column}
+.hd{display:flex;align-items:baseline;gap:12px;padding:18px 18px 14px}
+.pad{padding:4px 18px 18px;display:flex;flex-direction:column;gap:16px}
+.tile{padding:12px 14px;border:1px solid #1A1F2B;border-radius:12px;background:#1E1F26}
+.tile .n{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;line-height:1}
+.tile .l{margin-top:6px;font-size:12px;color:#95A4A6}
+.lh{margin:0;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:400;letter-spacing:.14em;text-transform:uppercase;color:#95A4A6}
+.sec{display:flex;flex-direction:column;gap:10px;padding:14px;border:1px solid #2E3340;border-radius:12px;background:#16171D}
+.btns{min-height:44px;padding:0 12px;border-radius:8px;background:transparent;color:#C6D2D3;border:1px solid #2E3340;font:600 13px 'IBM Plex Sans',sans-serif}
+.cf{margin:0;padding:10px 12px;border:1px solid #1A1F2B;border-radius:8px;background:#1E1F26;display:flex;flex-direction:column;gap:8px}
+.cf.open{border-color:#2E3340;border-left:3px solid #E0913C;padding-left:10px}
+.cn{font-size:13.5px;color:#C6D2D3}
+.cm{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#7C8A8C}
+.pr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.pill{position:relative;display:flex;align-items:center;justify-content:center;gap:6px;height:44px;border:1px solid #2E3340;border-radius:8px;font-size:13px;color:#B3C0C2;box-sizing:border-box}
+.pill b{font-family:'IBM Plex Mono',monospace;font-weight:500;color:#C6D2D3}
+.pill.on{border-color:#5C86C9;background:#2C405F;color:#C6D2D3}
+.cf.focus{box-shadow:0 0 0 2px #5C86C9}
+.row{display:flex;align-items:center;gap:10px;min-height:40px;padding:8px 12px;box-sizing:border-box;border:1px solid #1A1F2B;border-radius:8px;background:#1E1F26}
+.row .nm{flex:1;min-width:0;font-size:13px;color:#C6D2D3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .d{flex:none;font-family:'IBM Plex Mono',monospace;font-size:12px}
+.tag{flex:none;padding:0 5px;border:1px solid #E0913C;border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#E0913C}
+.warn{margin:0;padding:12px 14px;background:#212229;border:1px solid #2E3340;border-left:3px solid #E0913C;border-radius:10px;font-size:13.5px;line-height:1.55;color:#B3C0C2}
+.more{min-height:44px;padding:0;background:none;border:0;font:13px 'IBM Plex Sans',sans-serif;color:#5C86C9;text-decoration:underline;text-underline-offset:2px;text-align:left}
+.bar{padding:12px 18px 14px;background:#181920;border-top:1px solid #2E3340}
+.sum{margin:0 0 10px;font-size:11.5px;line-height:1.45;text-align:center;color:#7C8A8C}
+.btnp{flex:1;height:46px;border-radius:10px;background:#C6D2D3;color:#121217;border:0;font:600 15px 'IBM Plex Sans',sans-serif}
+.btnp.held{opacity:.4}
+.btng{flex:none;height:46px;padding:0 18px;border-radius:10px;background:transparent;color:#C6D2D3;border:1px solid #2E3340;font:400 14px 'IBM Plex Sans',sans-serif}
+.tabs{height:56px;border-top:1px solid #1A1F2B;background:#121217;display:flex;align-items:center;justify-content:space-around;font-size:11px;color:#7C8A8C}
+.cap{font-size:12.5px;line-height:1.5;color:#95A4A6}
+</style>
+</helmet>
+<div style="width:1800px;box-sizing:border-box;padding:40px 56px 56px;background:#0E0E12;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:22px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span class="k">Conflicts · phone 390 · R2</span>
+    <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px">A row is the card, then App and File side by side</h2>
+    <p class="cap" style="margin:0;max-width:1300px">At 390 the row stacks: name, then printing and what it was at your last upload in mono, then the two choices as equal 44px halves. The bulk presses stack too, full width. Everything else is the desktop’s rule.</p>
+  </div>
+  <div style="display:flex;gap:40px;align-items:flex-start">
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">P1 · three conflicts, one answered</span>
+      <section class="ph">
+        <div class="hd"><span style="font-family:'Metamorphous',serif;font-size:18px">Review sync</span><span class="m" style="margin-left:auto;font-size:10px;color:#7C8A8C">The Vault 10-14-26.csv</span></div>
+        <div class="pad">
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+            <div class="tile" style="border-color:#E0913C"><div class="n" style="color:#E0913C">2</div><div class="l">to decide</div></div>
+            <div class="tile"><div class="n" style="color:#6FA368">15</div><div class="l">from the file</div></div>
+            <div class="tile"><div class="n">119</div><div class="l">kept from The 99</div></div>
+            <div class="tile"><div class="n">3,385</div><div class="l">nothing to do</div></div>
+          </div>
+          <div class="sec">
+            <h2 class="lh">To decide · 3</h2>
+            <span style="font-size:13px;line-height:1.5;color:#B3C0C2">You and the file both changed these since your Oct 2 upload. Pick which count to keep. 2 left.</span>
+            <button class="btns" type="button">Keep the app’s for all 3</button>
+            <button class="btns" type="button">Take the file’s for all 3</button>
+            <sc-for list="{{three}}" as="r" hint-placeholder-count="3">
+              <fieldset class="{{r.cls}}">
+                <legend class="sr">{{r.aria}}</legend>
+                <span style="display:flex;flex-direction:column;gap:2px"><span class="cn">{{r.n}}</span><span class="cm">{{r.p}} · at Oct 2 {{r.b}}</span></span>
+                <span class="pr"><label class="{{r.appCls}}"><input class="sr" type="radio" name="p{{r.id}}">App <b>{{r.a}}</b></label><label class="{{r.fileCls}}"><input class="sr" type="radio" name="p{{r.id}}">File <b>{{r.f}}</b></label></span>
+              </fieldset>
+            </sc-for>
+          </div>
+        </div>
+        <div class="bar"><p class="sum" style="color:#E0913C">2 cards still to decide.</p><div style="display:flex;gap:10px"><button class="btng" type="button">Cancel</button><button class="btnp held" type="button" aria-disabled="true">Sync collection</button></div></div>
+        <div class="tabs" aria-hidden="true"><span>Home</span><span>Decks</span><span style="color:#C6D2D3">Collection</span><span>Commanders</span></div>
+      </section>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">P2 · held button pressed → first card left</span>
+      <section class="ph">
+        <div class="pad" style="padding-top:18px">
+          <div class="sec">
+            <fieldset class="cf"><legend class="sr">Arcane Signet</legend><span style="display:flex;flex-direction:column;gap:2px"><span class="cn">Arcane Signet</span><span class="cm">CMM 410 · nonfoil · at Oct 2 ×1</span></span><span class="pr"><label class="pill on"><input class="sr" type="radio" name="q1" checked>App <b>×3</b></label><label class="pill"><input class="sr" type="radio" name="q1">File <b>×2</b></label></span></fieldset>
+            <fieldset class="cf open focus"><legend class="sr">Esper Sentinel, at Oct 2 new, app ×1, file ×2</legend><span style="display:flex;flex-direction:column;gap:2px"><span class="cn">Esper Sentinel</span><span class="cm">MH2 12 · nonfoil · at Oct 2 new</span></span><span class="pr"><label class="pill"><input class="sr" type="radio" name="q2">App <b>×1</b></label><label class="pill"><input class="sr" type="radio" name="q2">File <b>×2</b></label></span></fieldset>
+            <fieldset class="cf open"><legend class="sr">Swords to Plowshares</legend><span style="display:flex;flex-direction:column;gap:2px"><span class="cn">Swords to Plowshares</span><span class="cm">STA 10 · foil · at Oct 2 ×2</span></span><span class="pr"><label class="pill"><input class="sr" type="radio" name="q3">App <b>×1</b></label><label class="pill"><input class="sr" type="radio" name="q3">File <b>×0</b></label></span></fieldset>
+          </div>
+        </div>
+        <div class="bar"><p class="sum" style="color:#E0913C">2 cards still to decide.</p><div style="display:flex;gap:10px"><button class="btng" type="button">Cancel</button><button class="btnp held" type="button" aria-disabled="true">Sync collection</button></div></div>
+        <div class="tabs" aria-hidden="true"><span>Home</span><span>Decks</span><span style="color:#C6D2D3">Collection</span><span>Commanders</span></div>
+      </section>
+      <span class="cap" style="max-width:390px">The page scrolls the first unanswered row above the bar and focuses its group. No toast and no inline error: the bar’s own line already says why.</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">P3 · 98 conflicts · bulk pressed</span>
+      <section class="ph">
+        <div class="pad" style="padding-top:18px">
+          <div class="sec">
+            <h2 class="lh">To decide · 98</h2>
+            <span role="status" style="font-size:13px;line-height:1.5;color:#B3C0C2">Kept the app’s count for all 98. You can still change any one.</span>
+            <button class="btns" type="button" aria-pressed="true" style="border-color:#5C86C9">Keep the app’s for all 98</button>
+            <button class="btns" type="button">Take the file’s for all 98</button>
+            <sc-for list="{{many}}" as="r" hint-placeholder-count="4">
+              <fieldset class="cf"><legend class="sr">{{r.n}}</legend><span style="display:flex;flex-direction:column;gap:2px"><span class="cn">{{r.n}}</span><span class="cm">{{r.p}} · at Oct 2 new</span></span><span class="pr"><label class="pill on"><input class="sr" type="radio" name="r{{$index}}" checked>App <b>×1</b></label><label class="pill"><input class="sr" type="radio" name="r{{$index}}">File <b>×2</b></label></span></fieldset>
+            </sc-for>
+            <button class="more" type="button">Show all 98</button>
+          </div>
+        </div>
+        <div class="bar"><p class="sum">Taking 18 cards from the file and keeping 121 of yours, with 114 tokens. You decided 98.</p><div style="display:flex;gap:10px"><button class="btng" type="button">Cancel</button><button class="btnp" type="button">Sync collection</button></div></div>
+        <div class="tabs" aria-hidden="true"><span>Home</span><span>Decks</span><span style="color:#C6D2D3">Collection</span><span>Commanders</span></div>
+      </section>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">P4 · all answered · two to the file</span>
+      <section class="ph">
+        <div class="pad" style="padding-top:18px">
+          <p class="warn">Taking the file’s count overwrites 2 cards you changed in the app since your Oct 2 upload.</p>
+          <div><h2 class="lh" style="margin-bottom:8px">Leaving your collection · 2</h2><div style="display:flex;flex-direction:column;gap:6px">
+            <div class="row"><span class="nm">Swords to Plowshares</span><span class="tag">edited</span><span class="d" style="color:#95A4A6">×1 → ×0</span></div>
+            <div class="row"><span class="nm">Smothering Tithe</span><span class="d" style="color:#95A4A6">×1 → ×0</span></div></div></div>
+          <div><h2 class="lh" style="margin-bottom:8px">Going up or new · 15</h2><div style="display:flex;flex-direction:column;gap:6px">
+            <div class="row"><span class="nm">Esper Sentinel</span><span class="tag">edited</span><span class="d" style="color:#6FA368">×1 → ×2</span></div>
+            <div class="row"><span class="nm">Jeweled Lotus</span><span class="d" style="color:#6FA368">new → ×1</span></div>
+            <div class="row"><span class="nm">Fierce Guardianship</span><span class="d" style="color:#6FA368">new → ×1</span></div></div>
+            <button class="more" type="button">Show all 15</button></div>
+        </div>
+        <div class="bar"><p class="sum">Taking 17 cards from the file and keeping 119 of yours, with 114 tokens. You decided 3. 1 deck will read short.</p><div style="display:flex;gap:10px"><button class="btng" type="button">Cancel</button><button class="btnp" type="button">Sync collection</button></div></div>
+        <div class="tabs" aria-hidden="true"><span>Home</span><span>Decks</span><span style="color:#C6D2D3">Collection</span><span>Commanders</span></div>
+      </section>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1800,"height":1900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const row = (id, n, p, b, a, f, pick) => ({
+      id, n, p, b, a, f,
+      aria: n + ', at Oct 2 ' + b + ', app ' + a + ', file ' + f,
+      cls: pick ? 'cf' : 'cf open',
+      appCls: pick === 'app' ? 'pill on' : 'pill',
+      fileCls: pick === 'file' ? 'pill on' : 'pill'
+    });
+    return {
+      three: [
+        row('1', 'Arcane Signet', 'CMM 410 · nonfoil', '×1', '×3', '×2', 'app'),
+        row('2', 'Esper Sentinel', 'MH2 12 · nonfoil', 'new', '×1', '×2', null),
+        row('3', 'Swords to Plowshares', 'STA 10 · foil', '×2', '×1', '×0', null)
+      ],
+      many: [
+        { n: 'Ellivere of the Wild Court', p: 'WOC 1 · foil' },
+        { n: 'Moonshaker Cavalry', p: 'WOC 82 · nonfoil' },
+        { n: 'Kor Spiritdancer', p: 'WOC 77 · nonfoil' },
+        { n: 'Sigarda’s Aid', p: 'WOC 87 · nonfoil' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

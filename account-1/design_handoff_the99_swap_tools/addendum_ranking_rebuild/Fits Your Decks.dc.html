@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-sunken:#18140F; --surface-raised:#211D18; --elevated:#29241F;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037; --display:'Cinzel',serif;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654;
+    --accent:#CF8745; --accent-hover:#DE9757; --accent-shadow:#6B482A; --success:#6FA368; --warning:#DEAA29;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-sunken:#101219; --surface-raised:#191B22; --elevated:#20222A;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843; --display:'Chakra Petch',sans-serif;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-shadow:#843052; --success:#6FA368; --warning:#E0913C;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="{{ rootStyle }}">
+  <div style="{{ headStyle }}">
+    <h2 style="margin:0;flex:1;font-family:var(--display);font-weight:700;font-size:16px;line-height:1.2;color:var(--fg);white-space:nowrap;">Find a deck for it</h2>
+    <sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}"><span style="flex:none;display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:999px;border:1px solid var(--border-strong);background:var(--elevated);font-size:12.5px;font-weight:600;color:var(--fg);white-space:nowrap;gap:6px;"><span aria-hidden="true">←</span><span>Basalt Monolith</span></span></sc-if>
+    <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}"><span aria-label="Back to Basalt Monolith" style="flex:none;width:44px;height:44px;margin-right:-10px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--fg-faint);">×</span></sc-if>
+  </div>
+  <div style="{{ bodyStyle }}">
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg);">
+      <span aria-hidden="true" style="flex:none;width:22px;height:31px;border-radius:3px;border:1px solid var(--border-strong);background:repeating-linear-gradient(135deg,var(--border) 0 3px,var(--surface-raised) 3px 6px);"></span>
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;">
+        <span style="font-size:14px;font-weight:600;color:var(--fg);">Basalt Monolith</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);">colorless · legal in Commander</span>
+      </div>
+      <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-body);white-space:nowrap;">×1 · 1 free</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:0 0 6px;border-bottom:1px solid var(--border);">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">could take it</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">by each commander’s synergy</span>
+      </div>
+      <sc-for list="{{ rows }}" as="r" hint-placeholder-count="4">
+        <div style="display:flex;flex-direction:column;gap:5px;padding:10px 0;border-bottom:1px solid var(--border);">
+          <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+            <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13.5px;color:var(--fg-body);text-decoration:underline;text-underline-offset:2px;text-decoration-color:var(--border-strong);">{{ r.name }}</span>
+            <button type="button" aria-label="Add Basalt Monolith to the {{ r.name }} draft, using your free copy" style="{{ addStyle }}">Add</button>
+          </div>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.45;color:var(--fg-muted);text-wrap:pretty;">
+            <sc-if value="{{ r.combo }}" hint-placeholder-val="{{ false }}"><span style="color:var(--fg);">Completes a combo with <span style="border-bottom:1px dotted var(--accent);">{{ r.combo }}</span></span></sc-if>
+            <sc-if value="{{ r.theme }}" hint-placeholder-val="{{ false }}"><span style="color:var(--fg-body);">{{ r.theme }}</span></sc-if>
+            <sc-if value="{{ r.plain }}" hint-placeholder-val="{{ true }}"><span>{{ r.plain }}</span></sc-if>
+            <sc-if value="{{ r.need }}" hint-placeholder-val="{{ true }}"><span style="color:var(--border-strong);"> · </span><span style="color:var(--fg-locked);">this deck </span><span>{{ r.need }}</span></sc-if>
+          </span>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="display:flex;flex-direction:column;">
+      <span style="padding:0 0 6px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);border-bottom:1px solid var(--border);">already holds it</span>
+      <div style="{{ minorRow }}">
+        <span style="flex:1;min-width:0;font-size:13px;color:var(--fg-body);text-decoration:underline;text-underline-offset:2px;text-decoration-color:var(--border-strong);">HD Tymna + Thrasios</span>
+        <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">holds 1</span>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:560,&quot;height&quot;:560},&quot;phone&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const phone = !!this.props.phone;
+    const rows = [
+      { name: "HD Kinnan", combo: "Kinnan, Bonder Prodigy", need: "ramp 11 of 10" },
+      { name: "HD Kenrith", combo: "Rings of Brighthearth", need: "ramp 9 of 10" },
+      { name: "HD Gishath", theme: "Joins 11 other artifact cards", need: "ramp 7 of 10" },
+      { name: "HD Atraxa Superfriends", plain: "in 6% of Atraxa decks, 4% of four-color", need: null },
+    ].map((r) => ({ combo: null, theme: null, plain: null, ...r }));
+    return {
+      theme: this.props.theme ?? "amonkhet",
+      phone, wide: !phone, rows,
+      rootStyle: phone
+        ? { width: 390, background: "var(--surface-raised)", borderTop: "1px solid var(--border-strong)", borderRadius: "14px 14px 0 0", color: "var(--fg)", fontFamily: "'IBM Plex Sans',sans-serif", display: "flex", flexDirection: "column", overflow: "hidden" }
+        : { width: 560, background: "var(--surface-raised)", border: "1px solid var(--border-strong)", borderRadius: 14, boxShadow: "0 24px 60px rgba(0,0,0,0.5)", color: "var(--fg)", fontFamily: "'IBM Plex Sans',sans-serif", display: "flex", flexDirection: "column", overflow: "hidden" },
+      headStyle: phone
+        ? { flex: "none", height: 43, display: "flex", alignItems: "center", gap: 9, padding: "0 6px 0 16px", borderBottom: "1px solid var(--border)" }
+        : { flex: "none", display: "flex", alignItems: "center", gap: 10, padding: "12px 14px 12px 18px", borderBottom: "1px solid var(--border)" },
+      bodyStyle: { padding: phone ? "14px 16px 24px" : "16px 18px 20px", display: "flex", flexDirection: "column", gap: 14 },
+      minorRow: { display: "flex", alignItems: "center", gap: 10, minHeight: phone ? 44 : 34, borderBottom: "1px solid var(--border)" },
+      addStyle: phone
+        ? { appearance: "none", background: "transparent", fontFamily: "inherit", lineHeight: 1, cursor: "pointer", flex: "none", display: "flex", alignItems: "center", justifyContent: "center", height: 44, minWidth: 64, padding: "0 14px", borderRadius: 8, fontSize: 13, fontWeight: 600, color: "var(--accent)", border: "1px solid var(--accent)" }
+        : { appearance: "none", background: "transparent", fontFamily: "inherit", lineHeight: 1, cursor: "pointer", flex: "none", display: "inline-flex", alignItems: "center", borderRadius: 7, padding: "5px 12px", fontSize: 12, fontWeight: 600, color: "var(--accent)", border: "1px solid var(--accent)" },
+    };
+  }
+}
+</script>
+</body>
+</html>

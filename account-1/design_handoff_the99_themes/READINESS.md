@@ -1,0 +1,116 @@
+# READINESS — Six-theme visual system, R2
+
+**Verdict: 🟢 Green, pending your sign-off on one judgement call.** Both R1 blockers were
+resolved in the audit, not by me. The two R2 items — mobile and Metamorphous — are drawn and
+ruled. Nothing is waiting on Engineering.
+
+## R2 — what changed
+
+| Audit item | Status |
+|---|---|
+| 1 · §8.2 fifth column is `--fg-faint` | **Closed by the audit.** `TOKEN-TABLE.md` stands as delivered; no hex changed. |
+| 2 · Accent area is an eyes-on heuristic, not CI | **Closed by the audit.** Vignette stays, ten empty states unchanged. README gap 7 and the §F panel are rewritten to say heuristic rather than CI check. |
+| A · Mobile | **Drawn.** §G: shell at rest desktop (2 themes) + mobile (3, including Rune Frost), the picker's 390px sheet at 44px minimum, and five empty states at 390px. Gap 10 closed. |
+| B · Metamorphous | **Ruled.** §H, with the specimen the ruling is made from. Keep the face, disable synthetic bold. |
+| Citation · crown | Fixed → `completion-reveal.tsx:78–80`. |
+| Citation · vignette | Fixed → six surfaces at 0.07, plus `loading-screen.tsx` at 0.08. |
+
+### The one judgement call I would like you to confirm
+
+**Rune Frost pins display weight to 400 and drops synthetic bold** —
+`[data-theme="kaldheim"] .font-display { font-synthesis-weight: none; }`, one rule in
+`@layer base`. §H carries the specimen and the reasoning; the short version is that synthetic
+bold is a uniform dilation, which is precisely wrong for a high-contrast decorative face, and
+it does its worst work at 15–18px where most of the 32 sites sit. The visible consequence is
+that Rune Frost headings sit a little lighter than the other five themes'.
+
+This is a taste call with a real trade-off, so it is flagged rather than assumed. It does not
+block: if you would rather keep synthetic bold, delete one rule and nothing else moves.
+
+---
+
+## Superseded — R1's two blockers, for the record
+
+<details>
+<summary>Both resolved in the R1 audit</summary>
+
+### 1. §8.2's fifth column — `--fg-muted` or `--fg-faint`?
+
+Read as `--fg-muted`, §8.2 failed §8.9 in four of six themes:
+
+| Theme | §8.2 value | on `--surface` | floor for `--fg-muted` |
+|---|---|---|---|
+| Neon Rain | `#6E7488` | **3.81:1** | 4.5:1 ✗ |
+| Screen Glow | `#606D86` | **3.36:1** | 4.5:1 ✗ |
+| Moonlit | `#737D7B` | **4.00:1** | 4.5:1 ✗ |
+| Oil and Iron | `#78747E` | **4.04:1** | 4.5:1 ✗ |
+| Gilded Stone | `#8E8269` | 4.55:1 | 4.5:1 ✓ |
+| Rune Frost | `#7C8A8C` | 4.59:1 | 4.5:1 ✓ |
+
+**Ruled `--fg-faint`.** The brief's header is being amended; the table stands.
+
+### 2. How is the accent area budget computed?
+
+**Ruled: it is not a CI check.** §8.4 makes chroma CI-enforcing; §8.5's “roughly 10%” is an
+eyes-on heuristic, and painted area is not statically computable. Area × alpha is the model,
+the vignette stays.
+
+</details>
+
+---
+
+## Non-blocking, but worth a look
+
+- **Metamorphous has exactly one weight** — ruled in §H. Keep the face, disable synthetic bold
+  on Rune Frost only. See the judgement call above.
+- **Rune Frost is the theme to spot-check on real hardware.** The specimen and the mobile shell
+  are rendered at 1× in a browser; synthetic-bold behaviour and hinting differ enough between
+  macOS and Windows that the 15px row is worth one look on each before Phase 4 closes.
+- **Syncopate needs the card-modal heading capped at 26px** or Oil and Iron grows a line on
+  long card names. Big Shoulders probably wants +1px under 24px. Both are stated from the
+  specimen, not measured on device.
+- **`--fg-locked` lands at 3.02–3.05:1 in all six.** Legal, zero headroom. It is the token the
+  spec already flagged as failing today (2.77:1), and the new floor is only just cleared
+  because the locked faint values sit high above it. Any future darkening of a `--surface`
+  breaks all six at once.
+- **Only one WUBRG pip moves in the entire system** (Oil and Iron's green). The spec's worked
+  example — deepening Duskmourn's blue — is unnecessary; measured ΔE is 0.19, well clear. The
+  contract carries 30 pip keys to express one decision. Correct as specced, but somebody should
+  know that before defending it in review.
+- **Moonlit's `--avail-hard-fg` is identical to its `--accent`.** Correct (the accent already
+  clears 7:1) but it will read as a copy-paste error without a comment.
+- **The empty states are drawn at both widths** as of R2 — ten at ~360px and five at 390px,
+  including the tab-bar reserve and the stacked full-width CTAs.
+- **Gilded Stone's warning has to move back toward yellow-gold** (`#E0913C` → `#DEAA29`),
+  reversing a documented brand decision, because §8's accent is more orange than brass was.
+  Worth noting that accent and warning have now collided twice from opposite directions.
+
+## What R1 is confident about
+
+- **All six themes pass all seven contrast gates and all three chroma budgets**, with the
+  numbers in `TOKEN-TABLE.md` and reproducible from `tokens.json`. They were generated by
+  solving for the floors, not picked and then checked.
+- **Six corrections to §8's locked hexes, all recorded, four invisible** (ΔE ≤ 0.014). The two
+  visible ones are both Moonlit and both follow from the §9.5 ruling the brief asked for.
+- **The chroma budget is measured after 8-bit quantisation.** Clamping in OKLCH and rounding
+  afterwards re-introduces chroma — five values in this system bust the budget that way, and a
+  CI check written the naive way will fail on source that looks correct. Called out because it
+  will cost somebody an afternoon otherwise.
+- **The replacement mark was already in the codebase.** `completion-reveal.tsx:110` draws the
+  three-diamond crown in brass beside the kaiju. The empty-state treatment is not an invention
+  to fill a hole; it is the mark the character was standing in front of, promoted.
+- **`LoaderDots` retires into the crown** — three dots become three diamonds on the same 1.2s
+  stagger. Net component count goes down, not up, and the reduced-motion fallback is the
+  existing one.
+- **Both §6 “say explicitly” calls are made**, with reasons: decks index keeps a mark, guided
+  banner loses one.
+- **35 keys, identical in all six**, with `--avail-soft` and `--avail-hard` written as `var()`
+  aliases rather than flattened, the three character tokens deleted, and `--brass*` renamed.
+  The table is the CI fixture.
+- **Nothing is carried by theme colour alone**, in any of the six — including the picker,
+  whose selected state is a ring and a tick.
+
+## What would make this green
+
+Nothing blocking. Confirm the Rune Frost synthetic-bold ruling and this is done; reject it and
+the cost is deleting one CSS rule.

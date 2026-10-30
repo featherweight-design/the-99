@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Metamorphous&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="kaldheim"] {
+    --bg:#121217; --surface:#1E1F26; --surface-sunken:#16171D; --surface-rail:#18191F; --elevated:#2D2E35;
+    --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E; --fg-disabled:#454E50;
+    --accent:#5C86C9; --accent-hover:#6C95D8; --success:#6FA368; --warning:#E0913C; --danger:#C6533F; --btn:#C9D3D6;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'IBM Plex Sans', sans-serif; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" data-screen-label="{{ label }}" style="{{ s.root }}">
+
+  <sc-if value="{{ isSheet }}" hint-placeholder-val="{{ true }}">
+    <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+      <div style="position:absolute;left:0;top:0;bottom:0;right:480px;padding:20px 22px;display:flex;flex-direction:column;gap:14px;">
+        <div style="display:flex;align-items:center;gap:12px;"><span style="font-family:'Metamorphous',serif;font-size:26px;color:var(--fg);">Collection</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ totalLine }}</span></div>
+        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;">
+          <sc-for list="{{ ghostTiles }}" as="g" hint-placeholder-count="9"><div style="height:150px;border-radius:8px;background:repeating-linear-gradient(135deg,var(--surface) 0 8px,var(--surface-rail) 8px 16px);opacity:0.7;"></div></sc-for>
+        </div>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-locked);">/collection behind the sheet · inert, no scrim (as shipped)</span>
+      </div>
+    </sc-if>
+    <div style="{{ s.sheet }}">
+      <div style="display:flex;align-items:center;gap:12px;padding:{{ s.sheetHeadPad }};">
+        <h2 style="margin:0;flex:1;font-family:'Metamorphous',serif;font-weight:400;font-size:21px;color:var(--fg);">Add cards</h2>
+        <span style="{{ s.close }}">✕</span>
+      </div>
+      <div style="flex:1;min-height:0;overflow:hidden;padding:{{ s.sheetBodyPad }};">
+        <div style="display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:16px 0;">
+          <p style="margin:0;font-family:'Metamorphous',serif;font-size:19px;color:var(--fg);">{{ saved.title }}</p>
+          <p style="margin:0;font-size:14px;color:var(--fg-body);">{{ saved.body }}</p>
+          <p style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">{{ saved.counts }}</p>
+
+          <sc-if value="{{ hasLines }}" hint-placeholder-val="{{ true }}">
+            <div style="align-self:stretch;margin-top:4px;display:flex;flex-direction:column;">
+              <span style="padding:0 0 6px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">{{ linesHead }}</span>
+              <sc-for list="{{ lines }}" as="l" hint-placeholder-count="1">
+                <div style="display:flex;flex-direction:column;border-top:1px solid var(--border);">
+                  <div style="display:flex;align-items:center;gap:10px;min-height:44px;padding:8px 0;">
+                    <span style="flex:1;min-width:0;font-size:13.5px;line-height:1.5;color:var(--fg-body);text-wrap:pretty;"><sc-for list="{{ l.parts }}" as="p" hint-placeholder-count="3"><span style="{{ p.st }}">{{ p.t }}</span></sc-for></span>
+                    <sc-if value="{{ l.hasAction }}" hint-placeholder-val="{{ true }}"><span style="{{ s.change }}">{{ l.action }}</span></sc-if>
+                  </div>
+                  <sc-if value="{{ l.hasChooser }}" hint-placeholder-val="{{ false }}">
+                    <div style="padding:0 0 12px;"><dc-import name="Copy Chooser" variant="{{ l.chooser }}" phone="{{ phone }}" theme="{{ theme }}" hint-size="100%,330px"></dc-import></div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ hasFoot }}" hint-placeholder-val="{{ false }}">
+            <p style="{{ s.foot }}">{{ foot }}</p>
+          </sc-if>
+
+          <span style="font-size:13.5px;color:var(--accent);text-decoration:underline;text-underline-offset:2px;">See it in History</span>
+          <div style="{{ s.savedBtns }}">
+            <span style="{{ s.btnOutline }}">Add more</span>
+            <span style="{{ s.btnPrimary }}">Done</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isDeck }}" hint-placeholder-val="{{ false }}">
+    <div style="{{ s.deckHead }}">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">‹ Decks</span>
+      <h1 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:24px;line-height:1.2;color:var(--fg);">{{ deck.name }}</h1>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ deck.sub }}</span>
+    </div>
+    <div style="{{ s.tabs }}">
+      <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="3"><span style="{{ t.st }}">{{ t.name }}</span></sc-for>
+    </div>
+    <div style="{{ s.deckBody }}">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <div style="display:flex;gap:2px;padding:2px;border-radius:9px;border:1px solid var(--border-strong);">
+          <span style="{{ seg.all }}">All</span><span style="{{ seg.shop }}">Shopping</span>
+        </div>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ deck.listLine }}</span>
+      </div>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">{{ deck.group }}</span>
+      <div style="display:flex;flex-direction:column;">
+        <sc-for list="{{ rows }}" as="r" hint-placeholder-count="5">
+          <sc-if value="{{ r.live }}" hint-placeholder-val="{{ true }}">
+            <div style="{{ r.st }}">
+              <span style="flex:none;width:30px;height:42px;border-radius:4px;background:repeating-linear-gradient(135deg,var(--surface) 0 5px,var(--surface-rail) 5px 10px);"></span>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;">
+                <span style="font-size:14px;line-height:1.4;color:var(--fg);">{{ r.name }}</span>
+                <sc-if value="{{ r.hasFact }}" hint-placeholder-val="{{ false }}">
+                  <span style="display:flex;flex-wrap:wrap;align-items:center;gap:0 10px;">
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);">{{ r.fact }}</span>
+                    <sc-if value="{{ r.hasChange }}" hint-placeholder-val="{{ false }}"><span style="{{ s.changeSm }}">Change</span></sc-if>
+                  </span>
+                </sc-if>
+                <sc-if value="{{ r.hasType }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ r.type }}</span></sc-if>
+              </div>
+              <sc-if value="{{ r.hasTag }}" hint-placeholder-val="{{ true }}">
+                <span style="flex:none;margin-top:3px;display:inline-flex;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--warning);border-radius:4px;padding:1px 5px;background:color-mix(in oklab, var(--warning) 13%, transparent);">buy<span style="color:var(--border-strong);padding:0 3px;">·</span><span style="color:var(--fg-body);">{{ r.price }}</span></span>
+              </sc-if>
+            </div>
+          </sc-if>
+          <sc-if value="{{ r.held }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;gap:12px;margin:6px 0;padding:11px 12px;border:1px dashed var(--border-dashed);border-radius:9px;">
+              <span style="flex:1;font-size:13.5px;color:var(--fg-muted);">{{ r.name }} · in your collection</span>
+            </div>
+          </sc-if>
+        </sc-for>
+      </div>
+    </div>
+    <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+      <div style="margin-top:auto;display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--border);background:var(--surface-sunken);">
+        <sc-for list="{{ tabbar }}" as="tb" hint-placeholder-count="5"><span style="{{ tb.st }}">{{ tb.name }}</span></sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+      <div style="{{ s.toast }}">
+        <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;padding:10px 0;">
+          <span style="font-size:13.5px;line-height:1.35;color:var(--fg);">{{ toast.title }}</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">CMM #400 · Nonfoil</span>
+          <span style="font-size:12.5px;line-height:1.45;color:var(--fg-body);text-wrap:pretty;">{{ toast.body }}<sc-if value="{{ toast.change }}" hint-placeholder-val="{{ true }}"><span style="{{ s.toastChange }}">Change</span></sc-if></span>
+        </span>
+        <span style="flex:none;display:flex;align-items:center;gap:2px;align-self:center;">
+          <span style="display:inline-flex;align-items:center;height:44px;padding:0 10px;font-size:13.5px;color:var(--accent);">History</span>
+          <span style="display:inline-flex;align-items:center;height:44px;padding:0 10px;font-size:13.5px;font-weight:600;color:var(--accent);">Undo</span>
+        </span>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ hasModal }}" hint-placeholder-val="{{ false }}">
+      <div style="{{ s.scrim }}">
+        <div style="{{ s.dialog }}">
+          <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}"><span style="align-self:center;width:36px;height:4px;border-radius:2px;background:var(--border-dashed);"></span></sc-if>
+          <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}"><span style="position:absolute;right:18px;top:18px;width:36px;height:36px;border-radius:50%;border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--fg-muted);">✕</span></sc-if>
+          <div style="display:flex;flex-direction:column;gap:6px;padding-right:44px;">
+            <h3 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:20px;line-height:1.25;color:var(--fg);">Where this copy goes</h3>
+            <span style="font-size:14px;line-height:1.4;color:var(--fg-body);">{{ modal.sub }}</span>
+          </div>
+          <dc-import name="Copy Chooser" variant="{{ modal.variant }}" phone="{{ phone }}" theme="{{ theme }}" hint-size="100%,330px"></dc-import>
+          <div style="{{ s.dialogFoot }}"><span style="{{ s.btnOutline }}">Done</span></div>
+        </div>
+      </div>
+    </sc-if>
+  </sc-if>
+
+  <sc-if value="{{ isSummary }}" hint-placeholder-val="{{ false }}">
+    <div style="{{ s.summary }}">
+      <p style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">Collection replaced</p>
+      <h1 style="{{ s.sumH1 }}">2,735 cards in your collection</h1>
+      <p style="margin:0;font-size:13.5px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">{{ sum.lede }}</p>
+      <p style="margin:8px 0 0;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ sum.stamp }}</p>
+
+      <sc-if value="{{ hasRows }}" hint-placeholder-val="{{ true }}">
+        <section style="margin-top:26px;">
+          <div style="margin-bottom:10px;">
+            <h2 style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-body);">{{ sum.head }}</h2>
+            <p style="margin:5px 0 0;font-size:12.5px;line-height:1.55;color:var(--fg-faint);text-wrap:pretty;">These arrived, so the decks that were billing them stop. Change where a copy goes, or keep it free.</p>
+          </div>
+          <div style="display:flex;flex-direction:column;">
+            <sc-for list="{{ sumRows }}" as="r" hint-placeholder-count="2">
+              <div style="display:flex;flex-direction:column;border-top:1px solid var(--border);">
+                <div style="{{ s.sumRow }}">
+                  <span style="{{ s.sumName }}">{{ r.card }}</span>
+                  <span style="{{ s.sumSub }}">
+                    <span style="flex:1;min-width:0;font-size:13px;line-height:1.5;color:var(--fg-body);text-wrap:pretty;"><sc-for list="{{ r.parts }}" as="p" hint-placeholder-count="2"><span style="{{ p.st }}">{{ p.t }}</span></sc-for></span>
+                    <sc-if value="{{ r.hasAction }}" hint-placeholder-val="{{ true }}"><span style="{{ s.change }}">{{ r.action }}</span></sc-if>
+                  </span>
+                </div>
+                <sc-if value="{{ r.hasChooser }}" hint-placeholder-val="{{ false }}">
+                  <div style="padding:2px 0 12px;"><dc-import name="Copy Chooser" variant="{{ r.chooser }}" phone="{{ phone }}" theme="{{ theme }}" hint-size="100%,330px"></dc-import></div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+      </sc-if>
+      <div style="margin-top:30px;"><span style="display:inline-flex;align-items:center;height:38px;padding:0 18px;border-radius:8px;background:var(--accent);font-size:13.5px;font-weight:600;color:var(--bg);">View your collection</span></div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:900,&quot;height&quot;:760},&quot;scene&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;ac-one&quot;,&quot;ac-many&quot;,&quot;ac-brews&quot;,&quot;ac-brew1&quot;,&quot;ac-none&quot;,&quot;ac-change&quot;,&quot;ac-kept&quot;,&quot;ig-other&quot;,&quot;ig-brews&quot;,&quot;ig-self&quot;,&quot;ig-none&quot;,&quot;ig-change&quot;,&quot;us-one&quot;,&quot;us-many&quot;,&quot;us-brews&quot;,&quot;us-none&quot;,&quot;us-change&quot;,&quot;us-kept&quot;,&quot;kf-count&quot;,&quot;kf-deck&quot;,&quot;kf-shop&quot;,&quot;kf-single&quot;],&quot;default&quot;:&quot;ac-one&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;phone&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;kaldheim&quot;],&quot;default&quot;:&quot;kaldheim&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const phone = !!this.props.phone;
+    const theme = this.props.theme ?? "kaldheim";
+    const scene = this.props.scene ?? "ac-one";
+    const M = "'IBM Plex Mono',monospace";
+    const fg = { color: "var(--fg)" }, card = { color: "var(--fg)", fontWeight: 600 }, body = {};
+    const P = (...xs) => xs.map((x) => (typeof x === "string" ? { t: x, st: body } : { t: x[0], st: x[1] === "c" ? card : fg }));
+    const line = (parts, o = {}) => ({ parts, hasAction: o.action !== "", action: o.action ?? "Change", hasChooser: !!o.chooser, chooser: o.chooser ?? "" });
+    const B = "HD - Brago", E = "HD - Eldrazi", A = "HD - Avatar Aang", T = "HD -Thorin", K = "HD - Kratos", G = "HD - Gishath";
+
+    // ── Add Cards (saved state) ──
+    const AC = {
+      "ac-one": { copies: 1, cards: 1, lines: [line(P(["Sol Ring", "c"], " goes to ", [B], ", which needs one"))] },
+      "ac-many": { copies: 5, cards: 4, lines: [
+        line(P("2 copies of ", ["Sol Ring", "c"], " go to ", [B], " and ", [E], ", one each")),
+        line(P(["Arcane Signet", "c"], " goes to ", [A], ", which needs one")),
+        line(P(["Command Tower", "c"], " goes to ", [T], ", which you picked earlier")),
+      ], foot: "No deck needed Lightning Greaves, so it’s free." },
+      "ac-brews": { copies: 1, cards: 1, lines: [line(P(["Sol Ring", "c"], " is free for the 3 brews that need it"))] },
+      "ac-brew1": { copies: 1, cards: 1, lines: [line(P(["Command Tower", "c"], " is free for ", [T], ", a brew that needs one"))] },
+      "ac-none": { copies: 2, cards: 2, lines: [], foot: "No deck needed these, so they’re free." },
+      "ac-change": { copies: 1, cards: 1, lines: [line(P(["Sol Ring", "c"], " goes to ", [B], ", which needs one"), { action: "Done", chooser: "one" })] },
+      "ac-kept": { copies: 1, cards: 1, lines: [line(P(["Sol Ring", "c"], " is kept free. No deck counts it."))] },
+    };
+
+    // ── Deck page (I got it, Keep it free on a deck) ──
+    const shopRows = (sol, extra = {}) => [
+      { name: "Arcane Signet", price: "$0.40" },
+      ...(sol ? [sol] : []),
+      { name: "Swiftfoot Boots", price: "$1.10" },
+      { name: "Thought Vessel", price: "$0.95" },
+      { name: "Wayfarer’s Bauble", price: "$0.35" },
+    ];
+    const DK = {
+      "ig-other": { deck: { name: E, sub: "v1 · committed · 99 / 99", listLine: "14 to buy · $38.20", group: "Shopping · 14" }, view: "shop",
+        rows: shopRows({ name: "Sol Ring", price: "$1.29", fact: "you own 17 · all 17 in other decks" }),
+        toast: { title: "Sol Ring added · ×1", body: "HD - Brago is older and was short too, so the copy went there. This deck still needs 1.", change: true } },
+      "ig-brews": { deck: { name: T, sub: "brew · 99 / 99", listLine: "35 to buy · $64.35", group: "Shopping · 35" }, view: "shop",
+        rows: shopRows({ name: "Sol Ring", held: true }),
+        toast: { title: "Sol Ring added · ×1", body: "It’s free, so this deck can use it. So can HD - Kratos and HD - Gishath, which need one too.", change: true } },
+      "ig-self": { deck: { name: B, sub: "v2 · committed · 99 / 99", listLine: "6 to buy · $12.80", group: "Shopping · 6" }, view: "shop",
+        rows: shopRows({ name: "Sol Ring", held: true }),
+        toast: { title: "Sol Ring added · ×1", body: "It goes to this deck.", change: true } },
+      "ig-none": { deck: { name: B, sub: "v2 · committed · 99 / 99", listLine: "5 to buy · $11.51", group: "Shopping · 5" }, view: "shop",
+        rows: shopRows(null),
+        toast: { title: "Sol Ring added · ×1", body: "No deck needs this copy, so it’s free.", change: false } },
+      "ig-change": { deck: { name: T, sub: "brew · 99 / 99", listLine: "35 to buy · $64.35", group: "Shopping · 35" }, view: "shop",
+        rows: shopRows({ name: "Sol Ring", held: true }),
+        toast: { title: "Sol Ring added · ×1", body: "It’s free, so this deck can use it. So can HD - Kratos and HD - Gishath, which need one too.", change: true },
+        modal: { variant: "brews", sub: "Sol Ring · added just now" } },
+      "kf-deck": { deck: { name: T, sub: "brew · 99 / 99", listLine: "99 cards · 35 to buy", group: "Artifacts · 8" }, view: "all",
+        rows: [
+          { name: "Arcane Signet", type: "Artifact" },
+          { name: "Lightning Greaves", type: "Artifact — Equipment" },
+          { name: "Sol Ring", fact: "1 kept free", change: true },
+          { name: "Swiftfoot Boots", type: "Artifact — Equipment" },
+          { name: "Thought Vessel", type: "Artifact" },
+        ] },
+      "kf-shop": { deck: { name: T, sub: "brew · 99 / 99", listLine: "35 to buy · $64.35", group: "Shopping · 35" }, view: "shop",
+        rows: shopRows({ name: "Sol Ring", price: "$1.29", fact: "you own 18 · 17 in other decks · 1 kept free", change: true }) },
+      "kf-single": { deck: { name: B, sub: "v2 · committed · 99 / 99", listLine: "7 to buy · $13.20", group: "Shopping · 7" }, view: "shop",
+        rows: [{ name: "Arcane Signet", price: "$0.40", fact: "you own 1 · 1 kept free", change: true }, { name: "Swiftfoot Boots", price: "$1.10" }, { name: "Thought Vessel", price: "$0.95" }, { name: "Wayfarer’s Bauble", price: "$0.35" }],
+        modal: { variant: "singleKept", sub: "Arcane Signet · you own 1" } },
+    };
+
+    // ── Upload summary ──
+    const owing = "Was 2,733. 2 arrived, 0 left. Here’s what your decks still need after the update.";
+    const SU = {
+      "us-one": { lede: owing, head: "No longer to buy · 1", rows: [{ card: "Sol Ring", ...line(P("goes to ", [B])) }] },
+      "us-many": { lede: "Was 2,731. 4 arrived, 0 left. Every arrival a committed deck was waiting for had a copy to spare, so there is nothing to decide.", head: "No longer to buy · 3", rows: [
+        { card: "Sol Ring", ...line(P("goes to ", [B], " and ", [E], ", one each")) },
+        { card: "Arcane Signet", ...line(P("goes to ", [A])) },
+        { card: "Command Tower", ...line(P("goes to ", [T], ", which you picked earlier")) },
+      ] },
+      "us-brews": { lede: owing, head: "No longer to buy · 2", rows: [
+        { card: "Sol Ring", ...line(P("is free for the 3 brews that need it")) },
+        { card: "Command Tower", ...line(P("is free for ", [T], ", a brew")) },
+      ] },
+      "us-none": { lede: "Nothing your decks care about moved. No purchase cleared, nothing went back on the buy list, and no copy is contested. Your collection is the new file.", stampTail: " · 2 cards differ from the old list", rows: [] },
+      "us-change": { lede: owing, head: "No longer to buy · 1", rows: [{ card: "Sol Ring", ...line(P("goes to ", [T], ", as you picked"), { action: "Done", chooser: "picked" }) }] },
+      "us-kept": { lede: owing, head: "No longer to buy · 2", rows: [
+        { card: "Sol Ring", ...line(P("kept free, so ", [B], " still bills it")) },
+        { card: "Arcane Signet", ...line(P("You were keeping 2 free. You own 1 now, so 1 is kept free.")) },
+      ] },
+      "kf-count": { lede: "Was 2,733. 2 arrived, 0 left. Here’s what your decks still need after the update.", head: "No longer to buy · 1", rows: [{ card: "Sol Ring", ...line(P("one goes to ", [B], ", one is kept free"), { action: "Done", chooser: "count" }) }] },
+    };
+
+    const isSheet = !!AC[scene], isDeck = !!DK[scene], isSummary = !!SU[scene];
+    const a = AC[scene] ?? AC["ac-one"], d = DK[scene] ?? DK["ig-other"], u = SU[scene] ?? SU["us-one"];
+    const nf = (x) => x.toLocaleString("en-US");
+    const btnH = phone ? 44 : 38;
+    const s = {
+      root: { width: phone ? 390 : 900, minHeight: isSummary ? (phone ? 700 : 560) : (phone ? 800 : 720), position: "relative", overflow: "hidden", background: "var(--bg)", color: "var(--fg)", fontFamily: "'IBM Plex Sans',sans-serif", display: "flex", flexDirection: "column" },
+      sheet: phone
+        ? { position: "relative", flex: 1, display: "flex", flexDirection: "column", background: "var(--surface)" }
+        : { position: "absolute", top: 0, right: 0, bottom: 0, width: 480, display: "flex", flexDirection: "column", background: "var(--surface)", borderLeft: "1px solid var(--border-strong)", boxShadow: "-24px 0 60px rgba(0,0,0,0.45)" },
+      sheetHeadPad: phone ? "16px 18px 12px" : "20px 22px 14px",
+      sheetBodyPad: phone ? "12px 18px" : "12px 22px",
+      close: { display: "flex", alignItems: "center", justifyContent: "center", width: phone ? 44 : 34, height: phone ? 44 : 34, borderRadius: phone ? 10 : 8, background: "var(--elevated)", color: "var(--fg-muted)", fontSize: 13 },
+      change: { flex: "none", display: "inline-flex", alignItems: "center", minHeight: 44, padding: "0 2px 0 6px", fontSize: 13.5, color: "var(--accent)" },
+      changeSm: { display: "inline-flex", alignItems: "center", minHeight: phone ? 44 : 28, fontSize: 12.5, color: "var(--accent)" },
+      toastChange: { display: "inline-flex", alignItems: "center", minHeight: 32, marginLeft: 6, fontSize: 12.5, fontWeight: 600, color: "var(--accent)", textDecoration: "underline", textUnderlineOffset: 2 },
+      foot: { margin: 0, alignSelf: "stretch", paddingTop: 9, borderTop: a.lines.length ? "1px solid var(--border)" : "none", fontFamily: M, fontSize: 11, lineHeight: 1.5, color: "var(--fg-faint)" },
+      savedBtns: { marginTop: 8, display: "flex", flexDirection: phone ? "column" : "row", gap: 8, width: "100%" },
+      btnOutline: { display: "inline-flex", alignItems: "center", justifyContent: "center", minHeight: btnH, padding: "0 16px", borderRadius: 8, border: "1px solid var(--border-strong)", fontSize: 14, color: "var(--fg)" },
+      btnPrimary: { display: "inline-flex", alignItems: "center", justifyContent: "center", minHeight: btnH, padding: "0 18px", borderRadius: 8, background: "var(--accent)", fontSize: 14, fontWeight: 600, color: "var(--bg)" },
+      deckHead: { padding: phone ? "16px 16px 10px" : "20px 22px 12px", display: "flex", flexDirection: "column", gap: 4 },
+      tabs: { display: "flex", gap: 6, padding: phone ? "0 16px 12px" : "0 22px 12px", borderBottom: "1px solid var(--border)" },
+      deckBody: { padding: phone ? "14px 16px 0" : "16px 22px 0", display: "flex", flexDirection: "column", gap: 10, maxWidth: 640 },
+      toast: phone
+        ? { position: "absolute", left: 16, right: 16, bottom: 74, zIndex: 4, display: "flex", alignItems: "flex-start", gap: 10, minHeight: 52, borderRadius: 10, border: "1px solid var(--border-strong)", background: "var(--elevated)", padding: "0 6px 0 14px", boxShadow: "0 12px 30px rgba(0,0,0,0.45)" }
+        : { position: "absolute", left: 16, bottom: 16, width: 440, zIndex: 4, display: "flex", alignItems: "flex-start", gap: 10, minHeight: 52, borderRadius: 10, border: "1px solid var(--border-strong)", background: "var(--elevated)", padding: "0 6px 0 14px", boxShadow: "0 12px 30px rgba(0,0,0,0.45)" },
+      scrim: { position: "absolute", inset: 0, zIndex: 5, background: "color-mix(in oklab, var(--bg) 74%, transparent)", display: "flex", justifyContent: "center", alignItems: phone ? "flex-end" : "flex-start", paddingTop: phone ? 0 : 70 },
+      dialog: phone
+        ? { position: "relative", width: "100%", borderRadius: "16px 16px 0 0", borderTop: "1px solid var(--border-strong)", background: "var(--surface)", padding: "10px 18px 18px", display: "flex", flexDirection: "column", gap: 16 }
+        : { position: "relative", width: 520, borderRadius: 14, border: "1px solid var(--border-strong)", background: "var(--surface)", padding: "24px 24px 20px", display: "flex", flexDirection: "column", gap: 18, boxShadow: "0 40px 100px rgba(0,0,0,.6)" },
+      dialogFoot: phone ? { display: "flex", flexDirection: "column" } : { display: "flex", justifyContent: "flex-end", borderTop: "1px solid var(--border)", paddingTop: 16 },
+      summary: { width: "100%", maxWidth: 760, margin: "0 auto", padding: phone ? 18 : "28px 34px" },
+      sumH1: { margin: "6px 0 8px", fontFamily: "'Metamorphous',serif", fontWeight: 400, fontSize: phone ? 24 : 30, color: "var(--fg)" },
+      sumRow: phone
+        ? { display: "flex", flexDirection: "column", gap: 0, paddingTop: 8, minHeight: 46 }
+        : { display: "flex", alignItems: "center", gap: 14, minHeight: 44, padding: "4px 0" },
+      sumName: phone ? { fontSize: 13.5, fontWeight: 600, color: "var(--fg)" } : { flex: "none", width: 170, fontSize: 13.5, fontWeight: 600, color: "var(--fg)" },
+      sumSub: { flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 10 },
+    };
+    const segOn = { display: "inline-flex", alignItems: "center", height: phone ? 40 : 30, padding: "0 13px", borderRadius: 7, background: "var(--elevated)", fontSize: 13, fontWeight: 600, color: "var(--fg)" };
+    const segOff = { ...segOn, background: "transparent", fontWeight: 400, color: "var(--fg-muted)" };
+    const rowSt = { display: "flex", gap: 12, alignItems: "flex-start", padding: "10px 0", borderTop: "1px solid var(--border)" };
+    const rows = d.rows.map((r) => ({
+      name: r.name, live: !r.held, held: !!r.held, st: rowSt,
+      hasFact: !!r.fact, fact: r.fact ?? "", hasChange: !!r.change,
+      hasType: !!r.type, type: r.type ?? "",
+      hasTag: !!r.price, price: r.price ?? "",
+    }));
+    const tabNames = ["Your deck", "Analysis", "Consider"];
+    return {
+      theme, phone, desktop: !phone, s,
+      label: `${scene} · ${phone ? 390 : 900}`,
+      isSheet, isDeck, isSummary,
+      totalLine: `${nf(2733 + a.copies)} cards`,
+      ghostTiles: Array.from({ length: 9 }, (_, i) => i),
+      saved: { title: a.copies === 1 ? "1 copy added" : `${a.copies} copies added`, body: `${a.cards} ${a.cards === 1 ? "card is" : "cards are"} in your collection now.`, counts: `${nf(2733)} → ${nf(2733 + a.copies)} cards` },
+      hasLines: a.lines.length > 0, lines: a.lines, linesHead: a.lines.length > 1 ? "Where they went" : "Where it went",
+      hasFoot: !!a.foot, foot: a.foot ?? "",
+      deck: d.deck, rows,
+      seg: { all: d.view === "all" ? segOn : segOff, shop: d.view === "shop" ? segOn : segOff },
+      tabs: tabNames.map((name, i) => ({ name, st: { display: "inline-flex", alignItems: "center", height: phone ? 40 : 32, padding: "0 13px", borderRadius: 8, fontSize: 13.5, fontWeight: i ? 400 : 600, color: i ? "var(--fg-body)" : "var(--fg)", background: i ? "transparent" : "var(--elevated)" } })),
+      tabbar: ["Home", "Collection", "Commanders", "Discover", "Decks"].map((name, i) => ({ name, st: { display: "flex", alignItems: "flex-end", justifyContent: "center", height: 64, paddingBottom: 12, fontFamily: M, fontSize: 10, color: i === 4 ? "var(--fg)" : "var(--fg-faint)", background: i === 4 ? "var(--surface)" : "transparent" } })),
+      hasToast: !!d.toast, toast: d.toast ?? { title: "", body: "", change: false },
+      hasModal: !!d.modal, modal: d.modal ?? { variant: "one", sub: "" },
+      sum: { lede: u.lede, head: u.head ?? "", stamp: `uploaded Oct 11 · collection-2026-10-11.csv${u.stampTail ?? ""}` },
+      hasRows: u.rows.length > 0, sumRows: u.rows,
+    };
+  }
+}
+</script>
+</body>
+</html>

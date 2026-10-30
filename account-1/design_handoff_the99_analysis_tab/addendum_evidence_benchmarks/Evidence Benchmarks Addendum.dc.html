@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] { --bg:#14110E; --surface:#1E1A15; --surface-sunken:#18140F; --surface-raised:#211D18; --elevated:#29241F; --display:'Cinzel',serif; --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037; --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --accent:#CF8745; --accent-hover:#DE9757; --accent-shadow:#6B482A; --fact:#8FA6BE; }
+  [data-theme="kamigawa"] { --bg:#0E0F14; --surface:#16181F; --surface-sunken:#101219; --surface-raised:#191B22; --elevated:#20222A; --display:'Chakra Petch',sans-serif; --border:#181C26; --border-strong:#262A35; --border-dashed:#343843; --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-shadow:#843052; --fact:#8FA6BE; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0907; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="display:flex;flex-direction:column;gap:64px;padding:48px 56px 80px;background:var(--bg);color:var(--fg);font-family:'IBM Plex Sans',sans-serif;min-width:1800px;">
+
+  <header style="display:flex;flex-direction:column;gap:10px;max-width:1160px;">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">The 99 · analysis tab · addendum, 2026-10-10 · evidence benchmarks (priority 4c) · R2, Dependencies</span>
+    <h1 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:32px;line-height:1.15;">Four graded benchmarks and a list of dependencies, inside the reading</h1>
+    <p style="margin:0;font-size:14px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">Built from <code>docs/superpowers/design-briefs/2026-10-10-evidence-benchmarks.md</code>, including “Dependencies: one benchmark, a row per dependency”. This replaces R1’s graveyard-only slot. What eng locks stands. Every string is a placeholder owed to <code>/copy-review</code>. Card lists and grade cut points are illustrative. The dependency rows each deck draws are the brief’s draft-cut results.</p>
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">
+      <sc-for list="{{ nav }}" as="n" hint-placeholder-count="12"><a href="#{{ n.id }}" style="padding:4px 9px;border:1px solid var(--border-strong);border-radius:6px;">{{ n.id }} {{ n.t }}</a></sc-for>
+    </div>
+  </header>
+
+  <section style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1380px;">
+    <sc-for list="{{ calls }}" as="c" hint-placeholder-count="6">
+      <div style="{{ c.box }}"><b style="font-size:13.5px;font-weight:600;">{{ c.h }}</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">{{ c.p }}</p></div>
+    </sc-for>
+  </section>
+
+  <sc-for list="{{ tabs }}" as="f" hint-placeholder-count="10">
+    <section id="{{ f.id }}" style="display:flex;flex-direction:column;gap:18px;">
+      <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">{{ f.id }}</span><h2 style="margin:0;font-size:20px;font-weight:600;">{{ f.t }}</h2></div>
+      <p style="margin:0;max-width:1240px;font-size:13px;line-height:1.65;color:var(--fg-muted);text-wrap:pretty;">{{ f.p }}</p>
+      <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:32px 40px;">
+        <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · {{ f.label }}</span><div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;"><dc-import name="Analysis Tab 1300" state="{{ f.state }}" theme="{{ theme }}" hint-size="1300px,1700px"></dc-import></div></div>
+        <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · {{ f.label }}</span><div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;"><dc-import name="Analysis Tab 390" state="{{ f.state }}" theme="{{ theme }}" hint-size="390px,3400px"></dc-import></div></div>
+      </div>
+    </section>
+  </sc-for>
+
+  <section id="2" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">2</span><h2 style="margin:0;font-size:20px;font-weight:600;">What “see the N cards” opens</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1380px;">
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--accent-shadow);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">1 · Press the opener</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">Every graded tile and every dependency row with cards ends in one opener: see the N cards, or see the N lines for win speed. It’s the findings’ own control: mono, accent, dotted underline, 44px tall on the phone, and aria-haspopup="dialog".</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">2 · The ledger opens over the tab</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">It’s the receipt’s sheet, not a new page. At 1300 it’s a 760 modal, centered over the tab on the shipped 72% scrim. At 390 it’s a sheet from 52px with its header pinned. The tab stays where it was underneath, and Escape, the ×, or a press on the scrim closes it, with focus back on the opener.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">3 · The app’s own card row</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">Each line is the shared card row (row-shell.ts): a 7px plate on --surface-rail, the availability dot, the name, the view’s own tag (the why), the 72px CostTrack, and the points. Only the tag and the points belong to this view. It’s 34px tall at 1300 and 52px with the meta line at 390. Hover shows the shipped HoverPreview (drawn above), and a press opens the card detail. The card stacks over the ledger exactly as it does over the receipt: ← Interaction to step back, and the page behind closes both. Depth stops at two.</p></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:32px 40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · Gishath · after pressing Interaction’s “see the 18 cards”, pointer resting on Chaos Warp</span>
+        <div style="position:relative;width:1300px;height:1000px;overflow:hidden;border:1px solid var(--border);border-radius:12px;background:var(--bg);">
+          <div style="position:absolute;left:0;right:0;bottom:0;"><dc-import name="Analysis Tab 1300" state="bGishath" theme="{{ theme }}" hint-size="1300px,1700px"></dc-import></div>
+          <div style="position:absolute;inset:0;background:color-mix(in oklab, var(--bg) 72%, transparent);"></div>
+          <div style="position:absolute;left:270px;top:40px;"><dc-import name="Benchmark Ledger" deck="gishath" bench="interaction" hover="Chaos Warp" theme="{{ theme }}" hint-size="760px,900px"></dc-import></div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · the same press</span>
+        <div style="position:relative;width:390px;height:844px;overflow:hidden;border:1px solid var(--border);border-radius:12px;background:var(--bg);">
+          <div style="position:absolute;left:0;right:0;bottom:0;"><dc-import name="Analysis Tab 390" state="bGishath" theme="{{ theme }}" hint-size="390px,3400px"></dc-import></div>
+          <div style="position:absolute;inset:0;background:color-mix(in oklab, var(--bg) 72%, transparent);"></div>
+          <div style="position:absolute;left:0;top:0;"><dc-import name="Benchmark Ledger" deck="gishath" bench="interaction" phone="{{ true }}" overlay="{{ true }}" theme="{{ theme }}" hint-size="390px,1400px"></dc-import></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="2t" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">2t</span><h2 style="margin:0;font-size:20px;font-weight:600;">The Dependencies tooltip</h2></div>
+    <p style="margin:0;max-width:1240px;font-size:13px;line-height:1.65;color:var(--fg-muted);text-wrap:pretty;">The stats InfoTip ring (18px, 1px fg-faint, mono i) sits beside the name. It opens on hover or focus at 1300 and on tap at 390, where the hit area is 44px. The bubble is role="tooltip" and tied to the ring with aria-describedby. It replaces both the Risks, not scores chip and the sub-line.</p>
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:32px 40px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · Soldiers · tooltip open</span><div style="width:1300px;padding:20px 30px 60px;background:var(--bg);border:1px solid var(--border);border-radius:12px;"><dc-import name="Benchmarks Block" deck="soldiers" tip-open="{{ true }}" theme="{{ theme }}" hint-size="1240px,420px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · tooltip open</span><div style="width:390px;padding:18px 16px 40px;background:var(--bg);border:1px solid var(--border);border-radius:12px;"><dc-import name="Benchmarks Block" deck="soldiers" phone="{{ true }}" tip-open="{{ true }}" theme="{{ theme }}" hint-size="358px,900px"></dc-import></div></div>
+    </div>
+  </section>
+
+  <sc-for list="{{ ledgers }}" as="l" hint-placeholder-count="7">
+    <section id="{{ l.id }}" style="display:flex;flex-direction:column;gap:18px;">
+      <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">{{ l.id }}</span><h2 style="margin:0;font-size:20px;font-weight:600;">{{ l.t }}</h2></div>
+      <p style="margin:0;max-width:1240px;font-size:13px;line-height:1.65;color:var(--fg-muted);text-wrap:pretty;">{{ l.p }}</p>
+      <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:32px 40px;">
+        <dc-import name="Benchmark Ledger" deck="{{ l.deck }}" bench="{{ l.bench }}" dep="{{ l.dep }}" theme="{{ theme }}" hint-size="760px,800px"></dc-import>
+        <div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;"><dc-import name="Benchmark Ledger" deck="{{ l.deck }}" bench="{{ l.bench }}" dep="{{ l.dep }}" phone="{{ true }}" theme="{{ theme }}" hint-size="390px,1200px"></dc-import></div>
+      </div>
+    </section>
+  </sc-for>
+
+  <section id="3a" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">3a</span><h2 style="margin:0;font-size:20px;font-weight:600;">Thin states: a tiny list, and every grade at its lowest step</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;max-width:1380px;">
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">A tiny list: grades wait</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">On a format-wide scale, a 41-card list would grade Low everywhere and list no dependencies, and neither would be true. Under a floor (60 drawn here; the plan fixes it), the block keeps its place and names, gets a dashed edge, and draws one line saying when grades start. The bracket above still reads, because limits apply at any size.</p></div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;"><b style="font-size:13.5px;font-weight:600;">All lowest: drawn as is</b><p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">No summary line, no warning and no red: four single segments in the ramp’s palest blue, each with its figure line. Dependencies draws its stated none, which says nothing is concentrated enough to name, not that the deck is safe.</p></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:22px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · the block alone · 41 cards</span><div style="width:1300px;padding:20px 30px;background:var(--bg);border:1px solid var(--border);border-radius:12px;"><dc-import name="Benchmarks Block" deck="tiny" theme="{{ theme }}" hint-size="1240px,120px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · the block alone · every grade at step 1</span><div style="width:1300px;padding:20px 30px;background:var(--bg);border:1px solid var(--border);border-radius:12px;"><dc-import name="Benchmarks Block" deck="low" theme="{{ theme }}" hint-size="1240px,380px"></dc-import></div></div>
+      <div style="display:flex;flex-wrap:wrap;gap:32px 40px;align-items:flex-start;">
+        <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · 41 cards</span><div style="width:390px;padding:18px 16px;background:var(--bg);border:1px solid var(--border);border-radius:12px;"><dc-import name="Benchmarks Block" deck="tiny" phone="{{ true }}" theme="{{ theme }}" hint-size="358px,200px"></dc-import></div></div>
+        <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · every grade at step 1</span><div style="width:390px;padding:18px 16px;background:var(--bg);border:1px solid var(--border);border-radius:12px;"><dc-import name="Benchmarks Block" deck="low" phone="{{ true }}" theme="{{ theme }}" hint-size="358px,900px"></dc-import></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="4a" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">4a</span><h2 style="margin:0;font-size:20px;font-weight:600;">About entry: How it plays</h2><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-faint);">joins 03 · Building the 99 · after “deck-analysis” · ships with the Overview tap-through, one ABOUT_VERSION bump</span></div>
+    <p style="margin:0;max-width:1240px;font-size:13px;line-height:1.65;color:var(--fg-muted);text-wrap:pretty;">Drawn on the per-entry artboard (§G template, R6 rules), not shipped with the block. The entry goes in at the evidence line’s close, with the claim tap-through, under one bump. Until then the block has no head-row link to About. The specimen is the block’s phone layout (Scrappy Survivors, so Dependencies shows its rows). It needs E1: a layout="rows" prop on the block, because the tiles don’t fit the 760 column.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:32px 40px;align-items:flex-start;">
+      <sc-for list="{{ about }}" as="v" hint-placeholder-count="2">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ v.label }}</span>
+          <div data-screen-label="{{ v.screen }}" style="{{ v.frame }}">
+            <div style="border-top:2px solid var(--accent);padding-top:13px;">
+              <div style="display:flex;flex-wrap:wrap;align-items:baseline;column-gap:10px;row-gap:2px;">
+                <h3 style="margin:0;font-family:var(--display);font-size:15.5px;font-weight:600;color:var(--fg);"><span style="display:inline-flex;align-items:center;margin-right:8px;border-radius:4px;padding:2px 7px;vertical-align:middle;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;letter-spacing:0.08em;background:var(--accent);color:var(--bg);">NEW</span>{{ aboutTitle }}</h3>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">/decks</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">opens the Analysis tab</span>
+              </div>
+              <p style="margin:6px 0 0;font-size:13.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">{{ aboutCaption }}</p>
+              <figure style="margin:10px 0 0;border-radius:8px;border:1px solid var(--border);background:var(--surface-sunken);padding:14px 16px;overflow:hidden;">
+                <dc-import name="Benchmarks Block" deck="scrappy" phone="{{ true }}" theme="{{ theme }}" hint-size="100%,1100px"></dc-import>
+              </figure>
+              <ol style="margin:8px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:5px;">
+                <sc-for list="{{ aboutKeys }}" as="k" hint-placeholder-count="4">
+                  <li style="display:flex;align-items:flex-start;gap:8px;"><span style="width:14px;height:14px;flex:none;margin-top:1px;border-radius:50%;background:var(--bg);border:1px solid var(--accent);color:var(--accent);font-family:'IBM Plex Mono',monospace;font-size:8.5px;display:flex;align-items:center;justify-content:center;">{{ k.n }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);text-wrap:pretty;">{{ k.t }}</span></li>
+                </sc-for>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const theme = this.props.theme ?? "amonkhet";
+    const box = (accent) => ({ display: "flex", flexDirection: "column", gap: 6, padding: "14px 16px", border: `1px solid ${accent ? "var(--accent-shadow)" : "var(--border)"}`, borderRadius: 10 });
+    const calls = [
+      { h: "1 · Placement: last in the tab, under the findings", p: "The tab reads banner, verdict with the overview, climb, findings, then the block. Recommended mix sits above the tabs, as shipped. Verdict, climb and findings tell the bracket story; putting the block after them keeps a benchmark from reading as a bracket input, and nothing above it moves. It lives inside the reading, so the stale banner covers it and Re-analyze refreshes it.", a: true },
+      { h: "2 · A grade: a step word over five segments", p: "The headline is a word (Low, Modest, Typical, High, Top), never a count, so no tile repeats the Jobs card. Under it is a five-segment meter in one hue, the app’s fact blue, each segment more saturated than the last. No green or warning ink, so a low step reads as a fact, not an alarm. One figure line says what decided it." },
+      { h: "2 · A dependency: a row with a word, never a meter", p: "Dependencies sits under the grades as its own full-width box on a sunken ground. What it means lives in an i tooltip beside the name, not in a chip or a sub-line. Each row leads with a Heavy or Light tag (a fixed-width word on a fact-blue edge, not a scale), then the dependency’s name, the figure that put it there, Broken by with the brief’s fixed hate list, and its ledger link. Heavy rows come first. There’s no total and no row count.", a: true },
+      { h: "3 · The ledger: the receipt’s chrome, a line body", p: "It opens from “see the N cards”, the findings’ own opener and each tile’s or row’s only control. The chrome is ModalChrome at 760, unchanged. A receipt tile holds a name only, but a ledger line has to carry the card, why it counts and what it adds, so the body uses the app’s shared card row, the same one the decklist and diff views draw, with HoverPreview. Every row is a CardDetailTrigger, and the card stacks over the sheet as it does over the receipt. A ledger simply lists its cards." },
+      { h: "4 · No combo line, and no dependencies", p: "No combo: the win-speed tile drops the meter (five empty segments would read as zero) and becomes a dashed panel, the same treatment as no dependencies, at the full height of its neighbours at both widths. No combo line is stated in plain sans with one reason. No dependencies: a dashed panel says nothing is concentrated enough to name, says outright that this isn’t protection, and lists the six things checked, so an empty list can’t read as a clean bill of health.", a: true },
+      { h: "6 · Links to Stats: from the ledger only", p: "Velocity links to Curve, and card flow and interaction link to Jobs, from the ledger’s summary. Win speed and Dependencies have no Stats card. The tile keeps one control. Someone reading the cards behind a grade is the one who wants the raw counts. Velocity’s ledger also shows the commander’s expected turn (brief lock 7)." },
+    ].map((c) => ({ ...c, box: box(c.a) }));
+    const tabs = [
+      { id: "1a", state: "bGishath", label: "Gishath", t: "Gishath: populated, with a combo line", p: "Interaction grades Typical on weight, and the figure line carries the miss in full ink: 0 cheap and instant. Win speed is graded because 4 counted lines exist. Dependencies has one Light row, Creatures, with creature board wipes as the hate." },
+      { id: "1b", state: "bElves", label: "Elves", t: "Elves: no combo, and three heavy dependencies", p: "Win speed takes the stated No combo line: no meter, no opener, a dashed edge. Dependencies lists Creatures, Activated abilities (the commander among them) and Combat, all Heavy. Combat has no ledger link, because there are no cards to show: no card here wins outside combat. That follows the findings’ zero rule." },
+      { id: "1c", state: "bSultai", label: "Sultai Arisen", t: "Sultai Arisen: graveyard heavy, commander-driven", p: "One Heavy row: 30 cards use the graveyard, your commander among them. It’s broken by Rest in Peace, Bojuka Bog and Dauthi Voidwalker." },
+      { id: "1d", state: "bCounter", label: "Counter Intelligence", t: "Counter Intelligence: artifacts heavy", p: "One Heavy row, with all three figures in its line: 37 artifacts, 15 payoffs, 21 with abilities. Broken by names both kinds of hate, since wipes and Null Rod break different things. The win-speed meter is graded on 17 lines." },
+      { id: "1e", state: "bScrappy", label: "Scrappy Survivors", t: "Scrappy Survivors: enchantments heavy, and the four-row maximum", p: "Three Heavy rows (Graveyard, Enchantments, Combat), then one Light (Creatures). Four rows is the staging maximum. The box grows by row with no change in form, and the grades row above it doesn’t move." },
+      { id: "1f", state: "bThorin", label: "Thorin", t: "Thorin: creatures heavy", p: "Creatures Heavy, then Artifacts and Combat Light. A Light combat row still has an out, so it gets its two cards and a ledger (2g)." },
+      { id: "1g", state: "bSoldiers", label: "Soldiers", t: "Soldiers: combat reliance heavy", p: "Combat Heavy leads, then Creatures Light. Broken by: fogs, Propaganda, Ghostly Prison." },
+      { id: "1h", state: "bWizards", label: "Wizards", t: "Wizards: no dependency row", p: "The stated none, in a dashed panel: one line saying nothing reaches the list, one saying outright that this isn’t protection, then the six things checked. It sits beside Top flow and Top interaction, so the block reads as strong and unconcentrated, not as safe." },
+      { id: "1i", state: "bStale", label: "stale", t: "The stale reading, under the banner", p: "One staleness story: the banner speaks for everything below it, and the block draws whole, like the climb and the findings. Only the caption changes, to Graded with the bracket on 18 Sept, before your changes, matching the bracket box. The banner’s credit note sits under its line, left-aligned, as in the method notice." },
+      { id: "1j", state: "bEmpty", label: "never analyzed", t: "Before a first Analyze: unchanged", p: "The shipped empty state, pixel for pixel. There’s no block and no teaser. Benchmarks arrive with the reading." },
+    ];
+    const ledgers = [
+      { id: "2a", deck: "gishath", bench: "velocity", dep: "", t: "Ledger · Mana velocity (Gishath)", p: "The header carries a mini meter, the name, and the step word. The summary gives the reading, the scale with all five words, the commander’s expected turn and the Curve link. Read, not counted lists cards a reader would expect and says why they’re missing: cost reducers, and ramp too late to count." },
+      { id: "2b", deck: "elves", bench: "flow", dep: "", t: "Ledger · Card flow (Elves)", p: "Five lines, with points for repeating (+2) against one-time (+1) draws. Draws that go to opponents aren’t counted." },
+      { id: "2c", deck: "gishath", bench: "interaction", dep: "", t: "Ledger · Interaction (Gishath)", p: "Sorted by weight. The why column gives speed and cost, the two inputs, so a run of instant, 3 mana at +2 shows why nothing reaches +3. Counterspells would list here as counterspell, instant, n mana, never as removal." },
+      { id: "2d", deck: "gishath", bench: "win", dep: "", t: "Ledger · Win speed (Gishath)", p: "Combo plates stay the receipt’s ReceiptTile. Every other ledger uses the shared card row. One section per line: the piece plates (ReceiptTile at a fixed width), the pieces as card triggers, Spellbook’s produces chips, the line’s own turn-8 odds, and Found by. Lines are named by what they produce, never as a win, because a forced loop can draw the game." },
+      { id: "2e", deck: "sultai", bench: "deps", dep: "graveyard", t: "Ledger · Dependencies · Graveyard (Sultai Arisen)", p: "A dependency ledger has no scale. The Heavy or Light tag sits left of the title, as in the row, and the summary adds Broken by. Every card counts once, so there’s no points column. The note names the left-out lands, which is the brief’s open scope call." },
+      { id: "2f", deck: "counter", bench: "deps", dep: "artifacts", t: "Ledger · Dependencies · Artifacts (Counter Intelligence)", p: "Three groups, in the order the hate reads them: payoffs, artifacts with abilities (what Null Rod stops), then the rest. Each card is listed once, under its first group." },
+      { id: "2g", deck: "thorin", bench: "deps", dep: "combat", t: "Ledger · Dependencies · Combat (Thorin, Light)", p: "The combat ledger lists the routes out of combat, because those are the cards that make the row Light. A Heavy combat row has no routes, so it has no ledger link (1b, 1e, 1g)." },
+    ];
+    const nav = [...tabs.map((f) => ({ id: f.id, t: f.label })), { id: "2", t: "opening a ledger" }, { id: "2t", t: "tooltip" }, { id: "2a", t: "ledgers" }, { id: "3a", t: "thin" }, { id: "4a", t: "About" }];
+    const keys = [
+      "Mana velocity, card flow and interaction each sit on one of five steps, on a scale shared by every Commander deck. There’s no total.",
+      "Win speed is graded only when the deck can assemble a combo. Otherwise it says there’s no combo line, which isn’t a low grade.",
+      "Dependencies lists what the deck leans on, Heavy or Light, and the cards that break it. It’s a risk to know about, never a score, and an empty list doesn’t mean the deck is safe.",
+      "Every grade and every dependency opens the cards behind it. The block is part of the reading, so it goes out of date with it.",
+    ].map((t, i) => ({ n: i + 1, t }));
+    const view = (phone) => ({
+      label: phone ? "the entry at 390" : "the entry, wide column · 760",
+      screen: `About · How it plays · ${phone ? 390 : 760}`,
+      frame: { width: phone ? 390 : 760, background: "var(--bg)", color: "var(--fg)", border: "1px solid var(--border-strong)", borderRadius: 12, padding: phone ? "18px 16px 22px" : "22px 24px 26px" },
+    });
+    return {
+      theme, calls, tabs, ledgers, nav, about: [view(false), view(true)], aboutKeys: keys,
+      aboutTitle: "How it plays",
+      aboutCaption: "Under the bracket reading, the Analysis tab grades how a deck plays: how fast its mana comes, how many cards it draws, how quickly and cheaply it answers threats, and how soon a combo could come together. Then it lists what the deck depends on that an opponent could break. Everything is worked out from your list and the cards’ own rules, with nothing generated, so the same list always reads the same.",
+    };
+  }
+}
+</script>
+</body>
+</html>

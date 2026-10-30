@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Part · Commanders, Decks, New deck and upload at 390</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="position:relative;width:390px;height:844px;background:#121217;overflow:hidden;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;border:1px solid #2E3340;border-radius:28px;box-sizing:border-box">
+  <div style="position:absolute;left:0;top:0;z-index:30"><dc-import name="MobileHeader" hint-size="390px,79px"></dc-import></div>
+  <div style="position:absolute;left:0;right:0;top:79px;bottom:74px;overflow:hidden">
+    <div style="{{ scrollStyle }}">
+
+      <sc-if value="{{ commanders }}" hint-placeholder-val="{{ true }}">
+        <div style="padding:12px 16px 0"><h1 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:22px">Commanders</h1><div style="margin-top:4px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#7C8A8C">yours, not yet built</div></div>
+        <div style="padding:12px 14px 0">
+          <div style="border-radius:10px;background:#1E1F26;border:1px solid #1A1F2B;border-left:3px solid #5C86C9;padding:12px 14px">
+            <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#5C86C9">Step 2 of 3</span><span style="display:flex;align-items:center;gap:4px"><span style="width:6px;height:6px;background:#6FA368;transform:rotate(45deg)"></span><span style="width:8px;height:8px;background:#5C86C9;transform:rotate(45deg)"></span><span style="width:6px;height:6px;background:#2E3340;transform:rotate(45deg)"></span></span></div>
+            <h2 style="margin:6px 0 0;font-family:'Metamorphous',serif;font-weight:400;font-size:15px">Review your commanders</h2>
+            <p style="margin:4px 0 0;font-size:12.5px;color:#B3C0C2;line-height:1.5">1,418 cards read. 64 can lead. I ranked them. You’re welcome. Pick a commander to build your first 99.</p>
+          </div>
+        </div>
+        <div style="margin-top:12px;background:#16171D;border-top:1px solid #1A1F2B;border-bottom:1px solid #1A1F2B;padding:12px 16px 10px;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;gap:8px"><span style="flex:1;height:44px;border-radius:8px;border:1px solid #2E3340;display:flex;align-items:center;padding:0 12px;font-size:14px;color:#7C8A8C;box-sizing:border-box">Search commanders</span><span style="height:44px;display:flex;align-items:center;padding:0 12px;border-radius:8px;border:1px solid #2E3340;font-size:13px;color:#B3C0C2;box-sizing:border-box">Order</span><span style="height:44px;display:flex;align-items:center;padding:0 12px;border-radius:8px;border:1px solid #2E3340;font-size:13px;color:#B3C0C2;box-sizing:border-box">Filters</span></div>
+          <span style="font-size:13px;color:#B3C0C2">64 commanders you own and haven’t built</span>
+        </div>
+        <div style="padding:12px 14px;display:flex;flex-direction:column;gap:10px">
+          <sc-for list="{{ cmdRows }}" as="r" hint-placeholder-count="2">
+            <div style="position:relative;height:208px;overflow:hidden;border-bottom:1px solid #1A1F2B">
+              <img src="{{ r.art }}" alt="" style="position:absolute;inset:0;width:100%;height:208px;object-fit:cover">
+              <div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent 35%,rgba(18,18,23,.92))"></div>
+              <div style="position:absolute;left:0;right:0;bottom:0;padding:12px 13px;display:flex;align-items:flex-end;gap:10px">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:600;color:{{ r.rankInk }}">{{ r.rank }}</span>
+                <span style="flex:1;font-family:'Metamorphous',serif;font-size:14.5px">{{ r.name }}</span>
+                <span style="padding:5px 9px;border-radius:9px;background:#121217;border:1px solid #2E3340;text-align:center"><span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:600">{{ r.fit }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;color:#7C8A8C">/100 FIT</span></span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ decks }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:12px 16px 0"><h1 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:22px">Decks</h1></div>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:12px 16px 0"><span style="height:44px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:#C6D2D3;color:#121217;font-size:14px;font-weight:600">New deck</span><span style="height:44px;display:flex;align-items:center;justify-content:center;border-radius:10px;border:1px solid #2E3340;font-size:14px;color:#B3C0C2">Import a deck</span></div>
+        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:12px 16px 0">
+          <div style="min-height:52px;border-radius:10px;border:1px solid #2E3340;background:#1E1F26;padding:9px 12px;box-sizing:border-box"><div style="font-size:14px;font-weight:500">Shop all decks</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A4A6">23 · $214.60</div></div>
+          <div style="min-height:52px;border-radius:10px;border:1px solid #2E3340;background:#1E1F26;padding:9px 12px;box-sizing:border-box"><div style="font-size:14px;font-weight:500">Precons</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A4A6">197 decklists</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 16px 10px">
+          <span style="position:relative;display:inline-flex">
+            <span aria-label="Show decks as" style="display:flex;gap:2px;padding:2px;border-radius:9px;border:1px solid #2E3340"><span style="height:40px;display:flex;align-items:center;padding:0 14px;border-radius:7px;background:#2D2E35;font-size:13.5px;font-weight:600">Tiles</span><span style="height:40px;display:flex;align-items:center;padding:0 14px;border-radius:7px;font-size:13.5px;color:#95A4A6;{{ h13 }}">Stats</span></span>
+            <sc-if value="{{ m13 }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:calc(100% + 10px);left:0;z-index:20"><dc-import name="Moment" tool="Stats" line="puts every deck side by side: when each last played, its bracket and colors, and the cards they share." phone="true" w="358" nibx="98" hint-size="358px,72px"></dc-import></span></sc-if>
+          </span>
+          <span style="margin-left:auto;font-size:15px;font-weight:600">All decks <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8A8C;font-weight:400">3</span> <span style="color:#7C8A8C">⌄</span></span>
+        </div>
+        <div style="padding:14px 16px;display:flex;flex-direction:column;gap:12px">
+          <sc-for list="{{ tiles }}" as="t" hint-placeholder-count="2">
+            <div style="border-radius:14px;background:#1A1B22;border:1px solid #1A1F2B;overflow:hidden">
+              <div style="position:relative;height:248px"><img src="{{ t.art }}" alt="" style="width:100%;height:248px;object-fit:cover;display:block"><div style="position:absolute;inset:0;background:linear-gradient(180deg,transparent 50%,rgba(18,18,23,.9))"></div><div style="position:absolute;left:13px;bottom:10px"><div style="font-family:'Metamorphous',serif;font-size:17px">{{ t.name }}</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#B3C0C2">{{ t.cmd }}</div></div></div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ newDeck }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:20px 18px 14px;border-bottom:1px solid #1A1F2B"><h1 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:20px">Pick a commander</h1><div style="margin-top:4px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8A8C">From your collection.</div></div>
+        <div style="padding:16px 18px;display:flex;flex-direction:column;gap:12px">
+          <div style="border-radius:10px;border:1px solid #2E3340;background:#16171D;padding:13px 14px;display:flex;flex-direction:column;gap:10px">
+            <div><div style="font-family:'Metamorphous',serif;font-size:14.5px">Not sure what to build?</div><div style="font-size:12.5px;color:#B3C0C2;margin-top:4px">Say what you want, and we’ll rank commanders by how well they fit it, owned or not.</div></div>
+            <span style="height:44px;display:flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid #5C86C9;color:#5C86C9;font-size:14px;font-weight:600">Help me choose →</span>
+          </div>
+          <div style="border-radius:10px;border:1px solid #2E3340;background:#16171D;padding:13px 14px;display:flex;flex-direction:column;gap:10px">
+            <div><div style="font-family:'Metamorphous',serif;font-size:14.5px">Start from a precon</div><div style="font-size:12.5px;color:#B3C0C2;margin-top:4px">Any Commander precon, with how many of its cards you already own.</div></div>
+            <div style="position:relative">
+              <span style="height:44px;display:flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid #5C86C9;color:#5C86C9;font-size:14px;font-weight:600;box-sizing:border-box;{{ h14 }}">Browse precons →</span>
+              <sc-if value="{{ m14 }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:calc(100% + 10px);left:-17px;z-index:20"><dc-import name="Moment" tool="Own a precon?" line="Start from it. Every precon shows how many of its cards you already own." phone="true" w="356" nibx="174" hint-size="356px,72px"></dc-import></span></sc-if>
+            </div>
+          </div>
+          <span style="height:40px;border-radius:9px;border:1px solid #2E3340;display:flex;align-items:center;padding:0 12px;font-size:14px;color:#7C8A8C">Search commanders…</span>
+          <sc-for list="{{ pick }}" as="r" hint-placeholder-count="2">
+            <div style="border-radius:10px;padding:10px 12px;display:flex;gap:12px;align-items:center;background:#181920;border:1px solid #1A1F2B">
+              <img src="{{ r.art }}" alt="" style="width:40px;height:30px;object-fit:cover;border-radius:5px">
+              <div style="flex:1"><div style="font-family:'Metamorphous',serif;font-size:14px">{{ r.name }}</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#95A4A6">{{ r.meta }}</div></div>
+              <span style="width:22px;height:22px;border-radius:999px;border:2px solid #424755;box-sizing:border-box"></span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ upload }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:20px 18px">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:#7C8A8C">STEP 2 OF 4 · collection-oct-16.csv</span>
+          <h1 style="margin:12px 0 6px;font-family:'Metamorphous',serif;font-weight:400;font-size:18px">What’s this file for?</h1>
+          <p style="margin:0 0 20px;font-size:14px;color:#95A4A6">Nothing changes until you confirm on the next screen.</p>
+          <div role="radiogroup" style="display:flex;flex-direction:column;gap:12px">
+            <div style="border-radius:12px;background:#1E1F26;border:1px solid #2E3340;padding:14px;display:flex;flex-direction:column;gap:8px"><span style="font-size:15px;font-weight:600">Replace my collection</span><span style="font-size:13.5px;line-height:1.55;color:#B3C0C2">Your collection becomes exactly this file. Anything not in it leaves.</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#95A4A6">1,418 → 1,262 cards</span></div>
+            <div style="border-radius:12px;background:#1E1F26;border:1px solid #2E3340;padding:14px;display:flex;flex-direction:column;gap:8px"><span style="font-size:15px;font-weight:600">Add these cards</span><span style="font-size:13.5px;line-height:1.55;color:#B3C0C2">The file’s quantities are added to yours. Nothing is removed, and your art picks stay.</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#95A4A6">1,418 → 2,680 cards</span></div>
+            <div style="position:relative;border-radius:12px;background:#1E1F26;border:1px solid #2E3340;padding:14px;display:flex;flex-direction:column;gap:8px;{{ h15 }}">
+              <sc-if value="{{ m15 }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:calc(100% + 10px);left:-1px;z-index:20"><dc-import name="Moment" tool="Sync" line="is new: it merges this file with what you changed here, card by card, and asks only where both moved." nib="down" phone="true" w="354" nibx="80" hint-size="354px,92px"></dc-import></span></sc-if>
+              <span style="font-size:15px;font-weight:600">Sync my collection</span><span style="font-size:13.5px;line-height:1.55;color:#B3C0C2">Takes what changed in the file and keeps what you changed in the app. Where you both changed a card, you choose.</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#95A4A6">1,418 → 1,431 cards</span><span style="font-size:13px;color:#95A4A6">Keeps the 14 cards you changed in the app since your Oct 2 upload.</span>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+  <sc-if value="{{ newDeck }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;left:0;right:0;bottom:74px;z-index:25;padding:10px 16px 12px;background:#121217;border-top:1px solid #1A1F2B;display:flex;flex-direction:column;gap:8px"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#7C8A8C">Pick a commander to start</span><span style="height:48px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:#C6D2D3;color:#121217;font-size:15px;font-weight:600;opacity:.4">Create deck →</span></div>
+  </sc-if>
+  <sc-if value="{{ upload }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;left:0;right:0;bottom:74px;z-index:25;padding:14px 18px;background:#181920;border-top:1px solid #2E3340;display:flex;flex-direction:column;gap:8px"><span style="height:44px;display:flex;align-items:center;justify-content:center;border-radius:8px;background:#C6D2D3;color:#121217;font-size:14px;font-weight:600;opacity:.4">Review the replace →</span><span style="height:44px;display:flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid #2E3340;font-size:14px;color:#B3C0C2">Cancel</span></div>
+  </sc-if>
+  <sc-if value="{{ m12 }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;left:16px;bottom:84px;z-index:40"><dc-import name="Moment" tool="Not sure where to start?" line="Help me choose ranks commanders by what you say you want, owned or not. It’s in Discover." nib="down" phone="true" w="358" nibx="249" hint-size="358px,72px"></dc-import></span></sc-if>
+  <div style="position:absolute;left:0;bottom:0;z-index:30"><dc-import name="TabBar" active="{{ tabActive }}" halo="{{ tabHalo }}" hint-size="390px,74px"></dc-import></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"page":{"editor":"enum","options":["commanders","decks","new","upload"],"default":"commanders"},"moment":{"editor":"enum","options":["none","m12","m13","m14","m15"],"default":"m12"},"scroll":{"editor":"int","default":0},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const page = this.props.page ?? 'commanders', m = this.props.moment ?? 'm12';
+    const H = 'box-shadow:0 0 0 2px rgba(92,134,201,.6),0 0 0 6px rgba(92,134,201,.16);';
+    const tabActive = { commanders: 'commanders', decks: 'decks', new: 'decks', upload: 'collection' }[page];
+    return {
+      commanders: page === 'commanders', decks: page === 'decks', newDeck: page === 'new', upload: page === 'upload',
+      tabActive, tabHalo: m === 'm12' ? 'discover' : 'none',
+      cmdRows: [
+        { rank: '1', rankInk: '#5C86C9', name: 'Zimone, Infinite Analyst', fit: '84', art: '/_blob/1e7a14bfc4e03333d6be2fb3aadde14b' },
+        { rank: '2', rankInk: '#7C8A8C', name: 'Killian, Decisive Mentor', fit: '79', art: '/_blob/3bbee1895c27503b7e33588524168e7a' }
+      ],
+      tiles: [
+        { name: 'Sai’s Workshop', cmd: 'Sai, Master Thopterist · Blue', art: '/_blob/d668d776a53822c47ab4a96b849bee70' },
+        { name: 'Dina’s Garden', cmd: 'Dina, Essence Brewer · Golgari', art: '/_blob/de928b813fe266dca8826e7305ccdd1d' }
+      ],
+      pick: [
+        { name: 'Zimone, Infinite Analyst', meta: 'Simic · 412 cards', art: '/_blob/1e7a14bfc4e03333d6be2fb3aadde14b' },
+        { name: 'Killian, Decisive Mentor', meta: 'Orzhov · 388 cards', art: '/_blob/3bbee1895c27503b7e33588524168e7a' }
+      ],
+      m12: m === 'm12', m13: m === 'm13', m14: m === 'm14', m15: m === 'm15',
+      h13: m === 'm13' ? H : '', h14: m === 'm14' ? H : '', h15: m === 'm15' ? H : '',
+      scrollStyle: `transform:translateY(-${Number(this.props.scroll ?? 0)}px)`
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Part · the tour card</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@500;600;700&amp;family=Metamorphous&amp;family=Cormorant+Garamond:wght@500;600;700&amp;family=Chakra+Petch:wght@600&amp;family=Trirong:wght@600&amp;family=Syncopate:wght@700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<section role="dialog" aria-modal="true" aria-labelledby="tour-title" style="{{ box }}">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+    <span style="{{ kicker }}">{{ kick }}</span>
+    <button type="button" aria-label="Skip the tour" style="{{ x }}">✕</button>
+  </div>
+  <h2 id="tour-title" style="{{ title }}">{{ head }}</h2>
+  <p style="{{ body }}">{{ line }}</p>
+
+  <sc-if value="{{ s1 }}" hint-placeholder-val="{{ false }}">
+    <sc-if value="{{ precons }}" hint-placeholder-val="{{ true }}">
+      <p style="{{ body2 }}">No file? <b style="{{ strong }}">Precons I own</b> adds every card in the boxes you have, at their own printings.</p>
+    </sc-if>
+    <p style="{{ foot }}">Six stops · about a minute · ✕ skips the tour</p>
+  </sc-if>
+
+  <sc-if value="{{ hasPic }}" hint-placeholder-val="{{ false }}">
+    <div style="{{ picBox }}"><img src="{{ pic }}" alt="{{ picAlt }}" style="{{ picImg }}"></div>
+    <span style="{{ picCap }}">{{ cap }}</span>
+  </sc-if>
+
+  <sc-if value="{{ s5 }}" hint-placeholder-val="{{ false }}">
+    <div role="radiogroup" aria-label="Color theme" style="{{ grid }}">
+      <sc-for list="{{ themes }}" as="m" hint-placeholder-count="6">
+        <button type="button" role="radio" aria-checked="{{ m.on }}" style="{{ m.cell }}">
+          <span aria-hidden="true" style="{{ m.mini }}">
+            <span style="{{ m.panel }}"><span style="{{ m.nn }}">99</span><span style="{{ m.bar }}"></span><span style="{{ m.chrome }}"></span></span>
+          </span>
+          <span style="{{ m.lblBox }}"><span style="{{ m.name }}">{{ m.label }}</span><span style="{{ m.plane }}">{{ m.short }}</span></span>
+          <sc-if value="{{ m.sel }}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="{{ m.tick }}">✓</span></sc-if>
+        </button>
+      </sc-for>
+    </div>
+    <p role="status" style="{{ foot }}">{{ applied }}</p>
+  </sc-if>
+
+  <sc-if value="{{ s6 }}" hint-placeholder-val="{{ false }}">
+    <div style="{{ noteBox }}">
+      <span style="{{ noteK }}">A note from the creator</span>
+      <p style="{{ noteP }}">There are a lot of Magic: The Gathering apps out there and a lot of them do really great things…</p>
+      <button type="button" style="{{ noteLink }}">Read the note ›</button>
+    </div>
+  </sc-if>
+
+  <div style="{{ footRow }}">
+    <span aria-label="{{ progAria }}" style="display:flex;align-items:center;gap:6px">
+      <sc-for list="{{ dots }}" as="d" hint-placeholder-count="6"><span aria-hidden="true" style="{{ d.s }}"></span></sc-for>
+    </span>
+    <span style="display:flex;gap:8px;{{ btnWrap }}">
+      <sc-if value="{{ back }}" hint-placeholder-val="{{ true }}"><button type="button" style="{{ ghost }}">Back</button></sc-if>
+      <button type="button" style="{{ fill }}">{{ next }}</button>
+    </span>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"step":{"editor":"int","default":1},"theme":{"editor":"enum","options":["amonkhet","kaldheim","eldraine"],"default":"amonkhet"},"phone":{"editor":"boolean","default":false},"precons":{"editor":"boolean","default":true},"focusSkip":{"editor":"boolean","default":false},"$preview":{"width":340,"height":300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const P = {
+      amonkhet: { bg:'#14110E', raised:'#211D18', elevated:'#29241F', inset:'#1B1712', border:'#2B241B', strong:'#3A3229', fg:'#EDE6D8', body:'#C0B8A6', muted:'#A59C89', faint:'#8B8270', accent:'#CF8745', rgb:'207,135,69', dashed:'#494037', disp:"'Cinzel',serif" },
+      kaldheim: { bg:'#121217', raised:'#22232B', elevated:'#2D2E35', inset:'#1A1B22', border:'#1A1F2B', strong:'#2E3340', fg:'#C6D2D3', body:'#B3C0C2', muted:'#95A4A6', faint:'#7C8A8C', accent:'#5C86C9', rgb:'92,134,201', dashed:'#424755', disp:"'Metamorphous',serif" },
+      eldraine: { bg:'#120E17', raised:'#1F1C25', elevated:'#26232C', inset:'#17141D', border:'#241D30', strong:'#342C41', fg:'#E4DEEE', body:'#B9B2C5', muted:'#9C95A8', faint:'#898395', accent:'#AE88E6', rgb:'174,136,230', dashed:'#443C52', disp:"'Cormorant Garamond',serif" },
+    };
+    const M = [
+      ['amonkhet', 'Low Sun', 'Amonkhet', '#14110E', '#1E1A15', '#3A3229', '#2B241B', '#CF8745', '#EDE6D8', "'Cinzel',serif"],
+      ['kamigawa', 'Neon Rain', 'Kamigawa', '#0E0F14', '#16181F', '#262A35', '#181C26', '#FF4D9A', '#E6E8F0', "'Chakra Petch',sans-serif"],
+      ['ixalan', 'Canopy', 'Ixalan', '#0E1310', '#171E19', '#2C3830', '#1D2620', '#A3C445', '#E0E7DE', "'Trirong',serif"],
+      ['phyrexia', 'Oil Haze', 'New Phyrexia', '#0D0B0E', '#151317', '#262329', '#19161C', '#52827A', '#E4E2E6', "'Syncopate',sans-serif"],
+      ['eldraine', 'Witching Hour', 'Eldraine', '#120E17', '#1B1821', '#342C41', '#241D30', '#AE88E6', '#E4DEEE', "'Cormorant Garamond',serif"],
+      ['kaldheim', 'First Frost', 'Kaldheim', '#121217', '#1E1F26', '#2E3340', '#1A1F2B', '#5C86C9', '#C6D2D3', "'Metamorphous',serif"],
+    ];
+    const S = {
+      1: ['Collection', 'Start with what you own', 'Everything here is built from your collection. Drop in a file from ManaBox, Moxfield, Archidekt or Deckbox.'],
+      2: ['Commanders', 'See what you could build', 'Every commander your cards can lead, ranked by how much of the 99 you already own. It opens once your cards are in.'],
+      3: ['Decks', 'Build it, tune it, play it', 'Pick a commander and the 99 is assembled from your cards. Then tune it, track it and log the games it plays.'],
+      4: ['Buying', 'Know what it’s missing', 'Each deck’s Shopping lists the cards you still need and what they cost, with one link to buy them. It lives inside Decks.'],
+      5: ['Your look', 'Pick your look', 'Six themes, one for every playmat. Change it any time in your account menu, under Theme.'],
+      6: ['What’s new', 'New things land here', 'When the app learns something, one line on Home says so. This one opens About: every tool, mark and figure, by screen.'],
+    };
+    const p = this.props;
+    const t = P[p.theme] || P.amonkhet;
+    const phone = p.phone === true || p.phone === 'true';
+    const step = Math.min(6, Math.max(1, Number(p.step ?? 1)));
+    const [k, head, line] = S[step];
+    const fs = phone ? 1 : 0;
+    const pics = { 2: ['a07790fb47809879c54e8233ccc61968', 'center 80%', 'Commanders, on a real collection', 'Commanders, once your cards are in'], 3: ['66b67ee5c151e4ce19d493c5932eafbf', 'center 24%', 'A deck page, on a real deck', 'A deck, once you build one'], 4: ['1a08633c049da2183255c0108593df2d', 'center 64%', 'A deck’s Shopping, on a real deck', 'Shopping, inside every deck'] };
+    const pic = pics[step];
+    const focusSkip = p.focusSkip === true || p.focusSkip === 'true';
+    const mono = "font-family:'IBM Plex Mono',monospace;";
+    const themes = M.map(([key, label, short, bg, surf, strong, border, acc, fg, disp]) => {
+      const sel = key === (p.theme || 'amonkhet');
+      return {
+        label, short, sel, on: sel ? 'true' : 'false',
+        cell: `position:relative;border:0;margin:0;cursor:pointer;text-align:left;font:inherit;border-radius:9px;display:flex;${phone ? 'flex-direction:row;align-items:center;gap:10px;min-height:48px;padding:5px 6px' : 'flex-direction:column;gap:5px;padding:5px'};` + (sel ? `background:${t.elevated};box-shadow:0 0 0 1.5px ${t.accent}` : 'background:transparent'),
+        mini: `flex:none;box-sizing:border-box;${phone ? 'width:52px;height:38px' : 'width:100%;height:46px'};border-radius:6px;background:${bg};border:1px solid ${strong};padding:6px;display:flex`,
+        panel: `flex:1;border-radius:4px;background:${surf};display:flex;align-items:center;gap:${phone ? 4 : 6}px;padding:0 ${phone ? 5 : 8}px`,
+        nn: `font-family:${disp};font-weight:600;font-size:${phone ? 10 : 12}px;line-height:1;color:${fg}`,
+        bar: `width:${phone ? 12 : 18}px;height:4px;border-radius:2px;background:${acc}`,
+        chrome: phone ? 'display:none' : `margin-left:auto;width:14px;height:4px;border-radius:2px;background:${border}`,
+        lblBox: 'display:flex;flex-direction:column;gap:1px;min-width:0',
+        name: `font-size:${phone ? 12.5 : 10.5}px;font-weight:500;color:${t.fg};white-space:nowrap`,
+        plane: mono + `font-size:${phone ? 9 : 8.5}px;color:${t.muted};white-space:nowrap`,
+        tick: `position:absolute;top:-5px;right:-5px;width:13px;height:13px;border-radius:999px;background:${t.accent};color:${t.bg};font-size:8.5px;font-weight:700;display:flex;align-items:center;justify-content:center`,
+      };
+    });
+    const sel = M.find((m) => m[0] === (p.theme || 'amonkhet')) || M[0];
+    const dots = [1, 2, 3, 4, 5, 6].map((i) => ({ s: `width:${i === step ? 8 : 6}px;height:${i === step ? 8 : 6}px;transform:rotate(45deg);background:${i === step ? t.accent : i < step ? `rgba(${t.rgb},.45)` : t.strong}` }));
+    const btnH = phone ? 44 : 32;
+    return {
+      kick: `${step} of 6 · ${k}`, head, line,
+      s1: step === 1, s5: step === 5, s6: step === 6, precons: p.precons !== false && p.precons !== 'false',
+      hasPic: !!pic, pic: pic ? '/_blob/' + pic[0] : '', picAlt: pic ? pic[2] : '', cap: pic ? pic[3] : '',
+      themes, applied: `${sel[1]} applied.`,
+      dots, progAria: `Step ${step} of 6`, back: step > 1, next: step === 6 ? 'Finish' : 'Next',
+      box: `box-sizing:border-box;width:${phone ? 358 : 340}px;display:flex;flex-direction:column;background:${t.raised};border:1px solid ${t.strong};border-radius:14px;padding:${phone ? '14px 16px 16px' : '14px 16px 14px 18px'};box-shadow:0 24px 60px rgba(0,0,0,.55);font-family:'IBM Plex Sans',sans-serif;color:${t.body};text-align:left`,
+      kicker: mono + `font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:${t.accent}`,
+      x: `flex:none;width:${phone ? 44 : 32}px;height:${phone ? 44 : 32}px;margin:${phone ? '-10px -12px -10px 0' : '-6px -8px -6px 0'};border:0;padding:0;border-radius:8px;background:transparent;color:${focusSkip ? t.fg : t.faint};font-size:${phone ? 15 : 13}px;font-family:'IBM Plex Sans',sans-serif;` + (focusSkip ? `box-shadow:0 0 0 2px ${t.accent}` : ''),
+      title: `margin:${phone ? 8 : 6}px 0 0;font-family:${t.disp};font-weight:600;font-size:${phone ? 20 : 19}px;line-height:1.2;color:${t.fg}`,
+      body: `margin:6px 0 0;font-size:${phone ? 14 : 13.5}px;line-height:1.55;color:${t.body};text-wrap:pretty`,
+      body2: `margin:8px 0 0;font-size:${phone ? 14 : 13.5}px;line-height:1.55;color:${t.body};text-wrap:pretty`,
+      strong: `color:${t.fg};font-weight:600`,
+      foot: mono + `margin:10px 0 0;font-size:10.5px;color:${t.faint}`,
+      picBox: `margin-top:12px;height:${phone ? 128 : 118}px;border-radius:9px;overflow:hidden;border:1px solid ${t.strong}`,
+      picImg: `width:100%;height:100%;object-fit:cover;object-position:${pic ? pic[1] : 'center'};display:block`,
+      picCap: mono + `margin-top:6px;font-size:10px;color:${t.faint}`,
+      grid: `margin-top:12px;display:grid;grid-template-columns:repeat(${phone ? 2 : 3},minmax(0,1fr));gap:${phone ? '6px 8px' : '8px'}`,
+      noteBox: `margin-top:14px;padding-top:12px;border-top:1px solid ${t.border};display:flex;flex-direction:column;gap:6px`,
+      noteK: mono + `font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:${t.faint}`,
+      noteP: `margin:0;font-size:${phone ? 14 : 13}px;line-height:1.55;color:${t.muted};font-style:italic`,
+      noteLink: `align-self:flex-start;border:0;padding:0;background:transparent;min-height:${phone ? 44 : 24}px;font-family:'IBM Plex Sans',sans-serif;font-size:${phone ? 14 : 13}px;color:${t.accent};text-decoration:underline;text-decoration-color:rgba(${t.rgb},.55);text-underline-offset:3px;cursor:pointer`,
+      footRow: `margin-top:14px;display:flex;align-items:center;justify-content:space-between;gap:12px`,
+      btnWrap: phone ? 'flex:none' : '',
+      ghost: `height:${btnH}px;padding:0 ${phone ? 16 : 12}px;border-radius:${phone ? 10 : 8}px;border:1px solid ${t.strong};background:transparent;color:${t.fg};font-family:'IBM Plex Sans',sans-serif;font-size:${phone ? 14 : 12.5}px;cursor:pointer`,
+      fill: `height:${btnH}px;padding:0 ${phone ? 20 : 14}px;border-radius:${phone ? 10 : 8}px;border:0;background:${t.fg};color:${t.bg};font-family:'IBM Plex Sans',sans-serif;font-size:${phone ? 14 : 12.5}px;font-weight:600;cursor:pointer`,
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,176 @@
+{
+ "amonkhet": {
+  "sheet": {
+   "fg_on_held": 10.958526396827343,
+   "accent_on_held": 4.668610856253608,
+   "fgbody_on_held": 6.900026024108643,
+   "warning_on_warn": 6.266213582600027,
+   "fg_on_warn": 10.717137750029934,
+   "warning_line_on_ground": 8.146241382976005,
+   "fg_on_out": 13.932559095779045,
+   "accent_on_out": 5.935624398256748,
+   "tint15_on_held": 9.741129098299503,
+   "tint25_on_held": 8.97100243858003,
+   "tint35_on_held": 8.270845529895453
+  },
+  "popover": {
+   "fg_on_held": 10.51035704536731,
+   "accent_on_held": 4.477679318207378,
+   "fgbody_on_held": 6.617836605905716,
+   "warning_on_warn": 6.028418482011297,
+   "fg_on_warn": 10.310435550097226,
+   "warning_line_on_ground": 7.887533223143922,
+   "fg_on_out": 13.490089181622887,
+   "accent_on_out": 5.747120965405311,
+   "tint15_on_held": 9.342747477232525,
+   "tint25_on_held": 8.604116581918792,
+   "tint35_on_held": 7.932593894325865
+  },
+  "warning_vs_accent": 1.372432087409119
+ },
+ "kamigawa": {
+  "sheet": {
+   "fg_on_held": 11.917427890228199,
+   "accent_on_held": 4.707243735888026,
+   "fgbody_on_held": 7.210168600314267,
+   "warning_on_warn": 5.6089987696276,
+   "fg_on_warn": 11.621339920525637,
+   "warning_line_on_ground": 6.9940814517660606,
+   "fg_on_out": 14.491106402616186,
+   "accent_on_out": 5.723816453358522,
+   "tint15_on_held": 10.225072343440251,
+   "tint25_on_held": 9.16914127960556,
+   "tint35_on_held": 8.309626197418634
+  },
+  "popover": {
+   "fg_on_held": 11.469298503101786,
+   "accent_on_held": 4.530237902930747,
+   "fgbody_on_held": 6.93904563102101,
+   "warning_on_warn": 5.381049604966611,
+   "fg_on_warn": 11.14904979604392,
+   "warning_line_on_ground": 6.784165914379128,
+   "fg_on_out": 14.056180328504153,
+   "accent_on_out": 5.552025773624941,
+   "tint15_on_held": 9.840580367084657,
+   "tint25_on_held": 8.824355332507501,
+   "tint35_on_held": 7.997160476677656
+  },
+  "warning_vs_accent": 1.2219262285502175
+ },
+ "ixalan": {
+  "sheet": {
+   "fg_on_held": 9.695959457697208,
+   "accent_on_held": 6.135704685140549,
+   "fgbody_on_held": 6.611609384278678,
+   "warning_on_warn": 5.344017127135281,
+   "fg_on_warn": 10.742781636425626,
+   "warning_line_on_ground": 6.701999601389345,
+   "fg_on_out": 13.472658588527525,
+   "accent_on_out": 8.525639446367917,
+   "tint15_on_held": 9.077715789543927,
+   "tint25_on_held": 8.646350068754698,
+   "tint35_on_held": 8.28867642066287
+  },
+  "popover": {
+   "fg_on_held": 9.271676091545215,
+   "accent_on_held": 5.867213727759394,
+   "fgbody_on_held": 6.322293417407865,
+   "warning_on_warn": 5.070447987421072,
+   "fg_on_warn": 10.192840747297154,
+   "warning_line_on_ground": 6.4248605797225915,
+   "fg_on_out": 12.915541363438361,
+   "accent_on_out": 8.173089831957304,
+   "tint15_on_held": 8.680486012649466,
+   "tint25_on_held": 8.267996329951933,
+   "tint35_on_held": 7.925974044683801
+  },
+  "warning_vs_accent": 1.2721038426502629
+ },
+ "phyrexia": {
+  "sheet": {
+   "fg_on_held": 12.069333498044392,
+   "accent_on_held": 3.5741027856859087,
+   "fgbody_on_held": 7.43276981937733,
+   "warning_on_warn": 5.86751622909314,
+   "fg_on_warn": 11.55814613262523,
+   "warning_line_on_ground": 7.2839939202200235,
+   "fg_on_out": 14.348399368989687,
+   "accent_on_out": 4.249004649937742,
+   "tint15_on_held": 10.363051406835234,
+   "tint25_on_held": 9.282652857215563,
+   "tint35_on_held": 8.26102238374581
+  },
+  "popover": {
+   "fg_on_held": 11.767287956174892,
+   "accent_on_held": 3.4846577626633275,
+   "fgbody_on_held": 7.24675830614432,
+   "warning_on_warn": 5.690131504285524,
+   "fg_on_warn": 11.208724249332235,
+   "warning_line_on_ground": 7.090063581787611,
+   "fg_on_out": 13.966385054306192,
+   "accent_on_out": 4.135878400961078,
+   "tint15_on_held": 10.10370705463002,
+   "tint25_on_held": 9.050346416043942,
+   "tint35_on_held": 8.054283131516275
+  },
+  "warning_vs_accent": 1.7142824073696297
+ },
+ "eldraine": {
+  "sheet": {
+   "fg_on_held": 10.322381324064978,
+   "accent_on_held": 4.820860450434258,
+   "fgbody_on_held": 6.6120289830591465,
+   "warning_on_warn": 5.500018000221425,
+   "fg_on_warn": 10.609804961661688,
+   "warning_line_on_ground": 6.908563861905741,
+   "fg_on_out": 13.326959136688869,
+   "accent_on_out": 6.224088048058669,
+   "tint15_on_held": 9.291741841174497,
+   "tint25_on_held": 8.610963127301268,
+   "tint35_on_held": 8.041545792261317
+  },
+  "popover": {
+   "fg_on_held": 9.89176169741875,
+   "accent_on_held": 4.6197482204065015,
+   "fgbody_on_held": 6.33619442873775,
+   "warning_on_warn": 5.274226699680889,
+   "fg_on_warn": 10.174242448833805,
+   "warning_line_on_ground": 6.622187363450023,
+   "fg_on_out": 12.774524800274614,
+   "accent_on_out": 5.966084709461545,
+   "tint15_on_held": 8.904117486200173,
+   "tint25_on_held": 8.251738873659505,
+   "tint35_on_held": 7.706075968195718
+  },
+  "warning_vs_accent": 1.1099720647526128
+ },
+ "kaldheim": {
+  "sheet": {
+   "fg_on_held": 8.632468662769163,
+   "accent_on_held": 3.6339977126225254,
+   "fgbody_on_held": 7.152506989423578,
+   "warning_on_warn": 5.137594414320838,
+   "fg_on_warn": 8.4090594236312,
+   "warning_line_on_ground": 6.476668298035263,
+   "fg_on_out": 10.600815127312178,
+   "accent_on_out": 4.462609646152949,
+   "tint15_on_held": 7.695782221004057,
+   "tint25_on_held": 7.077173139435044,
+   "tint35_on_held": 6.493007436331351
+  },
+  "popover": {
+   "fg_on_held": 8.170306709351262,
+   "accent_on_held": 3.4394420707555264,
+   "fgbody_on_held": 6.769578683373197,
+   "warning_on_warn": 4.894893413524399,
+   "fg_on_warn": 8.011813753131575,
+   "warning_line_on_ground": 6.1674902676014005,
+   "fg_on_out": 10.094761861769747,
+   "accent_on_out": 4.249577142788329,
+   "tint15_on_held": 7.2837682440894795,
+   "tint25_on_held": 6.698278029522328,
+   "tint35_on_held": 6.145387176408017
+  },
+  "warning_vs_accent": 1.4513185807363993
+ }
+}

@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #100D0A; }
+  ::selection { background: #CF8745; color: #14110E; }
+  a { color: #CF8745; text-decoration: none; }
+  a:hover { color: #DE9757; }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;padding:40px;background:#100D0A;background-image:radial-gradient(1400px 700px at 30% -300px, rgba(207,135,69,0.06), transparent 70%);min-height:100vh;">
+
+  <section style="max-width:1400px;margin:0 0 26px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#CF8745;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R1</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#8B8270;">Amendment 4 &middot; commanders detail &middot; &ldquo;Full card&rdquo;</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:0 0 10px;color:#EDE6D8;">The commander stops being the one card in the app with its own modal.</h1>
+    <p style="max-width:1040px;font-size:15px;line-height:1.7;color:#C0B8A6;margin:0 0 12px;">Every other card on the commander detail page &mdash; every coverage chip, every synergy row &mdash; already opens <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">CardModal</span> through the provider mounted at <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">detail.tsx:240</span>. The commander itself opens a bespoke lightbox that draws a picture of a card and tells you to tap anywhere. <b style="color:#EDE6D8;font-weight:600;">The rich modal wins, and the lightbox does not survive.</b></p>
+    <p style="max-width:1040px;font-size:15px;line-height:1.7;color:#C0B8A6;margin:0 0 12px;">This is not a close call on features &mdash; the modal is a strict superset except for one thing, art size, and it answers that with a full-bleed blurred wash of the same art plus real selectable text instead of pixels. It is close on <i>promise</i>: a control labelled <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">Full card</span> that opens a details panel has lied. So <b style="color:#EDE6D8;font-weight:600;">the label changes with the destination</b> &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">Card details</span>, and the accessible name falls back to the shared <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">View details for {name}</span> every other trigger on the page uses.</p>
+    <p style="max-width:1040px;font-size:14px;line-height:1.7;color:#8B8270;margin:0;">Read <a href="README.md">README.md</a> for the decisions log and the deletion list, <a href="PARITY-lightbox-to-modal.md">PARITY-lightbox-to-modal.md</a> for the element-by-element mapping of what the lightbox did and where each piece goes, <a href="full-card · copy strings.ts">full-card &middot; copy strings.ts</a> for the copy diff, <a href="READINESS.md">READINESS.md</a> for what blocks a green. Mock commander is Kykar, Wind's Fury &mdash; continuous with the sibling handoffs. Oracle text in the frames is placeholder; production reads <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">cards.oracle_text</span>.</p>
+  </section>
+
+  <div style="border:1px solid #3A3229;border-left:3px solid #CF8745;border-radius:12px;background:#18140F;padding:16px 20px;margin-bottom:38px;max-width:1400px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:8px;">Two amendments, one file</div>
+    <div style="font-size:13px;color:#A59C89;line-height:1.7;">Amendment 1 exists to delete <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">PIP_TEXT</span>, and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">PIP_TEXT</span> lives in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">lightbox.tsx</span>, which this amendment deletes outright. <b style="color:#EDE6D8;font-weight:600;">They are independent and land in either order</b> &mdash; if this one ships first, amendment 1's deletion note is already satisfied and only the six token values remain.</div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:56px;max-width:2200px;">
+
+  <!-- ============ A · THE COMPARISON ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">A &middot; <span style="color:#CF8745;">the two candidates, element by element</span></div>
+    <div style="background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;max-width:1180px;">
+      <div style="display:grid;grid-template-columns:1.5fr 1.4fr 1.4fr;gap:1px;background:#2B241B;border:1px solid #2B241B;border-radius:10px;overflow:hidden;font-size:12.5px;line-height:1.5;">
+        <div style="background:#211D18;padding:11px 14px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;">what the surface gives you</div>
+        <div style="background:#211D18;padding:11px 14px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;">lightbox (shipped)</div>
+        <div style="background:#211D18;padding:11px 14px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#CF8745;">card modal (called)</div>
+
+        <div style="background:#1E1A15;padding:11px 14px;color:#C0B8A6;">Card art, sharp</div>
+        <div style="background:#1E1A15;padding:11px 14px;color:#6FA368;">262px wide</div>
+        <div style="background:#1E1A15;padding:11px 14px;color:#DEAA29;">180px wide, over a full-bleed blurred wash of the same art</div>
+
+        <div style="background:#1E1A15;padding:11px 14px;color:#C0B8A6;">Type line &amp; oracle text</div>
+        <div style="background:#1E1A15;padding:11px 14px;color:#DEAA29;">Pixels in the image, plus an <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">sr-only</span> paragraph</div>
+        <div style="background:#1E1A15;padding:11px 14px;color:#6FA368;">Real text, 13.5px, in a bordered block &mdash; with keywords bolded and reminder text italicised</div>
+
+        <div style="background:#1E1A15;padding:11px 14px;color:#C0B8A6;">Mana cost</div>
+        <div style="background:#1E1A15;padding:11px 14px;color:#DEAA29;">16px pips, fallback frame only, with a per-colour ink hack</div>
+        <div style="background:#1E1A15;padding:11px 14px;color:#6FA368;">22px <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">ManaCost</span>, always present, no hack</div>
+
+        <div style="background:#1E1A15;padding:11px 14px;color:#C0B8A6;">Set &middot; Rarity &middot; Identity &middot; You own</div>
+        <div style="background:#1E1A15;padding:11px 14px;color:#C6533F;">None of the four</div>
+        <div style="background:#1E1A15;padding:11px 14px;color:#6FA368;">All four</div>
+
+        <div style="background:#1E1A15;padding:11px 14px;color:#C0B8A6;">Printing / alternate art picker</div>
+        <div style="background:#1E1A15;padding:11px 14px;color:#C6533F;">No</div>
+        <div style="background:#1E1A15;padding:11px 14px;color:#6FA368;">Yes &mdash; and the commander is the card players most want to pick art for</div>
+
+        <div style="background:#1E1A15;padding:11px 14px;color:#C0B8A6;">Availability (&ldquo;in 2 decks, none free&rdquo;)</div>
+        <div style="background:#1E1A15;padding:11px 14px;color:#C6533F;">No</div>
+        <div style="background:#1E1A15;padding:11px 14px;color:#6FA368;">Yes, when the card is claimed</div>
+
+        <div style="background:#1E1A15;padding:11px 14px;color:#C0B8A6;">Prev / Next paging</div>
+        <div style="background:#1E1A15;padding:11px 14px;color:#C6533F;">No</div>
+        <div style="background:#1E1A15;padding:11px 14px;color:#8B8270;">Renders <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">1 of 1</span>, both arrows disabled &mdash; a commander has no sibling list</div>
+
+        <div style="background:#1E1A15;padding:11px 14px;color:#C0B8A6;">No-image fallback</div>
+        <div style="background:#1E1A15;padding:11px 14px;color:#6FA368;">A hand-drawn card frame over an identity gradient</div>
+        <div style="background:#1E1A15;padding:11px 14px;color:#6FA368;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">identityGradient</span> in the art slot; the frame's text is the modal's own text, at larger sizes</div>
+
+        <div style="background:#1E1A15;padding:11px 14px;color:#C0B8A6;">Focus trap, Escape, focus return, scroll lock</div>
+        <div style="background:#1E1A15;padding:11px 14px;color:#6FA368;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;">useDialogA11y</span></div>
+        <div style="background:#1E1A15;padding:11px 14px;color:#6FA368;">The same hook, plus a two-stage Escape for the picker region</div>
+
+        <div style="background:#1E1A15;padding:11px 14px;color:#C0B8A6;">Desktop</div>
+        <div style="background:#1E1A15;padding:11px 14px;color:#C6533F;">Does not exist &mdash; mobile only</div>
+        <div style="background:#1E1A15;padding:11px 14px;color:#6FA368;">820&times;620 two-column, already shipped on four other routes</div>
+
+        <div style="background:#211D18;padding:11px 14px;color:#EDE6D8;font-weight:600;">Lines of bespoke code</div>
+        <div style="background:#211D18;padding:11px 14px;color:#C6533F;font-family:'IBM Plex Mono',monospace;font-size:12px;">282 + a test file</div>
+        <div style="background:#211D18;padding:11px 14px;color:#6FA368;font-family:'IBM Plex Mono',monospace;font-size:12px;">0 &mdash; one prop on an existing trigger</div>
+      </div>
+      <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:16px;max-width:900px;"><b style="color:#EDE6D8;font-weight:600;">The only column where the lightbox wins is art size, and it wins it by 82px.</b> What it pays for those 82px is every fact about the card, on the one screen in the app where a player is deciding whether to commit a hundred cards to this commander. The wash keeps the atmosphere the lightbox was built for; the details are what the surface was missing.</div>
+    </div>
+  </div>
+
+  <!-- ============ B · THE TRIGGER ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">B &middot; <span style="color:#CF8745;">the affordance at 390px &mdash; same place, same geometry, new word</span></div>
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:390px;flex:none;background:#18140F;border:1px solid #2B241B;border-radius:14px;padding:16px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">Shipped</div>
+        <div style="position:relative;border-radius:10px;overflow:hidden;height:230px;background:linear-gradient(150deg,#2C3550 0%,#6B5E43 45%,#1B1712 100%);">
+          <div style="position:absolute;top:56px;right:16px;display:flex;align-items:center;gap:6px;background:rgba(20,17,14,0.55);border:1px solid rgba(237,230,216,0.18);border-radius:999px;padding:6px 11px;">
+            <span style="color:#EDE6D8;font-size:12px;">&#9974;</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.08em;color:#EDE6D8;">Full card</span>
+          </div>
+          <div style="position:absolute;bottom:14px;left:16px;right:16px;">
+            <div style="font-family:'Cinzel',serif;font-weight:700;font-size:20px;color:#EDE6D8;text-shadow:0 2px 8px rgba(0,0,0,0.6);">Kykar, Wind's Fury</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C0B8A6;text-shadow:0 1px 6px rgba(0,0,0,0.7);">Legendary Creature &mdash; Bird Spirit &middot; Jeskai</div>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:14px;">Opens the lightbox. The whole band is also a tap target &mdash; an <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-hidden</span> absolute-inset div, never focusable, with the chip as the accessible control.</div>
+      </div>
+
+      <div style="width:390px;flex:none;background:#18140F;border:1px solid #6B482A;border-radius:14px;padding:16px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:14px;">Called &mdash; one word changes</div>
+        <div style="position:relative;border-radius:10px;overflow:hidden;height:230px;background:linear-gradient(150deg,#2C3550 0%,#6B5E43 45%,#1B1712 100%);">
+          <div style="position:absolute;top:56px;right:16px;display:flex;align-items:center;gap:6px;background:rgba(20,17,14,0.55);border:1px solid rgba(237,230,216,0.18);border-radius:999px;padding:6px 11px;">
+            <span style="color:#EDE6D8;font-size:12px;">&#9974;</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.08em;color:#EDE6D8;">Card details</span>
+          </div>
+          <div style="position:absolute;bottom:14px;left:16px;right:16px;">
+            <div style="font-family:'Cinzel',serif;font-weight:700;font-size:20px;color:#EDE6D8;text-shadow:0 2px 8px rgba(0,0,0,0.6);">Kykar, Wind's Fury</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C0B8A6;text-shadow:0 1px 6px rgba(0,0,0,0.7);">Legendary Creature &mdash; Bird Spirit &middot; Jeskai</div>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:14px;"><b style="color:#EDE6D8;font-weight:600;">Position, geometry, glyph, backdrop blur, hit box and the full-band tap target are all unchanged.</b> The label follows the destination, and the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-label</span> stops being bespoke: it falls back to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">cardDetailCopy.triggerAria(name)</span>, so the commander is no longer the one trigger on the page with its own accessible name.</div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:12px;">The <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&#9974;</span> glyph stays. It is not a promise about size &mdash; it is the app's &ldquo;open this bigger&rdquo; mark, and it is what makes the chip findable at a glance on an art band.</div>
+      </div>
+
+      <div style="width:420px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">Rejected labels</div>
+        <div style="display:flex;flex-direction:column;gap:12px;font-size:12.5px;color:#A59C89;line-height:1.55;">
+          <div><b style="color:#EDE6D8;font-weight:600;">Keep <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Full card</span>.</b> Cheapest, and it is the lie. The surface it now opens leads with a 180px thumbnail and four meta fields; a player who tapped for a big picture got a spec sheet.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Details</span> alone.</b> True and weightless. On a page that is already all detail &mdash; three breakdown sections, forty named cards &mdash; &ldquo;Details&rdquo; does not say <i>whose</i>.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Card details</span>.</b> <span style="color:#6FA368;">Chosen.</span> Two words, names the subject and the surface, and it is the phrase the app already uses in <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">cardDetailCopy</span> &mdash; the close button on the thing it opens is labelled <i>Close card details</i>.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ C · THE MODAL AT 390 ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">C &middot; <span style="color:#CF8745;">what opens at 390px &mdash; the shipped modal, unmodified, on this route</span></div>
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:390px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:12px;">Full-screen sheet &middot; <span style="color:#CF8745;">2+ printings (the normal case)</span></div>
+        <div style="border:1px solid #2B241B;border-radius:14px;overflow:hidden;background:#18140F;">
+          <div style="position:relative;padding:44px 20px 20px;background:#18140F;overflow:hidden;box-shadow:inset 0 -60px 60px -40px rgba(0,0,0,0.55);">
+            <div style="position:absolute;inset:0;background:linear-gradient(150deg,#2C3550 0%,#6B5E43 45%,#1B1712 100%);filter:blur(22px);transform:scale(1.2);opacity:0.45;"></div>
+            <div style="position:absolute;top:22px;right:18px;width:32px;height:32px;border-radius:999px;background:rgba(20,17,14,0.55);color:#EDE6D8;font-size:16px;display:flex;align-items:center;justify-content:center;">&#10005;</div>
+            <div style="position:relative;width:180px;aspect-ratio:63/88;margin:6px auto 0;border-radius:10px;background:linear-gradient(150deg,#2C3550 0%,#6B5E43 45%,#1B1712 100%);box-shadow:0 20px 40px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.3);"></div>
+          </div>
+          <div style="padding:20px;">
+            <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">
+              <div style="min-width:0;">
+                <div style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;color:#EDE6D8;line-height:1.15;">Kykar, Wind's Fury</div>
+                <div style="font-size:13px;color:#A59C89;margin-top:4px;">Legendary Creature &mdash; Bird Spirit</div>
+              </div>
+              <div style="display:flex;gap:4px;flex:none;padding-top:4px;">
+                <span style="width:22px;height:22px;border-radius:999px;background:#494037;color:#EDE6D8;font-family:'IBM Plex Mono',monospace;font-size:12px;display:flex;align-items:center;justify-content:center;">1</span>
+                <span style="width:22px;height:22px;border-radius:999px;background:#F4E9C4;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;">W</span>
+                <span style="width:22px;height:22px;border-radius:999px;background:#3A6AA5;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;">U</span>
+                <span style="width:22px;height:22px;border-radius:999px;background:#C05A3E;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;">R</span>
+              </div>
+            </div>
+            <div style="margin-top:16px;border-radius:10px;background:#14110E;border:1px solid #2B241B;padding:14px 16px;font-size:13.5px;line-height:1.6;color:#C0B8A6;">
+              <span style="color:#EDE6D8;font-weight:600;">Flying.</span> Oracle text renders here from <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">cards.oracle_text</span>, with keywords bolded and <em style="font-style:italic;">(reminder text in italics)</em> &mdash; the block, the bolding and the italics all ship today.
+            </div>
+            <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#2B241B;border:1px solid #2B241B;border-radius:10px;overflow:hidden;">
+              <div style="background:#1E1A15;padding:11px 14px;">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:#8B8270;">Rarity</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#CF8745;margin-top:3px;">Rare</div>
+              </div>
+              <div style="background:#1E1A15;padding:11px 14px;">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:#8B8270;">Identity</div>
+                <div style="display:flex;align-items:center;gap:6px;margin-top:3px;"><span style="width:12px;height:12px;border-radius:999px;background:#8B8270;"></span><span style="font-size:13px;color:#EDE6D8;">W/U/R</span></div>
+              </div>
+              <div style="background:#1E1A15;padding:11px 14px;grid-column:span 2;">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:#8B8270;">You own</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#CF8745;margin-top:3px;">&times;1</div>
+              </div>
+            </div>
+            <div style="margin-top:12px;display:flex;align-items:center;gap:12px;background:#29241F;border:1px solid #494037;border-radius:10px;padding:11px 14px;min-height:62px;">
+              <span style="width:40px;height:56px;border-radius:5px;background:linear-gradient(150deg,#2C3550,#6B5E43);box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35);flex:none;"></span>
+              <span style="min-width:0;flex:1;">
+                <span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:#8B8270;">Set</span>
+                <span style="display:block;font-size:13px;color:#EDE6D8;margin-top:3px;">Throne of Eldraine &middot; 209</span>
+                <span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#CF8745;margin-top:4px;">6 printings you own &#9662;</span>
+              </span>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:14px;"><b style="color:#EDE6D8;font-weight:600;">Nothing in this frame is new.</b> The 180px art over its own blurred wash, the promoted Set row with its 40&times;56 thumb, the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">You own</span> cell spanning two columns because Set was promoted out &mdash; all shipped, all reached by passing one oracle id to a provider that is already mounted.</div>
+      </div>
+
+      <div style="width:390px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:12px;">Single printing &middot; <span style="color:#CF8745;">Set stays in the grid</span></div>
+        <div style="border:1px solid #2B241B;border-radius:14px;overflow:hidden;background:#18140F;">
+          <div style="position:relative;padding:44px 20px 20px;background:#18140F;overflow:hidden;box-shadow:inset 0 -60px 60px -40px rgba(0,0,0,0.55);">
+            <div style="position:absolute;inset:0;background:linear-gradient(150deg,#3A2A3F 0%,#6B4E43 45%,#1B1712 100%);filter:blur(22px);transform:scale(1.2);opacity:0.45;"></div>
+            <div style="position:absolute;top:22px;right:18px;width:32px;height:32px;border-radius:999px;background:rgba(20,17,14,0.55);color:#EDE6D8;font-size:16px;display:flex;align-items:center;justify-content:center;">&#10005;</div>
+            <div style="position:relative;width:180px;aspect-ratio:63/88;margin:6px auto 0;border-radius:10px;background:linear-gradient(150deg,#3A2A3F 0%,#6B4E43 45%,#1B1712 100%);box-shadow:0 20px 40px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0,0,0,0.3);"></div>
+          </div>
+          <div style="padding:20px;">
+            <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">
+              <div style="min-width:0;">
+                <div style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;color:#EDE6D8;line-height:1.15;">Gonti, Lord of Luxury</div>
+                <div style="font-size:13px;color:#A59C89;margin-top:4px;">Legendary Creature &mdash; Aetherborn Rogue</div>
+              </div>
+              <div style="display:flex;gap:4px;flex:none;padding-top:4px;">
+                <span style="width:22px;height:22px;border-radius:999px;background:#494037;color:#EDE6D8;font-family:'IBM Plex Mono',monospace;font-size:12px;display:flex;align-items:center;justify-content:center;">4</span>
+                <span style="width:22px;height:22px;border-radius:999px;background:#98748F;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;">B</span>
+              </div>
+            </div>
+            <div style="margin-top:16px;border-radius:10px;background:#14110E;border:1px solid #2B241B;padding:14px 16px;font-size:13.5px;line-height:1.6;color:#C0B8A6;">
+              <span style="color:#EDE6D8;font-weight:600;">Deathtouch.</span> Oracle text renders here from <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">cards.oracle_text</span>.
+            </div>
+            <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#2B241B;border:1px solid #2B241B;border-radius:10px;overflow:hidden;">
+              <div style="background:#1E1A15;padding:11px 14px;">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:#8B8270;">Set</div>
+                <div style="font-size:13px;color:#EDE6D8;margin-top:3px;">Kaladesh &middot; 77</div>
+              </div>
+              <div style="background:#1E1A15;padding:11px 14px;">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:#8B8270;">Rarity</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#CF8745;margin-top:3px;">Rare</div>
+              </div>
+              <div style="background:#1E1A15;padding:11px 14px;">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:#8B8270;">Identity</div>
+                <div style="display:flex;align-items:center;gap:6px;margin-top:3px;"><span style="width:12px;height:12px;border-radius:999px;background:#98748F;"></span><span style="font-size:13px;color:#EDE6D8;">Black</span></div>
+              </div>
+              <div style="background:#1E1A15;padding:11px 14px;">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:#8B8270;">You own</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#CF8745;margin-top:3px;">&times;1</div>
+              </div>
+            </div>
+            <div style="margin-top:16px;border-radius:10px;background:#14110E;border:1px solid #2B241B;padding:14px 16px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:#8B8270;">In your decks</div>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:13px;color:#C0B8A6;">
+                <span style="font-family:'IBM Plex Mono',monospace;color:#CF8745;">&times;1</span>
+                <span style="color:#8B8270;">&middot;</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C46857;">none free &mdash; in <a href="#">Gonti Theft</a></span>
+              </div>
+              <div style="font-size:12.5px;color:#A59C89;margin-top:8px;line-height:1.5;">Your only copy is committed to a finished deck.</div>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:14px;"><b style="color:#EDE6D8;font-weight:600;">The availability block is the argument in miniature.</b> A player choosing a commander to build wants to know their only copy is already sleeved in another deck &mdash; and the lightbox had no slot in which to say it. Also the black pip, drawn at amendment 1's value: the two amendments meet on this frame.</div>
+      </div>
+
+      <div style="width:420px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">The three things the lightbox did that must not be lost</div>
+        <div style="display:flex;flex-direction:column;gap:14px;font-size:12.5px;color:#A59C89;line-height:1.55;">
+          <div><b style="color:#EDE6D8;font-weight:600;">1 &middot; The art filling the screen.</b> Kept, as the modal's own blurred full-bleed wash at <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">opacity 0.45</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">blur(22px)</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">scale(1.2)</span> &mdash; which is the lightbox's own device (0.28, 3px) taken further. Same atmosphere, and the sharp copy no longer competes with a second legible copy of its own text.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">2 &middot; Tap anywhere to close.</b> Kept. The modal's backdrop closes on click, exactly as the lightbox's overlay did. <b style="color:#EDE6D8;font-weight:600;">The hint line goes</b>, because at 390px the modal is a full-screen sheet with no visible backdrop to tap &mdash; there is a 32px &#10005; in the corner and it is where a sheet's close control belongs.</div>
+          <div><b style="color:#EDE6D8;font-weight:600;">3 &middot; A commander with no art still shows a card.</b> Kept, differently. The lightbox drew a card frame &mdash; name, pips, oracle glass over an identity gradient &mdash; because the picture <i>was</i> the surface. The modal already puts every one of those elements on screen at larger sizes, so the art slot takes <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">identityGradient</span> and nothing is missing. <b style="color:#EDE6D8;font-weight:600;">282 lines of hand-drawn card frame go with it.</b></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ D · DESKTOP ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">D &middot; <span style="color:#CF8745;">desktop &mdash; the route that never had a lightbox</span></div>
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:880px;flex:none;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:12px;">820&times;620 &middot; the shipped desktop modal, opened from the commander art</div>
+        <div style="width:820px;height:620px;display:flex;border:1px solid #3A3229;border-radius:16px;overflow:hidden;background:#1A1611;box-shadow:0 40px 100px rgba(0,0,0,0.7);">
+          <div style="width:320px;flex:none;padding:28px;background:#14110E;display:flex;align-items:center;justify-content:center;">
+            <div style="width:100%;aspect-ratio:63/88;border-radius:12px;background:linear-gradient(150deg,#2C3550 0%,#6B5E43 45%,#1B1712 100%);box-shadow:0 24px 50px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(0,0,0,0.3);"></div>
+          </div>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;position:relative;">
+            <div style="position:absolute;top:22px;right:24px;width:34px;height:34px;border-radius:999px;background:#211D18;border:1px solid #3A3229;color:#A59C89;font-size:15px;display:flex;align-items:center;justify-content:center;">&#10005;</div>
+            <div style="flex:1;overflow:auto;padding:30px 32px;">
+              <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding-right:46px;">
+                <div style="min-width:0;">
+                  <div style="font-family:'Cinzel',serif;font-weight:700;font-size:29px;color:#EDE6D8;line-height:1.1;">Kykar, Wind's Fury</div>
+                  <div style="font-size:14px;color:#A59C89;margin-top:6px;">Legendary Creature &mdash; Bird Spirit</div>
+                </div>
+                <div style="display:flex;gap:5px;flex:none;">
+                  <span style="width:26px;height:26px;border-radius:999px;background:#494037;color:#EDE6D8;font-family:'IBM Plex Mono',monospace;font-size:13px;display:flex;align-items:center;justify-content:center;">1</span>
+                  <span style="width:26px;height:26px;border-radius:999px;background:#F4E9C4;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;">W</span>
+                  <span style="width:26px;height:26px;border-radius:999px;background:#3A6AA5;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;">U</span>
+                  <span style="width:26px;height:26px;border-radius:999px;background:#C05A3E;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;">R</span>
+                </div>
+              </div>
+              <div style="margin-top:22px;border-radius:10px;background:#14110E;border:1px solid #2B241B;padding:18px 20px;font-size:15px;line-height:1.65;color:#C0B8A6;">
+                <span style="color:#EDE6D8;font-weight:600;">Flying.</span> Oracle text renders here from <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">cards.oracle_text</span>, with keywords bolded and <em style="font-style:italic;">(reminder text in italics)</em>.
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:26px;margin-top:24px;">
+                <div style="border-radius:8px;background:#29241F;border:1px solid #494037;padding:8px 12px;margin:-8px -12px;">
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;">Set</div>
+                  <div style="font-size:14px;color:#EDE6D8;margin-top:5px;">Throne of Eldraine &middot; 209</div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#CF8745;margin-top:4px;">6 printings you own &#9662;</div>
+                </div>
+                <div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;">Rarity</div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:#CF8745;margin-top:5px;">Rare</div>
+                </div>
+                <div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;">Identity</div>
+                  <div style="display:flex;align-items:center;gap:6px;margin-top:5px;"><span style="width:13px;height:13px;border-radius:999px;background:#8B8270;"></span><span style="font-size:14px;color:#EDE6D8;">W/U/R</span></div>
+                </div>
+                <div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8B8270;">You own</div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:#CF8745;margin-top:5px;">&times;1 copy</div>
+                </div>
+              </div>
+            </div>
+            <div style="flex:none;margin:0 32px 30px;padding-top:20px;border-top:1px solid #2B241B;display:flex;align-items:center;gap:10px;">
+              <span style="font-size:15px;color:#8B8270;opacity:0.4;">&lsaquo; Prev</span>
+              <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;">1 of 1</span>
+              <span style="margin-left:auto;font-size:15px;color:#CF8745;opacity:0.4;">Next &rsaquo;</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:420px;flex:none;background:#1A1611;border:1px solid #6B482A;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#CF8745;margin-bottom:14px;">Desktop gets the trigger too &mdash; one added prop</div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;">The brief asks about mobile, because mobile is where the lightbox lives. But the desktop commander page shows the card art and the oracle text and <b style="color:#EDE6D8;font-weight:600;">has no route to the printing picker at all</b> &mdash; and the commander is the single card a player is most likely to want alternate art for. So the desktop art panel becomes the same <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">CardDetailTrigger</span>, which is what <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">builder-spine.tsx</span> already does with the commander thumb on <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/decks/[id]</span>.</div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:12px;"><b style="color:#EDE6D8;font-weight:600;">This is the one thing in this amendment that is more than the brief asked for.</b> Reject it and nothing else changes: the mobile call, the deletion and the label all stand on their own. Take it and the two widths finally behave the same way, which is the actual complaint underneath &ldquo;mobile opens the bare lightbox&rdquo;.</div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:12px;">No visible affordance is added at desktop &mdash; no chip, no <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">&#9974;</span>. The art becomes a button with the shared accessible name and the shared pointer cursor, matching the spine. A chip over a 320px art panel on a page that already has a primary <i>Build this deck</i> action would be a third competing target.</div>
+      </div>
+
+      <div style="width:420px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">Prev / Next &mdash; <span style="color:#CF8745;">1 of 1, and left alone</span></div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;">The provider renders <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">1 of 1</span> with both arrows disabled when no sibling list is passed, and that is the correct reading here: <b style="color:#EDE6D8;font-weight:600;">a commander has no peers on its own page.</b></div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:12px;">Considered and rejected: passing the ranked commander list as siblings, so Next pages to the next recommendation. It sounds free and it is wrong &mdash; paging inside a modal would silently disagree with the page behind it, which is still the commander you opened. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">/commanders</span> is the surface for comparing commanders, and it is one back-navigation away.</div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:12px;"><b style="color:#EDE6D8;font-weight:600;">And no <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Add</span> control in the modal on this route</b> &mdash; the constraint the recommendations and synergy handoffs both carried. The modal must not assume a deck; the commander page's own <i>Build this deck</i> is the entry point.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============ E · DELETIONS & A11Y ============ -->
+  <div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8B8270;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">E &middot; <span style="color:#CF8745;">the deletion, and the a11y ledger</span></div>
+    <div style="display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:520px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">What goes</div>
+        <div style="background:#18140F;border:1px solid #2B241B;border-radius:10px;padding:14px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.8;">
+          <div style="color:#C6533F;">&minus; src/components/commanders/lightbox.tsx</div>
+          <div style="color:#6E6654;padding-left:14px;">282 lines &middot; CommanderLightbox, LightboxCommander,</div>
+          <div style="color:#6E6654;padding-left:14px;">PIP_TEXT, the drawn card frame, the oracle glass</div>
+          <div style="color:#C6533F;">&minus; src/components/commanders/lightbox.test.tsx</div>
+          <div style="height:8px;"></div>
+          <div style="color:#8B8270;">~ src/components/commanders/full-card-trigger.tsx</div>
+          <div style="color:#6E6654;padding-left:14px;">keeps the chip + the full-band target;</div>
+          <div style="color:#6E6654;padding-left:14px;">loses useState, the lightbox import and the</div>
+          <div style="color:#6E6654;padding-left:14px;">LightboxCommander prop. Becomes a</div>
+          <div style="color:#6E6654;padding-left:14px;">CardDetailTrigger around its own chip.</div>
+          <div style="height:8px;"></div>
+          <div style="color:#8B8270;">~ src/components/commanders/detail.tsx</div>
+          <div style="color:#6E6654;padding-left:14px;">passes oracleId + name instead of six fields;</div>
+          <div style="color:#6E6654;padding-left:14px;">desktop art panel gains the same trigger</div>
+        </div>
+        <div style="font-size:12.5px;color:#A59C89;line-height:1.6;margin-top:14px;"><b style="color:#EDE6D8;font-weight:600;">The client payload gets smaller.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">LightboxCommander</span> shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">manaCost</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">typeLine</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">oracleText</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">colorIdentity</span> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">imageUri</span> to the client on every commander detail render, to draw a surface most players never open. The modal fetches on click &mdash; the pattern the provider's own comment says it exists for.</div>
+      </div>
+
+      <div style="width:520px;flex:none;background:#1A1611;border:1px solid #2B241B;border-radius:14px;padding:20px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8B8270;margin-bottom:14px;">Accessibility ledger</div>
+        <div style="display:flex;flex-direction:column;gap:11px;font-size:12.5px;color:#A59C89;line-height:1.55;">
+          <div style="display:flex;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6FA368;flex:none;width:74px;padding-top:2px;">kept</span><span>Focus trap, Escape-to-close, focus return to the trigger, scroll lock &mdash; both surfaces use <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">useDialogA11y</span>. The trigger is never <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">disabled</span> while the fetch runs, so focus always has somewhere to return to.</span></div>
+          <div style="display:flex;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6FA368;flex:none;width:74px;padding-top:2px;">gained</span><span>Oracle text and the type line become <b style="color:#EDE6D8;font-weight:600;">real text</b> rather than an <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">sr-only</span> transcript of an image. Selectable, zoomable, reflowing, and one copy instead of two.</span></div>
+          <div style="display:flex;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6FA368;flex:none;width:74px;padding-top:2px;">gained</span><span>The trigger's accessible name joins the shared one &mdash; <i>View details for Kykar, Wind's Fury</i> &mdash; so the page stops having two conventions for the same gesture.</span></div>
+          <div style="display:flex;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6FA368;flex:none;width:74px;padding-top:2px;">gained</span><span>A second Escape stage: with the printing region open, Escape collapses it and returns focus to the Set field before a second Escape closes the dialog.</span></div>
+          <div style="display:flex;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#DEAA29;flex:none;width:74px;padding-top:2px;">changed</span><span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-label</span> on the dialog becomes <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">aria-labelledby</span> the card name heading &mdash; the modal's shipped pattern. The lightbox's <i>&ldquo;Full card &mdash; {name}&rdquo;</i> label goes with it.</span></div>
+          <div style="display:flex;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C6533F;flex:none;width:74px;padding-top:2px;">lost</span><span><i>&ldquo;Tap anywhere to close&rdquo;</i>. The gesture survives on the backdrop; the sentence does not, because at 390px the sheet is full-screen and there is no visible backdrop for the sentence to be about. The 32px &#10005; is at the top-right, at a 44px hit box.</span></div>
+          <div style="display:flex;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8B8270;flex:none;width:74px;padding-top:2px;">note</span><span>One new live-region announcement reaches this route for free: the provider's <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Loading card details&hellip;</span> during the fetch. The lightbox opened instantly because its data was already on the client; this trades an invisible payload for a named wait.</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  </div>
+</div>
+
+</x-dc>
+</body>
+</html>

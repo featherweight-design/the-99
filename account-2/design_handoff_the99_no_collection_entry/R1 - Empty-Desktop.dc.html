@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>No cards outside first run, desktop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C}
+.cap{font-size:12.5px;line-height:1.5;color:#95A4A6}
+.dk{width:1300px;height:820px;flex:none;display:flex;background:#121217;border:1px solid #2E3340;border-radius:12px;overflow:hidden;position:relative;box-sizing:border-box}
+.rail{width:72px;flex:none;background:#16171D;border-right:1px solid #2E3340;display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:6px;box-sizing:border-box}
+.logo{width:36px;height:36px;border-radius:9px;border:1px solid #5C86C9;color:#5C86C9;display:flex;align-items:center;justify-content:center;font:700 14px 'Metamorphous',serif;margin-bottom:10px}
+.slot{width:48px;height:46px;border-radius:10px;display:flex;align-items:center;justify-content:center;font:500 8.5px 'IBM Plex Mono',monospace;letter-spacing:.04em;color:#95A4A6;text-decoration:none;background:transparent;border:0}
+.slot.lk{color:#5F6875}
+.slot.cur{background:#1E1F26;color:#C6D2D3}
+.slot.lk.cur{background:#1B1C22;color:#7C8590}
+.well{width:52px;background:#0F1014;border:1px solid #2E3340;border-radius:12px;padding:4px 0 9px;display:flex;flex-direction:column;align-items:center;gap:4px;box-sizing:border-box}
+.wl{font:500 8.5px 'IBM Plex Mono',monospace;letter-spacing:.1em;color:#5F6875}
+.main{flex:1;min-width:0;display:flex;flex-direction:column;position:relative}
+.center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 40px}
+.h1{margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px;color:#C6D2D3}
+.lede{margin:10px 0 0;max-width:520px;font-size:14px;line-height:1.6;color:#95A4A6}
+.door{display:flex;flex-direction:column;align-items:flex-start;gap:8px;width:540px;padding:18px;margin-top:26px;border:1px solid #424755;background:#1E1F26;border-radius:12px;text-align:left;box-sizing:border-box}
+.mark{width:34px;height:34px;border-radius:9px;background:#2A2B33;color:#5C86C9;display:flex;align-items:center;justify-content:center;font-size:17px}
+.dt{font-size:15px;font-weight:600;color:#C6D2D3}
+.ds{font-size:13px;line-height:1.5;color:#95A4A6}
+.alt{width:540px;margin-top:16px;display:flex;flex-direction:column;gap:6px;text-align:left}
+.altk{font:500 9.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C}
+.ways{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+.way{display:flex;flex-direction:column;gap:2px;min-height:44px;padding:7px 10px;margin-left:-10px;border-radius:8px;background:transparent;border:0;text-align:left;font-family:'IBM Plex Sans',sans-serif}
+.way .wt{font-size:13px;font-weight:600;color:#C6D2D3}
+.way .wt i{font-style:normal;color:#7C8A8C;font-weight:400;margin-left:4px}
+.way .ws{font-size:12px;line-height:1.45;color:#95A4A6}
+.bp{height:40px;padding:0 18px;border-radius:8px;background:#C6D2D3;color:#121217;border:0;font:600 13.5px 'IBM Plex Sans',sans-serif;margin-top:22px}
+.bg{height:34px;padding:0 13px;border-radius:8px;background:transparent;color:#C6D2D3;border:1px solid #424755;font:400 12.5px 'IBM Plex Sans',sans-serif}
+.bps{height:34px;padding:0 14px;border-radius:8px;background:#C6D2D3;color:#121217;border:0;font:600 12.5px 'IBM Plex Sans',sans-serif}
+.hd{display:flex;align-items:flex-end;justify-content:space-between;padding:26px 28px 0}
+.kick{margin:0 0 7px;font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.18em;text-transform:uppercase;color:#7C8A8C}
+.pl{margin:12px 28px 0;display:flex;align-items:center;gap:8px;font-size:12.5px;color:#95A4A6}
+.sec{padding:22px 28px 0;display:flex;flex-direction:column;gap:12px}
+.sh{font-family:'Metamorphous',serif;font-size:17px;color:#C6D2D3}
+.res{display:flex;align-items:center;gap:14px;padding:12px 14px;background:#1E1F26;border:1px solid #2E3340;border-radius:12px}
+.port{width:56px;height:56px;border-radius:8px;background:#23252E;flex:none}
+.note{position:absolute;width:268px;padding:14px;background:#22232B;border:1px solid #424755;border-radius:10px;display:flex;flex-direction:column;gap:10px;box-sizing:border-box}
+</style>
+</helmet>
+<div style="width:2760px;box-sizing:border-box;padding:40px 56px 56px;background:#0E0E12;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:22px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span class="k">No cards, outside first run · S12, S13 · the lock · Open 7 · desktop 1300 · R1</span>
+    <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px">Collection opens at zero and holds every way in; the rankers say so and send you there</h2>
+    <p class="cap" style="margin:0;max-width:1700px">Starting empty (c) is leaving step 1 with nothing: the player can open Collection, whose empty state repeats step 1’s order. Commanders, Discover and Decks keep the lock until a card lands. Their empty states, reached by URL, point to Collection rather than to the upload alone.</p>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(2,1300px);gap:40px 48px">
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">S13 · /collection at zero cards · open, with every way in</span>
+      <div class="dk">
+        <nav class="rail" aria-label="Main"><span class="logo" aria-hidden="true">99</span><a class="slot" href="#">HOME</a><a class="slot cur" href="#" aria-current="page">COLL</a><div class="well"><button class="slot lk" type="button">CMDRS</button><button class="slot lk" type="button">DISC</button><button class="slot lk" type="button">DECKS</button><span class="wl">LOCKED</span></div></nav>
+        <main class="main">
+          <div class="center">
+            <h1 class="h1">Your collection is empty</h1>
+            <p class="lede">A pile of possibilities waiting for a commander. Bring a file over, or start another way.</p>
+            <a class="door" href="#" style="text-decoration:none"><span class="mark" aria-hidden="true">↥</span><span class="dt">Upload a file</span><span class="ds">A CSV from ManaBox, Moxfield, Archidekt or Deckbox</span></a>
+            <div class="alt" role="group" aria-labelledby="e1a">
+              <span class="altk" id="e1a">No file? Start another way</span>
+              <div class="ways">
+                <button class="way" type="button"><span class="wt">Precons I own<i>›</i></span><span class="ws">Pick the boxes you own.</span></button>
+                <button class="way" type="button"><span class="wt">Import a deck<i>›</i></span><span class="ws">Paste a list you play.</span></button>
+                <button class="way" type="button"><span class="wt">Add cards<i>›</i></span><span class="ws">Search by name, one by one.</span></button>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+      <span class="cap" style="max-width:1300px">The shipped two equal doors become one: Upload keeps its tile (now 540 wide, the only tile), and Add cards joins Precons I own and Import a deck as the same text group step 1 uses, so the two surfaces teach one order. The body’s second clause changes to match. Edit switch off: the shipped single Upload your CSV button and a locked Collection slot, unchanged.</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">S12 · Home with a deck and no cards · the note outside first run</span>
+      <div class="dk">
+        <nav class="rail" aria-label="Main"><span class="logo" aria-hidden="true">99</span><a class="slot cur" href="#" aria-current="page">HOME</a><a class="slot" href="#">COLL</a><div class="well"><button class="slot lk" type="button">CMDRS</button><button class="slot lk" type="button">DISC</button><button class="slot lk" type="button" style="background:#1B1C22" aria-expanded="true">DECKS</button><span class="wl">LOCKED</span></div></nav>
+        <div class="note" role="status" style="left:84px;top:198px"><span class="altk" style="color:#5F6875">Locked</span><span style="font-size:13px;line-height:1.5;color:#B3C0C2">Decks opens once your cards are in. So do Commanders and Discover. Your decks are on Home until then.</span><button class="bg" type="button" style="align-self:flex-start">Add your cards</button></div>
+        <main class="main">
+          <div class="hd"><div><p class="kick">0 cards · 1 deck</p><h1 class="h1">Welcome back</h1></div><div style="display:flex;gap:8px"><button class="bps" type="button">Add your cards</button></div></div>
+          <p class="pl"><svg width="12" height="15" viewBox="0 0 11 14" aria-hidden="true" style="color:#5F6875"><path d="M2.5 6V4a3 3 0 0 1 6 0v2" fill="none" stroke="currentColor" stroke-width="1.4"/><rect x=".5" y="6" width="10" height="7.5" rx="1.5" fill="currentColor"/></svg>Commanders, Discover and Decks open once your cards are in.</p>
+          <div class="sec"><span class="sh">Pick up where you left off</span>
+            <div class="res"><span class="port" aria-hidden="true"></span><div style="flex:1;display:flex;flex-direction:column;gap:4px"><span style="font-size:14px;font-weight:600">Kinnan Ramp</span><span style="font:11.5px 'IBM Plex Mono',monospace;color:#95A4A6">imported today · 0 of 100 owned · 100 to buy</span></div><span style="color:#7C8A8C">›</span></div>
+          </div>
+        </main>
+      </div>
+      <span class="cap" style="max-width:1300px">The account path (a) declined leaves. Today it gets the dashboard with no lock line and a Ready to build that ranks nothing. Drawn: the dashboard’s header with Add your cards as its one fill (replacing Update collection and New deck, which need cards), the page line from first run, and the resume row that reaches the deck. Ready to build is absent at zero cards, not empty. The note’s button is Add your cards, to /collection, because there is no step 1 here; its sentence names where the decks are.</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">Open 7 · /commanders at zero cards (typed URL)</span>
+      <div class="dk">
+        <nav class="rail" aria-label="Main"><span class="logo" aria-hidden="true">99</span><a class="slot" href="#">HOME</a><a class="slot" href="#">COLL</a><div class="well"><button class="slot lk cur" type="button" aria-current="page">CMDRS</button><button class="slot lk" type="button">DISC</button><button class="slot lk" type="button">DECKS</button><span class="wl">LOCKED</span></div></nav>
+        <main class="main"><div class="center">
+          <h1 class="h1">Nothing to rank yet</h1>
+          <p class="lede">We rank commanders from the cards you own. Add some and every one you can build shows up here.</p>
+          <a class="bp" href="#" style="display:inline-flex;align-items:center;text-decoration:none">Add your cards</a>
+        </div></main>
+      </div>
+      <span class="cap" style="max-width:1300px">Replaces No collection yet / Upload collection. One button to /collection, where all four ways are, instead of the upload alone. The title is the same on both routes; the body names what each ranks.</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">Open 7 · /discover at zero cards (typed URL)</span>
+      <div class="dk">
+        <nav class="rail" aria-label="Main"><span class="logo" aria-hidden="true">99</span><a class="slot" href="#">HOME</a><a class="slot" href="#">COLL</a><div class="well"><button class="slot lk" type="button">CMDRS</button><button class="slot lk cur" type="button" aria-current="page">DISC</button><button class="slot lk" type="button">DECKS</button><span class="wl">LOCKED</span></div></nav>
+        <main class="main"><div class="center">
+          <h1 class="h1">Nothing to rank yet</h1>
+          <p class="lede">Discover finds commanders your cards are close to building. Add some and they show up here.</p>
+          <a class="bp" href="#" style="display:inline-flex;align-items:center;text-decoration:none">Add your cards</a>
+        </div></main>
+      </div>
+      <span class="cap" style="max-width:1300px">Both titles and bodies move from inline literals to copy keys (commanders.empty, discovery.empty). With the edit switch off, the button reads Upload collection and goes to /collection/replace, as shipped.</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2760,"height":1960}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Motion retune · desktop and timing table</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+@keyframes menuA{from{opacity:0;transform:translateY(-6px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes menuB{from{opacity:0;transform:translateY(-6px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes upA{from{transform:translateY(100%)}to{transform:none}}
+@keyframes upB{from{transform:translateY(100%)}to{transform:none}}
+@keyframes zoomA{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:none}}
+@keyframes zoomB{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:none}}
+@keyframes turnA{from{transform:perspective(200px) rotateY(0)}to{transform:perspective(200px) rotateY(180deg)}}
+@keyframes turnB{from{transform:perspective(200px) rotateY(0)}to{transform:perspective(200px) rotateY(180deg)}}
+@keyframes riseA{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+@keyframes riseB{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+@keyframes slideA{from{opacity:0;transform:translateX(26px)}to{opacity:1;transform:none}}
+@keyframes slideB{from{opacity:0;transform:translateX(26px)}to{opacity:1;transform:none}}
+@keyframes tagA{from{opacity:0;transform:translateX(-5px)}to{opacity:1;transform:none}}
+@keyframes tagB{from{opacity:0;transform:translateX(-5px)}to{opacity:1;transform:none}}
+@keyframes fadeA{from{opacity:0}to{opacity:1}}
+@keyframes fadeB{from{opacity:0}to{opacity:1}}
+@keyframes snapA{from{transform:translateY(40%)}to{transform:none}}
+@keyframes snapB{from{transform:translateY(40%)}to{transform:none}}
+.runA .k-menu{animation-name:menuA}.runB .k-menu{animation-name:menuB}
+.runA .k-up{animation-name:upA}.runB .k-up{animation-name:upB}
+.runA .k-zoom{animation-name:zoomA}.runB .k-zoom{animation-name:zoomB}
+.runA .k-turn{animation-name:turnA}.runB .k-turn{animation-name:turnB}
+.runA .k-rise{animation-name:riseA}.runB .k-rise{animation-name:riseB}
+.runA .k-slide{animation-name:slideA}.runB .k-slide{animation-name:slideB}
+.runA .k-tag{animation-name:tagA}.runB .k-tag{animation-name:tagB}
+.runA .k-fade{animation-name:fadeA}.runB .k-fade{animation-name:fadeB}
+.runA .k-snap{animation-name:snapA}.runB .k-snap{animation-name:snapB}
+.lift img,.lift .art{transition:filter 200ms cubic-bezier(.45,0,.55,1)}
+.lift:hover .art{filter:brightness(1.06)}
+</style>
+</helmet>
+<div class="{{run}}" style="width:1280px;min-height:1700px;box-sizing:border-box;padding:40px 48px;background:#121217;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:28px">
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px">
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#7C8A8C">Motion · desktop · R2 · plays on a loop</span>
+      <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px">Answers open at once, arrivals wait a beat</h2>
+      <p style="margin:0;max-width:820px;font-size:13px;line-height:1.55;color:#95A4A6"><b style="color:#C6D2D3;font-weight:600">Answer</b>: a menu, popover, hover or zoom that answers a press. No delay, <code style="font-family:'IBM Plex Mono',monospace;font-size:12px">--motion-quick</code> 200ms on <code style="font-family:'IBM Plex Mono',monospace;font-size:12px">--motion-ease</code>. <b style="color:#C6D2D3;font-weight:600">Arrival</b>: a sheet or card the reader opened. <code style="font-family:'IBM Plex Mono',monospace;font-size:12px">--motion-delay</code> 100ms, then <code style="font-family:'IBM Plex Mono',monospace;font-size:12px">--motion-duration</code> 320ms. <b style="color:#C6D2D3;font-weight:600">Kept</b>: three motions keep their decelerating curve, named once as <code style="font-family:'IBM Plex Mono',monospace;font-size:12px">--motion-ease-out</code>. Exits run about two-thirds of their entrance.</p>
+    </div>
+    <button type="button" onClick="{{play}}" style="flex:none;height:40px;padding:0 18px;background:#5C86C9;border:0;border-radius:8px;font-family:'IBM Plex Sans',sans-serif;font-size:14px;font-weight:600;color:#121217;cursor:pointer">Replay now</button>
+  </div>
+
+  <div style="display:flex;flex-direction:column;border:1px solid #1A1F2B;border-radius:10px;overflow:hidden">
+    <div style="display:grid;grid-template-columns:190px 170px 230px 1fr 120px 120px;gap:0 14px;padding:9px 14px;background:#1E1F26;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.06em;color:#7C8A8C">
+      <span>class</span><span>today</span><span>R1</span><span>timeline, 1px = 2ms · grey is the wait</span><span>today</span><span>R1</span>
+    </div>
+    <sc-for list="{{rows}}" as="r" hint-placeholder-count="13">
+      <div style="display:grid;grid-template-columns:190px 170px 230px 1fr 120px 120px;gap:0 14px;align-items:center;padding:10px 14px;border-top:1px solid #1A1F2B">
+        <div style="display:flex;flex-direction:column;gap:2px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6D2D3">{{r.name}}</span><span style="font-size:11px;color:#7C8A8C">{{r.what}}</span></div>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A4A6">{{r.today}}</span>
+        <div style="display:flex;flex-direction:column;gap:2px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C6D2D3">{{r.next}}</span><span style="font-size:11px;line-height:1.4;color:{{r.kindInk}}">{{r.kind}}</span></div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <div style="display:flex;align-items:center"><span style="height:5px;width:{{r.oldWaitPx}}px;background:#2E3340;border-radius:3px"></span><span style="height:5px;width:{{r.oldRunPx}}px;background:#5F6D6E;border-radius:3px"></span></div>
+          <div style="display:flex;align-items:center"><span style="height:5px;width:{{r.newWaitPx}}px;background:#2E3340;border-radius:3px"></span><span style="height:5px;width:{{r.newRunPx}}px;background:#5C86C9;border-radius:3px"></span></div>
+        </div>
+        <div style="height:46px;position:relative;overflow:hidden;background:#16171D;border-radius:6px;display:flex;align-items:center;justify-content:center">
+          <span class="k-{{r.k}}" style="width:44px;height:30px;border-radius:5px;background:#5F6D6E;animation-duration:{{r.oldDur}}ms;animation-delay:{{r.oldDelay}}ms;animation-timing-function:{{r.oldEase}};animation-fill-mode:both"></span>
+        </div>
+        <div style="height:46px;position:relative;overflow:hidden;background:#16171D;border-radius:6px;display:flex;align-items:center;justify-content:center">
+          <span class="k-{{r.k}}" style="width:44px;height:30px;border-radius:5px;background:#5C86C9;animation-duration:{{r.newDur}}ms;animation-delay:{{r.newDelay}}ms;animation-timing-function:{{r.newEase}};animation-fill-mode:both"></span>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px">
+    <div style="display:flex;flex-direction:column;gap:10px;padding:16px;background:#1E1F26;border:1px solid #1A1F2B;border-radius:10px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C">E7 · art brightens · hover me</span>
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">
+        <div class="lift" style="display:flex;flex-direction:column;border:1px solid #1A1F2B;border-radius:9px;overflow:hidden;background:#1E1F26"><span class="art" style="display:block;aspect-ratio:63/88;background:#4A5266"></span><span style="padding:6px 8px;font-size:11px;color:#C6D2D3">Sol Ring</span></div>
+        <div class="lift" style="display:flex;flex-direction:column;border:1px solid #1A1F2B;border-radius:9px;overflow:hidden;background:#1E1F26"><span class="art" style="display:block;aspect-ratio:63/88;background:#5A4A3E"></span><span style="padding:6px 8px;font-size:11px;color:#C6D2D3">Cultivate</span></div>
+        <div class="lift" style="display:flex;flex-direction:column;border:1px solid #1A1F2B;border-radius:9px;overflow:hidden;background:#1E1F26"><span class="art" style="display:block;aspect-ratio:63/88;background:#3E5A4A"></span><span style="padding:6px 8px;font-size:11px;color:#C6D2D3">Swords</span></div>
+      </div>
+      <p style="margin:0;font-size:12px;line-height:1.5;color:#B3C0C2">The art takes <code style="font-family:'IBM Plex Mono',monospace;font-size:11px">brightness(1.06)</code> on 200ms, hover-capable pointers only. No lift, no shadow: nothing gets its own layer on a 200-tile grid, and only the hovered image repaints. Applies to the deck tile, card tile, precon tile and set cell. Not to rows.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;padding:16px;background:#1E1F26;border:1px solid #1A1F2B;border-radius:10px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C">E8 · count up</span>
+      <div style="display:flex;gap:26px;align-items:baseline">
+        <div style="display:flex;flex-direction:column;gap:2px"><span aria-hidden="true" style="font-family:'IBM Plex Mono',monospace;font-size:28px;font-weight:500;font-variant-numeric:tabular-nums;color:#C6D2D3">{{countA}}</span><span style="font-size:11px;color:#7C8A8C">cards in your collection</span></div>
+        <div style="display:flex;flex-direction:column;gap:2px"><span aria-hidden="true" style="font-family:'IBM Plex Mono',monospace;font-size:28px;font-weight:500;font-variant-numeric:tabular-nums;color:#C6D2D3">{{countB}}</span><span style="font-size:11px;color:#7C8A8C">lands in the deck</span></div>
+      </div>
+      <p style="margin:0;font-size:12px;line-height:1.5;color:#B3C0C2">Two families only: Home's count figures and the deck stats' count totals. Never money, never a percentage. From 0 on a visit's first paint, from the old figure when it changes; 100ms wait, 320ms on <code style="font-family:'IBM Plex Mono',monospace;font-size:11px">--motion-ease</code>, whole numbers, tabular figures. Under 10 it does not count. The moving digits are <code style="font-family:'IBM Plex Mono',monospace;font-size:11px">aria-hidden</code>; the final value is in the text from the first render.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;padding:16px;background:#1E1F26;border:1px solid #1A1F2B;border-radius:10px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C">E9 · Show more, staggered</span>
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px">
+        <sc-for list="{{stagger}}" as="s" hint-placeholder-count="16">
+          <span class="k-fade" style="height:26px;border-radius:5px;background:{{s.ink}};animation-duration:200ms;animation-delay:{{s.delay}}ms;animation-timing-function:cubic-bezier(.45,0,.55,1);animation-fill-mode:both"></span>
+        </sc-for>
+      </div>
+      <p style="margin:0;font-size:12px;line-height:1.5;color:#B3C0C2">Item n of the new batch fades in at 100 + 40 × min(n, 11) ms, 200ms each, opacity only. Items past the 12th (grey) arrive with the 12th, so the whole batch lands inside 740ms. Rows and tiles alike.</p>
+    </div>
+  </div>
+
+  <div style="padding:14px 16px;border:1px dashed #424755;border-radius:10px;font-size:12px;line-height:1.55;color:#B3C0C2">
+    <b style="color:#C6D2D3;font-weight:600">Reduced motion</b>, unchanged policy: every class above joins the named list. Movement goes. Opacity-only fades (overlay, backdrop, Show more) shorten to 100ms with no wait. The count-up shows the final figure. The art brighten keeps its end state with no transition. Drag and swipe are never transitioned.
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1700}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { run: '', countA: 1418, countB: 36 };
+    // R2: plays on its own, once shortly after it opens and then every 2.6s, so nothing waits on a press.
+    this._boot = setTimeout(() => {
+      this.play();
+      this._loop = setInterval(() => this.play(), 2600);
+    }, 700);
+  }
+  componentWillUnmount() {
+    clearTimeout(this._boot);
+    clearInterval(this._loop);
+  }
+  play() {
+    const run = this.state.run === 'runA' ? 'runB' : 'runA';
+    this.setState({ run: run, countA: 0, countB: 0 });
+    const start = performance.now() + 100;
+    const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
+    const tick = (now) => {
+      const t = Math.max(0, Math.min(1, (now - start) / 320));
+      const e = ease(t);
+      this.setState({ countA: Math.round(1418 * e), countB: Math.round(36 * e) });
+      if (t < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+  renderVals() {
+    const EASE = 'cubic-bezier(.45,0,.55,1)';
+    const OUT = 'cubic-bezier(.2,.7,.2,1)';
+    const answer = { kind: 'answer · no wait', kindInk: '#95A4A6' };
+    const arrival = { kind: 'arrival · waits 100ms', kindInk: '#5C86C9' };
+    const kept = { kind: 'kept curve, tokenised', kindInk: '#E0913C' };
+    const row = (o) => Object.assign({}, o, {
+      oldWaitPx: o.oldDelay / 2, oldRunPx: o.oldDur / 2,
+      newWaitPx: o.newDelay / 2, newRunPx: o.newDur / 2
+    });
+    const rows = [
+      row(Object.assign({ name: 'anim-menu-in', what: 'menus, popovers', k: 'menu', today: '120 · ease-out', next: '200 quick · ease', oldDur: 120, oldDelay: 0, oldEase: 'ease-out', newDur: 200, newDelay: 0, newEase: EASE }, answer)),
+      row(Object.assign({ name: 'anim-sheet-up', what: 'account sheet (a menu)', k: 'up', today: '180 · (.22,1,.36,1)', next: '320 duration · ease', oldDur: 180, oldDelay: 0, oldEase: 'cubic-bezier(.22,1,.36,1)', newDur: 320, newDelay: 0, newEase: EASE }, answer)),
+      row(Object.assign({ name: 'anim-zoom-in', what: 'card zoom', k: 'zoom', today: '200 · ease-out', next: '200 quick · ease', oldDur: 200, oldDelay: 0, oldEase: 'ease-out', newDur: 200, newDelay: 0, newEase: EASE }, answer)),
+      row(Object.assign({ name: 'anim-card-turn', what: 'flip a two-faced card', k: 'turn', today: '320 · (.2,.7,.2,1)', next: '320 duration · ease-out', oldDur: 320, oldDelay: 0, oldEase: OUT, newDur: 320, newDelay: 0, newEase: OUT }, kept)),
+      row(Object.assign({ name: 'anim-stack-rise', what: 'card over a sheet', k: 'rise', today: '240 · (.2,.7,.2,1)', next: '100 + 320 · ease', oldDur: 240, oldDelay: 0, oldEase: OUT, newDur: 320, newDelay: 100, newEase: EASE }, arrival)),
+      row(Object.assign({ name: 'anim-phone-card-enter', what: 'phone card details', k: 'rise', today: '240 · (.2,.7,.2,1)', next: '100 + 320 · ease', oldDur: 240, oldDelay: 0, oldEase: OUT, newDur: 320, newDelay: 100, newEase: EASE }, arrival)),
+      row(Object.assign({ name: 'anim-carousel-prev/next', what: 'Prev and Next art', k: 'slide', today: '200 · ease-out', next: '200 quick · ease-out', oldDur: 200, oldDelay: 0, oldEase: 'ease-out', newDur: 200, newDelay: 0, newEase: OUT }, kept)),
+      row(Object.assign({ name: 'anim-rail-tag', what: 'rail name on hover', k: 'tag', today: '100 · ease-out', next: '200 quick · ease', oldDur: 100, oldDelay: 0, oldEase: 'ease-out', newDur: 200, newDelay: 0, newEase: EASE }, answer)),
+      row(Object.assign({ name: 'anim-overlay-in / -out', what: 'escalation screen', k: 'fade', today: '150 / 120 · ease-out', next: '200 / 140 · ease', oldDur: 150, oldDelay: 0, oldEase: 'ease-out', newDur: 200, newDelay: 0, newEase: EASE }, answer)),
+      row(Object.assign({ name: '.sheet-snap', what: 'snap after a drag', k: 'snap', today: '240 · (.2,.7,.2,1)', next: '200 quick · ease-out', oldDur: 240, oldDelay: 0, oldEase: OUT, newDur: 200, newDelay: 0, newEase: OUT }, kept)),
+      row(Object.assign({ name: 'anim-sheet-in', what: 'filter sheet (E2)', k: 'rise', today: '180 · ease', next: '100 + 320 · ease', oldDur: 180, oldDelay: 0, oldEase: EASE, newDur: 320, newDelay: 100, newEase: EASE }, arrival)),
+      row(Object.assign({ name: 'anim-backdrop-in', what: 'its backdrop (E2)', k: 'fade', today: '180 · ease', next: '100 + 320 · ease', oldDur: 180, oldDelay: 0, oldEase: EASE, newDur: 320, newDelay: 100, newEase: EASE }, arrival)),
+      row(Object.assign({ name: 'anim-quickadd-in', what: 'results as you type (E2)', k: 'rise', today: '140 · ease', next: '200 quick · ease', oldDur: 140, oldDelay: 0, oldEase: EASE, newDur: 200, newDelay: 0, newEase: EASE }, answer))
+    ];
+    const stagger = [];
+    for (let i = 0; i < 16; i++) {
+      stagger.push({ delay: 100 + 40 * Math.min(i, 11), ink: i < 12 ? '#5C86C9' : '#5F6D6E' });
+    }
+    return {
+      run: this.state.run,
+      rows: rows,
+      stagger: stagger,
+      countA: this.state.countA.toLocaleString('en-US'),
+      countB: this.state.countB,
+      play: () => this.play()
+    };
+  }
+}
+</script>
+</body>
+</html>

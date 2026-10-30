@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Discovery R3 · empty states that name their tool</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.lbl{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#8B8270}
+.mono{font-family:'IBM Plex Mono',monospace}
+.disp{font-family:'Cinzel',serif;font-weight:600}
+.cap{margin:0;font-size:14px;line-height:1.6;color:#A59C89;text-wrap:pretty}
+.sec{display:flex;flex-direction:column;gap:16px;border-top:1px solid #3A3229;padding-top:20px}
+.h{display:flex;align-items:baseline;gap:12px}
+.h .id{font-family:'IBM Plex Mono',monospace;font-size:13px;color:#CF8745}
+.h .t{font-size:19px;font-weight:600;color:#EDE6D8}
+.frames{display:flex;gap:40px;align-items:flex-start}
+.w{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;margin-bottom:8px}
+.dk{width:1280px;border-radius:12px;overflow:hidden;border:1px solid #3A3229}
+.ph{width:390px;height:844px;border-radius:18px;overflow:hidden;border:1px solid #3A3229}
+.on{color:#6FA368}.off{color:#C6533F}
+</style>
+</helmet>
+<div style="width:1800px;min-height:4240px;box-sizing:border-box;padding:44px 40px 60px;background:#0F0D0B;font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;display:flex;flex-direction:column;gap:40px">
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:1300px">
+    <span class="lbl">Discovery R3 · tools where the need is · empty states · 1280 and 390 · Amonkhet</span>
+    <h2 class="disp" style="margin:0;font-size:28px">An empty state names the tool that fills it, in one quiet line</h2>
+    <p class="cap">The line sits under the empty state’s own buttons, in the door shape /discover already ships: a plain question, then the tool as an underlined accent link. It is never a second button or a card. With the tool’s switch off the line is absent, and the empty state is exactly as shipped. Both screens are rebuilt from <span class="mono">src/</span>, since no staging account has zero decks (G26).</p>
+  </div>
+
+  <section class="sec">
+    <div class="h"><span class="id">E1</span><span class="t">No decks yet → Help me choose <span class="mono on" style="font-size:12px;font-weight:400">· HELP_ME_CHOOSE_ENABLED on</span></span></div>
+    <p class="cap">Under Browse commanders and Import a deck, and under the buildable line. <span class="mono">DecksZeroActions</span> is shared, so Home’s <span class="mono">No decks yet</span> gains the same line (Home draws no buildable line, as shipped). It opens Help me choose, as the door on /decks/new does.</p>
+    <div class="frames">
+      <div><div class="w">1280 · /decks</div><div class="dk"><dc-import name="NeedDesk" page="decks" hmc="{{ true }}" h="560" hint-size="1280px,560px"></dc-import></div></div>
+      <div><div class="w">390 · /decks</div><div class="ph"><dc-import name="NeedPhone" page="decks" hmc="{{ true }}" hint-size="390px,844px"></dc-import></div></div>
+    </div>
+  </section>
+  <section class="sec">
+    <div class="h"><span class="id">E1·off</span><span class="t">No decks yet, with the switch off <span class="mono off" style="font-size:12px;font-weight:400">· HELP_ME_CHOOSE_ENABLED off</span></span></div>
+    <div class="frames">
+      <div><div class="w">1280 · /decks, as shipped</div><div class="dk"><dc-import name="NeedDesk" page="decks" hmc="{{ false }}" h="560" hint-size="1280px,560px"></dc-import></div></div>
+      <div><div class="w">390 · /decks, as shipped</div><div class="ph"><dc-import name="NeedPhone" page="decks" hmc="{{ false }}" hint-size="390px,844px"></dc-import></div></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="h"><span class="id">E2</span><span class="t">Commanders’ first run → Help me choose (G1) <span class="mono on" style="font-size:12px;font-weight:400">· HELP_ME_CHOOSE_ENABLED on</span></span></div>
+    <p class="cap">At the end of the guided banner’s line, where a player with cards and no deck already stands. At 390 the ribbon gives the door its own 32px line. This is now R1’s M12 anchor: the first /commanders visit with no decks is exactly when the banner shows.</p>
+    <div class="frames">
+      <div><div class="w">1280 · /commanders, first run</div><div class="dk"><dc-import name="NeedDesk" page="commanders" hmc="{{ true }}" h="560" hint-size="1280px,560px"></dc-import></div></div>
+      <div><div class="w">390 · /commanders, first run</div><div class="ph"><dc-import name="NeedPhone" page="commanders" hmc="{{ true }}" hint-size="390px,844px"></dc-import></div></div>
+    </div>
+  </section>
+  <section class="sec">
+    <div class="h"><span class="id">E2·off</span><span class="t">Commanders’ first run, with the switch off <span class="mono off" style="font-size:12px;font-weight:400">· HELP_ME_CHOOSE_ENABLED off</span></span></div>
+    <p class="cap">The banner as shipped. R1’s M12 is absent too, because a moment follows its tool’s switch.</p>
+    <div class="frames">
+      <div><div class="w">1280 · as shipped</div><div class="dk"><dc-import name="NeedDesk" page="commanders" hmc="{{ false }}" h="560" hint-size="1280px,560px"></dc-import></div></div>
+      <div><div class="w">390 · as shipped</div><div class="ph"><dc-import name="NeedPhone" page="commanders" hmc="{{ false }}" hint-size="390px,844px"></dc-import></div></div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1800,"height":4240}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

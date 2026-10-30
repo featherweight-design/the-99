@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Discovery R3 · the spotlight and the tour card</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.lbl{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#8B8270}
+.mono{font-family:'IBM Plex Mono',monospace}
+.disp{font-family:'Cinzel',serif;font-weight:600}
+.cap{margin:0;font-size:14px;line-height:1.6;color:#A59C89;text-wrap:pretty}
+.sec{display:flex;flex-direction:column;gap:16px;border-top:1px solid #3A3229;padding-top:20px}
+.h{display:flex;align-items:baseline;gap:12px}
+.h .id{font-family:'IBM Plex Mono',monospace;font-size:13px;color:#CF8745}
+.h .t{font-size:19px;font-weight:600;color:#EDE6D8}
+.frames{display:flex;gap:40px;align-items:flex-start}
+.w{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;margin-bottom:8px}
+.note{display:flex;flex-direction:column;gap:10px;font-size:13.5px;line-height:1.6;color:#C0B8A6}
+.note b{color:#EDE6D8;font-weight:600}
+.note .k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#8B8270;margin-top:6px}
+.zoom{position:relative;overflow:hidden;border-radius:12px;border:1px solid #3A3229}
+</style>
+</helmet>
+<div style="width:1800px;min-height:1620px;box-sizing:border-box;padding:44px 40px 60px;background:#0F0D0B;font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;display:flex;flex-direction:column;gap:40px">
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:1300px">
+    <span class="lbl">Discovery R3 · the first-run tour · the spotlight and the card · Amonkhet</span>
+    <h2 class="disp" style="margin:0;font-size:28px">The spotlight: a scrim, a cutout on the real control, and R1’s halo as its ring</h2>
+    <p class="cap">Spotlights belong to the tour alone (lock 6). Nothing in a moment, a nudge or the “?” dims the app. The tour reuses R1’s halo for the cutout’s ring, so a lit control reads as part of the same family, and lights the control without pressing it.</p>
+  </div>
+
+  <section class="sec">
+    <div class="h"><span class="id">P1</span><span class="t">The cutout, at 2×</span></div>
+    <div class="frames">
+      <div>
+        <div class="w">On a slot · Commanders in the rail’s lock well · 5px of room, radius 14</div>
+        <div class="zoom" style="width:520px;height:520px"><div style="position:absolute;left:0;top:0;transform:scale(2) translate(0px,-60px);transform-origin:0 0"><dc-import name="FirstRunDesk" step="2" hint-size="1280px,800px"></dc-import></div></div>
+      </div>
+      <div>
+        <div class="w">On a card · step 1 of the checklist · 8px of room, radius 20</div>
+        <div class="zoom" style="width:760px;height:520px"><div style="position:absolute;left:0;top:0;transform:scale(2) translate(-40px,-150px);transform-origin:0 0"><dc-import name="FirstRunDesk" step="1" hint-size="1280px,800px"></dc-import></div></div>
+      </div>
+      <div class="note" style="width:340px">
+        <span class="k">The scrim</span>
+        <span>One layer over the whole app at 66%, rail and tab bar included. The cutout is a box shadow, so the lit control is drawn by the app itself, live and in its theme.</span>
+        <span class="k">The ring</span>
+        <span>R1’s halo: 2px accent at 75%, then 6px at 20%. It follows the theme’s accent.</span>
+        <span class="k">The control under it</span>
+        <span>Inert. A press on the cutout does nothing; the tour never presses for the player. Only the card is live.</span>
+        <span class="k">Between steps</span>
+        <span>The cutout glides to the next control in 240ms on <span class="mono">--motion-ease-out</span>, and the card fades across in 160ms. Under reduced motion both cut.</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="h"><span class="id">P2</span><span class="t">The card, at 1280 and at 390</span></div>
+    <div class="frames" style="gap:28px">
+      <div><div class="w">1280 · step 1</div><dc-import name="TourCard" step="1" hint-size="340px,300px"></dc-import></div>
+      <div><div class="w">1280 · step 2, with a picture</div><dc-import name="TourCard" step="2" hint-size="340px,360px"></dc-import></div>
+      <div><div class="w">1280 · step 6</div><dc-import name="TourCard" step="6" hint-size="340px,330px"></dc-import></div>
+      <div><div class="w">390 · step 4</div><dc-import name="TourCard" step="4" phone="{{ true }}" hint-size="358px,380px"></dc-import></div>
+    </div>
+    <div class="note" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 40px;max-width:1500px">
+      <span><span class="k">Surface</span><br><span class="mono">--surface-raised</span>, 1px <span class="mono">--border-strong</span>, radius 14, shadow <span class="mono">0 24 60</span> at 55%. It is the locked-slot note’s surface at card size, not a moment bubble.</span>
+      <span><span class="k">Placement</span><br>At 1280: 340 wide, 16px beside the lit control, and never over it. At 390: 358 wide, docked 12px above the tab bar; the page scrolls so the lit control clears it.</span>
+      <span><span class="k">Reading order</span><br>A mono kicker (<span class="mono">2 of 6 · Commanders</span>), then the title in the theme’s display face, a sentence or two, and a picture or the picker when the step has one. The footer holds progress diamonds and Back and Next.</span>
+      <span><span class="k">Presses</span><br><span class="mono">Next</span> is the shipped bone primary; <span class="mono">Back</span> (from step 2) is the ghost. Step 6’s Next reads <span class="mono">Finish</span>. ✕ is <span class="mono">Skip the tour</span>. 32px at 1280; 44px, and the ✕ a 44px hit, at 390.</span>
+      <span><span class="k">Keys and readers</span><br>A modal dialog labelled by its title, with focus held in it and starting on Next. Enter presses Next and Esc skips. Each step’s lit control is named in the dialog’s description, and the step count is spoken.</span>
+      <span><span class="k">What never happens</span><br>No step runs anything, spends a credit or changes data. The one exception is the theme, which saves as the picker always does.</span>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1800,"height":1620}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

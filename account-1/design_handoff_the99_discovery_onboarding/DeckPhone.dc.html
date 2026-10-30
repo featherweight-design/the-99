@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Part · deck page at 390</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="position:relative;width:390px;height:844px;background:#121217;overflow:hidden;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;border:1px solid #2E3340;border-radius:28px;box-sizing:border-box">
+  <div style="position:absolute;left:0;top:0;z-index:30"><dc-import name="MobileHeader" hint-size="390px,79px"></dc-import></div>
+  <div style="position:absolute;left:0;right:0;top:79px;bottom:74px;overflow:hidden">
+    <div style="{{ scrollStyle }}">
+      <div style="position:relative;height:288px;overflow:hidden;background:#1E1F26">
+        <img src="/_blob/d668d776a53822c47ab4a96b849bee70" alt="" style="width:390px;height:288px;object-fit:cover;object-position:30% 30%;display:block">
+        <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(18,18,23,0) 35%,rgba(18,18,23,.55) 62%,rgba(18,18,23,.92) 100%)"></div>
+        <div style="position:absolute;left:16px;right:40px;bottom:12px;display:flex;flex-direction:column;gap:6px">
+          <h1 style="margin:0;font-family:'Metamorphous',serif;font-size:20px;font-weight:400;line-height:1.25;text-shadow:0 1px 8px rgba(0,0,0,.7)">Sai’s Workshop <span style="font-size:13px;color:#95A4A6">✎</span></h1>
+          <p style="margin:0;font-size:12.5px;color:#B3C0C2">Thopters every turn, sacrificed for cards.</p>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#B3C0C2">Sai, Master Thopterist · Blue</span>
+          <div style="display:flex;gap:6px"><span style="{{ pill }}">{{ pillWord }}</span><span style="height:22px;display:inline-flex;align-items:center;padding:0 7px;border-radius:6px;border:1px solid #2E3340;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#B3C0C2;background:rgba(18,18,23,.6)">Bracket 2</span></div>
+        </div>
+      </div>
+      <div style="border-top:1px solid #1A1F2B;padding:14px 16px 12px;display:flex;flex-direction:column;gap:8px">
+        <span style="height:6px;border-radius:999px;background:#2D2E35;box-shadow:inset 0 0 0 1px rgba(0,0,0,.4);overflow:hidden;display:block"><span style="{{ barFill }}"></span></span>
+        <span style="text-align:center"><span style="{{ countStyle }}">{{ have }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:#7C8A8C"> / 99</span><sc-if value="{{ over }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#C6533F;margin-left:6px">+5</span></sc-if></span>
+        <sc-if value="{{ over }}" hint-placeholder-val="{{ false }}">
+          <p style="margin:0;text-align:center;font-size:12px;color:#B3C0C2"><b style="color:#C6D2D3">Five over the ninety-nine.</b> Cut five and it is legal.</p>
+          <div style="position:relative;height:44px;display:flex;align-items:center;justify-content:center">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#5C86C9;border-bottom:1px dotted #2C405F;border-radius:3px;padding:2px 4px;{{ h3 }}">Proposed cuts →</span>
+            <sc-if value="{{ m3 }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:calc(100% + 2px);left:0;z-index:20"><dc-import name="Moment" tool="Proposed cuts" line="counts where this deck runs long, free. A deeper look can name the five." phone="true" w="358" nibx="174" hint-size="358px,72px"></dc-import></span></sc-if>
+          </div>
+        </sc-if>
+      </div>
+      <div style="display:flex;justify-content:center;gap:8px;padding:4px 16px 14px">
+        <span style="height:44px;display:flex;align-items:center;padding:0 12px;border-radius:7px;border:1px solid #2E3340;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#B3C0C2">Update from a list</span>
+        <span style="height:44px;display:flex;align-items:center;gap:6px;padding:0 14px;border-radius:7px;border:1px solid #2E3340;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#5C86C9">↓ Export</span>
+        <span style="height:44px;width:44px;display:flex;align-items:center;justify-content:center;border-radius:7px;border:1px solid #2E3340;color:#95A4A6">⋯</span>
+      </div>
+
+      <sc-if value="{{ under }}" hint-placeholder-val="{{ true }}">
+        <section style="margin:0 16px 4px;border-radius:10px;background:#181920;border:1px solid #2E3340;padding:13px 14px;display:flex;flex-direction:column;gap:8px">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.14em;color:#5C86C9">THE LAST 12</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#7C8A8C">12 slots open · 40 candidates ranked</span>
+          <div style="position:relative">
+            <span style="display:flex;align-items:center;justify-content:center;gap:8px;height:44px;border-radius:8px;border:1px solid #5C86C9;color:#5C86C9;font-size:14px;font-weight:600;box-sizing:border-box;{{ h1 }}">Choose the last 12 <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#7C8A8C;font-weight:400">↓</span></span>
+            <sc-if value="{{ m1 }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:calc(100% + 10px);left:-15px;z-index:20"><dc-import name="Moment" tool="Top off" line="ranks your own cards for the last 12 slots. Nothing is added until you say so." phone="true" w="358" nibx="174" hint-size="358px,72px"></dc-import></span></sc-if>
+          </div>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#5F6D6E">3 you can sleeve. Nothing is added until you say so.</span>
+        </section>
+      </sc-if>
+
+      <section aria-label="Recommended mix" style="padding:10px 16px">
+        <span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.1em;color:#7C8A8C;margin-bottom:8px">RECOMMENDED MIX</span>
+        <div style="display:flex;gap:4px">
+          <sc-for list="{{ cells }}" as="c" hint-placeholder-count="5">
+            <div style="position:relative;flex:1;min-width:0;min-height:62px;border-radius:7px;padding:7px 2px 6px;background:#16171D;border:1px solid #1A1F2B;box-sizing:border-box;text-align:center">
+              <p style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:.06em;color:#7C8A8C">{{ c.label }}</p>
+              <p style="margin:2px 0 0;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:{{ c.color }}">{{ c.have }}</p>
+              <span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:8px;color:#5F6D6E">rec {{ c.target }}</span>
+              <sc-if value="{{ c.balance }}" hint-placeholder-val="{{ false }}">
+                <span style="position:relative;display:inline-block;margin-top:3px">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:#5C86C9;border-radius:4px;padding:1px 3px;{{ h4 }}">balance →</span>
+                  <sc-if value="{{ m4 }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:calc(100% + 10px);right:-12px;z-index:20"><dc-import name="Moment" tool="Mana Balance" line="counts every source of each color against what your spells ask for. Free." phone="true" w="358" nibx="317" hint-size="358px,72px"></dc-import></span></sc-if>
+                </span>
+              </sc-if>
+              <sc-if value="{{ c.dash }}" hint-placeholder-val="{{ true }}"><span style="display:block;margin-top:3px;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#2E3340">—</span></sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+
+      <nav style="display:flex;align-items:center;gap:16px;padding:10px 16px 0;min-height:44px;border-bottom:1px solid #1A1F2B;box-sizing:border-box;white-space:nowrap">
+        <span style="padding-bottom:10px;border-bottom:2px solid #5C86C9;font-size:13.5px;font-weight:600">Your deck <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#5C86C9">{{ have }}</span></span>
+        <span style="position:relative;display:inline-block;padding-bottom:12px">
+          <span style="font-size:13.5px;font-weight:500;color:#7C8A8C;border-radius:6px;padding:2px 4px;margin:-2px -4px;{{ h2 }}">Analysis</span>
+          <sc-if value="{{ m2 }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:calc(100% - 2px);left:-111px;z-index:20"><dc-import name="Moment" tool="Suggested changes" line="is in Analysis now the deck is full. It reads your games and notes and offers up to five swaps." phone="true" w="358" nibx="138" hint-size="358px,92px"></dc-import></span></sc-if>
+        </span>
+        <span style="padding-bottom:12px;font-size:13.5px;font-weight:500;color:#7C8A8C">Consider <span style="font-family:'IBM Plex Mono',monospace;font-size:11px">40</span></span>
+        <span style="padding-bottom:12px;font-size:13.5px;font-weight:500;color:#7C8A8C">Games <span style="font-family:'IBM Plex Mono',monospace;font-size:11px">4</span></span>
+      </nav>
+
+      <div style="padding:9px 16px">
+        <span style="display:flex;gap:2px;padding:3px;border-radius:9px;border:1px solid #2E3340">
+          <span style="{{ segAll }}">All <span style="font-family:'IBM Plex Mono',monospace;font-size:11px">{{ have }}</span></span>
+          <span style="{{ segShop }}">Shopping <span style="font-family:'IBM Plex Mono',monospace;font-size:11px">14</span></span>
+          <span style="width:1px;background:#2E3340;margin:6px 1px"></span>
+          <span style="flex:1;height:44px;display:flex;align-items:center;justify-content:center;border-radius:6px;font-size:14px;color:#95A4A6">Stats</span>
+          <span style="flex:1;height:44px;display:flex;align-items:center;justify-content:center;border-radius:6px;font-size:14px;color:#95A4A6">Notes</span>
+        </span>
+      </div>
+
+      <sc-if value="{{ shop }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:0 16px;display:flex;flex-direction:column;gap:10px">
+          <div style="border-radius:9px;background:#16171D;padding:10px 13px">
+            <div><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600">$184.20</span> <span style="font-size:10.5px;color:#7C8A8C">· 13 of 14 priced</span></div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#5F6D6E;margin-top:3px;line-height:1.5">single-copy prices on Mana Pool · last checked today</div>
+            <div style="height:44px;display:flex;align-items:center;font-size:13px;color:#5C86C9;text-decoration:underline;text-underline-offset:3px">Buy these at Mana Pool</div>
+          </div>
+          <span style="font-size:13px;color:#B3C0C2">Marking cards over <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;font-weight:600;border-bottom:1px dotted #5C86C9">$10</span> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#7C8A8C">· 3 over</span></span>
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 12px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#7C8A8C">
+            <span><span style="color:#E0913C;font-size:13px">⇄</span> cheaper stand-ins</span>
+            <span><span style="color:#8FA6BE">◆◇</span> friend has a spare</span>
+            <span><span style="padding:1px 5px;border-radius:4px;background:rgba(224,145,60,.13);color:#E0913C">buy</span> press to add</span>
+            <span><span style="padding:1px 5px;border-radius:4px;box-shadow:inset 0 0 0 1px rgba(224,145,60,.6);color:#E0913C">buy</span> over $10</span>
+          </div>
+        </div>
+      </sc-if>
+
+      <div style="padding:12px 16px 40px;display:flex;flex-direction:column;gap:4px">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;color:#7C8A8C;padding:4px 2px">{{ groupHead }}</span>
+        <sc-for list="{{ rows }}" as="r" hint-placeholder-count="8">
+          <div style="min-height:34px;display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:7px;background:#181920;box-sizing:border-box">
+            <span style="{{ r.dot }}"></span>
+            <span style="flex:1;min-width:0;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#C6D2D3">{{ r.name }}</span>
+            <sc-if value="{{ r.contest }}" hint-placeholder-val="{{ false }}">
+              <span style="position:relative;display:inline-flex">
+                <span style="display:inline-flex;align-items:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#80ABEF;border-radius:4px;padding:2px 4px;{{ h7 }}"><span style="width:7px;height:7px;background:#5C86C9;transform:rotate(45deg)"></span>0</span>
+                <sc-if value="{{ m7 }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:calc(100% + 10px);right:-125px;z-index:20"><dc-import name="Moment" tool="None free" line="means another deck holds your only copy. When you commit, you choose which deck keeps it." phone="true" w="358" nibx="222" hint-size="358px,92px"></dc-import></span></sc-if>
+              </span>
+            </sc-if>
+            <sc-if value="{{ r.soft }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#B3C0C2"><span style="width:6px;height:6px;border:1.5px solid #95A4A6;transform:rotate(45deg)"></span></span></sc-if>
+            <sc-if value="{{ r.ways }}" hint-placeholder-val="{{ false }}">
+              <span style="position:relative;display:inline-flex">
+                <span style="height:26px;margin:-3px 0;display:inline-flex;align-items:center;gap:5px;padding:0 7px;border-radius:6px;border:1px solid #2E3340;box-sizing:border-box;{{ r.waysHalo }}"><sc-if value="{{ r.swap }}" hint-placeholder-val="{{ true }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:#E0913C">⇄</span></sc-if><sc-if value="{{ r.spare }}" hint-placeholder-val="{{ false }}"><span style="font-size:11px;letter-spacing:-1px;color:#8FA6BE">◆◇</span></sc-if></span>
+                <sc-if value="{{ r.m5 }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:calc(100% + 10px);right:-137px;z-index:20"><dc-import name="Moment" tool="Cheaper stand-ins" line="for a card over your $10 limit. Press ⇄ to see what does the same job for less." nib="down" phone="true" w="358" nibx="200" hint-size="358px,72px"></dc-import></span></sc-if>
+                <sc-if value="{{ r.m6 }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;bottom:calc(100% + 10px);right:-137px;z-index:20"><dc-import name="Moment" tool="A friend has a spare" line="of this card. Press to see who, before you buy." nib="down" phone="true" w="358" nibx="200" hint-size="358px,72px"></dc-import></span></sc-if>
+              </span>
+            </sc-if>
+            <sc-if value="{{ r.buy }}" hint-placeholder-val="{{ false }}"><span style="min-width:84px;display:flex;justify-content:flex-end"><span style="{{ r.tag }}">buy · <span style="color:#B3C0C2">{{ r.price }}</span></span></span></sc-if>
+            <sc-if value="{{ r.pips }}" hint-placeholder-val="{{ true }}"><span style="width:72px;display:flex;justify-content:flex-end;gap:3px"><sc-for list="{{ r.cost }}" as="p" hint-placeholder-count="2"><span style="{{ p.s }}">{{ p.t }}</span></sc-for></span></sc-if>
+            <span style="width:26px;text-align:center;font-size:13px;color:#424755">✕</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+  <div style="position:absolute;left:0;bottom:0;z-index:30"><dc-import name="TabBar" active="decks" hint-size="390px,74px"></dc-import></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["under","full","over"],"default":"under"},"view":{"editor":"enum","options":["all","shopping"],"default":"all"},"moment":{"editor":"enum","options":["none","m1","m2","m3","m4","m5","m6","m7"],"default":"m1"},"scroll":{"editor":"int","default":0},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props;
+    const state = p.state ?? 'under', view = p.view ?? 'all', m = p.moment ?? 'm1';
+    const H = 'box-shadow:0 0 0 2px rgba(92,134,201,.6),0 0 0 6px rgba(92,134,201,.16);';
+    const have = state === 'under' ? '87' : state === 'over' ? '104' : '99';
+    const pillMap = { under: ['Building', '#C6D2D3'], full: ['To buy', '#5C86C9'], over: ['Over', '#C6533F'] };
+    const [pillWord, ink] = pillMap[state];
+    const pill = `height:22px;display:inline-flex;align-items:center;padding:0 7px;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:10px;border:1px solid ${ink};background:color-mix(in srgb, ${ink} 18%, #121217);color:${state === 'over' ? '#C6D2D3' : ink}`;
+    const barFill = `display:block;height:100%;width:${state === 'under' ? 88 : 100}%;border-radius:999px;background:${state === 'over' ? '#C6533F' : state === 'full' ? '#6FA368' : '#5C86C9'}`;
+    const countStyle = `font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;color:${state === 'over' ? '#C6533F' : '#C6D2D3'}`;
+    const full = state !== 'under';
+    const cells = [['RAMP', full ? 10 : 9, 10], ['DRAW', full ? 10 : 8, 10], ['REMOVAL', full ? 8 : 6, 8], ['WIPES', 3, 3], ['LANDS', full ? 36 : 33, 36]]
+      .map(([label, h, t]) => ({ label, have: h, target: t, color: h >= t ? '#C6D2D3' : '#E0913C', balance: label === 'LANDS', dash: label !== 'LANDS' }));
+    const seg = (on) => `flex:1;height:44px;display:flex;align-items:center;justify-content:center;gap:4px;border-radius:6px;font-size:14px;${on ? 'background:#2D2E35;font-weight:600;color:#C6D2D3' : 'color:#95A4A6'}`;
+    const filled = 'flex:none;width:8px;height:8px;border-radius:999px;background:#95A4A6';
+    const dashed = 'flex:none;width:8px;height:8px;border-radius:999px;border:1.5px dashed #95A4A6;box-sizing:border-box';
+    const g = (n) => ({ t: String(n), s: "width:13px;height:13px;border-radius:999px;background:#CAC5C0;color:#121217;font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:600;display:flex;align-items:center;justify-content:center" });
+    const u = () => ({ t: '', s: 'width:13px;height:13px;border-radius:999px;background:#A8C9E8;box-shadow:inset 0 0 0 2px #3A6AA5' });
+    const tagWash = "font-family:'IBM Plex Mono',monospace;font-size:9px;padding:1px 5px;border-radius:4px;background:color-mix(in srgb, #E0913C 13%, transparent);color:#E0913C";
+    const tagOver = "font-family:'IBM Plex Mono',monospace;font-size:9px;padding:1px 5px;border-radius:4px;box-shadow:inset 0 0 0 1px color-mix(in srgb, #E0913C 60%, transparent);color:#E0913C";
+    let rows, groupHead;
+    if (view === 'shopping') {
+      groupHead = 'TO BUY · 14';
+      rows = [
+        ['Academy Manufactor', '$9.40', false, false], ['Sharding Sphinx', '$1.90', false, m === 'm6'],
+        ['Padeem, Consul of Innovation', '$1.20', false, false], ['Retrofitter Foundry', '$12.50', true, m === 'm6'],
+        ['Thopter Spy Network', '$2.75', false, false], ['Efficient Construction', '$0.45', false, false],
+        ['Whirler Rogue', '$0.60', false, false], ['Reverse Engineer', '$0.35', false, false]
+      ].map(([name, price, over, spare], i) => ({
+        name, price, buy: true, pips: false, dot: dashed, tag: over ? tagOver : tagWash,
+        ways: over || spare, swap: over, spare, m5: m === 'm5' && over, m6: m === 'm6' && spare && i === 1,
+        waysHalo: ((m === 'm5' && over) || (m === 'm6' && spare && i === 1)) ? H : '', contest: false, soft: false, cost: []
+      }));
+    } else {
+      groupHead = 'ARTIFACTS · 18';
+      rows = [
+        ['Sol Ring', [g(1)], false, false], ['Arcane Signet', [g(2)], false, false], ['Thopter Spy Network', [g(2), u(), u()], false, false],
+        ['Retrofitter Foundry', [g(1)], false, false], ['Mind Stone', [g(2)], m === 'm7', false], ['Etherium Sculptor', [g(1), u()], false, true],
+        ['Sharding Sphinx', [g(4), u(), u()], false, false], ['Master of Etherium', [g(2), u()], false, false], ['Thought Monitor', [g(6), u()], false, false]
+      ].map(([name, cost, contest, soft]) => ({ name, cost, contest, soft, pips: true, buy: false, ways: false, dot: filled, m5: false, m6: false, waysHalo: '', tag: '', price: '' }));
+    }
+    return {
+      have, pill, pillWord, barFill, countStyle, over: state === 'over', under: state === 'under', cells,
+      segAll: seg(view === 'all'), segShop: seg(view === 'shopping'), shop: view === 'shopping', rows, groupHead,
+      m1: m === 'm1', m2: m === 'm2', m3: m === 'm3', m4: m === 'm4', m7: m === 'm7',
+      h1: m === 'm1' ? H : '', h2: m === 'm2' ? H : '', h3: m === 'm3' ? H : '', h4: m === 'm4' ? H : '', h7: m === 'm7' ? H : '',
+      scrollStyle: `transform:translateY(-${Number(p.scroll ?? 0)}px)`
+    };
+  }
+}
+</script>
+</body>
+</html>

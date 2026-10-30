@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Discovery R2 · the ? on Shopping</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.lbl{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#8B8270}
+.mono{font-family:'IBM Plex Mono',monospace}
+.disp{font-family:'Cinzel',serif;font-weight:600}
+.cap{margin:0;font-size:14px;line-height:1.6;color:#A59C89;text-wrap:pretty}
+.sec{display:flex;flex-direction:column;gap:16px;border-top:1px solid #3A3229;padding-top:20px}
+.h{display:flex;align-items:baseline;gap:12px}
+.h .id{font-family:'IBM Plex Mono',monospace;font-size:13px;color:#CF8745}
+.h .t{font-size:19px;font-weight:600;color:#EDE6D8}
+.frames{display:flex;gap:40px;align-items:flex-start}
+.w{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8B8270;margin-bottom:8px}
+.note{display:flex;flex-direction:column;gap:10px;font-size:13.5px;line-height:1.6;color:#C0B8A6}
+.note b{color:#EDE6D8;font-weight:600}
+.note .k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#8B8270;margin-top:6px}
+</style>
+</helmet>
+<div style="width:1800px;min-height:2070px;box-sizing:border-box;padding:44px 40px 60px;background:#0F0D0B;font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;display:flex;flex-direction:column;gap:40px">
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:1240px">
+    <span class="lbl">Discovery R2 · the ? on Shopping · 1280 and 390 · Amonkhet</span>
+    <h2 class="disp" style="margin:0;font-size:28px">On Shopping, the list leads with what helps you spend less</h2>
+    <p class="cap">The same ? and the same panel. Because the deck is on its Shopping view, the panel opens on Shopping’s entries and the rest of the deck is one press away under Elsewhere. Search reaches every entry on every screen, and its results name the screen each lives on.</p>
+  </div>
+  <section class="sec">
+    <div class="h"><span class="id">H2</span><span class="t">A deck on Shopping · Cheaper stand-ins open</span></div>
+    <div class="frames">
+      <div><div class="w">1280 · the panel on Shopping, Cheaper stand-ins opened in place</div><div style="position:relative;width:1280px;height:760px"><dc-import name="DeckDesk" state="full" view="shopping" moment="none" scroll="300" help="open" hint-size="1280px,760px"></dc-import><div style="position:absolute;right:1px;top:1px;border-radius:0 11px 11px 0;overflow:hidden"><dc-import name="HelpSheet" mode="desk" screen="shopping" open="stand-ins" q="" h="758" hint-size="400px,758px"></dc-import></div></div></div>
+      <div class="note" style="width:380px"><span class="k">Show me here</span>
+<span><b>What the cards you’re missing cost</b> points at a buy tag, <b>Cheaper stand-ins</b> at the first ⇄ press. <b>When a friend has a spare</b> has none on this deck (no row carries the friends mark), so it shows no Show me.</span>
+<span class="k">Shopping for all your decks</span>
+<span>Lives on Decks, where its door is. A reader on this screen finds it by searching, or under Decks in the Reference.</span>
+<span class="k">Follows its switch</span>
+<span>An entry whose switch is off for this reader is not listed, here or in search, exactly as <span class="mono">visibleEntries</span> drops it today.</span></div>
+    </div>
+
+  </section>
+  <section class="sec">
+    <div class="h"><span class="id">H2 · 390</span><span class="t">The same at 390, with search</span></div>
+    <div class="frames">
+      <div><div class="w">390 · the sheet on Shopping</div><dc-import name="PhoneShot" shot="shophead" open="true" screen="shopping" entry="stand-ins" q="" halo="" hint-size="390px,844px"></dc-import></div>
+      <div><div class="w">390 · searching “combo”: results from every screen</div><dc-import name="PhoneShot" shot="shophead" open="true" screen="shopping" entry="" q="combo" halo="" hint-size="390px,844px"></dc-import></div>
+      <div><div class="w">390 · Show me on Cheaper stand-ins: the ⇄ press haloed</div><dc-import name="PhoneShot" shot="shopping" open="false" screen="deck" entry="" q="" halo="210,345,29,30" hint-size="390px,520px"></dc-import></div>
+    </div>
+
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1800,"height":2070}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

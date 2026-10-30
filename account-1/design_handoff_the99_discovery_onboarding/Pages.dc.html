@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Discovery R1 · M12–M15 on Commanders, Decks, New deck and the upload</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.lbl{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#7C8A8C}
+.mono{font-family:'IBM Plex Mono',monospace}
+.disp{font-family:'Metamorphous',serif;font-weight:400}
+.cap{margin:0;font-size:14px;line-height:1.6;color:#95A4A6;text-wrap:pretty}
+.sec{display:flex;flex-direction:column;gap:16px;border-top:1px solid #2E3340;padding-top:20px}
+.h{display:flex;align-items:baseline;gap:12px}
+.h .id{font-family:'IBM Plex Mono',monospace;font-size:13px;color:#5C86C9}
+.h .t{font-size:19px;font-weight:600;color:#C6D2D3}
+.facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px 28px;max-width:1710px}
+.facts span{font-size:13px;line-height:1.5;color:#B3C0C2}
+.facts .k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#7C8A8C}
+.frames{display:flex;gap:40px;align-items:flex-start}
+.w{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8A8C;margin-bottom:8px}
+</style>
+</helmet>
+<div style="width:1800px;min-height:4420px;box-sizing:border-box;padding:44px 40px 60px;background:#0E0E12;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:40px">
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:1240px">
+    <span class="lbl">Discovery R1 · Commanders, Decks, New deck, the upload choice · 1280 and 390 · Kaldheim</span>
+    <h2 class="disp" style="margin:0;font-size:28px">On a page with one clear next step, the moment names a second way in</h2>
+    <p class="cap">Each of these fires on a page the player has come to for something else: choosing a commander, starting a deck, reading a file. The moment names the tool beside that task in one line and points at the door that is already there. Nothing on the page is pre-picked or pressed.</p>
+  </div>
+
+  <section class="sec">
+    <div class="h"><span class="id">M12</span><span class="t">Help me choose · the first visit to Commanders with no decks</span></div>
+    <div class="facts">
+      <span class="k">Fires when (locked)</span><span class="k">Points at</span><span class="k">Switch · About</span><span class="k">Notes</span>
+      <span>The first visit to /commanders while the player has no decks (the guided setup’s step 2).</span>
+      <span><span class="mono">Discover</span> in the rail (1280) or the tab bar (390). Help me choose has no control on /commanders: its doors are on /discover’s result line and on New deck. Flagged as G1.</span>
+      <span><span class="mono">HELP_ME_CHOOSE_ENABLED</span> · <span class="mono">help-me-choose</span></span>
+      <span>Spends a credit per run, inside its own flow. The rail has no room below a slot, so at 1280 the bubble sits to the slot’s right with a left nib; at 390 it sits above the tab bar.</span>
+    </div>
+    <div class="frames">
+      <div><div class="w">1280 · /commanders, first run</div><dc-import name="PageDesk" page="commanders" moment="m12" hint-size="1280px,760px"></dc-import></div>
+      <div><div class="w">390 · /commanders, first run</div><dc-import name="PagePhone" page="commanders" moment="m12" hint-size="390px,844px"></dc-import></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="h"><span class="id">M13</span><span class="t">Lineup · /decks with three or more decks</span></div>
+    <div class="facts">
+      <span class="k">Fires when (locked)</span><span class="k">Points at</span><span class="k">Switch · About</span><span class="k">Notes</span>
+      <span>A visit to /decks while the player has 3 or more decks.</span>
+      <span>The <span class="mono">Stats</span> segment of the <span class="mono">Tiles | Stats</span> switch on the shelf row.</span>
+      <span><span class="mono">LINEUP_ENABLED</span> · <span class="mono">decks-stats</span></span>
+      <span>Free. The line is drawn from the entry’s own caption, so it promises nothing the view doesn’t show.</span>
+    </div>
+    <div class="frames">
+      <div><div class="w">1280 · /decks</div><dc-import name="PageDesk" page="decks" moment="m13" hint-size="1280px,760px"></dc-import></div>
+      <div><div class="w">390 · /decks</div><dc-import name="PagePhone" page="decks" moment="m13" hint-size="390px,844px"></dc-import></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="h"><span class="id">M14</span><span class="t">Precons · the first New deck press</span></div>
+    <div class="facts">
+      <span class="k">Fires when (locked)</span><span class="k">Points at</span><span class="k">Switch · About</span><span class="k">Notes</span>
+      <span>The first press of New deck, on arriving at /decks/new. The line is the brief’s: “Start from a precon you own”.</span>
+      <span><span class="mono">Browse precons →</span> on the Start from a precon door.</span>
+      <span><span class="mono">PRECONS_ENABLED</span> · <span class="mono">precons</span></span>
+      <span>Help me choose’s door sits above it on the same page. Only one moment shows, and Precons is first in the fixed order.</span>
+    </div>
+    <div class="frames">
+      <div><div class="w">1280 · /decks/new</div><dc-import name="PageDesk" page="new" moment="m14" hint-size="1280px,760px"></dc-import></div>
+      <div><div class="w">390 · /decks/new</div><dc-import name="PagePhone" page="new" moment="m14" hint-size="390px,844px"></dc-import></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="h"><span class="id">M15</span><span class="t">Collection Sync · the second upload’s choice screen</span></div>
+    <div class="facts">
+      <span class="k">Fires when (locked)</span><span class="k">Points at</span><span class="k">Switch · About</span><span class="k">Notes</span>
+      <span>The choice step of the player’s second upload: the first time the three cards are offered.</span>
+      <span>The <span class="mono">Sync my collection</span> card.</span>
+      <span><span class="mono">COLLECTION_SYNC_ENABLED</span> · <span class="mono">upload-choice</span></span>
+      <span>Nothing is picked: pressing the card picks Sync as it always would. At 390 the bubble sits above the card, clear of the foot’s buttons; the frame is scrolled to the card.</span>
+    </div>
+    <div class="frames">
+      <div><div class="w">1280 · /collection/replace, step 2</div><dc-import name="PageDesk" page="upload" moment="m15" hint-size="1280px,760px"></dc-import></div>
+      <div><div class="w">390 · step 2, scrolled to the card</div><dc-import name="PagePhone" page="upload" moment="m15" scroll="210" hint-size="390px,844px"></dc-import></div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1800,"height":4420}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

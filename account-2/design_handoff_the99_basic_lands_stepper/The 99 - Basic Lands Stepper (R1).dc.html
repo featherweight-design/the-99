@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Basic lands stepper · the calls</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+.lbl{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#7C8A8C}
+.row{display:flex;align-items:center;gap:9px;background:#181920;border-radius:7px;box-sizing:border-box}
+.ph{min-height:44px;padding:0 4px 0 8px}
+.dk{min-height:34px;padding:3px 9px}
+.dot{flex:none;width:7px;height:7px;border-radius:50%;background:#6FA368}
+.nm{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#C6D2D3}
+.from{flex:none;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8A8C}
+.stp{flex:none;display:inline-flex;align-items:center;border:1px solid #2E3340;box-sizing:border-box;overflow:hidden}
+.stp button{background:transparent;border:0;padding:0;color:#95A4A6;font-family:'IBM Plex Mono',monospace;cursor:pointer}
+.stp input{background:transparent;border:0;padding:0;text-align:center;color:#C6D2D3;font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums}
+.sp{height:36px;border-radius:9px}.sp button{width:44px;height:36px;font-size:16px}.sp input{width:30px;height:36px;font-size:16px}
+.sd{height:28px;border-radius:7px}.sd button{width:28px;height:28px;font-size:14px}.sd input{width:30px;height:28px;font-size:12.5px}
+.call{display:grid;grid-template-columns:44px minmax(0,1fr);gap:4px 14px;padding:16px 0;border-top:1px solid #1A1F2B}
+.n{font-family:'IBM Plex Mono',monospace;font-size:13px;color:#5C86C9;padding-top:2px}
+.q{font-size:12px;color:#7C8A8C;font-family:'IBM Plex Mono',monospace}
+.a{font-size:16px;font-weight:600;color:#C6D2D3;margin:2px 0 4px}
+.w{font-size:13.5px;line-height:1.6;color:#B3C0C2;margin:0}
+</style>
+</helmet>
+<div style="width:1280px;min-height:1040px;box-sizing:border-box;padding:48px 56px;background:#121217;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:28px">
+  <div style="display:flex;align-items:center;gap:14px">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#121217;background:#5C86C9;border-radius:6px;padding:4px 10px;letter-spacing:.08em">R1</span>
+    <span class="lbl" style="letter-spacing:.3em">Basic lands · a stepper on the row · 2026-10-14</span>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:10px;max-width:1040px">
+    <h1 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:34px;color:#C6D2D3">Five Islands in five presses, saved once.</h1>
+    <p style="margin:0;font-size:15px;line-height:1.7;color:#B3C0C2">On a basic land's row, the count becomes a stepper: <b style="color:#C6D2D3;font-weight:600">− count +</b>, in the place the ✕ and the ×N held. Presses move the count at once and one save writes the final figure. Every other card keeps its ✕. Adding 5 Islands goes from about 7 actions to 5 presses (or one typed figure); removing 3 is 3 presses with no waiting.</p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:56px;align-items:start">
+    <div style="display:flex;flex-direction:column">
+      <div class="lbl" style="margin-bottom:6px">The five open calls</div>
+      <div class="call"><div class="n">01</div><div><div class="q">Which control</div><div class="a">A stepper on basic rows, with a typed count between − and +.</div><p class="w">Stepper and tap-the-count in one: the count is the shipped collection stepper's field, so the 35-Island deck is one typed figure, not fifteen presses. No basics panel this round (gap G1): it is the one option that adds a new surface, and the locks ask for a light addendum.</p></div></div>
+      <div class="call"><div class="n">02</div><div><div class="q">What − does at 1</div><div class="a">At 1 the − becomes the shipped ✕, and pressing it removes the row.</div><p class="w">The row leaves into #185's receipt, <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px">Island removed · Undo</span>, so a mis-press is one press away from back. No row held at 0: a count of nought is never drawn. The glyph changes so the press that removes the row looks like removal.</p></div></div>
+      <div class="call"><div class="n">03</div><div><div class="q">Where it sits on a Card view tile</div><div class="a">A stepper band across the foot of the art.</div><p class="w">44px tall on the phone, 32px on desktop, full tile width. The tile does not grow, so the grid stays even. A basic's art says nothing the name does not, and it has no cost pips to cover. The caption loses its ×N and its ✕ column, as the row does.</p></div></div>
+    </div>
+    <div style="display:flex;flex-direction:column">
+      <div class="lbl" style="margin-bottom:6px">&#160;</div>
+      <div class="call"><div class="n">04</div><div><div class="q">Desktop reveal</div><div class="a">Always visible, quiet at rest.</div><p class="w">The stepper holds the count, and a count that appears only on hover is a count most visits never see. At rest the glyphs sit in <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px">--border-dashed</span> ink, as the ✕ does, and lift to <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px">--fg-body</span> on row hover. The tile band follows the same rule.</p></div></div>
+      <div class="call"><div class="n">05</div><div><div class="q">The 1 → 2 change marker</div><div class="a"><span style="font-family:'IBM Plex Mono',monospace">from 6</span> after the name, the new count in the stepper.</div><p class="w">The shipped pair prints <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px">6 → 8</span> in the name's place. With a stepper, the 8 is already on the row, so the pair loses its right half and keeps what only it knows: the committed figure. The 2px accent edge stays as shipped. Back at the committed count, both go.</p></div></div>
+      <div class="call"><div class="n">&#8212;</div><div><div class="q">About</div><div class="a">No entry and no edit.</div><p class="w">With no basics panel, nothing here needs discovering. The brief's one key line on <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px">deck-page</span> was for a panel only.</p></div></div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:56px;align-items:start">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="lbl">The row · 390</div>
+      <div style="width:358px;display:flex;flex-direction:column;gap:6px">
+        <div class="row ph"><span class="dot"></span><span class="nm" style="font-size:12.5px">Sol Ring</span><button aria-label="Remove Sol Ring" style="flex:none;width:44px;height:44px;background:transparent;border:0;color:#424755;font-size:13px">✕</button></div>
+        <div class="row ph"><span class="dot"></span><span class="nm" style="font-size:12.5px">Island</span><span class="stp sp"><button aria-label="Take one Island out, 5 left">−</button><input aria-label="Islands in deck" value="6" inputmode="numeric"><button aria-label="Add one Island, 7 in deck">+</button></span></div>
+      </div>
+      <p class="w" style="font-size:12.5px;color:#95A4A6;max-width:520px">Each button is a 44×44 target around a 36px drawn box. The stepper spends 118px where the ✕ spent 44, and a basic's name is at most <span style="font-family:'IBM Plex Mono',monospace">Mountain</span> (snow basics aside), so the name never truncates at 390.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="lbl">The row · desktop</div>
+      <div style="width:520px;display:flex;flex-direction:column;gap:6px">
+        <div class="row dk"><span class="dot" style="width:8px;height:8px"></span><span class="nm" style="font-size:13.5px">Sol Ring</span><button aria-label="Remove Sol Ring" style="flex:none;background:transparent;border:0;color:#424755;font-size:13px">✕</button></div>
+        <div class="row dk"><span class="dot" style="width:8px;height:8px"></span><span class="nm" style="font-size:13.5px">Island</span><span class="stp sd"><button aria-label="Take one Island out, 5 left">−</button><input aria-label="Islands in deck" value="6" inputmode="numeric"><button aria-label="Add one Island, 7 in deck">+</button></span></div>
+      </div>
+      <p class="w" style="font-size:12.5px;color:#95A4A6;max-width:520px">The shipped desktop stepper: 28px buttons, a 30px count, in an 86px run. A 28px box rides a 34px row on 3px of padding, so the row does not grow.</p>
+    </div>
+  </div>
+  <p style="margin:0;font-size:12px;color:#7C8A8C;font-family:'IBM Plex Mono',monospace">Theme: Kaldheim (the live theme). Strings are placeholders for /copy-review. Locks held: basics only · one save writes the final count · no 99-card cap · refusals use the shipped shape.</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1040}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-sunken:#18140F; --surface-rail:#1A1611; --elevated:#29241F;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654;
+    --accent:#CF8745; --accent-hover:#DE9757;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-sunken:#101219; --surface-rail:#12141B; --elevated:#20222A;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476;
+    --accent:#FF4D9A; --accent-hover:#FF62A9;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--fg);padding:44px 40px 90px;display:flex;flex-direction:column;gap:64px;width:max-content;">
+
+  <div style="max-width:1180px;display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:center;gap:13px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">ADDENDUM</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--fg-faint);">Filter chassis · /commanders · the result line</span>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:32px;margin:0;line-height:1.15;">A way into Free only, from the line that counts.</h1>
+    <p style="margin:0;font-size:14.5px;line-height:1.7;color:var(--fg-body);max-width:960px;text-wrap:pretty;">A new player didn’t know <b style="color:var(--fg);font-weight:600;">Free only</b> existed. On <b style="color:var(--fg);font-weight:600;">All my cards</b>, the result line’s trailing slot, the one Discover uses for Help me choose, now says how many of these commanders are free to build right now, and one press switches Build from to Free only. It uses the Discover link’s treatment unchanged: sans 12.5 <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--fg-muted</span> lead, and an accent action with a 50% underline over the whole 44px line. It sits at the right end of the wide rack, and on its own 44px line under the count on the compact one.</p>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;">
+      <sc-for list="{{ rules }}" as="c" hint-placeholder-count="3">
+        <div style="border:1px solid var(--border);border-radius:10px;padding:13px 15px;background:var(--surface);display:flex;flex-direction:column;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ c.k }}</span><span style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);">{{ c.v }}</span></div>
+      </sc-for>
+    </div>
+  </div>
+
+  <sc-for list="{{ states }}" as="st" hint-placeholder-count="2">
+    <section id="{{ st.id }}" style="display:flex;flex-direction:column;gap:18px;">
+      <div style="display:flex;align-items:baseline;gap:12px;max-width:1180px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 8px;">{{ st.id }}</span>
+        <span style="font-size:15px;font-weight:600;color:var(--fg);">{{ st.cap }}</span>
+        <span style="font-size:13px;color:var(--fg-muted);max-width:900px;">{{ st.desc }}</span>
+      </div>
+      <div style="display:flex;gap:40px;align-items:flex-start;">
+
+        <div data-screen-label="{{ st.id }} · 1300" style="width:1300px;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;background:var(--bg);flex:none;">
+          <div style="padding:26px 34px 16px;display:flex;align-items:baseline;gap:12px;">
+            <span style="font-family:'Cinzel',serif;font-weight:700;font-size:26px;">Commanders</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">yours, not yet built</span>
+          </div>
+          <div style="background:var(--surface-sunken);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:14px 34px 12px;display:flex;flex-direction:column;gap:11px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <span style="display:flex;align-items:center;gap:9px;height:34px;border-radius:8px;border:1px solid var(--border-strong);background:var(--bg);padding:0 11px;flex:1 1 auto;min-width:132px;"><span style="font-size:13px;color:var(--fg-faint);">⚲</span><span style="font-size:12.5px;color:var(--fg-faint);">Search commanders</span></span>
+              <div style="display:flex;align-items:center;gap:8px;height:34px;border-radius:9px;border:1px solid var(--border);background:var(--bg);padding:0 10px;flex:none;">
+                <sc-for list="{{ pips }}" as="p" hint-placeholder-count="5"><span style="{{ p }}"></span></sc-for>
+                <span style="width:1px;height:20px;background:var(--border);"></span>
+                <span style="display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">Any</span>
+                <span style="display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">Exactly</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:9px;flex:none;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">Build from</span>
+                <div role="radiogroup" style="display:flex;height:34px;border-radius:8px;border:1px solid var(--border-strong);overflow:hidden;">
+                  <span style="display:inline-flex;align-items:center;padding:0 11px;background:var(--elevated);color:var(--fg);font-size:12.5px;">All my cards</span>
+                  <span style="display:inline-flex;align-items:center;padding:0 11px;color:var(--fg-muted);font-size:12.5px;">Free only</span>
+                </div>
+              </div>
+              <div style="margin-left:auto;display:flex;align-items:center;gap:12px;flex:none;"><span style="width:1px;height:20px;background:var(--border);"></span><span style="display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 12px;border-radius:8px;border:1px solid var(--border-strong);font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg);">Order · Fit<span style="color:var(--accent);">▾</span></span></div>
+            </div>
+            <div style="min-height:24px;"></div>
+            <div style="display:flex;align-items:center;gap:12px;min-height:22px;">
+              <p style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.5;color:var(--fg-muted);font-variant-numeric:tabular-nums;">{{ st.line }}</p>
+              <sc-if value="{{ st.show }}" hint-placeholder-val="{{ true }}">
+                <p aria-label="{{ st.aria }}" style="margin:0 0 0 auto;display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--fg-muted);position:relative;">
+                  <span>{{ st.lead }}</span>
+                  <span aria-hidden="true" style="color:var(--border-strong);">·</span>
+                  <span role="button" style="color:var(--accent);border-bottom:1px solid color-mix(in oklab, var(--accent) 50%, transparent);">Free only</span>
+                </p>
+              </sc-if>
+            </div>
+          </div>
+          <div style="padding:18px 34px 26px;display:flex;flex-direction:column;gap:10px;">
+            <sc-for list="{{ rows }}" as="r" hint-placeholder-count="3"><div style="height:72px;border-radius:8px;border:1px solid var(--border);background:repeating-linear-gradient(135deg, var(--surface) 0 11px, var(--surface-sunken) 11px 22px);display:flex;align-items:center;padding:0 16px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ r }}</div></sc-for>
+          </div>
+        </div>
+
+        <div data-screen-label="{{ st.id }} · 390" style="width:390px;border:1px solid var(--border-strong);border-radius:22px;overflow:hidden;background:var(--bg);flex:none;">
+          <div style="padding:20px 18px 12px;display:flex;flex-direction:column;gap:3px;">
+            <span style="font-family:'Cinzel',serif;font-weight:700;font-size:20px;">Commanders</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">yours, not yet built</span>
+          </div>
+          <div style="background:var(--surface-sunken);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:10px 16px 6px;display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="display:flex;align-items:center;gap:8px;height:44px;border-radius:10px;border:1px solid var(--border-strong);background:var(--bg);padding:0 12px;flex:1 1 auto;min-width:0;"><span style="font-size:13px;color:var(--fg-faint);">⚲</span><span style="font-size:14px;color:var(--fg-faint);">Search</span></span>
+              <span style="width:44px;height:44px;border-radius:10px;border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--fg-muted);flex:none;">⇅</span>
+              <span style="height:44px;border-radius:10px;border:1px solid var(--border-strong);display:inline-flex;align-items:center;padding:0 13px;font-size:13px;color:var(--fg);flex:none;">Filters</span>
+            </div>
+            <p style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.5;color:var(--fg-muted);padding:2px 0;">{{ st.line }}</p>
+            <sc-if value="{{ st.show }}" hint-placeholder-val="{{ true }}">
+              <p aria-label="{{ st.aria }}" style="margin:0;min-height:44px;display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--fg-muted);border-top:1px solid var(--border);">
+                <span>{{ st.lead }}</span>
+                <span aria-hidden="true" style="color:var(--border-strong);">·</span>
+                <span role="button" style="color:var(--accent);border-bottom:1px solid color-mix(in oklab, var(--accent) 50%, transparent);">Free only</span>
+              </p>
+            </sc-if>
+          </div>
+          <div style="padding:14px 16px 24px;display:flex;flex-direction:column;gap:10px;">
+            <sc-for list="{{ rows }}" as="r" hint-placeholder-count="3"><div style="height:64px;border-radius:8px;border:1px solid var(--border);background:repeating-linear-gradient(135deg, var(--surface) 0 11px, var(--surface-sunken) 11px 22px);display:flex;align-items:center;padding:0 12px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ r }}</div></sc-for>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const theme = this.props.theme ?? "amonkhet";
+    const hue = { W: "#F8F6D8", U: "#C1D7E9", B: "#CBC2BF", R: "#F9AA8F", G: "#9BD3AE" };
+    const pips = ["W", "U", "B", "R", "G"].map((c) => ({ width: 22, height: 22, borderRadius: "50%", flex: "none", background: `${hue[c]} url(https://svgs.scryfall.io/card-symbols/${c}.svg) center / 100% no-repeat` }));
+    const rules = [
+      { k: "N is Free only’s own count", v: "N is exactly the number Free only would print with the same search and colors. Pressing it lands on a list of N, which the result line then states. It never counts differently from that line." },
+      { k: "Shown only when it would change something", v: "Only on All my cards, and only when 0 < N < the rows shown. At N = 0 there’s nothing to go to. At N = all shown, Free only would change nothing. In both cases the slot stays empty." },
+      { k: "Not in the sheet, not in the chips", v: "The sheet already holds the Build from control itself, so the phone’s sheet gets nothing new. It isn’t a filter, so the badge and Clear never count it. It never moves when the count changes: announcing N stays with the result line’s one live region." },
+    ];
+    const states = [
+      { id: "F1", cap: "All my cards, some free", desc: "12 of 38 commanders have no card sleeved into a built deck. The line offers them. One press sets Build from to Free only.", line: "38 commanders you own and haven’t built", show: true, lead: "12 free to build now", aria: "Free only: show the 12 free to build now" },
+      { id: "F2", cap: "All my cards, none free (N = 0)", desc: "Everything owned is sleeved into a built deck, so the slot stays empty. The row is the same height and the list doesn’t move. Free only’s own empty state (They’re all in decks already) still explains this if the player picks the segment.", line: "38 commanders you own and haven’t built", show: false, lead: "", aria: "" },
+    ];
+    const rows = ["commander row", "commander row", "commander row"];
+    return { theme, pips, rules, states, rows };
+  }
+}
+</script>
+</body>
+</html>

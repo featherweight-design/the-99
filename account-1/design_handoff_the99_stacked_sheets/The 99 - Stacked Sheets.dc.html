@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0B0E; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { color: var(--fg); }
+  :root {
+    --bg:#14110E; --surface:#1E1A15; --surface-raised:#211D18; --surface-rail:#1A1611; --surface-sunken:#18140F;
+    --border:#2B241B; --border-strong:#3A3229;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270;
+    --accent:#CF8745; --accent-dim:#6B482A; --avail:#C86D5B; --success:#8FAE6B; --font-display:'Cinzel',serif;
+  }
+</style>
+</helmet>
+<section id="r1" style="font-family:'IBM Plex Sans',sans-serif;color:var(--fg);padding:48px;background:#0B0B0E;display:flex;flex-direction:column;gap:56px;">
+
+  <div style="display:flex;flex-direction:column;gap:16px;max-width:1240px;">
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#0B0B0E;background:var(--accent);border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R1</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:var(--fg-faint);">phone 390 · a sheet opened from a sheet</span>
+    </div>
+    <h1 style="font-family:var(--font-display);font-weight:800;font-size:32px;line-height:1.2;margin:0;max-width:1100px;text-wrap:pretty;">On the phone a card replaces the sheet it came from. It takes the full screen, and the ✕ becomes a way back that names that sheet.</h1>
+    <p style="margin:0;font-size:14.5px;line-height:1.7;color:var(--fg-body);max-width:1000px;text-wrap:pretty;">Hugh, 2026-10-04: the stack shrinks the card. At 96 the card draws 251 wide instead of 320, and a stand-in at 140 with its Take footer draws 160. A card opened from a sheet now has the same geometry as one opened from a page. The sheet underneath stays mounted with its scroll kept, out of sight. Desktop is unchanged.</p>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 40px;margin-top:6px;">
+      <p style="margin:0;font-size:13.5px;line-height:1.65;color:var(--fg-body);text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">1 · Replace, not stack.</b> A card sheet opened from a sheet starts at 0, like any card. No peek of the sheet underneath. The receipt's 96px offset and its step down to <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--surface-sunken</span> (verdict addendum, ruling 1) retire on the phone. The ruling's reason, that a reader can see where a dismissal lands, is now met by the label.</p>
+      <p style="margin:0;font-size:13.5px;line-height:1.65;color:var(--fg-body);text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">2 · The way back sits in the ✕'s slot.</b> It's a pill, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">← {sheet}</span>, top-right at y 22–54. That's the slot the desktop's back pill uses and where the phone's ✕ already went back one layer. The counter keeps its plate on the left. There's no second ✕ beside it: one control, one layer.</p>
+      <p style="margin:0;font-size:13.5px;line-height:1.65;color:var(--fg-body);text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">3 · What it says.</b> The sheet's short name: <i>Game changers</i>, <i>What would have to go</i>, <i>Cheaper stand-ins</i>, <i>Which deck to pull from</i>. It ellipsizes at 266 wide (354 with no counter). The accessible name is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Back to {sheet}</span>, as the phone ✕ ships today.</p>
+      <p style="margin:0;font-size:13.5px;line-height:1.65;color:var(--fg-body);text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">4 · Paging works in a stacked card.</b> It pages its own list (carousel call 9): the receipt's tiles, the candidates, the stand-ins in sheet order. Teaser, full, the grabber and the 10px lock are unchanged, and paging is still withheld in full. A drag starting within 16px of either edge still goes to the system.</p>
+      <p style="margin:0;font-size:13.5px;line-height:1.65;color:var(--fg-body);text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">5 · One press, one layer.</b> Escape, hardware Back and the pill each step once. From full: full → teaser → the sheet underneath, with focus on the tile that opened the card. The pill skips the teaser rung and goes straight back, because it names a place, not a state.</p>
+      <p style="margin:0;font-size:13.5px;line-height:1.65;color:var(--fg-body);text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">6 · Motion.</b> The card rises from the bottom over 240ms <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">cubic-bezier(.2,.7,.2,1)</span>, the sheet snap's curve. The sheet underneath fades to the scrim under it. Back reverses that in 200ms. It never slides sideways, because sideways is paging. With reduced motion it swaps, and drags still track the finger.</p>
+      <p style="margin:0;font-size:13.5px;line-height:1.65;color:var(--fg-body);text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">7 · List sheets keep their shipped geometry.</b> Stand-ins still rise from 52 over the card. The card no longer drops to 52 beneath it: it stays put at full size under the scrim. The sheet's ✕ becomes the same pill, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">← {card}</span>.</p>
+      <p style="margin:0;font-size:13.5px;line-height:1.65;color:var(--fg-body);text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">8 · Three deep, on one path only.</b> Card → stand-ins → stand-in is the shipped cap and stays the only three-deep path. Depth no longer costs the card, so it no longer needs to be cut. Nothing in a stacked card opens a further layer, as shipped: no door, no Find a deck, and the combo partner replaces.</p>
+      <p style="margin:0;font-size:13.5px;line-height:1.65;color:var(--fg-body);text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">9 · Take moves into the teaser.</b> The stand-in's 84px footer was the other half of the shrink. Take now shares the teaser's foot row with All details, and the oracle text gives up one line for <i>in place of {card}</i>. The teaser stays 280 and the card stays 320. In full, Take pins to the sheet's foot.</p>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:22px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--border-strong);padding-top:18px;max-width:1300px;">Today · <span style="color:var(--fg-muted);">as shipped, for comparison</span></div>
+    <div style="display:flex;flex-wrap:wrap;gap:40px 32px;align-items:flex-start;">
+      <div id="t1" style="display:flex;flex-direction:column;gap:10px;max-width:392px;">
+        <div style="display:flex;align-items:center;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#0B0B0E;background:var(--fg-muted);border-radius:4px;padding:2px 7px;">T1</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-muted);">receipt → card, at 96</span></div>
+        <dc-import name="StackFrame" f="{{ fr.t1 }}" hint-size="392px,814px"></dc-import>
+        <p style="margin:0;font-size:12.5px;line-height:1.55;color:var(--fg-muted);text-wrap:pretty;">The card draws 251 × 351, 78% of the unstacked card. The receipt's header strip is the only reason for the lost height.</p>
+      </div>
+      <div id="t2" style="display:flex;flex-direction:column;gap:10px;max-width:392px;">
+        <div style="display:flex;align-items:center;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#0B0B0E;background:var(--fg-muted);border-radius:4px;padding:2px 7px;">T2</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-muted);">card → stand-ins → stand-in, at 140</span></div>
+        <dc-import name="StackFrame" f="{{ fr.t2 }}" hint-size="392px,814px"></dc-import>
+        <p style="margin:0;font-size:12.5px;line-height:1.55;color:var(--fg-muted);text-wrap:pretty;">Two strips of offset plus the 84px Take footer leave a 160-wide card, half the unstacked size and 40px above the cramped floor.</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:22px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">Proposed · <span style="color:var(--accent);">each stacking pair at 390</span></div>
+    <div style="display:flex;flex-wrap:wrap;gap:40px 32px;align-items:flex-start;">
+      <sc-for list="{{ pairs }}" as="p" hint-placeholder-count="7">
+        <div id="{{ p.id }}" style="display:flex;flex-direction:column;gap:10px;max-width:392px;">
+          <div style="display:flex;align-items:center;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#0B0B0E;background:var(--accent);border-radius:4px;padding:2px 7px;">{{ p.id }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ p.label }}</span></div>
+          <dc-import name="StackFrame" f="{{ p.f }}" hint-size="392px,814px"></dc-import>
+          <p style="margin:0;font-size:12.5px;line-height:1.55;color:var(--fg-muted);text-wrap:pretty;">{{ p.note }}</p>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:22px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">The back control · <span style="color:var(--accent);">top 120 of the frame</span></div>
+    <div style="display:grid;grid-template-columns:repeat(3,392px);gap:32px 32px;align-items:start;">
+      <sc-for list="{{ strips }}" as="s" hint-placeholder-count="6">
+        <div id="{{ s.id }}" style="display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;align-items:center;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#0B0B0E;background:var(--accent);border-radius:4px;padding:2px 7px;">{{ s.id }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ s.label }}</span></div>
+          <dc-import name="StackFrame" f="{{ s.f }}" hint-size="392px,122px"></dc-import>
+          <p style="margin:0;font-size:12.5px;line-height:1.55;color:var(--fg-muted);text-wrap:pretty;">{{ s.note }}</p>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div id="states" style="display:flex;flex-direction:column;gap:16px;max-width:1240px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;">States · <span style="color:var(--accent);">STATES-stacked-sheets.md has the full set</span></div>
+    <div style="display:grid;grid-template-columns:52px minmax(0,1.3fr) minmax(0,1fr) minmax(0,1.3fr) 70px;border:1px solid var(--border);border-radius:10px;overflow:hidden;font-size:13px;">
+      <span style="padding:10px 12px;background:var(--surface);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">#</span>
+      <span style="padding:10px 12px;background:var(--surface);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">Pair</span>
+      <span style="padding:10px 12px;background:var(--surface);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">Pill</span>
+      <span style="padding:10px 12px;background:var(--surface);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">Back lands on · focus</span>
+      <span style="padding:10px 12px;background:var(--surface);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">Frame</span>
+      <sc-for list="{{ rows }}" as="r" hint-placeholder-count="7">
+        <span style="padding:10px 12px;border-top:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-muted);">{{ r.n }}</span>
+        <span style="padding:10px 12px;border-top:1px solid var(--border);color:var(--fg);">{{ r.pair }}</span>
+        <span style="padding:10px 12px;border-top:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-body);">{{ r.pill }}</span>
+        <span style="padding:10px 12px;border-top:1px solid var(--border);color:var(--fg-body);">{{ r.land }}</span>
+        <span style="padding:10px 12px;border-top:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--accent);">{{ r.frame }}</span>
+      </sc-for>
+    </div>
+  </div>
+
+  <div id="motion" style="display:flex;flex-direction:column;gap:16px;max-width:1240px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;">Motion</div>
+    <div style="display:grid;grid-template-columns:minmax(0,0.9fr) minmax(0,1.6fr) minmax(0,1fr);border:1px solid var(--border);border-radius:10px;overflow:hidden;font-size:13px;">
+      <span style="padding:10px 12px;background:var(--surface);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">Event</span>
+      <span style="padding:10px 12px;background:var(--surface);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">Allowed</span>
+      <span style="padding:10px 12px;background:var(--surface);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">Reduced</span>
+      <sc-for list="{{ motion }}" as="m" hint-placeholder-count="5">
+        <span style="padding:10px 12px;border-top:1px solid var(--border);color:var(--fg);">{{ m.e }}</span>
+        <span style="padding:10px 12px;border-top:1px solid var(--border);color:var(--fg-body);">{{ m.a }}</span>
+        <span style="padding:10px 12px;border-top:1px solid var(--border);color:var(--fg-body);">{{ m.r }}</span>
+      </sc-for>
+    </div>
+    <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-faint);max-width:1000px;">Files: <a href="README.md">README.md</a> · <a href="STATES-stacked-sheets.md">STATES-stacked-sheets.md</a> · <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">stacked-sheets · copy strings.ts</span> (placeholders, owed to /copy-review).</p>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const U = { s: "U", bg: "#8FB3D9" }, N = (n) => ({ s: n, bg: "#B8B0A2" });
+    const C = {
+      rhystic: { name: "Rhystic Study", type: "Enchantment", grad: "linear-gradient(160deg,#35577a,#152536)", pips: [N("2"), U], price: "$38.40", from: "$31.10", own: "×1", avail: "short", oracle: "Whenever an opponent casts a spell, you may draw a card unless that player pays {1}." },
+      rift: { name: "Cyclonic Rift", type: "Instant", grad: "linear-gradient(160deg,#2f5f86,#10202f)", pips: [N("1"), U], price: "$24.10", from: "$19.80", own: "×1", avail: "short", oracle: "Return target nonland permanent you don't control to its owner's hand. Overload {6}{U}." },
+      canyon: { name: "Sunbaked Canyon", type: "Land", grad: "linear-gradient(160deg,#a5603e,#3a2318)", pips: [], price: "$0.40", from: "$0.22", own: "×0", avail: "short", oracle: "{T}, Pay 1 life: Add {R} or {W}. {1}, {T}, Sacrifice Sunbaked Canyon: Draw a card." },
+      fabled: { name: "Fabled Passage", type: "Land", grad: "linear-gradient(160deg,#6b6355,#2a2620)", pips: [], price: "$1.10", from: "$0.60", own: "×1", avail: "short", oracle: "{T}, Sacrifice Fabled Passage: Search your library for a basic land card, put it onto the battlefield tapped, then shuffle." },
+      plateau: { name: "Plateau", type: "Land — Mountain Plains", grad: "linear-gradient(160deg,#9a4a32,#d8c69a)", pips: [], price: "$310", from: "$240", own: "×0", avail: "short", oracle: "({T}: Add {R} or {W}.)" },
+    };
+    const gB = "linear-gradient(160deg,#3d5a78,#1a2836)", gL = "linear-gradient(160deg,#7a5a3e,#2a2018)";
+    const take = { label: "Take Sunbaked Canyon", inPlaceOf: "in place of Plateau" };
+    const stand = {
+      title: "Cheaper stand-ins", sub: "for Plateau · under your $10 limit", back: "Plateau",
+      rows: [
+        { group: true, card: false, label: "yours, free" },
+        { group: false, card: true, name: "Sacred Foundry", meta: "×1 free · in 52% of Gishath decks", price: "$14.20", grad: "linear-gradient(160deg,#9a4a32,#d8c69a)", hl: "transparent" },
+        { group: true, card: false, label: "to buy · by Gishath decks" },
+        { group: false, card: true, name: "Inspiring Vantage", meta: "in 44% of Gishath decks", price: "$1.90", grad: "linear-gradient(160deg,#b0704a,#e2d6b2)", hl: "transparent" },
+        { group: false, card: true, name: "Sunbaked Canyon", meta: "in 41% of Gishath decks", price: "$0.40", grad: C.canyon.grad, hl: "color-mix(in oklab,var(--fg) 6%,transparent)" },
+        { group: false, card: true, name: "Battlefield Forge", meta: "in 33% of Gishath decks", price: "$0.70", grad: "linear-gradient(160deg,#8a3e2a,#c9b48a)", hl: "transparent" },
+      ],
+    };
+    const fr = {
+      t1: { mode: "today", layerTop: 96, pageLabel: "Analysis · HD Kykar", strips: [{ top: 52, title: "Game changers", count: "5" }], cur: C.rhystic, pos: 2, total: 5, prev: gB, next: gL },
+      t2: { mode: "today", layerTop: 140, pageLabel: "Shopping · HD Gishath", strips: [{ top: 52, title: "Plateau", count: "" }, { top: 96, title: "Cheaper stand-ins", count: "4" }], cur: C.canyon, pos: 3, total: 4, prev: gL, next: gB, take },
+    };
+    const card = (o) => ({ mode: "card", ...o });
+    const pairs = [
+      { id: "1a", label: "receipt → card", f: card({ cur: C.rhystic, pos: 2, total: 5, prev: gB, next: gL, back: "Game changers" }), note: "The receipt's finding label names the way back. The card is 320 × 447, the same as when it's opened from a page. The receipt stays mounted underneath with its scroll kept." },
+      { id: "1b", label: "what would have to go → card", f: card({ cur: C.rift, pos: 1, total: 4, next: gB, back: "What would have to go" }), note: "The sheet's name, not its heading (Core, two things would have to go), which runs past the slot. The first candidate has no left peek, as shipped." },
+      { id: "1c", label: "stand-ins → card", f: card({ cur: C.canyon, pos: 3, total: 4, prev: gL, next: gB, back: "Cheaper stand-ins", take }), note: "Take shares the teaser's foot row with All details, and the oracle text gives up one line for in place of Plateau. The card keeps 320 on the Shopping path and on the card's own door path." },
+      { id: "1d", label: "Pull it list → card", f: card({ cur: C.fabled, pos: 1, total: 1, back: "Which deck to pull from" }), note: "The card name in the list's head is the card trigger. It's a list of one, so there's no counter and the pill may run to 354." },
+      { id: "1e", label: "card → stand-ins", f: card({ cur: C.plateau, pos: 4, total: 9, prev: gB, next: gL, sheet: stand }), note: "A list sheet keeps its shipped 52 rise. The card underneath stays put at full size under the scrim and no longer drops to 52. The sheet's ✕ becomes ← Plateau. Tapping a row opens 1c, three deep." },
+      { id: "1f", label: "stacked card, full", f: card({ cur: C.rhystic, pos: 2, total: 5, prev: gB, next: gL, back: "Game changers", full: true }), note: "The full sheet stops at 64, below the plate row, so the pill stays in reach. Escape goes to the teaser first. The pill goes straight to the receipt." },
+      { id: "1g", label: "stacked card, paging", f: card({ cur: C.rhystic, pos: 2, total: 5, prev: gB, next: gL, back: "Game changers", dragX: -96, gripX: 250, gripY: 300 }), note: "A horizontal drag on the band pages the receipt's tiles. The pill and counter stay fixed while the band moves. On commit the counter reads 3 of 5 and the pill is unchanged." },
+    ];
+    const strip = (o) => ({ mode: "card", crop: 120, cur: C.rhystic, pos: 2, total: 5, prev: gB, next: gL, back: "Game changers", ...o });
+    const strips = [
+      { id: "2a", label: "rest", f: strip({}), note: "32 tall, radius 16, the counter's plate ink. ← in --fg-muted, label 13 / 500 in --fg." },
+      { id: "2b", label: "pressed", f: strip({ backState: "pressed", tapX: 312, tapY: 19 }), note: "A 16% --fg wash and scale .97, released on pointer-up. A drag that turns into a page cancels the press." },
+      { id: "2c", label: "focus-visible", f: strip({ backState: "focus" }), note: "A 2px --accent ring, 2px out. On arrival focus goes to the pill, the way the ✕ took it before." },
+      { id: "2d", label: "hit target", f: strip({ showTarget: true, targetW: 134 }), note: "44 tall (y 16–60), as wide as the pill. It clears the card band's y 64, so a press never starts a drag." },
+      { id: "2e", label: "list of one", f: strip({ cur: C.fabled, pos: 1, total: 1, prev: null, next: null, back: "Which deck to pull from" }), note: "No counter, so the pill may run to 354." },
+      { id: "2f", label: "long label", f: strip({ back: "Cards that let a player take extra turns" }), note: "Ellipsized at 266. The accessible name keeps the whole label: Back to Cards that let a player take extra turns." },
+    ];
+    const rows = [
+      { n: "s1", pair: "Analysis receipt → card", pill: "← {finding}", land: "the receipt, on the tile that opened it", frame: "1a" },
+      { n: "s2", pair: "What would have to go → card", pill: "← What would have to go", land: "the sheet, on the candidate", frame: "1b" },
+      { n: "s3", pair: "Reasoning · Synopsis → card", pill: "← {title} · ← Synopsis", land: "the sheet, on the card name", frame: "(1a)" },
+      { n: "s4", pair: "Shopping stand-ins → card", pill: "← Cheaper stand-ins", land: "the sheet, on the stand-in's name", frame: "1c" },
+      { n: "s5", pair: "Pull it list → card", pill: "← Which deck to pull from", land: "the list, on the card name; the pick is kept", frame: "1d" },
+      { n: "s6", pair: "card → stand-ins (list sheet)", pill: "← {card}", land: "the card, on the door", frame: "1e" },
+      { n: "s7", pair: "card → stand-ins → card", pill: "← Cheaper stand-ins", land: "the sheet, then ← {card} to the card", frame: "1c, 1e" },
+      { n: "s8", pair: "after Take, back on the card", pill: "✕ (first layer)", land: "the door reads swapped out · {card} is in", frame: "as shipped" },
+      { n: "s9", pair: "stacked card, full", pill: "← {sheet}", land: "Escape → teaser; the pill → the sheet", frame: "1f" },
+      { n: "s10", pair: "stacked card, paging", pill: "unchanged", land: "a page doesn't move the way back", frame: "1g" },
+      { n: "s11", pair: "zoom", pill: "n/a", land: "retired on the phone (carousel R2)", frame: "—" },
+    ];
+    const motion = [
+      { e: "Open a card from a sheet", a: "The card rises from y 812 to 0 over 240ms cubic-bezier(.2,.7,.2,1). The sheet underneath fades to 0 opacity over the same 240ms, onto its scrim.", r: "Swap. The pill is there on the first frame." },
+      { e: "Back (pill · Esc · Back)", a: "The card drops in 200ms on the same curve, and the sheet fades back in to 1.", r: "Swap." },
+      { e: "List sheet over a card", a: "As shipped: it rises to 52. The card underneath doesn't move.", r: "Swap." },
+      { e: "Teaser ↔ full", a: "240ms snap, unchanged.", r: "Swap. The drag tracks the finger." },
+      { e: "Paging", a: "R1's 240ms glide, unchanged. The plates don't move.", r: "Swap. The drag tracks the finger." },
+    ];
+    return { fr, pairs, strips, rows, motion };
+  }
+}
+</script>
+</body>
+</html>

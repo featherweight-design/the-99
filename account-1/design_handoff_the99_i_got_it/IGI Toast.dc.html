@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div role="{{ role }}" aria-live="polite" style="{{ shell }}">
+  <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;padding:10px 0;">
+    <span style="font-size:13.5px;line-height:1.35;color:var(--fg);">{{ l1 }}</span>
+    <sc-if value="{{ hasL2 }}" hint-placeholder-val="{{ true }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">{{ l2 }}</span></sc-if>
+    <sc-if value="{{ hasL3 }}" hint-placeholder-val="{{ false }}"><span style="font-size:12.5px;line-height:1.45;color:var(--fg-body);text-wrap:pretty;">{{ l3 }}</span></sc-if>
+  </span>
+  <sc-if value="{{ hasActs }}" hint-placeholder-val="{{ true }}">
+    <span style="flex:none;display:flex;align-items:center;gap:2px;align-self:center;">
+      <sc-if value="{{ hasHist }}" hint-placeholder-val="{{ true }}"><span style="{{ hist }}">{{ histLabel }}</span></sc-if>
+      <sc-if value="{{ hasUndo }}" hint-placeholder-val="{{ true }}"><span aria-busy="{{ busy }}" style="{{ undo }}">{{ undoLabel }}</span></sc-if>
+    </span>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:440,&quot;height&quot;:120},&quot;spec&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.props.spec || {};
+    const ph = !!s.ph, v = s.v || "clean";
+    const T = {
+      clean: { l1: "Etali, Primal Conqueror added · ×1", l2: "MOM #137 · nonfoil" },
+      claimed: { l1: "Swords to Plowshares added · ×1", l2: "STA #10 · nonfoil", l3: "HD Atraxa is older and was short too, so the copy went there. This deck still needs 1." },
+      partial: { l1: "Dragon's Approach added · ×1", l2: "STX #96 · nonfoil", l3: "The deck still needs 2." },
+      checking: { l1: "Swords to Plowshares added · ×1", l2: "STA #10 · nonfoil", undo: "Checking decks…", busy: true },
+      undoing: { l1: "Etali, Primal Conqueror added · ×1", l2: "MOM #137 · nonfoil", undo: "Undoing…", busy: true },
+      undone: { l1: "Undone. Etali, Primal Conqueror is back on the list.", noL2: true, noActs: true },
+      failed: { l1: "Couldn't undo that.", l2: "", l3: "The copy is still in your collection. You can revert it from History.", hist: "Open History", noUndo: true, role: "alert" },
+    };
+    const t = T[v];
+    const btn = (strong, busy) => ({ display: "inline-flex", alignItems: "center", height: 44, padding: ph ? "0 10px" : "0 10px", fontSize: 13.5, fontWeight: strong ? 600 : 400, whiteSpace: "nowrap", color: busy ? "var(--fg-muted)" : "var(--accent)", opacity: busy ? 0.8 : 1 });
+    return {
+      role: t.role || "status",
+      shell: { width: ph ? "100%" : 440, borderRadius: 10, background: "var(--elevated)", border: "1px solid var(--border-strong)", boxShadow: "0 12px 30px rgba(0,0,0,0.45)", padding: "0 6px 0 14px", minHeight: 52, display: "flex", alignItems: "flex-start", gap: 10 },
+      l1: t.l1, l2: t.l2 || "", hasL2: !t.noL2 && !!t.l2, l3: t.l3 || "", hasL3: !!t.l3,
+      hasActs: !t.noActs, hasHist: !t.busy, histLabel: t.hist || "History", hist: btn(false, false),
+      hasUndo: !t.noUndo, undoLabel: t.undo || "Undo", undo: btn(true, !!t.busy), busy: t.busy ? "true" : "false",
+    };
+  }
+}
+</script>
+</body>
+</html>

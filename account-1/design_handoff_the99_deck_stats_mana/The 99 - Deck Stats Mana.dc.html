@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Metamorphous&amp;family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0B0E; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { color: var(--fg); }
+  :root {
+    --bg:#121217; --surface:#1E1F26; --surface-rail:#181920; --surface-sunken:#16171D; --elevated:#2D2E35; --elevated-hover:#212229;
+    --border:#1F222C; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E;
+    --accent:#5C86C9; --accent-shadow:#2C405F; --success:#6FA368; --warning:#E0913C; --danger:#D0645A; --brass:#C9A54E; --link-rule:#8E5A78;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+</style>
+</helmet>
+
+<section id="m" style="font-family:'IBM Plex Sans',sans-serif;color:var(--fg);padding:40px;background:#0B0B0E;display:flex;flex-direction:column;gap:56px;">
+
+  <div style="display:flex;flex-direction:column;gap:14px;max-width:1100px;">
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#0B0B0E;background:var(--accent);border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R2</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:var(--fg-faint);">deck stats · card (b) addendum · PR 4b · 2026-10-09</div>
+    </div>
+    <h1 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:34px;color:var(--fg);">Every source takes its colors. A source that isn’t a land is striped.</h1>
+    <p style="margin:0;max-width:900px;font-size:14.5px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">Drawn against docs/superpowers/plans/2026-10-08-deck-stats.md (main), section “New in this plan: the mana cost vs. production chart”. Card (b) keeps R1 ruling 3: a butterfly of raw pip shares, counts printed. Only the right-hand side changes: mana rocks, dorks and land search now count toward the colors they make. Curve weighting is dropped (Hugh, 2026-10-09). R2 applies Hugh’s review: new title, one-line header, plain column heads, the explanation moves into a tooltip, and the hollow-square row is gone.</p>
+  </div>
+
+  <div id="m0" style="display:flex;flex-direction:column;gap:16px;max-width:1100px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--accent);border:1px solid var(--accent-shadow);border-radius:4px;padding:2px 7px;">m0</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);">The calls</span>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,220px) minmax(0,1fr);border:1px solid var(--border-strong);border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55;">
+      <sc-for list="{{ calls }}" as="c" hint-placeholder-count="6">
+        <div style="padding:11px 14px;border-top:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-muted);background:var(--surface-sunken);">{{ c.q }}</div>
+        <div style="padding:11px 14px;border-top:1px solid var(--border);color:var(--fg-body);text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">{{ c.a }}</b> {{ c.why }}</div>
+      </sc-for>
+    </div>
+  </div>
+
+  <sc-for list="{{ decks }}" as="d" hint-placeholder-count="3">
+    <div id="{{ d.id }}" style="display:flex;flex-direction:column;gap:14px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--accent);border:1px solid var(--accent-shadow);border-radius:4px;padding:2px 7px;">{{ d.id }}</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);">{{ d.label }}</span>
+      </div>
+      <p style="margin:0;max-width:1000px;font-size:13px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">{{ d.line }}</p>
+      <div style="display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start;">
+        <sc-for list="{{ d.frames }}" as="f" hint-placeholder-count="2">
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">{{ f.tag }}</span>
+            <div data-screen-label="{{ f.screen }}" style="flex:none;width:{{ f.frameW }}px;min-height:{{ f.frameMinH }}px;background:var(--bg);border:1px solid var(--border-strong);border-radius:{{ f.radius }}px;padding:{{ f.framePad }};">
+              <div style="width:100%;background:var(--surface-sunken);border:1px solid var(--border);border-radius:12px;padding:{{ f.c.pad }};display:flex;flex-direction:column;gap:16px;">
+                <div style="position:relative;display:flex;align-items:center;gap:8px;padding-bottom:10px;border-bottom:1px solid var(--border);">
+                  <span style="font-family:'Metamorphous',serif;font-size:{{ f.c.titleSize }}px;color:var(--fg);white-space:nowrap;">Mana colors</span>
+                  <button onClick="{{ f.toggle }}" aria-label="How this is counted" aria-expanded="{{ f.open }}" style="flex:none;display:flex;align-items:center;justify-content:center;width:{{ f.c.hit }}px;height:{{ f.c.hit }}px;margin:{{ f.c.hitMargin }};padding:0;border:0;background:transparent;cursor:pointer;">
+                    <span style="width:18px;height:18px;border-radius:50%;border:1px solid {{ f.tipBorder }};color:{{ f.tipInk }};display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;">i</span>
+                  </button>
+                  <span style="flex:1;"></span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);white-space:nowrap;">{{ f.c.denom }}</span>
+                  <sc-if value="{{ f.open }}" hint-placeholder-val="{{ false }}">
+                    <div role="tooltip" style="position:absolute;top:calc(100% + 6px);left:0;z-index:2;width:{{ f.c.tipW }};padding:12px 14px;background:var(--elevated);border:1px solid var(--border-strong);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.45);display:flex;flex-direction:column;gap:8px;">
+                      <sc-for list="{{ tip }}" as="t"><span style="font-size:12.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">{{ t }}</span></sc-for>
+                    </div>
+                  </sc-if>
+                </div>
+                <div style="display:grid;grid-template-columns:minmax(0,1fr) 26px minmax(0,1fr);gap:10px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;color:var(--fg-faint);">
+                  <span style="text-align:right;">PIPS</span><span></span><span>SOURCES</span>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:9px;">
+                  <sc-for list="{{ f.c.rows }}" as="r" hint-placeholder-count="4">
+                    <div style="display:grid;grid-template-columns:minmax(0,1fr) 26px minmax(0,1fr);gap:10px;align-items:center;">
+                      <div style="display:flex;flex-direction:row-reverse;align-items:center;gap:8px;"><span style="flex:none;width:{{ r.pipW }};height:14px;border-radius:3px;background:{{ r.c }};"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);white-space:nowrap;">{{ r.pipLabel }}</span></div>
+                      <span style="width:26px;height:26px;border-radius:5px;background:{{ r.c }};color:{{ r.ink }};display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:600;">{{ r.l }}</span>
+                      <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+                        <span style="flex:none;display:flex;gap:{{ r.segGap }};width:{{ r.srcW }};height:14px;">
+                          <span style="flex:none;width:{{ r.landW }};height:14px;border-radius:{{ r.landR }};background:{{ r.c }};"></span>
+                          <span style="flex:none;width:{{ r.otherW }};height:14px;border-radius:{{ r.otherR }};background:{{ r.otherBg }};box-shadow:{{ r.otherEdge }};"></span>
+                        </span>
+                        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);white-space:nowrap;">{{ r.srcLabel }}</span>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+                <sc-if value="{{ f.c.hasLegend }}" hint-placeholder-val="{{ true }}">
+                  <div style="display:flex;flex-wrap:wrap;gap:6px 16px;padding-top:12px;border-top:1px dashed var(--border-dashed);font-size:12px;color:var(--fg-body);">
+                    <span style="display:inline-flex;align-items:center;gap:7px;"><span style="width:18px;height:10px;border-radius:2px;background:var(--fg-muted);"></span>Land<span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">{{ f.c.landN }}</span></span>
+                    <span style="display:inline-flex;align-items:center;gap:7px;"><span style="width:18px;height:10px;border-radius:2px;background:repeating-linear-gradient(135deg, var(--fg-muted) 0 2px, transparent 2px 5px);box-shadow:inset 0 0 0 1px var(--fg-muted);"></span>Mana rock, dork or land search<span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">{{ f.c.otherN }}</span></span>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ f.c.onlyLands }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;align-items:center;gap:10px;padding-top:12px;border-top:1px dashed var(--border-dashed);">
+                    <span style="flex:none;width:18px;height:10px;border-radius:2px;background:var(--fg-muted);"></span>
+                    <span style="font-size:12.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">Every source is a land. This deck has no mana rocks, dorks or land search.</span>
+                  </div>
+                </sc-if>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-for>
+
+  <div id="mt" style="display:flex;flex-direction:column;gap:14px;max-width:1100px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--accent);border:1px solid var(--accent-shadow);border-radius:4px;padding:2px 7px;">mt</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);">What counts, and toward which color</span>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,200px) minmax(0,1fr) minmax(0,200px);border:1px solid var(--border-strong);border-radius:10px;overflow:hidden;font-size:13px;line-height:1.55;">
+      <sc-for list="{{ rules }}" as="r" hint-placeholder-count="8">
+        <div style="padding:10px 14px;border-top:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-muted);background:var(--surface-sunken);">{{ r.k }}</div>
+        <div style="padding:10px 14px;border-top:1px solid var(--border);color:var(--fg-body);text-wrap:pretty;">{{ r.v }}</div>
+        <div style="padding:10px 14px;border-top:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ r.draw }}</div>
+      </sc-for>
+    </div>
+  </div>
+
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const PIP = { W:['var(--w)','#14110E'], U:['var(--u)','#F2F4F4'], B:['var(--b)','#14110E'], R:['var(--r)','#F2F4F4'], G:['var(--g)','#F2F4F4'], C:['var(--fg-muted)','#14110E'] };
+const pct = (n, t) => Math.round(n / t * 100);
+
+// rows: [color, pips, landSources, otherSources]
+const DECKS = {
+  gishath: { rows: [['W', 21, 16, 3], ['R', 31, 17, 5], ['G', 52, 15, 6], ['C', 0, 1, 2]] },
+  korvold: { rows: [['B', 34, 19, 4], ['R', 29, 18, 4], ['G', 27, 17, 6], ['C', 0, 3, 3]] },
+  feather: { rows: [['R', 26, 21, 0], ['W', 30, 22, 0], ['C', 0, 2, 0]] }
+};
+
+function card(key, nar) {
+  const rows0 = DECKS[key].rows.map(([l, p, ld, o]) => ({ l, p, ld, o }));
+  const pT = rows0.reduce((a, r) => a + r.p, 0);
+  const sT = rows0.reduce((a, r) => a + r.ld + r.o, 0);
+  const lT = rows0.reduce((a, r) => a + r.ld, 0), oT = rows0.reduce((a, r) => a + r.o, 0);
+  const sh = rows0.map(r => [pct(r.p, pT), pct(r.ld + r.o, sT)]);
+  const mx = Math.max(...sh.flat()), minO = nar ? 8 : 10;
+  const rows = rows0.map((r, i) => {
+    const s = r.ld + r.o, c = PIP[r.l][0], mixed = r.o && r.ld, w = sh[i][1] / mx * 60;
+    return {
+      l: r.l, c, ink: PIP[r.l][1],
+      pipW: r.p ? (sh[i][0] / mx * 60) + '%' : '0px', pipLabel: r.p ? `${r.p} · ${sh[i][0]}%` : '0',
+      srcW: !s ? '0px' : mixed ? `max(${minO + 5}px, ${w}%)` : r.o ? `max(${minO}px, ${w}%)` : w + '%',
+      srcLabel: s ? `${s} · ${sh[i][1]}%` : '0',
+      segGap: mixed ? '1px' : '0px',
+      landW: !r.ld ? '0px' : r.o ? `max(4px, calc(100% - max(${minO}px, ${r.o / s * 100}% - 1px) - 1px))` : '100%',
+      landR: r.o ? '3px 0 0 3px' : '3px',
+      otherW: !r.o ? '0px' : r.ld ? `min(calc(100% - 5px), max(${minO}px, ${r.o / s * 100}% - 1px))` : '100%',
+      otherR: r.ld ? '0 3px 3px 0' : '3px',
+      otherBg: `repeating-linear-gradient(135deg, ${c} 0 2px, transparent 2px 5px)`,
+      otherEdge: r.o ? `inset 0 0 0 1px ${c}` : 'none'
+    };
+  });
+  return {
+    pad: nar ? '16px 14px' : '20px 22px', titleSize: nar ? 17 : 19,
+    hit: nar ? 44 : 28, hitMargin: nar ? '-13px -6px' : '-5px 0',
+    tipW: nar ? '100%' : '340px',
+    denom: `${pT} pips · ${sT} sources`,
+    rows, hasLegend: oT > 0, onlyLands: oT === 0, landN: String(lT), otherN: String(oT)
+  };
+}
+
+class Component extends DCLogic {
+  state = { open: { 'm1 1300': true } };
+  frames(key, id) {
+    const mk = (nar) => {
+      const screen = `${id} ${nar ? 390 : 1300}`, open = !!this.state.open[screen];
+      return {
+        tag: nar ? '390 · phone, one column' : '1300 · right column, 580', screen,
+        frameW: nar ? 390 : 620, radius: nar ? 18 : 14, framePad: nar ? '12px 16px 16px' : '20px',
+        frameMinH: open ? (nar ? 470 : 0) : 0,
+        open, tipBorder: open ? 'var(--fg)' : 'var(--fg-faint)', tipInk: open ? 'var(--fg)' : 'var(--fg-muted)',
+        toggle: () => this.setState(s => ({ open: { ...s.open, [screen]: !s.open[screen] } })),
+        c: card(key, nar)
+      };
+    };
+    return [mk(true), mk(false)];
+  }
+  renderVals() {
+    return {
+      tip: [
+        'A source counts once for each color it can add, so a dual land or a two-color mana rock counts twice. Land search counts the basics in this deck it can find.',
+        'Shares are of all pips and all sources. A card that makes mana in a color we can’t read isn’t counted.'
+      ],
+      calls: [
+        { q: 'title', a: 'Mana colors.', why: 'Two words, one line at 390 beside the denominator. “Colors, asked for and made” said the butterfly’s two halves in prose; the column heads already say them.' },
+        { q: 'column heads', a: 'PIPS · SOURCES.', why: '“Asks for” and “Makes” are cut. Pips are what a card asks for and sources are what makes mana, so the nouns carry it.' },
+        { q: 'the explanation', a: 'In a tooltip on the ⓘ beside the title.', why: 'The counting rules matter once, not every visit. Tap at 390 (44px target; the tip spans the card), hover or focus at 1300 (340 wide). Open on m1 at 1300 for review.' },
+        { q: '1 · non-land sources', a: 'Colored, in the color they make, striped.', why: 'A mana rock, dork or land search joins its color’s bar as a striped segment after the land segment. Same hue, so the bar still reads as one color’s supply; stripes, so a land never looks like a Signet. Shares are of all sources together.' },
+        { q: 'hollow squares', a: 'Removed.', why: 'R1 kept dashed squares for a card whose mana color can’t be read. It was a parser gap drawn as a fact, with no context for the player. Those cards aren’t counted; the tooltip says so in one clause.' },
+        { q: '3 · only lands make mana', a: 'All solid bars and one line.', why: 'The legend gives way to “Every source is a land.” A fact, never a nudge to add ramp (ruling 1).' },
+        { q: 'never', a: 'No “short” mark, no “weighted”.', why: 'Weighting is dropped. Green asks for 50% and makes 32% on Gishath; the card prints both and draws both, and leaves the read to Mana Balance.' }
+      ],
+      decks: [
+        { id: 'm1', label: 'HD Gishath · 6 / 6 / 6 basics, green short', line: 'Green asks for half the pips (52 of 104) and makes 32% of sources. Its six green mana rocks, dorks and searches lift it from 15 to 21: the stripe shows the lift, and that it isn’t enough. Tooltip open at 1300.', frames: this.frames('gishath', 'm1') },
+        { id: 'm2', label: 'Korvold · balanced, the R2 fixture', line: 'Pips and sources within eight points on every color. Green’s stripe is the longest (Cultivate, Kodama’s Reach, Birds), which is why its source share edges past its pip share.', frames: this.frames('korvold', 'm2') },
+        { id: 'm3', label: 'Feather · thin, only lands make mana', line: 'No mana rock, dork or land search: every bar is solid and rounded, and the legend becomes one sentence. The figures match PR 4’s card exactly.', frames: this.frames('feather', 'm3') }
+      ],
+      rules: [
+        { k: 'land', v: 'Unchanged from READINESS Q1: each color it can add; a fetch, the basic types it can fetch; an any-color land, each of the deck’s colors.', draw: 'solid segment' },
+        { k: 'mana rock', v: 'Each color it can add. A Signet or Talisman counts once for each of its two colors. Arcane Signet and other any-color mana rocks: each of the deck’s colors.', draw: 'striped segment' },
+        { k: 'colorless mana rock', v: 'Sol Ring, Mind Stone: the Colorless row, as colorless lands already are.', draw: 'striped, C row' },
+        { k: 'mana dork', v: 'As a mana rock. Birds of Paradise: each of the deck’s colors. Llanowar Elves: green.', draw: 'striped segment' },
+        { k: 'land search', v: 'A named type (“a Forest card”) counts that color. “A basic land” counts each color among the basics this deck holds. Cultivate in Gishath: W, R and G once each.', draw: 'striped segment' },
+        { k: 'one-shot mana', v: 'Rituals and Treasure makers are not sources. Engineering to confirm against classifyRoles’ ramp set.', draw: 'not drawn' },
+        { k: 'color unreadable', v: 'Matches the ramp pattern, but no color can be read. Not counted; the tooltip says so.', draw: 'not drawn' },
+        { k: 'pips', v: 'Plain symbol counts per copy, from manaNeeds(). No curve weighting.', draw: 'left bar, unchanged' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

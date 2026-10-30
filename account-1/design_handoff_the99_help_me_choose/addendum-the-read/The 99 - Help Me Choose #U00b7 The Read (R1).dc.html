@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-sunken:#18140F; --surface-rail:#1A1611; --elevated:#29241F;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654;
+    --accent:#CF8745; --accent-hover:#DE9757; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-sunken:#101219; --surface-rail:#12141B; --elevated:#20222A;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --warning:#E0913C; --danger:#C6533F;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+
+<div data-theme="{{ theme }}" style="font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--fg);padding:44px 40px 90px;display:flex;flex-direction:column;gap:72px;width:max-content;">
+
+  <div style="max-width:1340px;display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:center;gap:13px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">ROUND · R1</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--fg-faint);">Help me choose · the read · /decks/new/choose</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">brief 2026-10-11 · rulings and engineering locks closed · approved 2026-10-11</span>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:0;line-height:1.15;color:var(--fg);max-width:1100px;">Anything else? One box, read against every commander, with a line on why.</h1>
+    <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-body);max-width:1000px;text-wrap:pretty;">The words box stops being a way to fill in chips. It moves to the foot of the form as <b style="color:var(--fg);">Anything else?</b>, and writing in it is the one thing that spends a credit. The answers above it stay free and instant. Find commanders runs them at once, and the read runs on top of their results. When it's done, the same list comes back re-ordered, with the ten closest first and one plain sentence under each. Frames are at 900 and 390. Hugh's two asks are the fixtures.</p>
+    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:6px;">
+      <sc-for list="{{ calls }}" as="c" hint-placeholder-count="4">
+        <div style="border:1px solid var(--border);border-radius:10px;padding:13px 15px;background:var(--surface);display:flex;flex-direction:column;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ c.k }}</span><span style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);">{{ c.v }}</span></div>
+      </sc-for>
+    </div>
+  </div>
+
+  <section id="B0" style="display:flex;flex-direction:column;gap:22px;max-width:1340px;">
+    <div style="display:flex;align-items:baseline;gap:12px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">§B0</span>
+      <h2 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:26px;color:var(--fg);">Design's calls on the open questions</h2>
+    </div>
+    <p style="margin:0;font-size:13px;line-height:1.6;color:var(--fg-muted);max-width:960px;">The brief numbers six open questions. I've counted the seventh as the one under What Design owns: what happens to Read as, the deeper marks and Not used. Each answer below is drawn in the sections that follow.</p>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;">
+      <sc-for list="{{ answers }}" as="a" hint-placeholder-count="7">
+        <div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px;background:var(--surface-rail);display:flex;flex-direction:column;gap:7px;">
+          <div style="display:flex;align-items:baseline;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);">Q{{ a.n }}</span><span style="font-size:13.5px;font-weight:600;color:var(--fg);">{{ a.q }}</span></div>
+          <span style="font-size:12.5px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">{{ a.a }}</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ a.where }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section id="B1" style="display:flex;flex-direction:column;gap:22px;max-width:1340px;">
+    <div style="display:flex;align-items:baseline;gap:12px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">§B1</span>
+      <h2 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:26px;color:var(--fg);">Read as and Not used, now that text isn't turned into chips</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,560px));gap:16px;">
+      <div style="border:1px solid var(--border);border-radius:12px;padding:16px;background:var(--surface-rail);display:flex;flex-direction:column;gap:10px;opacity:0.7;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Before · shipped ReadAsBar after a look</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">We read this as</span>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          <span style="display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 8px 0 9px;border-radius:6px;background:var(--surface);border:1px solid var(--border-strong);"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">theme</span><span style="font-size:12.5px;color:var(--fg-body);">Horrors</span></span>
+          <span style="display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 8px 0 9px;border-radius:6px;background:var(--surface);border:1px dashed var(--accent);"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">theme</span><span style="font-size:12.5px;color:var(--fg-body);">Aristocrats</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;color:var(--accent);">deeper</span></span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">Still not used</span><span style="font-size:13px;color:var(--fg-muted);border-bottom:1px dotted var(--border-dashed);">“scary”</span><span style="font-size:13px;color:var(--fg-muted);border-bottom:1px dotted var(--border-dashed);">“a little nasty”</span></div>
+        <span style="font-size:12px;line-height:1.55;color:var(--fg-muted);text-wrap:pretty;">The tone ends up as leftovers, and the one chip it adds is a tag, so Giada can still come back.</span>
+      </div>
+      <div style="border:1px solid var(--border-strong);border-radius:12px;padding:16px;background:var(--surface-rail);display:flex;flex-direction:column;gap:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">After · this round</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Your answers</span>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;"><span style="display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 8px 0 9px;border-radius:6px;background:var(--surface);border:1px solid var(--border-strong);"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">exactly</span><span style="font-size:12.5px;color:var(--fg-body);">Black</span></span></div>
+        <div style="display:flex;flex-direction:column;gap:4px;padding-top:10px;border-top:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">You wrote</span><span style="font-size:14px;line-height:1.5;color:var(--fg);">“a horrors deck that’s scary and a little nasty”</span></div>
+        <span style="font-size:12px;line-height:1.55;color:var(--fg-muted);text-wrap:pretty;">The chips are only the answers set in the controls, so the label reads <b style="color:var(--fg-body);">Your answers</b>. What was written is quoted whole, once, as <b style="color:var(--fg-body);">You wrote</b>. Nothing is set aside, so <b style="color:var(--fg-body);">Not used</b> and <b style="color:var(--fg-body);">Still not used</b> go away, along with the dashed edge, the <i>deeper</i> mark and the <code style="font-family:'IBM Plex Mono',monospace;font-size:11px;">d</code> param. The read's status sits under them in the shipped DeeperLook panel.</span>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;">
+      <sc-for list="{{ reasonRules }}" as="r" hint-placeholder-count="3">
+        <div style="border:1px solid var(--border);border-radius:10px;padding:13px 15px;background:var(--surface);display:flex;flex-direction:column;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ r.k }}</span><span style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">{{ r.v }}</span></div>
+      </sc-for>
+    </div>
+  </section>
+
+  <sc-for list="{{ sections }}" as="sec" hint-placeholder-count="6">
+    <section id="{{ sec.id }}" style="display:flex;flex-direction:column;gap:26px;">
+      <div style="display:flex;flex-direction:column;gap:8px;max-width:1340px;">
+        <div style="display:flex;align-items:baseline;gap:12px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">§{{ sec.id }}</span>
+          <h2 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:26px;color:var(--fg);">{{ sec.title }}</h2>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">STATES {{ sec.states }} · scene {{ sec.scene }}</span>
+        </div>
+        <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-body);max-width:1000px;text-wrap:pretty;">{{ sec.note }}</p>
+      </div>
+      <div style="display:flex;gap:40px;align-items:flex-start;">
+        <div style="border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;flex:none;">
+          <dc-import name="Help Me Choose Read" scene="{{ sec.scene }}" theme="{{ theme }}" hint-size="900px,1200px"></dc-import>
+        </div>
+        <div style="border:1px solid var(--border-strong);border-radius:22px;overflow:hidden;flex:none;">
+          <dc-import name="Help Me Choose Read" scene="{{ sec.scene }}" phone="{{ true }}" theme="{{ theme }}" hint-size="390px,1400px"></dc-import>
+        </div>
+      </div>
+    </section>
+  </sc-for>
+
+  <section id="B14" style="display:flex;flex-direction:column;gap:22px;">
+    <div style="display:flex;flex-direction:column;gap:8px;max-width:1340px;">
+      <div style="display:flex;align-items:baseline;gap:12px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">§B14</span>
+        <h2 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:26px;color:var(--fg);">The About entry, revised</h2>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">§G template · help-me-choose + credits</span>
+      </div>
+      <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-body);max-width:1000px;text-wrap:pretty;">The existing entry rewritten, drawn on the §G template, then shown at 760 and 390. Two strings change: this entry's caption and third key line, and one bullet in the credits entry. I recommend bumping <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;">ABOUT_VERSION</code> from 14 to 15 and leaving <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;">since</code> as it is, because a player can now do something they couldn't before. Hugh makes that call. Copy is in <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;">about · help me choose r2.ts</code>.</p>
+    </div>
+    <div style="display:flex;gap:40px;align-items:flex-start;">
+      <div style="width:560px;flex:none;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:18px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:12.5px;line-height:1.55;color:var(--fg-body);">
+          <sc-for list="{{ slots }}" as="sl" hint-placeholder-count="11">
+            <div style="{{ sl.cell }}">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">{{ sl.label }}</div>
+              <div style="white-space:pre-line;text-wrap:pretty;">{{ sl.text }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <sc-for list="{{ aboutViews }}" as="v" hint-placeholder-count="2">
+        <div data-screen-label="{{ v.screen }}" style="{{ v.frame }}">
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">02 · Finding a commander</span>
+            <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">
+              <h3 style="{{ v.h3 }}">Help me choose a commander</h3>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);">/decks/new/choose</span>
+            </div>
+            <sc-for list="{{ captionParas }}" as="cp" hint-placeholder-count="3"><p style="{{ v.para }}">{{ cp }}</p></sc-for>
+            <div style="border:1px solid var(--border);border-radius:11px;background:var(--surface-rail);padding:12px 14px;display:flex;flex-direction:column;gap:7px;">
+              <span style="font-family:'Cinzel',serif;font-weight:600;font-size:15px;color:var(--fg);text-decoration:underline dotted var(--accent);text-underline-offset:3px;">Valgavoth, Terror Eater</span>
+              <span style="font-size:13px;line-height:1.5;color:var(--fg-body);text-wrap:pretty;">Anything of theirs that would hit the graveyard is exiled, and you can play it by paying life. Grim, and it takes their things.</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);">buy · $14.50 · you own 47 of its 99 · about $121 to buy</span>
+            </div>
+            <ol style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px;">
+              <sc-for list="{{ keyLines }}" as="k" hint-placeholder-count="4">
+                <li style="display:flex;gap:10px;font-size:13px;line-height:1.55;color:var(--fg-body);"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--accent);padding-top:2px;">{{ k.n }}</span><span style="text-wrap:pretty;">{{ k.t }}</span></li>
+              </sc-for>
+            </ol>
+            <div style="border-top:1px solid var(--border);padding-top:10px;display:flex;flex-direction:column;gap:4px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-locked);">Also changes · Credits entry, third bullet</span>
+              <span style="font-size:13px;line-height:1.55;color:var(--fg-body);">– Each “Help me choose” search where you fill in “Anything else?”</span>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const theme = this.props.theme ?? "amonkhet";
+    const calls = [
+      { k: "the box", v: "The words field gets a new label, Anything else?, and moves from the top of the form to the foot. It's optional, has no chips and no matching, and is the one field that can cost a credit." },
+      { k: "the press", v: "Same button, same verb. With text in the box, the 1 credit pill from Look deeper rides inside Find commanders, and the credit line sits beside it. With no credits left, it falls back to a free search and says so." },
+      { k: "the wait", v: "The free results arrive at once, dimmed, under the shipped panel. The panel names its two steps, scanning every commander your answers allow and then weighing the closest few. One charge, one Stop." },
+      { k: "the reason", v: "One sentence under each of the top ten, in body type with no figure in it. It names a deck of yours only when the ask was about difference, and then only by its commander." },
+    ];
+    const answers = [
+      { n: 1, q: "Where the box sits", a: "It's the last field, after Bracket, separated by a rule and labelled optional. A player who wants filters only reads down the form and presses before they reach it. It's the same field renamed, not a second one. The card answer used to come only from words, and that path is now gone, so the form needs a card picker. That's flagged for Hugh, not drawn.", where: "§B2 · §B3" },
+      { n: 2, q: "Does nothing-fits refund?", a: "Yes, under the rule engineering locked: a read that finds nothing is refunded. The refund isn't the headline, though. The panel says plainly that nothing fits and why, and the credit shows only in the mono line: No credit used · 9 of 10 left.", where: "§B11" },
+      { n: 3, q: "How “unlike my decks” shows", a: "Only when the ask was about difference, as in Ask B. The deck is named by its commander in semibold, as in your Omnath deck. Ask A never names a deck, even though the model has read them.", where: "§B8 · §B9" },
+      { n: 4, q: "No decks", a: "The read still works on tone and theme. The panel's lead adds one sentence, You have no decks yet, so the lines speak to Landfall alone. The rows don't repeat it.", where: "§B12" },
+      { n: 5, q: "A second press", a: "There's no warning step. The 1 credit pill is on the button for every press, so the cost is never hidden. An exact repeat, under the same fingerprint, is answered from the store, and its done line reads No credit used · you asked this already. A near-identical ask isn't detected, because nothing defines near.", where: "STATES 7m" },
+      { n: 6, q: "Where the standing lives", a: "On the form, next to the press, and only when the box has text. An empty box shows no credit line, as today. On the results it moves into the read panel's line, which reads 1 credit used · 8 of 10 left, or why nothing was spent.", where: "§B3 · §B4 · §B8" },
+      { n: 7, q: "Read as, d marks, Not used", a: "Read as becomes Your answers, holding only the chips set in the controls. You wrote quotes the text whole. Not used, Still not used, the dashed chip, the deeper tag and the d param are all retired.", where: "§B1" },
+    ];
+    const reasonRules = [
+      { k: "never a score", v: "No percentages, no fit words like strong or great, no ranks and no stars. The figures beside it are the free search's ownership figures and stay where they are. The order says what's closest. The sentence says why." },
+      { k: "tied to the words", v: "Each sentence pins what the commander does to what was written, scary, nasty or Landfall, in plain rules language. It never names a card label. It's 140 characters at most, and the build refuses a longer one rather than cutting it." },
+      { k: "where it sits", v: "Under the name, on every row from 1 to 10, best-fit cards included: 13 / 1.5 --fg-body (12.5 on a phone), wrapping to two or three lines and never truncated. Rows 11 and on carry none, under a The rest of your results rule." },
+    ];
+    const sections = [
+      { id: "B2", scene: "formEmpty", states: "7a", title: "The form, box empty", note: "The five answers as shipped, then a rule, then Anything else?, marked optional, at the foot. The placeholder suggests the two kinds of thing a player might write, and the caption says that leaving it empty searches for free. There's no credit line and no pill, because nothing on this form costs anything until the box has text. On a phone the dock is unchanged." },
+      { id: "B3", scene: "formFilled", states: "7b", title: "The form, box filled: the press with a credit", note: "Ask A typed. The box takes the accent edge, the caption says what will be read and when the credit is spent, and a mono count shows 46 / 800. Find commanders keeps its verb, and the 1 credit pill from Look deeper rides inside it. The shared credit line sits beside it on desktop and under it in the dock. Hugh owns 10 credits and one is already out." },
+      { id: "B4", scene: "formSpent", states: "7c", title: "The press with no credits", note: "The text stays, but this time it won't be read. The box edge drops to --border-strong and the caption says so. The button stays live with no pill, because the free search is never blocked, and the line names the reset. Paused and owner-share use this same frame with creditsCopy.paused or creditsCopy.ownerShare as the line." },
+      { id: "B5", scene: "reading", states: "7d", title: "The wait", note: "Pressing goes straight to the results. The free results for the answers are there at once, dimmed to 0.45 (best fits too, which settles R6 from the old table). The shipped DeeperLook panel runs the wait as one charge, but names two steps: first the scan of every commander the answers allow, with the count, then the closer weighing. Only the dot and the colour move when step 1 ends, and nothing animates. Hairline 1 credit · Reading… with Stop beside it, as in 3b." },
+      { id: "B6", scene: "stopped", states: "7e", title: "Stop, refunded", note: "Stop took. The results come back to full strength in the free order, and the panel says no credit was used, in the lead rather than a toast. Try again is a new press with the same words, and it's priced on its pill." },
+      { id: "B7", scene: "failed", states: "7f", title: "Failed, refunded", note: "It's 3d with new words. The tag reads didn't finish, in --danger. The lead says the credit came back and the results are the free search's. Try again carries the pill. The page itself is not an error, only the panel says so." },
+      { id: "B8", scene: "askA", states: "7g", title: "Ask A: a horrors deck that's scary and a little nasty", note: "No answers set, so the read scanned all 3,445 commanders and weighed 36. The tag baseline led with Atraxa and Giada, and neither is here: the read picked for tone, not for the tag. Each of the ten carries one sentence about the commander's own play, and none of them names a deck, because the ask wasn't about difference. Rows 11 and on are the rest of the list in its usual ownership order, under a rule. The line reads 1 credit used." },
+      { id: "B9", scene: "askB", states: "7h", title: "Ask B: a Landfall deck unlike other decks I own", note: "Omnath isn't here, because Hugh built it. Each line says what the commander does with lands, then sets it against his two lands-matter decks, named by their commanders (Omnath, Teval) in semibold. The lines that lean nearest those decks say so honestly, as Lord Windgrace and Lumra do. Hugh's other 19 decks are read too, but they're named only when they bear on the ask." },
+      { id: "B10", scene: "black", states: "7i", title: "Ask A with Black only: the filter holds", note: "Colors set to exactly Black. The same words now read only the 268 mono-black commanders. Sauron, Nekusar and Valgavoth, Harrower of Souls fit the words but not the color, so they aren't drawn and they aren't named. The lead adds one sentence, Your colors held: nothing outside black was read. Rows 11 and on are the usual order inside the filter." },
+      { id: "B11", scene: "nothing", states: "7j", title: "Nothing fits", note: "Ask B with Colorless. None of the 58 colorless commanders makes a Landfall deck. The panel's title says so plainly, with no tag, and the lead says the answers held, so it didn't look outside them. The next step, Change answers to let it look wider, is a link. It isn't a narrow note, because the read doesn't loosen filters. The results stay visible in the usual order. The refund shows only in the mono line." },
+      { id: "B12", scene: "nodecks", states: "7k", title: "An account with no decks", note: "Ask B on a new account with five credits and a small collection. The read works, but there's nothing to compare against, and the lead says so once. The ten lines speak to Landfall alone, and none of them mentions decks." },
+      { id: "B13", scene: "unread", states: "7l", title: "Results after a press with no credits", note: "This follows §B4. The answers searched, and the panel says plainly that what was written wasn't read and is kept. The button is disabled, with a 0 left pill and Read it, so the player knows the words aren't lost. The line is the bare count and reset time, since the lead already says why." },
+    ];
+    const captionParas = [
+      "Know the deck you want, but not who should lead it? Tell “Help me choose” what you’re after, and it finds commanders that fit, whether you own them or not.",
+      "Colors, themes, sets, a budget and a bracket narrow the list for free. Under “Anything else?” you can describe the deck in your own words: how it should feel, or how it should differ from decks you’ve built. That uses a credit, and the ten that fit best come first, each with a line on why.",
+      "Pick a commander and your answers carry over to a new deck, ready to fill from your Collection.",
+    ];
+    const keyLines = [
+      { n: 1, t: "What you write is read against every commander your answers allow. Your answers always hold, so it never shows a commander outside them." },
+      { n: 2, t: "When you ask for something unlike your decks, it compares each commander with your decks’ commanders and themes. It never reads your notes or descriptions." },
+      { n: 3, t: "If nothing fits, it says so and no credit is used. Stopping, or a read that doesn’t finish, also gives the credit back." },
+      { n: 4, t: "The rest of your results follow the ten, in the usual order." },
+    ];
+    const full = { gridColumn: "1 / -1" };
+    const slots = [
+      { label: "Title", text: "Help me choose a commander (unchanged)", cell: {} },
+      { label: "Route", text: "/decks/new/choose", cell: {} },
+      { label: "Chapter", text: "02 · Finding a commander, after “discover” (unchanged)", cell: {} },
+      { label: "Width", text: "plate: several parts need naming", cell: {} },
+      { label: "Caption", text: captionParas.join("\n\n"), cell: full },
+      { label: "Specimen", text: "One ChooseRow with its reason line, in a read's done state. It mounts as shipped once the row takes `reason`.", cell: full },
+      { label: "Fixture props", text: "fixtures.choose · words “a horrors deck that’s scary and a little nasty” · row: Valgavoth, Terror Eater (buy $14.50) · reason as drawn · trial ready: owned 47 · buy $121.", cell: full },
+      { label: "Key lines · 4 of 4", text: keyLines.map((k) => `${k.n}. ${k.t}`).join("\n"), cell: full },
+      { label: "Phone reduction", text: "The row stacks name, reason, figure, then ownership line. The reason wraps and is never truncated.", cell: full },
+      { label: "since", text: "unchanged · recommend ABOUT_VERSION 14 → 15 (Hugh’s call)", cell: {} },
+      { label: "Strings from", text: "copy/about.ts :523–532, :1168 · copy/help-me-choose.ts", cell: {} },
+    ];
+    const view = (phone) => ({
+      screen: `About · Help me choose · ${phone ? 390 : 760}`,
+      frame: { width: phone ? 390 : 760, flex: "none", background: "var(--bg)", color: "var(--fg)", border: "1px solid var(--border-strong)", borderRadius: 12, padding: phone ? "18px 16px 22px" : "22px 24px 26px" },
+      h3: { margin: 0, fontFamily: "'Cinzel',serif", fontWeight: 700, fontSize: phone ? 19 : 22, color: "var(--fg)" },
+      para: { margin: 0, fontSize: phone ? 14 : 14.5, lineHeight: 1.65, color: "var(--fg-body)", textWrap: "pretty" },
+    });
+    return { theme, calls, answers, reasonRules, sections, captionParas, keyLines, slots, aboutViews: [view(false), view(true)] };
+  }
+}
+</script>
+</body>
+</html>

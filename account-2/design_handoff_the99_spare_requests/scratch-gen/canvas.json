@@ -1,0 +1,59 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "Asker-States.dc.html": {
+      "h": 2696,
+      "title": "The asker · states and Your requests",
+      "w": 2380,
+      "x": 0,
+      "y": 5500
+    },
+    "Cart-By-Friend.dc.html": {
+      "h": 1582,
+      "title": "Shopping for all decks · By friend",
+      "w": 1960,
+      "x": 0,
+      "y": 2416
+    },
+    "Friend-Side.dc.html": {
+      "h": 2983,
+      "title": "The friend · Yes or No, badge, Home, Settings",
+      "w": 1950,
+      "x": 2040,
+      "y": 2416
+    },
+    "Main.dc.html": {
+      "h": 1435,
+      "title": "R2 · the flow, calls, gaps",
+      "w": 1612,
+      "x": 0,
+      "y": 0
+    },
+    "Shopping.dc.html": {
+      "h": 2116,
+      "title": "Shopping · the row and the modal’s Ask",
+      "w": 2780,
+      "x": 1692,
+      "y": 0
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-10-22T15:30:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {},
+  "order": [
+    "Main.dc.html",
+    "Shopping.dc.html",
+    "Cart-By-Friend.dc.html",
+    "Asker-States.dc.html",
+    "Friend-Side.dc.html"
+  ],
+  "pages": [],
+  "title": "The 99 · Spare requests"
+}

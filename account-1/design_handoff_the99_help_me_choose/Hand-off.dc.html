@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-rail:#1A1611; --surface-sunken:#18140F; --surface-raised:#211D18; --elevated:#29241F; --elevated-hover:#201C17;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037; --display:'Cinzel',serif;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654; --fg-disabled:#4A4033;
+    --accent:#CF8745; --accent-hover:#DE9757; --accent-shadow:color-mix(in oklab, #CF8745 45%, transparent); --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-rail:#12141B; --surface-sunken:#101219; --surface-raised:#191B22; --elevated:#20222A; --elevated-hover:#181A21;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843; --display:'Chakra Petch',sans-serif;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476; --fg-disabled:#3D404E;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-shadow:color-mix(in oklab, #FF4D9A 45%, transparent); --warning:#E0913C;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'IBM Plex Sans', sans-serif; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="{{ s.root }}" data-screen-label="{{ label }}">
+
+  <sc-if value="{{ isForm }}" hint-placeholder-val="{{ true }}">
+    <section>
+      <div style="{{ s.header }}">
+        <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}"><span style="font-size:18px;line-height:1;color:var(--fg-faint);">‹</span></sc-if>
+        <div>
+          <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}"><span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:11px;margin-bottom:6px;color:var(--fg-faint);">‹ Help me choose · results</span></sc-if>
+          <h1 style="{{ s.h1 }}">New deck</h1>
+          <p style="{{ s.sub }}">{{ sub }}</p>
+        </div>
+      </div>
+      <div style="{{ s.body }}">
+        <div style="flex:none;">
+          <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;gap:14px;border-radius:12px;padding:14px;margin-bottom:24px;background:var(--surface);border:1px solid var(--border);">
+              <span style="width:52px;height:72px;flex:none;border-radius:6px;background:linear-gradient(160deg,color-mix(in oklab,var(--w) 50%,var(--bg)),color-mix(in oklab,var(--r) 55%,var(--bg)),color-mix(in oklab,var(--g) 55%,var(--bg)));box-shadow:inset 0 0 0 1px rgba(255,255,255,0.08);"></span>
+              <div style="display:flex;flex-direction:column;justify-content:center;min-width:0;">
+                <p style="margin:0;font-family:var(--display);font-weight:600;font-size:16px;line-height:1.2;color:var(--fg);">Gishath, Sun’s Avatar</p>
+                <p style="margin:3px 0 0;font-size:11.5px;color:var(--fg-muted);">Legendary Creature — Dinosaur Avatar</p>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+            <div>
+              <div style="width:220px;aspect-ratio:63/88;border-radius:12px;background:linear-gradient(160deg,color-mix(in oklab,var(--w) 50%,var(--bg)),color-mix(in oklab,var(--r) 55%,var(--bg)),color-mix(in oklab,var(--g) 55%,var(--bg)));box-shadow:0 20px 50px rgba(0,0,0,0.5),inset 0 0 0 1px rgba(255,255,255,0.08);"></div>
+              <div style="margin-top:14px;">
+                <p style="margin:0;font-family:var(--display);font-weight:600;font-size:17px;line-height:1.2;color:var(--fg);">Gishath, Sun’s Avatar</p>
+                <p style="margin:4px 0 0;font-size:12.5px;color:var(--fg-muted);">Legendary Creature — Dinosaur Avatar</p>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="{{ s.legal }}"><span style="{{ s.tick }}">✓</span><span style="{{ s.legalText }}">Legal · validated</span></div>
+          <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+            <div style="margin-bottom:24px;">
+              <p style="margin:0 0 9px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Color identity</p>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="width:22px;height:22px;border-radius:50%;background:var(--w);"></span>
+                <span style="width:22px;height:22px;border-radius:50%;background:var(--r);"></span>
+                <span style="width:22px;height:22px;border-radius:50%;background:var(--g);"></span>
+                <span style="margin-left:4px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-muted);">Naya</span>
+              </div>
+            </div>
+          </sc-if>
+
+          <div style="{{ s.answers }}">
+            <div style="display:flex;align-items:baseline;gap:10px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Built from your answers</span>
+              <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);">Change</span>
+            </div>
+            <sc-for list="{{ answers }}" as="a" hint-placeholder-count="4">
+              <div style="{{ s.aRow }}">
+                <span style="{{ s.aKey }}">{{ a.k }}</span>
+                <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;">
+                  <span style="{{ a.vStyle }}">{{ a.v }}<sc-if value="{{ a.buy }}" hint-placeholder-val="{{ false }}"><span style="margin-left:8px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:400;border-radius:4px;padding:1px 5px;color:var(--warning);background:color-mix(in oklab, var(--warning) 13%, transparent);">buy<span style="color:var(--border-strong);padding:0 3px;">·</span><span style="color:var(--fg-body);">{{ a.buy }}</span></span></sc-if></span>
+                  <span style="font-size:12px;line-height:1.5;color:var(--fg-muted);">{{ a.d }}</span>
+                </span>
+              </div>
+            </sc-for>
+          </div>
+
+          <label style="{{ s.label }}">Deck name</label>
+          <div style="{{ s.input }}">Sun’s Stampede</div>
+          <div style="{{ s.ctaRow }}">
+            <span role="button" style="{{ s.primary }}">{{ ctaLabel }}</span>
+            <span role="button" style="{{ s.ghost }}">Back to results</span>
+          </div>
+          <p style="{{ s.helper }}">Cards outside your commander’s color identity won’t be suggested.</p>
+        </div>
+      </div>
+    </section>
+  </sc-if>
+
+  <sc-if value="{{ isDeck }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;flex-direction:column;">
+      <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+        <header style="position:relative;min-height:262px;border-bottom:1px solid var(--border);">
+          <div aria-hidden="true" style="position:absolute;inset:0;overflow:hidden;background:var(--bg);">
+            <div style="position:absolute;left:0;top:0;bottom:0;width:560px;background:linear-gradient(150deg,color-mix(in oklab,var(--w) 30%,var(--bg)),color-mix(in oklab,var(--r) 45%,var(--bg)) 55%,color-mix(in oklab,var(--g) 40%,var(--bg)));"></div>
+            <div style="position:absolute;inset:0;background:linear-gradient(90deg, transparent 0px, transparent 325px, color-mix(in oklab, var(--bg) 78%, transparent) 540px, var(--bg) 564px);"></div>
+          </div>
+          <span style="position:absolute;left:16px;bottom:22px;display:flex;align-items:center;gap:7px;height:32px;padding:0 12px;border-radius:7px;background:var(--bg);border:1px solid var(--border-strong);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg);">⛶ Card details</span>
+          <div style="position:relative;display:flex;align-items:flex-end;min-height:262px;padding:0 22px 20px 592px;gap:18px;">
+            <div style="flex:1 1 300px;min-width:0;display:flex;flex-direction:column;">
+              <div style="display:flex;align-items:center;">
+                <h1 style="margin:0;font-family:var(--display);font-weight:700;font-size:21px;line-height:1.2;color:var(--fg);">Sun’s Stampede</h1>
+                <span style="margin-left:6px;font-size:14px;line-height:1;color:var(--fg-muted);">✎</span>
+              </div>
+              <p style="margin:4px 0 0;display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;max-width:420px;">
+                <span style="align-self:center;width:18px;height:18px;border-radius:50%;border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);flex:none;">i</span>
+                <span style="min-width:0;font-size:14px;line-height:1.45;color:var(--fg-body);border-bottom:1px dashed var(--border-strong);">{{ intent }}</span>
+                <span style="flex:none;border-radius:999px;padding:2px 9px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);background:color-mix(in oklab, var(--accent) 12%, transparent);">from the build</span>
+                <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">edit</span>
+              </p>
+              <div style="display:flex;align-items:center;gap:10px;margin-top:6px;">
+                <span style="display:flex;gap:3px;"><span style="width:9px;height:9px;border-radius:2px;background:var(--w);"></span><span style="width:9px;height:9px;border-radius:2px;background:var(--r);"></span><span style="width:9px;height:9px;border-radius:2px;background:var(--g);"></span></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);">Gishath, Sun’s Avatar · Naya</span>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:8px;"><span style="display:flex;align-items:center;height:24px;padding:0 9px;border-radius:6px;background:var(--elevated);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">Draft</span></div>
+              <div style="display:flex;align-items:center;gap:10px;margin-top:9px;">
+                <div style="width:154px;height:6px;border-radius:999px;background:var(--elevated);overflow:hidden;"><div style="{{ s.progress }}"></div></div>
+                <span style="display:flex;align-items:baseline;gap:4px;"><span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:15px;color:var(--fg);">{{ built }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--fg-faint);">/ 99</span></span>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:9px;flex:none;">
+              <span style="display:flex;align-items:center;height:32px;padding:0 14px;border-radius:8px;border:1px solid var(--border-strong);font-weight:600;font-size:12.5px;color:var(--fg);">Update from a list</span>
+              <span style="display:flex;align-items:center;height:32px;padding:0 14px;border-radius:8px;background:var(--fg);font-weight:600;font-size:12.5px;color:var(--bg);">Export</span>
+              <span style="display:flex;align-items:center;height:36px;padding:0 15px;border-radius:9px;border:1px solid var(--border-strong);font-weight:600;font-size:12.5px;color:var(--fg);">Commit as v1</span>
+            </div>
+          </div>
+        </header>
+      </sc-if>
+
+      <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+        <div style="height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;border-bottom:1px solid var(--border);">
+          <span style="display:flex;align-items:baseline;gap:7px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.32em;color:var(--accent);">THE</span><span style="font-family:'Cinzel',serif;font-weight:800;font-size:24px;line-height:1;color:var(--fg);">99</span></span>
+          <span style="width:34px;height:34px;border-radius:10px;border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--accent);">HH</span>
+        </div>
+        <header style="background:var(--surface);">
+          <div style="position:relative;height:288px;overflow:hidden;">
+            <div aria-hidden="true" style="position:absolute;inset:0;background:linear-gradient(160deg,color-mix(in oklab,var(--w) 30%,var(--bg)),color-mix(in oklab,var(--r) 45%,var(--bg)) 55%,color-mix(in oklab,var(--g) 40%,var(--bg)));"></div>
+            <div aria-hidden="true" style="position:absolute;inset:0;background:linear-gradient(180deg, transparent 0%, transparent 35%, color-mix(in oklab, var(--bg) 73%, transparent) 56%, color-mix(in oklab, var(--bg) 73%, transparent) 100%);"></div>
+            <span style="position:absolute;right:16px;bottom:14px;width:26px;height:26px;border-radius:7px;border:1px solid var(--border-strong);background:var(--bg);display:flex;align-items:center;justify-content:center;color:var(--fg);font-size:14px;">⛶</span>
+            <div style="position:absolute;left:18px;right:18px;bottom:12px;padding-right:40px;display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
+              <h1 style="margin:0;font-family:var(--display);font-weight:700;font-size:20px;line-height:1.25;color:var(--fg);text-shadow:0 1px 4px rgba(0,0,0,0.85);">Sun’s Stampede <span style="font-size:14px;color:var(--fg-muted);">✎</span></h1>
+              <p style="margin:-1px 0 0;display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;text-shadow:0 1px 4px rgba(0,0,0,0.85);">
+                <span style="align-self:center;width:16px;height:16px;border-radius:50%;border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--accent);">i</span>
+                <span style="font-size:12.5px;line-height:1.5;color:var(--fg-body);border-bottom:1px dashed var(--border-strong);">{{ intent }}</span>
+                <span style="border-radius:999px;padding:2px 9px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);background:color-mix(in oklab, var(--accent) 12%, transparent);text-shadow:none;">from the build</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">edit</span>
+              </p>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="display:flex;gap:3px;"><span style="width:8px;height:8px;border-radius:2px;background:var(--w);"></span><span style="width:8px;height:8px;border-radius:2px;background:var(--r);"></span><span style="width:8px;height:8px;border-radius:2px;background:var(--g);"></span></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-body);text-shadow:0 1px 4px rgba(0,0,0,0.85);">Gishath, Sun’s Avatar · Naya</span>
+              </div>
+              <span style="display:flex;align-items:center;height:22px;padding:0 7px;border-radius:6px;background:var(--elevated);font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);">Draft</span>
+            </div>
+          </div>
+          <div style="border-top:1px solid var(--border);padding:14px 16px 12px;display:flex;align-items:center;gap:10px;">
+            <div style="flex:1;height:6px;border-radius:999px;background:var(--elevated);overflow:hidden;"><div style="{{ s.progress }}"></div></div>
+            <span style="display:flex;align-items:baseline;gap:4px;"><span style="font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14px;color:var(--fg);">{{ built }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--fg-faint);">/ 99</span></span>
+          </div>
+          <div style="display:flex;justify-content:center;padding:4px 16px 14px;gap:8px;">
+            <span style="display:flex;align-items:center;min-height:44px;padding:6px 9px;border-radius:8px;border:1px solid var(--border-strong);font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:11px;color:var(--fg);">Update from a list</span>
+            <span style="display:flex;align-items:center;min-height:44px;padding:6px 9px;border-radius:7px;border:1px solid var(--border-strong);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);">Export</span>
+          </div>
+        </header>
+      </sc-if>
+
+      <sc-if value="{{ filled }}" hint-placeholder-val="{{ true }}">
+        <div style="{{ s.ledger }}">
+          <div style="display:flex;align-items:center;gap:11px;margin-bottom:11px;">
+            <span style="width:18px;height:18px;border-radius:50%;border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);flex:none;">i</span>
+            <h3 style="margin:0;font-weight:400;font-size:12.5px;line-height:1.4;color:var(--fg-body);">Where these 99 cards came from</h3>
+            <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}"><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);white-space:nowrap;">one pass · 58 to buy</span></sc-if>
+          </div>
+          <div style="{{ s.ledgerLine }}">
+            <span style="flex:none;width:66px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;white-space:nowrap;color:var(--accent);">The seed</span>
+            <p style="margin:0;flex:1 1 auto;min-width:0;font-size:12.5px;line-height:1.5;color:var(--fg-body);"><span style="font-weight:600;color:var(--fg);">99</span> cards: the roles and the mana base, 58 to buy.</p>
+            <span style="{{ s.ledgerCtl }}">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--accent);border-bottom:1px dashed var(--accent-shadow);white-space:nowrap;">Show these 99</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);text-align:right;width:126px;">Clear all auto reverses it</span>
+            </span>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ empty }}" hint-placeholder-val="{{ false }}">
+        <div style="{{ s.failBanner }}">
+          <span aria-hidden="true" style="flex:none;font-size:13px;line-height:1;color:var(--warning);">⚠</span>
+          <div style="flex:1;min-width:0;">
+            <p style="margin:0;font-weight:600;font-size:12.5px;line-height:1.4;color:var(--fg-body);">The deck is here, the cards aren’t.</p>
+            <p style="margin:4px 0 0;font-size:12.5px;line-height:1.55;color:var(--fg-body);">We made the deck but couldn’t fill it. Nothing is lost.</p>
+            <span role="button" style="display:inline-flex;margin-top:10px;font-size:12.5px;font-weight:600;line-height:1.4;color:var(--accent);border-bottom:1px solid var(--accent-shadow);">Try filling again</span>
+          </div>
+        </div>
+      </sc-if>
+
+      <div style="{{ s.tabs }}">
+        <span style="display:flex;align-items:baseline;gap:6px;padding-bottom:10px;border-bottom:2px solid var(--accent);"><span style="{{ s.tabOn }}">Your deck</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">{{ built }}</span></span>
+        <span style="padding-bottom:10px;"><span style="{{ s.tab }}">Analysis</span></span>
+        <span style="display:flex;align-items:baseline;gap:6px;padding-bottom:10px;"><span style="{{ s.tab }}">Consider</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">{{ consider }}</span></span>
+        <span style="padding-bottom:10px;"><span style="{{ s.tab }}">Games</span></span>
+      </div>
+
+      <sc-if value="{{ filled }}" hint-placeholder-val="{{ true }}">
+        <div style="{{ s.listWrap }}">
+          <div style="{{ s.toolbar }}">
+            <div style="display:flex;gap:8px;">
+              <span style="display:flex;align-items:center;height:32px;padding:0 13px;border-radius:999px;background:var(--elevated);font-size:13px;font-weight:600;color:var(--fg);">All 99</span>
+              <span style="display:flex;align-items:center;height:32px;padding:0 13px;border-radius:999px;border:1px solid color-mix(in oklab, var(--warning) 45%, transparent);font-size:13px;font-weight:500;color:var(--warning);">Shopping 58</span>
+            </div>
+            <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;align-items:center;gap:8px;margin-left:auto;">
+                <span style="display:flex;align-items:center;height:32px;padding:0 11px;border-radius:7px;border:1px solid var(--border-strong);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);">Keep all 99</span>
+                <span style="display:flex;align-items:center;height:32px;padding:0 11px;border-radius:7px;border:1px solid var(--border-strong);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);">Clear all auto · 99</span>
+                <span style="width:1px;height:22px;background:var(--border-strong);margin:0 2px;"></span>
+                <span style="display:flex;align-items:center;height:32px;padding:0 12px;border-radius:999px;background:var(--elevated);font-size:12.5px;font-weight:600;color:var(--fg);">By type</span>
+                <span style="display:flex;align-items:center;height:32px;padding:0 12px;border-radius:999px;border:1px solid var(--border);font-size:12.5px;color:var(--fg-muted);">By role</span>
+                <span style="display:flex;align-items:center;gap:7px;height:34px;padding:0 12px;border-radius:7px;background:var(--surface);border:1px solid var(--border-strong);font-size:12.5px;color:var(--fg);">Name · A–Z <span style="font-size:9px;">▼</span></span>
+                <span style="display:flex;gap:2px;padding:2px;border-radius:7px;border:1px solid var(--border-strong);"><span style="width:30px;height:28px;border-radius:5px;background:var(--elevated);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--fg);">≡</span><span style="width:30px;height:28px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--fg-faint);">▦</span></span>
+              </div>
+            </sc-if>
+          </div>
+          <span style="display:flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);"><span style="padding:0 4px;border-radius:3px;color:var(--warning);background:color-mix(in oklab, var(--warning) 13%, transparent);">$</span>to buy</span>
+          <div style="display:flex;align-items:baseline;gap:8px;padding-bottom:9px;border-bottom:1px solid color-mix(in oklab, var(--b) 55%, var(--border));">
+            <span style="font-family:var(--display);font-weight:600;font-size:14px;letter-spacing:0.02em;font-variant:small-caps;color:var(--fg);">Creatures</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">37 · 37 auto</span>
+          </div>
+          <div style="{{ s.rows }}">
+            <sc-for list="{{ deckRows }}" as="d" hint-placeholder-count="6">
+              <div style="display:flex;align-items:center;gap:8px;height:32px;padding:0 10px;border-radius:6px;background:var(--surface-rail);">
+                <span style="{{ d.dot }}"></span>
+                <span style="flex:1;min-width:0;font-size:13px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ d.n }}</span>
+                <span style="width:14px;height:14px;border-radius:50%;background:var(--fg-faint);color:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:8.5px;display:flex;align-items:center;justify-content:center;flex:none;">{{ d.cmc }}</span>
+                <span style="display:flex;gap:3px;flex:none;"><sc-for list="{{ d.pips }}" as="p" hint-placeholder-count="2"><span style="{{ p }}"></span></sc-for></span>
+                <sc-if value="{{ d.buy }}" hint-placeholder-val="{{ false }}"><span style="flex:none;padding:0 4px;border-radius:3px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--warning);background:color-mix(in oklab, var(--warning) 13%, transparent);">$</span></sc-if>
+                <span style="flex:none;padding:1px 5px;border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-locked);background:var(--elevated);">auto</span>
+                <span style="flex:none;font-size:11px;color:var(--fg-faint);">✕</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <div style="{{ s.dock }}">
+        <span style="{{ s.dockField }}"><span style="color:var(--fg-faint);">⌕</span>Add a card by name · Naya only</span>
+        <span style="display:flex;align-items:center;gap:9px;flex:none;"><span style="width:26px;height:15px;border-radius:999px;background:var(--accent);position:relative;"><span style="position:absolute;right:2px;top:2px;width:11px;height:11px;border-radius:50%;background:var(--bg);"></span></span><span style="font-size:13px;color:var(--fg-body);">Owned only</span></span>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1300,&quot;height&quot;:860},&quot;state&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;form&quot;,&quot;creating&quot;,&quot;landed&quot;,&quot;empty&quot;],&quot;default&quot;:&quot;form&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;phone&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const P = !!this.props.phone;
+    const st = this.props.state ?? "form";
+    const theme = this.props.theme ?? "amonkhet";
+    const mono = "'IBM Plex Mono',monospace";
+    const isForm = st === "form" || st === "creating";
+    const creating = st === "creating";
+    const empty = st === "empty";
+    const answers = [
+      { k: "Theme", v: "Dinosaurs", d: "91% of its decks are Dinosaurs." },
+      { k: "Built around", v: "Regisaur Alpha", buy: "$1.10", d: "Placed in the deck because you asked for it. 64% of its decks run it." },
+      { k: "Budget", v: "$150", d: "Regisaur Alpha takes $1.10 of it first. The fill buys the rest while the price fits, then finishes with basics." },
+      { k: "Bracket", v: "2 · Core", d: "Every card the fill chooses stays inside bracket 2." },
+    ].map((a) => ({ ...a, buy: a.buy ?? "", vStyle: a.k === "Built around" ? { fontSize: 13.5, fontWeight: 600, color: "var(--fg)", borderBottom: "1px dotted var(--accent)", alignSelf: "flex-start" } : { fontSize: 13.5, fontWeight: 600, color: "var(--fg)" } }));
+    const PIP = { W: "var(--w)", R: "var(--r)", G: "var(--g)" };
+    const dotAuto = { width: 10, height: 10, borderRadius: "50%", border: "1.5px dotted var(--fg-locked)", flex: "none" };
+    const dotOwned = { width: 7, height: 7, borderRadius: "50%", background: "var(--success)", margin: "0 1.5px", flex: "none" };
+    const deckRows = [
+      ["Annoyed Altisaur", 5, ["G", "G"], true, false], ["Apex Altisaur", 7, ["G", "G"], true, false],
+      ["Atzocan Seer", 1, ["G", "W"], false, true], ["Bellowing Aegisaur", 5, ["W"], true, false],
+      ["Etali, Primal Storm", 4, ["R", "R"], false, true], ["Forerunner of the Empire", 3, ["R"], true, false],
+      ["Ghalta, Primal Hunger", 10, ["G", "G"], false, true], ["Regisaur Alpha", 5, ["R", "G"], true, false],
+    ].slice(0, P ? 5 : 8).map(([n, cmc, ci, buy, owned]) => ({ n, cmc: String(cmc), buy, dot: owned ? dotOwned : dotAuto, pips: ci.map((c) => ({ width: 10, height: 10, borderRadius: "50%", background: PIP[c] })) }));
+    const s = {
+      root: { width: P ? 390 : 1300, minHeight: P ? 844 : 820, background: "var(--bg)", color: "var(--fg)", fontFamily: "'IBM Plex Sans',sans-serif", display: "flex", flexDirection: "column" },
+      header: P ? { display: "flex", alignItems: "center", gap: 10, padding: "20px 18px 14px", borderBottom: "1px solid var(--border)" } : { padding: "34px 40px" },
+      h1: { margin: P ? 0 : "2px 0 4px", fontFamily: "var(--display)", fontWeight: 700, fontSize: P ? 20 : 28, color: "var(--fg)" },
+      sub: P ? { margin: "1px 0 0", fontFamily: mono, fontSize: 10, color: "var(--fg-faint)" } : { margin: "0 0 26px", fontSize: 14, color: "var(--fg-muted)" },
+      body: P ? { padding: "20px 18px", display: "flex", flexDirection: "column" } : { padding: "0 40px 40px", display: "flex", gap: 48, alignItems: "flex-start" },
+      legal: { display: "flex", alignItems: "center", gap: P ? 9 : 11, borderRadius: P ? 8 : 10, marginBottom: P ? 24 : 28, padding: P ? "10px 13px" : "13px 16px", background: "color-mix(in oklab, var(--success) 10%, transparent)", border: "1px solid color-mix(in srgb, var(--success) 40%, var(--bg))" },
+      tick: { width: P ? 20 : 24, height: P ? 20 : 24, borderRadius: "50%", flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: P ? 12 : 14, color: "var(--success)", background: "color-mix(in oklab, var(--success) 20%, transparent)" },
+      legalText: { fontSize: P ? 12.5 : 13.5, color: "var(--fg-body)" },
+      answers: { display: "flex", flexDirection: "column", gap: 12, padding: P ? 14 : "16px 18px", marginBottom: 24, borderRadius: 11, background: "var(--surface-rail)", border: "1px solid var(--border)" },
+      aRow: { display: "flex", gap: P ? 4 : 12, alignItems: "baseline", flexDirection: P ? "column" : "row" },
+      aKey: { width: P ? "auto" : 104, flex: "none", fontFamily: mono, fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--fg-locked)" },
+      label: { display: "block", marginBottom: P ? 8 : 9, fontFamily: mono, fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--fg-faint)" },
+      input: { marginBottom: 24, padding: P ? "12px 14px" : "14px 16px", borderRadius: P ? 8 : 9, background: "var(--surface-sunken)", border: "1px solid var(--accent)", fontSize: P ? 15 : 16, color: "var(--fg)" },
+      ctaRow: { display: "flex", flexDirection: P ? "column" : "row", alignItems: P ? "stretch" : "center", gap: 12 },
+      primary: { display: "flex", alignItems: "center", justifyContent: "center", padding: "13px 26px", borderRadius: 9, background: "var(--accent)", color: "var(--bg)", fontSize: 15, fontWeight: 600, opacity: creating ? 0.4 : 1 },
+      ghost: { display: "flex", alignItems: "center", justifyContent: "center", padding: P ? "11px 0" : "13px 20px", borderRadius: 9, border: "1px solid var(--border-strong)", color: "var(--fg-body)", fontSize: P ? 13 : 14 },
+      helper: { margin: "20px 0 0", fontSize: P ? 12.5 : 13, lineHeight: P ? 1.55 : 1.6, color: "var(--fg-faint)", paddingTop: P ? 0 : 16, borderTop: P ? "none" : "1px solid var(--border)" },
+      progress: { width: empty ? "0%" : "100%", height: "100%", background: "var(--success)" },
+      ledger: { margin: P ? "10px 16px 12px" : "12px 30px 12px", borderRadius: 9, padding: P ? "10px 12px" : "12px 15px", background: "var(--surface-sunken)", border: "1px solid var(--border)", borderLeft: "3px solid var(--accent)" },
+      ledgerLine: { display: "flex", flexDirection: P ? "column" : "row", alignItems: P ? "flex-start" : "center", gap: P ? 5 : 11, minHeight: 34, padding: P ? "9px 10px" : "0 11px", borderRadius: 7, background: "var(--elevated-hover)", border: "1px solid var(--accent-shadow)" },
+      ledgerCtl: { display: "flex", alignItems: "center", gap: 10, width: P ? "100%" : "auto", justifyContent: P ? "space-between" : "flex-start", flex: "none" },
+      failBanner: { display: "flex", alignItems: "flex-start", gap: 11, margin: P ? "10px 16px" : "12px 30px 10px", borderRadius: P ? 8 : 9, padding: P ? "9px 12px" : "11px 15px", background: "var(--surface-sunken)", border: "1px solid var(--border)", borderLeft: "3px solid var(--warning)" },
+      tabs: { display: "flex", alignItems: "baseline", gap: P ? 16 : 22, padding: P ? "10px 16px 0" : "14px 30px 0", borderBottom: "1px solid var(--border)", whiteSpace: "nowrap" },
+      tabOn: { fontSize: P ? 13.5 : 14.5, fontWeight: 600, color: "var(--fg)" },
+      tab: { fontSize: P ? 13.5 : 14.5, fontWeight: 500, color: "var(--fg-faint)" },
+      listWrap: { display: "flex", flexDirection: "column", gap: 14, padding: P ? "14px 16px 20px" : "18px 30px 24px" },
+      toolbar: { display: "flex", alignItems: "center", gap: 10 },
+      rows: { display: "grid", gridTemplateColumns: P ? "minmax(0,1fr)" : "repeat(2, minmax(0,1fr))", gap: P ? 6 : "7px 16px" },
+      dock: { marginTop: "auto", display: "flex", alignItems: "center", gap: 14, padding: P ? "10px 14px" : "10px 30px", borderTop: "1px solid var(--border)", background: "var(--bg)" },
+      dockField: { flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 10, height: P ? 44 : 40, padding: "0 13px", borderRadius: 8, border: "1px solid var(--border-strong)", fontSize: P ? 14 : 14.5, color: "var(--fg-faint)", whiteSpace: "nowrap", overflow: "hidden" },
+    };
+    return {
+      theme, phone: P, desktop: !P, s, label: `${P ? "390" : "1300"} · hand-off · ${st}`,
+      isForm, isDeck: !isForm, filled: st === "landed", empty,
+      sub: P ? "From your answers" : "Name your deck. It will be built from your answers.",
+      answers, ctaLabel: creating ? "Creating…" : "Create deck →",
+      intent: "Built around Gishath, Sun’s Avatar: Dinosaurs, with Regisaur Alpha, under $150, bracket 2.",
+      built: empty ? "0" : "99", consider: empty ? "0" : "85", deckRows,
+    };
+  }
+}
+</script>
+</body>
+</html>

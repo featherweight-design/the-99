@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Metamorphous&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="kaldheim"] {
+    --bg:#121217; --surface:#1E1F26; --surface-sunken:#16171D; --surface-rail:#18191F; --elevated:#2D2E35;
+    --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E;
+    --accent:#5C86C9; --accent-hover:#6C95D8; --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="kaldheim" style="font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--fg);padding:44px 40px 90px;display:flex;flex-direction:column;gap:36px;width:max-content;">
+  <div style="max-width:1300px;display:flex;flex-direction:column;gap:12px;">
+    <div style="display:flex;align-items:center;gap:13px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">ABOUT · NEW ENTRY</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--fg-faint);">§G per-entry template · R6 rules</span>
+    </div>
+    <h1 style="font-family:'Metamorphous',serif;font-weight:400;font-size:30px;margin:0;line-height:1.2;">Stats: your decks, side by side</h1>
+    <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-body);max-width:1000px;text-wrap:pretty;">This entry is for Stats on /decks (<a href="The%2099%20-%20Decks%20Stats%20(R2).dc.html">The 99 - Decks Stats (R2)</a>, in this handoff; the brief called it Lineup). It goes in chapter 04, after <i>Stats: the deck, drawn</i>, because it’s the second part of Deck stats. It batches into the cart line’s bump, <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;">ABOUT_VERSION</code> 14 → 15, <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;">since: 15</code>, and is announced by its own switch, <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;">LINEUP_ENABLED</code>. The key lines quote no fixture figure.</p>
+  </div>
+
+  <div style="display:flex;gap:40px;align-items:flex-start;">
+    <div style="width:560px;flex:none;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:18px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:12.5px;line-height:1.55;color:var(--fg-body);">
+        <sc-for list="{{ slots }}" as="sl" hint-placeholder-count="11">
+          <div style="{{ sl.cell }}">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">{{ sl.label }}</div>
+            <div style="white-space:pre-line;text-wrap:pretty;">{{ sl.text }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <sc-for list="{{ views }}" as="v" hint-placeholder-count="2">
+      <div data-screen-label="{{ v.screen }}" style="{{ v.frame }}">
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">04 · Playing and tuning</span>
+          <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">
+            <h3 style="{{ v.h3 }}">Stats: your decks, side by side</h3>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);">/decks</span>
+          </div>
+          <sc-for list="{{ captionParas }}" as="cp" hint-placeholder-count="2"><p style="{{ v.para }}">{{ cp }}</p></sc-for>
+          <div style="border:1px solid var(--border);border-radius:11px;background:var(--surface-sunken);padding:10px 14px;display:flex;flex-direction:column;gap:8px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Cards your decks share</span>
+            <div style="{{ v.row }}">
+              <span style="{{ v.rowName }}">Sol Ring</span>
+              <div style="{{ v.rowSq }}"><sc-for list="{{ v.sq }}" as="q"><span style="{{ q }}"></span></sc-for></div>
+              <div style="{{ v.rowFig }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg);white-space:nowrap;">20 decks</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);white-space:nowrap;">you own 17</span></div>
+            </div>
+          </div>
+          <ol style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px;">
+            <sc-for list="{{ keyLines }}" as="k" hint-placeholder-count="4">
+              <li style="display:flex;gap:10px;font-size:13px;line-height:1.55;color:var(--fg-body);"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--accent);padding-top:2px;">{{ k.n }}</span><span style="text-wrap:pretty;">{{ k.t }}</span></li>
+            </sc-for>
+          </ol>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const captionParas = [
+      "Decks has two views, the tiles and Stats. Stats draws all your decks together: when each last played, where they sit by bracket and color, the cards they share, and how much of your collection they use.",
+      "Pick a deck to see it among the others. Each chart folds to one line, and every deck and card in it opens when you press it.",
+    ];
+    const keyLines = [
+      { n: 1, t: "Never-played decks are always shown, together in their own group." },
+      { n: 2, t: "Collection totals count each copy you own once, even when several decks play the card." },
+      { n: 3, t: "Results are as logged, with the pod size each game had." },
+      { n: 4, t: "Finished only leaves brews out of the charts. Your collection still counts every copy." },
+    ];
+    const full = { gridColumn: "1 / -1" };
+    const slots = [
+      { label: "Title", text: "Stats: your decks, side by side", cell: {} },
+      { label: "Route", text: "/decks", cell: {} },
+      { label: "Chapter", text: "04 · Playing and tuning, after “Stats: the deck, drawn”", cell: {} },
+      { label: "opens", text: "opens Decks, on Stats", cell: {} },
+      { label: "Caption", text: captionParas.join("\n\n"), cell: full },
+      { label: "Specimen", text: "One SharedRow, Sol Ring, read-only: 17 filled squares (a deck holding a copy) and 3 dashed (a deck that wants one, with none left). It doesn’t press.", cell: full },
+      { label: "Fixture props", text: "fixtures.lineup · Sol Ring · decks 20 · owned 17. Staging’s own figure, as the brief writes it.", cell: full },
+      { label: "Key lines · 4 of 4", text: keyLines.map((k) => `${k.n}. ${k.t}`).join("\n"), cell: full },
+      { label: "Phone reduction", text: "The name and figure share a line and the squares wrap under, as SharedCard does at 390. Same component.", cell: full },
+      { label: "since / switch", text: "since 15 · switch LINEUP_ENABLED (new AboutSwitch member)", cell: {} },
+      { label: "Strings from", text: "copy/decks-stats.ts", cell: {} },
+    ];
+    const view = (phone) => {
+      const z = phone ? 11 : 13;
+      return {
+        screen: `About · Decks Stats · ${phone ? 390 : 760}`,
+        frame: { width: phone ? 390 : 760, flex: "none", background: "var(--bg)", color: "var(--fg)", border: "1px solid var(--border-strong)", borderRadius: 12, padding: phone ? "18px 16px 22px" : "22px 24px 26px" },
+        h3: { margin: 0, fontFamily: "'Metamorphous',serif", fontWeight: 400, fontSize: phone ? 19 : 22, color: "var(--fg)" },
+        para: { margin: 0, fontSize: phone ? 14 : 14.5, lineHeight: 1.65, color: "var(--fg-body)", textWrap: "pretty" },
+        row: phone ? { display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gridTemplateAreas: "'n f' 'q q'", gap: "6px 10px", alignItems: "center" } : { display: "grid", gridTemplateColumns: "120px minmax(0,1fr) 84px", gap: 12, alignItems: "center", minHeight: 28 },
+        rowName: { fontSize: 13.5, color: "var(--fg)", ...(phone ? { gridArea: "n" } : {}) },
+        rowSq: { display: "flex", flexWrap: "wrap", gap: 3, ...(phone ? { gridArea: "q" } : {}) },
+        rowFig: { display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 1, ...(phone ? { gridArea: "f" } : {}) },
+        sq: Array.from({ length: 20 }, (_, j) => (j < 17 ? { width: z, height: z, borderRadius: 2, background: "var(--fg-muted)" } : { width: z, height: z, borderRadius: 2, boxSizing: "border-box", border: "1px dashed var(--fg-muted)" })),
+      };
+    };
+    return { captionParas, keyLines, slots, views: [view(false), view(true)] };
+  }
+}
+</script>
+</body>
+</html>

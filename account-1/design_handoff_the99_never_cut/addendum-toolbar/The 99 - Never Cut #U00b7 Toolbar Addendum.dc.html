@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-rail:#1A1611; --surface-sunken:#18140F; --surface-raised:#211D18; --elevated:#29241F;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037; --display:'Cinzel',serif;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654;
+    --accent:#CF8745; --accent-hover:#DE9757; --accent-shadow:#6B482A; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-rail:#12141B; --surface-sunken:#101219; --surface-raised:#191B22; --elevated:#20222A;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843; --display:'Chakra Petch',sans-serif;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-shadow:#843052; --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0d0b09; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<section data-theme="{{ theme }}" data-screen-label="Never cut · toolbar addendum" style="display:flex;flex-direction:column;gap:60px;padding:56px 64px 110px;background:var(--bg);color:var(--fg);font-family:'IBM Plex Sans',sans-serif;min-width:1860px;">
+
+  <header style="display:flex;flex-direction:column;gap:14px;max-width:1180px;">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">Locked cards R2 · addendum · audit F3</span>
+    <h1 style="margin:0;font-family:var(--display);font-weight:700;font-size:34px;line-height:1.15;">Lock cards, in the real toolbar</h1>
+    <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-muted);text-wrap:pretty;">R2 drew <i>Lock cards</i> in a mock toolbar. This addendum places it in <b style="color:var(--fg-body);font-weight:600;">group-toggle.tsx</b> as shipped: the filter pills, cluster 2 (<i>act on the cards</i>), the hairline, then cluster 3 (<i>how the list reads</i>: grouping, sort, view well). It also draws Hugh's L3 note on Clear all auto. Nothing else in R2 changes, and the lock glyph and its inks are R2's. The fixture is HD Yuriko: 40 auto cards, of which Lotus Petal and Ornithopter are locked, and 59 kept.</p>
+  </header>
+
+  <div style="display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">§</span><h2 style="margin:0;font-size:18px;font-weight:600;">The calls</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;max-width:1720px;">
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--accent-shadow);border-radius:10px;">
+        <b style="font-size:13.5px;font-weight:600;">1 · Last in cluster 2, after Clear all auto</b>
+        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">Locking acts on the cards, so it goes on the acting side of the hairline, not the reading side. It sits last, so the tested Keep → Clear order reads unchanged and the pair stays adjacent. On desktop the cluster is pushed right by the spacer, so the button sits just left of the hairline. It is one more child inside the cluster's own wrapper, so the row still wraps between clusters and never inside one.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;">
+        <b style="font-size:13.5px;font-weight:600;">2 · The bulk buttons' skin and height, not the pills'</b>
+        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">It takes <b style="color:var(--fg-body);font-weight:600;">BULK_BUTTON_CLASS</b> verbatim (mono 12, --fg-body, --border-strong, radius 8, px 12). On the phone that is <b style="color:var(--fg-body);font-weight:600;">min-h 44</b>, the same as Keep and Clear beside it. The ~26px pills are filters, and this is a control on a thumb's line. On desktop it's py 6, about 30px, level with the pair. The icon is R2's closed lock in --fg-muted. The button is <b style="color:var(--fg-body);font-weight:600;">min-w 116</b>, so <i>Done</i> takes exactly the same box.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;">
+        <b style="font-size:13.5px;font-weight:600;">3 · Done: in place, and nothing reflows</b>
+        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">In the mode the label becomes <i>Done</i> and the text, border and icon turn --accent (R2). Keep all and Clear all auto stay in place, disabled at the shipped 50%. That way no line of the toolbar comes or goes, and Done stays under the thumb that pressed Lock cards. Disabled, not hidden: a sweep mid-mode would remove cards the player is deciding about. While Keep all's question is open, Lock cards stands down with the pair, because the question replaces the cluster's controls.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;">
+        <b style="font-size:13.5px;font-weight:600;">4 · 390: no new line, in either deck state</b>
+        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">With auto cards, cluster 2 is <i>Keep 40 · Clear auto · 38 · Lock cards</i>: 76 + 134 + 116 + two 8px gaps = <b style="color:var(--fg-body);font-weight:600;">342 of the 358px</b> line. Counts never pass two digits, so it can't grow. That's three lines, as shipped. With no auto cards, Lock cards joins the pills' line (153 + 7 + 116 = 276), so it's two lines, as shipped. The view well keeps its line and its right edge (<a href="#4b">4b</a>).</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;">
+        <b style="font-size:13.5px;font-weight:600;">5 · Shopping hides it</b>
+        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">Hidden under Shopping for the view well's reason: it's absent there, not disabled. Shopping is a list of things to buy, not the deck's composition. The at-rest locks still show on Shopping rows, and the desktop hover shortcut still works there (R2 2e). Switching to Shopping while in the mode ends the mode. Switching between List and Card keeps it, because it's the same toolbar and the same deck (<a href="#4c">4c</a>).</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;">
+        <b style="font-size:13.5px;font-weight:600;">6 · The mode's line takes the key's slot</b>
+        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">MarkKey renders in its own wrapper under the toolbar (px 16 pt 12 / md px 26 pt 14, <i>empty:hidden</i>). In the mode the key hides and the line renders <b style="color:var(--fg-body);font-weight:600;">in that same wrapper</b>: the same position, the same insets, above the receipt and the groups. It's one sentence in one place. When a deck had no key entries, the wrapper appears for the mode and goes with it.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;">
+        <b style="font-size:13.5px;font-weight:600;">7 · Clear all auto skips locked cards (L3)</b>
+        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">Its label counts what it will clear: <i>Clear all auto · 38</i>, beside <i>Keep all 40</i>. The two now count different sets on purpose: a locked auto card can be kept but not cleared. A 40 that clears 38 would be the false count this toolbar forbids. The receipt names what stayed: <i>38 auto cards removed · 2 locked cards stayed</i>. When every remaining auto card is locked, Clear is absent (absent at zero), and Keep all stays (<a href="#4d">4d</a>).</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px;border:1px dashed var(--border-strong);border-radius:10px;">
+        <b style="font-size:13.5px;font-weight:600;">What changes in group-toggle.tsx</b>
+        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">Cluster 2's gate and the hairline's gate each gain <i>filter === "all"</i>, so on All both always render. The wrapper's phone rule <i>hidden md:flex</i> at a zero auto count gives way when Lock cards is present, and the kept note stays desktop-only. Cluster 3, the spacer and the well are untouched. At the narrowest desktop widths the row wraps whole clusters, as it does today. Audit F7's probe covers it.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="4a" style="display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">4a</span><h2 style="margin:0;font-size:18px;font-weight:600;">1300 · List and Card, at rest and Done</h2></div>
+    <p style="margin:0;max-width:1100px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">Drawn at the decklist pane's full width, with the nav rail left off. The row is one line: pills, spacer, <i>59 cards are yours now · Keep all 40 · Clear all auto · 38 · Lock cards</i>, the hairline, then <i>By type · By role · Sort · the well</i>. The rows and tiles below are R2's, simplified.</p>
+    <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">List · at rest</span><div style="width:1300px;border:1px solid var(--border);border-radius:12px;overflow:hidden;"><dc-import name="Toolbar" state="rest" view="list" theme="{{ theme }}" hint-size="1300px,300px"></dc-import></div></div>
+    <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">List · Done · the pair disabled in place, the line in the key's slot</span><div style="width:1300px;border:1px solid var(--border);border-radius:12px;overflow:hidden;"><dc-import name="Toolbar" state="mode" view="list" theme="{{ theme }}" hint-size="1300px,300px"></dc-import></div></div>
+    <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">Card · at rest</span><div style="width:1300px;border:1px solid var(--border);border-radius:12px;overflow:hidden;"><dc-import name="Toolbar" state="rest" view="card" theme="{{ theme }}" hint-size="1300px,520px"></dc-import></div></div>
+    <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">Card · Done</span><div style="width:1300px;border:1px solid var(--border);border-radius:12px;overflow:hidden;"><dc-import name="Toolbar" state="mode" view="card" theme="{{ theme }}" hint-size="1300px,520px"></dc-import></div></div>
+  </div>
+
+  <div id="4b" style="display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">4b</span><h2 style="margin:0;font-size:18px;font-weight:600;">390 · List and Card, at rest and Done</h2></div>
+    <p style="margin:0;max-width:1100px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">Line 1 has the pills (~26px). Line 2 is cluster 2 at 44px: Keep, Clear, Lock cards. Line 3 is cluster 3: <i>By type · By role · Name · A–Z ▾</i> and the well, pushed to the right edge. That's about 345 of 358px, the measurement <b style="color:var(--fg-body);font-weight:600;">deck-sort.ts</b> records for dropping the <i>Sort</i> prefix, and it's unchanged here. The last frame is a deck with no auto cards: Lock cards joins line 1, and there are two lines, as shipped.</p>
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:28px 32px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">List · at rest</span><div style="width:390px;border:1px solid var(--border);border-radius:18px;overflow:hidden;"><dc-import name="Toolbar" phone="{{ true }}" state="rest" view="list" theme="{{ theme }}" hint-size="390px,470px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">List · Done</span><div style="width:390px;border:1px solid var(--border);border-radius:18px;overflow:hidden;"><dc-import name="Toolbar" phone="{{ true }}" state="mode" view="list" theme="{{ theme }}" hint-size="390px,470px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">Card · at rest</span><div style="width:390px;border:1px solid var(--border);border-radius:18px;overflow:hidden;"><dc-import name="Toolbar" phone="{{ true }}" state="rest" view="card" theme="{{ theme }}" hint-size="390px,560px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">Card · Done</span><div style="width:390px;border:1px solid var(--border);border-radius:18px;overflow:hidden;"><dc-import name="Toolbar" phone="{{ true }}" state="mode" view="card" theme="{{ theme }}" hint-size="390px,560px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">List · no auto cards · two lines</span><div style="width:390px;border:1px solid var(--border);border-radius:18px;overflow:hidden;"><dc-import name="Toolbar" phone="{{ true }}" state="noauto" view="list" theme="{{ theme }}" hint-size="390px,420px"></dc-import></div></div>
+    </div>
+  </div>
+
+  <div id="4c" style="display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">4c</span><h2 style="margin:0;font-size:18px;font-weight:600;">Shopping · no Lock cards</h2></div>
+    <p style="margin:0;max-width:1100px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The toolbar is exactly as shipped under Shopping: no button, no well. Mana Vault's lock still shows at rest, and the key says <i>locked</i>. The price strip under the pills is shipped and left off here.</p>
+    <div style="display:flex;align-items:flex-start;gap:32px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300</span><div style="width:1300px;border:1px solid var(--border);border-radius:12px;overflow:hidden;"><dc-import name="Toolbar" state="shopping" theme="{{ theme }}" hint-size="1300px,260px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390</span><div style="width:390px;border:1px solid var(--border);border-radius:18px;overflow:hidden;"><dc-import name="Toolbar" phone="{{ true }}" state="shopping" theme="{{ theme }}" hint-size="390px,470px"></dc-import></div></div>
+    </div>
+  </div>
+
+  <div id="4d" style="display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 7px;">4d</span><h2 style="margin:0;font-size:18px;font-weight:600;">Clear all auto · after the sweep (L3)</h2></div>
+    <p style="margin:0;max-width:1100px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The shipped SweepReceipt, with one clause added after a middot in the same ink. Lotus Petal and Ornithopter stay, still auto and still locked. The toolbar now reads <i>Keep all 2</i>, with no Clear, because the only auto cards left are locked. Undo puts back the 38 and changes nothing about the two.</p>
+    <div style="display:flex;align-items:flex-start;gap:32px;">
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">1300 · List</span><div style="width:1300px;border:1px solid var(--border);border-radius:12px;overflow:hidden;"><dc-import name="Toolbar" state="receipt" view="list" theme="{{ theme }}" hint-size="1300px,360px"></dc-import></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">390 · List</span><div style="width:390px;border:1px solid var(--border);border-radius:18px;overflow:hidden;"><dc-import name="Toolbar" phone="{{ true }}" state="receipt" view="list" theme="{{ theme }}" hint-size="390px,520px"></dc-import></div></div>
+    </div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() { return { theme: this.props.theme ?? "amonkhet" }; }
+}
+</script>
+</body>
+</html>

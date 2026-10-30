@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&amp;family=Metamorphous&amp;family=Syncopate:wght@400;700&amp;family=Chakra+Petch:wght@500;600&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0B0E; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { color: var(--fg); }
+  :root {
+    --bg:#14110E; --surface:#1E1A15; --surface-raised:#211D18; --surface-rail:#1A1611; --surface-sunken:#18140F;
+    --border:#2B241B; --border-strong:#3A3229;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654;
+    --accent:#CF8745; --accent-dim:#6B482A; --avail:#C86D5B; --font-display:'Cinzel',serif;
+  }
+</style>
+</helmet>
+<div style="font-family:'IBM Plex Sans',sans-serif;color:var(--fg);padding:40px;background:#0B0B0E;min-height:100vh;display:flex;flex-direction:column;gap:64px;{{ themeVars }}">
+
+  <section id="r2" style="max-width:1320px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#0B0B0E;background:var(--accent);border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R2</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:var(--fg-faint);">phone only · card first, details below the fold</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:32px;margin:0 0 16px;max-width:1100px;">On the phone the card opens big, with a teaser resting under it. Swipe up for everything.</h1>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 40px;max-width:1240px;">
+      <sc-for list="{{ answersR2 }}" as="a" hint-placeholder-count="8">
+        <p style="font-size:14px;line-height:1.65;color:var(--fg-body);margin:0;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">{{ a.q }}</b> {{ a.body }}</p>
+      </sc-for>
+    </div>
+  </section>
+
+  <section id="r2-frames" style="display:flex;flex-direction:column;gap:22px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">R2 · <span style="color:var(--accent);">phone 390 · teaser, swipe, full, an end, a list of one</span></div>
+    <div style="display:flex;flex-wrap:wrap;gap:40px 32px;align-items:flex-start;">
+      <sc-for list="{{ heroFrames }}" as="fr" hint-placeholder-count="6">
+        <div style="display:flex;flex-direction:column;gap:10px;max-width:392px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#0B0B0E;background:var(--accent);border-radius:4px;padding:2px 7px;">{{ fr.id }}</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ fr.label }}</span>
+          </div>
+          <dc-import name="PhoneHero" f="{{ fr.f }}" hint-size="392px,814px"></dc-import>
+          <p style="margin:0;font-size:12.5px;line-height:1.55;color:var(--fg-muted);text-wrap:pretty;">{{ fr.note }}</p>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section style="max-width:1320px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#0B0B0E;background:var(--accent);border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R1</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">desktop stands · phone frames P1–P7 superseded by R2</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:var(--fg-faint);">card details carousel · H23 · 2026-10-03</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:32px;margin:0 0 16px;max-width:1100px;">The details view pages, at both widths, with its neighbors in view. The zoom stays a look.</h1>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 40px;max-width:1240px;">
+      <sc-for list="{{ answers }}" as="a" hint-placeholder-count="10">
+        <p style="font-size:14px;line-height:1.65;color:var(--fg-body);margin:0;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">{{ a.q }}</b> {{ a.body }}</p>
+      </sc-for>
+    </div>
+    <p style="margin:18px 0 0;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-faint);max-width:1240px;line-height:1.6;">Drawn on kaldheim, the theme in the walk's screenshots (display face Metamorphous). Tweaks switch the theme. Art is placeholder: the identity gradient, striped, labelled. Peeks are drawn as buttons; their accessible names are in the copy file.</p>
+  </section>
+
+  <sc-for list="{{ groups }}" as="g" hint-placeholder-count="5">
+    <section id="{{ g.id }}" style="display:flex;flex-direction:column;gap:22px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">{{ g.num }} · <span style="color:var(--accent);">{{ g.title }}</span></div>
+      <div style="display:flex;flex-wrap:wrap;gap:40px 32px;align-items:flex-start;">
+        <sc-for list="{{ g.frames }}" as="fr" hint-placeholder-count="3">
+          <div style="display:flex;flex-direction:column;gap:10px;max-width:{{ fr.w }}px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#0B0B0E;background:var(--accent);border-radius:4px;padding:2px 7px;">{{ fr.id }}</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ fr.label }}</span>
+            </div>
+            <sc-if value="{{ fr.phone }}" hint-placeholder-val="{{ true }}">
+              <dc-import name="PhoneSheet" f="{{ fr.f }}" hint-size="392px,814px"></dc-import>
+            </sc-if>
+            <sc-if value="{{ fr.desk }}" hint-placeholder-val="{{ false }}">
+              <dc-import name="DesktopModal" f="{{ fr.f }}" hint-size="1302px,762px"></dc-import>
+            </sc-if>
+            <p style="margin:0;font-size:12.5px;line-height:1.55;color:var(--fg-muted);text-wrap:pretty;max-width:{{ fr.w }}px;">{{ fr.note }}</p>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+  </sc-for>
+
+  <section id="motion-table" style="display:flex;flex-direction:column;gap:14px;max-width:1100px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;">§6 · <span style="color:var(--accent);">motion, and reduced motion</span></div>
+    <div style="display:grid;grid-template-columns:200px minmax(0,1fr) minmax(0,1fr);border:1px solid var(--border-strong);border-radius:10px;overflow:hidden;font-size:13px;line-height:1.5;">
+      <div style="padding:10px 14px;background:var(--surface);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);"></div>
+      <div style="padding:10px 14px;background:var(--surface);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">motion allowed</div>
+      <div style="padding:10px 14px;background:var(--surface);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">prefers-reduced-motion</div>
+      <sc-for list="{{ motion }}" as="m" hint-placeholder-count="6">
+        <div style="padding:10px 14px;border-top:1px solid var(--border);color:var(--fg);">{{ m.k }}</div>
+        <div style="padding:10px 14px;border-top:1px solid var(--border);color:var(--fg-body);">{{ m.a }}</div>
+        <div style="padding:10px 14px;border-top:1px solid var(--border);color:var(--fg-body);">{{ m.r }}</div>
+      </sc-for>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;kaldheim&quot;,&quot;amonkhet&quot;,&quot;phyrexia&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;kaldheim&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const THEMES = {
+      amonkhet: "--bg:#14110E;--surface:#1E1A15;--surface-raised:#211D18;--surface-rail:#1A1611;--surface-sunken:#18140F;--border:#2B241B;--border-strong:#3A3229;--fg:#EDE6D8;--fg-body:#C0B8A6;--fg-muted:#A59C89;--fg-faint:#8B8270;--fg-locked:#6E6654;--accent:#CF8745;--accent-dim:#6B482A;--font-display:'Cinzel',serif;",
+      kaldheim: "--bg:#121217;--surface:#1E1F26;--surface-raised:#22232B;--surface-rail:#181920;--surface-sunken:#16171D;--border:#1A1F2B;--border-strong:#2E3340;--fg:#C6D2D3;--fg-body:#B3C0C2;--fg-muted:#95A4A6;--fg-faint:#7C8A8C;--fg-locked:#5F6D6E;--accent:#5C86C9;--accent-dim:#2C405F;--font-display:'Metamorphous',serif;",
+      phyrexia: "--bg:#0D0B0E;--surface:#151317;--surface-raised:#18161A;--surface-rail:#110F13;--surface-sunken:#100E12;--border:#19161C;--border-strong:#262329;--fg:#E4E2E6;--fg-body:#B5B2BB;--fg-muted:#9A96A0;--fg-faint:#78747E;--fg-locked:#64616A;--accent:#52827A;--accent-dim:#213834;--font-display:'Syncopate',sans-serif;",
+      kamigawa: "--bg:#0E0F14;--surface:#16181F;--surface-raised:#191B22;--surface-rail:#12141B;--surface-sunken:#101219;--border:#181C26;--border-strong:#262A35;--fg:#E6E8F0;--fg-body:#B1B6C7;--fg-muted:#959AAD;--fg-faint:#6F7486;--fg-locked:#606476;--accent:#FF4D9A;--accent-dim:#843052;--font-display:'Chakra Petch',sans-serif;",
+    };
+    const themeVars = THEMES[this.props.theme ?? "kaldheim"] || THEMES.amonkhet;
+    const G = { W: "linear-gradient(160deg,#D6CBA6,#7F7559)", U: "linear-gradient(160deg,#3F6F9F,#1B3049)", R: "linear-gradient(160deg,#B4573B,#552417)", C: "linear-gradient(160deg,#8D857A,#3A362F)", WUBG: "linear-gradient(135deg,#CFC4A0,#3F6F9F 45%,#3B3236 70%,#4C7A45)" };
+    const PIP = { W: "#EFE6C6", U: "#A5C8E6", B: "#BDB4AE", R: "#E9A083", G: "#A2CB9E", n: "#CBC3B3" };
+    const pips = (s) => s.map((x) => ({ s: /\d/.test(x) ? x : x, bg: PIP[x] || PIP.n }));
+    const card = (name, type, cost, g, oracle, price, set, rarity, identity, own) => ({ name, type, pips: pips(cost), grad: G[g], oracle, price, set, rarity, identity, own, from: "$" + (parseFloat(price.slice(1)) * 0.72).toFixed(2), avail: own === "×1" ? "none free" : "1 free" });
+    const C = {
+      sol: card("Sol Ring", "Artifact", ["1"], "C", "{T}: Add {C}{C}.", "$1.40", "C21 · 263", "Uncommon", "Colorless", "×3"),
+      signet: card("Arcane Signet", "Artifact", ["2"], "C", "{T}: Add one mana of any color in your commander’s color identity.", "$0.80", "CMM · 380", "Common", "Colorless", "×2"),
+      tithe: card("Smothering Tithe", "Enchantment", ["3", "W"], "W", "Whenever an opponent draws a card, that player may pay {2}. If they don’t, you create a Treasure token.", "$21.40", "RNA · 22", "Rare", "White", "×1"),
+      study: card("Rhystic Study", "Enchantment", ["2", "U"], "U", "Whenever an opponent casts a spell, you may draw a card unless that player pays {1}.", "$38.10", "JMP · 169", "Common", "Blue", "×1"),
+      rift: card("Cyclonic Rift", "Instant", ["1", "U"], "U", "Return target nonland permanent you don’t control to its owner’s hand. Overload {6}{U}.", "$29.75", "RTR · 35", "Rare", "Blue", "×1"),
+      sentinel: card("Esper Sentinel", "Artifact Creature — Human Soldier", ["W"], "W", "Whenever an opponent casts their first noncreature spell each turn, unless that player pays {X}, you draw a card.", "$11.20", "MH2 · 12", "Rare", "White", "×1"),
+      swords: card("Swords to Plowshares", "Instant", ["W"], "W", "Exile target creature. Its controller gains life equal to its power.", "$2.10", "STA · 10", "Uncommon", "White", "×2"),
+      atraxa: card("Atraxa, Praetors’ Voice", "Legendary Creature — Phyrexian Angel Horror", ["G", "W", "U", "B"], "WUBG", "Flying, vigilance, deathtouch, lifelink. At the beginning of your end step, proliferate.", "$9.60", "2XM · 190", "Mythic", "W/U/B/G", "×1"),
+    };
+    const mid = { cur: C.study, prev: C.tithe, next: C.rift, pos: 12, total: 48 };
+    const first = { cur: C.sol, prev: null, next: C.signet, pos: 1, total: 48 };
+    const last = { cur: C.swords, prev: C.sentinel, next: null, pos: 48, total: 48 };
+    const one = { cur: C.atraxa, prev: null, next: null, pos: 1, total: 1 };
+    const P = (id, label, f, note) => ({ id, label, f, note, phone: true, desk: false, w: 392 });
+    const D = (id, label, f, note) => ({ id, label, f, note, phone: false, desk: true, w: f.W ? f.W + 2 : 1302 });
+    const groups = [
+      { id: "phone", num: "§1", title: "phone 390 · mid-list, each end, a list of one", frames: [
+        P("P1", "mid-list · 12 of 48", mid, "The 180px card stays centred and full size. Each neighbor is the whole card at 128px, half opacity, cut by the screen edge: 91px shows. A peek is a button and pages on tap. The counter takes the top-left plate, the ✕ plate's twin."),
+        P("P2", "first card · 1 of 48", first, "Nothing on the left: no ghost, no disabled arrow. A drag to the right moves the strip a third of the finger's travel, 40px at most, and springs back."),
+        P("P3", "last card · 48 of 48", last, "The mirror of P2. The list stops at both ends; it does not wrap."),
+        P("P4", "list of one", one, "Opened alone (deck header commander). No peeks, no counter, no drag. The header is the shipped one, unchanged."),
+      ]},
+      { id: "phone-more", num: "§2", title: "phone · compact header, a drag in progress, a stacked card", frames: [
+        P("P5", "compact header · picker open", { ...mid, mode: "compact" }, "Peeks and the swipe are withheld while the picker is open: paging would discard the region and its search. The counter drops its plate and becomes a mono line under the type line. The plate would cover the thumb, and the shipped 44px padding stays. Close the picker and the plate and peeks return."),
+        P("P6", "drag · 30% of the way", { ...mid, dragX: -84, gripX: 250 }, "The strip follows the finger once the drag has locked horizontal. Release past 25% of the header width (98px), or flick, and it commits. Short of that it returns."),
+        P("P7", "stacked · 2 of 3 over a receipt", { cur: C.study, prev: C.tithe, next: C.rift, pos: 2, total: 3, stacked: true }, "Opened from the Game changers receipt at 96px. The top card pages its own list (3), with peeks in its own header. The card held under a sheet still draws no paging."),
+      ]},
+      { id: "desktop", num: "§3", title: "desktop 1300 · mid-list, each end, a list of one", frames: [
+        D("D1", "mid-list · next under the pointer", { ...mid, W: 1300, hoverNext: true }, "Neighbors are drawn on the backdrop beside the modal: 168px cards, 24px off its edges, with the name under each. Hover raises one to .92. A neighbor pages; the rest of the backdrop still closes. The footer keeps ‹ Prev · 12 of 48 · Next › as shipped, and ← → page from anywhere in the dialog except the printing search, the printing grid, and the zoom."),
+        D("D2", "first card · 1 of 48", { ...first, W: 1300 }, "Left neighbor absent. ‹ Prev stays drawn at .4 and is aria-disabled rather than disabled, so a focused control keeps focus at the end of the list."),
+        D("D3", "last card · 48 of 48", { ...last, W: 1300 }, "The mirror of D2."),
+        D("D4", "list of one", { ...one, W: 1300 }, "No neighbors, and the footer no longer draws 1 of 1 with two dead controls: the link stands alone, as on the phone. Arrow keys do nothing."),
+        D("D5", "narrow desktop · 1024", { ...mid, W: 1024 }, "Below 1252px wide the gutter can't hold a 168px card and its margins, so the neighbors drop. The footer controls and the arrow keys carry paging alone."),
+      ]},
+      { id: "motion", num: "§4", title: "motion · phone header, drag → glide → settled", frames: [
+        P("M1", "drag, released at 30%", { ...mid, mode: "header", dragX: -84, gripX: 250 }, "Released past the threshold."),
+        P("M2", "glide · ~120ms", { cur: C.study, prev: C.tithe, next: C.rift, pos: 12, total: 48, mode: "header", dragX: -140, peekOp: 0.75 }, "Drawn as translation only. In build the strip glides the rest of the way, 240ms on the flip's curve, while the incoming card grows 128 → 180 and fades .5 → 1, and the outgoing one does the reverse. The content below swaps at the commit and scrolls to the top."),
+        P("M3", "settled · 13 of 48", { cur: C.rift, prev: C.study, next: C.sentinel, pos: 13, total: 48, mode: "header" }, "A new card starts on its front, by the remount that already guarantees it."),
+      ]},
+      { id: "reduced", num: "§5", title: "reduced motion · phone drag → settled · desktop art", frames: [
+        P("R1", "drag, released at 30%", { ...mid, mode: "header", dragX: -84, gripX: 250 }, "The strip still tracks the finger. A drag is direct manipulation, not animation, and taking it away would leave a press that does nothing visible until it lifts."),
+        P("R2", "settled, no glide", { cur: C.rift, prev: C.study, next: C.sentinel, pos: 13, total: 48, mode: "header" }, "On release the strip jumps to the settled frame. No glide, no scale, no fade. A short release returns at once. The flip's reduced path does the same: face replaces face."),
+        D("R3", "desktop · the art's 200ms slide-in, drawn at its start", { ...mid, W: 1300, artX: 24, artOp: 0.35 }, "With motion allowed, the new art enters 24px from the side it came from and fades in over 200ms. The content column and the neighbors swap. Under reduced motion it is a swap: this frame never shows."),
+      ]},
+    ];
+    const answers = [
+      { q: "Where it lives.", body: "The details view, at both widths. The zoom does not page: decision 2 is not reopened. Hugh offered the zoom as the fallback if the details view proved hard, and it hasn't. In the zoom, swipes and arrow keys do nothing, and it opens on whichever card is current." },
+      { q: "What a neighbor shows.", body: "The whole card, scaled down. Phone: 128px at .5, cut by the screen edge. Desktop: 168px at .55 on the backdrop, with its name. No art on hand: the identity gradient, as everywhere else." },
+      { q: "Compact 72px header.", body: "Peeks and the swipe are withheld. That header only exists while the printing picker is open, and paging resets the picker. The counter stays." },
+      { q: "What a swipe moves.", body: "The art header only. The strip moves; the sheet does not. A drag locks after 10px. If horizontal travel beats 1.5× the vertical, it pages and cancels the press under it (zoom, turn, peek). Otherwise it is a scroll. Taps keep their shipped jobs. Drags that start within 16px of the screen edge go to the system." },
+      { q: "Desktop controls.", body: "The footer's ‹ Prev · N of M · Next › stays. Neighbors beside the modal are a view and a shortcut, and they drop below 1252px. ← and → page." },
+      { q: "Ends.", body: "Stop. Wrapping a sorted 3,000-card list jumps from Z to A without a word. The missing side draws nothing, and a drag past the end rubber-bands." },
+      { q: "One or two.", body: "One: no carousel at all, and 1 of 1 goes. Two (a suggestion's cut and add): one peek, 1 of 2, and it stops at both ends." },
+      { q: "Motion.", body: "240ms glide on the flip's cubic-bezier(.2,.7,.2,1). It is shorter than the flip's 320 because paging is pressed in runs. A press mid-glide finishes the glide and starts the next one. It never queues. Under reduced motion it is a swap." },
+      { q: "Screen reader.", body: "On arrival: “{name}, {n} of {total}”, in the provider's live region. The modal remounts per card, and its own region remounts with it. Focus stays on the control that paged." },
+      { q: "Stacked.", body: "Both stay. The top card pages its own list; the held card draws nothing, and arrows reach only the top layer. About entry: not drawn. I'd fold it into the card details entry. Hugh decides." },
+    ];
+    const motion = [
+      { k: "Phone commit (swipe, peek tap)", a: "Strip glides to the next slot, 240ms cubic-bezier(.2,.7,.2,1). Incoming 128→180 and .5→1; outgoing reverse.", r: "Jumps to settled. No scale, no fade." },
+      { k: "Phone return (short release)", a: "180ms, same curve.", r: "Returns at once." },
+      { k: "Phone drag", a: "Tracks the finger 1:1. Past an end, 0.3×, capped at 40px.", r: "Same. A drag is not an animation." },
+      { k: "Desktop page (click, key)", a: "Art enters 24px from the side it came from, opacity 0→1, 200ms. Content and neighbors swap.", r: "Swap." },
+      { k: "Press mid-glide", a: "Finishes the current glide at once and starts the next. Never queues.", r: "n/a" },
+      { k: "Flip on the new card", a: "Starts on its front (keyed remount). Turn unchanged, 320ms.", r: "Unchanged: face replaces face." },
+    ];
+    const H = (id, label, f, note) => ({ id, label, f, note });
+    const heroFrames = [
+      H("H1", "opened · teaser · 12 of 48", mid, "The card at 320 × 447, wider than the zoom's 318. Neighbors at 236, opacity .5, 23px showing. The teaser rests at y 532 and fills the sheet down to the 34px home inset: name, type, cost, price, set, copies, three lines of oracle text and All details. The card's lower half covers y 290–511, where the thumb already rests."),
+      H("H2", "swipe on the card", { ...mid, dragX: -96, gripX: 236, gripY: 360 }, "Horizontal drags page from anywhere on the card band, y 0–532. The teaser stays put and swaps its text on the commit. A vertical drag on the band or the teaser moves the sheet instead. The lock is the R1 rule: 10px, then 1.5×."),
+      H("H3", "swiped up · all details", { ...mid, mode: "full" }, "The sheet snaps to y 64, leaving the counter and ✕ on the wash. This is the shipped details column, oracle through the link-out, scrolling inside the sheet. Paging is withheld here, as the compact header ruled in R1: one drag down, or a tap on the dimmed band, returns to the teaser. The printing picker opens here, so the 72px compact header is retired."),
+      H("H4", "mid-drag up", { ...mid, sheetTop: 300 }, "The sheet follows the finger and snaps to the nearer state on release, or to the flick's direction. Two snaps only, teaser and full; nothing rests between them."),
+      H("H5", "first card · 1 of 48", first, "Nothing on the left. A drag that way rubber-bands, as in R1. It stops at both ends."),
+      H("H6", "list of one", one, "No counter, no peeks, and horizontal drags do nothing. The teaser and swipe-up still work: the layout serves a lone card as well."),
+    ];
+    const answersR2 = [
+      { q: "Yes, and it fits.", body: "The pattern is generic: a big card, peeks, and a bottom sheet with two snaps. It's drawn in this app's own vocabulary, with the shipped ✕ and counter plates, the art wash, the buy tag and the details column. Nothing of ManaBox's chrome comes across. Its bottom action bar has no counterpart here, because this modal edits nothing." },
+      { q: "Two states.", body: "Teaser on open, every time, even if the last card was left full. Full by a swipe up, a flick, or the All details button, which is the keyboard and screen-reader route. Down, a tap on the band, or Escape returns to the teaser. A second Escape closes the dialog: one rung added to the shipped Escape ladder." },
+      { q: "What the teaser carries.", body: "What tells you which card and whether you want it: name, type, cost, the price tag, set · number, copies owned, and up to three lines of oracle text that fade out. All details is pinned above the home inset, so a short text leaves its slack above the button, not under it. No receipts, no picker, no facts block. All of those wait below the fold." },
+      { q: "Swipe stays on the card.", body: "Horizontal on the card band pages, and vertical anywhere moves the sheet. In the full state paging is withheld, so a reader who opened the details is reading them. The counter stays as the locator." },
+      { q: "Zoom and Tap to zoom.", body: "At 320 the card is already the zoom's size (318), so the phone retires the zoom and its 'Tap to zoom' hint. A tap on the card does nothing in the teaser and returns to the teaser from full. The desktop zoom stays as it is, and decision 2 stands. The shipped price plate ('$1.55 from $0.26') moves from under the art into the teaser." },
+      { q: "Matched to the shipped sheet.", body: "Drawn against the walk's screenshots: kaldheim, the theme's own display face, the cost glyph to the right of the name, and a stronger wash. The full sheet uses the shipped stack in its shipped order: oracle, then bracket facts and combos when the card has them (this one has neither), collection receipt, meta grid with accent values, set row with its thumbnail, and both link-outs." },
+      { q: "What it reopens.", body: "The full-card handoff's decision 3 (262 → 180) is overturned on the phone: the card grows to 320 and the details move below the fold. The phone's 180px header and the compact 72px header both go. Desktop is unchanged; R1 §3 stands." },
+      { q: "Small and stacked phones.", body: "The card width is min(320, (viewport height − 85 − 280) × 0.7159). That's about 216 on a 667px phone, with the teaser always at 280. Stacked at 96px, the same formula runs on the shorter sheet." },
+      { q: "Motion.", body: "Sheet snaps take 240ms on the flip's curve, and paging keeps R1's glide. Under reduced motion both are swaps, but the sheet and the strip still track the finger while it's down." },
+    ];
+    return { themeVars, groups, answers, motion, heroFrames, answersR2 };
+  }
+}
+</script>
+</body>
+</html>

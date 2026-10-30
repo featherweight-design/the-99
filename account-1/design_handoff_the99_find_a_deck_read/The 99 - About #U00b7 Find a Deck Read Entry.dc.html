@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Metamorphous&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="kaldheim"] {
+    --bg:#121217; --surface:#1E1F26; --surface-sunken:#16171D; --surface-rail:#18191F; --elevated:#2D2E35;
+    --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E;
+    --accent:#5C86C9; --accent-hover:#6C95D8; --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="kaldheim" style="font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--fg);padding:44px 40px 90px;display:flex;flex-direction:column;gap:36px;width:max-content;">
+  <div style="max-width:1300px;display:flex;flex-direction:column;gap:12px;">
+    <div style="display:flex;align-items:center;gap:13px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">ABOUT · NEW ENTRY</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--fg-faint);">§G per-entry template · R6 rules</span>
+    </div>
+    <h1 style="font-family:'Metamorphous',serif;font-weight:400;font-size:30px;margin:0;line-height:1.2;">Which deck needs it most?</h1>
+    <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-body);max-width:1000px;text-wrap:pretty;">The entry for the read in Find a deck for it (<a href="The%2099%20-%20Find%20a%20Deck%20Read%20(R1).dc.html">The 99 - Find a Deck Read (R1)</a>, in this handoff). It goes in chapter 03, right after <i>Find a deck for it</i> (<code style="font-family:'IBM Plex Mono',monospace;font-size:12px;">fits-your-decks</code>), which keeps describing the free list. It follows its own switch, <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;">FIND_A_DECK_READ_ENABLED</code> (a new <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;">AboutSwitch</code> member), with no <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;">ABOUT_VERSION</code> bump: <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;">since: 14</code>, the version current when it was written, and it is seen by id when the switch turns on. The key lines quote no fixture figure.</p>
+  </div>
+
+  <div style="display:flex;gap:40px;align-items:flex-start;">
+    <div style="width:560px;flex:none;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:18px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:12.5px;line-height:1.55;color:var(--fg-body);">
+        <sc-for list="{{ slots }}" as="sl" hint-placeholder-count="11">
+          <div style="{{ sl.cell }}">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">{{ sl.label }}</div>
+            <div style="white-space:pre-line;text-wrap:pretty;">{{ sl.text }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <sc-for list="{{ views }}" as="v" hint-placeholder-count="2">
+      <div data-screen-label="{{ v.screen }}" style="{{ v.frame }}">
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">03 · Building the 99</span>
+          <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">
+            <h3 style="{{ v.h3 }}">Which deck needs it most?</h3>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);">/collection</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">opens the card detail</span>
+          </div>
+          <sc-for list="{{ captionParas }}" as="cp" hint-placeholder-count="2"><p style="{{ v.para }}">{{ cp }}</p></sc-for>
+          <div style="display:flex;flex-direction:column;gap:9px;border-radius:9px;padding:12px 14px;background:var(--surface-sunken);border:1px solid var(--border);">
+            <div style="display:flex;flex-direction:column;gap:3px;">
+              <span style="font-size:13.5px;font-weight:600;color:var(--fg);text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--border-strong);">HD - Goblins</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">Krenko, Mob Boss<span style="color:var(--border-strong);"> · </span>plan from its overview</span>
+            </div>
+            <p style="margin:0;font-size:13px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">Every activation adds a creature for <span style="color:var(--fg);border-bottom:1px dotted var(--accent);">Krenko, Mob Boss</span> to count, and its card draw turns the wide board <span style="color:var(--fg);border-bottom:1px dotted var(--accent);">Goblin Chieftain</span> already pumps into a full hand.</p>
+            <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;padding-top:8px;border-top:1px solid var(--border);">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-locked);">cut</span>
+              <span style="font-size:12.5px;font-weight:600;color:var(--fg);border-bottom:1px dotted var(--accent);">Skirk Prospector</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">goes out when you swap it in</span>
+            </div>
+          </div>
+          <ol style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px;">
+            <sc-for list="{{ keyLines }}" as="k" hint-placeholder-count="4">
+              <li style="display:flex;gap:10px;font-size:13px;line-height:1.55;color:var(--fg-body);"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--accent);padding-top:2px;">{{ k.n }}</span><span style="text-wrap:pretty;">{{ k.t }}</span></li>
+            </sc-for>
+          </ol>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const captionParas = [
+      "Some cards fit a dozen of your decks on paper and help two of them for real. Open “Find a deck for it” on any card and press “Which deck needs it most?” for a closer read.",
+      "It names the few decks the card actually helps, says how in each deck’s own cards, and suggests what it would replace. One press swaps it in. Handy for the niche rares that never seem to have a home.",
+    ];
+    const keyLines = [
+      { n: 1, t: "A read uses a credit. If it fails, finds no real fit, or too little of it holds up, the credit comes back." },
+      { n: 2, t: "Every card a read names is checked against that deck’s list. A deck whose line doesn’t check out is left off." },
+      { n: 3, t: "“Swap in” puts the card in the deck’s draft and takes the cut out. Press it again to undo." },
+      { n: 4, t: "Reopening a read is free until one of your decks changes. Then it’s marked out of date." },
+    ];
+    const full = { gridColumn: "1 / -1" };
+    const slots = [
+      { label: "Title", text: "Which deck needs it most?", cell: {} },
+      { label: "Route", text: "/collection", cell: {} },
+      { label: "Chapter", text: "03 · Building the 99, after “Find a deck for it”", cell: {} },
+      { label: "opens", text: "opens the card detail", cell: {} },
+      { label: "Caption", text: captionParas.join("\n\n"), cell: full },
+      { label: "Specimen", text: "One ReadRow, read-only: HD - Goblins, its commander and plan source, the sentence with two card marks, and the cut line. No Swap in button: the specimen doesn’t press.", cell: full },
+      { label: "Fixture props", text: "fixtures.findADeckRead · Ajani Unrelenting · HD - Goblins · cut Skirk Prospector. Illustrative until the eval returns a real line.", cell: full },
+      { label: "Key lines · 4 of 4", text: keyLines.map((k) => `${k.n}. ${k.t}`).join("\n"), cell: full },
+      { label: "Phone reduction", text: "Same row at 390: the sentence rewraps, the cut line wraps its note under the card. Same component.", cell: full },
+      { label: "since / switch", text: "since 14 · switch FIND_A_DECK_READ_ENABLED (new AboutSwitch member). No bump.", cell: {} },
+      { label: "Strings from", text: "copy/swap-tools.ts (fits.read)", cell: {} },
+    ];
+    const view = (phone) => ({
+      screen: `About · Find a Deck Read · ${phone ? 390 : 760}`,
+      frame: { width: phone ? 390 : 760, flex: "none", background: "var(--bg)", color: "var(--fg)", border: "1px solid var(--border-strong)", borderRadius: 12, padding: phone ? "18px 16px 22px" : "22px 24px 26px" },
+      h3: { margin: 0, fontFamily: "'Metamorphous',serif", fontWeight: 400, fontSize: phone ? 19 : 22, color: "var(--fg)" },
+      para: { margin: 0, fontSize: phone ? 14 : 14.5, lineHeight: 1.65, color: "var(--fg-body)", textWrap: "pretty" },
+    });
+    return { captionParas, keyLines, slots, views: [view(false), view(true)] };
+  }
+}
+</script>
+</body>
+</html>

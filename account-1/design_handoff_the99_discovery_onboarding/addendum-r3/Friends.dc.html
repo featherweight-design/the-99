@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Part · Friends section on Home</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@500;600;700&amp;family=Chakra+Petch:wght@500;600;700&amp;family=Trirong:wght@500;600;700&amp;family=Syncopate:wght@400;700&amp;family=Cormorant+Garamond:wght@500;600;700&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="{{ s.root }}">
+  <sc-if value="{{ col }}" hint-placeholder-val="{{ true }}">
+    <span style="{{ s.kick }}">COMMITMENTS</span>
+    <div style="{{ s.card }}">
+      <div style="{{ s.cRow }}"><span>Cards in use</span><span style="{{ s.cInUse }}">214 of 1,418</span></div>
+      <div style="{{ s.cRow }}"><span>Spoken for twice</span><span style="{{ s.cTwice }}">2 cards</span></div>
+      <div style="{{ s.cRow }}"><span>To buy, all decks</span><span style="{{ s.cBuy }}">23 · $214.60</span></div>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px"><a href="#" style="{{ s.ghost }}">Review commitments</a><a href="#" style="{{ s.ghost }}">Shop all decks</a></div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ showFriends }}" hint-placeholder-val="{{ true }}">
+  <section aria-labelledby="friends-home-head" style="{{ s.section }}">
+    <div style="{{ s.head }}">
+      <h2 id="friends-home-head" style="{{ s.kickH }}">FRIENDS<sc-if value="{{ hasFriends }}" hint-placeholder-val="{{ true }}"><span style="{{ s.count }}"> · {{ total }}</span></sc-if></h2>
+      <sc-if value="{{ hasFriends }}" hint-placeholder-val="{{ true }}">
+        <a href="#" style="{{ s.all }}">All friends<span aria-hidden="true" style="{{ s.chev }}">›</span></a>
+      </sc-if>
+    </div>
+
+    <ul style="{{ s.faces }}">
+      <sc-if value="{{ empty }}" hint-placeholder-val="{{ false }}">
+        <li aria-hidden="true" style="{{ s.slot }}">
+          <img src="art/art-dina.jpg" alt="" style="{{ s.face }}">
+          <span style="{{ s.you }}">You</span>
+        </li>
+      </sc-if>
+      <sc-for list="{{ shown }}" as="f" hint-placeholder-count="3">
+        <li style="{{ s.slot }}">
+          <a href="#" aria-label="{{ f.aria }}" style="{{ s.faceLink }}">
+            <img src="{{ f.art }}" alt="" style="{{ s.face }}">
+            <span style="{{ s.name }}">{{ f.name }}</span>
+          </a>
+        </li>
+      </sc-for>
+      <sc-if value="{{ overflow }}" hint-placeholder-val="{{ false }}">
+        <li aria-hidden="true" style="{{ s.slot }}">
+          <span style="{{ s.more }}">+{{ hidden }}</span>
+          <span style="{{ s.moreSub }}">more</span>
+        </li>
+      </sc-if>
+      <sc-for list="{{ seats }}" as="e" hint-placeholder-count="2">
+        <li aria-hidden="true" style="{{ s.slot }}"><span style="{{ e.style }}"><span style="{{ e.mark }}"></span></span></li>
+      </sc-for>
+    </ul>
+
+    <sc-if value="{{ empty }}" hint-placeholder-val="{{ false }}">
+      <p style="{{ s.line }}">Add the people you play with. Seat them when you log a game, and see their spares when you shop.</p>
+    </sc-if>
+
+    <sc-if value="{{ pending }}" hint-placeholder-val="{{ false }}">
+      <p style="{{ s.pend }}"><span>Friend link open · {{ left }}</span><span aria-hidden="true" style="{{ s.dot }}">·</span><button type="button" aria-label="Show the friend link made today" style="{{ s.show }}">Show</button></p>
+    </sc-if>
+
+    <button type="button" style="{{ s.add }}">Add a friend</button>
+  </section>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["amonkhet","kamigawa","ixalan","phyrexia","eldraine","kaldheim"],"default":"amonkhet"},"state":{"editor":"enum","options":["none","one","four","many","pending","pendingSoon"],"default":"many"},"phone":{"editor":"boolean","default":false},"col":{"editor":"boolean","default":true},"friends":{"editor":"boolean","default":true},"$preview":{"width":356,"height":420}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const TH = {
+      amonkhet: { bg:'#14110E', surface:'#1E1A15', raised:'#211D18', rail:'#1A1611', inset:'#1B1712', elevated:'#29241F', border:'#2B241B', strong:'#3A3229', dashed:'#494037', fg:'#EDE6D8', body:'#C0B8A6', muted:'#A59C89', faint:'#8B8270', locked:'#6E6654', disabled:'#4A4033', accent:'#CF8745', rgb:'207,135,69', success:'#6FA368', warning:'#DEAA29', danger:'#C6533F' },
+      kamigawa: { bg:'#0E0F14', surface:'#16181F', raised:'#191B22', rail:'#12141B', inset:'#13151C', elevated:'#20222A', border:'#181C26', strong:'#262A35', dashed:'#343843', fg:'#E6E8F0', body:'#B1B6C7', muted:'#959AAD', faint:'#6F7486', locked:'#606476', disabled:'#3D404E', accent:'#FF4D9A', rgb:'255,77,154', success:'#6FA368', warning:'#E0913C', danger:'#C6533F' },
+      ixalan:   { bg:'#0E1310', surface:'#171E19', raised:'#1A221C', rail:'#121814', inset:'#141B16', elevated:'#212A23', border:'#1D2620', strong:'#2C3830', dashed:'#3B4A3F', fg:'#E0E7DE', body:'#B6C2B3', muted:'#98A695', faint:'#808C7C', locked:'#626E5E', disabled:'#3E473A', accent:'#A3C445', rgb:'163,196,69', success:'#5EA990', warning:'#E0913C', danger:'#C6533F' },
+      phyrexia: { bg:'#0D0B0E', surface:'#151317', raised:'#18161A', rail:'#110F13', inset:'#131115', elevated:'#1E1C20', border:'#19161C', strong:'#262329', dashed:'#332F36', fg:'#E4E2E6', body:'#B5B2BB', muted:'#9A96A0', faint:'#78747E', locked:'#64616A', disabled:'#403E45', accent:'#52827A', rgb:'82,130,122', success:'#6FA368', warning:'#E0913C', danger:'#C6533F' },
+      eldraine: { bg:'#120E17', surface:'#1B1821', raised:'#1F1C25', rail:'#15121B', inset:'#17141D', elevated:'#26232C', border:'#241D30', strong:'#342C41', dashed:'#443C52', fg:'#E4DEEE', body:'#B9B2C5', muted:'#9C95A8', faint:'#898395', locked:'#6A6475', disabled:'#443F4D', accent:'#AE88E6', rgb:'174,136,230', success:'#6FA368', warning:'#E0913C', danger:'#C6533F' },
+      kaldheim: { bg:'#121217', surface:'#1E1F26', raised:'#22232B', rail:'#181920', inset:'#1A1B22', elevated:'#2D2E35', border:'#1A1F2B', strong:'#2E3340', dashed:'#424755', fg:'#C6D2D3', body:'#B3C0C2', muted:'#95A4A6', faint:'#7C8A8C', locked:'#5F6D6E', disabled:'#3B4647', accent:'#5C86C9', rgb:'92,134,201', success:'#6FA368', warning:'#E0913C', danger:'#C6533F' },
+    };
+    const p = this.props;
+    const t = TH[p.theme] || TH.amonkhet;
+    const on = (v, d) => v === undefined ? d : !(v === false || v === 'false');
+    const phone = on(p.phone, false);
+    const col = on(p.col, true);
+    const showFriends = on(p.friends, true);
+    const state = p.state || 'many';
+    const mono = "font-family:'IBM Plex Mono',monospace;";
+    const sans = "font-family:'IBM Plex Sans',sans-serif;";
+
+    // The fixture friends, in /friends' own order (listFriends: by name).
+    const ALL = [
+      { name: 'Chris', cmd: 'Zimone, Infinite Analyst', art: 'art/face-zimone.jpg' },
+      { name: 'Colin', cmd: 'Sai, Master Thopterist', art: 'art/face-sai.jpg' },
+      { name: 'Max', cmd: 'Captain America, Team Leader', art: 'art/face-captain-america.jpg' },
+      { name: 'Peter', cmd: 'Jace, Multiverse Architect', art: 'art/face-jace.jpg' },
+    ];
+    const total = { none: 0, pending: 0, pendingSoon: 0, one: 1, four: 4, many: 7 }[state] ?? 7;
+    const list = state === 'one' ? [ALL[1]] : ALL;
+    // Five slots, flush to both edges at both sizes (R2). Past five, four faces and a count; the columns a
+    // short list leaves are empty seats, so the row is always the full table.
+    const CAP = 5;
+    const overflow = total > CAP;
+    const shown = (overflow ? list.slice(0, CAP - 1) : list.slice(0, total)).map((f) => ({ ...f, aria: `${f.name}’s page` }));
+    const hidden = overflow ? total - (CAP - 1) : 0;
+    const pending = state === 'pending' || state === 'pendingSoon';
+    const soon = state === 'pendingSoon';
+    const used = total === 0 ? 1 : shown.length + (overflow ? 1 : 0);
+
+    const W = phone ? 358 : 316;
+    const slotW = phone ? 56 : 52;
+    const SLOT = slotW;
+    const s = {
+      root: `width:${W}px;box-sizing:border-box;display:flex;flex-direction:column;gap:${phone ? 12 : 11}px;${sans}color:${t.body};background:transparent`,
+      kick: `${mono}font-size:10px;letter-spacing:.14em;color:${t.faint};margin-top:${phone ? 6 : 4}px`,
+      card: `border-radius:14px;border:1px solid ${t.border};background:${t.inset};padding:14px;display:flex;flex-direction:column;gap:11px`,
+      cRow: `display:flex;justify-content:space-between;font-size:13px;color:${t.body}`,
+      cInUse: `${mono}color:${t.accent}`, cTwice: `${mono}color:${t.danger}`, cBuy: `${mono}color:${t.fg}`,
+      ghost: `height:${phone ? 44 : 32}px;display:flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid ${t.strong};font-size:${phone ? 13 : 12.5}px;color:${t.body};text-decoration:none`,
+      section: `display:flex;flex-direction:column;gap:${phone ? 12 : 11}px;margin-top:${col ? (phone ? 6 : 4) : 0}px`,
+      head: `display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:${phone ? 24 : 14}px`,
+      kickH: `margin:0;${mono}font-weight:400;font-size:10px;letter-spacing:.14em;color:${t.faint}`,
+      count: `letter-spacing:.08em`,
+      all: `display:flex;align-items:center;gap:4px;${phone ? 'min-height:44px;margin:-10px 0;padding:0 2px 0 12px;' : ''}font-size:12.5px;color:${t.muted};text-decoration:none`,
+      chev: `font-size:15px;line-height:1;color:${t.faint}`,
+      faces: `margin:0;padding:0;list-style:none;display:flex;justify-content:space-between;align-items:flex-start`,
+      slot: `flex:none;width:${SLOT}px;display:flex;flex-direction:column;align-items:center;gap:6px`,
+      faceLink: `width:100%;${phone ? 'min-height:64px;' : ''}display:flex;flex-direction:column;align-items:center;gap:6px;text-decoration:none`,
+      face: `width:40px;height:40px;box-sizing:border-box;border-radius:10px;border:1px solid ${t.strong};background:${t.raised};object-fit:cover;display:block`,
+      name: `max-width:${slotW - 6}px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11.5px;color:${t.body}`,
+      you: `font-size:11.5px;color:${t.faint}`,
+      more: `width:40px;height:40px;display:flex;align-items:center;justify-content:center;${mono}font-size:12.5px;color:${t.muted}`,
+      moreSub: `font-size:11.5px;color:${t.faint}`,
+      seat: `width:40px;height:40px;box-sizing:border-box;border-radius:10px;border:1.5px dashed ${t.dashed}`,
+      seat1: `width:40px;height:40px;box-sizing:border-box;border-radius:10px;display:flex;align-items:center;justify-content:center;` + (pending ? `border:1.5px dashed rgba(${t.rgb},.7)` : `border:1.5px dashed ${t.dashed}`),
+      seatMark: pending ? `width:6px;height:6px;background:${t.accent};transform:rotate(45deg)` : 'display:none',
+      line: `margin:0;font-size:${phone ? 13 : 12.5}px;line-height:1.5;color:${t.body}`,
+      pend: `margin:0;display:flex;align-items:center;flex-wrap:wrap;gap:6px;${mono}font-size:11px;color:${soon ? t.warning : t.muted}`,
+      dot: `color:${t.faint}`,
+      show: `${phone ? 'min-height:44px;margin:-14px 0;padding:0 8px;' : 'padding:0 2px;'}border:0;background:transparent;${sans}font-size:12.5px;font-weight:500;color:${t.fg};text-decoration:underline;text-decoration-color:rgba(${t.rgb},.55);text-underline-offset:3px`,
+      add: `align-self:${phone ? 'stretch' : 'flex-start'};height:${phone ? 44 : 32}px;padding:0 ${phone ? 16 : 14}px;border-radius:${phone ? 10 : 8}px;border:1px solid ${t.strong};background:transparent;${sans}font-size:${phone ? 14 : 12.5}px;color:${t.fg}`,
+    };
+    const seats = Array.from({ length: CAP - used }, (_, i) => {
+      const lit = pending && i === 0;
+      return {
+        style: lit ? s.seat1 : s.seat,
+        mark: lit ? s.seatMark : 'display:none',
+      };
+    });
+    return {
+      s, col, showFriends, seats, shown, overflow, hidden, total, pending,
+      hasFriends: total > 0, empty: total === 0,
+      left: soon ? 'Under a day left' : '6 days left',
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Part · first-run Home at 390, with the tour over it</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@500;600;700&amp;family=Metamorphous&amp;family=Cormorant+Garamond:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="{{ frame }}">
+  <div style="{{ scroller }}">
+    <div style="position:absolute;left:0;top:0"><dc-import name="MobileHeader" theme="{{ theme }}" hint-size="390px,79px"></dc-import></div>
+    <span style="{{ kicker }}">Step 1 of 3</span>
+    <h1 style="{{ h1 }}">Welcome to The 99</h1>
+    <div role="status" style="{{ banner }}">
+      <span aria-hidden="true" style="{{ mark }}"><span style="{{ markD }}"></span></span>
+      <span style="{{ bannerText }}"><b style="{{ bannerLead }}">What The&#160;99 does:</b> every mark and figure in the app, and where to find it, on one page. <a href="#" style="{{ showMe }}">Show me</a></span>
+    </div>
+    <section aria-label="Step 1, Add your collection" style="{{ step1 }}">
+      <div aria-hidden="true" style="position:relative;width:118px;height:100px;flex:none">
+        <span style="{{ c1 }}"></span><span style="{{ c2 }}"></span><span style="{{ c3 }}">99</span>
+      </div>
+      <h2 style="{{ s1Title }}">Add your collection</h2>
+      <p style="{{ s1Body }}">Drop a CSV export from Moxfield, Archidekt, Deckbox or ManaBox.</p>
+      <button type="button" style="{{ primary }}">Upload a CSV</button>
+      <button type="button" style="{{ ghostBtn }}">Paste a list</button>
+      <span style="{{ waysK }}">No file? Start another way</span>
+      <div style="{{ ways }}">
+        <sc-for list="{{ wayRows }}" as="w" hint-placeholder-count="3">
+          <a href="#" style="{{ w.row }}"><span style="display:flex;flex-direction:column;gap:2px"><span style="{{ w.t }}">{{ w.title }}</span><span style="{{ w.s }}">{{ w.sub }}</span></span><span aria-hidden="true" style="{{ w.chev }}">›</span></a>
+        </sc-for>
+      </div>
+    </section>
+    <sc-for list="{{ locked }}" as="l" hint-placeholder-count="2">
+      <section aria-label="{{ l.aria }}" style="{{ l.box }}">
+        <span style="{{ l.num }}">{{ l.n }}</span>
+        <span style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:0"><span style="{{ l.tt }}">{{ l.title }}</span><span style="{{ l.rr }}">{{ l.reason }}</span></span>
+      </section>
+    </sc-for>
+  </div>
+  <div style="position:absolute;left:0;bottom:0;z-index:5"><dc-import name="TabBar" theme="{{ theme }}" active="home" locked="{{ true }}" hint-size="390px,88px"></dc-import></div>
+
+  <sc-if value="{{ tour }}" hint-placeholder-val="{{ true }}">
+    <div style="position:absolute;inset:0;z-index:30" aria-hidden="true"><span style="{{ spot }}"></span></div>
+    <div style="position:absolute;left:16px;bottom:100px;z-index:40"><dc-import name="TourCard" step="{{ step }}" theme="{{ theme }}" phone="{{ true }}" focus-skip="{{ focusSkip }}" hint-size="358px,320px"></dc-import></div>
+  </sc-if>
+
+  <sc-if value="{{ note }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;z-index:30;background:rgba(6,5,8,.62)"></div>
+    <section role="dialog" aria-modal="true" aria-label="A note from the creator" style="{{ sheet }}">
+      <div aria-hidden="true" style="{{ grab }}"></div>
+      <header style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:12px 16px 10px">
+        <h2 style="{{ noteH }}">A note from the creator</h2>
+        <button type="button" aria-label="Close" style="{{ noteX }}">✕</button>
+      </header>
+      <div style="{{ noteBody }}">
+        <p style="margin:0 0 14px">There are a lot of Magic: The Gathering apps out there and a lot of them do really great things: ManaBox is the main place I store my collection, Moxfield was my first deck builder, and Deckcheck helped me really understand tuning.</p>
+        <p style="margin:0 0 14px">But, no single app really scratched that itch for me. Somewhere I could really see and manage everything. At least not everything I needed. So, I built The 99. Specifically, around the idea that, maybe I would know what commander I want, but it was always arduous to round out the rest of the deck.</p>
+        <p style="margin:0 0 14px">How many lands should I have? Is this too many creatures? Do I have any Sol Rings left? Didn’t I crack a pack last week with something I needed? Does this deck even make sense?</p>
+        <p style="margin:0 0 14px">And, like most players, I have hundreds of cards neatly catalogued, tucked away in a big box, conveniently hidden away so I have no idea what I even own. The number of times I’ve bought a single only to realize I owned one is too many to count. Or, worse, realizing I don’t have what I need right before a game.</p>
+        <p style="margin:0 0 14px">The 99 aims to solve this by focusing on your collection first. What do you already own, where is it today, and what do you need more of? From there, it grew to answer more niche questions like “How many Game Changers do I own?”, “What bracket does this deck land me in?”, “Is there a cheaper alternative for this $300 land?”, “Would a different commander run this deck better?”</p>
+        <p style="margin:0 0 14px">And, I hope it keeps growing into something me and my friends can use to build cooler decks, have better game nights, and enjoy this nerdy-ass hobby even more. Because at the end of the day, The 99 is for me and my friends. Something for nerds, by nerds, to do more nerd shit.</p>
+        <p style="margin:0 0 14px">Cheers nerds,</p>
+        <p style="margin:0 0 14px">Hugh</p>
+        <div style="{{ fade }}"></div>
+      </div>
+    </section>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["amonkhet","kaldheim","eldraine"],"default":"amonkhet"},"step":{"editor":"int","default":1},"state":{"editor":"enum","options":["tour","none","note"],"default":"tour"},"focusSkip":{"editor":"boolean","default":false},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const P = {
+      amonkhet: { bg:'#14110E', surface:'#1E1A15', raised:'#211D18', rail:'#1A1611', inset:'#1B1712', elevated:'#29241F', border:'#2B241B', strong:'#3A3229', fg:'#EDE6D8', body:'#C0B8A6', muted:'#A59C89', faint:'#8B8270', locked:'#6E6654', dashed:'#494037', accent:'#CF8745', rgb:'207,135,69', disp:"'Cinzel',serif" },
+      kaldheim: { bg:'#121217', surface:'#1E1F26', raised:'#22232B', rail:'#181920', inset:'#1A1B22', elevated:'#2D2E35', border:'#1A1F2B', strong:'#2E3340', fg:'#C6D2D3', body:'#B3C0C2', muted:'#95A4A6', faint:'#7C8A8C', locked:'#5F6D6E', dashed:'#424755', accent:'#5C86C9', rgb:'92,134,201', disp:"'Metamorphous',serif" },
+      eldraine: { bg:'#120E17', surface:'#1B1821', raised:'#1F1C25', rail:'#15121B', inset:'#17141D', elevated:'#26232C', border:'#241D30', strong:'#342C41', fg:'#E4DEEE', body:'#B9B2C5', muted:'#9C95A8', faint:'#898395', locked:'#6A6475', dashed:'#443C52', accent:'#AE88E6', rgb:'174,136,230', disp:"'Cormorant Garamond',serif" },
+    };
+    const p = this.props;
+    const theme = P[p.theme] ? p.theme : 'amonkhet';
+    const t = P[theme];
+    const step = Math.min(6, Math.max(1, Number(p.step ?? 1)));
+    const state = p.state ?? 'tour';
+    const tour = state === 'tour';
+    const mono = "font-family:'IBM Plex Mono',monospace;";
+    const abs = (x, y, w, h) => `position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;box-sizing:border-box;`;
+    const scroll = tour && step === 1 ? 380 : 0;
+    // Spotlit targets in viewport coordinates: [x, y, w, h, pad, radius].
+    const R = {
+      1: [16, 14, 358, 411, 6, 20],
+      2: [157.6, 778, 74.8, 52, 3, 14],
+      3: [307.2, 778, 74.8, 52, 3, 14],
+      4: [307.2, 778, 74.8, 52, 3, 14],
+      5: [329, 23, 38, 38, 4, 15],
+      6: [16, 154, 358, 104, 6, 16],
+    }[step];
+    const [sx, sy, sw, sh, pad, rad] = R;
+    const card = (x, y, extra) => `position:absolute;left:${x}px;top:${y}px;width:56px;height:76px;box-sizing:border-box;border-radius:6px;border:1px solid ${t.strong};${extra}`;
+    const wayRows = [
+      ['Precons I own', 'Pick the boxes. We know every card in them.'],
+      ['Import a deck', 'Paste a list you play.'],
+      ['Add cards by hand', 'Search by name and add them one by one.'],
+    ].map(([title, sub], i) => ({
+      title, sub,
+      row: `display:flex;align-items:center;justify-content:space-between;gap:12px;height:56px;padding:0 14px;text-align:left;text-decoration:none;${i ? `border-top:1px solid ${t.border};` : ''}`,
+      t: `font-size:14px;font-weight:500;color:${t.fg}`, s: `font-size:12.5px;color:${t.muted}`, chev: `font-size:17px;color:${t.faint}`,
+    }));
+    const locked = [[2, 'Pick a commander or import a deck', 'Opens once your cards are in', 817], [3, 'Build the 99', 'Opens once you pick a commander', 889]].map(([n, title, reason, y]) => ({
+      n, title, reason, aria: `Step ${n}, ${title}, locked`,
+      box: abs(16, y, 358, 60) + `display:flex;align-items:center;gap:12px;padding:0 14px;border-radius:14px;border:1px solid ${t.border}`,
+      num: `flex:none;width:24px;height:24px;border-radius:999px;border:1px solid ${t.dashed};display:flex;align-items:center;justify-content:center;${mono}font-size:11px;color:${t.locked}`,
+      tt: `font-size:14px;font-weight:500;color:${t.locked};white-space:nowrap;overflow:hidden;text-overflow:ellipsis`, rr: mono + `font-size:10.5px;color:${t.locked}`,
+    }));
+    return {
+      theme, step, tour, note: state === 'note', focusSkip: p.focusSkip === true || p.focusSkip === 'true', wayRows, locked,
+      frame: `position:relative;width:390px;height:844px;overflow:hidden;background:${t.bg};font-family:'IBM Plex Sans',sans-serif;color:${t.body}`,
+      scroller: `position:absolute;left:0;top:0;width:390px;height:960px;transform:translateY(-${scroll}px)`,
+      kicker: `position:absolute;left:16px;top:95px;${mono}font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:${t.faint}`,
+      h1: `position:absolute;left:16px;top:112px;margin:0;font-family:${t.disp};font-weight:700;font-size:23px;line-height:1.15;color:${t.fg}`,
+      banner: abs(16, 154, 358, 104) + `display:flex;align-items:flex-start;gap:12px;padding:13px 14px;border-radius:10px;border:1px solid ${t.strong};background:${t.rail}`,
+      mark: `flex:none;width:22px;height:22px;border-radius:6px;background:rgba(${t.rgb},.16);border:1px solid rgba(${t.rgb},.45);box-sizing:border-box;display:flex;align-items:center;justify-content:center`,
+      markD: `width:7px;height:7px;background:${t.accent};transform:rotate(45deg)`,
+      bannerText: `font-size:14px;line-height:1.45;color:${t.body}`, bannerLead: `color:${t.fg};font-weight:500`,
+      showMe: `font-size:14px;color:${t.fg};text-decoration:underline;text-decoration-color:rgba(${t.rgb},.55);text-underline-offset:3px`,
+      step1: abs(16, 274, 358, 531) + `display:flex;flex-direction:column;align-items:center;text-align:center;padding:16px;border-radius:14px;border:1px solid ${t.accent};background:${t.inset}`,
+      c1: card(12, 16, `background:${t.inset};transform:rotate(-14deg)`),
+      c2: card(28, 11, `background:${t.raised}`),
+      c3: card(44, 16, `border-color:${t.accent};background:${t.inset};transform:rotate(14deg);display:flex;align-items:center;justify-content:center;font-family:${t.disp};font-weight:700;font-size:18px;color:${t.accent}`),
+      s1Title: `margin:12px 0 0;font-family:${t.disp};font-weight:600;font-size:19px;color:${t.fg}`,
+      s1Body: `margin:4px 0 0;font-size:13.5px;line-height:1.6;color:${t.muted}`,
+      primary: `margin-top:12px;width:100%;height:44px;border-radius:10px;border:0;background:${t.fg};color:${t.bg};font-family:'IBM Plex Sans',sans-serif;font-size:14px;font-weight:600`,
+      ghostBtn: `margin-top:9px;width:100%;height:44px;border-radius:10px;border:1px solid ${t.strong};background:transparent;color:${t.fg};font-family:'IBM Plex Sans',sans-serif;font-size:14px`,
+      waysK: `margin-top:14px;align-self:flex-start;${mono}font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:${t.faint}`,
+      ways: `margin-top:8px;width:100%;border:1px solid ${t.border};border-radius:10px;overflow:hidden;display:flex;flex-direction:column`,
+      spot: abs(sx - pad, sy - pad, sw + pad * 2, sh + pad * 2) + `border-radius:${rad}px;box-shadow:0 0 0 2px rgba(${t.rgb},.75),0 0 0 6px rgba(${t.rgb},.2),0 0 0 3000px rgba(6,5,8,.66)`,
+      sheet: `position:absolute;left:0;bottom:0;z-index:40;width:390px;max-height:796px;box-sizing:border-box;display:flex;flex-direction:column;background:${t.rail};border:1px solid ${t.strong};border-bottom:0;border-radius:18px 18px 0 0`,
+      grab: `align-self:center;width:40px;height:4px;border-radius:999px;background:${t.dashed};margin:8px 0 0`,
+      noteH: `margin:0;font-family:${t.disp};font-size:20px;font-weight:600;color:${t.fg}`,
+      noteX: `flex:none;width:44px;height:44px;margin:-8px -12px 0 0;background:none;border:0;color:${t.muted};font-size:20px`,
+      noteBody: `position:relative;flex:0 1 auto;min-height:0;overflow:hidden;padding:4px 16px 0;font-size:14.5px;line-height:1.65;color:${t.body}`,
+      fade: `position:absolute;left:0;right:0;bottom:0;height:70px;background:linear-gradient(rgba(0,0,0,0),${t.rail})`,
+    };
+  }
+}
+</script>
+</body>
+</html>

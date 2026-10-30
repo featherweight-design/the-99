@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Metamorphous&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="kaldheim"] {
+    --bg:#121217; --surface:#1E1F26; --surface-sunken:#16171D; --surface-rail:#18191F; --elevated:#2D2E35;
+    --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E;
+    --accent:#5C86C9; --accent-hover:#6C95D8; --success:#6FA368; --warning:#E0913C; --danger:#C6533F; --btn:#C9D3D6;
+  }
+  [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-sunken:#18140F; --surface-rail:#1A1611; --elevated:#29241F;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654;
+    --accent:#CF8745; --accent-hover:#DE9757; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-sunken:#101219; --surface-rail:#12141B; --elevated:#20222A;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+
+<div data-theme="{{ theme }}" style="font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--fg);padding:44px 40px 90px;display:flex;flex-direction:column;gap:72px;width:max-content;">
+
+  <div id="C0" style="max-width:1340px;display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:center;gap:13px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">ROUND · R2</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--fg-faint);">Commander precons · /decks/precons · /decks/new</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">R1 feedback, 2026-10-11 · R1 kept beside this file</span>
+    </div>
+    <div style="border:1px solid var(--accent);border-radius:10px;background:color-mix(in oklab, var(--accent) 8%, transparent);padding:13px 16px;max-width:1100px;display:flex;flex-direction:column;gap:6px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">R2 · two notes</span>
+      <span style="font-size:13px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;"><b style="color:var(--fg);">1 · No cart line.</b> P2 draws /decks with the cart’s line absent: the precon line keeps its half-width cell at 900 and fills the row at 390. <b style="color:var(--fg);">2 · The fold on a phone.</b> The phone chrome is calibrated to Hugh’s screenshot, so today the first tile starts at about 397 and the tab bar’s top is at 779. R1 stacked two 56px lines (+123px), which pushed the tile to about 520. The art still clears the tab bar, but the deck name ends about 38px above it, and the status pills, the 99 / 99 bar and the figure fall below. R2 puts both doors in one 2-up row of 52px cells, adding 68px, so the tile starts at about 465. The name, the pills and the bar stay above the fold. P1 shows today, R1 and R2 side by side, each in a true 390 × 844 viewport. Everything else is unchanged from R1.</span>
+    </div>
+    <h1 style="font-family:'Metamorphous',serif;font-weight:400;font-size:34px;margin:0;line-height:1.15;color:var(--fg);max-width:1100px;">A door beside the cart’s on /decks, a door beside Help me choose on New deck, and one read-only decklist behind both.</h1>
+    <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-body);max-width:1000px;text-wrap:pretty;">The precons live on their own route, <code style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">/decks/precons</code>, reached from a line under the Decks header that sits beside the cart’s line. No tab is added and the shelves are untouched. Every figure is a count, <i>you own 74 of 85</i>, with basic lands left out and said so. The open precon is the deck view without its editing tools, and its one action makes a draft.</p>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:6px;">
+      <sc-for list="{{ calls }}" as="c" hint-placeholder-count="9">
+        <div style="border:1px solid var(--border);border-radius:10px;padding:13px 15px;background:var(--surface);display:flex;flex-direction:column;gap:6px;"><div style="display:flex;justify-content:space-between;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ c.k }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ c.where }}</span></div><span style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">{{ c.v }}</span></div>
+      </sc-for>
+    </div>
+  </div>
+
+  <sc-for list="{{ sections }}" as="sec" hint-placeholder-count="13">
+    <section id="{{ sec.id }}" data-screen-label="{{ sec.id }} {{ sec.title }}" style="display:flex;flex-direction:column;gap:26px;">
+      <div style="display:flex;flex-direction:column;gap:8px;max-width:1340px;">
+        <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">§{{ sec.id }}</span>
+          <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px;color:var(--fg);">{{ sec.title }}</h2>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">STATES {{ sec.id }} · scene {{ sec.scene }}</span>
+        </div>
+        <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-body);max-width:1000px;text-wrap:pretty;">{{ sec.note }}</p>
+      </div>
+      <div style="display:flex;gap:40px;align-items:flex-start;">
+        <div style="border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;flex:none;">
+          <dc-import name="Precons R2" scene="{{ sec.scene }}" theme="{{ theme }}" hint-size="900px,760px"></dc-import>
+        </div>
+        <sc-for list="{{ sec.phones }}" as="ph" hint-placeholder-count="1">
+          <div style="display:flex;flex-direction:column;gap:10px;flex:none;">
+            <sc-if value="{{ ph.hasCap }}" hint-placeholder-val="{{ false }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:{{ ph.capInk }};">{{ ph.cap }}</span></sc-if>
+            <div style="border:1px solid var(--border-strong);border-radius:22px;overflow:hidden;">
+              <dc-import name="Precons R2" scene="{{ sec.scene }}" phone="{{ true }}" doors="{{ ph.doors }}" theme="{{ theme }}" hint-size="390px,844px"></dc-import>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+  </sc-for>
+
+  <section id="AB" data-screen-label="AB About entry" style="display:flex;flex-direction:column;gap:22px;">
+    <div style="display:flex;flex-direction:column;gap:8px;max-width:1340px;">
+      <div style="display:flex;align-items:baseline;gap:12px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">§AB</span>
+        <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px;color:var(--fg);">The About entry</h2>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">per-entry artboard · design_handoff_the99_about</span>
+      </div>
+      <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-body);max-width:1000px;text-wrap:pretty;">Chapter 03, Building the 99, directly after <i>Starting a deck</i> (<code style="font-family:'IBM Plex Mono',monospace;font-size:12px;">new-deck</code>), because it is a second way to start one. The MTGJSON credit joins the page’s data credits with its licence notice (lock 8). Copy is in <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;">about · precons.ts</code>.</p>
+    </div>
+    <div style="display:flex;gap:40px;align-items:flex-start;">
+      <div style="width:560px;flex:none;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:18px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:12.5px;line-height:1.55;color:var(--fg-body);">
+          <sc-for list="{{ slots }}" as="sl" hint-placeholder-count="10">
+            <div style="{{ sl.cell }}">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">{{ sl.label }}</div>
+              <div style="white-space:pre-line;text-wrap:pretty;">{{ sl.text }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <sc-for list="{{ aboutViews }}" as="v" hint-placeholder-count="2">
+        <div data-screen-label="{{ v.screen }}" style="{{ v.frame }}">
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">03 · Building the 99</span>
+            <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">
+              <h3 style="{{ v.h3 }}">Starting from a precon</h3>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);">/decks/precons</span>
+            </div>
+            <sc-for list="{{ captionParas }}" as="cp" hint-placeholder-count="2"><p style="{{ v.para }}">{{ cp }}</p></sc-for>
+            <div style="display:flex;align-items:flex-start;gap:12px;border-radius:10px;background:var(--surface-rail);border:1px solid var(--border);padding:10px 10px 10px 12px;">
+              <span style="flex:none;width:34px;height:48px;border-radius:4px;background:repeating-linear-gradient(135deg,var(--surface) 0 5px,var(--elevated) 5px 10px);box-shadow:inset 0 0 0 1px var(--border-strong);"></span>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;">
+                <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;">
+                  <span style="font-family:'Metamorphous',serif;font-size:15px;color:var(--fg);">Eldrazi Unbound</span>
+                  <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:500;color:var(--fg);"><span style="font-size:10px;color:var(--fg-faint);">you own</span> 74 of 85</span>
+                </div>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">Ulalek, Fused Atrocity</span>
+                <div style="display:flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);"><span style="width:10px;height:10px;border-radius:50%;background:#A8A49F;box-shadow:inset 0 0 0 1px rgba(0,0,0,.35);"></span>CMM · Aug 2023</div>
+              </div>
+              <span style="flex:none;align-self:center;font-size:18px;color:var(--fg-muted);">›</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:7px;margin-top:4px;">
+              <sc-for list="{{ keyLines }}" as="kl" hint-placeholder-count="4">
+                <div style="display:flex;gap:9px;"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);padding-top:2px;">—</span><span style="{{ v.key }}">{{ kl }}</span></div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="max-width:960px;border:1px dashed var(--border-dashed);border-radius:10px;padding:12px 15px;display:flex;flex-direction:column;gap:6px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Data credits · new line</span>
+      <span style="font-size:13px;line-height:1.6;color:var(--fg-body);">Commander precon decklists from <span style="color:var(--fg);">MTGJSON</span>, under the MIT licence. Copyright (c) 2018 - Present, Zach Halpern.</span>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const theme = this.props.theme ?? "kaldheim";
+    const calls = [
+      { k: "1 · Where on /decks", where: "P1", v: "A route, /decks/precons, opened from a Commander precons line under the header. At 900 it sits beside the cart’s line, two equal cells; at 390 it stacks under it. No tab, and the shelves and chassis don’t change." },
+      { k: "2 · New deck", where: "N1", v: "A second door under Help me choose, the same box: Start from a precon, Browse precons →. It opens the list with ‹ New deck as its back link. No inline pick: 185 entries need the list." },
+      { k: "3 · The list", where: "L1–L4", v: "Newest first, under year heads. A row is the name, commanders, colour pips, set and month, and you own N of M. Search covers name, commander and set. Pips filter by identity. Order: Newest or Most owned." },
+      { k: "4 · Twins (Q1)", where: "V1", v: "One row for each decklist, named for the plain edition, with also sold as a Collector’s Edition under it. The open page names the twin. Search finds either name. 185 rows." },
+      { k: "5 · Already built (Q2)", where: "L1 · O1", v: "Yes. One line: your deck HD Tune - Counter Intelligence · 88 shared, linked. It shows when a deck has the same commander and most of the cards. It’s a comparison, so it says shared, never from." },
+      { k: "6 · Printing (Q3)", where: "O1–O3", v: "The read-only list shows the precon’s printing, its set and number, with that art in hover and details. The draft keeps none: deck printings picks from the copies the player holds, as any deck does." },
+      { k: "7 · Basics (Q4)", where: "all", v: "Not counted, and every figure says so. Basics get one dashed line at the foot of Lands, Wastes ×15 · basic · not counted. The Lands count includes them, and its note gives the split." },
+      { k: "8 · Order (Q5)", where: "L1", v: "Newest is the default. Most owned is one choice away, stored per browser like the deck sort. It drops the year heads." },
+      { k: "9 · Whole precon (Q6)", where: "S1", v: "All 100 cards, no subset this round. The draft has every card, Shopping lists what isn’t owned, and the player edits from there. A leave-out-unowned option is gap G6." },
+    ];
+    const sections = [
+      { id: "P1", title: "/decks: two doors share the head", scene: "decks", note: "At 900, unchanged from R1: two equal cells under the header, and only the cart’s has the accent ring. At 390, R2 sets the doors as one 2-up row of 52px cells, Shop all decks · 307 · $843.99 and Precons · 185 decklists, between the buttons and the shelf trigger. That adds 68px where R1 added 123. The three phones are today, R1 and R2, each 390 × 844 with the shipped 248px tile art and the chrome calibrated to Hugh’s screenshot. The first tile starts at about 397, 520 and 465. The dashed line is the top of the tab bar. The phone label Shop all decks needs Hugh’s OK, because the cart’s approved line reads Shopping for all decks, and that is still the label at 900.", phones: [{ doors: "none", cap: "today · no doors", capInk: "var(--fg-faint)" }, { doors: "stacked", cap: "R1 · stacked lines · +123px", capInk: "var(--fg-faint)" }, { doors: "compact", cap: "R2 · one 2-up row · +68px", capInk: "var(--accent)" }] },
+      { id: "P2", title: "/decks with no cart line", scene: "decksNoCart", note: "No deck needs a card bought (cart E4), so the cart line is absent. At 900 the precon line keeps its half-width cell: stretched to the full width, one line would read as a banner. At 390 it takes the whole 2-up row as one 52px cell, adding 60px. Nothing takes the cart’s place, and nothing else moves." },
+      { id: "N1", title: "New deck: Start from a precon", scene: "newDeck", note: "Same component shape as HelpMeChooseDoor, directly under it, above the search. On a phone both doors stack, and the name field and list follow as shipped. The desktop sub names all three ways. The phone keeps From your collection." },
+      { id: "L1", title: "The precon list, newest first", scene: "list", note: "Year heads carry the decklist count, after twins are folded. 2026 is drawn with five rows: the three 2 Oct releases A–Z, then Avengers Assemble with its twin line, then Prismari Artistry, which a deck is already built from. Each row presses whole into its decklist. Commander names in ‹ › are not in the brief (G1)." },
+      { id: "L2", title: "An empty collection", scene: "listEmpty", note: "Every figure reads 0 of M. It is still a count, never hidden. One band explains it and links to upload. Built lines go, because there are no cards to compare." },
+      { id: "L3", title: "No precon matches", scene: "listNone", note: "The result line reads 0 of 185, and the body says what the search looks at. Clear the search is in two places: on the result line, as on /decks, and in the body." },
+      { id: "L4", title: "The feed couldn’t be read", scene: "listDown", note: "No controls and no count, because there is nothing to filter. The door lines on /decks and New deck stay up: they’re static and don’t read the feed. The page says the player’s own data is untouched." },
+      { id: "O1", title: "Open: fully owned, already built", scene: "full", note: "Counter Intelligence, 91 of 91. The header is an eyebrow (Precon decklist · read-only), the name, the commander, and identity · set · release. The own box holds the count, a neutral bar and the built line. Groups are DecklistGroup by type with each group’s own count as its note. Rows keep the owned dot, have no buy tag, lock, claim, price or I got it, and show the precon’s printing on the right." },
+      { id: "O2", title: "Open: partial", scene: "partial", note: "Eldrazi Unbound, 74 of 85. Not-owned rows take the deck view’s dashed dot. That’s the only difference, with no warning colour or verdict. Fifteen Wastes sit in one dashed basics line under Lands." },
+      { id: "O3", title: "Open: mostly unowned", scene: "unowned", note: "Wretched Ranks, 18 of 67, the lowest of the five newest. It reads the same as O2. A low count isn’t treated as a problem. 33 Swamps are the basics line, so the Lands head reads 45." },
+      { id: "S1", title: "Start a deck: the confirm", scene: "start", note: "One dialog, a sheet on the phone. It shows the commander, the name (prefilled with the precon’s name, editable, DECK_NAME_MAX), and three facts: all 100 cards, the owned count, and where printings come from. Start the deck calls a new server action, createDeckFromPrecon(fileName, name), which reads the precon on the server and writes its exact entries with counts (G8). createDeck can’t carry counts and would trust a list sent by the browser. Pending: Starting… and the button disabled, with the inFlight guard." },
+      { id: "S2", title: "Arrival: a draft on Your deck", scene: "arrival", note: "createDeck redirects to the new deck. The import’s arrival strip says where it came from, that all 100 are in, the owned count, and that the rest are in Shopping. It stays until dismissed or committed. From here it’s an ordinary draft: buy tags, claims and I got it work as usual (lock 7)." },
+      { id: "V1", title: "A Collector’s Edition twin", scene: "twin", note: "Avengers Assemble, 30 of 84. The own box names the twin in one sentence. The URL is the plain edition’s fileName, and the twin’s fileName redirects to it, so a shared link to either lands on this page." },
+      { id: "V2", title: "Two commanders", scene: "partners", note: "Food and Fellowship (fixture assumed, G1): Frodo + Sam, two thumbs, joined with + as the picker’s dock joins a pair. The group is Commanders 2, and the own box says 2 commanders and 98 cards. Start passes the second id as partnerOracleId." },
+    ];
+    const caption = "Any Commander precon, from the first in 2011 to this month’s, is listed on Decks under Commander precons. Each shows how many of its cards you own.\n\nOpen one to read its list, group by group. Start a deck from it, and you get a draft with all 100 cards that you can change before you commit.";
+    const keyLines = [
+      "Any printing counts, as everywhere else. Basic lands are left out of the count.",
+      "If a deck of yours has the same commander and most of the same cards, the precon says so.",
+      "A Collector’s Edition with the same cards is listed once, under the plain edition.",
+      "Your deck picks printings from the copies you hold, not the precon’s.",
+    ];
+    const slots = [
+      { label: "id", text: "precons" }, { label: "chapter · after", text: "03 · after new-deck" },
+      { label: "since", text: "17 (cart 15, tokens 16)" }, { label: "switch", text: "PRECONS_ENABLED (new AboutSwitch member)" },
+      { label: "title", text: "Starting from a precon" }, { label: "route · opens", text: "/decks/precons · opens the precon list" },
+      { label: "caption", text: caption, wide: true },
+      { label: "specimen", text: "PreconRow · Eldrazi Unbound · own 74 of 85", wide: true },
+      { label: "phone", text: "Rows stack name, figure, commander, meta. The open precon’s Start button docks above the tab bar.", wide: true },
+    ].map((s) => ({ ...s, cell: s.wide ? { gridColumn: "1 / -1" } : {} }));
+    const view = (w, ph) => ({
+      screen: `AB ${ph ? 390 : 620}`,
+      frame: { width: w, flex: "none", background: "var(--bg)", border: "1px solid var(--border-strong)", borderRadius: ph ? 22 : 12, padding: ph ? "20px 16px" : "26px 28px" },
+      h3: { margin: 0, fontFamily: "'Metamorphous',serif", fontWeight: 400, fontSize: ph ? 19 : 22, color: "var(--fg)" },
+      para: { margin: 0, fontSize: ph ? 13 : 14, lineHeight: 1.65, color: "var(--fg-body)", textWrap: "pretty" },
+      key: { fontSize: ph ? 12.5 : 13, lineHeight: 1.55, color: "var(--fg-muted)", textWrap: "pretty" },
+    });
+    sections.forEach((s) => { s.phones = (s.phones ?? [{ doors: "compact" }]).map((p) => ({ ...p, hasCap: !!p.cap, cap: p.cap ?? "", capInk: p.capInk ?? "var(--fg-faint)" })); });
+    calls[0] = { k: "1 · Where on /decks", where: "P1 · P2", v: "A route, /decks/precons, opened from a Commander precons line under the header. At 900 it sits beside the cart’s line as two equal cells. At 390 (R2) both doors share one 2-up row of 52px cells, so the first deck stays above the fold. No tab, and the shelves and chassis are unchanged." };
+    return { theme, calls, sections, slots, captionParas: caption.split("\n\n"), keyLines, aboutViews: [view(620, false), view(390, true)] };
+  }
+}
+</script>
+</body>
+</html>

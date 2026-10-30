@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-rail:#1A1611; --surface-sunken:#18140F; --surface-raised:#211D18; --elevated:#29241F; --elevated-hover:#201C17;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037; --display:'Cinzel',serif;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654; --fg-disabled:#4A4033;
+    --accent:#CF8745; --accent-hover:#DE9757; --accent-shadow:#6B482A; --accent-strong:#AB6E37; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+    --avail-soft:var(--fg-muted); --avail-hard:var(--accent); --avail-hard-fg:#D9975C; --avail-over-fg:#C46857; --avail-over-border:#752619;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-rail:#12141B; --surface-sunken:#101219; --surface-raised:#191B22; --elevated:#20222A; --elevated-hover:#181A21;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843; --display:'Chakra Petch',sans-serif;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476; --fg-disabled:#3D404E;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-shadow:#843052; --accent-strong:#D33E7E; --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --avail-soft:var(--fg-muted); --avail-hard:var(--accent); --avail-hard-fg:#DF8AA7; --avail-over-fg:#C26755; --avail-over-border:#752619;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  @keyframes dots { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="{{ rootStyle }}">
+
+  <sc-if value="{{ isCard }}" hint-placeholder-val="{{ true }}">
+    <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+      <div style="position:relative;height:180px;background:repeating-linear-gradient(135deg,var(--elevated) 0 6px,var(--surface) 6px 12px);display:flex;align-items:flex-end;padding:12px 16px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">card art · {{ card.name }}</span>
+        <span style="position:absolute;top:6px;right:6px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--fg);">×</span>
+      </div>
+    </sc-if>
+    <sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}">
+      <div style="flex:none;width:320px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:30px 28px;background:var(--bg);">
+        <div style="width:264px;height:368px;border-radius:12px;border:1px solid var(--border-strong);background:repeating-linear-gradient(135deg,var(--elevated) 0 6px,var(--surface) 6px 12px);display:flex;align-items:flex-end;padding:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">card art · {{ card.name }}</span></div>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);">Click to zoom</span>
+        <span style="display:flex;align-items:center;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--warning);border:1px solid var(--warning);border-radius:5px;padding:3px 7px;">{{ card.price }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ card.from }}</span></span>
+      </div>
+    </sc-if>
+    <div style="{{ colStyle }}">
+      <div style="display:flex;align-items:flex-start;gap:10px;">
+        <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
+          <h2 style="margin:0;font-family:var(--display);font-weight:700;font-size:{{ titlePx }}px;line-height:1.15;color:var(--fg);">{{ card.name }}</h2>
+          <span style="font-size:13px;color:var(--fg-muted);">{{ card.type }}</span>
+        </div>
+        <span aria-hidden="true" style="{{ pipStyle }}"></span>
+        <sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}"><span style="flex:none;width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:50%;border:1px solid var(--border-strong);font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--fg-faint);">×</span></sc-if>
+      </div>
+      <div style="{{ boxStyle }}"><p style="margin:0;font-size:13.5px;line-height:1.6;color:var(--fg-body);">{{ card.oracle }}</p></div>
+      <div style="{{ boxStyle }}">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">In your collection</div>
+        <div style="margin-top:8px;display:flex;align-items:center;gap:8px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);">{{ card.owned }}</span><span style="color:var(--fg-faint);">·</span>
+          <span style="display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--avail-hard-fg);"><span style="display:block;width:6px;height:6px;transform:rotate(45deg);background:var(--avail-hard);"></span>none free</span>
+        </div>
+      </div>
+
+      <span role="button" style="{{ calloutStyle }}">
+        <span aria-hidden="true" style="flex:none;display:flex;gap:3px;"><span style="display:block;width:6px;height:6px;transform:rotate(45deg);border:1.5px solid var(--accent);"></span><span style="display:block;width:6px;height:6px;transform:rotate(45deg);border:1.5px solid var(--accent);"></span></span>
+        <span style="flex:1;font-size:13px;font-weight:500;color:var(--fg-body);">Find a deck for it</span>
+        <span aria-hidden="true" style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);">→</span>
+      </span>
+
+      <div style="{{ footStyle }}">
+        <span style="font-size:13px;font-weight:500;color:var(--accent);border-bottom:1px solid var(--accent-shadow);">Buy any printing at Mana Pool ↗</span>
+        <sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}"><span style="flex:1;"></span><span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg-faint);">‹ Prev  1 of 1  Next ›</span></sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isPicker }}" hint-placeholder-val="{{ false }}">
+    <div style="{{ headStyle }}">
+      <h2 style="margin:0;flex:1;font-family:var(--display);font-weight:700;font-size:16px;line-height:1.2;color:var(--fg);white-space:nowrap;">Find a deck for it</h2>
+      <sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}"><span style="flex:none;display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:999px;border:1px solid var(--border-strong);background:var(--elevated);font-size:12.5px;font-weight:600;color:var(--fg);white-space:nowrap;gap:6px;"><span aria-hidden="true">←</span><span>{{ card.name }}</span></span></sc-if>
+      <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}"><span aria-label="Back to {{ card.name }}" style="flex:none;width:44px;height:44px;margin-right:-10px;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--fg-faint);">×</span></sc-if>
+    </div>
+    <div style="{{ bodyStyle }}">
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg);">
+        <span aria-hidden="true" style="flex:none;width:22px;height:31px;border-radius:3px;border:1px solid var(--border-strong);background:repeating-linear-gradient(135deg,var(--border) 0 3px,var(--surface-raised) 3px 6px);"></span>
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;">
+          <span style="font-size:14px;font-weight:600;color:var(--fg);">{{ card.name }}</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);">{{ card.identity }}</span>
+        </div>
+        <sc-if value="{{ copies }}" hint-placeholder-val="{{ true }}"><span style="{{ copiesStyle }}">{{ copies }}</span></sc-if>
+      </div>
+
+      <sc-if value="{{ loading }}" hint-placeholder-val="{{ false }}">
+        <div role="status" style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:230px;padding:24px 20px;border-radius:10px;background:radial-gradient(380px 200px at 50% 70%,color-mix(in oklab,var(--accent) 8%,transparent),transparent 70%);">
+          {{ crown }}
+          <h3 style="margin:20px 0 0;width:100%;font-family:var(--display);font-weight:700;font-size:18px;line-height:1.25;color:var(--fg);text-wrap:balance;">Checking your decks</h3>
+          <p style="margin:8px 0 0;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">reading each commander’s colors…</p>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ sentence }}" hint-placeholder-val="{{ false }}"><p style="margin:0;font-size:13px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">{{ sentence }}</p></sc-if>
+
+      <sc-if value="{{ hasJoin }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;flex-direction:column;">
+          <span style="padding:0 0 6px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);border-bottom:1px solid var(--border);">could take it · by name</span>
+          <sc-for list="{{ rows }}" as="r" hint-placeholder-count="4">
+            <div style="display:flex;flex-direction:column;gap:7px;padding:10px 0;border-bottom:1px solid var(--border);">
+              <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+                <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13.5px;color:var(--fg-body);text-decoration:underline;text-underline-offset:2px;text-decoration-color:var(--border-strong);">{{ r.name }}</span>
+                <sc-if value="{{ r.addFree }}" hint-placeholder-val="{{ true }}"><button type="button" aria-label="Add {{ card.name }} to the {{ r.name }} draft, using your free copy" style="{{ addStyle }}">Add</button></sc-if>
+                <sc-if value="{{ r.addBuy }}" hint-placeholder-val="{{ false }}"><button type="button" aria-label="Add {{ card.name }} to the {{ r.name }} draft as a card to buy" style="{{ addBuyStyle }}">Add to buy</button></sc-if>
+                <sc-if value="{{ r.added }}" hint-placeholder-val="{{ false }}"><span style="{{ addedStyle }}"><span aria-hidden="true" style="width:15px;height:15px;display:flex;align-items:center;justify-content:center;border-radius:4px;font-size:9px;border:1px solid var(--success);">✓</span>in the draft</span></sc-if>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                <span style="display:inline-flex;align-items:baseline;gap:6px;border-radius:5px;padding:3px 7px;font-family:'IBM Plex Mono',monospace;font-size:10px;background:var(--surface-sunken);border:1px solid var(--border);"><span style="font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">commander</span><span style="color:var(--fg-muted);">{{ r.cmdr }}</span></span>
+                <sc-if value="{{ r.need }}" hint-placeholder-val="{{ true }}"><span style="display:inline-flex;align-items:baseline;gap:6px;border-radius:5px;padding:3px 7px;font-family:'IBM Plex Mono',monospace;font-size:10px;background:var(--surface-sunken);border:1px solid var(--border);"><span style="font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">this deck</span><span style="color:var(--fg-muted);">{{ r.need }}</span></span></sc-if>
+              </div>
+              <sc-if value="{{ r.added }}" hint-placeholder-val="{{ false }}"><span style="font-size:12.5px;color:var(--fg-muted);">{{ r.addedNote }} <span style="color:var(--accent);border-bottom:1px solid var(--accent-shadow);">Open the deck →</span></span></sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-for list="{{ minorGroups }}" as="g" hint-placeholder-count="2">
+        <div style="display:flex;flex-direction:column;">
+          <span style="padding:0 0 6px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);border-bottom:1px solid var(--border);">{{ g.heading }}</span>
+          <sc-for list="{{ g.rows }}" as="m" hint-placeholder-count="1">
+            <div style="{{ minorRow }}">
+              <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;color:var(--fg-body);text-decoration:underline;text-underline-offset:2px;text-decoration-color:var(--border-strong);">{{ m.name }}</span>
+              <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">{{ m.note }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:900,&quot;height&quot;:760},&quot;phone&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;view&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;card&quot;,&quot;picker&quot;],&quot;default&quot;:&quot;card&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;state&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;several&quot;,&quot;loading&quot;,&quot;allhold&quot;,&quot;colors&quot;,&quot;added&quot;],&quot;default&quot;:&quot;several&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const phone = !!this.props.phone;
+    const wide = !phone;
+    const view = this.props.view ?? "card";
+    const state = this.props.state ?? "several";
+    const cards = {
+      birds: { name: "Birds of Paradise", type: "Creature — Bird", oracle: "Flying. {T}: Add one mana of any color.", owned: "×1", price: "$7.90", from: "from $6.20", pip: "#7FA86B", identity: "green · legal in Commander" },
+      sol: { name: "Sol Ring", type: "Artifact", oracle: "{T}: Add {C}{C}.", owned: "×6", price: "$1.60", from: "from $0.95", pip: "#A9A294", identity: "colorless · legal in Commander" },
+      iter: { name: "Counterspell", type: "Instant", oracle: "Counter target spell.", owned: "×1", price: "$1.10", from: "from $0.45", pip: "#6E9BC8", identity: "blue · legal in Commander" },
+    };
+    const card = state === "allhold" ? cards.sol : state === "colors" ? cards.iter : cards.birds;
+    let rows = [], minorGroups = [], sentence = null;
+    if (state === "several" || state === "added" || state === "loading") {
+      rows = [
+        { name: "HD Atraxa Superfriends", cmdr: "31% of Atraxa decks", need: null },
+        { name: "HD Gishath", cmdr: "58% of Gishath decks", need: "ramp 7 of 10" },
+        { name: "HD Kenrith", cmdr: "not listed for Kenrith", need: "ramp 9 of 10" },
+        { name: "HD Kinnan", cmdr: "74% of Kinnan decks", need: "ramp 11 of 10" },
+      ].map((r) => {
+        const added = state === "added" && r.name === "HD Gishath";
+        const freeLeft = state !== "added";
+        return { ...r, added, addedNote: "It uses your free copy, so none are left.", addFree: !added && freeLeft, addBuy: !added && !freeLeft };
+      });
+      minorGroups = [{ heading: "already holds it", rows: [{ name: "HD Tymna + Thrasios", note: "holds 1" }] }];
+    }
+    if (state === "allhold") {
+      sentence = "Every deck that can play Sol Ring already holds it.";
+      minorGroups = [{ heading: "already holds it", rows: ["HD Atraxa Superfriends", "HD Gishath", "HD Kaalia", "HD Kenrith", "HD Kinnan", "HD Tymna + Thrasios"].map((n) => ({ name: n, note: "holds 1" })) }];
+    }
+    if (state === "colors") {
+      sentence = "None of your decks can play it. It’s blue, and neither of your commanders is.";
+      minorGroups = [];
+    }
+    const copies = state === "several" || state === "loading" ? "×2 · 1 free" : state === "added" ? "×2 · none free" : null;
+    const loading = state === "loading";
+    if (loading) { rows = []; minorGroups = []; }
+    const crown = React.createElement("span", { "aria-hidden": true, style: { display: "flex", alignItems: "center", gap: 9, height: 16 } },
+      [8, 11, 8].map((d, i) => React.createElement("span", { key: i, style: { display: "block", width: d, height: d, transform: "rotate(45deg)", background: "var(--accent-strong)", animation: "dots 1.2s ease-in-out infinite", animationDelay: `${i * 0.2}s` } })));
+    const isCard = view === "card";
+    return {
+      theme: this.props.theme ?? "amonkhet",
+      copies,
+      copiesStyle: { flex: "none", fontFamily: "'IBM Plex Mono',monospace", fontSize: 11.5, color: copies && copies.includes("none") ? "var(--avail-hard-fg)" : "var(--fg-body)", whiteSpace: "nowrap" },
+      addBuyStyle: phone
+        ? { appearance: "none", background: "transparent", fontFamily: "inherit", lineHeight: 1, cursor: "pointer", flex: "none", display: "flex", alignItems: "center", justifyContent: "center", height: 44, padding: "0 12px", borderRadius: 8, fontSize: 13, fontWeight: 500, color: "var(--fg-muted)", border: "1px solid var(--border-strong)", whiteSpace: "nowrap" }
+        : { appearance: "none", background: "transparent", fontFamily: "inherit", lineHeight: 1, cursor: "pointer", flex: "none", display: "inline-flex", alignItems: "center", borderRadius: 7, padding: "5px 11px", fontSize: 12, fontWeight: 500, color: "var(--fg-muted)", border: "1px solid var(--border-strong)", whiteSpace: "nowrap" },
+      phone, wide, isCard, isPicker: !isCard, card, rows, minorGroups, sentence, loading, crown,
+      hasJoin: rows.length > 0,
+      pipStyle: { flex: "none", width: 24, height: 24, borderRadius: "50%", background: card.pip, marginTop: 4 },
+      titlePx: phone ? 22 : 30,
+      rootStyle: isCard
+        ? (phone
+          ? { width: 390, background: "var(--surface-raised)", color: "var(--fg)", fontFamily: "'IBM Plex Sans',sans-serif", display: "flex", flexDirection: "column" }
+          : { width: 900, background: "var(--surface-raised)", color: "var(--fg)", fontFamily: "'IBM Plex Sans',sans-serif", display: "flex", border: "1px solid var(--border-strong)", borderRadius: 16, overflow: "hidden", boxShadow: "0 24px 60px rgba(0,0,0,0.45)" })
+        : (phone
+          ? { width: 390, background: "var(--surface-raised)", borderTop: "1px solid var(--border-strong)", borderRadius: "14px 14px 0 0", color: "var(--fg)", fontFamily: "'IBM Plex Sans',sans-serif", display: "flex", flexDirection: "column", overflow: "hidden" }
+          : { width: 560, background: "var(--surface-raised)", border: "1px solid var(--border-strong)", borderRadius: 14, boxShadow: "0 24px 60px rgba(0,0,0,0.5)", color: "var(--fg)", fontFamily: "'IBM Plex Sans',sans-serif", display: "flex", flexDirection: "column", overflow: "hidden" }),
+      colStyle: { flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: phone ? 14 : 18, padding: phone ? "16px 16px 24px" : "30px 30px 26px" },
+      boxStyle: { borderRadius: 12, padding: phone ? "14px 16px" : "18px 20px", background: "var(--bg)", border: "1px solid var(--border)" },
+      calloutStyle: { display: "flex", alignItems: "center", gap: 10, minHeight: phone ? 48 : 44, padding: phone ? "0 16px" : "0 20px", borderRadius: 12, background: "var(--bg)", border: "1px solid var(--border)", cursor: "pointer" },
+      footStyle: { display: "flex", alignItems: "center", gap: 12, minHeight: phone ? 44 : 0, marginTop: phone ? 0 : 4 },
+      headStyle: phone
+        ? { flex: "none", height: 43, display: "flex", alignItems: "center", gap: 9, padding: "0 6px 0 16px", borderBottom: "1px solid var(--border)" }
+        : { flex: "none", display: "flex", alignItems: "center", gap: 10, padding: "12px 14px 12px 18px", borderBottom: "1px solid var(--border)" },
+      bodyStyle: { padding: phone ? "14px 16px 24px" : "16px 18px 20px", display: "flex", flexDirection: "column", gap: 14 },
+      minorRow: { display: "flex", alignItems: "center", gap: 10, minHeight: phone ? 44 : 34, borderBottom: "1px solid var(--border)" },
+      addStyle: phone
+        ? { appearance: "none", background: "transparent", fontFamily: "inherit", lineHeight: 1, cursor: "pointer", flex: "none", display: "flex", alignItems: "center", justifyContent: "center", height: 44, minWidth: 64, padding: "0 14px", borderRadius: 8, fontSize: 13, fontWeight: 600, color: "var(--accent)", border: "1px solid var(--accent)" }
+        : { appearance: "none", background: "transparent", fontFamily: "inherit", lineHeight: 1, cursor: "pointer", flex: "none", display: "inline-flex", alignItems: "center", borderRadius: 7, padding: "5px 12px", fontSize: 12, fontWeight: 600, color: "var(--accent)", border: "1px solid var(--accent)" },
+      addedStyle: { flex: "none", display: "inline-flex", alignItems: "center", gap: 6, minHeight: phone ? 44 : 0, fontFamily: "'IBM Plex Mono',monospace", fontSize: 9.5, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--success)" },
+    };
+  }
+}
+</script>
+</body>
+</html>

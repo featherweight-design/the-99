@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>About · Commander sets on the way</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Metamorphous&amp;family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9;text-decoration:none}a:hover{color:#6C95D8}
+.mono{font-family:'IBM Plex Mono',monospace}
+</style>
+</helmet>
+<div style="width:1300px;min-height:1180px;box-sizing:border-box;font-family:'IBM Plex Sans',sans-serif;background:#121217;color:#C6D2D3;padding:44px 40px 60px;display:flex;flex-direction:column;gap:36px">
+  <div style="max-width:1220px;display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;align-items:center;gap:13px;flex-wrap:wrap">
+      <span class="mono" style="font-size:12px;font-weight:600;color:#121217;background:#5C86C9;border-radius:6px;padding:4px 10px;letter-spacing:.08em">ABOUT · NEW ENTRY</span>
+      <span class="mono" style="font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#7C8A8C">§G per-entry template · R6 rules</span>
+    </div>
+    <h1 style="font-family:'Metamorphous',serif;font-weight:400;font-size:30px;margin:0;line-height:1.2">Commander sets on the way</h1>
+    <p style="margin:0;font-size:14px;line-height:1.65;color:#B3C0C2;max-width:1000px;text-wrap:pretty">A new entry, because this is something a reader couldn’t do before: see what’s coming, and be told when it arrives. It goes in chapter 03 right after <i>Starting from a precon</i>. It follows its own switch, as <span class="mono" style="font-size:12px">precons</span> does, and is announced when the switch flips, so it adds no <span class="mono" style="font-size:12px">ABOUT_VERSION</span> bump. The banner is one more surface this entry describes, not a second entry. The existing precons entry is unchanged.</p>
+  </div>
+
+  <div style="display:flex;gap:40px;align-items:flex-start">
+    <div style="width:520px;flex:none;border:1px solid #1A1F2B;border-radius:12px;padding:18px">
+      <div style="display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:14px;font-size:12.5px;line-height:1.55;color:#B3C0C2">
+        <sc-for list="{{ slots }}" as="sl" hint-placeholder-count="11">
+          <div style="{{ sl.cell }}">
+            <div class="mono" style="font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C;margin-bottom:6px">{{ sl.label }}</div>
+            <div style="white-space:pre-line;text-wrap:pretty">{{ sl.text }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <sc-for list="{{ views }}" as="v" hint-placeholder-count="2">
+      <div style="{{ v.frame }}">
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <span class="mono" style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C">03 · Building the 99</span>
+          <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+            <h3 style="{{ v.h3 }}">Commander sets on the way</h3>
+            <span class="mono" style="font-size:10px;color:#5C86C9">/decks/precons</span>
+          </div>
+          <sc-for list="{{ captionParas }}" as="cp" hint-placeholder-count="2"><p style="{{ v.para }}">{{ cp }}</p></sc-for>
+          <div style="border:1px dashed #424755;border-radius:10px;padding:11px 12px 12px;display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;flex-direction:column;gap:3px">
+              <span style="font-family:'Metamorphous',serif;font-size:15px;color:#C6D2D3">Darkhold Destiny Commander</span>
+              <span class="mono" style="{{ v.meta }}">{{ v.metaText }}</span>
+            </div>
+            <div style="width:76px;display:flex;flex-direction:column;gap:5px">
+              <div style="width:76px;height:106px;border-radius:4px;background:#2D2E35;display:flex;align-items:center;justify-content:center"><span class="mono" style="font-size:8.5px;letter-spacing:.1em;color:#5F6D6E">MDC ART</span></div>
+              <span style="font-size:10.5px;line-height:1.3;color:#B3C0C2">Gargantos, the Endbringer</span>
+              <span style="display:flex;gap:3px"><span style="width:7px;height:7px;border-radius:50%;background:#98748F"></span><span style="width:7px;height:7px;border-radius:50%;background:#4B7A46"></span></span>
+            </div>
+          </div>
+          <ol style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px">
+            <sc-for list="{{ keyLines }}" as="k" hint-placeholder-count="3">
+              <li style="display:flex;gap:10px;font-size:13px;line-height:1.55;color:#B3C0C2"><span class="mono" style="flex:none;font-size:10.5px;color:#5C86C9;padding-top:2px">{{ k.n }}</span><span style="text-wrap:pretty">{{ k.t }}</span></li>
+            </sc-for>
+          </ol>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1300,"height":1180}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const captionParas = [
+      "When a Commander set is announced, Commander precons lists it under Announced, above this year’s decklists, with its release date and every commander revealed so far. Its decks aren’t listed yet, so there’s nothing to own or start a deck from.",
+      "When a set is announced, or its decklists arrive, Home says so once, under the header. Close it, or open Commander precons, and it won’t show again on any of your devices.",
+    ];
+    const keyLines = [
+      { n: 1, t: "A revealed commander is a legendary creature from the set. Until the decks are listed, nothing says which deck it leads." },
+      { n: 2, t: "Dates are release days. A set that’s out stays under Announced until its decklists arrive." },
+      { n: 3, t: "When they arrive, the set’s precons join the list, marked new for two weeks." },
+    ];
+    const full = { gridColumn: "1 / -1" };
+    const slots = [
+      { label: "Title", text: "Commander sets on the way", cell: {} },
+      { label: "Route", text: "/decks/precons", cell: {} },
+      { label: "Chapter", text: "03 · Building the 99, after “Starting from a precon”", cell: {} },
+      { label: "opens", text: "opens the precon list", cell: {} },
+      { label: "Caption", text: captionParas.join("\n\n"), cell: full },
+      { label: "Specimen", text: "One AnnouncedSet block, read-only, at its own width: the name, the date line and one revealed commander. The banner isn’t drawn here. The caption’s second paragraph names it.", cell: full },
+      { label: "Fixture props", text: "fixtures.announcedSet · Darkhold Destiny Commander · MDC · releasesOn 2027-04-09 · today 2026-10-14 · revealed: Gargantos, the Endbringer (B, G), MDC small art. Staging’s own, the thinnest real set.", cell: full },
+      { label: "Key lines · 3 of 3", text: keyLines.map((k) => `${k.n}. ${k.t}`).join("\n"), cell: full },
+      { label: "Phone reduction", text: "The date line splits in two (date and countdown, then code and count). A set with more commanders scrolls sideways in one row. The specimen is the same component at 390.", cell: full },
+      { label: "since / switch", text: "switch UPCOMING_PRECONS_ENABLED (new AboutSwitch member, requires PRECONS_ENABLED) · marksPending, since = the version current when written, as precons", cell: {} },
+      { label: "Strings from", text: "copy/precons.ts (upcoming.*) · copy/refresh.ts (home.arrivals.*)", cell: {} },
+    ];
+    const view = (phone) => ({
+      frame: { width: phone ? "390px" : "620px", flex: "none", background: "#121217", color: "#C6D2D3", border: "1px solid #2E3340", borderRadius: "12px", padding: phone ? "18px 16px 22px" : "22px 24px 26px", boxSizing: "border-box" },
+      h3: { margin: 0, fontFamily: "'Metamorphous',serif", fontWeight: 400, fontSize: phone ? "19px" : "22px", color: "#C6D2D3" },
+      para: { margin: 0, fontSize: phone ? "14px" : "14.5px", lineHeight: 1.65, color: "#B3C0C2", textWrap: "pretty" },
+      meta: { fontSize: "11px", lineHeight: 1.5, color: "#7C8A8C", whiteSpace: "pre-line" },
+      metaText: phone ? "Apr 9, 2027 · in 6 months\nMDC · 1 commander revealed" : "MDC · Apr 9, 2027 · in 6 months · 1 commander revealed",
+    });
+    return { captionParas, keyLines, slots, views: [view(false), view(true)] };
+  }
+}
+</script>
+</body>
+</html>

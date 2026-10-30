@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0A0C; }
+  ::selection { background: #CF8745; color: #14110E; }
+  a { color: #CF8745; text-decoration: none; }
+  a:hover { color: #DE9757; }
+  /* The 37-key contract, transcribed from src/app/globals.css. Low Sun on :root so
+     the page paints its default before the theme prop resolves. Identical block to
+     the shipped handoff's canvas — this addendum must measure on the same values. */
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-raised:#211D18; --surface-rail:#1A1611;
+    --surface-sunken:#18140F; --surface-inset:#1B1712; --elevated:#29241F; --elevated-hover:#201C17;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654;
+    --accent:#CF8745; --accent-hover:#DE9757; --accent-strong:#AB6E37; --accent-dim:#6B482A;
+    --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-raised:#191B22; --surface-rail:#12141B;
+    --surface-sunken:#101219; --surface-inset:#13151C; --elevated:#20222A; --elevated-hover:#181A21;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-strong:#D33E7E; --accent-dim:#843052;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="phyrexia"] {
+    --bg:#0D0B0E; --surface:#151317; --surface-raised:#18161A; --surface-rail:#110F13;
+    --surface-sunken:#100E12; --surface-inset:#131115; --elevated:#1E1C20; --elevated-hover:#171519;
+    --border:#19161C; --border-strong:#262329; --border-dashed:#332F36;
+    --fg:#E4E2E6; --fg-body:#B5B2BB; --fg-muted:#9A96A0; --fg-faint:#78747E; --fg-locked:#64616A;
+    --accent:#52827A; --accent-hover:#629189; --accent-strong:#3E665F; --accent-dim:#213834;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#527030;
+  }
+  [data-theme="kaldheim"] {
+    --bg:#121217; --surface:#1E1F26; --surface-raised:#22232B; --surface-rail:#181920;
+    --surface-sunken:#16171D; --surface-inset:#1A1B22; --elevated:#2D2E35; --elevated-hover:#212229;
+    --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E;
+    --accent:#5C86C9; --accent-hover:#6C95D8; --accent-strong:#486BA3; --accent-dim:#2C405F;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="ixalan"] {
+    --bg:#0E1310; --surface:#171E19; --surface-raised:#1A221C; --surface-rail:#121814;
+    --surface-sunken:#101512; --surface-inset:#141B16; --elevated:#212A23; --elevated-hover:#18201A;
+    --border:#1D2620; --border-strong:#2C3830; --border-dashed:#3B4A3F;
+    --fg:#E0E7DE; --fg-body:#B6C2B3; --fg-muted:#98A695; --fg-faint:#808C7C; --fg-locked:#626E5E;
+    --accent:#A3C445; --accent-hover:#B2D257; --accent-strong:#85A22F; --accent-dim:#3E5220;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="eldraine"] {
+    --bg:#120E17; --surface:#1B1821; --surface-raised:#1F1C25; --surface-rail:#15121B;
+    --surface-sunken:#131018; --surface-inset:#17141D; --elevated:#26232C; --elevated-hover:#1D1A23;
+    --border:#241D30; --border-strong:#342C41; --border-dashed:#443C52;
+    --fg:#E4DEEE; --fg-body:#B9B2C5; --fg-muted:#9C95A8; --fg-faint:#898395; --fg-locked:#6A6475;
+    --accent:#AE88E6; --accent-hover:#BC9BEE; --accent-strong:#8E6AC4; --accent-dim:#4A3568;
+    --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+</style>
+</helmet>
+
+<div data-theme="{{ theme }}" style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;padding:40px;background:#0B0A0C;background-image:radial-gradient(1400px 700px at 30% -300px, rgba(207,135,69,0.05), transparent 70%);min-height:100vh;">
+
+  <section style="max-width:1400px;margin:0 0 26px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#CF8745;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">ADDENDUM R3</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#8E8269;">six findings from the shipped surface &middot; #519</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:0 0 10px;">One number sizes every cell: 146.</h1>
+    <p style="max-width:1080px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;">Findings 1 and 2 are one ruling, as the brief suspected: the grid becomes <b style="color:#EDE6D8;font-weight:600;">a real CSS grid of <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">1fr</span> tracks with a minimum</b>, so the row distributes <i>by</i> the cells growing &mdash; one mechanism, not two. <b style="color:#EDE6D8;font-weight:600;">R2 raises the minimum to 146px and drops the per-width exception:</b> 146 is <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">image_uri_small</span>'s own width, so <i>a cell is never narrower than the art inside it</i> &mdash; one constant, one declaration, every width. Desktop lands <b style="color:#EDE6D8;font-weight:600;">149&ndash;163px</b> (was 116, ragged) and the phone stays at <b style="color:#EDE6D8;font-weight:600;">two cells of 174</b>.</p>
+    <p style="max-width:1080px;font-size:15px;line-height:1.7;color:#C6B79A;margin:0 0 12px;"><b style="color:#EDE6D8;font-weight:600;">R2 also conforms the whole rack, not only Clear.</b> The pips become <b style="color:#EDE6D8;font-weight:600;">Scryfall's mana symbols drawn as images</b> &mdash; never token colours, never dimmed &mdash; the four rarity letters become <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">Rarity &#9662;</span> with the chassis's anchored panel, and Clear leaves the control row for the chip line (<a href="#clear">&sect;2</a>). Both widths are drawn: the desktop row with its panel open, and the phone's persistent row plus the sheet. <b style="color:#EDE6D8;font-weight:600;">The name search</b> takes the chassis's field slot at the head of both rows (<a href="#search">&sect;3</a>), and <b style="color:#EDE6D8;font-weight:600;">the extras figure</b> leaves the index row's code line for a second line under the base ratio (<a href="#index">&sect;4</a>).</p>
+    <p style="max-width:1080px;font-size:14px;line-height:1.7;color:#8E8269;margin:0;">Read <a href="ADDENDUM-README.md">ADDENDUM-README.md</a> for the rulings, <a href="ADDENDUM-STATES.md">ADDENDUM-STATES.md</a> for the state matrix, <a href="ADDENDUM-READINESS.md">ADDENDUM-READINESS.md</a> for what blocks a green, <a href="addendum copy strings.ts">addendum copy strings</a>. Governing: <a href="README.md">README.md</a> R3, <a href="DENSITY-four-hundred-cells.md">DENSITY-four-hundred-cells.md</a> (density table superseded by &sect;1), and <a href="../design_handoff_the99_filter_chassis/README.md">design_handoff_the99_filter_chassis</a> R2 + its STATES file, which govern &sect;2 and &sect;3 outright. <a href="DIM-missing.md">DIM-missing.md</a> is untouched &mdash; no token in this round changes.</p>
+  </section>
+
+  <div style="border:1px solid #3A3229;border-left:3px solid #6FA368;border-radius:12px;background:#161318;padding:16px 20px;margin-bottom:20px;max-width:1400px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#6FA368;margin-bottom:10px;">The constraint, held in three places</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px 26px;font-size:13px;color:#A89B84;line-height:1.65;">
+      <div><b style="color:#EDE6D8;font-weight:600;">Owned and missing keep identical geometry.</b> Stronger than before, not weaker: after this round <b style="color:#EDE6D8;font-weight:600;">the cell carries no width literal at all</b> &mdash; the track sets the width and <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">aspect-ratio: 63/88</span> sets the height, so the two states cannot differ by construction. Border <i>style</i> and art <i>opacity</i> remain the only difference.</div>
+      <div><b style="color:#EDE6D8;font-weight:600;">The grid must not reflow when a filter flips.</b> One engineering line decides it: <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">auto-fill</span>, never <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">auto-fit</span>. <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">auto-fit</span> collapses empty tracks, so a filter leaving three cells would stretch those three across the whole column &mdash; the exact reflow the constraint forbids, one keyword away.</div>
+      <div><b style="color:#EDE6D8;font-weight:600;">The dim still clears 3:1 in all six themes.</b> It has to: nothing in the dim changes. Same <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">.28</span> / <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">saturate(.55)</span> over the same <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--surface-sunken</span>, same dashed <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--fg-locked</span> edge. <a href="#themes">&sect;5</a> re-draws the pair at 174px in all six anyway, because the plate is 2.6&times; the area it was measured at.</div>
+    </div>
+  </div>
+
+  <div style="border:1px solid #2A241D;border-radius:14px;background:#16131A;padding:20px 24px;margin-bottom:38px;max-width:1400px;display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px 26px;">
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">1 + 2 &middot; the grid</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.55;">Tracks distribute; the cell <i>is</i> the track, and the minimum <i>is</i> the art's own width. <b style="color:#EDE6D8;font-weight:600;">149&ndash;163px desktop, 174 phone, one constant.</b> <a href="#grid">&sect;1</a></div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">3 &middot; the rack conforms</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.55;">Mana-symbol pips, <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">Rarity &#9662;</span> with a panel, a chip line, and <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">Clear all filters</span> on its trailing edge. <a href="#clear">&sect;2</a></div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">4 &middot; name search</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.55;"><b style="color:#EDE6D8;font-weight:600;">Leads the control row at both widths</b>, never in the sheet, never counted by the badge, and it folds into the one count function. <a href="#search">&sect;3</a></div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">5 &middot; the extras figure</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.55;"><b style="color:#EDE6D8;font-weight:600;">Second line under the ratio</b>, one type step down, and the base ratio brightens so the two figures rank. <a href="#index">&sect;4</a></div></div>
+    <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:6px;">6 &middot; the phone head</div><div style="font-size:13.5px;color:#C6B79A;line-height:1.55;">Three registers, one resident. <b style="color:#EDE6D8;font-weight:600;">48% of the screen &rarr; 22% at rest, 8% scrolled</b>, with every fact kept. <a href="#head">&sect;7</a></div></div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:56px;max-width:2600px;">
+
+  <!-- ========== §1 THE GRID ========== -->
+  <div id="grid">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">&sect;1 &middot; <span style="color:#CF8745;">findings 1 + 2 &mdash; one ruling, and now one constant</span></div>
+
+    <div style="border:1px solid #3A3229;border-left:3px solid #CF8745;border-radius:12px;background:#161318;padding:16px 20px;margin-bottom:22px;max-width:1180px;">
+      <div style="font-size:13.5px;color:#A89B84;line-height:1.75;"><b style="color:#EDE6D8;font-weight:600;">The two questions are one question.</b> A fixed-width child in a wrapping row and a <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">1fr</span> track in a grid differ in exactly this: the grid gives the leftover width to the cells instead of to the right margin. So &ldquo;does the row distribute&rdquo; and &ldquo;do the cells grow&rdquo; are the same sentence read from either end &mdash; and the answer to both is <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">grid-template-columns: repeat(auto-fill, minmax(146px, 1fr))</span>. <b style="color:#EDE6D8;font-weight:600;">The minimum is the whole design</b> &mdash; it sets the column count, and the column count sets the size. <b style="color:#EDE6D8;font-weight:600;">R1 shipped two minima, 116 desktop and 160 phone; R2 has one.</b> Desktop at 116 was still too small, and the moment the minimum rises to 146 the phone exception stops being needed: 146 puts two cells on a 390px screen by itself.</div>
+    </div>
+
+    <div style="display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:1140px;flex:none;display:flex;flex-direction:column;gap:18px;">
+        <div style="border:1px solid #C6533F;border-radius:12px;overflow:hidden;background:var(--bg);">
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C6533F;">shipped &middot; desktop &middot; fixed 116px in a wrapping flex row &mdash; 1100px of grid, 998px used</span></div>
+          <div style="padding:18px 20px 20px;">
+            <div style="width:1100px;position:relative;">
+              <div style="display:flex;flex-wrap:wrap;gap:18px 10px;">
+                <sc-for list="{{ deskCells }}" as="c" hint-placeholder-count="8">
+                  <div style="width:116px;">
+                    <div style="position:relative;width:116px;height:162px;border-radius:6px;overflow:hidden;background:var(--surface-sunken);border:1px {{ c.edge }} {{ c.edgeCol }};">
+                      <div style="position:absolute;inset:0;background:linear-gradient(155deg, color-mix(in srgb, {{ c.tok }} 34%, var(--surface-sunken)) 0%, color-mix(in srgb, {{ c.tok }} 10%, var(--surface-sunken)) 70%, var(--surface-sunken) 100%);opacity:{{ c.dim }};filter:saturate({{ c.sat }});"></div>
+                    </div>
+                    <div style="display:flex;align-items:baseline;gap:5px;margin-top:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:{{ c.numCol }};">{{ c.num }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">{{ c.rar }}</span></div>
+                    <div style="font-size:11px;color:var(--fg-body);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.n }}</div>
+                    <sc-if value="{{ c.missing }}" hint-placeholder-val="{{ false }}">
+                      <div style="margin-top:4px;"><span style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:2px 5px;border-radius:4px;color:{{ c.priceCol }};border:1px {{ c.priceEdgeStyle }} {{ c.priceEdge }};">{{ c.price }}</span></div>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="position:absolute;top:0;right:0;width:102px;height:162px;border:1px dashed #C6533F;border-radius:6px;background:rgba(198,83,63,0.08);display:flex;align-items:center;justify-content:center;text-align:center;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#C6533F;line-height:1.5;">102px<br>dead</span></div>
+            </div>
+            <div style="margin-top:16px;font-size:13px;color:#A89B84;line-height:1.7;max-width:900px;">Eight cells and seven gaps is <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">8&times;116 + 7&times;10 = 998</span>. A ninth needs 1124 and does not fit, so the remainder has nowhere to go and the page ends in a column of nothing &mdash; beside a grid whose left edge is aligned to the head, the section heading and the result line. <b style="color:#EDE6D8;font-weight:600;">The ragged edge is not a rounding error; it is a whole cell's worth of width the reader paid for.</b></div>
+          </div>
+        </div>
+
+        <div style="border:1px solid #6FA368;border-radius:12px;overflow:hidden;background:var(--bg);">
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6FA368;">ruled &middot; desktop &middot; repeat(auto-fill, minmax(146px, 1fr)) &mdash; seven tracks of 148.6px, flush</span></div>
+          <div style="padding:18px 20px 20px;">
+            <div style="width:1100px;display:grid;grid-template-columns:repeat(auto-fill,minmax(146px,1fr));gap:18px 10px;">
+              <sc-for list="{{ deskAfter }}" as="c" hint-placeholder-count="7">
+                <div style="min-width:0;">
+                  <div style="position:relative;width:100%;aspect-ratio:63/88;border-radius:6px;overflow:hidden;background:var(--surface-sunken);border:1px {{ c.edge }} {{ c.edgeCol }};">
+                    <div style="position:absolute;inset:0;background:linear-gradient(155deg, color-mix(in srgb, {{ c.tok }} 34%, var(--surface-sunken)) 0%, color-mix(in srgb, {{ c.tok }} 10%, var(--surface-sunken)) 70%, var(--surface-sunken) 100%);opacity:{{ c.dim }};filter:saturate({{ c.sat }});"></div>
+                    <sc-if value="{{ c.foil }}" hint-placeholder-val="{{ false }}">
+                      <span style="position:absolute;right:5px;bottom:5px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;color:var(--fg-body);background:rgba(0,0,0,0.68);border-radius:3px;padding:1px 4px;">&#9670; FOIL</span>
+                    </sc-if>
+                  </div>
+                  <div style="display:flex;align-items:baseline;gap:5px;margin-top:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:{{ c.numCol }};">{{ c.num }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">{{ c.rar }}</span></div>
+                  <div style="font-size:11.5px;color:var(--fg-body);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.n }}</div>
+                  <sc-if value="{{ c.missing }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-top:5px;"><span style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;padding:2px 6px;border-radius:4px;color:{{ c.priceCol }};border:1px {{ c.priceEdgeStyle }} {{ c.priceEdge }};">{{ c.price }}</span></div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+            <div style="margin-top:16px;font-size:13px;color:#A89B84;line-height:1.7;max-width:900px;"><b style="color:#EDE6D8;font-weight:600;">28% wider, 65% more art, and a flush right edge</b>, from one declaration. The column count drops 8 &rarr; 7, which is the honest form of &ldquo;bigger&rdquo;: <b style="color:#EDE6D8;font-weight:600;">size on this page is bought in whole columns, never in pixels</b>, because an <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">fr</span> track has no in-between. The name gains 33px of measure &mdash; ~26 characters against ~20 &mdash; which is the caption change that matters most on a dimmed cell.</div>
+          </div>
+        </div>
+
+        <div style="border:1px solid #2A241D;border-radius:12px;background:#141118;padding:18px 20px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:12px;">The whole range from one constant &mdash; F = 146, gap 10, no breakpoint</div>
+          <div style="overflow:hidden;border:1px solid #2A241D;border-radius:8px;">
+            <div style="display:grid;grid-template-columns:150px 130px 90px 120px 110px 1fr;background:#1A1620;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.08em;text-transform:uppercase;color:#8E8269;">
+              <div style="padding:9px 12px;">width</div><div style="padding:9px 12px;">grid</div><div style="padding:9px 12px;">tracks</div><div style="padding:9px 12px;">cell</div><div style="padding:9px 12px;">art h</div><div style="padding:9px 12px;">vs 146px source</div>
+            </div>
+            <sc-for list="{{ deskRange }}" as="r" hint-placeholder-count="6">
+              <div style="display:grid;grid-template-columns:150px 130px 90px 120px 110px 1fr;border-top:1px solid #221D28;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#C6B79A;">
+                <div style="padding:9px 12px;">{{ r.shell }}</div><div style="padding:9px 12px;">{{ r.grid }}</div><div style="padding:9px 12px;color:#EDE6D8;">{{ r.tracks }}</div><div style="padding:9px 12px;color:#EDE6D8;">{{ r.cell }}</div><div style="padding:9px 12px;">{{ r.art }}</div><div style="padding:9px 12px;">{{ r.scale }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="margin-top:14px;font-size:13px;color:#A89B84;line-height:1.75;max-width:980px;"><b style="color:#EDE6D8;font-weight:600;">146 is not a taste figure &mdash; it is <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">image_uri_small</span>'s width.</b> Setting the minimum there means <b style="color:#EDE6D8;font-weight:600;">a cell is never narrower than the art it holds</b>, so nothing on the page is ever downscaling its source pointlessly, and the ceiling is structural rather than declared: a track cannot reach <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">2F + gap = 302px</span>, because at that width another column fits instead. Across every real width the cell sits between native and <b style="color:#EDE6D8;font-weight:600;">1.19&times;</b> the source. <b style="color:#EDE6D8;font-weight:600;">Below ~330px of content the grid goes to one column</b> &mdash; two tracks there would be 139px, under the source width, so a single larger cell is the right answer rather than an accident.</div>
+        </div>
+
+        <sc-if value="{{ showRejected }}" hint-placeholder-val="{{ true }}">
+          <div style="border:1px solid #2A241D;border-radius:12px;background:#141118;padding:18px 20px;">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:12px;">Three alternatives drawn and rejected</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px 26px;font-size:13px;color:#A89B84;line-height:1.7;">
+              <div><b style="color:#EDE6D8;font-weight:600;">Keep 116 and give the remainder to the gaps</b> (<span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">justify-content: space-between</span>). Flushes the edge and answers nothing about size. Rejected twice over: the column gap becomes 24.6px against an 18px row gap, so the grid stops reading as a grid &mdash; and a wrapped final row of three cells spaces those three across the whole width, the classic last-row defect, on the one row every reader reaches.</div>
+              <div><b style="color:#EDE6D8;font-weight:600;">Centre the fixed grid.</b> Halves the dead space and costs more than it buys: the grid's left edge is load-bearing. The sticky ratio, the cost strip, the section headings, the result line and every cell share one left margin, and centring puts the cells 51px inside it &mdash; a misalignment on the page's own spine, for symmetry nobody asked for.</div>
+              <div><b style="color:#EDE6D8;font-weight:600;">F = 160 everywhere</b>, the next step up. Six tracks of 175px at 1180 &mdash; 21% more art than 146 and <b style="color:#EDE6D8;font-weight:600;">a 21,500px desktop page</b>, against 16,500 at 146. Rejected on the scroll, not on the size: six columns is a two-and-a-half-screen base run, and 175px is past the point where the art gets better, because the source runs out at 146.</div>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+
+      <div style="width:390px;flex:none;display:flex;flex-direction:column;gap:18px;">
+        <div style="border:1px solid #C6533F;border-radius:12px;overflow:hidden;background:var(--bg);">
+          <div style="padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C6533F;">shipped &middot; 390px &middot; three at 108</span></div>
+          <div style="padding:16px;">
+            <div style="width:358px;display:flex;flex-wrap:wrap;gap:18px 10px;">
+              <sc-for list="{{ phoneBefore }}" as="c" hint-placeholder-count="6">
+                <div style="width:108px;">
+                  <div style="position:relative;width:108px;height:151px;border-radius:6px;overflow:hidden;background:var(--surface-sunken);border:1px {{ c.edge }} {{ c.edgeCol }};">
+                    <div style="position:absolute;inset:0;background:linear-gradient(155deg, color-mix(in srgb, {{ c.tok }} 34%, var(--surface-sunken)) 0%, color-mix(in srgb, {{ c.tok }} 10%, var(--surface-sunken)) 70%, var(--surface-sunken) 100%);opacity:{{ c.dim }};filter:saturate({{ c.sat }});"></div>
+                  </div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:{{ c.numCol }};margin-top:6px;">{{ c.num }}</div>
+                  <div style="font-size:11px;color:var(--fg-body);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.n }}</div>
+                  <sc-if value="{{ c.missing }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-top:4px;"><span style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;padding:2px 5px;border-radius:4px;color:{{ c.priceCol }};border:1px {{ c.priceEdgeStyle }} {{ c.priceEdge }};">{{ c.price }}</span></div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+            <div style="margin-top:14px;font-size:12.5px;color:#A89B84;line-height:1.65;">108&times;151, three columns, 14px stranded. The art is 4% of a phone screen and the dim is the feature &mdash; <b style="color:#EDE6D8;font-weight:600;">you can see that a cell is dark, not what is in it</b>.</div>
+          </div>
+        </div>
+
+        <div style="border:1px solid #6FA368;border-radius:12px;overflow:hidden;background:var(--bg);">
+          <div style="padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6FA368;">ruled &middot; 390px &middot; the same F = 146 &rarr; two tracks of 174</span></div>
+          <div style="padding:16px;">
+            <div style="width:358px;display:grid;grid-template-columns:repeat(auto-fill,minmax(146px,1fr));gap:20px 10px;">
+              <sc-for list="{{ phoneAfter }}" as="c" hint-placeholder-count="4">
+                <div style="min-width:0;">
+                  <div style="position:relative;width:100%;aspect-ratio:63/88;border-radius:6px;overflow:hidden;background:var(--surface-sunken);border:1px {{ c.edge }} {{ c.edgeCol }};">
+                    <div style="position:absolute;inset:0;background:linear-gradient(155deg, color-mix(in srgb, {{ c.tok }} 34%, var(--surface-sunken)) 0%, color-mix(in srgb, {{ c.tok }} 10%, var(--surface-sunken)) 70%, var(--surface-sunken) 100%);opacity:{{ c.dim }};filter:saturate({{ c.sat }});"></div>
+                    <sc-if value="{{ c.foil }}" hint-placeholder-val="{{ false }}">
+                      <span style="position:absolute;right:5px;bottom:5px;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.06em;color:var(--fg-body);background:rgba(0,0,0,0.68);border-radius:3px;padding:1px 4px;">&#9670; FOIL</span>
+                    </sc-if>
+                  </div>
+                  <div style="display:flex;align-items:baseline;gap:5px;margin-top:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:{{ c.numCol }};">{{ c.num }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">{{ c.rar }}</span></div>
+                  <div style="font-size:12px;color:var(--fg-body);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.n }}</div>
+                  <sc-if value="{{ c.missing }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-top:5px;"><span style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;padding:2px 6px;border-radius:4px;color:{{ c.priceCol }};border:1px {{ c.priceEdgeStyle }} {{ c.priceEdge }};">{{ c.price }}</span></div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+            <div style="margin-top:14px;font-size:12.5px;color:#A89B84;line-height:1.65;">174&times;243 &mdash; <b style="color:#EDE6D8;font-weight:600;">1.6&times; the width, 2.6&times; the area</b>, and unchanged from R1 even though the constant behind it changed. The caption now holds three things, so <b style="color:#EDE6D8;font-weight:600;">rarity comes back at phone</b>: the <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">hidden md:inline</span> on it retires, and the shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">042 &middot; uncommon</span> caption is one format at every width.</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:520px;flex:none;display:flex;flex-direction:column;gap:18px;">
+        <div style="border:1px solid #DEAA29;border-left:3px solid #DEAA29;border-radius:12px;background:#161318;padding:18px 20px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#DEAA29;margin-bottom:10px;">At 390px there are exactly two answers, and nothing between them</div>
+          <div style="font-size:13px;color:#A89B84;line-height:1.75;">The content width is 358px and the gap is 10. Three tracks are <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">(358&minus;20)/3 = 112.67</span>; two are <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">(358&minus;10)/2 = 174</span>. <b style="color:#EDE6D8;font-weight:600;">There is no 140px cell to compromise on</b> &mdash; an <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">fr</span> track takes the whole remainder, so any minimum from 113 to 174 produces the same 174. This is also why R2 could delete R1's phone exception: <b style="color:#EDE6D8;font-weight:600;">146 is inside that band</b>, so the desktop constant produces the phone answer for free, and the two widths stop being two rules.</div>
+        </div>
+
+        <div style="border:1px solid #2A241D;border-radius:12px;background:#141118;padding:18px 20px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:12px;">The bill &mdash; DENSITY's table, re-run (EOE: 276 base, 123 extras)</div>
+          <div style="overflow:hidden;border:1px solid #2A241D;border-radius:8px;">
+            <div style="display:grid;grid-template-columns:1fr 120px 120px;background:#1A1620;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.08em;text-transform:uppercase;color:#8E8269;">
+              <div style="padding:9px 12px;"></div><div style="padding:9px 12px;">shipped</div><div style="padding:9px 12px;">ruled</div>
+            </div>
+            <sc-for list="{{ bill }}" as="b" hint-placeholder-count="7">
+              <div style="display:grid;grid-template-columns:1fr 120px 120px;border-top:1px solid #221D28;font-size:12px;color:#C6B79A;">
+                <div style="padding:9px 12px;">{{ b.k }}</div><div style="padding:9px 12px;font-family:'IBM Plex Mono',monospace;">{{ b.a }}</div><div style="padding:9px 12px;font-family:'IBM Plex Mono',monospace;color:#EDE6D8;">{{ b.b }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="margin-top:14px;font-size:13px;color:#A89B84;line-height:1.75;"><b style="color:#EDE6D8;font-weight:600;">Named rather than buried: the desktop page grows 60% and the phone page doubles.</b> That is the cost of the ask at both widths, and DENSITY's own three mitigations are what it is charged against &mdash; the head sticks, <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">extras &darr;</span> jumps the section, and missing-only removes the cells the reader is done with. <b style="color:#EDE6D8;font-weight:600;">&sect;3's name search is the fourth, and the first that can take 276 rows to 1.</b> Read that way, findings 2 and 4 pay for each other.</div>
+        </div>
+
+        <div style="border:1px solid #2A241D;border-radius:12px;background:#141118;padding:18px 20px;font-size:13px;color:#A89B84;line-height:1.75;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:10px;">What one constant deletes</div>
+          <b style="color:#EDE6D8;font-weight:600;">R1's <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">md</span> step is gone.</b> With two minima the cell went 176 &rarr; 136 at the breakpoint &mdash; a cell that got <i>smaller</i> as the window got bigger, which R1 had to argue for. At F = 146 the progression is monotonic in column count and nothing reverses: 358px &rarr; 2&times;174, 568 &rarr; 3&times;183, 736 &rarr; 4&times;176, 944 &rarr; 6&times;149.<br><br><b style="color:#EDE6D8;font-weight:600;">And the upscale open item is gone with it.</b> R1's phone cell upscaled <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">image_uri_small</span> 1.19&times; and left a flagged risk about substituting a larger source. That risk did not change &mdash; the phone cell is still 174 &mdash; but the reasoning did: <b style="color:#EDE6D8;font-weight:600;">the minimum now IS the source width</b>, so the worst case in the system is stated by the constant itself (1.19&times; at 390px, 1.12&times; at 1280) rather than discovered per width. Nothing here needs <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">normal</span>, and DENSITY's ban on it stands.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== §2 THE RACK ========== -->
+  <div id="clear">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">&sect;2 &middot; <span style="color:#CF8745;">finding 3 &mdash; the rack conforms to the chassis, both widths</span></div>
+
+    <div style="border:1px solid #3A3229;border-left:3px solid #CF8745;border-radius:12px;background:#161318;padding:16px 20px;margin-bottom:22px;max-width:1280px;">
+      <div style="font-size:13.5px;color:#A89B84;line-height:1.75;">The brief asked for Clear to conform. Read against <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">design_handoff_the99_filter_chassis</span> R2 the answer is that <b style="color:#EDE6D8;font-weight:600;">Clear is the third of four things on this rack that do not conform</b>, and fixing it alone would leave a chip line under a control row the chassis does not recognise. So all four land together: <b style="color:#EDE6D8;font-weight:600;">the pips become mana symbols</b> (chassis decisions 7 and 8), <b style="color:#EDE6D8;font-weight:600;">rarity becomes a trigger with the shared panel</b> (decisions 4 and 19), <b style="color:#EDE6D8;font-weight:600;">Clear becomes three scopes</b> (decision 12), and <b style="color:#EDE6D8;font-weight:600;">the bar becomes three rows that never change height</b> (decisions 1 and 2). Each is drawn at both widths below.</div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px 26px;max-width:1280px;margin-bottom:22px;">
+      <div style="border:1px solid #2A241D;border-radius:12px;background:#141118;padding:16px 18px;font-size:13px;color:#A89B84;line-height:1.7;"><b style="color:#EDE6D8;font-weight:600;">1 &middot; The pips are art, not palette.</b> Shipped, <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">color-pip.tsx</span> draws a token square at <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">opacity .34&ndash;.40</span> when unlit, which measures <b style="color:#EDE6D8;font-weight:600;">1.38:1</b>. The chassis ruling: <b style="color:#EDE6D8;font-weight:600;">Scryfall's full-colour symbol SVGs drawn as images, never masked and never dimmed</b>; lit is a <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">2px --accent</span> ring (4.42:1 floor), unlit is no ring at all.</div>
+      <div style="border:1px solid #2A241D;border-radius:12px;background:#141118;padding:16px 18px;font-size:13px;color:#A89B84;line-height:1.7;"><b style="color:#EDE6D8;font-weight:600;">2 &middot; Rarity is a trigger and a panel.</b> Four values, single-select, with an off state &mdash; the chassis's own test makes that a panel dimension, not a segmented run and not four buttons. <b style="color:#EDE6D8;font-weight:600;">The copy for it already exists in the shipped file, unused:</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">rarity.all</span> = <i>Rarity &middot; all</i> and <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">rarity.value(r)</span> = <i>Rarity &middot; uncommon</i>. The trigger was always the intent; the letters were the shortcut.</div>
+      <div style="border:1px solid #2A241D;border-radius:12px;background:#141118;padding:16px 18px;font-size:13px;color:#A89B84;line-height:1.7;"><b style="color:#EDE6D8;font-weight:600;">3 &middot; Clear leaves the row.</b> It is the only <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">GhostButton</span> in a row of hairlines, it is inside a sticky head <b style="color:#EDE6D8;font-weight:600;">whose height it changes</b>, it does not say which filters, and it appears at one filter where the lit control beside it is the shorter route off. It becomes <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">Clear all filters</span> on the chip line's trailing edge, past one active control.</div>
+      <div style="border:1px solid #2A241D;border-radius:12px;background:#141118;padding:16px 18px;font-size:13px;color:#A89B84;line-height:1.7;"><b style="color:#EDE6D8;font-weight:600;">4 &middot; Three rows, always all three.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">no filters on</span> prints at rest rather than collapsing, which is what makes the fixed-height promise cheap &mdash; and it is worth more here than on any other route, because <b style="color:#EDE6D8;font-weight:600;">this bar lives inside a sticky head</b> and every height change under a reader's thumb moves the grid they are reading.</div>
+    </div>
+
+    <div style="display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="width:860px;flex:none;display:flex;flex-direction:column;gap:18px;">
+        <div style="border:1px solid #C6533F;border-radius:12px;overflow:hidden;background:var(--bg);">
+          <div style="padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C6533F;">shipped &middot; token pips at .34, four rarity letters, a ghost Clear inside the sticky head</span></div>
+          <div style="padding:18px 20px;">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <div style="display:flex;align-items:center;gap:6px;border-radius:8px;padding:7px 10px;background:var(--surface-sunken);border:1px solid var(--border-strong);">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:var(--fg-faint);margin-right:2px;">COLOR</span>
+                <sc-for list="{{ pipsShipped }}" as="p" hint-placeholder-count="5">
+                  <span style="width:22px;height:22px;border-radius:50%;background:{{ p.tok }};opacity:{{ p.op }};display:inline-block;"></span>
+                </sc-for>
+              </div>
+              <span style="height:32px;display:inline-flex;align-items:center;padding:0 9px;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);border:1px solid var(--border);">C</span>
+              <span style="height:32px;display:inline-flex;align-items:center;padding:0 9px;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);border:1px solid var(--accent);">U</span>
+              <span style="height:32px;display:inline-flex;align-items:center;padding:0 9px;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);border:1px solid var(--border);">R</span>
+              <span style="height:32px;display:inline-flex;align-items:center;padding:0 9px;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);border:1px solid var(--border);">M</span>
+              <span style="height:32px;display:inline-flex;align-items:center;padding:0 10px;border-radius:6px;font-size:12px;color:var(--accent);border:1px solid var(--accent);">Missing only</span>
+              <span style="height:32px;display:inline-flex;align-items:center;padding:0 14px;border-radius:8px;font-size:12.5px;font-weight:600;color:var(--fg);border:1px solid var(--border-strong);">Clear filters</span>
+            </div>
+            <p style="margin:14px 0 0;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">118 of 399 cells &middot; <span style="color:var(--accent);">extras &darr;</span></p>
+            <div style="margin-top:14px;font-size:13px;color:#A89B84;line-height:1.7;">Six control types in one row: a captioned well of dimmed squares, four mono letter buttons, a worded toggle and a filled-weight ghost button &mdash; <b style="color:#EDE6D8;font-weight:600;">and a lit rarity that states its value only as a letter</b>. Nothing here is broken; all of it is a different vocabulary from the other three routes.</div>
+          </div>
+        </div>
+
+        <div style="border:1px solid #6FA368;border-radius:12px;overflow:hidden;background:var(--bg);">
+          <div style="padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6FA368;">ruled &middot; desktop &middot; field &middot; pips &middot; Rarity &#9662; &middot; Missing only &nbsp;+&nbsp; chips &nbsp;+&nbsp; result</span></div>
+          <div style="padding:18px 20px;">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:nowrap;">
+              <span style="height:34px;flex:1;min-width:132px;display:inline-flex;align-items:center;gap:8px;padding:0 12px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border-strong);"><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--fg-faint);">&#8981;</span><span style="font-size:12.5px;color:var(--fg-faint);">Find a card in this set</span></span>
+              <div style="flex:none;display:flex;align-items:center;gap:6px;border-radius:8px;padding:6px 10px;background:var(--surface-sunken);border:1px solid var(--border-strong);">
+                <sc-for list="{{ pips }}" as="p" hint-placeholder-count="5">
+                  <span style="width:22px;height:22px;border-radius:50%;background:{{ p.bg }};box-shadow:{{ p.ring }};display:inline-flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:{{ p.ink }};">{{ p.sym }}</span>
+                </sc-for>
+              </div>
+              <span style="flex:none;height:34px;display:inline-flex;align-items:center;gap:8px;padding:0 11px;border-radius:6px;font-size:12.5px;color:var(--accent);border:1px solid var(--accent);">Rarity &middot; uncommon<span style="font-size:9px;color:var(--accent);">&#9662;</span></span>
+              <span style="flex:none;height:34px;display:inline-flex;align-items:center;padding:0 11px;border-radius:6px;font-size:12.5px;color:var(--accent);border:1px solid var(--accent);">Missing only</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:10px;min-height:24px;">
+              <sc-for list="{{ chips }}" as="c" hint-placeholder-count="3">
+                <span style="height:24px;display:inline-flex;align-items:center;gap:7px;padding:0 8px;border-radius:6px;background:var(--surface-sunken);border:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);">{{ c.label }}<span style="color:var(--fg-muted);">&times;</span></span>
+              </sc-for>
+              <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);border-bottom:1px solid var(--border-strong);">Clear all filters</span>
+            </div>
+            <p style="margin:10px 0 0;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">118 of 399 cells &middot; <span style="color:var(--accent);">extras &darr;</span></p>
+            <div style="margin-top:14px;font-size:13px;color:#A89B84;line-height:1.7;"><b style="color:#EDE6D8;font-weight:600;">The rarity filter fits, and it fits by getting shorter.</b> Four 34px letter buttons plus their gaps are 158px; one trigger at its longest value (<i>Rarity &middot; uncommon</i>) is 149px, and at rest (<i>Rarity &middot; all</i>) 106px. Row arithmetic at 1100: field 132 minimum + pips 154 + rarity 149 + missing 106 + three 8px gaps = <b style="color:#EDE6D8;font-weight:600;">565 of 1100</b>, so the field takes 667px at rest and every control is <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">flex: none</span> with <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">nowrap</span>. The row cannot wrap at any width this page is drawn at.</div>
+          </div>
+        </div>
+
+        <div style="border:1px solid #2A241D;border-radius:12px;overflow:hidden;background:var(--bg);">
+          <div style="padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;">at rest, with the rarity panel open &mdash; anchored, never in flow</span></div>
+          <div style="padding:18px 20px 26px;">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:nowrap;">
+              <span style="height:34px;flex:1;min-width:132px;display:inline-flex;align-items:center;gap:8px;padding:0 12px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border-strong);"><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--fg-faint);">&#8981;</span><span style="font-size:12.5px;color:var(--fg-faint);">Find a card in this set</span></span>
+              <div style="flex:none;display:flex;align-items:center;gap:6px;border-radius:8px;padding:6px 10px;background:var(--surface-sunken);border:1px solid var(--border-strong);">
+                <sc-for list="{{ pipsRest }}" as="p" hint-placeholder-count="5">
+                  <span style="width:22px;height:22px;border-radius:50%;background:{{ p.bg }};display:inline-flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:{{ p.ink }};">{{ p.sym }}</span>
+                </sc-for>
+              </div>
+              <div style="flex:none;position:relative;">
+                <span style="height:34px;display:inline-flex;align-items:center;gap:8px;padding:0 11px;border-radius:6px;font-size:12.5px;color:var(--fg-body);border:1px solid var(--border-strong);">Rarity &middot; all<span style="font-size:9px;color:var(--fg-muted);">&#9662;</span></span>
+                <div style="position:absolute;top:40px;right:0;width:280px;border-radius:10px;background:var(--surface-rail);border:1px solid var(--border-strong);box-shadow:0 18px 40px rgba(0,0,0,0.55);overflow:hidden;z-index:2;">
+                  <sc-for list="{{ rarityRows }}" as="r" hint-placeholder-count="4">
+                    <div style="height:44px;display:flex;align-items:center;gap:10px;padding:0 12px;border-bottom:1px solid var(--border);">
+                      <span style="width:9px;height:9px;transform:rotate(45deg);flex:none;background:{{ r.markBg }};border:1px solid {{ r.markEdge }};"></span>
+                      <span style="font-size:13px;color:var(--fg-body);">{{ r.label }}</span>
+                      <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">{{ r.n }}</span>
+                    </div>
+                  </sc-for>
+                  <div style="height:40px;display:flex;align-items:center;gap:10px;padding:0 12px;background:var(--surface-sunken);">
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">0 of 4 on</span>
+                    <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);">Clear rarity</span>
+                  </div>
+                </div>
+              </div>
+              <span style="flex:none;height:34px;display:inline-flex;align-items:center;padding:0 11px;border-radius:6px;font-size:12.5px;color:var(--fg-muted);border:1px solid var(--border);">Missing only</span>
+            </div>
+            <div style="min-height:224px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-top:10px;min-height:24px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">no filters on</span>
+              </div>
+              <p style="margin:10px 0 0;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">399 cells &middot; 62 yours, 337 missing &middot; <span style="color:var(--accent);">extras &darr;</span></p>
+            </div>
+            <div style="margin-top:14px;font-size:13px;color:#A89B84;line-height:1.7;">The panel is <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">filter-panel.tsx</span>'s shape, mounted and not forked: 280px, <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--surface-rail</span> on a <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--border-strong</span> hairline, 44px rows, a rotated-diamond marker filled <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--accent</span> when on, <b style="color:#EDE6D8;font-weight:600;">per-row counts from the same filtered computation the result line uses</b>, and a footer stating <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">n of 4 on</span> beside a Clear for this dimension only. <b style="color:#EDE6D8;font-weight:600;">It is drawn anchored to the trigger's trailing edge, which is the ruling:</b> a 280px panel hung from a trigger this far along a 1100px row would otherwise run past the column, so it <b style="color:#EDE6D8;font-weight:600;">flips rather than overflowing</b> &mdash; the same rule the chassis's other panels follow, and the reason the footer is reachable at all at this width. <b style="color:#EDE6D8;font-weight:600;">No search field in it</b> &mdash; four values have nothing to search, which is <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">searchable</span>'s existing rule. <b style="color:#EDE6D8;font-weight:600;">Anchored, never in flow:</b> a panel that expands in the document pushes the grid down, and on this page it would push it down from inside a sticky head.</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:390px;flex:none;display:flex;flex-direction:column;gap:18px;">
+        <div style="border:1px solid #6FA368;border-radius:12px;overflow:hidden;background:var(--bg);">
+          <div style="padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6FA368;">390px &middot; persistent row, chips, result</span></div>
+          <div style="padding:16px;">
+            <div style="width:358px;display:flex;align-items:center;gap:8px;">
+              <span style="height:44px;flex:1;min-width:132px;display:inline-flex;align-items:center;gap:8px;padding:0 12px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border-strong);"><span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:var(--fg-faint);">&#8981;</span><span style="font-size:13px;color:var(--fg-faint);">Find a card</span></span>
+              <span style="height:44px;flex:none;display:inline-flex;align-items:center;gap:6px;padding:0 12px;border-radius:6px;font-size:13px;color:var(--fg-body);border:1px solid var(--border);">Filters<span style="min-width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;border-radius:9px;background:var(--accent);color:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:10px;">3</span></span>
+              <span style="height:44px;flex:none;display:inline-flex;align-items:center;padding:0 12px;border-radius:6px;font-size:13px;color:var(--accent);border:1px solid var(--accent);">Missing</span>
+            </div>
+            <div style="width:358px;margin-top:10px;position:relative;overflow:hidden;">
+              <div style="display:flex;gap:8px;justify-content:flex-end;">
+                <sc-for list="{{ chips }}" as="c" hint-placeholder-count="3">
+                  <span style="height:34px;flex:none;display:inline-flex;align-items:center;gap:8px;padding:0 10px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-body);white-space:nowrap;">{{ c.label }}<span style="color:var(--fg-muted);font-size:13px;">&times;</span></span>
+                </sc-for>
+                <span style="height:34px;flex:none;display:inline-flex;align-items:center;padding:0 10px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);white-space:nowrap;border-bottom:1px solid var(--border-strong);">Clear all filters</span>
+              </div>
+              <div style="position:absolute;top:0;left:0;width:36px;height:34px;background:linear-gradient(270deg, rgba(0,0,0,0) 0%, var(--bg) 80%);"></div>
+            </div>
+            <p style="margin:10px 0 0;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">118 missing &middot; numbers skip, because the cards you own are hidden</p>
+            <div style="margin-top:12px;font-size:12.5px;color:#A89B84;line-height:1.65;">Drawn <b style="color:#EDE6D8;font-weight:600;">scrolled to its trailing edge</b>, which is the state this frame exists to prove: three chips plus the control are 463px of a 358px row, so one of the four is always off-screen and <b style="color:#EDE6D8;font-weight:600;">the one that must never be clipped is <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Clear all filters</span></b>. Build rule: the strip starts at its trailing edge on the phone, and the fade sits on the side with content behind it.</div>
+          </div>
+        </div>
+
+        <div style="border:1px solid #6FA368;border-radius:12px;overflow:hidden;background:var(--bg);">
+          <div style="padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6FA368;">390px &middot; the sheet &mdash; pips lead, rarity is a chip group</span></div>
+          <div style="padding:0;background:rgba(16,13,10,0.74);">
+            <div style="height:120px;"></div>
+            <div style="background:var(--surface);border-top:1px solid var(--border);border-radius:14px 14px 0 0;padding:14px 16px 20px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:var(--fg-faint);margin-bottom:10px;">Colour</div>
+              <div style="display:flex;gap:8px;margin-bottom:18px;">
+                <sc-for list="{{ pips }}" as="p" hint-placeholder-count="5">
+                  <span style="width:44px;height:44px;border-radius:50%;background:{{ p.bg }};box-shadow:{{ p.ring }};display:inline-flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:19px;font-weight:600;color:{{ p.ink }};">{{ p.sym }}</span>
+                </sc-for>
+              </div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:var(--fg-faint);margin-bottom:10px;">Rarity</div>
+              <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px;">
+                <sc-for list="{{ rarityRows }}" as="r" hint-placeholder-count="4">
+                  <span style="height:44px;display:inline-flex;align-items:center;gap:8px;padding:0 14px;border-radius:8px;font-size:13px;color:{{ r.chipCol }};border:1px solid {{ r.chipEdge }};">{{ r.label }}<span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">{{ r.n }}</span></span>
+                </sc-for>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span style="height:44px;display:inline-flex;align-items:center;padding:0 14px;border-radius:8px;font-size:13px;font-weight:600;color:var(--fg);border:1px solid var(--border-strong);">Clear all</span>
+                <span style="margin-left:auto;height:44px;display:inline-flex;align-items:center;padding:0 16px;border-radius:8px;background:var(--fg);color:var(--bg);font-size:13px;font-weight:600;">Show 118 cards</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="border:1px solid #2A241D;border-radius:12px;background:#141118;padding:18px 20px;font-size:13px;color:#A89B84;line-height:1.75;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:10px;">The compact form, and what it must not do</div>
+          <b style="color:#EDE6D8;font-weight:600;">A control never changes type between widths</b> &mdash; only its target size, and whether its panel is anchored or a block in the sheet. So the pips are the <i>same</i> circles at 44px and lead the sheet (five circles of full-strength artwork are the anchor at the top and an interruption in the middle), and rarity is <b style="color:#EDE6D8;font-weight:600;">a chip group, not a nested list</b>: four short values is exactly what a chip group is for, unlike <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">Set</span> with its 41. Four 44px chips wrap to two rows at 358px, which a sheet may do and the control row may not.<br><br><b style="color:#EDE6D8;font-weight:600;">Missing-only stays on the persistent row, and stays out of the sheet</b> &mdash; one control, one accessible name, which is the reason <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">MissingOnlyToggle</span> is mounted once today. The badge counts <b style="color:#EDE6D8;font-weight:600;">dimensions only: never the search, never missing-only</b>, both of which are visible on the row beside it.<br><br><b style="color:#EDE6D8;font-weight:600;">Chip target is 34px, not 44</b> &mdash; the refresh's granted exception on its own test: a chip is a shortcut, never the only route, and every value it removes is also removable at 44px in the sheet or on the row.</div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px;border:1px solid #DEAA29;border-left:3px solid #DEAA29;border-radius:12px;background:#161318;padding:18px 20px;max-width:1280px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#DEAA29;margin-bottom:10px;">Three amendments back to the chassis, from drawing it on this page</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px 26px;font-size:13px;color:#A89B84;line-height:1.75;">
+        <div><b style="color:#EDE6D8;font-weight:600;">1 &middot; <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">Clear all filters</span> must clear the search.</b> The chassis excludes sort and says nothing about the field. The reason it excludes sort is that <b style="color:#EDE6D8;font-weight:600;">sort does not narrow</b>. A search does, so a Clear that leaves it on leaves the reader looking at four cells under a control that claimed to have cleared everything. The field's own <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">&times;</span> stays the scoped route. Applies to all four routes.</div>
+        <div><b style="color:#EDE6D8;font-weight:600;">2 &middot; There is a fifth control type: the toggle.</b> The chassis names four &mdash; field, pip row, segmented, trigger+panel &mdash; chosen by the shape of the values. <b style="color:#EDE6D8;font-weight:600;">Missing-only's whole value is on or off</b>, so it is not segmented (which is for dimensions with <i>no</i> off state) and a panel for one boolean is absurd. Drawn as the shipped hairline carrying <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--accent</span> border and label when on, which is the same twice-carried rule as an active trigger.</div>
+        <div><b style="color:#EDE6D8;font-weight:600;">3 &middot; A trigger's value may be a word the page does not otherwise print.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">Rarity &middot; uncommon</span> is lowercase because the cell caption below it says <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">042 &middot; uncommon</span> in the same register &mdash; the trigger and the thing it filters read alike, which is why the shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">rarity.value()</span> string is right as written and the sheet's chips are Title Case, because a chip is a control and not a caption.</div>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;border:1px solid #2A241D;border-radius:12px;background:#141118;padding:18px 20px;max-width:1280px;font-size:13px;color:#A89B84;line-height:1.75;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:10px;">The pips, drawn honestly &mdash; and the one exception to this package's no-literal rule</div>
+      Each pip above is <b style="color:#EDE6D8;font-weight:600;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">svgs.scryfall.io/card-symbols/{W,U,B,R,G}.svg</span>, drawn as an image</b>. The canvas stands the glyph in as a mono letter on the symbol's own ground, which is the one place in this package where a colour is a literal rather than a token &mdash; <b style="color:#EDE6D8;font-weight:600;">deliberately, because by the chassis's ruling these are artwork, not palette</b>: the files open with a filled <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">&lt;circle&gt;</span>, and a single-colour mask would flatten every two-tone hybrid to one hue. <b style="color:#EDE6D8;font-weight:600;">They are never tinted, never dimmed and never token-coloured</b>, and the set page's <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--w &hellip; --g</span> tokens keep doing their real job one layer down, inside the cell art. Lit is a <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">2px --accent</span> ring at <b style="color:#EDE6D8;font-weight:600;">4.42:1</b> against the sunken well; unlit carries <b style="color:#EDE6D8;font-weight:600;">no rim at all</b>, because <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--border-strong</span> there measures 1.24:1 and could never be the carrier. The symbols themselves floor at <b style="color:#EDE6D8;font-weight:600;">9.51:1</b>.
+    </div>
+  </div>
+
+  <!-- ========== §3 NAME SEARCH ========== -->
+  <div id="search">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">&sect;3 &middot; <span style="color:#CF8745;">finding 4 &mdash; the name search is the chassis's field slot, and it leads</span></div>
+
+    <div style="border:1px solid #3A3229;border-left:3px solid #CF8745;border-radius:12px;background:#161318;padding:16px 20px;margin-bottom:22px;max-width:1180px;">
+      <div style="font-size:13.5px;color:#A89B84;line-height:1.75;"><b style="color:#EDE6D8;font-weight:600;">Nothing about the position is a new decision.</b> The chassis has a field slot, it is first in row 1, it is the only child that shrinks, it sits on the phone's persistent row rather than in the sheet, and the badge never counts it because it is visible. Four routes already do this. The decisions that <i>are</i> this page's are the three below: what it matches, what it is called, and what it does to the money.</div>
+    </div>
+
+    <div style="display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="width:860px;flex:none;display:flex;flex-direction:column;gap:18px;">
+        <div style="border:1px solid #6FA368;border-radius:12px;overflow:hidden;background:var(--bg);">
+          <div style="padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6FA368;">desktop &middot; typing, with two filters still on</span></div>
+          <div style="padding:18px 20px;">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:nowrap;">
+              <span style="height:34px;flex:1;min-width:132px;display:inline-flex;align-items:center;gap:8px;padding:0 12px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--accent);box-shadow:0 0 0 3px color-mix(in oklab, var(--accent) 16%, transparent);"><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--fg-faint);">&#8981;</span><span style="font-size:12.5px;color:var(--fg);">pilgrim</span><span style="margin-left:auto;font-size:13px;color:var(--fg-muted);">&times;</span></span>
+              <div style="flex:none;display:flex;align-items:center;gap:6px;border-radius:8px;padding:6px 10px;background:var(--surface-sunken);border:1px solid var(--border-strong);">
+                <sc-for list="{{ pips }}" as="p" hint-placeholder-count="5">
+                  <span style="width:22px;height:22px;border-radius:50%;background:{{ p.bg }};box-shadow:{{ p.ring }};display:inline-flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:{{ p.ink }};">{{ p.sym }}</span>
+                </sc-for>
+              </div>
+              <span style="flex:none;height:34px;display:inline-flex;align-items:center;gap:8px;padding:0 11px;border-radius:6px;font-size:12.5px;color:var(--fg-body);border:1px solid var(--border-strong);">Rarity &middot; all<span style="font-size:9px;color:var(--fg-muted);">&#9662;</span></span>
+              <span style="flex:none;height:34px;display:inline-flex;align-items:center;padding:0 11px;border-radius:6px;font-size:12.5px;color:var(--accent);border:1px solid var(--accent);">Missing only</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:10px;min-height:24px;">
+              <span style="height:24px;display:inline-flex;align-items:center;gap:7px;padding:0 8px;border-radius:6px;background:var(--surface-sunken);border:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);">2 colours<span style="color:var(--fg-muted);">&times;</span></span>
+              <span style="height:24px;display:inline-flex;align-items:center;gap:7px;padding:0 8px;border-radius:6px;background:var(--surface-sunken);border:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);">Missing only<span style="color:var(--fg-muted);">&times;</span></span>
+              <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);border-bottom:1px solid var(--border-strong);">Clear all filters</span>
+            </div>
+            <p style="margin:10px 0 0;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">3 of 399 cells</p>
+            <div style="margin-top:16px;border-radius:10px;background:var(--surface-sunken);border:1px solid var(--border);padding:14px 16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+              <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:4px;">Cost to complete</div><div style="display:flex;align-items:baseline;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:19px;color:var(--accent);">$4.80</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">over 3 of the 3 missing</span></div></div>
+              <span style="margin-left:auto;height:34px;display:inline-flex;align-items:center;padding:0 14px;border-radius:8px;background:var(--fg);color:var(--bg);font-size:12.5px;font-weight:600;">Send 3 to ManaPool</span>
+            </div>
+            <div style="margin-top:14px;font-size:13px;color:#A89B84;line-height:1.7;"><b style="color:#EDE6D8;font-weight:600;">The search re-scopes the money, and that is deliberate</b> &mdash; decision 6's one-selector rule says the filters <i>are</i> the selector, and a search is a filter by any reading a player would give it. <b style="color:#EDE6D8;font-weight:600;">Engineering consequence, load-bearing:</b> the query goes into <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">applyFilters</span> in <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">lib/sets/filters.ts</span> as a fourth field, never as a second pass over <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">shown</span>. A separate pass is how the result line, the <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">Send N</span> label, the cost denominator <b style="color:#EDE6D8;font-weight:600;">and now the rarity panel's per-row counts</b> stop agreeing &mdash; four readings of one computation, and the panel is the new one.</div>
+          </div>
+        </div>
+
+        <div style="border:1px solid #2A241D;border-radius:12px;overflow:hidden;background:var(--bg);">
+          <div style="padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#8E8269;">zero &mdash; a new branch, and the cheapest correction is the search</span></div>
+          <div style="padding:26px 20px 30px;text-align:center;">
+            <div style="font-family:'Cinzel',serif;font-size:19px;color:var(--fg);margin-bottom:8px;">Nothing in Edge of Eternities matches &ldquo;pilgrom&rdquo;</div>
+            <div style="font-size:13.5px;color:var(--fg-muted);max-width:520px;margin:0 auto;line-height:1.6;">This searches the names in this set only, so it is a spelling rather than a gap in your collection. Your colour and rarity filters are still on.</div>
+            <div style="margin-top:18px;display:inline-flex;gap:10px;"><span style="height:34px;display:inline-flex;align-items:center;padding:0 14px;border-radius:8px;font-size:12.5px;font-weight:600;color:var(--fg);border:1px solid var(--border-strong);">Clear the search</span><span style="height:34px;display:inline-flex;align-items:center;padding:0 14px;border-radius:8px;font-size:12.5px;font-weight:600;color:var(--fg);border:1px solid var(--border-strong);">Clear all filters</span></div>
+            <div style="margin-top:18px;font-size:13px;color:#A89B84;line-height:1.7;max-width:640px;margin-left:auto;margin-right:auto;">Two corrections, narrowest first &mdash; the chassis's empty-state shape (<span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">Drop &lt;control&gt;</span> beside <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">Clear all filters</span>) with the query as the control to blame, which it almost always is: a typo is the likeliest cause of zero on this page. <b style="color:#EDE6D8;font-weight:600;">The chassis stays on screen above it</b> &mdash; never replaced, because the filters that caused this have to stay removable.</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:390px;flex:none;display:flex;flex-direction:column;gap:18px;">
+        <div style="border:1px solid #6FA368;border-radius:12px;overflow:hidden;background:var(--bg);">
+          <div style="padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6FA368;">390px &middot; the persistent row, three controls, 358px</span></div>
+          <div style="padding:16px;">
+            <div style="width:358px;display:flex;align-items:center;gap:8px;">
+              <span style="height:44px;flex:1;min-width:132px;display:inline-flex;align-items:center;gap:8px;padding:0 12px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border-strong);"><span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:var(--fg-faint);">&#8981;</span><span style="font-size:13px;color:var(--fg-faint);">Find a card</span></span>
+              <span style="height:44px;flex:none;display:inline-flex;align-items:center;gap:6px;padding:0 12px;border-radius:6px;font-size:13px;color:var(--fg-body);border:1px solid var(--border);">Filters<span style="min-width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;border-radius:9px;background:var(--accent);color:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:10px;">2</span></span>
+              <span style="height:44px;flex:none;display:inline-flex;align-items:center;padding:0 12px;border-radius:6px;font-size:13px;color:var(--accent);border:1px solid var(--accent);">Missing</span>
+            </div>
+            <div style="margin-top:14px;font-size:12.5px;color:#A89B84;line-height:1.7;">The arithmetic, since this row is the tightest 358px in the feature: <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Filters</span> with a badge is 93, <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Missing</span> is 76, two gaps are 16 &mdash; <b style="color:#EDE6D8;font-weight:600;">so the field gets 173 at rest against a 132 minimum</b>. It shrinks and nothing else does; the row cannot wrap, and there is no third form. <b style="color:#EDE6D8;font-weight:600;">This is also why rarity had to leave the row rather than join it</b>: four letters at a 44px target are 180px, and there was never room.</div>
+          </div>
+        </div>
+
+        <div style="border:1px solid #2A241D;border-radius:12px;background:#141118;padding:18px 20px;font-size:13px;color:#A89B84;line-height:1.75;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:10px;">What it matches, and what it is called</div>
+          <b style="color:#EDE6D8;font-weight:600;">Substring on the printed name, case-insensitive and diacritic-folded</b> (<span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">aether</span> finds &AElig;ther, <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">jotun</span> finds J&ouml;tun), matching <b style="color:#EDE6D8;font-weight:600;">either half of a <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">//</span> name</b>. Not the type line, not oracle text, not the collector number &mdash; the control is named for the name, and a field that quietly matched rules text would make the result line's count unexplainable.<br><br><b style="color:#EDE6D8;font-weight:600;">Placeholder <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">Find a card in this set</span>; accessible name <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">Search cards in Edge of Eternities</span>.</b> The set has to be in the name: this field and the index's <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">Find any set</span> are one tap apart, look identical, and search populations that are opposites.<br><br><b style="color:#EDE6D8;font-weight:600;">It reaches nothing.</b> Every cell is already in hand, so this is a presentation change over loaded data: <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">history.replaceState</span> like the other three, 150ms debounce (the shipped card-search window), no request, no router, no dropdown of names, no Enter to submit.<br><br><b style="color:#EDE6D8;font-weight:600;">Never in the sheet.</b> A second search field behind <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">Filters</span> would be two controls with one accessible name &mdash; the defect <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">MissingOnlyToggle</span> already exists to avoid on this page.</div>
+
+        <div style="border:1px solid #2A241D;border-radius:12px;background:#141118;padding:18px 20px;font-size:13px;color:#A89B84;line-height:1.75;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:10px;">The parameter, and a note on decision 15</div>
+          <b style="color:#EDE6D8;font-weight:600;">The key is <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">q</span></b>, matching the index's own search, so <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">/collection/sets/eoe?q=plains&amp;m=1</span> is a linkable page.<br><br>R2's decision 15 wrote &ldquo;no shared key names&rdquo; with /collection. Read literally that bans <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">q</span> &mdash; but the shipped surface already shares <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">c</span> for colour with <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">browser.tsx</span>'s owned-params list, and no bug came of it. <b style="color:#EDE6D8;font-weight:600;">Narrowed: the rule is that no value carries, and that no one name means two different things.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">q</span> means &ldquo;what I typed&rdquo; on all three routes; it just types into different populations, which is what the route boundary is for. What would still be the bug decision 15 was written about is <b style="color:#EDE6D8;font-weight:600;">carrying /collection's <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">q</span> into this route on the <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">By set</span> link</b>. The pill still carries nothing.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== §4 THE INDEX ROW ========== -->
+  <div id="index">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">&sect;4 &middot; <span style="color:#CF8745;">finding 5 &mdash; the extras figure becomes a figure</span></div>
+
+    <div style="display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="width:720px;flex:none;display:flex;flex-direction:column;gap:18px;">
+        <div style="border:1px solid #C6533F;border-radius:12px;overflow:hidden;background:var(--bg);">
+          <div style="padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C6533F;">shipped &middot; third item on a metadata line</span></div>
+          <div style="padding:14px 16px;">
+            <sc-for list="{{ idxBefore }}" as="s" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:10px;">
+                <span style="width:26px;height:26px;border-radius:50%;background:var(--elevated);flex:none;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--fg-muted);">set</span>
+                <span style="min-width:0;flex:1;">
+                  <span style="display:flex;align-items:baseline;gap:8px;">
+                    <span style="font-size:14px;color:var(--fg-body);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ s.name }}</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.08em;color:var(--fg-faint);flex:none;">{{ s.code }} &middot; {{ s.year }} &middot; {{ s.extras }} extras</span>
+                  </span>
+                  <span style="display:block;margin-top:6px;height:4px;border-radius:2px;background:var(--surface-sunken);overflow:hidden;"><span style="display:block;height:4px;border-radius:2px;background:var(--accent);width:{{ s.pct }};"></span></span>
+                </span>
+                <span style="flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">{{ s.ratio }}</span>
+              </div>
+            </sc-for>
+            <div style="margin-top:12px;font-size:13px;color:#A89B84;line-height:1.7;">Hugh is right, and the reason is grammatical: <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">EOC &middot; 2025 &middot; 4/123 extras</span> is a code, a date and <i>a ratio</i> on one line at <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--fg-faint</span>. The first two are provenance and the third is a <b style="color:#EDE6D8;font-weight:600;">count of the same kind as the figure 300px to its right</b> &mdash; so the row states two ratios in two registers, in two places, and the smaller one reads as noise beside a year.</div>
+          </div>
+        </div>
+
+        <div style="border:1px solid #6FA368;border-radius:12px;overflow:hidden;background:var(--bg);">
+          <div style="padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6FA368;">ruled &middot; second figure under the first, one type step down</span></div>
+          <div style="padding:14px 16px;">
+            <sc-for list="{{ idxAfter }}" as="s" hint-placeholder-count="4">
+              <div style="display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:10px;">
+                <span style="width:26px;height:26px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:8px;background:{{ s.iconBg }};border:{{ s.iconRing }};color:{{ s.iconCol }};">set</span>
+                <span style="min-width:0;flex:1;">
+                  <span style="display:flex;align-items:baseline;gap:8px;">
+                    <span style="font-size:14px;color:var(--fg-body);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ s.name }}</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.08em;color:var(--fg-faint);flex:none;">{{ s.code }} &middot; {{ s.year }}</span>
+                  </span>
+                  <sc-if value="{{ s.indexed }}" hint-placeholder-val="{{ true }}">
+                    <span style="display:block;margin-top:6px;height:4px;border-radius:2px;background:var(--surface-sunken);overflow:hidden;"><span style="display:block;height:4px;border-radius:2px;background:{{ s.barCol }};width:{{ s.pct }};"></span></span>
+                  </sc-if>
+                </span>
+                <span style="flex:none;text-align:right;">
+                  <span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:11px;color:{{ s.ratioCol }};">{{ s.ratio }}</span>
+                  <sc-if value="{{ s.hasExtras }}" hint-placeholder-val="{{ true }}">
+                    <span style="display:block;margin-top:2px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);">{{ s.extrasLine }}</span>
+                  </sc-if>
+                </span>
+              </div>
+            </sc-for>
+            <div style="margin-top:12px;font-size:13px;color:#A89B84;line-height:1.7;">Four rows, four cases: extras owned, <b style="color:#EDE6D8;font-weight:600;">extras present and none owned</b> (a figure, not a hidden row), <b style="color:#EDE6D8;font-weight:600;">complete with extras outstanding</b>, and not indexed. The set page already states the extras ratio <b style="color:#EDE6D8;font-weight:600;">one type step below the headline and never folded into it</b> &mdash; the index row now says it the same way, so one habit reads on both routes.</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="width:520px;flex:none;display:flex;flex-direction:column;gap:18px;">
+        <div style="border:1px solid #2A241D;border-radius:12px;background:#141118;padding:18px 20px;font-size:13px;color:#A89B84;line-height:1.75;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:10px;">The four rules in the move</div>
+          <b style="color:#EDE6D8;font-weight:600;">1 &middot; It takes <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--fg-muted</span>, not <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--fg-locked</span>.</b> It is a figure, so it is text and owes 4.5:1; <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--fg-locked</span> measures 3.16&ndash;3.44:1 and is only legitimate on the cell's rarity word, which is a redundant restatement of a filter. <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--fg-muted</span> floors at 6.53:1.<br><br><b style="color:#EDE6D8;font-weight:600;">2 &middot; So the base ratio brightens to <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--fg-body</span>.</b> With both figures at <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--fg-muted</span> the only ranking left is 1px of type size. One token up on the primary restores the step and raises the row's most important string at the same time. Complete rows keep <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--success</span> on the base ratio and <b style="color:#EDE6D8;font-weight:600;">leave the extras line muted</b> &mdash; a finished base run with 119 extras outstanding must not read as a finished set.<br><br><b style="color:#EDE6D8;font-weight:600;">3 &middot; Never <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">0 / 0 extras</span>.</b> The shipped <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">extrasTotal &gt; 0</span> condition moves with the line, and an unindexed row has no ratio so it has no second line either &mdash; the tag stands alone.<br><br><b style="color:#EDE6D8;font-weight:600;">4 &middot; The accessible name has to grow with it.</b> The row is one <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">&lt;Link&gt;</span> carrying an explicit <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">aria-label</span>, which <b style="color:#EDE6D8;font-weight:600;">replaces everything its descendants contribute</b> &mdash; so a second visible figure that is not in the label is invisible. Exactly the defect <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">set-cell.tsx</span> already fixed for its price tag and its two marks. One clause appended: <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">&hellip;and 4 of 123 extras</span>.</div>
+        </div>
+
+        <div style="border:1px solid #2A241D;border-radius:12px;background:#141118;padding:18px 20px;font-size:13px;color:#A89B84;line-height:1.75;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:10px;">Geometry, and the phone</div>
+          The figure column goes one line to two: 11px mono (15) + 2 + 10px mono (13) = <b style="color:#EDE6D8;font-weight:600;">30px against the name-and-bar block's 24</b>, so the desktop row grows 4px and the <b style="color:#EDE6D8;font-weight:600;">phone row does not move at all</b> &mdash; it is already pinned to its 44px target floor, with 14px spare. The code line loses ~74px, which is measure the set name gets back on the width where it truncates.<br><br><b style="color:#EDE6D8;font-weight:600;">Not drawn, because it is not on offer:</b> a third line, or the extras ratio getting its own completion bar. One set is one figure with one bar; the extras are a second count on the same subject, which is what one type step down means.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== §5 SIX THEMES ========== -->
+  <div id="themes">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">&sect;5 &middot; <span style="color:#CF8745;">the 174px pair in all six themes &mdash; the dim at 2.6&times; the area</span></div>
+    <p style="max-width:1060px;font-size:14px;line-height:1.7;color:#A89B84;margin:0 0 18px;"><b style="color:#EDE6D8;font-weight:600;">No token in this round changes</b>, so <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">DIM-missing.md</span>'s 3.15&ndash;3.42:1 step and its dashed <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">--fg-locked</span> edge carry unamended. The pair is redrawn anyway at the new phone size, because <b style="color:#EDE6D8;font-weight:600;">the one thing area changes is how much of the dimmed art the eye integrates</b> &mdash; and the answer is the argument for finding 2: at 108 a dark cell was a dark rectangle, at 174 it is a picture you can place. The dashed edge is the value worth re-checking by eye at this size, since it is the one carrier that does <i>not</i> scale with the plate. <b style="color:#EDE6D8;font-weight:600;">Each card below is a 390px phone at 358px of grid</b>, so the swatch is the ruled cell at its ruled width &mdash; 174px, from the same <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">minmax(146px, 1fr)</span> declaration &sect;1 ships.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,390px);justify-content:start;gap:18px;max-width:1400px;">
+      <sc-for list="{{ themes }}" as="t" hint-placeholder-count="6">
+        <div data-theme="{{ t.key }}" style="width:390px;border:1px solid #3A3229;border-radius:12px;overflow:hidden;">
+          <div style="padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-muted);">{{ t.name }}</span>
+            <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">step {{ t.step }}:1 &middot; edge {{ t.edgeRatio }}:1</span>
+          </div>
+          <div style="padding:16px;background:var(--bg);"><div style="width:358px;display:grid;grid-template-columns:repeat(auto-fill,minmax(146px,1fr));gap:20px 10px;">
+            <sc-for list="{{ t.cells }}" as="c" hint-placeholder-count="2">
+              <div style="min-width:0;">
+                <div style="position:relative;width:100%;aspect-ratio:63/88;border-radius:6px;overflow:hidden;background:var(--surface-sunken);border:1px {{ c.edge }} {{ c.edgeCol }};">
+                  <div style="position:absolute;inset:0;background:linear-gradient(155deg, color-mix(in srgb, {{ c.tok }} 34%, var(--surface-sunken)) 0%, color-mix(in srgb, {{ c.tok }} 10%, var(--surface-sunken)) 70%, var(--surface-sunken) 100%);opacity:{{ c.dim }};filter:saturate({{ c.sat }});"></div>
+                </div>
+                <div style="display:flex;align-items:baseline;gap:5px;margin-top:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:{{ c.numCol }};">{{ c.num }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">{{ c.rar }}</span></div>
+                <div style="font-size:12px;color:var(--fg-body);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.n }}</div>
+                <sc-if value="{{ c.missing }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top:5px;"><span style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;padding:2px 6px;border-radius:4px;color:{{ c.priceCol }};border:1px {{ c.priceEdgeStyle }} {{ c.priceEdge }};">{{ c.price }}</span></div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div></div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <!-- ========== §7 THE PHONE HEAD ========== -->
+  <div id="head">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">&sect;7 &middot; <span style="color:#CF8745;">finding 6 &mdash; the phone head, and the 44% it takes before a card is seen</span></div>
+
+    <div style="border:1px solid #3A3229;border-left:3px solid #CF8745;border-radius:12px;background:#161318;padding:16px 20px;margin-bottom:22px;max-width:1280px;">
+      <div style="font-size:13.5px;color:#A89B84;line-height:1.75;"><b style="color:#EDE6D8;font-weight:600;">The head is not too big; it is too resident &mdash; and it is resident in the literal sense.</b> The whole block is one <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">sticky top-0 z-[2]</span> container in <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">set-grid-view.tsx</span> with <b style="color:#EDE6D8;font-weight:600;">no width qualifier on the sticky</b>, so the screenshot is not the top of the page: <b style="color:#EDE6D8;font-weight:600;">it is every screen of the page.</b> All 325px follow the reader down all 399 cells. That reframes the finding &mdash; <b style="color:#EDE6D8;font-weight:600;">this is not &ldquo;add a collapse&rdquo;, it is &ldquo;the collapse the existing sticky head never got&rdquo;</b> &mdash; and it is why the head cannot simply be trimmed: every line in it is correct, and most are read <i>once</i>, but the sticky makes the page pay for all of them permanently. <b style="color:#EDE6D8;font-weight:600;">Three registers &mdash; identity, money, controls &mdash; and only the controls earn the whole scroll.</b></div>
+    </div>
+
+    <div style="border:1px solid #2A241D;border-radius:12px;background:#141118;padding:16px 20px;margin-bottom:22px;max-width:1280px;font-size:13px;color:#A89B84;line-height:1.7;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:10px;">Grounding &mdash; what the head actually is, since this finding arrived as a screenshot</div>
+      <b style="color:#EDE6D8;font-weight:600;">There is no <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">set-head.tsx</span>.</b> The head is written inline in <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">set-grid-view.tsx</span>, inside the same sticky container as the control row and the result line &mdash; the file &sect;2 already changes. In source order it is: <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">SetIcon</span>, which takes a size of 30 with a desktop size of 44; an <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">h1</span> at <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">text-[20px] md:text-[24px] line-clamp-2</span>; the ratio at <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">font-mono text-[11px] --fg-muted</span>; <b style="color:#EDE6D8;font-weight:600;">one interpolated provenance string</b>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">setPageCopy.head.meta(code, date, baseTotal, extrasTotal)</span> at <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">text-[10px] --fg-locked</span>, gated on <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">sections.indexed</span>; then <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">setPageCopy.head.ratioNote</span>, same size and token, <b style="color:#EDE6D8;font-weight:600;">ungated &mdash; the source comment calls it &ldquo;the one line that always stands&rdquo;</b>; then <b style="color:#EDE6D8;font-weight:600;">the <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">DeltaStrip</span></b>, which the screenshot does not show because it was not firing; then the cost strip; then the controls; then the result line. Two corrections to R3's first draft follow from this, and both are in the frames below: the shipped colours are <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--fg-locked</span> on both reference lines (not <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">--fg-faint</span>), and <b style="color:#EDE6D8;font-weight:600;">the head already has a variable-height member</b> &mdash; the delta strip &mdash; so &ldquo;fixed height&rdquo; is a promise this head has never kept.
+    </div>
+
+    <div style="display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap;">
+
+      <div style="width:390px;flex:none;">
+        <div style="border:1px solid #C6533F;border-radius:12px;overflow:hidden;background:var(--bg);">
+          <div style="padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#C6533F;">shipped &middot; 390px &middot; head 325px of 672px &mdash; and <span style="color:#EDE6D8;">sticky at every width</span></span></div>
+          <div style="position:relative;padding:16px;">
+            <div style="position:absolute;left:0;top:16px;width:6px;height:325px;background:#C6533F;border-radius:3px;"></div>
+            <div style="padding-left:12px;">
+              <div style="display:flex;align-items:flex-start;gap:12px;">
+                <span style="width:30px;height:30px;border-radius:50%;background:var(--elevated);flex:none;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--fg-muted);">set</span>
+                <span style="min-width:0;flex:1;">
+                  <span style="display:block;font-family:'Cinzel',serif;font-size:20px;font-weight:700;color:var(--fg);line-height:1.2;">The Hobbit</span>
+                  <span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);margin-top:4px;">162 / 208 &middot; 78%</span>
+                  <span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);margin-top:4px;line-height:1.5;">HOB &middot; released 2026-08-14 &middot; 208 in the base run &middot; 113 extras</span>
+                  <span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);margin-top:3px;">base run only &middot; extras counted apart</span>
+                </span>
+              </div>
+              <div style="margin-top:10px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;border-radius:10px;border:1px solid var(--border);background:var(--surface-sunken);padding:10px 12px;">
+                <span style="display:flex;min-width:0;flex-direction:column;">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.08em;color:var(--fg-faint);">Cost to complete</span>
+                  <span style="display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:19px;color:var(--accent);">$188.66</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">over 45 of the 46 missing</span></span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">1 has never been stocked and is not in this figure</span>
+                </span>
+                <span style="margin-left:auto;height:44px;display:inline-flex;align-items:center;padding:0 14px;border-radius:8px;background:var(--fg);color:var(--bg);font-size:13px;">Send 46 to ManaPool</span>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:10px;">
+                <span style="height:44px;display:inline-flex;align-items:center;padding:0 12px;border-radius:6px;font-size:13px;color:var(--fg-body);border:1px solid var(--border);">Filters</span>
+                <span style="height:44px;display:inline-flex;align-items:center;padding:0 12px;border-radius:6px;font-size:13px;color:var(--fg-muted);border:1px solid var(--border);">Missing</span>
+              </div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);margin-top:8px;">321 cells &middot; 171 yours, 150 missing &middot; <span style="color:var(--accent);">extras &darr;</span></div>
+              <div style="margin-top:8px;border-top:1px dashed #C6533F;padding-top:6px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#C6533F;line-height:1.5;">+ DeltaStrip, here, when it fires &mdash; the head already has a variable-height member</div>
+            </div>
+            <div style="margin-top:14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(105px,1fr));gap:14px 10px;">
+              <sc-for list="{{ headCells }}" as="c" hint-placeholder-count="3">
+                <div style="min-width:0;">
+                  <div style="position:relative;width:100%;aspect-ratio:63/88;border-radius:6px;overflow:hidden;background:var(--surface-sunken);border:1px {{ c.edge }} {{ c.edgeCol }};">
+                    <div style="position:absolute;inset:0;background:linear-gradient(155deg, color-mix(in srgb, {{ c.tok }} 34%, var(--surface-sunken)) 0%, color-mix(in srgb, {{ c.tok }} 10%, var(--surface-sunken)) 70%, var(--surface-sunken) 100%);opacity:{{ c.dim }};filter:saturate({{ c.sat }});"></div>
+                  </div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);margin-top:5px;">{{ c.num }}</div>
+                  <div style="font-size:11px;color:var(--fg-body);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.n }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="height:60px;background:var(--surface-rail);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-around;padding:0 8px;">
+            <sc-for list="{{ nav }}" as="t" hint-placeholder-count="5">
+              <span style="font-size:10px;color:{{ t.col }};">{{ t.label }}</span>
+            </sc-for>
+          </div>
+        </div>
+        <div style="margin-top:14px;border:1px solid #2A241D;border-radius:12px;background:#141118;padding:16px 18px;font-size:12.5px;color:#A89B84;line-height:1.7;"><b style="color:#EDE6D8;font-weight:600;">Nine facts and one button before a card.</b> Four of them &mdash; the release date, the base-run count, the extras count and the scope note &mdash; are read once in the life of a set and then re-rendered on every visit, above the fold, at full weight, <b style="color:#EDE6D8;font-weight:600;">and they do not scroll away.</b></div>
+      </div>
+
+      <div style="width:390px;flex:none;">
+        <div style="border:1px solid #6FA368;border-radius:12px;overflow:hidden;background:var(--bg);">
+          <div style="padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6FA368;">ruled &middot; at rest &middot; head 148px</span></div>
+          <div style="position:relative;padding:16px;">
+            <div style="position:absolute;left:0;top:16px;width:6px;height:148px;background:#6FA368;border-radius:3px;"></div>
+            <div style="padding-left:12px;">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span style="width:30px;height:30px;border-radius:50%;background:var(--elevated);flex:none;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--fg-muted);">set</span>
+                <span style="min-width:0;flex:1;font-family:'Cinzel',serif;font-size:21px;font-weight:700;color:var(--fg);line-height:1.1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">The Hobbit</span>
+                <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);letter-spacing:0.06em;">HOB &middot; 2026</span>
+              </div>
+              <div style="display:flex;align-items:baseline;gap:8px;margin-top:8px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--fg-body);">162 / 208 base &middot; 78%</span>
+                <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">0 / 113 extras</span>
+              </div>
+              <div style="margin-top:10px;display:flex;align-items:center;gap:10px;height:44px;border-radius:8px;border:1px solid var(--border);background:var(--surface-sunken);padding:0 12px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:var(--accent);">$188.66</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);">to finish &middot; 45 of 46</span>
+                <span style="margin-left:auto;font-size:11px;color:var(--fg-muted);">&#9662;</span>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:10px;">
+                <span style="height:44px;flex:1;min-width:132px;display:inline-flex;align-items:center;gap:8px;padding:0 12px;border-radius:8px;background:var(--surface-sunken);border:1px solid var(--border-strong);"><span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:var(--fg-faint);">&#8981;</span><span style="font-size:13px;color:var(--fg-faint);">Find a card</span></span>
+                <span style="height:44px;flex:none;display:inline-flex;align-items:center;padding:0 12px;border-radius:6px;font-size:13px;color:var(--fg-body);border:1px solid var(--border);">Filters</span>
+                <span style="height:44px;flex:none;display:inline-flex;align-items:center;padding:0 12px;border-radius:6px;font-size:13px;color:var(--fg-body);border:1px solid var(--border);">Missing</span>
+              </div>
+            </div>
+            <div style="margin-left:12px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);margin-top:10px;">321 cells &middot; 171 yours &middot; <span style="color:var(--accent);">extras &darr;</span></div>
+            <div style="margin-top:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(146px,1fr));gap:18px 10px;">
+              <sc-for list="{{ headCellsBig }}" as="c" hint-placeholder-count="4">
+                <div style="min-width:0;">
+                  <div style="position:relative;width:100%;aspect-ratio:63/88;border-radius:6px;overflow:hidden;background:var(--surface-sunken);border:1px {{ c.edge }} {{ c.edgeCol }};">
+                    <div style="position:absolute;inset:0;background:linear-gradient(155deg, color-mix(in srgb, {{ c.tok }} 34%, var(--surface-sunken)) 0%, color-mix(in srgb, {{ c.tok }} 10%, var(--surface-sunken)) 70%, var(--surface-sunken) 100%);opacity:{{ c.dim }};filter:saturate({{ c.sat }});"></div>
+                  </div>
+                  <div style="display:flex;align-items:baseline;gap:5px;margin-top:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);">{{ c.num }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">{{ c.rar }}</span></div>
+                  <div style="font-size:12px;color:var(--fg-body);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.n }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="height:60px;background:var(--surface-rail);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-around;padding:0 8px;">
+            <sc-for list="{{ nav }}" as="t" hint-placeholder-count="5">
+              <span style="font-size:10px;color:{{ t.col }};">{{ t.label }}</span>
+            </sc-for>
+          </div>
+        </div>
+        <div style="margin-top:14px;border:1px solid #2A241D;border-radius:12px;background:#141118;padding:16px 18px;font-size:12.5px;color:#A89B84;line-height:1.7;"><b style="color:#EDE6D8;font-weight:600;">Same nine facts, three of them folded into figures that were already stating them.</b> The grid starts at 148px instead of 325 &mdash; <b style="color:#EDE6D8;font-weight:600;">two full rows of 174px cells above the fold, against one</b> &mdash; and &sect;1's bigger cells stop being paid for entirely out of scroll.</div>
+      </div>
+
+      <div style="width:390px;flex:none;">
+        <div style="border:1px solid #6FA368;border-radius:12px;overflow:hidden;background:var(--bg);">
+          <div style="padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:#6FA368;">ruled &middot; scrolled &middot; the resident bar, 52px</span></div>
+          <div style="position:relative;">
+            <div style="position:relative;z-index:2;background:var(--surface);border-bottom:1px solid var(--border);box-shadow:0 6px 18px rgba(0,0,0,0.45);padding:0 16px;height:52px;display:flex;align-items:center;gap:10px;">
+              <span style="width:24px;height:24px;border-radius:50%;background:var(--elevated);flex:none;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:7px;color:var(--fg-muted);">set</span>
+              <span style="min-width:0;flex:1;overflow:hidden;">
+                <span style="display:block;font-size:13px;color:var(--fg);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">The Hobbit</span>
+                <span style="display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);">162 / 208 &middot; 78%</span>
+              </span>
+              <span style="flex:none;width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:15px;color:var(--fg-faint);border:1px solid var(--border);">&#8981;</span>
+              <span style="flex:none;height:40px;display:inline-flex;align-items:center;gap:6px;padding:0 11px;border-radius:8px;font-size:12.5px;color:var(--accent);border:1px solid var(--accent);">Filters<span style="min-width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;background:var(--accent);color:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:9px;">2</span></span>
+            </div>
+            <div style="padding:14px 16px 16px;">
+              <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(146px,1fr));gap:18px 10px;">
+                <sc-for list="{{ headCellsScrolled }}" as="c" hint-placeholder-count="6">
+                  <div style="min-width:0;">
+                    <div style="position:relative;width:100%;aspect-ratio:63/88;border-radius:6px;overflow:hidden;background:var(--surface-sunken);border:1px {{ c.edge }} {{ c.edgeCol }};">
+                      <div style="position:absolute;inset:0;background:linear-gradient(155deg, color-mix(in srgb, {{ c.tok }} 34%, var(--surface-sunken)) 0%, color-mix(in srgb, {{ c.tok }} 10%, var(--surface-sunken)) 70%, var(--surface-sunken) 100%);opacity:{{ c.dim }};filter:saturate({{ c.sat }});"></div>
+                    </div>
+                    <div style="display:flex;align-items:baseline;gap:5px;margin-top:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-muted);">{{ c.num }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">{{ c.rar }}</span></div>
+                    <div style="font-size:12px;color:var(--fg-body);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ c.n }}</div>
+                    <sc-if value="{{ c.missing }}" hint-placeholder-val="{{ false }}">
+                      <div style="margin-top:5px;"><span style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;padding:2px 6px;border-radius:4px;color:{{ c.priceCol }};border:1px {{ c.priceEdgeStyle }} {{ c.priceEdge }};">{{ c.price }}</span></div>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+          <div style="height:60px;background:var(--surface-rail);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-around;padding:0 8px;">
+            <sc-for list="{{ nav }}" as="t" hint-placeholder-count="5">
+              <span style="font-size:10px;color:{{ t.col }};">{{ t.label }}</span>
+            </sc-for>
+          </div>
+        </div>
+        <div style="margin-top:14px;border:1px solid #2A241D;border-radius:12px;background:#141118;padding:16px 18px;font-size:12.5px;color:#A89B84;line-height:1.7;"><b style="color:#EDE6D8;font-weight:600;">One bar, and it is the only thing that is truly resident.</b> Set, ratio, search and Filters &mdash; where you are, how far along, and the two ways to change what you are looking at. <b style="color:#EDE6D8;font-weight:600;">The money and the provenance are not on it</b>, because neither is a thing you act on mid-scroll; both are one flick up.</div>
+      </div>
+
+      <div style="width:560px;flex:none;display:flex;flex-direction:column;gap:18px;">
+        <div style="border:1px solid #2A241D;border-radius:12px;background:#141118;padding:18px 20px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:12px;">The budget &mdash; iPhone 14, 390&times;844, Safari</div>
+          <div style="overflow:hidden;border:1px solid #2A241D;border-radius:8px;">
+            <div style="display:grid;grid-template-columns:1fr 108px 108px 108px;background:#1A1620;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.08em;text-transform:uppercase;color:#8E8269;">
+              <div style="padding:9px 12px;"></div><div style="padding:9px 12px;">shipped</div><div style="padding:9px 12px;">rest</div><div style="padding:9px 12px;">scrolled</div>
+            </div>
+            <sc-for list="{{ budget }}" as="b" hint-placeholder-count="6">
+              <div style="display:grid;grid-template-columns:1fr 108px 108px 108px;border-top:1px solid #221D28;font-size:12px;color:#C6B79A;">
+                <div style="padding:9px 12px;">{{ b.k }}</div><div style="padding:9px 12px;font-family:'IBM Plex Mono',monospace;">{{ b.a }}</div><div style="padding:9px 12px;font-family:'IBM Plex Mono',monospace;color:#EDE6D8;">{{ b.b }}</div><div style="padding:9px 12px;font-family:'IBM Plex Mono',monospace;color:#EDE6D8;">{{ b.c }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="margin-top:14px;font-size:13px;color:#A89B84;line-height:1.75;">Chrome is <b style="color:#EDE6D8;font-weight:600;">172px you do not own</b> &mdash; Safari's bar plus the app's own nav rail &mdash; so the honest denominator is 672, not 844. Against it the shipped head is <b style="color:#EDE6D8;font-weight:600;">48%</b>, which is the screenshot's complaint stated as a fraction. <b style="color:#EDE6D8;font-weight:600;">At rest it becomes 22%, and past the first flick 8%.</b><br><br><b style="color:#EDE6D8;font-weight:600;">Read the &ldquo;scrolled&rdquo; column as the real number.</b> Because the head is sticky, the shipped 48% is not a first-screen cost that scrolls away &mdash; it is what every screen of a 399-cell page looks like. The comparison that matters is therefore <b style="color:#EDE6D8;font-weight:600;">325px against 52px, for as long as the reader is on the page</b>.</div>
+        </div>
+
+        <div style="border:1px solid #2A241D;border-radius:12px;background:#141118;padding:18px 20px;font-size:13px;color:#A89B84;line-height:1.75;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:10px;">Where the 177px went &mdash; four moves, no deletions</div>
+          <b style="color:#EDE6D8;font-weight:600;">1 &middot; The scope note is absorbed into the figure it explains. &minus;15px.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">head.ratioNote</span> &mdash; <i>base run only &middot; extras counted apart</i> &mdash; is a whole <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">&lt;p&gt;</span> that exists to tell you what the 208 counts, and it is the one line in the head that renders <b style="color:#EDE6D8;font-weight:600;">even when there is no ratio to annotate</b>. <b style="color:#EDE6D8;font-weight:600;">So put it in the 208:</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">162 / 208 base &middot; 78%</span>, with the extras ratio on that line's trailing edge. One word does what a caption did. <b style="color:#EDE6D8;font-weight:600;">The note keeps its own line at desktop</b> and keeps standing alone in the unindexed state, where the word <i>base</i> has nothing to ride on.<br><br><b style="color:#EDE6D8;font-weight:600;">2 &middot; Provenance drops to what identifies the set. &minus;15px.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">head.meta()</span> is <b style="color:#EDE6D8;font-weight:600;">one interpolated string of four values</b>, not four nodes, so this is a second phone-only form beside it &mdash; <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">head.metaShort(code, year)</span> &rarr; <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">HOB &middot; 2026</span>, riding the title line's trailing edge. <b style="color:#EDE6D8;font-weight:600;">The full string is unchanged at desktop</b>; the base-run and extras counts it carried are now the two figures in move 1, which is the only reason dropping them costs nothing.<br><br><b style="color:#EDE6D8;font-weight:600;">3 &middot; The cost card becomes a cost line. &minus;137px.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">CostStrip</span> is a wrapping flex row whose label, figure, denominator, <b style="color:#EDE6D8;font-weight:600;">up to four caveat lines</b> (<span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">unpriced</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">noFigure</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">soldOut</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">stale</span>) and 44px button stack to ~137px on a phone &mdash; and the worst case is worse than the screenshot, which is firing only one caveat. It becomes <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">$188.66 &nbsp;to finish &middot; 45 of 46 &nbsp;&#9662;</span> in one 44px row, <b style="color:#EDE6D8;font-weight:600;">expanding in place on tap</b> to the caveats and <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">Send 46 to ManaPool</span>. The figure is a glance; the purchase is a decision, and a decision can afford a tap. <b style="color:#EDE6D8;font-weight:600;">The caveat count is exactly why the line cannot just be truncated:</b> a strip whose height depends on how many pricing facts are true is a sticky head with an unpredictable height, which is the same defect as the ghost Clear in <a href="#clear">&sect;2</a>.<br><br><b style="color:#EDE6D8;font-weight:600;">4 &middot; The result line loses its redundant half. &minus;10px.</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">result.rest(shown, yours, missing)</span> restates a subtraction the ratio above already made. <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">321 cells &middot; 171 yours &middot; extras &darr;</span> keeps the jump and the count &mdash; and the <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">role="status"</span> live region it sits in is unchanged, because it is the thing that announces a filter change.</div>
+
+        <div style="border:1px solid #DEAA29;border-left:3px solid #DEAA29;border-radius:12px;background:#161318;padding:18px 20px;font-size:13px;color:#A89B84;line-height:1.75;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#DEAA29;margin-bottom:10px;">The collapse, and the four things it must not do</div>
+          The container is <b style="color:#EDE6D8;font-weight:600;">already <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">sticky top-0 z-[2]</span></b>, so nothing about the mechanism is new &mdash; what is new is that it has two heights. It collapses <b style="color:#EDE6D8;font-weight:600;">once, at a threshold, never continuously</b>: a head that interpolates with scroll offset is always moving under a reader's thumb. <b style="color:#EDE6D8;font-weight:600;">Threshold at 120px down, restoring at 40px</b>, an 80px hysteresis band so a thumb resting mid-gesture cannot flutter it.<br><br><b style="color:#EDE6D8;font-weight:600;">Must not reflow the grid.</b> Sticky already overlays, so <a href="#grid">&sect;1</a>'s track count is untouched at every scroll position &mdash; but the <i>document</i> flow above the grid does change height on collapse, and that is the thing to hold: reserve the rest height, or the page jumps by 96px the first time it crosses the threshold.<br><br><b style="color:#EDE6D8;font-weight:600;">Must not take the filter state with it.</b> The chip line goes; <b style="color:#EDE6D8;font-weight:600;">the badge on <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">Filters</span> carries it</b>, which is the count <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">filtersOn</span> already computes &mdash; and is why <a href="#clear">&sect;2</a>'s rest line matters here: at zero filters there is no badge and nothing to carry.<br><br><b style="color:#EDE6D8;font-weight:600;">Must not animate the title's size.</b> The <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">h1</span> is <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">font-display text-[20px] line-clamp-2</span>, so a long name is already two lines &mdash; interpolating that to 13px is the one thing here that would look cheap, and on a two-line title it reflows mid-scroll. Cross-fade the block, 140ms, <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">prefers-reduced-motion</span> swaps instantly.<br><br><b style="color:#EDE6D8;font-weight:600;">Must not change the desktop head.</b> It is the same sticky container and it keeps its full form: the head is ~14% of a 900px viewport, the <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">md:</span> sizes (24px title, 44px icon, 32px controls) are unchanged, and <b style="color:#EDE6D8;font-weight:600;">all four content moves are phone-only forms beside the shipped strings</b>, never replacements of them.<br><br><b style="color:#EDE6D8;font-weight:600;">Must not collapse the delta strip's message away.</b> It renders inside this container, keyed to remount on a change; if it is firing when the threshold crosses, <b style="color:#EDE6D8;font-weight:600;">the collapse waits</b> &mdash; it is the one member of the head that is news rather than reference.</div>
+
+        <div style="border:1px solid #2A241D;border-radius:12px;background:#141118;padding:18px 20px;font-size:13px;color:#A89B84;line-height:1.75;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:10px;">Two things I did not do, and why</div>
+          <b style="color:#EDE6D8;font-weight:600;">I did not hide the head behind a scroll-up gesture.</b> Reveal-on-scroll-up is the usual answer and it costs the thing this page is for: you scroll <i>up</i> constantly on a 399-cell grid to re-check a number you passed, and a head that springs down over the cells each time is worse than one that is simply small.<br><br><b style="color:#EDE6D8;font-weight:600;">I did not move the cost strip below the grid.</b> It is the page's one commercial moment and the reason the missing cells are dimmed at all. A line that states the figure and expands on tap keeps it above the fold at <b style="color:#EDE6D8;font-weight:600;">a sixth of the height</b> &mdash; cheaper than moving it somewhere nobody scrolls to.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== §6 CONTRACT ========== -->
+  <div id="contract">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #CF8745;padding-top:18px;">&sect;6 &middot; <span style="color:#CF8745;">what changes, file by file</span></div>
+    <div style="max-width:1180px;border:1px solid #2A241D;border-radius:12px;overflow:hidden;">
+      <div style="display:grid;grid-template-columns:330px 1fr;background:#1A1620;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.08em;text-transform:uppercase;color:#8E8269;">
+        <div style="padding:10px 14px;">file</div><div style="padding:10px 14px;">change</div>
+      </div>
+      <sc-for list="{{ contract }}" as="c" hint-placeholder-count="8">
+        <div style="display:grid;grid-template-columns:330px 1fr;border-top:1px solid #221D28;background:#141118;">
+          <div style="padding:12px 14px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#EDE6D8;">{{ c.f }}</div>
+          <div style="padding:12px 14px;font-size:13px;color:#A89B84;line-height:1.7;">{{ c.c }}</div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="max-width:1180px;margin-top:20px;border:1px solid #3A3229;border-left:3px solid #DEAA29;border-radius:12px;background:#161318;padding:18px 20px;font-size:13px;color:#A89B84;line-height:1.75;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#DEAA29;margin-bottom:10px;">Severability, and the one sequencing constraint</div>
+      <b style="color:#EDE6D8;font-weight:600;">&sect;2 is now one PR, not four.</b> The pips, the rarity trigger, the chip line and the three-row bar are one conformance change on one component, and splitting them leaves the page in a state that is neither the old vocabulary nor the new one. <b style="color:#EDE6D8;font-weight:600;">Finding 4 lands in that PR or after it, never before</b> &mdash; the search is the chassis's field slot, and adding a field to today's row puts it beside a <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">GhostButton</span> at 358px with no width to give it. <b style="color:#EDE6D8;font-weight:600;">Findings 1+2 and 5 are independent of both</b>, one file each. Nothing here touches the sticky head's contents, the cost strip, the delta strip, the modal, or any token.<br><br><b style="color:#EDE6D8;font-weight:600;">The dependency worth naming:</b> &sect;2 mounts <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">filter-panel.tsx</span> and the chassis's pip component. If the chassis package lands first, this page adopts both and the PR shrinks to a chip line and a trigger. <b style="color:#EDE6D8;font-weight:600;">If this page lands first it must not fork either</b> &mdash; a forked pip is how six themes of measurement get re-derived by hand, and a forked panel is the component the chassis's own flagged decision is about.</div>
+  </div>
+
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1480,&quot;height&quot;:1000},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;,&quot;phyrexia&quot;,&quot;kaldheim&quot;,&quot;ixalan&quot;,&quot;eldraine&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Palette&quot;},&quot;showRejected&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Depth&quot;}}">
+const TOK = ["var(--w)","var(--u)","var(--b)","var(--r)","var(--g)"];
+const OWNED = { owned:true, missing:false, edge:"solid", edgeCol:"var(--border)", dim:"1", sat:"1" };
+const MISS  = { owned:false, missing:true, edge:"dashed", edgeCol:"var(--fg-locked)", dim:".28", sat:".55" };
+const RAR = { C:"\u00b7 common", U:"\u00b7 uncommon", R:"\u00b7 rare", M:"\u00b7 mythic" };
+
+function pad(n){ return String(n).padStart(3,"0"); }
+
+// Same cell factory as the shipped canvas, so the two files draw one cell.
+function cell(n, num, ti, o){
+  o = o || {};
+  const c = Object.assign({ n, num: pad(num), tok: TOK[ti % 5], rar: RAR[o.rar || "C"], foil: !!o.foil }, o.own ? OWNED : MISS);
+  c.numCol = "var(--fg-muted)";
+  if (o.own) { c.price = ""; c.priceCol = "transparent"; c.priceEdge = "transparent"; c.priceEdgeStyle = "solid"; }
+  else if (o.unstocked) { c.price = "no stock"; c.priceCol = "var(--fg-locked)"; c.priceEdge = "var(--fg-locked)"; c.priceEdgeStyle = "dashed"; }
+  else { c.price = "$" + o.p; c.priceCol = "var(--accent)"; c.priceEdge = "var(--accent-dim)"; c.priceEdgeStyle = "solid"; }
+  return c;
+}
+
+const NAMES = ["Faller's Faithful","Singularity Rupture","Void Pilgrim","Hollow Sun Ascetic","Starfall Reliquary","Drifting Habitat","Quantum Shepherd","Rimeforge Gunner"];
+
+// The mana symbols are ARTWORK, not palette: svgs.scryfall.io/card-symbols/*.svg drawn as
+// images per the chassis's decision 7. W and the WU blue half are quoted verbatim in that
+// brief; B, R and G are the canonical pip colours and must be confirmed on first fetch.
+// This is the one place in the package where a colour is a literal rather than a token,
+// and it is deliberate — a single-colour mask would flatten every hybrid.
+const SYMBOLS = [
+  { sym:"W", bg:"#F8F6D8", ink:"#17130E" },
+  { sym:"U", bg:"#C1D7E9", ink:"#0F1620" },
+  { sym:"B", bg:"#CBC2BF", ink:"#131010" },
+  { sym:"R", bg:"#F9AA8F", ink:"#1E0D07" },
+  { sym:"G", bg:"#9BD3AE", ink:"#0C1710" },
+];
+
+class Component extends DCLogic {
+  renderVals(){
+    const theme = this.props.theme ?? "amonkhet";
+    const showRejected = this.props.showRejected ?? true;
+
+    const spec = [
+      { own:true,  rar:"C", p:"1.20" },
+      { own:false, rar:"U", p:"0.90" },
+      { own:false, rar:"R", p:"4.10" },
+      { own:true,  rar:"C", p:"0.35" },
+      { own:false, rar:"M", p:"28.60" },
+      { own:false, rar:"C", p:"0.25" },
+      { own:true,  rar:"U", p:"1.80" },
+      { own:false, rar:"R", unstocked:true },
+    ];
+    const deskCells = spec.map((o,i) => cell(NAMES[i], i+1, i, o));
+    // Seven, because at F = 146 a 1100px grid holds seven tracks.
+    const deskAfter = spec.slice(0,7).map((o,i) => {
+      const c = cell(NAMES[i], i+1, i, o);
+      if (i === 0) c.foil = true;
+      return c;
+    });
+    const phoneBefore = spec.slice(0,6).map((o,i) => cell(NAMES[i], i+1, i, o));
+    const phoneAfter = [
+      cell("Faller's Faithful", 1, 0, { own:true, rar:"C", foil:true }),
+      cell("Singularity Rupture", 2, 1, { rar:"U", p:"0.90" }),
+      cell("Void Pilgrim", 3, 2, { rar:"R", p:"4.10" }),
+      cell("Hollow Sun Ascetic", 4, 3, { own:true, rar:"C" }),
+    ];
+
+    // n = floor((W + 10) / 156); cell = (W - 10(n-1)) / n. One constant, no breakpoint.
+    const deskRange = [
+      { shell:"390",  grid:"358",  tracks:"2",  cell:"174.0px", art:"243px", scale:"1.19\u00d7" },
+      { shell:"768",  grid:"736",  tracks:"4",  cell:"176.5px", art:"246px", scale:"1.21\u00d7" },
+      { shell:"1024", grid:"944",  tracks:"6",  cell:"149.0px", art:"208px", scale:"1.02\u00d7" },
+      { shell:"1180", grid:"1100", tracks:"7",  cell:"148.6px", art:"208px", scale:"1.02\u00d7" },
+      { shell:"1280", grid:"1200", tracks:"7",  cell:"162.9px", art:"228px", scale:"1.12\u00d7" },
+      { shell:"1440", grid:"1360", tracks:"8",  cell:"161.3px", art:"225px", scale:"1.10\u00d7" },
+    ];
+
+    const bill = [
+      { k:"Desktop cell (1180)", a:"116 \u00d7 162", b:"148.6 \u00d7 208" },
+      { k:"Desktop columns", a:"8, ragged", b:"7, flush" },
+      { k:"Desktop name measure", a:"~20 chars", b:"~26 chars" },
+      { k:"Phone cell (390)", a:"108 \u00d7 151", b:"174 \u00d7 243" },
+      { k:"Phone columns", a:"3", b:"2" },
+      { k:"Desktop page (399 cells)", a:"\u224810,300px", b:"\u224816,500px" },
+      { k:"Phone page (399 cells)", a:"\u224829,000px", b:"\u224864,000px" },
+      { k:"Phone, missing-only at 62%", a:"72 rows", b:"107 rows" },
+    ];
+
+    // Shipped: a token square at opacity .34 when unlit — 1.38:1 at its worst.
+    const pipsShipped = TOK.map((t,i) => ({ tok:t, op: i===1 || i===3 ? "1" : ".34" }));
+    // Ruled: the symbol at full strength always; lit adds a 2px --accent ring.
+    const pips = SYMBOLS.map((s,i) => Object.assign({}, s, {
+      ring: i===1 || i===3 ? "0 0 0 2px var(--accent)" : "none",
+    }));
+    const pipsRest = SYMBOLS.map(s => Object.assign({}, s));
+
+    const chips = [
+      { label:"2 colours" },
+      { label:"Uncommon" },
+      { label:"Missing only" },
+    ];
+
+    // Panel rows and sheet chips are one list: same values, same counts, two targets.
+    const rarityRows = [
+      { label:"Common",   n:"101", on:false },
+      { label:"Uncommon", n:"80",  on:false },
+      { label:"Rare",     n:"60",  on:false },
+      { label:"Mythic",   n:"20",  on:false },
+    ].map(r => Object.assign({}, r, {
+      markBg:   r.on ? "var(--accent)" : "transparent",
+      markEdge: r.on ? "var(--accent)" : "var(--border-strong)",
+      chipCol:  r.on ? "var(--accent)" : "var(--fg-body)",
+      chipEdge: r.on ? "var(--accent)" : "var(--border)",
+    }));
+
+    const idxBefore = [
+      { name:"Edge of Eternities Commander", code:"EOC", year:"2025", extras:"4/123", ratio:"62 / 276 \u00b7 22%", pct:"22%" },
+      { name:"Tarkir: Dragonstorm", code:"TDM", year:"2025", extras:"11/98", ratio:"140 / 271 \u00b7 52%", pct:"52%" },
+      { name:"Duskmourn: House of Horror", code:"DSK", year:"2024", extras:"18/123", ratio:"276 / 276 \u00b7 100%", pct:"100%" },
+    ];
+    const idxAfter = [
+      { name:"Edge of Eternities Commander", code:"EOC", year:"2025", ratio:"62 / 276 \u00b7 22%", ratioCol:"var(--fg-body)", pct:"22%", barCol:"var(--accent)", indexed:true, hasExtras:true, extrasLine:"4 / 123 extras", iconBg:"var(--elevated)", iconRing:"none", iconCol:"var(--fg-muted)" },
+      { name:"Tarkir: Dragonstorm", code:"TDM", year:"2025", ratio:"140 / 271 \u00b7 52%", ratioCol:"var(--fg-body)", pct:"52%", barCol:"var(--accent)", indexed:true, hasExtras:true, extrasLine:"0 / 98 extras", iconBg:"var(--elevated)", iconRing:"none", iconCol:"var(--fg-muted)" },
+      { name:"Duskmourn: House of Horror", code:"DSK", year:"2024", ratio:"276 / 276 \u00b7 100%", ratioCol:"var(--success)", pct:"100%", barCol:"var(--success)", indexed:true, hasExtras:true, extrasLine:"18 / 123 extras", iconBg:"transparent", iconRing:"1.5px solid var(--success)", iconCol:"var(--success)" },
+      { name:"Marvel's Spider-Man", code:"SPM", year:"2026", ratio:"not indexed yet", ratioCol:"var(--fg-locked)", pct:"0%", barCol:"var(--accent)", indexed:false, hasExtras:false, extrasLine:"", iconBg:"var(--elevated)", iconRing:"none", iconCol:"var(--fg-muted)" },
+    ];
+
+    const THEMES = [
+      { key:"amonkhet", name:"Low Sun",       step:"3.22", edgeRatio:"3.22" },
+      { key:"kamigawa", name:"Neon Rain",     step:"3.30", edgeRatio:"3.19" },
+      { key:"phyrexia", name:"Oil Haze",      step:"3.42", edgeRatio:"3.16" },
+      { key:"kaldheim", name:"First Frost",   step:"3.15", edgeRatio:"3.32" },
+      { key:"ixalan",   name:"Canopy",        step:"3.25", edgeRatio:"3.44" },
+      { key:"eldraine", name:"Witching Hour", step:"3.35", edgeRatio:"3.31" },
+    ];
+    const themes = THEMES.map(t => Object.assign({}, t, {
+      cells: [
+        cell("Faller's Faithful", 1, 0, { own:true, rar:"C" }),
+        cell("Void Pilgrim", 3, 2, { rar:"R", p:"4.10" }),
+      ],
+    }));
+
+    // §7 — the shipped phone head redrawn from the screenshot, at its own 105px cells.
+    const headCells = [
+      cell("Belladonna Took", 4, 3, { own:true, rar:"C" }),
+      cell("Bilbo's Gambit", 5, 0, { rar:"U", p:"1.56" }),
+      cell("Bofur, Reliable Guard", 6, 1, { rar:"R", p:"0.15" }),
+    ];
+    const headCellsBig = [
+      cell("Belladonna Took", 4, 3, { own:true, rar:"C" }),
+      cell("Bilbo's Gambit", 5, 0, { rar:"U", p:"1.56" }),
+      cell("Bofur, Reliable Guard", 6, 1, { rar:"R", p:"0.15" }),
+      cell("Celebrate the Mountain-king", 7, 2, { own:true, rar:"C" }),
+    ];
+    const headCellsScrolled = [
+      cell("D\u00e1in, Lord of the Iron Hills", 8, 4, { own:true, rar:"R" }),
+      cell("Dwarven Provisioner", 9, 3, { own:true, rar:"C" }),
+      cell("Dwarven Shortsword", 10, 0, { rar:"C", p:"0.12" }),
+      cell("Eagle of the Great Shelf", 11, 1, { own:true, rar:"C" }),
+      cell("The Eagles Are Coming!", 12, 2, { rar:"U", p:"0.45" }),
+      cell("Elrond's Counsel", 13, 4, { own:true, rar:"U" }),
+    ];
+    const nav = ["Home","Collection","Commanders","Discover","Decks"].map(label => ({
+      label, col: label === "Collection" ? "var(--fg)" : "var(--fg-faint)",
+    }));
+
+    // 844 viewport − 112 Safari chrome − 60 app nav = 672 of content. The shipped head is
+    // `sticky top-0` with no width qualifier, so its 325px is resident at every scroll
+    // position, not merely above the fold.
+    const budget = [
+      { k:"Head (resident, sticky)", a:"325px", b:"148px", c:"52px" },
+      { k:"\u2026 as % of content", a:"48%", b:"22%", c:"8%" },
+      { k:"Grid above the fold", a:"347px", b:"524px", c:"620px" },
+      { k:"Rows of 174px cells seen", a:"1.0", b:"2.0", c:"2.4" },
+      { k:"Cells seen", a:"2", b:"4", c:"6" },
+      { k:"Facts stated in the head", a:"9", b:"9", c:"2" },
+    ];
+
+    const contract = [
+      { f:"components/sets/set-grid-view.tsx", c:"Section's wrapping flex row becomes grid-template-columns: repeat(auto-fill, minmax(146px, 1fr)) \u2014 auto-fill, never auto-fit, and one value for every width. The control row becomes field \u00b7 pips \u00b7 Rarity trigger \u00b7 Missing only; the four rarity letter buttons and the GhostButton Clear both come out; a chip line goes between the row and the result line." },
+      { f:"components/sets/set-cell.tsx", c:"Every width and height literal comes out: the button is w-full, the plate is w-full with aspect-ratio 63/88. The rarity span loses hidden md:inline. Owned/missing still differ only in border style and art opacity \u2014 now unarguably, since neither carries a size." },
+      { f:"components/collection/color-pip.tsx (or the chassis's replacement)", c:"The token square at opacity .34\u2013.40 becomes the Scryfall symbol drawn as an image, 22px desktop / 44px phone, full strength always, lit by a 2px --accent ring. No tint, no mask, no opacity. If the chassis package has landed, mount its component rather than editing this one." },
+      { f:"components/ui/filter-panel.tsx", c:"Mounted, not forked, for Rarity: 280px anchored panel, 44px rows, rotated-diamond marker, per-row counts from the one filtered computation, footer n of 4 on + Clear rarity, searchable={false}. The phone equivalent is a 44px chip group in the existing sheet, ordered after the pips." },
+      { f:"lib/sets/filters.ts", c:"SetGridFilters gains name: string; applyFilters folds it in (fold diacritics, lowercase, substring, either half of a // name); parseFilters and serialiseFilters carry q, and an empty query serialises as an absence. The panel's per-row counts read the same function \u2014 four readings, one computation." },
+      { f:"components/sets/set-index-view.tsx", c:"The extras clause leaves the code line for a second line under the ratio at --fg-muted, the base ratio goes --fg-body (--success when complete), and ratioAria gains the extras clause. The extrasTotal > 0 guard travels with it." },
+      { f:"lib/copy/set-collections.ts", c:"setFilterCopy: none, clearAll, chip labels and their remove aria, the field's placeholder and set-named aria label. rarity.all and rarity.value() stop being dead code \u2014 they are the trigger's label. setPageCopy: the search-zero branch. setsIndexCopy: row.extrasLine, row.extrasAria." },
+      { f:"components/sets/set-grid-view.tsx (the head, phone only)", c:"There is no set-head.tsx \u2014 the head is inline in the same sticky top-0 container as \u00a72's control row, so this is the same file. head.ratioNote folds into the ratio as the word 'base' (keeping its own line at desktop and in the unindexed state); head.meta() gains a phone-only metaShort(code, year) beside it; CostStrip gains a collapsed one-line phone form that expands in place. Then the container takes two heights \u2014 collapsing at 120px of scroll, restoring at 40 \u2014 with the rest height reserved so the document does not jump, a cross-fade rather than an interpolation, the desktop form unchanged, and the collapse deferred while the delta strip is firing." },
+      { f:"components/sets/cost-strip.tsx", c:"A collapsed phone form: figure + short denominator + a disclosure, with the label, the up-to-four caveat lines (unpriced, noFigure, soldOut, stale) and the Send button behind one tap. The four caveats are why truncation is not enough \u2014 a strip whose height depends on how many pricing facts are true is an unpredictable sticky head." },
+      { f:"DENSITY-four-hundred-cells.md", c:"Its density table is superseded by \u00a71 of this addendum. Its three arguments for what pays for the scroll all stand and are now doing more work; the name search joins them as a fourth." },
+    ];
+
+    return { theme, showRejected, deskCells, deskAfter, phoneBefore, phoneAfter, deskRange, bill, pipsShipped, pips, pipsRest, chips, rarityRows, idxBefore, idxAfter, themes, contract, headCells, headCellsBig, headCellsScrolled, nav, budget };
+  }
+}
+
+</script>
+</body>
+</html>

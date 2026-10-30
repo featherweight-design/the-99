@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Metamorphous&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="kaldheim"] {
+    --bg:#121217; --surface:#1E1F26; --surface-sunken:#16171D; --surface-rail:#18191F; --elevated:#2D2E35;
+    --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E;
+    --accent:#5C86C9; --accent-hover:#6C95D8; --success:#6FA368; --warning:#E0913C; --danger:#C6533F;
+  }
+  [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-sunken:#18140F; --surface-rail:#1A1611; --elevated:#29241F;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654;
+    --accent:#CF8745; --accent-hover:#DE9757; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-sunken:#101219; --surface-rail:#12141B; --elevated:#20222A;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --warning:#E0913C; --danger:#C6533F;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+
+<div data-theme="{{ theme }}" style="font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--fg);padding:44px 40px 90px;display:flex;flex-direction:column;gap:72px;width:max-content;">
+
+  <div style="max-width:1340px;display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:center;gap:13px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">ROUND · R1</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--fg-faint);">Shopping for all decks · /decks/shopping</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">brief 2026-10-11 · four rulings and eight locks closed · for audit</span>
+    </div>
+    <h1 style="font-family:'Metamorphous',serif;font-weight:400;font-size:34px;margin:0;line-height:1.15;color:var(--fg);max-width:1100px;">One cart for every deck that’s short: a line per card, the decks beside it, one total, one link.</h1>
+    <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-body);max-width:1000px;text-wrap:pretty;">The cart is its own page, opened from one line under the Decks header and from each tile’s <b style="color:var(--fg);">N to buy · $X</b>. By default it reads by card, because that’s the question at a shop. By deck is one switch away. Selections sit beside the total, so the total is the sum of the selections. The figures come from Hugh’s staging fixture: 7 decks, 307 copies, $843.99. Card prices are illustrative, but the per-deck figures match the roll-up and the tile to the cent.</p>
+    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:6px;">
+      <sc-for list="{{ calls }}" as="c" hint-placeholder-count="4">
+        <div style="border:1px solid var(--border);border-radius:10px;padding:13px 15px;background:var(--surface);display:flex;flex-direction:column;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ c.k }}</span><span style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">{{ c.v }}</span></div>
+      </sc-for>
+    </div>
+  </div>
+
+  <section id="C0" style="display:flex;flex-direction:column;gap:22px;max-width:1340px;">
+    <div style="display:flex;align-items:baseline;gap:12px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">§C0</span>
+      <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px;color:var(--fg);">Design’s calls on the eight open questions</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;">
+      <sc-for list="{{ answers }}" as="a" hint-placeholder-count="8">
+        <div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px;background:var(--surface-rail);display:flex;flex-direction:column;gap:7px;">
+          <div style="display:flex;align-items:baseline;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);">Q{{ a.n }}</span><span style="font-size:13.5px;font-weight:600;color:var(--fg);">{{ a.q }}</span></div>
+          <span style="font-size:12.5px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">{{ a.a }}</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ a.where }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <sc-for list="{{ sections }}" as="sec" hint-placeholder-count="14">
+    <section id="{{ sec.id }}" style="display:flex;flex-direction:column;gap:26px;">
+      <div style="display:flex;flex-direction:column;gap:8px;max-width:1340px;">
+        <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">§{{ sec.id }}</span>
+          <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px;color:var(--fg);">{{ sec.title }}</h2>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">STATES {{ sec.id }} · scene {{ sec.scene }}</span>
+        </div>
+        <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-body);max-width:1000px;text-wrap:pretty;">{{ sec.note }}</p>
+      </div>
+      <div style="display:flex;gap:40px;align-items:flex-start;">
+        <div style="border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;flex:none;">
+          <dc-import name="All Decks Cart" scene="{{ sec.scene }}" theme="{{ theme }}" hint-size="900px,900px"></dc-import>
+        </div>
+        <div style="border:1px solid var(--border-strong);border-radius:22px;overflow:hidden;flex:none;">
+          <dc-import name="All Decks Cart" scene="{{ sec.scene }}" phone="{{ true }}" theme="{{ theme }}" hint-size="390px,1300px"></dc-import>
+        </div>
+      </div>
+    </section>
+  </sc-for>
+
+  <section id="AB" style="display:flex;flex-direction:column;gap:22px;">
+    <div style="display:flex;flex-direction:column;gap:8px;max-width:1340px;">
+      <div style="display:flex;align-items:baseline;gap:12px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">§AB</span>
+        <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px;color:var(--fg);">The About entry</h2>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">§G per-entry template · new entry</span>
+      </div>
+      <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-body);max-width:1000px;text-wrap:pretty;">A new entry in chapter 01, right after <i>What the cards you’re missing cost</i>, since that’s the per-deck figure this one adds up. It’s drawn on the per-entry template, then shown at 760 and 390. It ships with the cart in the same round, with <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;">ABOUT_VERSION</code> going from 14 to 15 and <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;">since: 15</code>. If the Help me choose read lands first and takes 15, the bump batches. Copy is in <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;">about · all decks cart.ts</code>.</p>
+    </div>
+    <div style="display:flex;gap:40px;align-items:flex-start;">
+      <div style="width:560px;flex:none;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:18px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:12.5px;line-height:1.55;color:var(--fg-body);">
+          <sc-for list="{{ slots }}" as="sl" hint-placeholder-count="11">
+            <div style="{{ sl.cell }}">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);margin-bottom:6px;">{{ sl.label }}</div>
+              <div style="white-space:pre-line;text-wrap:pretty;">{{ sl.text }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <sc-for list="{{ aboutViews }}" as="v" hint-placeholder-count="2">
+        <div data-screen-label="{{ v.screen }}" style="{{ v.frame }}">
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">01 · Your Collection</span>
+            <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">
+              <h3 style="{{ v.h3 }}">Shopping for all your decks</h3>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);">/decks/shopping</span>
+            </div>
+            <sc-for list="{{ captionParas }}" as="cp" hint-placeholder-count="2"><p style="{{ v.para }}">{{ cp }}</p></sc-for>
+            <div style="border:1px solid var(--border);border-radius:11px;background:var(--surface-rail);padding:10px 14px;display:flex;gap:12px;align-items:flex-start;">
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;">
+                <span style="font-size:14px;color:var(--fg);">Sol Ring</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">3 · Gishath, Kratos, Thorin</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">you own 17 · all 17 in other decks</span>
+              </div>
+              <span style="flex:none;margin-top:3px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--warning);border-radius:4px;padding:1px 5px;background:color-mix(in oklab, var(--warning) 13%, transparent);white-space:nowrap;">buy<span style="color:var(--border-strong);padding:0 3px;">·</span><span style="color:var(--fg-body);">$3.87</span></span>
+            </div>
+            <ol style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px;">
+              <sc-for list="{{ keyLines }}" as="k" hint-placeholder-count="4">
+                <li style="display:flex;gap:10px;font-size:13px;line-height:1.55;color:var(--fg-body);"><span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--accent);padding-top:2px;">{{ k.n }}</span><span style="text-wrap:pretty;">{{ k.t }}</span></li>
+              </sc-for>
+            </ol>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;kaldheim&quot;,&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;kaldheim&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const theme = this.props.theme ?? "kaldheim";
+    const calls = [
+      { k: "where it lives", v: "It’s a route, /decks/shopping, opened from one line under the Decks header that reads 307 to buy · $843.99 · 7 decks. A 291-line list needs a page of its own. A sheet would bury it, and a block would push the decks down." },
+      { k: "the line", v: "Each line has the card, then Hugh’s form, 3 · Gishath, Kratos, Thorin, then the buy tag with the line’s total. Deck names wrap and are never truncated. Five decks just make a longer line." },
+      { k: "selections and the total", v: "On desktop the selections are a column and the checkout sits under them. On a phone they’re a fold above the list, with the checkout docked below it. The total is the sum of the selected decks’ roll-up figures, so a deck’s figure here always matches its tile." },
+      { k: "owned, held elsewhere", v: "One faint mono fact under the decks line: you own 17 · all 17 in other decks. There’s no verdict word, no warning colour and no icon. The line is still a buy line, because the deck still needs a copy." },
+    ];
+    const answers = [
+      { n: 1, q: "Does the cart remember deselected decks?", a: "This visit only, as engineering prefers. The list is in view state. Coming back from Mana Pool keeps it (same visit), and leaving /decks/shopping resets it to all selected. That means the entry line and the cart always agree when the cart opens. If Hugh wants it kept across visits, the shape is the sort’s useStoredView, keyed by deck id, with new decks starting selected.", where: "§A3 · §A4" },
+      { n: 2, q: "By card or by deck?", a: "Both, with a two-segment switch. By card is the default: one line per card, commanders first, then most decks, then A to Z. By deck groups use Consider’s shelf header. They’re folded except the deck you came from, and the checkbox sits in each header. The switch is view state and resets with the selections.", where: "§A2 · §A5" },
+      { n: 3, q: "How a line says you own it", a: "you own 17 · all 17 in other decks, in --fg-faint mono, only on lines for a card you own. It states the two counts and stops there. It never says short, conflict or held up. The buy tag stays the shipped one, because the copy still has to be bought.", where: "§A2 · §S1" },
+      { n: 4, q: "Bought on a multi-deck line", a: "One confirm, with the stepper preset to the line’s count. At 3 of 3 the decks are just listed. Below that, the list becomes the Card Assignments chooser, so the player picks which decks get the copies (S1b). It says once that where the copies go is read again after they’re added (lock 7). The held slot shows in the cart only. Each deck’s own list reads the roll-up fresh next time it loads, so nothing is drawn there.", where: "§S1 · §S3" },
+      { n: 5, q: "A line bought part-way", a: "The line stays, its count drops to what the roll-up now says (1 · Thorin), and a faint 2 added this visit sits under it. A line that clears becomes the shipped held slot (Sol Ring · in your collection) until the visit ends. The total and copies always come from the read, never from subtraction.", where: "§S3 · §S4" },
+      { n: 6, q: "If the link won’t carry the cart", a: "Not drawn. There’s one link and one label, Buy these at Mana Pool. Until Hugh answers, an over-limit cart is engineering’s refusal. The note under the link says how many lines it sends.", where: "§K1" },
+      { n: 7, q: "A deck short only its commander", a: "Yes, it can be selected and gets a group like any other deck. In by card it’s one commander line, first in the list. A one-line deck is still a deck the player might want to leave out.", where: "§E2" },
+      { n: 8, q: "Does the tile link into the cart?", a: "Yes. The tile’s N to buy · $X becomes a second link, raised over the cover link as the notice mark is (F19). It goes to /decks/shopping?deck=<id>, opens By deck with that deck unfolded, and keeps every deck selected. Arriving from a tile doesn’t deselect the others.", where: "§A1 · §A5" },
+    ];
+    const sections = [
+      { id: "A1", scene: "entry", title: "On /decks: the entry line and the tile link", note: "The one new line sits under the header and above the shelves. It shows the roll-up total that /decks has never drawn (shopping.total) and the deck count. It’s absent when no deck has a roll-up row (E4), never a zeroed row. The page is drawn as shipped: header, shelves, the filter chassis, and the tiles. The only change to a tile is its N to buy · $X, which becomes a link into the cart with that deck unfolded (Q8). The dotted underline marks it here, and the build uses the notice mark’s raised second link. Mutant Menace shows why the entry line is still needed: while a draft is open, its detail slot shows 94 changes since v1, which outranks the to-buy figure, so that tile has no link. Tile art is a placeholder." },
+      { id: "A2", scene: "all", title: "All seven selected, by card", note: "307 copies · $843.99 from 7 decks, matching the roll-up. On desktop the selections are a column with the checkout under them, and the list fills the rest. On a phone the selections fold above the list. The list scrolls in its own 460px box with a fade at the foot, so the checkout and its link stay right under it instead of 291 lines down. In the build the dock is also sticky to the viewport. Commanders come first, then the cards several decks need, three decks before two, then the 273 single-deck lines. Sol Ring is the fourth of the three-deck lines (A to Z) and carries the ownership fact. ShoppingKey’s buy item sits over the list, as on a deck’s Shopping list." },
+      { id: "A3", scene: "some", title: "Omnath and Mutant Menace deselected", note: "5 of 7: 197 copies · $466.52, which is $843.99 less $270.48 and $106.99. A deselected deck stays in the column with an empty box, its name in --fg-muted and its figure in --fg-locked. It isn’t struck through or hidden. Lines re-read: Command Tower becomes 2 · Gishath, Thorin, Fabled Passage becomes 1 · Gishath, and Omnath’s commander leaves the list. Select all comes back as the way back. On a phone the fold is open here, and its head reads 5 of 7 selected when closed. Nothing is written to either deck (lock 8)." },
+      { id: "A4", scene: "none", title: "None selected", note: "The list area becomes one dashed block with Select all 7 decks. The checkout drops its figure, provenance and link, and says Select a deck to build a cart. The selections column stays as it is, so the way back is where the player left it." },
+      { id: "A5", scene: "byDeck", title: "By deck, arriving from the Gishath tile", note: "Seven shelf headers, the largest first, each with its checkbox and the tile’s own figure (75 · $118.59). Gishath is unfolded because the tile sent the player here. Each row is that deck’s copy, priced through its own printing pick, with also Kratos, Thorin where other selected decks need the card too. The total and the link are the same as by card, because the switch changes the view and not the cart." },
+      { id: "S1", scene: "confirm", title: "Sol Ring: the Bought press", note: "Pressing buy on Sol Ring opens GotItConfirm, extended. The tag holds its open wash. The confirm adds one block, For 3 decks on this cart, listing each deck with needs 1, and repeats the ownership fact. The stepper is preset to 3, and its line says the cart needs 3, one for each deck. One sentence says where the copies go is read again once they’re added. Printing, finish, Cancel and Add are as shipped." },
+      { id: "S1b", scene: "confirmTwo", title: "Sol Ring: buying fewer copies than decks need", note: "Three decks need one, but the player bought two. When the stepper drops below the number of decks on the line, the deck list turns into the shipped Card Assignments chooser (ContestedCardRow). It's square-marked because more than one copy can be given, and its heading is Give the 2 copies to · 2 of 2 given. Unpicked, the marks are neutral and show the default: the decks that listed the card first get it. Here the player tapped Thorin, so Thorin is in --accent, Kratos flips to buys it, and the footer sentence and Back to first listed appear, as the assignments handoff requires. Add writes the purchase plus one card_assignments row per picked deck. Gishath, Kratos and Thorin are all brews, and assignments today refuse a brew, so this needs that refusal lifted (gap G11). If Hugh keeps the refusal, brew options draw inert, the default order stands, and the shipped draftNoteMany sentence says why." },
+      { id: "S2", scene: "buying", title: "Sol Ring: being bought", note: "The write is in flight. The tag reads buy · adding… in the figure slot at 0.75, as BuyTag’s pending state does today, and the confirm has closed. The row doesn’t move or dim. The total doesn’t change until the read comes back." },
+      { id: "S3", scene: "bought", title: "Sol Ring: bought, all three covered", note: "The roll-up was read again, and none of the three decks bills Sol Ring now. The line becomes the shipped held slot, Sol Ring · in your collection, with 3 added beside it, and it stays until the visit ends. The receipt is I got it’s toast. Its body names the decks the read says are covered. Totals come from the read: 304 copies · $840.12, 290 lines. Undo is the shipped revert." },
+      { id: "S4", scene: "partial", title: "Sol Ring: two bought, one still needed", note: "This follows S1b. The player added 2 and gave them to Gishath and Thorin. The read agrees, so the line stays at 1 · Kratos with 2 added this visit, and the ownership fact moves to 19. The receipt names the decks the read covered and says as you picked. With no pick, the default order decides and the line names whichever deck it left short. The figures always come from the read, never from the pick." },
+      { id: "K1", scene: "ret", title: "Checkout, and back from Mana Pool", note: "The checkout is the PriceStrip column: figure, copies and decks, provenance, then the one link, with a line under it saying what the link sends: 291 lines, names and quantities, printings chosen on Mana Pool. Coming back to the tab after pressing the link shows one band over the list that points to the buy tags. It can be dismissed and doesn’t come back that visit. Nothing is marked bought for the player." },
+      { id: "T1", scene: "sold", title: "A sold-out line", note: "Star of Extinction’s printings are sold out for both decks. The tag reads sold out in the figure slot, and the figure line gains the strip’s clause, · 305 of 307 priced. The total adds only what is priced. The deck figures beside the selections are the roll-up’s, as the tile shows them." },
+      { id: "T2", scene: "priceFail", title: "The price read failed", note: "The PriceStrip draws nothing when the read fails, but the cart can’t lose its link. So the checkout keeps the copies line and the link, drops the figure, and puts prices couldn’t be read just now in the provenance slot, in --fg-locked. That isn’t a warning, because the player can’t fix it. Tags are bare buy, and deck figures are copies only." },
+      { id: "E1", scene: "one", title: "Thin: one deck missing cards", note: "Hypothetical: only Counter Intelligence is short. The cart still opens with one deck selected and no Select all, and the switch is hidden, because by card and by deck would be the same list. The sub-line says 1 of 21 decks." },
+      { id: "E2", scene: "cmdrOnly", title: "Thin: a deck short only its commander", note: "Hypothetical: Omnath with its other 66 bought, beside Counter Intelligence. It gets a checkbox and a figure like any other deck (Q7), and its one line leads the list as a commander." },
+      { id: "E3", scene: "empty", title: "Empty: no deck is missing a card", note: "Reached only by a direct visit or a stale link, because /decks shows no entry line in this state (E4). The message is centred in the page body, with one way back and no zeroed total or link." },
+      { id: "E4", scene: "entryNone", title: "/decks when nothing needs buying", note: "No roll-up rows means no Shopping for all decks line. It isn't zeroed and it isn't a dimmed placeholder. The header sits on the shelves exactly as it does today. The line comes back when any deck needs a card." },
+    ];
+    const captionParas = [
+      "Several decks short of cards? Shopping for all decks puts everything they’re missing on one list, with one total and one link to Mana Pool.",
+      "Each line names the decks that need the card. Deselect a deck to leave it out of this visit’s cart. Nothing in the deck changes.",
+    ];
+    const keyLines = [
+      { n: 1, t: "Every deck that’s missing cards starts selected, brews included. Finished decks aren’t listed." },
+      { n: 2, t: "Each deck gets its own copy. If three decks need Sol Ring, the cart buys three and names all three decks." },
+      { n: 3, t: "A card you own can still be on the list when your other decks are using every copy. The line says how many you own." },
+      { n: 4, t: "When you’re back from Mana Pool, press buy on what you got, and it goes into your collection." },
+    ];
+    const full = { gridColumn: "1 / -1" };
+    const slots = [
+      { label: "Title", text: "Shopping for all your decks", cell: {} },
+      { label: "Route", text: "/decks/shopping", cell: {} },
+      { label: "Chapter", text: "01 · Your Collection, after “What the cards you’re missing cost”", cell: {} },
+      { label: "opens", text: "opens the cart", cell: {} },
+      { label: "Caption", text: captionParas.join("\n\n"), cell: full },
+      { label: "Specimen", text: "One cart line (CartLine) in its listed state: the card, the decks line, the ownership fact, the buy tag. It mounts read-only, with no press.", cell: full },
+      { label: "Fixture props", text: "fixtures.cart · Sol Ring · decks [Gishath, Kratos, Thorin] · owned 17, held 17 · line $3.87 (3 × $1.29).", cell: full },
+      { label: "Key lines · 4 of 4", text: keyLines.map((k) => `${k.n}. ${k.t}`).join("\n"), cell: full },
+      { label: "Phone reduction", text: "The line keeps its order: name, decks, owned, then the tag top-right. The decks line wraps and is never truncated.", cell: full },
+      { label: "since / switch", text: "since 15 · switch ALL_DECKS_CART_ENABLED (new, gap G3)", cell: {} },
+      { label: "Strings from", text: "copy/all-decks-cart.ts · copy/i-got-it.ts · copy/price.ts", cell: {} },
+    ];
+    const view = (phone) => ({
+      screen: `About · Shopping for all decks · ${phone ? 390 : 760}`,
+      frame: { width: phone ? 390 : 760, flex: "none", background: "var(--bg)", color: "var(--fg)", border: "1px solid var(--border-strong)", borderRadius: 12, padding: phone ? "18px 16px 22px" : "22px 24px 26px" },
+      h3: { margin: 0, fontFamily: "'Metamorphous',serif", fontWeight: 400, fontSize: phone ? 19 : 22, color: "var(--fg)" },
+      para: { margin: 0, fontSize: phone ? 14 : 14.5, lineHeight: 1.65, color: "var(--fg-body)", textWrap: "pretty" },
+    });
+    return { theme, calls, answers, sections, captionParas, keyLines, slots, aboutViews: [view(false), view(true)] };
+  }
+}
+</script>
+</body>
+</html>

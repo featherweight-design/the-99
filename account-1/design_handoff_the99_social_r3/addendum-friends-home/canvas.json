@@ -1,0 +1,181 @@
+{
+  "v": 3,
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-10-16T23:49:49Z"
+  },
+  "title": "The 99 - Friends on Home R1",
+  "launch": {
+    "view": "canvas",
+    "page": "boards"
+  },
+  "pages": [
+    {
+      "id": "boards",
+      "name": "Boards"
+    },
+    {
+      "id": "parts",
+      "name": "Parts"
+    }
+  ],
+  "boards": {
+    "Main.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1280,
+      "h": 1760,
+      "title": "Main · the calls, locks and gaps (R2b, approved)",
+      "page": "boards"
+    },
+    "Home-Desktop.dc.html": {
+      "x": 1360,
+      "y": 0,
+      "w": 2720,
+      "h": 2060,
+      "title": "Home at 1280 · H1–H4 (R2)",
+      "page": "boards"
+    },
+    "Home-Phone.dc.html": {
+      "x": 4160,
+      "y": 0,
+      "w": 1840,
+      "h": 2260,
+      "title": "Home at 390 · P1–P4 (R2b)",
+      "page": "boards"
+    },
+    "Checklist-Desktop.dc.html": {
+      "x": 0,
+      "y": 2380,
+      "w": 4080,
+      "h": 960,
+      "title": "First-run checklist at 1280 · C1–C3",
+      "page": "boards"
+    },
+    "Checklist-Phone.dc.html": {
+      "x": 4160,
+      "y": 2380,
+      "w": 1380,
+      "h": 1220,
+      "title": "First-run checklist at 390 · CP1–CP3",
+      "page": "boards"
+    },
+    "Themes-Home-Desktop.dc.html": {
+      "x": 0,
+      "y": 3720,
+      "w": 1780,
+      "h": 2840,
+      "title": "Six themes · Home section at 1280 (R2)",
+      "page": "boards"
+    },
+    "Themes-Home-Phone.dc.html": {
+      "x": 1860,
+      "y": 3720,
+      "w": 1920,
+      "h": 3460,
+      "title": "Six themes · Home section at 390 (R2)",
+      "page": "boards"
+    },
+    "Themes-Checklist-Desktop.dc.html": {
+      "x": 3860,
+      "y": 3720,
+      "w": 1300,
+      "h": 2640,
+      "title": "Six themes · checklist row at 1280",
+      "page": "boards"
+    },
+    "Themes-Checklist-Phone.dc.html": {
+      "x": 5240,
+      "y": 3720,
+      "w": 1500,
+      "h": 1500,
+      "title": "Six themes · checklist row at 390",
+      "page": "boards"
+    },
+    "Friends.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 356,
+      "h": 420,
+      "title": "Part · Friends section",
+      "page": "parts"
+    },
+    "ChecklistRow.dc.html": {
+      "x": 436,
+      "y": 0,
+      "w": 1162,
+      "h": 160,
+      "title": "Part · checklist row",
+      "page": "parts"
+    },
+    "Rail.dc.html": {
+      "x": 1678,
+      "y": 0,
+      "w": 62,
+      "h": 900,
+      "title": "Part · rail",
+      "page": "parts"
+    },
+    "PhoneChrome.dc.html": {
+      "x": 1820,
+      "y": 0,
+      "w": 390,
+      "h": 79,
+      "title": "Part · phone header and tab bar",
+      "page": "parts"
+    },
+    "HomeDesk.dc.html": {
+      "x": 0,
+      "y": 1020,
+      "w": 1280,
+      "h": 900,
+      "title": "Part · Home at 1280",
+      "page": "parts"
+    },
+    "HomePhone.dc.html": {
+      "x": 1360,
+      "y": 1020,
+      "w": 390,
+      "h": 2060,
+      "title": "Part · Home at 390",
+      "page": "parts"
+    },
+    "FirstRunDesk.dc.html": {
+      "x": 1830,
+      "y": 1020,
+      "w": 1280,
+      "h": 800,
+      "title": "Part · first run at 1280",
+      "page": "parts"
+    },
+    "FirstRunPhone.dc.html": {
+      "x": 3190,
+      "y": 1020,
+      "w": 390,
+      "h": 1010,
+      "title": "Part · first run at 390",
+      "page": "parts"
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Home-Desktop.dc.html",
+    "Home-Phone.dc.html",
+    "Checklist-Desktop.dc.html",
+    "Checklist-Phone.dc.html",
+    "Themes-Home-Desktop.dc.html",
+    "Themes-Home-Phone.dc.html",
+    "Themes-Checklist-Desktop.dc.html",
+    "Themes-Checklist-Phone.dc.html",
+    "Friends.dc.html",
+    "ChecklistRow.dc.html",
+    "Rail.dc.html",
+    "PhoneChrome.dc.html",
+    "HomeDesk.dc.html",
+    "HomePhone.dc.html",
+    "FirstRunDesk.dc.html",
+    "FirstRunPhone.dc.html"
+  ],
+  "notes": {},
+  "designSystems": []
+}

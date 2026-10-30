@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Precon add results</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C}
+.cap{font-size:12.5px;line-height:1.5;color:#95A4A6}
+.dk{width:1300px;height:820px;flex:none;display:flex;background:#121217;border:1px solid #2E3340;border-radius:12px;overflow:hidden;position:relative;box-sizing:border-box}
+.rail{width:72px;flex:none;background:#16171D;border-right:1px solid #2E3340;display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:6px;box-sizing:border-box}
+.logo{width:36px;height:36px;border-radius:9px;border:1px solid #5C86C9;color:#5C86C9;display:flex;align-items:center;justify-content:center;font:700 14px 'Metamorphous',serif;margin-bottom:10px}
+.slot{width:48px;height:46px;border-radius:10px;display:flex;align-items:center;justify-content:center;font:500 8.5px 'IBM Plex Mono',monospace;letter-spacing:.04em;color:#95A4A6;text-decoration:none}
+.slot.cur{background:#1E1F26;color:#C6D2D3}
+.main{flex:1;min-width:0;display:flex;flex-direction:column;position:relative}
+.strip{display:flex;align-items:center;gap:12px;padding:12px 28px;background:#181920;border-bottom:1px solid #2E3340;font-size:13.5px;color:#B3C0C2}
+.strip b{color:#C6D2D3;font-weight:600}
+.ok{color:#6FA368;font-weight:700}
+.x{width:32px;height:32px;border:0;background:transparent;color:#7C8A8C;font-size:16px;border-radius:8px}
+.hd{display:flex;align-items:flex-end;justify-content:space-between;padding:26px 28px 0}
+.kick{margin:0 0 7px;font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.18em;text-transform:uppercase;color:#7C8A8C}
+.h1{margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:27px;color:#C6D2D3}
+.sec{padding:22px 28px 0;display:flex;flex-direction:column;gap:12px}
+.sh{font-family:'Metamorphous',serif;font-size:17px;color:#C6D2D3}
+.hero{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.hc{display:flex;gap:14px;padding:14px;background:#1E1F26;border:1px solid #2E3340;border-radius:12px}
+.art{width:120px;height:88px;border-radius:8px;background:#23252E;flex:none}
+.sk{height:10px;border-radius:4px;background:#2A2C35}
+.bp{height:34px;padding:0 14px;border-radius:8px;background:#C6D2D3;color:#121217;border:0;font:600 12.5px 'IBM Plex Sans',sans-serif}
+.bg{height:34px;padding:0 13px;border-radius:8px;background:transparent;color:#C6D2D3;border:1px solid #424755;font:400 12.5px 'IBM Plex Sans',sans-serif}
+.zero{padding:18px;border:1px dashed #424755;border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:14px}
+.toast{position:absolute;left:50%;transform:translateX(-50%);width:420px;display:flex;align-items:center;gap:14px;padding:4px 6px 4px 16px;background:#2A2B33;border:1px solid #424755;border-radius:10px;box-shadow:0 12px 40px rgba(0,0,0,.5);box-sizing:border-box}
+.toast .tt{flex:1;padding:8px 0;font-size:13.5px;line-height:1.4;color:#C6D2D3}
+.ta{height:36px;padding:0 12px;border:0;border-radius:8px;background:transparent;color:#C6D2D3;font:600 13px 'IBM Plex Sans',sans-serif}
+.wrap{width:900px;margin:0 auto;display:flex;flex-direction:column;flex:1;min-height:0}
+.h1p{margin:10px 0 6px;font-family:'Metamorphous',serif;font-weight:400;font-size:26px;color:#C6D2D3}
+.yr{display:flex;justify-content:space-between;padding:14px 0 6px;border-bottom:1px solid #2E3340;font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;color:#7C8A8C}
+.rl{display:flex;align-items:center;gap:14px;min-height:52px;padding:0 10px;border-bottom:1px solid #1F2129}
+.rl.on{background:#171922}
+.cb{width:20px;height:20px;flex:none;border-radius:5px;border:1.5px solid #424755;box-sizing:border-box;display:flex;align-items:center;justify-content:center;color:#121217;font:700 13px 'IBM Plex Sans',sans-serif}
+.on .cb{background:#5C86C9;border-color:#5C86C9}
+.nm{font-size:14px;font-weight:600;color:#C6D2D3;flex:1;display:flex;flex-direction:column;gap:2px}
+.mt{font:11px 'IBM Plex Mono',monospace;color:#7C8A8C;font-weight:400}
+.tag{font:10.5px 'IBM Plex Mono',monospace;color:#6FA368}
+.cnt{font:12px 'IBM Plex Mono',monospace;color:#95A4A6;width:80px;text-align:right}
+.foot{height:68px;flex:none;border-top:1px solid #2E3340;background:#16171D;display:flex;align-items:center}
+.fw{width:900px;margin:0 auto;display:flex;align-items:center;gap:12px}
+.fl{flex:1;font-size:13.5px;color:#B3C0C2}
+.bpl{height:40px;padding:0 18px;border-radius:8px;background:#C6D2D3;color:#121217;border:0;font:600 13.5px 'IBM Plex Sans',sans-serif}
+.bgl{height:40px;padding:0 16px;border-radius:8px;background:transparent;color:#C6D2D3;border:1px solid #424755;font:400 13.5px 'IBM Plex Sans',sans-serif}
+.ph{width:390px;height:844px;flex:none;background:#121217;border:1px solid #2E3340;border-radius:28px;overflow:hidden;display:flex;flex-direction:column;position:relative;box-sizing:border-box}
+.mh{height:52px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid #2E3340}
+.tabs{height:74px;flex:none;border-top:1px solid #2E3340;background:#16171D;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-items:center;font:500 10px 'IBM Plex Sans',sans-serif;color:#95A4A6;text-align:center}
+.tabs.lkd{height:88px;position:relative;align-items:end;padding-bottom:16px;box-sizing:border-box}
+.pr{display:flex;align-items:center;gap:12px;min-height:56px;padding:0 16px;border-bottom:1px solid #1F2129}
+.pr.on{background:#171922}
+</style>
+</helmet>
+<div style="width:2760px;box-sizing:border-box;padding:40px 56px 56px;background:#0E0E12;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:22px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span class="k">Precon add · done, refused, part-failed · both widths · R1</span>
+    <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px">Done lands on Home with a receipt strip; a refusal is the shared toast over the standing pick</h2>
+    <p class="cap" style="margin:0;max-width:1700px">S5 goes to Home, where the dashboard replaces first run because cards exist, and the nav unlocks with no transition (first-run D7). The receipt is the deck arrival strip’s anatomy. S6 and S7 never leave the pick, and never draw an inline error: the shared ToastFrame (centre placement, role alert) carries the refusal, and the rows carry what landed.</p>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(2,1300px);gap:40px 48px">
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">S5 · done · Home, nav unlocked, receipt</span>
+      <div class="dk">
+        <nav class="rail" aria-label="Main"><span class="logo" aria-hidden="true">99</span><a class="slot cur" href="#" aria-current="page">HOME</a><a class="slot" href="#">COLL</a><a class="slot" href="#">CMDRS</a><a class="slot" href="#">DISC</a><a class="slot" href="#">DECKS</a></nav>
+        <main class="main">
+          <div class="strip" role="status"><span class="ok" aria-hidden="true">✓</span><span style="flex:1"><b>3 precons added to your collection:</b> Abzan Armor, Sultai Arisen and Temur Roar. 300 cards and 31 tokens. <a href="#">History</a></span><button class="x" type="button" aria-label="Dismiss">✕</button></div>
+          <div class="hd"><div><p class="kick">300 cards · read just now</p><h1 class="h1">Welcome back</h1></div><div style="display:flex;gap:8px"><button class="bg" type="button">Update collection</button><button class="bp" type="button">New deck</button></div></div>
+          <div class="sec"><span class="sh">Ready to build</span>
+            <div class="hero">
+              <div class="hc"><span class="art" aria-hidden="true"></span><div style="flex:1;display:flex;flex-direction:column;gap:9px;padding-top:4px"><span class="sk" style="width:60%;height:14px"></span><span class="sk" style="width:40%"></span><span class="sk" style="width:70%"></span></div></div>
+              <div class="hc"><span class="art" aria-hidden="true"></span><div style="flex:1;display:flex;flex-direction:column;gap:9px;padding-top:4px"><span class="sk" style="width:55%;height:14px"></span><span class="sk" style="width:45%"></span><span class="sk" style="width:65%"></span></div></div>
+            </div>
+          </div>
+          <div class="sec"><span class="sh">No decks yet</span>
+            <div class="zero"><span style="font-size:13.5px;color:#B3C0C2">Your 300 cards can already lead a few decks. Pick a commander, or bring in a list you play.</span><span style="display:flex;gap:8px"><button class="bp" type="button">Pick a commander</button><button class="bg" type="button">Import a deck</button></span></div>
+          </div>
+        </main>
+      </div>
+      <span class="cap" style="max-width:1300px">Strip: --surface-rail band, ✓ in --success, dismiss ✕, gone on the next visit (deck arrival strip, #158). It names up to three boxes; four or more read “Abzan Armor, Sultai Arisen and 4 others”. History opens the collection’s History, where each box is its own precon entry with Revert. The dashboard below is scaffolding: the shipped dashboard with its shipped “No decks yet” section (first-run R2 6a).</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">S6 · refused · nothing added · the pick standing</span>
+      <div class="dk">
+        <nav class="rail" aria-label="Main"><span class="logo" aria-hidden="true">99</span><a class="slot" href="#">HOME</a><a class="slot" href="#">COLL</a><span class="slot" style="color:#5F6875">CMDRS</span><span class="slot" style="color:#5F6875">DISC</span><span class="slot" style="color:#5F6875">DECKS</span></nav>
+        <main class="main">
+          <div class="wrap">
+            <a href="#" style="font-size:12.5px;color:#95A4A6;text-decoration:none;margin-top:22px">‹ Home</a>
+            <h1 class="h1p">Precons I own</h1>
+            <div class="yr"><span>2025</span><span>18 decklists</span></div>
+            <label class="rl"><span class="cb"></span><span class="nm">Revival Trance<span class="mt">FIC · Jun 2025</span></span><span class="cnt">100 cards</span></label>
+            <label class="rl"><span class="cb"></span><span class="nm">Counter Blitz<span class="mt">FIC · Jun 2025</span></span><span class="cnt">100 cards</span></label>
+            <label class="rl on"><span class="cb">✓</span><span class="nm">Abzan Armor<span class="mt">TDC · Apr 2025</span></span><span class="cnt">100 cards</span></label>
+            <label class="rl"><span class="cb"></span><span class="nm">Jeskai Striker<span class="mt">TDC · Apr 2025</span></span><span class="cnt">100 cards</span></label>
+            <label class="rl"><span class="cb"></span><span class="nm">Mardu Surge<span class="mt">TDC · Apr 2025</span></span><span class="cnt">100 cards</span></label>
+            <label class="rl on"><span class="cb">✓</span><span class="nm">Sultai Arisen<span class="mt">TDC · Apr 2025</span></span><span class="cnt">100 cards</span></label>
+            <label class="rl on"><span class="cb">✓</span><span class="nm">Temur Roar<span class="mt">TDC · Apr 2025</span></span><span class="cnt">100 cards</span></label>
+          </div>
+          <div class="toast" role="alert" style="bottom:92px"><span class="tt">We couldn’t add those. Your collection is unchanged.</span><button class="ta" type="button">Try again</button></div>
+          <div class="foot"><div class="fw"><span class="fl">3 boxes · 300 cards and 31 tokens</span><button class="bgl" type="button">Cancel</button><button class="bpl" type="button">Add 3 boxes · 300 cards</button></div></div>
+        </main>
+      </div>
+      <span class="cap" style="max-width:1300px">Every box refused (notFound or failed on the first): the ticks stay, the rail stays locked, focus returns to the add button. The toast is the shipped addFailed sentence and holds on hover and focus; Try again is the same press as the foot’s button. Thrown with no answer: the shipped addUnsure, “Couldn’t confirm the cards were added. Try again and they won’t be added twice.”</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">S7 · part-failed · two landed, one did not</span>
+      <div class="dk">
+        <nav class="rail" aria-label="Main"><span class="logo" aria-hidden="true">99</span><a class="slot" href="#">HOME</a><a class="slot" href="#">COLL</a><a class="slot" href="#">CMDRS</a><a class="slot" href="#">DISC</a><a class="slot" href="#">DECKS</a></nav>
+        <main class="main">
+          <div class="wrap">
+            <a href="#" style="font-size:12.5px;color:#95A4A6;text-decoration:none;margin-top:22px">‹ Home</a>
+            <h1 class="h1p">Precons I own</h1>
+            <div class="yr"><span>2025</span><span>18 decklists</span></div>
+            <label class="rl"><span class="cb"></span><span class="nm">Revival Trance<span class="mt">FIC · Jun 2025</span></span><span class="cnt">100 cards</span></label>
+            <label class="rl"><span class="cb"></span><span class="nm">Counter Blitz<span class="mt">FIC · Jun 2025</span></span><span class="cnt">100 cards</span></label>
+            <label class="rl"><span class="cb"></span><span class="nm">Abzan Armor<span class="mt">TDC · Apr 2025</span></span><span class="tag">✓ added just now</span><span class="cnt">100 cards</span></label>
+            <label class="rl"><span class="cb"></span><span class="nm">Jeskai Striker<span class="mt">TDC · Apr 2025</span></span><span class="cnt">100 cards</span></label>
+            <label class="rl"><span class="cb"></span><span class="nm">Mardu Surge<span class="mt">TDC · Apr 2025</span></span><span class="cnt">100 cards</span></label>
+            <label class="rl"><span class="cb"></span><span class="nm">Sultai Arisen<span class="mt">TDC · Apr 2025</span></span><span class="tag">✓ added just now</span><span class="cnt">100 cards</span></label>
+            <label class="rl on"><span class="cb">✓</span><span class="nm">Temur Roar<span class="mt">TDC · Apr 2025</span></span><span class="cnt">100 cards</span></label>
+          </div>
+          <div class="toast" role="alert" style="bottom:92px;width:460px"><span class="tt">Added Abzan Armor and Sultai Arisen. We couldn’t add Temur Roar.</span><button class="ta" type="button">Try again</button></div>
+          <div class="foot"><div class="fw"><span class="fl">1 box · 100 cards and 10 tokens</span><button class="bgl" type="button">Done</button><button class="bpl" type="button">Add 1 box · 100 cards</button></div></div>
+        </main>
+      </div>
+      <span class="cap" style="max-width:1300px">The landed boxes untick and carry a --success “added just now”, so a retry cannot stack them by accident; only the failed box stays ticked. The rail unlocks the moment any box lands, since cards now exist. Nothing is retried silently: Try again re-sends the one box with its own idempotency id. Cancel becomes Done, which goes to Home with S5’s strip naming the two that landed.</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">S5 · S6 · S7 · phone 390</span>
+      <div style="display:flex;gap:40px">
+        <section class="ph" aria-label="S5 phone">
+          <div class="mh"><span style="font:700 12px 'Metamorphous',serif;color:#5C86C9">99</span></div>
+          <div class="strip" role="status" style="padding:10px 12px 10px 16px;align-items:flex-start;font-size:13px"><span class="ok" aria-hidden="true">✓</span><span style="flex:1;line-height:1.45"><b>3 precons added</b> · 300 cards · <a href="#">History</a></span><button class="x" type="button" aria-label="Dismiss" style="width:44px;height:44px;margin:-12px -8px -12px 0">✕</button></div>
+          <div style="padding:18px 16px;display:flex;flex-direction:column;gap:6px"><p class="kick" style="margin:0">300 cards · read just now</p><h1 class="h1" style="font-size:23px">Welcome back</h1></div>
+          <div style="padding:0 16px;display:flex;flex-direction:column;gap:12px;flex:1"><span class="sh">Ready to build</span><div class="hc" style="flex-direction:column"><span class="art" style="width:100%;height:150px"></span><span class="sk" style="width:60%;height:14px"></span><span class="sk" style="width:40%"></span></div></div>
+          <nav class="tabs" aria-label="Main"><span style="color:#C6D2D3">Home</span><span>Collection</span><span>Commanders</span><span>Discover</span><span>Decks</span></nav>
+        </section>
+        <section class="ph" aria-label="S6 phone">
+          <div style="padding:14px 16px 0"><a href="#" style="font-size:13px;color:#95A4A6;text-decoration:none">‹ Home</a><h1 class="h1p" style="font-size:22px">Precons I own</h1></div>
+          <div style="flex:1;overflow:hidden">
+            <div class="pr"><span class="cb"></span><span class="nm">Mardu Surge<span class="mt">TDC · Apr 2025</span></span><span class="mt">100</span></div>
+            <div class="pr on"><span class="cb">✓</span><span class="nm">Sultai Arisen<span class="mt">TDC · Apr 2025</span></span><span class="mt">100</span></div>
+            <div class="pr on"><span class="cb">✓</span><span class="nm">Temur Roar<span class="mt">TDC · Apr 2025</span></span><span class="mt">100</span></div>
+          </div>
+          <div class="toast" role="alert" style="bottom:220px;width:358px"><span class="tt">We couldn’t add those. Your collection is unchanged.</span><button class="ta" type="button">Try again</button></div>
+          <div style="border-top:1px solid #2E3340;background:#16171D;padding:10px 16px 12px;display:flex;flex-direction:column;gap:8px"><span style="font-size:12.5px;color:#B3C0C2;text-align:center">2 boxes · 200 cards and 21 tokens</span><button class="bpl" type="button" style="height:44px;width:100%">Add 2 boxes · 200 cards</button></div>
+          <nav class="tabs lkd" aria-label="Main"><span>Home</span><span>Collection</span><span style="color:#5F6875">Commanders</span><span style="color:#5F6875">Discover</span><span style="color:#5F6875">Decks</span></nav>
+        </section>
+        <section class="ph" aria-label="S7 phone">
+          <div style="padding:14px 16px 0"><a href="#" style="font-size:13px;color:#95A4A6;text-decoration:none">‹ Home</a><h1 class="h1p" style="font-size:22px">Precons I own</h1></div>
+          <div style="flex:1;overflow:hidden">
+            <div class="pr"><span class="cb"></span><span class="nm">Mardu Surge<span class="mt">TDC · Apr 2025</span></span><span class="mt">100</span></div>
+            <div class="pr"><span class="cb"></span><span class="nm">Sultai Arisen<span class="mt" style="color:#6FA368">✓ added just now</span></span><span class="mt">100</span></div>
+            <div class="pr on"><span class="cb">✓</span><span class="nm">Temur Roar<span class="mt">TDC · Apr 2025</span></span><span class="mt">100</span></div>
+          </div>
+          <div class="toast" role="alert" style="bottom:220px;width:358px"><span class="tt">Added Sultai Arisen. We couldn’t add Temur Roar.</span><button class="ta" type="button">Try again</button></div>
+          <div style="border-top:1px solid #2E3340;background:#16171D;padding:10px 16px 12px;display:flex;flex-direction:column;gap:8px"><span style="font-size:12.5px;color:#B3C0C2;text-align:center">1 box · 100 cards and 10 tokens</span><button class="bpl" type="button" style="height:44px;width:100%">Add 1 box · 100 cards</button></div>
+          <nav class="tabs" aria-label="Main"><span>Home</span><span>Collection</span><span>Commanders</span><span>Discover</span><span>Decks</span></nav>
+        </section>
+      </div>
+      <span class="cap" style="max-width:1250px">At 390 the strip keeps one line (count, cards, History) and its ✕ is a 44px target; the names are in History. The toast sits above the add bar, 16px clear, never over it. In S7 the tab bar drops its bracket the moment a box lands.</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2760,"height":1960}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

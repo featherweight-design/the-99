@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0B0E; }
+  a { color: #5C86C9; text-decoration: none; }
+  a:hover { color: #6C95D8; }
+  :root {
+    --bg:#121217; --surface:#1E1F26; --surface-raised:#22232B; --surface-rail:#181920; --surface-sunken:#16171D;
+    --elevated:#2D2E35; --elevated-hover:#212229; --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E; --fg-disabled:#3B4647;
+    --accent:#5C86C9; --accent-hover:#6C95D8; --accent-shadow:#2C405F; --accent-dim:#2C405F; --danger:#C6533F; --success:#6FA368; --warning:#E0913C;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:var(--fg);padding:40px;background:#0B0B0E;min-height:100vh;display:flex;flex-direction:column;gap:64px;">
+
+  <section style="max-width:1320px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#0B0B0E;background:#5C86C9;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R1</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:var(--fg-faint);">Deck printings &middot; canvas 1 of 2 &middot; &sect;A choosing a deck&rsquo;s printing &middot; 2026-10-09</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:32px;margin:0 0 12px;line-height:1.25;">A deck&rsquo;s printing is chosen in the block that already says &ldquo;In this deck&rdquo;.</h1>
+    <p style="max-width:1080px;font-size:15px;line-height:1.7;color:var(--fg-body);margin:0 0 12px;text-wrap:pretty;">Card details opened from a deck already carry one deck-scoped block: the proxy control, headed <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">In this deck</span>. It's absent without a deck, and it's the only part of the modal that writes to the deck. A printing choice is the same kind of thing (cosmetic, one deck, takes effect at once, Hugh 2026-10-09), so it joins that block as one row above the proxy tick. <b style="color:var(--fg);font-weight:600;">Change</b> opens <span style="font-family:'IBM Plex Mono',monospace;font-size:13.5px;">PrintingRegion role="choose" source="catalog"</span> inside the block. Choosing a tile writes immediately and closes the region, the way the proxy tick does. There is no Save.</p>
+    <p style="max-width:1080px;font-size:15px;line-height:1.7;color:var(--fg-body);margin:0;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">No second door.</b> Rows, tiles and the Add panel gain nothing. A printing is a detail you set once per card, not something you do while building, and every row already opens card details.</p>
+  </section>
+
+  <section id="a0" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">A0 &middot; <span style="color:var(--accent);">three meanings of a printing &middot; three places &middot; never in the same box</span></div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;max-width:1300px;">
+      <sc-for list="{{ meanings }}" as="m" hint-placeholder-count="3">
+        <div style="border-radius:12px;border:1px solid var(--border-strong);background:var(--surface-rail);padding:18px 20px;display:flex;flex-direction:column;gap:8px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ m.k }}</span>
+          <span style="font-family:'Cinzel',serif;font-size:18px;font-weight:700;">{{ m.t }}</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ m.where }}</span>
+          <span style="font-size:13px;line-height:1.6;color:var(--fg-body);">{{ m.body }}</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);">writes: {{ m.writes }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="max-width:1300px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">They stay apart in four ways. <b style="color:var(--fg-body);font-weight:600;">Place:</b> the receipt, the Set field and the In this deck block are three different boxes. <b style="color:var(--fg-body);font-weight:600;">Context:</b> Edit copies draws only from /collection (1+2 handoff). The art disclosure is a collection surface (printing picker decision 2), so in details opened from a deck the Set field is the plain shipped <span style="font-family:'IBM Plex Mono',monospace;">MetaField</span> naming the deck's printing, and the In this deck block draws only there. <b style="color:var(--fg-body);font-weight:600;">Words:</b> the deck's name is in the row's state line (<span style="font-family:'IBM Plex Mono',monospace;">Chosen for HD Gishath</span>), as the proxy label puts it in its sentence. <b style="color:var(--fg-body);font-weight:600;">Signals:</b> the art picker's <span style="font-family:'IBM Plex Mono',monospace;">Your pick</span> badge is accent. The deck's chosen mark is a neutral <span style="font-family:'IBM Plex Mono',monospace;">--fg-body</span> diamond, the proxy tick's ink, because accent means in use or to buy wherever this sheet opens.</div>
+  </section>
+
+  <section id="a1" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">A1 &middot; <span style="color:var(--accent);">card details opened from a deck &middot; desktop modal and 390 full sheet, scrolled to the block</span></div>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;max-width:1900px;">
+      <sc-for list="{{ heroes }}" as="h" hint-placeholder-count="2">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ h.label }}</div>
+          <div style="width:820px;height:620px;border-radius:16px;background:var(--surface-rail);border:1px solid var(--border-strong);display:flex;overflow:hidden;position:relative;">
+            <div style="width:320px;flex:none;background:var(--surface-sunken);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;">
+              <div style="{{ h.art }}"></div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);border:1px solid var(--accent-dim);border-radius:4px;padding:2px 7px;">{{ h.price }}</span>
+            </div>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;padding:30px 30px 22px;">
+              <div style="flex:1;min-height:0;overflow:hidden;position:relative;display:flex;flex-direction:column;">
+                <div style="position:absolute;left:0;right:0;top:0;height:36px;background:linear-gradient(var(--surface-rail),transparent);z-index:2;"></div>
+                <div style="margin-top:{{ h.scroll }};display:flex;flex-direction:column;gap:16px;">
+                  <div style="border-radius:12px;border:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr;overflow:hidden;">
+                    <div style="padding:14px 18px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);"><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Set</div><div style="margin-top:6px;font-size:15px;">{{ h.setField }}</div></div>
+                    <div style="padding:14px 18px;border-bottom:1px solid var(--border);"><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Rarity</div><div style="margin-top:6px;font-size:15px;">Mythic</div></div>
+                    <div style="padding:14px 18px;border-right:1px solid var(--border);"><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Identity</div><div style="margin-top:6px;font-size:15px;">Green</div></div>
+                    <div style="padding:14px 18px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">You own</div><div style="margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:15px;color:var(--accent);">&times;1</div></div>
+                  </div>
+                  <dc-import name="DP Block" spec="{{ h.block }}" hint-size="100%,260px" style="margin-top:-22px;"></dc-import>
+                </div>
+              </div>
+              <div style="display:flex;align-items:flex-end;gap:20px;padding-top:16px;border-top:1px solid var(--border);">
+                <span style="font-size:14.5px;color:var(--accent);text-decoration:underline;text-underline-offset:4px;">Buy any printing at Mana Pool &#8599;</span>
+                <div style="margin-left:auto;display:flex;align-items:center;gap:14px;font-size:15px;"><span style="color:var(--fg-muted);">&lsaquo; Prev</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-faint);">12 of 99</span><span style="color:var(--accent);">Next &rsaquo;</span></div>
+              </div>
+            </div>
+            <span style="position:absolute;top:18px;right:18px;width:34px;height:34px;border-radius:50%;border:1px solid var(--border-strong);background:var(--surface-raised);display:flex;align-items:center;justify-content:center;color:var(--fg-muted);">&#10005;</span>
+          </div>
+          <div style="width:820px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">{{ h.note }}</div>
+        </div>
+      </sc-for>
+      <sc-for list="{{ phones }}" as="h" hint-placeholder-count="1">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ h.label }}</div>
+          <div style="width:390px;border:1px solid var(--border-strong);border-radius:14px;overflow:hidden;background:var(--surface);padding:16px 20px 22px;display:flex;flex-direction:column;">
+            <div style="border-radius:12px;border:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr;overflow:hidden;">
+              <div style="padding:14px 16px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);"><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Set</div><div style="margin-top:6px;font-size:15px;">{{ h.setField }}</div></div>
+              <div style="padding:14px 16px;border-bottom:1px solid var(--border);"><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Rarity</div><div style="margin-top:6px;font-size:15px;">Mythic</div></div>
+              <div style="padding:14px 16px;border-right:1px solid var(--border);"><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Identity</div><div style="margin-top:6px;font-size:15px;">Green</div></div>
+              <div style="padding:14px 16px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">You own</div><div style="margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:15px;color:var(--accent);">&times;1</div></div>
+            </div>
+            <dc-import name="DP Block" spec="{{ h.block }}" hint-size="100%,300px"></dc-import>
+          </div>
+          <div style="width:390px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">{{ h.note }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section id="a2" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">A2 &middot; <span style="color:var(--accent);">every state the brief lists &middot; the block alone &middot; desktop column (440) and 390</span></div>
+    <sc-for list="{{ matrix }}" as="row" hint-placeholder-count="2">
+      <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;max-width:1900px;">
+        <sc-for list="{{ row.items }}" as="m" hint-placeholder-count="4">
+          <div style="display:flex;flex-direction:column;gap:6px;width:{{ row.w }};">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ m.label }}</div>
+            <div style="background:{{ row.bg }};border:1px solid var(--border-strong);border-radius:12px;padding:0 {{ row.pad }} {{ row.pad }};">
+              <dc-import name="DP Block" spec="{{ m.spec }}" hint-size="100%,240px"></dc-import>
+            </div>
+            <div style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);">{{ m.note }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-for>
+  </section>
+
+  <section id="a3" style="display:flex;flex-direction:column;gap:20px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:18px;max-width:1300px;">A3 &middot; <span style="color:var(--accent);">the commander &middot; same block, opened from the deck head &middot; the head&rsquo;s art follows</span></div>
+    <div style="display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;max-width:1900px;">
+      <sc-for list="{{ heads }}" as="h" hint-placeholder-count="2">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ h.label }}</div>
+          <div style="width:620px;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;background:var(--bg);display:flex;">
+            <div style="{{ h.art }}"></div>
+            <div style="flex:1;min-width:0;padding:22px 24px;display:flex;flex-direction:column;gap:8px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Commander</span>
+              <span style="font-family:'Cinzel',serif;font-size:24px;font-weight:700;line-height:1.15;">Gishath, Sun&rsquo;s Avatar</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">HD Gishath &middot; 97 / 99 built</span>
+              <div style="margin-top:6px;height:6px;border-radius:999px;background:var(--border);overflow:hidden;"><div style="width:97%;height:100%;background:var(--accent);"></div></div>
+            </div>
+          </div>
+          <div style="width:620px;font-size:12.5px;line-height:1.6;color:var(--fg-muted);">{{ h.note }}</div>
+        </div>
+      </sc-for>
+      <div style="display:flex;flex-direction:column;gap:8px;width:440px;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">the commander&rsquo;s details &middot; the block</div>
+        <div style="background:var(--surface-rail);border:1px solid var(--border-strong);border-radius:12px;padding:0 20px 20px;"><dc-import name="DP Block" spec="{{ cmdBlock }}" hint-size="100%,260px"></dc-import></div>
+        <div style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);">The commander isn't a row, but its details are the same modal, opened from the head's art, so it gets the same block with no special case. The head band, the rail and every commander caption on <span style="font-family:'IBM Plex Mono',monospace;">/decks</span> read the deck's printing. <b style="color:var(--fg-body);font-weight:600;">A pair:</b> each commander has its own choice, made from its own details (the partner's opens from its name in the caption, as shipped). Nothing on the head says a printing was chosen. The art is the evidence.</div>
+      </div>
+    </div>
+  </section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const grad = (a, w) => ({ width: w, aspectRatio: "63/88", borderRadius: 12, background: `linear-gradient(160deg, ${a[0]}, ${a[1]} 70%, #121217)`, boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.35)" });
+    const RIX = ["#4B7A46", "#2C405F"], LCC = ["#4B7A46", "#C05A3E"];
+    const meanings = [
+      { k: "own it", t: "Your copies", where: "In your collection receipt · Edit copies", body: "Which printings you hold and how many. Edited in the Add cards sheet, and only from /collection. From a deck the receipt is read-only, as shipped.", writes: "the collection" },
+      { k: "show it everywhere", t: "Your art", where: "the Set field's disclosure · /collection only", body: "Which owned printing's art a card shows across the app. A per-player preference. A deck's choice overrides it inside that deck only.", writes: "your art preference" },
+      { k: "this deck uses it", t: "The deck's printing", where: "In this deck block · details opened from a deck", body: "Which printing this deck means for this card: its art, price, export and Shopping row. Any printing in the catalog, owned or not.", writes: "this deck only" },
+    ];
+    const heroes = [
+      { label: "desktop · from HD Gishath's list · default", art: grad(RIX, 250), price: "$9.89", setField: "RIX · 138", scroll: "-6px", block: { v: "default" }, note: "The art column, the price tag and the Set field show the printing the deck resolves to today, which is the copy you own. Nothing in the modal changes until a choice is made, except the new row in the block. The row's state line says where the default comes from, and that the price is still the cheapest in stock (price-query.ts), which can be a different printing from the art. Choosing one makes the two agree." },
+      { label: "desktop · choosing · the region opens in the block", art: grad(RIX, 250), price: "$9.89", setField: "RIX · 138", scroll: "-110px", block: { v: "choosing", focusTile: "lcc" }, note: "Change becomes Close, and the region opens below the row on the choose role's dashed rule. Every catalog printing, owned ones first, then the catalog's order. The deck's current printing takes the selection ring with no badge, the way I got it presets one. Each tile adds its price to the meta line, because here the price is part of the choice. Arrow keys move without choosing. Enter or a click chooses, writes at once, closes the region, and the art, tag and Set field re-read." },
+    ];
+    const phones = [
+      { label: "390 · full sheet, scrolled · chosen, owns another", setField: "LCC · 241", block: { ph: true, v: "other" }, note: "The same block in the sheet's scrolling body. Change and Use the default are 44px targets on the right. The sheet's 180px art header (above, not drawn) shows LCC #241." },
+      { label: "390 · choosing · one sideways row", setField: "RIX · 138", block: { ph: true, v: "choosing" }, note: "The phone uses B4m's layout=\"row\": one sideways-scrolling row of 100px tiles, as the I got it confirm does." },
+    ];
+    const D = (label, v, note, x = {}) => ({ label, spec: { v, ...x }, note });
+    const items = [
+      D("no choice · owned", "default", "The default, saying where it comes from. No diamond, faint ink."),
+      D("no choice · not owned", "defaultUnowned", "The catalog's printing, the art today's resolver picks. Nothing calls it chosen."),
+      D("chosen · owned", "owned", "The diamond and the deck's name. One line of ownership, about this printing."),
+      D("chosen · owns another", "other", "Brief open 4, answered yes, in details only. It says the deck is still covered, so nobody buys the printing to fix a problem that isn't there."),
+      D("chosen · owns none", "unowned", "The card was already on Shopping because no printing is owned. The choice changes only its art and price."),
+      D("chosen · sold out", "soldOut", "Says it plainly, and says other printings are in stock, because the Mana Pool link names cards, not printings."),
+      D("chosen · never stocked", "never", "No price anywhere for this card in this deck. The row's tag reads a bare buy (canvas 2 B4)."),
+      D("one printing", "single", "Nothing to choose: no Change and no region. The row stays so the block reads the same for every card."),
+      D("saving", "pending", "Optimistic. The art has already moved, and the row is at .6 with saving… where the links were."),
+      D("failed · nothing changed", "failed", "The art, tag and Set field go back. One line says what the deck still uses. No retry button: Change is right there."),
+      D("after Use the default", "reset", "Use the default writes at once and the row reads default again. The live region says: HD Gishath is back to the default for Polyraptor."),
+      D("switch off", "off", "DECK_PRINTINGS_ENABLED off: the block is the shipped proxy control, with no slot held. Any choice is kept and returns."),
+    ];
+    const matrix = [
+      { w: "440px", bg: "var(--surface-rail)", pad: "20px", items },
+      { w: "390px", bg: "var(--surface)", pad: "20px", items: [
+        D("390 · overflow · Forest, 54", "many", "Past 12, the choose role's search field appears (16px on the phone). No finish chips, as shipped. The row starts with the owned ones.", { ph: true }),
+        D("390 · sold out", "soldOut", "Facts wrap under the name. The links keep the right edge.", { ph: true }),
+        D("390 · failed", "failed", "", { ph: true }),
+      ] },
+      { w: "440px", bg: "var(--surface-rail)", pad: "20px", items: [
+        D("desktop · overflow · Forest, 54", "many", "Past 12, there's search, plus two group headers in place of set headers: You own and Every other printing. Owned first is the point of the list, and 54 tiles sorted by set would bury your 3. Below the owned group, the shipped set order applies. The region scrolls with the modal's column, and the modal doesn't grow."),
+      ] },
+    ];
+    const heads = [
+      { label: "deck head · no choice", art: { width: 230, flex: "none", background: "linear-gradient(160deg, #C05A3E, #4B7A46 60%, #121217)" }, note: "The head's art crop is the commander's resolved printing, as today." },
+      { label: "deck head · Gishath's printing chosen (LCC)", art: { width: 230, flex: "none", background: "linear-gradient(160deg, #F4E9C4, #C05A3E 55%, #121217)" }, note: "The crop follows the choice, on this deck only. Other decks led by Gishath keep their own." },
+    ];
+    return { meanings, heroes, phones, matrix, heads, cmdBlock: { v: "other", card: "Gishath, Sun’s Avatar", printing: { set: "Ixalan Commander", sc: "LCC", num: "1", a: ["#F4E9C4", "#C05A3E"] }, facts: [["You own a different printing (XLN #222). The deck still counts it as covered.", "var(--fg-body)"]] } };
+  }
+}
+</script>
+</body>
+</html>

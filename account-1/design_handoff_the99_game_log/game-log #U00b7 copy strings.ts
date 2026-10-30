@@ -1,0 +1,255 @@
+// src/lib/copy/game-log.ts — #9, the Games tab (Phase 2).
+// Shape follows src/lib/copy/decks-builder.ts and synergy-discovery.ts: flat const
+// object, functions for interpolated strings, no JSX, no number formatting
+// (callers pass pre-formatted strings). Voice: Kitchen Table — utility copy
+// stays straight; the expressive moments are marked.
+//
+// This block ADDS ONLY. It edits nothing and duplicates nothing:
+//   decksBuilderCopy.tabs.*          Decklist / Consider — untouched; 'Games' is a third entry
+//   decksBuilderCopy.roleCounter.*   the role strip's own strings — not reused, not changed
+//   REJECTION_MESSAGES              §4's returned rejections live there, not here
+//
+// One rule governs this whole file, and it is checkable: NO STRING HERE PRINTS A
+// PERCENTAGE, AND NO STRING HERE PRINTS `net`. Every count carries its own
+// denominator. See LOW-N-summary.md.
+
+/**
+ * The presentation threshold, and the ONLY place it lives. Below this many games
+ * the summary describes; at or above it, the summary makes a finding. It is not a
+ * data gate — §5 forbids one — and `summarizeGames` never sees it.
+ */
+export const PATTERN_MIN = 3;
+
+/**
+ * The eight axis labels and their per-column glosses.
+ *
+ * The KEYS are locked by the spec (§3) and are not copy. The labels are, and the
+ * glosses are the reason a one-word label is safe: the same label appears in both
+ * columns, so it carries no direction, and the gloss under it supplies the
+ * direction for the column it is standing in.
+ *
+ * `src/lib/decks/game-axes.ts` keeps its `{ key, label }` shape and stays the
+ * source of truth for which axes EXIST and in what order. This is the wording.
+ * If eng would rather the label sat in the constant, that is a one-line move —
+ * but the glosses must not become extra columns of the database vocabulary.
+ */
+export const axisCopy = {
+  speed: {
+    label: 'Speed',
+    worked: 'got going fast',
+    hurt: 'started too slow',
+  },
+  card_flow: {
+    label: 'Cards in hand',
+    worked: 'kept drawing',
+    hurt: 'ran out of gas',
+  },
+  mana: {
+    label: 'Mana',
+    worked: 'hit every land drop',
+    hurt: 'screwed or flooded',
+  },
+  interaction: {
+    label: 'Answers',
+    worked: 'answered the threats',
+    hurt: 'nothing for their threats',
+  },
+  board: {
+    label: 'Board presence',
+    worked: 'built a board',
+    hurt: 'got outsized',
+  },
+  resilience: {
+    label: 'Comebacks',
+    worked: 'recovered from a wipe',
+    hurt: 'never recovered',
+  },
+  engine: {
+    // Possessive, not 'The engine': plenty of decks have a plan and no engine.
+    label: 'The deck\u2019s plan',
+    worked: 'the plan fired',
+    hurt: 'never came together',
+  },
+  closing: {
+    // NOT 'Finishing' — in this product 'finish' already means foil/nonfoil
+    // (collection_items_finish_check).
+    label: 'Closing the game',
+    worked: 'converted the win',
+    hurt: 'stalled out',
+  },
+} as const;
+
+export const gameLogCopy = {
+  // ── The tab ───────────────────────────────────────────────────────────
+  tab: {
+    // Bare at zero games. The COUNT is absent, never the tab — a tab reading
+    // 'Games · 0' advertises its own emptiness, and hiding it hides the feature
+    // from everyone who has not used it.
+    label: 'Games',
+    labelWithCount: (n: string) => `Games \u00b7 ${n}`,
+  },
+
+  // ── The empty state · carries the whole pitch (§8.4) ──────────────────
+  empty: {
+    // The headline is the COUNT, not the act. §1: the log is worth close to
+    // nothing until the app can count across games, so 'Track your wins' would
+    // be selling the worthless half.
+    heading: 'Three games is a pattern.',
+    // Quotes the aggregate panel's real output. Showing the output is the only
+    // honest way to pitch an output — the italicised clause is rendered as
+    // <i>, and it is the app talking.
+    body: 'One game you already remember. The third one is where this tab earns its keep \u2014 it starts saying things like',
+    bodyQuote: 'ran out of gas, 3 of 3 games',
+    bodyAfter: ', which is the kind of sentence you can actually act on.',
+    // The objection is friction, not value, so the cost is stated in seconds.
+    cost: 'Logging takes about fifteen seconds: did you win, how big was the pod, and the two or three things that decided it.',
+    cta: 'Log your first game',
+    ctaNote: 'nothing to fill in twice \u2014 the deck is already here',
+    // The scope line, drawn in the player's favour. #9 names the weakness and
+    // stops; #10 is not promised, hinted at, or dated.
+    scope: 'This tab tells you what is letting the deck down. What to do about it stays your call.',
+  },
+
+  // ── The record line and headline (§8.5) ───────────────────────────────
+  headline: {
+    // N = 1 — a description. No finding, no bucket, no colour.
+    oneGame: 'One game logged.',
+    oneGameRecord: (result: string) => `1\u20130 \u00b7 ${result}`,
+    oneGameNote:
+      'Nothing to read into yet \u2014 it is on the record. Two more and this turns into something you can act on.',
+
+    // N = 2 — a leaning. This is the hardest line in the feature: it must not
+    // overclaim and must not apologise.
+    twoGames: (axis: string) => `${axis} went wrong both times.`,
+    twoGamesKeep: (axis: string) => `${axis} has held up both times.`,
+    twoGamesNote:
+      'Two games. Both of them, which is worth noticing and not yet worth calling a pattern.',
+
+    // N >= PATTERN_MIN — a finding about the deck.
+    finding: (axis: string) => `${axis} is letting this deck down.`,
+    findingKeep: (axis: string) => `${axis} is carrying this deck.`,
+    // Fallback when every marked axis nets to zero.
+    findingNone: 'Nothing has pointed one way yet.',
+    // Fallback when games exist but no axis was ever marked. The record alone.
+    recordOnly: (games: string, record: string) => `${games} games logged. ${record}.`,
+
+    // The denominator is in the SENTENCE, not beside it. 'every one you have
+    // logged' only prints when marked === count.
+    sub: (marked: string, count: string, record: string) =>
+      `Marked in ${marked} of ${count} games. Record ${record}.`,
+    subAll: (count: string, record: string) =>
+      `Marked in ${count} of ${count} games \u2014 every one you have logged. Record ${record}.`,
+
+    // The record itself. An en dash between the figures, never a hyphen.
+    record: (w: string, l: string) => `${w}\u2013${l}`,
+    recordWithDraws: (w: string, l: string, d: string) => `${w}\u2013${l}\u2013${d}`,
+    recordLong: (record: string, games: string) => `${record} across ${games} games`,
+    recordLongOne: (record: string) => `${record} across 1 game`,
+  },
+
+  // ── The aggregate panel (§8.2) ────────────────────────────────────────
+  buckets: {
+    fix: 'Fix',
+    // The gloss says what the bucket MEANS, so the heading does not have to be
+    // an instruction.
+    fixNote: 'marked against you more often than for you',
+    keep: 'Keep',
+    keepNote: 'marked for you more often than against',
+    // §8.2 — shown, always, as one line under a rule. Never a third group.
+    mixed: 'Mixed',
+    mixedLine: (axis: string, up: string, down: string) =>
+      `${axis} \u2014 ${up} up, ${down} down. Cut both ways so far.`,
+    mixedLineMulti: (clauses: string) => `${clauses} Cut both ways so far.`,
+
+    // N = 1 only. A true title for a panel that is not a finding.
+    oneGameHeading: 'What that one game said',
+    oneGameNote: 'no Keep, no Fix, no colour \u2014 one game does not have sides yet',
+  },
+
+  // ── The axis cell ─────────────────────────────────────────────────────
+  cell: {
+    // The figure. ALWAYS carries its denominator. Never a percentage, never a
+    // net, never a bare count.
+    figure: (marked: string, count: string) => `${marked} of ${count}`,
+    // N = 1: a direction and a count, not a ratio. '1 of 1' inside a bucket
+    // called Fix reads as certainty.
+    figureOneUp: '1 up',
+    figureOneDown: '1 down',
+    sub: (up: string, down: string) => `${up} up \u00b7 ${down} down`,
+    subOneGame: '1 game',
+  },
+
+  // ── The form (§8.3) ───────────────────────────────────────────────────
+  form: {
+    open: 'Log a game',
+    heading: 'Log a game',
+
+    resultLabel: 'Result',
+    // 'Won' / 'Lost', not 'Win' / 'Loss': the player is reporting, not
+    // classifying. Draw has no past tense that reads well.
+    won: 'Won',
+    lost: 'Lost',
+    draw: 'Draw',
+
+    podLabel: 'Pod size',
+    podHint: 'players at the table',
+
+    // Defaults to today. The dashed underline is the affordance.
+    playedToday: 'played tonight',
+    played: (date: string) => `played ${date}`,
+
+    workedLabel: 'What worked',
+    hurtLabel: 'What let me down',
+    // Absent at zero — a counter reading '0 marked' is a column complaining.
+    marked: (n: string) => `${n} marked`,
+
+    // The move, §6 in STATES-log-form.md. Replaces the gloss for one beat.
+    movedToHurt: 'moved to what let me down',
+    movedToWorked: 'moved to what worked',
+
+    save: 'Save this game',
+    saving: 'Saving\u2026',
+    cancel: 'Cancel',
+    // Says the quiet part out loud: two empty columns otherwise read as a
+    // required field whose requirement you cannot see.
+    optionalNote: 'marks are optional \u2014 a result on its own is a game',
+    // Returned by logGame, rendered in the shipped MutationError. Kept in
+    // REJECTION_MESSAGES; quoted here so Design's wording is on the record.
+    refused: 'We couldn\u2019t save that game. Nothing has been logged.',
+  },
+
+  // ── History ───────────────────────────────────────────────────────────
+  history: {
+    heading: 'History',
+    headingNote: 'newest first',
+    // Single letters in the row's square. W takes --success; L and D are
+    // NEUTRAL — a list of losses in --danger reads as a list of errors, and
+    // this is a diary, not a lint report.
+    won: 'W',
+    lost: 'L',
+    drawn: 'D',
+    // Pod size first: it is what changes how a game read. The date locates it.
+    meta: (pod: string, date: string) => `${pod}-player \u00b7 ${date}`,
+    // A game with no marks is valid (§3). Absence, never an empty gap that
+    // reads as a rendering fault.
+    noMarks: '\u2014',
+
+    delete: 'Delete this game',
+    // One inline confirm, in the row. §4 has no edit action, so
+    // delete-and-relog is the correction path and a stray tap loses the only
+    // copy of a game the player will not remember.
+    confirm: 'Delete this game?',
+    confirmYes: 'Delete',
+    confirmNo: 'Keep',
+    deleteRefused: 'We couldn\u2019t delete that game. Nothing has changed.',
+  },
+
+  // ── Live region · one message per settle, never one per tick ──────────
+  announce: {
+    moved: (axis: string, column: string) => `${axis} moved to ${column}`,
+    saved: (record: string) => `Game logged. ${record}.`,
+    savedFirst: 'Game logged. 1 game on the record.',
+    deleted: (record: string) => `Game deleted. ${record}.`,
+    deletedLast: 'Game deleted. No games logged.',
+  },
+} as const;

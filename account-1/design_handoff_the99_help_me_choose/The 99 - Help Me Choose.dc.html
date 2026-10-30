@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-sunken:#18140F; --surface-raised:#211D18; --surface-rail:#1A1611; --elevated:#29241F;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654;
+    --accent:#CF8745; --accent-hover:#DE9757; --success:#6FA368; --warning:#DEAA29; --danger:#C6533F;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-sunken:#101219; --surface-raised:#191B22; --surface-rail:#12141B; --elevated:#20222A;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --warning:#E0913C;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+
+<div data-theme="{{ theme }}" style="font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--fg);padding:44px 40px 90px;display:flex;flex-direction:column;gap:72px;width:max-content;">
+
+  <div style="max-width:1180px;display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:center;gap:13px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R1</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--fg-faint);">Help me choose · sub-project 8 · /decks/new and /discover</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">brief: 2026-09-24-intake-to-deck.md (PR #933)</span>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:0;line-height:1.15;color:var(--fg);">Say what you want, see who fits it, build from the one you pick.</h1>
+    <p style="font-size:15px;line-height:1.7;color:var(--fg-body);margin:0;max-width:920px;text-wrap:pretty;">A submission, not a filter. <b style="color:var(--fg);font-weight:600;">Say what you want</b>, press <b style="color:var(--fg);font-weight:600;">Find commanders</b>, get <b style="color:var(--fg);font-weight:600;">suggestions</b>, then <b style="color:var(--fg);font-weight:600;">change your answers</b> and search again. Until you submit, the form shows no commanders and no counts. The form takes plain words and reads them for free on submit; our reading is shown with the results. The <b style="color:var(--fg);font-weight:600;">top three are called out as best fits</b>. For a closer fit, one credit buys a <b style="color:var(--fg);font-weight:600;">deeper look</b>. The cost sits on the button, in front of the action.</p>
+    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:6px;">
+      <sc-for list="{{ calls }}" as="c" hint-placeholder-count="7">
+        <div style="border:1px solid var(--border);border-radius:10px;padding:13px 15px;background:var(--surface);display:flex;flex-direction:column;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ c.k }}</span><span style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);">{{ c.v }}</span></div>
+      </sc-for>
+    </div>
+  </div>
+
+  <sc-for list="{{ sections }}" as="sec" hint-placeholder-count="6">
+    <section id="{{ sec.id }}" style="display:flex;flex-direction:column;gap:26px;">
+      <div style="display:flex;flex-direction:column;gap:8px;max-width:1180px;">
+        <div style="display:flex;align-items:baseline;gap:12px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">§{{ sec.id }}</span>
+          <h2 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:26px;color:var(--fg);">{{ sec.title }}</h2>
+        </div>
+        <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-body);max-width:960px;text-wrap:pretty;">{{ sec.note }}</p>
+      </div>
+
+      <sc-if value="{{ sec.key }}" hint-placeholder-val="{{ false }}">
+        <div style="display:grid;grid-template-columns:repeat(4,minmax(0,280px));gap:12px;">
+          <div style="border:1px solid var(--border);border-radius:10px;padding:14px;background:var(--surface-rail);display:flex;flex-direction:column;gap:10px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">matched · free</span>
+            <span style="align-self:flex-start;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 8px 0 9px;border-radius:6px;background:var(--surface);border:1px solid var(--border-strong);"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">theme</span><span style="font-size:12.5px;color:var(--fg-body);">Dinosaurs</span></span>
+            <span style="font-size:12px;line-height:1.55;color:var(--fg-muted);">Solid hairline, kind in mono. Read-only; Change answers edits it.</span>
+          </div>
+          <div style="border:1px solid var(--border);border-radius:10px;padding:14px;background:var(--surface-rail);display:flex;flex-direction:column;gap:10px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">card</span>
+            <span style="align-self:flex-start;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 8px 0 9px;border-radius:6px;background:var(--surface);border:1px solid var(--border-strong);"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">card</span><span style="font-size:12.5px;font-weight:600;color:var(--fg);border-bottom:1px dotted var(--accent);">Regisaur Alpha</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;border-radius:4px;padding:1px 5px;color:var(--warning);background:color-mix(in oklab, var(--warning) 13%, transparent);">buy · $1.10</span></span>
+            <span style="font-size:12px;line-height:1.55;color:var(--fg-muted);">The name opens the card. Owned: the dot. Not owned: the buy tag.</span>
+          </div>
+          <div style="border:1px solid var(--border);border-radius:10px;padding:14px;background:var(--surface-rail);display:flex;flex-direction:column;gap:10px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">from the deeper look</span>
+            <span style="align-self:flex-start;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 8px 0 9px;border-radius:6px;background:var(--surface);border:1px dashed var(--accent);"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">theme</span><span style="font-size:12.5px;color:var(--fg-body);">Tokens</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--accent);">deeper</span></span>
+            <span style="font-size:12px;line-height:1.55;color:var(--fg-muted);">Dashed accent edge and the word <i>deeper</i>. The same vocabulary as the rest.</span>
+          </div>
+          <div style="border:1px solid var(--border);border-radius:10px;padding:14px;background:var(--surface-rail);display:flex;flex-direction:column;gap:10px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">left over · not understood</span>
+            <span style="display:flex;align-items:baseline;gap:8px;height:28px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">not understood</span><span style="font-size:13px;color:var(--fg-muted);border-bottom:1px dotted var(--border-dashed);">“that stomp”</span></span>
+            <span style="font-size:12px;line-height:1.55;color:var(--fg-muted);">Not a chip: quoted words with no edge and no ✕. They answer nothing.</span>
+          </div>
+        </div>
+      </sc-if>
+
+      <div style="display:flex;flex-direction:column;gap:44px;">
+        <sc-for list="{{ sec.frames }}" as="f" hint-placeholder-count="2">
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <div style="display:flex;align-items:baseline;gap:12px;max-width:1720px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 8px;">{{ f.id }}</span>
+              <span style="font-family:'IBM Plex Sans',sans-serif;font-size:15px;font-weight:600;color:var(--fg);">{{ f.cap }}</span>
+              <span style="font-size:13px;color:var(--fg-muted);max-width:1100px;">{{ f.desc }}</span>
+            </div>
+            <div style="display:flex;gap:40px;align-items:flex-start;">
+              <div style="border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;flex:none;">
+                <sc-if value="{{ f.main }}" hint-placeholder-val="{{ false }}"><dc-import name="Help Me Choose" scene="{{ f.scene }}" theme="{{ theme }}" hint-size="1300px,960px"></dc-import></sc-if>
+                <sc-if value="{{ f.hand }}" hint-placeholder-val="{{ false }}"><dc-import name="Hand-off" state="{{ f.scene }}" theme="{{ theme }}" hint-size="1300px,820px"></dc-import></sc-if>
+                <sc-if value="{{ f.door }}" hint-placeholder-val="{{ false }}"><dc-import name="Doors" door="{{ f.scene }}" theme="{{ theme }}" hint-size="1300px,700px"></dc-import></sc-if>
+              </div>
+              <div style="border:1px solid var(--border-strong);border-radius:22px;overflow:hidden;flex:none;">
+                <sc-if value="{{ f.main }}" hint-placeholder-val="{{ false }}"><dc-import name="Help Me Choose" scene="{{ f.scene }}" phone="{{ true }}" theme="{{ theme }}" hint-size="390px,844px"></dc-import></sc-if>
+                <sc-if value="{{ f.hand }}" hint-placeholder-val="{{ false }}"><dc-import name="Hand-off" state="{{ f.scene }}" phone="{{ true }}" theme="{{ theme }}" hint-size="390px,844px"></dc-import></sc-if>
+                <sc-if value="{{ f.door }}" hint-placeholder-val="{{ false }}"><dc-import name="Doors" door="{{ f.scene }}" phone="{{ true }}" theme="{{ theme }}" hint-size="390px,760px"></dc-import></sc-if>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const theme = this.props.theme ?? "amonkhet";
+    const M = (id, scene, cap, desc) => ({ id, scene, cap, desc, main: true, hand: false, door: false });
+    const H = (id, scene, cap, desc) => ({ id, scene, cap, desc, main: false, hand: true, door: false });
+    const Dr = (id, scene, cap, desc) => ({ id, scene, cap, desc, main: false, hand: false, door: true });
+    const calls = [
+      { k: "§4.1 · one form, then results", v: "Five inputs on one form and one submit. Results are their own screen at both widths, headed by what you asked for, with Change answers and Start over." },
+      { k: "§4.2 · the credit", v: "Want a closer fit? on the results, with a button reading 1 credit · Look deeper. It's framed as more depth, never as a fix. The first results stay, dimmed, until the new ones are ready." },
+      { k: "§4.3 · chips", v: "Shown only on results, under We read this as. Matched: solid. Card: name + dot or buy tag. From the deeper look: dashed accent + deeper. Not used: quoted words." },
+      { k: "§4.4 · several figures", v: "Ranked by the answer each commander fits least, so a strong fit on one answer can’t hide a weak one. Every figure is shown, and the one that sets the rank is tagged. The top three are best fits." },
+      { k: "§4.5 · too narrow", v: "An empty state with a short list of one-press loosenings, each with the count it brings back. When a few do fit, it’s a slim bar above them. Errors get their own empty state." },
+      { k: "§4.6 · hand-off", v: "The pre-filled door gains one block. The new deck is today’s deck page: the answers become its seeded intent line (from the build), and a failed fill is today’s banner." },
+      { k: "§4.7 · how many", v: "12 suggestions, then Show 12 more. No total is printed, because this is a shortlist, not a catalog. Trial fills run only for rows on screen." },
+    ];
+    const sections = [
+      { id: "1", title: "The two doors", note: "The /decks/new picker gains one door above its search, not a second page. Discover’s result line gains a link that carries the lit colors into the intake. Nothing else on either surface moves.", frames: [Dr("1a", "decksnew", "/decks/new", "The owned-commander picker, unchanged below the door. On a phone the door sits above the name field and stays out of the dock."), Dr("1b", "discover", "Discover", "The link sits on the rack’s result line, at its right end on desktop and under it on a phone. Red · Green goes with it.")] },
+      { id: "2", title: "The intake, every input optional", note: "The form stands alone at both widths: no results beside it and no live count. The submit button is the only way forward. Every answer is optional, so a blank submit is allowed.", frames: [M("2a", "blank", "Nothing entered", "Every control at no preference. The button still reads Find commanders; the note says blank suggestions lean on cards you have, owned commanders or not."), M("2b", "matched", "Answered, ready to submit", "Plain words plus any controls. Nothing is interpreted or counted until Find commanders.")] },
+      { id: "3", title: "A deeper look, from the results", key: true, note: "The form doesn’t interpret anything as you type. On submit, a free match turns your words into answers, and the results open with that reading. For a closer fit, one credit buys a deeper look: it weighs everything written, not only the names we matched, and searches again. It is offered only when there were words, and nothing is spent until it’s pressed.", frames: [
+        M("3a", "leftover", "First results, with the offer", "We read this as holds the matched answers, with two phrases not used. Below it, Want a closer fit? and 1 credit · Look deeper, with the credit count under the button."),
+        M("3b", "reading", "Looking deeper", "The button greys to Looking… with Stop beside it. The first results stay, dimmed, until the new ones are ready."),
+        M("3c", "read", "New results", "Tokens arrives dashed and marked deeper, and the list re-ranks with it. The offer turns into a quiet done line with the credit count."),
+        M("3d", "failed", "Didn’t finish, credit back", "The first results stand. The tag, the refund and Try again sit in the same place."),
+        M("3e", "emptyread", "Nothing to add", "The credit comes back and the results stand. No second offer for the same words."),
+        M("3f", "spent", "No credits left", "The button is disabled, and its pill reads 0 left. The line says when the next credit returns."),
+        M("3g", "paused", "App-wide limit reached", "The pill reads Paused, and the line has the app’s own sentence. Nothing the player did caused it."),
+      ] },
+      { id: "4", title: "The results", note: "Results are their own screen. They open with You asked for (the answers, read-only) and two ways back: Change answers returns to the form as it was, and Start over clears it. The top three are drawn as best-fit cards, with a rank, the art, every figure and the ownership line. The rest follow as rows. Best fits only appear when there are four or more results.", frames: [
+        M("4a", "theme", "Ordered by one theme", "Three best fits, then the rest as rows. An owned commander (Etali) keeps its place in the fit order."),
+        M("4b", "themes", "Several themes", "Each commander ranks by the theme it fits least. That figure is lit and tagged sets rank; the other is dimmed."),
+        M("4c", "card", "Ordered by a card", "The card chip is the only answer. The header says the card goes in the deck whichever commander you pick."),
+        M("4d", "themecard", "A theme plus a card", "Both figures are % of its decks, so they compare directly. Gishath is 91% Dinosaurs but its Regisaur Alpha figure is 64%, and that sets its rank."),
+        M("4e", "unpriced", "Build-around card with no price", "Never stocked, so it has no price. It’s placed anyway, and every row says the budget couldn’t count it."),
+        M("4f", "ownership", "No theme, no card: ordered by ownership", "A blank or colors-only submit. No catalog count is printed, so it doesn’t read as Discover. The header suggests adding a theme or a card."),
+      ] },
+      { id: "5", title: "Too narrow, errors, and loading", note: "An answer is never loosened for you. When none fit, the results area becomes an empty state listing one-press loosenings, each with the count it would bring back. When a few do fit, a slim bar above them offers the same. Loading is per row, so fit order never waits on ownership.", frames: [
+        M("5a", "narrow", "A few fit", "A bar above the one result offers two loosenings, each with its count. No best-fit cards under four results."),
+        M("5b", "zero", "None fit", "A centered empty state. The first option is the one that brings back the most, and one line says why."),
+        M("5c", "loading", "Searching, just after submit", "The results screen opens at once, with the answers above and skeleton rows below."),
+        M("5d", "rowloading", "Per-row loading and failure", "Rows 3 and 4 are still counting, and row 6 failed with its own Retry. Nothing moves."),
+        M("5e", "listfailed", "The search failed", "A centered empty state: Try again and Change answers. The answers are kept, and no credit was used."),
+      ] },
+      { id: "6", title: "The hand-off into creation", note: "Pressing a best fit or a row opens today’s pre-filled door, with the answers carried along and one new block. The deck lands on today’s deck page. The answers become the seeded intent line, the one that already reads from the build, and a failed fill shows today’s banner.", frames: [
+        H("6a", "form", "Pre-filled, with answers", "CreatePreFilled as it ships, color identity row included, plus Built from your answers. The back link and the ghost button return to the results."),
+        H("6b", "creating", "Creating", "As today: the button reads Creating… at 0.4."),
+        H("6c", "landed", "Landed on the new deck", "Today’s deck page. The only change is what goes into the seeded intent line: the commander, then the answers. The fill ledger and the list are unchanged."),
+        H("6d", "empty", "The fill failed", "Today’s FillFailedBanner, copy unchanged. Try filling again now re-runs the fill with the same answers."),
+      ] },
+    ];
+    return { theme, calls, sections };
+  }
+}
+</script>
+</body>
+</html>

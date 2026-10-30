@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Discovery R3 · one tool, met five ways</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.lbl{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#8B8270}
+.mono{font-family:'IBM Plex Mono',monospace}
+.disp{font-family:'Cinzel',serif;font-weight:600}
+.cap{margin:0;font-size:14px;line-height:1.6;color:#A59C89;text-wrap:pretty}
+.sec{display:flex;flex-direction:column;gap:16px;border-top:1px solid #3A3229;padding-top:20px}
+.h{display:flex;align-items:baseline;gap:12px}
+.h .id{font-family:'IBM Plex Mono',monospace;font-size:13px;color:#CF8745}
+.h .t{font-size:19px;font-weight:600;color:#EDE6D8}
+.col{display:flex;flex-direction:column;gap:12px}
+.w{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#CF8745;letter-spacing:.08em}
+.d{font-size:13px;line-height:1.55;color:#C0B8A6;text-wrap:pretty}
+.d b{color:#EDE6D8;font-weight:600}
+</style>
+</helmet>
+<div style="width:1800px;min-height:1080px;box-sizing:border-box;padding:44px 40px 60px;background:#0F0D0B;font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;display:flex;flex-direction:column;gap:40px">
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:1300px">
+    <span class="lbl">Discovery R3 · how the five layers read side by side · Amonkhet</span>
+    <h2 class="disp" style="margin:0;font-size:28px">One tool, Suggested changes, met five ways, and no two alike</h2>
+    <p class="cap">Each layer has its own form, so a player never mistakes one for another. A moment floats and speaks once. A nudge is a word in place, and stays. A tool card is a picture in About. The “?” lists entries. The tour dims the app, once ever. Every part on this board is the one the other boards mount.</p>
+  </div>
+  <section class="sec">
+    <div class="h"><span class="id">F1</span><span class="t">The same tool, in each layer’s own form</span></div>
+    <div style="display:flex;gap:22px;align-items:flex-start">
+      <div class="col" style="width:300px">
+        <span class="w">R1 · A MOMENT</span>
+        <div style="padding-top:8px"><dc-import name="Moment" tool="Suggested changes" line="is in Analysis now the deck is full. It reads your games and notes and offers up to five swaps." nibx="94" w="300" hint-size="300px,92px"></dc-import></div>
+        <span class="d"><b>Floats</b> beside a control, with a surface, a shadow, a nib and the diamond. It names the tool in a sentence, <b>once</b>, then is spent. It is not a press: the control is.</span>
+      </div>
+      <div class="col" style="width:300px">
+        <span class="w">R3 · A NUDGE</span>
+        <div style="position:relative;width:300px;height:200px;overflow:hidden;border-radius:12px;border:1px solid #3A3229"><div style="position:absolute;left:0;top:0;transform:scale(1.9) translate(-196px,-182px);transform-origin:0 0"><dc-import name="PhoneShot" shot="mix" nudge="wipes" hint-size="390px,520px"></dc-import></div></div>
+        <span class="d"><b>In place,</b> in the figure’s own slot: two words and an arrow, no surface. It <b>is</b> the press, and it <b>stays</b> while the figure is short. There is no ✕ and no halo.</span>
+      </div>
+      <div class="col" style="width:372px">
+        <span class="w">R2 · A TOOL CARD</span>
+        <dc-import name="ToolCard" tool="suggested" hint-size="372px,470px"></dc-import>
+        <span class="d"><b>In About’s Tools:</b> a real screen with the control haloed, one line and the deck it opens on. It is there whenever a player goes looking.</span>
+      </div>
+      <div class="col" style="width:320px">
+        <span class="w">R2 · THE “?”</span>
+        <div style="width:320px;height:606px;overflow:hidden;border-radius:12px"><div style="transform:scale(.8);transform-origin:0 0"><dc-import name="HelpSheet" mode="desk" screen="deck" hint-size="400px,758px"></dc-import></div></div>
+        <span class="d"><b>Asked for:</b> the screen’s entries, with Show me. It is never offered unasked.</span>
+      </div>
+      <div class="col" style="width:340px">
+        <span class="w">R3 · THE TOUR</span>
+        <div style="position:relative;width:340px;height:330px;border-radius:12px;overflow:hidden;background:rgba(6,5,8,.9);border:1px solid #3A3229;display:flex;align-items:center;justify-content:center"><dc-import name="TourCard" step="3" hint-size="340px,320px"></dc-import></div>
+        <span class="d"><b>Once per account, ever:</b> a scrim, a lit control and a card. It is about places, not tools, so Suggested changes is never a stop. Its tools are left to the four forms beside it.</span>
+      </div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1800,"height":1080}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

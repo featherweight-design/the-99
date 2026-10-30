@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Log a game with opponents, desktop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#FF4D9A}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#6F7486}
+.cap{font-size:12.5px;line-height:1.55;color:#959AAD;margin:0}
+.dk{width:1300px;flex:none;display:flex;background:#0E0F14;border:1px solid #262A35;border-radius:12px;overflow:hidden;position:relative;box-sizing:border-box;font-family:'IBM Plex Sans',sans-serif}
+.rail{width:62px;flex:none;background:#12141B;border-right:1px solid #181C26;display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:4px;box-sizing:border-box}
+.logo{display:flex;flex-direction:column;align-items:center;margin-bottom:16px;color:#E6E8F0;font:700 19px 'Chakra Petch',sans-serif;line-height:1}
+.logo i{color:#FF4D9A;font-style:normal;font-size:8px;letter-spacing:1px;margin-bottom:2px}
+.slot{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#6F7486}
+.slot.on{background:#20222A;color:#FF4D9A}
+.av{margin-top:auto;width:30px;height:30px;border-radius:50%;border:1px solid #FF4D9A;background:#0E0F14;color:#FF4D9A;font:500 10px 'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center;padding:0}
+.main{flex:1;min-width:0;display:flex;flex-direction:column;position:relative}
+.dh{display:flex;align-items:center;gap:16px;padding:24px 30px 0}
+.dh img{width:76px;height:54px;object-fit:cover;border-radius:9px;border:1px solid #262A35}
+.dn{margin:0;font:700 24px 'Chakra Petch',sans-serif;color:#E6E8F0}
+.dsub{font-size:13px;color:#959AAD;margin-top:2px}
+.tabs{display:flex;gap:22px;padding:14px 30px 0;border-bottom:1px solid #181C26}
+.tab{display:flex;align-items:baseline;gap:6px;min-height:44px;padding:0 0 10px;border:0;border-bottom:2px solid transparent;background:transparent;font:14px 'IBM Plex Sans',sans-serif;color:#959AAD;box-sizing:border-box;align-items:flex-end}
+.tab small{font:12px 'IBM Plex Mono',monospace;color:#6F7486}
+.tab.on{border-bottom-color:#FF4D9A;color:#E6E8F0}
+.tab.on small{color:#B1B6C7}
+.pane{padding:20px 30px 34px}
+.hl{display:flex;align-items:baseline;gap:14px;margin:6px 0 16px;flex-wrap:wrap}
+.hl h3{margin:0;font:700 26px 'Chakra Petch',sans-serif;color:#E6E8F0}
+.hl p{margin:0;font-size:13.5px;color:#B1B6C7}
+.hl p span{font:13px 'IBM Plex Mono',monospace;color:#FF4D9A}
+.form{border-radius:12px;padding:20px;background:#16181F;border:1px solid #262A35;position:relative}
+.fh{display:flex;align-items:baseline;justify-content:space-between}
+.fh h3{margin:0;font:600 19px 'Chakra Petch',sans-serif;color:#E6E8F0}
+.date{border:0;border-bottom:1px dashed #343843;background:transparent;font:11px 'IBM Plex Mono',monospace;color:#6F7486;padding:0}
+.date span{color:#B1B6C7}
+.row1{display:flex;gap:34px;margin:18px 0 20px}
+.fl{display:block;font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#6F7486;margin-bottom:9px}
+.fl i{font-style:normal;text-transform:none;letter-spacing:0;color:#606476;margin-left:8px}
+.rg{display:flex;gap:8px}
+.rb{height:40px;padding:0 20px;border-radius:8px;border:1px solid #181C26;background:transparent;color:#B1B6C7;font:500 13.5px 'IBM Plex Sans',sans-serif}
+.rb.on{border-color:#FF4D9A;color:#E6E8F0;font-weight:600}
+.rb.win{background:#6FA368;border-color:#6FA368;color:#0E0F14;font-weight:600}
+.pz{width:40px;height:40px;border-radius:8px;border:1px solid #262A35;background:transparent;color:#B1B6C7;font:600 14px 'IBM Plex Mono',monospace;padding:0}
+.pz.on{border-color:#FF4D9A;background:rgba(255,77,154,.12);color:#FF4D9A}
+.pz.held{opacity:.36}
+.seats{border-top:1px solid #181C26;padding-top:16px;margin-bottom:22px}
+.sth{display:flex;align-items:center;gap:10px;margin-bottom:12px;min-height:32px}
+.sth .fl{margin:0}
+.cnt{font:10.5px 'IBM Plex Mono',monospace;color:#606476}
+.pods{margin-left:auto;display:flex;align-items:center;gap:8px;font:11px 'IBM Plex Mono',monospace;color:#6F7486}
+.pchip{height:32px;padding:0 13px;border-radius:999px;border:1px solid #262A35;background:transparent;color:#B1B6C7;font:12.5px 'IBM Plex Sans',sans-serif}
+.pchip.on{border-color:#FF4D9A;color:#E6E8F0;background:rgba(255,77,154,.08)}
+.table{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-start}
+.seat{width:124px;display:flex;flex-direction:column;gap:2px}
+.sw{position:relative;width:124px;height:86px}
+.sa{display:block;width:100%;height:100%;padding:0;border:1px solid #262A35;border-radius:10px;overflow:hidden;background:#20222A;box-sizing:border-box}
+.sa img{width:100%;height:100%;object-fit:cover;display:block}
+.seat.you .sa{border-color:#181C26}
+.seat.you .sa img{opacity:.78}
+.seat.won .sa{outline:2px solid #E6E8F0;outline-offset:2px}
+.ini{display:flex;width:100%;height:100%;align-items:center;justify-content:center;font:500 22px 'IBM Plex Mono',monospace;color:#959AAD}
+.ytag{position:absolute;left:7px;bottom:7px;height:20px;padding:0 7px;border-radius:5px;background:rgba(14,15,20,.8);font:500 9.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;color:#B1B6C7;display:flex;align-items:center}
+.sx{position:absolute;top:6px;left:6px;width:28px;height:28px;border-radius:50%;border:0;background:rgba(14,15,20,.8);color:#E6E8F0;font-size:12px;padding:0}
+.tr{position:absolute;top:6px;right:6px;width:30px;height:30px;border-radius:50%;border:1px solid rgba(230,232,240,.4);background:rgba(14,15,20,.8);color:#E6E8F0;display:flex;align-items:center;justify-content:center;padding:0}
+.tr.on{background:#E6E8F0;color:#0E0F14;border-color:#E6E8F0}
+.sn{font-size:13px;font-weight:500;color:#E6E8F0;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ss{font:10.5px 'IBM Plex Mono',monospace;color:#6F7486;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ss.wn{color:#E6E8F0}
+.sb{align-self:flex-start;border:0;background:transparent;padding:0;color:#FF4D9A;font:12px 'IBM Plex Sans',sans-serif;min-height:22px}
+.sin{height:30px;border-radius:6px;border:1px solid #FF4D9A;background:#101219;padding:0 8px;display:flex;align-items:center;justify-content:space-between;font-size:12.5px;color:#E6E8F0;margin-top:3px;box-sizing:border-box}
+.sin small{font:9.5px 'IBM Plex Mono',monospace;color:#606476}
+.addw{position:relative}
+.add{width:124px;height:86px;border-radius:10px;border:1.5px dashed #343843;background:transparent;color:#959AAD;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font:12.5px 'IBM Plex Sans',sans-serif;box-sizing:border-box;padding:0}
+.add b{font:400 22px 'IBM Plex Sans',sans-serif;line-height:1}
+.add.open{border-color:#FF4D9A;border-style:solid;color:#E6E8F0}
+.hint{margin:12px 0 0;font:11px 'IBM Plex Mono',monospace;color:#959AAD;display:flex;align-items:center;gap:8px}
+.held{margin:12px 0 0;font-size:13px;color:#B1B6C7;display:flex;align-items:center;gap:8px}
+.held i{width:6px;height:6px;border-radius:50%;background:#E0913C;display:inline-block}
+.pk{position:absolute;left:0;top:96px;z-index:5;width:384px;box-sizing:border-box;background:#191B22;border:1px solid #343843;border-radius:12px;box-shadow:0 24px 60px rgba(0,0,0,.6);padding:12px 12px 10px}
+.sf{height:42px;border-radius:8px;border:1px solid #343843;background:#101219;display:flex;align-items:center;gap:10px;padding:0 12px;color:#7D8294;font-size:14px;box-sizing:border-box}
+.sf.on{border-color:#FF4D9A;color:#E6E8F0}
+.pkb{display:flex;align-items:center;gap:10px;min-height:44px}
+.bk{width:36px;height:36px;border-radius:8px;border:1px solid #262A35;background:transparent;color:#B1B6C7;font-size:16px;padding:0}
+.pkb b{font-size:15px;color:#E6E8F0;font-weight:600}
+.pkb span{font:11px 'IBM Plex Mono',monospace;color:#6F7486}
+.pkm{margin:8px 4px 4px;font-size:13px;line-height:1.5;color:#959AAD}
+.pkh{margin:12px 4px 4px}
+.pkl{display:flex;flex-direction:column}
+.pr{display:flex;align-items:center;gap:11px;min-height:50px;border:0;border-radius:8px;background:transparent;padding:4px 6px;text-align:left;color:#E6E8F0;font:14px 'IBM Plex Sans',sans-serif;width:100%;box-sizing:border-box}
+.pr.hl{background:#20222A}
+.pr.dim{opacity:.42}
+.th{width:36px;height:36px;border-radius:9px;overflow:hidden;flex:none;background:#20222A;color:#959AAD;font:500 11px 'IBM Plex Mono',monospace;display:flex;align-items:center;justify-content:center}
+.th.wide{width:54px;height:38px;border-radius:7px}
+.th.ic{background:transparent;border:1px dashed #343843}
+.th img{width:100%;height:100%;object-fit:cover;display:block}
+.pt{display:flex;flex-direction:column;min-width:0;flex:1}
+.pn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ps{font:10.5px 'IBM Plex Mono',monospace;color:#6F7486;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pm{font:10.5px 'IBM Plex Mono',monospace;color:#6F7486;flex:none}
+.pips{display:flex;gap:3px;flex:none}
+.pip{width:10px;height:10px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.45);display:block}
+.pkf{margin:8px 6px 2px;font:10.5px 'IBM Plex Mono',monospace;color:#6F7486}
+.axes{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.lg{display:flex;align-items:baseline;gap:8px;margin-bottom:9px;font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase}
+.lg small{letter-spacing:0;text-transform:none;color:#606476}
+.ax{display:flex;align-items:center;gap:11px;min-height:46px;border-radius:8px;padding:5px 12px;border:1px solid #181C26;background:#16181F;margin-bottom:5px;box-sizing:border-box}
+.ax.on{border-color:#843052;background:#181A21}
+.bx{width:18px;height:18px;flex:none;border-radius:5px;border:1px solid #262A35;display:flex;align-items:center;justify-content:center;font:11px 'IBM Plex Mono',monospace;box-sizing:border-box}
+.ax.on .bx{border-color:#FF4D9A;background:rgba(255,77,154,.12)}
+.al{display:flex;flex-direction:column;gap:2px}
+.aln{font-size:13.5px;color:#E6E8F0}
+.alg{font:10px 'IBM Plex Mono',monospace;color:#6F7486}
+.ax.on .alg{color:#959AAD}
+.note{margin-top:18px;padding-top:16px;border-top:1px solid #FF4D9A}
+.nl{display:flex;align-items:baseline;gap:8px;margin-bottom:9px}
+.nl b{font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#FF4D9A}
+.nl span{font:10px 'IBM Plex Mono',monospace;color:#606476}
+.nf{height:46px;border-radius:8px;background:#101219;border:1px solid #262A35;box-sizing:border-box}
+.rbk{margin:8px 0 0;font:10px 'IBM Plex Mono',monospace;color:#6F7486}
+.rbk em{font-style:normal;color:#B1B6C7}
+.acts{display:flex;align-items:center;gap:16px;margin-top:20px;padding-top:18px;border-top:1px solid #181C26}
+.save{height:44px;padding:0 20px;border-radius:8px;border:0;background:#E6E8F0;color:#0E0F14;font:600 14px 'IBM Plex Sans',sans-serif}
+.cancel{height:44px;padding:0 18px;border-radius:8px;border:1px solid #262A35;background:transparent;color:#959AAD;font:500 13.5px 'IBM Plex Sans',sans-serif}
+.opt{font:11px 'IBM Plex Mono',monospace;color:#6F7486}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+</helmet>
+<div style="width:2760px;min-height:7000px;box-sizing:border-box;padding:40px 56px 56px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:22px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span class="k">R1 · deck page · Games tab · Log a game · desktop 1300 · the shipped form, Kamigawa theme · seating with SOCIAL_GAMES_ENABLED on</span>
+    <h2 style="margin:0;font:700 26px 'Chakra Petch',sans-serif">Across the table: one optional row in the shipped form, drawn as the table you sat at</h2>
+    <p class="cap" style="max-width:2300px">The row sits under Result and Pod size, because the pod size bounds it (seats are pod minus you) and a loss is what turns on the trophy. Everything above and below it is the form as it ships: the date word, Won / Lost / Draw, Pod size, the two mark columns, the note and Save this game. A game saved with no seats is today’s game. Your own seat is drawn first, from your deck’s commander, so the table reads whole. Each frame is the deck page at 1300 with the Games tab open.</p>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(2,1300px);gap:48px 48px;align-items:start">
+    <sc-for list="{{frames}}" as="f" hint-placeholder-count="9">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span class="k">{{f.label}}</span>
+        <div class="dk">
+          <nav class="rail" aria-label="Primary">
+            <span class="logo" aria-hidden="true"><i>◆◆◆</i>99</span>
+            <a class="slot" href="#" aria-label="Home"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg></a>
+            <a class="slot" href="#" aria-label="Collection"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></svg></a>
+            <a class="slot" href="#" aria-label="Commanders"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M4 18h16M5 16l-1-9 5 4 3-6 3 6 5-4-1 9z"/></svg></a>
+            <a class="slot" href="#" aria-label="Discover"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 8l3 4-3 4-3-4z"/></svg></a>
+            <a class="slot on" href="#" aria-label="Decks" aria-current="page"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="7" y="4" width="12" height="16" rx="2"/><path d="M5 7v12a2 2 0 002 2h9"/></svg></a>
+            <button class="av" type="button" aria-label="Account">HH</button>
+          </nav>
+          <main class="main">
+            <div class="dh"><img src="art/zimone.png" alt=""><div><h1 class="dn">Quandrix Unlimited</h1><div class="dsub">Zimone, Infinite Analyst · 100 of 100</div></div></div>
+            <div class="tabs" role="tablist" aria-label="Deck views">
+              <button class="tab" type="button" role="tab" aria-selected="false">Your deck <small>100</small></button>
+              <button class="tab" type="button" role="tab" aria-selected="false">Consider</button>
+              <button class="tab on" type="button" role="tab" aria-selected="true">Games <small>6</small></button>
+              <button class="tab" type="button" role="tab" aria-selected="false">Analysis</button>
+            </div>
+            <div class="pane">
+              <header class="hl"><h3>Cards in hand is letting this deck down.</h3><p>Marked in 3 of 6 games. Record <span>3–3</span>.</p></header>
+              <div class="form">
+                <div class="fh"><h3>Log a game</h3><button class="date" type="button">played <span>tonight</span></button></div>
+                <div class="row1">
+                  <div><span class="fl">Result</span>
+                    <div class="rg" role="radiogroup" aria-label="Result"><sc-for list="{{f.results}}" as="r" hint-placeholder-count="3"><button class="{{r.cls}}" type="button" role="radio" aria-checked="{{r.on}}">{{r.label}}</button></sc-for></div>
+                  </div>
+                  <div><span class="fl">Pod size<i>players at the table</i></span>
+                    <div class="rg" role="radiogroup" aria-label="Pod size" style="gap:6px"><sc-for list="{{f.pods}}" as="p" hint-placeholder-count="7"><button class="{{p.cls}}" type="button" role="radio" aria-checked="{{p.on}}" aria-disabled="{{p.held}}">{{p.n}}</button></sc-for></div>
+                  </div>
+                </div>
+
+                <sc-if value="{{f.seating}}" hint-placeholder-val="{{true}}">
+                  <section class="seats" aria-label="Across the table">
+                    <div class="sth">
+                      <span class="fl">Across the table</span><span class="cnt">{{f.count}}</span>
+                      <sc-if value="{{f.hasPods}}" hint-placeholder-val="{{false}}">
+                        <span class="pods">Seat a pod<sc-for list="{{f.podChips}}" as="c" hint-placeholder-count="2"><button class="{{c.cls}}" type="button" aria-pressed="{{c.on}}">{{c.name}}</button></sc-for></span>
+                      </sc-if>
+                    </div>
+                    <div class="table">
+                      <sc-for list="{{f.seats}}" as="s" hint-placeholder-count="4">
+                        <div class="{{s.cls}}">
+                          <div class="sw">
+                            <sc-if value="{{s.isYou}}" hint-placeholder-val="{{false}}"><div class="sa"><img src="{{s.art}}" alt=""></div><span class="ytag">YOU</span></sc-if>
+                            <sc-if value="{{s.isOpp}}" hint-placeholder-val="{{true}}">
+                              <button class="sa" type="button" aria-label="Change {{s.name}}"><sc-if value="{{s.art}}" hint-placeholder-val="{{true}}"><img src="{{s.art}}" alt=""></sc-if><sc-if value="{{s.noArt}}" hint-placeholder-val="{{false}}"><span class="ini">{{s.ini}}</span></sc-if></button>
+                              <button class="sx" type="button" aria-label="Clear {{s.name}}’s seat">✕</button>
+                              <sc-if value="{{s.trophy}}" hint-placeholder-val="{{false}}"><button class="{{s.trCls}}" type="button" aria-pressed="{{s.won}}" aria-label="{{s.name}} won"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 4h8v5a4 4 0 01-8 0z"/><path d="M8 6H5a3 3 0 003 4M16 6h3a3 3 0 01-3 4"/><path d="M12 13v4M9 20h6"/></svg></button></sc-if>
+                            </sc-if>
+                          </div>
+                          <span class="sn">{{s.name}}</span>
+                          <sc-if value="{{s.sub}}" hint-placeholder-val="{{true}}"><span class="{{s.subCls}}">{{s.sub}}</span></sc-if>
+                          <sc-if value="{{s.subBtn}}" hint-placeholder-val="{{false}}"><button class="sb" type="button">{{s.subBtn}}</button></sc-if>
+                          <sc-if value="{{s.input}}" hint-placeholder-val="{{false}}"><span class="sin" role="textbox" aria-label="Who played it">{{s.input}}<small>{{s.inputCount}}</small></span></sc-if>
+                        </div>
+                      </sc-for>
+                      <sc-if value="{{f.addTile}}" hint-placeholder-val="{{true}}">
+                        <div class="addw">
+                          <button class="{{f.addCls}}" type="button" aria-expanded="{{f.pkOpen}}"><b aria-hidden="true">+</b>Add opponent</button>
+                          <sc-if value="{{f.pk}}" hint-placeholder-val="{{false}}">
+                            <div class="pk" role="dialog" aria-label="Seat an opponent">
+                              <sc-if value="{{f.pkSearch}}" hint-placeholder-val="{{true}}"><div class="{{f.sfCls}}" role="searchbox" aria-label="{{f.ph}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg><span>{{f.q}}</span></div></sc-if>
+                              <sc-if value="{{f.pkBack}}" hint-placeholder-val="{{false}}"><div class="pkb"><button class="bk" type="button" aria-label="Back to friends">‹</button><span class="th"><sc-if value="{{f.backArt}}" hint-placeholder-val="{{true}}"><img src="{{f.backArt}}" alt=""></sc-if><sc-if value="{{f.backIni}}" hint-placeholder-val="{{false}}">{{f.backIni}}</sc-if></span><b>{{f.backName}}</b><span>{{f.backMeta}}</span></div></sc-if>
+                              <sc-if value="{{f.pkMsg}}" hint-placeholder-val="{{false}}"><p class="pkm">{{f.pkMsg}}</p></sc-if>
+                              <sc-if value="{{f.pkHead}}" hint-placeholder-val="{{true}}"><p class="k pkh">{{f.pkHead}}</p></sc-if>
+                              <div class="pkl" role="listbox" aria-label="{{f.pkHead}}">
+                                <sc-for list="{{f.rows}}" as="r" hint-placeholder-count="5">
+                                  <button class="{{r.cls}}" type="button" role="option" aria-disabled="{{r.dis}}">
+                                    <span class="{{r.thCls}}" aria-hidden="true"><sc-if value="{{r.img}}" hint-placeholder-val="{{true}}"><img src="{{r.img}}" alt=""></sc-if><sc-if value="{{r.ini}}" hint-placeholder-val="{{false}}">{{r.ini}}</sc-if><sc-if value="{{r.search}}" hint-placeholder-val="{{false}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg></sc-if></span>
+                                    <span class="pt"><span class="pn">{{r.name}}</span><sc-if value="{{r.sub}}" hint-placeholder-val="{{false}}"><span class="ps">{{r.sub}}</span></sc-if></span>
+                                    <sc-if value="{{r.pips}}" hint-placeholder-val="{{false}}"><span class="pips"><sc-for list="{{r.pips}}" as="c" hint-placeholder-count="2"><i class="pip" style="background:{{c.bg}}"></i></sc-for></span></sc-if>
+                                    <sc-if value="{{r.meta}}" hint-placeholder-val="{{false}}"><span class="pm">{{r.meta}}</span></sc-if>
+                                  </button>
+                                </sc-for>
+                              </div>
+                              <sc-if value="{{f.pkHead2}}" hint-placeholder-val="{{false}}">
+                                <p class="k pkh">{{f.pkHead2}}</p>
+                                <div class="pkl" role="listbox" aria-label="{{f.pkHead2}}">
+                                  <sc-for list="{{f.rows2}}" as="r" hint-placeholder-count="3">
+                                    <button class="{{r.cls}}" type="button" role="option"><span class="{{r.thCls}}" aria-hidden="true"><img src="{{r.img}}" alt=""></span><span class="pt"><span class="pn">{{r.name}}</span></span><span class="pips"><sc-for list="{{r.pips}}" as="c" hint-placeholder-count="2"><i class="pip" style="background:{{c.bg}}"></i></sc-for></span></button>
+                                  </sc-for>
+                                </div>
+                              </sc-if>
+                              <p class="pkf">{{f.foot}}</p>
+                            </div>
+                          </sc-if>
+                        </div>
+                      </sc-if>
+                    </div>
+                    <sc-if value="{{f.wonHint}}" hint-placeholder-val="{{false}}"><p class="hint"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 4h8v5a4 4 0 01-8 0z"/><path d="M8 6H5a3 3 0 003 4M16 6h3a3 3 0 01-3 4"/><path d="M12 13v4M9 20h6"/></svg>{{f.wonHint}}</p></sc-if>
+                    <sc-if value="{{f.held}}" hint-placeholder-val="{{false}}"><p class="held" role="status"><i aria-hidden="true"></i>{{f.held}}</p></sc-if>
+                  </section>
+                </sc-if>
+
+                <div class="axes">
+                  <sc-for list="{{f.cols}}" as="col" hint-placeholder-count="2">
+                    <fieldset style="border:0;padding:0;margin:0;min-width:0">
+                      <legend class="lg" style="color:{{col.ink}}">{{col.legend}}<sc-if value="{{col.marked}}" hint-placeholder-val="{{false}}"><small>{{col.marked}}</small></sc-if></legend>
+                      <sc-for list="{{col.rows}}" as="a" hint-placeholder-count="8">
+                        <label class="{{a.cls}}"><input class="sr" type="checkbox" checked="{{a.on}}"><span class="bx" style="color:{{col.ink}}" aria-hidden="true">{{a.tick}}</span><span class="al"><span class="aln">{{a.label}}</span><span class="alg">{{a.gloss}}</span></span></label>
+                      </sc-for>
+                    </fieldset>
+                  </sc-for>
+                </div>
+                <div class="note">
+                  <div class="nl"><b>Note</b><span>one line, in your words</span></div>
+                  <div class="nf" role="textbox" aria-label="Note"></div>
+                  <p class="rbk">Read back to you in the history: <em>quoted, never paraphrased</em></p>
+                </div>
+                <div class="acts"><button class="save" type="button">Save this game</button><button class="cancel" type="button">Cancel</button><span class="opt">marks and the note are optional: a result on its own is a game</span></div>
+              </div>
+            </div>
+          </main>
+        </div>
+        <p class="cap" style="max-width:1300px">{{f.note}}</p>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2760,"height":7000}}'>
+class Component extends DCLogic {
+renderVals() {
+const ART = { master: 'art/zimone.png', sokka: 'art/captain-america.png', aang: 'art/heroes.png', omnath: 'art/jace.png', baral: 'art/sai.png', kilo: 'art/rootha.png' };
+const C = { W: '#F4E9C4', U: '#3A6AA5', B: '#98748F', R: '#C05A3E', G: '#4B7A46' };
+const pips = (s) => s.split('').map((k) => ({ bg: C[k] }));
+const AX = [
+['Speed', 'got going fast', 'started too slow'], ['Cards in hand', 'kept drawing', 'ran out of gas'], ['Mana', 'hit every land drop', 'screwed or flooded'], ['Answers', 'answered the threats', 'nothing for their threats'],
+['Board presence', 'built a board', 'got outsized'], ['Comebacks', 'recovered from a wipe', 'never recovered'], ['The deck’s plan', 'the plan fired', 'never came together'], ['Closing the game', 'converted the win', 'stalled out']
+];
+const cols = (worked, hurt) => [
+{ legend: 'What worked', ink: '#6FA368', marked: worked.length ? worked.length + ' marked' : '', rows: AX.map((a, i) => ({ label: a[0], gloss: a[1], on: worked.includes(i), tick: worked.includes(i) ? '✓' : '', cls: worked.includes(i) ? 'ax on' : 'ax' })) },
+{ legend: 'What let me down', ink: '#E0913C', marked: hurt.length ? hurt.length + ' marked' : '', rows: AX.map((a, i) => ({ label: a[0], gloss: a[2], on: hurt.includes(i), tick: hurt.includes(i) ? '✓' : '', cls: hurt.includes(i) ? 'ax on' : 'ax' })) }
+];
+const results = (r) => [['win', 'Won'], ['loss', 'Lost'], ['draw', 'Draw']].map(([v, l]) => ({ label: l, on: r === v ? 'true' : 'false', cls: r === v ? (v === 'win' ? 'rb win' : 'rb on') : 'rb' }));
+const podsOf = (n, heldBelow) => [2, 3, 4, 5, 6, 7, 8].map((p) => ({ n: p, on: p === n ? 'true' : 'false', held: p < (heldBelow || 0) ? 'true' : 'false', cls: p === n ? 'pz on' : (p < (heldBelow || 0) ? 'pz held' : 'pz') }));
+const you = { cls: 'seat you', isYou: true, isOpp: false, art: ART.master, name: 'You', sub: 'Quandrix Unlimited', subCls: 'ss', subBtn: '', input: '' };
+const opp = (o) => Object.assign({ cls: 'seat', isYou: false, isOpp: true, art: '', noArt: false, ini: '', sub: '', subCls: 'ss', subBtn: '', input: '', inputCount: '', trophy: false, trCls: 'tr', won: 'false' }, o);
+const fd = (name, deck, art) => opp({ name, sub: deck, art });
+const fo = (name, btn) => opp({ name, noArt: true, ini: name.slice(0, 2).toUpperCase(), subBtn: btn });
+const an = (cmd, art, label) => opp({ name: label || cmd, sub: label ? cmd : '', art, subBtn: label ? '' : 'Add a name' });
+const lost = (seats, winner) => seats.map((s) => s.isOpp ? Object.assign({}, s, { trophy: true, won: s.name === winner ? 'true' : 'false', trCls: s.name === winner ? 'tr on' : 'tr', cls: s.name === winner ? 'seat won' : 'seat', sub: s.name === winner ? 'won this game' : s.sub, subCls: s.name === winner ? 'ss wn' : 'ss' }) : s);
+const friendRows = (seated) => [
+{ name: 'Alex', img: ART.baral, meta: '1 deck' }, { name: 'Dave', img: ART.sokka, meta: '3 decks' }, { name: 'Jo', ini: 'JO', meta: 'no decks' },
+{ name: 'Marcus', img: ART.omnath, meta: '1 deck' }, { name: 'Priya', img: ART.aang, meta: '2 decks' }, { name: 'Sam', img: ART.kilo, meta: '1 deck' }
+].map((r, i) => Object.assign({ sub: '', ini: '', img: '', search: false, pips: null, thCls: 'th', dis: 'false', cls: i === 0 ? 'pr hl' : 'pr' }, r, (seated || []).includes(r.name) ? { meta: 'seated', dis: 'true', cls: 'pr dim' } : {}));
+const cmdRows = [['Heroes in a Half Shell', ART.aang, ''], ['Sai, Master Thopterist', ART.baral, 'U'], ['Rootha, Mastering the Moment', ART.kilo, 'UR'], ['Captain America, Team Leader', ART.sokka, ''], ['Zimone, Infinite Analyst', ART.master, '']].map(([n, img, p], i) => ({ name: n, img, sub: '', ini: '', search: false, meta: '', pips: p ? pips(p) : null, thCls: 'th wide', dis: 'false', cls: i === 2 ? 'pr hl' : 'pr' }));
+const deckRows = [
+{ name: 'Avengers Assemble', sub: 'Captain America, Team Leader', img: ART.sokka, cls: 'pr hl' },
+{ name: 'Rootha Spells', sub: 'Rootha, Mastering the Moment', img: ART.kilo },
+{ name: 'Turtle Power', sub: 'Heroes in a Half Shell', img: ART.aang }
+].map((r) => Object.assign({ ini: '', search: false, meta: '', pips: null, thCls: 'th wide', dis: 'false', cls: 'pr' }, r));
+const extra = (who) => [
+{ name: 'Another commander', sub: 'search the catalog for what ' + who + ' played', search: true, img: '', ini: '', thCls: 'th wide ic' },
+{ name: 'Just ' + who, sub: 'no deck or commander', img: '', ini: who.slice(0, 2).toUpperCase(), search: false, thCls: 'th wide' }
+].map((r) => Object.assign({ meta: '', pips: null, dis: 'false', cls: 'pr' }, r));
+const base = { results: results(null), pods: podsOf(4), seating: true, count: '', hasPods: false, podChips: [], seats: [you], addTile: true, addCls: 'add', pkOpen: 'false', pk: false, pkSearch: true, sfCls: 'sf', ph: 'Friend or any commander', q: 'Friend or any commander', pkBack: false, backArt: '', backIni: '', backName: '', backMeta: '', pkMsg: '', pkHead: '', rows: [], pkHead2: '', rows2: [], foot: '', wonHint: '', held: '', cols: cols([], []) };
+const pods = (on) => ['Thursday night', 'Store league'].map((n) => ({ name: n, on: n === on ? 'true' : 'false', cls: n === on ? 'pchip on' : 'pchip' }));
+const fr = (o) => Object.assign({}, base, o);
+const lostSeats = lost([you, fd('Dave', 'Avengers Assemble', ART.sokka), fo('Jo', 'Add a commander'), an('Rootha, Mastering the Moment', ART.kilo, 'Lee')], 'Dave');
+const frames = [
+fr({ label: 'F1 · no friends yet · only anyone seats · the picker searching', results: results('win'), count: '1 of 3 seats', seats: [you, an('Jace, Multiverse Architect', ART.omnath, 'Lee')], addCls: 'add open', pkOpen: 'true', pk: true, sfCls: 'sf on', ph: 'Any commander', q: 'a|', pkHead: 'Commanders', rows: cmdRows, foot: 'Any commander in the catalog. Name who played it on the seat.', cols: cols([0], []),
+  note: 'A player with no friends, which is every account on staging today. The row is the same; the picker’s field is Any commander and finds commanders only, drawn as the shipped commander search draws them (art, name, color pips). Arrow keys move, Enter seats. Nothing points at friends: where friends live is Round 1’s call. Lee is an anyone seat: Jace, plus the name typed on the seat.' }),
+fr({ label: 'F2 · with friends · the picker before typing', count: '0 of 3 seats', hasPods: true, podChips: pods(''), addCls: 'add open', pkOpen: 'true', pk: true, sfCls: 'sf on', pkHead: 'Friends', rows: friendRows([]), foot: 'Type to search every commander too.',
+  note: 'One field, two kinds of answer, so there is no friend / deck / anyone switch to set first. Before typing it lists your friends by name, each with R1’s commander face and how many decks they have; typing filters them and adds commander results under them (a second list, Commanders). The faces are live here, at pick time only. Seat a pod sits on the row’s own line, R1’s pods by name.' }),
+fr({ label: 'F3 · a friend picked · their decks', count: '0 of 3 seats', hasPods: true, podChips: pods(''), addCls: 'add open', pkOpen: 'true', pk: true, pkSearch: false, pkBack: true, backArt: ART.sokka, backName: 'Dave', backMeta: '3 decks', pkHead: 'Dave’s decks', rows: deckRows.concat(extra('Dave')), foot: 'Name and commander only: nothing else of Dave’s is read.',
+  note: 'Picking Dave opens his decks in place, newest first, by name and commander: listFriendDecks, through your own friendship. One press seats Dave with that deck, and the seat snapshots both names and the commanders. Another commander seats Dave with a catalog commander (a friend seat with a commander of its own). Just Dave seats him with neither. Dave renamed Avengers Tempo to Avengers Assemble last week: the picker shows today’s name, and old games keep the old one (Games board).' }),
+fr({ label: 'F4 · a friend with no decks', count: '0 of 3 seats', hasPods: true, podChips: pods(''), addCls: 'add open', pkOpen: 'true', pk: true, pkSearch: false, pkBack: true, backIni: 'JO', backName: 'Jo', backMeta: 'no decks', pkMsg: 'Jo has no decks in The 99.', pkHead: '', rows: extra('Jo').map((r, i) => i === 0 ? Object.assign({}, r, { name: 'Pick a commander', cls: 'pr hl' }) : r), foot: 'Either way, Jo’s name is kept with the game.',
+  note: 'The same step with nothing to list: one sentence, then the two ways that still work. Jo is seated by name alone, or by name with the commander Jo played.' }),
+fr({ label: 'F5 · seated three ways · a name being typed', results: results('win'), count: '3 of 3 seats', seats: [you, fd('Dave', 'Avengers Assemble', ART.sokka), fo('Jo', 'Add a commander'), opp({ name: 'Rootha, Mastering the Moment', art: ART.kilo, input: 'Le|', inputCount: '2 / 30' })], addTile: false, cols: cols([0, 2], [3]),
+  note: 'A friend’s deck (Dave), a friend alone (Jo), and anyone by commander (Rootha). Pressing Add a name turns the line under an anyone seat into the label field in place, up to 30 characters, counter shown; Enter or leaving the field keeps it. A friend’s seat has no label: the friend’s name is the name. Pressing a seat’s art reopens the picker to change it; ✕ empties it. With all three seats filled the dashed seat is gone.' }),
+fr({ label: 'F6 · lost · who won', results: results('loss'), count: '3 of 3 seats', seats: lostSeats, addTile: false, wonHint: 'Lost. If one of them won, press their trophy. Optional.', cols: cols([], [1, 3]),
+  note: 'Lost turns on one trophy per seated opponent. Dave’s is pressed: his seat gets the bone ring and says won this game. Pressing Jo’s would move it; pressing Dave’s again clears it. At most one, never asked for. Switch the result to Won or Draw and the trophies go, and so does the mark.' }),
+fr({ label: 'F7 · pod quick-seat · Thursday night', count: '3 of 3 seats', hasPods: true, podChips: pods('Thursday night'), seats: [you, fo('Dave', 'Which deck?'), fo('Priya', 'Which deck?'), fo('Sam', 'Which deck?')], addTile: false,
+  note: 'One press on a pod seats its members who are your friends and sets the pod size to the pod’s, here 4. Each seat starts as the friend alone, with Which deck? under the name, which opens that friend’s decks. A pod member who is not your friend (after a hand-on) is not seated, and leaves a dashed seat. The chip stays pressed until a seat is changed by hand; pressing it again clears the seats it filled.' }),
+fr({ label: 'F8 · a full pod of 8 · seven seats · a smaller pod held', pods: podsOf(8, 8), count: '7 of 7 seats', results: results('draw'), seats: [you, fd('Dave', 'Avengers Assemble', ART.sokka), fd('Priya', 'Elements', ART.aang), fd('Marcus', 'Jace Superfriends', ART.omnath), fd('Alex', 'Sai Thopters', ART.baral), fo('Jo', 'Add a commander'), an('Rootha, Mastering the Moment', ART.kilo, 'Lee'), an('Rootha, Mastering the Moment', ART.kilo, '')], addTile: false, held: 'All 7 seats are filled. Clear a seat to make the pod smaller.',
+  note: 'Seats never outnumber the pod: the form offers pod minus one, so “more opponents than seats” cannot be sent. Lowering the pod size drops empty seats first; once only filled seats remain, the smaller sizes are held (dimmed, aria-disabled) and a press says why in one line. Two seats can hold the same commander. Eight seats wrap to one row at 124px each.' }),
+fr({ label: 'F9 · games off · seating hidden entirely', seating: false, results: results('win'), cols: cols([0], []),
+  note: 'SOCIAL_GAMES_ENABLED off (production today), or friends off, which it needs. The form is exactly the shipped one: no row, no reserved space, no hint that seating exists. History and the Games tab likewise draw no vs line and no Matchups.' })
+];
+return { frames };
+}
+}
+</script>
+</body>
+</html>

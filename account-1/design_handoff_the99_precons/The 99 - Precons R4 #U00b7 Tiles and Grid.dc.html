@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Metamorphous&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="kaldheim"] {
+    --bg:#121217; --surface:#1E1F26; --surface-sunken:#16171D; --surface-rail:#18191F; --elevated:#2D2E35;
+    --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E;
+    --accent:#5C86C9; --accent-hover:#6C95D8; --success:#6FA368; --warning:#E0913C; --danger:#C6533F; --btn:#C9D3D6;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+
+<div data-theme="kaldheim" style="font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--fg);padding:44px 40px 90px;display:flex;flex-direction:column;gap:72px;width:max-content;">
+
+  <div id="C0" style="max-width:1340px;display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:center;gap:13px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">PRECONS R4 · R1 · FOR REVIEW</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--fg-faint);">Tiles and Card view</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">Hugh’s rulings 2026-10-12 · parent: Precons R2 + R3 · switch-gated, no About bump</span>
+    </div>
+    <h1 style="font-family:'Metamorphous',serif;font-weight:400;font-size:34px;margin:0;line-height:1.15;color:var(--fg);max-width:1100px;">Precons default to tiles, because people recognise a precon by its commander’s card. An open precon stays a list by default and adds the deck’s Card view.</h1>
+    <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-body);max-width:1000px;text-wrap:pretty;">The list tile is the deck card tile’s anatomy: the commander’s full card at 63:88, the shared caption, nothing drawn over the art. The open precon’s Card view is DeckCardTile in a read-only form. Both switches are the shipped ViewToggle well. Figures are the brief’s and R3’s; anything in <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">‹ ›</span> is illustrative. All copy is a placeholder for /copy-review.</p>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:6px;">
+      <sc-for list="{{ calls }}" as="c" hint-placeholder-count="6">
+        <div style="border:1px solid var(--border);border-radius:10px;padding:13px 15px;background:var(--surface);display:flex;flex-direction:column;gap:6px;"><div style="display:flex;justify-content:space-between;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);">{{ c.k }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ c.where }}</span></div><span style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">{{ c.v }}</span></div>
+      </sc-for>
+    </div>
+  </div>
+
+  <sc-for list="{{ sections }}" as="sec" hint-placeholder-count="6">
+    <section id="{{ sec.id }}" data-screen-label="{{ sec.id }} {{ sec.title }}" style="display:flex;flex-direction:column;gap:26px;">
+      <div style="display:flex;flex-direction:column;gap:8px;max-width:1340px;">
+        <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--accent);">§{{ sec.id }}</span>
+          <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px;color:var(--fg);">{{ sec.title }}</h2>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">STATES {{ sec.id }} · scene {{ sec.scene }}</span>
+        </div>
+        <p style="margin:0;font-size:14px;line-height:1.65;color:var(--fg-body);max-width:1000px;text-wrap:pretty;">{{ sec.note }}</p>
+      </div>
+      <div style="display:flex;gap:40px;align-items:flex-start;">
+        <div style="border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;flex:none;">
+          <dc-import name="Precons Tiles" scene="{{ sec.scene }}" hint-size="900px,1000px"></dc-import>
+        </div>
+        <div style="border:1px solid var(--border-strong);border-radius:22px;overflow:hidden;flex:none;">
+          <dc-import name="Precons Tiles" scene="{{ sec.scene }}" phone="{{ true }}" hint-size="390px,844px"></dc-import>
+        </div>
+      </div>
+    </section>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      calls: [
+        { k: "1 · Tiles are the default", where: "T1", v: "Recommend tiles, as Hugh expects. The list is browsing, and a precon is known by its face commander: the card names it, colours it and shows it. Rows stay one press away and are remembered, and they still read more per screen (about 6 against 4 at 390), which is why Most owned keeps working in both." },
+        { k: "2 · The switch", where: "T1 · T2", v: "The shipped ViewToggle well (≣ ▦), as /collection’s Rows · Grid, not /decks’ Tiles · Stats. Stats is another view of decks; this is the same list drawn two ways, which is the well’s job. In the chassis after sort at 900; on the search row at 390, where /collection puts it. ?view=rows, stored per browser." },
+        { k: "3 · What a tile carries", where: "T3", v: "Art: the first commander’s full card, so the commander’s name rides the image. Caption: you own N of M · the precon’s name · pips with SET · month. A foot, only when present, carries the row’s extra lines: the deck (linked first, R3) and the twin." },
+        { k: "4 · Twins and partners", where: "T3d · T3e", v: "A twin is one tile, with the foot line also sold as a Collector’s Edition. Partners draw both cards staggered in one art box, each card with its own matte radius; the caption is unchanged." },
+        { k: "5 · Density", where: "T1 · T4", v: "4-up at 900 (205px tiles), 2-up at 390 (174px). The chassis, the empty band and the year heads sit above the grid unchanged. Most owned drops the year heads, as rows do." },
+        { k: "6 · Open precon, Card view", where: "G1 · G0", v: "List stays the default: here you’ve chosen, and you’re reading what you own; 100 tiles is six screens. The deck page’s List · Card well sits on the list-note line. Commander first, a dot on every tile, not owned in words, basics one tile per name at the foot of Lands. R3’s link sits in the header and own box, unchanged." },
+      ],
+      sections: [
+        { id: "T1", scene: "tiles", title: "The list, tiles (default)", note: "Newest first under year heads, as R2. Each tile is the commander’s card, then the caption. The foot only draws when the row would have an extra line: Prismari Artistry’s shared deck, Avengers Assemble’s twin. Tiles without a foot stretch to their row’s height, so art and caption line up across every row." },
+        { id: "T2", scene: "rows", title: "The switch, on rows", note: "The same list with ≣ pressed. Nothing else on the page changes: the chassis, the result line, the order and the year heads. The well is ViewToggle verbatim: 32px segments at 900, 44px at 390, selected is --elevated with a ring, never accent. Its names are spoken: Rows view, Tiles view." },
+        { id: "T3", scene: "board", title: "A tile in each state", note: "High and low share, linked, twin, partners and missing art, at their real sizes. No state changes the caption’s height. The foot is the only part that grows, and only with the row’s own extra lines. No verdict word and no status colour on any figure." },
+        { id: "T4", scene: "tilesEmpty", title: "Empty collection, over tiles", note: "R2 L2’s band between the chassis and the first year head, unchanged. Every figure reads 0 of M. No shared feet are drawn, as L2 draws no built lines." },
+        { id: "G1", scene: "openCard", title: "Open precon, Card view", note: "Eldrazi Unbound, partial (74 of 85), linked to HD - Eldrazi (R3 K8). The List · Card well sits on the list-note line, under the own box, so the header and R3’s Link a deck, Start and Unlink don’t move between views. Commander first, then types A–Z. Not owned is a dashed dot and the words not owned. Wastes ×15 is one dashed tile at the foot of Lands." },
+        { id: "G0", scene: "openList", title: "Open precon, List view (default)", note: "R2’s read-only list, as shipped, with the well added at the right of the list-note line, ≣ pressed. This is the default, stored per browser apart from the deck page’s own choice." },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

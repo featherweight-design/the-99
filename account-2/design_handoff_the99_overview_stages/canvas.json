@@ -1,0 +1,58 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-10-30T02:40:00Z"
+ },
+ "title": "The 99 \u00b7 Overview stages and swap summary",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1300,
+   "h": 636,
+   "title": "The calls"
+  },
+  "Overview-Stages.dc.html": {
+   "x": 1380,
+   "y": 0,
+   "w": 1712,
+   "h": 4482,
+   "title": "1 \u00b7 Overview: stages and the alternate commander (A)"
+  },
+  "Overview-Visual.dc.html": {
+   "x": 3172,
+   "y": 0,
+   "w": 1712,
+   "h": 4590,
+   "title": "1 \u00b7 Option B: Overview, less of a wall of text"
+  },
+  "Why-These.dc.html": {
+   "x": 4964,
+   "y": 0,
+   "w": 1412,
+   "h": 6369,
+   "title": "2 \u00b7 Suggested changes: why these cards"
+  },
+  "Toast-Checkbox.dc.html": {
+   "x": 6456,
+   "y": 0,
+   "w": 1300,
+   "h": 1546,
+   "title": "3 \u00b7 Toast and checkbox"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Overview-Stages.dc.html",
+  "Overview-Visual.dc.html",
+  "Why-These.dc.html",
+  "Toast-Checkbox.dc.html"
+ ],
+ "notes": {},
+ "designSystems": []
+}

@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Metamorphous&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0B0E; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { color: #6C95D8; }
+  :root {
+    --bg:#121217; --surface:#1E1F26; --surface-rail:#181920; --surface-sunken:#16171D; --surface-raised:#212229;
+    --elevated:#2D2E35; --elevated-hover:#34353D; --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E;
+    --accent:#5C86C9; --accent-dim:#34507D; --danger:#C6533F; --success:#6FA368; --warning:#E0913C;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:var(--fg);background:#0B0B0E;padding:48px 56px 96px;display:flex;flex-direction:column;gap:64px;width:max-content;min-width:1800px;">
+
+  <header style="display:flex;flex-direction:column;gap:14px;max-width:1180px;">
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#0B0B0E;background:var(--accent);border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R1</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.28em;text-transform:uppercase;color:var(--fg-faint);">tuning hub · canvas B of 3 · mana balance · 2026-10-09</span>
+    </div>
+    <h1 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:34px;line-height:1.25;color:var(--fg);">The count shows the moment the tool opens. Look deeper sits on top of it, and a deeper look lands above the count, never over it.</h1>
+    <p style="margin:0;max-width:1000px;font-size:14.5px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">Brief §3 and §7. Tier 1 is free and deterministic, so its ready state is its result: there is no button to press and no running frame. Tier 2 is Look deeper, one credit, drawn after Help me choose’s own deeper look (title, cost tag, Stop that refunds, results kept underneath). Every figure is consistent with one deck: Naya, 105 cards, 31 green pips against 14 green sources.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px;">
+      <sc-for list="{{ jump }}" as="j" hint-placeholder-count="8">
+        <a href="#{{ j.id }}" style="font-family:'IBM Plex Mono',monospace;font-size:12px;border:1px solid {{ j.bc }};border-radius:6px;padding:5px 10px;">{{ j.id }} · {{ j.label }}</a>
+      </sc-for>
+    </div>
+  </header>
+
+  <sc-for list="{{ sections }}" as="s" hint-placeholder-count="3">
+    <section id="{{ s.id }}" style="display:flex;flex-direction:column;gap:18px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:16px;">{{ s.id }} · <span style="color:var(--accent);">{{ s.title }}</span></div>
+      <div style="display:flex;align-items:flex-start;gap:40px;">
+        <sc-for list="{{ s.frames }}" as="f" hint-placeholder-count="2">
+          <div style="display:flex;flex-direction:column;gap:8px;flex:none;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 7px;align-self:flex-start;">{{ f.tag }}</span>
+            <div data-screen-label="{{ f.tag }}" style="width:{{ f.w }}px;background:var(--bg);border:1px solid var(--border-strong);border-radius:{{ f.frameR }}px;padding:{{ f.framePad }};display:flex;flex-direction:column;gap:10px;">
+              <sc-if value="{{ f.d }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;gap:22px;border-bottom:1px solid var(--border);">
+                  <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5"><span style="font-size:13px;font-weight:{{ t.weight }};color:{{ t.ink }};padding:4px 0 10px;border-bottom:2px solid {{ t.rule }};margin-bottom:-1px;display:flex;align-items:center;gap:7px;"><sc-if value="{{ t.key }}" hint-placeholder-val="{{ false }}"><dc-import name="TuningToolMark" tool="{{ t.key }}" size="14" ink="{{ t.ink }}" hint-size="14px,14px"></dc-import></sc-if>{{ t.label }}</span></sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ f.p }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;align-items:center;justify-content:space-between;"><span style="height:44px;display:flex;align-items:center;font-size:13px;font-weight:500;color:var(--fg-muted);">‹ Tuning</span><span style="display:flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);"><dc-import name="TuningToolMark" tool="mana" size="14" ink="var(--fg-body)" hint-size="14px,14px"></dc-import>2 of 4 tools</span></div>
+              </sc-if>
+
+              <div style="background:var(--surface-sunken);border:1px solid var(--border);border-radius:{{ f.panelR }}px;padding:{{ f.panelPad }};display:flex;flex-direction:column;gap:14px;">
+                <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">
+                  <h3 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:{{ f.h }}px;color:var(--fg);">Mana Balance</h3>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ f.sub }}</span>
+                </div>
+
+                <sc-if value="{{ f.band.offer }}" hint-placeholder-val="{{ false }}">
+                  <div style="background:var(--surface);border:1px solid {{ f.band.border }};border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:10px;">
+                    <div style="display:flex;flex-direction:{{ f.dir }};align-items:{{ f.align }};gap:12px;">
+                      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;">
+                        <span style="font-size:13.5px;font-weight:600;color:var(--fg);">{{ f.band.title }}</span>
+                        <span style="font-size:12.5px;line-height:1.5;color:var(--fg-body);text-wrap:pretty;">{{ f.band.lead }}</span>
+                      </div>
+                      <span role="button" aria-label="{{ f.band.aria }}" style="flex:none;min-height:{{ f.btnH }}px;display:flex;align-items:stretch;justify-content:center;font-size:13px;font-weight:600;color:{{ f.band.btnInk }};border:1px solid {{ f.band.btnBorder }};border-radius:8px;overflow:hidden;">
+                        <span style="flex:1;display:flex;align-items:center;justify-content:center;padding:0 14px;">{{ f.band.btn }}</span>
+                        <sc-if value="{{ f.band.seg }}" hint-placeholder-val="{{ true }}"><span style="display:flex;align-items:center;gap:6px;padding:0 12px;border-left:1px solid {{ f.band.btnBorder }};font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;"><span style="width:7px;height:7px;transform:rotate(45deg);background:currentColor;"></span>{{ f.band.seg }}</span></sc-if>
+                      </span>
+                    </div>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);">{{ f.band.line }}</span>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ f.band.running }}" hint-placeholder-val="{{ false }}">
+                  <div style="background:var(--surface);border:1px solid var(--accent);border-radius:10px;padding:12px 14px;display:flex;flex-direction:{{ f.dir }};align-items:{{ f.align }};gap:12px;" aria-busy="true">
+                    <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;">
+                      <span style="display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;color:var(--fg);"><span style="width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px rgba(92,134,201,0.22);"></span>Looking deeper…</span>
+                      <span style="font-size:12.5px;line-height:1.5;color:var(--fg-body);">The count below stays until the deeper look is ready.</span>
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">reading your description, 2 game notes and 105 cards · 0:09 · stopping gives the credit back</span>
+                    </div>
+                    <span style="flex:{{ f.btnFlex }};min-height:{{ f.btnH }}px;display:flex;align-items:center;justify-content:center;padding:0 16px;font-size:13px;font-weight:500;color:var(--fg-muted);border:1px solid var(--border-strong);border-radius:8px;">Stop</span>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ f.band.note }}" hint-placeholder-val="{{ false }}">
+                  <div style="background:var(--surface);border:1px solid var(--border-strong);border-radius:10px;padding:12px 14px;display:flex;flex-direction:{{ f.dir }};align-items:{{ f.align }};gap:12px;">
+                    <div style="flex:1;min-width:0;display:flex;align-items:flex-start;gap:10px;">
+                      <sc-if value="{{ f.band.failed }}" hint-placeholder-val="{{ false }}"><svg role="img" aria-label="Didn’t finish" viewBox="0 0 16 16" width="18" height="18" style="flex:none;display:block;color:var(--danger);margin-top:1px;"><path fill-rule="evenodd" fill="currentColor" d="M8 1.2 A6.8 6.8 0 1 0 8 14.8 A6.8 6.8 0 1 0 8 1.2 Z M7.05 4 H8.95 L8.6 9.3 H7.4 Z M8 10.5 A1.15 1.15 0 1 0 8 12.8 A1.15 1.15 0 1 0 8 10.5 Z"></path></svg></sc-if>
+                      <sc-if value="{{ f.band.refused }}" hint-placeholder-val="{{ false }}"><span style="flex:none;width:18px;height:18px;border-radius:50%;border:1px solid var(--fg-faint);color:var(--fg-faint);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;">i</span></sc-if>
+                      <span style="font-size:12.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">{{ f.band.sentence }}</span>
+                    </div>
+                    <span role="button" style="flex:none;min-height:{{ f.btnH }}px;display:flex;align-items:stretch;justify-content:center;font-size:13px;font-weight:600;color:var(--accent);border:1px solid var(--accent);border-radius:8px;overflow:hidden;">
+                      <span style="flex:1;display:flex;align-items:center;justify-content:center;padding:0 14px;">{{ f.band.btn }}</span>
+                      <span style="display:flex;align-items:center;gap:6px;padding:0 12px;border-left:1px solid var(--accent);font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;"><span style="width:7px;height:7px;transform:rotate(45deg);background:currentColor;"></span>1 credit</span>
+                    </span>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ f.deeper }}" hint-placeholder-val="{{ false }}">
+                  <div style="background:var(--surface);border:1px solid var(--border-strong);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:12px;">
+                    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                      <span style="font-size:13.5px;font-weight:600;color:var(--fg);">Deeper look</span>
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--success);background:rgba(111,163,104,0.12);border-radius:999px;padding:2px 9px;">done</span>
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">read your description, 2 game notes, 105 cards and the count below</span>
+                    </div>
+                    <sc-for list="{{ deeperItems }}" as="x" hint-placeholder-count="3">
+                      <div style="border-top:1px solid var(--border);padding-top:12px;display:flex;flex-direction:column;gap:8px;">
+                        <sc-if value="{{ x.pair }}" hint-placeholder-val="{{ false }}">
+                          <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;">
+                            <div style="width:22px;height:31px;flex:none;border-radius:3px;background:repeating-linear-gradient(135deg,var(--border),var(--border) 3px,var(--surface-raised) 3px,var(--surface-raised) 6px);border:1px solid var(--border-strong);"></div>
+                            <span style="font-size:13px;color:var(--fg-body);text-decoration:line-through;text-decoration-color:var(--fg-locked);border-bottom:1px dotted var(--accent);">{{ x.cut }}</span>
+                            <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);">→</span>
+                            <div style="width:22px;height:31px;flex:none;border-radius:3px;background:repeating-linear-gradient(135deg,var(--elevated),var(--elevated) 3px,var(--border) 3px,var(--border) 6px);border:1px solid var(--border-dashed);"></div>
+                            <span style="width:7px;height:7px;flex:none;border-radius:50%;background:var(--success);"></span>
+                            <span style="font-size:13px;font-weight:600;color:var(--fg);border-bottom:1px dotted var(--accent);">{{ x.add }}</span>
+                          </div>
+                        </sc-if>
+                        <div style="display:flex;flex-direction:{{ f.dir }};align-items:flex-start;gap:{{ f.tagGap }}px;">
+                          <span style="flex:none;width:86px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:{{ x.tagInk }};border:1px {{ x.tagStyle }} {{ x.tagBorder }};border-radius:999px;padding:2px 0;">{{ x.tag }}</span>
+                          <span style="font-size:12.5px;line-height:1.55;color:{{ x.ink }};text-wrap:pretty;">{{ x.text }}</span>
+                        </div>
+                        <div style="display:flex;gap:5px;flex-wrap:wrap;padding-left:{{ f.indent }}px;">
+                          <sc-for list="{{ x.cites }}" as="c" hint-placeholder-count="2">
+                            <span style="display:flex;align-items:baseline;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;background:var(--surface-sunken);border:1px solid var(--border);border-radius:5px;padding:3px 7px;"><span style="letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">{{ c.src }}</span><span style="color:var(--fg-muted);">{{ c.text }}</span></span>
+                          </sc-for>
+                        </div>
+                        <sc-if value="{{ x.pair }}" hint-placeholder-val="{{ false }}">
+                          <div style="display:flex;gap:7px;padding-left:{{ f.indent }}px;">
+                            <span style="font-weight:600;font-size:12.5px;color:var(--accent);border:1px solid var(--accent);border-radius:7px;padding:7px 13px;">Apply</span>
+                            <span style="font-weight:500;font-size:12.5px;color:var(--fg-muted);border:1px solid var(--border-strong);border-radius:7px;padding:7px 12px;">Reject</span>
+                          </div>
+                        </sc-if>
+                      </div>
+                    </sc-for>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);border-top:1px solid var(--border);padding-top:10px;">1 credit used · 1 of 3 left · next one at 4:10 PM</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:10px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);"><span>The count, unchanged</span><span style="flex:1;height:1px;background:var(--border);"></span></div>
+                </sc-if>
+
+                <sc-if value="{{ f.count }}" hint-placeholder-val="{{ true }}">
+                  <p style="margin:0;font-size:{{ f.leadSize }}px;line-height:1.6;color:var(--fg-body);max-width:640px;text-wrap:pretty;"><b style="color:var(--warning);font-weight:600;">Green is short by 3.</b> Your spells ask for 31 green pips and the deck has 14 green sources, where 17 would cover them. White and red are covered.</p>
+                  <div style="display:flex;flex-direction:column;border-top:1px solid var(--border);">
+                    <sc-if value="{{ f.d }}" hint-placeholder-val="{{ true }}">
+                      <div style="display:grid;grid-template-columns:120px 90px minmax(0,1fr) 110px;gap:14px;padding:8px 2px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-locked);border-bottom:1px solid var(--border);"><span>Color</span><span>Cost</span><span>Sources</span><span style="text-align:right;">Status</span></div>
+                    </sc-if>
+                    <sc-for list="{{ colors }}" as="c" hint-placeholder-count="3">
+                      <div style="display:grid;grid-template-columns:{{ f.colGrid }};gap:{{ f.colGap }};align-items:center;padding:10px 2px;border-bottom:1px solid var(--border);">
+                        <span style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--fg);"><span style="width:18px;height:18px;border-radius:50%;background:{{ c.pip }};color:{{ c.pipInk }};display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;">{{ c.k }}</span>{{ c.name }}</span>
+                        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">{{ c.pips }} pips</span>
+                        <div style="display:flex;flex-direction:column;gap:5px;grid-column:{{ f.barCol }};">
+                          <div style="position:relative;height:8px;border-radius:999px;background:var(--elevated);">
+                            <div style="position:absolute;left:0;top:0;bottom:0;width:{{ c.landPct }}%;background:{{ c.pip }};border-radius:999px 0 0 999px;"></div>
+                            <div style="position:absolute;left:calc({{ c.landPct }}% + 2px);top:0;bottom:0;width:calc({{ c.otherPct }}% - 2px);border-radius:0 999px 999px 0;background:repeating-linear-gradient(135deg,{{ c.pip }} 0 2px,transparent 2px 5px);box-shadow:inset 0 0 0 1px {{ c.pip }};"></div>
+                            <div style="position:absolute;left:{{ c.needPct }}%;top:-3px;bottom:-3px;width:2px;background:var(--fg);"></div>
+                          </div>
+                          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);"><span style="color:var(--fg);font-weight:600;">{{ c.have }}</span> of {{ c.need }} · {{ c.mix }}</span>
+                        </div>
+                        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;text-align:right;color:{{ c.statusInk }};grid-row:{{ f.statusRow }};grid-column:{{ f.statusCol }};">{{ c.status }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                  <div style="position:relative;display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;padding-top:12px;border-top:1px dashed var(--border-dashed);font-size:12px;color:var(--fg-body);">
+                    <span style="display:inline-flex;align-items:center;gap:7px;"><span style="width:18px;height:10px;border-radius:2px;background:var(--fg-muted);"></span>Land<span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">36</span></span>
+                    <span style="display:inline-flex;align-items:center;gap:7px;"><span style="width:18px;height:10px;border-radius:2px;background:repeating-linear-gradient(135deg, var(--fg-muted) 0 2px, transparent 2px 5px);box-shadow:inset 0 0 0 1px var(--fg-muted);"></span>Mana rock, dork or land search<span style="font-family:'IBM Plex Mono',monospace;font-size:11px;">7</span></span>
+                    <span style="display:inline-flex;align-items:center;gap:7px;"><span style="width:2px;height:14px;background:var(--fg);"></span>Covers the cost</span>
+                    <span style="display:inline-flex;align-items:center;gap:6px;margin-left:{{ f.tipML }};font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">1 not counted<span style="width:18px;height:18px;border-radius:50%;border:1px solid {{ f.tipBorder }};color:{{ f.tipInk }};display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:600;">i</span></span>
+                    <sc-if value="{{ f.tipOpen }}" hint-placeholder-val="{{ false }}">
+                      <div role="tooltip" style="position:absolute;top:calc(100% + 6px);right:0;z-index:2;width:300px;padding:12px 14px;background:var(--elevated);border:1px solid var(--border-strong);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.45);font-size:12.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">We can’t read what Pyramid of the Pantheon makes, so it’s left out of every figure.</div>
+                    </sc-if>
+                  </div>
+                  <span style="font-size:12px;line-height:1.5;color:var(--fg-muted);">2 green sources are creatures: counted, and a wipe takes them.</span>
+
+                  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:2px;">
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">{{ f.sugHead }}</span>
+                    <span style="flex:1;min-width:16px;height:1px;background:var(--border);"></span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:{{ f.tallyInk }};">{{ f.tally }}</span>
+                    <sc-if value="{{ f.cutsLink }}" hint-placeholder-val="{{ false }}"><span style="display:flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--accent);"><dc-import name="TuningToolMark" tool="cuts" size="14" ink="var(--accent)" hint-size="14px,14px"></dc-import>Proposed cuts →</span></sc-if>
+                    <sc-if value="{{ f.allBtn }}" hint-placeholder-val="{{ true }}"><span style="min-height:{{ f.actH }}px;display:flex;align-items:center;padding:0 13px;font-size:12.5px;font-weight:600;color:var(--accent);border:1px solid var(--accent);border-radius:7px;">{{ f.allBtn }}</span></sc-if>
+                  </div>
+                  <sc-for list="{{ f.groups }}" as="grp" hint-placeholder-count="2">
+                    <div style="display:flex;flex-direction:column;gap:{{ f.listGap }}px;">
+                      <span style="display:flex;align-items:baseline;gap:8px;padding:2px 2px 0;"><span style="font-size:12.5px;font-weight:600;color:var(--fg);">{{ grp.title }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ grp.count }}</span></span>
+                      <sc-for list="{{ grp.rows }}" as="g" hint-placeholder-count="3">
+                        <div>
+                          <sc-if value="{{ g.answered }}" hint-placeholder-val="{{ false }}">
+                            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:9px;border-radius:9px;padding:9px 12px;background:{{ g.aBg }};border:1px solid {{ g.aBorder }};">
+                              <span style="display:flex;align-items:center;gap:6px;"><sc-if value="{{ g.done }}" hint-placeholder-val="{{ false }}"><span style="width:15px;height:15px;border-radius:4px;border:1px solid var(--success);color:var(--success);font-size:9px;display:flex;align-items:center;justify-content:center;">✓</span></sc-if><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:{{ g.aInk }};">{{ g.aLabel }}</span></span>
+                              <span style="font-size:12.5px;color:{{ g.aName }};text-decoration:{{ g.aDeco }};text-decoration-color:var(--fg-locked);">{{ g.name }}</span>
+                              <span style="margin-left:auto;min-height:32px;display:flex;align-items:center;border-radius:7px;padding:0 11px;font-size:12px;font-weight:500;color:var(--fg-muted);border:1px solid var(--border-strong);">{{ g.aUndo }}</span>
+                            </div>
+                          </sc-if>
+                          <sc-if value="{{ g.open }}" hint-placeholder-val="{{ true }}">
+                            <div style="background:var(--surface);border:1px solid var(--border);border-radius:{{ f.cardR }}px;padding:{{ f.cardPad }};display:flex;flex-direction:column;gap:{{ f.rowGap }}px;">
+                              <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;">
+                                <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;color:{{ g.glyphInk }};width:12px;text-align:center;">{{ g.glyph }}</span>
+                                <div style="width:22px;height:31px;flex:none;border-radius:3px;background:repeating-linear-gradient(135deg,var(--elevated),var(--elevated) 3px,var(--border) 3px,var(--border) 6px);border:1px {{ g.thumbStyle }} {{ g.thumbBorder }};"></div>
+                                <sc-if value="{{ g.isAdd }}" hint-placeholder-val="{{ true }}"><span style="width:7px;height:7px;flex:none;border-radius:50%;background:{{ g.dot }};border:1px {{ g.dotStyle }} {{ g.dotBorder }};box-sizing:border-box;"></span></sc-if>
+                                <span style="font-size:13px;font-weight:{{ g.weight }};color:{{ g.nameInk }};text-decoration:{{ g.deco }};text-decoration-color:var(--fg-locked);border-bottom:1px dotted var(--accent);">{{ g.name }}</span>
+                                <sc-if value="{{ g.buy }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--warning);background:rgba(224,145,60,0.12);border-radius:4px;padding:1px 6px;">buy <span style="color:var(--fg-locked);">···</span> {{ g.buy }}</span></sc-if>
+                                <sc-if value="{{ f.d }}" hint-placeholder-val="{{ true }}">
+                                  <span style="margin-left:auto;display:flex;gap:7px;">
+                                    <span style="min-height:32px;display:flex;align-items:center;padding:0 13px;font-size:12.5px;font-weight:600;color:var(--accent);border:1px solid var(--accent);border-radius:7px;">{{ g.yes }}</span>
+                                    <span style="min-height:32px;display:flex;align-items:center;padding:0 12px;font-size:12.5px;font-weight:500;color:var(--fg-muted);border:1px solid var(--border-strong);border-radius:7px;">Reject</span>
+                                  </span>
+                                </sc-if>
+                              </div>
+                              <div style="display:flex;align-items:flex-start;gap:8px;background:var(--surface-sunken);border:1px solid var(--border);border-radius:7px;padding:7px 9px;">
+                                <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-body);border:1px solid var(--border-strong);border-radius:999px;padding:1px 7px;">counted</span>
+                                <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.55;color:var(--fg-muted);">{{ g.fact }}</span>
+                              </div>
+                              <sc-if value="{{ f.p }}" hint-placeholder-val="{{ false }}">
+                                <div style="display:flex;gap:8px;">
+                                  <span style="flex:1;min-height:44px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--accent);border:1px solid var(--accent);border-radius:8px;">{{ g.yes }}</span>
+                                  <span style="flex:1;min-height:44px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;color:var(--fg-muted);border:1px solid var(--border-strong);border-radius:8px;">Reject</span>
+                                </div>
+                              </sc-if>
+                            </div>
+                          </sc-if>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </sc-for>
+                  <sc-if value="{{ f.thin }}" hint-placeholder-val="{{ false }}">
+                    <div style="border:1px dashed var(--border-dashed);border-radius:9px;padding:10px 12px;display:flex;align-items:flex-start;gap:10px;">
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-locked);">–</span>
+                      <span style="font-size:12.5px;line-height:1.55;color:var(--fg-faint);text-wrap:pretty;">No staple suggestion this time. EDHREC lists 12 Gishath decks, too few to say which rocks they usually run. The count above needs no EDHREC data.</span>
+                    </div>
+                  </sc-if>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);border-top:1px solid var(--border);padding-top:10px;">Counted from the list as it is now. Open it again and it counts again; nothing is spent.</span>
+                </sc-if>
+
+                <sc-if value="{{ f.failed }}" hint-placeholder-val="{{ false }}">
+                  <div style="background:var(--surface-sunken);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;">
+                    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                      <svg role="img" aria-label="Couldn’t count" viewBox="0 0 16 16" width="18" height="18" style="flex:none;display:block;color:var(--danger);"><path fill-rule="evenodd" fill="currentColor" d="M8 1.2 A6.8 6.8 0 1 0 8 14.8 A6.8 6.8 0 1 0 8 1.2 Z M7.05 4 H8.95 L8.6 9.3 H7.4 Z M8 10.5 A1.15 1.15 0 1 0 8 12.8 A1.15 1.15 0 1 0 8 10.5 Z"></path></svg>
+                      <span style="font-family:'Metamorphous',serif;font-size:17px;color:var(--fg);">We couldn’t count this deck’s mana</span>
+                    </div>
+                    <p style="margin:11px 0 0;font-size:13.5px;line-height:1.6;color:var(--fg-body);max-width:660px;">The card catalog didn’t answer, so there is nothing to show yet. It is usually back within a minute.</p>
+                    <span style="margin-top:9px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">your list is untouched · nothing was spent</span>
+                  </div>
+                  <div style="padding-top:14px;border-top:1px solid var(--border);display:flex;flex-direction:{{ f.dir }};align-items:{{ f.align }};gap:12px;">
+                    <span style="min-height:{{ f.btnH }}px;display:flex;align-items:center;justify-content:center;padding:0 18px;font-size:13.5px;font-weight:600;color:var(--accent);border:1px solid var(--accent);border-radius:8px;">Try again</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">Look deeper needs the count, so it waits for it.</span>
+                  </div>
+                </sc-if>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+        <div style="width:360px;flex:none;display:flex;flex-direction:column;gap:12px;font-size:13px;line-height:1.65;color:var(--fg-muted);">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);">{{ s.noteHead }}</span>
+          <sc-for list="{{ s.notes }}" as="n" hint-placeholder-count="3">
+            <p style="margin:0;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">{{ n.b }}</b> {{ n.t }}</p>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+  </sc-for>
+
+  <section id="B10" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:16px;">B10 · <span style="color:var(--accent);">Additions and Cuts on Suggested changes too: the same two lists, each line with its own reason (Hugh, feedback)</span></div>
+    <div style="display:flex;align-items:flex-start;gap:40px;">
+      <sc-for list="{{ scFrames }}" as="f" hint-placeholder-count="2">
+        <div style="display:flex;flex-direction:column;gap:8px;flex:none;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 7px;align-self:flex-start;">{{ f.tag }}</span>
+          <div data-screen-label="{{ f.tag }}" style="width:{{ f.w }}px;background:var(--bg);border:1px solid var(--border-strong);border-radius:{{ f.frameR }}px;padding:{{ f.framePad }};">
+            <div style="background:var(--surface-sunken);border:1px solid var(--border);border-radius:{{ f.panelR }}px;padding:{{ f.panelPad }};display:flex;flex-direction:column;gap:14px;">
+              <h3 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:{{ f.h }}px;color:var(--fg);">Suggested changes</h3>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">read from 9 games · 2 game notes · 99 cards · your collection</span>
+              <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">5 in, 5 out</span>
+                <span style="flex:1;min-width:16px;height:1px;background:var(--border);"></span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">+1 in · −1 out · stays at 99</span>
+                <span style="min-height:{{ f.actH }}px;display:flex;align-items:center;padding:0 13px;font-size:12.5px;font-weight:600;color:var(--accent);border:1px solid var(--accent);border-radius:7px;">Apply the rest</span>
+              </div>
+              <sc-for list="{{ scGroups }}" as="grp" hint-placeholder-count="2">
+                <div style="display:flex;flex-direction:column;gap:{{ f.listGap }}px;">
+                  <span style="display:flex;align-items:baseline;gap:8px;padding:2px 2px 0;"><span style="font-size:12.5px;font-weight:600;color:var(--fg);">{{ grp.title }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ grp.count }}</span></span>
+                  <sc-for list="{{ grp.rows }}" as="g" hint-placeholder-count="2">
+                    <div>
+                      <sc-if value="{{ g.answered }}" hint-placeholder-val="{{ false }}">
+                        <div style="display:flex;flex-wrap:wrap;align-items:center;gap:9px;border-radius:9px;padding:9px 12px;background:{{ g.aBg }};border:1px solid {{ g.aBorder }};">
+                          <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.1em;text-transform:uppercase;color:{{ g.aInk }};">{{ g.aLabel }}</span>
+                          <span style="font-size:12.5px;color:{{ g.aName }};text-decoration:{{ g.aDeco }};text-decoration-color:var(--fg-locked);">{{ g.name }}</span>
+                          <span style="margin-left:auto;min-height:32px;display:flex;align-items:center;border-radius:7px;padding:0 11px;font-size:12px;font-weight:500;color:var(--fg-muted);border:1px solid var(--border-strong);">{{ g.aUndo }}</span>
+                        </div>
+                      </sc-if>
+                      <sc-if value="{{ g.open }}" hint-placeholder-val="{{ true }}">
+                        <div style="background:var(--surface);border:1px solid var(--border);border-radius:{{ f.cardR }}px;padding:{{ f.cardPad }};display:flex;flex-direction:column;gap:{{ f.rowGap }}px;">
+                          <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;">
+                            <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;color:{{ g.glyphInk }};width:12px;text-align:center;">{{ g.glyph }}</span>
+                            <div style="width:22px;height:31px;flex:none;border-radius:3px;background:repeating-linear-gradient(135deg,var(--elevated),var(--elevated) 3px,var(--border) 3px,var(--border) 6px);border:1px {{ g.thumbStyle }} {{ g.thumbBorder }};"></div>
+                            <sc-if value="{{ g.isAdd }}" hint-placeholder-val="{{ true }}"><span style="width:7px;height:7px;flex:none;border-radius:50%;background:var(--success);"></span></sc-if>
+                            <span style="font-size:13px;font-weight:{{ g.weight }};color:{{ g.nameInk }};text-decoration:{{ g.deco }};text-decoration-color:var(--fg-locked);border-bottom:1px dotted var(--accent);">{{ g.name }}</span>
+                            <sc-if value="{{ f.d }}" hint-placeholder-val="{{ true }}">
+                              <span style="margin-left:auto;display:flex;gap:7px;">
+                                <span style="min-height:32px;display:flex;align-items:center;padding:0 13px;font-size:12.5px;font-weight:600;color:var(--accent);border:1px solid var(--accent);border-radius:7px;">{{ g.yes }}</span>
+                                <span style="min-height:32px;display:flex;align-items:center;padding:0 12px;font-size:12.5px;font-weight:500;color:var(--fg-muted);border:1px solid var(--border-strong);border-radius:7px;">Reject</span>
+                              </span>
+                            </sc-if>
+                          </div>
+                          <span style="font-size:12.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">{{ g.why }}</span>
+                          <div style="display:flex;gap:5px;flex-wrap:wrap;">
+                            <sc-for list="{{ g.cites }}" as="c" hint-placeholder-count="2">
+                              <span style="display:flex;align-items:baseline;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;background:var(--surface-sunken);border:1px solid var(--border);border-radius:5px;padding:3px 7px;"><span style="letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">{{ c.src }}</span><span style="color:var(--fg-muted);">{{ c.text }}</span></span>
+                            </sc-for>
+                          </div>
+                          <sc-if value="{{ f.p }}" hint-placeholder-val="{{ false }}">
+                            <div style="display:flex;gap:8px;">
+                              <span style="flex:1;min-height:44px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--accent);border:1px solid var(--accent);border-radius:8px;">{{ g.yes }}</span>
+                              <span style="flex:1;min-height:44px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;color:var(--fg-muted);border:1px solid var(--border-strong);border-radius:8px;">Reject</span>
+                            </div>
+                          </sc-if>
+                        </div>
+                      </sc-if>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+      <div style="width:360px;flex:none;display:flex;flex-direction:column;gap:12px;font-size:13px;line-height:1.65;color:var(--fg-muted);">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);">Why two lists works, and what it costs</span>
+        <sc-for list="{{ mixNotes }}" as="n" hint-placeholder-count="6">
+          <p style="margin:0;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">{{ n.b }}</b> {{ n.t }}</p>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <section id="B9" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:16px;">B9 · <span style="color:var(--accent);">a counted fact beside a hedged claim: two kinds of statement, told apart at a glance (§7)</span></div>
+    <div style="display:flex;align-items:flex-start;gap:40px;">
+      <div style="width:900px;flex:none;background:var(--bg);border:1px solid var(--border-strong);border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:18px;">
+        <sc-for list="{{ specimen }}" as="x" hint-placeholder-count="2">
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">{{ x.label }}</span>
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;">
+              <div style="display:flex;align-items:flex-start;gap:10px;">
+                <span style="flex:none;width:86px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:{{ x.tagInk }};border:1px {{ x.tagStyle }} {{ x.tagBorder }};border-radius:999px;padding:2px 0;">{{ x.tag }}</span>
+                <span style="font-size:13px;line-height:1.55;color:{{ x.ink }};text-wrap:pretty;">{{ x.text }}</span>
+              </div>
+              <div style="display:flex;gap:5px;flex-wrap:wrap;padding-left:96px;">
+                <sc-for list="{{ x.cites }}" as="c" hint-placeholder-count="2">
+                  <span style="display:flex;align-items:baseline;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;background:var(--surface-sunken);border:1px solid var(--border);border-radius:5px;padding:3px 7px;"><span style="letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">{{ c.src }}</span><span style="color:var(--fg-muted);">{{ c.text }}</span></span>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">tier 1 form: the counted strip inside a free suggestion</span>
+          <div style="display:flex;align-items:flex-start;gap:8px;background:var(--surface-sunken);border:1px solid var(--border);border-radius:7px;padding:7px 9px;max-width:620px;">
+            <span style="flex:none;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-body);border:1px solid var(--border-strong);border-radius:999px;padding:1px 7px;">counted</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.55;color:var(--fg-muted);">green 14 sources for 31 pips, 17 cover it · after: 16 · white 15 for 12 pips, 12 cover it · after: 13</span>
+          </div>
+        </div>
+      </div>
+      <div style="width:400px;flex:none;display:flex;flex-direction:column;gap:12px;font-size:13px;line-height:1.65;color:var(--fg-muted);">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);">Three carriers, so it never rests on color</span>
+        <sc-for list="{{ hedgeNotes }}" as="n" hint-placeholder-count="5">
+          <p style="margin:0;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">{{ n.b }}</b> {{ n.t }}</p>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const D = { d: true, p: false, w: 900, frameR: 12, framePad: '18px 24px 22px', panelR: 12, panelPad: '18px 20px', h: 19, dir: 'row', align: 'center', btnFlex: 'none', btnH: 36, actH: 32, actGap: 12, pairGap: 9, cardR: 9, cardPad: '10px 12px', cardGap: 8, leadSize: 13.5, tagGap: 10, indent: 96,
+      colGrid: '120px 90px minmax(0,1fr) 110px', colGap: '14px', barCol: 'auto', statusRow: 'auto', statusCol: 'auto' };
+    const P = { d: false, p: true, w: 390, frameR: 22, framePad: '10px 16px 20px', panelR: 11, panelPad: '16px 14px', h: 17, dir: 'column', align: 'stretch', btnFlex: '1', btnH: 44, actH: 44, actGap: 8, pairGap: 7, cardR: 10, cardPad: '13px 12px', cardGap: 11, leadSize: 13, tagGap: 6, indent: 0,
+      colGrid: 'minmax(0,1fr) auto auto', colGap: '6px 12px', barCol: '1 / -1', statusRow: '1', statusCol: '3' };
+    const credit = 'Uses a credit. 2 of 3 left · next one at 4:10 PM.';
+    const offer = { offer: true, border: 'var(--border)', title: 'Want a closer read?', lead: 'A deeper look reads your description and game notes against this count, and checks every rules claim against the card’s own text.', seg: '1 credit', aria: 'Look deeper. Uses 1 credit.', btn: 'Look deeper', btnInk: 'var(--accent)', btnBorder: 'var(--accent)', line: '2 of 3 credits left · next one at 4:10 PM' };
+    const spent = { ...offer, seg: '', aria: 'Look deeper. No credits left.', btnInk: 'var(--fg-locked)', btnBorder: 'var(--border-strong)', line: '0 of 3 credits left · next one at 4:10 PM. Suggestions, overviews and deeper looks share these credits.' };
+    const running = { running: true };
+    const none = {};
+    const refused = { note: true, refused: true, btn: 'Look deeper', sentence: 'The deeper look found nothing it could check against this deck, so it showed nothing. Your credit came back, and the count below stands.' };
+    const failed = { note: true, failed: true, btn: 'Try again', sentence: 'The deeper look didn’t finish, so your credit came back. The count below is unchanged.' };
+    const sug = (o) => ({ open: true, applied: false, swap: true, pickCut: false, glyph: '→', glyphSize: 13, thumbStyle: 'solid', thumbBorder: 'var(--border-strong)', dot: 'var(--success)', dotStyle: 'solid', dotBorder: 'var(--success)', buy: '', yes: 'Apply', ...o });
+    const rebalance = sug({ kind: 'Rebalance · two basics, both already in the deck', cut: '2× Plains', add: '2× Forest', fact: 'green 14 sources for 31 pips, 17 cover it · after: 16 · white 15 for 12 pips, 12 cover it · after: 13', after: 'the deck stays at 105' });
+    const ramp = sug({ kind: 'For ramp · two basics out, one rock in', cut: '2× Mountain', add: 'Talisman of Unity', thumbBorder: 'var(--border-dashed)', fact: 'makes green or white (its own text) · green after: 15 · white after: 16 · red 20 for 20 pips, 18 cover it · after: 18 · 2-drops in the deck: 6', after: 'the deck goes to 104' });
+    const staple = sug({ kind: 'Staple · not in your deck', swap: false, pickCut: true, glyph: '+', glyphSize: 15, cut: '', add: 'Arcane Signet', thumbStyle: 'dashed', thumbBorder: 'var(--border-dashed)', dot: 'transparent', dotStyle: 'dashed', dotBorder: 'var(--fg-faint)', buy: '$0.89', yes: 'Add', fact: 'in 88% of Gishath decks on EDHREC · this deck runs 3 of the 6 rocks they most share · makes any of your colors (its own text)', after: 'no cut picked · the deck goes to 106' });
+    const appliedRow = { open: false, applied: true, cut: '2× Plains', add: '2× Forest' };
+    const sugs = [rebalance, ramp, staple];
+    // Additions and Cuts (Hugh, feedback): two lists, each line with its own counted reason.
+    const add = (name, fact, o = {}) => ({ open: true, answered: false, isAdd: true, glyph: '+', glyphInk: 'var(--accent)', name, fact, yes: 'Add', weight: 600, nameInk: 'var(--fg)', deco: 'none', thumbStyle: o.inDeck ? 'solid' : 'dashed', thumbBorder: o.inDeck ? 'var(--border-strong)' : 'var(--border-dashed)', dot: o.owned === false ? 'transparent' : 'var(--success)', dotStyle: o.owned === false ? 'dashed' : 'solid', dotBorder: o.owned === false ? 'var(--fg-faint)' : 'var(--success)', buy: o.buy || '' });
+    const cut = (name, fact) => ({ open: true, answered: false, isAdd: false, glyph: '−', glyphInk: 'var(--fg-faint)', name, fact, yes: 'Cut', weight: 400, nameInk: 'var(--fg-body)', deco: 'line-through', thumbStyle: 'solid', thumbBorder: 'var(--border-strong)', buy: '' });
+    const done = (r, label) => ({ ...r, open: false, answered: true, done: true, aLabel: label, aBg: 'var(--surface)', aBorder: 'var(--success)', aInk: 'var(--success)', aName: 'var(--fg-body)', aDeco: r.isAdd ? 'none' : 'line-through', aUndo: 'Undo' });
+    const nope = (r) => ({ ...r, open: false, answered: true, done: false, aLabel: 'rejected', aBg: 'var(--surface-sunken)', aBorder: 'var(--border)', aInk: 'var(--fg-locked)', aName: 'var(--fg-faint)', aDeco: 'none', aUndo: 'Show it again' });
+    const aForest = add('2× Forest', 'green 14 → 16 for 31 pips · 17 cover it', { inDeck: true });
+    const aTalisman = add('Talisman of Unity', 'makes green or white (its own text) · green +1 · white +1 · 6 two-drops in the deck');
+    const aSignet = add('Arcane Signet', 'in 88% of Gishath decks on EDHREC · makes any of your colors (its own text) · this deck runs 3 of the 6 rocks they share', { owned: false, buy: '$0.89' });
+    const cPlains = cut('2× Plains', 'white 15 for 12 pips · 12 cover it · 3 to spare');
+    const cMountain = cut('2× Mountain', 'red 20 for 20 pips · 18 cover it · 2 to spare');
+    const groupsOf = (adds, cuts) => [
+      { title: 'Additions', count: `${adds.length}`, rows: adds },
+      { title: 'Cuts', count: `${cuts.length}`, rows: cuts },
+    ];
+    const allGroups = groupsOf([aForest, aTalisman, aSignet], [cPlains, cMountain]);
+    const fr = (base, tag, band, o = {}) => ({ ...base, tag, band, count: true, groups: allGroups, tally: '+4 in · −4 out · stays at 105', tallyInk: 'var(--fg-faint)', allBtn: 'Apply all', listGap: base.d ? 6 : 10, rowGap: base.d ? 7 : 10, tipML: base.d ? 'auto' : '0', tipOpen: false, tipBorder: 'var(--fg-faint)', tipInk: 'var(--fg-faint)', deeper: false, failed: false, thin: false, sugs, sugHead: 'From the count', sub: o.sub || 'free · counted just now', ...o });
+    const sections = [
+      { id: 'B1', title: 'the free result, with Look deeper on top (tier 1 ready = results)',
+        frames: [fr(D, 'B1 · free result · desktop 900 · ⓘ open', offer, { tipOpen: true, tipBorder: 'var(--accent)', tipInk: 'var(--accent)' }), fr(P, 'B1b · free result · phone 390', offer)],
+        noteHead: 'Instant, so there is nothing to press',
+        notes: [
+          { b: 'Opening the tool is the run.', t: 'Tier 1 is a count, not a call: it draws on open with no manifest, no fan and no running frame. A recount happens every time it opens (A6 resets the view anyway).' },
+          { b: 'Look deeper is the first thing in the panel', t: '(ruling 1): one press, never a second trip. The cost rides inside the button as its own segment, ◆ 1 credit, after a rule (Hugh, feedback): one control, so it never sits awkwardly beside the label on a phone. The standing line under it reads 2 of 3 credits left.' },
+          { b: 'The source table counts every kind.', t: 'Columns Color · Cost · Sources · Status. Lands solid in the color’s ink, rocks, dorks and land search striped after them, a tick at what covers the cost. The legend is Deck Stats mana’s own (dashed rule, swatch, label, count) plus the tick.' },
+          { b: 'What isn’t counted is behind ⓘ:', t: '1 not counted, with the card named in the tooltip (drawn open in B1). The dork caveat stays as one short line, because it changes how to read a figure.' },
+          { b: 'Suggestions are two lists, Additions and Cuts', t: '(Hugh, feedback), not pairs. Each line stands alone with its own counted reason and its own Add or Cut / Reject. Apply all takes every open line at once.' },
+          { b: 'The tally keeps the total honest.', t: 'Beside Apply all: +4 in · −4 out · stays at 105. It recounts with every answer. Going over is fine (Hugh): the tally stays neutral and, once the total passes 100, gains Proposed cuts → beside it (B6).' },
+          { b: 'Retired: three suggestion kinds.', t: 'Rebalance, For ramp and Staple no longer need their own shapes: a + line or a − line says it. What was a staple is an Addition with a dashed thumbnail and dot (not in the deck) and the buy tag. Previously: a dashed thumbnail and a dashed dot because it is not in the deck, and the shipped buy tag when unowned. The kind line names it in words too.' },
+          { b: 'Each carries its counted strip:', t: 'current, target and after, in the pip math’s own figures. Apply is an edit, exactly as in Suggested changes (sets the changes flag; collapses in its slot).' },
+        ] },
+      { id: 'B2', title: 'Look deeper, running (tier 2)',
+        frames: [fr(D, 'B2 · looking deeper · desktop 900', running), fr(P, 'B2b · looking deeper · phone 390', running)],
+        noteHead: 'The count stays put underneath',
+        notes: [
+          { b: 'The band becomes the running state in place:', t: '1px --accent border (the generating panel’s signal), the accent dot, what it is reading with real counts, elapsed time. No fan here: the fan belongs to Suggested changes’ manifest.' },
+          { b: 'Stop is open for engineering', t: '(Hugh questions whether a Stop belongs here at all). Drawn as Help me choose’s, in Look deeper’s place, refunding the credit; without it the band is simply the running line. The free result below stays live: Apply still works while the deeper look runs.' },
+          { b: 'Leaving and coming back', t: 'shows the landing with this tool’s tile running (A3). Reopening it shows this frame.' },
+        ] },
+      { id: 'B3', title: 'deeper result, above the free count (tier 2 results)',
+        frames: [fr(D, 'B3 · deeper look done · desktop 900', none, { deeper: true, sub: 'free count · plus a deeper look' }), fr(P, 'B3b · deeper look done · phone 390', none, { deeper: true, sub: 'free count · plus a deeper look' })],
+        noteHead: 'Sits above, never replaces',
+        notes: [
+          { b: 'The call: above.', t: 'The deeper look is grounded in the count, so the count stays visible beneath it, unchanged, under a rule that says so. Replacing it would hide the facts the deeper look leans on; merging would blur which line cost a credit.' },
+          { b: 'Every line has a kind tag.', t: 'Suggestion, Checked, or Unchecked. A suggestion carries Suggested changes’ own citations (YOU SAID, NOTE, LIST, plus CARD TEXT when a rules claim was verified against oracle text).' },
+          { b: 'One deeper look per version of the list.', t: 'The band does not come back until the list changes; then it offers again over a fresh count. The result reopens from History.' },
+        ] },
+      { id: 'B4', title: 'deeper look refused: nothing it could stand behind',
+        frames: [fr(D, 'B4 · refused · desktop 900', refused), fr(P, 'B4b · refused · phone 390', refused)],
+        noteHead: 'A refusal is not a failure',
+        notes: [
+          { b: 'Suggested changes’ refusal pattern:', t: 'one plain sentence in a neutral note, no --danger, credit back. The validator dropped everything (ungrounded, or every rules claim failed oracle checking).' },
+          { b: 'Look deeper stays offered', t: 'because nothing was spent; pressing it again is a fresh, charged attempt.' },
+          { b: 'Tier 1 never refuses', t: '(ruling 6). It has no refusal state to draw; its nearest is B7, where it runs and says what is missing.' },
+        ] },
+      { id: 'B5', title: 'deeper look failed',
+        frames: [fr(D, 'B5 · failed · desktop 900', failed), fr(P, 'B5b · failed · phone 390', failed)],
+        noteHead: 'Same shape as Help me choose’s',
+        notes: [
+          { b: 'An icon replaces the Didn’t finish tag', t: '(Hugh, feedback): a 16-grid filled disc with the ! cut out, in --danger, labeled Didn’t finish for screen readers. It is the panel’s only --danger. The sentence says the credit came back; Try again carries its own 1 credit segment. Never an automatic retry.' },
+          { b: 'Every failure class', t: '(unavailable, timed out, unusable answer, interrupted) takes this shape; only the sentence changes, from the existing failure copy.' },
+        ] },
+      { id: 'B6', title: 'credits used up, one free suggestion applied',
+        frames: [fr(D, 'B6 · no credits, part answered · desktop 900', spent, { groups: groupsOf([done(aForest, 'added'), aTalisman, nope(aSignet)], [cPlains, cMountain]), tally: '+2 in · −0 out · the deck goes to 107', cutsLink: true, allBtn: 'Apply the rest' }), fr(P, 'B6b · no credits, part answered · phone 390', spent, { groups: groupsOf([done(aForest, 'added'), aTalisman, nope(aSignet)], [done(cPlains, 'cut'), cMountain]), tally: '+2 · −2 · stays at 105', allBtn: 'Apply the rest' })],
+        noteHead: 'The free tier never runs out',
+        notes: [
+          { b: 'Only the paid button disables.', t: 'It drops its credit segment and goes to the disabled primary’s ink; the standing line under it says 0 of 3 credits left and when the next returns. No separate 0 left tag. The count and its suggestions are untouched: tier 1 is never limited.' },
+          { b: 'Answered lines collapse in their slots:', t: 'added and cut on a --success frame with Undo, rejected sunken with Show it again. With an addition taken and no cut yet, the tally reads +2 in · −0 out · the deck goes to 107, in its ordinary ink, with Proposed cuts → beside it. Apply all becomes Apply the rest.' },
+        ] },
+      { id: 'B7', title: 'thin EDHREC data: it runs anyway and says what is missing',
+        frames: [fr(D, 'B7 · thin data · desktop 900', offer, { thin: true, groups: groupsOf([aForest, aTalisman], [cPlains, cMountain]), tally: '+3 in · −4 out · the deck goes to 104' }), fr(P, 'B7b · thin data · phone 390', offer, { thin: true, groups: groupsOf([aForest, aTalisman], [cPlains, cMountain]), tally: '+3 in · −4 out · the deck goes to 104' })],
+        noteHead: 'Only the staple depends on EDHREC',
+        notes: [
+          { b: 'The count needs no EDHREC data,', t: 'so the table and the two swap kinds are unaffected. Only the Staple suggestion is withheld, and a dashed line in its place says why, with the deck count EDHREC has.' },
+          { b: 'Dashed is the app’s word for “shown, not read”:', t: 'the manifest’s none-logged row uses it, and so does this.' },
+        ] },
+      { id: 'B8', title: 'tier 1 failed: the count could not be made',
+        frames: [fr(D, 'B8 · count failed · desktop 900', none, { count: false, failed: true, sub: 'free' }), fr(P, 'B8b · count failed · phone 390', none, { count: false, failed: true, sub: 'free' })],
+        noteHead: 'The one tier 1 failure',
+        notes: [
+          { b: 'Only an outage stops a count:', t: 'the catalog that holds each card’s mana abilities did not answer. Suggested changes’ failure shape: tag, Metamorphous heading, one sentence, what survived, Try again in the action row.' },
+          { b: 'No Look deeper band:', t: 'it is grounded in the count and has nothing to stand on. The action row says so in one mono line.' },
+        ] },
+    ];
+    const hedge = { tag: 'Unchecked', tagInk: 'var(--fg-faint)', tagStyle: 'dashed', tagBorder: 'var(--border-dashed)', ink: 'var(--fg-muted)' };
+    const checked = { tag: 'Checked', tagInk: 'var(--fg-body)', tagStyle: 'solid', tagBorder: 'var(--border-strong)', ink: 'var(--fg-body)' };
+    const suggestion = { tag: 'Suggestion', tagInk: 'var(--accent)', tagStyle: 'solid', tagBorder: 'var(--accent-dim)', ink: 'var(--fg-body)' };
+    const deeperItems = [
+      { ...suggestion, pair: true, cut: 'Rugged Highlands', add: 'Game Trail', text: 'You wrote that the deck wants Gishath on six, every game. 7 of your 36 lands enter tapped; Game Trail makes red or green and enters untapped when you hold a Mountain or a Forest, which 22 of your lands are.', cites: [{ src: 'you said', text: '“Gishath on six, every game”' }, { src: 'list', text: '7 of 36 enter tapped' }, { src: 'card text', text: 'Game Trail · checked' }] },
+      { ...checked, pair: false, text: 'Talisman of Unity makes green or white, so the For ramp swap below adds one source to each. With the Rebalance swap as well, green reaches 17 of 17.', cites: [{ src: 'card text', text: 'Talisman of Unity · checked' }] },
+      { ...hedge, pair: false, text: 'Your two dorks may be worth less here than the count says. You noted a wipe on turn five in 2 of 9 games, and how often a dork survives is not something we can count.', cites: [{ src: 'note', text: '“wiped on turn 5” · 2 of 9' }] },
+    ];
+    const specimen = [
+      { label: 'counted fact · checkable from the deck alone', ...checked, text: 'Green has 14 sources for 31 pips; 17 would cover them.', cites: [{ src: 'list', text: '105 cards' }, { src: 'count', text: 'green 14 of 17' }] },
+      { label: 'hedged claim · says what it cannot know', ...hedge, text: 'Your two dorks may be worth less here than the count says, because how often a dork survives is not something we can count.', cites: [{ src: 'note', text: '“wiped on turn 5” · 2 of 9' }] },
+    ];
+    const hedgeNotes = [
+      { b: 'The tag:', t: 'Checked is a solid pill in --fg-body; Unchecked is a dashed pill in --fg-faint. Same width (86px), same slot, so a column of mixed lines scans as two kinds.' },
+      { b: 'The ink:', t: 'a checked line reads in --fg-body; a hedged line one step quieter in --fg-muted. Both stay above 4.5:1 on --surface.' },
+      { b: 'The words:', t: 'a hedge always carries may (or might) and names the uncertainty in the same sentence. A checked line never hedges.' },
+      { b: 'Figures inside a hedge are cited, not claimed.', t: 'The 2 of 9 is a counted fact the hedge leans on, so it sits in a chip; the hedge itself states no figure as its conclusion.' },
+      { b: 'Dashed already means not read or not checked in this app', t: '(the manifest’s none-logged row, the in-flight cell). The Unchecked pill borrows it; no new token, no new mark.' },
+      { b: 'Tier 1 has nothing to hedge,', t: 'per the brief: its counted strip is the free form of a checked line, and never carries Unchecked.' },
+    ];
+    const KEY = { 'Suggested changes': 'suggested', 'Mana Balance': 'mana', 'Proposed cuts': 'cuts', 'History': 'history' };
+    const tabs = ['All tools', 'Suggested changes', 'Mana Balance', 'Proposed cuts', 'History'].map((label, i) => ({ label, key: KEY[label] || '', weight: i === 2 ? 600 : 500, ink: i === 2 ? 'var(--fg)' : 'var(--fg-muted)', rule: i === 2 ? 'var(--accent)' : 'transparent' }));
+    const colors = [
+      { k: 'W', name: 'White', pip: 'var(--w)', pipInk: '#14110E', pips: 12, have: 15, need: 12, lands: 12, mix: '12 lands · 2 rocks · 1 search', status: 'covered', statusInk: 'var(--fg-faint)' },
+      { k: 'R', name: 'Red', pip: 'var(--r)', pipInk: '#F2F4F4', pips: 20, have: 20, need: 18, lands: 17, mix: '17 lands · 2 rocks · 1 search', status: 'covered', statusInk: 'var(--fg-faint)' },
+      { k: 'G', name: 'Green', pip: 'var(--g)', pipInk: '#F2F4F4', pips: 31, have: 14, need: 17, lands: 10, mix: '10 lands · 1 rock · 2 dorks · 1 search', status: 'short 3', statusInk: 'var(--warning)' },
+    ].map(c => { const max = 22; return { ...c, landPct: c.lands / max * 100, otherPct: (c.have - c.lands) / max * 100, needPct: c.need / max * 100 }; });
+    const jump = [['B1', 'free result'], ['B2', 'deeper, running'], ['B3', 'deeper result'], ['B4', 'refused'], ['B5', 'failed'], ['B6', 'no credits'], ['B7', 'thin data'], ['B8', 'count failed'], ['B10', 'mix and match (new)'], ['B9', 'counted vs hedged']].map(([id, label], i) => ({ id, label, bc: i === 8 ? 'var(--accent)' : 'var(--border-strong)' }));
+    const scA = (name, why, cites) => ({ ...add(name, ''), why, cites });
+    const scC = (name, why, cites) => ({ ...cut(name, ''), why, cites });
+    const scGroups = [
+      { title: 'Additions', count: '5', rows: [
+        done(scA('Nature’s Lore', '', []), 'added'),
+        scA('Three Visits', 'Fetches a Forest untapped for two. You marked mana against the deck in 5 of 9 games, all stalled on turn three.', [{ src: 'games', text: 'mana · 5 of 9' }]),
+        scA('Ranging Raptors', 'Turns each hit you take into a land. 4 of your 9 games had you defending early with nothing on board.', [{ src: 'games', text: 'defense · 4 of 9' }, { src: 'you said', text: '“go wide and fast”' }]),
+      ] },
+      { title: 'Cuts', count: '5', rows: [
+        done(scC('Kodama’s Reach', '', []), 'cut'),
+        scC('Rampant Growth', 'Its land enters tapped, and 5 of your 9 games stalled the turn after you cast it.', [{ src: 'games', text: 'mana · 5 of 9' }, { src: 'note', text: '“one land short again” · Sep 26' }]),
+        scC('Wildgrowth Walker', 'Needs explore to pay off; this list has 3 explore cards, the fewest of any role.', [{ src: 'list', text: '3 explore cards' }]),
+      ] },
+    ];
+    const scFrames = [
+      { ...D, tag: 'B10 · Suggested changes, two lists · desktop 900', listGap: 6, rowGap: 7 },
+      { ...P, tag: 'B10b · Suggested changes, two lists · phone 390', listGap: 10, rowGap: 10 },
+    ];
+    const opt = (label, tag, effect, o = {}) => ({ label, tag, effect, on: !!o.on, bg: o.on ? 'rgba(92,134,201,0.12)' : 'transparent', ring: o.on ? 'var(--accent)' : 'var(--border-dashed)', ink: o.muted ? 'var(--fg-muted)' : 'var(--fg)', weight: o.on ? 600 : 400, effInk: o.warn ? 'var(--warning)' : 'var(--fg-faint)' });
+    const cutOptions = [
+      opt('2× Plains', 'suggested', 'white 15 → 13 · 12 cover it'),
+      opt('2× Mountain', 'your pick', 'red 20 → 18 · 18 cover it', { on: true }),
+      opt('1× Plains, 1× Mountain', '', 'white 14 · red 19 · both covered'),
+      opt('Another card from your deck…', '', 'search the list', { muted: true }),
+      opt('No cut', '', 'the deck goes to 107', { muted: true, warn: true }),
+    ];
+    const mixNotesRetired = [
+      { b: 'Either half changes in place.', t: 'change ▾ on the cut or the add opens a short ranked list; the phone opens it as a sheet with 52px rows. The first line is always what was suggested; picking another marks the half your pick.' },
+      { b: 'Every option shows its counted effect before you pick it,', t: 'so 2× Mountain for 2× Forest reads red 20 → 18, still covered. Tier 1 recounts instantly; nothing is spent.' },
+      { b: 'Not one for one:', t: 'basics carry a quantity stepper (2× Forest − 2 +), a cut can be any card in the deck (Another card…, which searches the list), and No cut is always an option that says what it does to the total.' },
+      { b: 'A Staple asks for a cut', t: 'instead of naming none: Pick a cut, or none, the same picker, ranked by the count.' },
+      { b: 'The same control on Suggested changes', t: '(B10c, third card). Changing a half there keeps the model’s reason but sets it under a rule that says it was written for the original pair; citations that named the replaced card drop. Back to the suggested pair restores it. History records what was applied, and that it was edited.' },
+    ];
+    const edited = [
+      { mark: 'mana', kind: 'Rebalance · edited', cut: '2× Mountain', cutEdited: true, add: '2× Forest', fact: 'green 14 → 16 for 31 pips, 17 cover it · red 20 → 18 for 20 pips, 18 cover it', why: '', whyNote: '', after: 'the deck stays at 105' },
+      { mark: 'mana', kind: 'For ramp · edited', cut: 'Cultivate', cutEdited: true, add: 'Talisman of Unity', fact: 'green 14 → 14: Cultivate’s land search was a green source, Talisman replaces it · white 15 → 16 · ramp 14 → 14', why: '', whyNote: '', after: 'the deck stays at 105' },
+      { mark: 'suggested', kind: 'Suggested changes · edited', cut: 'Wildgrowth Walker', cutEdited: true, add: 'Nature’s Lore', fact: '', why: 'Five of your nine games stalled on turn three, and Nature’s Lore finds a Forest untapped where Rampant Growth finds a basic tapped.', whyNote: 'This reason was written for Rampant Growth → Nature’s Lore. You picked a different cut, so it may not hold for Wildgrowth Walker.', after: 'the deck stays at 105' },
+    ];
+    const mixNotes = [
+      { b: 'Design’s read: yes, adopt it.', t: 'Two lists is simpler to scan and to answer than pairs with pickers, and it is the honest shape: most of these suggestions were never truly paired. Plains out is about white’s surplus; Forest in is about green’s gap. Each line now says only what it can count.' },
+      { b: 'Apply all, or line by line.', t: 'Apply all takes every open line; each line has its own Add or Cut and Reject. Answered lines collapse in place, nothing reorders.' },
+      { b: 'The cost of decoupling is the total.', t: 'Taking adds without cuts moves the deck. The tally in the section head (+2 in · −1 out · the deck goes to 106) recounts on every answer, so the player sees the total before Apply the rest. Going over is fine: past 100 it offers Proposed cuts →, never a warning.' },
+      { b: 'Suggested changes takes the same shape.', t: 'Each line gets its own one-sentence reason and its own citations, instead of one reason per swap. That is a prompt and validator change (one rationale per card, each still needing a countable citation), not only UI: flagged as README open 8.' },
+      { b: 'What it loses:', t: 'the arrow’s “this for that” read, which was the original Suggested changes idea (cut and add with equal weight). The two lists keep equal weight by giving Cuts its own heading, same size as Additions.' },
+      { b: 'Mana Balance’s count and History are unchanged.', t: 'History records lines, so a run reads 3 added, 2 cut, 1 rejected.' },
+    ];
+    return { scGroups, scFrames, mixNotes, sections, deeperItems, specimen, hedgeNotes, tabs, colors, jump };
+  }
+}
+</script>
+</body>
+</html>

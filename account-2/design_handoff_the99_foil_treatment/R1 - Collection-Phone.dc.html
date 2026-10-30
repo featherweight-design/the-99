@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Collection grid · 390</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C}
+.m{font-family:'IBM Plex Mono',monospace}
+.shell{overflow:hidden;border-radius:9px;border:1px solid;display:flex;flex-direction:column}
+.art{position:relative;aspect-ratio:63/88;overflow:hidden;border-radius:0 0 9px 9px}
+.plate{position:absolute;inset:0;background:#0E0E10}
+.face{position:absolute;inset:4.3% 4.8%;border-radius:2.5%;display:flex;flex-direction:column;gap:2.2%;padding:3.2%;box-sizing:border-box}
+.nb{flex:0 0 7%;border-radius:2px;background:rgba(255,255,255,.22)}
+.win{flex:0 0 46%;border-radius:1px}
+.tb{flex:0 0 6%;border-radius:1px;background:rgba(255,255,255,.2)}
+.box{flex:1;border-radius:1px}
+.fl{position:absolute;inset:0;border-radius:inherit;pointer-events:none;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}
+.fl.foil::before,.fl.etched::before,.fl.foil::after,.fl.etched::after{content:"";position:absolute;inset:0;border-radius:inherit}
+.fl.foil::before{background:linear-gradient(115deg,rgba(255,255,255,0) 8%,rgba(255,110,180,.16) 22%,rgba(255,220,120,.16) 32%,rgba(255,255,255,.26) 39%,rgba(130,240,210,.16) 47%,rgba(120,170,255,.16) 60%,rgba(200,130,255,.14) 74%,rgba(255,255,255,0) 90%)}
+.fl.etched::before{background:linear-gradient(115deg,rgba(214,226,240,0) 12%,rgba(214,226,240,.10) 30%,rgba(236,243,250,.22) 42%,rgba(214,226,240,.10) 54%,rgba(214,226,240,0) 74%)}
+.fl.foil::after,.fl.etched::after{background:linear-gradient(105deg,rgba(255,255,255,0) 30%,rgba(255,255,255,.42) 50%,rgba(255,255,255,0) 70%);transform:translateX(-100%)}
+.rt .fl::before,.rt .fl::after,.fc .fl::before,.fc .fl::after{display:none}
+</style>
+</helmet>
+<div style="width:390px;min-height:2800px;box-sizing:border-box;padding:28px 16px 48px;background:#121217;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:28px">
+
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span class="m" style="font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#7C8A8C">Collection · Grid · 390 · R1</span>
+    <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:22px;line-height:1.25">One foil in a screenful</h2>
+    <p style="margin:0;font-size:12.5px;line-height:1.5;color:#95A4A6">The 3-up tile is 115px wide. The film still reads at that size: the bright streak sits a third of the way across, over the art window. Static, as on every phone.</p>
+  </div>
+
+  <ul style="margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+    <sc-for list="{{screen}}" as="t" hint-placeholder-count="12">
+      <li style="display:flex;flex-direction:column">
+        <div class="shell" style="background:{{t.surface}};border-color:{{t.border}}">
+          <div class="art {{t.state}}" style="background:{{t.sunken}}">
+            <sc-if value="{{t.drawn}}" hint-placeholder-val="{{true}}"><div class="plate"><div class="face" style="background:{{t.face}}"><span class="nb"></span><span class="win" style="background:{{t.win}}"></span><span class="tb"></span><span class="box" style="background:{{t.box}}"></span></div></div></sc-if>
+            <span class="fl {{t.fin}}" style="{{t.flStyle}}"></span>
+          </div>
+          <div style="padding:6px 7px 7px;display:flex;flex-direction:column;gap:2px">
+            <span style="display:flex;align-items:center;gap:4px"><span style="width:7px;height:7px;border-radius:50%;background:#6FA27A"></span></span>
+            <span style="font-size:11.5px;color:{{t.fg}};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{t.name}}<span class="m" style="font-size:10px;color:{{t.muted}}">{{t.trail}}</span></span>
+            <span class="m" style="font-size:9.5px;color:{{t.muted}};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{t.sub}}</span>
+          </div>
+        </div>
+        <span class="m" style="font-size:9.5px;color:#5C86C9;padding-top:4px;min-height:12px">{{t.label}}</span>
+      </li>
+    </sc-for>
+  </ul>
+
+  <section style="display:flex;flex-direction:column;gap:12px">
+    <span class="k">Six themes · foil, mixed, plain</span>
+    <sc-for list="{{themes}}" as="p" hint-placeholder-count="6">
+      <div style="display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:12px;background:{{p.bg}};border:1px solid {{p.border}}">
+        <span class="m" style="font-size:11px;font-weight:500;color:{{p.muted}}">{{p.n}}</span>
+        <ul style="margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+          <sc-for list="{{p.tiles}}" as="t" hint-placeholder-count="3">
+            <li style="display:flex;flex-direction:column">
+              <div class="shell" style="background:{{t.surface}};border-color:{{t.border}}">
+                <div class="art {{t.state}}" style="background:{{t.sunken}}">
+                  <sc-if value="{{t.drawn}}" hint-placeholder-val="{{true}}"><div class="plate"><div class="face" style="background:{{t.face}}"><span class="nb"></span><span class="win" style="background:{{t.win}}"></span><span class="tb"></span><span class="box" style="background:{{t.box}}"></span></div></div></sc-if>
+                  <span class="fl {{t.fin}}" style="{{t.flStyle}}"></span>
+                </div>
+                <div style="padding:6px 7px 7px;display:flex;flex-direction:column;gap:2px">
+                  <span style="font-size:11.5px;color:{{t.fg}};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{t.name}}<span class="m" style="font-size:10px;color:{{t.muted}}">{{t.trail}}</span></span>
+                  <span class="m" style="font-size:9.5px;color:{{t.muted}}">{{t.label}}</span>
+                </div>
+              </div>
+            </li>
+          </sc-for>
+        </ul>
+      </div>
+    </sc-for>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:12px">
+    <span class="k">Preferences · Kaldheim</span>
+    <ul style="margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px 8px">
+      <sc-for list="{{prefs}}" as="t" hint-placeholder-count="4">
+        <li style="display:flex;flex-direction:column;gap:5px">
+          <div class="shell" style="background:{{t.surface}};border-color:{{t.border}}">
+            <div class="art {{t.state}}" style="background:{{t.sunken}}">
+              <sc-if value="{{t.drawn}}" hint-placeholder-val="{{true}}"><div class="plate"><div class="face" style="background:{{t.face}}"><span class="nb"></span><span class="win" style="background:{{t.win}}"></span><span class="tb"></span><span class="box" style="background:{{t.box}}"></span></div></div></sc-if>
+              <span class="fl {{t.fin}}" style="{{t.flStyle}}"></span>
+            </div>
+            <div style="padding:6px 7px 7px;display:flex;flex-direction:column;gap:2px">
+              <span style="font-size:11.5px;color:{{t.fg}};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{t.name}}</span>
+            </div>
+          </div>
+          <span class="m" style="font-size:10.5px;font-weight:500;color:#C6D2D3">{{t.label}}</span>
+          <span style="font-size:11px;line-height:1.4;color:#95A4A6">{{t.note}}</span>
+        </li>
+      </sc-for>
+    </ul>
+  </section>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":2800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const TH = {
+      amonkhet: { n: 'Amonkhet · Low Sun', bg: '#14110E', surface: '#1E1A15', sunken: '#18140F', border: '#2B241B', fg: '#EDE6D8', muted: '#A59C89' },
+      kamigawa: { n: 'Kamigawa · Neon Rain', bg: '#0E0F14', surface: '#16181F', sunken: '#101219', border: '#181C26', fg: '#E6E8F0', muted: '#959AAD' },
+      ixalan: { n: 'Ixalan · Canopy', bg: '#0E1310', surface: '#171E19', sunken: '#101512', border: '#1D2620', fg: '#E0E7DE', muted: '#98A695' },
+      phyrexia: { n: 'Phyrexia · Oil Haze', bg: '#0D0B0E', surface: '#151317', sunken: '#100E12', border: '#19161C', fg: '#E4E2E6', muted: '#9A96A0' },
+      eldraine: { n: 'Eldraine · Witching Hour', bg: '#120E17', surface: '#1B1821', sunken: '#131018', border: '#241D30', fg: '#E4DEEE', muted: '#9C95A8' },
+      kaldheim: { n: 'Kaldheim · First Frost', bg: '#121217', surface: '#1E1F26', sunken: '#16171D', border: '#1A1F2B', fg: '#C6D2D3', muted: '#95A4A6' }
+    };
+    const ART = [
+      ['#D9D0B4', 'linear-gradient(160deg,#cfd8e6,#e8c98a 60%,#9a7b52)', '#EEE7D3'],
+      ['#2D5C93', 'linear-gradient(170deg,#1b2f55,#4f86c4 55%,#c9e0f0)', '#B9CCE0'],
+      ['#3A3436', 'linear-gradient(165deg,#120f14,#4b2f4a 60%,#8a5a6e)', '#B7AEAE'],
+      ['#B2452F', 'linear-gradient(160deg,#2a0f0a,#c2552c 55%,#f2b061)', '#E2C2B0'],
+      ['#3F6C3B', 'linear-gradient(170deg,#0f2414,#3f7a3a 55%,#b9d28a)', '#C3D1B5'],
+      ['#C2A04C', 'linear-gradient(160deg,#3a2a12,#b8873a 50%,#f0d58a)', '#E8DDB8'],
+      ['#8D9298', 'linear-gradient(165deg,#22262c,#6b737d 55%,#c8ccd2)', '#D3D6DA'],
+      ['#7E6C57', 'linear-gradient(170deg,#2b2a33,#7b6a8f 50%,#e6b98a)', '#D8CDBE']
+    ];
+    const tile = (o) => {
+      const th = TH[o.th || 'kaldheim'];
+      const a = ART[o.a % ART.length];
+      const fc = o.mode === 'fc';
+      const hidden = o.mode === 'pending' || o.mode === 'noart';
+      return {
+        name: o.name, trail: o.n > 1 ? ' ×' + o.n : '', sub: o.sub || '', label: o.label || '', note: o.note || '',
+        fin: hidden ? '' : (o.fin || ''),
+        state: (o.mode || '') + (o.mid ? ' mid' : ''),
+        drawn: !hidden,
+        face: a[0], win: a[1], box: a[2],
+        surface: fc ? '#000000' : th.surface, border: fc ? '#FFFFFF' : th.border, sunken: fc ? '#000000' : th.sunken,
+        fg: fc ? '#FFFFFF' : th.fg, muted: fc ? '#FFFFFF' : th.muted,
+        flStyle: o.mode === 'rt' ? 'box-shadow:inset 0 0 0 2px ' + th.muted : (fc ? 'box-shadow:none' : '')
+      };
+    };
+    const names = [
+      ['Abrade', 3, 1, 'WOC · common'], ['Absorb', 1, 1, 'RVR · rare'], ['Adarkar Wastes', 7, 1, 'DMU · rare'],
+      ['Aether Gust', 1, 2, 'M20 · uncommon'], ['Akroma’s Will', 0, 1, 'CMR · rare'], ['Ancient Tomb', 7, 1, 'UMA · uncommon'],
+      ['Anguished Unmaking', 5, 1, 'SOI · rare'], ['Arcane Signet', 6, 4, 'CMM · common'], ['Archon of Cruelty', 2, 1, 'MH2 · mythic'],
+      ['Arid Mesa', 7, 1, 'MH2 · rare'], ['Assassin’s Trophy', 5, 2, 'GRN · rare'], ['Austere Command', 0, 1, 'CMM · rare']
+    ];
+    return {
+      screen: names.map(([n, a, q, s], i) => tile({ name: n, a: a, n: q, sub: s, fin: i === 4 ? 'foil' : '', label: i === 4 ? 'foil' : '' })),
+      themes: Object.keys(TH).map((k) => ({
+        n: TH[k].n, bg: TH[k].bg, border: TH[k].border, muted: TH[k].muted,
+        tiles: [
+          tile({ th: k, name: 'Akroma’s Will', a: 0, n: 1, fin: 'foil', label: 'foil' }),
+          tile({ th: k, name: 'Beast Within', a: 4, n: 3, label: 'mixed' }),
+          tile({ th: k, name: 'Absorb', a: 1, n: 1, label: 'plain' })
+        ]
+      })),
+      prefs: [
+        tile({ name: 'Akroma’s Will', a: 0, fin: 'foil', label: 'At rest', note: 'All a phone shows.' }),
+        tile({ name: 'Akroma’s Will', a: 0, fin: 'foil', mode: 'rm', label: 'Reduced motion', note: 'The same.' }),
+        tile({ name: 'Akroma’s Will', a: 0, fin: 'foil', mode: 'rt', label: 'Reduced transp.', note: 'Solid 2px edge.' }),
+        tile({ name: 'Akroma’s Will', a: 0, fin: 'foil', mode: 'fc', label: 'Forced colours', note: 'Film off.' })
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Social R1, calls and locks</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#FF4D9A}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#6F7486}
+.cap{font-size:13px;line-height:1.55;color:#959AAD;margin:0}
+.col{display:flex;flex-direction:column;gap:12px}
+.card{border:1px solid #262A35;border-radius:12px;background:#12141B;padding:20px 22px;display:flex;flex-direction:column;gap:10px}
+.n{display:grid;grid-template-columns:34px 1fr;gap:4px 0;font-size:13.5px;line-height:1.55;color:#B1B6C7}
+.n b{color:#E6E8F0;font-weight:600}
+.n i{font-style:normal;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#FF4D9A;padding-top:3px}
+.lk{display:grid;grid-template-columns:240px 1fr;gap:0;font-size:13px;line-height:1.5;color:#B1B6C7;border-top:1px solid #181C26}
+.lk span{padding:9px 0;border-bottom:1px solid #181C26}
+.lk span:nth-child(odd){color:#E6E8F0;font-weight:600;padding-right:16px}
+.g{display:grid;grid-template-columns:44px 1fr;font-size:13px;line-height:1.5;color:#B1B6C7}
+.g i{font-style:normal;font:500 11px 'IBM Plex Mono',monospace;color:#E0913C;padding-top:2px}
+.g span{padding-bottom:9px}
+code{font:12px 'IBM Plex Mono',monospace;color:#E6E8F0;background:#20222A;padding:1px 5px;border-radius:4px}
+</style>
+</helmet>
+<div style="width:1800px;min-height:1500px;box-sizing:border-box;padding:48px 56px 56px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:28px">
+  <div class="col" style="gap:8px">
+    <span class="k">Social · round 1 of 3 · friends and pods · SOCIAL_FRIENDS_ENABLED · drawn on the shipped shell, Kamigawa theme</span>
+    <h1 style="margin:0;font:700 34px 'Chakra Petch',sans-serif">Friends live in the account menu, on one page that starts empty</h1>
+    <p class="cap" style="max-width:1500px;font-size:14.5px;color:#B1B6C7">One row joins the account menu, <b style="color:#E6E8F0">Friends</b>, and opens <code>/friends</code>. That page holds everything this round adds: the name friends see, your friends, your pods, and the invite links you have open. A friend is added only from a single-use link or its QR code, shown in one dialog (a sheet on a phone). The link opens <code>/invite/[token]</code>, which answers every invite state in the same card. Pods are cards on the friends page, each with one inline checkbox for sharing spares. Every list draws its empty state first, because staging holds no social rows.</p>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px">
+    <div class="card">
+      <span class="k">The calls (§Open, R1 items)</span>
+      <div class="n">
+        <i>01</i><span><b>Placement: the account menu, not a sixth nav item.</b> The tab bar is five wide and already squeezes Commanders to 9px; friends are set up a few times, not visited daily; and R2 and R3 put social data where it is used (deck rows, the log form), not on this page. The row sits second, under About. The rejected sixth tab is drawn on the Placement board.</span>
+        <i>02</i><span><b>Pods are a section of /friends, not a page.</b> A pod is a short list of friends plus one checkbox. A page of its own would hold one card.</span>
+        <i>03</i><span><b>One press makes one link.</b> <b>Invite a friend</b> creates the invite and opens the dialog with the QR code on top, the link and a copy button under it (Share first on a phone, through the native share sheet). The link is single-use, so a second press makes a second link.</span>
+        <i>04</i><span><b>Open links are listed under the pods</b> with the time left, <b>Show</b> (the same dialog, for the table) and <b>Revoke</b>. Only open links are listed: used, declined, revoked and expired links leave the list. A decline is never told, so the list cannot say it either.</span>
+        <i>05</i><span><b>At 10 open links the button is held</b> (aria-disabled), with one line under it saying why. A race past the cap answers <code>tooMany</code> in the shared toast.</span>
+        <i>06</i><span><b>The landing is one card in every state.</b> Signed out it names nobody and offers Sign in only, since the app is invite-only and a friend invite is not an app invite. Open: Accept or Decline, naming the inviter. Expired has its own line; used, declined, revoked and a bad token all read “This invite link no longer works”, so a forged token is told nothing new.</span>
+        <i>07</i><span><b>The display name is never asked for.</b> It starts as the Clerk first name (<code>ensureProfile</code>) and is changed inline wherever someone is about to see it: the page head, the invite dialog, the landing card. 30 characters.</span>
+        <i>08</i><span><b>Remove, leave and delete confirm in the shared delete pane</b>, inside the row’s <b>…</b> menu, as folders do. Each second sentence says what happens and that nobody is told. Removing a member from your pod is a bare ✕ with no confirm, since adding them back is one press.</span>
+        <i>09</i><span><b>Sharing spares is one checkbox on each pod card</b>, unticked by default, never a global toggle and never in a settings block.</span>
+        <i>10</i><span><b>After Accept you land on /friends</b> with a one-line receipt (✕ to close) and the friend at the top of the list. After Decline, the card says the inviter isn’t told.</span>
+      </div>
+    </div>
+    <div class="col" style="gap:28px">
+      <div class="card">
+        <span class="k">The locks (§Rulings), and where each one is honoured</span>
+        <div class="lk">
+          <span>Link or QR only, no search</span><span>No search field, name lookup or suggestion anywhere. The only way in is <b>Invite a friend</b>, then a link or a QR code.</span>
+          <span>Friendship is mutual</span><span>One Accept writes both sides. No requests, no pending friend.</span>
+          <span>Pods from the owner’s friends</span><span>Add friends lists your friends only. A member who arrived by a hand-on shows by name, marked “not a friend”.</span>
+          <span>Hand-on to longest-standing</span><span>Leave names the next owner in its confirm. The last member leaving deletes the pod, and that confirm says so.</span>
+          <span>Spares view-only, per pod</span><span>One checkbox per pod. No borrow, no ask, nothing in the cart. Spare lines themselves are R2.</span>
+          <span>Name and public id only</span><span>Rows draw display names and initials. No email, no avatar image, no Clerk id.</span>
+          <span>No model calls</span><span>Names are typed and shown, never read by a prompt.</span>
+          <span>30 / 40 / 10 / 7 days</span><span>Fields cap at 30 and 40; the 11th link is held; every link shows its expiry.</span>
+        </div>
+      </div>
+      <div class="card">
+        <span class="k">Gaps for engineering and Hugh</span>
+        <div class="g">
+          <i>G1</i><span>No read lists your open invites. The page needs <code>listOpenInvites(viewer)</code>: token, created, expires.</span>
+          <i>G2</i><span><code>/invite/[token]</code> must be public in <code>src/proxy.ts</code> to draw the signed-out card, and it reads nothing while signed out.</span>
+          <i>G3</i><span>Ruled (Hugh): the app stays invite-only. A friend invite cannot create an account, and the signed-out card says so. An invite for trusted new players is out of scope.</span>
+          <i>G4</i><span>Ruled (Hugh): opening a link from someone already your friend spends it. The page calls <code>redeemInvite</code>, which already handles that case.</span>
+          <i>G5</i><span>A brand-new account with no cards meets the first-run lock; /friends is not a nav item, so the lock does not touch it.</span>
+          <i>G6</i><span>Every name, pod and date here is placeholder data. Staging has none.</span>
+          <i>G7</i><span>The production host in the link (<code>the-99.dev</code>) is read from docs, not config.</span>
+          <i>G8</i><span>The QR code needs a client encoder; the boards draw a stand-in matrix.</span>
+          <i>G9</i><span>Members sort owner, You, then by name: <code>listPods</code> or the client orders them.</span>
+          <i>G10</i><span>No caption under the spares checkbox, for minimal controls. Hugh to confirm.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="cap">No About entry this round (batched at launch). Copy goes to /copy-review. Boards: Placement, Friends (desktop, phone), Invite (desktop, phone), Landing (desktop, phone), Pods (desktop, phone). New pixels on shipped surfaces sit inside a pink dashed outline.</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1800,"height":1500}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

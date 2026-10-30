@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #100D0A; }
+  ::selection { background: #C9A24B; color: #14110E; }
+  a { color: #C9A24B; text-decoration: none; }
+  a:hover { color: #D8B25E; }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;padding:40px;background:#100D0A;background-image:radial-gradient(1400px 700px at 30% -300px, rgba(201,162,75,0.06), transparent 70%);min-height:100vh;">
+
+  <!-- ===================================================================== TURN 2 — RESOLVED: THE RAIL, FULL STATE MATRIX ===================================================================== -->
+  <section id="2a" style="max-width:1400px;margin:0 0 30px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#C9A24B;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">2a</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#8E8269;">The 99 — App Shell · Turn 2 · Resolved</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:0 0 8px;color:#EDE6D8;">The Rail — every required state</h1>
+    <p style="max-width:760px;font-size:15px;line-height:1.65;color:#C6B79A;margin:0;">Resolved on <a href="#1a">1a</a>, built mobile-first — each state leads with the phone, desktop beside it. Signed-out landing, the first-run hybrid checklist with CSV upload (+ paste fallback), the three data-driven empty states, and the account menu. Decisions log + token-referenced component notes are in <b style="color:#EDE6D8;font-weight:600;">The 99 - App Shell README.md</b>.</p>
+  </section>
+
+  <div style="border:1px solid #2A241D;border-radius:14px;background:#1A160F;padding:22px 26px;margin-bottom:30px;max-width:1000px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:20px;">Mark usage — which mark, where</div>
+    <div style="display:flex;gap:20px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:220px;display:flex;gap:16px;align-items:center;">
+        <div style="width:72px;flex:none;display:flex;flex-direction:column;align-items:center;gap:6px;"><div style="display:flex;gap:4px;transform:translateX(-1px);"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="width:8px;height:8px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span></div><span style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;line-height:0.8;color:#EDE6D8;">99</span></div>
+        <div><div style="font-family:'Cinzel',serif;font-weight:600;font-size:16px;color:#EDE6D8;">Crowned 99 — identity</div><div style="font-size:12.5px;color:#A89B84;line-height:1.5;margin-top:4px;">The app itself: wordmark, signed-out landing, home, splash, favicon. Not a per-surface icon.</div></div>
+      </div>
+      <div style="flex:1;min-width:220px;display:flex;gap:16px;align-items:center;">
+        <div style="width:72px;flex:none;position:relative;height:66px;"><div style="position:absolute;left:50%;top:50%;width:32px;height:46px;border-radius:6px;background:#2A241D;border:1.5px solid #4A4033;transform:translate(-50%,-50%) rotate(-15deg) translateX(-11px);"></div><div style="position:absolute;left:50%;top:50%;width:32px;height:46px;border-radius:6px;background:#33291F;border:1.5px solid #5A4B38;transform:translate(-50%,-50%);"></div><div style="position:absolute;left:50%;top:50%;width:32px;height:46px;border-radius:6px;background:#3E3020;border:1.5px solid #C9A24B;transform:translate(-50%,-50%) rotate(15deg) translateX(11px);display:flex;align-items:center;justify-content:center;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:14px;color:#C9A24B;">99</span></div></div>
+        <div><div style="font-family:'Cinzel',serif;font-weight:600;font-size:16px;color:#EDE6D8;">Card fan — the library</div><div style="font-size:12.5px;color:#A89B84;line-height:1.5;margin-top:4px;">Collection &amp; Decks — the pile you own and build from. Their empty states.</div></div>
+      </div>
+      <div style="flex:1;min-width:220px;display:flex;gap:16px;align-items:center;">
+        <div style="width:72px;flex:none;display:flex;justify-content:center;"><div style="width:52px;height:52px;border:2px solid #C9A24B;border-radius:12px;display:flex;align-items:center;justify-content:center;"><span style="font-family:'Cinzel',serif;font-weight:700;font-size:15px;letter-spacing:0.03em;color:#EDE6D8;">XCIX</span></div></div>
+        <div><div style="font-family:'Cinzel',serif;font-weight:600;font-size:16px;color:#EDE6D8;">XCIX seal — leadership</div><div style="font-size:12.5px;color:#A89B84;line-height:1.5;margin-top:4px;">Commanders — the general who leads the 99. Its surface, empty &amp; loading states.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:46px;max-width:1720px;">
+
+    <!-- ============ STATE: SIGNED-OUT LANDING ============ -->
+    <div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #2A241D;padding-top:18px;">01 · Signed-out / — public landing · deliberately minimal</div>
+      <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+        <!-- mobile -->
+        <div style="width:392px;flex:none;border-radius:46px;padding:12px;background:#0A0806;border:1px solid #2A241D;box-shadow:0 34px 90px rgba(0,0,0,0.55);"><div style="border-radius:34px;overflow:hidden;background:#14110E;position:relative;height:812px;display:flex;flex-direction:column;background-image:radial-gradient(600px 360px at 50% 22%, rgba(201,162,75,0.12), transparent 70%);"><div style="position:absolute;top:11px;left:50%;transform:translateX(-50%);width:120px;height:26px;background:#0A0806;border-radius:0 0 16px 16px;z-index:5;"></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center;">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:12px;"><div style="display:flex;gap:8px;transform:translateX(-2px);"><span style="width:13px;height:13px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="width:18px;height:18px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="width:13px;height:13px;background:#C9A24B;transform:rotate(45deg);display:block;"></span></div><span style="font-family:'Cinzel',serif;font-weight:900;font-size:92px;line-height:0.82;color:#EDE6D8;">99</span></div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.4em;color:#C9A24B;margin-top:14px;">THE NINETY-NINE</div>
+            <p style="font-family:'IBM Plex Sans';font-style:italic;font-size:17px;line-height:1.5;color:#C6B79A;margin:22px 0 0;max-width:280px;">"99 problems, but your commander ain't one."</p>
+            <button style="font-family:'IBM Plex Sans';font-weight:600;font-size:15px;color:#14110E;background:#C9A24B;border:none;border-radius:8px;padding:14px 0;cursor:pointer;width:100%;max-width:260px;margin-top:34px;" style-hover="background:#D8B25E;">Sign in</button>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;margin-top:18px;letter-spacing:0.04em;">Invite-only · access by request</div>
+          </div>
+        </div></div>
+        <!-- desktop -->
+        <div style="width:1240px;flex:none;border-radius:14px;overflow:hidden;border:1px solid #3A3229;box-shadow:0 34px 90px rgba(0,0,0,0.55);">
+          <div style="height:38px;background:#1E1A15;border-bottom:1px solid #3A3229;display:flex;align-items:center;gap:8px;padding:0 14px;"><span style="width:9px;height:9px;border-radius:999px;background:#C6533F;display:block;"></span><span style="width:9px;height:9px;border-radius:999px;background:#E0913C;display:block;"></span><span style="width:9px;height:9px;border-radius:999px;background:#6FA368;display:block;"></span><div style="margin-left:14px;width:300px;height:22px;border-radius:6px;background:#14110E;border:1px solid #3A3229;display:flex;align-items:center;padding:0 10px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">the99.app</div><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;letter-spacing:0.14em;">SIGNED OUT · LANDING</span></div>
+          <div style="height:720px;background:#14110E;background-image:radial-gradient(1000px 520px at 50% 8%, rgba(201,162,75,0.10), transparent 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px;">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:16px;"><div style="display:flex;gap:11px;transform:translateX(-3px);"><span style="width:18px;height:18px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="width:25px;height:25px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="width:18px;height:18px;background:#C9A24B;transform:rotate(45deg);display:block;"></span></div><span style="font-family:'Cinzel',serif;font-weight:900;font-size:132px;line-height:0.82;color:#EDE6D8;">99</span></div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;letter-spacing:0.44em;color:#C9A24B;margin-top:16px;">THE NINETY-NINE</div>
+            <p style="font-family:'IBM Plex Sans';font-style:italic;font-size:21px;color:#C6B79A;margin:26px 0 0;">"99 problems, but your commander ain't one."</p>
+            <button style="font-family:'IBM Plex Sans';font-weight:600;font-size:15px;color:#14110E;background:#C9A24B;border:none;border-radius:8px;padding:14px 40px;cursor:pointer;margin-top:36px;" style-hover="background:#D8B25E;">Sign in</button>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8E8269;margin-top:20px;letter-spacing:0.04em;">Invite-only · access by request · a Commander companion</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ STATE: FIRST-RUN HYBRID CHECKLIST + CSV UPLOAD ============ -->
+    <div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #2A241D;padding-top:18px;">02 · First-run home — hybrid checklist · step 1 is the CSV dropzone</div>
+      <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+        <!-- mobile -->
+        <div style="width:392px;flex:none;border-radius:46px;padding:12px;background:#0A0806;border:1px solid #2A241D;box-shadow:0 34px 90px rgba(0,0,0,0.55);"><div style="border-radius:34px;overflow:hidden;background:#14110E;position:relative;height:812px;display:flex;flex-direction:column;"><div style="position:absolute;top:11px;left:50%;transform:translateX(-50%);width:120px;height:26px;background:#0A0806;border-radius:0 0 16px 16px;z-index:5;"></div>
+          <div style="padding:20px 20px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #2A241D;">
+            <div style="display:flex;align-items:flex-end;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.4em;color:#C9A24B;padding-bottom:4px;">THE</span><div style="display:flex;flex-direction:column;align-items:center;gap:4px;"><div style="display:flex;gap:3px;"><span style="width:5px;height:5px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="width:7px;height:7px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="width:5px;height:5px;background:#C9A24B;transform:rotate(45deg);display:block;"></span></div><span style="font-family:'Cinzel',serif;font-weight:800;font-size:24px;line-height:0.8;color:#EDE6D8;">99</span></div></div>
+            <div style="width:38px;height:38px;border-radius:12px;background:#221D16;border:1px solid #C9A24B;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C9A24B;">AR</div>
+          </div>
+          <div style="flex:1;overflow:hidden;padding:20px;">
+            <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:23px;margin:0;color:#EDE6D8;line-height:1.2;">Welcome to the 99, Arden</h2>
+            <p style="font-size:13px;color:#C6B79A;margin:8px 0 20px;line-height:1.5;">Three steps to your first recommendations.</p>
+            <!-- step 1 active -->
+            <div style="background:#1E1A15;border:1px solid #C9A24B;border-radius:12px;padding:16px;">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;"><span style="width:22px;height:22px;border-radius:999px;background:#C9A24B;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;">1</span><span style="font-family:'Cinzel',serif;font-weight:600;font-size:16px;color:#EDE6D8;">Upload your collection</span></div>
+              <div style="border:1.5px dashed #4A4033;border-radius:10px;background:#181410;padding:22px 16px;text-align:center;">
+                <div style="width:40px;height:40px;border-radius:999px;border:1px solid #C9A24B;color:#C9A24B;font-size:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">↑</div>
+                <div style="font-size:14px;color:#EDE6D8;font-weight:600;">Drop your collection CSV</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;margin-top:6px;letter-spacing:0.06em;">Moxfield · Archidekt · Deckbox · CSV</div>
+                <button style="font-family:'IBM Plex Sans';font-weight:600;font-size:13px;color:#14110E;background:#C9A24B;border:none;border-radius:8px;padding:10px 18px;cursor:pointer;margin-top:14px;">Browse files</button>
+              </div>
+              <div style="font-size:12px;color:#8E8269;line-height:1.5;margin-top:12px;">Needs a <b style="color:#C6B79A;font-weight:600;">Name</b> and <b style="color:#C6B79A;font-weight:600;">Quantity</b> column — most exports already have them. <a href="#2a" style="color:#C9A24B;">Paste a list instead</a></div>
+            </div>
+            <!-- steps 2/3 locked -->
+            <div style="display:flex;align-items:center;gap:10px;padding:15px 16px;margin-top:12px;background:#181410;border:1px solid #2A241D;border-radius:12px;opacity:0.55;"><span style="width:22px;height:22px;border-radius:999px;border:1px solid #4A4033;color:#8E8269;font-family:'IBM Plex Mono',monospace;font-size:12px;display:flex;align-items:center;justify-content:center;">2</span><span style="font-family:'Cinzel',serif;font-weight:600;font-size:15px;color:#A89B84;">Review your commanders</span></div>
+            <div style="display:flex;align-items:center;gap:10px;padding:15px 16px;margin-top:10px;background:#181410;border:1px solid #2A241D;border-radius:12px;opacity:0.55;"><span style="width:22px;height:22px;border-radius:999px;border:1px solid #4A4033;color:#8E8269;font-family:'IBM Plex Mono',monospace;font-size:12px;display:flex;align-items:center;justify-content:center;">3</span><span style="font-family:'Cinzel',serif;font-weight:600;font-size:15px;color:#A89B84;">Build your first deck</span></div>
+          </div>
+          <div style="display:flex;border-top:1px solid #3A3229;background:#1A160F;padding:10px 6px 22px;">
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="width:8px;height:8px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="font-size:10px;color:#C9A24B;font-weight:600;">Home</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="width:8px;height:8px;background:#4A4033;transform:rotate(45deg);display:block;"></span><span style="font-size:10px;color:#8E8269;">Collection</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="width:8px;height:8px;background:#4A4033;transform:rotate(45deg);display:block;"></span><span style="font-size:10px;color:#8E8269;">Commanders</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="width:8px;height:8px;background:#4A4033;transform:rotate(45deg);display:block;"></span><span style="font-size:10px;color:#8E8269;">Decks</span></div>
+          </div>
+        </div></div>
+        <!-- desktop -->
+        <div style="width:1240px;flex:none;border-radius:14px;overflow:hidden;border:1px solid #3A3229;box-shadow:0 34px 90px rgba(0,0,0,0.55);">
+          <div style="height:38px;background:#1E1A15;border-bottom:1px solid #3A3229;display:flex;align-items:center;gap:8px;padding:0 14px;"><span style="width:9px;height:9px;border-radius:999px;background:#C6533F;display:block;"></span><span style="width:9px;height:9px;border-radius:999px;background:#E0913C;display:block;"></span><span style="width:9px;height:9px;border-radius:999px;background:#6FA368;display:block;"></span><div style="margin-left:14px;width:300px;height:22px;border-radius:6px;background:#14110E;border:1px solid #3A3229;display:flex;align-items:center;padding:0 10px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">the99.app/</div><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;letter-spacing:0.14em;">FIRST RUN · EMPTY COLLECTION</span></div>
+          <div style="display:flex;background:#14110E;min-height:720px;">
+            <div style="width:236px;flex:none;background:#1A160F;border-right:1px solid #3A3229;display:flex;flex-direction:column;">
+              <div style="padding:22px 20px 20px;border-bottom:1px solid #2A241D;"><div style="display:flex;align-items:flex-end;gap:7px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.42em;color:#C9A24B;padding-bottom:5px;">THE</span><div style="display:flex;flex-direction:column;align-items:center;gap:5px;"><div style="display:flex;gap:4px;"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="width:8px;height:8px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span></div><span style="font-family:'Cinzel',serif;font-weight:800;font-size:30px;line-height:0.8;color:#EDE6D8;">99</span></div></div></div>
+              <div style="padding:16px 12px;display:flex;flex-direction:column;gap:4px;">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;padding:6px 12px 8px;">Play</div>
+                <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;background:#2A241D;color:#EDE6D8;font-size:14px;font-weight:600;"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span>Home</div>
+                <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;color:#6A6152;font-size:14px;font-weight:500;"><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);display:block;"></span>Collection</div>
+                <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;color:#6A6152;font-size:14px;font-weight:500;"><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);display:block;"></span>Commanders</div>
+                <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;color:#6A6152;font-size:14px;font-weight:500;"><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);display:block;"></span>Decks</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;padding:4px 12px;line-height:1.5;">Surfaces unlock once your<br>collection is uploaded.</div>
+              </div>
+              <div style="margin-top:auto;padding:14px 12px;"><div style="display:flex;align-items:center;gap:12px;background:#221D16;border:1px solid #3A3229;padding:2px;border-radius:14px;padding-right:12px;"><div style="width:38px;height:38px;flex:none;border-radius:12px;background:#14110E;border:1px solid #C9A24B;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#C9A24B;">AR</div><div style="line-height:1.25;min-width:0;"><div style="font-size:13px;color:#EDE6D8;font-weight:600;">Arden Reyes</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;">invite · member</div></div><span style="margin-left:auto;color:#8E8269;font-size:15px;line-height:1;">⋯</span></div></div>
+            </div>
+            <div style="flex:1;padding:40px 48px 48px;min-width:0;max-width:760px;">
+              <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:30px;margin:0;color:#EDE6D8;">Welcome to the 99, Arden</h2>
+              <p style="font-size:15px;color:#C6B79A;margin:10px 0 28px;">Three steps to your first recommendations. Start by handing us your cards.</p>
+              <div style="background:#1E1A15;border:1px solid #C9A24B;border-radius:14px;padding:26px 28px;">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;"><span style="width:26px;height:26px;border-radius:999px;background:#C9A24B;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;">1</span><span style="font-family:'Cinzel',serif;font-weight:600;font-size:20px;color:#EDE6D8;">Upload your collection</span></div>
+                <div style="border:1.5px dashed #4A4033;border-radius:12px;background:#181410;padding:34px;display:flex;align-items:center;gap:28px;" style-hover="border-color:#C9A24B;background:#1C1712;">
+                  <div style="width:56px;height:56px;flex:none;border-radius:999px;border:1px solid #C9A24B;color:#C9A24B;font-size:24px;display:flex;align-items:center;justify-content:center;">↑</div>
+                  <div style="flex:1;"><div style="font-size:17px;color:#EDE6D8;font-weight:600;">Drop your collection CSV here</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;margin-top:6px;letter-spacing:0.06em;">Moxfield · Archidekt · Deckbox · plain CSV</div></div>
+                  <button style="font-family:'IBM Plex Sans';font-weight:600;font-size:14px;color:#14110E;background:#C9A24B;border:none;border-radius:8px;padding:11px 22px;cursor:pointer;white-space:nowrap;" style-hover="background:#D8B25E;">Browse files</button>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;gap:16px;flex-wrap:wrap;"><div style="font-size:13px;color:#8E8269;line-height:1.5;">We only need a <b style="color:#C6B79A;font-weight:600;">Name</b> and <b style="color:#C6B79A;font-weight:600;">Quantity</b> column — most exports already include them.</div><a href="#2a" style="font-size:13px;color:#C9A24B;white-space:nowrap;">Paste a list instead →</a></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;padding:18px 22px;margin-top:14px;background:#181410;border:1px solid #2A241D;border-radius:14px;opacity:0.55;"><span style="width:26px;height:26px;border-radius:999px;border:1px solid #4A4033;color:#8E8269;font-family:'IBM Plex Mono',monospace;font-size:13px;display:flex;align-items:center;justify-content:center;">2</span><span style="font-family:'Cinzel',serif;font-weight:600;font-size:18px;color:#A89B84;">Review your commanders</span><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6A6152;">unlocks after upload</span></div>
+              <div style="display:flex;align-items:center;gap:12px;padding:18px 22px;margin-top:12px;background:#181410;border:1px solid #2A241D;border-radius:14px;opacity:0.55;"><span style="width:26px;height:26px;border-radius:999px;border:1px solid #4A4033;color:#8E8269;font-family:'IBM Plex Mono',monospace;font-size:13px;display:flex;align-items:center;justify-content:center;">3</span><span style="font-family:'Cinzel',serif;font-weight:600;font-size:18px;color:#A89B84;">Build your first deck</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ STATE: PASTE-LIST FALLBACK (mobile) + EMPTY COLLECTION (desktop) ============ -->
+    <div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #2A241D;padding-top:18px;">03 · Paste-list fallback (phone) · Collection surface empty state (desktop)</div>
+      <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+        <!-- mobile: paste mode -->
+        <div style="width:392px;flex:none;border-radius:46px;padding:12px;background:#0A0806;border:1px solid #2A241D;box-shadow:0 34px 90px rgba(0,0,0,0.55);"><div style="border-radius:34px;overflow:hidden;background:#14110E;position:relative;height:812px;display:flex;flex-direction:column;"><div style="position:absolute;top:11px;left:50%;transform:translateX(-50%);width:120px;height:26px;background:#0A0806;border-radius:0 0 16px 16px;z-index:5;"></div>
+          <div style="padding:20px 20px 14px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #2A241D;"><span style="color:#C9A24B;font-size:20px;">‹</span><span style="font-family:'Cinzel',serif;font-weight:600;font-size:18px;color:#EDE6D8;">Paste a list</span></div>
+          <div style="flex:1;overflow:hidden;padding:20px;">
+            <p style="font-size:13px;color:#C6B79A;line-height:1.55;margin:0 0 14px;">One card per line — quantity, then name. We'll match them against the Oracle database.</p>
+            <div style="background:#181410;border:1px solid #3A3229;border-radius:10px;padding:14px 16px;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#C6B79A;line-height:1.9;height:300px;">1 Ysolde, Ember Sovereign<br>1 Corvyn, Vault Warden<br>3 Emberflow Rider<br>1 Mireth, Spore Matron<br>10 Mountain<br><span style="color:#6A6152;">|</span></div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;margin-top:10px;">42 lines · 128 cards recognized</div>
+            <button style="font-family:'IBM Plex Sans';font-weight:600;font-size:15px;color:#14110E;background:#C9A24B;border:none;border-radius:8px;padding:13px 0;cursor:pointer;width:100%;margin-top:16px;">Import 128 cards</button>
+            <div style="text-align:center;margin-top:14px;"><a href="#2a" style="font-size:13px;color:#C9A24B;">Upload a CSV instead</a></div>
+          </div>
+        </div></div>
+        <!-- desktop: collection empty -->
+        <div style="width:1240px;flex:none;border-radius:14px;overflow:hidden;border:1px solid #3A3229;box-shadow:0 34px 90px rgba(0,0,0,0.55);">
+          <div style="height:38px;background:#1E1A15;border-bottom:1px solid #3A3229;display:flex;align-items:center;gap:8px;padding:0 14px;"><span style="width:9px;height:9px;border-radius:999px;background:#C6533F;display:block;"></span><span style="width:9px;height:9px;border-radius:999px;background:#E0913C;display:block;"></span><span style="width:9px;height:9px;border-radius:999px;background:#6FA368;display:block;"></span><div style="margin-left:14px;width:300px;height:22px;border-radius:6px;background:#14110E;border:1px solid #3A3229;display:flex;align-items:center;padding:0 10px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">the99.app/collection</div><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;letter-spacing:0.14em;">EMPTY · NO CSV UPLOADED</span></div>
+          <div style="display:flex;background:#14110E;min-height:640px;">
+            <div style="width:236px;flex:none;background:#1A160F;border-right:1px solid #3A3229;display:flex;flex-direction:column;">
+              <div style="padding:22px 20px 20px;border-bottom:1px solid #2A241D;"><div style="display:flex;align-items:flex-end;gap:7px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.42em;color:#C9A24B;padding-bottom:5px;">THE</span><div style="display:flex;flex-direction:column;align-items:center;gap:5px;"><div style="display:flex;gap:4px;"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="width:8px;height:8px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span></div><span style="font-family:'Cinzel',serif;font-weight:800;font-size:30px;line-height:0.8;color:#EDE6D8;">99</span></div></div></div>
+              <div style="padding:16px 12px;display:flex;flex-direction:column;gap:4px;">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;padding:6px 12px 8px;">Play</div>
+                <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;color:#A89B84;font-size:14px;font-weight:500;"><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);display:block;"></span>Home</div>
+                <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;background:#2A241D;color:#EDE6D8;font-size:14px;font-weight:600;"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span>Collection</div>
+                <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;color:#A89B84;font-size:14px;font-weight:500;"><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);display:block;"></span>Commanders</div>
+                <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;color:#A89B84;font-size:14px;font-weight:500;"><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);display:block;"></span>Decks</div>
+              </div>
+              <div style="margin-top:auto;padding:14px 12px;"><div style="display:flex;align-items:center;gap:12px;background:#221D16;border:1px solid #3A3229;padding:2px;border-radius:14px;padding-right:12px;"><div style="width:38px;height:38px;flex:none;border-radius:12px;background:#14110E;border:1px solid #C9A24B;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#C9A24B;">AR</div><div style="line-height:1.25;min-width:0;"><div style="font-size:13px;color:#EDE6D8;font-weight:600;">Arden Reyes</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;">invite · member</div></div><span style="margin-left:auto;color:#8E8269;font-size:15px;line-height:1;">⋯</span></div></div>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:48px;">
+              <div style="position:relative;width:120px;height:130px;margin-bottom:26px;"><div style="position:absolute;left:50%;top:50%;width:60px;height:84px;border-radius:9px;background:#2A241D;border:1.5px solid #4A4033;transform:translate(-50%,-50%) rotate(-16deg) translateX(-22px);"></div><div style="position:absolute;left:50%;top:50%;width:60px;height:84px;border-radius:9px;background:#33291F;border:1.5px solid #5A4B38;transform:translate(-50%,-50%);"></div><div style="position:absolute;left:50%;top:50%;width:60px;height:84px;border-radius:9px;background:#3E3020;border:1.5px solid #C9A24B;transform:translate(-50%,-50%) rotate(16deg) translateX(22px);display:flex;align-items:center;justify-content:center;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:26px;color:#C9A24B;">99</span></div></div>
+              <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:28px;margin:0;color:#EDE6D8;">Your collection is empty</h2>
+              <p style="font-size:16px;color:#C6B79A;line-height:1.6;margin:12px 0 0;max-width:420px;">A pile of possibilities waiting for a general. Upload a CSV and the table fills — commanders and decks follow.</p>
+              <div style="display:flex;gap:12px;margin-top:26px;"><button style="font-family:'IBM Plex Sans';font-weight:600;font-size:14px;color:#14110E;background:#C9A24B;border:none;border-radius:8px;padding:12px 24px;cursor:pointer;" style-hover="background:#D8B25E;">Upload collection</button><button style="font-family:'IBM Plex Sans';font-weight:600;font-size:14px;color:#EDE6D8;background:transparent;border:1px solid #3A3229;border-radius:8px;padding:12px 24px;cursor:pointer;" style-hover="border-color:#C9A24B;color:#D8B25E;">Paste a list</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ STATE: NO COMMANDER CANDIDATES ============ -->
+    <div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #2A241D;padding-top:18px;">04 · Commanders — collection uploaded, no ownable candidates surface</div>
+      <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+        <!-- mobile -->
+        <div style="width:392px;flex:none;border-radius:46px;padding:12px;background:#0A0806;border:1px solid #2A241D;box-shadow:0 34px 90px rgba(0,0,0,0.55);"><div style="border-radius:34px;overflow:hidden;background:#14110E;position:relative;height:812px;display:flex;flex-direction:column;"><div style="position:absolute;top:11px;left:50%;transform:translateX(-50%);width:120px;height:26px;background:#0A0806;border-radius:0 0 16px 16px;z-index:5;"></div>
+          <div style="padding:20px 20px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #2A241D;"><span style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;color:#EDE6D8;">Commanders</span><div style="width:38px;height:38px;border-radius:12px;background:#221D16;border:1px solid #C9A24B;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C9A24B;">AR</div></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px;">
+            <div style="width:64px;height:64px;border:2px solid #C9A24B;border-radius:14px;display:flex;align-items:center;justify-content:center;margin-bottom:22px;"><span style="font-family:'Cinzel',serif;font-weight:700;font-size:20px;letter-spacing:0.04em;color:#EDE6D8;">XCIX</span></div>
+            <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:24px;margin:0;color:#C9A24B;line-height:1.25;">No generals in the ranks — yet</h2>
+            <p style="font-size:14px;color:#C6B79A;line-height:1.6;margin:14px 0 0;">We scanned all 742 cards and none can helm a legal 99 on their own. Add a legendary creature and they'll show up here.</p>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;margin-top:18px;">742 cards · 0 eligible commanders</div>
+            <button style="font-family:'IBM Plex Sans';font-weight:600;font-size:14px;color:#EDE6D8;background:transparent;border:1px solid #3A3229;border-radius:8px;padding:12px 22px;cursor:pointer;margin-top:22px;">Add more cards</button>
+          </div>
+          <div style="display:flex;border-top:1px solid #3A3229;background:#1A160F;padding:10px 6px 22px;">
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="width:8px;height:8px;background:#4A4033;transform:rotate(45deg);display:block;"></span><span style="font-size:10px;color:#8E8269;">Home</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="width:8px;height:8px;background:#4A4033;transform:rotate(45deg);display:block;"></span><span style="font-size:10px;color:#8E8269;">Collection</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="width:8px;height:8px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="font-size:10px;color:#C9A24B;font-weight:600;">Commanders</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="width:8px;height:8px;background:#4A4033;transform:rotate(45deg);display:block;"></span><span style="font-size:10px;color:#8E8269;">Decks</span></div>
+          </div>
+        </div></div>
+        <!-- desktop -->
+        <div style="width:1240px;flex:none;border-radius:14px;overflow:hidden;border:1px solid #3A3229;box-shadow:0 34px 90px rgba(0,0,0,0.55);">
+          <div style="height:38px;background:#1E1A15;border-bottom:1px solid #3A3229;display:flex;align-items:center;gap:8px;padding:0 14px;"><span style="width:9px;height:9px;border-radius:999px;background:#C6533F;display:block;"></span><span style="width:9px;height:9px;border-radius:999px;background:#E0913C;display:block;"></span><span style="width:9px;height:9px;border-radius:999px;background:#6FA368;display:block;"></span><div style="margin-left:14px;width:300px;height:22px;border-radius:6px;background:#14110E;border:1px solid #3A3229;display:flex;align-items:center;padding:0 10px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">the99.app/commanders</div><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;letter-spacing:0.14em;">EMPTY · NO CANDIDATES</span></div>
+          <div style="display:flex;background:#14110E;min-height:600px;">
+            <div style="width:236px;flex:none;background:#1A160F;border-right:1px solid #3A3229;display:flex;flex-direction:column;">
+              <div style="padding:22px 20px 20px;border-bottom:1px solid #2A241D;"><div style="display:flex;align-items:flex-end;gap:7px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.42em;color:#C9A24B;padding-bottom:5px;">THE</span><div style="display:flex;flex-direction:column;align-items:center;gap:5px;"><div style="display:flex;gap:4px;"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="width:8px;height:8px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span></div><span style="font-family:'Cinzel',serif;font-weight:800;font-size:30px;line-height:0.8;color:#EDE6D8;">99</span></div></div></div>
+              <div style="padding:16px 12px;display:flex;flex-direction:column;gap:4px;">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;padding:6px 12px 8px;">Play</div>
+                <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;color:#A89B84;font-size:14px;font-weight:500;"><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);display:block;"></span>Home</div>
+                <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;color:#A89B84;font-size:14px;font-weight:500;"><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);display:block;"></span>Collection</div>
+                <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;background:#2A241D;color:#EDE6D8;font-size:14px;font-weight:600;"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span>Commanders</div>
+                <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;color:#A89B84;font-size:14px;font-weight:500;"><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);display:block;"></span>Decks</div>
+              </div>
+              <div style="margin-top:auto;padding:14px 12px;"><div style="display:flex;align-items:center;gap:12px;background:#221D16;border:1px solid #3A3229;padding:2px;border-radius:14px;padding-right:12px;"><div style="width:38px;height:38px;flex:none;border-radius:12px;background:#14110E;border:1px solid #C9A24B;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#C9A24B;">AR</div><div style="line-height:1.25;min-width:0;"><div style="font-size:13px;color:#EDE6D8;font-weight:600;">Arden Reyes</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;">invite · member</div></div><span style="margin-left:auto;color:#8E8269;font-size:15px;line-height:1;">⋯</span></div></div>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:48px;">
+              <div style="width:78px;height:78px;border:2px solid #C9A24B;border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:24px;"><span style="font-family:'Cinzel',serif;font-weight:700;font-size:24px;letter-spacing:0.04em;color:#EDE6D8;">XCIX</span></div>
+              <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:28px;margin:0;color:#C9A24B;">No generals in the ranks — yet</h2>
+              <p style="font-size:16px;color:#C6B79A;line-height:1.6;margin:12px 0 0;max-width:460px;">We scanned all 742 cards and none can helm a legal 99 on their own. Add a legendary creature — or a planeswalker that can command — and they'll appear here, ranked.</p>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8E8269;margin-top:18px;">742 cards scanned · 0 eligible commanders</div>
+              <div style="display:flex;gap:12px;margin-top:24px;"><button style="font-family:'IBM Plex Sans';font-weight:600;font-size:14px;color:#14110E;background:#C9A24B;border:none;border-radius:8px;padding:12px 24px;cursor:pointer;" style-hover="background:#D8B25E;">Add more cards</button><button style="font-family:'IBM Plex Sans';font-weight:600;font-size:14px;color:#EDE6D8;background:transparent;border:1px solid #3A3229;border-radius:8px;padding:12px 24px;cursor:pointer;" style-hover="border-color:#C9A24B;color:#D8B25E;">View collection</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ STATE: NO DECKS ============ -->
+    <div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #2A241D;padding-top:18px;">05 · Decks — none created yet</div>
+      <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+        <!-- mobile -->
+        <div style="width:392px;flex:none;border-radius:46px;padding:12px;background:#0A0806;border:1px solid #2A241D;box-shadow:0 34px 90px rgba(0,0,0,0.55);"><div style="border-radius:34px;overflow:hidden;background:#14110E;position:relative;height:812px;display:flex;flex-direction:column;"><div style="position:absolute;top:11px;left:50%;transform:translateX(-50%);width:120px;height:26px;background:#0A0806;border-radius:0 0 16px 16px;z-index:5;"></div>
+          <div style="padding:20px 20px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #2A241D;"><span style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;color:#EDE6D8;">Decks</span><div style="width:38px;height:38px;border-radius:12px;background:#221D16;border:1px solid #C9A24B;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C9A24B;">AR</div></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px;">
+            <div style="position:relative;width:100px;height:110px;margin-bottom:22px;"><div style="position:absolute;left:50%;top:50%;width:52px;height:74px;border-radius:8px;background:#2A241D;border:1.5px solid #4A4033;transform:translate(-50%,-50%) rotate(-14deg) translateX(-18px);"></div><div style="position:absolute;left:50%;top:50%;width:52px;height:74px;border-radius:8px;background:#33291F;border:1.5px solid #5A4B38;transform:translate(-50%,-50%);"></div><div style="position:absolute;left:50%;top:50%;width:52px;height:74px;border-radius:8px;background:#3E3020;border:1.5px solid #C9A24B;transform:translate(-50%,-50%) rotate(14deg) translateX(18px);display:flex;align-items:center;justify-content:center;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:22px;color:#C9A24B;">99</span></div></div>
+            <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:24px;margin:0;color:#EDE6D8;">No decks yet</h2>
+            <p style="font-size:14px;color:#C6B79A;line-height:1.6;margin:12px 0 0;">Pick a commander and we'll assemble the 99 from cards you already own.</p>
+            <button style="font-family:'IBM Plex Sans';font-weight:600;font-size:14px;color:#14110E;background:#C9A24B;border:none;border-radius:8px;padding:13px 26px;cursor:pointer;margin-top:24px;">Browse commanders</button>
+          </div>
+          <div style="display:flex;border-top:1px solid #3A3229;background:#1A160F;padding:10px 6px 22px;">
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="width:8px;height:8px;background:#4A4033;transform:rotate(45deg);display:block;"></span><span style="font-size:10px;color:#8E8269;">Home</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="width:8px;height:8px;background:#4A4033;transform:rotate(45deg);display:block;"></span><span style="font-size:10px;color:#8E8269;">Collection</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="width:8px;height:8px;background:#4A4033;transform:rotate(45deg);display:block;"></span><span style="font-size:10px;color:#8E8269;">Commanders</span></div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="width:8px;height:8px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="font-size:10px;color:#C9A24B;font-weight:600;">Decks</span></div>
+          </div>
+        </div></div>
+        <!-- desktop -->
+        <div style="width:1240px;flex:none;border-radius:14px;overflow:hidden;border:1px solid #3A3229;box-shadow:0 34px 90px rgba(0,0,0,0.55);">
+          <div style="height:38px;background:#1E1A15;border-bottom:1px solid #3A3229;display:flex;align-items:center;gap:8px;padding:0 14px;"><span style="width:9px;height:9px;border-radius:999px;background:#C6533F;display:block;"></span><span style="width:9px;height:9px;border-radius:999px;background:#E0913C;display:block;"></span><span style="width:9px;height:9px;border-radius:999px;background:#6FA368;display:block;"></span><div style="margin-left:14px;width:300px;height:22px;border-radius:6px;background:#14110E;border:1px solid #3A3229;display:flex;align-items:center;padding:0 10px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">the99.app/decks</div><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;letter-spacing:0.14em;">EMPTY · NO DECKS</span></div>
+          <div style="display:flex;background:#14110E;min-height:600px;">
+            <div style="width:236px;flex:none;background:#1A160F;border-right:1px solid #3A3229;display:flex;flex-direction:column;">
+              <div style="padding:22px 20px 20px;border-bottom:1px solid #2A241D;"><div style="display:flex;align-items:flex-end;gap:7px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.42em;color:#C9A24B;padding-bottom:5px;">THE</span><div style="display:flex;flex-direction:column;align-items:center;gap:5px;"><div style="display:flex;gap:4px;"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="width:8px;height:8px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span></div><span style="font-family:'Cinzel',serif;font-weight:800;font-size:30px;line-height:0.8;color:#EDE6D8;">99</span></div></div></div>
+              <div style="padding:16px 12px;display:flex;flex-direction:column;gap:4px;">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;padding:6px 12px 8px;">Play</div>
+                <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;color:#A89B84;font-size:14px;font-weight:500;"><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);display:block;"></span>Home</div>
+                <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;color:#A89B84;font-size:14px;font-weight:500;"><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);display:block;"></span>Collection</div>
+                <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;color:#A89B84;font-size:14px;font-weight:500;"><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);display:block;"></span>Commanders</div>
+                <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;background:#2A241D;color:#EDE6D8;font-size:14px;font-weight:600;"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span>Decks</div>
+              </div>
+              <div style="margin-top:auto;padding:14px 12px;"><div style="display:flex;align-items:center;gap:12px;background:#221D16;border:1px solid #3A3229;padding:2px;border-radius:14px;padding-right:12px;"><div style="width:38px;height:38px;flex:none;border-radius:12px;background:#14110E;border:1px solid #C9A24B;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#C9A24B;">AR</div><div style="line-height:1.25;min-width:0;"><div style="font-size:13px;color:#EDE6D8;font-weight:600;">Arden Reyes</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;">invite · member</div></div><span style="margin-left:auto;color:#8E8269;font-size:15px;line-height:1;">⋯</span></div></div>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:48px;">
+              <div style="position:relative;width:120px;height:130px;margin-bottom:26px;"><div style="position:absolute;left:50%;top:50%;width:60px;height:84px;border-radius:9px;background:#2A241D;border:1.5px solid #4A4033;transform:translate(-50%,-50%) rotate(-15deg) translateX(-22px);"></div><div style="position:absolute;left:50%;top:50%;width:60px;height:84px;border-radius:9px;background:#33291F;border:1.5px solid #5A4B38;transform:translate(-50%,-50%);"></div><div style="position:absolute;left:50%;top:50%;width:60px;height:84px;border-radius:9px;background:#3E3020;border:1.5px solid #C9A24B;transform:translate(-50%,-50%) rotate(15deg) translateX(22px);display:flex;align-items:center;justify-content:center;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:26px;color:#C9A24B;">99</span></div></div>
+              <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:28px;margin:0;color:#EDE6D8;">No decks yet</h2>
+              <p style="font-size:16px;color:#C6B79A;line-height:1.6;margin:12px 0 0;max-width:420px;">Pick a commander and we'll assemble the 99 from cards you already own — then track what's missing.</p>
+              <div style="display:flex;gap:12px;margin-top:26px;"><button style="font-family:'IBM Plex Sans';font-weight:600;font-size:14px;color:#14110E;background:#C9A24B;border:none;border-radius:8px;padding:12px 26px;cursor:pointer;" style-hover="background:#D8B25E;">Browse commanders</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ STATE: ACCOUNT MENU (Clerk user button) ============ -->
+    <div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #2A241D;padding-top:18px;">06 · Account control — Clerk user button, menu open</div>
+      <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;">
+        <!-- mobile: bottom sheet -->
+        <div style="width:392px;flex:none;border-radius:46px;padding:12px;background:#0A0806;border:1px solid #2A241D;box-shadow:0 34px 90px rgba(0,0,0,0.55);"><div style="border-radius:34px;overflow:hidden;background:#14110E;position:relative;height:812px;display:flex;flex-direction:column;"><div style="position:absolute;top:11px;left:50%;transform:translateX(-50%);width:120px;height:26px;background:#0A0806;border-radius:0 0 16px 16px;z-index:5;"></div>
+          <div style="position:absolute;inset:0;background:rgba(10,8,6,0.72);z-index:8;"></div>
+          <div style="padding:20px 20px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #2A241D;opacity:0.5;"><span style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;color:#EDE6D8;">Home</span><div style="width:38px;height:38px;border-radius:12px;background:#221D16;border:1px solid #C9A24B;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C9A24B;">AR</div></div>
+          <div style="flex:1;"></div>
+          <!-- sheet -->
+          <div style="position:relative;z-index:9;background:#1E1A15;border-top:1px solid #3A3229;border-radius:20px 20px 0 0;padding:20px 20px 26px;">
+            <div style="width:40px;height:4px;border-radius:2px;background:#3A3229;margin:0 auto 20px;"></div>
+            <div style="display:flex;align-items:center;gap:14px;padding-bottom:18px;border-bottom:1px solid #2A241D;"><div style="width:48px;height:48px;border-radius:14px;background:#14110E;border:1px solid #C9A24B;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:15px;color:#C9A24B;">AR</div><div><div style="font-size:16px;color:#EDE6D8;font-weight:600;">Arden Reyes</div><div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8E8269;margin-top:2px;">arden@featherweight.design</div></div></div>
+            <div style="display:flex;align-items:center;gap:12px;padding:15px 6px;font-size:15px;color:#EDE6D8;"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span>Manage account</div>
+            <div style="display:flex;align-items:center;gap:12px;padding:15px 6px;font-size:15px;color:#EDE6D8;border-top:1px solid #2A241D;"><span style="width:6px;height:6px;background:#C6533F;transform:rotate(45deg);display:block;"></span>Sign out</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;text-align:center;margin-top:14px;letter-spacing:0.08em;">SECURED BY CLERK</div>
+          </div>
+        </div></div>
+        <!-- desktop: popover above account block -->
+        <div style="width:1240px;flex:none;border-radius:14px;overflow:hidden;border:1px solid #3A3229;box-shadow:0 34px 90px rgba(0,0,0,0.55);position:relative;">
+          <div style="height:38px;background:#1E1A15;border-bottom:1px solid #3A3229;display:flex;align-items:center;gap:8px;padding:0 14px;"><span style="width:9px;height:9px;border-radius:999px;background:#C6533F;display:block;"></span><span style="width:9px;height:9px;border-radius:999px;background:#E0913C;display:block;"></span><span style="width:9px;height:9px;border-radius:999px;background:#6FA368;display:block;"></span><div style="margin-left:14px;width:300px;height:22px;border-radius:6px;background:#14110E;border:1px solid #3A3229;display:flex;align-items:center;padding:0 10px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">the99.app/</div><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;letter-spacing:0.14em;">ACCOUNT MENU OPEN</span></div>
+          <div style="display:flex;background:#14110E;min-height:560px;">
+            <div style="width:236px;flex:none;background:#1A160F;border-right:1px solid #3A3229;display:flex;flex-direction:column;position:relative;">
+              <div style="padding:22px 20px 20px;border-bottom:1px solid #2A241D;"><div style="display:flex;align-items:flex-end;gap:7px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.42em;color:#C9A24B;padding-bottom:5px;">THE</span><div style="display:flex;flex-direction:column;align-items:center;gap:5px;"><div style="display:flex;gap:4px;"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="width:8px;height:8px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span></div><span style="font-family:'Cinzel',serif;font-weight:800;font-size:30px;line-height:0.8;color:#EDE6D8;">99</span></div></div></div>
+              <div style="padding:16px 12px;display:flex;flex-direction:column;gap:4px;">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;padding:6px 12px 8px;">Play</div>
+                <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;background:#2A241D;color:#EDE6D8;font-size:14px;font-weight:600;"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span>Home</div>
+                <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;color:#A89B84;font-size:14px;font-weight:500;"><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);display:block;"></span>Collection</div>
+                <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;color:#A89B84;font-size:14px;font-weight:500;"><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);display:block;"></span>Commanders</div>
+                <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;color:#A89B84;font-size:14px;font-weight:500;"><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);display:block;"></span>Decks</div>
+              </div>
+              <div style="margin-top:auto;padding:14px 12px;position:relative;">
+                <!-- popover -->
+                <div style="position:absolute;left:12px;right:12px;bottom:calc(100% - 6px);background:#221D16;border:1px solid #3A3229;border-radius:14px;box-shadow:0 20px 50px rgba(0,0,0,0.6);padding:8px;z-index:20;">
+                  <div style="display:flex;align-items:center;gap:12px;padding:12px 12px 14px;border-bottom:1px solid #2A241D;"><div style="width:44px;height:44px;border-radius:12px;background:#14110E;border:1px solid #C9A24B;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:14px;color:#C9A24B;">AR</div><div style="min-width:0;"><div style="font-size:14px;color:#EDE6D8;font-weight:600;">Arden Reyes</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;margin-top:2px;overflow:hidden;text-overflow:ellipsis;">arden@featherweight.design</div></div></div>
+                  <div style="display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:8px;font-size:14px;color:#EDE6D8;cursor:pointer;" style-hover="background:#2A241D;"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span>Manage account</div>
+                  <div style="display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:8px;font-size:14px;color:#EDE6D8;cursor:pointer;" style-hover="background:#2A241D;"><span style="width:6px;height:6px;background:#C6533F;transform:rotate(45deg);display:block;"></span>Sign out</div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#6A6152;text-align:center;padding:8px 0 4px;letter-spacing:0.08em;">SECURED BY CLERK</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;background:#2A241D;border:1px solid #C9A24B;padding:2px;border-radius:14px;padding-right:12px;"><div style="width:38px;height:38px;flex:none;border-radius:12px;background:#14110E;border:1px solid #C9A24B;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#C9A24B;">AR</div><div style="line-height:1.25;min-width:0;"><div style="font-size:13px;color:#EDE6D8;font-weight:600;">Arden Reyes</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;">invite · member</div></div><span style="margin-left:auto;color:#C9A24B;font-size:15px;line-height:1;">⋯</span></div>
+              </div>
+            </div>
+            <div style="flex:1;padding:40px;min-width:0;">
+              <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:26px;margin:0;color:#EDE6D8;opacity:0.4;">Welcome back, Arden</h2>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#A89B84;margin-top:8px;opacity:0.4;">1,284 cards · 742 unique · 24 commanders buildable · 3 decks</div>
+              <div style="margin-top:40px;font-size:13px;color:#8E8269;line-height:1.7;max-width:380px;border-left:2px solid #3A3229;padding-left:16px;">The account control is Clerk's <b style="color:#C6B79A;font-weight:600;">&lt;UserButton /&gt;</b> — we own its trigger placement (pinned to the base of the rail) and re-skin the popover to brand tokens. <b style="color:#C6B79A;font-weight:600;">Manage account</b> opens Clerk's hosted profile modal; <b style="color:#C6B79A;font-weight:600;">Sign out</b> returns to the signed-out landing.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <section style="max-width:1400px;margin:56px 0 26px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#8E8269;">The 99 — App Shell · Turn 1</div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:12px 0 8px;color:#EDE6D8;">Two directions for the frame</h1>
+    <p style="max-width:720px;font-size:15px;line-height:1.65;color:#C6B79A;margin:0;">Same brand, same dashboard content model — two ways to hold the app together. Each shows signed-in <b style="color:#EDE6D8;font-weight:600;">home</b>, the shell around a populated <b style="color:#EDE6D8;font-weight:600;">Commanders</b> surface, and <b style="color:#EDE6D8;font-weight:600;">mobile</b>. Reference an option in chat by its badge — <a href="#1a">1a</a> or <a href="#1b">1b</a>.</p>
+  </section>
+
+  <div style="display:flex;gap:56px;align-items:flex-start;flex-wrap:wrap;">
+
+    <!-- ============================= OPTION 1A — THE RAIL ============================= -->
+    <div id="1a" style="display:flex;flex-direction:column;gap:26px;">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#C9A24B;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">1a</span>
+        <div>
+          <div style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;color:#EDE6D8;">The Rail</div>
+          <div style="font-size:13px;color:#A89B84;margin-top:2px;">Persistent left sidebar · account pinned to the base · workspace feel</div>
+        </div>
+      </div>
+
+      <!-- ---- 1a desktop: HOME ---- -->
+      <div style="width:1240px;border-radius:14px;overflow:hidden;border:1px solid #3A3229;box-shadow:0 34px 90px rgba(0,0,0,0.55);">
+        <div style="height:38px;background:#1E1A15;border-bottom:1px solid #3A3229;display:flex;align-items:center;gap:8px;padding:0 14px;">
+          <span style="width:9px;height:9px;border-radius:999px;background:#C6533F;display:block;"></span>
+          <span style="width:9px;height:9px;border-radius:999px;background:#E0913C;display:block;"></span>
+          <span style="width:9px;height:9px;border-radius:999px;background:#6FA368;display:block;"></span>
+          <div style="margin-left:14px;width:300px;height:22px;border-radius:6px;background:#14110E;border:1px solid #3A3229;display:flex;align-items:center;padding:0 10px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">the99.app/</div>
+          <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;letter-spacing:0.14em;">SIGNED IN · HOME</span>
+        </div>
+        <div style="display:flex;background:#14110E;min-height:812px;">
+          <!-- RAIL -->
+          <div style="width:236px;flex:none;background:#1A160F;border-right:1px solid #3A3229;display:flex;flex-direction:column;">
+            <div style="padding:22px 20px 20px;border-bottom:1px solid #2A241D;">
+              <div style="display:flex;align-items:flex-end;gap:7px;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.42em;color:#C9A24B;padding-bottom:5px;">THE</span>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:5px;">
+                  <div style="display:flex;gap:4px;transform:translateX(-1px);"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="width:8px;height:8px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span></div>
+                  <span style="font-family:'Cinzel',serif;font-weight:800;font-size:30px;line-height:0.8;color:#EDE6D8;">99</span>
+                </div>
+              </div>
+            </div>
+            <div style="padding:16px 12px;display:flex;flex-direction:column;gap:4px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;padding:6px 12px 8px;">Play</div>
+              <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;background:#2A241D;color:#EDE6D8;font-size:14px;font-weight:600;"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span>Home</div>
+              <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;color:#A89B84;font-size:14px;font-weight:500;cursor:pointer;" style-hover="background:#211C15;color:#EDE6D8;"><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);display:block;"></span>Collection</div>
+              <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;color:#A89B84;font-size:14px;font-weight:500;cursor:pointer;" style-hover="background:#211C15;color:#EDE6D8;"><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);display:block;"></span>Commanders</div>
+              <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;color:#A89B84;font-size:14px;font-weight:500;cursor:pointer;" style-hover="background:#211C15;color:#EDE6D8;"><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);display:block;"></span>Decks</div>
+            </div>
+            <div style="margin-top:auto;padding:14px 12px;">
+              <div style="display:flex;align-items:center;gap:12px;background:#221D16;border:1px solid #3A3229;padding:2px;border-radius:14px;padding-right:12px;cursor:pointer;" style-hover="border-color:#C9A24B;">
+                <div style="width:38px;height:38px;flex:none;border-radius:12px;background:#14110E;border:1px solid #C9A24B;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#C9A24B;">AR</div>
+                <div style="line-height:1.25;min-width:0;"><div style="font-size:13px;color:#EDE6D8;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Arden Reyes</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;">invite · member</div></div>
+                <span style="margin-left:auto;color:#8E8269;font-size:15px;line-height:1;">⋯</span>
+              </div>
+            </div>
+          </div>
+          <!-- MAIN -->
+          <div style="flex:1;padding:34px 40px 44px;min-width:0;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:30px;">
+              <div>
+                <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:32px;margin:0;color:#EDE6D8;">Welcome back, Arden</h2>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#A89B84;margin-top:8px;">1,284 cards · 742 unique · 24 commanders buildable · 3 decks</div>
+              </div>
+              <button style="font-family:'IBM Plex Sans';font-weight:600;font-size:13px;color:#EDE6D8;background:transparent;border:1px solid #3A3229;border-radius:8px;padding:9px 16px;cursor:pointer;" style-hover="border-color:#C9A24B;color:#D8B25E;">Update collection</button>
+            </div>
+
+            <!-- HERO REC -->
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:12px;">Your most complete general</div>
+            <div style="display:flex;gap:0;background:#1E1A15;border:1px solid #3A3229;border-radius:14px;overflow:hidden;margin-bottom:34px;">
+              <div style="width:200px;flex:none;background:#14110E;background-image:repeating-linear-gradient(135deg,#1E1A15 0 11px,#181209 11px 22px);border-right:1px solid #3A3229;position:relative;">
+                <div style="position:absolute;top:12px;left:12px;display:flex;gap:4px;"><span style="width:12px;height:12px;border-radius:3px;background:#C05A48;border:1px solid rgba(0,0,0,0.35);display:block;"></span></div>
+                <div style="position:absolute;bottom:10px;left:12px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#8E8269;">commander art</div>
+              </div>
+              <div style="flex:1;padding:26px 30px;display:flex;flex-direction:column;justify-content:center;">
+                <div style="font-family:'Cinzel',serif;font-weight:700;font-size:28px;color:#EDE6D8;">Ysolde, Ember Sovereign</div>
+                <div style="font-size:13px;color:#A89B84;margin-top:4px;">Legendary Creature — Phoenix Sovereign</div>
+                <div style="display:flex;align-items:center;gap:10px;margin-top:18px;max-width:420px;">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#6FA368;">96 / 99 owned</span>
+                  <div style="flex:1;height:6px;background:#2A241D;border-radius:3px;overflow:hidden;"><div style="height:100%;width:97%;background:#6FA368;border-radius:3px;"></div></div>
+                </div>
+              </div>
+              <div style="padding:26px 30px;display:flex;flex-direction:column;justify-content:center;align-items:flex-end;gap:12px;border-left:1px solid #2A241D;">
+                <div style="text-align:right;"><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">to complete</div><div style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#E0913C;margin-top:2px;">3 cards · $18.40</div></div>
+                <button style="font-family:'IBM Plex Sans';font-weight:600;font-size:14px;color:#14110E;background:#C9A24B;border:none;border-radius:8px;padding:11px 22px;cursor:pointer;white-space:nowrap;" style-hover="background:#D8B25E;">Build this deck</button>
+              </div>
+            </div>
+
+            <!-- REC GRID -->
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;">Recommended from your collection</div>
+              <span style="font-size:13px;color:#C9A24B;cursor:pointer;">All 24 →</span>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:36px;">
+              <sc-for list="{{ rec3 }}" as="item" hint-placeholder-count="3">
+                <div style="background:#1E1A15;border:1px solid #3A3229;border-radius:12px;overflow:hidden;display:flex;flex-direction:column;">
+                  <div style="position:relative;height:116px;background:#14110E;background-image:repeating-linear-gradient(135deg,#1E1A15 0 10px,#181209 10px 20px);border-bottom:1px solid #3A3229;">
+                    <div style="position:absolute;top:10px;left:10px;display:flex;gap:4px;"><sc-for list="{{ item.pips }}" as="pip" hint-placeholder-count="1"><span style="width:11px;height:11px;border-radius:3px;background:{{ pip }};border:1px solid rgba(0,0,0,0.35);display:block;"></span></sc-for></div>
+                    <div style="position:absolute;bottom:8px;right:11px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;">art</div>
+                  </div>
+                  <div style="padding:14px 16px 16px;display:flex;flex-direction:column;gap:12px;flex:1;">
+                    <div><div style="font-family:'Cinzel',serif;font-weight:600;font-size:17px;color:#EDE6D8;line-height:1.15;">{{ item.name }}</div><div style="font-size:12px;color:#A89B84;margin-top:4px;">{{ item.type }}</div></div>
+                    <div style="margin-top:auto;">
+                      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C6B79A;">{{ item.owned }} / 99 owned</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">{{ item.missing }} to go</span></div>
+                      <div style="height:6px;background:#2A241D;border-radius:3px;overflow:hidden;"><div style="height:100%;border-radius:3px;background:{{ item.bar }};width:{{ item.pct }};"></div></div>
+                    </div>
+                    <button style="font-family:'IBM Plex Sans';font-weight:600;font-size:13px;color:#EDE6D8;background:transparent;border:1px solid #3A3229;border-radius:8px;padding:9px 0;cursor:pointer;width:100%;" style-hover="border-color:#C9A24B;color:#D8B25E;">Build deck</button>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+
+            <!-- DECKS + STATS -->
+            <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:20px;">
+              <div>
+                <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;">Recent decks</div><span style="font-size:13px;color:#C9A24B;cursor:pointer;">All decks →</span></div>
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                  <sc-for list="{{ decks }}" as="d" hint-placeholder-count="3">
+                    <div style="display:flex;align-items:center;gap:14px;background:#1E1A15;border:1px solid #3A3229;border-left:3px solid {{ d.color }};border-radius:8px;padding:13px 16px;cursor:pointer;" style-hover="background:#221D16;">
+                      <div style="display:flex;gap:3px;"><sc-for list="{{ d.pips }}" as="pip" hint-placeholder-count="1"><span style="width:10px;height:10px;border-radius:2px;background:{{ pip }};display:block;"></span></sc-for></div>
+                      <div style="min-width:0;"><div style="font-family:'Cinzel',serif;font-weight:600;font-size:16px;color:#EDE6D8;">{{ d.name }}</div><div style="font-size:12px;color:#A89B84;margin-top:2px;">{{ d.cmd }}</div></div>
+                      <div style="margin-left:auto;text-align:right;"><div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:{{ d.color }};">{{ d.owned }} / 99</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;margin-top:2px;">{{ d.status }}</div></div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+              <div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:14px;">Collection</div>
+                <div style="background:#1E1A15;border:1px solid #3A3229;border-radius:12px;padding:6px 20px;">
+                  <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid #2A241D;"><span style="font-size:13px;color:#C6B79A;">Total cards</span><span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#EDE6D8;">1,284</span></div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid #2A241D;"><span style="font-size:13px;color:#C6B79A;">Unique</span><span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#EDE6D8;">742</span></div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid #2A241D;"><span style="font-size:13px;color:#C6B79A;">Commanders buildable</span><span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#C9A24B;">24</span></div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;"><span style="font-size:13px;color:#C6B79A;">Decks built</span><span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#EDE6D8;">3</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---- 1a desktop: COMMANDERS ---- -->
+      <div style="width:1240px;border-radius:14px;overflow:hidden;border:1px solid #3A3229;box-shadow:0 34px 90px rgba(0,0,0,0.55);">
+        <div style="height:38px;background:#1E1A15;border-bottom:1px solid #3A3229;display:flex;align-items:center;gap:8px;padding:0 14px;">
+          <span style="width:9px;height:9px;border-radius:999px;background:#C6533F;display:block;"></span><span style="width:9px;height:9px;border-radius:999px;background:#E0913C;display:block;"></span><span style="width:9px;height:9px;border-radius:999px;background:#6FA368;display:block;"></span>
+          <div style="margin-left:14px;width:300px;height:22px;border-radius:6px;background:#14110E;border:1px solid #3A3229;display:flex;align-items:center;padding:0 10px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">the99.app/commanders</div>
+          <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;letter-spacing:0.14em;">SHELL · POPULATED SURFACE</span>
+        </div>
+        <div style="display:flex;background:#14110E;min-height:812px;">
+          <div style="width:236px;flex:none;background:#1A160F;border-right:1px solid #3A3229;display:flex;flex-direction:column;">
+            <div style="padding:22px 20px 20px;border-bottom:1px solid #2A241D;">
+              <div style="display:flex;align-items:flex-end;gap:7px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.42em;color:#C9A24B;padding-bottom:5px;">THE</span><div style="display:flex;flex-direction:column;align-items:center;gap:5px;"><div style="display:flex;gap:4px;transform:translateX(-1px);"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="width:8px;height:8px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span></div><span style="font-family:'Cinzel',serif;font-weight:800;font-size:30px;line-height:0.8;color:#EDE6D8;">99</span></div></div>
+            </div>
+            <div style="padding:16px 12px;display:flex;flex-direction:column;gap:4px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;padding:6px 12px 8px;">Play</div>
+              <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;color:#A89B84;font-size:14px;font-weight:500;cursor:pointer;" style-hover="background:#211C15;color:#EDE6D8;"><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);display:block;"></span>Home</div>
+              <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;color:#A89B84;font-size:14px;font-weight:500;cursor:pointer;" style-hover="background:#211C15;color:#EDE6D8;"><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);display:block;"></span>Collection</div>
+              <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;background:#2A241D;color:#EDE6D8;font-size:14px;font-weight:600;"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span>Commanders</div>
+              <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;color:#A89B84;font-size:14px;font-weight:500;cursor:pointer;" style-hover="background:#211C15;color:#EDE6D8;"><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);display:block;"></span>Decks</div>
+            </div>
+            <div style="margin-top:auto;padding:14px 12px;">
+              <div style="display:flex;align-items:center;gap:12px;background:#221D16;border:1px solid #3A3229;padding:2px;border-radius:14px;padding-right:12px;cursor:pointer;" style-hover="border-color:#C9A24B;"><div style="width:38px;height:38px;flex:none;border-radius:12px;background:#14110E;border:1px solid #C9A24B;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#C9A24B;">AR</div><div style="line-height:1.25;min-width:0;"><div style="font-size:13px;color:#EDE6D8;font-weight:600;">Arden Reyes</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;">invite · member</div></div><span style="margin-left:auto;color:#8E8269;font-size:15px;line-height:1;">⋯</span></div>
+            </div>
+          </div>
+          <div style="flex:1;padding:34px 40px 44px;min-width:0;">
+            <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:32px;margin:0;color:#EDE6D8;">Commanders</h2>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#A89B84;margin-top:8px;">24 buildable from cards you own · ranked by completeness</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin:24px 0 26px;align-items:center;">
+              <span style="font-family:'IBM Plex Sans';font-weight:600;font-size:13px;color:#14110E;background:#C9A24B;border-radius:999px;padding:7px 15px;cursor:pointer;">All colors</span>
+              <span style="display:flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#EDE6D8;background:#2A241D;border-radius:999px;padding:6px 13px 6px 10px;cursor:pointer;" style-hover="background:#332B20;"><span style="width:10px;height:10px;border-radius:2px;background:#E8E4D6;"></span>W</span>
+              <span style="display:flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#EDE6D8;background:#2A241D;border-radius:999px;padding:6px 13px 6px 10px;cursor:pointer;" style-hover="background:#332B20;"><span style="width:10px;height:10px;border-radius:2px;background:#4A7FB5;"></span>U</span>
+              <span style="display:flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#EDE6D8;background:#2A241D;border-radius:999px;padding:6px 13px 6px 10px;cursor:pointer;" style-hover="background:#332B20;"><span style="width:10px;height:10px;border-radius:2px;background:#5B5566;"></span>B</span>
+              <span style="display:flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#EDE6D8;background:#2A241D;border-radius:999px;padding:6px 13px 6px 10px;cursor:pointer;" style-hover="background:#332B20;"><span style="width:10px;height:10px;border-radius:2px;background:#C05A48;"></span>R</span>
+              <span style="display:flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#EDE6D8;background:#2A241D;border-radius:999px;padding:6px 13px 6px 10px;cursor:pointer;" style-hover="background:#332B20;"><span style="width:10px;height:10px;border-radius:2px;background:#6B9E63;"></span>G</span>
+              <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8E8269;border:1px solid #3A3229;border-radius:999px;padding:6px 13px;cursor:pointer;" style-hover="border-color:#C9A24B;color:#D8B25E;">Buildable ≥ 90% ✓</span>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+              <sc-for list="{{ cmd }}" as="item" hint-placeholder-count="6">
+                <div style="background:#1E1A15;border:1px solid #3A3229;border-radius:12px;overflow:hidden;display:flex;flex-direction:column;">
+                  <div style="position:relative;height:116px;background:#14110E;background-image:repeating-linear-gradient(135deg,#1E1A15 0 10px,#181209 10px 20px);border-bottom:1px solid #3A3229;">
+                    <div style="position:absolute;top:10px;left:10px;display:flex;gap:4px;"><sc-for list="{{ item.pips }}" as="pip" hint-placeholder-count="1"><span style="width:11px;height:11px;border-radius:3px;background:{{ pip }};border:1px solid rgba(0,0,0,0.35);display:block;"></span></sc-for></div>
+                    <div style="position:absolute;bottom:8px;right:11px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;">art</div>
+                  </div>
+                  <div style="padding:14px 16px 16px;display:flex;flex-direction:column;gap:12px;flex:1;">
+                    <div><div style="font-family:'Cinzel',serif;font-weight:600;font-size:17px;color:#EDE6D8;line-height:1.15;">{{ item.name }}</div><div style="font-size:12px;color:#A89B84;margin-top:4px;">{{ item.type }}</div></div>
+                    <div style="margin-top:auto;">
+                      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C6B79A;">{{ item.owned }} / 99 owned</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">{{ item.missing }} to go</span></div>
+                      <div style="height:6px;background:#2A241D;border-radius:3px;overflow:hidden;"><div style="height:100%;border-radius:3px;background:{{ item.bar }};width:{{ item.pct }};"></div></div>
+                    </div>
+                    <button style="font-family:'IBM Plex Sans';font-weight:600;font-size:13px;color:#EDE6D8;background:transparent;border:1px solid #3A3229;border-radius:8px;padding:9px 0;cursor:pointer;width:100%;" style-hover="border-color:#C9A24B;color:#D8B25E;">Build deck</button>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---- 1a MOBILE ---- -->
+      <div style="display:flex;gap:16px;align-items:center;">
+        <div style="width:392px;flex:none;border-radius:46px;padding:12px;background:#0A0806;border:1px solid #2A241D;box-shadow:0 34px 90px rgba(0,0,0,0.55);">
+          <div style="border-radius:34px;overflow:hidden;background:#14110E;position:relative;height:812px;display:flex;flex-direction:column;">
+            <div style="position:absolute;top:11px;left:50%;transform:translateX(-50%);width:120px;height:26px;background:#0A0806;border-radius:0 0 16px 16px;z-index:5;"></div>
+            <!-- top mini header -->
+            <div style="padding:20px 20px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #2A241D;">
+              <div style="display:flex;align-items:flex-end;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.4em;color:#C9A24B;padding-bottom:4px;">THE</span><div style="display:flex;flex-direction:column;align-items:center;gap:4px;"><div style="display:flex;gap:3px;"><span style="width:5px;height:5px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="width:7px;height:7px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="width:5px;height:5px;background:#C9A24B;transform:rotate(45deg);display:block;"></span></div><span style="font-family:'Cinzel',serif;font-weight:800;font-size:24px;line-height:0.8;color:#EDE6D8;">99</span></div></div>
+              <div style="width:38px;height:38px;border-radius:12px;background:#221D16;border:1px solid #C9A24B;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C9A24B;">AR</div>
+            </div>
+            <div style="flex:1;overflow:hidden;padding:20px;">
+              <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:24px;margin:0;color:#EDE6D8;">Welcome back</h2>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#A89B84;margin-top:6px;">24 commanders buildable · 3 decks</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin:22px 0 10px;">Most complete general</div>
+              <div style="background:#1E1A15;border:1px solid #3A3229;border-radius:12px;padding:16px;">
+                <div style="display:flex;gap:4px;margin-bottom:10px;"><span style="width:11px;height:11px;border-radius:3px;background:#C05A48;display:block;"></span></div>
+                <div style="font-family:'Cinzel',serif;font-weight:600;font-size:19px;color:#EDE6D8;">Ysolde, Ember Sovereign</div>
+                <div style="font-size:12px;color:#A89B84;margin-top:3px;">Legendary Creature — Phoenix Sovereign</div>
+                <div style="display:flex;align-items:center;gap:10px;margin:14px 0 14px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#6FA368;">96 / 99</span><div style="flex:1;height:6px;background:#2A241D;border-radius:3px;overflow:hidden;"><div style="height:100%;width:97%;background:#6FA368;border-radius:3px;"></div></div></div>
+                <button style="font-family:'IBM Plex Sans';font-weight:600;font-size:14px;color:#14110E;background:#C9A24B;border:none;border-radius:8px;padding:11px 0;cursor:pointer;width:100%;">Build this deck</button>
+              </div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin:22px 0 10px;">Recommended</div>
+              <div style="display:flex;flex-direction:column;gap:10px;">
+                <div style="display:flex;align-items:center;gap:12px;background:#1E1A15;border:1px solid #3A3229;border-radius:10px;padding:12px 14px;"><div style="display:flex;gap:3px;"><span style="width:10px;height:10px;border-radius:2px;background:#E8E4D6;display:block;"></span><span style="width:10px;height:10px;border-radius:2px;background:#4A7FB5;display:block;"></span></div><div><div style="font-family:'Cinzel',serif;font-weight:600;font-size:15px;color:#EDE6D8;">Corvyn, Vault Warden</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;margin-top:2px;">91 / 99 owned</div></div><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E0913C;">92%</span></div>
+                <div style="display:flex;align-items:center;gap:12px;background:#1E1A15;border:1px solid #3A3229;border-radius:10px;padding:12px 14px;"><div style="display:flex;gap:3px;"><span style="width:10px;height:10px;border-radius:2px;background:#5B5566;display:block;"></span><span style="width:10px;height:10px;border-radius:2px;background:#6B9E63;display:block;"></span></div><div><div style="font-family:'Cinzel',serif;font-weight:600;font-size:15px;color:#EDE6D8;">Mireth, Spore Matron</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;margin-top:2px;">84 / 99 owned</div></div><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E0913C;">85%</span></div>
+              </div>
+            </div>
+            <!-- bottom tabs -->
+            <div style="display:flex;border-top:1px solid #3A3229;background:#1A160F;padding:10px 6px 22px;">
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="width:8px;height:8px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="font-size:10px;color:#C9A24B;font-weight:600;">Home</span></div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="width:8px;height:8px;background:#4A4033;transform:rotate(45deg);display:block;"></span><span style="font-size:10px;color:#8E8269;">Collection</span></div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="width:8px;height:8px;background:#4A4033;transform:rotate(45deg);display:block;"></span><span style="font-size:10px;color:#8E8269;">Commanders</span></div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="width:8px;height:8px;background:#4A4033;transform:rotate(45deg);display:block;"></span><span style="font-size:10px;color:#8E8269;">Decks</span></div>
+            </div>
+          </div>
+        </div>
+        <div style="width:220px;font-size:13px;line-height:1.6;color:#A89B84;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">Mobile — the rail folds</div>
+          The sidebar collapses to a <b style="color:#C6B79A;font-weight:600;">bottom tab bar</b>; account moves to the top-right avatar (opens the same Clerk menu). Identical capability, thumb-reachable.
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================= OPTION 1B — THE CROWN BAR ============================= -->
+    <div id="1b" style="display:flex;flex-direction:column;gap:26px;">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#C9A24B;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">1b</span>
+        <div>
+          <div style="font-family:'Cinzel',serif;font-weight:700;font-size:22px;color:#EDE6D8;">The Crown Bar</div>
+          <div style="font-size:13px;color:#A89B84;margin-top:2px;">Top bar · wordmark left, tabs center, account right · content gets full width</div>
+        </div>
+      </div>
+
+      <!-- ---- 1b desktop: HOME ---- -->
+      <div style="width:1240px;border-radius:14px;overflow:hidden;border:1px solid #3A3229;box-shadow:0 34px 90px rgba(0,0,0,0.55);">
+        <div style="height:38px;background:#1E1A15;border-bottom:1px solid #3A3229;display:flex;align-items:center;gap:8px;padding:0 14px;">
+          <span style="width:9px;height:9px;border-radius:999px;background:#C6533F;display:block;"></span><span style="width:9px;height:9px;border-radius:999px;background:#E0913C;display:block;"></span><span style="width:9px;height:9px;border-radius:999px;background:#6FA368;display:block;"></span>
+          <div style="margin-left:14px;width:300px;height:22px;border-radius:6px;background:#14110E;border:1px solid #3A3229;display:flex;align-items:center;padding:0 10px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">the99.app/</div>
+          <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;letter-spacing:0.14em;">SIGNED IN · HOME</span>
+        </div>
+        <div style="background:#14110E;min-height:812px;">
+          <!-- TOP BAR -->
+          <div style="height:66px;background:#1A160F;border-bottom:1px solid #3A3229;display:flex;align-items:center;padding:0 32px;gap:40px;">
+            <div style="display:flex;align-items:flex-end;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.42em;color:#C9A24B;padding-bottom:5px;">THE</span><div style="display:flex;flex-direction:column;align-items:center;gap:4px;"><div style="display:flex;gap:3px;"><span style="width:5px;height:5px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="width:7px;height:7px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="width:5px;height:5px;background:#C9A24B;transform:rotate(45deg);display:block;"></span></div><span style="font-family:'Cinzel',serif;font-weight:800;font-size:26px;line-height:0.78;color:#EDE6D8;">99</span></div></div>
+            <div style="display:flex;gap:30px;align-items:center;margin-left:16px;">
+              <span style="font-size:14px;font-weight:600;color:#EDE6D8;position:relative;padding:22px 0;cursor:pointer;">Home<span style="position:absolute;left:0;right:0;bottom:0;height:2px;background:#C9A24B;"></span></span>
+              <span style="font-size:14px;font-weight:500;color:#A89B84;padding:22px 0;cursor:pointer;" style-hover="color:#EDE6D8;">Collection</span>
+              <span style="font-size:14px;font-weight:500;color:#A89B84;padding:22px 0;cursor:pointer;" style-hover="color:#EDE6D8;">Commanders</span>
+              <span style="font-size:14px;font-weight:500;color:#A89B84;padding:22px 0;cursor:pointer;" style-hover="color:#EDE6D8;">Decks</span>
+            </div>
+            <div style="margin-left:auto;display:flex;align-items:center;gap:16px;">
+              <button style="font-family:'IBM Plex Sans';font-weight:600;font-size:13px;color:#EDE6D8;background:transparent;border:1px solid #3A3229;border-radius:8px;padding:8px 15px;cursor:pointer;" style-hover="border-color:#C9A24B;color:#D8B25E;">Update collection</button>
+              <div style="display:flex;align-items:center;gap:9px;cursor:pointer;padding:4px 6px 4px 4px;border-radius:999px;border:1px solid transparent;" style-hover="border-color:#3A3229;"><div style="width:36px;height:36px;border-radius:999px;background:#221D16;border:1px solid #C9A24B;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C9A24B;">AR</div><span style="color:#8E8269;font-size:11px;">▾</span></div>
+            </div>
+          </div>
+          <!-- CONTENT -->
+          <div style="max-width:1080px;margin:0 auto;padding:38px 32px 48px;">
+            <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:32px;margin:0;color:#EDE6D8;">Welcome back, Arden</h2>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#A89B84;margin-top:8px;margin-bottom:30px;">1,284 cards · 742 unique · 24 commanders buildable · 3 decks</div>
+
+            <div style="display:grid;grid-template-columns:1.6fr 1fr;gap:20px;margin-bottom:34px;">
+              <div style="background:#1E1A15;border:1px solid #3A3229;border-radius:14px;overflow:hidden;display:flex;">
+                <div style="width:150px;flex:none;background:#14110E;background-image:repeating-linear-gradient(135deg,#1E1A15 0 11px,#181209 11px 22px);border-right:1px solid #3A3229;position:relative;"><div style="position:absolute;top:12px;left:12px;"><span style="width:12px;height:12px;border-radius:3px;background:#C05A48;display:block;"></span></div><div style="position:absolute;bottom:10px;left:12px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;">art</div></div>
+                <div style="flex:1;padding:24px 26px;display:flex;flex-direction:column;justify-content:center;">
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">Most complete general</div>
+                  <div style="font-family:'Cinzel',serif;font-weight:700;font-size:26px;color:#EDE6D8;">Ysolde, Ember Sovereign</div>
+                  <div style="font-size:13px;color:#A89B84;margin-top:3px;">Legendary Creature — Phoenix Sovereign</div>
+                  <div style="display:flex;align-items:center;gap:10px;margin:16px 0;"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#6FA368;">96 / 99</span><div style="flex:1;height:6px;background:#2A241D;border-radius:3px;overflow:hidden;"><div style="height:100%;width:97%;background:#6FA368;border-radius:3px;"></div></div></div>
+                  <button style="font-family:'IBM Plex Sans';font-weight:600;font-size:14px;color:#14110E;background:#C9A24B;border:none;border-radius:8px;padding:11px 22px;cursor:pointer;align-self:flex-start;" style-hover="background:#D8B25E;">Build this deck</button>
+                </div>
+              </div>
+              <div style="background:#1E1A15;border:1px solid #3A3229;border-radius:14px;padding:6px 20px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:13px 0;border-bottom:1px solid #2A241D;"><span style="font-size:13px;color:#C6B79A;">Total cards</span><span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#EDE6D8;">1,284</span></div>
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:13px 0;border-bottom:1px solid #2A241D;"><span style="font-size:13px;color:#C6B79A;">Unique</span><span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#EDE6D8;">742</span></div>
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:13px 0;border-bottom:1px solid #2A241D;"><span style="font-size:13px;color:#C6B79A;">Buildable</span><span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#C9A24B;">24</span></div>
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:13px 0;"><span style="font-size:13px;color:#C6B79A;">Decks built</span><span style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#EDE6D8;">3</span></div>
+              </div>
+            </div>
+
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;">Recommended from your collection</div><span style="font-size:13px;color:#C9A24B;cursor:pointer;">All 24 →</span></div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:36px;">
+              <sc-for list="{{ rec4 }}" as="item" hint-placeholder-count="4">
+                <div style="background:#1E1A15;border:1px solid #3A3229;border-radius:12px;overflow:hidden;display:flex;flex-direction:column;">
+                  <div style="position:relative;height:104px;background:#14110E;background-image:repeating-linear-gradient(135deg,#1E1A15 0 10px,#181209 10px 20px);border-bottom:1px solid #3A3229;"><div style="position:absolute;top:10px;left:10px;display:flex;gap:4px;"><sc-for list="{{ item.pips }}" as="pip" hint-placeholder-count="1"><span style="width:11px;height:11px;border-radius:3px;background:{{ pip }};border:1px solid rgba(0,0,0,0.35);display:block;"></span></sc-for></div></div>
+                  <div style="padding:13px 15px 15px;display:flex;flex-direction:column;gap:11px;flex:1;">
+                    <div><div style="font-family:'Cinzel',serif;font-weight:600;font-size:16px;color:#EDE6D8;line-height:1.15;">{{ item.name }}</div><div style="font-size:11.5px;color:#A89B84;margin-top:4px;">{{ item.type }}</div></div>
+                    <div style="margin-top:auto;"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C6B79A;">{{ item.owned }} / 99</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">{{ item.missing }} to go</span></div><div style="height:6px;background:#2A241D;border-radius:3px;overflow:hidden;"><div style="height:100%;border-radius:3px;background:{{ item.bar }};width:{{ item.pct }};"></div></div></div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;">Recent decks</div><span style="font-size:13px;color:#C9A24B;cursor:pointer;">All decks →</span></div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;">
+              <sc-for list="{{ decks }}" as="d" hint-placeholder-count="3">
+                <div style="background:#1E1A15;border:1px solid #3A3229;border-left:3px solid {{ d.color }};border-radius:8px;padding:16px 18px;cursor:pointer;" style-hover="background:#221D16;">
+                  <div style="display:flex;gap:3px;margin-bottom:10px;"><sc-for list="{{ d.pips }}" as="pip" hint-placeholder-count="1"><span style="width:10px;height:10px;border-radius:2px;background:{{ pip }};display:block;"></span></sc-for></div>
+                  <div style="font-family:'Cinzel',serif;font-weight:600;font-size:17px;color:#EDE6D8;">{{ d.name }}</div>
+                  <div style="font-size:12px;color:#A89B84;margin:3px 0 12px;">{{ d.cmd }}</div>
+                  <div style="display:flex;justify-content:space-between;align-items:baseline;"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:{{ d.color }};">{{ d.owned }} / 99</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">{{ d.status }}</span></div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---- 1b desktop: COMMANDERS ---- -->
+      <div style="width:1240px;border-radius:14px;overflow:hidden;border:1px solid #3A3229;box-shadow:0 34px 90px rgba(0,0,0,0.55);">
+        <div style="height:38px;background:#1E1A15;border-bottom:1px solid #3A3229;display:flex;align-items:center;gap:8px;padding:0 14px;">
+          <span style="width:9px;height:9px;border-radius:999px;background:#C6533F;display:block;"></span><span style="width:9px;height:9px;border-radius:999px;background:#E0913C;display:block;"></span><span style="width:9px;height:9px;border-radius:999px;background:#6FA368;display:block;"></span>
+          <div style="margin-left:14px;width:300px;height:22px;border-radius:6px;background:#14110E;border:1px solid #3A3229;display:flex;align-items:center;padding:0 10px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">the99.app/commanders</div>
+          <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;letter-spacing:0.14em;">SHELL · POPULATED SURFACE</span>
+        </div>
+        <div style="background:#14110E;min-height:812px;">
+          <div style="height:66px;background:#1A160F;border-bottom:1px solid #3A3229;display:flex;align-items:center;padding:0 32px;gap:40px;">
+            <div style="display:flex;align-items:flex-end;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.42em;color:#C9A24B;padding-bottom:5px;">THE</span><div style="display:flex;flex-direction:column;align-items:center;gap:4px;"><div style="display:flex;gap:3px;"><span style="width:5px;height:5px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="width:7px;height:7px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="width:5px;height:5px;background:#C9A24B;transform:rotate(45deg);display:block;"></span></div><span style="font-family:'Cinzel',serif;font-weight:800;font-size:26px;line-height:0.78;color:#EDE6D8;">99</span></div></div>
+            <div style="display:flex;gap:30px;align-items:center;margin-left:16px;">
+              <span style="font-size:14px;font-weight:500;color:#A89B84;padding:22px 0;cursor:pointer;" style-hover="color:#EDE6D8;">Home</span>
+              <span style="font-size:14px;font-weight:500;color:#A89B84;padding:22px 0;cursor:pointer;" style-hover="color:#EDE6D8;">Collection</span>
+              <span style="font-size:14px;font-weight:600;color:#EDE6D8;position:relative;padding:22px 0;cursor:pointer;">Commanders<span style="position:absolute;left:0;right:0;bottom:0;height:2px;background:#C9A24B;"></span></span>
+              <span style="font-size:14px;font-weight:500;color:#A89B84;padding:22px 0;cursor:pointer;" style-hover="color:#EDE6D8;">Decks</span>
+            </div>
+            <div style="margin-left:auto;display:flex;align-items:center;gap:16px;">
+              <button style="font-family:'IBM Plex Sans';font-weight:600;font-size:13px;color:#EDE6D8;background:transparent;border:1px solid #3A3229;border-radius:8px;padding:8px 15px;cursor:pointer;" style-hover="border-color:#C9A24B;color:#D8B25E;">Update collection</button>
+              <div style="display:flex;align-items:center;gap:9px;cursor:pointer;padding:4px 6px 4px 4px;border-radius:999px;border:1px solid transparent;" style-hover="border-color:#3A3229;"><div style="width:36px;height:36px;border-radius:999px;background:#221D16;border:1px solid #C9A24B;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C9A24B;">AR</div><span style="color:#8E8269;font-size:11px;">▾</span></div>
+            </div>
+          </div>
+          <div style="max-width:1080px;margin:0 auto;padding:38px 32px 48px;">
+            <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:32px;margin:0;color:#EDE6D8;">Commanders</h2>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#A89B84;margin-top:8px;">24 buildable from cards you own · ranked by completeness</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin:24px 0 26px;align-items:center;">
+              <span style="font-family:'IBM Plex Sans';font-weight:600;font-size:13px;color:#14110E;background:#C9A24B;border-radius:999px;padding:7px 15px;cursor:pointer;">All colors</span>
+              <span style="display:flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#EDE6D8;background:#2A241D;border-radius:999px;padding:6px 13px 6px 10px;cursor:pointer;" style-hover="background:#332B20;"><span style="width:10px;height:10px;border-radius:2px;background:#E8E4D6;"></span>W</span>
+              <span style="display:flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#EDE6D8;background:#2A241D;border-radius:999px;padding:6px 13px 6px 10px;cursor:pointer;" style-hover="background:#332B20;"><span style="width:10px;height:10px;border-radius:2px;background:#4A7FB5;"></span>U</span>
+              <span style="display:flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#EDE6D8;background:#2A241D;border-radius:999px;padding:6px 13px 6px 10px;cursor:pointer;" style-hover="background:#332B20;"><span style="width:10px;height:10px;border-radius:2px;background:#5B5566;"></span>B</span>
+              <span style="display:flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#EDE6D8;background:#2A241D;border-radius:999px;padding:6px 13px 6px 10px;cursor:pointer;" style-hover="background:#332B20;"><span style="width:10px;height:10px;border-radius:2px;background:#C05A48;"></span>R</span>
+              <span style="display:flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#EDE6D8;background:#2A241D;border-radius:999px;padding:6px 13px 6px 10px;cursor:pointer;" style-hover="background:#332B20;"><span style="width:10px;height:10px;border-radius:2px;background:#6B9E63;"></span>G</span>
+              <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8E8269;border:1px solid #3A3229;border-radius:999px;padding:6px 13px;cursor:pointer;" style-hover="border-color:#C9A24B;color:#D8B25E;">Buildable ≥ 90% ✓</span>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;">
+              <sc-for list="{{ cmd }}" as="item" hint-placeholder-count="6">
+                <div style="background:#1E1A15;border:1px solid #3A3229;border-radius:12px;overflow:hidden;display:flex;flex-direction:column;">
+                  <div style="position:relative;height:104px;background:#14110E;background-image:repeating-linear-gradient(135deg,#1E1A15 0 10px,#181209 10px 20px);border-bottom:1px solid #3A3229;"><div style="position:absolute;top:10px;left:10px;display:flex;gap:4px;"><sc-for list="{{ item.pips }}" as="pip" hint-placeholder-count="1"><span style="width:11px;height:11px;border-radius:3px;background:{{ pip }};border:1px solid rgba(0,0,0,0.35);display:block;"></span></sc-for></div></div>
+                  <div style="padding:13px 15px 15px;display:flex;flex-direction:column;gap:11px;flex:1;">
+                    <div><div style="font-family:'Cinzel',serif;font-weight:600;font-size:16px;color:#EDE6D8;line-height:1.15;">{{ item.name }}</div><div style="font-size:11.5px;color:#A89B84;margin-top:4px;">{{ item.type }}</div></div>
+                    <div style="margin-top:auto;"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C6B79A;">{{ item.owned }} / 99</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">{{ item.missing }} to go</span></div><div style="height:6px;background:#2A241D;border-radius:3px;overflow:hidden;"><div style="height:100%;border-radius:3px;background:{{ item.bar }};width:{{ item.pct }};"></div></div></div>
+                    <button style="font-family:'IBM Plex Sans';font-weight:600;font-size:12.5px;color:#EDE6D8;background:transparent;border:1px solid #3A3229;border-radius:8px;padding:8px 0;cursor:pointer;width:100%;" style-hover="border-color:#C9A24B;color:#D8B25E;">Build deck</button>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ---- 1b MOBILE ---- -->
+      <div style="display:flex;gap:16px;align-items:center;">
+        <div style="width:392px;flex:none;border-radius:46px;padding:12px;background:#0A0806;border:1px solid #2A241D;box-shadow:0 34px 90px rgba(0,0,0,0.55);">
+          <div style="border-radius:34px;overflow:hidden;background:#14110E;position:relative;height:812px;display:flex;flex-direction:column;">
+            <div style="position:absolute;top:11px;left:50%;transform:translateX(-50%);width:120px;height:26px;background:#0A0806;border-radius:0 0 16px 16px;z-index:5;"></div>
+            <div style="padding:20px 20px 14px;display:flex;align-items:center;justify-content:space-between;background:#1A160F;border-bottom:1px solid #3A3229;">
+              <div style="display:flex;align-items:flex-end;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.4em;color:#C9A24B;padding-bottom:4px;">THE</span><div style="display:flex;flex-direction:column;align-items:center;gap:4px;"><div style="display:flex;gap:3px;"><span style="width:5px;height:5px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="width:7px;height:7px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="width:5px;height:5px;background:#C9A24B;transform:rotate(45deg);display:block;"></span></div><span style="font-family:'Cinzel',serif;font-weight:800;font-size:24px;line-height:0.8;color:#EDE6D8;">99</span></div></div>
+              <div style="width:38px;height:38px;border-radius:999px;background:#221D16;border:1px solid #C9A24B;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C9A24B;">AR</div>
+            </div>
+            <div style="flex:1;overflow:hidden;padding:20px;">
+              <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:24px;margin:0;color:#EDE6D8;">Welcome back</h2>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#A89B84;margin-top:6px;">24 commanders buildable · 3 decks</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px 0 22px;">
+                <div style="background:#1E1A15;border:1px solid #3A3229;border-radius:10px;padding:14px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:20px;color:#C9A24B;">24</div><div style="font-size:11px;color:#A89B84;margin-top:2px;">buildable</div></div>
+                <div style="background:#1E1A15;border:1px solid #3A3229;border-radius:10px;padding:14px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:20px;color:#EDE6D8;">1,284</div><div style="font-size:11px;color:#A89B84;margin-top:2px;">cards</div></div>
+              </div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin:0 0 10px;">Most complete general</div>
+              <div style="background:#1E1A15;border:1px solid #3A3229;border-radius:12px;padding:16px;">
+                <div style="display:flex;gap:4px;margin-bottom:10px;"><span style="width:11px;height:11px;border-radius:3px;background:#C05A48;display:block;"></span></div>
+                <div style="font-family:'Cinzel',serif;font-weight:600;font-size:19px;color:#EDE6D8;">Ysolde, Ember Sovereign</div>
+                <div style="font-size:12px;color:#A89B84;margin-top:3px;">Legendary Creature — Phoenix Sovereign</div>
+                <div style="display:flex;align-items:center;gap:10px;margin:14px 0;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#6FA368;">96 / 99</span><div style="flex:1;height:6px;background:#2A241D;border-radius:3px;overflow:hidden;"><div style="height:100%;width:97%;background:#6FA368;border-radius:3px;"></div></div></div>
+                <button style="font-family:'IBM Plex Sans';font-weight:600;font-size:14px;color:#14110E;background:#C9A24B;border:none;border-radius:8px;padding:11px 0;cursor:pointer;width:100%;">Build this deck</button>
+              </div>
+            </div>
+            <div style="display:flex;border-top:1px solid #3A3229;background:#1A160F;padding:10px 6px 22px;">
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="width:8px;height:8px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="font-size:10px;color:#C9A24B;font-weight:600;">Home</span></div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="width:8px;height:8px;background:#4A4033;transform:rotate(45deg);display:block;"></span><span style="font-size:10px;color:#8E8269;">Collection</span></div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="width:8px;height:8px;background:#4A4033;transform:rotate(45deg);display:block;"></span><span style="font-size:10px;color:#8E8269;">Commanders</span></div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;"><span style="width:8px;height:8px;background:#4A4033;transform:rotate(45deg);display:block;"></span><span style="font-size:10px;color:#8E8269;">Decks</span></div>
+            </div>
+          </div>
+        </div>
+        <div style="width:220px;font-size:13px;line-height:1.6;color:#A89B84;">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:8px;">Mobile — bar becomes tabs</div>
+          The top tabs drop to a <b style="color:#C6B79A;font-weight:600;">bottom tab bar</b>; the wordmark + avatar stay in a slim top header. Both directions converge to the same mobile shell.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const W='#E8E4D6',U='#4A7FB5',B='#5B5566',R='#C05A48',G='#6B9E63';
+    const barOf = p => p>=90 ? '#6FA368' : p>=75 ? '#E0913C' : '#C6533F';
+    const mk = (name,type,owned,pips) => {
+      const pct = Math.round(owned/99*100);
+      return { name, type, owned:String(owned), missing:String(99-owned), pct:pct+'%', bar:barOf(pct), pips };
+    };
+    const cmd = [
+      mk('Ysolde, Ember Sovereign','Legendary Creature — Phoenix Sovereign',96,[R]),
+      mk('Corvyn, Vault Warden','Legendary Creature — Human Advisor',91,[W,U]),
+      mk('Mireth, Spore Matron','Legendary Creature — Fungus Shaman',84,[B,G]),
+      mk('Kaldrek Stormhoof','Legendary Creature — Minotaur Warrior',78,[R,G]),
+      mk('Selu, Dawncaller','Legendary Creature — Bird Cleric',73,[W]),
+      mk('Vorath, Tide of Bone','Legendary Creature — Merfolk Wizard',69,[U,B]),
+    ];
+    const decks = [
+      { name:'Ember Reign', cmd:'Ysolde, Ember Sovereign', owned:'99', color:'#6FA368', status:'Complete', pips:[R] },
+      { name:'Skyward Writ', cmd:'Corvyn, Vault Warden', owned:'91', color:'#E0913C', status:'8 to acquire', pips:[W,U] },
+      { name:'Fungal Tithe', cmd:'Mireth, Spore Matron', owned:'84', color:'#E0913C', status:'15 to acquire', pips:[B,G] },
+    ];
+    return { cmd, rec3: cmd.slice(0,3), rec4: cmd.slice(0,4), decks };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,157 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-10-16T22:30:00Z"
+ },
+ "title": "The 99 · Rule 0 check R2",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 300,
+   "w": 1700,
+   "h": 2383,
+   "title": "Rule 0 check · calls, locks, gaps (R2, approved)"
+  },
+  "Entry-Phone.dc.html": {
+   "x": 1780,
+   "y": 300,
+   "w": 1860,
+   "h": 1324,
+   "title": "Entry · phone"
+  },
+  "Setup-Phone.dc.html": {
+   "x": 3720,
+   "y": 300,
+   "w": 1860,
+   "h": 1228,
+   "title": "Setup · phone"
+  },
+  "Log-Phone.dc.html": {
+   "x": 5660,
+   "y": 300,
+   "w": 1860,
+   "h": 2109,
+   "title": "Log and expiry · phone"
+  },
+  "Read-Phone.dc.html": {
+   "x": 0,
+   "y": 3058,
+   "w": 2280,
+   "h": 4082,
+   "title": "The read · phone"
+  },
+  "Swap-Phone.dc.html": {
+   "x": 2360,
+   "y": 3058,
+   "w": 2700,
+   "h": 2106,
+   "title": "Suggestion and swap · phone"
+  },
+  "Entry-Desktop.dc.html": {
+   "x": 0,
+   "y": 7560,
+   "w": 4120,
+   "h": 1075,
+   "title": "Entry · desktop"
+  },
+  "Setup-Desktop.dc.html": {
+   "x": 4200,
+   "y": 7560,
+   "w": 4120,
+   "h": 1075,
+   "title": "Setup · desktop"
+  },
+  "Read-Desktop.dc.html": {
+   "x": 0,
+   "y": 9055,
+   "w": 2780,
+   "h": 5007,
+   "title": "The read · desktop (R2, one seat per row)"
+  },
+  "Swap-Desktop.dc.html": {
+   "x": 2860,
+   "y": 9055,
+   "w": 2780,
+   "h": 3106,
+   "title": "Suggestion and swap · desktop (R2)"
+  },
+  "Log-Desktop.dc.html": {
+   "x": 0,
+   "y": 14482,
+   "w": 4120,
+   "h": 1248,
+   "title": "Log and expiry · desktop (R2)"
+  },
+  "Desktop-Options.dc.html": {
+   "x": 0,
+   "y": 16150,
+   "w": 2760,
+   "h": 3451,
+   "title": "R2 · desktop seat layout · A vs B"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Entry-Phone.dc.html",
+  "Setup-Phone.dc.html",
+  "Log-Phone.dc.html",
+  "Read-Phone.dc.html",
+  "Swap-Phone.dc.html",
+  "Entry-Desktop.dc.html",
+  "Setup-Desktop.dc.html",
+  "Read-Desktop.dc.html",
+  "Swap-Desktop.dc.html",
+  "Log-Desktop.dc.html",
+  "Desktop-Options.dc.html"
+ ],
+ "notes": {
+  "row1": {
+   "x": 0,
+   "y": 40,
+   "text": "Start here, and the phone (390)",
+   "kind": "title1",
+   "maxW": 4000
+  },
+  "row2": {
+   "x": 0,
+   "y": 2798,
+   "text": "The read and the swap, phone (390)",
+   "kind": "title1",
+   "maxW": 4000
+  },
+  "row3": {
+   "x": 0,
+   "y": 7300,
+   "text": "Desktop (1300): entry and setup",
+   "kind": "title1",
+   "maxW": 4000
+  },
+  "row4": {
+   "x": 0,
+   "y": 8795,
+   "text": "Desktop (1300): the read and the swap",
+   "kind": "title1",
+   "maxW": 4000
+  },
+  "row5": {
+   "x": 0,
+   "y": 14222,
+   "text": "Desktop (1300): logging and expiry",
+   "kind": "title1",
+   "maxW": 4000
+  },
+  "row6": {
+   "x": 0,
+   "y": 15890,
+   "text": "R2: desktop seat layout, A vs B (Hugh picked A)",
+   "kind": "title1",
+   "maxW": 4000
+  }
+ },
+ "designSystems": []
+}

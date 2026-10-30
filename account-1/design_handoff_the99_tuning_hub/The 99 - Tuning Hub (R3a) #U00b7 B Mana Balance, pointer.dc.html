@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Metamorphous&amp;family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0B0B0E; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { color: #6C95D8; }
+  :root {
+    --bg:#121217; --surface:#1E1F26; --surface-sunken:#16171D; --elevated:#2D2E35;
+    --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755;
+    --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E;
+    --accent:#5C86C9; --accent-dim:#34507D; --danger:#C6533F; --success:#6FA368; --warning:#E0913C;
+    --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:var(--fg);background:#0B0B0E;padding:48px 56px 96px;display:flex;flex-direction:column;gap:64px;width:max-content;min-width:1800px;">
+
+  <header style="display:flex;flex-direction:column;gap:14px;max-width:1180px;">
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#0B0B0E;background:var(--accent);border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R3a</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.28em;text-transform:uppercase;color:var(--fg-faint);">tuning hub · canvas B · mana balance · addendum: pointer, needs, one door · 2026-10-11 · for review</span>
+    </div>
+    <h1 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:34px;line-height:1.25;color:var(--fg);">No color is named until the player asks. Improve my mana, the one door, lists every color tightest first, with nothing chosen.</h1>
+    <p style="margin:0;max-width:1060px;font-size:14.5px;line-height:1.6;color:var(--fg-body);text-wrap:pretty;">Hugh’s rulings of 2026-10-11 change the pattern rows and the help entry. Ruling 1 was revised the same day: there’s no lead line, and the pointer exists only inside the door. Everything else stands as drawn in R3 (<a href="The 99 - Tuning Hub (R3) · B Mana Balance, evidence.dc.html">B Mana Balance, evidence</a>). Figures are from uploads/mana-pointer-calibration-2026-10-11.md (staging). Every string is a placeholder owed to /copy-review.</p>
+    <div style="display:flex;flex-direction:column;gap:3px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">
+      <span>HD - Gishath · 904fdc61-e190-4ba5-8e34-2b18fa0584f2</span>
+      <span>HD - Avatar Aang · 0f585441-203e-475b-be7c-f11e67e20d79</span>
+      <span>HD Tune - Blood Rites · 783df427-d0c5-456a-805e-cdc94ecb0952</span>
+      <span>HD - Wizards · 7653dec3-bcf4-4045-8242-9000765c7601</span>
+      <span>HD - Eldrazi · 0b49cb44-8ae2-4c19-b558-633344a2f4ed</span>
+    </div>
+  </header>
+
+  <section style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1380px;">
+    <sc-for list="{{ calls }}" as="c" hint-placeholder-count="6">
+      <div style="background:var(--surface-sunken);border:1px solid {{ c.rule }};border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:8px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);">{{ c.k }}</span>
+        <b style="font-size:13.5px;font-weight:600;color:var(--fg);">{{ c.h }}</b>
+        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">{{ c.p }}</p>
+      </div>
+    </sc-for>
+  </section>
+
+  <sc-for list="{{ sections }}" as="s" hint-placeholder-count="5">
+    <section id="{{ s.id }}" style="display:flex;flex-direction:column;gap:18px;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);border-top:1px solid var(--accent);padding-top:16px;">{{ s.id }} · <span style="color:var(--accent);">{{ s.title }}</span></div>
+      <div style="display:flex;align-items:flex-start;gap:40px;">
+        <sc-for list="{{ s.frames }}" as="f" hint-placeholder-count="2">
+          <div style="display:flex;flex-direction:column;gap:8px;flex:none;">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;max-width:{{ f.w }}px;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 7px;">{{ f.tag }}</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ f.deckId }}</span>
+            </div>
+            <div data-screen-label="{{ f.tag }}" style="width:{{ f.w }}px;background:var(--bg);border:1px solid var(--border-strong);border-radius:{{ f.frameR }}px;padding:{{ f.framePad }};display:flex;flex-direction:column;gap:10px;">
+              <div style="background:var(--surface-sunken);border:1px solid var(--border);border-radius:12px;padding:{{ f.panelPad }};display:flex;flex-direction:column;gap:16px;">
+                <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">
+                  <h3 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:{{ f.h }}px;color:var(--fg);">Mana Balance</h3>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ f.sub }}</span>
+                </div>
+
+
+                <sc-if value="{{ f.thinOn }}" hint-placeholder-val="{{ false }}">
+                  <div style="background:var(--surface);border:1px solid var(--border-strong);border-radius:10px;padding:12px 14px;display:flex;align-items:flex-start;gap:10px;">
+                    <span style="flex:none;width:18px;height:18px;border-radius:50%;border:1px solid var(--fg-faint);color:var(--fg-faint);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;">i</span>
+                    <span style="flex:1;min-width:0;font-size:12.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">No card in this deck has a colored pip, so there’s no color to count and no color to help with. The lands and the colorless count below still stand.</span>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ f.stubOn }}" hint-placeholder-val="{{ true }}">
+                  <div style="border:1px dashed var(--border-dashed);border-radius:9px;padding:10px 12px;display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline;">
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">canvas only</span>
+                    <span style="font-size:12.5px;color:var(--fg-faint);">{{ f.stub }}</span>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ f.patOn }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;flex-direction:column;gap:10px;">
+                    <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">
+                      <span style="font-size:13.5px;font-weight:600;color:var(--fg-body);">Hardest costs</span>
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">six hardest per color</span>
+                    </div>
+                    <sc-if value="{{ f.exClosed }}" hint-placeholder-val="{{ true }}">
+                      <span role="button" aria-expanded="false" style="align-self:flex-start;min-height:{{ f.tapH }}px;display:flex;align-items:center;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);border-bottom:1px solid var(--accent-dim);padding-bottom:1px;">What “Needs” means</span></span>
+                    </sc-if>
+                    <sc-if value="{{ f.exOpen }}" hint-placeholder-val="{{ false }}">
+                      <div style="background:var(--surface-sunken);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:9px;padding:11px 13px;display:flex;flex-direction:column;gap:7px;">
+                        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;"><span role="button" aria-expanded="true" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);">What “Needs” means</span><span role="button" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">Hide</span></div>
+                        <p style="margin:0;font-size:12px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;"><b style="font-weight:600;color:var(--fg);">Needs</b> Frank Karsten’s math: sources of this color a 99-card deck needs to cast this on curve about 9 times in 10.</p>
+                        <p style="margin:0;font-size:12px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;"><b style="font-weight:600;color:var(--fg);">Source</b> Frank Karsten, “How Many Sources Do You Need to Consistently Cast Your Spells? A 2022 Update”, <a href="#" aria-label="TCGplayer, opens in a new tab" style="display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font-weight:500;">TCGplayer<svg aria-hidden="true" viewBox="0 0 16 16" width="14" height="14" style="display:block;flex:none;"><path d="M6 3.5h6.5V10M12.5 3.5 4 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg></a>. A reference point for reading the count, not a target.</p>
+                      </div>
+                    </sc-if>
+                    <div role="radiogroup" aria-label="Color" style="display:flex;gap:6px;flex-wrap:{{ f.wrap }};overflow-x:auto;">
+                      <sc-for list="{{ f.chips }}" as="c" hint-placeholder-count="3">
+                        <span role="radio" aria-checked="{{ c.on }}" style="flex:none;min-height:{{ f.chipH }}px;display:flex;align-items:center;gap:7px;padding:0 12px;border-radius:999px;font-size:12px;font-weight:{{ c.weight }};color:{{ c.ink }};background:{{ c.fill }};border:1px solid {{ c.border }};"><span style="width:12px;height:12px;border-radius:50%;background:{{ c.bg }};"></span>{{ c.name }}</span>
+                      </sc-for>
+                    </div>
+                    <div style="border-top:1px solid var(--border);">
+                      <sc-if value="{{ f.d }}" hint-placeholder-val="{{ true }}">
+                        <div style="display:grid;grid-template-columns:72px minmax(0,1fr) 200px;gap:14px;padding:8px 2px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-locked);border-bottom:1px solid var(--border);"><span>Cost</span><span>Cards</span><span style="text-align:right;">Needed</span></div>
+                      </sc-if>
+                      <sc-for list="{{ f.patterns }}" as="r" hint-placeholder-count="6">
+                        <div style="display:grid;grid-template-columns:{{ f.prGrid }};column-gap:14px;row-gap:5px;align-items:baseline;padding:10px 2px;border-bottom:1px solid var(--border);">
+                          <span style="grid-column:1;grid-row:1;display:flex;align-items:baseline;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:var(--fg);">{{ r.code }}</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ r.copies }}</span></span>
+                          <span style="grid-column:{{ f.namesCol }};grid-row:{{ f.namesRow }};font-size:12.5px;line-height:1.55;color:var(--fg-body);min-width:0;text-wrap:pretty;"><sc-for list="{{ r.names }}" as="n" hint-placeholder-count="2"><span><span style="border-bottom:1px dotted var(--accent);">{{ n.name }}</span>{{ n.sep }}</span></sc-for></span>
+                          <span style="grid-column:{{ f.figCol }};grid-row:1;justify-self:end;text-align:right;white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-size:12px;color:{{ r.ink }};">{{ r.hn }}</span>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ f.doorOn }}" hint-placeholder-val="{{ true }}">
+                  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:12px;">
+                    <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;">
+                      <div style="display:flex;flex-direction:column;gap:4px;flex:1 1 260px;min-width:0;">
+                        <span style="font-size:13.5px;font-weight:600;color:var(--fg);">Improve my mana</span>
+                        <span style="font-size:12.5px;line-height:1.5;color:var(--fg-body);text-wrap:pretty;">{{ f.doorLead }}</span>
+                      </div>
+                      <sc-if value="{{ f.doorBtn }}" hint-placeholder-val="{{ true }}">
+                        <span role="button" aria-expanded="false" style="flex:{{ f.btnFlex }};min-height:{{ f.tapH }}px;display:flex;align-items:center;justify-content:center;padding:0 16px;border-radius:8px;border:1px solid var(--accent);color:var(--accent);font-size:13px;font-weight:600;">{{ f.btn }}</span>
+                      </sc-if>
+                    </div>
+                    <sc-if value="{{ f.stepOn }}" hint-placeholder-val="{{ false }}">
+                      <div style="border-top:1px solid var(--border);padding-top:12px;display:flex;flex-direction:column;gap:8px;">
+                        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;">
+                          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Which color?</span>
+                          <span role="button" aria-label="Close" style="min-width:{{ f.tapH }}px;min-height:{{ f.closeH }}px;display:flex;align-items:center;justify-content:flex-end;font-size:13px;color:var(--fg-muted);">✕</span>
+                        </div>
+                        <span style="font-size:12.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">Listed by how close each color’s sources are to what its tightest cost needs, counting costs two or more cards share. Pick any.</span>
+                        <sc-if value="{{ f.stExClosed }}" hint-placeholder-val="{{ true }}">
+                          <span role="button" aria-expanded="false" style="align-self:flex-start;min-height:{{ f.tapH }}px;display:flex;align-items:center;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);border-bottom:1px solid var(--accent-dim);padding-bottom:1px;">What “Needs” means</span></span>
+                        </sc-if>
+                        <sc-if value="{{ f.stEx }}" hint-placeholder-val="{{ false }}">
+                          <div style="background:var(--surface-sunken);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:9px;padding:11px 13px;display:flex;flex-direction:column;gap:7px;">
+                            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;"><span role="button" aria-expanded="true" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent);">What “Needs” means</span><span role="button" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">Hide</span></div>
+                            <p style="margin:0;font-size:12px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;"><b style="font-weight:600;color:var(--fg);">Needs</b> Frank Karsten’s math: sources of this color a 99-card deck needs to cast this on curve about 9 times in 10.</p>
+                            <p style="margin:0;font-size:12px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;"><b style="font-weight:600;color:var(--fg);">Source</b> Frank Karsten, “How Many Sources Do You Need to Consistently Cast Your Spells? A 2022 Update”, <a href="#" aria-label="TCGplayer, opens in a new tab" style="display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font-weight:500;">TCGplayer<svg aria-hidden="true" viewBox="0 0 16 16" width="14" height="14" style="display:block;flex:none;"><path d="M6 3.5h6.5V10M12.5 3.5 4 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg></a>. A reference point for reading the count, not a target.</p>
+                          </div>
+                        </sc-if>
+                        <div role="radiogroup" aria-label="Which color" style="display:flex;flex-direction:column;gap:6px;">
+                          <sc-for list="{{ f.step }}" as="c" hint-placeholder-count="3">
+                            <div role="radio" aria-checked="false" style="min-height:{{ f.stepH }}px;display:grid;grid-template-columns:{{ f.stGrid }};column-gap:12px;row-gap:2px;align-items:center;padding:8px 12px;border-radius:9px;border:1px solid var(--border-strong);background:var(--surface-sunken);">
+                              <span style="grid-column:1;grid-row:1 / span {{ f.stSpan }};width:18px;height:18px;border-radius:50%;border:1px solid var(--fg-faint);"></span>
+                              <span style="grid-column:2;grid-row:1;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--fg);"><span style="width:14px;height:14px;border-radius:50%;background:{{ c.bg }};"></span>{{ c.name }}</span>
+                              <span style="grid-column:{{ f.stCodeCol }};grid-row:{{ f.stCodeRow }};font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);min-width:0;">{{ c.code }}</span>
+                              <span style="grid-column:{{ f.stHnCol }};grid-row:{{ f.stHnRow }};justify-self:{{ f.stHnJustify }};font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:{{ c.ink }};white-space:nowrap;">{{ c.have }}</span>
+                            </div>
+                          </sc-for>
+                        </div>
+                        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.5;color:var(--fg-faint);">Pick one to see basic swaps and staples for it (R3 M4, M5).</span>
+                      </div>
+                    </sc-if>
+                  </div>
+                </sc-if>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+        <div style="width:360px;flex:none;display:flex;flex-direction:column;gap:12px;font-size:13px;line-height:1.65;color:var(--fg-muted);">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--accent);">{{ s.noteHead }}</span>
+          <sc-for list="{{ s.notes }}" as="n" hint-placeholder-count="3">
+            <p style="margin:0;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">{{ n.b }}</b> {{ n.t }}</p>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const PIP = { W: ['var(--w)', '#14110E', 'White'], U: ['var(--u)', '#F2F4F4', 'Blue'], B: ['var(--b)', '#14110E', 'Black'], R: ['var(--r)', '#0B0B0E', 'Red'], G: ['var(--g)', '#F2F4F4', 'Green'] };
+    const D = { d: true, w: 900, frameR: 12, framePad: '18px 24px 22px', panelPad: '18px 20px', h: 19, leadName: 16, haveML: 'auto', tapH: 32, closeH: 28, chipH: 30, wrap: 'wrap',
+      prGrid: '72px minmax(0,1fr) 200px', namesCol: '2', namesRow: '1', figCol: '3', btnFlex: 'none',
+      stGrid: '18px 120px minmax(0,1fr) auto', stSpan: 1, stCodeCol: '3', stCodeRow: '1', stHnCol: '4', stHnRow: '1', stHnJustify: 'end', stepH: 44 };
+    const P = { d: false, w: 390, frameR: 22, framePad: '14px 16px 20px', panelPad: '16px 14px', h: 17, leadName: 15, haveML: '0', tapH: 44, closeH: 44, chipH: 44, wrap: 'nowrap',
+      prGrid: 'auto minmax(0,1fr) auto', namesCol: '1 / -1', namesRow: '2', figCol: '3', btnFlex: '1 1 100%',
+      stGrid: '18px minmax(0,1fr) auto', stSpan: 2, stCodeCol: '2 / -1', stCodeRow: '2', stHnCol: '3', stHnRow: '1', stHnJustify: 'end', stepH: 56 };
+
+    const names = (l) => l.map((name, i) => ({ name, sep: i === l.length - 1 ? '' : ', ' }));
+    const hn = (h, n) => `You have ${h} · Needs ${n}`;
+    const lead = (k, code, cards, h, n) => ({ k, bg: PIP[k][0], ink: PIP[k][1], name: PIP[k][2], code, cards: names(cards), have: hn(h, n) });
+    const st = (k, code, h, n) => ({ k, bg: PIP[k][0], name: PIP[k][2], code, have: n === null ? `${h} sources · no pips` : hn(h, n), ink: n === null ? 'var(--fg-muted)' : 'var(--fg)' });
+    const pr = (code, copies, list, h, n, kind) => ({ code, copies: `×${copies}`, names: names(list), hn: kind === 'a' ? `You have ${h} · Needs at most ${n}` : kind === 'n' ? 'No published figure' : hn(h, n), ink: kind === 'n' ? 'var(--fg-muted)' : 'var(--fg)' });
+    const chips = (ks, on) => ks.map(k => ({ name: PIP[k][2], bg: PIP[k][0], on: k === on ? 'true' : 'false', weight: k === on ? 600 : 500, ink: k === on ? 'var(--bg)' : 'var(--fg-muted)', fill: k === on ? 'var(--fg-body)' : 'transparent', border: k === on ? 'var(--fg-body)' : 'var(--border-strong)' }));
+
+    const base = { exOpen: false, exOpenAttr: 'false', exChev: '›', stEx: false, stExAttr: 'false', stExChev: '›', thinOn: false, stubOn: true,
+      stub: 'The color table, Hardest costs and Lands, as R3 M1, with the Karsten column renamed Needed.', patOn: false, patterns: [], chips: [],
+      doorOn: true, doorBtn: true, btn: 'Improve my mana', stepOn: false, step: [] };
+
+    const gis = { deckId: 'HD - Gishath · 904fdc61-e190-4ba5-8e34-2b18fa0584f2', sub: 'free · counted just now · 100 pips · 89 sources, as on Deck stats',
+      lc: lead('G', '1CC', ['Runic Armasaur', 'Thrashing Brontodon', 'Topiary Stomper'], 28, 28),
+      doorLead: 'Basic swaps and staples Gishath decks run, the ones you own first, for a color you pick.',
+      step: [st('G', '1CC · 3 cards', 28, 28), st('R', '4CC · 2 cards', 27, 22), st('W', '4C · 2 cards', 26, 15)] };
+    const gPat = [
+      pr('6CCC', 1, ['The Tarrasque'], 28, 26, 'a'), pr('1CC', 3, ['Runic Armasaur', 'Thrashing Brontodon', 'Topiary Stomper'], 28, 28), pr('2CC', 1, ['Ripjaw Raptor'], 28, 26),
+      pr('3CC', 1, ['Vivien, Monsters’ Advocate'], 28, 23), pr('4CC', 1, ['Regal Behemoth'], 28, 22), pr('5CC', 2, ['Annoyed Altisaur', 'Ghalta and Mavren'], 28, 20) ];
+    const aang = { deckId: 'HD - Avatar Aang · 0f585441-203e-475b-be7c-f11e67e20d79', sub: 'free · counted just now · 94 pips · 102 sources, as on Deck stats',
+      lc: lead('U', 'CC', ['Crashing Wave', 'Wan Shi Tong, Librarian', 'Water Whip', 'Waterbender’s Restoration'], 21, 30),
+      doorLead: 'Basic swaps and staples Avatar Aang decks run, the ones you own first, for a color you pick.',
+      step: [st('U', 'CC · 4 cards', 21, 30), st('R', '1C · 4 cards', 21, 19), st('W', '1C · 2 cards', 22, 19), st('G', '1C · 6 cards', 22, 19), st('B', '', 9, null)] };
+    const br = { deckId: 'HD Tune - Blood Rites · 783df427-d0c5-456a-805e-cdc94ecb0952', sub: 'free · counted just now · 83 pips · white 24, black 30 sources, as on Deck stats',
+      lc: lead('W', '2CC', ['Kindred Boon', 'Redemption Choir', 'Return to Dust'], 24, 26),
+      doorLead: 'Basic swaps and staples Clavileño decks run, the ones you own first, for a color you pick.',
+      step: [st('W', '2CC · 3 cards', 24, 26), st('B', 'CC · 3 cards', 30, 30)] };
+    const brPatW = [pr('CC', 1, ['March of the Canonized'], 24, 30), pr('2CC', 3, ['Kindred Boon', 'Redemption Choir', 'Return to Dust'], 24, 26)];
+    const wiz = { deckId: 'HD - Wizards · 7653dec3-bcf4-4045-8242-9000765c7601', sub: 'free · counted just now · 75 pips · 41 sources, as on Deck stats',
+      doorLead: 'Basic swaps and staples Baral decks run, the ones you own first, for blue.', btn: 'Improve my mana' };
+    const eld = { deckId: 'HD - Eldrazi · 0b49cb44-8ae2-4c19-b558-633344a2f4ed', sub: 'free · counted just now · 21 pips · 17 sources, as on Deck stats',
+      thinOn: true, stub: 'The colorless line, Lands and the land-count citation follow, as R3 M6.', doorOn: false };
+
+    const F = (b, deck, tag, o = {}) => { const x = { ...b, ...base, ...deck, tag, ...o }; x.exClosed = !x.exOpen; x.stExClosed = !x.stEx; return x; };
+    const open = { exOpen: true, exOpenAttr: 'true', exChev: '⌃' };
+    const stepOpen = { stubOn: true, stub: 'Color table, Hardest costs and Lands above, as R3 M1.', doorBtn: false, stepOn: true };
+
+    const sections = [
+      { id: 'N1', title: 'the view on open, door closed: Gishath and Aang (no color named)',
+        frames: [F(D, gis, 'N1 · Gishath · desktop 900'), F(P, aang, 'N1b · Aang · phone 390')],
+        noteHead: 'Nothing points until asked',
+        notes: [
+          { b: 'The view opens on the evidence, as R3 M1,', t: 'with no lead line. A deck whose mana works never has a color named at it.' },
+          { b: 'Improve my mana is the one door,', t: 'at the foot, where Help adding a color was. Its lead says what it offers, and no color is named until the player opens it.' },
+        ] },
+      { id: 'N2', title: 'the pattern rows and the explanation, open: Gishath green and Blood Rites white',
+        frames: [F(D, gis, 'N2 · Gishath, open + rows · desktop 900', { ...open, stubOn: false, patOn: true, patterns: gPat, chips: chips(['W', 'R', 'G'], 'G'), doorOn: false }),
+                 F(P, br, 'N2b · Blood Rites, open + rows · phone 390', { ...open, stubOn: false, patOn: true, patterns: brPatW, chips: chips(['W', 'B'], 'W'), doorOn: false })],
+        noteHead: 'Have vs Needs; Karsten named once',
+        notes: [
+          { b: 'Inline, not an InfoTip (the open call).', t: 'With the lead line gone, “What ‘Needs’ means ›” sits under the Hardest costs heading, the first “Needs” on the view, and again in the color step, the only other place it’s read. It opens in place with the sentence Hugh ruled. An InfoTip on every row would repeat it six times and hide it on a phone.' },
+          { b: 'Each pattern row ends “You have 28 · Needs 28”.', t: 'Have is the color’s sources, so it’s the same on every row of a color. That’s what lets a player read down the column. The column is now headed Needed.' },
+          { b: 'Ceilings and gaps read the same way:', t: '“Needs at most 26”, and “No published figure” for five pips or more.' },
+          { b: 'Karsten is named only in this line and the citation.', t: 'The R3 table’s “Karsten” column becomes Needed. The “Reading the Karsten figure” box is withdrawn.' },
+        ] },
+      { id: 'N3', title: 'the color step, tightest first: Gishath (Green first), Aang (Blue first, black with no pips), Blood Rites (White first, not Black)',
+        frames: [F(D, gis, 'N3 · Gishath, step · desktop 900', { ...stepOpen, stEx: true, stExAttr: 'true', stExChev: '⌃' }), F(P, aang, 'N3b · Aang, step · phone 390', stepOpen), F(P, br, 'N3c · Blood Rites, step · phone 390', stepOpen)],
+        noteHead: 'The pointer lives here only',
+        notes: [
+          { b: 'Opening the door is the request.', t: 'The step lists the identity’s colors tightest first: lowest sources against what the color’s tightest cost shared by two or more cards needs. Ties go in W U B R G order. Each row shows its cost and “You have · Needs”, as radio rows with nothing selected.' },
+          { b: 'One line says how they’re listed,', t: 'and “What ‘Needs’ means” opens Hugh’s sentence (open in N3).' },
+          { b: 'Blood Rites lists White before Black:', t: '24 · 26 (2CC, three cards) against 30 · 30. March of the Canonized (24 · 30) is a single card, so it doesn’t set the order.' },
+          { b: 'Picking a row runs R3’s help for that color', t: '(M4, M5: basic swaps, then staples, owned first). The step closes into the result, and ✕ closes it without a pick.' },
+          { b: 'A color with sources and no pips still lists,', t: 'last, as Aang’s black does: “9 sources · no pips”. Help for it is still meaningful (a staple that adds black), and the identity bounds the list, not the pips.' },
+          { b: 'No row is preselected, starred or tinted,', t: 'not even the first. The order is the only pointer, and Gishath’s 28 · 28 and Aang’s 21 · 30 read in the same ink.' },
+        ] },
+      { id: 'N4', title: 'one color: Wizards (the step skips itself)',
+        frames: [F(D, wiz, 'N4 · Wizards · desktop 900'), F(P, wiz, 'N4b · Wizards · phone 390')],
+        noteHead: 'Nothing to rank, nothing to pick',
+        notes: [
+          { b: 'The step skips itself.', t: 'With one color there’s nothing to order or pick, so Improve my mana goes straight to blue’s help (R3 M5’s result for blue), and its lead names blue.' },
+          { b: 'The pattern rows still read “You have 37 · Needs 30”', t: 'and so on, with the explanation under Hardest costs.' },
+        ] },
+      { id: 'N5', title: 'colorless: Eldrazi (no door)',
+        frames: [F(D, eld, 'N5 · Eldrazi · desktop 900'), F(P, eld, 'N5b · Eldrazi · phone 390')],
+        noteHead: 'No door',
+        notes: [
+          { b: 'R3’s neutral note stands', t: 'with the colorless line and Lands.' },
+          { b: 'No door:', t: 'a colorless identity has no color to improve. The land count and its citation still show.' },
+        ] },
+    ];
+
+    const calls = [
+      { k: 'ruling 1, revised', rule: 'var(--border)', h: 'No lead line; the pointer is the step’s order', p: 'The view opens on the evidence alone. Only inside Improve my mana are the colors listed tightest first, with nothing chosen.' },
+      { k: 'open · the explanation', rule: 'var(--border)', h: 'Inline, not an InfoTip', p: 'A tap-open line under Hardest costs, and again in the step. No ⓘ per row: the sentence is the same for every row, and an ⓘ is a 44px target six times over on a phone.' },
+      { k: 'design · one color', rule: 'var(--border)', h: 'Wizards: the step skips itself', p: 'There’s nothing to order or pick, so Improve my mana goes straight to blue’s help.' },
+      { k: 'design · colorless', rule: 'var(--border)', h: 'Eldrazi: no door', p: 'There’s no color to improve. R3 M6’s note and the Lands block stand.' },
+      { k: 'design · the table', rule: 'var(--border)', h: 'Needed follows the step’s rule', p: 'The color table’s Karsten column becomes Needed, with the same tightest shared cost the step orders by, so the table and the step agree (Gishath red: 22 for 4CC, not 30 for Shatterskull).' },
+      { k: 'design · the step', rule: 'var(--border)', h: 'Radio rows, tightest first, nothing chosen', p: 'Every identity color, a pipless one last. Each row repeats the cost and “You have · Needs”, so the choice is made from the figures, not from a mark.' },
+    ];
+
+    return { sections, calls };
+  }
+}
+</script>
+</body>
+</html>

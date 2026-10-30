@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-sunken:#18140F; --surface-rail:#1A1611; --surface-inset:#1B1712; --elevated:#29241F; --elevated-hover:#201C17;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654;
+    --accent:#CF8745; --accent-hover:#DE9757; --accent-strong:#AB6E37; --warning:#DEAA29; --success:#6FA368; --danger:#C6533F; --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-sunken:#101219; --surface-rail:#12141B; --surface-inset:#13151C; --elevated:#20222A; --elevated-hover:#181A21;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-strong:#D33E7E; --warning:#E0913C; --success:#6FA368; --danger:#C6533F; --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  @keyframes pipIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes edgePulse { 0%, 100% { border-color: var(--border-strong); } 50% { border-color: var(--fg-muted); } }
+  @keyframes sweep { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+  @keyframes breathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+  @keyframes dots { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--fg);padding:44px 40px 90px;display:flex;flex-direction:column;gap:64px;width:max-content;">
+
+  <div style="max-width:1180px;display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:center;gap:13px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">HANDOFF</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--fg-faint);">App-wide · every loading.tsx · page-to-page navigation</span>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:32px;margin:0;line-height:1.15;">Keep the page up. Show the screen only for a real wait.</h1>
+    <p style="margin:0;font-size:14.5px;line-height:1.7;color:var(--fg-body);max-width:960px;text-wrap:pretty;">Every navigation takes about 310ms because every route has a loading screen, and React holds a shown screen for at least 300ms. With no boundary above it, a fast route lands in about 95ms and the current page stays up until then. So only the deck page and the routes under it keep a screen. Everywhere else the link you pressed shows it’s working. Figures are from <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">docs/superpowers/perf/2026-09-27-after-pr6.md</span>, §The navigation floor.</p>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;">
+      <sc-for list="{{ rules }}" as="c" hint-placeholder-count="3">
+        <div style="border:1px solid var(--border);border-radius:10px;padding:13px 15px;background:var(--surface);display:flex;flex-direction:column;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg);">{{ c.k }}</span><span style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);">{{ c.v }}</span></div>
+      </sc-for>
+    </div>
+  </div>
+
+  <section id="R1" style="display:flex;flex-direction:column;gap:18px;max-width:1180px;">
+    <div style="display:flex;align-items:baseline;gap:12px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 8px;">R1</span>
+      <span style="font-size:15px;font-weight:600;">Route → what a navigation shows</span>
+      <span style="font-size:13px;color:var(--fg-muted);">Nav times are 1300 / 390, revisit, from Home. “Unmeasured” rows follow the default until the lane’s script times them.</span>
+    </div>
+    <div style="border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;">
+      <div style="display:grid;grid-template-columns:250px 200px 150px minmax(0,1fr);gap:0 20px;padding:10px 18px;background:var(--surface-sunken);border-bottom:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">
+        <span>Route</span><span>Today</span><span>New</span><span>Why</span>
+      </div>
+      <sc-for list="{{ table }}" as="t" hint-placeholder-count="14">
+        <div style="display:grid;grid-template-columns:250px 200px 150px minmax(0,1fr);gap:0 20px;padding:11px 18px;border-bottom:1px solid var(--border);align-items:baseline;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg);">{{ t.route }}</span>
+          <span style="font-size:12.5px;color:var(--fg-muted);">{{ t.today }}</span>
+          <span style="font-size:12.5px;font-weight:600;color:{{ t.tone }};">{{ t.next }}</span>
+          <span style="font-size:12.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">{{ t.why }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);max-width:980px;">The threshold is a median navigation of about <b style="color:var(--fg);font-weight:600;">700ms</b>. Below it, a held screen costs more than it tells you. /collection sits below it (302–337ms, server-bound either way). Its screen would buy about 30ms of earlier feedback and cost a flash on every revisit. A loading.tsx can’t tell a first visit from a revisit, so the call has to be made per route, and this one goes to the pip.</p>
+  </section>
+
+  <section id="P1" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:12px;max-width:1180px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 8px;">P1</span>
+      <span style="font-size:15px;font-weight:600;">Nav slot, pending</span>
+      <span style="font-size:13px;color:var(--fg-muted);max-width:900px;">On Home, Commanders pressed, 120ms in. Home stays active (aria-current) because Home is still the page on screen. The pressed slot holds its hover fill, its icon goes to --fg, and a 4px diamond pulses under it until /commanders paints.</span>
+    </div>
+    <div style="display:flex;gap:40px;align-items:flex-start;">
+
+      <div data-screen-label="P1 · 1300" style="width:1300px;height:830px;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;flex:none;"><dc-import name="HomeFrame" wide="{{ true }}" screen="home" pending="nav" pip="{{ pip }}" sweep="{{ sweep }}" crown="{{ crown }}" mark-rail="{{ markRail }}" mark-header="{{ markHeader }}" icons="{{ icons }}" hint-size="1300px,830px" style="width:100%;height:100%;"></dc-import></div>
+      <div data-screen-label="P1 · 390" style="width:390px;height:844px;border:1px solid var(--border-strong);border-radius:22px;overflow:hidden;flex:none;"><dc-import name="HomeFrame" wide="{{ false }}" screen="home" pending="nav" offset="{{ 0 }}" pip="{{ pip }}" sweep="{{ sweep }}" crown="{{ crown }}" mark-rail="{{ markRail }}" mark-header="{{ markHeader }}" icons="{{ icons }}" hint-size="390px,844px" style="width:100%;height:100%;"></dc-import></div>
+      <div style="width:330px;flex:none;display:flex;flex-direction:column;gap:14px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Slot states · 2×</span>
+        <div style="zoom:2;display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;gap:8px;align-items:center;background:var(--surface-rail);border:1px solid var(--border);border-radius:8px;padding:6px 8px;">
+            <span style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--fg-faint);">{{ icons.commanders }}</span>
+            <span style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--elevated);color:var(--fg);">{{ icons.commanders }}</span>
+            <span style="position:relative;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--elevated-hover);color:var(--fg);">{{ icons.commanders }}<span style="position:absolute;left:0;right:0;bottom:2px;display:flex;justify-content:center;">{{ pip }}</span></span>
+          </div>
+          <div style="display:flex;gap:4px;align-items:center;background:var(--surface-rail);border:1px solid var(--border);border-radius:8px;padding:6px;">
+            <span style="width:48px;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--fg-faint);">{{ icons.commanders }}<span style="font-family:'IBM Plex Mono',monospace;font-size:7px;">Comm…</span></span>
+            <span style="width:48px;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:var(--surface-inset);color:var(--fg);">{{ icons.commanders }}<span style="font-family:'IBM Plex Mono',monospace;font-size:7px;">Comm…</span></span>
+            <span style="position:relative;width:48px;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--fg);">{{ icons.commanders }}<span style="font-family:'IBM Plex Mono',monospace;font-size:7px;">Comm…</span><span style="position:absolute;left:0;right:0;bottom:1px;display:flex;justify-content:center;">{{ pip }}</span></span>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);"><span>rest</span><span>active</span><span>pending</span></div>
+        <p style="margin:0;font-size:12px;line-height:1.6;color:var(--fg-muted);">The tab bar has no hover fill, so pending there is the --fg colour and the pip, with no surface. Its label is the tab bar’s 9px mono (“Commanders” is shortened here only because the slot is drawn at 2×).</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="P2" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:12px;max-width:1180px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 8px;">P2</span>
+      <span style="font-size:15px;font-weight:600;">In-page link, pending</span>
+      <span style="font-size:13px;color:var(--fg-muted);max-width:900px;">Home, Ready to build’s All commanders pressed (390 is scrolled to it). The button keeps its hover fill, and a 1px --fg-muted segment loops along the inside of its bottom hairline (<a href="#3c">3c</a>). The box, padding and label don’t change. The nav rail doesn’t light: only the thing you pressed says it’s working.</span>
+    </div>
+    <div style="display:flex;gap:40px;align-items:flex-start;">
+      <div data-screen-label="P2 · 1300" style="width:1300px;height:830px;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;flex:none;"><dc-import name="HomeFrame" wide="{{ true }}" screen="home" pending="link" pip="{{ pip }}" sweep="{{ sweep }}" crown="{{ crown }}" mark-rail="{{ markRail }}" mark-header="{{ markHeader }}" icons="{{ icons }}" hint-size="1300px,830px" style="width:100%;height:100%;"></dc-import></div>
+      <div data-screen-label="P2 · 390" style="width:390px;height:844px;border:1px solid var(--border-strong);border-radius:22px;overflow:hidden;flex:none;"><dc-import name="HomeFrame" wide="{{ false }}" screen="home" pending="link" offset="{{ 560 }}" pip="{{ pip }}" sweep="{{ sweep }}" crown="{{ crown }}" mark-rail="{{ markRail }}" mark-header="{{ markHeader }}" icons="{{ icons }}" hint-size="390px,844px" style="width:100%;height:100%;"></dc-import></div>
+          </div>
+  </section>
+
+  <section id="P3" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:12px;max-width:1180px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 8px;">P3</span>
+      <span style="font-size:15px;font-weight:600;">In-page link: options that keep the button’s shape · <a href="#3c">3c</a> chosen</span>
+      <span style="font-size:13px;color:var(--fg-muted);max-width:900px;">Tucked under a 32px label, the pip has 2px of clearance, and it reads as crowding rather than status. Each option below keeps the box, padding and label exactly as they are. The nav slots keep the pip either way: an icon-only square has room for it. Drawn at 2×.</span>
+    </div>
+    <div style="display:flex;gap:20px;flex-wrap:wrap;">
+      <div id="3a" style="width:400px;flex:none;display:flex;flex-direction:column;gap:12px;border:1px solid var(--border);border-radius:12px;background:var(--surface-sunken);padding:18px;">
+        <div style="display:flex;align-items:center;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 8px;">3a</span><span style="font-size:14px;font-weight:600;">Pip outside, leading</span></div>
+        <div style="zoom:2;display:flex;flex-direction:column;gap:10px;align-items:flex-start;">
+          <div style="display:flex;align-items:center;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--fg-faint);">1300</span><span style="display:flex;align-items:center;gap:6px;"><span style="display:flex;width:12px;justify-content:center;">{{ pip }}</span><span style="position:relative;display:flex;flex:none;white-space:nowrap;align-items:center;height:32px;padding:0 13px;border-radius:8px;border:1px solid var(--border-strong);background:var(--elevated-hover);font-size:12.5px;color:var(--fg);overflow:hidden;">All commanders</span></span></div>
+          <div style="display:flex;align-items:center;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--fg-faint);">390</span><span style="display:flex;align-items:center;gap:6px;"><span style="display:flex;width:12px;justify-content:center;">{{ pip }}</span><span style="position:relative;display:flex;flex:none;white-space:nowrap;align-items:center;height:44px;padding:0 12px;border-radius:10px;border:1px solid var(--border-strong);background:var(--elevated-hover);font-size:13px;color:var(--fg);overflow:hidden;">All commanders</span></span></div>
+        </div>
+        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The same pip, in the row’s own gap before the button. The button isn’t touched. At 390 the button sits at the far edge, so the pip goes on its left there too. It reads as “this one”, but it’s beside the control rather than in it.</p>
+      </div>
+      <div id="3b" style="width:400px;flex:none;display:flex;flex-direction:column;gap:12px;border:1px solid var(--border);border-radius:12px;background:var(--surface-sunken);padding:18px;">
+        <div style="display:flex;align-items:center;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 8px;">3b</span><span style="font-size:14px;font-weight:600;">Hairline pulses · the reduced-motion fallback</span></div>
+        <div style="zoom:2;display:flex;flex-direction:column;gap:10px;align-items:flex-start;">
+          <div style="display:flex;align-items:center;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--fg-faint);">1300</span><span style="position:relative;display:flex;flex:none;white-space:nowrap;align-items:center;height:32px;padding:0 13px;border-radius:8px;border:1px solid var(--border-strong);background:var(--elevated-hover);font-size:12.5px;color:var(--fg);overflow:hidden;animation:edgePulse 1.2s ease-in-out 120ms infinite;">All commanders</span></div>
+          <div style="display:flex;align-items:center;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--fg-faint);">390</span><span style="position:relative;display:flex;flex:none;white-space:nowrap;align-items:center;height:44px;padding:0 12px;border-radius:10px;border:1px solid var(--border-strong);background:var(--elevated-hover);font-size:13px;color:var(--fg);overflow:hidden;animation:edgePulse 1.2s ease-in-out 120ms infinite;">All commanders</span></div>
+        </div>
+        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The border breathes from --border-strong to --fg-muted on the same 1.2s beat as the crown. It uses no new element and no colour, so it stays true to “colour is status”. It holds the hover fill, so it reads as pressed-and-working. With reduced motion, the border stays at --fg-muted.</p>
+      </div>
+      <div id="3c" style="width:400px;flex:none;display:flex;flex-direction:column;gap:12px;border:1px solid var(--border);border-radius:12px;background:var(--surface-sunken);padding:18px;">
+        <div style="display:flex;align-items:center;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 8px;">3c</span><span style="font-size:14px;font-weight:600;">Track along the bottom edge · chosen</span></div>
+        <div style="zoom:2;display:flex;flex-direction:column;gap:10px;align-items:flex-start;">
+          <div style="display:flex;align-items:center;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--fg-faint);">1300</span><span style="position:relative;display:flex;flex:none;white-space:nowrap;align-items:center;height:32px;padding:0 13px;border-radius:8px;border:1px solid var(--border-strong);background:var(--elevated-hover);font-size:12.5px;color:var(--fg);overflow:hidden;">All commanders{{ sweep }}</span></div>
+          <div style="display:flex;align-items:center;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--fg-faint);">390</span><span style="position:relative;display:flex;flex:none;white-space:nowrap;align-items:center;height:44px;padding:0 12px;border-radius:10px;border:1px solid var(--border-strong);background:var(--elevated-hover);font-size:13px;color:var(--fg);overflow:hidden;">All commanders{{ sweep }}</span></div>
+        </div>
+        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">A 1px --fg-muted segment slides along the inside of the bottom hairline. It’s the most legible “working”. It loops endlessly and never fills, so it doesn’t claim a percentage. It lives on the pressed control, not across the page. Under reduced motion it’s replaced by 3b’s held --fg-muted hairline.</p>
+      </div>
+      <div id="3d" style="width:400px;flex:none;display:flex;flex-direction:column;gap:12px;border:1px solid var(--border);border-radius:12px;background:var(--surface-sunken);padding:18px;">
+        <div style="display:flex;align-items:center;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 8px;">3d</span><span style="font-size:14px;font-weight:600;">Label breathes</span></div>
+        <div style="zoom:2;display:flex;flex-direction:column;gap:10px;align-items:flex-start;">
+          <div style="display:flex;align-items:center;gap:12px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--fg-faint);">1300</span><span style="position:relative;display:flex;flex:none;white-space:nowrap;align-items:center;height:32px;padding:0 13px;border-radius:8px;border:1px solid var(--border-strong);background:var(--elevated-hover);font-size:12.5px;color:var(--fg);overflow:hidden;animation:breathe 1.2s ease-in-out 120ms infinite;">All commanders</span></div>
+          <div style="display:flex;align-items:center;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--fg-faint);">390</span><span style="position:relative;display:flex;flex:none;white-space:nowrap;align-items:center;height:44px;padding:0 12px;border-radius:10px;border:1px solid var(--border-strong);background:var(--elevated-hover);font-size:13px;color:var(--fg);overflow:hidden;animation:breathe 1.2s ease-in-out 120ms infinite;">All commanders</span></div>
+        </div>
+        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The label’s opacity eases from 1 to 0.6. It’s the quietest option, with nothing added. At 0.6 the label drops under 4.5:1 on the hover fill for half the cycle, and it can read as disabled rather than working.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="T1" style="display:flex;flex-direction:column;gap:14px;max-width:1180px;">
+    <div style="display:flex;align-items:baseline;gap:12px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 8px;">T1</span>
+      <span style="font-size:15px;font-weight:600;">When the pip shows</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;">
+      <sc-for list="{{ timing }}" as="t" hint-placeholder-count="4">
+        <div style="border:1px solid var(--border);border-radius:10px;padding:13px 15px;background:var(--surface);display:flex;flex-direction:column;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg);font-variant-numeric:tabular-nums;">{{ t.k }}</span><span style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);">{{ t.v }}</span></div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section id="K1" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:12px;max-width:1180px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 8px;">K1</span>
+      <span style="font-size:15px;font-weight:600;">Kept screen: the deck page, unchanged</span>
+      <span style="font-size:13px;color:var(--fg-muted);max-width:900px;">LoadingScreen isn’t redrawn. A route that keeps it shows it the moment it’s pressed, so the link’s pending ends at once and no pip shows. It paints inside the shell, with the rail or tab bar up and Decks already active. The only change is who can see it: /decks/[id] and its children, and Help me choose’s results skeleton.</span>
+    </div>
+    <div style="display:flex;gap:40px;align-items:flex-start;">
+      <div data-screen-label="K1 · 1300" style="width:1300px;height:620px;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;flex:none;"><dc-import name="HomeFrame" wide="{{ true }}" screen="loading" pip="{{ pip }}" sweep="{{ sweep }}" crown="{{ crown }}" mark-rail="{{ markRail }}" mark-header="{{ markHeader }}" icons="{{ icons }}" hint-size="1300px,620px" style="width:100%;height:100%;"></dc-import></div>
+      <div data-screen-label="K1 · 390" style="width:390px;height:844px;border:1px solid var(--border-strong);border-radius:22px;overflow:hidden;flex:none;"><dc-import name="HomeFrame" wide="{{ false }}" screen="loading" offset="{{ 0 }}" pip="{{ pip }}" sweep="{{ sweep }}" crown="{{ crown }}" mark-rail="{{ markRail }}" mark-header="{{ markHeader }}" icons="{{ icons }}" hint-size="390px,844px" style="width:100%;height:100%;"></dc-import></div>
+          </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;still&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const theme = this.props.theme ?? "amonkhet";
+    const still = this.props.still ?? false;
+    const h = React.createElement;
+    const svg = (...kids) => h("svg", { width: 19, height: 19, viewBox: "0 0 20 20", fill: "none", stroke: "currentColor", strokeWidth: 1.5, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true }, ...kids);
+    const icons = {
+      home: svg(h("path", { d: "M3 9.2 10 3.6l7 5.6V16a1 1 0 0 1-1 1h-3.5v-4.2h-5V17H4a1 1 0 0 1-1-1z" })),
+      collection: svg(...[[3.2, 3.2], [11, 3.2], [3.2, 11], [11, 11]].map(([x, y], i) => h("rect", { key: i, x, y, width: 5.8, height: 5.8, rx: 1.2 }))),
+      commanders: svg(h("path", { d: "M3 14.5 4.4 6l3.2 3.6L10 4l2.4 5.6L15.6 6 17 14.5z" }), h("path", { d: "M3 16.6h14" })),
+      discover: svg(h("circle", { cx: 10, cy: 10, r: 6.8 }), h("path", { d: "M10 6.4 12.8 10 10 13.6 7.2 10z" })),
+      decks: svg(h("rect", { x: 6.6, y: 3.2, width: 10, height: 13, rx: 1.6 }), h("path", { d: "M4.2 5.4A1.6 1.6 0 0 0 3.4 6.8v8.6a1.6 1.6 0 0 0 1.6 1.6h8.2" })),
+    };
+    const pip = h("span", { "aria-hidden": true, style: { display: "block", animation: still ? "none" : "pipIn 160ms ease-out 120ms both" } },
+      h("span", { style: { display: "block", width: 4, height: 4, background: "var(--fg)", transform: "rotate(45deg)", animation: still ? "none" : "dots 1.2s ease-in-out 280ms infinite" } }));
+    // Transcribed from src/components/ui/crown.tsx (CrownDiamonds, crownBox) and src/components/marks.tsx (CROWNED99_SPECS).
+    const box = ({ small, large, gap }) => { const s = small * Math.SQRT2, l = large * Math.SQRT2; return { width: s + gap + l + gap + s, height: l, centers: [s / 2, s + gap + l / 2, s + gap + l + gap + s / 2] }; };
+    const diamonds = (g, fill, offsetX = 0, pulse = false) => { const { centers, height } = box(g); const cy = height / 2; const sides = [g.small, g.large, g.small];
+      return h("g", null, ...centers.map((c, i) => { const cx = c + offsetX, side = sides[i]; return h("rect", { key: i, x: cx - side / 2, y: cy - side / 2, width: side, height: side, transform: `rotate(45, ${cx}, ${cy})`, fill, style: pulse ? { animation: "dots 1.2s ease-in-out infinite", animationDelay: `${[0, 0.2, 0.4][i]}s` } : undefined }); })); };
+    const cg = { small: 8, large: 11, gap: 5 }, cb = box(cg);
+    const crown = h("svg", { "aria-hidden": true, viewBox: `0 0 ${cb.width} ${cb.height}`, width: cb.width, height: cb.height, style: { display: "block" } }, diamonds(cg, "var(--accent-strong)", 0, !still));
+    const crowned = ({ s, l, size, weight, gap, baselineGap, bottomPad, ls }) => { const g = { small: s, large: l, gap }; const { width: cw, height: ch } = box(g); const tw = Math.max(cw, size * 1.15) + 4; const ty = ch + baselineGap; const th = ty + bottomPad;
+      return h("svg", { role: "img", "aria-label": "The 99", viewBox: `0 0 ${tw} ${th}`, width: tw, height: th, style: { overflow: "visible", display: "block" } }, diamonds(g, "var(--accent)", tw / 2 - cw / 2), h("text", { x: tw / 2, y: ty, textAnchor: "middle", fontFamily: "'Cinzel', serif", fontWeight: weight, fontSize: size, letterSpacing: ls, fill: "var(--fg)" }, "99")); };
+    const markRail = crowned({ s: 6, l: 8.5, size: 23, weight: 900, gap: 3, baselineGap: 22, bottomPad: 5, ls: "-0.01em" });
+    const markHeader = crowned({ s: 5, l: 7, size: 24, weight: 800, gap: 3, baselineGap: 30, bottomPad: 4 });
+    const rules = [
+      { k: "A full screen means a real wait", v: "Only routes whose navigation takes about 700ms or more keep a loading.tsx: the deck page, the routes under it, and Help me choose. Every other route keeps the current page up until the next one is ready." },
+      { k: "The pressed thing says it’s working", v: "Every nav slot and in-page Link reads useLinkStatus. From 120ms into pending, a nav slot shows a 4px --fg diamond under its icon. A button-shaped link shows a 1px --fg-muted segment looping along its bottom edge. A 95ms navigation shows nothing but the press. Neither signal uses accent, because colour is status." },
+      { k: "No root boundary", v: "src/app/loading.tsx is deleted, so nothing sits between the root layout and a fast route. “Setting the table” retires with it. A hard load already streams the shell, so it doesn’t need one." },
+    ];
+    const keep = "var(--fg)", pend = "var(--fg-body)";
+    const table = [
+      { route: "/ (root loading.tsx)", today: "Setting the table", next: "Deleted", tone: keep, why: "It wraps every route, so while it exists no route can skip a screen. Home warm is 63 / 71ms. A cold miss after a write (~850ms) shows Home held with the pip." },
+      { route: "/about", today: "Opening the rulebook", next: "Pip", tone: pend, why: "One primary-key lookup. Its own comment already says the screen is almost never seen." },
+      { route: "/collection", today: "Reading your collection", next: "Pip", tone: pend, why: "302–322 without a screen, 323–337 with one. The first visit at 390 takes 557ms, still under the threshold. See the note below." },
+      { route: "/collection/proxies · /replace · /replace/summary/[uploadId] · /sets · /sets/[code]", today: "Own screens", next: "Pip", tone: pend, why: "Unmeasured. Time them with the lane’s script before merging. Any route over ~700ms moves to Keep." },
+      { route: "/commanders", today: "Consulting the council", next: "Pip", tone: pend, why: "317 / 318 → 98 / 93. The list’s client render comes after navigation and isn’t this screen’s to cover." },
+      { route: "/commanders/[slug]", today: "Consulting the council", next: "Pip", tone: pend, why: "Unmeasured. Same default." },
+      { route: "/discover", today: "Casting a wider net", next: "Pip", tone: pend, why: "315 / 312 → 99 / 86." },
+      { route: "/decks", today: "Shuffling up", next: "Pip", tone: pend, why: "Server ~40ms since PR 6, so it behaves like /discover." },
+      { route: "/decks/import", today: "None (under /decks)", next: "Pip", tone: pend, why: "Unchanged. Nothing above it now shows a screen." },
+      { route: "/decks/new", today: "Clearing a space, or ChooseLoading on the choose address", next: "Pip", tone: pend, why: "Unmeasured. With this file gone, the pathname branch goes too: a navigation into choose meets choose’s own boundary first." },
+      { route: "/decks/new/choose", today: "ChooseLoading", next: "Keep", tone: keep, why: "This isn’t the shell screen but the page’s own header over still rows, so it reads as the page arriving. It stays still, as before. Its time is unmeasured, so measure it. If it’s under ~700ms, it’s the next to drop." },
+      { route: "/decks/[id]", today: "Shuffling up", next: "Keep", tone: keep, why: "967 / 961 first visit, 886 / 833 revisit. The server takes ~0.9s (#687 PR 8). Without a screen you’d stare at the old page for nearly a second." },
+      { route: "/decks/[id]/changes", today: "Shuffling up", next: "Keep", tone: keep, why: "It awaits the diff, claims and prices. It sits under /decks/[id]’s boundary, which would show anyway." },
+      { route: "/decks/[id]/import", today: "Fetching the list", next: "Keep", tone: keep, why: "It’s under /decks/[id]’s boundary too. Without its own file it would show “Shuffling up”." },
+    ];
+    const timing = [
+      { k: "0ms · press", v: "The pressed slot or link takes its pending colour at once (rail and buttons keep their hover fill). No pip yet. Focus stays on the link." },
+      { k: "120ms · signal", v: "Nav slots: the pip fades in over 160ms and then pulses on the crown’s `dots` keyframes (1.2s). In-page buttons: the 40%-wide segment starts looping left to right, 1.2s ease-in-out. Most fast routes (~95ms) have landed before this, so they never show either." },
+      { k: "lands · clear", v: "The new page paints, aria-current moves, and the signal goes with no exit animation. A second press cancels the first pending. useLinkStatus clears it." },
+      { k: "still · reduced motion", v: "Under prefers-reduced-motion, and inside still regions (Help me choose, the version rail), the pip shows at full opacity with no pulse. The segment is replaced by the button’s hairline held at --fg-muted." },
+    ];
+    const sweep = h("span", { "aria-hidden": true, style: { position: "absolute", left: 0, right: 0, bottom: 0, height: 1, overflow: "hidden" } }, h("span", { style: { display: "block", width: "40%", height: 1, background: "var(--fg-muted)", animation: still ? "none" : "sweep 1.2s ease-in-out 120ms infinite" } }));
+    return { theme, icons, pip, crown, markRail, markHeader, rules, table, timing, sweep };
+  }
+}
+</script>
+</body>
+</html>

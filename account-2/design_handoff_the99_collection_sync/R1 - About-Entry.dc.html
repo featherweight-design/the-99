@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>About, the upload-choice edit</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5C86C9}a:hover{color:#6C95D8}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#7C8A8C}
+.m{font-family:'IBM Plex Mono',monospace}
+.ent{display:flex;flex-direction:column;gap:12px;padding:22px 24px;background:#1E1F26;border:1px solid #1A1F2B;border-radius:12px}
+.t{margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:21px;color:#C6D2D3}
+.c{margin:0;font-size:13.5px;line-height:1.6;color:#B3C0C2;white-space:pre-line}
+.key{display:flex;gap:10px;font-size:13px;line-height:1.5;color:#B3C0C2}
+.key span:first-child{color:#7C8A8C}
+.new{background:rgba(111,163,104,.14);color:#C6D2D3}
+.gone{text-decoration:line-through;color:#7C8A8C}
+.cap{font-size:12.5px;line-height:1.5;color:#95A4A6}
+</style>
+</helmet>
+<div style="width:1280px;box-sizing:border-box;padding:40px 56px 56px;background:#0E0E12;font-family:'IBM Plex Sans',sans-serif;color:#C6D2D3;display:flex;flex-direction:column;gap:22px">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <span class="k">About · ordinary edits · no version bump · R1</span>
+    <h2 style="margin:0;font-family:'Metamorphous',serif;font-weight:400;font-size:26px">upload-choice names three choices; post-import gets half a line</h2>
+    <p class="cap" style="margin:0;max-width:1000px">The entry already covers this surface and is tied to COLLECTION_EDIT_ENABLED, so it is an edit, not a new entry, and the version does not move. The content hash is re-pinned. The entry holds at most four key lines, so Sync’s line takes the place of Add’s doubling line: a re-export is now Sync’s job, and Add’s own overlap note still warns on the screen. Hugh rules whether this is owed at all.</p>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;align-items:start">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">upload-choice · now</span>
+      <div class="ent">
+        <span class="m" style="font-size:11px;color:#7C8A8C">01 · /collection/replace · opens the upload</span>
+        <h3 class="t">Replacing or adding from a file</h3>
+        <p class="c">Drop in a fresh export from ManaBox, Moxfield or any of the others and The 99 asks what the file is for. “Replace” makes your Collection exactly the file. “Add” stacks its cards on top of what you have, which is what you want for a booster haul or a trade binder.
+
+Either way, you see every card that moves before anything changes. Replace also tells you if it’ll overwrite changes you made in the app, and names any decks that will read short.</p>
+        <div class="key"><span>—</span><span>Replace: anything not in the file leaves your Collection.</span></div>
+        <div class="key"><span>—</span><span>Add: quantities go up, nothing leaves, and your art picks stay.</span></div>
+        <div class="key"><span>—</span><span>Adding a full export doubles your copies, and the screen tells you when that’s about to happen.</span></div>
+        <div class="key"><span>—</span><span>Your very first upload skips the question, since there’s nothing to replace.</span></div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="k">upload-choice · R1 edit</span>
+      <div class="ent">
+        <span class="m" style="font-size:11px;color:#7C8A8C">01 · /collection/replace · opens the upload</span>
+        <h3 class="t"><span class="new">Replacing, adding or syncing from a file</span></h3>
+        <p class="c">Drop in a fresh export from ManaBox, Moxfield or any of the others and The 99 asks what the file is for. “Replace” makes your Collection exactly the file. “Add” stacks its cards on top of what you have, which is what you want for a booster haul or a trade binder. <span class="new">“Sync” takes what changed in the file and keeps what you changed in the app.</span>
+
+<span class="new">Whichever you pick,</span> you see every card that moves before anything changes. Replace also tells you if it’ll overwrite changes you made in the app, and names any decks that will read short.</p>
+        <div class="key"><span>—</span><span>Replace: anything not in the file leaves your Collection.</span></div>
+        <div class="key"><span>—</span><span>Add: quantities go up, nothing leaves, and your art picks stay.</span></div>
+        <div class="key"><span>—</span><span class="new">Sync: keeps what you changed in the app and takes what’s new in the file. If you both changed a card, it asks.</span></div>
+        <div class="key"><span>—</span><span>Your very first upload skips the question, since there’s nothing to replace.</span></div>
+        <div class="key"><span></span><span class="gone">Adding a full export doubles your copies, and the screen tells you when that’s about to happen.</span></div>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:10px;max-width:600px">
+    <span class="k">post-import · R1 edit · caption only</span>
+    <div class="ent">
+      <h3 class="t">How replacing your Collection affects your decks</h3>
+      <p class="c">Your decklists don’t change, just whether you own what’s in them. <span class="new">After a sync it also says how many of your own changes stayed.</span></p>
+    </div>
+    <span class="cap">Second paragraph of the caption only; its four keys are full and unchanged. The title still says “replacing”; a sync lands on the same page.</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

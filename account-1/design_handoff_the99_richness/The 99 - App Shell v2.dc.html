@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #100D0A; }
+  ::selection { background: #C9A24B; color: #14110E; }
+  a { color: #C9A24B; text-decoration: none; }
+  a:hover { color: #D8B25E; }
+  @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+  @keyframes dots { 0% { opacity: .25; } 50% { opacity: 1; } 100% { opacity: .25; } }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+</style>
+</helmet>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="crab99" viewBox="0 0 160 110">
+    <g fill="none" stroke="#C9A24B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M30 60 L 13 70 L 6 88"/><path d="M34 72 L 19 84 L 14 101"/><path d="M43 81 L 33 93 L 30 105"/>
+      <path d="M130 60 L 147 70 L 154 88"/><path d="M126 72 L 141 84 L 146 101"/><path d="M117 81 L 127 93 L 130 105"/>
+    </g>
+    <path d="M80 24 C 114 24, 136 40, 134 60 C 132 80, 110 90, 80 90 C 50 90, 28 80, 26 60 C 24 40, 46 24, 80 24 Z" fill="#1E1A15" stroke="#C9A24B" stroke-width="3" stroke-linejoin="round"/>
+    <g fill="#1E1A15" stroke="#C9A24B" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M54 76 C 36 72, 22 82, 27 95 C 31 105, 49 109, 59 101 C 66 96, 65 84, 58 79 Z"/><path d="M59 101 L 49 88" fill="none"/>
+      <path d="M106 76 C 124 72, 138 82, 133 95 C 129 105, 111 109, 101 101 C 94 96, 95 84, 102 79 Z"/><path d="M101 101 L 111 88" fill="none"/>
+    </g>
+    <ellipse cx="58" cy="18" rx="4.5" ry="6.5" fill="#1E1A15" stroke="#C9A24B" stroke-width="3"/>
+    <ellipse cx="102" cy="18" rx="4.5" ry="6.5" fill="#1E1A15" stroke="#C9A24B" stroke-width="3"/>
+    <circle cx="57" cy="20" r="2" fill="#C9A24B"/><circle cx="101" cy="20" r="2" fill="#C9A24B"/>
+    <path d="M52 14 L 63 13" stroke="#C9A24B" stroke-width="3" stroke-linecap="round" fill="none"/>
+    <path d="M97 13 L 108 14" stroke="#C9A24B" stroke-width="3" stroke-linecap="round" fill="none"/>
+    <path d="M72 62 L 88 62" stroke="#C9A24B" stroke-width="3" stroke-linecap="round" fill="none"/>
+  </symbol>
+</svg>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;padding:40px;background:#100D0A;background-image:radial-gradient(1400px 700px at 30% -300px, rgba(201,162,75,0.06), transparent 70%);min-height:100vh;">
+
+  <section id="3a" style="max-width:1400px;margin:0 0 30px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#C9A24B;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">3a</span>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#8E8269;">The 99 — App Shell v2 · Richness pass · #51</div>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:34px;margin:0 0 8px;color:#EDE6D8;">The Rail, with a crab in it</h1>
+    <p style="max-width:780px;font-size:15px;line-height:1.65;color:#C6B79A;margin:0;">The resolved Rail shell (<b style="color:#EDE6D8;font-weight:600;">2a</b> in App Shell v1) with the richness pass applied. Deltas: candle-glow vignettes in main areas (whisper of material) · the crab takes over first-run, loading, and empty moments · two new shell states (global loading, 404) · contrast lifts — all <span style="font-family:'IBM Plex Mono',monospace;color:#8E8269;">#6A6152</span> dimmed text raised to <span style="font-family:'IBM Plex Mono',monospace;color:#8E8269;">#8E8269</span> (faint, AA) · brass hover life on nav + cards. Working density unchanged. System reference: <b style="color:#EDE6D8;font-weight:600;">The 99 - Richness Pass.dc.html</b>.</p>
+  </section>
+
+  <div style="display:flex;flex-direction:column;gap:46px;max-width:1400px;">
+
+    <!-- ===== 01 SIGNED-IN HOME ===== -->
+    <div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #2A241D;padding-top:18px;">01 · Signed-in home — warmth without noise · Δ vignette behind hero, brass hover life, +8px breathing in main</div>
+      <div style="width:1240px;border-radius:14px;overflow:hidden;border:1px solid #3A3229;box-shadow:0 34px 90px rgba(0,0,0,0.55);">
+        <div style="height:38px;background:#1E1A15;border-bottom:1px solid #3A3229;display:flex;align-items:center;gap:8px;padding:0 14px;"><span style="width:9px;height:9px;border-radius:999px;background:#C6533F;display:block;"></span><span style="width:9px;height:9px;border-radius:999px;background:#E0913C;display:block;"></span><span style="width:9px;height:9px;border-radius:999px;background:#6FA368;display:block;"></span><div style="margin-left:14px;width:300px;height:22px;border-radius:6px;background:#14110E;border:1px solid #3A3229;display:flex;align-items:center;padding:0 10px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">the99.app/</div><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;letter-spacing:0.14em;">SIGNED IN · HOME</span></div>
+        <div style="display:flex;background:#14110E;min-height:700px;">
+          <div style="width:236px;flex:none;background:#1A160F;border-right:1px solid #3A3229;display:flex;flex-direction:column;">
+            <div style="padding:22px 20px 20px;border-bottom:1px solid #2A241D;"><div style="display:flex;align-items:flex-end;gap:7px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.42em;color:#C9A24B;padding-bottom:5px;">THE</span><div style="display:flex;flex-direction:column;align-items:center;gap:5px;"><div style="display:flex;gap:4px;"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="width:8px;height:8px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span></div><span style="font-family:'Cinzel',serif;font-weight:800;font-size:30px;line-height:0.8;color:#EDE6D8;">99</span></div></div></div>
+            <div style="padding:16px 12px;display:flex;flex-direction:column;gap:4px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;padding:6px 12px 8px;">Play</div>
+              <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;background:#2A241D;color:#EDE6D8;font-size:14px;font-weight:600;box-shadow:inset 2px 0 0 #C9A24B;"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span>Home</div>
+              <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;color:#A89B84;font-size:14px;font-weight:500;cursor:pointer;" style-hover="background:#211C15;color:#EDE6D8;box-shadow:inset 2px 0 0 rgba(201,162,75,0.4);"><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);display:block;"></span>Collection</div>
+              <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;color:#A89B84;font-size:14px;font-weight:500;cursor:pointer;" style-hover="background:#211C15;color:#EDE6D8;box-shadow:inset 2px 0 0 rgba(201,162,75,0.4);"><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);display:block;"></span>Commanders</div>
+              <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;color:#A89B84;font-size:14px;font-weight:500;cursor:pointer;" style-hover="background:#211C15;color:#EDE6D8;box-shadow:inset 2px 0 0 rgba(201,162,75,0.4);"><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);display:block;"></span>Decks</div>
+            </div>
+            <div style="margin-top:auto;padding:14px 12px;"><div style="display:flex;align-items:center;gap:12px;background:#221D16;border:1px solid #3A3229;padding:2px;border-radius:14px;padding-right:12px;cursor:pointer;" style-hover="border-color:#C9A24B;"><div style="width:38px;height:38px;flex:none;border-radius:12px;background:#14110E;border:1px solid #C9A24B;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#C9A24B;">AR</div><div style="line-height:1.25;min-width:0;"><div style="font-size:13px;color:#EDE6D8;font-weight:600;">Arden Reyes</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;">invite · member</div></div><span style="margin-left:auto;color:#8E8269;font-size:15px;line-height:1;">⋯</span></div></div>
+          </div>
+          <div style="flex:1;padding:42px 48px 52px;min-width:0;background-image:radial-gradient(760px 380px at 45% -60px, rgba(201,162,75,0.08), transparent 70%);">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:34px;">
+              <div>
+                <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:32px;margin:0;color:#EDE6D8;">Welcome back, Arden</h2>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#A89B84;margin-top:8px;">1,284 cards · 742 unique · 24 commanders buildable · 3 decks</div>
+              </div>
+              <button style="font-family:'IBM Plex Sans';font-weight:600;font-size:13px;color:#EDE6D8;background:transparent;border:1px solid #3A3229;border-radius:8px;padding:9px 16px;cursor:pointer;" style-hover="border-color:#C9A24B;color:#D8B25E;">Update collection</button>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;margin-bottom:12px;">Your most complete general</div>
+            <div style="display:flex;background:#1E1A15;border:1px solid #3A3229;border-radius:14px;overflow:hidden;margin-bottom:38px;box-shadow:0 0 60px rgba(201,162,75,0.05);" style-hover="border-color:#4A4033;box-shadow:0 0 70px rgba(201,162,75,0.10);">
+              <div style="width:200px;flex:none;background:#14110E;background-image:repeating-linear-gradient(135deg,#1E1A15 0 11px,#181209 11px 22px);border-right:1px solid #3A3229;position:relative;"><div style="position:absolute;top:12px;left:12px;"><span style="width:12px;height:12px;border-radius:3px;background:#C05A48;border:1px solid rgba(0,0,0,0.35);display:block;"></span></div><div style="position:absolute;bottom:10px;left:12px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.1em;color:#8E8269;">commander art</div></div>
+              <div style="flex:1;padding:28px 32px;display:flex;flex-direction:column;justify-content:center;">
+                <div style="font-family:'Cinzel',serif;font-weight:700;font-size:28px;color:#EDE6D8;">Ysolde, Ember Sovereign</div>
+                <div style="font-size:13px;color:#A89B84;margin-top:4px;">Legendary Creature — Phoenix Sovereign</div>
+                <div style="display:flex;align-items:center;gap:10px;margin-top:18px;max-width:420px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#6FA368;">96 / 99 owned</span><div style="flex:1;height:6px;background:#2A241D;border-radius:3px;overflow:hidden;"><div style="height:100%;width:97%;background:#6FA368;border-radius:3px;"></div></div></div>
+              </div>
+              <div style="padding:28px 32px;display:flex;flex-direction:column;justify-content:center;align-items:flex-end;gap:12px;border-left:1px solid #2A241D;">
+                <div style="text-align:right;"><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">to complete</div><div style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#E0913C;margin-top:2px;">3 cards · $18.40</div></div>
+                <button style="font-family:'IBM Plex Sans';font-weight:600;font-size:14px;color:#14110E;background:#C9A24B;border:none;border-radius:8px;padding:11px 22px;cursor:pointer;white-space:nowrap;" style-hover="background:#D8B25E;">Build this deck</button>
+              </div>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#8E8269;">Recommended from your collection</div><span style="font-size:13px;color:#C9A24B;cursor:pointer;">All 24 →</span></div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;">
+              <div style="background:#1E1A15;border:1px solid #3A3229;border-radius:12px;overflow:hidden;" style-hover="border-color:#4A4033;transform:translateY(-2px);"><div style="height:96px;background:#14110E;background-image:repeating-linear-gradient(135deg,#1E1A15 0 10px,#181209 10px 20px);border-bottom:1px solid #3A3229;position:relative;"><div style="position:absolute;top:10px;left:10px;display:flex;gap:4px;"><span style="width:11px;height:11px;border-radius:3px;background:#4A7FB5;display:block;"></span><span style="width:11px;height:11px;border-radius:3px;background:#E8E4D6;display:block;"></span></div></div><div style="padding:14px 16px 16px;"><div style="font-family:'Cinzel',serif;font-weight:600;font-size:17px;color:#EDE6D8;">Corvyn, Vault Warden</div><div style="font-size:12px;color:#A89B84;margin-top:4px;">Legendary Creature — Sphinx</div><div style="display:flex;justify-content:space-between;margin:14px 0 6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C6B79A;">88 / 99 owned</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">11 to go</span></div><div style="height:6px;background:#2A241D;border-radius:3px;overflow:hidden;"><div style="height:100%;width:89%;background:#C9A24B;border-radius:3px;"></div></div></div></div>
+              <div style="background:#1E1A15;border:1px solid #3A3229;border-radius:12px;overflow:hidden;" style-hover="border-color:#4A4033;transform:translateY(-2px);"><div style="height:96px;background:#14110E;background-image:repeating-linear-gradient(135deg,#1E1A15 0 10px,#181209 10px 20px);border-bottom:1px solid #3A3229;position:relative;"><div style="position:absolute;top:10px;left:10px;display:flex;gap:4px;"><span style="width:11px;height:11px;border-radius:3px;background:#6B9E63;display:block;"></span><span style="width:11px;height:11px;border-radius:3px;background:#5B5566;display:block;"></span></div></div><div style="padding:14px 16px 16px;"><div style="font-family:'Cinzel',serif;font-weight:600;font-size:17px;color:#EDE6D8;">Mireth, Spore Matron</div><div style="font-size:12px;color:#A89B84;margin-top:4px;">Legendary Creature — Fungus Druid</div><div style="display:flex;justify-content:space-between;margin:14px 0 6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C6B79A;">84 / 99 owned</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">15 to go</span></div><div style="height:6px;background:#2A241D;border-radius:3px;overflow:hidden;"><div style="height:100%;width:85%;background:#C9A24B;border-radius:3px;"></div></div></div></div>
+              <div style="background:#1E1A15;border:1px solid #3A3229;border-radius:12px;overflow:hidden;" style-hover="border-color:#4A4033;transform:translateY(-2px);"><div style="height:96px;background:#14110E;background-image:repeating-linear-gradient(135deg,#1E1A15 0 10px,#181209 10px 20px);border-bottom:1px solid #3A3229;position:relative;"><div style="position:absolute;top:10px;left:10px;display:flex;gap:4px;"><span style="width:11px;height:11px;border-radius:3px;background:#C05A48;display:block;"></span></div></div><div style="padding:14px 16px 16px;"><div style="font-family:'Cinzel',serif;font-weight:600;font-size:17px;color:#EDE6D8;">Krenko, Mob Boss</div><div style="font-size:12px;color:#A89B84;margin-top:4px;">Legendary Creature — Goblin</div><div style="display:flex;justify-content:space-between;margin:14px 0 6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C6B79A;">99 / 99 owned</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#6FA368;">complete</span></div><div style="height:6px;background:#2A241D;border-radius:3px;overflow:hidden;"><div style="height:100%;width:100%;background:#6FA368;border-radius:3px;"></div></div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 02 FIRST-RUN ===== -->
+    <div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #2A241D;padding-top:18px;">02 · First-run home — the crab hosts · Δ crab + wink copy, locked-step text lifted to faint (AA)</div>
+      <div style="width:1240px;border-radius:14px;overflow:hidden;border:1px solid #3A3229;box-shadow:0 34px 90px rgba(0,0,0,0.55);">
+        <div style="height:38px;background:#1E1A15;border-bottom:1px solid #3A3229;display:flex;align-items:center;gap:8px;padding:0 14px;"><span style="width:9px;height:9px;border-radius:999px;background:#C6533F;display:block;"></span><span style="width:9px;height:9px;border-radius:999px;background:#E0913C;display:block;"></span><span style="width:9px;height:9px;border-radius:999px;background:#6FA368;display:block;"></span><div style="margin-left:14px;width:300px;height:22px;border-radius:6px;background:#14110E;border:1px solid #3A3229;display:flex;align-items:center;padding:0 10px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">the99.app/</div><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;letter-spacing:0.14em;">FIRST RUN · EMPTY COLLECTION</span></div>
+        <div style="display:flex;background:#14110E;min-height:660px;">
+          <div style="width:236px;flex:none;background:#1A160F;border-right:1px solid #3A3229;display:flex;flex-direction:column;">
+            <div style="padding:22px 20px 20px;border-bottom:1px solid #2A241D;"><div style="display:flex;align-items:flex-end;gap:7px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.42em;color:#C9A24B;padding-bottom:5px;">THE</span><div style="display:flex;flex-direction:column;align-items:center;gap:5px;"><div style="display:flex;gap:4px;"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="width:8px;height:8px;background:#C9A24B;transform:rotate(45deg);display:block;"></span><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span></div><span style="font-family:'Cinzel',serif;font-weight:800;font-size:30px;line-height:0.8;color:#EDE6D8;">99</span></div></div></div>
+            <div style="padding:16px 12px;display:flex;flex-direction:column;gap:4px;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;padding:6px 12px 8px;">Play</div>
+              <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;background:#2A241D;color:#EDE6D8;font-size:14px;font-weight:600;box-shadow:inset 2px 0 0 #C9A24B;"><span style="width:6px;height:6px;background:#C9A24B;transform:rotate(45deg);display:block;"></span>Home</div>
+              <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;color:#8E8269;font-size:14px;font-weight:500;"><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);display:block;"></span>Collection</div>
+              <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;color:#8E8269;font-size:14px;font-weight:500;"><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);display:block;"></span>Commanders</div>
+              <div style="display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;color:#8E8269;font-size:14px;font-weight:500;"><span style="width:6px;height:6px;background:#3A3229;transform:rotate(45deg);display:block;"></span>Decks</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;padding:4px 12px;line-height:1.5;">Surfaces unlock once your<br>collection is uploaded.</div>
+            </div>
+            <div style="margin-top:auto;padding:14px 12px;"><div style="display:flex;align-items:center;gap:12px;background:#221D16;border:1px solid #3A3229;padding:2px;border-radius:14px;padding-right:12px;"><div style="width:38px;height:38px;flex:none;border-radius:12px;background:#14110E;border:1px solid #C9A24B;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#C9A24B;">AR</div><div style="line-height:1.25;min-width:0;"><div style="font-size:13px;color:#EDE6D8;font-weight:600;">Arden Reyes</div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;">invite · member</div></div><span style="margin-left:auto;color:#8E8269;font-size:15px;line-height:1;">⋯</span></div></div>
+          </div>
+          <div style="flex:1;padding:44px 48px 48px;min-width:0;max-width:800px;background-image:radial-gradient(640px 340px at 40% -40px, rgba(201,162,75,0.07), transparent 70%);">
+            <div style="display:flex;align-items:flex-end;gap:22px;margin-bottom:6px;">
+              <div style="flex:1;">
+                <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:30px;margin:0;color:#EDE6D8;">Welcome to the 99, Arden</h2>
+                <p style="font-size:15px;color:#C6B79A;margin:10px 0 0;">Three steps to your first recommendations. I'll wait — I've got time.</p>
+              </div>
+              <div style="width:96px;flex:none;animation:bob 5s ease-in-out infinite;"><svg viewBox="0 0 160 110" style="width:100%;display:block;"><use href="#crab99"/></svg></div>
+            </div>
+            <div style="background:#1E1A15;border:1px solid #C9A24B;border-radius:14px;padding:26px 28px;margin-top:22px;">
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;"><span style="width:26px;height:26px;border-radius:999px;background:#C9A24B;color:#14110E;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;">1</span><span style="font-family:'Cinzel',serif;font-weight:600;font-size:20px;color:#EDE6D8;">Upload your collection</span></div>
+              <div style="border:1.5px dashed #4A4033;border-radius:12px;background:#181410;padding:34px;display:flex;align-items:center;gap:28px;" style-hover="border-color:#C9A24B;background:#1C1712;">
+                <div style="width:56px;height:56px;flex:none;border-radius:999px;border:1px solid #C9A24B;color:#C9A24B;font-size:24px;display:flex;align-items:center;justify-content:center;">↑</div>
+                <div style="flex:1;"><div style="font-size:17px;color:#EDE6D8;font-weight:600;">Drop your collection CSV here</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;margin-top:6px;letter-spacing:0.06em;">Moxfield · Archidekt · Deckbox · plain CSV</div></div>
+                <button style="font-family:'IBM Plex Sans';font-weight:600;font-size:14px;color:#14110E;background:#C9A24B;border:none;border-radius:8px;padding:11px 22px;cursor:pointer;white-space:nowrap;" style-hover="background:#D8B25E;">Browse files</button>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;gap:16px;flex-wrap:wrap;"><div style="font-size:13px;color:#8E8269;line-height:1.5;">We only need a <b style="color:#C6B79A;font-weight:600;">Name</b> and <b style="color:#C6B79A;font-weight:600;">Quantity</b> column — most exports already include them.</div><a href="#3a" style="font-size:13px;color:#C9A24B;white-space:nowrap;">Paste a list instead →</a></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;padding:18px 22px;margin-top:14px;background:#181410;border:1px solid #2A241D;border-radius:14px;"><span style="width:26px;height:26px;border-radius:999px;border:1px solid #4A4033;color:#8E8269;font-family:'IBM Plex Mono',monospace;font-size:13px;display:flex;align-items:center;justify-content:center;">2</span><span style="font-family:'Cinzel',serif;font-weight:600;font-size:18px;color:#8E8269;">Review your commanders</span><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">unlocks after upload</span></div>
+            <div style="display:flex;align-items:center;gap:12px;padding:18px 22px;margin-top:12px;background:#181410;border:1px solid #2A241D;border-radius:14px;"><span style="width:26px;height:26px;border-radius:999px;border:1px solid #4A4033;color:#8E8269;font-family:'IBM Plex Mono',monospace;font-size:13px;display:flex;align-items:center;justify-content:center;">3</span><span style="font-family:'Cinzel',serif;font-weight:600;font-size:18px;color:#8E8269;">Build your first deck</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 03 GLOBAL LOADING (new state) ===== -->
+    <div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #2A241D;padding-top:18px;">03 · Global loading — new shell state · Δ crab replaces bare spinner everywhere the shell waits</div>
+      <div style="width:1240px;border-radius:14px;overflow:hidden;border:1px solid #3A3229;box-shadow:0 34px 90px rgba(0,0,0,0.55);">
+        <div style="height:38px;background:#1E1A15;border-bottom:1px solid #3A3229;display:flex;align-items:center;gap:8px;padding:0 14px;"><span style="width:9px;height:9px;border-radius:999px;background:#C6533F;display:block;"></span><span style="width:9px;height:9px;border-radius:999px;background:#E0913C;display:block;"></span><span style="width:9px;height:9px;border-radius:999px;background:#6FA368;display:block;"></span><div style="margin-left:14px;width:300px;height:22px;border-radius:6px;background:#14110E;border:1px solid #3A3229;display:flex;align-items:center;padding:0 10px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">the99.app/collection/replace</div><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;letter-spacing:0.14em;">PROCESSING CSV</span></div>
+        <div style="height:520px;background:#14110E;background-image:radial-gradient(560px 320px at 50% 68%, rgba(201,162,75,0.08), transparent 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px;">
+          <div style="position:relative;display:inline-flex;">
+            <svg viewBox="0 0 160 110" style="width:120px;display:block;"><use href="#crab99"/></svg>
+            <div style="position:absolute;top:-4px;right:-22px;display:flex;gap:6px;">
+              <span style="width:7px;height:7px;border-radius:999px;background:#C9A24B;animation:dots 1.2s ease-in-out infinite;"></span>
+              <span style="width:7px;height:7px;border-radius:999px;background:#C9A24B;animation:dots 1.2s ease-in-out .2s infinite;"></span>
+              <span style="width:7px;height:7px;border-radius:999px;background:#C9A24B;animation:dots 1.2s ease-in-out .4s infinite;"></span>
+            </div>
+          </div>
+          <h2 style="font-family:'Cinzel',serif;font-weight:600;font-size:22px;color:#EDE6D8;margin:24px 0 0;">Reading your collection</h2>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#C6B79A;margin-top:10px;">1,204 cards · matching to Oracle…</div>
+          <p style="font-size:13px;color:#A89B84;line-height:1.6;margin:10px 0 0;max-width:300px;">This is the boring part. I'll flag anything that looks off.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 04 EMPTY DECKS ===== -->
+    <div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #2A241D;padding-top:18px;">04 · Decks empty state · Δ crab joins the card-fan mark, copy gets the wink</div>
+      <div style="width:1240px;border-radius:14px;overflow:hidden;border:1px solid #3A3229;box-shadow:0 34px 90px rgba(0,0,0,0.55);">
+        <div style="height:38px;background:#1E1A15;border-bottom:1px solid #3A3229;display:flex;align-items:center;gap:8px;padding:0 14px;"><span style="width:9px;height:9px;border-radius:999px;background:#C6533F;display:block;"></span><span style="width:9px;height:9px;border-radius:999px;background:#E0913C;display:block;"></span><span style="width:9px;height:9px;border-radius:999px;background:#6FA368;display:block;"></span><div style="margin-left:14px;width:300px;height:22px;border-radius:6px;background:#14110E;border:1px solid #3A3229;display:flex;align-items:center;padding:0 10px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">the99.app/decks</div><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;letter-spacing:0.14em;">EMPTY · NO DECKS</span></div>
+        <div style="height:520px;background:#14110E;background-image:radial-gradient(560px 320px at 50% 72%, rgba(201,162,75,0.08), transparent 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px;">
+          <div style="display:flex;align-items:flex-end;gap:18px;margin-bottom:24px;">
+            <div style="width:104px;animation:bob 5s ease-in-out infinite;"><svg viewBox="0 0 160 110" style="width:100%;display:block;"><use href="#crab99"/></svg></div>
+            <div style="position:relative;width:96px;height:110px;"><div style="position:absolute;left:50%;top:50%;width:50px;height:70px;border-radius:8px;background:#2A241D;border:1.5px solid #4A4033;transform:translate(-50%,-50%) rotate(-14deg) translateX(-17px);"></div><div style="position:absolute;left:50%;top:50%;width:50px;height:70px;border-radius:8px;background:#33291F;border:1.5px solid #5A4B38;transform:translate(-50%,-50%);"></div><div style="position:absolute;left:50%;top:50%;width:50px;height:70px;border-radius:8px;background:#3E3020;border:1.5px solid #C9A24B;transform:translate(-50%,-50%) rotate(14deg) translateX(17px);display:flex;align-items:center;justify-content:center;"><span style="font-family:'Cinzel',serif;font-weight:800;font-size:20px;color:#C9A24B;">99</span></div></div>
+          </div>
+          <h2 style="font-family:'Cinzel',serif;font-weight:700;font-size:28px;margin:0;color:#EDE6D8;">No decks yet.</h2>
+          <p style="font-size:16px;color:#C6B79A;line-height:1.6;margin:12px 0 0;max-width:420px;">I've been through your collection. I have opinions. Pick a commander and we'll assemble the 99 from cards you already own.</p>
+          <div style="display:flex;gap:12px;margin-top:26px;"><button style="font-family:'IBM Plex Sans';font-weight:600;font-size:14px;color:#14110E;background:#C9A24B;border:none;border-radius:8px;padding:12px 26px;cursor:pointer;" style-hover="background:#D8B25E;">Browse commanders</button></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 05 404 (new state) ===== -->
+    <div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#8E8269;margin-bottom:16px;border-top:1px solid #2A241D;padding-top:18px;">05 · 404 — new shell state · Δ non-critical, so the crab gets to be himself</div>
+      <div style="width:1240px;border-radius:14px;overflow:hidden;border:1px solid #3A3229;box-shadow:0 34px 90px rgba(0,0,0,0.55);">
+        <div style="height:38px;background:#1E1A15;border-bottom:1px solid #3A3229;display:flex;align-items:center;gap:8px;padding:0 14px;"><span style="width:9px;height:9px;border-radius:999px;background:#C6533F;display:block;"></span><span style="width:9px;height:9px;border-radius:999px;background:#E0913C;display:block;"></span><span style="width:9px;height:9px;border-radius:999px;background:#6FA368;display:block;"></span><div style="margin-left:14px;width:300px;height:22px;border-radius:6px;background:#14110E;border:1px solid #3A3229;display:flex;align-items:center;padding:0 10px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;">the99.app/decks/krenko-mob-bosss</div><span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8E8269;letter-spacing:0.14em;">404 · NOT FOUND</span></div>
+        <div style="height:480px;background:#14110E;background-image:radial-gradient(520px 300px at 50% 70%, rgba(201,162,75,0.07), transparent 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px;">
+          <div style="font-family:'Cinzel',serif;font-weight:900;font-size:64px;line-height:1;color:#2A241D;letter-spacing:0.04em;">404</div>
+          <div style="width:104px;margin:-14px 0 18px;"><svg viewBox="0 0 160 110" style="width:100%;display:block;"><use href="#crab99"/></svg></div>
+          <h2 style="font-family:'Cinzel',serif;font-weight:600;font-size:24px;margin:0;color:#EDE6D8;">There's no page here.</h2>
+          <p style="font-size:15px;color:#C6B79A;line-height:1.6;margin:10px 0 0;max-width:380px;">I checked. Twice. Probably a typo in the URL — happens to the best of us.</p>
+          <div style="display:flex;gap:12px;margin-top:24px;"><button style="font-family:'IBM Plex Sans';font-weight:600;font-size:14px;color:#14110E;background:#C9A24B;border:none;border-radius:8px;padding:11px 24px;cursor:pointer;" style-hover="background:#D8B25E;">Back home</button><button style="font-family:'IBM Plex Sans';font-weight:600;font-size:14px;color:#EDE6D8;background:transparent;border:1px solid #3A3229;border-radius:8px;padding:11px 24px;cursor:pointer;" style-hover="border-color:#C9A24B;color:#D8B25E;">View decks</button></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <p style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8E8269;margin:34px 0 0;max-width:760px;line-height:1.7;">Mobile variants follow the same deltas (crab scales to 72–90px; vignettes centered on content). Handoff notes + canonical crab/kaiju SVGs: <b style="color:#C6B79A;">design_handoff_the99_richness/</b>. The v1 shell doc (<b style="color:#C6B79A;">The 99 - App Shell.dc.html</b>) remains the state-matrix reference; this doc owns the visual layer.</p>
+
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Chakra+Petch:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] { --bg:#14110E; --surface:#1E1A15; --surface-rail:#1A1611; --display:'Cinzel',serif; --surface-sunken:#18140F; --surface-raised:#211D18; --elevated:#29241F; --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037; --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654; --fg-disabled:#4A4033; --accent:#CF8745; --accent-hover:#DE9757; --fact:#8FA6BE; }
+  [data-theme="kamigawa"] { --bg:#0E0F14; --surface:#16181F; --surface-rail:#12141B; --display:'Chakra Petch',sans-serif; --surface-sunken:#101219; --surface-raised:#191B22; --elevated:#20222A; --border:#181C26; --border-strong:#262A35; --border-dashed:#343843; --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476; --fg-disabled:#3D404E; --accent:#FF4D9A; --accent-hover:#FF62A9; --fact:#8FA6BE; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" data-benchmarks="" style="width:100%;color:var(--fg);font-family:'IBM Plex Sans',sans-serif;">
+
+  <sc-if value="{{ desk }}" hint-placeholder-val="{{ true }}">
+    <section style="display:flex;flex-direction:column;gap:11px;">
+      <div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;">
+        <h3 style="margin:0;font-family:'IBM Plex Mono',monospace;font-weight:400;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--fg-faint);">How it plays</h3>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ caption }}</span>
+      </div>
+      <sc-if value="{{ tiny }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:24px;padding:14px 16px;border-radius:9px;border:1px dashed var(--border-dashed);">
+          <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:0;"><p style="margin:0;font-size:13.5px;line-height:1.5;color:var(--fg-body);">{{ tinyHead }}</p><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.55;color:var(--fg-faint);">{{ tinyLine }}</span></div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px 14px;max-width:560px;justify-content:flex-end;"><sc-for list="{{ names }}" as="n" hint-placeholder-count="5"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ n.t }}</span></sc-for></div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ graded }}" hint-placeholder-val="{{ true }}">
+        <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;align-items:stretch;">
+          <sc-for list="{{ tiles }}" as="t" hint-placeholder-count="4">
+            <sc-if value="{{ t.graded }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;flex-direction:column;gap:8px;background:var(--surface);border:1px solid var(--border-strong);border-radius:9px;padding:12px 14px 11px;min-width:0;">
+                <span style="font-size:12px;font-weight:600;color:var(--fg);">{{ t.name }}</span>
+                <span style="font-family:var(--display);font-weight:700;font-size:18px;line-height:1.1;color:var(--fg);">{{ t.word }}</span>
+                <span role="img" aria-label="{{ t.aria }}" style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;"><sc-for list="{{ t.segs }}" as="s" hint-placeholder-count="5"><span style="{{ s.style }}"></span></sc-for></span>
+                <span style="flex:1;font-size:10.5px;line-height:1.45;color:var(--fg-muted);text-wrap:pretty;">{{ t.pre }}<b style="font-weight:600;color:var(--fg);">{{ t.strong }}</b>{{ t.post }}</span>
+                <span style="display:flex;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--accent);border-bottom:1px dotted var(--accent);cursor:pointer;">{{ t.opener }}</span></span>
+              </div>
+            </sc-if>
+            <sc-if value="{{ t.noCombo }}" hint-placeholder-val="{{ false }}">
+              <div data-no-combo="" style="display:flex;flex-direction:column;gap:8px;border:1px dashed var(--border-dashed);border-radius:9px;padding:12px 14px 11px;min-width:0;">
+                <span style="font-size:12px;font-weight:600;color:var(--fg);">{{ t.name }}</span>
+                <span style="font-size:14px;font-weight:500;line-height:1.3;color:var(--fg-body);">{{ t.word }}</span>
+                <span style="font-size:10.5px;line-height:1.45;color:var(--fg-muted);text-wrap:pretty;">{{ t.post }}</span>
+              </div>
+            </sc-if>
+          </sc-for>
+        </div>
+
+        <div data-dependencies="" style="display:flex;flex-direction:column;border-radius:9px;border:1px solid var(--border);background:var(--surface-sunken);">
+          <div style="display:flex;align-items:center;gap:8px;padding:12px 16px 10px;"><span style="font-size:12px;font-weight:600;color:var(--fg);">{{ dep.name }}</span><span tabindex="0" role="button" aria-label="{{ dep.tipAria }}" aria-describedby="deps-tip" style="position:relative;flex:none;display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;border:1px solid var(--fg-faint);font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;line-height:1;color:var(--fg-muted);cursor:help;">i<sc-if value="{{ tipOpen }}" hint-placeholder-val="{{ false }}"><span id="deps-tip" role="tooltip" style="position:absolute;left:-10px;top:calc(100% + 8px);z-index:5;width:260px;padding:9px 11px;border-radius:8px;background:var(--elevated);border:1px solid var(--border-strong);box-shadow:0 10px 28px rgba(0,0,0,0.45);font-family:'IBM Plex Sans',sans-serif;font-size:12px;font-weight:400;line-height:1.5;color:var(--fg-body);text-align:left;white-space:normal;">{{ dep.sub }}</span></sc-if></span></div>
+          <sc-if value="{{ dep.hasRows }}" hint-placeholder-val="{{ true }}">
+            <sc-for list="{{ dep.rows }}" as="r" hint-placeholder-count="1">
+              <div style="display:grid;grid-template-columns:220px minmax(0,1fr) minmax(0,1.15fr) 120px;align-items:center;gap:18px;min-height:46px;padding:9px 16px;border-top:1px solid var(--border);">
+                <span style="display:flex;align-items:center;gap:9px;min-width:0;"><span style="{{ r.pill }}">{{ r.strength }}</span><span style="font-size:13px;font-weight:600;color:var(--fg);">{{ r.name }}</span></span>
+                <span style="font-size:12px;line-height:1.45;color:var(--fg-muted);text-wrap:pretty;">{{ r.pre }}<b style="font-weight:600;color:var(--fg);">{{ r.strong }}</b>{{ r.post }}</span>
+                <span style="display:flex;flex-direction:column;gap:2px;min-width:0;"><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">{{ r.brokenBy }}</span><span style="font-size:12px;line-height:1.45;color:var(--fg-body);text-wrap:pretty;">{{ r.hate }}</span></span>
+                <span style="display:flex;justify-content:flex-end;"><sc-if value="{{ r.hasOpen }}" hint-placeholder-val="{{ true }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--accent);border-bottom:1px dotted var(--accent);cursor:pointer;white-space:nowrap;">{{ r.opener }}</span></sc-if></span>
+              </div>
+            </sc-for>
+          </sc-if>
+          <sc-if value="{{ dep.noRows }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:5px;margin:0 12px 12px;padding:12px 14px;border-radius:7px;border:1px dashed var(--border-dashed);">
+              <p style="margin:0;font-size:13px;line-height:1.5;color:var(--fg-body);">{{ dep.noneHead }}</p>
+              <p style="margin:0;font-size:12px;line-height:1.5;color:var(--fg-muted);text-wrap:pretty;">{{ dep.noneLine }}</p>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ dep.checked }}</span>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+    </section>
+  </sc-if>
+
+  <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+    <section style="display:flex;flex-direction:column;gap:9px;">
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <h3 style="margin:0;font-family:'IBM Plex Mono',monospace;font-weight:400;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">How it plays</h3>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;line-height:1.5;color:var(--fg-faint);text-wrap:pretty;">{{ caption }}</span>
+      </div>
+      <sc-if value="{{ tiny }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:8px;padding:13px 14px;border-radius:11px;border:1px dashed var(--border-dashed);">
+          <p style="margin:0;font-size:13px;line-height:1.5;color:var(--fg-body);">{{ tinyHead }}</p>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.55;color:var(--fg-faint);">{{ tinyLine }}</span>
+          <div style="display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:2px;"><sc-for list="{{ names }}" as="n" hint-placeholder-count="5"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ n.t }}</span></sc-for></div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ graded }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;flex-direction:column;border:1px solid var(--border);border-radius:11px;background:var(--surface);overflow:hidden;">
+          <sc-for list="{{ tiles }}" as="t" hint-placeholder-count="4">
+            <sc-if value="{{ t.graded }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;flex-direction:column;padding:12px 13px 0;border-bottom:1px solid var(--border);">
+                <span style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;"><span style="font-size:12.5px;font-weight:600;color:var(--fg);">{{ t.name }}</span><span style="font-family:var(--display);font-weight:700;font-size:15px;line-height:1.1;color:var(--fg);">{{ t.word }}</span></span>
+                <span role="img" aria-label="{{ t.aria }}" style="margin-top:9px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;"><sc-for list="{{ t.segs }}" as="s" hint-placeholder-count="5"><span style="{{ s.style }}"></span></sc-for></span>
+                <span style="margin-top:8px;font-size:11.5px;line-height:1.5;color:var(--fg-muted);text-wrap:pretty;">{{ t.pre }}<b style="font-weight:600;color:var(--fg);">{{ t.strong }}</b>{{ t.post }}</span>
+                <span style="display:flex;justify-content:flex-end;"><span style="min-height:44px;display:inline-flex;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);"><span style="border-bottom:1px dotted var(--accent);">{{ t.opener }} →</span></span></span>
+              </div>
+            </sc-if>
+            <sc-if value="{{ t.noCombo }}" hint-placeholder-val="{{ false }}">
+              <div data-no-combo="" style="padding:10px;border-bottom:1px solid var(--border);"><div style="display:flex;flex-direction:column;justify-content:center;gap:7px;min-height:104px;padding:10px 12px;border-radius:8px;border:1px dashed var(--border-dashed);">
+                <span style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;"><span style="font-size:12.5px;font-weight:600;color:var(--fg);">{{ t.name }}</span><span style="font-size:13px;font-weight:500;color:var(--fg-body);">{{ t.word }}</span></span>
+                <span style="font-size:11.5px;line-height:1.5;color:var(--fg-muted);text-wrap:pretty;">{{ t.post }}</span>
+              </div></div>
+            </sc-if>
+          </sc-for>
+        </div>
+
+        <div data-dependencies="" style="display:flex;flex-direction:column;border:1px solid var(--border);border-radius:11px;background:var(--surface-sunken);">
+          <div style="display:flex;align-items:center;gap:8px;min-height:44px;padding:0 13px;"><span style="font-size:12.5px;font-weight:600;color:var(--fg);">{{ dep.name }}</span><span tabindex="0" role="button" aria-label="{{ dep.tipAria }}" aria-describedby="deps-tip" style="position:relative;flex:none;display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;border:1px solid var(--fg-faint);font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;line-height:1;color:var(--fg-muted);cursor:help;">i<sc-if value="{{ tipOpen }}" hint-placeholder-val="{{ false }}"><span id="deps-tip" role="tooltip" style="position:absolute;left:-10px;top:calc(100% + 8px);z-index:5;width:260px;padding:9px 11px;border-radius:8px;background:var(--elevated);border:1px solid var(--border-strong);box-shadow:0 10px 28px rgba(0,0,0,0.45);font-family:'IBM Plex Sans',sans-serif;font-size:12px;font-weight:400;line-height:1.5;color:var(--fg-body);text-align:left;white-space:normal;">{{ dep.sub }}</span></sc-if></span></div>
+          <sc-if value="{{ dep.hasRows }}" hint-placeholder-val="{{ true }}">
+            <sc-for list="{{ dep.rows }}" as="r" hint-placeholder-count="1">
+              <div style="display:flex;flex-direction:column;gap:6px;padding:11px 13px 0;border-top:1px solid var(--border);">
+                <span style="display:flex;align-items:center;gap:9px;"><span style="{{ r.pill }}">{{ r.strength }}</span><span style="font-size:13px;font-weight:600;color:var(--fg);">{{ r.name }}</span></span>
+                <span style="font-size:11.5px;line-height:1.5;color:var(--fg-muted);text-wrap:pretty;">{{ r.pre }}<b style="font-weight:600;color:var(--fg);">{{ r.strong }}</b>{{ r.post }}</span>
+                <span style="font-size:11.5px;line-height:1.5;color:var(--fg-body);text-wrap:pretty;"><span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">{{ r.brokenBy }}</span>&nbsp; {{ r.hate }}</span>
+                <sc-if value="{{ r.hasOpen }}" hint-placeholder-val="{{ true }}"><span style="display:flex;justify-content:flex-end;"><span style="min-height:44px;display:inline-flex;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--accent);"><span style="border-bottom:1px dotted var(--accent);">{{ r.opener }} →</span></span></span></sc-if>
+                <sc-if value="{{ r.noOpen }}" hint-placeholder-val="{{ false }}"><span style="height:11px;"></span></sc-if>
+              </div>
+            </sc-for>
+          </sc-if>
+          <sc-if value="{{ dep.noRows }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:6px;margin:0 10px 10px;padding:12px;border-radius:8px;border:1px dashed var(--border-dashed);">
+              <p style="margin:0;font-size:12.5px;line-height:1.5;color:var(--fg-body);">{{ dep.noneHead }}</p>
+              <p style="margin:0;font-size:11.5px;line-height:1.5;color:var(--fg-muted);text-wrap:pretty;">{{ dep.noneLine }}</p>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;line-height:1.5;color:var(--fg-faint);">{{ dep.checked }}</span>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+    </section>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1240,&quot;height&quot;:420},&quot;deck&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;gishath&quot;,&quot;elves&quot;,&quot;sultai&quot;,&quot;counter&quot;,&quot;scrappy&quot;,&quot;thorin&quot;,&quot;soldiers&quot;,&quot;wizards&quot;,&quot;tiny&quot;,&quot;low&quot;],&quot;default&quot;:&quot;scrappy&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;phone&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;stale&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;tipOpen&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = { fx: null };
+  componentDidMount() {
+    import(new URL("benchmark-fixtures.js", document.baseURI).href).then((m) => this.setState({ fx: m }));
+  }
+  renderVals() {
+    const theme = this.props.theme ?? "amonkhet";
+    const phone = !!this.props.phone;
+    const base = { theme, phone, desk: !phone, dep: {}, tiles: [] };
+    if (!this.state.fx) return base;
+    const { COPY: C, deckData, STEP_INK: INK, DEP_ORDER } = this.state.fx;
+    const d = deckData(this.props.deck ?? "gishath");
+    const caption = this.props.stale ? C.captionStale : C.caption;
+    const names = [C.names.velocity, C.names.flow, C.names.interaction, C.names.win, C.deps.name].map((t) => ({ t }));
+    if (d.tiny) return { ...base, caption, tiny: true, graded: false, names, tinyHead: C.tinyHead(d.cards, 60), tinyLine: C.tinyLine };
+    const h = phone ? 7 : 6;
+    const seg = (i, on) => ({ style: { display: "block", height: h, borderRadius: 2, background: on ? INK[i - 1] : "var(--elevated)", boxShadow: on ? "none" : "inset 0 0 0 1px var(--border-strong)" } });
+    const tile = (k) => {
+      const b = d[k];
+      if (k === "win" && !b.combo) return { name: C.names[k], word: C.noCombo, post: C.noComboLine, noCombo: true, graded: false };
+      return {
+        name: C.names[k], word: C.steps[b.step - 1], graded: true, noCombo: false,
+        aria: `${C.names[k]}: ${C.steps[b.step - 1]}, ${C.stepOf(b.step)}`,
+        segs: [1, 2, 3, 4, 5].map((i) => seg(i, i <= b.step)),
+        pre: b.pre, strong: b.strong, post: b.post,
+        opener: k === "win" ? C.openCombo(b.n) : C.open(b.n),
+      };
+    };
+    // Strength is a word, never a meter: heavy reads in --fg on a --fact edge, light in muted on the neutral edge.
+    const pill = (s) => ({
+      fontFamily: "'IBM Plex Mono',monospace", fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", whiteSpace: "nowrap",
+      borderRadius: 4, padding: "2px 6px", display: "inline-block", minWidth: 50, textAlign: "center", flex: "none",
+      color: s === "heavy" ? "var(--fg)" : "var(--fg-muted)",
+      border: s === "heavy" ? "1px solid var(--fact)" : "1px solid var(--border-strong)",
+      background: s === "heavy" ? "color-mix(in oklab, var(--fact) 14%, transparent)" : "transparent",
+    });
+    const rows = [...d.deps]
+      .sort((a, z) => (a.s === z.s ? DEP_ORDER.indexOf(a.k) - DEP_ORDER.indexOf(z.k) : a.s === "heavy" ? -1 : 1))
+      .map((r) => ({
+        name: C.deps.rows[r.k], strength: C.deps.strength[r.s], pill: pill(r.s),
+        pre: r.pre, strong: r.strong, post: r.post, brokenBy: C.deps.brokenBy, hate: C.deps.hate[r.k],
+        hasOpen: r.n > 0, noOpen: r.n === 0, opener: C.open(r.n),
+      }));
+    const dep = { name: C.deps.name, sub: C.deps.sub, tipAria: C.deps.tipAria, rows, hasRows: rows.length > 0, noRows: rows.length === 0, noneHead: C.deps.noneHead, noneLine: C.deps.noneLine, checked: C.deps.checked };
+    return { ...base, caption, tiny: false, graded: true, tipOpen: !!this.props.tipOpen, tiles: ["velocity", "flow", "interaction", "win"].map(tile), dep };
+  }
+}
+</script>
+</body>
+</html>

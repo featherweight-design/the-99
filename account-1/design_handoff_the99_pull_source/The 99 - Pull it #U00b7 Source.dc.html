@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><rect width="120" height="120" fill="#100D0A"/><rect x="24" y="34" width="72" height="14" rx="4" fill="#1E1A15" stroke="#CF8745"/><rect x="24" y="54" width="72" height="14" rx="4" fill="#1E1A15"/><rect x="24" y="74" width="72" height="14" rx="4" fill="none" stroke="#3A3229" stroke-dasharray="3 3"/></svg></template>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #100D0A; }
+  a { color: #CF8745; text-decoration: none; } a:hover { color: #DE9757; }
+</style>
+</helmet>
+
+<div style="font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;padding:40px;background:#100D0A;min-height:100vh;">
+  <section style="max-width:1300px;margin-bottom:30px;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:#14110E;background:#CF8745;border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">R1</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#8B8270;">Pull it · addendum · choosing the source deck</span>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:32px;margin:0 0 12px;text-wrap:pretty;">When two decks hold the card, Pull it asks which one gives it up.</h1>
+    <p style="max-width:980px;font-size:15px;line-height:1.7;color:#C0B8A6;margin:0 0 16px;text-wrap:pretty;">Pull it gets a short list only when two or more decks could give the card up. The list is in commit order. Today's pick comes preselected, and the button says which deck it pulls from, so taking the default is still one extra tap. A locked copy is listed but can't be chosen. With one source, Pull it works as it ships. Source: <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">pull-control.tsx</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">review-changes.tsx</span>, <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">availability.ts</span> (<span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">pullSources</span>), <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;">pull-release.ts</span> at main. <a href="README.md">README and states</a> · <a href="pull-source · copy strings.ts">copy</a>.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px 28px;padding:16px 20px;border:1px solid #3A3229;border-radius:12px;background:#181410;">
+      <div style="font-size:13px;line-height:1.6;color:#A59C89;"><b style="color:#EDE6D8;">1 · Popover at 1300, sheet at 390.</b> The popover hangs under the row, so the card it's about stays in view. A sheet would cover both columns for a two-to-four-row choice.</div>
+      <div style="font-size:13px;line-height:1.6;color:#A59C89;"><b style="color:#EDE6D8;">2 · Each source shows name, version and date, its new count, and new draft or joins its draft.</b> Copies held is dropped: outside basics it's always 1, and basics never reach a pull.</div>
+      <div style="font-size:13px;line-height:1.6;color:#A59C89;"><b style="color:#EDE6D8;">3 · Today's pick is preselected.</b> It's filled and the button names it, so the default can be seen, not just assumed. Commit order matches the contested-card row.</div>
+      <div style="font-size:13px;line-height:1.6;color:#A59C89;"><b style="color:#EDE6D8;">4 · Locked: shown and disabled, with its reason.</b> It has the dashed edge and <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">locked</span> tag the shipped guard uses. Hiding it would make "in 3 decks" disagree with a list of two. Commander claims get the same treatment.</div>
+      <div style="font-size:13px;line-height:1.6;color:#A59C89;"><b style="color:#EDE6D8;">5 · One source: no list.</b> The row already names the deck, so one tap pulls, as it does today, and Undo covers a mistake (<a href="#3a">3a</a>).</div>
+      <div style="font-size:13px;line-height:1.6;color:#A59C89;"><b style="color:#EDE6D8;">6 · Confirm names the deck:</b> <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">Pull from HD - Avatar Aang</span>. One sentence says what happens to that deck and how to undo it.</div>
+      <div style="font-size:13px;line-height:1.6;color:#A59C89;"><b style="color:#EDE6D8;">7 · After the pull</b> the buy tag clears at once and the row reads <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">pulled from HD - Avatar Aang</span>, which links to that deck, where the undo lives.</div>
+      <div style="font-size:13px;line-height:1.6;color:#A59C89;"><b style="color:#EDE6D8;">Not listed:</b> draft-only decks (no committed version, so they can't be a source) and junior decks. <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">senior: false</span> means pulling from them frees nothing. The list reads <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">pullSources</span> plus the guarded claims.</div>
+    </div>
+    <p style="font-size:12px;color:#6E6654;font-family:'IBM Plex Mono',monospace;margin:12px 0 0;">Frames are live: open the list, change the pick, confirm, replay.</p>
+  </section>
+
+  <section data-screen-label="01 The list" style="margin-bottom:56px;">
+    <h2 style="font-family:'Cinzel',serif;font-size:22px;margin:0 0 6px;">1 · The list: three sources, one locked</h2>
+    <p style="font-size:13.5px;color:#A59C89;margin:0 0 16px;max-width:900px;">Fabled Passage is in three decks. Pull it reads <span style="font-family:'IBM Plex Mono',monospace;">in 2 decks</span> and gets a caret, because two of them can give it up and the locked one can't.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start;">
+      <div id="1a"><div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#CF8745;margin-bottom:8px;">1a · 1300 · popover</div><dc-import name="Changes Pull Frame" w="1300" s="list" sel="aang" hint-size="1300px,640px"></dc-import></div>
+      <div id="1b"><div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#CF8745;margin-bottom:8px;">1b · 390 · sheet</div><dc-import name="Changes Pull Frame" w="390" s="list" sel="aang" hint-size="390px,800px"></dc-import></div>
+    </div>
+  </section>
+
+  <section data-screen-label="02 The confirm" style="margin-bottom:56px;">
+    <h2 style="font-family:'Cinzel',serif;font-size:22px;margin:0 0 6px;">2 · The confirm: another pick, pulling, refused</h2>
+    <p style="font-size:13.5px;color:#A59C89;margin:0 0 16px;max-width:900px;">A different pick changes the button and the sentence. Nothing else moves. While pulling, the list dims and the button reads the shipped <span style="font-family:'IBM Plex Mono',monospace;">Pulling…</span>. A refusal goes under the buttons with the pick kept. The list stays open so the player can try again or choose another deck.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start;">
+      <div id="2a"><div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#CF8745;margin-bottom:8px;">2a · 1300 · Prismari picked (joins its draft)</div><dc-import name="Changes Pull Frame" w="1300" s="list" sel="prismari" hint-size="1300px,640px"></dc-import></div>
+      <div id="2b"><div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#CF8745;margin-bottom:8px;">2b · 390 · pulling</div><dc-import name="Changes Pull Frame" w="390" s="pending" sel="aang" hint-size="390px,800px"></dc-import></div>
+      <div id="2c"><div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#CF8745;margin-bottom:8px;">2c · 1300 · refused</div><dc-import name="Changes Pull Frame" w="1300" s="refused" sel="aang" hint-size="1300px,640px"></dc-import></div>
+    </div>
+  </section>
+
+  <section data-screen-label="03 One source" style="margin-bottom:56px;">
+    <h2 style="font-family:'Cinzel',serif;font-size:22px;margin:0 0 6px;">3 · One source</h2>
+    <p style="font-size:13.5px;color:#A59C89;margin:0 0 16px;max-width:900px;">Arcane Signet has one deck it can come from. The row doesn't change: it names Prismari Artistry, and one tap pulls with no confirm. The shipped Undo covers a mistake. This counts sources that can be chosen: one free source plus a locked one is still one source.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start;">
+      <div id="3a"><div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#CF8745;margin-bottom:8px;">3a · 1300 · one source, one tap (also the row before 1a)</div><dc-import name="Changes Pull Frame" w="1300" s="closed" sel="aang" hint-size="1300px,640px"></dc-import></div>
+      <div id="3b"><div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#CF8745;margin-bottom:8px;">3b · 390 · one source, one tap</div><dc-import name="Changes Pull Frame" w="390" s="closed" sel="aang" hint-size="390px,800px"></dc-import></div>
+    </div>
+  </section>
+
+  <section data-screen-label="04 After the pull" style="margin-bottom:40px;">
+    <h2 style="font-family:'Cinzel',serif;font-size:22px;margin:0 0 6px;">4 · After the pull</h2>
+    <p style="font-size:13.5px;color:#A59C89;margin:0 0 16px;max-width:900px;">The buy tag and the control go. The source deck takes the held-by slot, written as the past act and linked to that deck, where discarding its draft undoes the pull. The chips and the column note drop by one. The shipped announcement and focus handling are unchanged.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start;">
+      <div id="4a"><div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#CF8745;margin-bottom:8px;">4a · 1300</div><dc-import name="Changes Pull Frame" w="1300" s="after" sel="aang" hint-size="1300px,640px"></dc-import></div>
+      <div id="4b"><div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#CF8745;margin-bottom:8px;">4b · 390</div><dc-import name="Changes Pull Frame" w="390" s="after" sel="aang" hint-size="390px,800px"></dc-import></div>
+    </div>
+  </section>
+</div>
+</x-dc>
+</body>
+</html>

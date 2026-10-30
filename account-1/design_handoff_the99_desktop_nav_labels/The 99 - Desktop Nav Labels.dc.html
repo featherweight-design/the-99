@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root, [data-theme="amonkhet"] {
+    --bg:#14110E; --surface:#1E1A15; --surface-raised:#211D18; --surface-sunken:#18140F; --surface-rail:#1A1611; --surface-inset:#1B1712; --elevated:#29241F; --elevated-hover:#201C17;
+    --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037;
+    --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654; --fg-disabled:#4A4033;
+    --accent:#CF8745; --accent-hover:#DE9757; --accent-strong:#AB6E37; --warning:#DEAA29; --success:#6FA368; --danger:#C6533F; --fact:#8FA6BE; --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-raised:#191B22; --surface-sunken:#101219; --surface-rail:#12141B; --surface-inset:#13151C; --elevated:#20222A; --elevated-hover:#181A21;
+    --border:#181C26; --border-strong:#262A35; --border-dashed:#343843;
+    --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476; --fg-disabled:#3D404E;
+    --accent:#FF4D9A; --accent-hover:#FF62A9; --accent-strong:#D33E7E; --warning:#E0913C; --success:#6FA368; --danger:#C6533F; --fact:#8FA6BE; --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E; --g:#4B7A46;
+  }
+  @keyframes pipIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes dots { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--fg);padding:44px 40px 90px;display:flex;flex-direction:column;gap:64px;width:max-content;">
+
+  <div style="max-width:1180px;display:flex;flex-direction:column;gap:14px;">
+    <div style="display:flex;align-items:center;gap:13px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:6px;padding:4px 10px;letter-spacing:0.08em;">HANDOFF · R2</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--fg-faint);">Desktop rail · nav.tsx NavRail + RailLock · intake H3</span>
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-weight:800;font-size:32px;margin:0;line-height:1.15;">Keep the rail thin wherever a pointer can ask. Print the names where it can’t.</h1>
+    <p style="margin:0;font-size:14.5px;line-height:1.7;color:var(--fg-body);max-width:960px;text-wrap:pretty;">R2 picks the rail by input type, not screen width. If the device can hover, the rail stays 62px and the cards keep the room. Hovering or focusing a slot shows a drawn label beside it, and the browser’s tooltip goes. If it can’t hover (a tablet at md and up), it gets R1’s labelled rail at 88px, because there’s nothing to point with. One media query, <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">(hover: none)</span>, decides. There’s no toggle and no stored state. R1’s sections below are kept: D1 to L1 now describe the touch rail. Source: <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;">docs/superpowers/design-briefs/2026-10-02-desktop-nav-labels.md</span>.</p>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;">
+      <sc-for list="{{ rules }}" as="c" hint-placeholder-count="3">
+        <div style="border:1px solid var(--border);border-radius:10px;padding:13px 15px;background:var(--surface);display:flex;flex-direction:column;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg);">{{ c.k }}</span><span style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">{{ c.v }}</span></div>
+      </sc-for>
+    </div>
+  </div>
+
+  <section id="V1" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:12px;max-width:1180px;flex-wrap:wrap;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 8px;">V1</span>
+      <span style="font-size:15px;font-weight:600;">Touch rail on a short screen · 852 × 393 · audit B1</span>
+      <span style="font-size:13px;color:var(--fg-muted);max-width:980px;text-wrap:pretty;">Below 460px tall, the touch rail keeps its labels and its 88px width, and its slots tighten from 52 to 44px. The nav between the mark and the account control can also scroll, so the account control stays pinned to the foot at any height. First run follows the same rule; its well tightens by the same 8px per slot. Labels never drop: touch has no hover to ask with, so the 62px rail would bring the finding back.</span>
+    </div>
+    <div style="display:flex;gap:40px;align-items:flex-start;">
+      <sc-for list="{{ shortFrames }}" as="f" hint-placeholder-count="2">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">{{ f.name }}</span>
+          <div data-screen-label="{{ f.screen }}" style="position:relative;width:852px;height:393px;outline:1px solid var(--border-strong);border-radius:12px;overflow:hidden;background:var(--bg);display:flex;flex:none;">
+            <aside style="width:88px;flex:none;height:100%;background:var(--surface-rail);border-right:1px solid var(--border);padding:10px 0;display:flex;flex-direction:column;align-items:center;box-sizing:border-box;">
+              <div style="margin-bottom:16px;display:flex;flex:none;">{{ markRail }}</div>
+              <div style="flex:1;min-height:0;width:100%;overflow-y:auto;display:flex;flex-direction:column;align-items:center;gap:4px;padding-bottom:8px;box-sizing:border-box;">
+                <sc-for list="{{ f.live }}" as="n">
+                  <span style="flex:none;width:72px;height:44px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:{{ n.bg }};color:{{ n.ink }};">{{ n.icon }}<span style="font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:12px;letter-spacing:0.06em;">{{ n.label }}</span></span>
+                </sc-for>
+                <sc-if value="{{ f.locked }}" hint-placeholder-val="{{ false }}">
+                  <div style="flex:none;width:80px;display:flex;flex-direction:column;align-items:center;gap:4px;border:1px solid var(--border);border-radius:14px;background:var(--surface-sunken);padding:4px 3px 5px;box-sizing:border-box;">
+                    <sc-for list="{{ lockItems }}" as="l">
+                      <span style="width:72px;height:44px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--fg-locked);">{{ l.icon }}<span style="font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:12px;letter-spacing:0.06em;">{{ l.label }}</span></span>
+                    </sc-for>
+                    <div style="margin-top:0;display:flex;flex-direction:column;align-items:center;gap:4px;">{{ padlock }}<span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;line-height:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">Locked</span></div>
+                  </div>
+                </sc-if>
+              </div>
+              <span style="flex:none;width:30px;height:30px;border-radius:50%;background:var(--surface);border:1px solid var(--border-strong);box-sizing:border-box;"></span>
+            </aside>
+            <div style="flex:1;min-width:0;padding:22px 26px 0;display:flex;flex-direction:column;gap:14px;overflow:hidden;">
+              <sc-if value="{{ f.locked }}" hint-placeholder-val="{{ false }}">
+                <h1 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:27px;line-height:1;color:var(--fg);">Welcome to The 99</h1>
+                <p style="margin:0;font-size:12.5px;color:var(--fg-muted);display:flex;gap:8px;align-items:center;">{{ padlock }}Collection, Commanders, Discover and Decks open once your cards are in.</p>
+              </sc-if>
+              <sc-if value="{{ f.unlocked }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;align-items:flex-end;gap:12px;">
+                  <div style="flex:1;min-width:0;"><p style="margin:0 0 7px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-faint);">4,335 cards · read 2 days ago</p><h1 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:28px;line-height:1;">Welcome back</h1></div>
+                  <span style="display:flex;align-items:center;height:32px;padding:0 14px;border-radius:8px;background:var(--fg);color:var(--bg);font-size:12.5px;font-weight:600;white-space:nowrap;">New deck</span>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;">
+                  <div style="height:288px;border-radius:14px;overflow:hidden;border:1px solid var(--border);"><img src="./art/hero-sokka.png" alt="" style="width:100%;height:100%;object-fit:cover;object-position:center top;display:block;"></div>
+                  <div style="height:288px;border-radius:14px;overflow:hidden;border:1px solid var(--border);"><img src="./art/hero-master.png" alt="" style="width:100%;height:100%;object-fit:cover;object-position:center top;display:block;"></div>
+                </div>
+              </sc-if>
+            </div>
+            <span style="position:absolute;top:8px;right:10px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--bg);background:var(--accent);border-radius:4px;padding:2px 7px;">{{ f.tally }}</span>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Without the rule · first run, R2 as drawn · 852 × 393</span>
+      <div data-screen-label="V1 · 852×393 failure" style="position:relative;width:852px;height:393px;outline:1px solid var(--border-strong);border-radius:12px;overflow:hidden;background:var(--bg);display:flex;flex:none;">
+        <aside style="width:88px;flex:none;height:447px;background:var(--surface-rail);border-right:1px solid var(--border);padding:14px 0;display:flex;flex-direction:column;align-items:center;box-sizing:border-box;">
+          <div style="margin-bottom:20px;display:flex;">{{ markRail }}</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+            <span style="width:72px;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:var(--elevated);color:var(--fg);">{{ icons.home }}<span style="font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:12px;letter-spacing:0.06em;">Home</span></span>
+            <div style="width:80px;display:flex;flex-direction:column;align-items:center;gap:4px;border:1px solid var(--border);border-radius:14px;background:var(--surface-sunken);padding:4px 3px 9px;">
+              <sc-for list="{{ lockItems }}" as="l">
+                <span style="width:72px;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--fg-locked);">{{ l.icon }}<span style="font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:12px;letter-spacing:0.06em;">{{ l.label }}</span></span>
+              </sc-for>
+              <div style="margin-top:3px;display:flex;flex-direction:column;align-items:center;gap:5px;">{{ padlock }}<span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">Locked</span></div>
+            </div>
+          </div>
+          <span style="margin-top:auto;width:30px;height:30px;border-radius:50%;background:var(--surface);border:1px solid var(--border-strong);box-sizing:border-box;flex:none;"></span>
+        </aside>
+        <div style="flex:1;min-width:0;padding:22px 26px 0;">
+          <h1 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:27px;line-height:1;color:var(--fg);">Welcome to The 99</h1>
+        </div>
+        <span style="position:absolute;left:0;right:0;bottom:0;border-bottom:2px dashed var(--danger);"></span>
+        <span style="position:absolute;top:8px;right:10px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg);background:var(--danger);border-radius:4px;padding:2px 7px;">column 447 · account control at 403–433, below the fold</span>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;max-width:1744px;">
+      <sc-for list="{{ shortSpecs }}" as="s" hint-placeholder-count="6">
+        <div style="border:1px solid var(--border);border-radius:10px;padding:13px 15px;background:var(--surface);display:flex;flex-direction:column;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg);">{{ s.k }}</span><span style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">{{ s.v }}</span></div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section id="H2" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:12px;max-width:1180px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 8px;">H2</span>
+      <span style="font-size:15px;font-weight:600;">Pointer rail · the drawn label · 2×</span>
+      <span style="font-size:13px;color:var(--fg-muted);max-width:900px;">The slot is today’s, unchanged at 38 × 38. The label is a name tag, not a dialog: one line, no caret, 8px off the rail’s edge, centred on the slot. Only one ever shows. It sits over the page and never pushes it.</span>
+    </div>
+    <div style="display:flex;gap:40px;align-items:flex-start;">
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="zoom:2;display:grid;grid-template-columns:repeat(4,170px);gap:6px;">
+          <sc-for list="{{ hoverStates }}" as="s" hint-placeholder-count="4">
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              <div style="position:relative;height:64px;display:flex;align-items:center;background:var(--bg);border:1px solid var(--border);">
+                <div style="width:62px;height:100%;flex:none;background:var(--surface-rail);border-right:1px solid var(--border);display:flex;align-items:center;justify-content:center;">
+                  <span style="position:relative;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:{{ s.bg }};color:{{ s.ink }};outline:{{ s.outline }};outline-offset:2px;">{{ s.icon }}<sc-if value="{{ s.pip }}"><span style="position:absolute;left:0;right:0;bottom:2px;display:flex;justify-content:center;">{{ pip }}</span></sc-if></span>
+                </div>
+                <sc-if value="{{ s.label }}"><span style="position:absolute;left:69px;top:18px;height:28px;display:flex;align-items:center;padding:0 10px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface-raised);font-size:12.5px;font-weight:500;color:var(--fg);box-shadow:0 10px 24px rgba(0,0,0,.4);white-space:nowrap;">{{ s.text }}</span></sc-if>
+              </div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:6px;color:var(--fg-faint);">{{ s.name }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="width:360px;flex:none;display:flex;flex-direction:column;gap:12px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Label · measured</span>
+        <sc-for list="{{ labelSpecs }}" as="s" hint-placeholder-count="7">
+          <div style="display:grid;grid-template-columns:96px minmax(0,1fr);gap:10px;font-size:12px;line-height:1.55;border-bottom:1px solid var(--border);padding-bottom:8px;"><span style="font-family:'IBM Plex Mono',monospace;color:var(--fg);">{{ s.k }}</span><span style="color:var(--fg-muted);text-wrap:pretty;">{{ s.v }}</span></div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <section id="T2" style="display:flex;flex-direction:column;gap:14px;max-width:1180px;">
+    <div style="display:flex;align-items:baseline;gap:12px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 8px;">T2</span>
+      <span style="font-size:15px;font-weight:600;">When the label shows</span>
+      <span style="font-size:13px;color:var(--fg-muted);">One label for the rail, which follows the pointer. It doesn’t reopen on each slot.</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;">
+      <sc-for list="{{ timing2 }}" as="t" hint-placeholder-count="8">
+        <div style="border:1px solid var(--border);border-radius:10px;padding:13px 15px;background:var(--surface);display:flex;flex-direction:column;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg);">{{ t.k }}</span><span style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">{{ t.v }}</span></div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section id="F3" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:12px;max-width:1180px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 8px;">F3</span>
+      <span style="font-size:15px;font-weight:600;">1300 · pointer and touch</span>
+      <span style="font-size:13px;color:var(--fg-muted);max-width:900px;">With a pointer, the rail is 62px with Commanders hovered, and main is 1238 as today. On touch, the rail is the 88px labelled one, and main is 1212. The same page and the same breakpoints. Only --rail-w differs.</span>
+    </div>
+    <div style="display:flex;gap:40px;align-items:flex-start;">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Pointer · (hover: hover) · 62</span>
+        <div data-screen-label="F3 · 1300 pointer" style="width:1300px;height:830px;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;flex:none;"><dc-import name="ShellFrame" vw="{{ 1300 }}" rail="today" hover="commanders" pip="{{ pip }}" mark-rail="{{ markRail }}" icons="{{ icons }}" hint-size="1300px,830px" style="width:100%;height:100%;"></dc-import></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Touch · (hover: none) · 88</span>
+        <div data-screen-label="F3 · 1300 touch" style="width:1300px;height:830px;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;flex:none;"><dc-import name="ShellFrame" vw="{{ 1300 }}" rail="labelled" pip="{{ pip }}" mark-rail="{{ markRail }}" icons="{{ icons }}" hint-size="1300px,830px" style="width:100%;height:100%;"></dc-import></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="F4" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:12px;max-width:1180px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 8px;">F4</span>
+      <span style="font-size:15px;font-weight:600;">768 · pointer and touch</span>
+      <span style="font-size:13px;color:var(--fg-muted);max-width:900px;">768 with a pointer is a narrow laptop window: 62px rail, main 706, Discover hovered. 768 on touch is a tablet in portrait: 88px labelled rail, main 680. The label sits over the first hero card’s art and is gone when the pointer leaves the rail.</span>
+    </div>
+    <div style="display:flex;gap:40px;align-items:flex-start;">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Pointer · 62</span>
+        <div data-screen-label="F4 · 768 pointer" style="width:768px;height:1024px;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;flex:none;"><dc-import name="ShellFrame" vw="{{ 768 }}" rail="today" hover="discover" pip="{{ pip }}" mark-rail="{{ markRail }}" icons="{{ icons }}" hint-size="768px,1024px" style="width:100%;height:100%;"></dc-import></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Touch · 88</span>
+        <div data-screen-label="F4 · 768 touch" style="width:768px;height:1024px;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;flex:none;"><dc-import name="ShellFrame" vw="{{ 768 }}" rail="labelled" pip="{{ pip }}" mark-rail="{{ markRail }}" icons="{{ icons }}" hint-size="768px,1024px" style="width:100%;height:100%;"></dc-import></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="E2" style="display:flex;flex-direction:column;gap:14px;max-width:1180px;">
+    <div style="display:flex;align-items:baseline;gap:12px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 8px;">E2</span>
+      <span style="font-size:15px;font-weight:600;">First run, access, and code · what R2 changes from R1</span>
+    </div>
+    <div style="border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;">
+      <sc-for list="{{ eng2 }}" as="e" hint-placeholder-count="9">
+        <div style="display:grid;grid-template-columns:260px minmax(0,1fr);gap:0 20px;padding:11px 18px;border-bottom:1px solid var(--border);align-items:baseline;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg);">{{ e.k }}</span>
+          <span style="font-size:12.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">{{ e.v }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <div style="max-width:1180px;display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--border-strong);padding-top:28px;">
+    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--fg-faint);">R1 · kept · now the touch rail</span>
+    <p style="margin:0;font-size:13.5px;line-height:1.65;color:var(--fg-muted);max-width:960px;text-wrap:pretty;">R1 proposed the labelled rail for every desktop. In R2 it’s what <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">(hover: none)</span> gets. Its slot, state, lock and width specs stand as written for that case. Where R1 says “the rail”, read “the touch rail”. D1’s <a href="#1b">1b</a> is the pointer half of R2, minus the gap it noted for touch.</p>
+  </div>
+
+  <section id="D1" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:12px;max-width:1180px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 8px;">D1</span>
+      <span style="font-size:15px;font-weight:600;">Which shape · <a href="#1c">1c</a> chosen</span>
+      <span style="font-size:13px;color:var(--fg-muted);max-width:900px;">Each drawn at 1×, Home active. The figure under each is the content column it leaves at 1300 and at 768.</span>
+    </div>
+    <div style="display:flex;gap:20px;flex-wrap:wrap;">
+
+      <div id="1a" style="width:420px;flex:none;display:flex;flex-direction:column;gap:12px;border:1px solid var(--border);border-radius:12px;background:var(--surface-sunken);padding:18px;">
+        <div style="display:flex;align-items:center;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 8px;">1a</span><span style="font-size:14px;font-weight:600;">Expanded rail, icon beside label</span></div>
+        <div style="height:372px;display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--bg);">
+          <div style="width:208px;flex:none;background:var(--surface-rail);border-right:1px solid var(--border);padding:14px 8px;display:flex;flex-direction:column;align-items:center;">
+            <div style="margin-bottom:20px;display:flex;">{{ markRail }}</div>
+            <div style="width:100%;display:flex;flex-direction:column;gap:4px;">
+              <sc-for list="{{ itemsA }}" as="i" hint-placeholder-count="5">
+                <span style="height:38px;border-radius:10px;display:flex;align-items:center;gap:12px;padding:0 12px;background:{{ i.bg }};color:{{ i.ink }};">{{ i.icon }}<span style="font-size:13px;">{{ i.label }}</span></span>
+              </sc-for>
+            </div>
+          </div>
+          <div style="flex:1;"></div>
+        </div>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg);">rail 208 · main 1092 at 1300 · 560 at 768</span>
+        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">The clearest row, and the most expensive. 146px comes out of every page, which at 768 leaves Home 560px. It only survives md with a collapse toggle, and collapsed it’s today’s icon rail again. That means a second control and a remembered state, and the unlabelled rail is still the one people see at the width where room matters most.</p>
+      </div>
+
+      <div id="1b" style="width:420px;flex:none;display:flex;flex-direction:column;gap:12px;border:1px solid var(--border);border-radius:12px;background:var(--surface-sunken);padding:18px;">
+        <div style="display:flex;align-items:center;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 8px;">1b</span><span style="font-size:14px;font-weight:600;">62px rail, drawn label on hover and focus</span></div>
+        <div style="height:372px;display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--bg);position:relative;">
+          <div style="width:62px;flex:none;background:var(--surface-rail);border-right:1px solid var(--border);padding:14px 0;display:flex;flex-direction:column;align-items:center;">
+            <div style="margin-bottom:20px;display:flex;">{{ markRail }}</div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+              <sc-for list="{{ itemsB }}" as="i" hint-placeholder-count="5">
+                <span style="width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:{{ i.bg }};color:{{ i.ink }};">{{ i.icon }}</span>
+              </sc-for>
+            </div>
+          </div>
+          <span style="position:absolute;left:70px;top:163px;height:28px;display:flex;align-items:center;padding:0 10px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface-raised);font-size:12.5px;color:var(--fg);box-shadow:0 10px 24px rgba(0,0,0,.4);white-space:nowrap;">Commanders</span>
+        </div>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg);">rail 62 · main 1238 at 1300 · 706 at 768 (unchanged)</span>
+        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">Costs no width, but you still have to point at an icon to learn what it is. That’s quicker than today, but it’s the same finding. A tablet at md can’t hover, so it gets nothing. A keyboard reader tabs through five slots to read five words. In first run the label and the lock note would both open off the same slot, at the same spot.</p>
+      </div>
+
+      <div id="1c" style="width:420px;flex:none;display:flex;flex-direction:column;gap:12px;border:1px solid var(--accent);border-radius:12px;background:var(--surface-sunken);padding:18px;">
+        <div style="display:flex;align-items:center;gap:10px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--bg);background:var(--accent);border-radius:5px;padding:2px 8px;">1c</span><span style="font-size:14px;font-weight:600;">Labelled rail: the tab bar’s slot · chosen</span></div>
+        <div style="height:372px;display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--bg);">
+          <div style="width:88px;flex:none;background:var(--surface-rail);border-right:1px solid var(--border);padding:14px 0;display:flex;flex-direction:column;align-items:center;">
+            <div style="margin-bottom:20px;display:flex;">{{ markRail }}</div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+              <sc-for list="{{ itemsB }}" as="i" hint-placeholder-count="5">
+                <span style="width:72px;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:{{ i.bgC }};color:{{ i.ink }};">{{ i.icon }}<span style="font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:12px;letter-spacing:0.06em;">{{ i.label }}</span></span>
+              </sc-for>
+            </div>
+          </div>
+          <div style="flex:1;"></div>
+        </div>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg);">rail 88 · main 1212 at 1300 · 680 at 768</span>
+        <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">Every name is on screen at every desktop width, for mouse, keyboard and touch alike, with nothing to time, toggle or remember. The slot is the phone’s, so the two widths match because they’re the same thing. It costs 26px, and nowhere does that change a layout (<a href="#W1">W1</a>). It’s one constant to move.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="S1" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:12px;max-width:1180px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 8px;">S1</span>
+      <span style="font-size:15px;font-weight:600;">Every slot, every state it already has · 2×</span>
+      <span style="font-size:13px;color:var(--fg-muted);max-width:900px;">Each cell is the full 88px rail width. These are today’s states, carried over unchanged. Only the slot’s box changes: it goes from 38 × 38 at radius 10 to 72 × 52 at radius 12. The pip is drawn centred, at the tab slot’s bottom: 1px. Its off-centre bug (H5) is fixed separately.</span>
+    </div>
+    <div style="display:flex;gap:40px;align-items:flex-start;">
+      <div style="zoom:2;display:flex;flex-direction:column;gap:4px;">
+        <div style="display:grid;grid-template-columns:62px repeat(5,88px);gap:4px;font-family:'IBM Plex Mono',monospace;font-size:6px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-faint);">
+          <span></span><span style="text-align:center;">rest</span><span style="text-align:center;">hover</span><span style="text-align:center;">active</span><span style="text-align:center;">pending</span><span style="text-align:center;">focus</span>
+        </div>
+        <sc-for list="{{ items }}" as="i" hint-placeholder-count="5">
+          <div style="display:grid;grid-template-columns:62px repeat(5,88px);gap:4px;align-items:center;">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:6px;color:var(--fg-faint);">{{ i.label }}</span>
+            <span style="height:64px;background:var(--surface-rail);display:flex;align-items:center;justify-content:center;"><span style="width:72px;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--fg-faint);">{{ i.icon }}<span style="font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:12px;letter-spacing:0.06em;">{{ i.label }}</span></span></span>
+            <span style="height:64px;background:var(--surface-rail);display:flex;align-items:center;justify-content:center;"><span style="width:72px;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:var(--elevated-hover);color:var(--fg-faint);">{{ i.icon }}<span style="font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:12px;letter-spacing:0.06em;">{{ i.label }}</span></span></span>
+            <span style="height:64px;background:var(--surface-rail);display:flex;align-items:center;justify-content:center;"><span style="width:72px;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:var(--elevated);color:var(--fg);">{{ i.icon }}<span style="font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:12px;letter-spacing:0.06em;">{{ i.label }}</span></span></span>
+            <span style="height:64px;background:var(--surface-rail);display:flex;align-items:center;justify-content:center;"><span style="position:relative;width:72px;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:var(--elevated-hover);color:var(--fg);">{{ i.icon }}<span style="font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:12px;letter-spacing:0.06em;">{{ i.label }}</span><span style="position:absolute;left:0;right:0;bottom:1px;display:flex;justify-content:center;">{{ pip }}</span></span></span>
+            <span style="height:64px;background:var(--surface-rail);display:flex;align-items:center;justify-content:center;"><span style="width:72px;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--fg-faint);outline:2px solid var(--accent);outline-offset:2px;">{{ i.icon }}<span style="font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:12px;letter-spacing:0.06em;">{{ i.label }}</span></span></span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="width:340px;flex:none;display:flex;flex-direction:column;gap:12px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Slot · measured</span>
+        <sc-for list="{{ specs }}" as="s" hint-placeholder-count="8">
+          <div style="display:grid;grid-template-columns:96px minmax(0,1fr);gap:10px;font-size:12px;line-height:1.55;border-bottom:1px solid var(--border);padding-bottom:8px;"><span style="font-family:'IBM Plex Mono',monospace;color:var(--fg);">{{ s.k }}</span><span style="color:var(--fg-muted);text-wrap:pretty;">{{ s.v }}</span></div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:40px;align-items:flex-start;margin-top:12px;">
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">First run · RailLock · 2×</span>
+        <div style="zoom:2;display:flex;gap:8px;align-items:flex-start;">
+          <sc-for list="{{ lockVariants }}" as="v" hint-placeholder-count="2">
+            <div style="display:flex;flex-direction:column;gap:4px;align-items:center;">
+              <div style="width:88px;background:var(--surface-rail);border-right:1px solid var(--border);padding:8px 0 10px;display:flex;flex-direction:column;align-items:center;gap:4px;">
+                <span style="width:72px;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:var(--elevated);color:var(--fg);">{{ icons.home }}<span style="font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:12px;letter-spacing:0.06em;">Home</span></span>
+                <div style="width:80px;display:flex;flex-direction:column;align-items:center;gap:4px;border:1px solid var(--border);border-radius:14px;background:var(--surface-sunken);padding:4px 3px 9px;">
+                  <sc-for list="{{ v.slots }}" as="l">
+                    <span style="width:72px;height:52px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--fg-locked);box-shadow:{{ l.ring }};">{{ l.icon }}<span style="font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:12px;letter-spacing:0.06em;">{{ l.label }}</span></span>
+                  </sc-for>
+                  <div style="margin-top:3px;display:flex;flex-direction:column;align-items:center;gap:5px;">{{ padlock }}<span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">Locked</span></div>
+                </div>
+              </div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:6px;color:var(--fg-faint);">{{ v.name }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="width:420px;flex:none;display:flex;flex-direction:column;gap:12px;padding-top:26px;">
+        <sc-for list="{{ lockSpecs }}" as="s" hint-placeholder-count="5">
+          <div style="display:grid;grid-template-columns:96px minmax(0,1fr);gap:10px;font-size:12px;line-height:1.55;border-bottom:1px solid var(--border);padding-bottom:8px;"><span style="font-family:'IBM Plex Mono',monospace;color:var(--fg);">{{ s.k }}</span><span style="color:var(--fg-muted);text-wrap:pretty;">{{ s.v }}</span></div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <section id="F1" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:12px;max-width:1180px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 8px;">F1</span>
+      <span style="font-size:15px;font-weight:600;">1300 · Home, Commanders pressed</span>
+      <span style="font-size:13px;color:var(--fg-muted);max-width:900px;">This is P1 from the navigation-pending handoff on the labelled rail. Main goes from 1238 to 1212. Home still splits into two columns, because that’s a viewport query at 1180. The left column goes from 850 to 824 and each hero card from 418 to 405. Nothing wraps or truncates that didn’t before.</span>
+    </div>
+    <div style="display:flex;gap:40px;align-items:flex-start;">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Labelled · 88</span>
+        <div data-screen-label="F1 · 1300 labelled" style="width:1300px;height:830px;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;flex:none;"><dc-import name="ShellFrame" vw="{{ 1300 }}" rail="labelled" pending="nav" pip="{{ pip }}" mark-rail="{{ markRail }}" icons="{{ icons }}" hint-size="1300px,830px" style="width:100%;height:100%;"></dc-import></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Today · 62, for comparison</span>
+        <div data-screen-label="F1 · 1300 today" style="width:1300px;height:830px;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;flex:none;"><dc-import name="ShellFrame" vw="{{ 1300 }}" rail="today" pending="nav" pip="{{ pip }}" mark-rail="{{ markRail }}" icons="{{ icons }}" hint-size="1300px,830px" style="width:100%;height:100%;"></dc-import></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="F2" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:12px;max-width:1180px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 8px;">F2</span>
+      <span style="font-size:15px;font-weight:600;">768 · the narrowest desktop</span>
+      <span style="font-size:13px;color:var(--fg-muted);max-width:900px;">Main goes from 706 to 680. Home is one column here, as it is everywhere under 1180, so the hero cards go from 330 to 317, the resume rows from 674 to 648, and Commitments drops below them as it does today. The rail’s nav column is 349px tall (73px to the first slot, then five 52px slots), with the account control pinned to the foot.</span>
+    </div>
+    <div style="display:flex;gap:40px;align-items:flex-start;">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Labelled · 88</span>
+        <div data-screen-label="F2 · 768 labelled" style="width:768px;height:1024px;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;flex:none;"><dc-import name="ShellFrame" vw="{{ 768 }}" rail="labelled" pip="{{ pip }}" mark-rail="{{ markRail }}" icons="{{ icons }}" hint-size="768px,1024px" style="width:100%;height:100%;"></dc-import></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">Today · 62</span>
+        <div data-screen-label="F2 · 768 today" style="width:768px;height:1024px;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;flex:none;"><dc-import name="ShellFrame" vw="{{ 768 }}" rail="today" pip="{{ pip }}" mark-rail="{{ markRail }}" icons="{{ icons }}" hint-size="768px,1024px" style="width:100%;height:100%;"></dc-import></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="W1" style="display:flex;flex-direction:column;gap:18px;max-width:1180px;">
+    <div style="display:flex;align-items:baseline;gap:12px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 8px;">W1</span>
+      <span style="font-size:15px;font-weight:600;">The content column</span>
+      <span style="font-size:13px;color:var(--fg-muted);">main is flex-1 beside the rail (shell.tsx), so it gives up exactly 26px at every width.</span>
+    </div>
+    <div style="border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;">
+      <div style="display:grid;grid-template-columns:120px 120px 120px minmax(0,1fr);gap:0 20px;padding:10px 18px;background:var(--surface-sunken);border-bottom:1px solid var(--border);font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">
+        <span>Viewport</span><span>Main today</span><span>Main new</span><span>What it touches</span>
+      </div>
+      <sc-for list="{{ widths }}" as="w" hint-placeholder-count="5">
+        <div style="display:grid;grid-template-columns:120px 120px 120px minmax(0,1fr);gap:0 20px;padding:11px 18px;border-bottom:1px solid var(--border);align-items:baseline;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg);">{{ w.vw }}</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg-muted);">{{ w.today }}</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:var(--fg);">{{ w.next }}</span>
+          <span style="font-size:12.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">{{ w.what }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <p style="margin:0;font-size:12.5px;line-height:1.6;color:var(--fg-muted);max-width:980px;text-wrap:pretty;"><b style="color:var(--fg);font-weight:600;">Breakpoints hold.</b> The app’s splits (Home and its resume rows at 1180, the row inset at 1000) are viewport queries. The rail doesn’t move them; it narrows the columns on each side by 26px. <b style="color:var(--fg);font-weight:600;">Column arithmetic moves.</b> The commanders, decks and deck-page handoffs all subtract 62. Add <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;">--rail-w: 88px</span> to globals.css next to --tabbar-h, have the rail and those calculations read it, and the next change to the rail is one line. One check before merging: any page that puts a fixed column beside its list at md loses the 26px from the list, not from the fixed column. For the 262px filter column at 768, that’s 418px of list instead of 444.</p>
+  </section>
+
+  <section id="L1" style="display:flex;flex-direction:column;gap:18px;">
+    <div style="display:flex;align-items:baseline;gap:12px;max-width:1180px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 8px;">L1</span>
+      <span style="font-size:15px;font-weight:600;">First run · Collection hovered, its note open · 1×</span>
+      <span style="font-size:13px;color:var(--fg-muted);max-width:900px;">The note is unchanged. It still opens on hover, focus or click, and it’s still placed at the rail’s right edge + 12, with its caret on the slot’s measured centre (railPlace). It moves 26px right and 21px down with the rail and slot, and no code change is needed for that.</span>
+    </div>
+    <div style="display:flex;gap:40px;align-items:flex-start;">
+      <sc-for list="{{ lockFrames }}" as="f" hint-placeholder-count="2">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg-faint);">{{ f.name }}</span>
+          <div style="position:relative;width:560px;height:520px;border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;background:var(--bg);display:flex;">
+            <div style="width:{{ f.railW }};flex:none;height:100%;background:var(--surface-rail);border-right:1px solid var(--border);padding:14px 0;display:flex;flex-direction:column;align-items:center;">
+              <div style="margin-bottom:20px;display:flex;">{{ markRail }}</div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+                <span style="width:{{ f.slotW }};height:{{ f.slotH }};border-radius:{{ f.radius }};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:var(--elevated);color:var(--fg);">{{ icons.home }}<sc-if value="{{ f.labelled }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:12px;letter-spacing:0.06em;">Home</span></sc-if></span>
+                <div style="width:{{ f.wellW }};display:flex;flex-direction:column;align-items:center;gap:4px;border:1px solid var(--border);border-radius:{{ f.wellR }};background:var(--surface-sunken);padding:4px 0 9px;">
+                  <sc-for list="{{ lockItems }}" as="l">
+                    <span style="width:{{ f.slotW }};height:{{ f.slotH }};border-radius:{{ f.radius }};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--fg-locked);">{{ l.icon }}<sc-if value="{{ f.labelled }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;line-height:12px;letter-spacing:0.06em;">{{ l.label }}</span></sc-if></span>
+                  </sc-for>
+                  <div style="margin-top:3px;display:flex;flex-direction:column;align-items:center;gap:5px;">{{ padlock }}<span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--fg-locked);">Locked</span></div>
+                </div>
+              </div>
+            </div>
+            <div style="flex:1;min-width:0;padding:26px 28px 0;">
+              <h1 style="margin:0;font-family:'Cinzel',serif;font-weight:700;font-size:27px;line-height:1;color:var(--fg);">Welcome to The 99</h1>
+              <p style="margin:12px 0 0;font-size:12.5px;color:var(--fg-muted);display:flex;gap:8px;align-items:center;">{{ padlock }}Collection, Commanders, Discover and Decks open once your cards are in.</p>
+            </div>
+            <div style="position:absolute;left:{{ f.noteX }};top:{{ f.noteY }};width:268px;display:flex;flex-direction:column;gap:8px;border-radius:10px;border:1px solid var(--border-strong);background:var(--surface-raised);padding:14px 16px 16px;box-shadow:0 18px 40px rgba(0,0,0,.45);">
+              <span style="position:absolute;top:28px;left:-6px;width:10px;height:10px;transform:rotate(45deg);border-left:1px solid var(--border-strong);border-bottom:1px solid var(--border-strong);background:var(--surface-raised);"></span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--fg-faint);">Locked</span>
+              <p style="margin:0;font-size:13px;line-height:1.5;color:var(--fg-body);text-wrap:pretty;"><span style="color:var(--fg);">Collection</span> opens once your cards are in. So do Commanders, Discover and Decks.</p>
+              <span style="margin-top:2px;align-self:flex-start;height:32px;display:flex;align-items:center;padding:0 13px;border-radius:8px;border:1px solid var(--border-strong);font-size:12.5px;color:var(--fg);">Go to step 1</span>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section id="K1" style="display:flex;flex-direction:column;gap:14px;max-width:1180px;">
+    <div style="display:flex;align-items:baseline;gap:12px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 8px;">K1</span>
+      <span style="font-size:15px;font-weight:600;">Keyboard, touch, screen readers</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;">
+      <sc-for list="{{ access }}" as="t" hint-placeholder-count="6">
+        <div style="border:1px solid var(--border);border-radius:10px;padding:13px 15px;background:var(--surface);display:flex;flex-direction:column;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--fg);">{{ t.k }}</span><span style="font-size:12.5px;line-height:1.6;color:var(--fg-muted);text-wrap:pretty;">{{ t.v }}</span></div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section id="E1" style="display:flex;flex-direction:column;gap:14px;max-width:1180px;">
+    <div style="display:flex;align-items:baseline;gap:12px;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--bg);background:var(--fg-body);border-radius:5px;padding:2px 8px;">E1</span>
+      <span style="font-size:15px;font-weight:600;">What changes in code</span>
+    </div>
+    <div style="border:1px solid var(--border-strong);border-radius:12px;overflow:hidden;">
+      <sc-for list="{{ eng }}" as="e" hint-placeholder-count="7">
+        <div style="display:grid;grid-template-columns:260px minmax(0,1fr);gap:0 20px;padding:11px 18px;border-bottom:1px solid var(--border);align-items:baseline;">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg);">{{ e.k }}</span>
+          <span style="font-size:12.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">{{ e.v }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;],&quot;default&quot;:&quot;amonkhet&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;still&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const theme = this.props.theme ?? "amonkhet";
+    const still = this.props.still ?? false;
+    const h = React.createElement;
+    const svg = (...kids) => h("svg", { width: 19, height: 19, viewBox: "0 0 20 20", fill: "none", stroke: "currentColor", strokeWidth: 1.5, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true }, ...kids);
+    const icons = {
+      home: svg(h("path", { d: "M3 9.2 10 3.6l7 5.6V16a1 1 0 0 1-1 1h-3.5v-4.2h-5V17H4a1 1 0 0 1-1-1z" })),
+      collection: svg(...[[3.2, 3.2], [11, 3.2], [3.2, 11], [11, 11]].map(([x, y], i) => h("rect", { key: i, x, y, width: 5.8, height: 5.8, rx: 1.2 }))),
+      commanders: svg(h("path", { d: "M3 14.5 4.4 6l3.2 3.6L10 4l2.4 5.6L15.6 6 17 14.5z" }), h("path", { d: "M3 16.6h14" })),
+      discover: svg(h("circle", { cx: 10, cy: 10, r: 6.8 }), h("path", { d: "M10 6.4 12.8 10 10 13.6 7.2 10z" })),
+      decks: svg(h("rect", { x: 6.6, y: 3.2, width: 10, height: 13, rx: 1.6 }), h("path", { d: "M4.2 5.4A1.6 1.6 0 0 0 3.4 6.8v8.6a1.6 1.6 0 0 0 1.6 1.6h8.2" })),
+    };
+    const pip = h("span", { "aria-hidden": true, style: { display: "block", animation: still ? "none" : "pipIn 160ms ease-out 120ms both" } },
+      h("span", { style: { display: "block", width: 4, height: 4, background: "var(--fg)", transform: "rotate(45deg)", animation: still ? "none" : "dots 1.2s ease-in-out -320ms infinite" } }));
+    const padlock = h("svg", { width: 12, height: 14, viewBox: "0 0 12 14", fill: "none", stroke: "var(--fg-locked)", strokeWidth: 1.5, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true, style: { flex: "none" } },
+      h("rect", { x: 0.75, y: 6.25, width: 10.5, height: 7, rx: 2.25 }), h("path", { d: "M3.25 6.75V3.5a2.75 2.75 0 0 1 5.5 0v3.25" }));
+    // Crowned99 rail-62, transcribed in the navigation-pending handoff from marks.tsx.
+    const box = ({ small, large, gap }) => { const s = small * Math.SQRT2, l = large * Math.SQRT2; return { width: s + gap + l + gap + s, height: l, centers: [s / 2, s + gap + l / 2, s + gap + l + gap + s / 2] }; };
+    const diamonds = (g, fill, offsetX = 0) => { const { centers, height } = box(g); const cy = height / 2; const sides = [g.small, g.large, g.small];
+      return h("g", null, ...centers.map((c, i) => { const cx = c + offsetX, side = sides[i]; return h("rect", { key: i, x: cx - side / 2, y: cy - side / 2, width: side, height: side, transform: `rotate(45, ${cx}, ${cy})`, fill }); })); };
+    const crowned = ({ s, l, size, weight, gap, baselineGap, bottomPad, ls }) => { const g = { small: s, large: l, gap }; const { width: cw, height: ch } = box(g); const tw = Math.max(cw, size * 1.15) + 4; const ty = ch + baselineGap; const th = ty + bottomPad;
+      return h("svg", { role: "img", "aria-label": "The 99", viewBox: `0 0 ${tw} ${th}`, width: tw, height: th, style: { overflow: "visible", display: "block" } }, diamonds(g, "var(--accent)", tw / 2 - cw / 2), h("text", { x: tw / 2, y: ty, textAnchor: "middle", fontFamily: "'Cinzel', serif", fontWeight: weight, fontSize: size, letterSpacing: ls, fill: "var(--fg)" }, "99")); };
+    const markRail = crowned({ s: 6, l: 8.5, size: 23, weight: 900, gap: 3, baselineGap: 22, bottomPad: 5, ls: "-0.01em" });
+
+    const items = [["home", "Home"], ["collection", "Collection"], ["commanders", "Commanders"], ["discover", "Discover"], ["decks", "Decks"]].map(([k, label]) => ({ k, label, icon: icons[k] }));
+    const itemsA = items.map((i) => ({ ...i, bg: i.k === "home" ? "var(--elevated)" : "transparent", ink: i.k === "home" ? "var(--fg)" : "var(--fg-faint)" }));
+    const itemsB = items.map((i) => ({ ...i, bg: i.k === "home" ? "var(--elevated)" : i.k === "commanders" ? "var(--elevated-hover)" : "transparent", bgC: i.k === "home" ? "var(--elevated)" : "transparent", ink: i.k === "home" ? "var(--fg)" : "var(--fg-faint)" }));
+    const lockItems = items.filter((i) => i.k !== "home");
+    const ring = "0 0 0 2px var(--accent)";
+    const lockVariants = [
+      { name: "rest · hover · note open", slots: lockItems.map((l) => ({ ...l, ring: "none" })) },
+      { name: "Commanders focused", slots: lockItems.map((l) => ({ ...l, ring: l.k === "commanders" ? ring : "none" })) },
+    ];
+    const lockFrames = [
+      { name: "Labelled · 88", labelled: true, railW: "88px", slotW: "72px", slotH: "52px", radius: "12px", wellW: "80px", wellR: "14px", noteX: "100px", noteY: "126px" },
+      { name: "Today · 62", labelled: false, railW: "62px", slotW: "38px", slotH: "38px", radius: "10px", wellW: "48px", wellR: "12px", noteX: "74px", noteY: "105px" },
+    ];
+
+    const hoverStates = [
+      { name: "hover · after 400ms", icon: icons.commanders, bg: "var(--elevated-hover)", ink: "var(--fg-faint)", outline: "none", label: true, text: "Commanders", pip: false },
+      { name: "keyboard focus · at once", icon: icons.commanders, bg: "transparent", ink: "var(--fg-faint)", outline: "2px solid var(--accent)", label: true, text: "Commanders", pip: false },
+      { name: "active, hovered", icon: icons.home, bg: "var(--elevated)", ink: "var(--fg)", outline: "none", label: true, text: "Home", pip: false },
+      { name: "pressed · label closes, pip takes over", icon: icons.commanders, bg: "var(--elevated-hover)", ink: "var(--fg)", outline: "none", label: false, text: "", pip: true },
+    ];
+    const labelSpecs = [
+      { k: "box", v: "28px tall, 0 10px padding, radius 8. --surface-raised on a 1px --border-strong, with a 0 10 24 / .4 shadow: the lock note’s materials at name-tag size." },
+      { k: "text", v: "IBM Plex Sans 12.5px / 500, --fg, one line, never wraps. The five words from ITEMS. The widest, “Commanders”, gives a tag about 96px wide." },
+      { k: "place", v: "left = the rail’s right edge + 8, measured like railPlace. Centred vertically on the slot’s measured centre." },
+      { k: "layer", v: "Fixed, inside the rail’s z-30 stacking context, like the lock note, so it clears page content and stays under the menus and modals at 40." },
+      { k: "slot", v: "Unchanged from today: 38 × 38, radius 10, with the same rest, hover, active and pending treatment. The label never changes the slot’s colours." },
+      { k: "a11y", v: "aria-hidden. The Link keeps aria-label as its name, so a screen reader hears each name once. title is removed." },
+      { k: "motion", v: "Opacity 0 → 1 over 100ms. No exit fade, no movement. Under reduced motion it appears with no fade." },
+    ];
+    const timing2 = [
+      { k: "enter · 400ms", v: "Pointer enters a slot with no label showing. The label opens after 400ms, so a pointer passing over the rail on its way somewhere doesn’t trigger it." },
+      { k: "move · 0ms", v: "While a label is showing, or for 300ms after one closed, the next slot’s label opens at once. Moving down the rail, one label follows the pointer." },
+      { k: "leave · 100ms", v: "It closes 100ms after the pointer leaves both slot and label. That covers the 8px gap, so the pointer can rest on the label (WCAG 1.4.13, hoverable)." },
+      { k: "press", v: "pointerdown closes it. From there the slot’s pending fill and pip (navigation-pending P1) say what’s happening. The label doesn’t sit over a page that’s about to change." },
+      { k: "focus", v: "Keyboard focus (:focus-visible) opens it at once, with no delay. Tabbing down the rail moves it slot by slot. Blur closes it. A mouse click’s focus doesn’t open it." },
+      { k: "Escape", v: "Closes it without moving focus (WCAG 1.4.13, dismissible). It stays closed until the pointer or focus moves to another slot." },
+      { k: "scroll · resize", v: "Closes it. It’s placed against a measured slot, so it’s never left floating somewhere stale." },
+      { k: "touch", v: "Never. A (hover: none) device doesn’t mount it at all, because its rail already prints every name (R1)." },
+    ];
+    const eng2 = [
+      { k: "First run · locked slots", v: "No label on a locked slot. Its note already opens on hover, focus or click, and opens with the slot’s name (“Collection opens once…”). Two popovers from one slot is the collision D1 1b warned of. Home, the one live slot, gets the label as usual. L1’s 62 frame is the pointer rail in first run, unchanged." },
+      { k: "Which rail · globals.css", v: "html { --rail-w: 62px; } @media (hover: none) { html { --rail-w: 88px; } }. It’s based on the primary input, so a touchscreen laptop with a trackpad gets the pointer rail and taps still navigate. If a device’s primary input changes (an iPad with a trackpad attached), the page reflows by 26px once." },
+      { k: "nav.tsx · rail NavSlot", v: "Keeps today’s 38px classes. Under [@media(hover:none)] it takes R1’s 72 × 52 / radius 12 / flex-col gap-3 and shows its label <span> (hidden otherwise, aria-hidden either way). pipBottom is 2 on the pointer rail and 1 on the touch rail. aria-label stays and title goes." },
+      { k: "nav.tsx · RailLabel (new)", v: "One fixed, aria-hidden element per rail, mounted only when matchMedia('(hover: hover)') matches. A useRailLabel hook owns the open slot, the 400 / 0 / 100 / 300ms timings from T2, and Escape, pointerdown, scroll and resize. Slots report pointerenter, pointerleave, focus and blur to it, and locked slots never do." },
+      { k: "nav.tsx · RailLock", v: "The well is 48px with 38px slots on the pointer rail, and R1’s 80 / 72 × 52 under (hover: none). The note and its placement are unchanged on both." },
+      { k: "nav.tsx · ITEMS comment", v: "Record it: icons stay; a pointer gets a drawn label on hover and focus; touch gets an 88px rail with labels printed. The 62px rail stands where a pointer can ask. Cite this handoff." },
+      { k: "Page column arithmetic", v: "As R1: read --rail-w, never a literal 62. Pointer layouts are unchanged from today. Touch layouts lose 26px (R1’s W1)." },
+      { k: "Tests", v: "No rail <a> has a title. The label element is aria-hidden. At (hover: none) the rail renders visible labels and no RailLabel. Locked slots never open RailLabel. Escape closes it without moving focus." },
+      { k: "Phone", v: "Untouched. Under md the tab bar replaces the rail whatever the input, as today." },
+    ];
+    const rules = [
+      { k: "Pointer: 62px, label on ask", v: "With a pointer, the rail is today’s, and the content keeps all its width. A drawn label opens beside a slot on hover (after 400ms, then instantly along the rail) and on keyboard focus (at once). title goes." },
+      { k: "Touch: 88px, labels printed", v: "(hover: none) gets R1’s labelled rail: the tab bar’s slot, icon over its 9px mono name, 72 × 52. A tablet at md has nothing to hover with, so every name is on screen." },
+      { k: "Content width", v: "Pointer: 1238 at 1300, 706 at 768, as today. Touch: 1212 and 680. Breakpoints don’t move. Pages read --rail-w and never a literal 62." },
+    ];
+    const rulesR1 = [
+      { k: "Always labelled, never revealed", v: "Every rail slot shows its icon over its name, in the tab bar’s slot form: 19px icon, 3px gap, 9px mono at 0.06em. There’s no hover label, no focus label and no toggle. The browser’s title tooltip goes." },
+      { k: "88px rail, 72 × 52 slots", v: "“Commanders” and “Collection” are both 59.4px at 9px / 0.06em. That leaves 6.3px either side in a 72px slot, the narrowest air in the set. The rail is 72 + 2 × 7.5, plus its 1px hairline: 88px." },
+      { k: "States carried, not redrawn", v: "Active keeps --elevated, hover --elevated-hover, and pending --elevated-hover + --fg + the pip. Locked keeps --fg-locked, no fill, and the sunken well with its padlock foot. The label takes the slot’s own colour in every state, so a label is never coloured." },
+    ];
+    const specs = [
+      { k: "rail", v: "88px wide, border-box, --surface-rail, 1px --border right, 14px top and bottom padding. Crowned99 rail-62 unchanged, with 20px under it." },
+      { k: "slot", v: "72 × 52, radius 12, a column with 3px gap, centred. 4px between slots, as today." },
+      { k: "label", v: "IBM Plex Mono 9px, 0.06em, 12px line. currentColor. Not truncated and not uppercase. The five words from ITEMS, nothing new." },
+      { k: "rest", v: "No fill. --fg-faint icon and label (≈4.7:1 on --surface-rail)." },
+      { k: "hover", v: "--elevated-hover fill, ink unchanged." },
+      { k: "active", v: "--elevated fill, --fg icon and label. aria-current=page." },
+      { k: "pending", v: "--elevated-hover + --fg. The pip is centred (left 50%, translateX −50%) at bottom 1px. That leaves 2.4px between the pip’s top and the label’s descender line, the same as the tab slot." },
+      { k: "focus", v: "The global :focus-visible ring, 2px --accent at a 2px offset. The 7.5px rail margin holds it." },
+    ];
+    const lockSpecs = [
+      { k: "well", v: "80px wide (48 today), 1px --border, radius 14, --surface-sunken, padding 4 / 3 / 9. It sits 3.5px in from the rail’s edges. Home stays above it, outside." },
+      { k: "locked slot", v: "72 × 52, radius 12, no fill on hover or when its note is open, as today. Icon and label are --fg-locked." },
+      { k: "focus", v: "Unchanged: a 2px --accent box-shadow ring. The well’s 3px padding holds it." },
+      { k: "foot", v: "Padlock (rail size) and LOCKED, 8.5px mono, --fg-locked. Unchanged." },
+      { k: "no invitation", v: "The label is the noun the note opens with: “Collection opens once…”. It sits in --fg-locked inside a sunken well that ends in a padlock and LOCKED. It never gets a fill or --fg ink, so it can’t look like a live slot. The phone already draws its locked labels this way." },
+    ];
+    const widths = [
+      { vw: "1300", today: "1238", next: "1212", what: "Home is two columns. The left goes from 850 to 824 and the hero cards from 418 to 405. Resume rows stay paired." },
+      { vw: "1180", today: "1118", next: "1092", what: "Home’s split threshold. The left column goes from 730 to 704 and the hero cards from 358 to 345. That’s the tightest the split gets." },
+      { vw: "1179", today: "1117", next: "1091", what: "One column. Commitments goes below. No change in order." },
+      { vw: "1000", today: "938", next: "912", what: "Resume rows switch to the 116px text inset. Their name and stamp have 26px less to share, and the name was already set to ellipsize." },
+      { vw: "768", today: "706", next: "680", what: "The narrowest desktop. Hero cards go from 330 to 317, resume rows from 674 to 648. Header: “Welcome back”, Update collection and New deck still fit on one row." },
+    ];
+    const access = [
+      { k: "Keyboard", v: "The label is always on screen, so focus has nothing to reveal. Tab order is unchanged: mark, Home, Collection, Commanders, Discover, Decks, account. The visible focus ring surrounds the icon and its name." },
+      { k: "Touch at md and up", v: "A tablet sees what a mouse sees, the labelled rail. There’s no hover-only state anywhere on it. Locked slots keep their click-to-open note, which already works by tap." },
+      { k: "Accessible name", v: "Live slots drop aria-label and title, and the visible label becomes the name. Locked slots keep aria-label “Collection, locked”. It contains the visible text, so label-in-name (WCAG 2.5.3) holds." },
+      { k: "No double tooltip", v: "title is removed from NavSlot entirely. The brief asked that the native tooltip never shows alongside a drawn label. Now there’s no drawn tooltip either." },
+      { k: "Zoom and reflow", v: "Labels are text, not images, and they’re fixed at 9px like the phone’s. At 200% zoom a 1300 window is under md, so the phone tab bar takes over and the rail never has to reflow." },
+      { k: "Reduced motion", v: "Nothing new moves. The pip keeps its reduced-motion rule from globals.css: still, at full ink, with the 120ms delay kept." },
+    ];
+    const eng = [
+      { k: "nav.tsx · NavRail <aside>", v: "w-[62px] → w-[var(--rail-w)]." },
+      { k: "nav.tsx · rail NavSlot", v: "h-[38px] w-[38px] rounded-[10px] → h-[52px] w-[72px] rounded-[12px] flex-col gap-[3px], plus a label <span> with the tab bar’s classes (font-mono text-[9px] tracking-[0.06em]). pipBottom 2 → 1." },
+      { k: "nav.tsx · NavSlot props", v: "Drop the `name` prop and with it title= and aria-label=. Both chromes now carry a visible label, so the comment above NavSlotProps goes too." },
+      { k: "nav.tsx · RailLock", v: "Well w-[48px] rounded-[12px] → w-[80px] rounded-[14px], px-[3px]. Locked button h-[52px] w-[72px] rounded-[12px] flex-col gap-[3px], with the label span. Note placement code is unchanged." },
+      { k: "nav.tsx · ITEMS comment", v: "Rewrite the paragraph that says a 62px rail with labels is not an option. Record that the rail widened to 88 to carry labels, icons kept, and cite this handoff." },
+      { k: "globals.css", v: "Add html { --rail-w: 88px; } beside --tabbar-h, with the same note: it’s geometry, not theme." },
+      { k: "Page column arithmetic", v: "Commanders, decks and the deck page subtract the rail by hand. Point them at --rail-w. Re-check any md layout with a fixed side column (W1)." },
+      { k: "Tests", v: "Rail slot tests that query by aria-label still pass, because the visible text is the name. Add one assertion that no rail <a> carries a title attribute." },
+    ];
+    const liveAll = items.map((i) => ({ ...i, bg: i.k === "home" ? "var(--elevated)" : "transparent", ink: i.k === "home" ? "var(--fg)" : "var(--fg-faint)" }));
+    const shortFrames = [
+      { name: "Unlocked · short touch rail", screen: "V1 · 852×393 unlocked", live: liveAll, locked: false, unlocked: true, tally: "column 341 + 8 · fits from 349px tall" },
+      { name: "First run · same rule", screen: "V1 · 852×393 first run", live: liveAll.slice(0, 1), locked: true, unlocked: false, tally: "column 384 + 8 · fits from 392px tall" },
+    ];
+    const shortSpecs = [
+      { k: "threshold · < 460px tall", v: "@media (hover: none) and (max-height: 459.98px). The full touch rail needs 393 unlocked and 447 in first run, plus the 8px minimum above the account control: 401 and 455. One threshold, set to the larger, keeps the two from changing form at different heights." },
+      { k: "slot · 72 × 44", v: "52 → 44, radius 12. Icon 19, gap 3 → 2, label 9px / 12px line, the same five words. 5.5px above and below. 44 is the touch floor, so it doesn’t tighten further. Gap between slots stays 4. States, fills and the focus ring are unchanged." },
+      { k: "rail · 88, padding 10", v: "Width unchanged. Top and bottom padding 14 → 10, and 20 → 16 under the mark. Unlocked column: 10 + 39 + 16 + 236 + 8 + 30 + 10 = 349." },
+      { k: "first run · same rule", v: "The well follows the slot: 80px wide, padding 4 / 3 / 5, four 44px slots. The padlock and LOCKED foot keep both elements, with margin 3 → 0 and gap 5 → 4. Well = 1 + 4 + 188 + 4 + 28 (foot) + 5 + 1 = 231. Home 44 + 4 + well 231 = 279 of nav. Column 10 + 39 + 16 + 279 + 8 + 30 + 10 = 392." },
+      { k: "backstop · nav scrolls", v: "Under the threshold, everything between the mark and the account control is one overflow-y: auto region (flex: 1, min-height: 0, 8px bottom padding). The mark and the account control are flex: none outside it. That region only scrolls below 349 unlocked or 392 in first run. The account control is never below the fold." },
+      { k: "what doesn’t change", v: "No new copy. The 88px width and --rail-w hold, so main is 764 at 852 wide. The lock note is placed by railPlace against the measured slot, so it follows the 44px slots without a code change. The pointer rail and the phone tab bar are untouched." },
+    ];
+    return { theme, icons, pip, padlock, markRail, shortFrames, shortSpecs, hoverStates, labelSpecs, timing2, eng2, items, itemsA, itemsB, lockItems, lockVariants, lockFrames, rules, specs, lockSpecs, widths, access, eng };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Metamorphous&family=Cinzel:wght@700&family=Chakra+Petch:wght@600&family=Trirong:wght@600&family=Syncopate:wght@700&family=Cormorant+Garamond:wght@600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  [data-theme="amonkhet"], :root {
+    --bg:#14110E; --surface:#1E1A15; --surface-rail:#1A1611; --surface-sunken:#18140F; --elevated:#29241F; --border:#2B241B; --border-strong:#3A3229; --border-dashed:#494037; --fg:#EDE6D8; --fg-body:#C0B8A6; --fg-muted:#A59C89; --fg-faint:#8B8270; --fg-locked:#6E6654; --accent:#CF8745; --accent-hover:#DE9757; --success:#6FA368; --warning:#DEAA29; --btn:#EDE6D8; --g:#4B7A46; --font-display:'Cinzel'; --display-weight:700;
+    --bracket-1:#8A857C; --bracket-2:#A89A74; --bracket-3:#C9AC62; --bracket-4:#E6D08A; --bracket-5:#FBEFC6;
+    --brass:#C9A54E; --link-rule:#8E5A78; --c:#7E8592; --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E;
+  }
+  [data-theme="kamigawa"] {
+    --bg:#0E0F14; --surface:#16181F; --surface-rail:#12141B; --surface-sunken:#101219; --elevated:#20222A; --border:#181C26; --border-strong:#262A35; --border-dashed:#343843; --fg:#E6E8F0; --fg-body:#B1B6C7; --fg-muted:#959AAD; --fg-faint:#6F7486; --fg-locked:#606476; --accent:#FF4D9A; --accent-hover:#FF62A9; --success:#6FA368; --warning:#E0913C; --btn:#E6E8F0; --g:#4B7A46; --font-display:'Chakra Petch'; --display-weight:600;
+    --bracket-1:#8A857C; --bracket-2:#A89A74; --bracket-3:#C9AC62; --bracket-4:#E6D08A; --bracket-5:#FBEFC6;
+    --brass:#C9A54E; --link-rule:#8E5A78; --c:#7E8592; --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E;
+  }
+  [data-theme="ixalan"] {
+    --bg:#0E1310; --surface:#171E19; --surface-rail:#121814; --surface-sunken:#101512; --elevated:#212A23; --border:#1D2620; --border-strong:#2C3830; --border-dashed:#3B4A3F; --fg:#E0E7DE; --fg-body:#B6C2B3; --fg-muted:#98A695; --fg-faint:#808C7C; --fg-locked:#626E5E; --accent:#A3C445; --accent-hover:#B2D257; --success:#5EA990; --warning:#E0913C; --btn:#E0E7DE; --g:#4B7A46; --font-display:'Trirong'; --display-weight:600;
+    --bracket-1:#8A857C; --bracket-2:#A89A74; --bracket-3:#C9AC62; --bracket-4:#E6D08A; --bracket-5:#FBEFC6;
+    --brass:#C9A54E; --link-rule:#8E5A78; --c:#7E8592; --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E;
+  }
+  [data-theme="phyrexia"] {
+    --bg:#0D0B0E; --surface:#151317; --surface-rail:#110F13; --surface-sunken:#100E12; --elevated:#1E1C20; --border:#19161C; --border-strong:#262329; --border-dashed:#332F36; --fg:#E4E2E6; --fg-body:#B5B2BB; --fg-muted:#9A96A0; --fg-faint:#78747E; --fg-locked:#64616A; --accent:#52827A; --accent-hover:#629189; --success:#6FA368; --warning:#E0913C; --btn:#E4E2E6; --g:#527030; --font-display:'Syncopate'; --display-weight:700;
+    --bracket-1:#8A857C; --bracket-2:#A89A74; --bracket-3:#C9AC62; --bracket-4:#E6D08A; --bracket-5:#FBEFC6;
+    --brass:#C9A54E; --link-rule:#8E5A78; --c:#7E8592; --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E;
+  }
+  [data-theme="eldraine"] {
+    --bg:#120E17; --surface:#1B1821; --surface-rail:#15121B; --surface-sunken:#131018; --elevated:#26232C; --border:#241D30; --border-strong:#342C41; --border-dashed:#443C52; --fg:#E4DEEE; --fg-body:#B9B2C5; --fg-muted:#9C95A8; --fg-faint:#898395; --fg-locked:#6A6475; --accent:#AE88E6; --accent-hover:#BC9BEE; --success:#6FA368; --warning:#E0913C; --btn:#E4DEEE; --g:#4B7A46; --font-display:'Cormorant Garamond'; --display-weight:600;
+    --bracket-1:#8A857C; --bracket-2:#A89A74; --bracket-3:#C9AC62; --bracket-4:#E6D08A; --bracket-5:#FBEFC6;
+    --brass:#C9A54E; --link-rule:#8E5A78; --c:#7E8592; --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E;
+  }
+  [data-theme="kaldheim"] {
+    --bg:#121217; --surface:#1E1F26; --surface-rail:#18191F; --surface-sunken:#16171D; --elevated:#2D2E35; --border:#1A1F2B; --border-strong:#2E3340; --border-dashed:#424755; --fg:#C6D2D3; --fg-body:#B3C0C2; --fg-muted:#95A4A6; --fg-faint:#7C8A8C; --fg-locked:#5F6D6E; --accent:#5C86C9; --accent-hover:#6C95D8; --success:#6FA368; --warning:#E0913C; --btn:#C9D3D6; --g:#4B7A46; --font-display:'Metamorphous'; --display-weight:400;
+    --bracket-1:#8A857C; --bracket-2:#A89A74; --bracket-3:#C9AC62; --bracket-4:#E6D08A; --bracket-5:#FBEFC6;
+    --brass:#C9A54E; --link-rule:#8E5A78; --c:#7E8592; --w:#F4E9C4; --u:#3A6AA5; --b:#98748F; --r:#C05A3E;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: 'IBM Plex Sans', sans-serif; }
+  a { color: var(--accent); text-decoration: none; } a:hover { color: var(--accent-hover); }
+</style>
+</helmet>
+<div data-theme="{{ theme }}" data-screen-label="{{ label }}" style="{{ s.root }}">
+
+  <sc-if value="{{ fullChrome }}" hint-placeholder-val="{{ true }}">
+    <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:2px;"><span style="font-size:9px;letter-spacing:2px;color:var(--accent);">◆◆◆</span><span style="display:flex;align-items:baseline;gap:6px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.3em;color:var(--accent);">THE</span><span style="font-family:var(--font-display),serif;font-weight:var(--display-weight);font-size:26px;line-height:1;color:var(--fg);">99</span></span></div>
+        <span style="width:44px;height:44px;border-radius:12px;border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--accent);">HH</span>
+      </div>
+    </sc-if>
+    <div style="{{ s.decksHead }}">
+      <h1 style="margin:0;font-family:var(--font-display),serif;font-weight:var(--display-weight);font-size:28px;line-height:1.2;color:var(--fg);">Decks</h1>
+      <div style="flex:1;"></div>
+      <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;gap:10px;">
+          <span style="display:inline-flex;align-items:center;height:38px;padding:0 16px;border-radius:9px;border:1px solid var(--border-strong);font-size:14px;color:var(--fg);">Import</span>
+          <span style="display:inline-flex;align-items:center;height:38px;padding:0 16px;border-radius:9px;background:var(--btn);font-size:14px;font-weight:600;color:var(--bg);">New deck</span>
+        </div>
+      </sc-if>
+    </div>
+    <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;gap:8px;padding:12px 16px 0;">
+        <span style="flex:1;display:inline-flex;justify-content:center;align-items:center;height:44px;border-radius:10px;background:var(--btn);font-size:14px;font-weight:600;color:var(--bg);">New deck</span>
+        <span style="flex:1;display:inline-flex;justify-content:center;align-items:center;height:44px;border-radius:10px;border:1px solid var(--border-strong);font-size:14px;color:var(--fg);">Import a deck</span>
+      </div>
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;padding:12px 16px 4px;">
+        <div style="display:flex;align-items:center;gap:6px;min-height:52px;border:1px solid var(--border-strong);border-radius:10px;background:var(--surface);padding:7px 8px 7px 12px;box-shadow:0 0 0 1px color-mix(in oklab, var(--accent) 35%, transparent);min-width:0;">
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;"><span style="font-size:13.5px;font-weight:500;line-height:1.3;color:var(--fg);">Shop all decks</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);white-space:nowrap;">307 · $843.99</span></div>
+          <span style="flex:none;font-size:16px;color:var(--fg-muted);">›</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;min-height:52px;border:1px solid var(--border-strong);border-radius:10px;background:var(--surface);padding:7px 8px 7px 12px;min-width:0;">
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;"><span style="font-size:13.5px;font-weight:500;line-height:1.3;color:var(--fg);">Precons</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-muted);white-space:nowrap;">185 decklists</span></div>
+          <span style="flex:none;font-size:16px;color:var(--fg-muted);">›</span>
+        </div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;padding:0 22px 16px;">
+        <div style="display:flex;align-items:center;gap:12px;min-height:56px;border:1px solid var(--border-strong);border-radius:10px;background:var(--surface);padding:9px 14px;box-shadow:0 0 0 1px color-mix(in oklab, var(--accent) 35%, transparent);min-width:0;">
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;"><span style="font-size:14px;font-weight:500;color:var(--fg);">Shopping for all decks</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">307 to buy · $843.99 · 7 decks</span></div>
+          <span style="font-size:18px;color:var(--fg-muted);">›</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;min-height:56px;border:1px solid var(--border-strong);border-radius:10px;background:var(--surface);padding:9px 14px;min-width:0;">
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;"><span style="font-size:14px;font-weight:500;color:var(--fg);">Commander precons</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">185 decklists · newest 2 Oct 2026</span></div>
+          <span style="font-size:18px;color:var(--fg-muted);">›</span>
+        </div>
+      </div>
+    </sc-if>
+  </sc-if>
+
+  <div data-stats-view-row style="{{ s.viewRow }}">
+    <sc-if value="{{ showSeg }}" hint-placeholder-val="{{ true }}">
+      <div role="tablist" style="flex:none;display:flex;gap:2px;padding:2px;border-radius:9px;border:1px solid var(--border-strong);">
+        <span style="{{ s.segTiles }}">Tiles</span>
+        <span style="{{ s.segStats }}">Stats</span>
+      </div>
+    </sc-if>
+    <sc-if value="{{ tilesDesk }}" hint-placeholder-val="{{ false }}">
+      <sc-if value="{{ showSeg }}" hint-placeholder-val="{{ true }}"><span style="flex:none;width:1px;height:22px;background:var(--border-strong);margin:0 6px;"></span></sc-if>
+      <sc-for list="{{ shelves }}" as="sh" hint-placeholder-count="6">
+        <span style="{{ sh.style }}">{{ sh.name }} <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ sh.n }}</span></span>
+      </sc-for>
+      <div style="flex:1;"></div>
+      <span style="display:inline-flex;align-items:center;height:34px;padding:0 11px;border-radius:8px;border:1px dashed var(--border-dashed);font-size:12.5px;color:var(--fg-body);">+ New folder</span>
+    </sc-if>
+    <sc-if value="{{ tilesPhone }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;"></div>
+      <span style="display:flex;align-items:center;gap:8px;min-height:44px;"><span style="font-size:15px;font-weight:600;color:var(--fg);">All decks</span><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">21</span><span style="font-size:10px;color:var(--fg-muted);">▼</span></span>
+    </sc-if>
+    <sc-if value="{{ statsDesk }}" hint-placeholder-val="{{ true }}">
+      <span style="flex:none;width:1px;height:22px;background:var(--border-strong);margin:0 6px;"></span>
+      <div role="radiogroup" style="flex:none;display:flex;gap:2px;padding:2px;border-radius:9px;border:1px solid var(--border-strong);">
+        <span style="{{ s.fAll }}">All decks</span>
+        <span style="{{ s.fFin }}">Finished only</span>
+      </div>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">{{ scopeLine }}</span>
+      <div style="flex:1;"></div>
+      <span onClick="{{ toggleAll }}" style="display:inline-flex;align-items:center;min-height:34px;font-size:13px;color:var(--accent);cursor:pointer;">{{ allLabel }}</span>
+    </sc-if>
+    <sc-if value="{{ statsPhone }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;"></div>
+      <span onClick="{{ toggleAll }}" style="display:inline-flex;align-items:center;min-height:44px;font-size:13px;color:var(--accent);cursor:pointer;">{{ allLabel }}</span>
+    </sc-if>
+  </div>
+  <sc-if value="{{ statsPhone }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;flex-direction:column;gap:8px;padding:0 16px 12px;">
+      <div role="radiogroup" style="display:grid;grid-template-columns:1fr 1fr;gap:2px;padding:2px;border-radius:9px;border:1px solid var(--border-strong);">
+        <span style="{{ s.fAll }}">All decks</span>
+        <span style="{{ s.fFin }}">Finished only</span>
+      </div>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">{{ scopeLine }}</span>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isTiles }}" hint-placeholder-val="{{ false }}">
+    <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+      <div style="padding:12px 22px 14px;display:flex;flex-direction:column;gap:10px;background:var(--surface-sunken);border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="flex:1;min-width:0;display:flex;align-items:center;height:36px;padding:0 12px;border-radius:8px;border:1px solid var(--border-strong);font-size:13px;color:var(--fg-faint);">Search decks</span>
+          <span style="display:inline-flex;align-items:center;height:36px;padding:0 10px;border-radius:8px;background:var(--surface);font-size:12.5px;color:var(--fg);">Status ▾</span>
+          <span style="display:inline-flex;align-items:center;height:36px;padding:0 10px;border-radius:8px;background:var(--surface);font-size:12.5px;color:var(--fg);">Deck state ▾</span>
+          <span style="display:flex;gap:4px;"><sc-for list="{{ pips }}" as="pp" hint-placeholder-count="5"><span style="{{ pp }}"></span></sc-for></span>
+          <span style="display:inline-flex;align-items:center;height:36px;padding:0 10px;border-radius:8px;background:var(--surface);font-size:12.5px;color:var(--fg);">Last played ▾</span>
+          <span style="display:inline-flex;align-items:center;height:36px;padding:0 10px;border-radius:8px;border:1px solid var(--border-strong);font-size:12.5px;color:var(--fg);">Sort · Name</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);"><span>No filters on</span><span style="text-decoration:underline;color:var(--fg-faint);">Clear all filters</span></div>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">21 decks</span>
+      </div>
+    </sc-if>
+    <sc-if value="{{ phone }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:12px 16px 14px;background:var(--surface-sunken);display:flex;flex-direction:column;gap:10px;border-bottom:1px solid var(--border);">
+        <div style="display:flex;gap:8px;"><span style="width:44px;height:44px;border-radius:9px;border:1px solid var(--border-strong);"></span><div style="flex:1;"></div><span style="width:44px;height:44px;border-radius:9px;border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--fg-muted);">⇅</span><span style="display:inline-flex;align-items:center;height:44px;padding:0 14px;border-radius:9px;border:1px solid var(--border-strong);font-size:13.5px;color:var(--fg);">Filter decks</span></div>
+        <div style="display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);"><span>No filters on</span><span style="text-decoration:underline;color:var(--fg-faint);">Clear all filters</span></div>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">21 decks</span>
+      </div>
+    </sc-if>
+    <div style="{{ s.tileGrid }}">
+      <sc-for list="{{ tiles }}" as="t" hint-placeholder-count="3">
+        <div style="position:relative;border:1px solid var(--border);border-radius:14px;background:var(--surface-sunken);display:flex;flex-direction:column;">
+          <div style="position:relative;height:{{ t.art }}px;border-radius:14px 14px 0 0;background:repeating-linear-gradient(135deg,var(--surface) 0 8px,var(--surface-rail) 8px 16px);">
+            <span style="position:absolute;top:10px;left:12px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-locked);">commander art</span>
+            <span style="{{ t.dots }}">…</span>
+            <div style="position:absolute;left:13px;right:13px;bottom:10px;display:flex;flex-direction:column;gap:4px;">
+              <span style="font-family:var(--font-display),serif;font-weight:var(--display-weight);font-size:17px;line-height:1.15;color:var(--fg);">{{ t.name }}</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-body);">{{ t.cmdr }}</span>
+            </div>
+          </div>
+          <div style="border-top:1px solid var(--border);padding:11px 13px 13px;display:flex;flex-direction:column;gap:9px;">
+            <div style="display:flex;gap:8px;"><span style="display:inline-flex;align-items:center;height:24px;padding:0 8px;border-radius:6px;background:color-mix(in oklab, var(--accent) 14%, transparent);border:1px solid color-mix(in oklab, var(--accent) 28%, transparent);font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:0.06em;color:var(--accent);">To buy</span><span style="display:inline-flex;align-items:center;height:24px;padding:0 8px;border-radius:6px;border:1px solid color-mix(in oklab, var(--warning) 60%, #C9A54A);font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#D3B35C;">◇ Upgraded</span></div>
+            <div style="display:flex;align-items:center;gap:10px;height:14px;"><div style="flex:1;height:3px;border-radius:2px;background:var(--accent);"></div><span style="width:60px;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg);">99 / 99</span></div>
+            <div style="display:flex;justify-content:space-between;gap:10px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);"><span>{{ t.detail }}</span><span>{{ t.played }}</span></div>
+          </div>
+          <sc-if value="{{ t.menu }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;top:42px;right:10px;z-index:3;width:226px;border:1px solid var(--border-strong);border-radius:10px;background:var(--elevated);padding:4px;box-shadow:0 20px 50px rgba(0,0,0,.5);display:flex;flex-direction:column;">
+              <span style="padding:8px 10px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-locked);">the menu’s shipped items</span>
+              <span style="height:1px;background:var(--border-strong);margin:2px 6px;"></span>
+              <span style="display:flex;align-items:center;min-height:44px;padding:0 10px;border-radius:7px;background:var(--surface);font-size:13.5px;color:var(--fg);">See it among your decks</span>
+            </div>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isStats }}" hint-placeholder-val="{{ true }}">
+    <div data-decks-stats style="{{ s.stack }}">
+
+      <sc-if value="{{ oneNote }}" hint-placeholder-val="{{ false }}">
+        <p style="margin:0;font-size:13px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">Stats compares your decks. Add another to fill every chart.</p>
+      </sc-if>
+
+      <sc-if value="{{ c.recency }}" hint-placeholder-val="{{ true }}">
+        <section data-stats-card="recency" style="{{ card.recency.shell }}">
+          <div onClick="{{ card.recency.toggle }}" style="{{ card.recency.head }}">
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;">
+              <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;"><span style="{{ s.title }}">When each deck last played</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ rec.denom }}</span></div>
+              <sc-if value="{{ card.recency.closed }}" hint-placeholder-val="{{ false }}"><span style="{{ s.summary }}">{{ rec.summary }}</span></sc-if>
+            </div>
+            <span style="{{ s.chev }}">{{ card.recency.chev }}</span>
+          </div>
+          <sc-if value="{{ card.recency.open }}" hint-placeholder-val="{{ true }}">
+            <sc-if value="{{ rec.hasGames }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;align-items:baseline;gap:6px 14px;flex-wrap:wrap;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;line-height:1;color:var(--fg);">{{ rec.won }}</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-faint);">{{ rec.pods }}</span>
+              </div>
+              <div style="display:flex;flex-direction:column;">
+                <div style="{{ s.axisGrid }}">
+                  <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}"><span></span></sc-if>
+                  <div style="{{ s.axisTrack }}"><sc-for list="{{ rec.ticks }}" as="tk" hint-placeholder-count="4"><span style="{{ tk.style }}">{{ tk.t }}</span></sc-for></div>
+                  <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}"><span style="text-align:right;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.08em;color:var(--fg-faint);">LAST · RESULTS</span></sc-if>
+                </div>
+                <sc-for list="{{ rec.lanes }}" as="ln" hint-placeholder-count="6">
+                  <div style="{{ s.laneGrid }}">
+                    <span style="{{ s.laneName }}"><span style="{{ ln.m.box }}"><sc-for list="{{ ln.m.pips }}" as="p"><span style="{{ p.s }}">{{ p.l }}</span></sc-for></span><span style="{{ s.deckLink }}">{{ ln.name }}</span></span>
+                    <div style="{{ s.laneTrack }}">
+                      <sc-for list="{{ rec.ticks }}" as="tk"><span style="{{ tk.rule }}"></span></sc-for>
+                      <span style="position:absolute;left:0;right:0;top:14px;height:1px;background:var(--border-strong);"></span>
+                      <span style="{{ ln.since }}"></span>
+                      <sc-for list="{{ ln.beads }}" as="bd" hint-placeholder-count="1"><span style="{{ bd.style }}">{{ bd.l }}</span></sc-for>
+                    </div>
+                    <div style="{{ s.laneFig }}">
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg);white-space:nowrap;">{{ ln.ago }}</span>
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);white-space:nowrap;">{{ ln.res }}</span>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ rec.noGames }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:6px;">
+                <span style="font-size:14px;color:var(--fg-body);">No games logged yet.</span>
+                <span style="font-size:12.5px;line-height:1.55;color:var(--fg-faint);text-wrap:pretty;">Log games from a deck’s Games tab.</span>
+              </div>
+            </sc-if>
+            <sc-if value="{{ rec.hasNever }}" hint-placeholder-val="{{ true }}">
+              <div data-stats-never style="border:1px dashed var(--border-dashed);border-radius:10px;padding:12px 14px 14px;display:flex;flex-direction:column;gap:10px;">
+                <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">
+                  <span style="font-size:13.5px;font-weight:600;color:var(--fg);">Never played</span>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg-muted);">{{ rec.neverCount }}</span>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:6px 14px;">
+                  <sc-for list="{{ rec.never }}" as="nv" hint-placeholder-count="15">
+                    <span style="display:inline-flex;align-items:center;gap:7px;min-height:28px;"><span style="{{ nv.m.box }}"><sc-for list="{{ nv.m.pips }}" as="p"><span style="{{ p.s }}">{{ p.l }}</span></sc-for></span><span style="{{ s.deckLinkSm }}">{{ nv.name }}</span></span>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.6;color:var(--fg-faint);">{{ rec.caption }}</span>
+          </sc-if>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{ c.spread }}" hint-placeholder-val="{{ true }}">
+        <section data-stats-card="spread" style="{{ card.spread.shell }}">
+          <div onClick="{{ card.spread.toggle }}" style="{{ card.spread.head }}">
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;">
+              <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;"><span style="{{ s.title }}">Brackets and colors</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ sp.denom }}</span></div>
+              <sc-if value="{{ card.spread.closed }}" hint-placeholder-val="{{ false }}"><span style="{{ s.summary }}">{{ sp.summary }}</span></sc-if>
+            </div>
+            <span style="{{ s.chev }}">{{ card.spread.chev }}</span>
+          </div>
+          <sc-if value="{{ card.spread.open }}" hint-placeholder-val="{{ true }}">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;color:var(--fg-faint);">ANALYZED BRACKET</span>
+            <div style="display:flex;flex-direction:column;">
+              <sc-for list="{{ sp.rows }}" as="br" hint-placeholder-count="9">
+                <div style="{{ br.row }}">
+                  <div style="{{ br.labelStyle }}"><sc-for list="{{ br.marks }}" as="bm"><span style="{{ bm.box }}"><span style="{{ bm.art }}"></span><span style="{{ bm.num }}">{{ bm.n }}</span></span></sc-for><sc-if value="{{ br.isNa }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;line-height:1.3;color:var(--fg-muted);">not analyzed</span></sc-if></div>
+                  <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-width:0;">
+                    <sc-for list="{{ br.decks }}" as="dk"><span style="{{ dk.chip }}"><span style="{{ dk.m.box }}"><sc-for list="{{ dk.m.pips }}" as="p"><span style="{{ p.s }}">{{ p.l }}</span></sc-for></span><span style="{{ dk.ink }}">{{ dk.name }}</span><sc-if value="{{ dk.hasNote }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ dk.note }}</span></sc-if></span></sc-for>
+                    <sc-if value="{{ br.empty }}"><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-locked);">none</span></sc-if>
+                  </div>
+                  <span style="{{ br.countStyle }}">{{ br.n }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <sc-if value="{{ sp.noAnalysis }}" hint-placeholder-val="{{ false }}">
+              <span style="font-size:12.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">No deck analyzed yet. Brackets come from each deck’s Analysis tab.</span>
+            </sc-if>
+            <div style="display:flex;flex-direction:column;gap:7px;padding-top:12px;border-top:1px solid var(--border);">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;color:var(--fg-faint);padding-bottom:2px;">DECKS PER COLOR</span>
+              <sc-for list="{{ sp.colors }}" as="cr" hint-placeholder-count="6">
+                <div style="display:grid;grid-template-columns:24px minmax(0,1fr) 52px;gap:10px;align-items:center;min-height:28px;">
+                  <img src="{{ cr.src }}" alt="{{ cr.alt }}" style="width:22px;height:22px;display:block;">
+                  <div aria-hidden="true" style="display:flex;gap:2px;height:12px;"><sc-for list="{{ cr.sq }}" as="q"><span style="{{ q }}"></span></sc-for></div>
+                  <span style="text-align:right;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg);white-space:nowrap;">{{ cr.nOf }}</span>
+                </div>
+              </sc-for>
+              <span style="padding-top:4px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.6;color:var(--fg-faint);">{{ sp.sizes }}</span>
+            </div>
+          </sc-if>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{ c.shared }}" hint-placeholder-val="{{ true }}">
+        <section data-stats-card="shared" style="{{ card.shared.shell }}">
+          <div onClick="{{ card.shared.toggle }}" style="{{ card.shared.head }}">
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;">
+              <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;"><span style="{{ s.title }}">Cards your decks share</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ sh.denom }}</span></div>
+              <sc-if value="{{ card.shared.closed }}" hint-placeholder-val="{{ false }}"><span style="{{ s.summary }}">{{ sh.summary }}</span></sc-if>
+            </div>
+            <span style="{{ s.chev }}">{{ card.shared.chev }}</span>
+          </div>
+          <sc-if value="{{ card.shared.open }}" hint-placeholder-val="{{ true }}">
+            <sc-if value="{{ sh.empty }}" hint-placeholder-val="{{ false }}">
+              <span style="font-size:13px;line-height:1.55;color:var(--fg-body);">Needs two decks.</span>
+            </sc-if>
+            <sc-if value="{{ sh.has }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                <span style="{{ s.chipOn }}">In the most decks</span>
+                <span style="{{ s.chipOff }}">{{ sh.moreChip }}</span>
+              </div>
+              <div style="display:flex;flex-direction:column;">
+                <sc-for list="{{ sh.rows }}" as="r" hint-placeholder-count="8">
+                  <div style="display:flex;flex-direction:column;gap:8px;padding:9px 0;border-bottom:1px solid var(--border);">
+                    <div style="{{ s.shareGrid }}">
+                      <span style="{{ s.shareName }}">{{ r.name }}</span>
+                      <div style="{{ s.shareSq }}"><sc-for list="{{ r.sq }}" as="q"><span style="{{ q }}"></span></sc-for></div>
+                      <div style="{{ s.shareFig }}">
+                        <span style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--fg);white-space:nowrap;">{{ r.want }}</span>
+                        <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);white-space:nowrap;">{{ r.own }}</span>
+                      </div>
+                    </div>
+                    <sc-if value="{{ r.open }}" hint-placeholder-val="{{ false }}">
+                      <div style="{{ s.shareOpen }}">
+                        <span>No copy left for <span style="{{ s.deckLinkSm }}">HD - Gishath</span>, <span style="{{ s.deckLinkSm }}">HD - Kratos</span> and <span style="{{ s.deckLinkSm }}">HD -Thorin</span>.</span>
+                        <span style="display:flex;align-items:center;min-height:32px;"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--warning);border-bottom:1px solid color-mix(in oklab, var(--warning) 45%, transparent);">3 on Shopping for all decks</span><span style="font-size:12px;color:var(--fg-muted);margin-left:8px;">⟶</span></span>
+                      </div>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px 14px;font-size:11.5px;color:var(--fg-body);">
+                <span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:2px;background:var(--fg-muted);"></span>has a copy</span>
+                <span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:2px;border:1px dashed var(--fg-muted);"></span>no copy left</span>
+              </div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.6;color:var(--fg-faint);">{{ sh.caption }}</span>
+            </sc-if>
+          </sc-if>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{ c.collection }}" hint-placeholder-val="{{ true }}">
+        <section data-stats-card="collection" style="{{ card.collection.shell }}">
+          <div onClick="{{ card.collection.toggle }}" style="{{ card.collection.head }}">
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;">
+              <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;"><span style="{{ s.title }}">Your collection, put to work</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ co.denom }}</span></div>
+              <sc-if value="{{ card.collection.closed }}" hint-placeholder-val="{{ false }}"><span style="{{ s.summary }}">{{ co.summary }}</span></sc-if>
+            </div>
+            <span style="{{ s.chev }}">{{ card.collection.chev }}</span>
+          </div>
+          <sc-if value="{{ card.collection.open }}" hint-placeholder-val="{{ true }}">
+            <div style="{{ s.fields }}">
+              <sc-for list="{{ co.fields }}" as="fd" hint-placeholder-count="2">
+                <div style="display:flex;flex-direction:column;gap:9px;min-width:0;">
+                  <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;">
+                    <div style="display:flex;flex-direction:column;gap:3px;min-width:0;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;color:var(--fg-faint);">{{ fd.k1 }}</span><span style="{{ s.figBig }}">{{ fd.v1 }}</span></div>
+                    <div style="display:flex;flex-direction:column;gap:3px;min-width:0;"><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;color:var(--fg-faint);">{{ fd.k2 }}</span><span style="{{ s.figBigMuted }}">{{ fd.v2 }}</span></div>
+                  </div>
+                  <div aria-hidden="true" style="display:flex;flex-wrap:wrap;gap:2px;"><sc-for list="{{ fd.cells }}" as="q"><span style="{{ q }}"></span></sc-for></div>
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);">{{ fd.unit }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <span style="font-size:13px;line-height:1.55;color:var(--fg-body);text-wrap:pretty;">{{ co.fact }}</span>
+            <div style="display:flex;flex-direction:column;gap:8px;padding-top:12px;border-top:1px solid var(--border);">
+              <span style="font-size:14px;font-weight:600;color:var(--fg);">Not in a deck, wanted by your commanders</span>
+              <div style="display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap;">
+                <span style="{{ s.select }}"><sc-if value="{{ co.wDeckOn }}" hint-placeholder-val="{{ false }}"><span style="{{ co.wm.box }}"><sc-for list="{{ co.wm.pips }}" as="p"><span style="{{ p.s }}">{{ p.l }}</span></sc-for></span></sc-if><span style="flex:1;min-width:0;">{{ co.wDeck }}</span><span style="font-size:10px;color:var(--fg-muted);">▾</span></span>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                <span style="{{ s.chipOn }}">{{ co.cut40 }}</span>
+                <span style="{{ s.chipOff }}">{{ co.cut20 }}</span>
+              </div>
+              <div style="display:flex;flex-direction:column;">
+                <sc-for list="{{ co.wants }}" as="w" hint-placeholder-count="5">
+                  <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 12px;align-items:baseline;padding:9px 0;border-bottom:1px solid var(--border);">
+                    <span style="font-size:13.5px;color:var(--fg);">{{ w.card }}</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--fg);white-space:nowrap;">{{ w.pct }} <span style="color:var(--fg-faint);">of {{ w.basis }}</span></span>
+                    <span style="grid-column:1 / -1;font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.55;color:var(--fg-faint);text-wrap:pretty;">{{ w.copies }} · <span style="{{ s.deckLinkMono }}">{{ w.deck }}</span></span>
+                  </div>
+                </sc-for>
+              </div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ co.more }}</span>
+            </div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.6;color:var(--fg-faint);">Basics not counted · ManaPool prices, 2h ago</span>
+          </sc-if>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{ c.among }}" hint-placeholder-val="{{ true }}">
+        <section data-stats-card="among" style="{{ card.among.shell }}">
+          <div onClick="{{ card.among.toggle }}" style="{{ card.among.head }}">
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;">
+              <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;"><span style="{{ s.title }}">This deck among yours</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ am.denom }}</span></div>
+              <sc-if value="{{ card.among.closed }}" hint-placeholder-val="{{ false }}"><span style="{{ s.summary }}">{{ am.summary }}</span></sc-if>
+            </div>
+            <span style="{{ s.chev }}">{{ card.among.chev }}</span>
+          </div>
+          <sc-if value="{{ card.among.open }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap;">
+              <span style="{{ s.select }}"><span style="{{ am.m.box }}"><sc-for list="{{ am.m.pips }}" as="p"><span style="{{ p.s }}">{{ p.l }}</span></sc-for></span><span style="flex:1;min-width:0;">{{ am.name }}</span><span style="font-size:10px;color:var(--fg-muted);">▾</span></span>
+            </div>
+            <div style="{{ s.amGrid }}">
+              <span></span>
+              <span></span>
+              <span style="text-align:right;font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.08em;color:var(--fg-faint);">{{ am.rankHead }}</span>
+            </div>
+            <sc-for list="{{ am.groups }}" as="g" hint-placeholder-count="3">
+              <div style="display:flex;flex-direction:column;">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;color:var(--fg-faint);padding-bottom:2px;">{{ g.name }}</span>
+                <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="2">
+                  <div style="{{ s.amRow }}">
+                    <span style="font-size:13px;color:var(--fg-body);">{{ r.name }}</span>
+                    <div style="position:relative;height:46px;">
+                      <span style="position:absolute;left:0;right:0;top:26px;height:2px;border-radius:1px;background:var(--elevated);"></span>
+                      <sc-for list="{{ r.ticks }}" as="tk"><span style="{{ tk }}"></span></sc-for>
+                      <span style="{{ r.med }}"></span>
+                      <span style="{{ r.you }}"></span>
+                      <span style="{{ r.youLabel }}">{{ r.v }}</span>
+                      <span style="position:absolute;left:0;top:33px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);">{{ r.lo }}</span>
+                      <span style="position:absolute;right:0;top:33px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--fg-faint);">{{ r.hi }}</span>
+                    </div>
+                    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px;">
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--fg);white-space:nowrap;">{{ r.rank }}</span>
+                      <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--fg-faint);white-space:nowrap;">{{ r.m }}</span>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-for>
+            <div style="display:flex;flex-wrap:wrap;gap:6px 14px;font-size:11.5px;color:var(--fg-body);">
+              <span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:10px;height:10px;border-radius:50%;background:var(--accent);"></span>{{ am.name }}</span>
+              <span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:2px;height:10px;background:var(--fg-faint);"></span>{{ am.others }}</span>
+              <span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:2px;height:14px;background:var(--fg);"></span>the median deck</span>
+            </div>
+          </sc-if>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{ c.worth }}" hint-placeholder-val="{{ false }}">
+        <section data-stats-card="worth" style="{{ card.worth.shell }}">
+          <div onClick="{{ card.worth.toggle }}" style="{{ card.worth.head }}">
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;">
+              <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;"><span style="{{ s.title }}">What each deck is worth</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;color:var(--bg);background:var(--brass);border-radius:4px;padding:2px 6px;">PROPOSAL</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ vb.denom }}</span></div>
+              <sc-if value="{{ card.worth.closed }}" hint-placeholder-val="{{ false }}"><span style="{{ s.summary }}">{{ vb.summary }}</span></sc-if>
+            </div>
+            <span style="{{ s.chev }}">{{ card.worth.chev }}</span>
+          </div>
+          <sc-if value="{{ card.worth.open }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;align-items:baseline;gap:6px 14px;flex-wrap:wrap;">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;line-height:1;color:var(--fg);">{{ vb.sum }}</span>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;">
+              <span style="{{ s.chipOn }}">Most first</span>
+              <span style="{{ s.chipOff }}">By name</span>
+            </div>
+            <div style="display:flex;flex-direction:column;">
+              <sc-for list="{{ vb.rows }}" as="vr" hint-placeholder-count="21">
+                <div style="{{ s.worthRow }}">
+                  <span style="{{ s.worthName }}"><span style="{{ vr.m.box }}"><sc-for list="{{ vr.m.pips }}" as="p"><span style="{{ p.s }}">{{ p.l }}</span></sc-for></span><span style="{{ vr.ink }}">{{ vr.name }}</span></span>
+                  <div style="{{ s.worthTrack }}">
+                    <span style="{{ vr.bar }}"></span>
+                    <span style="{{ vb.medLine }}"></span>
+                  </div>
+                  <span style="{{ vr.figStyle }}">{{ vr.fig }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px 14px;font-size:11.5px;color:var(--fg-body);">
+              <span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:14px;height:8px;border-radius:2px;background:var(--accent);"></span>{{ vb.chosen }}</span>
+              <span style="display:inline-flex;align-items:center;gap:6px;"><span style="width:1px;height:12px;border-left:1px dashed var(--fg-body);"></span>{{ vb.medText }}</span>
+            </div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.6;color:var(--fg-faint);">ManaPool prices, 2h ago</span>
+          </sc-if>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{ c.jobs }}" hint-placeholder-val="{{ false }}">
+        <section data-stats-card="jobs" style="{{ card.jobs.shell }}">
+          <div onClick="{{ card.jobs.toggle }}" style="{{ card.jobs.head }}">
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;">
+              <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;"><span style="{{ s.title }}">Jobs, deck by deck</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.12em;color:var(--bg);background:var(--brass);border-radius:4px;padding:2px 6px;">PROPOSAL</span><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--fg-faint);">{{ jb.denom }}</span></div>
+              <sc-if value="{{ card.jobs.closed }}" hint-placeholder-val="{{ false }}"><span style="{{ s.summary }}">{{ jb.summary }}</span></sc-if>
+            </div>
+            <span style="{{ s.chev }}">{{ card.jobs.chev }}</span>
+          </div>
+          <sc-if value="{{ card.jobs.open }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;flex-direction:column;">
+              <div style="{{ s.jobGrid }}">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:0.08em;color:var(--fg-faint);">DECK</span>
+                <sc-for list="{{ jb.cols }}" as="jc" hint-placeholder-count="4"><span style="{{ jc.style }}">{{ jc.t }}</span></sc-for>
+              </div>
+              <sc-for list="{{ jb.rows }}" as="jr" hint-placeholder-count="21">
+                <div style="{{ jr.row }}">
+                  <span style="display:flex;align-items:center;gap:7px;min-width:0;"><span style="{{ jr.m.box }}"><sc-for list="{{ jr.m.pips }}" as="p"><span style="{{ p.s }}">{{ p.l }}</span></sc-for></span><span style="{{ jr.ink }}">{{ jr.name }}</span></span>
+                  <sc-for list="{{ jr.cells }}" as="jx"><span style="{{ jx.style }}">{{ jx.t }}</span></sc-for>
+                </div>
+              </sc-for>
+            </div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;line-height:1.6;color:var(--fg-faint);">Press a column to sort.</span>
+          </sc-if>
+        </section>
+      </sc-if>
+
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ tabBar }}" hint-placeholder-val="{{ false }}">
+    <div style="{{ s.tabs }}">
+      <sc-for list="{{ tabs }}" as="tb" hint-placeholder-count="5"><span style="{{ tb.style }}">{{ tb.name }}</span></sc-for>
+    </div>
+  </sc-if>
+  <sc-if value="{{ showFold }}" hint-placeholder-val="{{ false }}">
+    <span style="position:absolute;left:0;right:0;top:779px;border-top:1px dashed var(--brass);pointer-events:none;"></span>
+    <span style="position:absolute;right:8px;top:762px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--brass);">tab bar · 390 × 844</span>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:900,&quot;height&quot;:1200},&quot;scene&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;decksOff&quot;,&quot;decks&quot;,&quot;first&quot;,&quot;open&quot;,&quot;finished&quot;,&quot;one&quot;,&quot;noGames&quot;,&quot;noAnalysis&quot;,&quot;colorless&quot;,&quot;partner&quot;,&quot;spreadOnly&quot;],&quot;default&quot;:&quot;open&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;phone&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;amonkhet&quot;,&quot;kamigawa&quot;,&quot;ixalan&quot;,&quot;phyrexia&quot;,&quot;eldraine&quot;,&quot;kaldheim&quot;],&quot;default&quot;:&quot;kaldheim&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;statsEnabled&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;mark&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;cluster&quot;,&quot;pips&quot;,&quot;symbols&quot;,&quot;stripes&quot;],&quot;default&quot;:&quot;cluster&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = { open: null };
+  renderVals() {
+    const phone = !!this.props.phone;
+    const scene = this.props.scene ?? "open";
+    const enabled = this.props.statsEnabled ?? true;
+    const markKind = this.props.mark ?? "cluster";
+    const M = "'IBM Plex Mono',monospace";
+    const MANA = { W: "var(--w)", U: "var(--u)", B: "var(--b)", R: "var(--r)", G: "var(--g)", C: "var(--c)" };
+    const PIPINK = { W: "#2A2416", U: "#E8EEF6", B: "#1E1520", R: "#FBEDE6", G: "#EAF3E8", C: "#14151A" };
+    const n = (x) => x.toLocaleString("en-US");
+    const money = (x) => "$" + x.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const ord = (k) => { const s = ["th", "st", "nd", "rd"], v = k % 100; return k + (s[(v - 20) % 10] || s[v] || s[0]); };
+    const RAW = [
+      ["aang", "HD - Avatar Aang", "WUBRG", [3], null, 2.70, 36, 18, 15, 6, 100.40, [["2026-09-26", 0, 3]], false],
+      ["brago", "HD - Brago", "WU", [4], null, 3.61, 35, 7, 13, 12, 176.31, [], false],
+      ["eldrazi", "HD - Eldrazi", "", [3], null, 4.78, 39, 24, 18, 18, 264.61, [], false],
+      ["elves", "HD - Elves", "G", null, null, 2.53, 29, 21, 4, 8, 56.41, [], false],
+      ["gishath", "HD - Gishath", "WRG", [4], null, 4.34, 38, 26, 8, 14, 126.80, [], true],
+      ["goblins", "HD - Goblins", "R", [4, 5], 4, 2.18, 34, 8, 1, 25, 46.64, [], false],
+      ["gods", "HD - Gods (Kratos + Atreus)", "WUR", [4, 5], 4, 3.24, 39, 14, 13, 6, 432.67, [["2026-09-25", 1, 4]], false],
+      ["kratos", "HD - Kratos", "R", [3], null, 3.27, 37, 12, 7, 9, 245.79, [], true],
+      ["omnath", "HD - Omnath", "WURG", [3], null, 3.70, 38, 38, 17, 6, 274.61, [["2026-09-28", 0, 5]], false],
+      ["soldiers", "HD - Soldiers", "W", null, null, 2.69, 35, 8, 5, 10, 41.35, [], false],
+      ["tovolar", "HD - Tovolar", "RG", [1, 2], 2, 2.88, 35, 15, 4, 10, 112.22, [["2026-07-17", 0, 3], ["2026-09-12", 0, 4]], false],
+      ["wizards", "HD - Wizards", "U", [4], null, 2.53, 35, 11, 24, 6, 53.67, [], false],
+      ["yuriko", "HD - Yuriko", "UB", [2], null, 2.99, 27, 11, 15, 8, 252.60, [], false],
+      ["zombies", "HD - Zombies", "B", null, null, 2.55, 34, 8, 8, 8, 42.47, [], false],
+      ["thorin", "HD -Thorin", "WR", [1, 2], 2, 2.80, 35, 18, 7, 12, 103.86, [], true],
+      ["blood", "HD Tune - Blood Rites", "WB", null, null, 2.98, 37, 10, 13, 9, 129.86, [["2026-09-12", 0, 4]], false],
+      ["counter", "HD Tune - Counter Intelligence", "WUR", [3], null, 2.77, 38, 21, 10, 8, 98.13, [], false],
+      ["mutant", "HD Tune - Mutant Menace", "UBG", null, null, 2.72, 38, 18, 9, 5, 169.85, [], false],
+      ["prismari", "HD Tune - Prismari Artistry", "UR", [1, 2], null, 4.03, 38, 22, 17, 8, 76.06, [], false],
+      ["scrappy", "HD Tune - Scrappy Survivors", "WRG", null, null, 2.97, 35, 18, 12, 3, 109.64, [["2026-10-05", 1, 4]], false],
+      ["sultai", "HD Tune - Sultai Arisen", "UBG", null, null, 3.29, 40, 20, 10, 6, 112.09, [], false],
+    ];
+    const ALL = RAW.map(([k, name, id, b, dec, mv, l, ra, dr, rm, v, g, brew]) => ({ k, name, id, b, dec, mv, l, ra, dr, rm, v, g, brew }));
+    const CARDS = ["recency", "spread", "shared", "collection", "among", "jobs", "worth"];
+    const SC = {
+      decksOff: { tiles: true },
+      decks: { tiles: true, menu: true },
+      first: { full: true, cards: CARDS, open: ["recency"], sel: "scrappy" },
+      open: { full: true, cards: CARDS, sel: "scrappy", solOpen: true },
+      finished: { full: true, filter: "fin", cards: ["recency", "spread", "shared", "collection", "among"], sel: "scrappy" },
+      one: { only: ["omnath"], cards: ["recency", "spread", "shared", "collection"], oneNote: true },
+      noGames: { noGames: true, cards: ["recency"] },
+      noAnalysis: { noAnalysis: true, cards: ["spread"] },
+      colorless: { cards: ["spread", "among"], sel: "eldrazi", hi: "eldrazi" },
+      spreadOnly: { cards: ["spread"], hi: "eldrazi" },
+      partner: { cards: ["collection", "among"], sel: "gods", partner: true, hi: "gods", wantsDeck: "gods" },
+    };
+    const cfg = SC[scene] ?? SC.open;
+    const fin = cfg.filter === "fin";
+    const decks = ALL.filter((d) => (!cfg.only || cfg.only.includes(d.k)) && (!fin || !d.brew));
+    const total = decks.length;
+    const brews = ALL.filter((d) => d.brew).length;
+
+    // Clustered pips with a hugging outline: the union of one halo per pip (plus a centre halo for 3+),
+    // drawn as an outer ring layer, an inner fill layer, then the pips.
+    const cluster = (cs, MANA) => {
+      const z = 7, ro = 5.5, ri = 4.5, W = 26;
+      const k = cs.length;
+      const P = {
+        1: [[0, 0]],
+        2: [[-4, 0], [4, 0]],
+        3: [[0, -4.6], [4, 2.3], [-4, 2.3]],
+        4: [[0, -5.6], [5.6, 0], [0, 5.6], [-5.6, 0]],
+        5: [0, 1, 2, 3, 4].map((i) => { const a = (-90 + i * 72) * Math.PI / 180; return [6.8 * Math.cos(a), 6.8 * Math.sin(a)]; }),
+      }[k];
+      const ys = P.map((p) => p[1]); const oy = -(Math.min(...ys) + Math.max(...ys)) / 2;
+      const C = W / 2;
+      const halos = k >= 3 ? [...P, [0, 0]] : P;
+      const disc = (x, y, r, bg) => ({ l: "", s: { position: "absolute", left: C + x - r, top: C + y + oy - r, width: r * 2, height: r * 2, borderRadius: "50%", background: bg } });
+      return {
+        box: { flex: "none", position: "relative", display: "inline-block", width: W, height: W },
+        pips: [
+          ...halos.map(([x, y]) => disc(x, y, ro, "var(--border-dashed)")),
+          ...halos.map(([x, y]) => disc(x, y, ri, "var(--bg)")),
+          ...cs.map((c, i) => ({ l: "", s: { position: "absolute", left: C + P[i][0] - z / 2, top: C + P[i][1] + oy - z / 2, width: z, height: z, borderRadius: "50%", boxSizing: "border-box", ...(c === "C" ? { border: `1.5px solid ${MANA.C}` } : { background: MANA[c], boxShadow: "inset 0 0 0 1px rgba(0,0,0,.3)" }) } })),
+        ],
+      };
+    };
+    const mark = (id, big) => {
+      const cs = id ? id.split("") : ["C"];
+      if (markKind === "stripes") {
+        const z = big ? 14 : 12, step = 100 / cs.length;
+        return { box: { flex: "none", display: "inline-block", width: z, height: z, borderRadius: 3, background: `linear-gradient(90deg,${cs.map((c, i) => `${MANA[c]} ${i * step}% ${(i + 1) * step}%`).join(",")})`, boxShadow: "inset 0 0 0 1px rgba(0,0,0,.35)" }, pips: [] };
+      }
+      if (markKind === "cluster") return cluster(cs, MANA);
+      const sym = markKind === "symbols";
+      const z = sym ? (big ? 15 : 14) : (big ? 9 : 8);
+      return {
+        box: { flex: "none", display: "inline-flex", alignItems: "center", gap: sym ? 1 : 2, ...(sym ? {} : { padding: "3px 4px", borderRadius: 999, background: "var(--bg)", boxShadow: "inset 0 0 0 1px var(--border-strong)" }) },
+        pips: cs.map((c) => ({
+          l: sym ? c : "",
+          s: c === "C"
+            ? { width: z, height: z, borderRadius: "50%", boxSizing: "border-box", border: `1.5px solid ${MANA.C}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: M, fontSize: 8.5, fontWeight: 600, color: "var(--fg-muted)" }
+            : { width: z, height: z, borderRadius: "50%", background: MANA[c], display: "flex", alignItems: "center", justifyContent: "center", fontFamily: M, fontSize: 8.5, fontWeight: 600, color: PIPINK[c], boxShadow: "inset 0 0 0 1px rgba(0,0,0,.3)" },
+        })),
+      };
+    };
+    const link = { color: "var(--fg)", textDecoration: "underline dotted var(--accent)", textUnderlineOffset: 3, fontSize: 13, lineHeight: 1.4 };
+
+    // open / collapsed
+    const cards = cfg.cards ?? [];
+    const defaultOpen = cfg.open ?? cards;
+    const openSet = new Set(this.state.open ?? defaultOpen);
+    const toggle = (k) => () => this.setState(() => { const s = new Set(this.state.open ?? defaultOpen); s.has(k) ? s.delete(k) : s.add(k); return { open: [...s] }; });
+    const anyClosed = cards.some((k) => !openSet.has(k));
+    const proposal = (k) => k === "worth" || k === "jobs";
+    const card = {};
+    CARDS.forEach((k) => {
+      const o = openSet.has(k);
+      card[k] = {
+        open: o, closed: !o, chev: o ? "▴" : "▾", toggle: toggle(k),
+        shell: { background: "var(--surface-sunken)", border: proposal(k) ? "1px dashed color-mix(in oklab, var(--brass) 55%, var(--border-dashed))" : "1px solid var(--border)", borderRadius: 12, padding: phone ? (o ? "6px 14px 16px" : "6px 14px") : (o ? "8px 20px 20px" : "8px 20px"), display: "flex", flexDirection: "column", gap: 16, minWidth: 0 },
+        head: { display: "flex", alignItems: "center", gap: 10, minHeight: phone ? 52 : 46, padding: "6px 0", cursor: "pointer", borderBottom: o ? "1px solid var(--border)" : "none" },
+      };
+    });
+
+    // recency
+    const day = (s) => Math.round(Date.UTC(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10)) / 864e5);
+    const TODAY = day("2026-10-11"), START = day("2026-07-10");
+    const pct = (d) => ((d - START) / (TODAY - START)) * 100;
+    const played = cfg.noGames ? [] : decks.filter((d) => d.g.length).sort((a, b) => day(b.g[b.g.length - 1][0]) - day(a.g[a.g.length - 1][0]));
+    const never = (cfg.noGames ? decks : decks.filter((d) => !d.g.length)).slice().sort((a, b) => a.name.localeCompare(b.name));
+    const pods = (gs) => { const ps = [...new Set(gs.map((g) => g[2]))].sort(); return ps.length === 1 ? `pod of ${ps[0]}` : `pods of ${ps[0]}–${ps[ps.length - 1]}`; };
+    const allGames = played.flatMap((d) => d.g);
+    const wins = allGames.filter((g) => g[1]).length;
+    const bsz = phone ? 14 : 16;
+    const lanes = played.map((d) => {
+      const last = day(d.g[d.g.length - 1][0]);
+      const ago = TODAY - last;
+      const w = d.g.filter((g) => g[1]).length;
+      return {
+        name: d.name, m: mark(d.id),
+        since: { position: "absolute", left: pct(last) + "%", right: 0, top: 13, height: 3, borderRadius: 2, background: "color-mix(in oklab, var(--fg-muted) 45%, transparent)" },
+        beads: d.g.map((g) => ({ l: g[1] ? "W" : "L", style: { position: "absolute", left: pct(day(g[0])) + "%", top: 15 - bsz / 2, width: bsz, height: bsz, marginLeft: -bsz / 2, borderRadius: 4, boxSizing: "border-box", background: g[1] ? "var(--brass)" : "var(--surface-sunken)", border: g[1] ? "1px solid var(--brass)" : "1px solid var(--fg-muted)", color: g[1] ? "#14110E" : "var(--fg-body)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: M, fontSize: 9, fontWeight: 600 } })),
+        ago: ago === 0 ? "today" : ago === 1 ? "1 day ago" : `${ago} days ago`,
+        res: `won ${w} of ${d.g.length} · ${pods(d.g)}`,
+      };
+    });
+    const ticks = [["Aug", "2026-08-01"], ["Sep", "2026-09-01"], ["Oct", "2026-10-01"]].map(([t, s]) => ({ t, style: { position: "absolute", left: pct(day(s)) + "%", top: 0, transform: "translateX(-1px)" }, rule: { position: "absolute", left: pct(day(s)) + "%", top: 0, bottom: 0, width: 1, background: "var(--border)" } }));
+    ticks.push({ t: "", style: { position: "absolute", right: 0, top: 0 }, rule: { position: "absolute", right: 0, top: 0, bottom: 0, width: 1, background: "var(--border-strong)" } });
+    const lastAgo = played.length ? TODAY - day(played[0].g[played[0].g.length - 1][0]) : null;
+    const rec = {
+      denom: `${played.length} of ${total} played`,
+      summary: played.length ? `last game ${lastAgo} days ago · won ${wins} of ${allGames.length} · ${never.length} never played` : `no games logged · ${never.length} never played`,
+      hasGames: played.length > 0, noGames: !!cfg.noGames,
+      won: `won ${wins} of ${allGames.length}`,
+      pods: `${allGames.length === 1 ? "1 game" : allGames.length + " games"} · ${pods(allGames)} · Jul to Oct 2026`,
+      ticks, lanes,
+      hasNever: never.length > 0, neverCount: `${never.length} of ${total}`,
+      never: never.map((d) => ({ name: d.name, m: mark(d.id) })),
+      caption: played.length ? "Right edge is today." : "",
+    };
+
+    // spread: rows
+    const SL = ["1", "1–2", "2", "2–3", "3", "3–4", "4", "4–5", "5"];
+    const slotOf = (b) => (b.length === 1 ? (b[0] - 1) * 2 : (b[0] - 1) * 2 + 1);
+    const analyzed = cfg.noAnalysis ? [] : decks.filter((d) => d.b);
+    const na = cfg.noAnalysis ? decks : decks.filter((d) => !d.b);
+    const chip = (d, dashed) => ({
+      name: d.name, m: mark(d.id), hasNote: !!(d.dec || !d.id), note: d.dec ? `declared ${d.dec}` : "colorless",
+      ink: { ...link, fontSize: 12.5, color: cfg.hi === d.k ? "var(--accent)" : "var(--fg)" },
+      chip: { display: "inline-flex", alignItems: "center", gap: 7, minHeight: phone ? 34 : 30, padding: "0 10px 0 6px", borderRadius: 8, border: cfg.hi === d.k ? "1px solid var(--accent)" : dashed ? "1px dashed var(--border-dashed)" : "1px solid var(--border-strong)", background: dashed ? "transparent" : "var(--surface)", maxWidth: "100%" },
+    });
+    const gridCols = phone ? "56px minmax(0,1fr) 18px" : "88px minmax(0,1fr) 24px";
+    const chipH = phone ? 34 : 30;
+    const SLUG = { 1: "1-exhibition", 2: "2-core", 3: "3-upgraded", 4: "4-optimized", 5: "5-cedh" };
+    const bmark = (b, dim, second) => {
+      const px = 26, ink = `var(--bracket-${b})`, img = `url(assets/brackets/bracket-${SLUG[b]}.svg)`, disc = "radial-gradient(circle closest-side, transparent 35%, #000 36%)";
+      return {
+        n: String(b),
+        box: { position: "relative", flex: "none", width: px, height: px, display: "inline-flex", alignItems: "center", justifyContent: "center", opacity: dim ? 0.65 : 1, marginLeft: second ? -5 : 0 },
+        art: { position: "absolute", inset: 0, backgroundColor: ink, WebkitMaskImage: `${img}, ${disc}`, maskImage: `${img}, ${disc}`, WebkitMaskSize: "100% 100%", maskSize: "100% 100%", WebkitMaskComposite: "source-in", maskComposite: "intersect" },
+        num: { position: "relative", fontFamily: "'Cinzel',serif", fontWeight: 700, fontSize: px * 0.4, lineHeight: 1, color: ink },
+      };
+    };
+    const cellTop = { height: chipH, display: "flex", alignItems: "center" };
+    const brRows = SL.map((label, i) => {
+      const ds = analyzed.filter((d) => slotOf(d.b) === i);
+      const edge = i % 2 === 1;
+      return {
+        label, isNa: false, marks: edge ? [bmark((i + 1) / 2, false, false), bmark((i + 3) / 2, true, true)] : [bmark(i / 2 + 1, false, false)], n: ds.length || "", empty: ds.length === 0,
+        countStyle: { ...cellTop, justifyContent: "flex-end", fontFamily: M, fontSize: 11, color: "var(--fg-muted)" },
+        decks: ds.map((d) => chip(d, false)),
+        row: { display: "grid", gridTemplateColumns: gridCols, gap: 10, alignItems: "start", minHeight: 30, padding: ds.length ? "6px 0" : "1px 0", borderBottom: edge ? "1px dashed var(--border)" : "1px solid var(--border)", background: edge && ds.length ? "var(--surface-rail)" : "transparent" },
+        labelStyle: { ...cellTop, height: ds.length ? chipH : 28, gap: 0 },
+      };
+    });
+    brRows.push({
+      label: "—", isNa: true, marks: [], n: na.length || "", empty: na.length === 0, decks: na.map((d) => chip(d, true)),
+      row: { display: "grid", gridTemplateColumns: gridCols, gap: 10, alignItems: "start", minHeight: 44, padding: "9px 0 4px", marginTop: 6 },
+      labelStyle: { ...cellTop },
+      countStyle: { ...cellTop, justifyContent: "flex-end", fontFamily: M, fontSize: 11, color: "var(--fg-muted)" },
+    });
+    brRows[brRows.length - 1].label = "not analyzed";
+    const emptySingles = [1, 2, 3, 4, 5].filter((b) => !analyzed.some((d) => slotOf(d.b) === (b - 1) * 2));
+    const spans = [1, 3, 5, 7].map((i) => [SL[i], analyzed.filter((d) => slotOf(d.b) === i).length]).filter((x) => x[1]);
+    const facts = [];
+    if (analyzed.length) {
+    }
+    const colors = ["W", "U", "B", "R", "G", "C"].map((c) => {
+      const ds = decks.filter((d) => (c === "C" ? !d.id : d.id.includes(c)));
+      const csz = phone ? 13 : 14;
+      return {
+        l: c, n: ds.length, src: `assets/mana/${c}.svg`, alt: { W: "White", U: "Blue", B: "Black", R: "Red", G: "Green", C: "Colorless" }[c],
+        pip: { width: 22, height: 22, borderRadius: "50%", background: c === "C" ? "transparent" : MANA[c], border: c === "C" ? `1.5px solid ${MANA.C}` : "none", color: c === "C" ? "var(--fg-muted)" : PIPINK[c], display: "flex", alignItems: "center", justifyContent: "center", fontFamily: M, fontSize: 10.5, fontWeight: 600, boxSizing: "border-box" },
+        // One segment per deck in the lineup: lit in the color's ink for each deck that plays it, so the bar reads "10 of 21".
+        sq: decks.map((_, j) => {
+          const d = ds[j];
+          const lit = j < ds.length;
+          return { flex: "1 1 0", minWidth: 0, height: "100%", borderRadius: j === 0 ? "3px 0 0 3px" : j === decks.length - 1 ? "0 3px 3px 0" : 0, background: lit ? (c === "C" ? "var(--c)" : MANA[c]) : "var(--elevated)", boxShadow: lit && cfg.hi === d.k ? "inset 0 0 0 2px var(--accent)" : "none" };
+        }),
+        nOf: `${ds.length} of ${decks.length}`,
+      };
+    });
+    const sizeN = [0, 1, 2, 3, 4, 5].map((k) => decks.filter((d) => d.id.length === k).length);
+    const sizeW = ["colorless", "one color", "two", "three", "four", "five"];
+    const topSlot = brRows.slice(0, 9).reduce((a, r, i) => (r.decks.length > a[1] ? [i, r.decks.length] : a), [0, 0]);
+    const sp = {
+      denom: `${analyzed.length} of ${total} analyzed`,
+      summary: analyzed.length ? `bracket ${SL[topSlot[0]]} holds ${topSlot[1]} · ${na.length} not analyzed · R in ${colors[3].n}, B in ${colors[2].n}` : `none analyzed · R in ${colors[3].n}, B in ${colors[2].n}`,
+      rows: brRows, noAnalysis: !!cfg.noAnalysis, facts, colors,
+      sizes: sizeN.map((k, i) => (k ? `${sizeW[i]} ${k}` : null)).filter(Boolean).join(" · "),
+    };
+
+    // shared
+    const SH_ALL = [["Sol Ring", 20, 17], ["Arcane Signet", 18, 15], ["Command Tower", 14, 11], ["Exotic Orchard", 8, 8], ["Mind Stone", 8, 6], ["Fabled Passage", 6, 3], ["Rogue’s Passage", 6, 6], ["Swords to Plowshares", 6, 4]];
+    const SH_FIN = [["Sol Ring", 17, 17], ["Arcane Signet", 15, 15], ["Command Tower", 12, 11], ["Exotic Orchard", 7, 8], ["Mind Stone", 7, 6], ["Swords to Plowshares", 6, 4], ["Fabled Passage", 5, 3], ["Rogue’s Passage", 4, 6]];
+    const shsz = phone ? 11 : 13;
+    const sh = {
+      empty: total < 2, has: total >= 2,
+      denom: fin ? "18 decks · 1,251 cards" : total < 2 ? "1 deck" : "21 decks · 1,366 cards",
+      summary: total < 2 ? "needs two decks" : fin ? "Sol Ring in 17 decks, you own 17 · 61 wanted more than you own" : "Sol Ring in 20 decks, you own 17 · 77 wanted more than you own",
+      moreChip: fin ? "Wanted more than you own · 61" : "Wanted more than you own · 77",
+      rows: (fin ? SH_FIN : SH_ALL).map(([name, w, o], i) => ({
+        name, open: !!cfg.solOpen && i === 0, want: `${w} decks`, own: `you own ${o}`,
+        sq: Array.from({ length: w }, (_, j) => (j < o ? { width: shsz, height: shsz, borderRadius: 2, background: "var(--fg-muted)" } : { width: shsz, height: shsz, borderRadius: 2, boxSizing: "border-box", border: "1px dashed var(--fg-muted)" })),
+      })),
+      caption: fin ? "142 cards in 2+ decks · 11 in 5+ · basics not counted" : "157 cards in 2+ decks · 13 in 5+ · basics not counted",
+    };
+
+    // collection
+    const CO = cfg.only ? { copies: 3924, cards: 2920, inD: 87, val: 3068, inV: 251 } : fin ? { copies: 3924, cards: 2920, inD: 1262, val: 3068, inV: 1980 } : { copies: 3924, cards: 2920, inD: 1344, val: 3068, inV: 2134 };
+    const usz = phone ? 7 : 8;
+    const cells = (on, all) => Array.from({ length: all }, (_, j) => (j < on ? { width: usz, height: usz, borderRadius: 1.5, background: "var(--fg-muted)" } : { width: usz, height: usz, borderRadius: 1.5, boxSizing: "border-box", border: "1px solid var(--border-strong)" }));
+    const pctC = Math.round((CO.inD / CO.copies) * 100), pctV = Math.round((CO.inV / CO.val) * 100);
+    const co = {
+      denom: `${n(CO.copies)} copies · ${n(CO.cards)} cards`,
+      summary: `${n(CO.inD)} of ${n(CO.copies)} copies in a deck · ${pctV}% of the value · 67 wanted by your commanders`,
+      fields: [
+        { k1: "IN A DECK", v1: n(CO.inD), k2: "NOT IN A DECK", v2: n(CO.copies - CO.inD), cells: cells(Math.round(CO.inD / 10), Math.round(CO.copies / 10)), unit: "1 square = 10 copies" },
+        { k1: "VALUE IN A DECK", v1: "$" + n(CO.inV), k2: "NOT IN A DECK", v2: "$" + n(CO.val - CO.inV), cells: cells(Math.round(CO.inV / 10), Math.round(CO.val / 10)), unit: "1 square = $10" },
+      ],
+      fact: `${pctC}% of your copies hold ${pctV}% of your value.`,
+      wants: cfg.wantsDeck === "gods" ? [
+        { card: "Boros Charm", copies: "×1", deck: "HD - Gods (Kratos + Atreus)", basis: "Kratos + Atreus decks", pct: "48%" },
+        { card: "Swords to Plowshares", copies: "×2", deck: "HD - Gods (Kratos + Atreus)", basis: "Kratos + Atreus decks", pct: "46%" },
+        { card: "Counterspell", copies: "×1", deck: "HD - Gods (Kratos + Atreus)", basis: "Kratos + Atreus decks", pct: "44%" },
+        { card: "Lightning Greaves", copies: "×1", deck: "HD - Gods (Kratos + Atreus)", basis: "Kratos + Atreus decks", pct: "41%" },
+      ] : [
+        { card: "Goblin Bombardment", copies: "×1", deck: "HD - Goblins", basis: "Krenko decks", pct: "61%" },
+        { card: "Swiftfoot Boots", copies: "×2", deck: "HD - Gishath", basis: "Gishath decks", pct: "58%" },
+        { card: "Cultivate", copies: "×3", deck: "HD - Omnath", basis: "Omnath decks", pct: "54%" },
+        { card: "Beast Within", copies: "×2", deck: "HD - Tovolar", basis: "Tovolar decks", pct: "47%" },
+        { card: "Rhystic Study", copies: "×1", deck: "HD - Brago", basis: "Brago decks", pct: "43%" },
+      ],
+      wDeckOn: !!cfg.wantsDeck,
+      wDeck: cfg.wantsDeck === "gods" ? "HD - Gods (Kratos + Atreus)" : "All decks",
+      wm: mark(cfg.wantsDeck === "gods" ? "WUR" : "WUBRG"),
+      wHow: cfg.wantsDeck ? "one deck · pick All decks to see every one" : "every deck · pick one to narrow",
+      cut40: cfg.wantsDeck ? "40% or more · 4" : "40% or more · 67",
+      cut20: cfg.wantsDeck ? "20% or more · 11" : "20% or more · 144",
+      more: cfg.wantsDeck ? "" : "62 more",
+    };
+
+    // among
+    const sel = decks.find((d) => d.k === cfg.sel) ?? decks[0];
+    const med = (xs) => { const s = xs.slice().sort((a, b) => a - b); const m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+    const fmtK = (key, x) => (key === "mv" ? x.toFixed(2) : key === "v" ? money(x) : Number.isInteger(x) ? String(x) : x.toFixed(1));
+    const fmtShort = (key, x) => (key === "v" ? "$" + Math.round(x) : fmtK(key, x));
+    const row = (name, key) => {
+      const vs = decks.map((d) => d[key]);
+      const lo = Math.min(...vs), hi = Math.max(...vs);
+      const pos = (v) => (hi === lo ? 50 : ((v - lo) / (hi - lo)) * 100);
+      const m = med(vs);
+      const above = decks.filter((d) => d[key] > sel[key]).length;
+      const tied = decks.filter((d) => d[key] === sel[key]).length > 1;
+      const p = pos(sel[key]);
+      return {
+        name,
+        ticks: decks.filter((d) => d !== sel).map((d) => ({ position: "absolute", left: pos(d[key]) + "%", top: 21, width: 2, height: 12, marginLeft: -1, borderRadius: 1, background: "var(--fg-faint)", opacity: 0.8 })),
+        med: { position: "absolute", left: pos(m) + "%", top: 17, height: 20, width: 2, marginLeft: -1, background: "var(--fg)" },
+        you: { position: "absolute", left: p + "%", top: 21, width: 12, height: 12, marginLeft: -6, borderRadius: "50%", background: "var(--accent)", boxShadow: "0 0 0 2px var(--surface-sunken)" },
+        youLabel: { position: "absolute", top: 0, ...(p > 80 ? { right: `${100 - p}%`, marginRight: -6 } : p < 20 ? { left: `${p}%`, marginLeft: -6 } : { left: `${p}%`, transform: "translateX(-50%)" }), fontFamily: M, fontSize: 11, fontWeight: 600, color: "var(--accent)", whiteSpace: "nowrap" },
+        v: fmtK(key, sel[key]), lo: fmtShort(key, lo), hi: fmtShort(key, hi),
+        rank: `${tied ? "tied " : ""}${ord(above + 1)} of ${total}`,
+        m: `median ${fmtShort(key, m)}`,
+      };
+    };
+    const am = {
+      denom: `${total} decks`, name: sel.name, m: mark(sel.id, true),
+      summary: `${sel.name} · ${row("Value", "v").rank} by value, ${row("Ramp", "ra").rank} by ramp`,
+      how: cfg.sel === "scrappy" ? "played most recently · pick any deck" : cfg.sel === "gods" ? "from its tile’s menu · a partner deck, its own figures" : "from its tile’s menu",
+      rankHead: "RANK",
+      groups: [
+        { name: "THE BUILD", rows: [row("Mana value", "mv"), row("Lands", "l"), row("Ramp", "ra")] },
+        { name: "JOBS", rows: [row("Card draw", "dr"), row("Removal", "rm")] },
+        { name: "VALUE", rows: [row("Deck value", "v")] },
+      ],
+      others: `the other ${total - 1}`,
+    };
+
+    // worth (proposal): each deck's own value, most first
+    const selS = ALL.find((d) => d.k === (cfg.sel ?? "scrappy"));
+    const vMax = Math.max(...ALL.map((d) => d.v));
+    const vMed = med(ALL.map((d) => d.v));
+    const vSum = ALL.reduce((a, d) => a + d.v, 0);
+    const vb = {
+      denom: `${ALL.length} decks`,
+      summary: `${money(vSum)} · most ${money(vMax)} · median ${money(vMed)}`,
+      sum: money(vSum),
+      rows: ALL.slice().sort((a, b) => b.v - a.v).map((d) => {
+        const on = selS && d.k === selS.k;
+        return {
+          name: d.name, m: mark(d.id), fig: money(d.v),
+          ink: { fontSize: 12.5, color: on ? "var(--accent)" : "var(--fg)", fontWeight: on ? 600 : 400, textDecoration: "underline dotted var(--accent)", textUnderlineOffset: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 },
+          bar: { position: "absolute", left: 0, top: 5, bottom: 5, width: (d.v / vMax) * 100 + "%", borderRadius: "0 3px 3px 0", background: on ? "var(--accent)" : "var(--fg-muted)", opacity: on ? 1 : 0.75 },
+          figStyle: { textAlign: "right", fontFamily: M, fontSize: 11.5, color: on ? "var(--accent)" : "var(--fg)", fontWeight: on ? 600 : 400, whiteSpace: "nowrap", ...(phone ? { gridArea: "f" } : {}) },
+        };
+      }),
+      medLine: { position: "absolute", left: (vMed / vMax) * 100 + "%", top: -2, bottom: -2, borderLeft: "1px dashed var(--fg-body)" },
+      chosen: selS ? selS.name : "",
+      medText: `the median deck, ${money(vMed)}`,
+    };
+
+    // jobs (proposal): heat grid
+    const JC = [["Lands", "l"], ["Ramp", "ra"], ["Draw", "dr"], ["Removal", "rm"]];
+    const range = {}; JC.forEach(([, k]) => { const vs = ALL.map((d) => d[k]); range[k] = [Math.min(...vs), Math.max(...vs)]; });
+    const cw = phone ? 46 : 84;
+    const jobCols = `minmax(0,1fr) repeat(4, ${cw}px)`;
+    const jb = {
+      denom: `${ALL.length} decks`,
+      summary: "ramp 7 to 38 · card draw 1 to 24 · removal 3 to 25",
+      cols: JC.map(([t, k]) => ({ t: k === "ra" ? t + " ↓" : t, style: { textAlign: "center", fontFamily: M, fontSize: 9.5, letterSpacing: "0.06em", color: k === "ra" ? "var(--fg)" : "var(--fg-faint)", textTransform: "uppercase" } })),
+      rows: ALL.slice().sort((a, b) => b.ra - a.ra || a.name.localeCompare(b.name)).map((d) => {
+        const on = selS && d.k === selS.k;
+        return {
+          name: d.name, m: mark(d.id),
+          ink: { fontSize: 12.5, color: on ? "var(--accent)" : "var(--fg)", fontWeight: on ? 600 : 400, textDecoration: "underline dotted var(--accent)", textUnderlineOffset: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 },
+          row: { display: "grid", gridTemplateColumns: jobCols, gap: 3, alignItems: "center", minHeight: phone ? 32 : 28, padding: "1px 0", ...(on ? { boxShadow: "inset 0 0 0 1px var(--accent)", borderRadius: 4 } : {}) },
+          cells: JC.map(([, k]) => { const [a, b] = range[k]; const t = (d[k] - a) / (b - a || 1); return { t: String(d[k]), style: { display: "flex", alignItems: "center", justifyContent: "center", height: phone ? 28 : 24, borderRadius: 3, background: `color-mix(in oklab, var(--fg-muted) ${Math.round(6 + t * 52)}%, transparent)`, fontFamily: M, fontSize: 11, color: t > 0.6 ? "var(--bg)" : "var(--fg)" } }; }),
+        };
+      }),
+    };
+
+    const isTiles = !!cfg.tiles;
+    const full = !!cfg.tiles || !!cfg.full;
+    const segOn = { display: "inline-flex", alignItems: "center", justifyContent: "center", height: phone ? 40 : 30, padding: "0 13px", borderRadius: 7, background: "var(--elevated)", fontSize: 13, fontWeight: 600, color: "var(--fg)" };
+    const segOff = { ...segOn, background: "transparent", fontWeight: 400, color: "var(--fg-muted)" };
+    const chipBase = { display: "inline-flex", alignItems: "center", minHeight: phone ? 44 : 30, padding: "0 12px", borderRadius: 999, fontSize: 12.5 };
+    const c = {}; cards.forEach((k) => (c[k] = true));
+    const tabs = ["Home", "Collection", "Commanders", "Discover", "Decks"].map((name, i) => ({ name, style: { display: "flex", alignItems: "flex-end", justifyContent: "center", height: 64, paddingBottom: 12, fontFamily: M, fontSize: 10, color: i === 4 ? "var(--fg)" : "var(--fg-faint)", background: i === 4 ? "var(--surface)" : "transparent" } }));
+    const decksPhone = phone && isTiles;
+    const s = {
+      root: { width: phone ? 390 : 900, minHeight: phone ? (decksPhone ? 844 : 500) : 460, ...(decksPhone ? { height: 844, overflow: "hidden" } : {}), position: "relative", background: "var(--bg)", color: "var(--fg)", fontFamily: "'IBM Plex Sans',sans-serif", display: "flex", flexDirection: "column", paddingBottom: phone ? 0 : 28 },
+      decksHead: { display: "flex", alignItems: "center", gap: 12, padding: phone ? "20px 16px 0" : "18px 22px 16px" },
+      viewRow: phone ? { display: "flex", alignItems: "center", gap: 8, padding: full ? "8px 16px 10px" : "14px 16px 10px" } : { display: "flex", alignItems: "center", gap: 6, padding: "10px 22px", borderTop: full ? "1px solid var(--border)" : "none", flexWrap: "wrap" },
+      segTiles: isTiles ? segOn : segOff, segStats: isTiles ? segOff : segOn,
+      fAll: fin ? segOff : segOn, fFin: fin ? segOn : segOff,
+      tileGrid: { display: "grid", gridTemplateColumns: phone ? "minmax(0,1fr)" : "repeat(3,minmax(0,1fr))", gap: 14, padding: phone ? "16px 16px 20px" : "18px 22px 24px" },
+      stack: { display: "flex", flexDirection: "column", gap: phone ? 10 : 12, padding: phone ? "4px 16px 20px" : "14px 22px 0", borderTop: phone ? "none" : "1px solid var(--border)" },
+      title: { fontFamily: "var(--font-display),serif", fontWeight: "var(--display-weight)", fontSize: phone ? 16 : 17, color: "var(--fg)" },
+      summary: { fontFamily: M, fontSize: 11, lineHeight: 1.5, color: "var(--fg-muted)", textWrap: "pretty" },
+      chev: { flex: "none", width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "var(--fg-muted)" },
+      axisGrid: phone ? { display: "grid", gridTemplateColumns: "minmax(0,1fr)", padding: "0 0 4px", borderBottom: "1px solid var(--border)" } : { display: "grid", gridTemplateColumns: "230px minmax(0,1fr) 150px", gap: 14, alignItems: "center", minHeight: 28, borderBottom: "1px solid var(--border)" },
+      axisTrack: { position: "relative", height: 16, fontFamily: M, fontSize: 9.5, color: "var(--fg-faint)" },
+      laneTrack: { position: "relative", height: 30, ...(phone ? { gridArea: "l" } : {}) },
+      laneGrid: phone ? { display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gridTemplateAreas: "'n f' 'l l'", gap: "2px 10px", alignItems: "center", padding: "6px 0", borderBottom: "1px solid var(--border)" } : { display: "grid", gridTemplateColumns: "230px minmax(0,1fr) 150px", gap: 14, alignItems: "center", minHeight: 40, borderBottom: "1px solid var(--border)" },
+      laneName: { display: "flex", alignItems: "center", gap: 7, minWidth: 0, ...(phone ? { gridArea: "n" } : {}) },
+      laneFig: { display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 1, ...(phone ? { gridArea: "f" } : {}) },
+      deckLink: link, deckLinkSm: { ...link, fontSize: 12.5 },
+      deckLinkMono: { color: "var(--fg-body)", textDecoration: "underline dotted var(--accent)", textUnderlineOffset: 3 },
+      chipOn: { ...chipBase, background: "var(--accent)", color: "var(--bg)", fontWeight: 600 },
+      chipOff: { ...chipBase, border: "1px solid var(--border-strong)", background: "var(--elevated)", color: "var(--fg)" },
+      shareGrid: phone ? { display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gridTemplateAreas: "'n f' 'q q'", gap: "6px 10px", alignItems: "center" } : { display: "grid", gridTemplateColumns: "190px minmax(0,1fr) 96px", gap: 12, alignItems: "center", minHeight: 28 },
+      shareName: { fontSize: 13.5, color: "var(--fg)", textDecoration: "underline dotted var(--fg-faint)", textUnderlineOffset: 3, ...(phone ? { gridArea: "n" } : {}) },
+      shareSq: { display: "flex", flexWrap: "wrap", gap: 3, ...(phone ? { gridArea: "q" } : {}) },
+      shareFig: { display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 1, ...(phone ? { gridArea: "f" } : {}) },
+      shareOpen: { display: "flex", flexDirection: "column", gap: 4, padding: phone ? "2px 0 0" : "2px 0 0 202px", fontSize: 12.5, lineHeight: 1.55, color: "var(--fg-body)", textWrap: "pretty" },
+      fields: { display: "grid", gridTemplateColumns: phone ? "minmax(0,1fr)" : "minmax(0,1fr) minmax(0,1fr)", gap: phone ? 18 : 28 },
+      figBig: { fontFamily: M, fontSize: phone ? 17 : 20, fontWeight: 600, color: "var(--fg)", whiteSpace: "nowrap" },
+      figBigMuted: { fontFamily: M, fontSize: phone ? 17 : 20, fontWeight: 600, color: "var(--fg-muted)", whiteSpace: "nowrap" },
+      select: { display: "inline-flex", alignItems: "center", gap: 8, minHeight: phone ? 44 : 36, padding: "0 12px", borderRadius: 9, border: "1px solid var(--border-strong)", background: "var(--surface)", fontSize: 13.5, color: "var(--fg)", maxWidth: "100%", ...(phone ? { flex: "1 1 100%" } : {}) },
+      amGrid: { display: "grid", gridTemplateColumns: phone ? "74px minmax(0,1fr) 72px" : "112px minmax(0,1fr) 110px", gap: phone ? 10 : 16 },
+      amRow: { display: "grid", gridTemplateColumns: phone ? "74px minmax(0,1fr) 72px" : "112px minmax(0,1fr) 110px", gap: phone ? 10 : 16, alignItems: "center", minHeight: 52, borderBottom: "1px solid var(--border)" },
+      worthRow: phone ? { display: "grid", gridTemplateColumns: "minmax(0,1fr) 70px", gridTemplateAreas: "'n f' 't t'", gap: "3px 10px", alignItems: "center", padding: "5px 0", borderBottom: "1px solid var(--border)" } : { display: "grid", gridTemplateColumns: "250px minmax(0,1fr) 76px", gap: 12, alignItems: "center", minHeight: 28, borderBottom: "1px solid var(--border)" },
+      worthName: { display: "flex", alignItems: "center", gap: 7, minWidth: 0, ...(phone ? { gridArea: "n" } : {}) },
+      worthTrack: { position: "relative", height: phone ? 16 : 22, ...(phone ? { gridArea: "t" } : {}) },
+      jobGrid: { display: "grid", gridTemplateColumns: jobCols, gap: 3, alignItems: "end", paddingBottom: 6, marginBottom: 2, borderBottom: "1px solid var(--border)" },
+      tabs: decksPhone ? { position: "absolute", left: 0, right: 0, bottom: 0, display: "grid", gridTemplateColumns: "repeat(5,1fr)", borderTop: "1px solid var(--border)", background: "var(--surface-sunken)" } : { marginTop: "auto", display: "grid", gridTemplateColumns: "repeat(5,1fr)", borderTop: "1px solid var(--border)", background: "var(--surface-sunken)" },
+    };
+    const dotsBtn = { position: "absolute", top: 10, right: 10, width: 26, height: 26, borderRadius: 6, background: "var(--bg)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "var(--fg)" };
+    const TILES = [
+      { name: "HD - Omnath", cmdr: "Omnath, Locus of Creation · Non-black", detail: "67 to buy · $270.48", played: "2 weeks ago" },
+      { name: "HD Tune - Counter Intelligence", cmdr: "Kilo, Apogee Mind · Jeskai", detail: "13 to buy · $28.71", played: "" },
+      { name: "HD Tune - Mutant Menace", cmdr: "The Wise Mothman · Sultai", detail: "94 changes since v1", played: "" },
+    ];
+    const tiles = (phone ? TILES.slice(0, 1) : TILES).map((t, i) => ({ ...t, art: phone ? 248 : 150, menu: !!cfg.menu && i === 0, dots: cfg.menu && i === 0 ? { ...dotsBtn, boxShadow: "0 0 0 2px var(--accent)" } : dotsBtn }));
+
+    return {
+      theme: this.props.theme ?? "kaldheim",
+      label: `Stats · ${scene} · ${this.props.theme ?? "kaldheim"} · ${phone ? 390 : 900}`,
+      s, phone, desktop: !phone, fullChrome: full, showSeg: enabled,
+      isTiles, isStats: !isTiles,
+      tilesDesk: isTiles && !phone, tilesPhone: isTiles && phone,
+      statsDesk: !isTiles && !phone, statsPhone: !isTiles && phone,
+      scopeLine: fin ? `18 finished decks · ${brews} brews left out` : cfg.only ? "1 deck" : `21 decks · ${brews} brews included`,
+      allLabel: anyClosed ? "Expand all" : "Collapse all",
+      toggleAll: () => this.setState({ open: anyClosed ? cards.slice() : [] }),
+      shelves: [["All decks", 21], ["Custom Builds", 11], ["Precon Tune", 6], ["Test", 1], ["WIP", 3], ["Unfiled", 0]].map(([name, k], i) => ({ name, n: k, style: { display: "inline-flex", alignItems: "center", gap: 6, height: 34, padding: "0 11px", borderRadius: 8, fontSize: 13, fontWeight: i ? 400 : 600, color: i ? "var(--fg-body)" : "var(--fg)", background: i ? "transparent" : "var(--elevated)" } })),
+      pips: ["#F4E9C4", "#BFD8EA", "#CFC6C2", "#E79A6C", "#9CC79A"].map((col) => ({ width: 26, height: 26, borderRadius: "50%", background: col, boxShadow: "inset 0 0 0 2px rgba(0,0,0,.35)" })),
+      tiles, oneNote: !!cfg.oneNote,
+      c, card, rec, sp, sh, co, am, vb, jb,
+      tabBar: phone && full, tabs, showFold: decksPhone,
+    };
+  }
+}
+</script>
+</body>
+</html>
