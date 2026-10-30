@@ -139,6 +139,29 @@ describe("the stages shape (contract 13)", () => {
     expect(within(stages[2]).queryAllByTestId("synopsis-card-image")).toHaveLength(0);
   });
 
+  it("draws the timeline as one segment per stage after its label, never a line behind the labels", () => {
+    drawStages(stage13(), 13);
+    const plan = screen.getByTestId("synopsis-plan");
+    const stages = screen.getAllByTestId("synopsis-stage");
+    // From md every stage but the last owns ONE segment, a sibling AFTER its label in the same row, so the line starts
+    // past the label's text and ends at the next diamond; the old single line behind all three ran through the labels.
+    const segment = (s: HTMLElement) => [...s.querySelectorAll("span[aria-hidden]")].filter((e) => e.className.includes("md:block") && e.className.includes("h-px"));
+    expect(stages.map((s) => segment(s).length)).toEqual([1, 1, 0]);
+    for (const s of stages.slice(0, 2)) {
+      const seg = segment(s)[0];
+      const label = seg.previousElementSibling!;
+      expect(label.textContent).toMatch(/^(Early|Mid)$/);
+      expect(seg.parentElement).toBe(label.parentElement);
+      expect(seg.className).toContain("flex-1");
+      expect(seg.className).toContain("hidden");
+    }
+    // No plan-wide horizontal line is drawn at md (the phone's rail is vertical and hidden from md).
+    const direct = [...plan.children].filter((e) => e.tagName === "SPAN");
+    expect(direct).toHaveLength(1);
+    expect(direct[0].className).toContain("md:hidden");
+    expect(direct[0].className).toContain("w-px");
+  });
+
   it("draws no Based on row under a weakness in the stages shape, and keeps it for a 12 row", () => {
     const evidence = { strategy: [[], [], []], keep: [[]], sendBack: [[]], tips: [[], []], keyCards: [[]], weaknesses: [["sol-ring"], []] };
     const names = { "sol-ring": "Sol Ring" };
