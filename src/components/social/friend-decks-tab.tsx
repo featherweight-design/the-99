@@ -6,6 +6,7 @@
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import type { FriendDeck, OpenFriendDeck, ShippedFriendDeck } from "../../lib/social/decks";
+import { PersonText, type ThirdPartyName } from "../../lib/person-name";
 import { socialCopy } from "../../lib/copy/social";
 import { commanderRepeats } from "../../lib/decks/commander-repeats";
 import { colorLabel } from "../../lib/decks/format";
@@ -19,7 +20,7 @@ const p = socialCopy.friendPage;
 const PILL_IN_FLOW = "inline-flex h-[19px] items-center self-start rounded-[5px] px-[7px] font-mono text-[10px]";
 
 export function FriendDecksTab({ name, decks, publicId, open = false }: {
-  name: string;
+  name: ThirdPartyName;
   decks: FriendDeck[];
   /** The friend's public id, for each tile's press. */
   publicId?: string;
@@ -33,8 +34,8 @@ export function FriendDecksTab({ name, decks, publicId, open = false }: {
   if (decks.length === 0) {
     return (
       <div className="mt-[16px] flex flex-col gap-[6px] rounded-[12px] px-[20px] py-[22px] [border:1px_dashed_var(--border-dashed)] md:mt-[18px] md:px-[32px] md:py-[30px]">
-        <p className="m-0 font-display text-[18px] font-bold text-[color:var(--fg)] [overflow-wrap:anywhere] md:text-[19px]">{p.decks.emptyTitle(name)}</p>
-        <p className="m-0 max-w-[600px] text-[14px] leading-[1.6] text-[color:var(--fg-muted)] [overflow-wrap:anywhere]">{open ? p.decks.emptyBodyOpen(name) : p.decks.emptyBody(name)}</p>
+        <p className="m-0 font-display text-[18px] font-bold text-[color:var(--fg)] [overflow-wrap:anywhere] md:text-[19px]"><PersonText text={p.decks.emptyTitle(name)} /></p>
+        <p className="m-0 max-w-[600px] text-[14px] leading-[1.6] text-[color:var(--fg-muted)] [overflow-wrap:anywhere]"><PersonText text={open ? p.decks.emptyBodyOpen(name) : p.decks.emptyBody(name)} /></p>
       </div>
     );
   }
@@ -55,7 +56,7 @@ export function FriendDecksTab({ name, decks, publicId, open = false }: {
   }
   return (
     <>
-      <p className="m-0 mt-[12px] font-mono text-[11px] text-[color:var(--fg-faint)]">{p.decks.line(name)}</p>
+      <p className="m-0 mt-[12px] font-mono text-[11px] text-[color:var(--fg-faint)]"><PersonText text={p.decks.line(name)} /></p>
       <ul className="m-0 mt-[12px] grid list-none grid-cols-1 gap-[12px] p-0 md:grid-cols-4 md:gap-[16px]">
         {decks.filter((d): d is ShippedFriendDeck => d.id === null).map((d, i) => {
           const fill = Math.min(100, Math.round((d.built / d.bodySize) * 100));

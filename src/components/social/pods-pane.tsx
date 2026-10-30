@@ -27,6 +27,7 @@ import {
 import { AFFIX_FOCUS, AFFIX_INPUT } from "../ui/text-field";
 import { PodCard } from "./pod-card";
 import { PodAddFriends } from "./pod-add-friends";
+import { compareNames } from "../../lib/person-name";
 import { SocialToast, type SocialToastState } from "./social-toast";
 
 const copy = socialCopy.pods;
@@ -230,7 +231,7 @@ export function PodsPane({
   }
 
   const candidates = adding_
-    ? friends.filter((f) => !adding_.members.some((m) => m.publicId === f.publicId)).sort((a, b) => byName({ name: a.displayName }, { name: b.displayName }))
+    ? friends.filter((f) => !adding_.members.some((m) => m.publicId === f.publicId)).sort((a, b) => compareNames(a.displayName, b.displayName, "en-US", { sensitivity: "base" }))
     : [];
 
   return (

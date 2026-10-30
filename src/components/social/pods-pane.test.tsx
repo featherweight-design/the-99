@@ -23,6 +23,8 @@ import { PodsPane } from "./pods-pane";
 import { FriendInviteContext } from "./invite-context";
 import { socialCopy } from "../../lib/copy/social";
 import type { Friend, Pod, PodMember } from "../../lib/social/access";
+import { named } from "../../lib/person-name/mint";
+import { plain } from "../../lib/person-name/testing";
 
 const P = socialCopy.pods;
 const ART = "https://cards.scryfall.io/art_crop/x.jpg";
@@ -35,7 +37,7 @@ const DAVE = member({ displayName: "Dave", commander: cmd("Korvold") });
 const PRIYA = member({ displayName: "Priya" });
 const SAM = member({ displayName: "Sam", isFriend: false });
 const friend = (displayName: string, commander: Friend["commander"] = null): Friend => ({
-  publicId: `p-${displayName}`, displayName, since: new Date("2026-10-02"), commander,
+  publicId: `p-${displayName}`, displayName: named(displayName), since: new Date("2026-10-02"), commander,
 });
 const mine = (over: Partial<Pod> = {}): Pod => ({
   id: "pod-1", name: "Thursday", isOwner: true, members: [{ ...ME, isOwner: true }, DAVE, PRIYA], nextOwner: null, ...over,
@@ -355,7 +357,7 @@ describe("round 1: races and edges", () => {
     fireEvent.click(alex);
     fireEvent.click(zed);
     // The friendship with Alex ended: the redraw drops him from the offer.
-    rerender(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS.filter((f) => f.displayName !== "Alex")} />);
+    rerender(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS.filter((f) => plain(f.displayName) !== "Alex")} />);
     await press(screen.getByRole("button", { name: P.addConfirm(1) }));
     expect(m.add).toHaveBeenCalledWith("pod-1", ["p-Zed"]);
   });

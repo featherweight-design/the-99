@@ -16,7 +16,7 @@ import { gameSeatsCopy } from "../../lib/copy/game-seats";
 import { shortName, type SeatFriend, type SeatPick } from "../../lib/decks/game-seats";
 import type { OpponentCommanderHit } from "../../lib/decks/opponent-commanders";
 import type { FriendDeck, PickerFriend } from "../../lib/social/games";
-import { faceInitials } from "../../lib/names/initials";
+import { nameIncludes, PersonInitials, PersonName, PersonText } from "../../lib/person-name";
 import { IdentityPips } from "../commanders/commander-art";
 import { Face } from "../social/face";
 import { ANCHORED_PANEL_CLASS, useAnchoredPanel } from "../ui/anchored-panel";
@@ -115,7 +115,7 @@ function Field({ inputRef, value, onChange, placeholder, describedBy }: {
   );
 }
 
-function Foot({ id, children }: { id: string; children: string }) {
+function Foot({ id, children }: { id: string; children: ReactNode }) {
   return (
     <p id={id} className="m-0 border-0 border-t border-solid border-t-[color:var(--border)] px-[14px] py-[9px] font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">
       {children}
@@ -160,14 +160,14 @@ function Decks({ friend, onPick, onCommander, onBack, describedBy }: {
           ‹
         </button>
         <Face name={friend.displayName} commander={{ artCropUri: friend.commanderArt }} size={26} />
-        <h3 className="m-0 min-w-0 flex-1 truncate text-[13.5px] font-medium text-[color:var(--fg)]">{copy.theirDecks(friend.displayName)}</h3>
+        <h3 className="m-0 min-w-0 flex-1 truncate text-[13.5px] font-medium text-[color:var(--fg)]"><PersonText text={copy.theirDecks(friend.displayName)} /></h3>
       </div>
       <div data-seat-body className={SCROLL_BODY}>
       <ul className="m-0 list-none p-0 pb-[6px]">
         {decks.state === "busy" && <li className="px-[14px] py-[10px] font-mono text-[11px] text-[color:var(--fg-faint)]">{copy.searching}</li>}
-        {decks.state === "failed" && <li role="alert" className={NOTE}>{copy.decksFailed(friend.displayName)}</li>}
+        {decks.state === "failed" && <li role="alert" className={NOTE}><PersonText text={copy.decksFailed(friend.displayName)} /></li>}
         {/* "has no decks" would be untrue of a friend whose rules withhold decks: they get A deck not listed instead. */}
-        {none && !friend.withheld && <li className={NOTE}>{copy.noDecks(friend.displayName)}</li>}
+        {none && !friend.withheld && <li className={NOTE}><PersonText text={copy.noDecks(friend.displayName)} /></li>}
         {decks.state === "done" && decks.items.map((d) => (
           <li key={d.deckId}>
             <button
@@ -204,15 +204,15 @@ function Decks({ friend, onPick, onCommander, onBack, describedBy }: {
                 <Slot><SearchIcon size={16} /></Slot>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[13.5px] font-medium text-[color:var(--fg)]">{none ? copy.pickCommander : copy.anotherCommander}</span>
-                  <span className="block truncate font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.anotherCommanderSub(friend.displayName)}</span>
+                  <span className="block truncate font-mono text-[10.5px] text-[color:var(--fg-faint)]"><PersonText text={copy.anotherCommanderSub(friend.displayName)} /></span>
                 </span>
               </button>
             </li>
             <li>
               <button type="button" onClick={() => onPick({ friend: who, deck: null, commander: null })} className={ROW}>
-                <Slot><span className="font-mono text-[12px]">{faceInitials(friend.displayName)}</span></Slot>
+                <Slot><span className="font-mono text-[12px]"><PersonInitials n={friend.displayName} /></span></Slot>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[13.5px] font-medium text-[color:var(--fg)]">{copy.justFriend(friend.displayName)}</span>
+                  <span className="block truncate text-[13.5px] font-medium text-[color:var(--fg)]"><PersonText text={copy.justFriend(friend.displayName)} /></span>
                   <span className="block truncate font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.justFriendSub}</span>
                 </span>
               </button>
@@ -220,7 +220,7 @@ function Decks({ friend, onPick, onCommander, onBack, describedBy }: {
           </>
         )}
       </ul>
-      <Foot id={describedBy}>{none ? copy.footNoDecks(friend.displayName) : copy.footDecks(friend.displayName)}</Foot>
+      <Foot id={describedBy}><PersonText text={none ? copy.footNoDecks(friend.displayName) : copy.footDecks(friend.displayName)} /></Foot>
       </div>
     </div>
   );
@@ -299,7 +299,7 @@ function Body({
 
   const friend = current.step === "commander" ? current.friend : null;
   const q = query.trim().toLocaleLowerCase("en-US");
-  const shown = friend ? [] : q === "" ? list : list.filter((f) => f.displayName.toLocaleLowerCase("en-US").includes(q));
+  const shown = friend ? [] : q === "" ? list : list.filter((f) => nameIncludes(f.displayName, q));
   const placeholder = friend || list.length === 0 ? copy.placeholder : copy.placeholderFriends;
   const asking = q.length >= 2;
   return (
@@ -320,7 +320,7 @@ function Body({
                 className={`${ROW} ${here ? "cursor-default opacity-[.45]" : ""}`}
               >
                 <Face name={f.displayName} commander={{ artCropUri: f.commanderArt }} size={40} />
-                <span className="min-w-0 flex-1 truncate text-[13.5px] font-medium text-[color:var(--fg)]">{f.displayName}</span>
+                <span className="min-w-0 flex-1 truncate text-[13.5px] font-medium text-[color:var(--fg)]"><PersonName n={f.displayName} /></span>
                 <span className="shrink-0 font-mono text-[10.5px] text-[color:var(--fg-faint)]">{/* "no decks" would be untrue of a friend whose rules may withhold decks, so their row says no count at all. */}
                   {here ? copy.seated : f.withheld && f.deckCount === 0 ? null : copy.deckCount(f.deckCount)}</span>
               </button>

@@ -1,6 +1,7 @@
 // The friend's deck route (friend decks G1): not found unless Friends is on for the VIEWER and both the
 // friend and the deck read (the deck's own rules are the OWNER's, in `loadFriendDeck`).
 import { describe, expect, it, vi, beforeEach } from "vitest";
+import { named } from "../../../../../lib/person-name/mint";
 
 const m = vi.hoisted(() => ({ requireUserId: vi.fn(), requestSwitchEnv: vi.fn(), loadFriend: vi.fn(), loadFriendDeck: vi.fn() }));
 vi.mock("next/navigation", () => ({ notFound: () => { throw new Error("NOT_FOUND"); } }));
@@ -19,7 +20,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   m.requireUserId.mockResolvedValue("user_me");
   m.requestSwitchEnv.mockResolvedValue(ON);
-  m.loadFriend.mockResolvedValue({ publicId: "p1", displayName: "Colin", commander: null, since: new Date() });
+  m.loadFriend.mockResolvedValue({ publicId: "p1", displayName: named("Colin"), commander: null, since: new Date() });
   m.loadFriendDeck.mockResolvedValue({ id: "d1" });
 });
 

@@ -27,10 +27,10 @@ import { plain } from "../../lib/person-name/testing";
 
 const NOW = new Date("2026-10-15T21:41:00Z");
 const TOKEN = "AbCdEfGhIjKlMnOpQrStUv";
-const DAVE: Friend = { publicId: "p-dave", displayName: "Dave", since: new Date("2026-10-02T12:00:00Z"), commander: null };
+const DAVE: Friend = { publicId: "p-dave", displayName: named("Dave"), since: new Date("2026-10-02T12:00:00Z"), commander: null };
 const fetchMock = vi.fn();
 
-const MO: Friend = { publicId: "p-mo", displayName: "Mo", since: NOW, commander: null };
+const MO: Friend = { publicId: "p-mo", displayName: named("Mo"), since: NOW, commander: null };
 type Link = { token: string; createdAt: Date; expiresAt: Date };
 const view = (friends: Friend[] = [DAVE], links: Link[] = []) => (
   <FriendsView

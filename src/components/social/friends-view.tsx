@@ -76,8 +76,8 @@ function useFieldWrite<T>(served: T, show: (v: T) => void) {
 }
 
 type Shown = { token: string; url: string; expiresAt: Date; friendsBefore: ReadonlySet<string> };
-/** The friend just accepted: from `Friend` (still a plain string until PR B) or from the invite watch (branded). */
-type Receipt = { publicId: string; displayName: string | ThirdPartyName };
+/** The friend just accepted: from `Friend` or from the invite watch, both branded. */
+type Receipt = { publicId: string; displayName: ThirdPartyName };
 
 export function FriendsView({
   profile,

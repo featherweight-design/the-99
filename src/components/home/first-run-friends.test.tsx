@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { named } from "../../lib/person-name/mint";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
 const actions = vi.hoisted(() => ({ createInviteAction: vi.fn() }));
@@ -31,7 +32,7 @@ const { FirstRunChecklist } = await import("./first-run");
 
 const NOW = "2026-10-16T12:00:00.000Z";
 const inDays = (d: number) => new Date(Date.parse(NOW) + d * 86_400_000);
-const friend = (name: string) => ({ publicId: `pub-${name}`, displayName: name, commander: null });
+const friend = (name: string) => ({ publicId: `pub-${name}`, displayName: named(name), commander: null });
 const link = (expiresAt: Date, token = "t1") => ({ token, createdAt: new Date(NOW), expiresAt });
 const props = (over: Partial<FirstRunFriendsProps> = {}): FirstRunFriendsProps => ({ friends: [], links: [], now: NOW, invites: null, ...over });
 const c = socialCopy.checklist;
@@ -126,12 +127,14 @@ describe("FirstRunFriendsRow", () => {
     expect(watch.useInviteWatch.mock.calls.at(-1)![0]).toEqual(["t1"]);
     fireEvent.click(screen.getByRole("button", { name: c.rowAria("6 days left") }));
     const onEnded = watch.useInviteWatch.mock.calls.at(-1)![1] as (e: unknown[]) => void;
-    act(() => { onEnded([{ token: "t1", friend: { publicId: "pub-Colin", displayName: "Colin" } }]); });
+    act(() => { onEnded([{ token: "t1", friend: { publicId: "pub-Colin", displayName: named("Colin") } }]); });
     expect(screen.queryByRole("dialog", { name: "Add a friend" })).toBeNull();
     // The redraw lands the friend: the row is done, and the toast survives the change of state.
     rerender(<FirstRunFriendsRow {...props({ friends: [friend("Colin")] })} />);
     expect(screen.getByRole("link", { name: plain(c.doneAria(socialCopy.page.accepted("Colin"))) })).toBeTruthy();
     expect(screen.getAllByText(plain(socialCopy.page.accepted("Colin"))).length).toBeGreaterThanOrEqual(2);
+    // The toast draws the friend by name: its span carries the autocapture marker.
+    expect(screen.getAllByText(plain(socialCopy.page.accepted("Colin"))).some((el) => el.closest(".ph-no-capture"))).toBe(true);
   });
 
   it("a dialog closed after the row changed state returns focus to the row as it now stands", async () => {
@@ -151,7 +154,7 @@ describe("FirstRunFriendsRow", () => {
     const show = screen.getByRole("button", { name: c.rowAria("6 days left") });
     fireEvent.click(show);
     const onEnded = watch.useInviteWatch.mock.calls.at(-1)![1] as (e: unknown[]) => void;
-    act(() => { onEnded([{ token: "t1", friend: { publicId: "pub-Colin", displayName: "Colin" } }]); });
+    act(() => { onEnded([{ token: "t1", friend: { publicId: "pub-Colin", displayName: named("Colin") } }]); });
     // The dialog's cleanup hands focus back to Show, which is still C2's press.
     show.focus();
     expect(document.activeElement).toBe(show);

@@ -8,12 +8,13 @@
 // The row holds no state of its own beyond which seat's picker is open; the seats, the result and the pod size
 // are the form's, so what is saved is what is drawn.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { listPickerPodsAction, listPodSeatsAction } from "../../app/decks/[id]/opponent-actions";
 import { gameSeatsCopy } from "../../lib/copy/game-seats";
 import { ruleZeroCopy } from "../../lib/copy/rule-zero";
 import { hasRoom, podFill, seatCount, seatedFriends, seatName, shortName, SEAT_LABEL_MAX, type Seat, type SeatFriend, type SeatPick } from "../../lib/decks/game-seats";
 import { faceInitials } from "../../lib/names/initials";
+import { joinNames, PersonInitials, PersonName, PersonText, personAttrs, personText, type PersonParts, type ThirdPartyName } from "../../lib/person-name";
 import type { PickerPod } from "../../lib/social/games";
 import { ArtLayer } from "../ui/art-layer";
 import { SeatPicker } from "./seat-picker";
@@ -28,7 +29,7 @@ const ART = "relative block h-[58px] w-[58px] shrink-0 overflow-hidden rounded-[
 const ART_POSITION = "50% 20%";
 
 /** A seat's art, or the friend's initials while they were seated with no commander to draw. */
-function Art({ uri, dim = false, initials = null }: { uri: string | null; dim?: boolean; initials?: string | null }) {
+function Art({ uri, dim = false, initials = null }: { uri: string | null; dim?: boolean; initials?: ReactNode }) {
   return (
     <span aria-hidden className={`${ART} ${uri || initials === null ? "" : "flex items-center justify-center font-mono text-[18px] text-[color:var(--fg-muted)]"}`} style={dim ? { opacity: 0.78 } : undefined}>
       {uri ? <ArtLayer src={uri} style={{ backgroundPosition: ART_POSITION }} /> : initials}
@@ -64,22 +65,21 @@ function SeatView({
         type="button"
         disabled={busy}
         onClick={(e) => onOpen(e.currentTarget)}
-        aria-label={copy.change(name)}
+        {...personAttrs({ "aria-label": copy.change(name) }, `shrink-0 cursor-pointer rounded-[8px] border-0 bg-transparent p-0 md:rounded-[10px] ${seat.won ? "outline outline-2 outline-offset-2 outline-[color:var(--fg)]" : ""}`)}
         aria-expanded={editing}
         data-seat-art
         data-seat-key={seat.key}
-        className={`shrink-0 cursor-pointer rounded-[8px] border-0 bg-transparent p-0 md:rounded-[10px] ${seat.won ? "outline outline-2 outline-offset-2 outline-[color:var(--fg)]" : ""}`}
       >
         {seat.table ? (
           // A seat from a Rule 0 table (plan §PR 8) draws the table's art for it, or the player's initials while it waits.
           <Art uri={seat.table.artCropUri} initials={faceInitials(seat.table.name)} />
         ) : (
-          <Art uri={seat.commander?.imageUri ?? null} initials={seat.friend ? faceInitials(seat.friend.name) : null} />
+          <Art uri={seat.commander?.imageUri ?? null} initials={seat.friend ? <PersonInitials n={seat.friend.name} /> : null} />
         )}
       </button>
       <span className="min-w-0 flex-1 md:flex-none">
         <span className="mt-0 block truncate text-[13px] font-medium text-[color:var(--fg)] md:mt-[6px]">
-          {name}
+          <PersonName n={name} />
           {seat.table?.mark && <small className="ml-[6px] font-mono text-[9.5px] text-[color:var(--fg-faint)]">{ruleZeroCopy.log.fromTable}</small>}
         </span>
         {sub && !seat.won && <span className="block truncate font-mono text-[10.5px] text-[color:var(--fg-faint)]">{sub}</span>}
@@ -132,15 +132,14 @@ function SeatView({
           type="button"
           disabled={busy}
           aria-pressed={seat.won}
-          aria-label={copy.wonAria(name)}
           onClick={onWon}
-          className={
+          {...personAttrs({ "aria-label": copy.wonAria(name) }, [
             "flex h-[32px] shrink-0 cursor-pointer items-center justify-center rounded-full border border-solid px-[12px] font-mono text-[11px] font-semibold " +
             "md:absolute md:right-[6px] md:top-[6px] md:h-[30px] md:w-[30px] md:p-0 " +
             (seat.won
               ? "border-[color:var(--fg)] bg-[color:var(--fg)] text-[color:var(--bg)]"
-              : "border-[color:var(--border-strong)] bg-[color-mix(in_srgb,var(--bg)_80%,transparent)] text-[color:var(--fg)]")
-          }
+              : "border-[color:var(--border-strong)] bg-[color-mix(in_srgb,var(--bg)_80%,transparent)] text-[color:var(--fg)]"),
+          ].join(" "))}
         >
           <span className="md:hidden">{copy.wonPill}</span>
           <span className="hidden md:block"><TrophyIcon /></span>
@@ -150,8 +149,7 @@ function SeatView({
         type="button"
         disabled={busy}
         onClick={onClear}
-        aria-label={copy.clear(name)}
-        className="flex h-[28px] w-[28px] shrink-0 cursor-pointer items-center justify-center rounded-full border border-solid border-[color:var(--border)] bg-transparent text-[12px] text-[color:var(--fg-muted)] md:absolute md:left-[6px] md:top-[6px] md:h-[22px] md:w-[22px] md:bg-[color-mix(in_srgb,var(--bg)_80%,transparent)]"
+        {...personAttrs({ "aria-label": copy.clear(name) }, "flex h-[28px] w-[28px] shrink-0 cursor-pointer items-center justify-center rounded-full border border-solid border-[color:var(--border)] bg-transparent text-[12px] text-[color:var(--fg-muted)] md:absolute md:left-[6px] md:top-[6px] md:h-[22px] md:w-[22px] md:bg-[color-mix(in_srgb,var(--bg)_80%,transparent)]")}
       >
         ✕
       </button>
@@ -160,7 +158,8 @@ function SeatView({
 }
 
 /** "Sam", "Sam and Jo", "Sam, Jo and Lee". */
-const names = (list: readonly string[]) => (list.length < 2 ? list.join("") : `${list.slice(0, -1).join(", ")} and ${list[list.length - 1]}`);
+const names = (list: ReadonlyArray<string | ThirdPartyName>): PersonParts =>
+  list.length < 2 ? personText`${list[0] ?? ""}` : personText`${joinNames(list.slice(0, -1))} and ${list[list.length - 1]}`;
 
 export function GameSeats({
   you, podSize, result, seats, busy, held, onSeat, onPod, onPodPending, onClear, onWon, onLabel,
@@ -208,7 +207,7 @@ export function GameSeats({
       if (reading.current) onPodPendingRef.current(false);
     };
   }, []);
-  const [podNote, setPodNote] = useState<string | null>(null);
+  const [podNote, setPodNote] = useState<string | PersonParts | null>(null);
   const room = hasRoom(podSize, seats.length);
   const lost = result === "loss" && seats.length > 0;
   const addRef = useRef<HTMLButtonElement>(null);
@@ -350,7 +349,7 @@ export function GameSeats({
           </li>
         )}
       </ul>
-      {podNote && <p role="status" className="m-0 mt-[12px] font-mono text-[11px] text-[color:var(--fg-muted)]">{podNote}</p>}
+      {podNote && <p role="status" className="m-0 mt-[12px] font-mono text-[11px] text-[color:var(--fg-muted)]"><PersonText text={podNote} /></p>}
       {held && (
         <p role="status" className="m-0 mt-[12px] font-mono text-[11px] text-[color:var(--fg-muted)]">{copy.held(seats.length)}</p>
       )}

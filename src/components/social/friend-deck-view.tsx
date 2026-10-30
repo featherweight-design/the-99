@@ -6,6 +6,7 @@
 // auto tag, proxy, lock, notes, tabs or ⋯.
 
 import Link from "next/link";
+import { PersonText, type ThirdPartyName } from "../../lib/person-name";
 import { socialCopy } from "../../lib/copy/social";
 import { preconsCopy } from "../../lib/copy/precons";
 import { WUBRG_COLOR } from "../../lib/collection/browse";
@@ -44,7 +45,7 @@ export function FriendDeckView({
   friend,
 }: {
   deck: FriendDeckPage;
-  friend: { publicId: string; displayName: string; commander: ProfileCommander | null };
+  friend: { publicId: string; displayName: ThirdPartyName; commander: ProfileCommander | null };
 }) {
   const [storedView, storeView] = useStoredView(VIEW_KEY, isDeckView);
   const view = storedView ?? "list";
@@ -92,7 +93,7 @@ export function FriendDeckView({
       <div className="pb-[96px]">
         <header className="flex flex-col gap-[12px] border-x-0 border-t-0 border-b-[1px] border-solid border-b-[color:var(--border)] p-[12px_16px_14px] md:p-[16px_26px_18px]">
           <Link href={decksHref} className="font-mono text-[11px] text-[color:var(--fg-faint)] no-underline">
-            {copy.back(name)}
+            <PersonText text={copy.back(name)} />
             <PendingReporter href={decksHref} />
           </Link>
           <div className="flex items-start gap-[12px]">
@@ -107,7 +108,7 @@ export function FriendDeckView({
             <div className="flex min-w-0 flex-1 flex-col gap-[4px]">
               <span data-testid="friend-deck-eyebrow" className="flex items-center gap-[6px] font-mono text-[9.5px] uppercase tracking-[0.08em] text-[color:var(--fg-faint)]">
                 <Face name={name} commander={friend.commander} size={16} />
-                {copy.eyebrow(name)}
+                <PersonText text={copy.eyebrow(name)} />
               </span>
               <h1 className="m-0 font-display text-[22px] font-normal leading-[1.15] text-[color:var(--fg)] md:text-[26px]">{deck.name}</h1>
               {!repeats && <span data-testid="friend-deck-commanders" className="text-[13.5px] text-[color:var(--fg-body)]">{commanderLine}</span>}
@@ -183,8 +184,8 @@ export function FriendDeckView({
           />
           {empty && head && (
             <div data-testid="friend-deck-empty" className="flex flex-col gap-[6px] rounded-[12px] border border-dashed border-[color:var(--border-dashed)] p-[22px_20px] md:p-[30px_32px]">
-              <p className="m-0 font-display text-[18px] font-bold text-[color:var(--fg)]">{copy.emptyTitle(name)}</p>
-              <p className="m-0 max-w-[600px] text-[14px] leading-[1.6] text-[color:var(--fg-muted)]">{copy.emptyBody(name)}</p>
+              <p className="m-0 font-display text-[18px] font-bold text-[color:var(--fg)]"><PersonText text={copy.emptyTitle(name)} /></p>
+              <p className="m-0 max-w-[600px] text-[14px] leading-[1.6] text-[color:var(--fg-muted)]"><PersonText text={copy.emptyBody(name)} /></p>
             </div>
           )}
           {groups.map(([label, group]) => {

@@ -24,14 +24,15 @@ import { SocialToast } from "./social-toast";
 import { socialCopy } from "../../lib/copy/social";
 import { TOAST_MS } from "../collection/edit-toast";
 import type { Friend } from "../../lib/social/access";
+import { named } from "../../lib/person-name/mint";
 import { plain } from "../../lib/person-name/testing";
 
 const NOW = new Date("2026-10-15T21:41:00Z");
 const SOKKA = { oracleId: "o-sokka", name: "Sokka, Tenacious Tactician", artCropUri: "https://x/sokka.jpg", colorIdentity: ["W", "U"] };
 /** SOKKA as the player's own face: the own read also carries the pick behind it. */
 const OWN_SOKKA = { ...SOKKA, printingId: null, printingGone: false };
-const DAVE: Friend = { publicId: "p-dave", displayName: "Dave", since: new Date("2026-10-02T12:00:00Z"), commander: SOKKA };
-const JO: Friend = { publicId: "p-jo", displayName: "Jo", since: new Date("2026-09-14T12:00:00Z"), commander: null };
+const DAVE: Friend = { publicId: "p-dave", displayName: named("Dave"), since: new Date("2026-10-02T12:00:00Z"), commander: SOKKA };
+const JO: Friend = { publicId: "p-jo", displayName: named("Jo"), since: new Date("2026-09-14T12:00:00Z"), commander: null };
 const link = (i: number, expiresAt = new Date("2026-10-22T21:41:00Z")) => ({
   token: `tok${String(i).padStart(19, "0")}`, createdAt: new Date("2026-10-15T21:41:00Z"), expiresAt,
 });
@@ -379,10 +380,12 @@ describe("the friends list", () => {
   it("removes a friend through the menu and the shared pane, Keep it first", async () => {
     a.unfriendAction.mockResolvedValue({ ok: true });
     draw();
-    fireEvent.click(screen.getByRole("button", { name: socialCopy.friends.menuAria("Dave") }));
+    const menu = screen.getByRole("button", { name: plain(socialCopy.friends.menuAria(named("Dave"))) });
+    expect(menu.classList.contains("ph-no-capture")).toBe(true);
+    fireEvent.click(menu);
     fireEvent.click(screen.getByRole("button", { name: socialCopy.friends.remove }));
-    expect(screen.getByText(socialCopy.friends.removeHeading("Dave"))).toBeTruthy();
-    expect(screen.getByText(socialCopy.friends.removeBody("Dave"))).toBeTruthy();
+    expect(screen.getByText(plain(socialCopy.friends.removeHeading(named("Dave"))))).toBeTruthy();
+    expect(screen.getByText(plain(socialCopy.friends.removeBody(named("Dave")))).closest(".ph-no-capture")).not.toBeNull();
     expect(screen.getByRole("button", { name: "Keep it" })).toHaveFocus();
     await act(async () => fireEvent.click(screen.getByRole("button", { name: socialCopy.friends.removeConfirm })));
     expect(a.unfriendAction).toHaveBeenCalledWith("p-dave");
@@ -393,7 +396,7 @@ describe("the friends list", () => {
   it("toasts a removal that failed, and keeps the row", async () => {
     a.unfriendAction.mockRejectedValue(new Error("down"));
     draw();
-    fireEvent.click(screen.getByRole("button", { name: socialCopy.friends.menuAria("Jo") }));
+    fireEvent.click(screen.getByRole("button", { name: plain(socialCopy.friends.menuAria(named("Jo"))) }));
     fireEvent.click(screen.getByRole("button", { name: socialCopy.friends.remove }));
     await act(async () => fireEvent.click(screen.getByRole("button", { name: socialCopy.friends.removeConfirm })));
     expect(alert().textContent).toContain(socialCopy.friends.removeFailed);
@@ -404,7 +407,7 @@ describe("the friends list", () => {
     a.unfriendAction.mockResolvedValue({ ok: true });
     draw();
     for (const [name, left] of [["Dave", 1], ["Jo", 0]] as const) {
-      fireEvent.click(screen.getByRole("button", { name: socialCopy.friends.menuAria(name) }));
+      fireEvent.click(screen.getByRole("button", { name: plain(socialCopy.friends.menuAria(named(name))) }));
       fireEvent.click(screen.getByRole("button", { name: socialCopy.friends.remove }));
       await act(async () => fireEvent.click(screen.getByRole("button", { name: socialCopy.friends.removeConfirm })));
       expect(screen.getByRole("heading", { name: socialCopy.friends.head(left) })).toHaveFocus();
@@ -414,7 +417,7 @@ describe("the friends list", () => {
   it("draws a removed friend again when a later redraw lists them (they accepted a new link)", async () => {
     a.unfriendAction.mockResolvedValue({ ok: true });
     const { rerender } = draw();
-    fireEvent.click(screen.getByRole("button", { name: socialCopy.friends.menuAria("Dave") }));
+    fireEvent.click(screen.getByRole("button", { name: plain(socialCopy.friends.menuAria(named("Dave"))) }));
     fireEvent.click(screen.getByRole("button", { name: socialCopy.friends.remove }));
     await act(async () => fireEvent.click(screen.getByRole("button", { name: socialCopy.friends.removeConfirm })));
     expect(document.querySelectorAll("[data-friend-row]")).toHaveLength(1);
@@ -428,6 +431,7 @@ describe("the receipt after Accept (E10)", () => {
     draw({ accepted: { ...DAVE, since: NOW } , friends: [{ ...DAVE, since: NOW }, JO] });
     const strip = screen.getByRole("status");
     expect(strip.textContent).toContain(plain(socialCopy.page.accepted("Dave")));
+    expect(within(strip).getByText(plain(socialCopy.page.accepted("Dave"))).closest(".ph-no-capture")).not.toBeNull();
     expect(screen.getByText(socialCopy.friends.since("today")).className).toContain("--success");
     fireEvent.click(within(strip).getByRole("button", { name: socialCopy.page.close }));
     expect(screen.queryByText(plain(socialCopy.page.accepted("Dave")))).toBeNull();

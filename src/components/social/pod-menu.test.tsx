@@ -26,6 +26,7 @@ import { PodsPane } from "./pods-pane";
 import { socialCopy } from "../../lib/copy/social";
 import { folderCopy } from "../../lib/copy/folders";
 import type { Friend, Pod, PodMember } from "../../lib/social/access";
+import { named } from "../../lib/person-name/mint";
 
 const P = socialCopy.pods;
 const ART = "https://cards.scryfall.io/art_crop/x.jpg";
@@ -38,7 +39,7 @@ const DAVE = member({ displayName: "Dave", commander: cmd("Korvold") });
 const PRIYA = member({ displayName: "Priya" });
 const SAM = member({ displayName: "Sam", isFriend: false });
 const friend = (displayName: string, commander: Friend["commander"] = null): Friend => ({
-  publicId: `p-${displayName}`, displayName, since: new Date("2026-10-02"), commander,
+  publicId: `p-${displayName}`, displayName: named(displayName), since: new Date("2026-10-02"), commander,
 });
 const mine = (over: Partial<Pod> = {}): Pod => ({
   id: "pod-1", name: "Thursday", isOwner: true, members: [{ ...ME, isOwner: true }, DAVE, PRIYA], nextOwner: null, ...over,

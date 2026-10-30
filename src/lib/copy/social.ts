@@ -106,25 +106,25 @@ export const socialCopy = {
     since: (date: string) => `since ${date}`, // "since today", "since Oct 2"
     today: "today",
     yesterday: "yesterday",
-    menuAria: (name: string) => `${name} actions`,
+    menuAria: (name: ThirdPartyName) => personText`${name} actions`,
     remove: "Remove friend",
-    removeHeading: (name: string) => `Remove ${name}?`,
+    removeHeading: (name: ThirdPartyName) => personText`Remove ${name}?`,
     // THE SENTENCE: unfriend removes each from the pods the other owns, and is silent.
-    removeBody: (name: string) => `${name} leaves the pods you own, and you leave ${name}’s. ${name} isn’t told.`,
+    removeBody: (name: ThirdPartyName) => personText`${name} leaves the pods you own, and you leave ${name}’s. ${name} isn’t told.`,
     removeConfirm: "Remove friend",
     removeFailed: "We couldn’t remove that friend. Try again.", // toast, role alert
     // The row's link to the friend's page (R2 P1), spoken; the › itself is drawn.
-    openAria: (name: string) => `${name}’s page`,
+    openAria: (name: ThirdPartyName) => personText`${name}’s page`,
   },
 
   // A friend's page, `/friends/[publicId]` (Social R2 P2, P3; handoff `social-r2 · copy strings.ts` friend block).
   friendPage: {
     back: "‹ Friends",
     since: (since: string) => `Friend ${since}`, // `since` is friends.since's "since Oct 2"
-    head: (name: string) => `${name}’s wishlist`,
+    head: (name: ThirdPartyName) => personText`${name}’s wishlist`,
     viewOnly: "view only",
-    emptyTitle: (name: string) => `${name}’s wishlist is empty`,
-    emptyBody: (name: string) => `When ${name} adds a card, it shows here with how many they want until they have them.`,
+    emptyTitle: (name: ThirdPartyName) => personText`${name}’s wishlist is empty`,
+    emptyBody: (name: ThirdPartyName) => personText`When ${name} adds a card, it shows here with how many they want until they have them.`,
     // The strip under a friend's head (menu and Home, PR 7). Placeholder words, for /copy-review.
     tabsAria: "Friend sections",
     tabs: { spares: "Spares", wishlist: "Wishlist", decks: "Decks" },
@@ -145,15 +145,15 @@ export const socialCopy = {
       noneBody: (name: string | ThirdPartyName) => personText`Spares show here when ${name} shares them with a pod you’re both in.`,
     },
     decks: {
-      line: (name: string) => `View only. ${name}’s committed decks and drafts, newest first.`,
+      line: (name: ThirdPartyName) => personText`View only. ${name}’s committed decks and drafts, newest first.`,
       figure: (built: number, bodySize: number, toBuy: number) =>
         toBuy > 0 ? `${built} / ${bodySize} · ${toBuy} ${toBuy === 1 ? "card" : "cards"}` : `${built} / ${bodySize}`,
-      emptyTitle: (name: string) => `${name} has no decks yet`,
-      emptyBody: (name: string) => `A deck ${name} builds shows here, as a name, a commander and a status.`,
+      emptyTitle: (name: ThirdPartyName) => personText`${name} has no decks yet`,
+      emptyBody: (name: ThirdPartyName) => personText`A deck ${name} builds shows here, as a name, a commander and a status.`,
       // Friend decks (handoff call 6, States): every tile opens the deck, and the tile shows a count, never a status.
       // Passed /copy-review: the head names the friend and the strip names the tab, so the line says only the order and the press.
       lineOpen: "Newest first. Open one to see its list.",
-      emptyBodyOpen: (name: string) => `A deck ${name} shares shows here, with its whole list.`,
+      emptyBodyOpen: (name: ThirdPartyName) => personText`A deck ${name} shares shows here, with its whole list.`,
       /** The tile's press, named with what the tile shows, in its order. */
       tileAria: (deck: string, commander: string | null, colour: string, cards: string) =>
         [deck, commander, colour, cards].filter(Boolean).join(", "),
@@ -176,8 +176,8 @@ export const socialCopy = {
   // A friend's deck, opened read-only (friend decks handoff, board 1 and States). The own band, the shared-deck lines,
   // the group notes and the basics line are the precon page's own words (`preconsCopy`). Passed /copy-review.
   friendDeck: {
-    back: (name: string) => `‹ ${name}’s decks`,
-    eyebrow: (name: string) => `${name}’s deck · read-only`,
+    back: (name: ThirdPartyName) => personText`‹ ${name}’s decks`,
+    eyebrow: (name: ThirdPartyName) => personText`${name}’s deck · read-only`,
     cards: (count: number) => (count === 1 ? "1 card" : `${count.toLocaleString("en-US")} cards`),
     listNote: "By type, A–Z within each group · press a card for its details, hover for its art",
     listNoteCard: "By type, A–Z within each group · press a card for its details",
@@ -185,9 +185,9 @@ export const socialCopy = {
     keyOwned: "you own it",
     keyNotOwned: "you don’t",
     keyAria: "What the dots mean",
-    emptyTitle: (name: string) => `${name} hasn’t added cards yet`,
+    emptyTitle: (name: ThirdPartyName) => personText`${name} hasn’t added cards yet`,
     // The Commander group sits directly above, so the body does not name the commander again (copy-review).
-    emptyBody: (name: string) => `The list shows here as ${name} builds it.`,
+    emptyBody: (name: ThirdPartyName) => personText`The list shows here as ${name} builds it.`,
   },
 
   // `/friends`' Waiting on you (menu and Home PR 7, board `Friends` 2a to 2c). Placeholder words, for /copy-review.

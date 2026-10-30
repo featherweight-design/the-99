@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { named } from "../../lib/person-name/mint";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 const actions = vi.hoisted(() => ({ createInviteAction: vi.fn() }));
@@ -25,7 +26,7 @@ import { FriendsSection, seatPlan, type FriendsSectionProps } from "./friends-se
 import { plain } from "../../lib/person-name/testing";
 
 const NOW = "2026-10-16T12:00:00.000Z";
-const friend = (name: string) => ({ publicId: `pub-${name}`, displayName: name, commander: null });
+const friend = (name: string) => ({ publicId: `pub-${name}`, displayName: named(name), commander: null });
 const props = (over: Partial<FriendsSectionProps> = {}): FriendsSectionProps => ({
   you: { displayName: "Hugh", commander: null },
   friends: [],
@@ -69,14 +70,15 @@ describe("FriendsSection", () => {
     const { container } = render(<FriendsSection {...props({ friends: [friend("Colin")] })} />);
     expect(screen.getByRole("heading", { name: "Friends · 1" })).toBeTruthy();
     expect(screen.getByRole("link", { name: /All friends/ }).getAttribute("href")).toBe("/friends");
-    expect(screen.getByRole("link", { name: socialCopy.friends.openAria("Colin") }).getAttribute("href")).toBe("/friends/pub-Colin");
+    expect(screen.getByRole("link", { name: plain(socialCopy.friends.openAria(named("Colin"))) }).getAttribute("href")).toBe("/friends/pub-Colin");
+    expect(screen.getByRole("link", { name: plain(socialCopy.friends.openAria(named("Colin"))) }).classList.contains("ph-no-capture")).toBe(true);
     expect(seats(container)).toHaveLength(4);
     expect(screen.queryByText(socialCopy.home.you)).toBeNull();
   });
 
   it("opens /friends from a face when a friend's own page is off", () => {
     render(<FriendsSection {...props({ friends: [friend("Colin")], friendPages: false })} />);
-    expect(screen.getByRole("link", { name: socialCopy.friends.openAria("Colin") }).getAttribute("href")).toBe("/friends");
+    expect(screen.getByRole("link", { name: plain(socialCopy.friends.openAria(named("Colin"))) }).getAttribute("href")).toBe("/friends");
   });
 
   it("with seven friends: four faces and +3, a count the screen reader skips", () => {
@@ -175,9 +177,9 @@ describe("FriendsSection", () => {
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: "friend link" })); });
     expect(screen.getByRole("dialog", { name: "Invite chooser" }).getAttribute("data-screen")).toBe("link");
     const onEnded = watch.useInviteWatch.mock.calls.at(-1)![1] as (e: unknown[]) => void;
-    act(() => { onEnded([{ token: "t9", friend: { publicId: "pub-Colin", displayName: "Colin" } }]); });
+    act(() => { onEnded([{ token: "t9", friend: { publicId: "pub-Colin", displayName: named("Colin") } }]); });
     expect(screen.queryByRole("dialog", { name: "Invite chooser" })).toBeNull();
-    expect(screen.getByText(plain(socialCopy.page.accepted("Colin")))).toBeTruthy();
+    expect(screen.getByText(plain(socialCopy.page.accepted("Colin"))).closest(".ph-no-capture")).not.toBeNull();
   });
 
   it("ignores a link that has already expired", () => {

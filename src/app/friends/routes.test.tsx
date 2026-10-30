@@ -87,7 +87,7 @@ import { plain } from "../../lib/person-name/testing";
 
 const ON = { SOCIAL_FRIENDS_ENABLED: "true" };
 const PUB = "00000000-0000-4000-8000-000000000001";
-const DAVE = { publicId: "00000000-0000-4000-8000-000000000002", displayName: "Dave", since: new Date("2026-10-02T12:00:00Z"), commander: null };
+const DAVE = { publicId: "00000000-0000-4000-8000-000000000002", displayName: named("Dave"), since: new Date("2026-10-02T12:00:00Z"), commander: null };
 const query = (q: Record<string, string> = {}) => Promise.resolve(q);
 const TOKEN = "AbCdEfGhIjKlMnOpQrStUv";
 const params = (token = TOKEN) => Promise.resolve({ token });
@@ -267,7 +267,7 @@ describe("/friends", () => {
       expect(m.spendFlyerOnSignUp).not.toHaveBeenCalled();
       // The stored profile is read as always; no name is offered because none is needed.
       expect(m.ensureProfile).toHaveBeenCalledWith("user_1", undefined);
-      expect(screen.getByText(DAVE.displayName)).toBeTruthy();
+      expect(screen.getByText(plain(DAVE.displayName))).toBeTruthy();
     });
 
     it("spends nothing for an account with no reservation, or a forged-looking one", async () => {
