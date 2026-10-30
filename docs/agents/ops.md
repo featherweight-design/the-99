@@ -114,7 +114,7 @@ Usage basics only: pageviews (App Router navigations included, `capture_pageview
 - **Where it runs.** `<Analytics />` (`src/components/shell/analytics.tsx`) in the root layout: once Clerk has loaded (never before, or a browser's first events would go to whoever it last identified), starts PostHog and, in the same task, identifies a signed-in reader by Clerk id with `name` set to the Clerk first name only (none when blank; never the full name, username or email), and resets on sign-out (an identified browser only, so a signed-out load keeps its anonymous id). Every event carries `release`, the short `VERCEL_GIT_COMMIT_SHA`, inlined by `next.config.ts`. Nothing here may reach a model prompt.
 - **What leaves.** Every event passes `redactCapture` (`before_send`): a friend, join or admin-account path token is replaced in every string (`redactLinkTokens`, shared with Sentry's scrubber), a URL loses its query and hash, and `$elements_chain` is redacted value by value. No `/flags` request (`advanced_disable_flags`): it would carry the landing URL outside `before_send`.
 - **CSP.** With a key set, the ingest host and its `-assets` twin go in `script-src` and `connect-src` of the report-only policy (`posthogCspHosts`, at build time).
-- **Variables Hugh sets in Vercel, the production project only, Production scope, and only once the privacy wording is approved:**
+- **Variables Hugh sets in Vercel, the production project only, Production scope.** `NEXT_PUBLIC_POSTHOG_KEY` is set in Production (2026-10-30, Hugh's ruling), so PostHog is live on `the-99.dev`. The privacy page names it in #2418:
 
 | Variable | Value | Sensitive |
 |---|---|---|
