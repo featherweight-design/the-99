@@ -235,6 +235,7 @@
     "check:public-reads": "node scripts/check-public-reads.mjs",
     "check:social-reads": "node scripts/check-social-reads.mjs",
     "check:switch-reads": "node scripts/check-switch-reads.mjs",
+    "check:third-party-names": "node scripts/check-third-party-names.mjs",
     "seed:summary": "tsx scripts/seed-summary-fixture.ts",
     "probe:mana-symbols": "node scripts/probe-mana-symbols.mjs",
     "fetch:mana": "tsx scripts/fetch-mana-symbols.ts",
