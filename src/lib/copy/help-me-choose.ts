@@ -48,7 +48,6 @@ export const helpMeChooseCopy = {
       caption: "Describe the deck in your own words: how it should feel, or how it should differ from decks you’ve built. Leave it empty and the answers above search on their own, for free.",
       captionFilled: "Read against every commander your answers allow, and your decks’ commanders and themes. It uses a credit when you press Find commanders.",
       captionSpent: "Kept here for when a credit comes back.",
-      count: (n: number, max: number) => `${n} / ${max}`,
       spentLine: (standing: string) => `Won’t be read: ${standing}.`,
       // The box takes the Notes `[[` card tag (the card-tags plan, PR 1). A tagged card is a requirement.
       tagHelp: {
@@ -58,8 +57,6 @@ export const helpMeChooseCopy = {
           "A tagged card is required: only commanders whose decks run it are suggested.",
           "A name typed without picking it from the list stays plain text.",
         ],
-        insert: "[[ ]]",
-        insertAria: "Insert a card tag",
       },
     },
     colors: "Colors", // canvas

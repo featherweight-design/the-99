@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { countCharacters } from "../../lib/text/count-characters";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { plainText } from "../../lib/decks/notes-body";
@@ -8,6 +8,7 @@ import { NOTES_TAGS_MAX } from "../../lib/tuning/limits";
 import { CardTagList } from "../cards/card-tag-picker";
 import { searchDescriptionCards } from "../cards/description-tag-search";
 import { TagHelpRow } from "../cards/tag-help-row";
+import { TaggedBox } from "../cards/tagged-box";
 import { useTaggedField } from "../cards/use-tagged-field";
 import { MutationError } from "./mutation-error";
 
@@ -22,8 +23,8 @@ const copy = deckDescriptionCopy.description;
  * It takes the `[[` card tag (card-tags plan, PR 3): `value` is the BODY, with a tag as `[[id|Name]]`, and the server
  * stores each tag as the catalog's name in plain words. The counter counts what is drawn.
  *
- * The counter is ALWAYS drawn, at the help text's end, in a fixed column, so the help text
- * never reflows as the count grows a digit.
+ * The textarea sits in a TaggedBox: the `[[ ]]` key, its words and the always-drawn counter are the frame's foot, so
+ * the help line below the frame never reflows as the count grows a digit.
  */
 export function DeckDescriptionField({
   value,
@@ -42,58 +43,36 @@ export function DeckDescriptionField({
   const ref = useRef<HTMLTextAreaElement>(null);
   const { field, picker } = useTaggedField({ value, onChange, search: searchDescriptionCards, max: copy.maxLength, maxTags: NOTES_TAGS_MAX, field: ref, disabled: saving });
   const n = countCharacters(plainText(value));
-  const over = n > copy.maxLength;
-  const warn = n >= copy.warnAt;
-  const [focused, setFocused] = useState(false);
-
   return (
     <div className="mt-[14px] flex flex-col gap-[6px] md:mt-[16px]">
-      <TagHelpRow htmlFor="deck-description-field" label={copy.label} infoId="deck-description-field-info" help={deckDescriptionCopy.notes.tagHelp} onInsert={picker.insertTag} />
+      <TagHelpRow htmlFor="deck-description-field" label={copy.label} infoId="deck-description-field-info" help={deckDescriptionCopy.notes.tagHelp} />
       <div className="relative">
-      <textarea
-        ref={ref}
-        id="deck-description-field"
-        value={field.text}
-        {...picker.fieldProps}
-        aria-describedby="deck-description-field-info"
-        onFocus={() => setFocused(true)}
-        onBlur={() => {
-          setFocused(false);
-          onBlur();
-        }}
-        onChange={(e) => picker.typed(e.target.value, e.target.selectionStart)}
-        onKeyDown={(e) => { picker.onKeyDown(e); }}
-        readOnly={saving}
-        rows={2}
-        placeholder={copy.placeholder}
-        // No `aria-label`: the visible `<label htmlFor>` above already names this field, and an
-        // aria-label would override it with different words a voice-control user can't see.
-        // 16px below `md`: iOS Safari zooms the viewport on focusing any input under 16px, and
-        // this field is shared at both widths (pre-open review) — `md:text-[13.5px]` is the
-        // desktop size the retired single-field editor used.
-        // No `focus-visible:outline-none`: keyboard focus needs the global 2px accent ring
-        // (globals.css), which this class used to suppress with nothing replacing it.
-        className="w-full resize-none rounded-[8px] font-sans text-[16px] leading-[1.5] [@media(pointer:fine)]:md:text-[13.5px]"
-        style={{
-          background: "var(--surface)",
-          border: `1px solid ${focused ? "var(--accent)" : "var(--border-strong)"}`,
-          padding: "10px 12px",
-          color: "var(--fg)",
-        }}
-      />
-      {picker.open && <CardTagList {...picker.list} />}
+        <TaggedBox onInsert={picker.insertTag} open={picker.open} count={n} max={copy.maxLength} warnAt={copy.warnAt}>
+          <textarea
+            ref={ref}
+            id="deck-description-field"
+            value={field.text}
+            {...picker.fieldProps}
+            aria-describedby="deck-description-field-info"
+            onBlur={onBlur}
+            onChange={(e) => picker.typed(e.target.value, e.target.selectionStart)}
+            onKeyDown={(e) => { picker.onKeyDown(e); }}
+            readOnly={saving}
+            rows={2}
+            placeholder={copy.placeholder}
+            // No `aria-label`: the visible `<label htmlFor>` above already names this field, and an
+            // aria-label would override it with different words a voice-control user can't see.
+            // 16px below `md`: iOS Safari zooms the viewport on focusing any input under 16px, and
+            // this field is shared at both widths (pre-open review) — `md:text-[13.5px]` is the
+            // desktop size the retired single-field editor used. The frame's accent edge (focus-within)
+            // is the focus mark here, so the field draws no outline of its own.
+            className="w-full resize-none bg-transparent font-sans text-[16px] leading-[1.5] outline-none [@media(pointer:fine)]:md:text-[13.5px]"
+            style={{ padding: "10px 12px 4px", color: "var(--fg)", minHeight: 72 }}
+          />
+        </TaggedBox>
+        {picker.open && <CardTagList {...picker.list} />}
       </div>
-      <p className="m-0 flex items-baseline justify-between gap-[10px] text-[12px] leading-[1.5]" style={{ color: "var(--fg-faint)" }}>
-        <span>{copy.help}</span>
-        <span
-          // Fixed to 9 monospace characters — "240 / 240", the widest this counter ever draws
-          // — so the help text's wrapping does not shift as the count grows a digit while typing.
-          className="flex-none text-right font-mono"
-          style={{ width: "9ch", color: over ? "var(--danger)" : warn ? "var(--warning)" : "var(--fg-faint)" }}
-        >
-          {copy.counter(n, copy.maxLength)}
-        </span>
-      </p>
+      <p className="m-0 text-[12px] leading-[1.5]" style={{ color: "var(--fg-faint)" }}>{copy.help}</p>
       {refused ? <MutationError message={refused} /> : null}
     </div>
   );

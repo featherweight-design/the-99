@@ -59,6 +59,7 @@ import { NOTES_TAGS_MAX } from "../../lib/tuning/limits";
 import { CardTagList } from "../cards/card-tag-picker";
 import { searchDescriptionCards } from "../cards/description-tag-search";
 import { TagHelpRow } from "../cards/tag-help-row";
+import { TaggedBox } from "../cards/tagged-box";
 import { useTaggedField } from "../cards/use-tagged-field";
 import { CreditsText } from "../ui/credits-text";
 import { freeCount, hasCredit } from "../../lib/model/allowance-rule";
@@ -1455,8 +1456,8 @@ export function TuningPanel({
           the limits box, since its text becomes a checklist row instead. */}
       {reading || v2 ? null : (
         <div className="mt-[16px] md:mt-[18px]">
-          {/* The foot words are deliberately shared with the Suggested changes request box (suggestedChangesV2Copy.intake.request.tagHelp). */}
-          <TuningNotesField value={notes} onChange={changeNotes} tagHelp={suggestedChangesV2Copy.intake.request.tagHelp} labelRow />
+          {/* The foot words are the shared TAG_A_CARD_WORDS, the same as the Suggested changes request box. */}
+          <TuningNotesField value={notes} onChange={changeNotes} labelRow />
         </div>
       )}
 
@@ -1579,11 +1580,11 @@ function DescribingInPlace({
   const { field, picker } = useTaggedField({ value, onChange, search: searchDescriptionCards, max: descCopy.maxLength, maxTags: NOTES_TAGS_MAX, field: ref, disabled: saving });
   const n = countCharacters(plainText(value));
   const over = n > descCopy.maxLength;
-  const warn = n >= descCopy.warnAt;
   return (
     <div className="mt-[14px] flex flex-col gap-[6px]">
-      <TagHelpRow htmlFor="tuning-describing-field" label={descCopy.label} infoId="tuning-describing-field-info" help={deckDescriptionCopy.notes.tagHelp} onInsert={picker.insertTag} />
+      <TagHelpRow htmlFor="tuning-describing-field" label={descCopy.label} infoId="tuning-describing-field-info" help={deckDescriptionCopy.notes.tagHelp} />
       <div className="relative">
+        <TaggedBox onInsert={picker.insertTag} open={picker.open} count={n} max={descCopy.maxLength} warnAt={descCopy.warnAt} accent="always">
         <textarea
           ref={ref}
           id="tuning-describing-field"
@@ -1604,18 +1605,13 @@ function DescribingInPlace({
           readOnly={saving}
           rows={2}
           placeholder={descCopy.placeholder}
-          aria-label={descCopy.fieldAria}
-          className="w-full resize-none rounded-[8px] font-sans text-[16px] leading-[1.5] [@media(pointer:fine)]:md:text-[13.5px]"
-          style={{ background: "var(--surface)", border: "1px solid var(--accent)", padding: "10px 12px", color: "var(--fg)" }}
+          className="w-full resize-none bg-transparent font-sans text-[16px] leading-[1.5] outline-none [@media(pointer:fine)]:md:text-[13.5px]"
+          style={{ padding: "10px 12px 4px", color: "var(--fg)", minHeight: 72 }}
         />
+        </TaggedBox>
         {picker.open && <CardTagList {...picker.list} />}
       </div>
-      <p className="m-0 flex items-baseline justify-between gap-[10px] text-[12px] leading-[1.5]" style={{ color: "var(--fg-faint)" }}>
-        <span>{descCopy.help}</span>
-        <span className="flex-none text-right font-mono" style={{ width: "9ch", color: over ? "var(--danger)" : warn ? "var(--warning)" : "var(--fg-faint)" }}>
-          {descCopy.counter(n, descCopy.maxLength)}
-        </span>
-      </p>
+      <p className="m-0 text-[12px] leading-[1.5]" style={{ color: "var(--fg-faint)" }}>{descCopy.help}</p>
       {refused ? <MutationError message={refused} /> : null}
       <div className="flex gap-[8px]">
         <button

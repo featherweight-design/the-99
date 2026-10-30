@@ -16,9 +16,21 @@ describe("DeckDescriptionField (STATES-deck-description.md §1)", () => {
     expect(screen.getByText("0 / 240")).toBeInTheDocument();
   });
 
-  it("reserves the counter's full width so the help text does not reflow as it grows a digit", () => {
-    render(<DeckDescriptionField value="" onChange={() => {}} onBlur={() => {}} saving={false} refused={null} />);
-    expect(screen.getByText("0 / 240")).toHaveStyle({ width: "9ch" });
+  it("draws the counter in the frame's foot, warning from 220 and danger past 240", () => {
+    const { rerender } = render(<DeckDescriptionField value={"a".repeat(219)} onChange={() => {}} onBlur={() => {}} saving={false} refused={null} />);
+    expect(screen.getByText("219 / 240").closest("[data-framed-box]")).not.toBeNull();
+    expect(screen.getByText("219 / 240")).toHaveStyle({ color: "var(--fg-faint)" });
+    rerender(<DeckDescriptionField value={"a".repeat(220)} onChange={() => {}} onBlur={() => {}} saving={false} refused={null} />);
+    expect(screen.getByText("220 / 240")).toHaveStyle({ color: "var(--warning)" });
+  });
+
+  it("keeps a 72 floor, and draws the danger frame when the value is past the cap", () => {
+    const { rerender } = render(<DeckDescriptionField value="" onChange={() => {}} onBlur={() => {}} saving={false} refused={null} />);
+    expect(screen.getByRole("combobox").style.minHeight).toBe("72px");
+    const frame = () => screen.getByRole("combobox").closest("[data-framed-box]")!;
+    expect(frame().className).not.toContain("border-[color:var(--danger)]");
+    rerender(<DeckDescriptionField value={"a".repeat(241)} onChange={() => {}} onBlur={() => {}} saving={false} refused={null} />);
+    expect(frame().className).toContain("border-[color:var(--danger)]");
   });
 
   // Round 5: an `aria-label` here used to override the visible `<label htmlFor>` with
@@ -98,10 +110,19 @@ describe("DeckDescriptionField (STATES-deck-description.md §1)", () => {
       expect(onChange).not.toHaveBeenCalled();
     });
 
-    it("draws the [[ ]] button and the card-tags tip beside the label", () => {
+    it("draws the [[ ]] key and its words in the frame's foot, and the card-tags tip beside the label", () => {
       render(<DeckDescriptionField value="" onChange={() => {}} onBlur={() => {}} saving={false} refused={null} />);
-      expect(screen.getByRole("button", { name: "Insert a card tag" })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: "How card tags work" })).toBeInTheDocument();
+      const frame = screen.getByRole("combobox").closest("[data-framed-box]")!;
+      expect(frame.contains(screen.getByRole("button", { name: "Insert a card tag" }))).toBe(true);
+      expect(frame.contains(screen.getByText("tag a card"))).toBe(true);
+      const tip = screen.getByRole("button", { name: "How card tags work" });
+      expect(frame.contains(tip)).toBe(false);
+      expect(document.querySelector('label[for="deck-description-field"]')!.parentElement!.contains(tip)).toBe(true);
+    });
+
+    it("does not blur the pair when the key is pressed", () => {
+      render(<DeckDescriptionField value="" onChange={() => {}} onBlur={() => {}} saving={false} refused={null} />);
+      expect(fireEvent.mouseDown(screen.getByRole("button", { name: "Insert a card tag" }))).toBe(false);
     });
   });
 });

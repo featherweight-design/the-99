@@ -119,7 +119,6 @@ export function SuggestedChangesIntake({
                 onChange={onRequest}
                 label={copy.request.title}
                 placeholder={copy.request.placeholder}
-                tagHelp={copy.request.tagHelp}
                 fill
                 highlightTail={tail}
               />

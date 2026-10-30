@@ -33,7 +33,6 @@ export const suggestedChangesV2Copy = {
     request: {
       title: "What are you looking to change?",
       placeholder: "In your own words, or leave it empty.",
-      tagHelp: "tag a card",
     },
     noticed: {
       head: "What we noticed",

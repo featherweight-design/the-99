@@ -25,3 +25,7 @@
 
 - `design_handoff_the99_deck_notes/ERRATUM-tag-control.md`: the tag key and counter move into the field's foot.
 - `design_handoff_the99_announcements/ERRATUM-offer-empty.md`: the empty, never-chosen box draws the quiet line and the offer line.
+
+## 2026-10-30
+
+- Tag-a-card frame: board draws only the accent edge on focus; when the frame is already accent or danger the app's standard focus ring is applied (WCAG 2.4.7). Design to draw its own treatment.

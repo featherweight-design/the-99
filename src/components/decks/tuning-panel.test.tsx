@@ -1369,17 +1369,30 @@ describe("TuningPanel: Describing in place (H35, PR 3)", () => {
   it("opens the editor from the dashed description row's link, and Cancel reverts it", async () => {
     await draw(deps([fresh]), noDescription);
     fireEvent.click(screen.getByRole("button", { name: "Describe your deck →" }));
-    expect(screen.getByLabelText("Deck description")).toBeInTheDocument();
+    expect(screen.getByLabelText("Describe your deck")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
-    expect(screen.queryByLabelText("Deck description")).toBeNull();
+    expect(screen.queryByLabelText("Describe your deck")).toBeNull();
     expect(screen.getByRole("button", { name: "Describe your deck →" })).toBeInTheDocument();
+  });
+
+  it("draws the editor in a tag-a-card foot, the accent edge at rest, and a 72 floor", async () => {
+    await draw(deps([fresh]), noDescription);
+    fireEvent.click(screen.getByRole("button", { name: "Describe your deck →" }));
+    const field = screen.getByLabelText("Describe your deck");
+    expect(field).not.toHaveAttribute("aria-label");
+    expect((field as HTMLElement).style.minHeight).toBe("72px");
+    const frame = field.closest("[data-framed-box]") as HTMLElement;
+    // Scoped to the editor's own frame: the Additional notes box draws the same foot beside it.
+    expect(within(frame).getByText("tag a card")).toBeInTheDocument();
+    expect(within(frame).getByRole("button", { name: "Insert a card tag" })).toBeInTheDocument();
+    expect(frame.className).toContain("border-[color:var(--accent)]");
   });
 
   it("Escape also reverts the editor to the dashed row", async () => {
     await draw(deps([fresh]), noDescription);
     fireEvent.click(screen.getByRole("button", { name: "Describe your deck →" }));
-    fireEvent.keyDown(screen.getByLabelText("Deck description"), { key: "Escape" });
-    expect(screen.queryByLabelText("Deck description")).toBeNull();
+    fireEvent.keyDown(screen.getByLabelText("Describe your deck"), { key: "Escape" });
+    expect(screen.queryByLabelText("Describe your deck")).toBeNull();
   });
 
   // Copilot review: Escape cancels an IME composition candidate first — it must not also
@@ -1387,8 +1400,8 @@ describe("TuningPanel: Describing in place (H35, PR 3)", () => {
   it("ignores Escape while an IME composition is active", async () => {
     await draw(deps([fresh]), noDescription);
     fireEvent.click(screen.getByRole("button", { name: "Describe your deck →" }));
-    fireEvent.keyDown(screen.getByLabelText("Deck description"), { key: "Escape", isComposing: true });
-    expect(screen.getByLabelText("Deck description")).toBeInTheDocument();
+    fireEvent.keyDown(screen.getByLabelText("Describe your deck"), { key: "Escape", isComposing: true });
+    expect(screen.getByLabelText("Describe your deck")).toBeInTheDocument();
   });
 
   it("saves a tagged description as its body, and the row fills", async () => {
@@ -1399,7 +1412,7 @@ describe("TuningPanel: Describing in place (H35, PR 3)", () => {
       );
     });
     fireEvent.click(screen.getByRole("button", { name: "Describe your deck →" }));
-    fireEvent.change(screen.getByLabelText("Deck description"), { target: { value: "Rocks: [[Sol" } });
+    fireEvent.change(screen.getByLabelText("Describe your deck"), { target: { value: "Rocks: [[Sol" } });
     fireEvent.mouseDown(await screen.findByRole("option", { name: /Sol Ring/ }));
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Save" }));
@@ -1417,12 +1430,12 @@ describe("TuningPanel: Describing in place (H35, PR 3)", () => {
       );
     });
     fireEvent.click(screen.getByRole("button", { name: "Describe your deck →" }));
-    fireEvent.change(screen.getByLabelText("Deck description"), { target: { value: "Go wide, win late." } });
+    fireEvent.change(screen.getByLabelText("Describe your deck"), { target: { value: "Go wide, win late." } });
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Save" }));
     });
     expect(onSaveDescription).toHaveBeenCalledWith("Go wide, win late.");
-    expect(screen.queryByLabelText("Deck description")).toBeNull();
+    expect(screen.queryByLabelText("Describe your deck")).toBeNull();
     expect(screen.queryByText("none yet")).toBeNull();
     expect(screen.queryByRole("button", { name: "Describe your deck →" })).toBeNull();
     expect(screen.getByRole("status")).toHaveTextContent(deckDescriptionCopy.announce.descriptionSaved);
@@ -1442,7 +1455,7 @@ describe("TuningPanel: Describing in place (H35, PR 3)", () => {
       fireEvent.click(screen.getByRole("button", { name: "Save" }));
     });
     expect(screen.getByText(deckDescriptionCopy.description.refused)).toBeInTheDocument();
-    expect(screen.getByLabelText("Deck description")).toBeInTheDocument();
+    expect(screen.getByLabelText("Describe your deck")).toBeInTheDocument();
   });
 
   it("shows the refusal and keeps the editor open when the save fails", async () => {
@@ -1457,7 +1470,7 @@ describe("TuningPanel: Describing in place (H35, PR 3)", () => {
       fireEvent.click(screen.getByRole("button", { name: "Save" }));
     });
     expect(screen.getByText("Nope.")).toBeInTheDocument();
-    expect(screen.getByLabelText("Deck description")).toBeInTheDocument();
+    expect(screen.getByLabelText("Describe your deck")).toBeInTheDocument();
   });
 
   // Copilot review round 2: the optimistic state must be NORMALIZED the same way `saveIntent`
@@ -1472,7 +1485,7 @@ describe("TuningPanel: Describing in place (H35, PR 3)", () => {
       );
     });
     fireEvent.click(screen.getByRole("button", { name: "Describe your deck →" }));
-    fireEvent.change(screen.getByLabelText("Deck description"), { target: { value: "  Go wide.  " } });
+    fireEvent.change(screen.getByLabelText("Describe your deck"), { target: { value: "  Go wide.  " } });
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Save" }));
     });
@@ -1504,7 +1517,7 @@ describe("TuningPanel: Describing in place (H35, PR 3)", () => {
     );
     await act(async () => { utils = render(panel(noDescription)); });
     fireEvent.click(screen.getByRole("button", { name: "Describe your deck →" }));
-    fireEvent.change(screen.getByLabelText("Deck description"), { target: { value: "Rocks: [[Sol" } });
+    fireEvent.change(screen.getByLabelText("Describe your deck"), { target: { value: "Rocks: [[Sol" } });
     fireEvent.mouseDown(await screen.findByRole("option", { name: /Sol Ring/ }));
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Save" })); });
     await act(async () => { utils.rerender(panel({ ...noDescription, intent: "Rocks: Sol Ring" })); });
