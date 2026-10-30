@@ -8,6 +8,7 @@
  * when stamping began.
  */
 import { allListsPosted, earlyPosted, filterEarly, listedCommanderIds, listsToCome, type EarlySet, type EarlyTile } from "../announcements/early-tiles";
+import { nameKey } from "../announcements/match-names";
 import { fold } from "./list";
 import type { PreconArrival } from "./arrivals-read";
 import type { RevealedCommander } from "./revealed";
@@ -149,6 +150,23 @@ export type AnnouncedMatch = {
  * - A set with revealed commanders and none matching an active filter leaves.
  * - A set with no revealed commanders stays only with no filter on, or when its name or code matches the search.
  */
+/**
+ * A listed commander the catalog had not got when its post was resolved keeps the id `unmatched:<name>` until the
+ * scheduled re-match, while the revealed read already carries its real oracle id. Each such id that names a revealed
+ * commander (by `nameKey`, the early list's own matcher) stands for that commander too, so it never reads as waiting.
+ */
+function resolveUnmatched(listed: Set<string>, revealed: readonly RevealedCommander[]): Set<string> {
+  const byName = new Map(revealed.map((c) => [nameKey(c.name), c.oracleId] as const));
+  for (const id of [...listed]) {
+    if (!id.startsWith(UNMATCHED)) continue;
+    const real = byName.get(nameKey(id.slice(UNMATCHED.length)));
+    if (real) listed.add(real);
+  }
+  return listed;
+}
+
+const UNMATCHED = "unmatched:";
+
 export function filterAnnounced(
   sets: readonly UpcomingSet[],
   commandersByCode: Readonly<Record<string, readonly RevealedCommander[]>>,
@@ -171,7 +189,7 @@ export function filterAnnounced(
     const hasEarly = posted !== undefined && posted.lists.length > 0;
     const nothing = all.length === 0 && !hasEarly;
     // A list that gave way to its release list still stands for its commander: not waiting, and not to come.
-    const listed = hasEarly ? listedCommanderIds(posted.lists, posted.released) : new Set<string>();
+    const listed = hasEarly ? resolveUnmatched(listedCommanderIds(posted.lists, posted.released), all) : new Set<string>();
     // Only a commander the row will draw keeps the set: with posted lists that is one still waiting for its list
     // (`waitingCommanders`). A commander stood for by a list is kept by that list matching, or not at all, so a search
     // that matches only a released list's commander never keeps a row with nothing to show.

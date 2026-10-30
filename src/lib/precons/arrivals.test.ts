@@ -286,6 +286,21 @@ describe("filterAnnounced", () => {
     expect(m.early?.posted).toBe(2);
   });
 
+  it("reads a list's unmatched commander the catalog has since revealed as listed, never as waiting", () => {
+    // Kirk's list was resolved before the catalog had him: the list still carries `unmatched:<name>`, spelled as posted.
+    const unmatchedKirk = { ...kirk, oracleId: "unmatched:JAMES T. KIRK" };
+    const early = { trc: { lists: [list(1, "Final Frontier", unmatchedKirk)], promised: 3 } };
+    const [m] = filterAnnounced([trc], byCode, { q: "", colours: [] }, early);
+    expect(m.early?.listed).toContain("kirk");
+    // Three promised, one posted, Chapel waiting: one to come, not zero.
+    expect(m.early?.toCome).toBe(1);
+    // The same holds for a released list's unmatched commander.
+    const gaveWay = { trc: { lists: [list(1, "Final Frontier", chapel)], promised: 3, released: ["unmatched:James T. Kirk"], releasedLists: 1 } };
+    const [r] = filterAnnounced([trc], byCode, { q: "", colours: [] }, gaveWay);
+    expect(r.early?.listed).toContain("kirk");
+    expect(r.early?.toCome).toBe(1);
+  });
+
   it("drops a set whose search matches only a commander whose list gave way: nothing of it would be drawn", () => {
     const early = { trc: { lists: [list(1, "Final Frontier", chapel)], promised: 3, released: ["kirk"], releasedLists: 1 } };
     expect(filterAnnounced([trc], byCode, { q: "kirk", colours: [] }, early)).toEqual([]);
