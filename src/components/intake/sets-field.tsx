@@ -35,7 +35,10 @@ export function SetsField({
   onChange,
   wide,
   copy: copyOverride,
+  triggerLook,
 }: {
+  /** The trigger drawn as a form field (`FilterPanel`'s `triggerLook`), for a box of fields. */
+  triggerLook?: "chip" | "field";
   /** Every set that printed a commander, newest first. */
   sets: readonly PrintedInSet[];
   /** Lower-case codes. */
@@ -73,6 +76,7 @@ export function SetsField({
         // Keyed on the form, as every chassis panel is: it holds its own `open`.
         key={wide ? "wide" : "compact"}
         compact={!wide}
+        triggerLook={triggerLook}
         copy={panelCopy}
         options={options}
         selected={[...value]}

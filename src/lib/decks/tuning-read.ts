@@ -369,7 +369,9 @@ export function askOf(row: {
     request: row.requestText && row.requestText.trim() !== "" ? row.requestText : null,
     bracket: (choice === "keep" || choice === "down" || choice === "up") && row.bracketTarget !== null
       ? { choice, target: row.bracketTarget, ...(row.bracketLow != null ? { low: row.bracketLow } : {}) } : null,
-    restrictions: restrictions ? { capCents: restrictions.capCents, sets: [...restrictions.sets], ownedOnly: restrictions.ownedOnly } : null,
+    restrictions: restrictions
+      ? { capCents: restrictions.capCents, sets: [...restrictions.sets], ownedOnly: restrictions.ownedOnly, ...(restrictions.otherDecks ? { otherDecks: true } : {}) }
+      : null,
   };
 }
 

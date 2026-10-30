@@ -2,7 +2,7 @@ import { PgDialect } from "drizzle-orm/pg-core";
 import { describe, expect, it } from "vitest";
 
 import { PROMPT_VERSION, PROMPT_VERSION_V2 } from "../tuning/prompt-version";
-import { liveOf, okRunWhere, promptVersionFor, suggestedRunsOfDeck, swapped } from "./tuning-read";
+import { askOf, liveOf, okRunWhere, promptVersionFor, suggestedRunsOfDeck, swapped } from "./tuning-read";
 
 describe("the panel's run reads", () => {
   it("scope a deck's runs to Suggested changes, so another tool's run on the deck is never its latest", () => {
@@ -58,5 +58,24 @@ describe("Suggested changes v2 on the panel's read (plan P1, P3)", () => {
     // The live lines carry their own read's price snapshot, not the last set's (null on a first run).
     const at = new Date("2026-10-28T09:00:00Z");
     expect(liveOf("r", null, { items: [], newestPriceAsOf: at }).newestPriceAsOf).toBe(at);
+  });
+});
+
+// Small items 4 item 2: the run's stored restrictions reach the results whole, or a held add is tagged to buy and You
+// asked drops "including your other decks" (found on the PR A walk).
+describe("askOf", () => {
+  const row = (restrictions: Record<string, unknown>) => ({
+    id: "r1", requestedCount: 3, requestText: null, bracketChoice: null, bracketTarget: null,
+    validationReport: { v2: { restrictions } } as never,
+  });
+
+  it("carries Include my other decks from the stored report", () => {
+    expect(askOf(row({ capCents: null, sets: [], ownedOnly: true, otherDecks: true }))?.restrictions)
+      .toEqual({ capCents: null, sets: [], ownedOnly: true, otherDecks: true });
+  });
+
+  it("reads a report written before the choice existed as without it", () => {
+    expect(askOf(row({ capCents: 500, sets: ["mh3"], ownedOnly: true }))?.restrictions)
+      .toEqual({ capCents: 500, sets: ["mh3"], ownedOnly: true });
   });
 });

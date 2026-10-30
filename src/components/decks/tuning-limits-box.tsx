@@ -143,7 +143,7 @@ export function TuningLimitsBox({
         <span className="block font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--fg-faint)]">
           {copy.setLabel}
         </span>
-        <SetsField sets={sets} value={selectedSets} onChange={onSetsChange} wide={wide} copy={SETS_PANEL_COPY} />
+        <SetsField sets={sets} value={selectedSets} onChange={onSetsChange} wide={wide} copy={SETS_PANEL_COPY} triggerLook="field" />
       </div>
 
       <div className="flex flex-col gap-[6px]">
@@ -156,7 +156,7 @@ export function TuningLimitsBox({
       {/* With Any card, cards in other decks are already offered (marked, with a buy tag), so there is no choice to make. */}
       {ownedOnly && (
         <label className="flex min-h-[44px] cursor-pointer items-start gap-[10px] px-[2px] pt-[4px] md:col-span-full md:min-h-0 md:items-center md:border-t md:border-solid md:border-[color:var(--border)] md:pt-[12px]">
-          <Checkbox checked={otherDecks} onChange={onOtherDecksChange} className="mt-[1px] md:mt-0" />
+          <Checkbox checked={otherDecks} onChange={onOtherDecksChange} className="mt-[1px]" />
           <span className="flex flex-col gap-[3px] md:flex-row md:items-baseline md:gap-[10px]">
             <span className="text-[13px] font-medium text-[color:var(--fg)]">{copy.otherDecks}</span>
             <span className="text-[12px] leading-[1.45] text-[color:var(--fg-muted)]">{copy.otherDecksLine}</span>
