@@ -1,0 +1,101 @@
+{
+  "feature": "US date order, PR 1 (player dates): every fixed-width or tight slot that draws a player date, at its longest realistic value",
+  "note": "Run on a scratch branch made from local-dev. DATE_DECK (the audit account's HD - Tovolar) had v1 committed_at set to 2025-12-31 18:00 UTC and its two games played_at 2025-12-31 18:00 and 2026-09-30 18:00 UTC; DATE_DECK_2 (HD - Avatar Aang) had v1 2025-12-31 and v2 2026-09-30. So the slots draw Dec 31, 2025 (the longest year-carrying form) and Sep 30 (the longest short form).",
+  "clearAbout": true,
+  "rows": [
+    {
+      "id": "game-rows",
+      "label": "/decks/[id] Games: history rows, meta slot `4-player · Dec 31, 2025` (md:w-[132px]) and `· Sep 30`",
+      "view": "src/components/decks/game-history-row.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${DATE_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Games",
+          "wait": "#panel-games li",
+          "scrollTo": "#panel-games li",
+          "settle": 1000
+        }
+      ]
+    },
+    {
+      "id": "stats-results",
+      "label": "/decks/[id] Stats: result beads with a 9px date under each 30px bead, the span line and the by-version sub dates",
+      "view": "src/components/decks/deck-stats-results.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${DATE_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "^Show the deck as stats",
+          "wait": "[data-results-beads]",
+          "scrollTo": "[data-stats-card=results]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "todo-foot",
+      "label": "/decks/[id]: the deck foot's version line `v1 · Dec 31, 2025`",
+      "view": "src/components/decks/todo-foot.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${DATE_DECK}",
+          "wait": "[data-todo-foot]",
+          "scrollTo": "[data-todo-foot]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "version-history",
+      "label": "/decks/[id] Versions: the version list rows, `Sep 30, 2026` and `Dec 31, 2025`",
+      "view": "src/components/decks/version-history.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${DATE_DECK_2}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Versions",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "version-diff-line",
+      "label": "/decks/[id] Versions: the newest version opened, its line `v2 · Sep 30, 2026`",
+      "view": "src/components/decks/version-diff.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${DATE_DECK_2}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Versions",
+          "settle": 800
+        },
+        {
+          "clickRole": "button",
+          "name": "^v2",
+          "settle": 800
+        },
+        {
+          "wait": "[data-version-diff-row]",
+          "settle": 600
+        }
+      ]
+    }
+  ]
+}
