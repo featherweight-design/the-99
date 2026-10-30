@@ -13,7 +13,7 @@ vi.mock("next/server", () => ({ after: (fn: () => Promise<void>) => { h.after.pu
 vi.mock("../switches/snapshot", () => ({ resolveSwitchEnv: async (u: unknown) => { expect(u).toBeNull(); if (h.envThrows) throw new Error("db down"); return h.env; } }));
 vi.mock("./observe", () => ({ recordHit: async (key: string, bucket: string) => { if (h.recordThrows) throw new Error("x"); h.recorded.push([key, bucket]); return h.hits; } }));
 
-import { anonKey, ANON_PREFIX, clientAddress, networkOf, observeAnonymousHit, UNKNOWN_KEY } from "./anon";
+import { anonKey, ANON_PREFIX, clientAddress, networkOf, observeAnonymousHit, overAnonymousLimit, UNKNOWN_KEY } from "./anon";
 
 const hdr = (o: Record<string, string>) => ({ get: (k: string) => o[k.toLowerCase()] ?? null });
 const flush = async () => { for (const fn of h.after.splice(0)) await fn(); };
@@ -133,5 +133,32 @@ describe("observeAnonymousHit", () => {
     h.recordThrows = true;
     await observeAnonymousHit(hdr({ "x-real-ip": "1.2.3.4" }));
     await expect(flush()).resolves.toBeUndefined();
+  });
+});
+
+describe("overAnonymousLimit", () => {
+  it("counts under the visitor's key in the named bucket, and the limit's own hit is let through", async () => {
+    h.hits = 10;
+    expect(await overAnonymousLimit(hdr({ "x-real-ip": "1.2.3.4" }), "launch-list")).toBe(false);
+    expect(h.recorded).toHaveLength(1);
+    expect(h.recorded[0][0].startsWith(ANON_PREFIX)).toBe(true);
+    expect(h.recorded[0][1]).toBe("launch-list");
+  });
+
+  it("refuses the hit past the limit, whatever RATE_LIMIT_ENABLED says", async () => {
+    h.env = { RATE_LIMIT_ENABLED: "off" };
+    h.hits = 11;
+    expect(await overAnonymousLimit(hdr({ "x-real-ip": "1.2.3.4" }), "launch-list")).toBe(true);
+  });
+
+  it("lets a header-less request through without counting it under the shared key", async () => {
+    h.hits = 99;
+    expect(await overAnonymousLimit(hdr({}), "launch-list")).toBe(false);
+    expect(h.recorded).toHaveLength(0);
+  });
+
+  it("fails open when counting fails", async () => {
+    h.recordThrows = true;
+    expect(await overAnonymousLimit(hdr({ "x-real-ip": "1.2.3.4" }), "launch-list")).toBe(false);
   });
 });

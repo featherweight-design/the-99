@@ -29,6 +29,8 @@ export type CardFace = {
   type: string;
   /** The text box: `openRules(name)`, `ownRules` or `friendRules(name)`. */
   rules: string | PersonParts;
+  /** The 99's own face (a flyer's invitation, no sender): the crowned 99 in the art box, and `credit` and `mark` for the footer's two ends. */
+  crown?: { credit: string; mark: string };
 };
 
 const SHADOW = "shadow-[0_34px_70px_rgba(0,0,0,.6),0_0_0_1px_rgba(0,0,0,.6)]";
@@ -148,6 +150,7 @@ function CardBack({ dim, word, compact }: { dim: boolean; word: string | null; c
 
 function CardFront({ face, hidden, compact, signature }: { face: CardFace; hidden: boolean; compact: boolean; signature: boolean }) {
   const art = face.commander?.artCropUri ?? null;
+  const crown = face.crown ?? null;
   // The text box says what accepting shares, so it is the image's description, read after its label.
   const rulesId = useId();
   return (
@@ -157,12 +160,12 @@ function CardFront({ face, hidden, compact, signature }: { face: CardFace; hidde
       // The label names the card's person, so it is spread with its classes: `personAttrs` marks the element.
       {...personAttrs(
         { "aria-label": copy.cardAria(face.name, face.commander?.name ?? null, face.type) },
-        `friend-card-face friend-card-front box-border overflow-hidden ${compact ? `rounded-[18px] p-[8px] text-left ${COMPACT_SHADOW}` : `rounded-[17px] p-[3px] ${SHADOW}`} ${art ? "bg-[color:var(--border-strong)]" : "bg-[linear-gradient(160deg,var(--fg-disabled),var(--border-strong))]"}`,
+        `friend-card-face friend-card-front box-border overflow-hidden ${compact ? `rounded-[18px] p-[8px] text-left ${COMPACT_SHADOW}` : `rounded-[17px] p-[3px] ${SHADOW}`} ${art || crown ? "bg-[color:var(--border-strong)]" : "bg-[linear-gradient(160deg,var(--fg-disabled),var(--border-strong))]"}`,
       )}
       aria-describedby={rulesId}
       aria-hidden={hidden || undefined}
       data-testid="friend-card-front"
-      data-frame={art ? "art" : "grey"}
+      data-frame={art ? "art" : crown ? "crown" : "grey"}
     >
       {/* The frame is the commander's art crop, behind the face, fading in as it lands. */}
       {art && <ArtLayer src={art} />}
@@ -170,7 +173,16 @@ function CardFront({ face, hidden, compact, signature }: { face: CardFace; hidde
         <div className={`flex flex-none items-center gap-[8px] bg-[color:var(--elevated)] shadow-[inset_0_0_0_1px_rgba(255,255,255,.05)] ${compact ? "h-[34px] rounded-[8px] px-[12px]" : "h-[32px] rounded-[8px] px-[10px]"}`}>
           <b className={`flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-[color:var(--fg)] ${compact ? "font-sans text-[18px] font-semibold" : "font-display text-[16px] font-bold"}`}><PersonName n={face.name} /></b>
         </div>
-        {art ? (
+        {crown ? (
+          // The 99's face: the crowned 99 over the accent wash (the board's `.ar`, doubled for the .5 scale).
+          <div
+            data-testid="friend-card-crown"
+            className="flex h-[176px] flex-none flex-col items-center justify-center gap-[8px] overflow-hidden rounded-[6px] bg-[color:var(--surface-sunken)] bg-[image:radial-gradient(180px_140px_at_50%_50%,color-mix(in_oklab,var(--accent)_30%,transparent),transparent_75%)] shadow-[inset_0_0_0_2px_rgba(0,0,0,.6)]"
+          >
+            <span className="text-[14px] tracking-[5px] text-[color:var(--accent-text)]">◆ ◆ ◆</span>
+            <b className="font-display text-[60px] font-extrabold leading-none text-[color:var(--fg)]">99</b>
+          </div>
+        ) : art ? (
           <div className={`flex-none overflow-hidden rounded-[6px] bg-[color:var(--elevated)] ${compact ? "h-[176px]" : "h-[178px]"} shadow-[inset_0_0_0_1px_rgba(0,0,0,.6)]`}>
             <FadingImg src={art} alt="" className="block h-full w-full object-cover" />
           </div>
@@ -184,12 +196,12 @@ function CardFront({ face, hidden, compact, signature }: { face: CardFace; hidde
         )}
         <div className={`flex flex-none items-center justify-between bg-[color:var(--elevated)] font-display font-semibold text-[color:var(--fg)] shadow-[inset_0_0_0_1px_rgba(255,255,255,.05)] ${compact ? "h-[28px] rounded-[6px] px-[12px] text-[15px]" : "h-[26px] rounded-[6px] px-[10px] text-[12.5px]"}`}>
           <span>{face.type}</span>
-          <i className="text-[11px] not-italic text-[color:var(--accent-text)]">◆</i>
+          <i className={`not-italic text-[color:var(--accent-text)] ${crown && compact ? "text-[12px]" : "text-[11px]"}`}>◆</i>
         </div>
         <p id={rulesId} className={`m-0 min-h-0 flex-1 overflow-hidden [overflow-wrap:anywhere] rounded-[6px] bg-[color:var(--surface-sunken)] font-sans text-[color:var(--fg-body)] ${compact ? "px-[12px] py-[10px] text-[14px] leading-[1.4]" : "px-[11px] py-[9px] text-[12px] leading-[1.45]"}`}><PersonText text={face.rules} /></p>
-        <div className={`flex flex-none justify-between px-[4px] font-mono uppercase text-[color:var(--fg-faint)] ${compact ? "text-[12px] tracking-[.15em]" : "text-[9.5px] tracking-[.04em]"}`}>
-          <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{face.commander ? copy.credit(face.commander.name) : signature ? copy.noSignature : copy.noCommander}</span>
-          <span className="flex-none pl-[8px]">{copy.mark}</span>
+        <div className={`flex flex-none justify-between px-[4px] font-mono uppercase text-[color:var(--fg-faint)] ${compact ? (crown ? "text-[12px] tracking-[.12em]" : "text-[12px] tracking-[.15em]") : "text-[9.5px] tracking-[.04em]"}`}>
+          <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{crown ? crown.credit : face.commander ? copy.credit(face.commander.name) : signature ? copy.noSignature : copy.noCommander}</span>
+          <span className="flex-none pl-[8px]">{crown ? crown.mark : copy.mark}</span>
         </div>
       </div>
     </div>

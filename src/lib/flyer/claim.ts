@@ -12,10 +12,10 @@ import { flyerClaims, flyerCodes } from "../../db/schema";
 import { clerkInvites, type ClerkInvites } from "../invites/clerk";
 import { mailConfig, sendMail, type MailConfig, type MailResult } from "../invites/mail";
 import { readCountIn } from "../invites/read";
-import { CODE_MAX_TRIES, codeState, CODE_TTL_MS, isClaimSecretShape, isEmailShape, normalizeEmail, parseCode, resendWaitMs } from "../invites/rules";
+import { CODE_MAX_TRIES, codeState, CODE_TTL_MS, isClaimSecretShape, isEmailShape, normalizeEmail, parseCode } from "../invites/rules";
 import { lockSenderIn } from "../invites/send";
 import { codeHmac, inviteSecret, newClaimSecret, newCode, sameHex, secretHash } from "../invites/tokens";
-import { FLYER_HOLD_MS, FLYER_PROVEN_HOLD_MS, FLYER_RESEND_CEILING_MS, flyerOpenness, parseFlyerCode, type FlyerClaimRow, type FlyerClosed } from "./rules";
+import { FLYER_HOLD_MS, FLYER_PROVEN_HOLD_MS, FLYER_RESEND_CEILING_MS, flyerOpenness, parseFlyerCode, resendWaitFor, type FlyerClaimRow, type FlyerClosed } from "./rules";
 
 type Row = typeof flyerClaims.$inferSelect;
 type CodeRow = typeof flyerCodes.$inferSelect;
@@ -68,10 +68,9 @@ export function decideStart(row: Row | undefined, presented: string | null, emai
   if (!row || !cookieMatches(row, presented) || !live(row, now)) return { kind: "first" };
   // A claim already proven stays proven: its address is the one the Clerk invitation will name.
   if (row.state === "proven") return { kind: "ended" };
-  // A re-sent code promises ten minutes (the mail says so), so a claim too near its ceiling to keep that promise ends: a new
-  // Send code after it lapses starts afresh.
-  if (row.createdAt.getTime() + FLYER_RESEND_CEILING_MS - now.getTime() < CODE_TTL_MS) return { kind: "ended" };
-  const waitMs = resendWaitMs(row.codeSentAt, now);
+  // A claim too near its ceiling to keep a re-sent code's ten-minute promise cannot be re-sent: it waits out its hold, then a new
+  // Send code starts afresh (the resumed view carries the same wait, so its resend is disabled for as long).
+  const waitMs = resendWaitFor(row, now);
   if (waitMs > 0) return { kind: "wait", waitMs };
   return { kind: "again", changed: row.email !== email };
 }

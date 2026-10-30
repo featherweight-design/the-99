@@ -403,6 +403,8 @@ const browser = await chromium.launch();
 const cameraBrowsers = new Set();
 /** The account's About columns as the run found them, when an inventory clears the gate or restores them. */
 let aboutPrior = null;
+/** The launch-list address this run made, when the inventory names `launchListEmailVar`: deleted in the `finally`. */
+let launchEmail = null;
 try {
   // `"restoreAbout": true`: a walk whose pages WRITE the account's About row as they are opened (an About page records
   // its visit, About visual PR 6b) puts both columns back exactly in the `finally`. Production and staging are refused
@@ -411,6 +413,20 @@ try {
   if (inventory.restoreAbout) {
     const [row] = await aboutSql()`select current_setting('neon.branch_id', true) as branch`;
     assertNotSharedBranch(row?.branch, `contact sheet ${path.basename(inventoryPath)}`);
+  }
+  // `"launchListEmailVar": "NAME"`: a walk that saves an address to the launch list (the form writes a real row through the
+  // server). The run makes a per-run address into `$NAME` for `fill` to type, refuses production and staging by
+  // `neon.branch_id` before the first page loads, and deletes exactly that row in the `finally`.
+  if (inventory.launchListEmailVar) {
+    // The branch guard checks DATABASE_URL, but the form writes through whichever server PROBE_BASE names: only a server
+    // on this machine is trusted to be on that database.
+    if (!/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(BASE)) {
+      throw new Error(`refusing: PROBE_BASE must be a server on this machine for a launchListEmailVar inventory, got ${BASE}`);
+    }
+    const [row] = await aboutSql()`select current_setting('neon.branch_id', true) as branch`;
+    assertNotSharedBranch(row?.branch, `contact sheet ${path.basename(inventoryPath)}`);
+    launchEmail = `sheet-${Date.now()}-${process.pid}@scratch-contact-sheet.test`;
+    process.env[inventory.launchListEmailVar] = launchEmail;
   }
   await clerkSetup();
   for (const size of WIDTHS) {
@@ -439,6 +455,11 @@ try {
       ...(size.userAgent ? { userAgent: size.userAgent } : {}),
     });
     if (THEME) await context.addCookies([{ name: "the99_theme", value: THEME, url: BASE }]);
+    // `"cookies": [{ "name", "value", "path" }]` on the inventory sets browser cookies before the first load, `${VAR}` expanded
+    // in the value: a signed-out surface keyed on a secret only the browser holds (the flyer claim at `/join/<CODE>`).
+    if (inventory.cookies) {
+      await context.addCookies(inventory.cookies.map((c) => ({ name: c.name, value: expand(c.value, `cookie ${c.name}`), domain: new URL(BASE).hostname, path: c.path ?? "/" })));
+    }
     const page = await context.newPage();
     // `"notificationPermission": "default"` STAGES what `Notification.permission` reads, for the one state headless Chromium
     // cannot reach (it never reports `default`). The surface is real; the browser's answer is not, and the row says so.
@@ -587,6 +608,15 @@ try {
       console.log("INFO  the account's About row is restored as the run found it");
     } catch (error) {
       console.error("COULD NOT RESTORE the About row; the account's About state is changed:", error);
+      process.exitCode = 1;
+    }
+  }
+  if (launchEmail) {
+    try {
+      await aboutSql()`delete from launch_list where email = ${launchEmail}`;
+      console.log("INFO  the launch-list row this run saved is deleted");
+    } catch (error) {
+      console.error("COULD NOT DELETE the launch-list row this run saved:", launchEmail, error);
       process.exitCode = 1;
     }
   }

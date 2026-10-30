@@ -7,6 +7,7 @@ import { plain } from "../../lib/person-name/testing";
 
 const m = vi.hoisted(() => ({ claim: vi.fn(), confirm: vi.fn(), hand: vi.fn() }));
 vi.mock("../../app/join/actions", () => ({ claimInviteAction: m.claim, confirmCodeAction: m.confirm, handOverAction: m.hand }));
+vi.mock("../../app/join/flyer-actions", () => ({ startFlyerClaimAction: vi.fn(), confirmFlyerCodeAction: vi.fn(), handOverFlyerAction: vi.fn(), saveLaunchListAction: vi.fn() }));
 vi.mock("@clerk/nextjs", () => ({ SignInButton: ({ children }: { children: React.ReactNode }) => <>{children}</> }));
 vi.mock("../ui/hydrated-art", () => ({ FadingImg: () => null, useHydrated: () => true }));
 vi.mock("../ui/art-layer", () => ({ ArtLayer: () => null }));

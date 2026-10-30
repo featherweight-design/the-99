@@ -56,3 +56,31 @@ export const inviteOnlyCopy = {
   signIn: "Sign in",
   fine: "Have an invitation email? Open its link to make your account.",
 } as const;
+
+/**
+ * The flyer's `/join/<CODE>` (flyer trial R1b, boards `Join-Phone` V1 to E3; handoff `flyer-trial · copy strings.ts`).
+ * Placeholder copy owed to /copy-review. The title is one the page balances; "The" and "99" stay on one line.
+ * Everything else on the page (email field, Send code, the code step, Confirm) is `joinCopy`.
+ */
+export const flyerJoinCopy = {
+  cardName: "The 99",
+  cardType: "Invitation",
+  cardRules: "Join before launch, with 3 invites of your own for your pod.",
+  cardCredit: "From a flyer",
+  /** The footer's right end, Roman for 99 (the board's `XCIX`); drawn uppercase by CSS. */
+  cardMark: "XCIX",
+  title: "Try The\u00A099 before it launches",
+  fine: "You start with 15 welcome credits and 3 invites for your friends.",
+  okBody: "Now make your account. You’ll start with 15 welcome credits and 3 invites.",
+  fullTitle: "This flyer’s spots are all taken",
+  revokedTitle: "This flyer has ended",
+  listBody: "The 99 opens to everyone soon. Leave your email and we’ll tell you when it does.",
+  listPress: "Tell me at launch",
+  listedTitle: "You’re on the list",
+  listedBody: (email: string): Parts => ["We’ll email ", { em: email }, " the day The 99 opens to everyone."],
+  /** Not drawn on the boards: a hand-over to an address that already has an account. The invite's names its sender; a flyer has none. */
+  haveAccountBody: (email: string): Parts => [{ em: email }, " is already on The 99. Sign in instead."],
+  launchedTitle: "The 99 is open to everyone now",
+  launchedBody: "Flyer codes have retired. Make your account the usual way.",
+  launchedPress: "Make your account",
+} as const;

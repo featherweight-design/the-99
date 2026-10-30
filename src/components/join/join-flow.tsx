@@ -6,13 +6,18 @@
 // the card face down and names nobody (N12).
 
 import { SignInButton } from "@clerk/nextjs";
+import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { InviteSender } from "../../lib/social/friends";
-import { joinCopy as copy } from "../../lib/copy/join";
+import { flyerJoinCopy as flyerCopy, joinCopy as copy } from "../../lib/copy/join";
 import { CODE_LENGTH, isEmailShape, parseCode } from "../../lib/invites/rules";
+import type { FlyerJoinView } from "../../lib/flyer/join-read";
+import type { FlyerClosed } from "../../lib/flyer/rules";
 import { claimInviteAction, confirmCodeAction, handOverAction } from "../../app/join/actions";
+import { confirmFlyerCodeAction, handOverFlyerAction, saveLaunchListAction, startFlyerClaimAction } from "../../app/join/flyer-actions";
 import { FriendCard, type CardFace } from "../social/friend-card";
 import { FORM, NewcomerColumn } from "./newcomer-column";
+import { PendingReporter } from "../shell/pending-reporter";
 import { SocialToast, type SocialToastState } from "../social/social-toast";
 
 export type JoinStart =
@@ -22,7 +27,14 @@ export type JoinStart =
   | { kind: "expired" }
   | { kind: "ended" };
 
-type Step = "email" | "code" | "proven" | "account" | "expired" | "ended";
+type Step = "email" | "code" | "proven" | "account" | "expired" | "ended" | "full" | "revoked" | "listed" | "launched";
+
+// The two kinds of newcomer share one set of steps. A flyer's differ only where an invite names its sender: the card is the 99's
+// own, the lines name no one, and a used-up, ended or retired code has the launch-list steps. Each action answers in the
+// closed reasons below, so the page never reads a message.
+type Claim = { ok: true; mailed: boolean } | { ok: false; reason: string; waitMs?: number; closed?: FlyerClosed };
+type Confirm = { ok: true } | { ok: false; reason: string };
+type HandOver = { ok: true; url: string } | { ok: false; reason: string };
 
 // The boards' presses are 100% x 48px at every width (`.b1`, `.b2`): the friend landing's own button is 44px from `md`.
 const PRESS = "box-border mt-[14px] inline-flex h-[48px] w-full cursor-pointer items-center justify-center rounded-[8px] font-sans text-[15px] no-underline disabled:cursor-default";
@@ -44,10 +56,21 @@ function mmss(ms: number): string {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
-export function JoinFlow({ token, start }: { token: string; start: JoinStart }) {
+export type JoinFlowProps =
+  | { token: string; start: JoinStart; flyer?: false }
+  /** `token` is the flyer code, in upper case (the page redirects a lower-case one). */
+  | { token: string; start: FlyerJoinView; flyer: true };
+
+export function JoinFlow({ token, ...props }: JoinFlowProps) {
+  const flyer = props.flyer === true;
+  const start = props.start;
   const sender = "sender" in start ? start.sender : null;
-  const [step, setStep] = useState<Step>(start.kind);
+  // Face up while a flyer's reader is on the email, code or proven step; a closed or retired code shows the back alone.
+  const flyerFace = flyer && (start.kind === "email" || start.kind === "code" || start.kind === "proven");
+  const [step, setStep] = useState<Step>(start.kind === "closed" ? start.closed : start.kind);
   const [email, setEmail] = useState("email" in start ? start.email : "");
+  // The address the launch list kept, for the line that thanks them.
+  const [listed, setListed] = useState("");
   const [code, setCode] = useState("");
   const [line, setLine] = useState<string | null>(start.kind === "code" && start.expired ? copy.codeExpired : null);
   const [busy, setBusy] = useState(false);
@@ -62,7 +85,7 @@ export function JoinFlow({ token, start }: { token: string; start: JoinStart }) 
 
   // The arrival turn, once, after mount, so the face-down card the server drew is what turns.
   useEffect(() => {
-    if (!sender) return;
+    if (!sender && !flyerFace) return;
     let inner = 0;
     const outer = requestAnimationFrame(() => {
       inner = requestAnimationFrame(() => setUp(true));
@@ -104,9 +127,18 @@ export function JoinFlow({ token, start }: { token: string; start: JoinStart }) 
   const say = (retry: () => void) =>
     setToast({ id: ++seq.current, text: copy.failed, retry: { label: copy.retry, run: retry } });
   const end = (to: "ended" | "expired" = "ended") => {
+    // A flyer's claim that ended (its hold ran out, the code was revoked or the trial retired) has no card of its own
+    // to draw: the page reads again, so the reader meets whichever state is now true.
+    if (flyer) {
+      window.location.reload();
+      return;
+    }
     setUp(false);
     setStep(to);
   };
+  const claimAction = (address: string): Promise<Claim> => (flyer ? startFlyerClaimAction(token, address) : claimInviteAction(token, address));
+  const confirmAction = (typed: string): Promise<Confirm> => (flyer ? confirmFlyerCodeAction(token, typed) : confirmCodeAction(token, typed));
+  const handOverAct = (): Promise<HandOver> => (flyer ? handOverFlyerAction(token) : handOverAction(token));
 
   async function run<T>(act: () => Promise<T>, then: (r: T) => void, retry: () => void) {
     if (busy) return;
@@ -129,7 +161,7 @@ export function JoinFlow({ token, start }: { token: string; start: JoinStart }) 
       setLine(copy.notAnEmail);
       return;
     }
-    void run(() => claimInviteAction(token, email), (r) => {
+    void run(() => claimAction(email), (r) => {
       if (r.ok && !r.mailed) {
         // The claim committed but the mail did not go: the resend cooldown is running, the address stays editable.
         setWaitUntil(Date.now() + 60_000);
@@ -146,6 +178,10 @@ export function JoinFlow({ token, start }: { token: string; start: JoinStart }) 
         // Refused, so the stored address is unchanged: stay where the reader is (the email step names the cooldown).
         setWaitUntil(Date.now() + (r.waitMs ?? 60_000));
         setNow(Date.now());
+      } else if (r.reason === "closed") {
+        // Used up, or revoked since the page loaded: the card turns face down and the launch list takes the address.
+        setUp(false);
+        setStep(r.closed === "revoked" ? "revoked" : "full");
       } else if (r.reason === "ended") end();
       else say(() => sendCode());
     }, () => sendCode());
@@ -158,7 +194,7 @@ export function JoinFlow({ token, start }: { token: string; start: JoinStart }) 
       setLine(copy.codeWrong);
       return;
     }
-    void run(() => confirmCodeAction(token, parsed), (r) => {
+    void run(() => confirmAction(parsed), (r) => {
       if (r.ok) setStep("proven");
       else if (r.reason === "wrong") setLine(copy.codeWrong);
       else if (r.reason === "expired") {
@@ -170,8 +206,26 @@ export function JoinFlow({ token, start }: { token: string; start: JoinStart }) 
     }, () => confirm());
   }
 
+  // E1, E2: the launch list. A refusal of the field is the shipped line; a transport failure is the shared toast with
+  // Try again and the field kept; a trial that has retired meanwhile turns the page to E3.
+  function leaveEmail(e?: FormEvent) {
+    e?.preventDefault();
+    if (!isEmailShape(email)) {
+      setLine(copy.notAnEmail);
+      return;
+    }
+    void run(() => saveLaunchListAction(token, email), (r) => {
+      if (r.ok) {
+        setListed(email.trim().toLowerCase());
+        setStep("listed");
+      } else if (r.reason === "launched") setStep("launched");
+      else if (r.reason === "throttled") say(() => leaveEmail());
+      else setLine(copy.notAnEmail);
+    }, () => leaveEmail());
+  }
+
   function toSignUp() {
-    void run(() => handOverAction(token), (r) => {
+    void run(() => handOverAct(), (r) => {
       if (r.ok) {
         setLeaving(true);
         window.location.assign(r.url);
@@ -187,10 +241,16 @@ export function JoinFlow({ token, start }: { token: string; start: JoinStart }) 
   }
 
   // An ended or expired invite names nobody (N11, N12): its card is the back alone, whoever it was.
-  const named = step !== "ended" && step !== "expired" && step !== "account";
-  const face: CardFace | null = sender && named
-    ? { name: sender.displayName, commander: sender.commander, type: copy.cardType, rules: copy.cardRules(sender.displayName) }
-    : null;
+  const named = step === "email" || step === "code" || step === "proven";
+  const person = sender !== null || flyer;
+  // A flyer has no sender: its card is the 99's own, crowned in the art box and credited "From a flyer".
+  const face: CardFace | null = !named
+    ? null
+    : sender
+      ? { name: sender.displayName, commander: sender.commander, type: copy.cardType, rules: copy.cardRules(sender.displayName) }
+      : flyer
+        ? { name: flyerCopy.cardName, commander: null, type: flyerCopy.cardType, rules: flyerCopy.cardRules, crown: { credit: flyerCopy.cardCredit, mark: flyerCopy.cardMark } }
+        : null;
   const signIn = (
     <SignInButton mode="redirect">
       <button type="button" className={QUIET_LINK}>{copy.signIn}</button>
@@ -198,13 +258,14 @@ export function JoinFlow({ token, start }: { token: string; start: JoinStart }) 
   );
 
   let column: React.ReactNode;
-  if (step === "email" && sender) {
+  if (step === "email" && person) {
     column = (
       <NewcomerColumn
         variant="join"
-        title={copy.title(sender.displayName)}
+        title={sender ? copy.title(sender.displayName) : flyerCopy.title}
         body={copy.body}
-        fine={copy.fine(sender.displayName)}
+        fine={sender ? copy.fine(sender.displayName) : flyerCopy.fine}
+        balance={flyer}
         landing={up ? "go" : "wait"}
         actions={
           <form onSubmit={sendCode} noValidate className={FORM}>
@@ -223,7 +284,7 @@ export function JoinFlow({ token, start }: { token: string; start: JoinStart }) 
         }
       />
     );
-  } else if (step === "code" && sender) {
+  } else if (step === "code" && person) {
     const digits = code.replace(/\D/g, "").slice(0, CODE_LENGTH);
     // Only a wrong code (N4) is drawn in danger; an expired one (N5) is a neutral empty row with Confirm stepped back.
     const wrong = line === copy.codeWrong;
@@ -233,6 +294,7 @@ export function JoinFlow({ token, start }: { token: string; start: JoinStart }) 
         variant="join"
         title={copy.codeTitle}
         body={copy.codeBody(email)}
+        balance={flyer}
         landing="go"
         actions={
           <form onSubmit={confirm} noValidate className={FORM}>
@@ -271,22 +333,24 @@ export function JoinFlow({ token, start }: { token: string; start: JoinStart }) 
         }
       />
     );
-  } else if (step === "proven" && sender) {
+  } else if (step === "proven" && person) {
     column = (
       <NewcomerColumn
         variant="join"
         title={copy.okTitle}
-        body={copy.okBody(sender.displayName)}
+        body={sender ? copy.okBody(sender.displayName) : flyerCopy.okBody}
+        balance={flyer}
         landing="go"
         actions={<div className={FORM}><button type="button" disabled={busy || leaving} className={press()} onClick={toSignUp}>{busy || leaving ? copy.continuing : copy.toSignUp}</button></div>}
       />
     );
-  } else if (step === "account" && sender) {
+  } else if (step === "account" && person) {
     column = (
       <NewcomerColumn
         variant="join"
         title={copy.haveAccountTitle}
-        body={copy.haveAccountBody(email, sender.displayName)}
+        body={sender ? copy.haveAccountBody(email, sender.displayName) : flyerCopy.haveAccountBody(email)}
+        balance={flyer}
         landing="go"
         actions={
           <div className={FORM}>
@@ -294,6 +358,53 @@ export function JoinFlow({ token, start }: { token: string; start: JoinStart }) 
               <button type="button" className={press()}>{copy.signIn}</button>
             </SignInButton>
           </div>
+        }
+      />
+    );
+  } else if (flyer && (step === "full" || step === "revoked")) {
+    column = (
+      <NewcomerColumn
+        variant="join"
+        title={step === "full" ? flyerCopy.fullTitle : flyerCopy.revokedTitle}
+        body={flyerCopy.listBody}
+        balance
+        landing="go"
+        actions={
+          <>
+            <form onSubmit={leaveEmail} noValidate className={FORM}>
+              <label className="flex flex-col text-left font-sans text-[13px] font-semibold text-[color:var(--fg)]">
+                <span className="mb-[6px]">{copy.emailLabel}</span>
+                <input
+                  type="email" inputMode="email" autoComplete="email" autoCapitalize="none" spellCheck={false}
+                  value={email} placeholder={copy.emailPlaceholder} className={field(email.length > 0, busy)} readOnly={busy}
+                  aria-invalid={line ? true : undefined} aria-describedby={line ? "join-line" : undefined}
+                  onChange={(e) => { setEmail(e.target.value); setLine(null); setToast(null); }}
+                />
+              </label>
+              {line && <p id="join-line" role="alert" className={ERR}>{line}</p>}
+              <button type="submit" disabled={busy} className={press(busy ? "busy" : "ready")}>{flyerCopy.listPress}</button>
+            </form>
+            <p className={QUIET}>{copy.haveOne} {signIn}</p>
+          </>
+        }
+      />
+    );
+  } else if (flyer && step === "listed") {
+    column = <NewcomerColumn variant="join" title={flyerCopy.listedTitle} body={flyerCopy.listedBody(listed)} balance landing="go" actions={<p className={QUIET}>{copy.haveOne} {signIn}</p>} />;
+  } else if (flyer && step === "launched") {
+    column = (
+      <NewcomerColumn
+        variant="join"
+        title={flyerCopy.launchedTitle}
+        body={flyerCopy.launchedBody}
+        balance
+        actions={
+          <>
+            <div className={FORM}>
+              <Link href="/sign-up" className={press()}>{flyerCopy.launchedPress}<PendingReporter href="/sign-up" /></Link>
+            </div>
+            <p className={QUIET}>{copy.haveOne} {signIn}</p>
+          </>
         }
       />
     );
@@ -305,7 +416,7 @@ export function JoinFlow({ token, start }: { token: string; start: JoinStart }) 
 
   return (
     <>
-      <FriendCard face={face} up={up} arrival dim={step === "expired"} compact word={copy.cardType} badge={step === "proven"} />
+      <FriendCard face={face} up={up} arrival dim={step === "expired" || step === "launched"} compact word={copy.cardType} badge={step === "proven"} />
       {column}
       <SocialToast toast={toast} onDone={() => setToast(null)} />
     </>
