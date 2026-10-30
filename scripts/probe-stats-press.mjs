@@ -13,12 +13,12 @@
 //  - THE RESULT: Stats then lands (`[data-decks-stats]`), the tab loses the mark and its busy flag, and
 //    the feedback came BEFORE it (the read was still pending at the feedback frame).
 //
-// Needs a server with LINEUP_ENABLED=true and an account with at least one deck. It writes nothing.
+// Needs a server and an account with at least one deck. It writes nothing.
 // Run it against `next start`, never production: a production build under that profile read 44-50ms
 // at both widths (2026-10-13), where `next dev` (React in development mode) reads 110-117ms and fails
 // the bar for that reason alone.
 //
-//   LINEUP_ENABLED=true pnpm build && LINEUP_ENABLED=true node node_modules/next/dist/bin/next start -p 3612
+//   pnpm build && node node_modules/next/dist/bin/next start -p 3612
 //   PROBE_BASE=http://localhost:3612 pnpm probe:stats-press
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";

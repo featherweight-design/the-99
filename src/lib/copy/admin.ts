@@ -738,7 +738,6 @@ export const switchCopy: Readonly<Record<SwitchName, { label: string; descriptio
   HOW_IT_WORKS_ENABLED: { label: "How it works", description: "The How it works page in About." },
   LABEL_ROLE_COUNTS_ENABLED: { label: "Label role counts", description: "Role counts from card labels instead of the classifier, in decks and recommendations." },
   LABEL_SURFACES_ENABLED: { label: "Label surfaces", description: "Card labels drawn on cards and lists." },
-  LINEUP_ENABLED: { label: "Lineup", description: "The Stats view on /decks, across every deck." },
   LIST_CACHE_ENABLED: { label: "List cache", description: "Home and /decks cached per reader." },
   MANA_BALANCE_ENABLED: { label: "Mana Balance", description: "Mana Balance in the Tuning hub. Makes no model call." },
   NAV_STALL_LOG_ENABLED: { label: "Stuck-loader reports", description: "Logs a report when a loading screen stays up 8 seconds. Changes nothing on screen." },

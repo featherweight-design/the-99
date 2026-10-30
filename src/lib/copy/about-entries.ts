@@ -1663,8 +1663,8 @@ export const aboutEntries: readonly AboutEntry[] = [
     marksPending: true,
     since: 11,
   },
-  // Stats on /decks (handoff `design_handoff_the99_lineup`, R2, `about · lineup.ts`): follows LINEUP_ENABLED,
-  // so turning Stats on is what announces it, by id. No bump: `since` is the version current at merge, the
+  // Stats on /decks (handoff `design_handoff_the99_lineup`, R2, `about · lineup.ts`): it kept LINEUP_ENABLED as its
+  // historical identity (the switch is retired), by which it was announced. No bump: `since` is the version current at merge, the
   // deck-stats precedent. Caption through /prose-pass (2026-10-12); the title to /copy-review.
   {
     id: 'decks-stats',

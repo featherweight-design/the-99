@@ -22,7 +22,7 @@ export const MOMENTS = [
   { id: "find-a-deck", m: "M8", tool: "SWAP_TOOLS_ENABLED" },
   { id: "wishlist", m: "M9", tool: "SOCIAL_WISHLIST_ENABLED" },
   { id: "collection-sync", m: "M15", tool: "COLLECTION_SYNC_ENABLED" },
-  { id: "lineup", m: "M13", tool: "LINEUP_ENABLED" },
+  { id: "lineup", m: "M13", tool: null },
   { id: "matchups", m: "M10", tool: "SOCIAL_GAMES_ENABLED" },
   { id: "friends-after-game", m: "M11", tool: "SOCIAL_FRIENDS_ENABLED" },
 ] as const satisfies readonly { id: string; m: string; tool: SwitchName | null; after?: string }[];

@@ -23,7 +23,6 @@ import { overviewV2Enabled } from "../synopsis/overview-v2";
 import { shoppingMarkBoughtEnabled } from "../decks/mark-bought-flag";
 import { allDecksCartEnabled } from "../decks/all-decks-cart-flag";
 import { deckPrintingsEnabled } from "../decks/printings-flag";
-import { lineupEnabled } from "../decks/lineup-flag";
 import { paymentsEnabled, welcomeCreditsEnabled } from "../payments/flag";
 import { homeFeedEnabled } from "../feed/flag";
 import { commandersPlaceEnabled } from "../commanders/place-flag";
@@ -74,7 +73,7 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   DECK_NOTES_ENABLED: deckNotesEnabled,
   // History, the lines naming it: the hub's own rule, two or more Tuning tools on.
   TUNING_HUB_ENABLED: tuningHubEnabled,
-  LINEUP_ENABLED: lineupEnabled,
+  LINEUP_ENABLED: () => true,
   // Already reads ANALYSIS_TAB_ENABLED: Look deeper lives in the tab's Tuning hub.
   PROPOSED_CUTS_ENABLED: proposedCutsEnabled,
   // Already reads SWAP_TOOLS_ENABLED: the read lives in Find a deck for it.

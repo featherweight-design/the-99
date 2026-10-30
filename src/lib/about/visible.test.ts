@@ -5,7 +5,7 @@ import { aboutEntries } from "../copy/about-entries";
 import { creditsEntryOf, drawnEntry, isFirstRun, isSeen, resolveEntry, switchedIds, unseenEntries, variantId, visibleEntries, type SeenState } from "./visible";
 
 // TUNING_ENABLED also requires ANALYSIS_TAB_ENABLED (`tuningEnabled()`), already "true" here.
-const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", DECK_STATS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true", HOME_FEED_ENABLED: "true", COMMANDERS_PLACE_ENABLED: "true", SHOPPING_MARK_BOUGHT_ENABLED: "true", DECK_PRINTINGS_ENABLED: "true", MANA_BALANCE_ENABLED: "true", ALL_DECKS_CART_ENABLED: "true", DECK_NOTES_ENABLED: "true", ADDED_COPY_ENABLED: "true", LINEUP_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true", FIND_A_DECK_READ_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_GAMES_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true", HELP_PANEL_ENABLED: "true", FIRST_RUN_TOUR_ENABLED: "true", RULE_ZERO_ENABLED: "true", SOCIAL_INVITES_ENABLED: "true", CARD_SCAN_ENABLED: "true", FRIEND_DECKS_ENABLED: "true", NEAR_COMBOS_ENABLED: "true", PUSH_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", DECK_STATS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true", HOME_FEED_ENABLED: "true", COMMANDERS_PLACE_ENABLED: "true", SHOPPING_MARK_BOUGHT_ENABLED: "true", DECK_PRINTINGS_ENABLED: "true", MANA_BALANCE_ENABLED: "true", ALL_DECKS_CART_ENABLED: "true", DECK_NOTES_ENABLED: "true", ADDED_COPY_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true", FIND_A_DECK_READ_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_GAMES_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true", HELP_PANEL_ENABLED: "true", FIRST_RUN_TOUR_ENABLED: "true", RULE_ZERO_ENABLED: "true", SOCIAL_INVITES_ENABLED: "true", CARD_SCAN_ENABLED: "true", FRIEND_DECKS_ENABLED: "true", NEAR_COMBOS_ENABLED: "true", PUSH_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 const OFF = {} as unknown as NodeJS.ProcessEnv;
 
 /** Two switched entries, a and b, beside one plain one, shaped like the launch entries. */
@@ -17,7 +17,7 @@ const seen = (version: number, ids: string[] = []): SeenState => ({ version, ids
 
 // Retired switches draw always and are still seen by id (so no reader's New marks moved): with "every switch off" they
 // are drawn like an unswitched entry, and a reader who "met every launch" has met them too.
-const RETIRED = ["CARD_SEARCH_ENABLED", "FIRST_RUN_TOUR_ENABLED", "HELP_PANEL_ENABLED", "NEAR_COMBOS_ENABLED", "PRECONS_ENABLED", "UPCOMING_PRECONS_ENABLED", "DECK_TOKENS_ENABLED"];
+const RETIRED = ["CARD_SEARCH_ENABLED", "FIRST_RUN_TOUR_ENABLED", "HELP_PANEL_ENABLED", "NEAR_COMBOS_ENABLED", "PRECONS_ENABLED", "UPCOMING_PRECONS_ENABLED", "DECK_TOKENS_ENABLED", "LINEUP_ENABLED"];
 const retiredEntries = aboutEntries.filter((e) => e.switch && RETIRED.includes(e.switch));
 const retiredIds = retiredEntries.map((e) => e.id);
 
@@ -541,7 +541,8 @@ describe("notes follows DECK_NOTES_ENABLED", () => {
   it("is hidden while the switch is off, and drawn straight after deck-stats once it is on", () => {
     expect(ids({ DECK_STATS_ENABLED: "true" })).not.toContain("notes");
     const on = ids({ DECK_STATS_ENABLED: "true", DECK_NOTES_ENABLED: "true" });
-    expect(on[on.indexOf("deck-stats") + 1]).toBe("notes");
+    // decks-stats is always drawn now (its switch is retired), between the two.
+    expect(on[on.indexOf("decks-stats") + 1]).toBe("notes");
   });
 });
 

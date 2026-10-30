@@ -107,13 +107,13 @@ describe("All features", () => {
       all(),
       row({ switchName: "DECK_NOTES_ENABLED", scope: "user", userId: "u1", value: "off" }),
       row({ switchName: "DECK_STATS_ENABLED", scope: "group", groupId: "g1", value: "off" }),
-      row({ switchName: "LINEUP_ENABLED", scope: "app", value: "off" }),
+      row({ switchName: "NOTICES_ENABLED", scope: "app", value: "off" }),
     ], { u1: "g1" });
     const env = resolveEnv(e({ NEVER_CUT_ENABLED: "off" }), s, "u1");
     expect(env.NEVER_CUT_ENABLED).toBe("off");
     expect(env.DECK_NOTES_ENABLED).toBe("false");
     expect(env.DECK_STATS_ENABLED).toBe("true");
-    expect(env.LINEUP_ENABLED).toBe("true");
+    expect(env.NOTICES_ENABLED).toBe("true");
     expect(decide("DECK_STATS_ENABLED", "feature", e({}), s, "u1").source).toEqual({ kind: "all" });
   });
 

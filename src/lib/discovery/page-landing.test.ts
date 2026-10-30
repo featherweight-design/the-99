@@ -42,8 +42,8 @@ describe("pageLanding", () => {
     }
   });
 
-  // Precons has no switch (retired), so it has no off state.
-  it.each(PAGES.filter((p) => p.tool !== "precons"))("lands nowhere on $tool's page with its switch off for the reader", ({ tool }) => {
+  // Precons and `lineup` have no switch left (retired), so they have no off state.
+  it.each(PAGES.filter((p) => p.tool !== "precons" && p.tool !== "lineup"))("lands nowhere on $tool's page with its switch off for the reader", ({ tool }) => {
     const name = TOOLS.find((t) => t.id === tool)!.switch!;
     expect(pageLanding(tool, { ...ALL_ON, [name]: "" }, tool).landing).toBeNull();
   });

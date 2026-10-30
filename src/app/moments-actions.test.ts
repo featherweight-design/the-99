@@ -10,13 +10,13 @@ const { spendMomentAction } = await import("./moments-actions");
 
 beforeEach(() => {
   spendMoment.mockClear();
-  env = { LINEUP_ENABLED: "true" };
+  env = { PRECONS_ENABLED: "true" };
 });
 
 describe("spendMomentAction", () => {
   it("spends a moment live for the reader", async () => {
-    await spendMomentAction("lineup");
-    expect(spendMoment).toHaveBeenCalledWith("user_1", "lineup");
+    await spendMomentAction("precons");
+    expect(spendMoment).toHaveBeenCalledWith("user_1", "precons");
   });
 
   it("spends nothing the registry does not name", async () => {
@@ -28,7 +28,7 @@ describe("spendMomentAction", () => {
   it("spends nothing for a moment whose tool is off", async () => {
     await spendMomentAction("matchups");
     env = {};
-    await spendMomentAction("lineup");
+    await spendMomentAction("precons");
     expect(spendMoment).not.toHaveBeenCalled();
   });
 });

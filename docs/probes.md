@@ -259,7 +259,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   Slow 4G and a 4x CPU: from the pointerdown, in the page, the Stats tab is filled and `aria-busy` within 100ms, before
   the view has changed, with Tiles letting go of the selected fill in that same frame (Hugh's walk, 2026-10-13: both read selected for a moment), with the shell's pending diamond fully opaque (after its 120ms beat) while the read runs, and once Stats lands the tab is
   selected with no mark and no busy flag. Measured on a production build 2026-10-13: 44-50ms at both widths, Stats
-  itself arriving at 700-800ms; `next dev` reads 110-117ms. Needs `LINEUP_ENABLED=true`, writes nothing.
+  itself arriving at 700-800ms; `next dev` reads 110-117ms. Writes nothing.
 - `pnpm probe:card-view-radius` proves a card tile's corner clears Scryfall's matte (~3.1% of the rendered width) at 390,
   480, 600, 767 and 1300px, by reading the COMPUTED radius of the shell and of the art button on the precon page's
   read-only tile (the deck tile draws the same constants, `TILE_SHELL_SCALED` and `TILE_ART_CLIP_SCALED`, and needs no
@@ -2745,7 +2745,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   only writes, so it refuses any branch but a scratch one (`assertScratchBranch`) before the first. Seed the rows it
   reads first, on a SCRATCH branch only (`assertScratchBranch`): `OWNER_ID=<admin id> pnpm
   seed:admin-pii-fixture` writes group `pii-probe` holding every Clerk account, an account override on
-  `LINEUP_ENABLED` with its history, and a waiting email invite at `@pii-probe.example` and one player run this month (so Costs draws its per-account table), replacing its own rows on
+  `NOTICES_ENABLED` with its history, and a waiting email invite at `@pii-probe.example` and one player run this month (so Costs draws its per-account table), replacing its own rows on
   a re-run. On origin/main before the masking it fails 8 checks; the inventory is
   `docs/superpowers/inventories/admin-masking.json`.
 - `pnpm probe:group-allowance` proves the per-group daily allowance (payments scope Q16) against a real database:

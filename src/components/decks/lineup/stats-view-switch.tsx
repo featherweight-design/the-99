@@ -2,8 +2,7 @@
 
 // `Tiles · Stats` (handoff R2 StatsViewSwitch): the /decks view row's first control, the app's segmented switch as a
 // `tablist` of two compact segments. One tab stop, arrows move between them (selection follows focus), and the
-// selected tab names the panel it shows. Drawn only with `LINEUP_ENABLED` on; the page reads nothing for Stats while
-// it is off.
+// selected tab names the panel it shows. The page reads Stats only when asked for it (`?view=stats`).
 
 import { decksStatsCopy } from "../../../lib/copy/decks-stats";
 import type { DecksView } from "../../ui/view-cookie";

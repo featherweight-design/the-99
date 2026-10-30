@@ -19,7 +19,6 @@ import { buildableCount } from "../../lib/recs/buildable";
 import { noticesEnabled } from "../../lib/notices/flag";
 import { DecksView } from "../../components/decks/decks-view";
 import { cookies } from "next/headers";
-import { lineupEnabled } from "../../lib/decks/lineup-flag";
 import { readLineupCached } from "../../lib/lineup/cached";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import { DECKS_STATS_OPEN_COOKIE } from "../../components/ui/view-cookie";
@@ -52,15 +51,13 @@ export default async function DecksPage({
   // The reader's resolved switches, once for the whole render: every switch below, the cached
   // payload's key and its load all decide from this one env.
   const env = await requestSwitchEnv(userId);
-  // Stats on /decks (`LINEUP_ENABLED`): off, no switch, no read, and `?view` is ignored. On, the page draws
-  // Stats for `?view=stats` alone and reads the Stats payload only then. A bare /decks is always Tiles: the
+  // Stats on /decks: the page draws Stats for `?view=stats` alone and reads the Stats payload only then. A bare /decks is always Tiles: the
   // view is no longer remembered (Hugh, 2026-10-13), so a returning reader is never opened on Stats. It is
   // its own cache entry, so Tiles pays nothing for it.
-  const statsOn = lineupEnabled(env);
   // Only the Stats cards' fold memory is read from here.
-  const jar = statsOn ? await cookies() : null;
+  const jar = await cookies();
   const askedView = Array.isArray(params.view) ? params.view[0] : params.view;
-  const view = statsOn && askedView === "stats" ? "stats" : "tiles";
+  const view = askedView === "stats" ? "stats" : "tiles";
   // Try it's landing for Stats for your decks (discovery R2·3): `?tool=lineup` haloes the Tiles · Stats switch;
   // anything else is stripped.
   const { landing, request } = pageLanding(params[TOOL_PARAM], env, "lineup");
@@ -155,11 +152,11 @@ export default async function DecksPage({
       // One clock for the whole page, read on the server. Every relative date
       // below agrees because they are all measured against this instant.
       now={new Date().toISOString()}
-      lineup={statsOn ? {
+      lineup={{
         data: lineupData ? await lineupData : null,
         view,
-        foldServer: jar?.get(DECKS_STATS_OPEN_COOKIE)?.value ?? null,
-      } : null}
+        foldServer: jar.get(DECKS_STATS_OPEN_COOKIE)?.value ?? null,
+      }}
     />
     </>
   );
