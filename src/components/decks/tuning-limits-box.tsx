@@ -95,10 +95,10 @@ export function TuningLimitsBox({
   return (
     <div
       data-testid="tuning-limits-box"
-      // Desktop: cap, set and own on one row (200 · 200 · up to 320), the other-decks choice a foot row across all three.
-      className="flex flex-col gap-[14px] rounded-[10px] border border-[color:var(--border)] bg-[color:var(--surface-sunken)] p-[14px] md:grid md:max-w-[820px] md:grid-cols-[200px_200px_minmax(0,320px)] md:items-end md:gap-[16px]"
+      // From lg (1024, where all three fit beside the rail; review round 3): cap, set and own on one row (200 · 200 · up to 320), the other-decks choice a foot row across all three.
+      className="flex flex-col gap-[14px] rounded-[10px] border border-[color:var(--border)] bg-[color:var(--surface-sunken)] p-[14px] lg:grid lg:max-w-[820px] lg:grid-cols-[200px_200px_minmax(0,320px)] lg:items-end lg:gap-[16px]"
     >
-      <h3 className="m-0 md:col-span-full font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--fg-faint)]">
+      <h3 className="m-0 lg:col-span-full font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--fg-faint)]">
         {copy.heading}
       </h3>
 
@@ -158,9 +158,9 @@ export function TuningLimitsBox({
 
       {/* With Any card, cards in other decks are already offered (marked, with a buy tag), so there is no choice to make. */}
       {otherDecksOffered && ownedOnly && (
-        <label className="flex min-h-[44px] cursor-pointer items-start gap-[10px] px-[2px] pt-[4px] md:col-span-full md:min-h-0 md:items-center md:border-t md:border-solid md:border-[color:var(--border)] md:pt-[12px]">
+        <label className="flex min-h-[44px] cursor-pointer items-start gap-[10px] px-[2px] pt-[4px] lg:col-span-full lg:min-h-0 lg:items-center lg:border-t lg:border-solid lg:border-[color:var(--border)] lg:pt-[12px]">
           <Checkbox checked={otherDecks} onChange={onOtherDecksChange} className="mt-[1px]" />
-          <span className="flex flex-col gap-[3px] md:flex-row md:items-baseline md:gap-[10px]">
+          <span className="flex flex-col gap-[3px] lg:flex-row lg:items-baseline lg:gap-[10px]">
             <span className="text-[13px] font-medium text-[color:var(--fg)]">{copy.otherDecks}</span>
             <span className="text-[12px] leading-[1.45] text-[color:var(--fg-muted)]">{copy.otherDecksLine}</span>
           </span>

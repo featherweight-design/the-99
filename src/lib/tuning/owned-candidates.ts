@@ -75,7 +75,9 @@ export async function readOwnedCandidates(args: OwnedCandidateArgs): Promise<{ c
   // Every row that passes, in rank order, with whether its copy is held in another deck. Read until the max-th card's
   // tie group is closed (`tieClosed`), so `spareBeforeHeld` sees the whole group a spare copy could still move up in.
   const pool: { r: { oracleId: string; name: string; typeLine: string; inclusion: number | null }; held: boolean }[] = [];
-  const sameRank = (a: (typeof pool)[number], b: (typeof pool)[number]) => Number(a.r.inclusion ?? 0) === Number(b.r.inclusion ?? 0);
+  // A missing inclusion ranks below zero (`desc nulls last`), so it ties only another missing one.
+  const sameRank = (a: (typeof pool)[number], b: (typeof pool)[number]) =>
+    a.r.inclusion === null || b.r.inclusion === null ? a.r.inclusion === b.r.inclusion : Number(a.r.inclusion) === Number(b.r.inclusion);
   // Ranked rows are read a page at a time until the shortlist is full or the index is exhausted. The
   // free-copy and price tests need the other tables' reads, so they cannot sit in this query; a single
   // fixed read-ahead would let a collection whose top-ranked cards are claimed elsewhere (or over the
