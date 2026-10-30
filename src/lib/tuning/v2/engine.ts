@@ -5,12 +5,13 @@ import type { EvidencePack } from "../evidence";
 import { buildPromptV2, type PromptV2Stage } from "../prompt";
 import { OWNED_OFF_INDEX_MAX, OWNED_SHORTLIST_MAX } from "../limits";
 import { lineSchemaV2, suggestedChangesV2Schema } from "../response-schema";
-import { validateSuggestions, type Drop, type ResolvedCard, type ValidatedSuggestion } from "../validate";
+import { quotableOf, validateSuggestions, type Drop, type ResolvedCard, type ValidatedSuggestion } from "../validate";
 import { aimDrops, type BracketAim } from "./bracket-aim";
 import { chargeFor, type Charge } from "./charge";
 import { askFor, cutPlanFor, replyCeilingFor, schemaCapFor } from "./count";
 import { reasonFor, refillShortfall } from "./refill";
 import { lineStream } from "./stream-lines";
+import { asksWhy, buildWhyPrompt, checkWhy, WHY_EFFORT, WHY_MODEL, WHY_REPLY_TOKENS, whySchema, type V2Why } from "./why";
 
 /**
  * Suggested changes v2's run (spec 2026-10-27 §5; plan PR 2 with the handoff's H1, H2, H3). Model-agnostic: the caller
@@ -45,7 +46,8 @@ import { lineStream } from "./stream-lines";
  * each tier (`additionPosition`). The prompt asks it to prefer the first list, and a paid eval showed it does not always.
  */
 
-export type V2Stage = "additions" | "additionsRefill" | "cuts" | "cutsRefill";
+/** `why` is the why-these-cards call (`v2/why.ts`), made once both lists are final; it writes no line. */
+export type V2Stage = "additions" | "additionsRefill" | "cuts" | "cutsRefill" | "why";
 export type V2Side = "add" | "cut";
 
 /** One streamed call, as the engine asks for it. PR 3 adapts `client.ts`'s `callModel` to this. */
@@ -59,6 +61,10 @@ export type V2CallRequest = {
   maxTokens: number;
   deadlineMs: number;
   stream: true;
+  /** The call's model, when it is not the run's (`TUNING_MODEL`): the why call's is `WHY_MODEL`. */
+  model?: string;
+  /** The call's reasoning effort, when it is not the run's (`TUNING_EFFORT`): the why call's is `WHY_EFFORT`. */
+  effort?: "low" | "medium" | "high";
 };
 export type V2CallOutcome = { ok: true; usage?: ModelUsage } | { ok: false; errorClass: ModelErrorClass; usage?: ModelUsage };
 /** The reply's text deltas as they arrive, and the call's outcome once it ends (`ok` only for a reply that parsed whole). */
@@ -128,6 +134,8 @@ export type V2Report = {
   budgetReached: boolean;
   strippedCites: number;
   charge: Charge;
+  /** Why these cards, checked against both final lists (`checkWhy`); null when none was asked or it failed. */
+  why: V2Why | null;
 };
 
 export type RunV2Args = {
@@ -402,5 +410,48 @@ export async function runV2(args: RunV2Args): Promise<V2Report> {
     cutsFailed: cutsFailed !== null,
     budgetReached,
   });
-  return { additions, cuts, calls, callCount: calls.length, cutsFailed, budgetReached, strippedCites, charge };
+  const why = await whyCall();
+  return { additions, cuts, calls, callCount: calls.length, cutsFailed, budgetReached, strippedCites, charge, why };
+
+  /**
+   * Why these cards: one small call once both lists are final, shown the kept rows (`v2/why.ts`). Its failure, or a reply
+   * that fails its checks, costs the run nothing but the box: the lists and the charge stand.
+   */
+  async function whyCall(): Promise<V2Why | null> {
+    if (!asksWhy({ n, adds: additions.kept.length, cuts: cuts.kept.length, cutsFailed: cutsFailed !== null })) return null;
+    const left = args.budgetMs - (now() - start);
+    if (left < minCall) return null;
+    const { system, user } = buildWhyPrompt({
+      commanders: pack.commanders.map((c) => c.name), request: pack.notes, adds: additions.kept, cuts: cuts.kept,
+    });
+    const here: V2CallReport = { stage: "why", ask: 0, ok: false, ms: 0, lines: 0, kept: 0, malformed: 0 };
+    calls.push(here);
+    const t = now();
+    const call = args.callModel({
+      stage: "why", ask: 0, system, user, schema: whySchema, maxTokens: WHY_REPLY_TOKENS,
+      deadlineMs: Math.min(callCap, left), stream: true, model: WHY_MODEL, effort: WHY_EFFORT,
+    });
+    let text = "";
+    try {
+      for await (const delta of call.deltas) text += delta;
+    } catch {
+      // A broken stream is the call's failure, settled below.
+    }
+    const outcome: V2CallOutcome = await call.outcome.catch(() => ({ ok: false as const, errorClass: "upstream_busy" as const }));
+    here.ms = now() - t;
+    if (outcome.usage) here.usage = outcome.usage;
+    if (!outcome.ok) {
+      here.errorClass = outcome.errorClass;
+      return null;
+    }
+    let reply: unknown;
+    try {
+      reply = JSON.parse(text);
+    } catch {
+      here.errorClass = "malformed";
+      return null;
+    }
+    here.ok = true;
+    return checkWhy(reply, additions.kept, cuts.kept, quotableOf(pack));
+  }
 }

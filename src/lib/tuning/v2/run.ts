@@ -248,8 +248,8 @@ async function workV2(args: {
       const call = stub
         ? stub({ stage: req.stage, ask: req.ask })
         : streamModel({
-          model: TUNING_MODEL, system: req.system, user: req.user, maxTokens: req.maxTokens, schema: req.schema,
-          deadlineMs: req.deadlineMs, effort: TUNING_EFFORT,
+          model: req.model ?? TUNING_MODEL, system: req.system, user: req.user, maxTokens: req.maxTokens, schema: req.schema,
+          deadlineMs: req.deadlineMs, effort: req.effort ?? TUNING_EFFORT,
         });
       const shadow = lineStream();
       const deltas = (async function* () {
@@ -268,7 +268,7 @@ async function workV2(args: {
         }
       })();
       const outcome = call.outcome.then((o) => {
-        if (o.usage) billed.push({ model: TUNING_MODEL, usage: o.usage, step: req.stage, effort: TUNING_EFFORT });
+        if (o.usage) billed.push({ model: req.model ?? TUNING_MODEL, usage: o.usage, step: req.stage, effort: req.effort ?? TUNING_EFFORT });
         if (refill) void markV2Progress(run.runId, "refilling", sideOf(req.stage), false).catch(() => undefined);
         return o.ok ? { ok: true as const, usage: o.usage } : { ok: false as const, errorClass: o.errorClass, usage: o.usage };
       });

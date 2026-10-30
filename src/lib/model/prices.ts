@@ -5,6 +5,7 @@ import { STUB_MODEL } from "../synopsis/stub";
 import { FITS_READ_INPUT_CEILING, FITS_READ_MAX_TOKENS, FITS_READ_MODEL } from "../swaps/fits-read-limits";
 import { CUTS_MAX_TOKENS, TUNING_MAX_TOKENS, TUNING_MODEL } from "../tuning/limits";
 import { askFor, MAX_COUNT, replyCeilingFor } from "../tuning/v2/count";
+import { WHY_INPUT_TOKENS, WHY_MODEL, WHY_REPLY_TOKENS } from "../tuning/v2/why";
 import type { ModelFeature } from "./allowance-rule";
 import type { ModelUsage } from "./client";
 
@@ -198,9 +199,13 @@ export const FEATURE_CALLS: Readonly<Record<ModelFeature, {
   // first ask, 20,301 for the worst one, a cut refill told 30 additions coming in and 45 rejections (about 7,000 tokens at
   // the eval's 3 characters a token). v10's same decks run 10,331 characters, and staging's largest v10 prompt measured
   // 5,116 tokens against the fixture's ~3,700, so 16,000 holds the worst v2 call on a large deck with room to spare.
+  // A fifth, small call writes why these cards once both lists are final (`v2/why.ts`): its own step, at its own ceilings.
   suggested_changes_v2: {
-    model: TUNING_MODEL, inputCeilingTokens: 16_000, maxTokens: replyCeilingFor(askFor(MAX_COUNT)), callsPerWrite: 4,
-    steps: Array.from({ length: 4 }, () => ({ model: TUNING_MODEL, inputCeilingTokens: 16_000, maxTokens: replyCeilingFor(askFor(MAX_COUNT)) })),
+    model: TUNING_MODEL, inputCeilingTokens: 16_000, maxTokens: replyCeilingFor(askFor(MAX_COUNT)), callsPerWrite: 5,
+    steps: [
+      ...Array.from({ length: 4 }, () => ({ model: TUNING_MODEL, inputCeilingTokens: 16_000, maxTokens: replyCeilingFor(askFor(MAX_COUNT)) })),
+      { model: WHY_MODEL, inputCeilingTokens: WHY_INPUT_TOKENS, maxTokens: WHY_REPLY_TOKENS },
+    ],
   },
 };
 
