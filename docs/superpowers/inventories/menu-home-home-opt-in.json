@@ -1,17 +1,34 @@
 {
-  "feature": "Home, direction B: What's new while every kind is off, the inline opt-in (menu and Home handoff call 7; plan 2026-10-22-menu-home.md, PR 6)",
+  "feature": "Home, direction B: What's new with nothing in the window for a reader who never chose, the quiet line then the offer line (small items 5, Offer-Empty; announcements ERRATUM-offer-empty.md)",
   "clearAbout": true,
-  "note": "The second of the line's three Home inventories (see `menu-home-home.json`): an account with cards whose user_prefs.feed_kinds is empty, the default. No lead and no Home badge. Run on a scratch Neon branch with HOME_FEED_ENABLED on.",
+  "note": "The second of the line's three Home inventories (see `menu-home-home.json`). Rewritten for small items 5: the inline opt-in panel (call 7) retired, so these rows draw the quiet line naming the default-on kinds with the offer line under it, then Pick pressed. The file name is kept. Account: one with cards that has never chosen (user_prefs.feed_kinds and feed_kinds_declined empty, feed_offer_closed_at null) and nothing in the feed window. No lead and no Home badge. Run on a scratch Neon branch with HOME_FEED_ENABLED on. With every kind off (no default-on kind available), the same account draws the offer line alone, with no quiet line.",
   "rows": [
     {
-      "id": "home-nothing-chosen",
-      "label": "/ nothing chosen: What's new is the opt-in, the news boxes unchecked (one column on a phone, two from md), Show these and the in-app foot",
+      "id": "home-never-chosen-empty",
+      "label": "/ never chosen, nothing in the window: the quiet line naming the kinds on, then the offer line under its rule (Pick ▾, ✕)",
       "view": "src/components/home/whats-new.tsx",
       "steps": [
         {
           "goto": "/",
-          "wait": "[data-feed-opt-in]",
+          "wait": "[data-whats-new=quiet] [data-feed-offer=closed]",
           "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "home-never-chosen-empty-pick",
+      "label": "/ never chosen, nothing in the window, Pick pressed: the shipped boxes open in place under the quiet line (one column on a phone, two from md), Show these and the in-app foot",
+      "view": "src/components/home/whats-new.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "[data-whats-new=quiet] [data-feed-offer=closed]",
+          "settle": 2000
+        },
+        {
+          "click": "[data-feed-offer=closed] button[aria-expanded]",
+          "wait": "[data-feed-offer=open]",
+          "settle": 500
         }
       ]
     }

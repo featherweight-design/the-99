@@ -1,0 +1,1 @@
+ALTER TABLE "user_prefs" ADD COLUMN "feed_offer_closed_at" timestamp with time zone;

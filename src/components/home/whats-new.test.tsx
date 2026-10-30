@@ -3,8 +3,9 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 const nav = vi.hoisted(() => ({ refresh: vi.fn() }));
 const save = vi.hoisted(() => vi.fn());
+const closeOffer = vi.hoisted(() => vi.fn());
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: nav.refresh, push: vi.fn() }), usePathname: () => "/" }));
-vi.mock("../../app/settings/feed-actions", () => ({ saveFeedKinds: save }));
+vi.mock("../../app/settings/feed-actions", () => ({ saveFeedKinds: save, closeFeedOfferAction: closeOffer }));
 vi.mock("../cards/card-detail-provider", () => ({ useCardDetailIfAny: () => null }));
 
 import { FEED_SHOWN, WhatsNew, feedGroups } from "./whats-new";
@@ -20,6 +21,7 @@ const chosen = (items: FeedView[], o: Partial<Extract<HomeFeed, { chosen: true }
 
 beforeEach(() => {
   save.mockReset();
+  closeOffer.mockReset();
   nav.refresh.mockReset();
 });
 
@@ -95,41 +97,92 @@ describe("WhatsNew, kinds on", () => {
   });
 });
 
-describe("WhatsNew, nothing chosen: the inline opt-in", () => {
-  const offer: HomeFeed = { chosen: false, offer: ["new-set", "new-precon", "price-drop", "trade-match", "combo"], alsoOn: false };
+describe("WhatsNew, nothing in the window and something to offer (small items 5, Offer-Empty)", () => {
+  const o = feedCopy.home.offer;
+  const OFFER = ["new-set", "new-precon", "price-drop", "trade-match", "combo"] as const;
+  // A reader who never chose, with default-on kinds on; and one with every kind off.
+  const empty: HomeFeed = { chosen: false, offer: [...OFFER], on: ["secret-lair", "spare-request"] };
+  const allOff: HomeFeed = { chosen: false, offer: [...OFFER], on: [] };
+  const line = (container: HTMLElement) => container.querySelector("[data-feed-offer]");
+  const pick = () => fireEvent.click(screen.getByRole("button", { name: /Pick/ }));
 
-  it("draws every kind unchecked, no count and no Settings link, and Show these waits for a choice", () => {
-    render(<WhatsNew feed={offer} now={NOW} />);
-    expect(screen.getAllByRole("checkbox")).toHaveLength(5);
-    for (const box of screen.getAllByRole("checkbox")) expect(box).not.toBeChecked();
+  it("draws the quiet line naming the kinds on, then the offer line under its rule, and no opt-in panel", () => {
+    const { container } = render(<WhatsNew feed={empty} now={NOW} />);
+    expect(container.querySelector("[data-whats-new=quiet]")).not.toBeNull();
+    expect(container.querySelector("[data-feed-quiet]")!.textContent).toBe(
+      `${feedCopy.home.quietLead} You hear about Secret Lair drops and friends asking for your spares here.`,
+    );
+    expect(line(container)?.getAttribute("data-feed-offer")).toBe("closed");
+    expect(line(container)?.className).toContain("border-top");
+    // The quiet line first, the offer line last in the box.
+    expect(line(container)?.previousElementSibling).toBe(container.querySelector("[data-feed-quiet]"));
+    expect(line(container)?.parentElement?.lastElementChild).toBe(line(container));
+    expect(container.querySelector("[data-feed-opt-in]")).toBeNull();
+    expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
     expect(screen.queryByRole("link", { name: /Choose what shows/ })).toBeNull();
-    expect(screen.getByRole("button", { name: "Show these" })).toBeDisabled();
   });
 
-  it("says nothing shows until a choice, unless a default-on kind already shows here", () => {
-    const { rerender } = render(<WhatsNew feed={offer} now={NOW} />);
-    expect(screen.getByText(feedCopy.home.optIn.line)).toBeTruthy();
-    rerender(<WhatsNew feed={{ ...offer, alsoOn: true }} now={NOW} />);
-    expect(screen.getByText(feedCopy.home.optIn.lineAlsoOn)).toBeTruthy();
-    expect(screen.queryByText(feedCopy.home.optIn.line)).toBeNull();
+  it("with no kind on, draws the offer line alone, with no quiet line and no rule", () => {
+    const { container } = render(<WhatsNew feed={allOff} now={NOW} />);
+    expect(container.querySelector("[data-whats-new=offer]")).not.toBeNull();
+    expect(container.querySelector("[data-feed-quiet]")).toBeNull();
+    expect(line(container)?.getAttribute("data-feed-offer")).toBe("closed");
+    expect(line(container)?.className ?? "").not.toContain("border-top");
+  });
+
+  it("after its ✕, the quiet line alone", async () => {
+    closeOffer.mockResolvedValue({ ok: true, changed: true });
+    const { container } = render(<WhatsNew feed={empty} now={NOW} />);
+    fireEvent.click(screen.getByRole("button", { name: o.closeAria }));
+    expect(line(container)).toBeNull();
+    expect(container.querySelector("[data-feed-quiet]")!.textContent).toContain("Secret Lair drops");
+    await waitFor(() => expect(closeOffer).toHaveBeenCalledTimes(1));
+  });
+
+  it("after its ✕ with no kind on, the quiet line's lead alone: nothing to name", async () => {
+    closeOffer.mockResolvedValue({ ok: true, changed: true });
+    const { container } = render(<WhatsNew feed={allOff} now={NOW} />);
+    fireEvent.click(screen.getByRole("button", { name: o.closeAria }));
+    expect(line(container)).toBeNull();
+    expect(container.querySelector("[data-feed-quiet]")!.textContent).toBe(feedCopy.home.quietLead);
+    await waitFor(() => expect(closeOffer).toHaveBeenCalledTimes(1));
+  });
+
+  it("puts the line back, and takes the lead-alone quiet line away, when the ✕'s write throws", async () => {
+    closeOffer.mockRejectedValue(new Error("down"));
+    const { container } = render(<WhatsNew feed={allOff} now={NOW} />);
+    fireEvent.click(screen.getByRole("button", { name: o.closeAria }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(feedCopy.news.failed);
+    expect(line(container)).not.toBeNull();
+    expect(container.querySelector("[data-feed-quiet]")).toBeNull();
+  });
+
+  it("Pick opens every kind unchecked, and Show these waits for a choice", () => {
+    render(<WhatsNew feed={empty} now={NOW} />);
+    pick();
+    expect(screen.getAllByRole("checkbox")).toHaveLength(OFFER.length);
+    for (const box of screen.getAllByRole("checkbox")) expect(box).not.toBeChecked();
+    expect(screen.getByRole("button", { name: o.save })).toBeDisabled();
   });
 
   it("saves the chosen kinds through Settings' action, then refreshes Home", async () => {
     save.mockResolvedValue({ ok: true, changed: true });
-    render(<WhatsNew feed={offer} now={NOW} />);
+    render(<WhatsNew feed={allOff} now={NOW} />);
+    pick();
     fireEvent.click(screen.getByRole("checkbox", { name: /New sets/ }));
     fireEvent.click(screen.getByRole("checkbox", { name: /Combos you can make/ }));
-    fireEvent.click(screen.getByRole("button", { name: "Show these" }));
+    fireEvent.click(screen.getByRole("button", { name: o.save }));
     await waitFor(() => expect(nav.refresh).toHaveBeenCalled());
     // With the kinds the page offered, so a kind that came available since keeps what it had.
-    expect(save).toHaveBeenCalledWith(["new-set", "combo"], offer.offer);
+    expect(save).toHaveBeenCalledWith(["new-set", "combo"], [...OFFER]);
   });
 
   it("says so when the save fails, and stays", async () => {
     save.mockResolvedValue({ ok: false, reason: "invalid" });
-    render(<WhatsNew feed={offer} now={NOW} />);
+    render(<WhatsNew feed={empty} now={NOW} />);
+    pick();
     fireEvent.click(screen.getByRole("checkbox", { name: /New sets/ }));
-    fireEvent.click(screen.getByRole("button", { name: "Show these" }));
+    fireEvent.click(screen.getByRole("button", { name: o.save }));
     expect(await screen.findByRole("alert")).toHaveTextContent("We couldn’t save that. Try again.");
     // A refusal redraws the page, so the boxes offered are the current ones.
     expect(nav.refresh).toHaveBeenCalled();
@@ -138,20 +191,112 @@ describe("WhatsNew, nothing chosen: the inline opt-in", () => {
   it("holds the boxes while a save is in flight, so the visible choice is the saved one", async () => {
     let finish!: (v: unknown) => void;
     save.mockReturnValue(new Promise((r) => (finish = r)));
-    render(<WhatsNew feed={offer} now={NOW} />);
+    render(<WhatsNew feed={empty} now={NOW} />);
+    pick();
     fireEvent.click(screen.getByRole("checkbox", { name: /New sets/ }));
-    fireEvent.click(screen.getByRole("button", { name: "Show these" }));
+    fireEvent.click(screen.getByRole("button", { name: o.save }));
     await waitFor(() => expect(screen.getByRole("checkbox", { name: /Combos you can make/ })).toBeDisabled());
     finish({ ok: true, changed: true });
   });
 
-  it("drops a selection the page no longer offers when the offer shrinks", () => {
-    const { rerender } = render(<WhatsNew feed={offer} now={NOW} />);
+  it("starts over when the offer changes: a box the page no longer offers leaves, and nothing comes back ticked", () => {
+    const { rerender } = render(<WhatsNew feed={empty} now={NOW} />);
+    pick();
     fireEvent.click(screen.getByRole("checkbox", { name: /Combos you can make/ }));
-    rerender(<WhatsNew feed={{ chosen: false, offer: ["new-set", "new-precon", "price-drop", "trade-match"], alsoOn: false }} now={NOW} />);
+    rerender(<WhatsNew feed={{ ...empty, offer: ["new-set", "new-precon", "price-drop", "trade-match"] }} now={NOW} />);
+    pick();
     expect(screen.queryByRole("checkbox", { name: /Combos you can make/ })).toBeNull();
-    // Back to the full offer: the box the reader had ticked is not ticked behind their back.
-    rerender(<WhatsNew feed={offer} now={NOW} />);
+    rerender(<WhatsNew feed={empty} now={NOW} />);
+    pick();
     expect(screen.getByRole("checkbox", { name: /Combos you can make/ })).not.toBeChecked();
+  });
+});
+
+describe("WhatsNew, never chosen: the offer line (announcements call 3)", () => {
+  const o = feedCopy.home.offer;
+  const OFFER = ["new-set", "price-drop", "combo"] as const;
+  const never = (items: FeedView[], extra: Partial<Extract<HomeFeed, { chosen: true }>> = {}) => chosen(items, { offer: [...OFFER], ...extra });
+  const line = (container: HTMLElement) => container.querySelector("[data-feed-offer]");
+
+  it("ends the rows with the line, Pick ▾ and a ✕, and draws no boxes until Pick", () => {
+    const { container } = render(<WhatsNew feed={never([view(1, 2), view(2, 3)])} now={NOW} />);
+    expect(line(container)?.getAttribute("data-feed-offer")).toBe("closed");
+    expect(line(container)?.textContent).toContain(o.lead);
+    expect(line(container)?.textContent).toContain(o.rest);
+    // Last in the box, under the rows.
+    expect(line(container)?.parentElement?.lastElementChild).toBe(line(container));
+    expect(screen.getByRole("button", { name: /Pick/ })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("button", { name: o.closeAria })).toBeTruthy();
+    expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
+  });
+
+  // The loader answers an empty window `chosen: false` (above), so a `chosen: true` view with no rows never carries it.
+  it("follows the rows in an items view: none under a chosen quiet line, and none under a lead with nothing else", () => {
+    const { container, rerender } = render(<WhatsNew feed={never([])} now={NOW} />);
+    expect(container.querySelector("[data-feed-quiet]")).not.toBeNull();
+    expect(line(container)).toBeNull();
+    rerender(<WhatsNew feed={never([], { lead: view(9, 1) })} now={NOW} />);
+    expect(container.querySelector("[data-whats-new]")).toBeNull();
+    expect(line(container)).toBeNull();
+  });
+
+  it("draws no line once the reader has chosen (no offer), and none with an empty offer", () => {
+    const { container, rerender } = render(<WhatsNew feed={chosen([view(1, 2)])} now={NOW} />);
+    expect(line(container)).toBeNull();
+    rerender(<WhatsNew feed={chosen([view(1, 2)], { offer: [] })} now={NOW} />);
+    expect(line(container)).toBeNull();
+  });
+
+  it("Pick opens the shipped boxes in place, every box empty, with Show these, and focuses the first", () => {
+    const { container } = render(<WhatsNew feed={never([view(1, 2)])} now={NOW} />);
+    fireEvent.click(screen.getByRole("button", { name: /Pick/ }));
+    expect(line(container)?.getAttribute("data-feed-offer")).toBe("open");
+    expect(line(container)?.textContent).toContain(o.openRest);
+    const boxes = screen.getAllByRole("checkbox");
+    expect(boxes).toHaveLength(OFFER.length);
+    for (const box of boxes) expect(box).not.toBeChecked();
+    expect(document.activeElement).toBe(boxes[0]);
+    expect(screen.getByRole("button", { name: "Show these" })).toBeDisabled();
+    expect(screen.queryByRole("button", { name: /Pick/ })).toBeNull();
+  });
+
+  it("Show these saves the ticked kinds through Settings' action, scoped to the offer, then refreshes", async () => {
+    save.mockResolvedValue({ ok: true, changed: true });
+    render(<WhatsNew feed={never([view(1, 2)])} now={NOW} />);
+    fireEvent.click(screen.getByRole("button", { name: /Pick/ }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /Combos you can make/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Show these" }));
+    await waitFor(() => expect(nav.refresh).toHaveBeenCalled());
+    expect(save).toHaveBeenCalledWith(["combo"], [...OFFER]);
+    expect(closeOffer).not.toHaveBeenCalled();
+  });
+
+  it("✕ saves an empty choice: the line leaves at once, focus goes to the head, and Home refreshes", async () => {
+    closeOffer.mockResolvedValue({ ok: true, changed: true });
+    const { container } = render(<WhatsNew feed={never([view(1, 2)])} now={NOW} />);
+    fireEvent.click(screen.getByRole("button", { name: o.closeAria }));
+    expect(line(container)).toBeNull();
+    expect(document.activeElement?.id).toBe("home-whats-new");
+    await waitFor(() => expect(nav.refresh).toHaveBeenCalled());
+    expect(closeOffer).toHaveBeenCalledTimes(1);
+    expect(save).not.toHaveBeenCalled();
+  });
+
+  it("✕ on the opened boxes saves the empty choice too", async () => {
+    closeOffer.mockResolvedValue({ ok: true, changed: true });
+    const { container } = render(<WhatsNew feed={never([view(1, 2)])} now={NOW} />);
+    fireEvent.click(screen.getByRole("button", { name: /Pick/ }));
+    fireEvent.click(screen.getByRole("button", { name: o.closeAria }));
+    expect(line(container)).toBeNull();
+    await waitFor(() => expect(closeOffer).toHaveBeenCalledTimes(1));
+  });
+
+  it("puts the line back with the reason when the ✕'s write throws", async () => {
+    closeOffer.mockRejectedValue(new Error("down"));
+    const { container } = render(<WhatsNew feed={never([view(1, 2)])} now={NOW} />);
+    fireEvent.click(screen.getByRole("button", { name: o.closeAria }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(feedCopy.news.failed);
+    expect(line(container)).not.toBeNull();
+    expect(nav.refresh).not.toHaveBeenCalled();
   });
 });

@@ -4,8 +4,8 @@ import { describe, expect, it } from "vitest";
 
 import { db } from "../../db";
 import {
-  effectiveKinds, feedKindsUpdate, kindsOn, loadNewsSettings, markFeedSeen, markFriendsSeen, nextFeedPrefs, parseChosenKinds,
-  parseDeclined, parseFeedKinds, setFeedKinds, type FeedKindsMap,
+  closeFeedOffer, closeFeedOfferQuery, effectiveKinds, feedKindsUpdate, kindsOn, loadNewsSettings, markFeedSeen, markFriendsSeen,
+  neverChose, nextFeedPrefs, parseChosenKinds, parseDeclined, parseFeedKinds, readFeedPrefs, setFeedKinds, type FeedKindsMap,
 } from "./prefs";
 import { DEFAULT_ON_KINDS, FEED_KINDS, isAnnouncementKind, type FeedKind } from "./kinds";
 
@@ -257,5 +257,52 @@ describe("loadNewsSettings (Settings' news section)", () => {
     const { q, reads } = reader({ combo: EARLIER });
     expect(await loadNewsSettings("u", env({ SOCIAL_WISHLIST_ENABLED: "true" }), q)).toEqual([]);
     expect(reads()).toBe(0);
+  });
+});
+
+describe("neverChose (the offer line's rule, announcements call 3)", () => {
+  it("holds with nothing stamped, nothing declined and the offer never closed", () => {
+    expect(neverChose({ map: {}, declined: [] })).toBe(true);
+    expect(neverChose({ map: {}, declined: [], offerClosed: false })).toBe(true);
+  });
+
+  it("ends with a kind stamped, a default-on kind declined, or the offer's ✕", () => {
+    expect(neverChose({ map: { combo: EARLIER }, declined: [] })).toBe(false);
+    expect(neverChose({ map: {}, declined: ["secret-lair"] })).toBe(false);
+    expect(neverChose({ map: {}, declined: [], offerClosed: true })).toBe(false);
+  });
+
+  it("leaves the default-on kinds on after the ✕, exactly as for a reader who never chose", () => {
+    expect(effectiveKinds({ map: {}, declined: [], offerClosed: true })).toEqual(effectiveKinds({ map: {}, declined: [] }));
+  });
+});
+
+describe("readFeedPrefs: the offer's ✕", () => {
+  const reading = (rows: unknown[]) => ({ select: () => ({ from: () => ({ where: async () => rows }) }) }) as never;
+
+  it("reads closed when the row holds a stamp, and open when it holds none or there is no row", async () => {
+    expect((await readFeedPrefs("u", reading([{ feedKinds: {}, declined: [], offerClosedAt: NOW }]))).offerClosed).toBe(true);
+    expect((await readFeedPrefs("u", reading([{ feedKinds: {}, declined: [], offerClosedAt: null }]))).offerClosed).toBe(false);
+    expect((await readFeedPrefs("u", reading([]))).offerClosed).toBe(false);
+  });
+});
+
+describe("closeFeedOffer (the offer's ✕)", () => {
+  it("upserts the caller's own row, stamping only the column, guarded on the stored row's column (qualified)", () => {
+    const { sql, params } = closeFeedOfferQuery("user_1", NOW, db).toSQL();
+    expect(sql).toMatch(/^insert into "user_prefs" /);
+    expect(sql).toMatch(/ on conflict \("user_id"\) do update set "feed_offer_closed_at" = \$\d+ where "user_prefs"\.feed_offer_closed_at is null$/);
+    expect(sql).not.toMatch(/do update set .*"feed_kinds/);
+    expect(params).toContain("user_1");
+  });
+
+  it("writes for the caller alone, and reports a repeat (the guard matched nothing) as no write", async () => {
+    const values: unknown[] = [];
+    const q = (rows: unknown[]) => ({
+      insert: () => ({ values: (v: unknown) => { values.push(v); return { onConflictDoUpdate: () => ({ returning: async () => rows }) }; } }),
+    }) as never;
+    expect(await closeFeedOffer("user_1", NOW, q([{ userId: "user_1" }]))).toBe(true);
+    expect(await closeFeedOffer("user_1", NOW, q([]))).toBe(false);
+    expect(values).toEqual([{ userId: "user_1", feedOfferClosedAt: NOW }, { userId: "user_1", feedOfferClosedAt: NOW }]);
   });
 });

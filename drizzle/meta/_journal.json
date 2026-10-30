@@ -1387,6 +1387,13 @@
       "when": 1793332121089,
       "tag": "0197_tuning_other_decks",
       "breakpoints": true
+    },
+    {
+      "idx": 198,
+      "version": "7",
+      "when": 1793335082566,
+      "tag": "0198_user_prefs_feed_offer_closed",
+      "breakpoints": true
     }
   ]
 }

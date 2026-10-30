@@ -5,10 +5,14 @@
  *
  * `loadHomeFeed` answers three ways:
  * - null: `HOME_FEED_ENABLED` is off for the reader (Home as shipped), and nothing is read;
- * - `{ chosen: false }`: What's new IS the opt-in (handoff call 7): every kind the reader can be offered is off
- *   (`alsoOn: false`), or the reader never chose and only a default-on kind is on, with nothing yet (`alsoOn: true`);
+ * - `{ chosen: false }`: the offer with nothing in the window (small items 5, `Offer-Empty`;
+ *   `ERRATUM-offer-empty.md`): every kind the reader can be offered is off (`on` empty, the offer line alone), or the
+ *   reader never chose (`neverChose`) and only default-on kinds are on, with nothing in the window yet (`on` names
+ *   them, for the quiet line over the offer line);
  * - `{ chosen: true }`: the items in the window, each with the card it is drawn with, read in four catalog lookups
- *   and one ownership count over the whole list (never one per item).
+ *   and one ownership count over the whole list (never one per item). While the reader has never chosen, `offer`
+ *   names the kinds still off, and What's new ends its items with the offer line (announcements call 3) until Show
+ *   these or its ✕ saves a choice.
  *
  * `homeFeedAfter` is the visit's two writes, for `after()`: `markFeedSeen` (writes only while an unseen item exists)
  * and `noticeTradeMatches` (idempotent). Neither runs during the render, and neither reaches the cached path.
@@ -27,7 +31,7 @@ import { noticeTradeMatches } from "../social/trade-match";
 import { availableFeedKinds, homeFeedEnabled } from "./flag";
 import { spareRequestsEnabled } from "../social/flag";
 import { leadStory, type FeedKind } from "./kinds";
-import { effectiveKinds, markFeedSeen, readFeedPrefs } from "./prefs";
+import { effectiveKinds, markFeedSeen, neverChose, readFeedPrefs } from "./prefs";
 import { loadFeed, type FeedItem, type FeedPost } from "./read";
 import { wizardsOutRoute } from "../push/wizards-out";
 
@@ -125,9 +129,19 @@ export type AnswerDetail = { canBuy: boolean; others: string[] };
 export type LeadAsk = { id: string; spare: number; copies: number; deckName: string | null; daysLeft: number };
 
 export type HomeFeed =
-  /** `alsoOn`: a default-on kind is on already (the reader never chose), so the offer is for what ELSE shows. */
-  | { chosen: false; offer: FeedKind[]; alsoOn: boolean }
-  | { chosen: true; on: FeedKind[]; items: FeedView[]; unseen: number; lead: FeedView | null };
+  /**
+   * Nothing in the window and something to offer: `offer`, the kinds the offer line's boxes hold; `on`, the kinds already
+   * on (the reader never chose), which the quiet line names over it. `on` empty: the offer line alone.
+   */
+  | { chosen: false; offer: FeedKind[]; on: FeedKind[] }
+  | {
+      chosen: true; on: FeedKind[]; items: FeedView[]; unseen: number; lead: FeedView | null;
+      /**
+       * The offer line's boxes (announcements call 3): the kinds still off, while the reader has never chosen and the
+       * window holds items. Absent or empty, What's new draws no offer line.
+       */
+      offer?: FeedKind[];
+    };
 
 /** One card from each new set: a mythic, then a rare, then the lowest collector number, with an image. */
 export function setCardsQuery(codes: readonly string[]) {
@@ -316,16 +330,17 @@ export async function loadHomeFeed(userId: string, env: NodeJS.ProcessEnv, now: 
   const prefs = await readFeedPrefs(userId, q);
   const effective = effectiveKinds(prefs);
   const on = available.filter((k) => effective.includes(k));
-  if (on.length === 0) return { chosen: false, offer: available, alsoOn: false };
+  if (on.length === 0) return { chosen: false, offer: available, on: [] };
   const items = await loadFeed(userId, env, now, q);
-  // A reader who never chose keeps the offer until a default-on kind has something to show (an incoming ask). The
-  // offer leaves out the default-on kinds already on: its boxes start empty and it saves only what it offers, so an
-  // unticked default would read as turned off.
-  const choseNothing = Object.keys(prefs.map).length === 0 && prefs.declined.length === 0;
-  const offer = available.filter((k) => !on.includes(k));
-  if (choseNothing && items.length === 0 && offer.length > 0) return { chosen: false, offer, alsoOn: true };
+  // A reader who never chose is offered the kinds still off for as long as they have not chosen (announcements call 3):
+  // with nothing in the window, as the offer line under the quiet line (small items 5, `Offer-Empty`); with items, as the
+  // offer line at the foot of What's new, since ending it at the first item would end it at the first Wizards post. It
+  // leaves out the default-on kinds already on: its boxes start empty and it saves only what it offers, so an unticked
+  // default would read as turned off.
+  const offer = neverChose(prefs) ? available.filter((k) => !on.includes(k)) : [];
+  if (items.length === 0 && offer.length > 0) return { chosen: false, offer, on };
   const views = toViews(items, await lookups(userId, items, q, env));
-  const feed = splitLead(views, on);
+  const feed = offer.length > 0 ? { ...splitLead(views, on), offer } : splitLead(views, on);
   // Only a spare request that leads is answered on Home; its ask is read only then. The ask waits on the friend's
   // side whatever the feed shows, so the match is by card and asker: one open ask per asker and card (the index).
   const answered = await answerDetails(userId, feed, env);

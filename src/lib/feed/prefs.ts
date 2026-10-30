@@ -41,8 +41,18 @@ export function parseDeclined(raw: unknown): FeedKind[] {
   return FEED_KINDS.filter((k) => seen.has(k));
 }
 
-/** A reader's stored news choice: the stamps, and the default-on kinds they turned off. */
-export type FeedPrefs = { map: FeedKindsMap; declined: readonly FeedKind[] };
+/**
+ * A reader's stored news choice: the stamps, the default-on kinds they turned off, and whether they closed What's new's
+ * offer with its ✕ (`user_prefs.feed_offer_closed_at`; absent reads as not closed). Closing turns nothing on or off.
+ */
+export type FeedPrefs = { map: FeedKindsMap; declined: readonly FeedKind[]; offerClosed?: boolean };
+
+/**
+ * Whether the reader has never chosen (announcements call 3): no kind stamped, none declined, and the offer never
+ * closed. THE rule; What's new's offer line stands only while it holds (`loadHomeFeed`).
+ */
+export const neverChose = (p: FeedPrefs): boolean =>
+  Object.keys(p.map).length === 0 && p.declined.length === 0 && p.offerClosed !== true;
 
 /** Whether a kind is on for this reader: stamped, or default-on and not declined. */
 export const isKindOn = (p: FeedPrefs, kind: FeedKind): boolean =>
@@ -148,10 +158,33 @@ export function feedKindsUpdate(
     ));
 }
 
-/** The reader's stored choice. Absent row: no stamps and nothing declined (every default-on kind on). */
+/** The reader's stored choice. Absent row: no stamps, nothing declined (every default-on kind on), the offer open. */
 export async function readFeedPrefs(userId: string, q: Pick<typeof db, "select"> = db): Promise<FeedPrefs> {
-  const [row] = await q.select(prefsColumns).from(userPrefs).where(eq(userPrefs.userId, userId));
-  return { map: parseFeedKinds(row?.feedKinds), declined: parseDeclined(row?.declined) };
+  const [row] = await q.select({ ...prefsColumns, offerClosedAt: userPrefs.feedOfferClosedAt }).from(userPrefs).where(eq(userPrefs.userId, userId));
+  return { map: parseFeedKinds(row?.feedKinds), declined: parseDeclined(row?.declined), offerClosed: row?.offerClosedAt != null };
+}
+
+/**
+ * What's new's offer ✕ (announcements call 3): saves an empty choice for good by stamping the reader's OWN row's
+ * `feed_offer_closed_at`, inserting the row when they have none. Writes only while it is null, so a second ✕ writes
+ * nothing and moves no stamp trigger. Kinds and declines are untouched: the default-on kinds stay on. Returns whether it wrote.
+ */
+export async function closeFeedOffer(userId: string, now = new Date(), q: Pick<typeof db, "insert"> = db): Promise<boolean> {
+  const done = await closeFeedOfferQuery(userId, now, q).returning({ userId: userPrefs.userId });
+  return done.length > 0;
+}
+
+/** The ✕'s upsert, apart so a test can render it: the conflict's update is guarded on the stored row's own column. */
+export function closeFeedOfferQuery(userId: string, now: Date, q: Pick<typeof db, "insert"> = db) {
+  return q
+    .insert(userPrefs)
+    .values({ userId, feedOfferClosedAt: now })
+    .onConflictDoUpdate({
+      target: userPrefs.userId,
+      set: { feedOfferClosedAt: now },
+      // Qualified by the table: unqualified, the column is ambiguous beside `excluded` in ON CONFLICT.
+      setWhere: sql`${userPrefs}.feed_offer_closed_at is null`,
+    });
 }
 
 /** The reader's map as stored. Absent row: no stamps. */

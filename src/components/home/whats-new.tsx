@@ -4,22 +4,26 @@
 // - kinds on, items: five rows, then "Show all N" expanding in place; Today / Earlier labels only when the shown list
 //   holds both;
 // - kinds on, nothing in the window: one quiet line naming the kinds that are on;
-// - every kind off (the default): the inline opt-in, the news boxes and Show these (handoff call 7). Saving turns
-//   them on through Settings' own action, and from then on the switches live in Settings alone.
+// - nothing in the window and something to offer (`chosen: false`; small items 5, `Offer-Empty`): the quiet line, then
+//   the offer line under it; with no kind on, the offer line alone. The full opt-in panel is retired
+//   (`ERRATUM-offer-empty.md`).
+// While the reader has never chosen, the items end with the offer line too (announcements call 3, `Offer`): Pick ▾
+// opens the shipped boxes in place, and its ✕ saves an empty choice (sticking while any kind is on). Saving the boxes turns the kinds on
+// through Settings' own action, and from then on the switches live in Settings alone.
 // The lead story is not in this list (`splitLead`); the head's count is every unseen item, the badge's own figure.
 
 import { displaceLead, useHeldLead } from "./held-lead";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { saveFeedKinds } from "../../app/settings/feed-actions";
+import { useEffect, useRef, useState } from "react";
+import { closeFeedOfferAction, saveFeedKinds } from "../../app/settings/feed-actions";
 import { feedCopy } from "../../lib/copy/feed";
 import { nameList } from "../../lib/copy/deck-analysis";
 import type { FeedView, HomeFeed } from "../../lib/feed/home";
 import type { FeedKind } from "../../lib/feed/kinds";
 import { FeedItemRow, type FeedFaces } from "../feed/feed-item";
 import { FEED_SHOWN, ShowAllFooter, useShowAll } from "../feed/show-all";
-import { useFeedDismiss } from "../feed/dismiss";
+import { DismissButton, useFeedDismiss } from "../feed/dismiss";
 import { AnswerSheetProvider } from "./answer-sheet";
 import { HOME_HEADING_ID } from "./arrivals-banner";
 import { HoverPreviewProvider } from "../decks/hover-preview";
@@ -62,11 +66,16 @@ export function WhatsNew({ feed: served, now, faces, className = "" }: { feed: H
   const feed = withoutOpened(withoutHidden(displaced, dismissed.hidden, heldLead?.gone ?? null), opened);
   const chosen = feed.chosen;
   const count = chosen && feed.unseen > 0 ? feed.unseen : 0;
+  // The offer line follows the rows; with nothing in the window (`chosen: false`) it follows the quiet line, or stands
+  // alone in the box when no kind is on.
+  const offer = chosen ? (feed.items.length > 0 && feed.offer && feed.offer.length > 0 ? feed.offer : null) : feed.offer.length > 0 ? feed.offer : null;
+  // After its ✕ this visit, the quiet line alone: with no kind on, its lead alone (nothing to name).
+  const [offerGone, setOfferGone] = useState(false);
   // The lead alone and nothing more: the head stands over no box, since the quiet line would contradict the lead.
   if (chosen && feed.items.length === 0 && feed.lead) return dismissed.toast;
 
   return (
-    <section aria-labelledby="home-whats-new" data-dismiss-scope data-whats-new={chosen ? (feed.items.length > 0 ? "items" : "quiet") : "opt-in"} className={`flex flex-col gap-[12px] min-[1180px]:gap-[11px] ${className}`}>
+    <section aria-labelledby="home-whats-new" data-dismiss-scope data-whats-new={chosen ? (feed.items.length > 0 ? "items" : "quiet") : feed.on.length > 0 ? "quiet" : "offer"} className={`flex flex-col gap-[12px] min-[1180px]:gap-[11px] ${className}`}>
       <h2 id="home-whats-new" tabIndex={-1} className={HEAD}>
         {c.head}
         {count > 0 && <em className="tracking-[.14em] text-[color:var(--fg-locked)] not-italic lowercase">{c.newCount(count)}</em>}
@@ -80,7 +89,7 @@ export function WhatsNew({ feed: served, now, faces, className = "" }: { feed: H
       </h2>
       <div ref={root} className="flex flex-col overflow-hidden rounded-[14px] [border:1px_solid_var(--border)] bg-[color:var(--surface-inset)]">
         {!chosen ? (
-          <OptIn key={feed.offer.join(",")} offer={feed.offer} alsoOn={feed.alsoOn} />
+          (feed.on.length > 0 || !offer || offerGone) && <Quiet on={feed.on} />
         ) : feed.items.length === 0 ? (
           <Quiet on={feed.on} />
         ) : (
@@ -90,6 +99,7 @@ export function WhatsNew({ feed: served, now, faces, className = "" }: { feed: H
             </HoverPreviewProvider>
           </AnswerSheetProvider>
         )}
+        {offer && <Offer key={offer.join(",")} offer={offer} rule={chosen || feed.on.length > 0} onClosed={setOfferGone} />}
       </div>
       {dismissed.toast}
     </section>
@@ -137,19 +147,25 @@ function Rows({ items, now, faces, expanded, onExpand, onDismiss }: {
 }
 
 function Quiet({ on }: { on: FeedKind[] }) {
-  // Each kind's own inline form (announcements G1): lowercasing a name would print "secret lair".
+  // Each kind's own inline form (announcements G1): lowercasing a name would print "secret lair". With no kind on (the
+  // offer closed this visit), the lead alone: there is nothing to name.
   const names = nameList(on.map((k) => c.quietName[k]));
   return (
     <div data-feed-quiet className="flex flex-col gap-[6px] p-[14px]">
       <p className="m-0 text-[13px] leading-[1.55] text-[color:var(--fg-body)]">
-        <b className="text-[color:var(--fg)]">{c.quietLead}</b> {c.quietRest(names)}
+        <b className="text-[color:var(--fg)]">{c.quietLead}</b>
+        {names && ` ${c.quietRest(names)}`}
       </p>
     </div>
   );
 }
 
-/** The inline opt-in: the kinds this reader can be offered, every box empty, and one Show these. */
-function OptIn({ offer, alsoOn }: { offer: FeedKind[]; alsoOn: boolean }) {
+/**
+ * The shipped boxes (handoff call 7), drawn by the opened offer: the kinds offered, every box empty, Show these, and the
+ * foot. Saving writes through Settings' own action and redraws the page, after which the
+ * reader has chosen.
+ */
+function KindBoxes({ offer }: { offer: FeedKind[] }) {
   const router = useRouter();
   const [on, setOn] = useState<FeedKind[]>([]);
   const [busy, setBusy] = useState(false);
@@ -176,9 +192,7 @@ function OptIn({ offer, alsoOn }: { offer: FeedKind[]; alsoOn: boolean }) {
   }
 
   return (
-    <div data-feed-opt-in className="flex flex-col gap-[4px] p-[14px]">
-      <h3 className="m-0 font-display text-[17px] font-bold text-[color:var(--fg)]">{c.optIn.title}</h3>
-      <p className="m-0 mb-[6px] text-[13px] leading-[1.55] text-[color:var(--fg-muted)]">{alsoOn ? c.optIn.lineAlsoOn : c.optIn.line}</p>
+    <>
       <ul className="m-0 list-none p-0 md:grid md:grid-cols-2 md:gap-x-[24px]">
         {offer.map((kind) => {
           const k = feedCopy.news.kinds[kind];
@@ -205,9 +219,9 @@ function OptIn({ offer, alsoOn }: { offer: FeedKind[]; alsoOn: boolean }) {
           onClick={save}
           disabled={on.length === 0 || busy}
           aria-busy={busy || undefined}
-          className="h-[44px] flex-1 rounded-[10px] px-[16px] text-[14px] font-medium disabled:opacity-50 md:h-[32px] md:flex-none md:rounded-[8px] md:px-[14px] md:text-[12.5px]"
+          className="h-[44px] flex-1 whitespace-nowrap rounded-[10px] px-[16px] text-[14px] font-medium disabled:opacity-50 md:h-[32px] md:flex-none md:rounded-[8px] md:px-[14px] md:text-[12.5px]"
         >
-          {c.optIn.save}
+          {c.offer.save}
         </PrimaryButton>
       </div>
       {failed && (
@@ -215,7 +229,90 @@ function OptIn({ offer, alsoOn }: { offer: FeedKind[]; alsoOn: boolean }) {
           {feedCopy.news.failed}
         </p>
       )}
-      <p className="m-0 mt-[8px] font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">{c.optIn.foot}</p>
+      <p className="m-0 mt-[8px] font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">{c.offer.foot}</p>
+    </>
+  );
+}
+
+/** The offer line's top rule, under the rows or the quiet line it follows. */
+const OFFER_RULE = "[border-top:1px_solid_var(--border)]";
+
+/**
+ * The offer (announcements call 3, board `Offer`): while the reader has never chosen, the last line of What's new.
+ * Pick ▾ opens the shipped boxes in place (`KindBoxes`); the ✕, closed or opened, saves an empty choice (sticking while any kind is on)
+ * (`closeFeedOfferAction`): the line leaves at once, focus goes to the section's head, and a failed write puts it back
+ * with the reason. `rule`: the top rule, off when the line stands alone in the box; `onClosed` tells What's new, which
+ * then draws the quiet line in its place.
+ */
+function Offer({ offer, rule, onClosed }: { offer: FeedKind[]; rule: boolean; onClosed: (closed: boolean) => void }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [closed, setClosed] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const opened = useRef<HTMLDivElement>(null);
+  const o = c.offer;
+  // Pick leaves with the closed line, so focus moves to the first box it opened rather than falling to the page.
+  useEffect(() => {
+    if (open) opened.current?.querySelector<HTMLInputElement>("input")?.focus();
+  }, [open]);
+
+  async function close() {
+    setClosed(true);
+    onClosed(true);
+    setFailed(false);
+    document.getElementById("home-whats-new")?.focus();
+    try {
+      // Closed, or the feed went off for this reader meanwhile: either way the page's next render decides.
+      await closeFeedOfferAction();
+      router.refresh();
+    } catch {
+      setClosed(false);
+      onClosed(false);
+      setFailed(true);
+    }
+  }
+
+  if (closed) return null;
+  if (open) {
+    return (
+      <div ref={opened} data-feed-offer="open" className={`${rule ? OFFER_RULE : ""} flex flex-col gap-[4px] px-[14px] pt-[12px] pb-[14px]`}>
+        <div className="flex items-start gap-[10px]">
+          <p className="m-0 flex-1 text-[13px] leading-[1.55] text-[color:var(--fg-muted)]">
+            <b className="font-medium text-[color:var(--fg)]">{o.lead}</b> {o.openRest}
+          </p>
+          <DismissButton title="" label={o.closeAria} onPress={close} margin="mt-[-10px] mr-[-10px]" />
+        </div>
+        <KindBoxes offer={offer} />
+        {failed && (
+          <p role="alert" className="m-0 mt-[6px] text-[12.5px] text-[color:var(--danger)]">
+            {feedCopy.news.failed}
+          </p>
+        )}
+      </div>
+    );
+  }
+  return (
+    <div data-feed-offer="closed" className={rule ? OFFER_RULE : undefined}>
+      <div className="flex items-center gap-[10px] py-[6px] pr-[4px] pl-[14px]">
+        <p className="m-0 min-w-0 flex-1 text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">
+          <b className="font-medium text-[color:var(--fg)]">{o.lead}</b> {o.rest}
+        </p>
+        <button
+          type="button"
+          aria-expanded={false}
+          onClick={() => setOpen(true)}
+          className="flex min-h-[44px] flex-none cursor-pointer items-center gap-[5px] border-0 bg-transparent px-[6px] py-0 font-sans text-[13px] font-medium text-[color:var(--accent-text)] md:min-h-[32px]"
+        >
+          {o.pick}
+          <span aria-hidden>▾</span>
+        </button>
+        <DismissButton title="" label={o.closeAria} onPress={close} margin="m-0" />
+      </div>
+      {failed && (
+        <p role="alert" className="m-0 px-[14px] pb-[10px] text-[12.5px] text-[color:var(--danger)]">
+          {feedCopy.news.failed}
+        </p>
+      )}
     </div>
   );
 }

@@ -2,18 +2,20 @@
 // that came available while the page was open keeps what it had, and nothing outside the offer can be checked.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const m = vi.hoisted(() => ({ available: [] as string[], set: vi.fn(), revalidatePath: vi.fn() }));
+const m = vi.hoisted(() => ({ available: [] as string[], set: vi.fn(), close: vi.fn(), revalidatePath: vi.fn(), feedOn: true }));
 vi.mock("next/cache", () => ({ revalidatePath: m.revalidatePath }));
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "u1" }));
 vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: async () => ({}) }));
-vi.mock("../../lib/feed/flag", () => ({ homeFeedEnabled: () => true, availableFeedKinds: () => m.available }));
-vi.mock("../../lib/feed/prefs", async (orig) => ({ ...(await orig<typeof import("../../lib/feed/prefs")>()), setFeedKinds: m.set }));
+vi.mock("../../lib/feed/flag", () => ({ homeFeedEnabled: () => m.feedOn, availableFeedKinds: () => m.available }));
+vi.mock("../../lib/feed/prefs", async (orig) => ({ ...(await orig<typeof import("../../lib/feed/prefs")>()), setFeedKinds: m.set, closeFeedOffer: m.close }));
 
-import { saveFeedKinds } from "./feed-actions";
+import { closeFeedOfferAction, saveFeedKinds } from "./feed-actions";
 
 beforeEach(() => {
   vi.clearAllMocks();
   m.set.mockResolvedValue(true);
+  m.close.mockResolvedValue(true);
+  m.feedOn = true;
 });
 
 describe("saveFeedKinds", () => {
@@ -40,5 +42,21 @@ describe("saveFeedKinds", () => {
     expect(await saveFeedKinds(["combo"], ["combo", "price-drop"])).toEqual({ ok: false, reason: "invalid" });
     expect(m.set).not.toHaveBeenCalled();
     expect(m.revalidatePath).not.toHaveBeenCalled();
+  });
+});
+
+describe("closeFeedOfferAction (the offer's ✕, announcements call 3)", () => {
+  it("closes the offer for the caller alone, writing no kind and revalidating nothing", async () => {
+    expect(await closeFeedOfferAction()).toEqual({ ok: true, changed: true });
+    expect(m.close).toHaveBeenCalledTimes(1);
+    expect(m.close).toHaveBeenCalledWith("u1", expect.any(Date));
+    expect(m.set).not.toHaveBeenCalled();
+    expect(m.revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("is refused, writing nothing, while the feed is off for the caller", async () => {
+    m.feedOn = false;
+    expect(await closeFeedOfferAction()).toEqual({ ok: false, reason: "off" });
+    expect(m.close).not.toHaveBeenCalled();
   });
 });

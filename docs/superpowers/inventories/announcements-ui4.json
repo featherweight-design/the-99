@@ -1,0 +1,164 @@
+{
+  "feature": "Announcements UI 4: the offer line at the foot of What's new while the reader has never chosen (Pick ▾ opens the kind boxes in place with Show these; the ✕ stamps user_prefs.feed_offer_closed_at), and the empty window's quiet line then offer line (handoff design_handoff_the99_announcements: Offer; small items 5: Offer-Empty, ERRATUM-offer-empty.md)",
+  "clearAbout": true,
+  "note": "Run on a SCRATCH branch migrated through 0198, with HOME_FEED_ENABLED and ANNOUNCEMENTS_ENABLED on for the account (flag_overrides, scope user). Each row names its `phase`: the database state it needs, set before that phase and again before each width (one width per run), because Show these writes feed_kinds and the ✕ writes feed_offer_closed_at. The runner does not read `phase`; run the phases one at a time with a filtered copy of this file. Every phase starts from: every post baseline, feed_kinds {}, feed_kinds_declined {}, feed_offer_closed_at null. Phases: `rows` = two Wizards posts in the window (a Secret Lair and a Wizards news post, both seen, so no lead), never chosen; `rows-show` = the same, then a box ticked and Show these pressed; `rows-close` = the same, then the offer's ✕, then Home loaded again; `empty` = nothing in the window, never chosen; `empty-close` = the same, then the ✕, then Home loaded again; `all-off` = nothing in the window and every default-on kind declined (feed_kinds_declined = the three announcement kinds and spare-request), so no kind is on; `chosen` = the `rows` posts with one kind stamped in feed_kinds (new-set), so the reader has chosen. Widths are 390 and 1300 drawn tall (2000 and 1200) so What's new below the decks is in frame without fullPage.",
+  "out": "contact-sheets/announcements-ui4",
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 2000
+    },
+    {
+      "label": "desktop",
+      "width": 1300,
+      "height": 1200
+    }
+  ],
+  "rows": [
+    {
+      "id": "home-offer-rows",
+      "phase": "rows",
+      "label": "Home, never chosen, rows in the window: the offer line under the rows, on its rule (bold lead, rest, Pick ▾, ✕)",
+      "view": "src/components/home/whats-new.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "[data-whats-new=items] [data-feed-offer=closed]",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "home-offer-rows-pick",
+      "phase": "rows",
+      "label": "Home, never chosen, rows in the window, Pick pressed: the kind boxes open in place (one column on a phone, two from md), Show these and the in-app foot, the ✕ kept",
+      "view": "src/components/home/whats-new.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "[data-whats-new=items] [data-feed-offer=closed]",
+          "settle": 2000
+        },
+        {
+          "click": "[data-feed-offer=closed] button[aria-expanded]",
+          "wait": "[data-feed-offer=open]",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "home-offer-rows-shown",
+      "phase": "rows-show",
+      "label": "Home, after a box ticked and Show these: the reader has chosen, the offer line is gone and the rows stay",
+      "view": "src/components/home/whats-new.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "[data-whats-new=items] [data-feed-offer=closed]",
+          "settle": 2000
+        },
+        {
+          "click": "[data-feed-offer=closed] button[aria-expanded]",
+          "wait": "[data-feed-offer=open]",
+          "settle": 400
+        },
+        {
+          "click": "[data-feed-offer=open] li:first-child label",
+          "settle": 300
+        },
+        {
+          "clickRole": "button",
+          "name": "^Show these$",
+          "wait": "[data-whats-new=items]:not(:has([data-feed-offer]))",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "home-offer-rows-closed",
+      "phase": "rows-close",
+      "label": "Home, after the offer's ✕ and a fresh load: the line is gone for good, the rows kept",
+      "view": "src/components/home/whats-new.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "[data-whats-new=items] [data-feed-offer=closed]",
+          "settle": 2000
+        },
+        {
+          "click": "[data-feed-offer=closed] [data-feed-dismiss]",
+          "wait": "[data-whats-new=items]:not(:has([data-feed-offer]))",
+          "settle": 2500
+        },
+        {
+          "goto": "/",
+          "wait": "[data-whats-new=items]:not(:has([data-feed-offer]))",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "home-offer-empty",
+      "phase": "empty",
+      "label": "Home, never chosen, nothing in the window: the quiet line naming the kinds on, then the offer line under its rule",
+      "view": "src/components/home/whats-new.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "[data-whats-new=quiet] [data-feed-quiet] + [data-feed-offer=closed]",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "home-offer-empty-closed",
+      "phase": "empty-close",
+      "label": "Home, nothing in the window, after the offer's ✕ and a fresh load: the quiet line alone",
+      "view": "src/components/home/whats-new.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "[data-whats-new=quiet] [data-feed-offer=closed]",
+          "settle": 2000
+        },
+        {
+          "click": "[data-feed-offer=closed] [data-feed-dismiss]",
+          "wait": "[data-whats-new=quiet]:not(:has([data-feed-offer]))",
+          "settle": 2500
+        },
+        {
+          "goto": "/",
+          "wait": "[data-whats-new=quiet] [data-feed-quiet]:only-child",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "home-offer-all-off",
+      "phase": "all-off",
+      "label": "Home, every kind off, nothing in the window: the offer line alone in the box, no rule and no quiet line",
+      "view": "src/components/home/whats-new.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "[data-whats-new=offer]:not(:has([data-feed-quiet])) [data-feed-offer=closed]",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "home-offer-chosen",
+      "phase": "chosen",
+      "label": "Home, a reader who has chosen, rows in the window: no offer line",
+      "view": "src/components/home/whats-new.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "[data-whats-new=items]:not(:has([data-feed-offer]))",
+          "settle": 2000
+        }
+      ]
+    }
+  ]
+}
