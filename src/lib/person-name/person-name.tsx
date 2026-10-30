@@ -8,6 +8,7 @@
 // takes `string | ThirdPartyName` and is marked only where it names someone else.
 import { faceInitials } from "../social/initials";
 import { isThirdPartyName, namesSomeone, type PersonParts, type ThirdPartyName } from "./brand";
+import { named } from "./mint";
 import { reveal } from "./reveal";
 
 /** PostHog's opt-out class (posthog-js `ph-no-capture`). */
@@ -70,4 +71,25 @@ export function compareNames(
 /** An identity for a list of names (an effect's dependency): compared, never drawn. */
 export function namesKey(names: ReadonlyArray<string | ThirdPartyName>): string {
   return names.map((n) => (typeof n === "string" ? n : reveal(n))).join("\u0000");
+}
+
+/**
+ * The first `max` characters of copy that may name someone, then `…`: a name cut mid-way stays a name, so the result is
+ * still drawn by `<PersonText>`. Copy that fits comes back as it was.
+ */
+export function clipParts(parts: PersonParts, max: number): PersonParts {
+  let left = max;
+  const out: Array<string | ThirdPartyName> = [];
+  for (const part of parts) {
+    const text = typeof part === "string" ? part : reveal(part);
+    if (text.length <= left) {
+      out.push(part);
+      left -= text.length;
+      continue;
+    }
+    const cut = `${text.slice(0, left)}…`;
+    out.push(typeof part === "string" ? cut : named(cut));
+    return out;
+  }
+  return parts;
 }

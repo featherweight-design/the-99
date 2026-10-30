@@ -910,6 +910,9 @@ describe("the Friend filter (v2 PR 9)", () => {
     await act(async () => { land({ ok: true, json: async () => ({ spares: BOARD }) }); });
     expect(within(chipsRow()).getByRole("button", { name: `Remove filter: ${copy.filters.chipFriend} Chris` })).toBeTruthy();
     expect(chipsRow().textContent).not.toContain("p-Chris");
+    // The chip's name and its ✕ both carry PostHog's opt-out class, so a click on the chip is never autocaptured.
+    expect(within(chipsRow()).getByRole("button", { name: `Remove filter: ${copy.filters.chipFriend} Chris` }).classList.contains("ph-no-capture")).toBe(true);
+    expect(within(chipsRow()).getByText("Chris", { selector: ".ph-no-capture" })).toBeTruthy();
   });
 
   it("cuts a Friend chip naming long or many friends for the eye, so its ✕ stays on a phone, and speaks every name", async () => {

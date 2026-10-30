@@ -12,6 +12,7 @@
 
 import { useEffect, useState } from "react";
 import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
+import { clipParts, joinNames, personText, type PersonParts, type ThirdPartyName } from "../../../lib/person-name";
 import { OWNED_FILTERS, CART_SORTS, type CartView, type FriendFilter, type OwnedFilter } from "../../../lib/decks/cart-sort";
 import { CHASSIS_WIDE_MIN_PX, FilterChassis, type FilterChip } from "../../ui/filter-chassis";
 import { FilterPanel } from "../../ui/filter-panel";
@@ -92,19 +93,19 @@ export function CartChassis({
   const friendOn = filters.friendLive && friend !== null;
   // A long term is cut for the eye and spoken whole, so the chip and its ✕ stay inside a phone's width.
   const shortTerm = term.length > CHIP_TERM_MAX ? `${term.slice(0, CHIP_TERM_MAX)}…` : term;
-  const friendNames = offer.kind === "friends" ? new Map(offer.friends.map((o) => [o.friend.publicId, o.friend.displayName])) : new Map<string, string>();
+  const friendNames = offer.kind === "friends" ? new Map(offer.friends.map((o) => [o.friend.publicId, o.friend.displayName])) : new Map<string, ThirdPartyName>();
   // One chip for the Friend filter, Any or the named friends, whose ✕ turns it off (decision 2); then Owned; then the
   // search (Controls C2, D: the filters' chips lead).
   // Never a public id: until the read lands a named filter's chip is name-free, reading as the trigger does; once it
   // lands every id left has a name (the cart drops the rest, decision 2).
   const named = (friend === null || friend === "any" ? [] : friend).flatMap((id) => friendNames.get(id) ?? []);
-  const friendValue = friend === "any" ? copy.filters.anyFriend : named.length > 0 ? named.join(", ") : copy.filters.friendReading;
+  const friendValue: PersonParts = friend === "any" ? [copy.filters.anyFriend] : named.length > 0 ? joinNames(named) : [copy.filters.friendReading];
   // Cut for the eye as the search chip is (a chip cannot shrink, so a long one pushes its ✕ off a phone), spoken whole.
-  const shortFriend = friendValue.length > CHIP_TERM_MAX ? `${friendValue.slice(0, CHIP_TERM_MAX)}…` : friendValue;
+  const shortFriend = clipParts(friendValue, CHIP_TERM_MAX);
   const chips: FilterChip[] = [
     ...(friendOn ? [{
       key: "friend", leading: dimension(copy.filters.chipFriend), label: shortFriend,
-      spoken: `${copy.filters.chipFriend} ${friendValue}`, onRemove: filters.onFriendOff,
+      spoken: personText`${copy.filters.chipFriend} ${friendValue}`, onRemove: filters.onFriendOff,
     }] : []),
     ...(owned !== "any" ? [{
       key: "owned", leading: dimension(copy.filters.chipOwned), label: OWNED_LABEL[owned],
