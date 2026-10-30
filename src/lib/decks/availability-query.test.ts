@@ -115,5 +115,7 @@ describe("a claim whose deck's draft has cut the card", () => {
     expect(q).toContain("select 1 from deck_cards dcut where dcut.deck_id = ac.deck_id and dcut.oracle_id = ac.oracle_id");
     expect(q).toContain("(nv.deck_id is not null and not bool_or(ac.is_commander) and not exists (");
     expect(q).toContain("'draftCut', cd.draft_cut");
+    // A card the draft promoted to commander or partner stays in the deck: not cut (PR #2458 round 3).
+    expect(q).toContain("where dlive.id = ac.deck_id and ac.oracle_id in (dlive.commander_oracle_id, dlive.partner_oracle_id)");
   });
 });
