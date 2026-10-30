@@ -36,7 +36,7 @@ export async function startFlyerClaimAction(code: unknown, email: unknown): Prom
   // The same floor as the invite path, so the answer's speed tells nothing about the address.
   const result = await atFloor(() => startFlyerClaim(code, email, jar.get(FLYER_CLAIM_COOKIE)?.value ?? null));
   if (result.ok) {
-    jar.set(FLYER_CLAIM_COOKIE, result.claimSecret, flyerCookieOptions(code));
+    jar.set(FLYER_CLAIM_COOKIE, result.claimSecret, flyerCookieOptions());
     return { ok: true, mailed: result.mailed };
   }
   return result;

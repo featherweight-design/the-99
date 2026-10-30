@@ -29,6 +29,10 @@ describe("decideStart", () => {
   it("waits out the resend cooldown", () => {
     expect(decideStart(row({ codeSentAt: at(-10_000) }), COOKIE, "a@b.co", now)).toEqual({ kind: "wait", waitMs: 50_000 });
   });
+  it("ends a claim too near its thirty-minute ceiling to keep a re-sent code's ten minutes", () => {
+    expect(decideStart(row({ createdAt: at(-21 * 60_000), holdsUntil: at(9 * 60_000), codeSentAt: at(-90_000) }), COOKIE, "a@b.co", now)).toEqual({ kind: "ended" });
+    expect(decideStart(row({ createdAt: at(-19 * 60_000), holdsUntil: at(9 * 60_000), codeSentAt: at(-90_000) }), COOKIE, "a@b.co", now)).toEqual({ kind: "again", changed: false });
+  });
   it("does not re-send a proven claim", () => {
     expect(decideStart(row({ state: "proven" }), COOKIE, "a@b.co", now)).toEqual({ kind: "ended" });
   });

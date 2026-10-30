@@ -62,6 +62,9 @@ export function decideStart(row: Row | undefined, presented: string | null, emai
   if (!row || !cookieMatches(row, presented) || !live(row, now)) return { kind: "first" };
   // A claim already proven stays proven: its address is the one the Clerk invitation will name.
   if (row.state === "proven") return { kind: "ended" };
+  // A re-sent code promises ten minutes (the mail says so), so a claim too near its ceiling to keep that promise ends: a new
+  // Send code after it lapses starts afresh.
+  if (row.createdAt.getTime() + FLYER_RESEND_CEILING_MS - now.getTime() < CODE_TTL_MS) return { kind: "ended" };
   const waitMs = resendWaitMs(row.codeSentAt, now);
   if (waitMs > 0) return { kind: "wait", waitMs };
   return { kind: "again", changed: row.email !== email };
