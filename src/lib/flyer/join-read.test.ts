@@ -63,7 +63,7 @@ describe("readFlyerJoin, a reopened page (the browser's claim cookie)", () => {
   const EMAIL = "mine@x.dev";
   const claim = (o: Record<string, unknown> = {}) => ({
     id: "claim-1", codeId: CODE_ID, state: "open", email: EMAIL, claimSecretHash: secretHash(MINE),
-    holdsUntil: at(FLYER_HOLD_MS), codeSentAt: at(-1000), codeExpiresAt: at(CODE_TTL_MS), codeTries: 0, ...o,
+    createdAt: at(-1000), holdsUntil: at(FLYER_HOLD_MS), codeSentAt: at(-1000), codeExpiresAt: at(CODE_TTL_MS), codeTries: 0, ...o,
   });
   const read = (secret: string | null) => readFlyerJoin("MAX4QK", secret, NOW);
 
@@ -82,6 +82,11 @@ describe("readFlyerJoin, a reopened page (the browser's claim cookie)", () => {
   it("an emailed code past its ten minutes still resumes at the code step, marked expired", async () => {
     m.claims = [claim({ codeSentAt: at(-CODE_TTL_MS - 5000), codeExpiresAt: at(-1) })];
     expect(await read(MINE)).toEqual({ kind: "code", email: EMAIL, resendWaitMs: 0, expired: true });
+  });
+
+  it("a claim too near its ceiling resumes with the rest of its hold as the resend wait", async () => {
+    m.claims = [claim({ createdAt: at(-21 * 60_000), holdsUntil: at(8 * 60_000), codeSentAt: at(-120_000) })];
+    expect(await read(MINE)).toEqual({ kind: "code", email: EMAIL, resendWaitMs: 8 * 60_000, expired: false });
   });
 
   it("a proven claim resumes at the hand-over", async () => {

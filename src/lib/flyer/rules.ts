@@ -8,6 +8,7 @@
  * written it down. Every completed sign-up also spends one of Hugh's invites, so a code is only open while he has
  * one to give past the claims already holding.
  */
+import { CODE_TTL_MS, resendWaitMs } from "../invites/rules";
 
 /** No 0/O and no 1/I: a code read off paper or typed on a phone cannot be misread. */
 export const FLYER_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -68,4 +69,11 @@ export function flyerOpenness(
   if (places <= 0) return { open: false, closed: "full" };
   if (hughLeft <= 0) return { open: false, closed: "hugh" };
   return { open: true, places };
+}
+
+/** Ms before a claim may send again: the cooldown, or the rest of its hold once it is too near its ceiling to keep a re-sent code's ten minutes. */
+export function resendWaitFor(row: { createdAt: Date; holdsUntil: Date; codeSentAt: Date | null }, now: Date): number {
+  const cooldown = resendWaitMs(row.codeSentAt, now);
+  if (row.createdAt.getTime() + FLYER_RESEND_CEILING_MS - now.getTime() < CODE_TTL_MS) return Math.max(cooldown, row.holdsUntil.getTime() - now.getTime());
+  return cooldown;
 }

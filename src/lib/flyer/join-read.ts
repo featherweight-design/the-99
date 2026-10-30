@@ -8,12 +8,12 @@ import { and, eq } from "drizzle-orm";
 import { db } from "../../db";
 import { flyerClaims } from "../../db/schema";
 import { loadInviteCount } from "../invites/read";
-import { CODE_MAX_TRIES, codeState, isClaimSecretShape, resendWaitMs } from "../invites/rules";
+import { CODE_MAX_TRIES, codeState, isClaimSecretShape } from "../invites/rules";
 import { secretHash } from "../invites/tokens";
 import { resolveSwitchEnv } from "../switches/snapshot";
 import { findFlyerCode } from "./claim";
 import { flyerTrialEnabled } from "./flag";
-import { flyerOpenness, holdsPlace, type FlyerClaimRow } from "./rules";
+import { flyerOpenness, holdsPlace, resendWaitFor, type FlyerClaimRow } from "./rules";
 
 export type FlyerJoinView =
   | { kind: "email" }
@@ -41,7 +41,7 @@ export async function readFlyerJoin(code: string, secret: string | null, now: Da
       return {
         kind: "code",
         email: mine.email,
-        resendWaitMs: resendWaitMs(mine.codeSentAt, now),
+        resendWaitMs: resendWaitFor(mine, now),
         expired: codeState(mine, now) !== "live",
       };
     }

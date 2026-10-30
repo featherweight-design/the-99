@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { inviteCount, type HoldingRow } from "../invites/rules";
-import { FLYER_ALPHABET, flyerHoldRow, FLYER_CODE_LENGTH, flyerOpenness, holdsPlace, parseFlyerCode, type FlyerClaimRow } from "./rules";
+import { FLYER_ALPHABET, flyerHoldRow, FLYER_CODE_LENGTH, flyerOpenness, holdsPlace, parseFlyerCode, resendWaitFor, type FlyerClaimRow } from "./rules";
 
 const now = new Date("2026-10-30T12:00:00Z");
 const later = new Date(now.getTime() + 60_000);
@@ -71,5 +71,14 @@ describe("a flyer hold in the invite count", () => {
 
   it("stops counting once its ten minutes run out", () => {
     expect(inviteCount(1, [flyerHoldRow(earlier)], now).left).toBe(1);
+  });
+});
+
+const T0 = new Date("2026-10-30T12:00:00Z");
+const atT = (ms: number) => new Date(T0.getTime() + ms);
+describe("resendWaitFor", () => {
+  it("is the cooldown while the ceiling is far, and the rest of the hold once a re-sent code's ten minutes no longer fit", () => {
+    expect(resendWaitFor({ createdAt: atT(-60_000), holdsUntil: atT(9 * 60_000), codeSentAt: atT(-10_000) }, T0)).toBe(50_000);
+    expect(resendWaitFor({ createdAt: atT(-21 * 60_000), holdsUntil: atT(8 * 60_000), codeSentAt: atT(-120_000) }, T0)).toBe(8 * 60_000);
   });
 });
