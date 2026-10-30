@@ -4,7 +4,7 @@ import { useCallback, useState } from "react";
 
 import { synopsisCopy } from "../../lib/copy/synopsis";
 import { normalizeName } from "../../lib/synopsis/facts";
-import { landFigure, markedCards, splitSeverity } from "../../lib/synopsis/stages-view";
+import { landFigure, markedCards, splitSeverity, type SeverityWord } from "../../lib/synopsis/stages-view";
 import type { CheckedSynopsis } from "../../lib/synopsis/types";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { NavIcon } from "../shell/nav-icons";
@@ -247,7 +247,14 @@ export function KeyCardGrid({
   );
 }
 
-/** A weakness with its leading Moderate or Minor drawn as a chip (Moderate in the warning ink). It draws no "Based on" row (Hugh, 2026-10-30): the line says why. */
+const SEVERITY_CHIP: Record<SeverityWord, string> = {
+  // Critical: the short-availability red as ink (5.5:1 on the modal); --danger is too dark as 10px text, so it draws only the edge.
+  Critical: "border-[color-mix(in_oklab,var(--danger)_60%,transparent)] text-[#E07A65]",
+  Moderate: "border-[color-mix(in_oklab,var(--warning)_45%,transparent)] text-[var(--warning)]",
+  Minor: "border-[var(--border-strong)] text-[var(--fg-muted)]",
+};
+
+/** A weakness with its leading Critical, Moderate or Minor drawn as a chip. It draws no "Based on" row (Hugh, 2026-10-30): the line says why. */
 export function WeaknessLine({ line, text }: { line: string; text: (t: string) => React.ReactNode }) {
   const sev = splitSeverity(line);
   return (
@@ -255,7 +262,7 @@ export function WeaknessLine({ line, text }: { line: string; text: (t: string) =
       {sev ? (
         <span
           data-testid="synopsis-severity"
-          className={`justify-self-start rounded-full border px-[8px] py-[2px] font-mono text-[10px] font-medium leading-[13px] uppercase tracking-[0.1em] ${sev.tier === "Moderate" ? "border-[color-mix(in_oklab,var(--warning)_45%,transparent)] text-[var(--warning)]" : "border-[var(--border-strong)] text-[var(--fg-muted)]"}`}
+          className={`justify-self-start rounded-full border px-[8px] py-[2px] font-mono text-[10px] font-medium leading-[13px] uppercase tracking-[0.1em] ${SEVERITY_CHIP[sev.tier]}`}
         >
           {sev.tier}
         </span>
