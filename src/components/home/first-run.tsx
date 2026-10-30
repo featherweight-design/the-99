@@ -99,7 +99,7 @@ function LockedStep({ n, title, reason }: { n: number; title: string; reason: st
 }
 
 /**
- * "Choose your news" (menu and Home handoff, `.frw.new`): last in the checklist, to Settings' What's new on Home. No feed
+ * "Choose your news" (menu and Home handoff, `.frw.new`): last in the checklist, to Settings' Notifications. No feed
  * before cards, since nothing in it would be about the reader yet; this row is where its choices start. Behind
  * `HOME_FEED_ENABLED`.
  */

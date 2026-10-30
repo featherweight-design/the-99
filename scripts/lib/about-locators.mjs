@@ -292,8 +292,8 @@ export const ABOUT_LOCATORS = {
   },
 
   // ---- settings ------------------------------------------------------------------
-  // Push notifications (handoff A3): the device row at the top of the push column, read Not on yet on the frame.
-  push: { screen: "settings", locator: "[data-push-device]", note: "the device row, at the top of What's new on Home's push column" },
+  // Push notifications (handoff A3; R1b): the device band above the column heads in Notifications, read Not on yet on the frame.
+  push: { screen: "settings", locator: "[data-push-device]", note: "the device band, above the In app and Push column heads in Notifications" },
 
   // ---- credits -------------------------------------------------------------------
   "buying-credits": { screen: "credits", locator: "section:has([data-testid='credits-total'])", note: "the balance strip" },
