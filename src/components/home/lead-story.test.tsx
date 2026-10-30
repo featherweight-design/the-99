@@ -154,6 +154,8 @@ describe("LeadSlot", () => {
     const wraps = screen.getByRole("link", { name: /spares/ }).className.split(/\s+/);
     expect(wraps).toEqual(expect.arrayContaining(["min-h-[40px]", "md:min-h-[36px]", "[overflow-wrap:anywhere]"]));
     expect(wraps).not.toContain("whitespace-nowrap");
+    expect(wraps).not.toContain("min-[390px]:whitespace-nowrap");
+    expect(wraps).not.toContain("min-[390px]:h-[40px]");
   });
 
   it("draws nothing with no lead", () => {
