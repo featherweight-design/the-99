@@ -1061,9 +1061,10 @@ export function FilterPanel({
             ? `${copy.panelAriaLabel}, ${oneName}, collapsed`
             : copy.triggerAriaWithSelection(selected.length);
 
-  // A friend's option is announced here, drawn marked.
+  // A friend's option is announced here, drawn marked. `role="log"` is a polite live region without a status role or an
+  // aria-live attribute, so the screens that look the page's own status line up by either keep finding only theirs.
   const liveRegion = (
-    <span className="sr-only" aria-live="polite" data-person-live="">
+    <span className="sr-only" role="log" data-person-live="">
       {personAnnouncement && <PersonText text={personAnnouncement} />}
     </span>
   );
