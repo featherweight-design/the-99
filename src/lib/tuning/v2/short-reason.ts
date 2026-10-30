@@ -31,8 +31,9 @@ export function isDegenerateShortReason(value: unknown): boolean {
  */
 export function shortReasonFrom(rationale: string): string {
   const text = rationale.replace(/\s+/g, " ").trim();
-  // The stop must close a word, as `about/caption.ts` reads a first sentence.
-  const sentence = /^.*?\S[.?!](?=\s|$)/.exec(text)?.[0] ?? text;
+  // The stop must close a word, as `about/caption.ts` reads a first sentence, and lie at least a clause's length in: a
+  // card name's own abbreviation ("Dr. Julius Jumblemorph", "Mr. Orfeo, the Boulder") is not a sentence's end.
+  const sentence = new RegExp(`^.{${MIN_CLAUSE - 2},}?\\S[.?!](?=\\s|$)`).exec(text)?.[0] ?? text;
   if (sentence.length <= SHORT_REASON_MAX) return sentence;
   const clause = /^(.*?\S)[,;:](?=\s)/.exec(sentence)?.[1];
   if (clause && clause.length >= MIN_CLAUSE && clause.length <= SHORT_REASON_MAX) return clause;

@@ -34,6 +34,11 @@ describe("shortReasonFrom", () => {
     expect(got.length).toBeLessThanOrEqual(SHORT_REASON_MAX);
   });
 
+  it("reads past a card name's abbreviation to the sentence's end", () => {
+    expect(shortReasonFrom("Dr. Julius Jumblemorph draws a card each turn. It also ramps.")).toBe("Dr. Julius Jumblemorph draws a card each turn.");
+    expect(shortReasonFrom("Mr. Orfeo, the Boulder hits hard. Keep him.")).toBe("Mr. Orfeo, the Boulder hits hard.");
+  });
+
   it("reads whitespace runs as one space", () => {
     expect(shortReasonFrom("  Cheap   ramp\nfor the plan.  ")).toBe("Cheap ramp for the plan.");
   });
