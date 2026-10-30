@@ -57,7 +57,6 @@ export const SWITCHES = [
   { name: "RULE_ZERO_ENABLED", kind: "feature", needs: "SOCIAL_FRIENDS_ENABLED" },
   { name: "SCAN_LAB_ENABLED", kind: "plumbing" },
   { name: "SHOPPING_MARK_BOUGHT_ENABLED", kind: "feature", needs: "COLLECTION_EDIT_ENABLED" },
-  { name: "SIGNATURE_CARD_ENABLED", kind: "feature", needs: "SOCIAL_FRIENDS_ENABLED" },
   { name: "SOCIAL_FRIENDS_ENABLED", kind: "feature" },
   { name: "SOCIAL_GAMES_ENABLED", kind: "feature", needs: "SOCIAL_FRIENDS_ENABLED" },
   { name: "SOCIAL_INVITES_ENABLED", kind: "feature", needs: "SOCIAL_FRIENDS_ENABLED" },
@@ -113,7 +112,7 @@ export const isOverrideName = (name: string): name is OverrideName => name === A
  * but the About `push` entry and the `whats-new` key follow the switch alone (`pushEnabled`: `visible.ts` sits on the proxy's
  * path, where the key parsing may not), so they would describe a column that is not there. Both Vercel projects carry the
  * keys (Production scope) and previews are not built, so that only happens on a local server run without them.
- * `SIGNATURE_CARD_ENABLED` held it from 2026-10-27 and left it with the `friends` entry's signature-card caption line.
+ * `SIGNATURE_CARD_ENABLED` held it from 2026-10-27 and left it with the `friends` entry's signature-card caption line (retired since).
  * `FLYER_TRIAL_ENABLED` and `FEEDBACK_ENABLED` hold it from 2026-10-30, until the first PR that ships a usable surface for each
  * (flyer: the `/join` page, PR 3; feedback: Report a problem, PR 5). Raised early, an account would see half a trial.
  * It holds the two above; a switch that joins it carries its reason beside it.

@@ -731,13 +731,12 @@ describe("push (close-out): each line follows the kind's own availability (`feed
 
 describe("the friends entry under the signature card", () => {
   const friends = aboutEntries.find((e) => e.id === "friends")!;
-  const env = (signature: boolean) =>
-    ({ SOCIAL_FRIENDS_ENABLED: "true", SIGNATURE_CARD_ENABLED: signature ? "true" : "" }) as unknown as NodeJS.ProcessEnv;
+  // SIGNATURE_CARD_ENABLED is retired: its lines follow SOCIAL_FRIENDS_ENABLED, which the friends entry needs anyway.
+  const env = () => ({ SOCIAL_FRIENDS_ENABLED: "true" }) as unknown as NodeJS.ProcessEnv;
   it.each([
-    [false, "your name, your commander and the decks", "Pick a commander and its art"],
-    [true, "your name, your signature card and the decks", "Pick a signature card, any card in any printing, and its art"],
-  ])("draws one privacy key and one face sentence (signature card %s)", (signature, key, face) => {
-    const e = resolveEntry(friends, env(signature));
+    ["your name, your signature card and the decks", "Pick a signature card, any card in any printing, and its art"],
+  ])("draws one privacy key and one face sentence (%s)", (key, face) => {
+    const e = resolveEntry(friends, env());
     const privacy = e.keys.filter((k) => k.startsWith("Friends see your name"));
     expect(privacy).toHaveLength(1);
     expect(privacy[0]).toContain(key);

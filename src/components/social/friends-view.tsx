@@ -115,7 +115,7 @@ export function FriendsView({
   openInviteNew?: boolean;
   /** The reader's own friend deck rules with `SOCIAL_FRIENDS_ENABLED` on, for the head's privacy line; null while off. */
   decksSeen?: FriendDeckPrefs | null;
-  /** `SIGNATURE_CARD_ENABLED` on for the reader: the signature card picker and its words, in place of the commander's. */
+  /** `SOCIAL_FRIENDS_ENABLED` on for the reader: the signature card picker and its words, in place of the commander's. */
   signature?: boolean;
 }) {
   const hydrated = useHydrated();

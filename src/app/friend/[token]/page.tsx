@@ -9,7 +9,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { SignInButton } from "@clerk/nextjs";
 import { notFound } from "next/navigation";
-import { signatureCardEnabled, socialFriendsEnabled } from "../../../lib/social/flag";
+import { socialFriendsEnabled } from "../../../lib/social/flag";
 import { requestSwitchEnv } from "../../../lib/switches/request";
 import { readInvite } from "../../../lib/social/friends";
 import { landingView } from "../../../lib/social/landing";
@@ -56,7 +56,7 @@ export default async function FriendLinkPage({ params }: { params: Promise<{ tok
     <>
       {/* Opening a friend's link spends it, once, after mount (G4): the card says it is used up. */}
       {view.kind === "friends" && <SpendFriendLink token={token} />}
-      <FriendLanding token={token} view={view} nowMs={now.getTime()} signature={signatureCardEnabled(env)} />
+      <FriendLanding token={token} view={view} nowMs={now.getTime()} signature={socialFriendsEnabled(env)} />
     </>
   );
 }

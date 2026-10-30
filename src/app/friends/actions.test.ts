@@ -312,8 +312,8 @@ describe("the picker's reads (E2)", () => {
   });
 });
 
-describe("the signature card (SIGNATURE_CARD_ENABLED)", () => {
-  const SIGNATURE = { ...ON, SIGNATURE_CARD_ENABLED: "true" };
+describe("the signature card (needs SOCIAL_FRIENDS_ENABLED)", () => {
+  const SIGNATURE = ON;
   const CARD = "33333333-3333-4333-8333-333333333333";
   const signatureCalls: [string, () => Promise<unknown>][] = [
     ["listDeckFacesAction", () => actions.listDeckFacesAction()],
@@ -323,8 +323,8 @@ describe("the signature card (SIGNATURE_CARD_ENABLED)", () => {
     ["setSignatureCardAction", () => actions.setSignatureCardAction(CARD)],
   ];
 
-  it.each(signatureCalls)("%s refuses as off with friends on but the signature card off, reading nothing", async (_n, call) => {
-    m.requestSwitchEnv.mockResolvedValue(ON);
+  it.each(signatureCalls)("%s refuses as off with friends off, reading nothing", async (_n, call) => {
+    m.requestSwitchEnv.mockResolvedValue({});
     expect(await call()).toEqual({ ok: false, reason: "off" });
     for (const fn of [m.listOwnDeckFaces, m.searchFaceCards, m.listFacePrintings, m.skipFacePrompt, m.setCommander, m.ensureProfile]) expect(fn).not.toHaveBeenCalled();
   });

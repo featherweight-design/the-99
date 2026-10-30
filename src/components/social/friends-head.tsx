@@ -67,7 +67,7 @@ export function FriendsHead({
    * rules let a friend open, and links to Settings. Null (off): the shipped line.
    */
   decksSeen?: FriendDeckPrefs | null;
-  /** `SIGNATURE_CARD_ENABLED` on for the reader: the face is named their signature card, not their commander. */
+  /** `SOCIAL_FRIENDS_ENABLED` on for the reader: the face is named their signature card, not their commander. */
   signature?: boolean;
 }) {
   const c = signature ? socialCopy.signature : socialCopy.commander;
