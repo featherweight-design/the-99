@@ -82,7 +82,7 @@ export function applyStagesShape(checked: CheckedSynopsis, reply: StagesReply, f
   // resolves to nothing): the app's own sentence stands in, so the figure is always present.
   if (out.landKeep === undefined) out = withLine(out, { text: landKeepFallback(target), evidence: [] }, facts, "landKeep");
   const alt = reply.alternate;
-  if (alt && alternates.length > 0 && checkAlternateLine({ alternate: [{ text: alt.text, refs: alt.evidence }] }, alternates, facts).pass) {
+  if (alt && alternates.length > 0 && checkAlternateLine({ alternate: [{ text: alt.text }] }, alternates, facts).pass) {
     out = withLine(out, alt, facts, "alternate");
   }
   return out;

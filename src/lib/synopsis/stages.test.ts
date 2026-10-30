@@ -787,9 +787,9 @@ describe("iteration 3: the prompt", () => {
     expect(system).toContain("respect every mana cost and the one land drop a turn");
     expect(buildSynopsisPrompt(FACTS, undefined, { v2: true, contract8: true, stages: { alternates: [] } }).system).not.toContain("HOW TO SPEAK");
   });
-  it("allows the turn only in Early, floors it at the commander's cost, and keeps Mid and Close turn-free", () => {
+  it("allows the turn only in Early and keeps Mid and Close turn-free", () => {
     const { system } = buildSynopsisPrompt(FACTS, undefined, opts());
-    expect(system).toContain('"around turn 4", the expected commander cast turn from the facts; the commander costs 4 mana, so never write an earlier turn');
+    expect(system).toContain('"around turn 4", the expected commander cast turn from the facts.');
     expect(system).toContain("Mid: the engine running: the cards that, with the commander, turn the setup into advantage. No turn number.");
     expect(system).toContain("The Mid and Close lines, the tips, the Key cards and every other line state no turn at all");
     expect(system).toContain("A stage line carries no turn number, except the Early line's");

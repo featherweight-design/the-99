@@ -268,10 +268,9 @@ function stagesSectionsV3(facts: SynopsisFacts, stages: StagesOption): string[] 
   const earlyMax = (castTurn ?? 3) + 1;
   const tipsFrom = `${range(SECTION_COUNTS.tips)} tips`;
   if (!tips.includes(tipsFrom)) throw new Error("buildSynopsisPrompt: the contract-8 tips line no longer states its count");
-  const cheapest = facts.commanderManaValues.length > 0 ? Math.min(...facts.commanderManaValues) : null;
   const turn = castTurn === null
     ? "State no turn number in this line."
-    : `If you give a turn, it is only "around turn ${castTurn}", the expected commander cast turn from the facts${cheapest !== null && cheapest > 1 ? `; the commander costs ${cheapest} mana, so never write an earlier turn` : ""}.`;
+    : `If you give a turn, it is only "around turn ${castTurn}", the expected commander cast turn from the facts.`;
   const alternates = stages.alternates;
   return [
     `${plans} The plans are never shown to the reader: they steer the lines below.`,
