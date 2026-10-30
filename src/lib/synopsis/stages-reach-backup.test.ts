@@ -54,6 +54,8 @@ describe("the new checks reach the repair and the gate", () => {
   it("a failed cast reach or tip lead sends the primer to the one repair and fails the gate", () => {
     const reach = { ...base, castReach: { pass: false, offenders: [{ where: "stages[0]", card: "Palladium Myr", manaValue: 3, turn: 3 }] } } as StagesChecks;
     expect(i3RepairTargets(reach).sections).toContain("primer");
+    const inOverview = { ...base, castReach: { pass: false, offenders: [{ where: "overview[0]", card: "Palladium Myr", manaValue: 3, turn: 3 }] } } as StagesChecks;
+    expect(i3RepairTargets(inOverview).sections).toEqual(["overview"]);
     expect(allChecksPass(reach, false)).toBe(false);
     const lead = { ...base, tipLead: { pass: false, offenders: ["the first tip is a trick though a later one is plan-level"] } } as StagesChecks;
     expect(i3RepairTargets(lead).sections).toContain("primer");

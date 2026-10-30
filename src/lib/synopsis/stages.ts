@@ -990,7 +990,7 @@ export function i3RepairTargets(c: StagesChecks): { sections: SectionId[]; reaso
   const sections = new Set<SectionId>();
   const reasons: string[] = [];
   for (const o of c.shape.offenders) if (/ Key cards, not /.test(o)) { sections.add("keyCards"); reasons.push(`keyCards: ${o.replace(/^shown: /, "")} once a Key card a stage already explains is dropped; name other cards`); }
-  for (const o of c.castReach?.offenders ?? []) { sections.add("primer"); reasons.push(`primer: ${o.where} gives turn ${o.turn} with ${o.card}, which costs ${o.manaValue}; ramp can only pay for turn ${o.turn} if it costs ${o.turn - 1} or less, so drop the turn or name a cheaper card`); }
+  for (const o of c.castReach?.offenders ?? []) { const section = o.where.startsWith("overview") ? "overview" : o.where.startsWith("stages") ? "primer" : null; if (!section) continue; sections.add(section); reasons.push(`${section}: ${o.where} gives turn ${o.turn} with ${o.card}, which costs ${o.manaValue}; ramp can only pay for turn ${o.turn} if it costs ${o.turn - 1} or less, so drop the turn or name a cheaper card`); }
   if (c.tipLead && !c.tipLead.pass) { sections.add("primer"); reasons.push(`primer: ${c.tipLead.offenders[0]}; tag every tip plan or trick, in order, and lead with a plan-level tip`); }
   for (const t of c.dedupe?.tipsWithoutSubject ?? []) { sections.add("primer"); reasons.push(`primer: tip ${t.tip + 1} needs ${TIP_MIN_CARDS} cards no earlier section explains (it names ${t.cards.join(", ")})`); }
   for (const o of c.noCardTwice?.offenders ?? []) {
