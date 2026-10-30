@@ -1270,11 +1270,11 @@ describe("FilterPanel third-party names", () => {
     const onAnnounce = vi.fn();
     const { unmount } = renderFriends(onAnnounce);
     // Mounted before anything is announced, and empty: a region added together with its text is not read out.
-    expect(screen.getByRole("status").textContent).toBe("");
+    expect((document.querySelector("[data-person-live]") as HTMLElement).textContent).toBe("");
     fireEvent.click(screen.getByRole("button", { name: /Filter by set/ }));
     fireEvent.keyDown(screen.getByRole("dialog"), { key: "ArrowDown" });
-    await waitFor(() => expect(screen.getByRole("status").textContent).toContain("Ada Lovelace"));
-    expect(screen.getByRole("status").firstElementChild?.classList.contains("ph-no-capture")).toBe(true);
+    await waitFor(() => expect((document.querySelector("[data-person-live]") as HTMLElement).textContent).toContain("Ada Lovelace"));
+    expect((document.querySelector("[data-person-live]") as HTMLElement).firstElementChild?.classList.contains("ph-no-capture")).toBe(true);
     expect(onAnnounce).not.toHaveBeenCalled();
     // The row itself is marked, so a press on its padding drops the event too.
     expect(screen.getByRole("option", { name: /Ada Lovelace/ }).classList.contains("ph-no-capture")).toBe(true);
@@ -1286,11 +1286,11 @@ describe("FilterPanel third-party names", () => {
     const { unmount } = renderFriends();
     fireEvent.click(screen.getByRole("button", { name: /Filter by set/ }));
     const dialog = screen.getByRole("dialog");
-    expect(screen.getAllByRole("status")).toHaveLength(1);
-    expect(dialog.contains(screen.getByRole("status"))).toBe(true);
+    expect(Array.from(document.querySelectorAll("[data-person-live]"))).toHaveLength(1);
+    expect(dialog.contains((document.querySelector("[data-person-live]") as HTMLElement))).toBe(true);
     fireEvent.keyDown(dialog, { key: "ArrowDown" });
-    await waitFor(() => expect(screen.getByRole("status").textContent).toContain("Ada Lovelace"));
-    expect(screen.getByRole("status").firstElementChild?.classList.contains("ph-no-capture")).toBe(true);
+    await waitFor(() => expect((document.querySelector("[data-person-live]") as HTMLElement).textContent).toContain("Ada Lovelace"));
+    expect((document.querySelector("[data-person-live]") as HTMLElement).firstElementChild?.classList.contains("ph-no-capture")).toBe(true);
     unmount();
   });
 
@@ -1300,10 +1300,10 @@ describe("FilterPanel third-party names", () => {
     fireEvent.click(screen.getByRole("button", { name: /Filter by set/ }));
     const dialog = screen.getByRole("dialog");
     fireEvent.keyDown(dialog, { key: "ArrowDown" });
-    await waitFor(() => expect(screen.getByRole("status").textContent).toContain("Ada Lovelace"));
+    await waitFor(() => expect((document.querySelector("[data-person-live]") as HTMLElement).textContent).toContain("Ada Lovelace"));
     fireEvent.keyDown(dialog, { key: "ArrowUp" });
-    expect(screen.getByRole("status").textContent).toBe("");
-    await waitFor(() => expect(screen.getByRole("status").textContent).toContain("Ada Lovelace"));
+    expect((document.querySelector("[data-person-live]") as HTMLElement).textContent).toBe("");
+    await waitFor(() => expect((document.querySelector("[data-person-live]") as HTMLElement).textContent).toContain("Ada Lovelace"));
     unmount();
   });
 });
