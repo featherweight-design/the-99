@@ -13,7 +13,7 @@
 // (`the99:precons:announced`, mirrored into a cookie so the server draws it).
 
 import { Chevron } from "../../ui/chevron";
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { preconDay, preconsCopy } from "../../../lib/copy/precons";
 import type { AnnouncedMatch } from "../../../lib/precons/arrivals";
 import type { PreconView } from "../../../lib/precons/list";
@@ -21,6 +21,7 @@ import { CardDetailProvider, type ViewPrinting } from "../../cards/card-detail-p
 import { HoverPreviewProvider } from "../hover-preview";
 import { useStoredView } from "../../ui/use-stored-view";
 import { PRECONS_ANNOUNCED_COOKIE } from "../../ui/view-cookie";
+import { noteAppScroll } from "../../../lib/ui/reveal";
 import { AnnouncedSet, FOCUS_RING, NEW_TAG, setIdentity, type ListedJump } from "./announced-parts";
 import { AnnouncedRow } from "./announced-row";
 
@@ -69,8 +70,10 @@ export type AnnouncedVisit = {
   /** The set codes a reader pressed Show all on this visit (addendum A1): held here for the same reason, and never stored. */
   openSets: ReadonlySet<string>;
   toggleSet: (code: string) => void;
-  /** The set block the arrival named (`#announced-<code>`), latched as the arrival is, so the open group can scroll to it once. */
+  /** The set block the arrival named (`#announced-<code>`), latched as the arrival is, so the open group can scroll to it once;
+   * null once it has been landed on, for the whole visit, so a group that unmounts and mounts again never jumps back. */
   landOn: string | null;
+  landed: (anchor: string) => void;
 };
 
 export function useAnnouncedVisit(): AnnouncedVisit {
@@ -83,6 +86,8 @@ export function useAnnouncedVisit(): AnnouncedVisit {
   const anchor = setAnchorOf(hash);
   const [landOn, setLandOn] = useState<string | null>(null);
   if (anchor && anchor !== landOn) setLandOn(anchor);
+  const [landedOn, setLandedOn] = useState<string | null>(null);
+  const target = landOn ?? anchor;
   const [pressed, setPressed] = useState<boolean | null>(null);
   const [openSets, setOpenSets] = useState<ReadonlySet<string>>(() => new Set());
   const toggleSet = useCallback((code: string) => {
@@ -92,7 +97,7 @@ export function useAnnouncedVisit(): AnnouncedVisit {
       return next;
     });
   }, []);
-  return { arrivedByLink: arrivedByLink || onLink, pressed, press: setPressed, openSets, toggleSet, landOn: landOn ?? anchor };
+  return { arrivedByLink: arrivedByLink || onLink, pressed, press: setPressed, openSets, toggleSet, landOn: target === landedOn ? null : target, landed: setLandedOn };
 }
 
 export type AnnouncedGroupProps = {
@@ -157,15 +162,15 @@ export function AnnouncedGroup({
   }, [open, store, setPressed]);
 
   // Arrived on one set's block (`#announced-<code>`): once the group is open, that block is scrolled to, once per anchor.
-  const { landOn } = visit;
-  const landed = useRef<string | null>(null);
+  const { landOn, landed } = visit;
   useEffect(() => {
-    if (!open || !landOn || landed.current === landOn) return;
+    if (!open || !landOn) return;
     const el = document.getElementById(landOn);
     if (!el) return;
-    landed.current = landOn;
+    landed(landOn);
+    noteAppScroll();
     el.scrollIntoView({ block: "start" });
-  }, [open, landOn, matches]);
+  }, [open, landOn, landed, matches]);
 
   const viewPrintings = useMemo(() => announcedPrintings(matches), [matches]);
   if (matches.length === 0) return null;
