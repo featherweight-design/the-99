@@ -18,6 +18,8 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   audit trail; the account's own switch overrides and group memberships go. It runs whatever the switches say: deleting a deleted
   account's data is never a feature to hide. It is idempotent, so a Clerk retry is harmless.
 
+  `check_in_state` (the Home check-in's one row per account: first Home load, visit days, snoozes, ended, flyer trial PR 6) and `feedback` are in `PURGE_ORDER`: a player's answers and where they stand with the check-in leave with the account.
+
   **Coverage is computed, not listed**: `src/lib/account/purge.test.ts` reads `schema.ts` and fails when a table
   holding an account column is neither purged nor kept with a reason, and when a child of a purged table has no
   `on delete` the order does not cover. A new per-user table therefore fails CI until the purge handles it.

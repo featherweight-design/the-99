@@ -4297,6 +4297,24 @@ export const playerFeedback = pgTable("feedback", {
 ]);
 
 /**
+ * Where a player stands with the check-in on Home (flyer trial PR 6): one row per account, made the first time Home
+ * asks. `first_seen_at` is the first Home load, `visit_days` the distinct UTC days with a Home load (`last_visit_day`
+ * is the latest, so a day counts once), `snoozes` the Not nows so far (`snoozed_until` is when the last one lapses),
+ * `ended_at` when the check-in was answered or closed with the ✕ (asked once ever), `shown_at` when it first opened.
+ * The purge deletes the row with the account.
+ */
+export const checkInState = pgTable("check_in_state", {
+  userId: text("user_id").primaryKey(),
+  firstSeenAt: timestamp("first_seen_at").notNull().defaultNow(),
+  visitDays: integer("visit_days").notNull().default(0),
+  lastVisitDay: date("last_visit_day", { mode: "string" }),
+  snoozes: integer("snoozes").notNull().default(0),
+  snoozedUntil: timestamp("snoozed_until"),
+  endedAt: timestamp("ended_at"),
+  shownAt: timestamp("shown_at"),
+});
+
+/**
  * Posts in the magic.wizards.com Announcements category (`src/lib/announcements/`), one row per post, keyed on its
  * Contentful entry id (a slug can change; the id does not). Catalog family: no per-account rows. `lastmod` is the
  * sitemap's value as last fetched, compared as text: a change means "fetch again", never "posted then". `baseline`
