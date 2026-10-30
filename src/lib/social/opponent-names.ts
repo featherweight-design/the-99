@@ -1,4 +1,4 @@
-// A saved game opponent's names, as they leave the owner's own `deck_game_opponents` rows. The rows SNAPSHOT another
+// A saved game opponent's names, as they leave the owner's own saved-game opponent rows. The rows SNAPSHOT another
 // reader's name (`friendNameThen`), a friend's deck name (`deckNameThen`) and, for a non-friend seated from a Rule 0
 // table, that player's display name as a plain `label` (`seatLabel` in `rule-zero-log.ts`). All three are a person's
 // name, so they are minted here, in the cross-user read layer, and the decks module that assembles a seat never mints.
