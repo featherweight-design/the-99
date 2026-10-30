@@ -248,7 +248,7 @@ async function workV2(args: {
       const call = stub
         ? stub({ stage: req.stage, ask: req.ask })
         : streamModel({
-          model: req.model ?? TUNING_MODEL, system: req.system, user: req.user, maxTokens: req.maxTokens, schema: req.schema,
+          model: req.model ?? TUNING_MODEL, system: req.system, cachedUser: req.cachedUser, user: req.user, maxTokens: req.maxTokens, schema: req.schema,
           deadlineMs: req.deadlineMs, effort: req.effort ?? TUNING_EFFORT,
         });
       const shadow = lineStream();

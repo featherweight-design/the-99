@@ -4,11 +4,11 @@ import type { ModelErrorClass, ModelUsage } from "../../model/client";
 import type { EvidencePack } from "../evidence";
 import { buildPromptV2, type PromptV2Stage } from "../prompt";
 import { OWNED_OFF_INDEX_MAX, OWNED_SHORTLIST_MAX } from "../limits";
-import { lineSchemaV2, suggestedChangesV2Schema } from "../response-schema";
+import { lineSchemaV2, suggestedChangesV2ReplySchema } from "../response-schema";
 import { quotableOf, validateSuggestions, type Drop, type ResolvedCard, type ValidatedSuggestion } from "../validate";
 import { aimDrops, type BracketAim } from "./bracket-aim";
 import { chargeFor, type Charge } from "./charge";
-import { askFor, cutPlanFor, replyCeilingFor, schemaCapFor } from "./count";
+import { askFor, cutPlanFor, replyCeilingFor } from "./count";
 import { reasonFor, refillShortfall } from "./refill";
 import { lineStream } from "./stream-lines";
 import { asksWhy, buildWhyPrompt, checkWhy, WHY_EFFORT, WHY_MODEL, WHY_REPLY_TOKENS, whySchema, type V2Why } from "./why";
@@ -56,6 +56,11 @@ export type V2CallRequest = {
   /** How many lines this call asks for (its prompt's count): the staged stub answers exactly that many. */
   ask: number;
   system: string;
+  /** The user message's cached prefix, the deck's evidence: byte for byte the same on every call of a run, so the transport
+   *  sends it as a cached block (`client.ts`'s `cachedUser`) and calls 2 to 4 read it, and `system`, at 0.1x. Absent on
+   *  the why call, whose system message and prefix differ from the list calls', so it could read none of their cache. */
+  cachedUser?: string;
+  /** The rest of the user message: this call's own step (`buildPromptV2`). */
   user: string;
   schema: z.ZodTypeAny;
   maxTokens: number;
@@ -258,13 +263,14 @@ export async function runV2(args: RunV2Args): Promise<V2Report> {
       return null;
     }
     const deadlineMs = Math.min(callCap, left);
-    const { system, user } = buildPromptV2(pack, prompt);
+    const { system, cachedUser, user } = buildPromptV2(pack, prompt);
     const here: V2CallReport = { stage, ask: prompt.ask, ok: false, ms: 0, lines: 0, kept: 0, malformed: 0 };
     calls.push(here);
     const t = now();
     const call = args.callModel({
-      stage, ask: prompt.ask, system, user,
-      schema: suggestedChangesV2Schema(schemaCapFor(prompt.ask), prompt.list),
+      stage, ask: prompt.ask, system, cachedUser, user,
+      // One schema for all four calls: it is part of the prompt-cache key (`suggestedChangesV2ReplySchema`).
+      schema: suggestedChangesV2ReplySchema,
       maxTokens: replyCeilingFor(prompt.ask),
       deadlineMs,
       stream: true,

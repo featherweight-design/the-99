@@ -44,12 +44,13 @@ export function buildPrompt(pack: EvidencePack): { system: string; user: string 
 }
 
 /**
- * Suggested changes v2's prompt (`PROMPT_VERSION_V2` 12; spec 2026-10-27 §4, §5, §10; plan PR 2 and H2, H3), for ONE call of
+ * Suggested changes v2's prompt (`PROMPT_VERSION_V2` 14: v13's cached prefix, with each call's tail asking for numbered
+ * lines (`numberLinesV2`); spec 2026-10-27 §4, §5, §10; plan PR 2 and H2, H3), for ONE call of
  * the two-call flow: the additions stage, asked ceil(1.5N) (`askFor`), or the cut stage that makes room for what is coming
  * in, first asked ceil(1.5·min(N, K1)) for the K1 additions call 1 kept (`cutPlanFor`), and either one's refill (asked the shortfall, told what stands and what fell and why). Composed from
  * v10's own lines, so every rule both share is one text: only the size and aim sentences, the citation kinds (`notes` is the
- * `request` in v2), the signal-trust order and the bracket choice differ, with the "Coming in" list and the refill's question
- * appended to the user message. Derived from the count-mechanism prototype (`scripts/eval/count-mechanism.mts`'s
+ * `request` in v2), the signal-trust order and the bracket choice differ. Since v13 the stage's own lines, the "Coming in" list and
+ * the refill's question follow the shared, cached prefix, under "This step" (`PromptV2`). Derived from the count-mechanism prototype (`scripts/eval/count-mechanism.mts`'s
  * `patchFlow`, `comingInBlock`, `refillBlock`), the flow the eval measured.
  *
  * THE REQUEST is the pack's `notes`: the field `renderPack` already sends through `playerText` at 500 characters
@@ -72,37 +73,54 @@ export type PromptV2Stage = {
   refill?: { kept: readonly string[]; rejected: readonly { card: string; reason: string }[] };
 };
 
-export function buildPromptV2(pack: EvidencePack, stage: PromptV2Stage): { system: string; user: string } {
-  // The owned lists are what the ADDITIONS choose from (prompt v12): a cut call, and its refill, is sent neither, and its
-  // owned-only rule falls back to the listless sentence, since it names no add of its own.
-  const v10 = buildPrompt(stage.list === "cuts" ? { ...pack, ownedCandidates: undefined, ownedOffIndex: undefined } : pack);
+/** One v2 call's messages: the cached prefix (`system`, then `cachedUser`) every call of a run shares, and its own tail. */
+export type PromptV2 = { system: string; cachedUser: string; user: string };
+
+export function buildPromptV2(pack: EvidencePack, stage: PromptV2Stage): PromptV2 {
+  // Prompt v13 (the cached prefix): every call of a run (additions, cuts, both refills) sends the SAME system message and
+  // the SAME first user block, the deck's evidence, which `client.ts` sends as one cached block (`cachedUser`), so calls 2 to
+  // 4 read it at 0.1x. Everything one call says and another does not comes after it, under "This step" (`user`): the size
+  // and aim lines, the bracket lines, the cut's narrowed result-claim rule, the owned lists with the rule that names them
+  // (the additions only, prompt v12), the "Coming in" list and the refill's question. So the shared part is built from the
+  // pack without its owned lists, whose owned-only rule is the listless sentence, true for every call.
+  const shared = buildPrompt({ ...pack, ownedCandidates: undefined, ownedOffIndex: undefined });
   const swap = new Map<string, string>([
-    [SIZE_LINE, sizeLineV2(stage)],
-    [AIM_LINE, aimLineV2(stage)],
     [KINDS_LINE, KINDS_LINE.replace(" notes, ", " request, ")],
     [NOTES_LINE, REQUEST_LINE],
-    // `noResultClaim` is narrowed on v2 CUTS (Hugh, spec §6.2, Q9; `presentationFailures`' `allowStronger`), so the cut
-    // stage says what its validator allows; additions and v10 keep the rule as written.
-    ...(stage.list === "cuts" ? [[RESULT_CLAIM_LINE, CUT_RESULT_CLAIM_LINE] as const] : []),
   ]);
-  const lines = v10.system.split("\n").flatMap((line) => {
+  const sharedLines = shared.system.split("\n");
+  for (const line of [SIZE_LINE, AIM_LINE, KINDS_LINE, NOTES_LINE, RESULT_CLAIM_LINE]) {
+    if (!sharedLines.includes(line)) throw new Error(`buildPromptV2: v10's line moved: ${line.slice(0, 40)}`);
+  }
+  const system = sharedLines.flatMap((line) => {
+    if (line === SIZE_LINE) return [STEP_POINTER_LINE];
+    // Stage-specific, so stated under "This step" instead.
+    if (line === AIM_LINE || line === RESULT_CLAIM_LINE) return [];
     const swapped = swap.get(line) ?? line;
     if (line.startsWith(GROUND_PREFIX)) return [swapped, SIGNAL_TRUST_LINE];
-    if (line === AIM_LINE) return [swapped, ...bracketLines(stage)];
     // The request outranks the focus (spec §4's signal order), so the focus rules v10 states without exception give way
     // to it: the half-of-the-additions rule and the rule against cutting a focus card included (Copilot round 2).
     if (line.startsWith(FOCUS_LAST_RULE)) return [swapped, REQUEST_OVER_FOCUS_LINE];
     return [swapped];
-  });
-  for (const line of [SIZE_LINE, AIM_LINE, KINDS_LINE, NOTES_LINE]) {
-    if (!v10.system.split("\n").includes(line)) throw new Error(`buildPromptV2: v10's line moved: ${line.slice(0, 40)}`);
-  }
+  }).join("\n");
+  const owned = stage.list === "additions" && pack.limits.ownedOnly && ownedFirstTier(pack) ? pack : null;
+  const step = [
+    STEP_HEADING,
+    sizeLineV2(stage),
+    aimLineV2(stage),
+    ...bracketLines(stage),
+    STEP_RULES_LINE,
+    // `noResultClaim` is narrowed on v2 CUTS (Hugh, spec §6.2, Q9; `presentationFailures`' `allowStronger`), so the cut
+    // stage says what its validator allows; additions and v10 keep the rule as written.
+    stage.list === "cuts" ? CUT_RESULT_CLAIM_LINE : RESULT_CLAIM_LINE,
+    ...(owned ? [`- ${ownedOnlyRule(owned)}`, ...ownedListLines(owned)] : []),
+  ].join("\n");
   const user = [
-    v10.user,
+    step,
     ...(stage.list === "cuts" ? [comingInBlockV2(stage.comingIn ?? [])] : []),
     ...(stage.refill ? [refillBlockV2(stage)] : []),
   ].join("\n");
-  return { system: lines.join("\n"), user };
+  return { system, cachedUser: shared.user, user };
 }
 
 const GROUND_PREFIX = "Ground every card in the evidence you are given";
@@ -112,12 +130,28 @@ const CUT_RESULT_CLAIM_LINE = "- No rationale or citation may promise a game res
 const REQUEST_LINE = "A request citation uses the player's own words from what they asked for this run. Quote their whole line in quotation marks, or cite a part of it WITHOUT quotation marks.";
 /** Spec §4: the request first, then the overview, the focus and the deck's description (Hugh). */
 const SIGNAL_TRUST_LINE = "Weigh what you are given in this order, strongest first: what the player is asking for this run, then how the deck plays (its overview), then the player's focus, then what the deck is for. Use the others where they help answer the request, never in place of it. With no request, work from the deck's own weaknesses.";
+/** Where the shared system message's size line was: what this call asks comes after the evidence (prompt v13). */
+const STEP_POINTER_LINE = "What to propose, how many cards, and the rules for this step come at the end of the message, under \"This step\".";
+const STEP_HEADING = "This step:";
+const STEP_RULES_LINE = "This step's rules. A suggestion that breaks any of these is discarded before the player sees it, as with the rules above:";
 const INDEPENDENT = "Each card stands alone: never pair an addition with a cut, and never refer to a card in the other list.";
 
+/**
+ * The count line (prompt v14): a reply sometimes closed its list early, far under its token cap (a cut call asked 30 stopped
+ * at 4), so every ask has the model number its lines (`replyLineSchemaV2`'s `n`) and names the last one, once per call: on
+ * the size line of a first ask, after the refill's own ask on a refill. Said in this call's own tail (`user`), never the
+ * cached prefix, because the number differs by call.
+ */
+export function numberLinesV2(ask: number): string {
+  return `Number the lines 1 to ${ask}; stop only after line ${ask}.`;
+}
+
 function sizeLineV2(stage: PromptV2Stage): string {
+  // A refill says it once, after its own "Propose exactly N more" at the end (`refillBlockV2`).
+  const count = stage.refill ? "" : ` ${numberLinesV2(stage.ask)}`;
   return stage.list === "additions"
-    ? `Propose exactly ${stage.ask} cards to add; the cuts are chosen in a separate step. ${INDEPENDENT}`
-    : `Propose exactly ${stage.ask} cards to cut; the additions were chosen in an earlier step. ${INDEPENDENT}`;
+    ? `Propose exactly ${stage.ask} cards to add; the cuts are chosen in a separate step.${count} ${INDEPENDENT}`
+    : `Propose exactly ${stage.ask} cards to cut; the additions were chosen in an earlier step.${count} ${INDEPENDENT}`;
 }
 
 function aimLineV2(stage: PromptV2Stage): string {
@@ -165,7 +199,7 @@ function refillBlockV2(stage: PromptV2Stage): string {
     "Your first answer was checked against the rules.",
     `Kept, ${noun}: ${refill.kept.join("; ") || "none"}.`,
     ...(refill.rejected.length > 0 ? ["Rejected, and why:", ...refill.rejected.map((r) => `- ${r.card}: ${r.reason}`)] : []),
-    `Propose exactly ${stage.ask} more ${noun}, following every rule above. Name none of the cards listed here.`,
+    `Propose exactly ${stage.ask} more ${noun}, following every rule above. Name none of the cards listed here. ${numberLinesV2(stage.ask)}`,
   ].join("\n");
 }
 
@@ -209,16 +243,38 @@ function limitsRules(pack: Pick<EvidencePack, "limits" | "ownedCandidates" | "ow
     // what the rule selects from, shown so the model stops guessing at what the player owns.
     // A second tier (v2, prompt v12) is named beside the first, and the first is preferred: its cards are on this
     // commander's own index, the second's only on its neighbours'.
-    const first = ownedFirstTier(pack);
-    lines.push(!first
-      ? "Every suggested add must be a card the player already owns."
-      : (pack.ownedOffIndex ?? []).length > 0
-        ? `Every suggested add must be one of the cards listed under "${OWNED_HEADING}" or under "${OWNED_OFF_INDEX_HEADING}". Prefer the first list: draw from the second only when the first has no card that gives the deck what it needs. Choose among them by what the deck needs.`
-        : `Every suggested add must be one of the cards listed under "${OWNED_HEADING}". Choose among them by what the deck needs.`);
+    lines.push(ownedOnlyRule(pack));
   }
   // Owned-only was set and the player owns nothing that fits: the adds are cards to buy, and the
   // price cap and sets above still hold. The app tells the player so itself.
   if (pack.ownedNone) lines.push("The player owns no card that fits this deck's needs. Suggest cards for them to buy instead.");
+  return lines;
+}
+
+/** The owned-only rule: tied to the owned lists when the pack carries them, the listless sentence when it does not. */
+function ownedOnlyRule(pack: Pick<EvidencePack, "ownedCandidates" | "ownedOffIndex">): string {
+  const first = ownedFirstTier(pack);
+  return !first
+    ? "Every suggested add must be a card the player already owns."
+    : (pack.ownedOffIndex ?? []).length > 0
+      ? `Every suggested add must be one of the cards listed under "${OWNED_HEADING}" or under "${OWNED_OFF_INDEX_HEADING}". Prefer the first list: draw from the second only when the first has no card that gives the deck what it needs. Choose among them by what the deck needs.`
+      : `Every suggested add must be one of the cards listed under "${OWNED_HEADING}". Choose among them by what the deck needs.`;
+}
+
+/** The owned lists, each after a blank line: v10's user message, and a v2 additions call's step (prompt v13). */
+function ownedListLines(pack: Pick<EvidencePack, "limits" | "ownedCandidates" | "ownedOffIndex">): string[] {
+  const lines: string[] = [];
+  const ownedFirst = ownedFirstTier(pack);
+  if (pack.limits.ownedOnly && ownedFirst) {
+    lines.push("", `${OWNED_HEADING} (the ones most decks with this commander play first):`);
+    if (ownedFirst.length === 0) lines.push("- none");
+    for (const c of ownedFirst) lines.push(`- ${c.name} (${c.typeLine})`);
+  }
+  // The second tier (v2, prompt v12): only when it has cards, so a pack without one sends the message it did before.
+  if (pack.limits.ownedOnly && pack.ownedOffIndex && pack.ownedOffIndex.length > 0) {
+    lines.push("", `${OWNED_OFF_INDEX_HEADING}:`);
+    for (const c of pack.ownedOffIndex) lines.push(`- ${c.name} (${c.typeLine})`);
+  }
   return lines;
 }
 
@@ -334,17 +390,7 @@ function renderPack(pack: EvidencePack): string {
   // today's user message byte for byte.
   const limitLines = limitsRules(pack);
   if (limitLines.length > 0) lines.push("", "Limits set for this deck:", ...limitLines.map((l) => `- ${l}`));
-  const ownedFirst = ownedFirstTier(pack);
-  if (pack.limits.ownedOnly && ownedFirst) {
-    lines.push("", `${OWNED_HEADING} (the ones most decks with this commander play first):`);
-    if (ownedFirst.length === 0) lines.push("- none");
-    for (const c of ownedFirst) lines.push(`- ${c.name} (${c.typeLine})`);
-  }
-  // The second tier (v2, prompt v12): only when it has cards, so a pack without one sends the message it did before.
-  if (pack.limits.ownedOnly && pack.ownedOffIndex && pack.ownedOffIndex.length > 0) {
-    lines.push("", `${OWNED_OFF_INDEX_HEADING}:`);
-    for (const c of pack.ownedOffIndex) lines.push(`- ${c.name} (${c.typeLine})`);
-  }
+  lines.push(...ownedListLines(pack));
 
   lines.push("", pack.intent === null
     ? "What the deck is for: no stated intent."

@@ -54,8 +54,10 @@ export const PLAN = Array.from({ length: REPS }, (_, r) => COUNTS.flatMap((n) =>
 const keyOf = (r: { deck: string; n: number; rep: number }) => `${r.deck}|${r.n}|${r.rep}`;
 
 /** A conservative input ceiling with no API call: ~3 characters a token, plus a margin (`count-mechanism.mts`'s). */
-const inputCeiling = (system: string, user: string) => Math.ceil((system.length + user.length) / 3) + 1_500;
-const worstUsd = (system: string, user: string, maxTokens: number) => worstCaseMicroUsd(TUNING_MODEL, inputCeiling(system, user), maxTokens) / 1e6;
+// Priced as a cache write (`cacheWrite`, 1.25x input), the worst case: a call that reads nothing from the cache writes it.
+const inputCeiling = (m: { system: string; cachedUser?: string; user: string }) => Math.ceil((m.system.length + (m.cachedUser?.length ?? 0) + m.user.length) / 3) + 1_500;
+// A call that sends a cached prefix may write it, so it is reserved at the write rate; the why call sends none.
+const worstUsd = (m: { system: string; cachedUser?: string; user: string }, maxTokens: number) => worstCaseMicroUsd(TUNING_MODEL, inputCeiling(m), maxTokens, { cacheWrite: m.cachedUser !== undefined }) / 1e6;
 
 type StoredCall = { stage: V2Stage; ok: boolean; errorClass?: string; ms: number; usd: number; raw: unknown };
 type Row = {
@@ -99,7 +101,7 @@ function dryRun() {
       buildPromptV2(withRequest, { list: "additions", n: p.n, ask: p.n, aim: null, refill: { kept: names.slice(1), rejected: [{ card: "x", reason: "it is outside the commander's colors" }] } }),
       buildPromptV2(withRequest, { list: "cuts", n: p.n, ask: p.n, aim: null, comingIn: names, refill: { kept: names.slice(1), rejected: [{ card: "x", reason: "it is the commander" }] } }),
     ];
-    const worst = calls.reduce((s, m) => s + worstUsd(m.system, m.user, replyCeilingFor(ask)), 0);
+    const worst = calls.reduce((s, m) => s + worstUsd(m, replyCeilingFor(ask)), 0);
     perN.set(p.n, Math.max(perN.get(p.n) ?? 0, worst));
     total += worst;
   }
@@ -150,7 +152,7 @@ async function spendRun() {
     let stop: string | null = null;
     // The engine's transport, over the app's one client; the ledger reserves before and settles after each call.
     const realCall: V2CallModel = (req) => {
-      const worst = worstUsd(req.system, req.user, req.maxTokens);
+      const worst = worstUsd(req, req.maxTokens);
       const now = spent(readLedger(LEDGER));
       if (stop !== null || now + worst > CAP_USD) {
         stop ??= `STOP before ${label} ${req.stage}: worst case $${worst.toFixed(3)} would cross the $${CAP_USD} cap (spent $${now.toFixed(3)})`;
@@ -162,7 +164,7 @@ async function spendRun() {
       let failedAttempts = 0;
       // Each call's own model and effort, with run.ts's defaults: the why stage runs at low effort in production.
       const model = req.model ?? TUNING_MODEL;
-      const settled = callModel({ model, system: req.system, user: req.user, maxTokens: req.maxTokens, schema: req.schema, deadlineMs: req.deadlineMs, effort: req.effort ?? TUNING_EFFORT, stream: true },
+      const settled = callModel({ model, system: req.system, cachedUser: req.cachedUser, user: req.user, maxTokens: req.maxTokens, schema: req.schema, deadlineMs: req.deadlineMs, effort: req.effort ?? TUNING_EFFORT, stream: true },
         { log: (line) => { if (/^\[model\] (malformed|upstream)/.test(line)) failedAttempts++; console.error(line); } })
         .then((o) => {
           // A call with a failed attempt settles at its worst case: its meter may not cover every attempt (`count-mechanism.mts`).
@@ -228,7 +230,7 @@ function score() {
   if (!existsSync(ROWS)) return log(`no rows at ${ROWS}; nothing to score`);
   const rows = readFileSync(ROWS, "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l) as Row);
   type Line = { card: string; rationale: string; rationaleShort: string; evidence: { kind: string; value: string }[] };
-  const cutLines = rows.flatMap((r) => r.calls.filter((c) => c.stage.startsWith("cuts") && c.raw).flatMap((c) => ((c.raw as { cuts: Line[] }).cuts ?? []).map((line) => ({ r, line }))));
+  const cutLines = rows.flatMap((r) => r.calls.filter((c) => c.stage.startsWith("cuts") && c.raw).flatMap((c) => ((c.raw as { lines?: Line[]; cuts?: Line[] }).lines ?? (c.raw as { cuts?: Line[] }).cuts ?? []).map((line) => ({ r, line }))));
   const claims = ({ r, line }: { r: Row; line: Line }, allowStronger: boolean) =>
     [line.rationale, line.rationaleShort, ...line.evidence.map((e) => e.value)]
       .some((t) => presentationFailures(t, r.quotables ?? [], { allowStronger }).broken.includes("noResultClaim"));

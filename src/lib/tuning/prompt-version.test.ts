@@ -10,7 +10,7 @@ describe("PROMPT_VERSION", () => {
 });
 
 describe("PROMPT_VERSION_V2", () => {
-  it("is 12: an owned-only run's additions see a second owned list, and the cut calls see neither", () => {
-    expect(PROMPT_VERSION_V2).toBe(12);
+  it("is 14: every ask numbers its lines, after the cached prefix every call of a run shares", () => {
+    expect(PROMPT_VERSION_V2).toBe(14);
   });
 });

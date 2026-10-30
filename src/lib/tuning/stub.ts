@@ -60,7 +60,8 @@ export function stagedStubOutcome(
     const list = stage.startsWith("additions") ? "additions" : "cuts";
     const refill = stage.endsWith("Refill");
     const cards = refill ? [] : (list === "additions" ? names.adds : names.cuts).slice(0, ask);
-    const line = (card: string) => JSON.stringify({
+    const line = (card: string, n: number) => JSON.stringify({
+      n,
       card,
       rationale: `${card} is a staged stand-in line for the probe.`,
       rationaleShort: "A staged stand-in line",
@@ -72,10 +73,10 @@ export function stagedStubOutcome(
     const deltas = (async function* () {
       try {
         if (!refill) await sleep(delay);
-        yield `{"${list}":[`;
+        yield `{"lines":[`;
         for (let i = 0; i < cards.length; i++) {
           if (i > 0) await sleep(Math.round(delay / 5));
-          yield `${i > 0 ? "," : ""}${line(cards[i])}`;
+          yield `${i > 0 ? "," : ""}${line(cards[i], i + 1)}`;
         }
         yield "]}";
       } finally {

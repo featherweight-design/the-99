@@ -18,9 +18,10 @@ import type { ModelUsage } from "./client";
  * Rates are dollars per million tokens, from Anthropic pricing, as recorded by the claude-api
  * skill's model table, 2026-09-24. A dollar per million tokens is exactly one micro-dollar per
  * token, so a rate here is also the micro-dollar price of one token. Cache reads cost 0.1x input
- * and cache writes 1.25x input (the 5-minute TTL, the only one the app sends). Only Help me choose's
- * read sends `cache_control` (`cacheSystem`); every other call's cache meters read zero and are
- * priced anyway.
+ * and cache writes 1.25x input (the 5-minute TTL, the only one the app sends). Help me choose's
+ * read (`cacheSystem`) and Suggested changes v2's calls (`cachedUser`, prompt v13) send
+ * `cache_control`; every other call's cache meters read zero and are priced anyway. A step that
+ * sends a cached prefix is reserved at the cache-write rate (`cacheWrite`), since a cold cache writes it.
  *
  * A model with an `above` row has TWO rate cards, chosen by the prompt's length: Claude Haiku 5.5
  * costs $0.10 / $0.50 up to 100K prompt tokens and $0.50 / $2.50 above (claude-api skill's model
@@ -202,8 +203,12 @@ export const FEATURE_CALLS: Readonly<Record<ModelFeature, {
   // A fifth, small call writes why these cards once both lists are final (`v2/why.ts`): its own step, at its own ceilings.
   suggested_changes_v2: {
     model: TUNING_MODEL, inputCeilingTokens: 16_000, maxTokens: replyCeilingFor(askFor(MAX_COUNT)), callsPerWrite: 5,
+    // The four list calls send the cached prefix (prompt v13), so a cold cache writes it: priced at the write rate. The why
+    // call sends no cached prefix, so it is priced at the plain input rate.
     steps: [
-      ...Array.from({ length: 4 }, () => ({ model: TUNING_MODEL, inputCeilingTokens: 16_000, maxTokens: replyCeilingFor(askFor(MAX_COUNT)) })),
+      ...Array.from({ length: 4 }, () => ({
+        model: TUNING_MODEL, inputCeilingTokens: 16_000, maxTokens: replyCeilingFor(askFor(MAX_COUNT)), cacheWrite: true,
+      })),
       { model: WHY_MODEL, inputCeilingTokens: WHY_INPUT_TOKENS, maxTokens: WHY_REPLY_TOKENS },
     ],
   },

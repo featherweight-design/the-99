@@ -1,6 +1,6 @@
 /**
  * Suggested changes v2's line-by-line read of a streamed reply (handoff H1, G1). Pure. The reply is one JSON object holding
- * one list, `{"additions":[{line},...]}` or `{"cuts":[...]}`; it arrives as text deltas cut anywhere, mid-string or
+ * one list, `{"lines":[{line},...]}` (the key is the same for every call; the side comes from the call's stage); it arrives as text deltas cut anywhere, mid-string or
  * mid-escape. Each line object is handed back the moment its closing brace arrives, so it can be validated and saved
  * while the rest of the reply is still being written.
  *

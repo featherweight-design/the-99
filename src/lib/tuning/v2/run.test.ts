@@ -192,12 +192,12 @@ beforeEach(() => {
 });
 
 /** One staged call's answer: these lines, each after its own wait, then the close. */
-function answer(list: "additions" | "cuts", cards: { card: string; waitMs?: number }[]) {
+function answer(cards: { card: string; waitMs?: number }[]) {
   let done!: () => void;
   const outcome = new Promise<{ ok: true }>((res) => { done = () => res({ ok: true }); });
   const deltas = (async function* () {
     try {
-      yield `{"${list}":[`;
+      yield `{"lines":[`;
       for (let i = 0; i < cards.length; i++) {
         if (cards[i].waitMs) await new Promise((res) => setTimeout(res, cards[i].waitMs));
         yield `${i > 0 ? "," : ""}${JSON.stringify({
@@ -355,10 +355,10 @@ describe("the v2 run's work", () => {
     s.gate = new Promise((res) => { release = res; });
     s.slowName = "Shared";
     s.custom = ({ stage }) => {
-      if (stage === "additions") return answer("additions", [{ card: "Fresh" }]);
-      if (stage === "cuts") return answer("cuts", [{ card: "Shared" }]);
-      if (stage === "additionsRefill") return answer("additions", [{ card: "Shared", waitMs: 5 }]);
-      return answer("cuts", []);
+      if (stage === "additions") return answer([{ card: "Fresh" }]);
+      if (stage === "cuts") return answer([{ card: "Shared" }]);
+      if (stage === "additionsRefill") return answer([{ card: "Shared", waitMs: 5 }]);
+      return answer([]);
     };
     setTimeout(() => release(), 30);
     await run({ wire: wire({ requestedCount: 2 }) });
