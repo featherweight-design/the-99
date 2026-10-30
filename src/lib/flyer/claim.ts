@@ -32,6 +32,12 @@ function cookieMatches(row: Row, presented: string | null): boolean {
   return presented !== null && secretHash(presented) === row.claimSecretHash;
 }
 
+/** Whether the code was revoked: read through the transaction that holds its creator's lock. */
+async function revoked(tx: Parameters<Parameters<typeof db.transaction>[0]>[0], codeId: string): Promise<boolean> {
+  const [row] = await tx.select({ revokedAt: flyerCodes.revokedAt }).from(flyerCodes).where(eq(flyerCodes.id, codeId));
+  return !row || row.revokedAt !== null;
+}
+
 /** The code a path segment names, or null: not a code's shape, or no such row. */
 export async function findFlyerCode(raw: string): Promise<CodeRow | null> {
   const code = parseFlyerCode(raw);
@@ -193,6 +199,8 @@ export async function confirmFlyerCode(
   if (!code) return ENDED;
   return db.transaction(async (tx): Promise<ConfirmResult> => {
     const now = await lockSenderIn(tx, code.createdBy, deps.now);
+    // A revoked code proves nothing more: it reads as ended, under the same lock a revoke takes.
+    if (await revoked(tx, code.id)) return ENDED;
     const row = await claimOf(tx, code.id, presented, true);
     const decision = decideConfirm(row, presented, rawCode, secret, now);
     switch (decision.kind) {
@@ -233,7 +241,7 @@ export async function handOverFlyer(codeRaw: string, presented: string | null, d
   if (!code) return ENDED;
   const first = await db.transaction(async (tx) => {
     const now = await lockSenderIn(tx, code.createdBy, deps.now);
-    return { row: await claimOf(tx, code.id, presented, false), now };
+    return { row: (await revoked(tx, code.id)) ? undefined : await claimOf(tx, code.id, presented, false), now };
   });
   if (!first.row || first.row.state !== "proven" || first.row.email === null || !live(first.row, first.now) || !cookieMatches(first.row, presented)) return ENDED;
   const claimId = first.row.id;
@@ -248,6 +256,7 @@ export async function handOverFlyer(codeRaw: string, presented: string | null, d
     // Read again under the lock: the invitation id and state are now ours to act on.
     const [row] = await tx.select().from(flyerClaims).where(eq(flyerClaims.id, claimId));
     if (!row || row.state !== "proven" || row.email === null || !live(row, now) || !cookieMatches(row, presented)) return ENDED;
+    if (await revoked(tx, row.codeId)) return ENDED;
     const email = row.email;
     try {
       // Whatever ticket this claim made earlier is ended first, so no branch below leaves one behind (the sweep skips a
