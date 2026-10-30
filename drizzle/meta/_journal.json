@@ -1443,6 +1443,13 @@
       "when": 1793390582842,
       "tag": "0205_model_calls_units",
       "breakpoints": true
+    },
+    {
+      "idx": 206,
+      "version": "7",
+      "when": 1793392247363,
+      "tag": "0206_retire_deck_notes_switch",
+      "breakpoints": true
     }
   ]
 }
