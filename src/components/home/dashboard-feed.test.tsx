@@ -113,11 +113,19 @@ describe("Home, direction B", () => {
     expect(container.querySelector("[data-whats-new=quiet]")).toHaveTextContent("You hear about new sets and trade matches here.");
   });
 
-  it("nothing chosen: no lead, the inline opt-in", () => {
-    const { container } = render(<Dashboard {...BASE} feed={{ chosen: false, offer: ["new-set", "combo"], alsoOn: false }} />);
+  it("nothing in the window, never chosen: no lead, the quiet line, then the offer line (small items 5)", () => {
+    const { container } = render(<Dashboard {...BASE} feed={{ chosen: false, offer: ["new-set", "combo"], on: ["spare-request"] }} />);
     expect(container.querySelector("[data-lead-story]")).toBeNull();
-    expect(container.querySelector("[data-whats-new=opt-in]")).not.toBeNull();
-    expect(screen.getAllByRole("checkbox")).toHaveLength(2);
+    expect(container.querySelector("[data-whats-new=quiet]")).toHaveTextContent("You hear about friends asking for your spares here.");
+    expect(container.querySelector("[data-whats-new=quiet] [data-feed-offer=closed]")).not.toBeNull();
+    expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
+  });
+
+  it("every kind off: no lead, the offer line alone", () => {
+    const { container } = render(<Dashboard {...BASE} feed={{ chosen: false, offer: ["new-set", "combo"], on: [] }} />);
+    expect(container.querySelector("[data-lead-story]")).toBeNull();
+    expect(container.querySelector("[data-whats-new=offer] [data-feed-offer=closed]")).not.toBeNull();
+    expect(container.querySelector("[data-feed-quiet]")).toBeNull();
   });
 });
 

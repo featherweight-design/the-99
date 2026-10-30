@@ -31,10 +31,13 @@ const refusing = {
   },
 } as never;
 
-/** An executor answering the prefs read with `kinds` and each execute by the table its statement reads. */
-function fake(kinds: Record<string, string>, rows: { feed?: unknown[]; sets?: unknown[]; cards?: unknown[] }) {
+/**
+ * An executor answering the prefs read with `kinds` (and `prefs`: the declined list, the offer's ✕ stamp) and each
+ * execute by the table its statement reads.
+ */
+function fake(kinds: Record<string, string>, rows: { feed?: unknown[]; sets?: unknown[]; cards?: unknown[] }, prefs: { declined?: string[]; offerClosedAt?: Date | null } = {}) {
   return {
-    select: () => ({ from: () => ({ where: async () => [{ feedKinds: kinds }] }) }),
+    select: () => ({ from: () => ({ where: async () => [{ feedKinds: kinds, ...prefs }] }) }),
     execute: vi.fn(async (q: SQL) => {
       const s = text(q);
       if (s.includes("as unseen")) return { rows: rows.feed ?? [] };
@@ -54,22 +57,48 @@ describe("loadHomeFeed", () => {
     expect(await loadHomeFeed("u1", {} as NodeJS.ProcessEnv, NOW, refusing)).toBeNull();
   });
 
-  it("answers the opt-in while every kind the reader can be offered is off, reading no feed", async () => {
+  it("answers the offer alone while every kind the reader can be offered is off, reading no feed", async () => {
     const q = fake({}, {});
     const feed = await loadHomeFeed("u1", ON, NOW, q);
-    expect(feed).toEqual({ chosen: false, offer: ["new-set", "new-precon", "price-drop", "trade-match", "combo"], alsoOn: false });
+    expect(feed).toEqual({ chosen: false, offer: ["new-set", "new-precon", "price-drop", "trade-match", "combo"], on: [] });
     expect((q as unknown as { execute: ReturnType<typeof vi.fn> }).execute).not.toHaveBeenCalled();
   });
 
-  it("keeps the offer for a reader who chose nothing until the default-on kind has an item", async () => {
+  describe("the offer line (announcements call 3)", () => {
     const SPARE = { ...ON, SPARE_REQUESTS_ENABLED: "true" } as NodeJS.ProcessEnv;
-    const empty = await loadHomeFeed("u1", SPARE, NOW, fake({}, {}));
     // The default-on kind already on is not offered: an unticked box there would save it off.
-    // `alsoOn`: spare requests already show here, so the offer must not say nothing does.
-    expect(empty).toEqual({ chosen: false, offer: ["new-set", "new-precon", "price-drop", "trade-match", "combo"], alsoOn: true });
-    const ask = row({ kind: "spare-request", key: "item:s", created_at: "2026-10-22T10:00:00Z", friend_public_id: "p1", friend_name: "Peter" });
-    const feed = await loadHomeFeed("u1", SPARE, NOW, fake({}, { feed: [ask] }));
-    expect(feed?.chosen && feed.lead?.key).toBe("item:s");
+    const OFFER = ["new-set", "new-precon", "price-drop", "trade-match", "combo"];
+    const ask = () => row({ kind: "spare-request", key: "item:s", created_at: "2026-10-22T10:00:00Z", friend_public_id: "p1", friend_name: "Peter" });
+    const ask2 = () => row({ kind: "spare-request", key: "item:t", created_at: "2026-10-21T10:00:00Z", friend_public_id: "p2", friend_name: "Max" });
+
+    it("with nothing in the window, for a reader who never chose, names the kinds on for the quiet line (small items 5)", async () => {
+      const feed = await loadHomeFeed("u1", SPARE, NOW, fake({}, {}));
+      // `on`: spare requests already show here, so the quiet line over the offer line names them.
+      expect(feed).toEqual({ chosen: false, offer: OFFER, on: ["spare-request"] });
+    });
+
+    it("stands with items in the window: the first item no longer ends it", async () => {
+      const feed = await loadHomeFeed("u1", SPARE, NOW, fake({}, { feed: [ask(), ask2()] }));
+      expect(feed?.chosen && feed.lead?.key).toBe("item:s");
+      expect(feed?.chosen && feed.items.map((i) => i.key)).toEqual(["item:t"]);
+      expect(feed?.chosen && feed.offer).toEqual(OFFER);
+    });
+
+    it("is gone once the reader has chosen: a kind stamped, or a default-on kind declined", async () => {
+      const stamped = await loadHomeFeed("u1", SPARE, NOW, fake({ "new-set": "2026-10-01T00:00:00Z" }, { feed: [ask()] }));
+      expect(stamped?.chosen && stamped.offer).toBeUndefined();
+      const declined = await loadHomeFeed("u1", { ...SPARE, ANNOUNCEMENTS_ENABLED: "true" } as NodeJS.ProcessEnv, NOW, fake({}, {}, { declined: ["secret-lair"] }));
+      expect(declined?.chosen && declined.offer).toBeUndefined();
+    });
+
+    it("is gone after its ✕, and the empty window is the quiet line alone (no offer line under it), while the default-on kinds stay on as for a reader who never chose", async () => {
+      const feed = await loadHomeFeed("u1", SPARE, NOW, fake({}, { feed: [ask()] }, { offerClosedAt: new Date("2026-10-20T00:00:00Z") }));
+      expect(feed?.chosen && feed.offer).toBeUndefined();
+      expect(feed?.chosen && feed.on).toEqual(["spare-request"]);
+      expect(feed?.chosen && feed.lead?.key).toBe("item:s");
+      const empty = await loadHomeFeed("u1", SPARE, NOW, fake({}, {}, { offerClosedAt: new Date("2026-10-20T00:00:00Z") }));
+      expect(empty).toEqual({ chosen: true, on: ["spare-request"], items: [], unseen: 0, lead: null });
+    });
   });
 
   it("draws each item with its card, the lead out of the list", async () => {
@@ -335,11 +364,13 @@ describe("a Wizards post", () => {
     const q = fake({}, { feed: [row({ kind: "wizards-news", key: "post:n1", created_at: NOW.toISOString(), name: data.title, data })] });
     const feed = await loadHomeFeed("u1", env, NOW, q);
     expect(feed).toMatchObject({ chosen: true, on: ["secret-lair", "commander-decklists", "wizards-news"], lead: null, unseen: 1 });
+    // The post does not end the offer (announcements call 3): the kinds still off ride under it.
+    expect(feed?.chosen && feed.offer).toEqual(["new-set", "new-precon", "combo"]);
     expect(feed?.chosen && feed.items.map((i) => [i.kind, i.outbound])).toEqual([["wizards-news", "/out/wizards/n1"]]);
   });
 
   it("offers nothing of Wizards' with ANNOUNCEMENTS_ENABLED off", async () => {
     const feed = await loadHomeFeed("u1", { HOME_FEED_ENABLED: "true" } as unknown as NodeJS.ProcessEnv, NOW, fake({}, {}));
-    expect(feed).toEqual({ chosen: false, offer: ["new-set", "new-precon", "combo"], alsoOn: false });
+    expect(feed).toEqual({ chosen: false, offer: ["new-set", "new-precon", "combo"], on: [] });
   });
 });

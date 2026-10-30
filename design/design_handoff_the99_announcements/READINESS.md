@@ -18,8 +18,9 @@ option taken. Nothing below blocks the build; each open item has a drawn default
 2. **Home row.** Shipped `FeedItemRow` with the hero cropped into the 46x64 slot (radius 4, `object-fit: cover`,
    no card shadow); the post-glyph plate on a missing or failed hero. Decklists rows carry two presses: one action
    line on a phone, stacked and right-aligned from `md`. Lead story hero per call 2.
-3. **The offer** (`alsoOn`, `src/lib/feed/home.ts`): shown while the reader has never chosen, as the last line of What's
-   new, whatever is in the window. ✕ saves an empty choice.
+3. **The offer** (`src/lib/feed/home.ts`): shown while the reader has never chosen, as the last line of What's
+   new. ✕ saves an empty choice. With nothing in the window, see `ERRATUM-offer-empty.md` (small items 5,
+   `Offer-Empty`): the quiet line, then the offer line, and the full opt-in panel retires.
 4. **Settings (R1b-1).** Rework `news-section.tsx`: section "Notifications", column heads In app and Push over two
    52px cells per row, each the shared `Checkbox` in its own 44px press with an `ariaLabel`; the row text no longer
    toggles; the device row moves to its own band above the heads. Applies to every kind. Update
@@ -181,3 +182,44 @@ still Wizards' early list:** you can start a deck from this precon once the rele
 string ships as drawn.
 
 **Follow-up.** The "See the lists" presses on Home and in the lead story ship in UI 6b.
+
+### Engineering audit: UI 4 (the offer)
+
+2026-10-29, against `feat/announcements-ui3a` (PR #2407; rebased onto main after it merges). Call 3, board `Offer`
+(1.10), behind `HOME_FEED_ENABLED` as What's new is.
+
+- **Built.** While the reader has never chosen, What's new ends with the offer line, under the rows or, with nothing
+  in the window, under the quiet line: the bold
+  "Pick what else you want to hear about." and "New sets, price drops, trade matches and more.", **Pick ▾** and a ✕
+  (`.ofr`, 390 and 1300). Pick opens the shipped boxes in place (`.ofo`): the shipped boxes, extracted to `KindBoxes`
+  from the retired opt-in, never a copy, with Show these through `saveFeedKinds`, and focus moves to the first box.
+  The ✕, closed or opened, saves an empty choice: the line leaves at once, focus goes to the section's head, and a
+  failed write puts it back with the reason. Copy in `feedCopy.home.offer`, placeholders for `/copy-review`.
+- **The `alsoOn` rule is retired.** It ended the opt-in at the first item, so with the Wizards kinds on for everyone at
+  the first post. `loadHomeFeed` answers `{ chosen: false, offer, on }` for an empty window (`on`, the kinds already
+  on, for the quiet line; empty with every kind off) and the items view with `offer` (the kinds still off) once the
+  window holds items, while `neverChose` holds.
+- **"Never chosen" has one rule.** `neverChose` (`lib/feed/prefs.ts`): nothing in `feed_kinds`, nothing in
+  `feed_kinds_declined`, and `feed_offer_closed_at` null. Its only reader was `loadHomeFeed`'s `choseNothing`, now
+  replaced. Every other reader of the prefs (`isKindOn`, `effectiveKinds`, `kindEnabledAt` in SQL, the push catalog,
+  Settings) decides what is ON, which the ✕ leaves alone: a reader who closed the offer keeps the default-on kinds,
+  exactly as one who never chose.
+- **The ✕'s marker.** An empty choice through `nextFeedPrefs` writes nothing, so the ✕ stamps its own column:
+  `closeFeedOfferAction` stamps the caller's row (`closeFeedOffer`, an upsert guarded on the column being null, so a
+  repeat moves no stamp trigger). **Migration 0198** (`drizzle/0198_user_prefs_feed_offer_closed.sql`) adds the nullable
+  `user_prefs.feed_offer_closed_at timestamptz`.
+- **The empty window (small items 5, Offer-Empty; ERRATUM-offer-empty.md).** A never-chosen reader with nothing in the
+  window sees the quiet line and, under it, the same offer line; with no kinds on, the offer line alone. `OptIn` and
+  `feedCopy.home.optIn` retire.
+- **Fork: the ✕ with no kinds on.** Neither the board nor the README draws it. After the ✕ What's new would be its head
+  over an empty box, so it draws the quiet line's lead alone ("Nothing new right now."), with nothing to name.
+- **No line with nothing to offer.** A reader who never chose but has every available kind on draws no line.
+- **Undrawn: nothing on, after the ✕.** With no kind on, the quiet line has nothing to name, so What's new draws
+  "Nothing new right now." alone (the shipped `quietLead`), and the offer line comes back next visit, as the opt-in did
+  (ruled 2026-10-30, option a, pending Hugh and a Design note; Settings is the other way back). The ✕'s spoken label is
+  "Hide this" (copy review: "for good" overclaimed for that reader).
+- **The closed line names only what the reader can pick.** The board's "New sets, price drops, trade matches and more."
+  promised kinds a reader without the wishlist or friends could not get. `offer.rest` now lists the kinds still offered,
+  by their quiet names: the first three, then "and more" (copy review, 2026-10-30).
+- **The shared Checkbox stays** (Hugh's ruling, recorded in #2408's erratum): the Offer board's 20×20 dashed box and CSS
+  check are not built; the boxes draw the shipped `Checkbox`.

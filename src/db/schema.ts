@@ -2178,6 +2178,13 @@ export const userPrefs = pgTable(
      */
     feedKindsDeclined: text("feed_kinds_declined").array().notNull().default(sql`'{}'::text[]`),
     /**
+     * When this reader closed What's new's offer with its ✕ (announcements call 3): an empty choice, which sticks while any kind is on. The
+     * offer line stands while the reader has never chosen, which is nothing in `feed_kinds`, nothing in
+     * `feed_kinds_declined` and this null (`neverChose`). Closing it turns nothing on or off: the default-on kinds stay
+     * on, as for a reader who never chose. Written once, only while null (`closeFeedOffer`), because of the stamp trigger above.
+     */
+    feedOfferClosedAt: timestamp("feed_offer_closed_at", { withTimezone: true }),
+    /**
      * The news kinds this reader has PUSH on (push notifications, `lib/push/`): the same closed set and the same shape as
      * `feed_kinds`, kind -> when it was turned on, and `isKindOn`'s rule (`spare-request` is on by default). A push kind
      * sends only what arrived after its stamp, so turning one on never pushes yesterday's news. Written only when the map

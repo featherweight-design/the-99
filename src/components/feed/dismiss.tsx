@@ -27,10 +27,14 @@ export function ringFocus(el: HTMLElement): void {
   el.focus();
 }
 
-export function DismissButton({ title, onPress, disabled = false, className = "" }: {
+export function DismissButton({ title, onPress, disabled = false, className = "", label, margin = "ml-auto mr-[-10px] md:mr-[-6px]" }: {
   title: string; onPress: (from: HTMLElement) => void; disabled?: boolean;
   /** The lead's phone nudge (`.d4n.ph .ld .la .x4`, margin-top −2px). */
   className?: string;
+  /** The accessible name in full, in place of "Hide “title”": the offer's ✕ (announcements call 3) hides no item. */
+  label?: string;
+  /** The box's margins: by default it ends an action line; the offer line sets its own (`.ofr .x4`, `.ofo .hd .x4`). */
+  margin?: string;
 }) {
   // The ring is a box-shadow over a TRANSPARENT outline, never `outline-none`: forced-colors mode drops shadows and
   // repaints the outline in a system color, so a keyboard reader in High Contrast still finds the focused ✕.
@@ -38,10 +42,10 @@ export function DismissButton({ title, onPress, disabled = false, className = ""
     <button
       type="button"
       data-feed-dismiss
-      aria-label={d.aria(title)}
+      aria-label={label ?? d.aria(title)}
       disabled={disabled}
       onClick={(e) => onPress(e.currentTarget)}
-      className={`z-[1] ml-auto mr-[-10px] flex h-[44px] w-[44px] flex-none cursor-pointer md:mr-[-6px] md:h-[32px] md:w-[32px] items-center justify-center rounded-[8px] border-0 bg-transparent p-0 text-[13px] focus-visible:outline-transparent focus-visible:shadow-[0_0_0_2px_var(--accent)] data-[ring]:outline-2 data-[ring]:outline-solid data-[ring]:outline-transparent data-[ring]:shadow-[0_0_0_2px_var(--accent)] text-[color:var(--fg-muted)] hover:text-[color:var(--fg)] disabled:cursor-default ${HIT} ${className}`}
+      className={`z-[1] ${margin} flex h-[44px] w-[44px] flex-none cursor-pointer md:h-[32px] md:w-[32px] items-center justify-center rounded-[8px] border-0 bg-transparent p-0 text-[13px] focus-visible:outline-transparent focus-visible:shadow-[0_0_0_2px_var(--accent)] data-[ring]:outline-2 data-[ring]:outline-solid data-[ring]:outline-transparent data-[ring]:shadow-[0_0_0_2px_var(--accent)] text-[color:var(--fg-muted)] hover:text-[color:var(--fg)] disabled:cursor-default ${HIT} ${className}`}
     >
       <span aria-hidden>✕</span>
     </button>

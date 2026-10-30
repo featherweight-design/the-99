@@ -67,13 +67,35 @@ export const feedCopy = {
       "spare-request": "friends asking for your spares",
       combo: "combos you can make",
     } satisfies Record<FeedKind, string>,
-    /** The inline opt-in while every kind is off (handoff call 7). The boxes reuse `news.kinds`. */
-    optIn: {
-      title: "Choose what shows here",
-      line: "Pick what you want to hear about. Nothing shows until you do, and you can change it in Settings.",
-      /** The same offer once a default-on kind (spare requests) is on: something already shows here. */
-      lineAlsoOn: "Pick what else you want to hear about. You can change it in Settings.",
+    /**
+     * The offer line while the reader has never chosen: at the foot of What's new's rows (announcements call 3,
+     * `Offer.dc.html`), and with nothing in the window under the quiet line, or alone with no kind on (small items 5,
+     * `Offer-Empty`; it replaces the retired opt-in panel). Placeholders for `/copy-review`. Closed: the bold `lead`, then
+     * `rest`, with Pick ▾ and a ✕. Opened: the bold `lead`, then `openRest`, over the shipped boxes (`news.kinds`), `save`
+     * and `foot`.
+     */
+    offer: {
+      lead: "Pick what else you want to hear about.",
+      /**
+       * The kinds this reader can still pick, by their quiet names, never a kind they cannot get (wishlist or friends
+       * off): the first three, then "and more" past three. The board's "New sets, price drops, trade matches and more." is
+       * this with all of them on.
+       */
+      rest: (names: readonly string[]) => {
+        const shown = names.slice(0, 3);
+        const head = shown.length === 1 ? shown[0] : `${shown.slice(0, -1).join(", ")}${names.length > 3 ? ", " : " and "}${shown.at(-1)}`;
+        const line = names.length > 3 ? `${head} and more.` : `${head}.`;
+        return line.charAt(0).toUpperCase() + line.slice(1);
+      },
+      openRest: "You can change it in Settings.",
+      /** The press that opens the boxes in place; a ▾ follows it, unspoken. */
+      pick: "Pick",
+      /** The ✕: it saves an empty choice (`feed_offer_closed_at`). "For good" is not said: with no kind on, the line
+       *  comes back next visit, the reader's only way back besides Settings. */
+      closeAria: "Hide this",
+      /** The boxes' save (handoff call 7, as shipped). */
       save: "Show these",
+      /** The boxes' foot (handoff call 7, as shipped). */
       foot: "In the app only. No email, ever.",
     },
     /** The mono kicker naming each kind. */
