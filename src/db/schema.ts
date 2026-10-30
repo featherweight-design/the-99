@@ -2727,13 +2727,15 @@ export const adminEvents = pgTable("admin_events", {
   newValue: text("new_value"),
   note: text("note"),
 }, (t) => [
-  check("admin_events_kind_check", sql`${t.kind} in ('override_set', 'override_cleared', 'group_created', 'group_renamed', 'group_described', 'member_added', 'member_removed', 'setting_set', 'group_allowance_set', 'invites_set', 'invites_topped_up', 'invite_revoked', 'account_revealed', 'group_paid_limit_set', 'credits_granted', 'purchase_block_cleared')`),
+  check("admin_events_kind_check", sql`${t.kind} in ('override_set', 'override_cleared', 'group_created', 'group_renamed', 'group_described', 'member_added', 'member_removed', 'setting_set', 'group_allowance_set', 'invites_set', 'invites_topped_up', 'invite_revoked', 'account_revealed', 'group_paid_limit_set', 'credits_granted', 'purchase_block_cleared', 'flyer_code_made', 'flyer_code_revoked')`),
   check("admin_events_scope_check", sql`${t.scope} is null or ${t.scope} in ('app', 'group', 'user')`),
   // Each kind names what it changed. A `group_allowance_set` names its group and a change: either
   // side may be null (null is the default daily credits), never both. `group_paid_limit_set` is
   // the same shape for the paid limit (null is `PAID_DAILY_LIMIT`).
   // A `credits_granted` (an admin's gift, admin plan A-R5) names the account, the units (`new_value`) and why (`note`).
   // A `purchase_block_cleared` (A3) names the account and when its block was set (`old_value`, ISO).
+  // A `flyer_code_made` (flyer trial 4b) names the sender whose invites the code draws (`user_id`) and the code (`new_value`); its
+  // `group_id` is the group the sign-ups join and `note` the store label. A `flyer_code_revoked` names the sender and the code (`old_value`).
   check("admin_events_fields_check", sql`case ${t.kind}
     when 'override_set' then ${t.switchName} is not null and ${t.scope} is not null and ${t.newValue} is not null
     when 'override_cleared' then ${t.switchName} is not null and ${t.scope} is not null and ${t.oldValue} is not null
@@ -2751,6 +2753,8 @@ export const adminEvents = pgTable("admin_events", {
     when 'group_paid_limit_set' then ${t.groupId} is not null and (${t.oldValue} is not null or ${t.newValue} is not null)
     when 'credits_granted' then ${t.userId} is not null and ${t.newValue} is not null and ${t.note} is not null
     when 'purchase_block_cleared' then ${t.userId} is not null and ${t.oldValue} is not null
+    when 'flyer_code_made' then ${t.userId} is not null and ${t.newValue} is not null
+    when 'flyer_code_revoked' then ${t.userId} is not null and ${t.oldValue} is not null
   end`),
   // A group-scoped override names its group, a user-scoped one its user, and app-wide neither.
   check("admin_events_scope_target_check", sql`${t.scope} is null
