@@ -47,6 +47,9 @@ requireEnv(["DATABASE_URL"]);
 
 const SEED = process.argv.includes("--seed");
 const UNSEED = process.argv.includes("--unseed");
+// Cases 5 and 6 spend a credit each for one player inside one window. The public default is one run a day (2026-10-30),
+// so this probe pins five for itself: read per call, so setting it here is enough.
+process.env.MODEL_DAILY_ALLOWANCE = "5";
 const USER = SEED || UNSEED ? requireEnv(["PROBE_USER_ID"]).PROBE_USER_ID : `probe-method-notice-${Date.now()}`;
 const SEED_PREFIX = "mn-probe-fixture-";
 

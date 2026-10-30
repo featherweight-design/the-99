@@ -38,6 +38,10 @@ process.env.DATABASE_URL = DATABASE_URL;
 
 const pool = new Pool({ connectionString: DATABASE_URL });
 const fixture = drizzle(pool);
+// Case 5 seeds four spent calls to leave its players one credit, and case 1 reads again after its first: both assume a
+// five-run day. The public default is one run (2026-10-30), so this probe pins five for itself: read per call, so
+// setting it here is enough.
+process.env.MODEL_DAILY_ALLOWANCE = "5";
 const USER = `probe-the-read-${Date.now()}`;
 
 let failures = 0;

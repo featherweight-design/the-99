@@ -64,10 +64,11 @@ describe("allowanceFrom", () => {
   });
 
   it("reopens when the oldest counted call leaves the window", () => {
-    // Given out of order on purpose: the reopening time is the OLDEST, not the first listed.
-    const rows = Array.from({ length: MODEL_DEFAULT_DAILY_ALLOWANCE }, (_, i) => spent(hoursAgo(20 - i))).reverse();
-    const a = allowanceFrom(rows, now);
-    expect(a.used).toBe(MODEL_DEFAULT_DAILY_ALLOWANCE);
+    // Given out of order on purpose: the reopening time is the OLDEST, not the first listed. A limit of several, so the
+    // order means something (the default is one run).
+    const rows = Array.from({ length: 5 }, (_, i) => spent(hoursAgo(20 - i))).reverse();
+    const a = allowanceFrom(rows, now, 5);
+    expect(a.used).toBe(5);
     expect(a.reopensAt).toEqual(new Date(hoursAgo(20).getTime() + ALLOWANCE_WINDOW_MS));
   });
 
