@@ -420,6 +420,29 @@ describe("iteration 3: the deck's own land number", () => {
     expect(heavy.why).toContain("average 4 mana value");
     expect(landKeepNumber({ ...withCurve([3, 4, 4, 4, 3]), commanderManaValues: [7] }).lands).toBe(4);
   });
+  it("pins each retuned cutoff by a deck the old value read the other way", () => {
+    // Copies per mana value, applied to the five nonland, non-commander cards in card order.
+    const deck = (mvs: number[], copies: number[], extra: Partial<SynopsisFacts> = {}): SynopsisFacts => {
+      const base = withCurve(mvs, extra);
+      let i = 0;
+      return { ...base, cards: base.cards.map((c) => (c.oracleId === "m" || c.oracleId === "f" ? c : { ...c, quantity: copies[i++] })) };
+    };
+    // lightAverage 3.3 (was 2.6): an average of 3.0 is a low curve now.
+    expect(landKeepNumber(withCurve([3, 3, 3, 3, 3])).reasons).toEqual(["low curve"]);
+    // lightFivePlusMax 12 (was 5): eight five-drops among cheap cards still read low.
+    const eightFives = landKeepNumber(deck([1, 1, 5, 1, 1], [12, 12, 8, 12, 12]));
+    expect(eightFives.curve.fivePlus).toBe(8);
+    expect(eightFives.reasons).toEqual(["low curve"]);
+    // heavyFivePlus 22 (was 14): 18 five-drops with a 3.6 average is middling, 22 is top-heavy.
+    const eighteen = landKeepNumber(deck([3, 3, 5, 3, 3], [10, 10, 18, 10, 10]));
+    expect(eighteen.curve.fivePlus).toBe(18);
+    expect(eighteen.reasons).toEqual([]);
+    const twentyTwo = landKeepNumber(deck([3, 3, 5, 3, 3], [15, 15, 22, 15, 15]));
+    expect(twentyTwo.curve.fivePlus).toBe(22);
+    expect(twentyTwo.reasons).toEqual(["top-heavy"]);
+    // heavyCommander 7 (was 6): a six-drop commander on a middling curve no longer adds one.
+    expect(landKeepNumber({ ...withCurve([3, 4, 4, 4, 3]), commanderManaValues: [6] }).reasons).toEqual([]);
+  });
   it("adds one at 41 lands, takes one at 32, and holds the number inside the keepable range and 2 to 4", () => {
     expect(landKeepNumber(withCurve([3, 4, 4, 4, 3], { lands: 41, keep: { low: 2, high: 4 } })).lands).toBe(4);
     expect(landKeepNumber(withCurve([3, 4, 4, 4, 3], { lands: 31 })).lands).toBe(2);
