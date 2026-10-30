@@ -373,7 +373,8 @@ export function SuggestedChangesRun({
         data-sc-side={side}
         className={`${half === side ? "flex" : "hidden"} min-w-0 flex-col gap-[8px] md:flex`}
       >
-        <div className="sticky top-0 flex min-h-[32px] items-center gap-[10px]">
+        {/* Sticky as the board draws `.lch`; opaque on the page surface, as every sticky head in the app is, so the rows it rides over never show through. */}
+        <div className="sticky top-0 z-[1] flex min-h-[32px] items-center gap-[10px]" style={{ background: "var(--bg)" }}>
           <h3 className="m-0 flex items-baseline gap-[7px] text-[14px] font-semibold" style={{ color: "var(--fg)" }}>
             {title}
             <span className="font-mono text-[11px] font-normal" style={{ color: "var(--fg-faint)" }}>
