@@ -108,3 +108,12 @@ describe("the claim readers decide their switches from the env they are handed",
     expect(off.text()).not.toContain(MOVED);
   });
 });
+
+describe("a claim whose deck's draft has cut the card", () => {
+  it("probes that deck's own draft row, aliased and qualified on both sides, and hands the flag on", async () => {
+    const q = await emitted(undefined);
+    expect(q).toContain("select 1 from deck_cards dcut where dcut.deck_id = ac.deck_id and dcut.oracle_id = ac.oracle_id");
+    expect(q).toContain("(nv.deck_id is not null and not bool_or(ac.is_commander) and not exists (");
+    expect(q).toContain("'draftCut', cd.draft_cut");
+  });
+});

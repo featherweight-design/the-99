@@ -184,7 +184,8 @@ function HeldRow({ line: l, held }: { line: LineItem; held: HeldProps }) {
   const holder = claim?.name ?? l.availability?.claims[0]?.name ?? null;
   const sub = chosen
     ? copy.confirm.pullsFrom(chosen.name)
-    : choosable.length > 1 ? review.heldByMany(choosable.length) : holder ? review.heldBy(holder) : null;
+    : choosable.length > 1 ? review.heldByMany(choosable.length)
+      : claim?.draftCut ? review.heldByLeaving(claim.name) : holder ? review.heldBy(holder) : null;
   return (
     <li data-sc-held={l.id} className="flex min-h-[52px] items-center gap-[8px] py-[6px] md:min-h-[44px] md:py-[5px]">
       <span aria-hidden className="w-[10px] flex-none font-mono text-[13px] font-semibold" style={{ color: "var(--accent-text)" }}>+</span>

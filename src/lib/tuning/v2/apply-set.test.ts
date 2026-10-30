@@ -137,9 +137,9 @@ beforeEach(() => {
 });
 
 describe("parseSetPulls", () => {
-  const A = "11111111-1111-4111-8111-111111111111";
-  const B = "22222222-2222-4222-8222-222222222222";
-  const D = "33333333-3333-4333-8333-333333333333";
+  const A = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+  const B = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+  const D = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
   it("takes none as none, and lowers each id", () => {
     expect(parseSetPulls(undefined, [A])).toEqual([]);
     expect(parseSetPulls([{ itemId: A.toUpperCase(), sourceDeckId: D.toUpperCase() }], [A])).toEqual([{ itemId: A, sourceDeckId: D }]);

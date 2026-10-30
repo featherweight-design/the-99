@@ -358,6 +358,7 @@ export function Column({
                   // Otherwise unchanged: one name, whether it is the one choosable source or
                   // the guard (commander/locked) this row has instead.
                   heldBy={choosableCount > 1 ? null : pullClaim?.name ?? null}
+                  heldByLeaving={choosableCount <= 1 && pullClaim?.draftCut === true}
                   heldByCount={choosableCount > 1 ? choosableCount : null}
                   // Post-pull — the most recent pull's source, linked. Gated on `!pullClaim`,
                   // found by the pre-open review: with 2+ choosable sources, pulling ONE of them
