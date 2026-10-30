@@ -28,10 +28,12 @@ const FACTS: SynopsisFacts = {
     { oracleId: "e", name: "Eternal Witness", typeLine: "Creature", quantity: 1, categories: [], oracleText: "Return a card.", manaValue: 3 },
     { oracleId: "k", name: "Spore Frog", typeLine: "Creature", quantity: 1, categories: [], oracleText: "Sacrifice: prevent damage.", manaValue: 1 },
     { oracleId: "f", name: "Forest", typeLine: "Basic Land", quantity: 18, categories: ["land"], oracleText: null },
+    { oracleId: "t", name: "Sakura-Tribe Elder", typeLine: "Creature", quantity: 1, categories: [], oracleText: "Sacrifice: search for a basic land.", manaValue: 2 },
+    { oracleId: "l", name: "Sylvan Library", typeLine: "Enchantment", quantity: 1, categories: [], oracleText: "Draw a card at your draw step.", manaValue: 2 },
   ],
   stats: { ramp: 10, commanderCastTurn: 4, interaction: { total: 8, instantSpeed: 3, cheap: 4, cheapInstant: 2, wipes: 1 } },
 };
-// Refs follow the cards' order: c1 Meren, c2 Satyr, c3 Seer, c4 Titan, c5 Witness, c6 Frog, c7 Forest.
+// Refs follow the cards' order: c1 Meren, c2 Satyr, c3 Seer, c4 Titan, c5 Witness, c6 Frog, c7 Forest, c8 Sakura-Tribe Elder, c9 Sylvan Library.
 
 const assessment = ["graveyard_or_zone_hate", "artifact_enchantment_removal", "interaction_speed", "commander_dependence", "win_path", "combo_vulnerability", "mana_and_colors"]
   .map((topic) => (topic === "graveyard_or_zone_hate"
@@ -150,7 +152,7 @@ describe("the explained-once pass on what is stored", () => {
 
   it("drops the mark, the listed card and the evidence of a tip card a stage already explains", () => {
     const r = reply((x) => {
-      x.primer.tips[0] = { text: "[[Satyr Wayfinder]] and [[Eternal Witness]] both refill the hand.", evidence: ["c2", "c5"] };
+      x.primer.tips[0] = { text: "[[Satyr Wayfinder]] pairs with [[Sakura-Tribe Elder]] and [[Sylvan Library]] to smooth every draw.", evidence: ["c2", "c8", "c9"] };
     });
     const c = applyStagesShape(checked(r), r, FACTS);
     expect(c.primer?.tips[0].cards).toContain("Satyr Wayfinder");
@@ -159,7 +161,7 @@ describe("the explained-once pass on what is stored", () => {
     expect(settled.primer?.tips[0].text).not.toContain("[[Satyr Wayfinder]]");
     expect(settled.primer?.tips[0].cards).not.toContain("Satyr Wayfinder");
     expect(settled.evidence?.tips[0]).not.toContain("s");
-    expect(settled.evidence?.tips[0]).toContain("e");
+    expect(settled.evidence?.tips[0]).toEqual(["t", "l"]);
   });
 
   it("is idempotent, so a section retry can run it over sections it kept", () => {
