@@ -7,6 +7,7 @@
 
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
+import { COVERED_WITH_MAIN } from "../shell/covered-layer";
 import { deckNotesCopy } from "../../lib/copy/deck-notes";
 import { fieldCount, fieldText, insertOpenTag, taggedCount, insertPick, openTagAt, type Picked } from "../../lib/decks/notes-field";
 import type { NoteCardHit } from "../../lib/decks/notes-store";
@@ -393,6 +394,9 @@ export function CardTagList({
       ref={listRef}
       id={listId}
       role="listbox"
+      // Anchored, the list is portalled to the body, outside <main>: it goes inert with <main> under a navigation's
+      // screen (`COVERED_WITH_MAIN`).
+      {...(anchor ? { [COVERED_WITH_MAIN]: "" } : {})}
       aria-label={p.listAria}
       className={`absolute left-0 z-20 w-full overflow-y-auto rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-raised)] py-[4px] shadow-lg max-h-[220px] md:w-[440px] md:max-h-none top-full mt-[4px]`}
       style={anchor ? floating : maxHeightPx === undefined ? undefined : { maxHeight: maxHeightPx }}

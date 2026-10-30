@@ -18,6 +18,7 @@ import type { StatusPill } from "../../lib/decks/status";
 import { settingsHideDeck, type FriendDeckPrefs } from "../../lib/social/deck-visibility-rule";
 import { SocialToast, type SocialToastState } from "../social/social-toast";
 import { PendingReporter } from "../shell/pending-reporter";
+import { COVERED_WITH_MAIN } from "../shell/covered-layer";
 
 /** The menu's own width; the delete pane takes `DELETE_CONFIRM_WIDTH`. */
 const MENU_WIDTH = 186;
@@ -568,11 +569,24 @@ export function DeckCardOverflow({
         </div>
       )}
       {/* The dialog in a portal on the body: a tile can hold a transform, which would make the dialog's
-          fixed overlay fixed to the tile. */}
+          fixed overlay fixed to the tile. Outside <main>, so each root goes inert with it under a navigation's
+          screen (`COVERED_WITH_MAIN`); the wrappers are static, so the fixed layers inside still place on the viewport. */}
       {exporting
-        ? createPortal(<exporting.Dialog {...exporting.read} open onClose={closeExport} returnFocusRef={buttonRef} />, document.body)
+        ? createPortal(
+            <div {...{ [COVERED_WITH_MAIN]: "" }}>
+              <exporting.Dialog {...exporting.read} open onClose={closeExport} returnFocusRef={buttonRef} />
+            </div>,
+            document.body,
+          )
         : null}
-      {hideToast ? createPortal(<SocialToast toast={hideToast} onDone={() => setHideToast(null)} />, document.body) : null}
+      {hideToast
+        ? createPortal(
+            <div {...{ [COVERED_WITH_MAIN]: "" }}>
+              <SocialToast toast={hideToast} onDone={() => setHideToast(null)} />
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }

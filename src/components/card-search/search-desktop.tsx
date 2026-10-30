@@ -13,6 +13,7 @@ import { dialogIsUp, isMacPlatform, isSearchShortcut } from "../../lib/card-sear
 import { cardSearchCopy } from "../../lib/copy/card-search";
 import { useMinWidth } from "../ui/use-min-width";
 import { SearchField } from "../ui/text-field";
+import { COVERED_WITH_MAIN } from "../shell/covered-layer";
 import { CARD_SEARCH_CLEAR_DESKTOP, SearchGlyph, SearchOffline, SearchProgress, useCardSearch } from "./card-search";
 
 const noSubscribe = () => () => {};
@@ -177,7 +178,9 @@ function DesktopFrame() {
           ) : null}
           {/* Offline is drawn by the frame, not the results' chunk, which may not have arrived (S7). */}
           {online ? null : <SearchOffline />}
-          <div ref={placeBody} className="min-h-0 flex-1 overflow-y-auto overscroll-contain" />
+          {/* The results' host (`SearchLayer` portals into it), outside <main>: inert with it under a navigation's
+              screen (`COVERED_WITH_MAIN`). */}
+          <div ref={placeBody} {...{ [COVERED_WITH_MAIN]: "" }} className="min-h-0 flex-1 overflow-y-auto overscroll-contain" />
           {showFoot ? (
             <p className="flex flex-none items-center justify-between gap-3 border-t border-solid border-[color:var(--border)] px-[14px] pt-[9px] pb-[5px] font-mono text-[11px] text-[color:var(--fg-faint)]">
               <span>{cardSearchCopy.keysHint}</span>

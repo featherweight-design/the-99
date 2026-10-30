@@ -39,6 +39,8 @@ const { mirrorUrl } = await import("../../lib/url/mirror");
 const { DeckToastStackHost } = await import("../decks/deck-toast-stack");
 const { QuickAddFailedToast } = await import("../decks/quick-add-failed-toast");
 const { TOAST_MS } = await import("../collection/edit-toast");
+const { createPortal } = await import("react-dom");
+const { COVERED_WITH_MAIN } = await import("./covered-layer");
 
 function Reporter({ href }: { href: string }) {
   return usePendingReport(href) ? <span data-testid={`mark ${href}`} /> : null;
@@ -379,6 +381,48 @@ describe("the page's layers outside main", () => {
     act(() => vi.advanceTimersByTime(OVERLAY_AFTER_MS));
     expect(overlay()).not.toBeNull();
     expect(stack().hasAttribute("inert")).toBe(false);
+  });
+});
+
+describe("a page's surface portalled to the body", () => {
+  // The way the body-portalled surfaces mark their root (deck-card-overflow, printed-in-control, card-tag-picker): a
+  // portal OUT of <main>, opened from the page before the navigation escalates.
+  function PortalApp({ open }: { open: boolean }) {
+    return (
+      <NavigationPendingProvider>
+        <ShellMain className="">
+          <Link href="/commanders">
+            <Reporter href="/commanders" />
+          </Link>
+          {open
+            ? createPortal(
+                <div data-testid="portalled" {...{ [COVERED_WITH_MAIN]: "" }}>
+                  <button type="button">Press</button>
+                </div>,
+                document.body,
+              )
+            : null}
+        </ShellMain>
+      </NavigationPendingProvider>
+    );
+  }
+  const portalled = () => screen.getByTestId("portalled");
+
+  it("goes inert with main while the screen covers it, and is freed at commit", () => {
+    cleanup();
+    state.path = "/";
+    state.pending.clear();
+    const { rerender: local } = render(<PortalApp open />);
+    expect(main().contains(portalled())).toBe(false);
+    state.pending.set("/commanders", true);
+    act(() => local(<PortalApp open />));
+    act(() => vi.advanceTimersByTime(OVERLAY_AFTER_MS));
+    expect(main().inert).toBe(true);
+    expect(portalled().hasAttribute("inert")).toBe(true);
+    state.path = "/commanders";
+    state.pending.set("/commanders", false);
+    act(() => local(<PortalApp open />));
+    expect(portalled().hasAttribute("inert")).toBe(false);
   });
 });
 

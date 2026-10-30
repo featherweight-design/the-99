@@ -36,6 +36,7 @@ import { noteAppScroll } from "../../lib/ui/reveal";
 import type { SiblingCard } from "../cards/card-detail-provider";
 import { useVisualViewportFrame, VV_FRAME } from "../ui/visual-viewport";
 import type { OpenCard, SearchLayerProps } from "./search-layer";
+import { COVERED_WITH_MAIN } from "../shell/covered-layer";
 
 /** A read starts this long after the last key, and only from this many characters (S3). */
 export const SEARCH_DEBOUNCE_MS = 150;
@@ -589,8 +590,11 @@ function PhoneFrame() {
       {busy ? <SearchProgress /> : null}
       {/* Offline is drawn here, not in the results' chunk, which may not have arrived (S7). */}
       {online ? null : <SearchOffline />}
+      {/* The results' host (`SearchLayer` portals into it), outside <main>: inert with it under a navigation's screen
+          (`COVERED_WITH_MAIN`). On the host, not the sheet, whose own `inert` React owns while veiled. */}
       <div
         ref={placeBody}
+        {...{ [COVERED_WITH_MAIN]: "" }}
         className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom)]"
       />
     </div>
