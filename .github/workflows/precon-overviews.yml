@@ -20,6 +20,10 @@ on:
         type: choice
         options: [generate, generate+copy, copy-only]
         default: generate
+      dry_run:
+        description: generate only - build and hash every request, print the worst case, call and write nothing
+        type: boolean
+        default: false
 
 # ONE group, so two runs' builds or copies can never overlap.
 concurrency:
@@ -78,7 +82,7 @@ jobs:
         run: |
           echo "### Precon overviews — \`catalog-staging\`" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
-          pnpm --silent db:build:precon-overviews 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+          pnpm --silent db:build:precon-overviews ${{ github.event.inputs.dry_run == 'true' && '--dry-run' || '' }} 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
 
   copy:
