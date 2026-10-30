@@ -8,7 +8,8 @@
 //
 // It runs against STAGING only, checked by the database's own `neon.branch_id` (never the URL), because the devices it
 // reaches are subscribed on the staging site. The connection is `THE_99_NEON_STAGING_DIRECT`; the VAPID keys are staging's
-// (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`), set in the shell, because a subscription only accepts pushes
+// (`STAGING_VAPID_PUBLIC_KEY`, `STAGING_VAPID_PRIVATE_KEY`, `STAGING_VAPID_SUBJECT`), set in the shell under names `.env`
+// never sets, so `env.mjs`'s override cannot replace them with local keys, because a subscription only accepts pushes
 // signed with the key it subscribed under. The account's switches resolve as the flush resolves them (`resolveSwitchEnvStrict`
 // over this shell's environment plus staging's overrides); the script stops before writing if push or Announcements is off
 // for the account.
@@ -50,11 +51,11 @@ async function main() {
   const { sendWebPush } = await import("../src/lib/push/send");
 
   const config = pushConfig({
-    VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY,
-    VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY,
-    VAPID_SUBJECT: process.env.VAPID_SUBJECT,
+    VAPID_PUBLIC_KEY: process.env.STAGING_VAPID_PUBLIC_KEY,
+    VAPID_PRIVATE_KEY: process.env.STAGING_VAPID_PRIVATE_KEY,
+    VAPID_SUBJECT: process.env.STAGING_VAPID_SUBJECT,
   } as unknown as NodeJS.ProcessEnv);
-  if (!config) throw new Error("announcements:test-fire: set staging's VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY and VAPID_SUBJECT");
+  if (!config) throw new Error("announcements:test-fire: set STAGING_VAPID_PUBLIC_KEY, STAGING_VAPID_PRIVATE_KEY and STAGING_VAPID_SUBJECT to staging's keys");
 
   const env = await resolveSwitchEnvStrict(userId);
   if (!pushEnabled(env)) throw new Error(`announcements:test-fire: push is off for ${userId}`);
