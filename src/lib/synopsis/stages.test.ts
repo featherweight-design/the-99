@@ -763,7 +763,8 @@ describe("iteration 3: the prompt", () => {
   it("drops Wins by, asks for the land line at the deck's number, deck-card mulligan lines, and Key cards the stages leave out", () => {
     const { system, user } = buildSynopsisPrompt(FACTS, undefined, opts());
     expect(system).not.toContain("Wins by");
-    expect(system).toContain("The plans are never shown to the reader");
+    expect(system).toContain('"primary" is never shown to the reader');
+    expect(system).toContain("The FIRST entry of \"backups\" IS shown, under Close, as the Backup line");
     expect(system).toContain("- landKeep: ONE { text, evidence }, at most 120 characters");
     expect(system).toContain("holds 4 lands (write the number as the digit 4, never a range)");
     expect(system).toContain("EVERY line names a card of this decklist as [[Name]]");
@@ -771,7 +772,7 @@ describe("iteration 3: the prompt", () => {
     expect(system).toContain("EXACTLY 2 tips");
     expect(system).toContain("A tip names NO card that a stage line, a Key card (the card or its job) or the alternate line names");
     expect(system).toContain("the stage lines first, then the Key cards from the cards the stages leave out, then the tips");
-    expect(system).toContain("named in ONE place only: the Close line, never also");
+    expect(system).toContain("named in ONE place only: the Close line when it is the primary win, the Backup line");
     expect(system).toContain("- alternate: leave it out.");
     expect(user).toContain("Keep-line land number");
     expect(user).toContain("- Lands in a keepable seven: 4");
@@ -793,7 +794,7 @@ describe("iteration 3: the prompt", () => {
     expect(system).not.toContain("names the commander, and leaves");
     // The explained-once rule no longer lists the overview; the teaser and the mulligan lines are outside it.
     expect(system).toContain("EACH CARD IS EXPLAINED ONCE. The three stage lines, the alternate line, the tips and the Key cards");
-    expect(system).toContain("The overview (the teaser) and the mulligan lines are outside this rule");
+    expect(system).toContain("The overview (the teaser), the Backup line and the mulligan lines are outside this rule");
     // Shape 2 still carries the old overview rule, untouched.
     const two = buildSynopsisPrompt(FACTS, undefined, { v2: true, contract8: true, stages: { alternates: [] } }).system;
     expect(two).toContain("it names the commander, and leaves the other cards to the stages, tips and Key cards");
@@ -833,7 +834,8 @@ describe("iteration 3: the prompt", () => {
     expect(system).toContain("Write each weakness line as: what hurts, so the kind of answer or tax that helps.");
     expect(system).toContain("Moderate: Much damage comes through combat, so Propaganda style taxes or fogs slow the deck.");
     expect(system).toContain("Each line is a concrete step of THIS deck's plan: it names a card, says what that card does and why it matters to the plan");
-    expect(system).not.toContain("Backup");
+    expect(system).toContain("THE FIRST TIP MUST BE A PLAN-LEVEL TIP");
+    expect(system).toContain("a 3-mana rock cannot pay for a 4-drop on turn 3");
     expect(system).toContain("Rank the tips by plan impact: prefer a tip that changes how the deck plays (a plan-level line where two cards together do something) over a minor trick.");
     expect(system).toContain("If nothing better is left among the cards the other sections skip, a trick is fine.");
   });
