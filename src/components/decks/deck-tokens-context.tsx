@@ -7,8 +7,8 @@ import { TokenRefusalToast } from "./token-refusal-toast";
 
 /**
  * The deck's tokens, read on the server and handed to the decklist several layers down, where drilling
- * a prop would thread it through the builder shell. Absent (null) wherever the switch is off, which is
- * exactly what a component rendered outside the provider sees: the Tokens group then draws nothing.
+ * a prop would thread it through the builder shell. A component rendered outside the provider (a deck-less
+ * surface) sees nothing: the Tokens group then draws nothing.
  */
 type DeckTokensValue = {
   deckId: string; read: DeckTokensRead; provenance: ProvenanceForm | null; ownProvenance: ProvenanceForm | null;

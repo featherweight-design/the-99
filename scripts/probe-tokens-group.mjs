@@ -14,10 +14,10 @@
 //
 // The fixture is three tokens, their printings (art borrowed from cards) and `card_tokens` links to cards two of
 // the account's decks hold, plus a `token_reads` marker if the account has none; all of it deleted in a
-// `finally`. Needs a server with DECK_TOKENS_ENABLED=true on local-dev or a scratch branch. Refuses staging and
+// `finally`. Needs a server on local-dev or a scratch branch. Refuses staging and
 // production by `neon.branch_id`.
 //
-//   DECK_TOKENS_ENABLED=true pnpm dev -p 3611      PROBE_BASE=http://localhost:3611 pnpm probe:tokens-group
+//   pnpm dev -p 3611      PROBE_BASE=http://localhost:3611 pnpm probe:tokens-group
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { neon } from "@neondatabase/serverless";
 import { randomUUID } from "node:crypto";

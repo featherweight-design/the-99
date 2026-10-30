@@ -1,7 +1,7 @@
-// The page end of the tokens boundary: the deck page reads the deck's tokens ONLY while the switch is on,
+// The page end of the tokens boundary: the deck page reads the deck's tokens
 // and hands what it read to `DeckTokensProvider`, outermost, so the decklist's group has something to draw.
 // The page loads too much to render in a unit test, so this reads its source as a syntax tree, as
-// `how-it-works-boundary.test.ts` does. A deleted provider, a read the switch does not gate, or a wrap that
+// `how-it-works-boundary.test.ts` does. A deleted provider, a second read, or a wrap that
 // is built and never returned each fail it. The group's side is `tokens-group.test.tsx` and the mount in
 // `decklist.test.tsx`.
 import { readFileSync } from "node:fs";
@@ -42,8 +42,8 @@ describe("the deck page hands the decklist its tokens", () => {
     expect(ps[0].inReturn).toBe(true);
   });
 
-  it("starts the read only when the switch is on, never unconditionally", () => {
-    expect(text).toMatch(/const tokensRead = deckTokensEnabled\(env\)\s*\?/);
+  it("starts the read once, from the page", () => {
+    expect(text).toMatch(/const tokensRead = early\(/);
     expect(text.match(/loadDeckTokens\(/g)).toHaveLength(1);
   });
 });

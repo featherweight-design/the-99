@@ -347,7 +347,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `Tokens ›` from card details opens a folded group for the visit, focuses its heading and leaves the stored fold
   alone; Shopping still draws its own Tokens group. The fixture is three tokens, their printings and `card_tokens` links
   to cards two of the account's decks share, one join on the first deck, and a `token_reads` marker if the account
-  has none, all deleted in a `finally`. Needs `DECK_TOKENS_ENABLED=true`; refuses staging and production.
+  has none, all deleted in a `finally`. Refuses staging and production.
 - `pnpm probe:run-after` proves that leaving the page never cancels a Suggested changes or Proposed
   cuts run: it presses the tool, waits for the pending row, CLOSES the browser context while the model
   call is held, and watches the run settle on its own, refunded, and later than the close. The model
@@ -3094,7 +3094,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   checks run at 1300 and the phone walk is the paging and no overflow. A proposed cut's reason is `probe:cuts-panel`'s,
   which hovers the reason (nothing) and the name (the card). Its one write is `clearAboutSheet`, which marks every About
   entry seen on the account (`user_prefs`) and is not put back, so it runs on a scratch branch. It needs a server with
-  `DECK_TOKENS_ENABLED` on and a database holding the token catalog, the precons (`PROBE_PRECON`,
+  a database holding the token catalog, the precons (`PROBE_PRECON`,
   default `CallingAllAngels_FDC`, whose card names the row control uses) and a deck that makes two or
   more tokens: a `pull:staging` copy on a scratch branch of staging, with the account's About row cleared
   (`markEveryEntrySeen`). Mutation-checked 2026-10-12: putting the hover back on a deck tile fails "no tile previews",

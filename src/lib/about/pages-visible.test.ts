@@ -64,7 +64,7 @@ describe("each sentence follows its own switch", () => {
     ["credits with Proposed cuts and not Suggested changes", { ANALYSIS_TAB_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true" }, "rule/credits", "Look deeper", "Suggested changes"],
     ["credits with payments", { PAYMENTS_ENABLED: "true" }, "rule/credits", "Pack and gift credits never expire", "Overview"],
     ["credits with nothing on", {}, "rule/credits", "Anything written just for you", "never expire"],
-    ["a proxy without tokens", {}, "rule/proxy", "uses no copy", "token"],
+    ["a proxy keeps its retired tokens sentence with nothing on", {}, "rule/proxy", "I have one", undefined],
     ["a fill without Help me choose", {}, "rule/autofill", "then uses your Collection", "Help me choose"],
     ["a fill with Help me choose", { HELP_ME_CHOOSE_ENABLED: "true" }, "rule/autofill", "any cards will do", undefined],
     ["friends see a wishlist only with the wishlist", { SOCIAL_FRIENDS_ENABLED: "true" }, "rule/friends-see", "spares you offer", "wishlist"],
@@ -371,19 +371,19 @@ describe("resolveDiagram", () => {
   const rule = (e: NodeJS.ProcessEnv, id: string) => visibleSections(e).flatMap((s) => s.rules).find((r) => r.key === ruleKey(id as never))!;
 
   it("drops a part, a chip and an emptied column whose switch is off, as a sentence is cut", () => {
-    const off = env({ ...(ALL_ON as Record<string, string>), DECK_TOKENS_ENABLED: "off", SOCIAL_WISHLIST_ENABLED: "off" });
+    const off = env({ ...(ALL_ON as Record<string, string>), SOCIAL_WISHLIST_ENABLED: "off" });
     const names = (d: ReturnType<typeof resolveDiagram>) =>
       parts(d).flatMap((p) => (p.part === "row" ? [p.name] : p.part === "caption" ? [p.text] : p.part === "chips" ? p.chips.map((c) => c.text) : []));
-    expect(names(rule(ALL_ON, "proxy").diagram!)).toContain("Treasure token");
-    expect(names(rule(off, "proxy").diagram!)).not.toContain("Treasure token");
-    expect(rule(off, "proxy").diagram!.foot).toEqual([]);
+    // A retired switch's parts draw whatever the env says (the tokens switch is gone).
+    expect(names(rule(off, "proxy").diagram!)).toContain("Treasure token");
+    expect(rule(off, "proxy").diagram!.foot).not.toEqual([]);
     // A full-column foot keeps its column, its switched parts cut from it.
     const hidden = rule(ALL_ON, "hidden-deck").diagram!.foot;
     expect(hidden && "parts" in hidden ? hidden.w : null).toBe(250);
     expect(names(rule(ALL_ON, "friends-see").diagram!)).toContain("Wishlist");
     expect(names(rule(off, "friends-see").diagram!)).not.toContain("Wishlist");
     const emptied = resolveDiagram(
-      { kind: "card-row", columns: [{ parts: [{ part: "row", name: "a", switch: "DECK_TOKENS_ENABLED" }] }, { parts: [{ part: "row", name: "b" }] }] },
+      { kind: "card-row", columns: [{ parts: [{ part: "row", name: "a", switch: "SOCIAL_WISHLIST_ENABLED" }] }, { parts: [{ part: "row", name: "b" }] }] },
       off,
     );
     expect(emptied.columns).toHaveLength(1);

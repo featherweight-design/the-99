@@ -69,7 +69,7 @@ function TokenShoppingRow({ deckId, token, newestAsOf }: { deckId: string; token
 /**
  * The tokens joined to this deck, last on its Shopping view. They are not the deck: the header says so, and
  * nothing here moves a card count, a price total, the status or the roll-up. Draws nothing without a provider
- * (the switch off) or with nothing joined.
+ * or with nothing joined.
  */
 export function TokensShoppingGroup() {
   const ctx = useDeckTokens();

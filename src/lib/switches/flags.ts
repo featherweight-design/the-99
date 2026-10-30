@@ -13,7 +13,6 @@ import { neverCutEnabled } from "../decks/never-cut-flag";
 import { deckNotesEnabled } from "../decks/notes-flag";
 import { deckPrintingsEnabled } from "../decks/printings-flag";
 import { deckStatsEnabled } from "../decks/stats-flag";
-import { deckTokensEnabled } from "../decks/tokens-flag";
 import { homeFeedEnabled } from "../feed/flag";
 import { pushEnabled } from "../push/flag";
 import { helpMeChooseEnabled } from "../intake/flag";
@@ -50,7 +49,6 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   DECK_NOTES_ENABLED: deckNotesEnabled,
   DECK_PRINTINGS_ENABLED: deckPrintingsEnabled,
   DECK_STATS_ENABLED: deckStatsEnabled,
-  DECK_TOKENS_ENABLED: deckTokensEnabled,
   FIND_A_DECK_READ_ENABLED: findADeckReadEnabled,
   HELP_ME_CHOOSE_ENABLED: helpMeChooseEnabled,
   FRIEND_DECKS_ENABLED: friendDecksEnabled,

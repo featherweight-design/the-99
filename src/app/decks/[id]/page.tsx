@@ -86,7 +86,6 @@ import { neverCutEnabled } from "../../../lib/decks/never-cut-flag";
 import { SwapToolsProvider } from "../../../lib/swaps/context";
 import { swapToolsEnabled } from "../../../lib/swaps/flag";
 import { howItWorksEnabled } from "../../../lib/about/how-it-works-flag";
-import { deckTokensEnabled } from "../../../lib/decks/tokens-flag";
 import { printedNameOf } from "../../../lib/collection/browse";
 import { loadDeckTokens } from "../../../lib/tokens/read";
 import { DeckTokensProvider } from "../../../components/decks/deck-tokens-context";
@@ -373,14 +372,12 @@ export default async function DeckBuilderPage({
     console.error("precons: the deck's link could not be read", error);
     return null;
   }));
-  const tokensRead = deckTokensEnabled(env)
-    ? early(detailRead.then((d) => (d
-      ? perf.timed("deckTokens", () => loadDeckTokens(id, userId, new Map([
-        ...d.cards.map((c) => [c.oracleId, { imageUri: c.imageUri ?? null, name: printedNameOf(c) }] as const),
-        ...[d.commander, d.partner].filter((c) => !!c).map((c) => [c!.oracleId, { imageUri: c!.imageUri ?? null, name: c!.printedName ?? c!.name }] as const),
-      ])))
-      : ({ status: "absent" } as const))))
-    : null;
+  const tokensRead = early(detailRead.then((d) => (d
+    ? perf.timed("deckTokens", () => loadDeckTokens(id, userId, new Map([
+      ...d.cards.map((c) => [c.oracleId, { imageUri: c.imageUri ?? null, name: printedNameOf(c) }] as const),
+      ...[d.commander, d.partner].filter((c) => !!c).map((c) => [c!.oracleId, { imageUri: c!.imageUri ?? null, name: c!.printedName ?? c!.name }] as const),
+    ])))
+    : ({ status: "absent" } as const))));
   const shoppingLimitRead = swapTools
     ? early(perf.timed("shoppingLimit", () => readShoppingLimit(id, userId)))
     : Promise.resolve(null);
@@ -841,12 +838,12 @@ export default async function DeckBuilderPage({
   // as an arrival from another route does. Keyed per deck too.
   const landed = <LandingKeyed key={id} request={landingRequest}>{page}</LandingKeyed>;
   // The deck's tokens reach the decklist through a context, outermost so no wrap above has to know of them.
-  const deckTokens = tokensRead ? await tokensRead : null;
+  const deckTokens = await tokensRead;
   // The buy box's figure includes the tokens' prices, which can be older than the cards' (the token ingest
   // refuses on its own floor), so its date is the older of the two.
-  const tokenNewest = deckTokens?.status === "ok" ? deckTokens.newestPriceAsOf : null;
+  const tokenNewest = deckTokens.status === "ok" ? deckTokens.newestPriceAsOf : null;
   const combinedAsOf = tokenNewest && priced?.newestAsOf && tokenNewest < priced.newestAsOf ? tokenNewest : null;
-  return deckTokens ? (
+  return (
     <DeckTokensProvider
       deckId={id}
       read={deckTokens}
@@ -855,5 +852,5 @@ export default async function DeckBuilderPage({
     >
       {landed}
     </DeckTokensProvider>
-  ) : landed;
+  );
 }

@@ -85,8 +85,8 @@ describe("what a write raises", () => {
   });
 
   it("counts the accounts whose About page gains an entry", () => {
-    expect(rise({}, snap(), write({ name: "DECK_TOKENS_ENABLED" })).whatsNew).toEqual(["u1", "u2"]);
-    expect(rise({ DECK_TOKENS_ENABLED: "true" }, snap(), write({ name: "DECK_TOKENS_ENABLED" })).whatsNew).toEqual([]);
+    expect(rise({}, snap(), write({ name: "SWAP_TOOLS_ENABLED" })).whatsNew).toEqual(["u1", "u2"]);
+    expect(rise({ SWAP_TOOLS_ENABLED: "true" }, snap(), write({ name: "SWAP_TOOLS_ENABLED" })).whatsNew).toEqual([]);
   });
 });
 

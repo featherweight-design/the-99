@@ -731,7 +731,6 @@ export const switchCopy: Readonly<Record<SwitchName, { label: string; descriptio
   DECK_NOTES_ENABLED: { label: "Deck notes", description: "Notes on a deck, in Your deck." },
   DECK_PRINTINGS_ENABLED: { label: "Deck printings", description: "Choose the printing of each card in a deck." },
   DECK_STATS_ENABLED: { label: "Deck stats", description: "The Stats view on a deck." },
-  DECK_TOKENS_ENABLED: { label: "Deck tokens", description: "The tokens a deck makes, on the deck and in Shopping." },
   FIND_A_DECK_READ_ENABLED: { label: "Find a deck read", description: "A one-credit run inside Find a deck for it." },
   FRIEND_DECKS_ENABLED: { label: "Friend decks", description: "Open a friend’s deck, and hide a deck from friends. Needs Friends." },
   HOME_FEED_ENABLED: { label: "Home feed", description: "What’s new on Home, its badge, and the news switches in Settings." },

@@ -2,7 +2,7 @@
 
 // The one line card details add for a card that makes tokens (design D1): under the proxy note, in the
 // `In this deck` box, only from a deck and only when this card is a maker of one of the deck's tokens. No
-// block of its own, and nothing at all outside a deck or with the switch off (no provider, no read).
+// block of its own, and nothing at all outside a deck (no provider, no read).
 
 import { tokensCopy } from "../../lib/copy/tokens";
 import { useDeckTokens } from "./deck-tokens-context";

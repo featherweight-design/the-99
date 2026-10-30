@@ -108,15 +108,14 @@ describe("GoodToKnow", () => {
     expect(panel.querySelector("ul")!.className).toContain("-mr-[14px]");
   });
 
-  it("drops a switched sentence and its diagram part while the switch is off, and keeps them while it is on", () => {
+  it("keeps the retired tokens sentence and diagram part whatever the env says", () => {
     const draw = (e: NodeJS.ProcessEnv) => render(<GoodToKnow sectionId="deck-shopping" rules={rulesOf(e, "deck-shopping")} />);
-    const on = draw(ALL_ON).container.querySelector('[data-rule="rule/proxy"]')!.textContent!;
-    expect(on).toContain("I have one");
-    expect(on).toContain("Treasure token");
-    const off = draw(without("DECK_TOKENS_ENABLED")).container.querySelector('[data-rule="rule/proxy"]')!.textContent!;
-    expect(off).not.toContain("I have one");
-    expect(off).not.toContain("Treasure token");
-    expect(off).toContain("A proxy comes off the shopping list and uses no copy.");
+    for (const e of [ALL_ON, without("DECK_TOKENS_ENABLED")]) {
+      const text = draw(e).container.querySelector('[data-rule="rule/proxy"]')!.textContent!;
+      expect(text).toContain("I have one");
+      expect(text).toContain("Treasure token");
+      expect(text).toContain("A proxy comes off the shopping list and uses no copy.");
+    }
   });
 
   it("puts one phone dot under the row per card, the first lit, and follows the swipe", () => {

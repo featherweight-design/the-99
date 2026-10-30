@@ -1,14 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// The proxy resolves each reader's switches onto a request header; with no request here, the
-// action reads the environment alone, as it did before overrides.
-vi.mock("../../lib/switches/request", async () => {
-  const { ENV_VIEW } = await import("@/test/env-view");
-  return { requestSwitchEnv: vi.fn(async () => ENV_VIEW) };
-});
-
 const stub = vi.hoisted(() => ({
-  on: true,
   join: vi.fn(), leave: vi.fn(), mark: vi.fn(), unmark: vi.fn(), revalidate: vi.fn(), requireDeck: vi.fn(),
   refresh: vi.fn(), makes: vi.fn(), write: vi.fn(), execute: vi.fn(),
   // The printing the token's own lookup returns: none, or one id.
@@ -29,7 +21,6 @@ vi.mock("../../lib/tokens/deck-printings", () => ({
   heldPrintingByNumber: async () => stub.found[0]?.id ?? null,
 }));
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
-vi.mock("../../lib/decks/tokens-flag", () => ({ deckTokensEnabled: () => stub.on }));
 vi.mock("../../lib/decks/read", () => ({ requireDeck: stub.requireDeck }));
 vi.mock("../../lib/tokens/joins", () => ({
   joinToken: stub.join, leaveToken: stub.leave, markOwnedOnDeck: stub.mark, unmarkOwned: stub.unmark,
@@ -41,7 +32,6 @@ const DECK = "00000000-0000-4000-8000-0000000000d1";
 const TOKEN = "00000000-0000-4000-8000-0000000000a1";
 
 beforeEach(() => {
-  stub.on = true;
   for (const f of Object.values(stub)) if (typeof f === "function" && "mockReset" in f) (f as ReturnType<typeof vi.fn>).mockReset();
   stub.join.mockResolvedValue("done");
   stub.mark.mockResolvedValue("done");
@@ -53,13 +43,6 @@ beforeEach(() => {
 
 describe("setDeckTokenPrinting (token printings TP2)", () => {
   const P = { setCode: "TCLB", collectorNumber: "4" };
-
-  it("does nothing while the switch is off", async () => {
-    stub.on = false;
-    expect(await setDeckTokenPrinting(DECK, TOKEN, P)).toEqual({ ok: false, reason: "off" });
-    expect(stub.requireDeck).not.toHaveBeenCalled();
-    expect(stub.write).not.toHaveBeenCalled();
-  });
 
   it("refuses a malformed id or printing before reading the deck", async () => {
     for (const args of [
@@ -104,16 +87,6 @@ describe("setDeckTokenPrinting (token printings TP2)", () => {
 });
 
 describe("token actions", () => {
-  it("do nothing at all while the switch is off", async () => {
-    stub.on = false;
-    expect(await setTokenJoined(DECK, TOKEN, true)).toEqual({ ok: false, reason: "off" });
-    expect(await setTokenHeld(DECK, TOKEN, true)).toEqual({ ok: false, reason: "off" });
-    expect(stub.requireDeck).not.toHaveBeenCalled();
-    expect(stub.join).not.toHaveBeenCalled();
-    expect(stub.mark).not.toHaveBeenCalled();
-    expect(stub.revalidate).not.toHaveBeenCalled();
-  });
-
   it("refuse a flag that is not a boolean, before reading the deck", async () => {
     await expect(setTokenJoined(DECK, TOKEN, "false" as never)).rejects.toThrow("bad token input");
     await expect(setTokenHeld(DECK, TOKEN, 0 as never)).rejects.toThrow("bad token input");

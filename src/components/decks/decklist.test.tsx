@@ -132,7 +132,7 @@ function renderDecklist(
     partner?: DeckCommander | null;
     /** Label rows provided around the list, as the deck page does with the switch on. */
     labelRows?: Record<string, readonly ("ramp" | "draw" | "removal" | "wipes")[]>;
-    /** The deck's tokens, provided around the list as the deck page does with the switch on. */
+    /** The deck's tokens, provided around the list as the deck page does. */
     tokens?: DeckTokensRead;
     /** Reads what the list publishes for the header's commander carousel, as the deck page does. */
     onSiblings?: (list: readonly Sibling[] | undefined) => void;

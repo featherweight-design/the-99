@@ -23,7 +23,6 @@ import { overviewV2Enabled } from "../synopsis/overview-v2";
 import { shoppingMarkBoughtEnabled } from "../decks/mark-bought-flag";
 import { allDecksCartEnabled } from "../decks/all-decks-cart-flag";
 import { deckPrintingsEnabled } from "../decks/printings-flag";
-import { deckTokensEnabled } from "../decks/tokens-flag";
 import { lineupEnabled } from "../decks/lineup-flag";
 import { paymentsEnabled, welcomeCreditsEnabled } from "../payments/flag";
 import { homeFeedEnabled } from "../feed/flag";
@@ -65,7 +64,7 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   // On only with COLLECTION_EDIT_ENABLED as well: the feature's own flag already says so.
   SHOPPING_MARK_BOUGHT_ENABLED: shoppingMarkBoughtEnabled,
   DECK_PRINTINGS_ENABLED: deckPrintingsEnabled,
-  DECK_TOKENS_ENABLED: deckTokensEnabled,
+  DECK_TOKENS_ENABLED: () => true,
   // Already reads ANALYSIS_TAB_ENABLED: the tool lives in the tab's Tuning hub.
   MANA_BALANCE_ENABLED: manaBalanceEnabled,
   ALL_DECKS_CART_ENABLED: allDecksCartEnabled,
