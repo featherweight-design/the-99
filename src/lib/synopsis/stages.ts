@@ -555,20 +555,22 @@ export function curveFacts(facts: Pick<SynopsisFacts, "cards" | "commanders" | "
 
 /**
  * THE LAND RULE (the app's, stated, so the number is never the model's judgement, as `keepableLands` is not):
- * start at 3; one more for a TOP-HEAVY deck (nonland average mana value 3.5 or more, 14 or more
- * nonland cards at five or more, or a commander at six or more); one fewer for a LOW CURVE (average
- * 2.6 or less with at most 5 cards at five or more); one more at 40 lands or more, one fewer at 32 or
- * fewer. Then held inside the app's keepable range and inside 2 to 4; where the two do not meet
+ * start at 3; one more for a TOP-HEAVY deck (nonland average mana value 4 or more, 22 or more
+ * nonland cards at five or more, or a commander at seven or more); one fewer for a LOW CURVE (average
+ * 3.3 or less with at most 12 cards at five or more); one more at 41 lands or more, one fewer at 32 or
+ * fewer. Tuned on the real precon set (182 decks, whose nonland average runs 2.4 to 4.6 with a median
+ * of 3.7: the first cutoffs, written for player decks, called 147 of 182 top-heavy), so the number
+ * spreads: about 15% say 2, 54% say 3, 31% say 4. Then held inside the app's keepable range and inside 2 to 4; where the two do not meet
  * (85 lands or more, where `keepableLands` gives 5 to 5), the rule's 2 to 4 wins.
  */
 export const LAND_RULE = {
   base: 3,
-  heavyAverage: 3.5,
-  heavyFivePlus: 14,
-  heavyCommander: 6,
-  lightAverage: 2.6,
-  lightFivePlusMax: 5,
-  manyLands: 40,
+  heavyAverage: 4,
+  heavyFivePlus: 22,
+  heavyCommander: 7,
+  lightAverage: 3.3,
+  lightFivePlusMax: 12,
+  manyLands: 41,
   fewLands: 32,
 } as const;
 
