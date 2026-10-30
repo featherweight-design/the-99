@@ -48,7 +48,7 @@ const CORPUS_URL = new URL("corpus/", EVAL);
 const CORPUS = fileURLToPath(CORPUS_URL);
 const LEDGER = fileURLToPath(new URL("ledger-overview-accuracy.jsonl", EVAL));
 
-type AnswerRow = GateRow & { listFingerprint?: string; reply: unknown };
+type AnswerRow = GateRow & { listFingerprint?: string; reply: unknown; factsContract?: number };
 const readAnswers = (path: string): AnswerRow[] => readFileSync(path, "utf8").split("\n").filter(Boolean).map((l) => JSON.parse(l) as AnswerRow);
 
 if (command === "score") {
@@ -127,12 +127,12 @@ if (command === "run") {
   await connectStaging();
   const { loadProfileHead, loadDeckProfileFromHead } = await import("../../src/lib/profile/load");
   const { listFingerprint } = await import("../../src/lib/profile/fingerprint");
-  const { factsFor, checkReply, refusedSections, repairPrompt, applyRepair, synopsisCallSettings } = await import("../../src/lib/synopsis/generate");
+  const { factsWithSource, checkReply, refusedSections, repairPrompt, applyRepair, synopsisCallSettings } = await import("../../src/lib/synopsis/generate");
   const { buildSynopsisPrompt } = await import("../../src/lib/synopsis/prompt");
   const { callModel } = await import("../../src/lib/model/client");
   const { synopsisResponseSchema, synopsisResponseSchemaV8Wire } = await import("../../src/lib/synopsis/response-schema");
   type SynopsisReply = import("../../src/lib/synopsis/response-schema").SynopsisReply;
-  const { SYNOPSIS_DEADLINE_MS, SYNOPSIS_REPAIR_MIN_MS } = await import("../../src/lib/synopsis/limits");
+  const { SYNOPSIS_DEADLINE_MS, SYNOPSIS_REPAIR_MIN_MS, synopsisContractVersion } = await import("../../src/lib/synopsis/limits");
   const { costUsd, worstCaseUsd } = await import("./lib/pricing.mjs");
   const { db } = await import("../../src/db/index");
   const { sql } = await import("drizzle-orm");
@@ -164,6 +164,7 @@ if (command === "run") {
   const otherArm = existing.filter((a) => JSON.stringify((a as { arm?: unknown }).arm) !== armKey);
   if (otherArm.length > 0) throw new Error(`eval:corpus run: ${args.out} holds ${otherArm.length} row(s) from another arm, or recorded before arms were (this run is ${armKey}); refusing to resume into it`);
   const done = new Set(existing.map((a) => a.id));
+  const contracts = new Set<number | string>(existing.map((a) => a.factsContract ?? "unrecorded"));
   for (const c of loadCorpus(CORPUS)) {
     if (only && !only.has(c.id)) continue;
     if (done.has(c.id)) { console.log(`${c.id}: already in ${args.out}, kept`); continue; }
@@ -181,7 +182,13 @@ if (command === "run") {
       writeFileSync(file, `${JSON.stringify(doc, null, 2)}\n`);
       console.log(`${c.id}: pinned ${live.slice(0, 8)}`);
     }
-    const facts = await factsFor(await loadDeckProfileFromHead(head, process.env), v2, process.env);
+    const { facts, shared } = await factsWithSource(await loadDeckProfileFromHead(head, process.env), v2);
+    // The facts' source is part of a run's identity as well: the shared benchmark reading and its classifier fallback
+    // (a failed label read) give different figures. Every row records the contract it really used, and a file holding
+    // any other, or a row recorded before this was, is refused rather than mixed.
+    const factsContract = synopsisContractVersion(v2, shared);
+    if (contracts.size > 0 && !(contracts.size === 1 && contracts.has(factsContract))) throw new Error(`eval:corpus run: ${args.out} holds rows read under facts contract ${[...contracts].join(", ")}, and ${c.id} read contract ${factsContract}; refusing to mix them`);
+    contracts.add(factsContract);
     const prompt = buildSynopsisPrompt(facts, undefined, { v2, contract8: v8 });
     const maxTokens = arm.maxTokens;
     const stops: { what: string; stopReason: string | null; outputTokens: number }[] = [];
@@ -219,7 +226,7 @@ if (command === "run") {
     if (!first.out.ok) {
       console.log(`  ${first.out.errorClass}`);
       // A failed answer is a result of the arm, not a gap: recorded so the arm's failure rate shows.
-      appendFileSync(args.out, `${JSON.stringify({ id: c.id, prompt: args.prompt, arm, failed: first.out.errorClass, stops, latencyMs, usd: first.usd, usage: first.usage })}\n`);
+      appendFileSync(args.out, `${JSON.stringify({ id: c.id, prompt: args.prompt, arm, factsContract, failed: first.out.errorClass, stops, latencyMs, usd: first.usd, usage: first.usage })}\n`);
       continue;
     }
     const checked = await checkReply(first.out.value, facts, v8);
@@ -243,7 +250,7 @@ if (command === "run") {
       rendered = await applyRepair(checked, repair.out, failing, facts, v8);
       console.log(`  repaired: ${show(rendered.verdicts)}`);
     }
-    appendFileSync(args.out, `${JSON.stringify({ id: c.id, prompt: args.prompt, arm, stops, latencyMs, totalLatencyMs: Date.now() - startedAt, usage: first.usage, repairUsage, listFingerprint: live, usd: first.usd, repairUsd, repairReply, firstVerdicts: checked.verdicts, rendered, reply: first.out.value })}\n`);
+    appendFileSync(args.out, `${JSON.stringify({ id: c.id, prompt: args.prompt, arm, factsContract, stops, latencyMs, totalLatencyMs: Date.now() - startedAt, usage: first.usage, repairUsage, listFingerprint: live, usd: first.usd, repairUsd, repairReply, firstVerdicts: checked.verdicts, rendered, reply: first.out.value })}\n`);
   }
   process.exit(0);
 }
