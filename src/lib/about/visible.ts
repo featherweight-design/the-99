@@ -17,7 +17,6 @@ import {
 } from "../social/flag";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
 import { allDecksCartEnabled } from "../decks/all-decks-cart-flag";
-import { deckPrintingsEnabled } from "../decks/printings-flag";
 import { paymentsEnabled, welcomeCreditsEnabled } from "../payments/flag";
 import { type AboutEntry, type AboutLineSwitch, type AboutLineSwitchOne, type AboutSwitch } from "../copy/about";
 import { aboutEntries } from "../copy/about-entries";
@@ -60,7 +59,8 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   // I got it's switch is retired, and so is its parent's, collection editing: the name stays the entry's, the key's and
   // the label's historical identity.
   SHOPPING_MARK_BOUGHT_ENABLED: () => true,
-  DECK_PRINTINGS_ENABLED: deckPrintingsEnabled,
+  // Retired (always on): deck printings. The name stays as the entry's historical identity.
+  DECK_PRINTINGS_ENABLED: () => true,
   DECK_TOKENS_ENABLED: () => true,
   // Already reads ANALYSIS_TAB_ENABLED: the tool lives in the tab's Tuning hub.
   MANA_BALANCE_ENABLED: manaBalanceEnabled,

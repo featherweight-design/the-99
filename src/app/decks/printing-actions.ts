@@ -11,8 +11,9 @@ import { proxiedMembership } from "../../lib/decks/proxies";
 export type SetDeckPrintingResult =
   | { ok: true }
   /**
-   * `refused`: the wire input is malformed. `notInDeck`: the card is not this deck's (a Consider tile or a search result opens under the same provider). `notHeld`: the
-   * player does not hold that printing; a pick is always an owned printing.
+   * `refused`: the wire input is malformed. `notInDeck`: the card is not this deck's (a Consider
+   * tile or a search result opens under the same provider). `notHeld`: the player does not hold
+   * that printing; a pick is always an owned printing.
    */
   | { ok: false; reason: "refused" | "notInDeck" | "notHeld" };
 

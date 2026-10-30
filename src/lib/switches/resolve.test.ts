@@ -102,15 +102,15 @@ describe("All features", () => {
     const s = snap([
       all(),
       row({ switchName: "CHANGE_COMMANDER_ENABLED", scope: "user", userId: "u1", value: "off" }),
-      row({ switchName: "DECK_PRINTINGS_ENABLED", scope: "group", groupId: "g1", value: "off" }),
+      row({ switchName: "ALL_DECKS_CART_ENABLED", scope: "group", groupId: "g1", value: "off" }),
       row({ switchName: "NOTICES_ENABLED", scope: "app", value: "off" }),
     ], { u1: "g1" });
     const env = resolveEnv(e({ NEVER_CUT_ENABLED: "off" }), s, "u1");
     expect(env.NEVER_CUT_ENABLED).toBe("off");
     expect(env.CHANGE_COMMANDER_ENABLED).toBe("false");
-    expect(env.DECK_PRINTINGS_ENABLED).toBe("true");
+    expect(env.ALL_DECKS_CART_ENABLED).toBe("true");
     expect(env.NOTICES_ENABLED).toBe("true");
-    expect(decide("DECK_PRINTINGS_ENABLED", "feature", e({}), s, "u1").source).toEqual({ kind: "all" });
+    expect(decide("ALL_DECKS_CART_ENABLED", "feature", e({}), s, "u1").source).toEqual({ kind: "all" });
   });
 
   it("leaves plumbing to its app-wide rung", () => {

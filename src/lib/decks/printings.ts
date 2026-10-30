@@ -395,9 +395,9 @@ export function recordedColumns(
 
 /**
  * Every pick these decks hold that the player still owns, as the price read takes them
- * (`loadPrices(ids, picks)`). Membership-scoped like `readDeckPicks`, and HELD: a pick whose printing left the Collection is not passed,
- * so no figure prices a printing the art no longer shows. Fail-soft to no picks, which is
- * today's figure on every row.
+ * (`loadPrices(ids, picks)`). Membership-scoped like `readDeckPicks`, and HELD: a pick whose
+ * printing left the Collection is not passed, so no figure prices a printing the art no longer
+ * shows. Fail-soft to no picks, which is today's figure on every row.
  */
 export async function readHeldPricePicks(
   userId: string,

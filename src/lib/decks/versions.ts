@@ -237,8 +237,9 @@ async function commitVersionIn(
   }).from(deckCards).where(eq(deckCards.deckId, deckId)).for("update");
 
   // THE PRINTING EACH CARD SHOWED, recorded at commit (deck printings): the deck's pick, then the
-  // Collection's, then the catalog's, the chain every deck surface draws. Fail-soft: a failed read records nulls rather than
-  // failing the commit, because the version's cards are the commit and the printing is a caption.
+  // Collection's, then the catalog's, the chain every deck surface draws. Fail-soft: a failed read
+  // records nulls rather than failing the commit, because the version's cards are the commit and
+  // the printing is a caption.
   //
   // Read inside the commit's own transaction, so a deck started and committed in one
   // (`startPreconDeck`) is resolved against the printing pins it has only here until it commits. In a SAVEPOINT, so the read stays fail-soft: a failed statement would otherwise
