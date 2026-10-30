@@ -8,7 +8,7 @@ import { SPELLBOOK_SOURCE } from "../../lib/bracket/sources";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import type { CardRef } from "../../lib/profile/types";
-import { CardDetailTrigger, useCardDetail, type SheetFooter, type Sibling } from "../cards/card-detail-provider";
+import { CardDetailTrigger, useCardDetailIfAny, type SheetFooter, type Sibling } from "../cards/card-detail-provider";
 import { CostPips } from "../ui/cost-pips";
 import { useMinWidth } from "../ui/use-min-width";
 import { FindingMark } from "./finding-mark";
@@ -145,7 +145,7 @@ export function ModalChrome({
   aside?: React.ReactNode;
   closeLabel: string;
   onClose: () => void;
-  width: 560 | 600 | 640 | 700 | 760 | 900;
+  width: 480 | 560 | 600 | 640 | 700 | 760 | 900;
   /**
    * The phone sheet sizes to its rows, up to the usual 52px from the top, with the 18px top radius
    * (combos close, `The-List.dc.html` `.bs`), rather than standing at that full height. Unset, the
@@ -199,7 +199,11 @@ export function ModalChrome({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const titleId = useId();
-  const { registerSheet, openOracleId, revealing } = useCardDetail();
+  // Outside a CardDetailProvider (the admin's Revoke confirm) no card ever stacks on the sheet.
+  const detail = useCardDetailIfAny();
+  const registerSheet = detail?.registerSheet;
+  const openOracleId = detail?.openOracleId ?? null;
+  const revealing = detail?.revealing ?? false;
   useDialogA11y(ref, onClose);
   // The footer is read through a ref, so a sheet whose state moves does not re-register itself (and
   // flicker the stacked card's way back) on every render.
@@ -210,7 +214,7 @@ export function ModalChrome({
   const hasFooter = stackFooter !== undefined;
   const onCard = overCard !== undefined;
   useEffect(
-    () => registerSheet(backLabel, hasFooter ? (id, layout, priced) => footerRef.current?.(id, layout, priced) ?? null : undefined, onCard, phoneBackLabel),
+    () => registerSheet?.(backLabel, hasFooter ? (id, layout, priced) => footerRef.current?.(id, layout, priced) ?? null : undefined, onCard, phoneBackLabel),
     [registerSheet, backLabel, hasFooter, onCard, phoneBackLabel],
   );
 
@@ -474,6 +478,7 @@ export type SheetBack = {
 
 // Literal class strings, so Tailwind sees each one.
 const WIDTH_CLASS = {
+  480: "md:w-[480px] ",
   560: "md:w-[560px] ",
   600: "md:w-[600px] ",
   640: "md:w-[640px] ",
