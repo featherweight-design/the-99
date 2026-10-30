@@ -721,7 +721,12 @@ export function SuggestedChangesRun({
           onClose={() => setConfirming(false)}
           deckId={deckId}
           ownedFromOtherDecks={ownedFromOtherDecks}
-          sourceFigures={pullFigures && pullFigures.key === figureKey ? pullFigures.map : undefined}
+          sourceFigures={pullFigures && pullFigures.key === figureKey
+            ? afterStaged(pullFigures.map, pickedAdds.flatMap((l) => {
+              const claim = staged.get(l.id);
+              return claim && heldInOtherDecks(l, ownedFromOtherDecks) ? [{ deckId: claim.id, oracleId: l.cardOracleId }] : [];
+            }))
+            : undefined}
           staged={staged}
           onStage={(id, claim) => setStaged((m) => {
             const next = new Map(m);
@@ -734,6 +739,24 @@ export function SuggestedChangesRun({
       {failed !== null ? <DeckRefusalToast key={failed} title={sc.applyFailed.title} detail={failedDetail} onDone={() => setFailed(null)} /> : null}
     </div>
   );
+}
+
+/**
+ * The picker's "→ N cards" with the confirmation's other staged pulls already taken (#2425 round 6): two additions
+ * staged from one deck leave it two cards smaller, so the second picker's figure counts the first. A pull of the SAME
+ * card is not subtracted from its own figure (that figure is the one the pull describes). Exported for its test.
+ */
+export function afterStaged(
+  figures: ReadonlyMap<string, SourceDeckFigure>, staged: readonly { deckId: string; oracleId: string }[],
+): Map<string, SourceDeckFigure> {
+  if (staged.length === 0) return new Map(figures);
+  const out = new Map<string, SourceDeckFigure>();
+  for (const [key, figure] of figures) {
+    const [deckId, oracleId] = key.split(":");
+    const taken = staged.filter((p) => p.deckId === deckId && p.oracleId !== oracleId).length;
+    out.set(key, taken === 0 ? figure : { ...figure, built: Math.max(0, figure.built - taken) });
+  }
+  return out;
 }
 
 function Notice({ edge, text, data }: { edge: "var(--warning)" | "var(--accent)"; text: string; data: string }) {

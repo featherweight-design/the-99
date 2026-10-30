@@ -23,6 +23,9 @@ const fx = vi.hoisted(() => ({
   run: { status: "ok", requestedCount: 3, readVersion: 4 as number | null, spentSets: [] as string[] },
   sourceName: "HD - Gishath" as string | null,
   sourceCommander: "o-commander" as string,
+  /** The reader's decks, as the pre-read's ownership check sees them. */
+  owned: ["c-source"] as string[],
+  transactions: 0,
   sourceRow: null as { quantity: number; auto: boolean } | null,
   updates: [] as Record<string, unknown>[],
   inserts: [] as Record<string, unknown>[],
@@ -39,6 +42,7 @@ vi.mock("../../../db", () => {
     if (has("runId")) return [{ runId: RUN }];
     if (keys.length === 1 && has("undoSnapshot")) return (fx.lines as Line[]).filter((l) => l.applySet === SET);
     if (has("addOracleId") && has("id")) return fx.lines;
+    if (keys.length === 1 && has("id")) return fx.owned.map((id) => ({ id }));
     if (has("name")) return fx.sourceName === null ? [] : [{ name: fx.sourceName, commander: fx.sourceCommander, partner: null }];
     if (has("quantity")) return fx.sourceRow ? [fx.sourceRow] : [];
     if (has("deckId")) return [{ deckId: DECK }];
@@ -66,7 +70,7 @@ vi.mock("../../../db", () => {
       }),
     }),
   };
-  return { db: { ...tx, transaction: (fn: (t: typeof tx) => unknown) => fn(tx) } };
+  return { db: { ...tx, transaction: (fn: (t: typeof tx) => unknown) => { fx.transactions += 1; return fn(tx); } } };
 });
 
 const pull = vi.hoisted(() => ({
@@ -118,6 +122,8 @@ beforeEach(() => {
   fx.run = { status: "ok", requestedCount: 3, readVersion: 4, spentSets: [] };
   fx.sourceName = "HD - Gishath";
   fx.sourceCommander = "o-commander";
+  fx.owned = [SOURCE];
+  fx.transactions = 0;
   fx.sourceRow = null;
   release.at = RELEASED_AT;
   release.undone = 0;
@@ -215,6 +221,23 @@ describe("applyPicks with staged pulls", () => {
     pull.pullInTx.mockResolvedValueOnce({ ok: false, message: "That deck isn’t waiting on that card." });
     const r = await apply([{ itemId: "a1", sourceDeckId: SOURCE }]);
     expect(r).toMatchObject({ ok: false, refusal: { kind: "pull", itemId: "a1" } });
+  });
+
+  // SECURITY (#2425 round 6): a source id is the client's word. One that is not the reader's deck refuses the set before
+  // any lock, so no caller can take a `for update` lock on another player's deck.
+  it("refuses a source deck that is not the reader's before taking any lock", async () => {
+    const r = await apply([{ itemId: "a1", sourceDeckId: "someone-elses-deck" }]);
+    expect(r).toEqual({ ok: false, refusal: { kind: "pull", itemId: "a1", message: expect.any(String) } });
+    expect(fx.transactions).toBe(0);
+    expect(pull.lockDecksInOrder).not.toHaveBeenCalled();
+    expect(fx.events).toEqual([]);
+    expect(pull.pullClaimants).not.toHaveBeenCalled();
+  });
+
+  it("refuses a set whose second pull names a foreign deck, naming that pull", async () => {
+    const r = await apply([{ itemId: "a1", sourceDeckId: SOURCE }, { itemId: "a2", sourceDeckId: "someone-elses-deck" }]);
+    expect(r).toMatchObject({ ok: false, refusal: { kind: "pull", itemId: "a2" } });
+    expect(fx.transactions).toBe(0);
   });
 
   it("refuses a pull naming a line that is not one of the set's additions", async () => {

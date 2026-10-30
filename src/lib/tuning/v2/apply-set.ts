@@ -136,12 +136,25 @@ async function lockedLines(tx: Tx, runId: string) {
  * The decks a set's staged pulls touch, besides the run's own: each named source, and every deck the claim on the pulled
  * card is made of (`pullClaimants`). Read BEFORE the transaction and used only to choose the locks, as the shipped pull
  * does: the pull itself re-reads the claim under them and refuses a claimant this did not name.
+ *
+ * The named sources come from the client, so they are checked against the reader's own decks here, in one select
+ * scoped to the reader, BEFORE any lock is taken: a foreign id would otherwise take a `for update` lock on another
+ * player's deck. `foreign` names the first pull whose source is not the reader's, and the set is refused with no lock
+ * taken. (The
+ * claimants are read through the reader's own claim model, so every one is the reader's deck.)
  */
-async function pullParties(runId: string, userId: string, env: NodeJS.ProcessEnv, pulls: readonly SetPull[]): Promise<string[]> {
-  if (pulls.length === 0) return [];
+async function pullParties(
+  runId: string, userId: string, env: NodeJS.ProcessEnv, pulls: readonly SetPull[],
+): Promise<{ ids: string[] } | { foreign: SetPull }> {
+  if (pulls.length === 0) return { ids: [] };
+  const named = [...new Set(pulls.map((p) => p.sourceDeckId))];
+  const owned = new Set((await db.select({ id: decks.id }).from(decks)
+    .where(and(inArray(decks.id, named), eq(decks.userId, userId)))).map((d) => d.id));
+  const foreign = pulls.find((p) => !owned.has(p.sourceDeckId));
+  if (foreign) return { foreign };
   const [owner] = await db.select({ deckId: deckSuggestionRuns.deckId }).from(deckSuggestionRuns)
     .where(and(eq(deckSuggestionRuns.id, runId), eq(deckSuggestionRuns.userId, userId)));
-  if (!owner) return [];
+  if (!owner) return { ids: [] };
   const items = await db.select({ id: deckSuggestionItems.id, addOracleId: deckSuggestionItems.addOracleId })
     .from(deckSuggestionItems)
     .where(and(eq(deckSuggestionItems.runId, runId), inArray(deckSuggestionItems.id, pulls.map((p) => p.itemId))));
@@ -149,7 +162,7 @@ async function pullParties(runId: string, userId: string, env: NodeJS.ProcessEnv
     const add = items.find((i) => i.id === p.itemId)?.addOracleId ?? null;
     return add === null ? [] : pullClaimants(userId, env, add, owner.deckId);
   }));
-  return [...pulls.map((p) => p.sourceDeckId), ...claimants.flat()];
+  return { ids: [...pulls.map((p) => p.sourceDeckId), ...claimants.flat()] };
 }
 
 /**
@@ -174,9 +187,12 @@ export async function applyPicks(args: {
   const actionId = args.actionId.toLowerCase();
   const pulls = (args.pulls ?? []).map((p) => ({ itemId: p.itemId.toLowerCase(), sourceDeckId: p.sourceDeckId.toLowerCase() }));
   const parties = await pullParties(runId, userId, env, pulls);
+  if ("foreign" in parties) {
+    return { ok: false, refusal: { kind: "pull", itemId: parties.foreign.itemId, message: "We couldn’t find that deck." } };
+  }
   try {
     return await db.transaction(async (tx) => {
-      const run = await lockRunDeck(tx, runId, userId, parties);
+      const run = await lockRunDeck(tx, runId, userId, parties.ids);
       if (!run) throw new Refused({ kind: "notFound" });
       const lines = await lockedLines(tx, runId);
       const done = lines.filter((l) => l.applySet === actionId);
@@ -267,7 +283,9 @@ export async function undoSet(args: { applySet: string; userId: string; env: Nod
         .limit(1);
       if (!owner) throw new Refused({ kind: "notFound" });
       // The decks the set pulled copies out of, read before the locks only to choose them (a set's snapshots are written
-      // by its apply and cleared by its undo, both under the run deck's lock, so the read under the locks agrees).
+      // by its apply and cleared by its undo, both under the run deck's lock, so the read under the locks agrees). Never
+      // the client's: only the server writes a snapshot, from sources it checked were the reader's (`pullParties`), on a
+      // set this read found through the reader's own run.
       const pre = await tx.select({ undoSnapshot: deckSuggestionItems.undoSnapshot }).from(deckSuggestionItems)
         .where(and(eq(deckSuggestionItems.runId, owner.runId), eq(deckSuggestionItems.applySet, applySet)));
       const sources = pre.flatMap((l) => (l.undoSnapshot?.pull ? [l.undoSnapshot.pull.sourceDeckId] : []));

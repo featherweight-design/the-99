@@ -10,7 +10,7 @@ import { tuningHubCopy } from "../../lib/copy/tuning-hub";
 import type { LineItem, TuningLive, V2Ask } from "../../lib/tuning/state";
 import type { ValidationReport } from "../../lib/tuning/validate";
 import { v2Line } from "../../lib/tuning/v2/results-fixture";
-import { NEW_MARK_MS, SLOW_NOTE_MS, SuggestedChangesRun, type SuggestionSetActions } from "./suggested-changes-run";
+import { afterStaged, NEW_MARK_MS, SLOW_NOTE_MS, SuggestedChangesRun, type SuggestionSetActions } from "./suggested-changes-run";
 import { historyDay } from "./tuning-history";
 
 const openCard = vi.hoisted(() => vi.fn());
@@ -298,6 +298,32 @@ describe("the results", () => {
     await press(screen.getByRole("button", { name: sc.confirmClose }));
     await press(apply());
     expect(sourceFigures).toHaveBeenCalledTimes(2);
+  });
+
+  // #2425 round 6: two additions staged from one deck leave it two cards smaller.
+  it("counts a pull already staged from a source in the next picker's figure for it", async () => {
+    const claim = (id: string, name: string, since: number) =>
+      ({ id, name, quantity: 1, mature: true, pending: false, commander: false, senior: true, since });
+    const GISHATH = claim("d-gishath", "HD - Gishath", 1);
+    const KRATOS = claim("d-kratos", "HD - Kratos", 2);
+    const held = { owned: 2, hard: 2, soft: 0, free: -1, claims: [GISHATH, KRATOS] } as unknown as NonNullable<LineItem["availability"]>;
+    const t = setup({
+      ask: ask(3, { restrictions: { capCents: null, sets: [], ownedOnly: true, otherDecks: true } }),
+      lines: [...adds(5, (i) => ({ picked: i < 2, availability: i < 2 ? held : null })), ...cuts(5, (i) => ({ picked: i < 2 }))],
+    });
+    t.actions.sourceFigures = vi.fn(async (pairs: { deckId: string; oracleId: string }[]) =>
+      pairs.map((p) => [`${p.deckId}:${p.oracleId}`, { built: 99, inDraft: true }] as [string, { built: number; inDraft: boolean }]));
+    t.rerender({});
+    await press(apply());
+    await act(async () => {});
+    const review = deckVersioningCopy.review;
+    await press(screen.getByRole("button", { name: review.pullManyA11y("Card a0", 2) }));
+    await press(screen.getByRole("button", { name: review.source.confirm(GISHATH.name) }));
+    await press(screen.getByRole("button", { name: review.pullManyA11y("Card a1", 2) }));
+    const radio = (name: string) => screen.getByRole("radio", { name: new RegExp(name) });
+    // Gishath gives up a0 already: a1 leaves it at 97, not 98. Kratos gives up nothing yet: 98.
+    expect(radio(GISHATH.name).textContent).toContain(review.source.leaves(97));
+    expect(radio(KRATOS.name).textContent).toContain(review.source.leaves(98));
   });
 
   it("takes a staged pull back with Undo, and then sends none", async () => {
@@ -821,5 +847,22 @@ describe("the design-review fixes", () => {
     };
     setup({ ask: ask(10), lines: [...adds(8), ...cuts(12)], report, credits: { left: 5, total: 5 } });
     expect(document.querySelector('[data-sc-short="refunded"]')!.textContent).toContain(sc.short.refundCreditLeft(5, 5));
+  });
+});
+
+describe("afterStaged", () => {
+  const figures = new Map([
+    ["d1:o-a", { built: 99, inDraft: true }],
+    ["d1:o-b", { built: 99, inDraft: true }],
+    ["d2:o-b", { built: 60, inDraft: false }],
+  ]);
+  it("takes each other staged pull from a source off that source's figures, never a pull of the same card", () => {
+    const out = afterStaged(figures, [{ deckId: "d1", oracleId: "o-a" }]);
+    expect(out.get("d1:o-a")).toEqual({ built: 99, inDraft: true });
+    expect(out.get("d1:o-b")).toEqual({ built: 98, inDraft: true });
+    expect(out.get("d2:o-b")).toEqual({ built: 60, inDraft: false });
+  });
+  it("leaves the figures as read with nothing staged", () => {
+    expect(afterStaged(figures, [])).toEqual(figures);
   });
 });
