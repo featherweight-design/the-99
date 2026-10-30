@@ -875,3 +875,34 @@ describe("iteration 3: the alternate line is required by the schema when the box
     expect(stagesSchemaFor(2, ["Grave Titan"])).toBe(stagesResponseSchemaWire);
   });
 });
+
+describe("iteration 3: the color name the model is handed", () => {
+  const land = landKeepNumber(withCurve([3, 4, 6, 5, 2]));
+  const s3 = { alternates: [] as string[], maxChars: 1834, shape: 3 as const, landKeep: land };
+  const user = (facts: SynopsisFacts, stages: typeof s3 | { alternates: string[]; maxChars: number }) =>
+    buildSynopsisPrompt(facts, undefined, { v2: true, contract8: true, stages }).user;
+
+  it("names a five-color identity in words and lowercase, never the display label", () => {
+    const five = { ...FACTS, identity: ["W", "U", "B", "R", "G"], identityName: "5-color" };
+    expect(user(five, s3)).toContain("Color identity: five-color");
+    expect(user(five, s3)).not.toContain("5-color");
+    // The shipped label is untouched where the shape is not iteration 3.
+    expect(user(five, { alternates: [], maxChars: 1834 })).toContain("Color identity: 5-color");
+  });
+
+  it("lowercases the generic names and keeps a guild's capital, so the prose does not say 'a Red deck'", () => {
+    const id = (identity: string[], identityName: string) => user({ ...FACTS, identity, identityName }, s3);
+    expect(id(["R"], "Red")).toContain("Color identity: red\n");
+    expect(id([], "Colorless")).toContain("Color identity: colorless\n");
+    expect(id(["W", "U", "B", "G"], "Non-red")).toContain("Color identity: non-red\n");
+    expect(id(["B", "G"], "Golgari")).toContain("Color identity: Golgari\n");
+    const lands = { ...FACTS, identity: ["W", "U", "B", "R", "G"], identityName: "5-color", landColors: [] };
+    expect(user(lands, s3)).toContain("Colors the lands make: colorless");
+  });
+
+  it("tells the model to put the color name in a plain phrase, for iteration 3 only", () => {
+    const sys = (stages: object) => buildSynopsisPrompt(FACTS, undefined, { v2: true, contract8: true, stages: stages as never }).system;
+    expect(sys(s3)).toContain('inside a plain phrase such as "a red deck"');
+    expect(sys({ alternates: [], maxChars: 1834 })).not.toContain("plain phrase");
+  });
+});

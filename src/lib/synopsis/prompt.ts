@@ -214,7 +214,8 @@ function stagesFactRules(shape: 2 | 3 = 2): string {
     .replace(STAGES_COMBO_PLACE, shape === 3
       ? "A listed combo is the primary win condition only when the deck is built to assemble it; otherwise it is a backup or an alternate win. Either way its cards other than the commander are named in ONE place only: the Close line, never also in the overview, another stage, a tip, a Key card or a Key card's job."
       : "A listed combo is the primary win condition only when the deck is built to assemble it; otherwise it is a backup or an alternate win. Either way its cards other than the commander are named in ONE place only: the Close line (or \"Wins by\", when the combo is the win there), never also in the overview, another stage, a tip or a Key card's job.")
-    .replace(STAGES_COMBO_EVERY, "The one line that names a listed combo names every card of the combo.");
+    .replace(STAGES_COMBO_EVERY, "The one line that names a listed combo names every card of the combo.")
+    .concat(shape === 3 ? `\n${STAGES_COLOR_RULE}` : "");
 }
 
 /**
@@ -326,6 +327,23 @@ function stagesSections(facts: SynopsisFacts, stages: StagesOption): string[] {
   ];
 }
 
+/**
+ * The stages variant (contract 13) hands the model a color name it can drop into a sentence. The
+ * app's labels are display labels ("Red", "Colorless", "Non-green", "5-color"): the model copied
+ * them capitalized into mid-sentence prose ("a Red artifact deck") and, told never to state a color
+ * count yet to use "5-color" word for word, mangled the five-color name into "Colors of Ur-Dragon
+ * identity". A guild, shard or wedge name is a proper name and keeps its capital; every other label
+ * is lowercased and the digit spelled out. Contract 12 and older, and iteration 2 of the stages test shape, keep the display label byte for byte.
+ */
+export function stagesColorName(label: string): string {
+  if (label === "5-color") return "five-color";
+  if (label === "Multi") return label;
+  const proper = new Set(["Azorius", "Dimir", "Rakdos", "Gruul", "Selesnya", "Orzhov", "Izzet", "Golgari", "Boros", "Simic", "Bant", "Esper", "Grixis", "Jund", "Naya", "Abzan", "Jeskai", "Sultai", "Mardu", "Temur"]);
+  return proper.has(label) ? label : label.toLowerCase();
+}
+
+const STAGES_COLOR_RULE = "Write the deck's color name exactly as the facts give it, capitals included (a guild or shard name such as Gruul keeps its capital; red, colorless, non-green and five-color are lowercase), inside a plain phrase such as \"a red deck\" or \"a five-color deck\". Never put the commander's name in the color phrase.";
+
 /** The stages variant's rules against repetition and stray turn numbers. */
 function stagesRules(facts: SynopsisFacts, stages: StagesOption): string {
   const castTurn = facts.stats?.commanderCastTurn ?? null;
@@ -397,7 +415,8 @@ export function buildSynopsisPrompt(
   if (opts.stages && !(opts.v2 && opts.contract8)) throw new Error("buildSynopsisPrompt: the stages variant needs v2 and contract8");
   const lines: string[] = [];
   lines.push(`Commander: ${facts.commanders.join(" and ")}`);
-  lines.push(`Color identity: ${identityNameOf(facts)}`);
+  const colorName = (label: string) => (opts.stages?.shape === 3 ? stagesColorName(label) : label);
+  lines.push(`Color identity: ${colorName(identityNameOf(facts))}`);
   if (facts.unproducible.length > 0) {
     // By name, as the identity is: a letter run here would hand the model the very form it is
     // told never to write.
@@ -410,7 +429,7 @@ export function buildSynopsisPrompt(
   // no color, named "Colorless" rather than left out and judged against the identity.
   const landColors = facts.landColors;
   if (opts.contract8 && landColors !== undefined && landColors.length < facts.identity.length) {
-    lines.push(`Colors the lands make: ${colorLabel(landColors)}`);
+    lines.push(`Colors the lands make: ${colorName(colorLabel(landColors))}`);
   }
 
   lines.push("", "Mulligan figures (the only numbers the mulligan lines may state):");
