@@ -161,9 +161,10 @@ not a plain integer, is a 404.
 commander's printings in paper Commander sets (`sets`, type `commander`, not digital) released from 60 days before to
 180 days after the post's day; the set with the most lists wins (a tie goes to the earlier release, then the lower
 code). The early address redirects to `/decks/precons/<fileName>` once a plain-edition precon names the same
-commander and the catalog first showed it (`catalog_first_seen`) no earlier than three days before the post, in any set
-whatever its release date (a new Secret Lair deck matches; an older precon with the same commander never does). A
-precon with no usable stamp matches only in the resolved set. "Released, still waiting" (3.5) is the resolved set's
+commander, preferring the resolved set: first a precon in that set (unless the catalog first showed it, by
+`catalog_first_seen`, more than three days before the post), then, only when the resolved set has none, a precon in any
+set whatever its release date that the catalog first showed no earlier than three days before the post (a new Secret
+Lair deck matches; a later product elsewhere cannot take over a resolved set's release; an older precon never matches). "Released, still waiting" (3.5) is the resolved set's
 release day on or before today with no such precon.
 
 **Switch.** `ANNOUNCEMENTS_ENABLED` (off: 404). `UPCOMING_PRECONS_ENABLED` was retired in #2399, so item 7's wording

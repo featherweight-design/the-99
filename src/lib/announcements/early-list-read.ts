@@ -126,28 +126,29 @@ export const RELEASE_SLACK_DAYS = 3;
 export type ReleaseCandidate = { fileName: string; setCode: string; firstSeenAt: Date | null; baseline: boolean | null };
 
 /**
- * The release list that replaces an early one, among the precons naming its commander (STATES 3.4):
+ * The release list that replaces an early one, among the precons naming its commander (STATES 3.4), in this order:
  *
- * - a precon the catalog first showed on or after the post's day (less `RELEASE_SLACK_DAYS`), whatever its set and the
- *   set's release date, so a new deck in a long-running set (Secret Lair) still matches and an older precon with the
- *   same commander never does; the earliest such stamp wins;
- * - failing that, a precon with no usable stamp (none, or `baseline`, as the arrivals read treats it) in the set the
- *   post's lists resolve to (`resolvePostSet`'s window rule).
+ * 1. a precon in the set the post's lists resolve to (`resolvePostSet`), unless the catalog stamped it before the post's
+ *    day (less `RELEASE_SLACK_DAYS`): the resolved set is the strongest evidence, so a later product elsewhere sharing the
+ *    commander cannot take over the address. Earliest stamp first, an unstamped or `baseline` one after, then by name;
+ * 2. failing that, a precon in ANY set the catalog first showed on or after that day, so a new deck in a long-running set
+ *    (Secret Lair) whose release date falls outside the post's window still matches. Earliest stamp wins.
  *
- * A stamped precon from before the post is never the release list. Pure, for a test.
+ * A precon stamped before the post is never the release list. Pure, for a test.
  */
 export function pickReleasePrecon(candidates: readonly ReleaseCandidate[], postedAt: Date, setCode: string | null): string | null {
   const floor = postedAt.getTime() - RELEASE_SLACK_DAYS * DAY_MS;
   const byName = (a: ReleaseCandidate, b: ReleaseCandidate) => (a.fileName < b.fileName ? -1 : a.fileName > b.fileName ? 1 : 0);
-  const stamped = candidates
-    .filter((c) => c.firstSeenAt !== null && c.baseline === false && c.firstSeenAt.getTime() >= floor)
-    .sort((a, b) => a.firstSeenAt!.getTime() - b.firstSeenAt!.getTime() || byName(a, b));
-  if (stamped[0]) return stamped[0].fileName;
-  if (!setCode) return null;
-  const unstamped = candidates
-    .filter((c) => (c.firstSeenAt === null || c.baseline !== false) && c.setCode.toLowerCase() === setCode.toLowerCase())
-    .sort(byName);
-  return unstamped[0]?.fileName ?? null;
+  const usable = (c: ReleaseCandidate) => c.firstSeenAt !== null && c.baseline === false;
+  const stampOf = (c: ReleaseCandidate) => (usable(c) ? c.firstSeenAt!.getTime() : Number.POSITIVE_INFINITY);
+  const notBefore = candidates.filter((c) => !usable(c) || c.firstSeenAt!.getTime() >= floor);
+  const order = (a: ReleaseCandidate, b: ReleaseCandidate) => stampOf(a) - stampOf(b) || byName(a, b);
+  if (setCode) {
+    const inSet = notBefore.filter((c) => c.setCode.toLowerCase() === setCode.toLowerCase()).sort(order);
+    if (inSet[0]) return inSet[0].fileName;
+  }
+  const elsewhere = notBefore.filter(usable).sort(order);
+  return elsewhere[0]?.fileName ?? null;
 }
 
 export async function loadEarlyList(userId: string, contentfulId: string, position: number, now = new Date()): Promise<EarlyListRead | null> {

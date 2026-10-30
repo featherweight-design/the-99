@@ -49,6 +49,14 @@ describe("pickReleasePrecon", () => {
     expect(pickReleasePrecon([c("A_CMM", "CMM", null)], posted, "fdc")).toBeNull();
     expect(pickReleasePrecon([c("A_CMM", "CMM", null)], posted, null)).toBeNull();
   });
+
+  it("prefers the resolved set's release over a later product elsewhere sharing the commander", () => {
+    const resolved = c("Angels_FDC", "FDC", "2020-01-01T00:00:00Z", true);
+    const later = c("Angels_SLD", "SLD", "2026-12-01T00:00:00Z");
+    expect(pickReleasePrecon([later, resolved], posted, "fdc")).toBe("Angels_FDC");
+    // With no release in the resolved set yet, the later stamped product is the only match.
+    expect(pickReleasePrecon([later], posted, "fdc")).toBe("Angels_SLD");
+  });
 });
 
 describe("earlyListRowQuery", () => {

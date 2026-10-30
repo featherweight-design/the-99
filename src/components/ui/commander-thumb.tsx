@@ -48,7 +48,7 @@ const BOX: Record<ThumbSize, { width: number; height: number; radius: string }> 
   openWide: { width: 56, height: 78, radius: "rounded-[6px]" },
   // An early decklist's header (announcements Early-List board, `.z-th`): 64/89 (0.719) on a phone, 84/117 (0.718) from md.
   early: { width: 64, height: 89, radius: "rounded-[5px]" },
-  earlyWide: { width: 84, height: 117, radius: "rounded-[5px]" },
+  earlyWide: { width: 84, height: 117, radius: "rounded-[6px]" },
   // Home's What's new row (menu and Home handoff, \`.fi .cardimg\`): 46/64 at the board's 3px, 6.5% of the width and so
   // clear of Scryfall's corner matte (3.1%).
   feed: { width: 46, height: 64, radius: "rounded-[3px]" },
