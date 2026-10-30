@@ -1,0 +1,130 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-10-30T20:10:00Z"
+ },
+ "title": "The 99 · Small items 7",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1612,
+   "h": 873,
+   "title": "Small items 7 · the calls"
+  },
+  "Launch-Date.dc.html": {
+   "x": 1732,
+   "y": 0,
+   "w": 2756,
+   "h": 3463,
+   "title": "1 · Launch date on the launch list card"
+  },
+  "No-Codes.dc.html": {
+   "x": 4608,
+   "y": 0,
+   "w": 1960,
+   "h": 1141,
+   "title": "1 · The flyer section with no codes"
+  },
+  "Revoke-Failed.dc.html": {
+   "x": 6688,
+   "y": 0,
+   "w": 2020,
+   "h": 1972,
+   "title": "1 · When revoking a code fails"
+  },
+  "CSV.dc.html": {
+   "x": 0,
+   "y": 3623,
+   "w": 1412,
+   "h": 2241,
+   "title": "1 · The launch list CSV"
+  },
+  "Print-Revoked.dc.html": {
+   "x": 1532,
+   "y": 3623,
+   "w": 1412,
+   "h": 1924,
+   "title": "1 · The print page for a revoked code"
+  },
+  "Friend-Order.dc.html": {
+   "x": 3064,
+   "y": 3623,
+   "w": 1820,
+   "h": 1257,
+   "title": "Erratum (a) · Friend page order"
+  },
+  "Cart-Toasts.dc.html": {
+   "x": 5004,
+   "y": 3623,
+   "w": 2000,
+   "h": 2492,
+   "title": "3 · Cart: two toasts on the phone"
+  },
+  "SC-Cost.dc.html": {
+   "x": 0,
+   "y": 6275,
+   "w": 2280,
+   "h": 7220,
+   "title": "2 · Suggested changes: the 2-credit cue"
+  },
+  "Cuts-Short.dc.html": {
+   "x": 2400,
+   "y": 6275,
+   "w": 2280,
+   "h": 3447,
+   "title": "4 · Proposed cuts, shorter than a screen"
+  },
+  "About-Cart.dc.html": {
+   "x": 4800,
+   "y": 6275,
+   "w": 1880,
+   "h": 3412,
+   "title": "6 · About: the cart entry"
+  },
+  "Sign-In.dc.html": {
+   "x": 0,
+   "y": 13655,
+   "w": 3100,
+   "h": 2149,
+   "title": "5 · Sign in and sign up"
+  },
+  "Dates.dc.html": {
+   "x": 3220,
+   "y": 13655,
+   "w": 2400,
+   "h": 1153,
+   "title": "Addendum 5–7 · Month-first dates"
+  },
+  "Report-Crash.dc.html": {
+   "x": 5740,
+   "y": 13655,
+   "w": 2600,
+   "h": 2169,
+   "title": "Addendum 8 · Crash screen and /report"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Launch-Date.dc.html",
+  "No-Codes.dc.html",
+  "Revoke-Failed.dc.html",
+  "CSV.dc.html",
+  "Print-Revoked.dc.html",
+  "Friend-Order.dc.html",
+  "Cart-Toasts.dc.html",
+  "SC-Cost.dc.html",
+  "Cuts-Short.dc.html",
+  "About-Cart.dc.html",
+  "Sign-In.dc.html",
+  "Dates.dc.html",
+  "Report-Crash.dc.html"
+ ],
+ "notes": {},
+ "designSystems": []
+}
