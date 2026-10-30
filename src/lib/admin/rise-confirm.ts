@@ -35,7 +35,7 @@ export type ConfirmPreview = {
 export type RiseRefusal = { ok: false; error: "accounts" } | { ok: false; error: "confirm"; preview: ConfirmPreview };
 
 /** One advisory lock for every switch write and every group save: either can move another's rise. */
-export const SWITCH_WRITE_LOCK = "admin_switches";
+export { SWITCH_WRITE_LOCK, lockSwitchWrites } from "../switches/write-lock";
 
 export type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -46,10 +46,6 @@ export class Abort<R> {
 
 /** An id no override or membership can name: the stand-in for an account a partial list leaves out. */
 export const UNLISTED = "\u0000unlisted";
-
-export async function lockSwitchWrites(tx: Tx): Promise<void> {
-  await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${SWITCH_WRITE_LOCK}, 0))`);
-}
 
 export async function readSnapshotIn(tx: Tx): Promise<SwitchSnapshot> {
   const { rows } = await tx.execute<{ overrides: OverrideRow[]; members: { userId: string; groupId: string }[] }>(sql.raw(SNAPSHOT_SQL));

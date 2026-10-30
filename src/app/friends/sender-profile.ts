@@ -8,6 +8,7 @@
 // attempted the spend: the spend itself (`welcomeInvitedIn`), /friends, and this. Without it, a newcomer whose
 // `user.created` webhook failed and who pressed Add a friend before opening /friends would have a profile and no spend.
 import { currentUser } from "@clerk/nextjs/server";
+import { spendFlyerOnSignUp } from "../../lib/flyer/spend";
 import { reservationIdFrom, spendInviteOnSignUp } from "../../lib/invites/spend";
 import { ensureProfile, profileAgeMs } from "../../lib/social/friends";
 import { profileNeedsClerk } from "../../lib/social/rules";
@@ -19,6 +20,10 @@ export async function ensureSenderProfile(userId: string): Promise<void> {
   if (!profileNeedsClerk(await profileAgeMs(userId))) return;
   const user = await currentUser();
   const reservationId = reservationIdFrom(user?.publicMetadata);
-  if (reservationId !== null) await spendInviteOnSignUp(userId, reservationId, user?.firstName);
+  if (reservationId !== null) {
+    const spend = await spendInviteOnSignUp(userId, reservationId, user?.firstName);
+    // A flyer sign-up's metadata names its claim, which the personal spend does not know: the same recovery for it.
+    if (!spend.spent && spend.reason === "unknown") await spendFlyerOnSignUp(userId, reservationId, user?.firstName);
+  }
   await ensureProfile(userId, user?.firstName);
 }

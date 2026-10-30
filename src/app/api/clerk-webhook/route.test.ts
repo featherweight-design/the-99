@@ -5,6 +5,7 @@ const verify = vi.hoisted(() => vi.fn());
 const purge = vi.hoisted(() => vi.fn());
 const record = vi.hoisted(() => vi.fn());
 const spend = vi.hoisted(() => vi.fn());
+const flyer = vi.hoisted(() => vi.fn());
 const grant = vi.hoisted(() => vi.fn());
 const switchEnv = vi.hoisted(() => vi.fn());
 vi.mock("@clerk/nextjs/webhooks", () => ({ verifyWebhook: verify }));
@@ -15,6 +16,8 @@ vi.mock("../../../lib/invites/spend", async (orig) => ({
   ...(await orig<typeof import("../../../lib/invites/spend")>()),
   spendInviteOnSignUp: spend,
 }));
+
+vi.mock("../../../lib/flyer/spend", () => ({ spendFlyerOnSignUp: flyer }));
 
 import { POST } from "./route";
 
@@ -28,6 +31,7 @@ beforeEach(() => {
   purge.mockResolvedValue(report);
   record.mockReset().mockResolvedValue(undefined);
   spend.mockReset().mockResolvedValue({ spent: true });
+  flyer.mockReset().mockResolvedValue({ spent: true });
   grant.mockReset().mockResolvedValue({ granted: true, expiresAt: new Date(0) });
   switchEnv.mockReset().mockResolvedValue({ WELCOME_CREDITS_ENABLED: "true" });
 });
@@ -122,18 +126,31 @@ describe("POST /api/clerk-webhook", () => {
       expect(spend).not.toHaveBeenCalled();
     });
 
-    it("answers 500 for a retry when the grant throws, and still spends the invite", async () => {
+    it("answers 500 for a retry when the grant throws, after the invite was spent", async () => {
       grant.mockRejectedValue(new Error("db down"));
       verify.mockResolvedValue(created({ inviteReservation: RES }));
       expect((await POST(req())).status).toBe(500);
       expect(spend).toHaveBeenCalledWith("user_new", RES, "Ana");
     });
 
-    it("answers 500 when the invite spend fails even though the grant landed, and grants regardless", async () => {
+    it("answers 500 when the invite spend fails and attempts no grant, so the retry decides it with the group in place", async () => {
       spend.mockRejectedValue(new Error("x"));
       verify.mockResolvedValue(created({ inviteReservation: RES }));
+      vi.spyOn(console, "error").mockImplementation(() => {});
       expect((await POST(req())).status).toBe(500);
-      expect(grant).toHaveBeenCalled();
+      expect(grant).not.toHaveBeenCalled();
+      expect(switchEnv).not.toHaveBeenCalled();
+    });
+
+    it("spends the invite (and the flyer fallback) BEFORE the welcome switches are resolved and the lot granted", async () => {
+      const order: string[] = [];
+      spend.mockImplementation(async () => { order.push("spend"); return { spent: false, reason: "unknown" }; });
+      flyer.mockImplementation(async () => { order.push("flyer"); return { spent: true }; });
+      switchEnv.mockImplementation(async () => { order.push("switches"); return { WELCOME_CREDITS_ENABLED: "true" }; });
+      grant.mockImplementation(async () => { order.push("grant"); return { granted: true, expiresAt: new Date(0) }; });
+      verify.mockResolvedValue(created({ inviteReservation: RES }));
+      expect((await POST(req())).status).toBe(200);
+      expect(order).toEqual(["spend", "flyer", "switches", "grant"]);
     });
 
     it("answers 500 and grants nothing when the switch overrides cannot be read, so Clerk retries", async () => {
@@ -177,6 +194,39 @@ describe("POST /api/clerk-webhook", () => {
       } finally {
         logged.mockRestore();
       }
+    });
+
+    it("never tries the flyer spend for a personal invite that was found (its inviter is still befriended)", async () => {
+      verify.mockResolvedValue(created({ inviteReservation: RES }));
+      for (const result of [{ spent: true }, { spent: false, reason: "already" }, { spent: false, reason: "lapsed" }, { spent: false, reason: "deleted" }]) {
+        spend.mockResolvedValue(result);
+        expect((await POST(req())).status).toBe(200);
+      }
+      expect(flyer).not.toHaveBeenCalled();
+    });
+
+    it("falls through to the flyer spend once when no reservation has that id", async () => {
+      verify.mockResolvedValue(created({ inviteReservation: RES }));
+      spend.mockResolvedValue({ spent: false, reason: "unknown" });
+      expect((await POST(req())).status).toBe(200);
+      expect(flyer).toHaveBeenCalledTimes(1);
+      expect(flyer).toHaveBeenCalledWith("user_new", RES, "Ana");
+    });
+
+    it("answers a redelivery as a no-op: the flyer spend says already and the event still answers 200", async () => {
+      verify.mockResolvedValue(created({ inviteReservation: RES }));
+      spend.mockResolvedValue({ spent: false, reason: "unknown" });
+      flyer.mockResolvedValue({ spent: false, reason: "already" });
+      expect((await POST(req())).status).toBe(200);
+      expect((await POST(req())).status).toBe(200);
+    });
+
+    it("answers 500 when the flyer spend fails, so Clerk retries", async () => {
+      verify.mockResolvedValue(created({ inviteReservation: RES }));
+      spend.mockResolvedValue({ spent: false, reason: "unknown" });
+      flyer.mockRejectedValue(new Error("x"));
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      expect((await POST(req())).status).toBe(500);
     });
 
     it("reads no feature switch: an invitation already accepted is honored", async () => {

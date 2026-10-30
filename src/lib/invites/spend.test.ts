@@ -1,5 +1,34 @@
-import { describe, expect, it } from "vitest";
-import { reservationIdFrom } from "./spend";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const h = vi.hoisted(() => ({
+  reads: [] as unknown[][],
+  writes: [] as { op: string; table: unknown; values?: unknown }[],
+  welcome: vi.fn(),
+}));
+function chain(result: () => unknown[]) {
+  const c: Record<string, unknown> = {};
+  for (const m of ["from", "innerJoin", "where", "for"]) c[m] = () => c;
+  c.then = (res: (v: unknown) => unknown, rej: (e: unknown) => unknown) => Promise.resolve().then(result).then(res, rej);
+  return c;
+}
+const fakeTx = {
+  execute: async () => ({ rows: [{ id: "inviter" }, { id: "user_new" }] }),
+  select: () => chain(() => h.reads.shift() ?? []),
+  update: (table: unknown) => ({ set: (values: unknown) => ({ where: async () => { h.writes.push({ op: "update", table, values }); } }) }),
+  insert: (table: unknown) => ({
+    values: (values: unknown) => ({ onConflictDoNothing: async () => { h.writes.push({ op: "insert", table, values }); } }),
+  }),
+};
+vi.mock("../../db", () => ({
+  db: { select: () => chain(() => h.reads.shift() ?? []), transaction: async (cb: (tx: unknown) => unknown) => cb(fakeTx) },
+}));
+vi.mock("../switches/write-lock", () => ({ lockSwitchWrites: async () => undefined }));
+vi.mock("../account/purge", () => ({ tombstoneHash: (id: string) => `hash:${id}` }));
+vi.mock("./send", () => ({ lockSenderIn: async (_tx: unknown, _id: string, given?: Date) => given ?? new Date() }));
+vi.mock("../social/friends", () => ({ welcomeInvitedIn: h.welcome }));
+
+import { flagGroupMembers } from "../../db/schema";
+import { reservationIdFrom, spendInviteOnSignUp } from "./spend";
 
 const ID = "0b3f2c9e-6a41-4d8e-9c53-1f0a7e2d4b68";
 
@@ -12,5 +41,41 @@ describe("reservationIdFrom (the invitation's public metadata, R8)", () => {
     for (const meta of [undefined, null, "x", 7, {}, { inviteReservation: "" }, { inviteReservation: 42 }, { inviteReservation: `${ID} ` }, { inviteReservation: "not-a-uuid" }, { other: ID }]) {
       expect(reservationIdFrom(meta)).toBeNull();
     }
+  });
+});
+
+describe("spendInviteOnSignUp: group inheritance from a flyer-origin inviter", () => {
+  const now = new Date("2026-10-30T12:00:00Z");
+  const reservation = { id: ID, userId: "inviter", kind: "email", state: "reserved", codeTries: 0, holdsUntil: new Date(now.getTime() + 60_000) };
+  /** The reads in order: the reservation's sender, a recorded edge, a tombstone, the reservation, an edge, the inviter's flyer claim, their membership. */
+  function script(flyerClaim: unknown[], membership: unknown[]) {
+    h.reads = [[{ senderId: "inviter" }], [], [], [reservation], [], flyerClaim, membership];
+  }
+  const groupWrites = () => h.writes.filter((w) => w.table === flagGroupMembers);
+
+  beforeEach(() => {
+    h.reads = [];
+    h.writes = [];
+    h.welcome.mockReset();
+  });
+
+  it("puts the invitee in the group of an inviter who came from a flyer, and still befriends the inviter", async () => {
+    script([{ admin: "hugh" }], [{ groupId: "g1" }]);
+    expect(await spendInviteOnSignUp("user_new", ID, "Ana", { now })).toEqual({ spent: true });
+    expect(groupWrites()[0].values).toEqual({ userId: "user_new", groupId: "g1", addedBy: "hugh" });
+    expect(h.welcome).toHaveBeenCalledWith(expect.anything(), "inviter", "user_new", "Ana");
+  });
+
+  it("copies no group from an inviter who did not come from a flyer", async () => {
+    script([], [{ groupId: "g1" }]);
+    expect(await spendInviteOnSignUp("user_new", ID, "Ana", { now })).toEqual({ spent: true });
+    expect(groupWrites()).toHaveLength(0);
+    expect(h.welcome).toHaveBeenCalledTimes(1);
+  });
+
+  it("copies nothing from a flyer-origin inviter who is no longer in any group", async () => {
+    script([{ admin: "hugh" }], []);
+    expect(await spendInviteOnSignUp("user_new", ID, "Ana", { now })).toEqual({ spent: true });
+    expect(groupWrites()).toHaveLength(0);
   });
 });

@@ -8,7 +8,8 @@
  */
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { accountTombstones, inviteBalances, inviteEdges, inviteReservations } from "../../db/schema";
+import { accountTombstones, flagGroupMembers, flyerClaims, flyerCodes, inviteBalances, inviteEdges, inviteReservations } from "../../db/schema";
+import { lockSwitchWrites } from "../switches/write-lock";
 import { tombstoneHash } from "../account/purge";
 import { welcomeInvitedIn } from "../social/friends";
 import { CODE_MAX_TRIES } from "./rules";
@@ -78,6 +79,24 @@ export async function spendInviteOnSignUp(
       inviterUserId: row.userId, inviteeUserId: newUserId, kind: row.kind === "qr" ? "qr" : "email", joinedAt: now,
     }).onConflictDoNothing();
     await welcomeInvitedIn(tx, row.userId, newUserId, offeredName);
+    // An inviter who joined through a flyer is in the code's flag group; the people they invite join it too. Strictly
+    // those inviters: a group an admin put someone in by hand is not passed on by their invites.
+    // `added_by` is an admin audit field that account purge keeps, while a membership goes with its user_id: so it names
+    // the code's creator (the admin), never the inviter, whose id would outlive their account in another player's row.
+    const [fromFlyer] = await tx.select({ admin: flyerCodes.createdBy }).from(flyerClaims)
+      .innerJoin(flyerCodes, eq(flyerCodes.id, flyerClaims.codeId))
+      .where(and(eq(flyerClaims.userId, row.userId), eq(flyerClaims.state, "spent")));
+    if (fromFlyer) {
+      // The lock first, then the read: a group move waits on every switch write (as a flyer sign-up's own join does), so
+      // the group read here is the serialized state and not one a concurrent admin move has since changed.
+      await lockSwitchWrites(tx);
+      const [membership] = await tx.select({ groupId: flagGroupMembers.groupId }).from(flagGroupMembers)
+        .where(eq(flagGroupMembers.userId, row.userId));
+      if (membership) {
+        await tx.insert(flagGroupMembers).values({ userId: newUserId, groupId: membership.groupId, addedBy: fromFlyer.admin })
+          .onConflictDoNothing();
+      }
+    }
     return { spent: true };
   });
 }

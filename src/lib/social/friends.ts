@@ -265,13 +265,21 @@ async function befriendIn(tx: Tx, a: string, b: string): Promise<void> {
 }
 
 /**
+ * A newcomer's profile alone (the Clerk first name, else "Player", kept when one exists), inside a spend's transaction:
+ * for a flyer sign-up, who is not befriended with anyone.
+ */
+export async function createProfileIn(tx: Tx, userId: string, offeredName: unknown): Promise<void> {
+  const displayName = cleanDisplayName(offeredName) ?? "Player";
+  await tx.insert(socialProfiles).values({ userId, displayName }).onConflictDoNothing();
+}
+
+/**
  * An invited newcomer's first rows (invites plan PR 3, R8), inside the spend's transaction: their profile (the Clerk
  * first name, else "Player", kept when one exists) and the friendship with the account that invited them. Idempotent,
  * so the webhook and the newcomer's first `/friends` can both run it in either order.
  */
 export async function welcomeInvitedIn(tx: Tx, senderId: string, newcomerId: string, offeredName: unknown): Promise<void> {
-  const displayName = cleanDisplayName(offeredName) ?? "Player";
-  await tx.insert(socialProfiles).values({ userId: newcomerId, displayName }).onConflictDoNothing();
+  await createProfileIn(tx, newcomerId, offeredName);
   await befriendIn(tx, senderId, newcomerId);
 }
 

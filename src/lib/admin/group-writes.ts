@@ -5,7 +5,7 @@ import { db } from "../../db";
 import { riseForAccounts } from "../switches/explain";
 import { clearSwitchSnapshot } from "../switches/snapshot";
 import { listAccounts, type Account } from "./accounts";
-import { groupEvents, isGroupId, memberDiff, validateGroup, type Desired, withMembership, type GroupInput, type GroupRefusal, type SavedGroup } from "./groups-rule";
+import { groupEvents, isGroupId, effectiveMembers, memberDiff, validateGroup, type Desired, withMembership, type GroupInput, type GroupRefusal, type SavedGroup } from "./groups-rule";
 import { Abort, checkRise, lockSwitchWrites, readSnapshotIn, type ConfirmPreview, type RiseOf, type Tx } from "./rise-confirm";
 
 /**
@@ -39,7 +39,7 @@ async function writeIn(
   tx: Tx,
   actorId: string,
   id: string | null,
-  desired: Desired,
+  submitted: Desired,
   accounts: readonly Account[],
   clerkDown: boolean,
   riseOf: RiseOf,
@@ -57,6 +57,8 @@ async function writeIn(
   const groupId = saved?.id ?? newId();
 
   const before = await readSnapshotIn(tx);
+  // A save from an editor that loaded its members is a diff against them, applied to what the group holds now.
+  const desired: Desired = { ...submitted, members: saved === null ? submitted.members : effectiveMembers(groupId, submitted, before.groupOf) };
   // A member must be an account this environment lists, or one the group already holds (Clerk down).
   const allowed = new Set(accounts.map((a) => a.id));
   for (const [u, g] of before.groupOf) if (g === groupId) allowed.add(u);
