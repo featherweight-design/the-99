@@ -34,6 +34,8 @@ import { leadStory, type FeedKind } from "./kinds";
 import { effectiveKinds, markFeedSeen, neverChose, readFeedPrefs } from "./prefs";
 import { loadFeed, type FeedItem, type FeedPost } from "./read";
 import { wizardsOutRoute } from "../push/wizards-out";
+import { parseCatalogKey } from "../push/catalog-rule";
+import { loadPostListTargets } from "../announcements/early-list-read";
 
 type Executor = Pick<typeof db, "execute">;
 
@@ -51,7 +53,11 @@ export type FeedView = {
   card: FeedCard | null;
   /** The friend who is the news (trade match, spare request), by public id. */
   friend: { publicId: string; displayName: string } | null;
-  /** Where the press goes in the app, or null when it opens a card's detail (`opens`), goes off the app (`outbound`), or has no press yet (spare request). */
+  /**
+   * Where the press goes in the app, or null when it opens a card's detail (`opens`), goes off the app (`outbound`), or has no press yet (spare request).
+   * A Commander decklists post on Home carries BOTH: this, its See the lists (`withListTargets`, Announcements UI 6b),
+   * the row's main press, and `outbound`, its Read the post beside it. Only while a list in it declares a commander.
+   */
   href: string | null;
   /** The card whose shipped detail the press opens: a combo's first piece. */
   opens: string | null;
@@ -339,13 +345,33 @@ export async function loadHomeFeed(userId: string, env: NodeJS.ProcessEnv, now: 
   // default would read as turned off.
   const offer = neverChose(prefs) ? available.filter((k) => !on.includes(k)) : [];
   if (items.length === 0 && offer.length > 0) return { chosen: false, offer, on };
-  const views = toViews(items, await lookups(userId, items, q, env));
+  // Every decklists post's See the lists in ONE read beside the catalog lookups, never one per row.
+  const posts = items.flatMap((i) => {
+    const id = i.kind === "commander-decklists" ? parseCatalogKey(i.kind, i.key) : null;
+    return id ? [id] : [];
+  });
+  const [found, targets] = await Promise.all([lookups(userId, items, q, env), loadPostListTargets(posts, now, q)]);
+  const views = withListTargets(toViews(items, found), targets);
   const feed = offer.length > 0 ? { ...splitLead(views, on), offer } : splitLead(views, on);
   // Only a spare request that leads is answered on Home; its ask is read only then. The ask waits on the friend's
   // side whatever the feed shows, so the match is by card and asker: one open ask per asker and card (the index).
   const answered = await answerDetails(userId, feed, env);
   if (answered.chosen && answered.lead?.kind === "spare-request") return withLeadAsk(answered, await loadIncomingAsks(userId, env, now, q));
   return answered;
+}
+
+/**
+ * Each Commander decklists post's See the lists (`href`), given every post's address by Contentful id
+ * (`loadPostListTargets`, one read for the page). A post with none keeps its one press. Pure, for the tests.
+ */
+export function withListTargets(views: FeedView[], targets: ReadonlyMap<string, string>): FeedView[] {
+  if (targets.size === 0) return views;
+  return views.map((v) => {
+    if (v.kind !== "commander-decklists") return v;
+    const id = parseCatalogKey(v.kind, v.key);
+    const href = id === null ? undefined : targets.get(id);
+    return href ? { ...v, href } : v;
+  });
 }
 
 /**

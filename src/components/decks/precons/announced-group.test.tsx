@@ -4,7 +4,7 @@ import { renderToString } from "react-dom/server";
 import type { AnnouncedMatch } from "../../../lib/precons/arrivals";
 import type { RevealedCommander } from "../../../lib/precons/revealed";
 import type { UpcomingSet } from "../../../lib/precons/upcoming";
-import { ANNOUNCED_KEY, AnnouncedGroup, announcedPrintings, useAnnouncedVisit, type AnnouncedGroupProps } from "./announced-group";
+import { ANNOUNCED_KEY, AnnouncedGroup, announcedPrintings, opensOnHash, setAnchorOf, useAnnouncedVisit, type AnnouncedGroupProps } from "./announced-group";
 import { AnnouncedSet, TILE_FOCUS_RING } from "./announced-parts";
 import { PRECON_TILES_CLASS } from "./precon-grid";
 import { TILE_SHELL } from "../../ui/card-tile-caption";
@@ -108,6 +108,63 @@ describe("AnnouncedGroup", () => {
     window.history.replaceState(null, "", "/decks/precons?sort=newest#announced");
     draw();
     expect(head()).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("opens on one set's anchor (#announced-<code>, Home's See the lists) over a stored close, and scrolls to that set", () => {
+    window.localStorage.setItem(ANNOUNCED_KEY, "closed");
+    window.history.replaceState(null, "", "/decks/precons#announced-mdc");
+    const scrolled: string[] = [];
+    const spy = vi.spyOn(Element.prototype, "scrollIntoView").mockImplementation(function (this: Element) { scrolled.push(this.id); });
+    try {
+      draw();
+      expect(head()).toHaveAttribute("aria-expanded", "true");
+      expect(scrolled).toEqual(["announced-mdc"]);
+      expect(document.getElementById("announced-mdc")).toHaveAttribute("data-testid", "announced-set");
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it("gives a set's row the same anchor in the rows view", () => {
+    window.history.replaceState(null, "", "/decks/precons#announced-trc");
+    const spy = vi.spyOn(Element.prototype, "scrollIntoView").mockImplementation(() => {});
+    try {
+      draw({ view: "rows" });
+      expect(head()).toHaveAttribute("aria-expanded", "true");
+      expect(document.getElementById("announced-trc")).toHaveAttribute("data-testid", "announced-row");
+      expect(spy).toHaveBeenCalledTimes(1);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it("opens on a set's anchor that arrives after the page drew (a hash change)", () => {
+    const spy = vi.spyOn(Element.prototype, "scrollIntoView").mockImplementation(() => {});
+    try {
+      draw();
+      expect(head()).toHaveAttribute("aria-expanded", "false");
+      act(() => {
+        window.location.hash = "#announced-trc";
+        fireEvent(window, new HashChangeEvent("hashchange"));
+      });
+      expect(head()).toHaveAttribute("aria-expanded", "true");
+      expect(spy).toHaveBeenCalledTimes(1);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it("reads which hashes open the group, and which name a set", () => {
+    expect(opensOnHash("#announced")).toBe(true);
+    expect(opensOnHash("#announced-fdc")).toBe(true);
+    expect(opensOnHash("#announced-")).toBe(false);
+    // The group's own ids name no set.
+    expect(opensOnHash("#announced-sets")).toBe(false);
+    expect(opensOnHash("#announced-head")).toBe(false);
+    expect(opensOnHash("#precons-2026")).toBe(false);
+    expect(opensOnHash("")).toBe(false);
+    expect(setAnchorOf("#announced-fdc")).toBe("announced-fdc");
+    expect(setAnchorOf("#announced")).toBeNull();
   });
 
   it("stays open after the link's fragment leaves the address (a search mirror, the decklist jump)", () => {

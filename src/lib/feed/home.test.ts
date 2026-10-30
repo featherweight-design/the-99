@@ -13,7 +13,7 @@ vi.mock("../social/spare-requests", async (importOriginal) => ({
 // The reader owns Sai in another printing: the row draws the chain's picture, the one card details opens.
 vi.mock("../cards/chain-art", () => ({ chainArt: async () => new Map([["c1", "sai-owned.jpg"]]) }));
 
-import { comboPieces, feedCardsQuery, homeFeedAfter, loadHomeFeed, postLists, preconCommandersQuery, preconOwnedQuery, setCardsQuery, splitLead, toViews, withAnswerDetails, withLeadAsk, wizardsPostUrl, type FeedView, type HomeFeed } from "./home";
+import { comboPieces, feedCardsQuery, homeFeedAfter, loadHomeFeed, postLists, preconCommandersQuery, preconOwnedQuery, setCardsQuery, splitLead, toViews, withAnswerDetails, withListTargets, withLeadAsk, wizardsPostUrl, type FeedView, type HomeFeed } from "./home";
 import type { IncomingAsk } from "../social/spare-requests";
 import type { FeedItem } from "./read";
 
@@ -35,7 +35,7 @@ const refusing = {
  * An executor answering the prefs read with `kinds` (and `prefs`: the declined list, the offer's ✕ stamp) and each
  * execute by the table its statement reads.
  */
-function fake(kinds: Record<string, string>, rows: { feed?: unknown[]; sets?: unknown[]; cards?: unknown[] }, prefs: { declined?: string[]; offerClosedAt?: Date | null } = {}) {
+function fake(kinds: Record<string, string>, rows: { feed?: unknown[]; sets?: unknown[]; cards?: unknown[]; lists?: unknown[] }, prefs: { declined?: string[]; offerClosedAt?: Date | null } = {}) {
   return {
     select: () => ({ from: () => ({ where: async () => [{ feedKinds: kinds, ...prefs }] }) }),
     execute: vi.fn(async (q: SQL) => {
@@ -43,6 +43,7 @@ function fake(kinds: Record<string, string>, rows: { feed?: unknown[]; sets?: un
       if (s.includes("as unseen")) return { rows: rows.feed ?? [] };
       if (s.includes('from "printings" sp')) return { rows: rows.sets ?? [] };
       if (s.includes('from "cards" fc')) return { rows: rows.cards ?? [] };
+      if (s.includes('from "wizards_announcements" pwa')) return { rows: rows.lists ?? [] };
       return { rows: [] };
     }),
   } as never;
@@ -369,8 +370,50 @@ describe("a Wizards post", () => {
     expect(feed?.chosen && feed.items.map((i) => [i.kind, i.outbound])).toEqual([["wizards-news", "/out/wizards/n1"]]);
   });
 
+  it("gives a decklists post its See the lists beside Read the post, all posts from ONE read (Announcements UI 6b)", async () => {
+    const env = { HOME_FEED_ENABLED: "true", ANNOUNCEMENTS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+    const data = { title: "Foundations Commander: the decklists", excerpt: "Every card.", hero: null, url: URL_OK, promised: 5, lists: 3 };
+    const q = fake({}, {
+      feed: [
+        row({ kind: "commander-decklists", key: "post:d1", created_at: NOW.toISOString(), name: data.title, data, unseen: false }),
+        row({ kind: "commander-decklists", key: "post:d2", created_at: NOW.toISOString(), name: data.title, data, unseen: false }),
+        row({ kind: "secret-lair", key: "post:s1", created_at: NOW.toISOString(), name: "JAWS", data: { ...data, lists: 0 }, unseen: false }),
+      ],
+      lists: [
+        { contentful_id: "d1", commander_id: "a", named: true, sets: [{ code: "fdc", releasedAt: "2026-11-13", hasPrecons: false }] },
+        // d2's only list declares no commander: no early page, so no See the lists.
+        { contentful_id: "d2", commander_id: null, named: false, sets: [] },
+      ],
+    });
+    const feed = await loadHomeFeed("u1", env, NOW, q);
+    const views = feed?.chosen ? feed.items : [];
+    expect(views.map((v) => [v.key, v.href, v.outbound])).toEqual([
+      ["post:d1", "/decks/precons#announced-fdc", "/out/wizards/d1"],
+      ["post:d2", null, "/out/wizards/d2"],
+      ["post:s1", null, "/out/wizards/s1"],
+    ]);
+    const calls = (q as unknown as { execute: { mock: { calls: [SQL][] } } }).execute.mock.calls.map(([x]) => text(x));
+    const reads = calls.filter((x) => x.includes('from "wizards_announcements" pwa'));
+    expect(reads).toHaveLength(1);
+  });
+
   it("offers nothing of Wizards' with ANNOUNCEMENTS_ENABLED off", async () => {
     const feed = await loadHomeFeed("u1", { HOME_FEED_ENABLED: "true" } as unknown as NodeJS.ProcessEnv, NOW, fake({}, {}));
     expect(feed).toEqual({ chosen: false, offer: ["new-set", "new-precon", "combo"], on: [] });
+  });
+});
+
+describe("withListTargets", () => {
+  const view = (kind: FeedView["kind"], key: string): FeedView => ({
+    key, kind, at: NOW.toISOString(), unseen: false, card: null, friend: null, href: null, opens: null, outbound: `/out/wizards/${key.slice(5)}`,
+    post: { title: "t", summary: null, hero: null, lists: null }, name: null, setSize: null, owned: null, drop: null, combo: null, answer: null, askable: false,
+  });
+
+  it("sets a decklists post's href by its Contentful id and leaves every other item as it was", () => {
+    const views = [view("commander-decklists", "post:d1"), view("secret-lair", "post:d1"), view("commander-decklists", "post:d2")];
+    const out = withListTargets(views, new Map([["d1", "/decks/precons?q=FDC"]]));
+    expect(out.map((v) => v.href)).toEqual(["/decks/precons?q=FDC", null, null]);
+    expect(out.map((v) => v.outbound)).toEqual(["/out/wizards/d1", "/out/wizards/d1", "/out/wizards/d2"]);
+    expect(out[1]).toBe(views[1]);
   });
 });

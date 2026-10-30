@@ -223,3 +223,27 @@ string ships as drawn.
   by their quiet names: the first three, then "and more" (copy review, 2026-10-30).
 - **The shared Checkbox stays** (Hugh's ruling, recorded in #2408's erratum): the Offer board's 20×20 dashed box and CSS
   check are not built; the boxes draw the shipped `Checkbox`.
+
+## Engineering audit: UI 6b (See the lists)
+
+**Scope.** STATES 1.9 and the decklists lead: a Commander decklists row (board Home-Rows `.fi .ac .two`) carries "See
+the lists ›" as its main, stretched, in-app press and "Read the post" as the quiet `.lnk.out` (`--fg-muted`) out to
+`/out/wizards/<id>`; one line 16px apart on a phone, stacked and right-aligned from `md`, 28px each. The decklists lead
+(board Lead-Story `.yg2`) draws "See the lists" filled (`.ba`, 40/36px, no ›) and "Read the post" as the ghost `.gh`.
+Secret Lair, Wizards news and a decklists post with no list declaring a commander are unchanged.
+
+**Target.** Read per request on Home, in ONE statement for every decklists post on the page (`postListRowsQuery`), by
+the early page's own set rule (`resolvePostSet`, same window and set types):
+- the resolved set is released (on or before today, UTC) and `precons` holds it: `/decks/precons?q=<CODE>`. The list
+  has no set filter or set anchor; its search matches a precon's set code (`filterPrecons`), so the set's precons are
+  what it lands on, with the code as its removable search chip;
+- otherwise, the set's Announced block: `/decks/precons#announced-<code>`;
+- no set resolves: `/decks/precons#announced`.
+
+**Anchors.** The Announced group opens on `#announced-<code>` as on `#announced`, over a stored close, and scrolls to
+that set's block once open (the server draws the group closed, so the browser's own jump found no height). The rows
+view's set row carries the same id as the tiles view's block.
+
+**Deviation.** The row's picture links where the stretched press goes (See the lists), not out to the post.
+
+**Copy review.** "See the lists" ships as drawn.

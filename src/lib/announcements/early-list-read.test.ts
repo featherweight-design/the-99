@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { db } from "../../db";
-import { assembleEarlyList, commanderPrintingsQuery, earlyListRowQuery, isBasicName, pickReleasePrecon, releaseCandidatesQuery } from "./early-list-read";
+import { PgDialect } from "drizzle-orm/pg-core";
+import { assembleEarlyList, commanderPrintingsQuery, earlyListRowQuery, isBasicName, loadPostListTargets, pickReleasePrecon, postListRowsQuery, releaseCandidatesQuery, toPostListRows } from "./early-list-read";
 import type { EarlyCardFacts } from "./early-list";
 
 describe("releaseCandidatesQuery", () => {
@@ -86,6 +87,72 @@ describe("commanderPrintingsQuery", () => {
   it("also takes any set that holds precons, whatever its type (Commander Masters is CMM, a masters set)", () => {
     const { sql } = commanderPrintingsQuery(["a"], new Date("2026-10-29T15:00:00Z"), db).toSQL();
     expect(sql).toMatch(/\("sets"\."set_type" = \$\d+ or exists \(select 1 from "precons" p where lower\(p\.set_code\) = "sets"\.code\)\)/);
+  });
+});
+
+describe("postListRowsQuery (Home's See the lists, Announcements UI 6b)", () => {
+  const text = () => new PgDialect().sqlToQuery(postListRowsQuery(["p1", "p2"]));
+
+  it("reads every post's lists in one statement, by Contentful id, Commander decklists posts only", () => {
+    const { sql, params } = text();
+    expect(sql).toContain('from "wizards_announcements" pwa');
+    expect(sql).toContain('join "wizards_announcement_decklists" pwd on pwd.announcement_id = pwa.id');
+    expect(sql).toContain("pwa.kind = 'commander-decklists' and pwa.contentful_id = any(");
+    expect(params).toEqual(expect.arrayContaining([["p1", "p2"]]));
+  });
+
+  it("aliases and qualifies both sides of every correlated subquery (AGENTS.md)", () => {
+    const { sql } = text();
+    expect(sql).toContain("where psr.oracle_id = pwd.commander_card_id");
+    expect(sql).toContain('join "sets" pss on pss.code = psr.set_code');
+    expect(sql).toContain('exists (select 1 from "precons" psp where lower(psp.set_code) = pss.code)');
+    expect(sql).toContain("(pss.set_type = 'commander' or exists (select 1 from \"precons\" psq where lower(psq.set_code) = pss.code))");
+    expect(sql).not.toMatch(/"oracle_id" = "commander_card_id"/);
+  });
+
+  it("keeps the early page's window: paper sets from 60 days before the post's UTC day to 180 after", () => {
+    const { sql, params } = text();
+    expect(sql).toContain("pss.digital = false");
+    expect(sql).toMatch(/pss\.released_at >= \(pwa\.published_at at time zone 'UTC'\)::date - \$\d+::int/);
+    expect(sql).toMatch(/pss\.released_at <= \(pwa\.published_at at time zone 'UTC'\)::date \+ \$\d+::int/);
+    expect(params).toEqual(expect.arrayContaining([60, 180]));
+  });
+
+  it("names whether each list declares a commander", () => {
+    expect(text().sql).toContain("(pwd.commander_name is not null) as named");
+  });
+});
+
+describe("toPostListRows", () => {
+  it("reads the jsonb sets defensively", () => {
+    expect(toPostListRows([
+      { contentful_id: "p1", commander_id: "a", named: true, sets: [{ code: "fdc", releasedAt: "2026-11-13", hasPrecons: false }, { code: 3 }, null] },
+      { contentful_id: "p1", commander_id: null, named: false, sets: null },
+    ])).toEqual([
+      { contentfulId: "p1", commanderId: "a", named: true, sets: [{ code: "fdc", releasedAt: "2026-11-13", hasPrecons: false }] },
+      { contentfulId: "p1", commanderId: null, named: false, sets: [] },
+    ]);
+  });
+});
+
+describe("loadPostListTargets", () => {
+  it("reads nothing when Home has no decklists post", async () => {
+    const execute = () => { throw new Error("read"); };
+    expect(await loadPostListTargets([], new Date(), { execute } as never)).toEqual(new Map());
+  });
+
+  it("answers every post from one read", async () => {
+    let calls = 0;
+    const execute = async () => {
+      calls += 1;
+      return { rows: [
+        { contentful_id: "p1", commander_id: "a", named: true, sets: [{ code: "fdc", releasedAt: "2026-11-13", hasPrecons: false }] },
+        { contentful_id: "p2", commander_id: "b", named: true, sets: [] },
+      ] };
+    };
+    const out = await loadPostListTargets(["p1", "p2"], new Date("2026-10-29T12:00:00Z"), { execute } as never);
+    expect(calls).toBe(1);
+    expect(out).toEqual(new Map([["p1", "/decks/precons#announced-fdc"], ["p2", "/decks/precons#announced"]]));
   });
 });
 

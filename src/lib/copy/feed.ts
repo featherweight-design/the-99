@@ -146,8 +146,10 @@ export const feedCopy = {
       combo: "See the combo",
       /** A Secret Lair or Wizards news post, on magic.wizards.com in a new tab (the link-out icon and the spoken suffix are `FeedPress`'s). */
       readOnWizards: "Read on Wizards",
-      /** A Commander decklists post, the same way. "See the lists ›", its in-app press, lands with the early lists. */
+      /** A Commander decklists post, the same way; beside See the lists, it is the row's quieter press. */
       readPost: "Read the post",
+      /** A Commander decklists post's in-app press, the row's main one: the post's set on Precons (Announcements UI 6b). */
+      seeLists: "See the lists",
       /** An answer to the reader's own spare request: opens that one request over Home (small items item 3). */
       answer: "Your request",
     },

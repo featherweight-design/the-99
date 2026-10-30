@@ -283,6 +283,62 @@ describe("a Wizards post's row (announcements boards Home-Rows and Row-States)",
   });
 });
 
+describe("a decklists post's two presses (Announcements UI 6b, board Home-Rows `.fi .ac .two`)", () => {
+  const item = (o: Partial<FeedView> = {}) => view({
+    key: "post:d1", kind: "commander-decklists", card: null, href: "/decks/precons#announced-fdc", outbound: "/out/wizards/d1",
+    post: { title: "Foundations Commander: the decklists", summary: "Every card.", hero: null, lists: { n: 3, of: 5 } }, ...o,
+  });
+
+  it("draws See the lists first, stretched over the row, then the quiet Read the post out to the post", () => {
+    const { container } = list(<FeedItemRow item={item()} now={NOW} onDismiss={() => {}} />);
+    const presses = container.querySelectorAll("[data-feed-press]");
+    expect(presses).toHaveLength(2);
+    const [lists, out] = [...presses];
+    expect(lists.textContent).toBe("See the lists ›");
+    expect(lists).toHaveAttribute("href", "/decks/precons#announced-fdc");
+    expect(lists).not.toHaveAttribute("target");
+    expect(lists.className).toContain("after:inset-0");
+    expect(lists.className).toContain("text-[color:var(--accent-text)]");
+    expect(lists.className).toContain("text-[13px]");
+    expect(lists.className).toContain("min-h-[32px]");
+    expect(lists.className).toContain("md:min-h-[28px]");
+    expect(out.textContent).toMatch(/^Read the post/);
+    expect(out).toHaveAttribute("href", "/out/wizards/d1");
+    expect(out).toHaveAttribute("target", "_blank");
+    expect(out.querySelector("svg[data-link-out]")).not.toBeNull();
+    expect(out.className).toContain("text-[color:var(--fg-muted)]");
+    expect(out.className).not.toContain("after:inset-0");
+    // Above the stretched press, so a press on it goes out.
+    expect(out.className).toContain("z-[1]");
+    expect(out.className).toContain("md:min-h-[28px]");
+    // The picture goes where the row goes: See the lists.
+    expect(container.querySelector("[data-feed-picture]")).toHaveAttribute("href", "/decks/precons#announced-fdc");
+    // The ✕ still ends the action line.
+    expect(container.querySelector("[data-feed-actions]")!.lastElementChild).toBe(screen.getByRole("button", { name: /Hide/ }));
+  });
+
+  it("shares one line on a phone, 16px apart, and stacks right-aligned from md", () => {
+    const { container } = list(<FeedItemRow item={item()} now={NOW} />);
+    const two = container.querySelector("[data-feed-two]")!;
+    expect(two.className).toContain("gap-x-[16px]");
+    expect(two.className).toMatch(/md:flex-col .*md:items-end/);
+  });
+
+  it("keeps the one Read the post on a decklists post with no list in, and on every other post", () => {
+    const none = list(<FeedItemRow item={item({ href: null })} now={NOW} />);
+    expect(none.container.querySelector("[data-feed-two]")).toBeNull();
+    const press = none.container.querySelectorAll("[data-feed-press]");
+    expect(press).toHaveLength(1);
+    expect(press[0].textContent).toMatch(/^Read the post/);
+    expect(press[0].className).toContain("after:inset-0");
+    expect(press[0].className).toContain("text-[color:var(--accent-text)]");
+    none.unmount();
+    const lair = list(<FeedItemRow item={item({ kind: "secret-lair" })} now={NOW} />);
+    expect(lair.container.querySelector("[data-feed-two]")).toBeNull();
+    expect(lair.container.querySelectorAll("[data-feed-press]")).toHaveLength(1);
+  });
+});
+
 describe("a Wizards post and its ✕", () => {
   it("draws its ✕ beside the press: feed_dismissals admits post: keys", () => {
     const item = view({ kind: "secret-lair", card: null, outbound: "https://magic.wizards.com/en/news/x", post: { title: "T", summary: null, hero: null, lists: null } });

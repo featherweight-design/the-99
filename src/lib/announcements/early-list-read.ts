@@ -16,7 +16,7 @@ import { summarisePrecons } from "../precons/list";
 import { BASIC_TYPES } from "../swaps/land";
 import type { OpenPrecon, OpenPreconCard } from "../precons/open-read";
 import { utcDay } from "../precons/upcoming";
-import { resolvePostSet, splitEarlyLines, type EarlyCardFacts, type UnmatchedLine } from "./early-list";
+import { postListTargets, resolvePostSet, splitEarlyLines, type EarlyCardFacts, type PostListRow, type UnmatchedLine } from "./early-list";
 
 type Reader = Pick<typeof db, "select" | "selectDistinct">;
 
@@ -118,6 +118,55 @@ export function releaseCandidatesQuery(commanderId: string, q: Reader = db) {
       isNull(precons.twinOf),
       sql`exists (select 1 from ${preconCards} pc where pc.file_name = ${precons}.file_name and pc.is_commander and pc.oracle_id = ${commanderId})`,
     ));
+}
+
+/**
+ * Home's See the lists, for every Commander decklists post on the page at once (Announcements UI 6b; never one read per
+ * row): each stored list of each post, whether it declares a commander, and the sets its commander is printed in by
+ * `commanderPrintingsQuery`'s rule (a Commander set or one holding precons, not digital, inside the post's window), each
+ * with whether `precons` holds it. `postListTargets` turns the rows into addresses. Raw SQL: every table is aliased and
+ * every column qualified (AGENTS.md), and the window is the post's UTC day less 60 and plus 180 days.
+ */
+export function postListRowsQuery(contentfulIds: readonly string[]) {
+  return sql`select pwa.contentful_id as contentful_id, pwd.commander_card_id as commander_id,
+      (pwd.commander_name is not null) as named,
+      coalesce((select jsonb_agg(distinct jsonb_build_object(
+          'code', pss.code, 'releasedAt', pss.released_at,
+          'hasPrecons', exists (select 1 from ${precons} psp where lower(psp.set_code) = pss.code)))
+        from ${printings} psr
+        join ${sets} pss on pss.code = psr.set_code
+        where psr.oracle_id = pwd.commander_card_id
+          and pss.digital = false
+          and (pss.set_type = 'commander' or exists (select 1 from ${precons} psq where lower(psq.set_code) = pss.code))
+          and pss.released_at >= (pwa.published_at at time zone 'UTC')::date - ${SET_WINDOW_BEFORE_DAYS}::int
+          and pss.released_at <= (pwa.published_at at time zone 'UTC')::date + ${SET_WINDOW_AFTER_DAYS}::int), '[]'::jsonb) as sets
+    from ${wizardsAnnouncements} pwa
+    join ${wizardsAnnouncementDecklists} pwd on pwd.announcement_id = pwa.id
+    where pwa.kind = 'commander-decklists' and pwa.contentful_id = any(${sql.param([...contentfulIds])}::text[])`;
+}
+
+type PostListSqlRow = { contentful_id: string; commander_id: string | null; named: boolean; sets: unknown };
+
+/** The rows of `postListRowsQuery`, read defensively (`sets` is jsonb). Pure, for a test. */
+export function toPostListRows(rows: readonly PostListSqlRow[]): PostListRow[] {
+  return rows.map((r) => ({
+    contentfulId: r.contentful_id,
+    commanderId: r.commander_id,
+    named: r.named === true,
+    sets: (Array.isArray(r.sets) ? r.sets : []).flatMap((x: unknown) => {
+      const o = (x ?? {}) as Record<string, unknown>;
+      return typeof o.code === "string" && typeof o.releasedAt === "string"
+        ? [{ code: o.code, releasedAt: o.releasedAt, hasPrecons: o.hasPrecons === true }]
+        : [];
+    }),
+  }));
+}
+
+/** Every listed post's See the lists address by Contentful id, in one read; none asked, no read. */
+export async function loadPostListTargets(contentfulIds: readonly string[], now: Date, q: Pick<typeof db, "execute"> = db): Promise<Map<string, string>> {
+  if (contentfulIds.length === 0) return new Map();
+  const { rows } = await q.execute<PostListSqlRow>(postListRowsQuery(contentfulIds));
+  return postListTargets(toPostListRows(rows as PostListSqlRow[]), utcDay(now));
 }
 
 /** How long before the post a precon may first show in the catalog and still be its release list (clock and ingest skew). */

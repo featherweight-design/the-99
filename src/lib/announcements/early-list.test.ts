@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { announcedSetAnchor, earlyListHref, isWizardsPostUrl, parseListPosition, resolvePostSet, splitEarlyLines, type EarlyCardFacts } from "./early-list";
+import { announcedSetAnchor, earlyListHref, isWizardsPostUrl, parseListPosition, postListTargets, preconsOfSetHref, resolvePostSet, seeListsHref, splitEarlyLines, type EarlyCardFacts, type PostListRow } from "./early-list";
 
 describe("earlyListHref", () => {
   it("is the early route with the post's id and the list's position", () => {
@@ -102,5 +102,55 @@ describe("splitEarlyLines", () => {
     const { matched, unmatched } = splitEarlyLines([{ name: "Gone", count: 2, cardId: "x" }], new Map());
     expect(matched).toEqual([]);
     expect(unmatched).toEqual([{ name: "Gone", count: 2 }]);
+  });
+});
+
+describe("seeListsHref (Home's See the lists, Announcements UI 6b)", () => {
+  const TODAY = "2026-11-20";
+
+  it("lands on the set's precons once it is out and its release lists are in", () => {
+    expect(seeListsHref({ code: "fdc", releasedAt: "2026-11-13", hasPrecons: true }, TODAY)).toBe("/decks/precons?q=FDC");
+    expect(seeListsHref({ code: "fdc", releasedAt: TODAY, hasPrecons: true }, TODAY)).toBe("/decks/precons?q=FDC");
+  });
+
+  it("lands on the set's Announced block before it is out, or while the release lists are not in", () => {
+    expect(seeListsHref({ code: "fdc", releasedAt: "2026-12-04", hasPrecons: true }, TODAY)).toBe("/decks/precons#announced-fdc");
+    expect(seeListsHref({ code: "fdc", releasedAt: "2026-11-13", hasPrecons: false }, TODAY)).toBe("/decks/precons#announced-fdc");
+    expect(seeListsHref({ code: "FDC", releasedAt: "2026-12-04", hasPrecons: false }, TODAY)).toBe("/decks/precons#announced-fdc");
+  });
+
+  it("lands on the Announced group when the set cannot be told", () => {
+    expect(seeListsHref(null, TODAY)).toBe("/decks/precons#announced");
+  });
+
+  it("searches the list by the set's code, as the list's own search matches it", () => {
+    expect(preconsOfSetHref("cmm")).toBe("/decks/precons?q=CMM");
+  });
+});
+
+describe("postListTargets", () => {
+  const TODAY = "2026-11-20";
+  const list = (contentfulId: string, commanderId: string | null, sets: PostListRow["sets"], named = true): PostListRow => ({ contentfulId, commanderId, named, sets });
+  const fdc = { code: "fdc", releasedAt: "2026-12-04", hasPrecons: false };
+  const cmm = { code: "cmm", releasedAt: "2026-11-13", hasPrecons: true };
+
+  it("gives a post an address only when a list declares a commander", () => {
+    const out = postListTargets([list("p1", "a", [fdc], false), list("p2", "b", [fdc])], TODAY);
+    expect(out.has("p1")).toBe(false);
+    expect(out.get("p2")).toBe("/decks/precons#announced-fdc");
+  });
+
+  it("resolves each post's set from all its lists' votes, one post apart from another", () => {
+    const out = postListTargets([
+      list("p1", "a", [fdc, cmm]), list("p1", "b", [cmm]), list("p1", null, [], false),
+      list("p2", "c", [fdc]),
+    ], TODAY);
+    // p1: CMM has two votes to FDC's one, and is out with its precons in.
+    expect(out.get("p1")).toBe("/decks/precons?q=CMM");
+    expect(out.get("p2")).toBe("/decks/precons#announced-fdc");
+  });
+
+  it("falls back to the Announced group when no list's commander is printed in a candidate set", () => {
+    expect(postListTargets([list("p1", null, []), list("p1", "a", [])], TODAY).get("p1")).toBe("/decks/precons#announced");
   });
 });

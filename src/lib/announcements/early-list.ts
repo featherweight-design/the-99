@@ -97,3 +97,63 @@ export function splitEarlyLines(lines: readonly AnnouncedDeckCard[], facts: Read
   }
   return { matched, unmatched };
 }
+
+/** Where the precons list lands on one set's own precons: the list's search, which matches a precon's set code (`filterPrecons`). */
+export function preconsOfSetHref(code: string): string {
+  return `/decks/precons?q=${encodeURIComponent(code.toUpperCase())}`;
+}
+
+/** The Announced group, when a post's set cannot be told: the banner's own fragment. */
+export const ANNOUNCED_GROUP_HREF = "/decks/precons#announced";
+
+/** A candidate set for a post's lists, as the Home read returns it: a `CommanderPrinting` with whether `precons` holds the set. */
+export type PostSetCandidate = CommanderPrinting & { hasPrecons: boolean };
+
+/** One stored list of a Commander decklists post, as the Home read returns it. */
+export type PostListRow = {
+  contentfulId: string;
+  commanderId: string | null;
+  /** The list declares a commander (`commander_name`): only such a list opens an early page, so only it qualifies the post. */
+  named: boolean;
+  /** The Commander sets its commander is printed in, inside the post's window (`commanderPrintingsQuery`'s rule). */
+  sets: { code: string; releasedAt: string; hasPrecons: boolean }[];
+};
+
+/**
+ * Where a Commander decklists post's See the lists goes (Announcements UI 6b), by the set its lists resolve to
+ * (`resolvePostSet`): once that set is out and its release lists are in the catalog, its precons on the list
+ * (`preconsOfSetHref`); before that, its block in the Announced group (`announcedSetAnchor`); a set that cannot be told,
+ * the Announced group itself. Pure, for a test.
+ */
+export function seeListsHref(set: { code: string; releasedAt: string; hasPrecons: boolean } | null, today: string): string {
+  if (!set) return ANNOUNCED_GROUP_HREF;
+  if (set.hasPrecons && set.releasedAt <= today) return preconsOfSetHref(set.code);
+  return `/decks/precons#${announcedSetAnchor(set.code)}`;
+}
+
+/**
+ * Every post's See the lists address, by Contentful id, from all the posts' lists read at once: only a post with a list
+ * that declares a commander has one (a post with none draws Read the post alone). Every list votes on the set, as the
+ * early page's read votes (`loadEarlyList`). Pure, for a test.
+ */
+export function postListTargets(rows: readonly PostListRow[], today: string): Map<string, string> {
+  const byPost = new Map<string, PostListRow[]>();
+  for (const r of rows) byPost.set(r.contentfulId, [...(byPost.get(r.contentfulId) ?? []), r]);
+  const out = new Map<string, string>();
+  for (const [id, lists] of byPost) {
+    if (!lists.some((l) => l.named)) continue;
+    const facts = new Map<string, { code: string; releasedAt: string; hasPrecons: boolean }>();
+    const candidates: CommanderPrinting[] = [];
+    for (const l of lists) {
+      if (!l.commanderId) continue;
+      for (const s of l.sets) {
+        const code = s.code.toLowerCase();
+        facts.set(code, { ...s, code });
+        candidates.push({ oracleId: l.commanderId, setCode: code, releasedAt: s.releasedAt });
+      }
+    }
+    const code = resolvePostSet(lists.map((l) => l.commanderId), candidates);
+    out.set(id, seeListsHref(code ? facts.get(code) ?? null : null, today));
+  }
+  return out;
+}

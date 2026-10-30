@@ -7,7 +7,10 @@
 //
 // A Wizards post (announcements handoff, boards Home-Rows and Row-States) is the same row: its hero cropped into the
 // picture's slot (never a card's shadow; the post-glyph plate when it is missing or fails), its title, its summary
-// clamped at two lines, a Commander decklists post's mono count of lists, and one press out to the post.
+// clamped at two lines, a Commander decklists post's mono count of lists, and one press out to the post. A Commander
+// decklists post whose lists are in (`href`, Announcements UI 6b; board Home-Rows `.fi .ac .two`) carries two: See the
+// lists, in the app and stretched over the row, then the quiet Read the post out to it (`--fg-muted`). On a phone they
+// share the action line; from `md` they stack in the third column, right-aligned, in-app on top.
 
 import Link from "next/link";
 import { useId, useState, type ReactNode } from "react";
@@ -94,6 +97,15 @@ export function listsText(item: FeedView): string | null {
   return l.n >= l.of ? c.line.listsAll(l.n) : c.line.listsSoFar(l.n, l.of);
 }
 
+/**
+ * A Commander decklists post with both presses: See the lists in the app (`href`) and Read the post out (`outbound`).
+ * Each press is drawn from the item with the other address taken away, so `FeedPress` draws the one it names.
+ */
+export function seesLists(item: FeedView): { lists: FeedView; post: FeedView } | null {
+  if (item.kind !== "commander-decklists" || !item.href || !item.outbound) return null;
+  return { lists: { ...item, outbound: null }, post: { ...item, href: null } };
+}
+
 /** The post glyph, a page of lines, drawn in the plate that stands for a missing or failed hero (board Row-States §3). */
 export function PostGlyph() {
   return (
@@ -126,6 +138,14 @@ function PostPicture({ item, box }: { item: FeedView; box: string }) {
     </span>
   );
   const shape = `${box} overflow-hidden rounded-[4px] ${hero ? "bg-[color:var(--surface-sunken)]" : ""}`;
+  // A decklists post with its lists in goes where the row's stretched press goes: See the lists, in the app.
+  if (seesLists(item) && item.href) {
+    return (
+      <Link href={item.href} aria-hidden tabIndex={-1} data-feed-picture className={`${shape} block`}>
+        {inner}
+      </Link>
+    );
+  }
   if (item.outbound) {
     return (
       <a href={item.outbound} target="_blank" rel="noopener" aria-hidden tabIndex={-1} data-feed-picture className={`${shape} block`}>
@@ -330,6 +350,7 @@ export function FeedItemRow({ item, now, face, onDismiss }: {
   const titleId = useId();
   const text = feedText(item);
   const lists = listsText(item);
+  const two = seesLists(item);
   const waiting = item.kind === "spare-request" && !item.answer;
   const kickerInk = !item.unseen ? "text-[color:var(--fg-locked)]" : waiting ? "text-[color:var(--accent-text)]" : "text-[color:var(--fg-faint)]";
   return (
@@ -356,7 +377,26 @@ export function FeedItemRow({ item, now, face, onDismiss }: {
           for its ✕ alone. */}
       {(text.press || onDismiss) && (
         <div data-feed-actions className="col-start-2 mt-[5px] flex min-w-0 flex-nowrap items-center gap-[8px] md:col-start-3 md:row-start-1 md:mt-0 md:justify-end md:gap-[12px]">
-          {text.press && (
+          {two && text.press ? (
+            // Board `.fi .ac .two`: one line on a phone (16px apart), stacked and right-aligned from `md` (28px each).
+            <span data-feed-two className="flex min-w-0 flex-wrap items-center gap-x-[16px] gap-y-0 md:flex-col md:flex-nowrap md:items-end">
+              <FeedPress
+                item={two.lists}
+                label={`${c.press.seeLists} ›`}
+                describedBy={titleId}
+                stretch="after:absolute after:inset-0 after:content-['']"
+                className="flex min-h-[32px] items-center font-sans text-[13px] font-medium whitespace-nowrap text-[color:var(--accent-text)] md:min-h-[28px]"
+              />
+              {/* Above the stretched See the lists (`z-[1]`), so a press on it goes out to the post. */}
+              <FeedPress
+                item={two.post}
+                label={text.press}
+                describedBy={titleId}
+                stretch=""
+                className="relative z-[1] flex min-h-[32px] items-center font-sans text-[13px] font-medium whitespace-nowrap text-[color:var(--fg-muted)] md:min-h-[28px]"
+              />
+            </span>
+          ) : text.press && (
             <FeedPress
               item={item}
               // An outbound press ends in its link-out icon (`FeedPress`), not the in-app ›.
