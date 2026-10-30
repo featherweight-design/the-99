@@ -35,6 +35,7 @@ export function NoteField({
   disabledSubmit?: boolean;
 }) {
   const input = useRef<HTMLInputElement>(null);
+  const frame = useRef<HTMLDivElement>(null);
   // A field that unmounts while focused (a saved edit, a switched panel) must not leave the bars hidden.
   useEffect(() => () => document.documentElement.removeAttribute("data-note-focus"), []);
 
@@ -76,6 +77,7 @@ export function NoteField({
             max={NOTE_MAX}
             counterId={counterId}
             warnAt={NOTE_WARN_AT}
+            frameRef={frame}
             className="relative"
           >
             <input
@@ -106,7 +108,9 @@ export function NoteField({
               buttonClassName="absolute right-[11px] top-[9px]"
             />
           </TaggedBox>
-          {open && <CardTagList {...picker.list} />}
+          {/* Floats over the page (a portal, fixed, the picker's own z-60), anchored to the frame: drawn in flow it sat
+              at z-20 under the deck page's sticky Add a card bar, also z-20 and later in the tree. */}
+          {open && <CardTagList {...picker.list} anchor={frame} />}
         </div>
         <div className="flex items-center justify-end gap-[8px]">
           {onCancel && (

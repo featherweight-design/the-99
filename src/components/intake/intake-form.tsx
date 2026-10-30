@@ -40,6 +40,7 @@ import { TaggedBox } from "../cards/tagged-box";
 import { searchTagCards } from "../../app/cards/tag-actions";
 import { serialize, toField } from "../../lib/decks/notes-field";
 import { useDockClearance } from "../shell/dock-clearance";
+import { useAutoGrow } from "../../lib/ui/use-auto-grow";
 
 /** What the budget box holds, as a whole-dollar answer: `$` and commas stripped, 1 to 100,000. */
 export function parseBudget(raw: string): number | null {
@@ -161,24 +162,8 @@ export function IntakeForm({
   // is held to the room above it (see `listMax`): it always opens below the box.
   const wordsRef = useRef<HTMLTextAreaElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
-  // Grows with its content (no resize handle: the board draws none). jsdom reports a 0 scrollHeight, so this is a no-op there.
-  // Re-measured when the box's width changes too (a rotation, a resize, a late font), or the height goes stale and clips.
-  useEffect(() => {
-    const el = wordsRef.current;
-    if (!el) return;
-    const grow = () => {
-      el.style.height = "auto";
-      if (el.scrollHeight > 0) el.style.height = `${el.scrollHeight}px`;
-    };
-    grow();
-    if (typeof ResizeObserver === "undefined") {
-      window.addEventListener("resize", grow);
-      return () => window.removeEventListener("resize", grow);
-    }
-    const observer = new ResizeObserver(grow);
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [words]);
+  // Grows with its content (no resize handle: the board draws none), re-measured when the box changes size.
+  useAutoGrow(wordsRef, words);
   const picker = useCardTagPicker({
     value: words, picked: tags, search: searchIntakeCards, max: READ_WORDS_MAX_CHARS, measure: wordsLength, maxTags: READ_TAGS_MAX, field: wordsRef, disabled: submitting,
     onChange: (text, next) => setField({ text, tags: next }),
@@ -405,7 +390,8 @@ export function IntakeForm({
               max={READ_WORDS_MAX_CHARS}
               fill="sunken"
               accent={written && closed === null ? "always" : "focus"}
-              footProps={{ "data-lock-hide": "" }}
+              // Locked while it reads, only the key hides (small items 3, item 5); the words and the counter stay.
+              keyProps={{ "data-lock-hide": "" }}
               frameRef={frameRef}
             >
               <textarea

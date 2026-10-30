@@ -165,13 +165,27 @@ describe("SpineDesktop", () => {
   // Both Save and Cancel refuse the mousedown, for opposite reasons: Cancel so
   // the blur does not save the edit it is refusing, Save so the blur does not
   // send the same rename the click is about to send.
-  it("the description's tag frame takes no accent on focus and the textarea keeps its focus ring", () => {
+  // One dashed frame around the words and the foot takes the accent edge on focus (Tag-Places d); the textarea draws no
+  // ring of its own, which drew a second, square box around the words alone and left the foot outside it.
+  it("the description's dashed tag frame takes the accent edge on focus and the textarea draws no ring of its own", () => {
     renderSpine(<SpineDesktop {...props} />);
     fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
     const field = screen.getByLabelText(deckDescriptionCopy.description.fieldAria);
     const frame = field.closest("[data-framed-box]")!;
-    expect(frame.className).not.toContain("focus-within");
-    expect(field.className).not.toContain("outline-none");
+    expect(frame.className).toContain("border-dashed");
+    expect(frame.className).toContain("focus-within:border-[color:var(--accent)]");
+    expect(field.className.split(/\s+/)).toContain("outline-none");
+  });
+
+  it("the header description grows with its words from the moment the editor opens (Tag-Places d)", () => {
+    const tall = vi.spyOn(HTMLTextAreaElement.prototype, "scrollHeight", "get").mockReturnValue(80);
+    renderSpine(<SpineDesktop {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
+    const field = screen.getByLabelText(deckDescriptionCopy.description.fieldAria) as HTMLTextAreaElement;
+    // Opened on the words it already had: the mount alone must size it.
+    expect(field.style.height).toBe("80px");
+    expect(field.className.split(/\s+/)).toContain("overflow-hidden");
+    tall.mockRestore();
   });
 
   it("neither action lets the field's blur fire first", () => {

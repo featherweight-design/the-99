@@ -32,6 +32,7 @@ import type { TileBracket } from "../../lib/decks/read";
 import { useDeckHeaderEdit } from "./use-deck-header-edit";
 import { CardTagList } from "../cards/card-tag-picker";
 import { TaggedBox } from "../cards/tagged-box";
+import { useAutoGrow } from "../../lib/ui/use-auto-grow";
 import { searchDescriptionCards } from "../cards/description-tag-search";
 import { useTaggedField } from "../cards/use-tagged-field";
 import { NOTES_TAGS_MAX } from "../../lib/tuning/limits";
@@ -185,6 +186,8 @@ export function SpineDesktop({
     value: rename.description, onChange: rename.setDescription, search: searchDescriptionCards,
     max: deckDescriptionCopy.description.maxLength, maxTags: NOTES_TAGS_MAX, field: descriptionFieldRef, disabled: saving,
   });
+  // The header description grows with its words (Tag-Places d): two rows is a floor, never a ceiling.
+  useAutoGrow(descriptionFieldRef, descriptionTags.field.text, renaming);
   const failed = rename.error !== null;
   const inert = !rename.canSave && !saving;
 
@@ -339,7 +342,6 @@ export function SpineDesktop({
                     fill="sunken"
                     dashed
                     footPad="compact"
-                    accent="none"
                     frameRef={descriptionFrameRef}
                   >
                   <textarea
@@ -356,7 +358,7 @@ export function SpineDesktop({
                     rows={2}
                     placeholder={deckDescriptionCopy.description.placeholder}
                     aria-label={deckDescriptionCopy.description.fieldAria}
-                    className="resize-none bg-transparent font-sans"
+                    className="resize-none overflow-hidden bg-transparent font-sans outline-none"
                     style={{
                       width: "100%",
                       boxSizing: "border-box",

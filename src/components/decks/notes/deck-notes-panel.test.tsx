@@ -88,9 +88,18 @@ describe("a deck with notes", () => {
 
 describe("formatNoteDate", () => {
   const now = new Date(YEAR, 9, 12, 12);
-  it("names the year only outside the current one", () => {
-    expect(formatNoteDate(at(YEAR, 9, 2), now)).toBe("2 Oct");
-    expect(formatNoteDate(at(YEAR - 1, 9, 2), now)).toBe(`2 Oct ${YEAR - 1}`);
+  it("writes the month first (US), naming the year only outside the current one", () => {
+    expect(formatNoteDate(at(YEAR, 9, 2), now)).toBe("Oct 2");
+    expect(formatNoteDate(at(YEAR, 9, 30), now)).toBe("Oct 30");
+    expect(formatNoteDate(at(YEAR, 8, 2), now)).toBe("Sep 2");
+    expect(formatNoteDate(at(YEAR - 1, 9, 2), now)).toBe(`Oct 2, ${YEAR - 1}`);
+  });
+
+  it("dates the add hint month first", () => {
+    mount(view([note("a", "x")]));
+    const d = new Date();
+    const month = d.toLocaleDateString("en-US", { month: "short" });
+    expect(screen.getByText(`Enter adds · dated ${month} ${d.getDate()}`)).toBeTruthy();
   });
 });
 
@@ -112,14 +121,14 @@ describe("the list", () => {
     expect(screen.queryByText("finished")).toBeNull();
     click(screen.getByRole("button", { name: /Done \(1\)/ }));
     expect(screen.getByText("finished")).toBeTruthy();
-    expect(screen.getAllByText("done 9 Mar").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("done Mar 9").length).toBeGreaterThan(0);
   });
 
   it("writes the year on a done note from another year", () => {
     const year = new Date().getFullYear() - 1;
     mount(view([note("a", "open one")], [note("b", "finished", { doneAt: at(year, 2, 9) })]));
     click(screen.getByRole("button", { name: /Done \(1\)/ }));
-    expect(screen.getAllByText(`done 9 Mar ${year}`).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(`done Mar 9, ${year}`).length).toBeGreaterThan(0);
   });
 
   it("replaces the input with the cap line at 100 notes, done ones counting", () => {
@@ -199,9 +208,22 @@ describe("adding", () => {
     expect(reveal).not.toHaveBeenCalled();
   });
 
+  it("floats the open list over the page, outside the panel, so the deck page's sticky Add a card bar cannot cover it", async () => {
+    const { container } = mount(view([note("a", "x")]));
+    const field = screen.getByRole("combobox", { name: "Add a note" }) as HTMLInputElement;
+    at(field, 200);
+    click(screen.getByRole("button", { name: "Insert a card tag" }));
+    expect(await screen.findByText(/Type a card name/)).toBeTruthy();
+    const list = screen.getByRole("listbox");
+    // A portal on the body, fixed, at the picker's own z-60: above the bar's z-20 (builder-shell) and the tab bar's z-40.
+    expect(container.contains(list)).toBe(false);
+    expect(list.style.position).toBe("fixed");
+    expect(list.style.zIndex).toBe("60");
+  });
+
   it("brings the field to the middle of the visible area when the open list itself runs past the window, though the phone cap would fit", async () => {
     vi.mocked(reveal).mockClear();
-    mount(view([note("a", "x")]));
+    const { container } = mount(view([note("a", "x")]));
     const field = screen.getByRole("combobox", { name: "Add a note" }) as HTMLInputElement;
     at(field, 200);
     // From `md` the list has no cap: here it reaches 100px past the window's foot.
@@ -214,7 +236,10 @@ describe("adding", () => {
     try {
       click(screen.getByRole("button", { name: "Insert a card tag" }));
       expect(await screen.findByText(/Type a card name/)).toBeTruthy();
-      expect(reveal).toHaveBeenCalledWith(field, "center", undefined, expect.any(Function));
+      // The list is anchored (a portal that mounts a render after the picker opens, once its place is measured): the
+      // reveal must still measure it, which it can only do once the list has mounted (Copilot, #2440 round 1).
+      expect(container.contains(screen.getByRole("listbox"))).toBe(false);
+      await waitFor(() => expect(reveal).toHaveBeenCalledWith(field, "center", undefined, expect.any(Function)));
       // The list is 622px tall under the field and cannot fit in 768px with it centred: the band narrows to the
       // field's own height at the window's top (middle at 768 - 622 - 23 = 123), so it is brought to the top.
       expect(vi.mocked(reveal).mock.calls.at(-1)?.[3]?.()).toEqual({ top: 0, bottom: 246 });
@@ -441,7 +466,7 @@ describe("a row", () => {
     click(screen.getByRole("button", { name: "Edit this note" }));
     const field = screen.getByRole("combobox", { name: "Edit this note" }) as HTMLInputElement;
     expect(field.value).toBe("try [[\u2060Sol Ring]]");
-    expect(screen.getByText(/the date stays 2 Oct/)).toBeTruthy();
+    expect(screen.getByText(/the date stays Oct 2/)).toBeTruthy();
     type(field, " today");
     click(screen.getByRole("button", { name: "Save" }));
     expect(stub.editNote).toHaveBeenCalledWith(DECK, "a", `try ${formatTag(SOL, "Sol Ring")} today`);

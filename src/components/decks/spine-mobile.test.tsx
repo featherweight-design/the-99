@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 // The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
 await (await import("../cards/card-detail-provider")).warmCardModal();
-import { SpineMobile } from "./spine-mobile";
+import { PHONE_DESCRIPTION_MAX_HEIGHT, SpineMobile } from "./spine-mobile";
 import { deckHeaderCopy, renameCopy } from "../../lib/copy/decks-builder";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
@@ -125,6 +125,48 @@ describe("SpineMobile", () => {
     expect(screen.getByText(/Atraxa, Praetors’ Voice/)).toBeTruthy();
   });
 
+  it("draws Save and Cancel under the progress bar, outside the 288 band (Tag-Places d, 390)", () => {
+    const { container } = renderSpine(<SpineMobile {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
+    const band = container.querySelector("[data-testid='spine-band']")!;
+    const save = screen.getByRole("button", { name: /Save/ });
+    const cancel = screen.getByRole("button", { name: "Cancel" });
+    expect(band.contains(save)).toBe(false);
+    expect(band.contains(cancel)).toBe(false);
+    // After the bar: the bar's fill precedes the row in the document.
+    const fill = screen.getByTestId("spine-bar-fill");
+    expect(fill.compareDocumentPosition(save) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // The band keeps the fields.
+    expect(band.contains(screen.getByLabelText(deckDescriptionCopy.description.fieldAria))).toBe(true);
+  });
+
+  it("takes the meta row's controls out of the tab order while editing, so Tab goes fields, then Save and Cancel", () => {
+    const { container } = renderSpine(<SpineMobile {...props} deck={pairDeck} />);
+    const under = () => container.querySelector<HTMLElement>("[data-spine-under-band]")!;
+    expect(under().hasAttribute("inert")).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(pairDeck.name) }));
+    expect(under().hasAttribute("inert")).toBe(true);
+    // Every control a Tab can reach, in document order, outside an inert subtree.
+    const reachable = Array.from(container.querySelectorAll<HTMLElement>("a[href], button, input, textarea, select, [tabindex]"))
+      .filter((el) => el.closest("[inert]") === null && el.getAttribute("tabindex") !== "-1");
+    const description = screen.getByLabelText(deckDescriptionCopy.description.fieldAria);
+    const after = reachable.slice(reachable.indexOf(description) + 1);
+    // The tag key (inside the frame), then Save and Cancel: nothing unrelated between them.
+    expect(after.slice(0, 3).map((el) => el.getAttribute("aria-label") ?? el.textContent?.trim())).toEqual(["Insert a card tag", renameCopy.save, renameCopy.cancel]);
+  });
+
+  it("keeps the editor open when focus moves between the band's fields and the row under the bar", () => {
+    renderSpine(<SpineMobile {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
+    const description = screen.getByLabelText(deckDescriptionCopy.description.fieldAria);
+    fireEvent.change(description, { target: { value: "Edited" } });
+    const cancel = screen.getByRole("button", { name: "Cancel" });
+    fireEvent.blur(description, { relatedTarget: cancel });
+    fireEvent.blur(cancel, { relatedTarget: description });
+    expect(saveDeckHeader).not.toHaveBeenCalled();
+    expect(screen.getByLabelText(deckDescriptionCopy.description.fieldAria)).toBeInTheDocument();
+  });
+
   // Both actions refuse the mousedown, for opposite reasons: Cancel so the blur
   // does not save the edit it is refusing, Save so the blur does not send the
   // same rename the tap is about to send.
@@ -150,9 +192,22 @@ describe("SpineMobile", () => {
     expect(frame!.className).toContain("pointer-events-auto");
     // The frame is the nearest ancestor of the foot, so nothing between them resets the inheritance.
     expect(foot.parentElement).toBe(frame);
-    // And the header description takes no frame accent on focus.
-    expect(frame!.className).not.toContain("focus-within");
-    expect(description.className).not.toContain("outline-none");
+    // And the one dashed frame takes the accent edge on focus; the textarea draws no ring of its own (Tag-Places d).
+    expect(frame!.className).toContain("focus-within:border-[color:var(--accent)]");
+    expect(description.className.split(/\s+/)).toContain("outline-none");
+  });
+
+  it("the header description grows with its words from the moment the editor opens (Tag-Places d)", () => {
+    const tall = vi.spyOn(HTMLTextAreaElement.prototype, "scrollHeight", "get").mockReturnValue(80);
+    renderSpine(<SpineMobile {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
+    const field = screen.getByLabelText(deckDescriptionCopy.description.fieldAria) as HTMLTextAreaElement;
+    // Opened on the words it already had: the mount alone must size it.
+    expect(field.style.height).toBe("80px");
+    // Capped so the editor pinned to the 288 band's foot cannot clip the name off its top; past the cap it scrolls.
+    expect(field.style.maxHeight).toBe(`${PHONE_DESCRIPTION_MAX_HEIGHT}px`);
+    expect(field.className.split(/\s+/)).toContain("overflow-y-auto");
+    tall.mockRestore();
   });
 
   it("announces a successful description save through a status region that outlives the editor", async () => {

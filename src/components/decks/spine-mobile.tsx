@@ -41,6 +41,7 @@ const F18_MARKS = "hidden @max-[344px]:contents";
 import { useDeckHeaderEdit } from "./use-deck-header-edit";
 import { CardTagList } from "../cards/card-tag-picker";
 import { TaggedBox } from "../cards/tagged-box";
+import { useAutoGrow } from "../../lib/ui/use-auto-grow";
 import { searchDescriptionCards } from "../cards/description-tag-search";
 import { useTaggedField } from "../cards/use-tagged-field";
 import { NOTES_TAGS_MAX } from "../../lib/tuning/limits";
@@ -54,6 +55,9 @@ const BLOCK_INSET_X = 18;
 /** The rename glyph's drawn size. Named because the measurement below has to
     keep the glyph inside the block, and the heading reserves the same figure. */
 const GLYPH = 14;
+
+/** The phone header description's grow cap, in px: 5.5 lines at 16px / 1.45 (128) plus its 10px of padding (border-box). */
+export const PHONE_DESCRIPTION_MAX_HEIGHT = 138;
 
 export function SpineMobile({
   deck,
@@ -100,11 +104,16 @@ export function SpineMobile({
   const descriptionFieldRef = useRef<HTMLTextAreaElement>(null);
   // The dashed frame the description sits in: the card list is anchored to it, not to the field.
   const descriptionFrameRef = useRef<HTMLDivElement>(null);
+  // The editor is two subtrees (the fields in the band, Save/Cancel under the bar): blur commits only when focus leaves both.
+  const fieldsRef = useRef<HTMLDivElement>(null);
+  const actionsRef = useRef<HTMLDivElement>(null);
   // The description takes the `[[` card tag: the hook holds the BODY, the box shows names (card-tags plan, PR 3).
   const descriptionTags = useTaggedField({
     value: rename.description, onChange: rename.setDescription, search: searchDescriptionCards,
     max: deckDescriptionCopy.description.maxLength, maxTags: NOTES_TAGS_MAX, field: descriptionFieldRef, disabled: rename.isPending,
   });
+  // The header description grows with its words (Tag-Places d): two rows is a floor, never a ceiling.
+  useAutoGrow(descriptionFieldRef, descriptionTags.field.text, renaming);
 
   // §C8/§C10 — one row, drawn in the band at rest and below the divider while
   // editing, where the field needs the band's whole width. Its ink differs with
@@ -315,7 +324,7 @@ export function SpineMobile({
         >
           <BlockScrim insetX={BLOCK_INSET_X} />
           {renaming ? (
-            <div className="flex w-full flex-col" style={{ gap: 8 }} onBlur={rename.onPairBlur}>
+            <div ref={fieldsRef} className="flex w-full flex-col" style={{ gap: 8 }} onBlur={(e) => rename.onPairBlur(e, actionsRef.current)}>
               <input
                 autoFocus
                 value={rename.name}
@@ -343,7 +352,6 @@ export function SpineMobile({
                   fill="sunken"
                   dashed
                   footPad="compact"
-                  accent="none"
                   frameRef={descriptionFrameRef}
                   // Inside `press-through` (pointer-events: none): the frame and its foot take presses back, so the
                   // foot's preventDefault holds the field's focus instead of letting the press blur it.
@@ -365,9 +373,14 @@ export function SpineMobile({
                   aria-label={deckDescriptionCopy.description.fieldAria}
                   // 16px, not 13.5: iOS Safari zooms the viewport on focusing an input under 16px
                   // (pre-open review) — the retired single-field editor used 16px on a phone too.
-                  className="w-full resize-none bg-transparent text-left font-sans"
+                  // Grows with its words up to five and a half lines, then scrolls inside the frame: the band stays
+                  // 288 tall with the editor pinned to its foot (Tag-Places d, 390), so a block taller than the band
+                  // would clip the name field off its top. Inset 12 + name 45 + gap 8 + frame border and foot 35 + an
+                  // error line 24 leave 148 under a 16px clear top; Save/Cancel sit under the bar, outside the band.
+                  className="w-full resize-none overflow-y-auto bg-transparent text-left font-sans outline-none"
                   style={{
                     boxSizing: "border-box",
+                    maxHeight: PHONE_DESCRIPTION_MAX_HEIGHT,
                     padding: "8px 12px 2px",
                     fontSize: 16,
                     lineHeight: 1.45,
@@ -382,52 +395,6 @@ export function SpineMobile({
                   {rename.error}
                 </p>
               ) : null}
-              <div className="flex" style={{ gap: 8 }}>
-                <button
-                  type="button"
-                  onClick={rename.commit}
-                  // Same guard Cancel carries, for the opposite reason: without
-                  // it the field's blur commits on mousedown and this tap
-                  // commits again before the first request has flipped
-                  // `isPending`, sending the rename twice.
-                  onMouseDown={(e) => e.preventDefault()}
-                  // aria-disabled, never disabled: disabling the focused control
-                  // blurs it, and blur commits.
-                  aria-disabled={!rename.canSave}
-                  // Keyed off inert, not off `canSave`: a request in flight also
-                  // clears `canSave`, and §F draws Saving as the accent button
-                  // at .6 rather than as the elevated one nothing can be done to.
-                  className={`flex items-center rounded-[7px] border-0 font-mono font-medium ${
-                    rename.canSave || rename.isPending
-                      ? "bg-[color:var(--accent)] text-[color:var(--bg)]"
-                      : "bg-[color:var(--elevated)] text-[color:var(--fg-disabled)]"
-                  }`}
-                  style={{
-                    minHeight: 44,
-                    padding: "0 18px",
-                    fontSize: 11,
-                    opacity: rename.isPending ? 0.6 : 1,
-                    cursor: rename.canSave ? "pointer" : "default",
-                  }}
-                >
-                  {rename.isPending
-                    ? renameCopy.saving
-                    : rename.error
-                      ? renameCopy.retry
-                      : renameCopy.save}
-                </button>
-                <button
-                  type="button"
-                  onClick={rename.cancel}
-                  // Without this the blur lands first and saves the edit the
-                  // tap was refusing.
-                  onMouseDown={(e) => e.preventDefault()}
-                  className="flex items-center rounded-[7px] border border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] font-mono text-[color:var(--fg-body)]"
-                  style={{ minHeight: 44, padding: "0 18px", fontSize: 11, cursor: "pointer" }}
-                >
-                  {renameCopy.cancel}
-                </button>
-              </div>
             </div>
           ) : (
             <>
@@ -549,6 +516,11 @@ export function SpineMobile({
       </div>
 
       <div
+        // Inert while editing: the meta row's controls (a partner's card details, the bracket, the notices) sit between
+        // the band's fields and Save/Cancel, so a Tab out of the tag key would land on one and the pair blur would save
+        // and close before a keyboard reader reached Cancel. Fields, then Save and Cancel.
+        inert={renaming || undefined}
+        data-spine-under-band
         className="flex flex-col items-center"
         style={{
           borderTop: "1px solid var(--border)",
@@ -615,6 +587,62 @@ export function SpineMobile({
         </div>
       </div>
 
+      {/* Save/Cancel, while editing: under the progress bar, out of the 288 band (Tag-Places d, 390), so the band holds
+          only the name, the description and its foot. They replace Update and Export (STATES §2, state 3). */}
+      {renaming && (
+          <div
+            ref={actionsRef}
+            data-spine-edit-actions
+            className="flex"
+            style={{ padding: "12px 16px 0", gap: 8 }}
+            onBlur={(e) => rename.onPairBlur(e, fieldsRef.current)}
+          >
+            <button
+              type="button"
+              onClick={rename.commit}
+              // Same guard Cancel carries, for the opposite reason: without
+              // it the field's blur commits on mousedown and this tap
+              // commits again before the first request has flipped
+              // `isPending`, sending the rename twice.
+              onMouseDown={(e) => e.preventDefault()}
+              // aria-disabled, never disabled: disabling the focused control
+              // blurs it, and blur commits.
+              aria-disabled={!rename.canSave}
+              // Keyed off inert, not off `canSave`: a request in flight also
+              // clears `canSave`, and §F draws Saving as the accent button
+              // at .6 rather than as the elevated one nothing can be done to.
+              className={`flex items-center rounded-[7px] border-0 font-mono font-medium ${
+                rename.canSave || rename.isPending
+                  ? "bg-[color:var(--accent)] text-[color:var(--bg)]"
+                  : "bg-[color:var(--elevated)] text-[color:var(--fg-disabled)]"
+              }`}
+              style={{
+                minHeight: 44,
+                padding: "0 18px",
+                fontSize: 11,
+                opacity: rename.isPending ? 0.6 : 1,
+                cursor: rename.canSave ? "pointer" : "default",
+              }}
+            >
+              {rename.isPending
+                ? renameCopy.saving
+                : rename.error
+                  ? renameCopy.retry
+                  : renameCopy.save}
+            </button>
+            <button
+              type="button"
+              onClick={rename.cancel}
+              // Without this the blur lands first and saves the edit the
+              // tap was refusing.
+              onMouseDown={(e) => e.preventDefault()}
+              className="flex items-center rounded-[7px] border border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] font-mono text-[color:var(--fg-body)]"
+              style={{ minHeight: 44, padding: "0 18px", fontSize: 11, cursor: "pointer" }}
+            >
+              {renameCopy.cancel}
+            </button>
+          </div>
+      )}
       {/* STATES §2, state 3: Save/Cancel replace Update and Export while editing, at both
           widths — so this whole row hides rather than sitting under the open editor. */}
       {!renaming && (

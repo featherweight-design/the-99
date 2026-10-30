@@ -26,7 +26,6 @@ export function TaggedBox({
   error,
   accent = "focus",
   keyProps,
-  footProps,
   footPad = "default",
   disabled = false,
   frameRef,
@@ -51,12 +50,10 @@ export function TaggedBox({
   dashed?: boolean;
   /** The danger frame; absent, drawn exactly while the count is past the cap (`over`). It outranks the accent edge. */
   error?: boolean;
-  /** `focus`: the accent edge on focus-within; `always`: the accent edge at rest too (an editor opened in place); `none`: no focus treatment on the frame (the field's own focus ring is the signal). */
-  accent?: "focus" | "always" | "none";
-  /** Spread on the key (e.g. `data-lock-hide`). */
+  /** `focus`: the accent edge on focus-within; `always`: the accent edge at rest too (an editor opened in place). */
+  accent?: "focus" | "always";
+  /** Spread on the key (e.g. `data-lock-hide`: Help me choose hides only the key while it reads; the counter stays). */
   keyProps?: Record<string, string>;
-  /** Spread on the whole foot (e.g. `data-lock-hide`, to hide the key, words and counter together). */
-  footProps?: Record<string, string>;
   /** `compact`: the dashed header description's 2 10 7 foot. */
   footPad?: "default" | "compact";
   /** The field is out of play (a save in flight): the frame dims and the key is disabled. */
@@ -73,9 +70,7 @@ export function TaggedBox({
     ? "border-[color:var(--danger)]"
     : accent === "always"
       ? "border-[color:var(--accent)]"
-      : accent === "none"
-        ? "border-[color:var(--border-strong)]"
-        : "border-[color:var(--border-strong)] focus-within:border-[color:var(--accent)]";
+      : "border-[color:var(--border-strong)] focus-within:border-[color:var(--accent)]";
   // The textarea is outline-none and a frame already accent or danger looks the same focused, so keyboard focus
   // would be invisible (WCAG 2.4.7): those frames take the app's standard focus ring (globals.css `:focus-visible`).
   const ring =
@@ -96,7 +91,6 @@ export function TaggedBox({
         style={{ color: "var(--fg-faint)" }}
         // A press on the foot's padding or the counter must not blur the field (a box that saves on blur).
         onMouseDown={(e) => e.preventDefault()}
-        {...footProps}
       >
         <button
           type="button"

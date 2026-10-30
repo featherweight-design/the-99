@@ -1,6 +1,5 @@
 "use client";
 
-import { formatPlayed } from "../../../lib/decks/format";
 import { useIsDesktop } from "../../ui/use-is-desktop";
 import { useEffect, useRef, useState } from "react";
 import { deleteNote, editNote, setNoteDone } from "../../../app/decks/notes-actions";
@@ -13,10 +12,12 @@ import { NoteField, type DeckCardOption } from "./note-field";
 import { NoteTags } from "./note-tags";
 import { reveal } from "../../../lib/ui/reveal";
 
-/** `2 Oct`, or `2 Oct 2025` outside the current year: absolute and mono, in the player's own calendar. Never relative (the Must-nots). */
-export function formatNoteDate(iso: string, now: Date = new Date()): string {
-  // `formatPlayed`, not `en-GB`: that locale writes `Sept` where the rest of the app writes `Sep`.
-  return formatPlayed(new Date(iso), now);
+/** `Oct 2`, or `Oct 2, 2025` outside the current year: absolute and mono, in the player's own calendar. Never relative (the Must-nots). */
+export function formatNoteDate(iso: string | Date, now: Date = new Date()): string {
+  const date = new Date(iso);
+  // `en-US` short months: `Sep`, never en-GB's `Sept`. The order is the copy module's (US: month first).
+  const month = date.toLocaleDateString("en-US", { month: "short" });
+  return deckNotesCopy.date(month, date.getDate(), date.getFullYear() === now.getFullYear() ? undefined : date.getFullYear());
 }
 
 /**

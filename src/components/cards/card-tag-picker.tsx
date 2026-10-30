@@ -93,6 +93,9 @@ export function useCardTagPicker(o: CardTagPickerOptions) {
   const [dismissed, setDismissed] = useState(false);
   const [active, setActive] = useState(0);
   const [answer, setAnswer] = useState<Answer | null>(null);
+  // The list's element, set as it mounts. A list anchored to its field (a portal) mounts a render after the picker
+  // opens, once its place is measured, so the reveal below must wait for it rather than look it up as it opens.
+  const [listEl, setListEl] = useState<HTMLElement | null>(null);
   const seq = useRef(0);
 
   const tag = !dismissed ? openTagAt(value, caret) : null;
@@ -150,9 +153,11 @@ export function useCardTagPicker(o: CardTagPickerOptions) {
   // stopped is never started again behind them. Typing in the box is not that.
   useEffect(() => {
     const el = field.current;
-    if (!open || !el) return;
+    // Starts once, when the list exists: an anchored list (a portal) mounts a render after the picker opens, and a run
+    // before it would start the waiting check only to cancel it and check again at once when the list arrives.
+    const list = listEl;
+    if (!open || !el || !list) return;
     const vv = window.visualViewport;
-    const list = document.getElementById(`${id}-list`);
     let later: ReturnType<typeof setTimeout> | null = null;
     let readerMoved = false;
     const check = () => {
@@ -161,7 +166,7 @@ export function useCardTagPicker(o: CardTagPickerOptions) {
       if (readerMoved) return;
       if (appScrolling()) { later = setTimeout(check, 120); return; }
       const floor = footFloor(vv ? vv.offsetTop + vv.height : window.innerHeight, el);
-      const needed = Math.max(el.getBoundingClientRect().bottom + LIST_ROOM_PX, list?.getBoundingClientRect().bottom ?? 0);
+      const needed = Math.max(el.getBoundingClientRect().bottom + LIST_ROOM_PX, list.getBoundingClientRect().bottom);
       if (needed > floor) reveal(el, "center", undefined, () => centerBand(el, list, vv));
     };
     const moved = (e: Event) => {
@@ -177,14 +182,14 @@ export function useCardTagPicker(o: CardTagPickerOptions) {
     // The list grows as the reader types; the field can grow on its own (an autosized textarea), moving the list down.
     const grows = typeof ResizeObserver !== "undefined" ? new ResizeObserver(check) : null;
     grows?.observe(el);
-    if (list) grows?.observe(list);
+    grows?.observe(list);
     return () => {
       for (const type of READER) window.removeEventListener(type, moved, { capture: true });
       vv?.removeEventListener("resize", check);
       grows?.disconnect();
       if (later !== null) clearTimeout(later);
     };
-  }, [open, field, id]);
+  }, [open, field, listEl]);
 
   const lookup = open && query.length >= REMOTE_MIN_LETTERS;
   const current = lookup && answer?.query === query ? answer : null;
@@ -280,7 +285,7 @@ export function useCardTagPicker(o: CardTagPickerOptions) {
       onClick: sync,
       onFocus: sync,
     },
-    list: { id, listId, open, query, local, options, activeIndex, remoteStatus, scoped, pick },
+    list: { id, listId, open, query, local, options, activeIndex, remoteStatus, scoped, pick, listRef: setListEl },
   };
 }
 
@@ -309,8 +314,10 @@ function useFloatingPlace(anchor: RefObject<HTMLElement | null> | undefined): CS
       const visibleTop = vv ? vv.offsetTop : 0;
       const visibleBottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
       // Zoomed in, the visible interval is the visual viewport's too: `offsetLeft` to `offsetLeft + width`.
-      const visibleLeft = vv ? vv.offsetLeft : 0;
-      const visibleWidth = vv ? vv.width : window.innerWidth;
+      // A missing or unreadable figure (a partial visual viewport) falls back to the layout viewport's, never NaN: a NaN
+      // place is never equal to itself, so it would be set again on every render.
+      const visibleLeft = vv && Number.isFinite(vv.offsetLeft) ? vv.offsetLeft : 0;
+      const visibleWidth = vv && Number.isFinite(vv.width) ? vv.width : window.innerWidth;
       const width = Math.min(r.width, FLOAT_MAX_WIDTH, visibleWidth - 2 * FLOAT_EDGE);
       const left = Math.max(visibleLeft + FLOAT_EDGE, Math.min(r.left, visibleLeft + visibleWidth - width - FLOAT_EDGE));
       const below = Math.floor(visibleBottom - (r.bottom + 4) - FLOAT_EDGE);
@@ -319,8 +326,10 @@ function useFloatingPlace(anchor: RefObject<HTMLElement | null> | undefined): CS
         ? { position: "fixed", top: r.bottom + 4, left, width, marginTop: 0, zIndex: 60, maxHeight: Math.max(0, below) }
         // `bottom` of a fixed box is measured from the LAYOUT viewport's bottom edge.
         : { position: "fixed", top: "auto", bottom: window.innerHeight - (r.top - 4), left, width, marginTop: 0, zIndex: 60, maxHeight: Math.max(0, above) };
+      // `Object.is`, not `===`: it holds for NaN, so an unreadable figure settles instead of looping.
       const same = (prev: CSSProperties | undefined) => prev !== undefined
-        && prev.top === next.top && prev.bottom === next.bottom && prev.left === next.left && prev.width === next.width && prev.maxHeight === next.maxHeight;
+        && Object.is(prev.top, next.top) && Object.is(prev.bottom, next.bottom) && Object.is(prev.left, next.left)
+        && Object.is(prev.width, next.width) && Object.is(prev.maxHeight, next.maxHeight);
       setPlace((prev) => (same(prev) ? prev : next));
     };
     measure();
@@ -328,11 +337,16 @@ function useFloatingPlace(anchor: RefObject<HTMLElement | null> | undefined): CS
     window.addEventListener("resize", measure);
     window.visualViewport?.addEventListener("resize", measure);
     window.visualViewport?.addEventListener("scroll", measure);
+    // The anchor can change size with nothing scrolled or resized (a field growing with its words, after this effect
+    // has measured): the list follows its foot.
+    const sized = anchor.current && typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
+    if (sized && anchor.current) sized.observe(anchor.current);
     return () => {
       window.removeEventListener("scroll", measure, true);
       window.removeEventListener("resize", measure);
       window.visualViewport?.removeEventListener("resize", measure);
       window.visualViewport?.removeEventListener("scroll", measure);
+      sized?.disconnect();
     };
   });
   return place;
@@ -344,7 +358,7 @@ function useFloatingPlace(anchor: RefObject<HTMLElement | null> | undefined): CS
  * what overflows them (the deck header's band), where an absolutely placed list would be cut to its first row.
  */
 export function CardTagList({
-  id, listId, query, local, options, activeIndex, remoteStatus, scoped, pick, maxHeightPx, anchor,
+  id, listId, query, local, options, activeIndex, remoteStatus, scoped, pick, maxHeightPx, anchor, listRef,
 }: {
   id: string;
   listId: string;
@@ -359,6 +373,8 @@ export function CardTagList({
   maxHeightPx?: number;
   /** The field the list floats under, in a portal; omitted, the list is placed in its container. */
   anchor?: RefObject<HTMLElement | null>;
+  /** Told the list's element as it mounts and unmounts (the picker's reveal measures it). */
+  listRef?: (el: HTMLElement | null) => void;
 }): ReactNode {
   const p = deckNotesCopy.picker;
   const floating = useFloatingPlace(anchor);
@@ -374,6 +390,7 @@ export function CardTagList({
   }, [id, listId, activeIndex, options.length]);
   const list = (
     <div
+      ref={listRef}
       id={listId}
       role="listbox"
       aria-label={p.listAria}

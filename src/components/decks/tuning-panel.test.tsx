@@ -1388,6 +1388,19 @@ describe("TuningPanel: Describing in place (H35, PR 3)", () => {
     expect(frame.className).toContain("border-[color:var(--accent)]");
   });
 
+  it("grows the editor with its words past the 72 floor, as the empty state's field does", async () => {
+    const tall = vi.spyOn(HTMLTextAreaElement.prototype, "scrollHeight", "get").mockReturnValue(110);
+    try {
+      await draw(deps([fresh]), noDescription);
+      fireEvent.click(screen.getByRole("button", { name: "Describe your deck →" }));
+      const field = screen.getByLabelText("Describe your deck") as HTMLTextAreaElement;
+      expect(field.style.height).toBe("110px");
+      expect(field.className.split(/\s+/)).toContain("overflow-hidden");
+    } finally {
+      tall.mockRestore();
+    }
+  });
+
   it("Escape also reverts the editor to the dashed row", async () => {
     await draw(deps([fresh]), noDescription);
     fireEvent.click(screen.getByRole("button", { name: "Describe your deck →" }));

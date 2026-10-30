@@ -96,12 +96,12 @@ describe("TaggedBox", () => {
     for (const c of ring) expect(cls()).toContain(c);
   });
 
-  it("accent none draws no focus-within accent on the frame and adds no ring class; the foot takes pointer events", () => {
-    box({ accent: "none" });
+  it("a dashed frame takes the accent edge on focus like every other place (Tag-Control 1); the foot takes pointer events", () => {
+    box({ dashed: true });
     const frame = document.querySelector("[data-framed-box]")!;
-    expect(frame.className).not.toContain("focus-within");
+    expect(frame.className).toContain("border-dashed");
+    expect(frame.className).toContain("focus-within:border-[color:var(--accent)]");
     expect(frame.className).not.toContain("has-[:focus-visible]");
-    expect(frame.className).toContain("border-[color:var(--border-strong)]");
     expect(screen.getByText("0 / 240").parentElement!.className).toContain("pointer-events-auto");
   });
 
@@ -116,10 +116,9 @@ describe("TaggedBox", () => {
     expect(cls()).not.toContain("border-[color:var(--danger)]");
   });
 
-  it("keeps the field's focus on a press of the foot's padding or counter, and spreads footProps on the foot", () => {
-    box({ footProps: { "data-lock-hide": "" } });
+  it("keeps the field's focus on a press of the foot's padding or counter", () => {
+    box();
     const foot = screen.getByText("0 / 240").parentElement!;
-    expect(foot).toHaveAttribute("data-lock-hide");
     expect(fireEvent.mouseDown(foot)).toBe(false);
     expect(fireEvent.mouseDown(screen.getByText("0 / 240"))).toBe(false);
   });

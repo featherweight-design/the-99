@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { CardTagList } from "./card-tag-picker";
@@ -32,6 +32,43 @@ describe("CardTagList floating under an anchor", () => {
     const ul = place({ top: 100, bottom: 140, left: 20, width: 300 }, { innerHeight: 800, innerWidth: 1000 });
     expect(ul.parentElement).toBe(document.body);
     expect(ul.style).toMatchObject({ position: "fixed", top: "144px", left: "20px", width: "300px", maxHeight: "648px" });
+  });
+
+  it("settles on the layout viewport's left and width when the visual viewport gives none, never NaN (and never re-sets forever)", () => {
+    vi.stubGlobal("innerHeight", 800);
+    vi.stubGlobal("innerWidth", 1000);
+    // A partial visual viewport, as some tests and older engines give: no offsetLeft, no width.
+    Object.defineProperty(window, "visualViewport", { configurable: true, value: { offsetTop: 10, height: 600, addEventListener() {}, removeEventListener() {} } });
+    const field = document.createElement("textarea");
+    field.getBoundingClientRect = () => ({ top: 100, bottom: 140, left: 20, right: 320, width: 300, height: 40, x: 20, y: 100, toJSON: () => ({}) });
+    document.body.appendChild(field);
+    render(
+      <CardTagList
+        id="t" listId="l" open query="sol" local={[]} activeIndex={0} remoteStatus="ok" scoped={false} pick={() => {}} anchor={{ current: field }}
+        options={[{ oracleId: "a", name: "Sol Ring", meta: "Artifact", group: "any" }]}
+      />,
+    );
+    expect(screen.getByRole("listbox").style).toMatchObject({ left: "20px", width: "300px" });
+  });
+
+  it("follows its anchor when the anchor changes size with nothing scrolled (a field growing with its words)", () => {
+    const observer: { fire?: () => void } = {};
+    const disconnect = vi.fn();
+    vi.stubGlobal("ResizeObserver", class {
+      constructor(callback: () => void) { observer.fire = callback; }
+      observe() {}
+      unobserve() {}
+      disconnect = disconnect;
+    });
+    const rect = { top: 100, bottom: 140, left: 20, width: 300 };
+    const ul = place(rect, { innerHeight: 800, innerWidth: 1000 });
+    expect(ul.style.top).toBe("144px");
+    // The field grew by two lines: its foot is 46px lower, and only its own size changed.
+    rect.bottom = 186;
+    act(() => observer.fire?.());
+    expect(screen.getByRole("listbox").style.top).toBe("190px");
+    cleanup();
+    expect(disconnect).toHaveBeenCalled();
   });
 
   it("never wider than 440px or past the window's edges", () => {
