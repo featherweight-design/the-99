@@ -93,6 +93,9 @@ export function useCardTagPicker(o: CardTagPickerOptions) {
   const [dismissed, setDismissed] = useState(false);
   const [active, setActive] = useState(0);
   const [answer, setAnswer] = useState<Answer | null>(null);
+  // The list's element, set as it mounts. A list anchored to its field (a portal) mounts a render after the picker
+  // opens, once its place is measured, so the reveal below must wait for it rather than look it up as it opens.
+  const [listEl, setListEl] = useState<HTMLElement | null>(null);
   const seq = useRef(0);
 
   const tag = !dismissed ? openTagAt(value, caret) : null;
@@ -152,7 +155,7 @@ export function useCardTagPicker(o: CardTagPickerOptions) {
     const el = field.current;
     if (!open || !el) return;
     const vv = window.visualViewport;
-    const list = document.getElementById(`${id}-list`);
+    const list = listEl;
     let later: ReturnType<typeof setTimeout> | null = null;
     let readerMoved = false;
     const check = () => {
@@ -184,7 +187,7 @@ export function useCardTagPicker(o: CardTagPickerOptions) {
       grows?.disconnect();
       if (later !== null) clearTimeout(later);
     };
-  }, [open, field, id]);
+  }, [open, field, listEl]);
 
   const lookup = open && query.length >= REMOTE_MIN_LETTERS;
   const current = lookup && answer?.query === query ? answer : null;
@@ -280,7 +283,7 @@ export function useCardTagPicker(o: CardTagPickerOptions) {
       onClick: sync,
       onFocus: sync,
     },
-    list: { id, listId, open, query, local, options, activeIndex, remoteStatus, scoped, pick },
+    list: { id, listId, open, query, local, options, activeIndex, remoteStatus, scoped, pick, listRef: setListEl },
   };
 }
 
@@ -344,7 +347,7 @@ function useFloatingPlace(anchor: RefObject<HTMLElement | null> | undefined): CS
  * what overflows them (the deck header's band), where an absolutely placed list would be cut to its first row.
  */
 export function CardTagList({
-  id, listId, query, local, options, activeIndex, remoteStatus, scoped, pick, maxHeightPx, anchor,
+  id, listId, query, local, options, activeIndex, remoteStatus, scoped, pick, maxHeightPx, anchor, listRef,
 }: {
   id: string;
   listId: string;
@@ -359,6 +362,8 @@ export function CardTagList({
   maxHeightPx?: number;
   /** The field the list floats under, in a portal; omitted, the list is placed in its container. */
   anchor?: RefObject<HTMLElement | null>;
+  /** Told the list's element as it mounts and unmounts (the picker's reveal measures it). */
+  listRef?: (el: HTMLElement | null) => void;
 }): ReactNode {
   const p = deckNotesCopy.picker;
   const floating = useFloatingPlace(anchor);
@@ -374,6 +379,7 @@ export function CardTagList({
   }, [id, listId, activeIndex, options.length]);
   const list = (
     <div
+      ref={listRef}
       id={listId}
       role="listbox"
       aria-label={p.listAria}

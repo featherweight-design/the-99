@@ -223,7 +223,7 @@ describe("adding", () => {
 
   it("brings the field to the middle of the visible area when the open list itself runs past the window, though the phone cap would fit", async () => {
     vi.mocked(reveal).mockClear();
-    mount(view([note("a", "x")]));
+    const { container } = mount(view([note("a", "x")]));
     const field = screen.getByRole("combobox", { name: "Add a note" }) as HTMLInputElement;
     at(field, 200);
     // From `md` the list has no cap: here it reaches 100px past the window's foot.
@@ -236,7 +236,10 @@ describe("adding", () => {
     try {
       click(screen.getByRole("button", { name: "Insert a card tag" }));
       expect(await screen.findByText(/Type a card name/)).toBeTruthy();
-      expect(reveal).toHaveBeenCalledWith(field, "center", undefined, expect.any(Function));
+      // The list is anchored (a portal that mounts a render after the picker opens, once its place is measured): the
+      // reveal must still measure it, which it can only do once the list has mounted (Copilot, #2440 round 1).
+      expect(container.contains(screen.getByRole("listbox"))).toBe(false);
+      await waitFor(() => expect(reveal).toHaveBeenCalledWith(field, "center", undefined, expect.any(Function)));
       // The list is 622px tall under the field and cannot fit in 768px with it centred: the band narrows to the
       // field's own height at the window's top (middle at 768 - 622 - 23 = 123), so it is brought to the top.
       expect(vi.mocked(reveal).mock.calls.at(-1)?.[3]?.()).toEqual({ top: 0, bottom: 246 });

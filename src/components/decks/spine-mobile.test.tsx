@@ -125,6 +125,33 @@ describe("SpineMobile", () => {
     expect(screen.getByText(/Atraxa, Praetors’ Voice/)).toBeTruthy();
   });
 
+  it("draws Save and Cancel under the progress bar, outside the 288 band (Tag-Places d, 390)", () => {
+    const { container } = renderSpine(<SpineMobile {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
+    const band = container.querySelector("[data-testid='spine-band']")!;
+    const save = screen.getByRole("button", { name: /Save/ });
+    const cancel = screen.getByRole("button", { name: "Cancel" });
+    expect(band.contains(save)).toBe(false);
+    expect(band.contains(cancel)).toBe(false);
+    // After the bar: the bar's fill precedes the row in the document.
+    const fill = screen.getByTestId("spine-bar-fill");
+    expect(fill.compareDocumentPosition(save) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // The band keeps the fields.
+    expect(band.contains(screen.getByLabelText(deckDescriptionCopy.description.fieldAria))).toBe(true);
+  });
+
+  it("keeps the editor open when focus moves between the band's fields and the row under the bar", () => {
+    renderSpine(<SpineMobile {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
+    const description = screen.getByLabelText(deckDescriptionCopy.description.fieldAria);
+    fireEvent.change(description, { target: { value: "Edited" } });
+    const cancel = screen.getByRole("button", { name: "Cancel" });
+    fireEvent.blur(description, { relatedTarget: cancel });
+    fireEvent.blur(cancel, { relatedTarget: description });
+    expect(saveDeckHeader).not.toHaveBeenCalled();
+    expect(screen.getByLabelText(deckDescriptionCopy.description.fieldAria)).toBeInTheDocument();
+  });
+
   // Both actions refuse the mousedown, for opposite reasons: Cancel so the blur
   // does not save the edit it is refusing, Save so the blur does not send the
   // same rename the tap is about to send.
