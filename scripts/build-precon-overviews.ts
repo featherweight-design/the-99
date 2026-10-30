@@ -179,7 +179,9 @@ async function main(): Promise<number> {
       continue;
     }
     // Its inputs moved: never carried over while its replacement waits (or fails, or is deferred).
-    if (had && !DRY) await db.update(preconSynopses).set({ current: false, checkedAt: new Date() })
+    // A FORCED row whose inputs did not move stays current until its replacement is stored: held or failed, it keeps the valid Overview it has.
+    const forcedOnly = FORCED.includes(file) && had?.hash === hash && had.list === list && had.model === model;
+    if (had && !DRY && !forcedOnly) await db.update(preconSynopses).set({ current: false, checkedAt: new Date() })
       .where(and(eq(preconSynopses.preconFile, file), eq(preconSynopses.contractVersion, contract), eq(preconSynopses.roleBasis, basis)));
     // `--limit` caps what is SENT, never what is checked: every precon past it is still hashed above,
     // so a row whose inputs moved is marked not current whatever the limit.
