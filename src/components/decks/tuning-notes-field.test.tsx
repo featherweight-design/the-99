@@ -178,6 +178,6 @@ describe("TuningNotesField", () => {
     expect(cls).toContain("h-[24px]");
     expect(cls).toContain("pointer-coarse:after:absolute");
     expect(cls).toContain("pointer-coarse:after:-inset-y-[10px]");
-    expect(cls).toContain("pointer-coarse:after:-inset-x-[4px]");
+    expect(cls).toContain("pointer-coarse:after:-inset-x-[8px]");
   });
 });
