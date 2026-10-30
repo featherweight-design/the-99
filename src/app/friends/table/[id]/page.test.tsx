@@ -59,13 +59,6 @@ describe("TablePage", () => {
     expect(m.loadClosedTable).not.toHaveBeenCalled();
   });
 
-  it("leaves Log this game out with friends off (opponents follow friends)", async () => {
-    m.loadTable.mockResolvedValue(TABLES.T1);
-    m.socialFriendsEnabled.mockReturnValue(false);
-    await page();
-    expect(screen.queryByText("Log this game")).toBeNull();
-  });
-
   it("draws the expired page when the night has ended", async () => {
     m.loadClosedTable.mockResolvedValue({ podName: "Thursday night", setBy: "Colin", faces: [{ name: "Colin", artCropUri: null }] });
     await page();

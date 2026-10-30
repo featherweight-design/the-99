@@ -67,7 +67,8 @@ describe("each sentence follows its own switch", () => {
     ["a proxy keeps its retired tokens sentence with nothing on", {}, "rule/proxy", "I have one", undefined],
     ["a fill without Help me choose", {}, "rule/autofill", "then uses your Collection", "Help me choose"],
     ["a fill with Help me choose", { HELP_ME_CHOOSE_ENABLED: "true" }, "rule/autofill", "any cards will do", undefined],
-    ["friends see a wishlist only with the wishlist", { SOCIAL_FRIENDS_ENABLED: "true" }, "rule/friends-see", "spares you offer", "wishlist"],
+    ["friends see the wishlist with friends on (its own switch is retired)", { SOCIAL_FRIENDS_ENABLED: "true" }, "rule/friends-see", "Your wishlist is theirs to read too", undefined],
+    ["friends see nothing with friends off", {}, "rule/friends-see", undefined, undefined],
     ["friends open decks", { SOCIAL_FRIENDS_ENABLED: "true" }, "rule/friends-see", "can open the decks", "names, status"],
     ["bracket marks are explained with the Analysis tab off, as they are drawn", {}, "decks/your-deck/bracket-marks", "Game Changers", undefined],
   ] as const)("%s", (_name, e, key, has, lacks) => {
@@ -188,7 +189,7 @@ describe("seen translation", () => {
     const replace = editOnly.flatMap((s) => s.rules).find((r) => r.key === "rule/replace")!;
     expect(replace.text.startsWith("With Replace")).toBe(true);
     const help = editOnly.flatMap((s) => s.labels).find((l) => l.key === "collection/cards/tabs")!;
-    expect(help.text).toBe(" are your Collection’s tabs. History lists your changes from the last 90 days.");
+    expect(help.text).toBe(" are your Collection’s tabs. History lists your changes from the last 90 days. Wishlist holds the cards you’re after.");
   });
 
   it("never lets the floor answer for a unit whose every source was switched", () => {
