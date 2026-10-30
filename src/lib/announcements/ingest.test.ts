@@ -36,6 +36,7 @@ function memoryStore(initial: CatalogCard[] = starTrekCatalog()) {
   const rows = new Map<string, { post: AnnouncementRecord; decklists: DecklistRecord[]; firstSeenAt: string }>();
   let catalogReads = 0;
   let saveMatchCalls = 0;
+  let stamps = 0;
   let clock = "2026-10-29T12:00:00.000Z";
   const store: IngestStore = {
     async readKnown(): Promise<KnownPost[]> {
@@ -64,9 +65,12 @@ function memoryStore(initial: CatalogCard[] = starTrekCatalog()) {
         row.decklists = row.decklists.map((x) => (x.position === d.position ? d : x));
       }
     },
+    async stampCatalog() {
+      stamps++;
+    },
   };
   return {
-    store, rows, catalogReads: () => catalogReads, saveMatchCalls: () => saveMatchCalls,
+    store, rows, catalogReads: () => catalogReads, saveMatchCalls: () => saveMatchCalls, stamps: () => stamps,
     setClock: (t: string) => (clock = t), setCatalog: (c: CatalogCard[]) => (catalog = c),
   };
 }
@@ -154,9 +158,11 @@ describe("runAnnouncementsIngest", () => {
     const mem = memoryStore();
     await run({ store: mem.store, site: web(pages()) });
     const site = web(pages());
+    expect(mem.stamps()).toBe(1); // the first run saved, so the cached Precons pages are retired once
     const { report } = await run({ store: mem.store, site });
     expect(site.calls.map((c) => c.url)).toEqual([SITEMAP_URL]);
     expect(report).toMatchObject({ due: 0, saved: 0 });
+    expect(mem.stamps()).toBe(1); // a run that wrote nothing moves no generation
   });
 
   it("an edited post (lastmod moved) is read again; a post published after the first run is not baseline", async () => {
@@ -318,6 +324,8 @@ describe("the re-match pass", () => {
     const { report } = await run({ store: mem.store, site, now: hour });
     expect(site.calls.map((c) => c.url)).toEqual([SITEMAP_URL]);
     expect(report).toMatchObject({ due: 0, saved: 0, rematched: 1 });
+    // first run, then the re-match: the quiet run wrote nothing and stamped nothing
+    expect(mem.stamps()).toBe(2);
     const after = fleet(mem);
     expect(after.commanderCardId).not.toBeNull();
     expect(after).toMatchObject({ partnerName: JANEWAY, partnerRole: "alternate", unmatched: ["Spot, Felis catus"] });
@@ -330,6 +338,7 @@ describe("the re-match pass", () => {
     const again = await run({ store: mem.store, site: web(pages()), now: hour.replace("10-31", "11-01") });
     expect(again.report.rematched).toBe(0);
     expect(mem.saveMatchCalls()).toBe(1);
+    expect(mem.stamps()).toBe(2);
   });
 
   it("never reads the catalog on the re-match hour when every list is matched", async () => {

@@ -5,6 +5,7 @@
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, wizardsAnnouncementDecklists, wizardsAnnouncements } from "../../db/schema";
+import { stampCatalogRefresh } from "../cache/stamp-catalog";
 import { isGameCardWhere } from "../cards/game-card-where";
 import type { AnnouncementFeedKind } from "../feed/kinds";
 import type { IngestStore, KnownPost, ParseStatus, StoredDecklist } from "./ingest";
@@ -97,5 +98,10 @@ export const announcementsStore: IngestStore = {
           .where(and(eq(t.announcementId, d.announcementId), eq(t.position, d.position)));
       }
     });
+  },
+
+  async stampCatalog() {
+    // Never throws: a failed stamp costs one hour's staleness, never the ingest (`stamp-catalog.ts`).
+    await stampCatalogRefresh();
   },
 };

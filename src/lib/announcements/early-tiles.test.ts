@@ -46,6 +46,8 @@ describe("lists to come (STATES 3.2)", () => {
 
   it("names the commanders the posted lists stand for", () => {
     expect([...listedCommanderIds([tile(0, "A", "a", ["W"]), tile(1, "B", "b", ["U"])])]).toEqual(["o-a", "o-b"]);
+    // A list that gave way to its release list still stands for its commander.
+    expect([...listedCommanderIds([tile(0, "A", "a", ["W"])], ["o-c"])]).toEqual(["o-a", "o-c"]);
   });
 });
 

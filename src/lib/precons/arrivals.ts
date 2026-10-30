@@ -134,8 +134,9 @@ export type AnnouncedMatch = {
   /**
    * The set's posted early lists (announcements UI 5): `lists` those the filters keep, `posted` every one (the meta's
    * "3 of 5 lists so far" counts them all), `promised` the post's own count, `listed` the commanders every posted list
-   * stands for (a revealed one among them is drawn as its list, not again), and `toCome` the promised lists neither
-   * posted nor stood for by a revealed commander, all read unfiltered. Absent while the set has none.
+   * stands for, a list that gave way to its release list included (a revealed one among them is drawn as its list, or
+   * not at all, never as waiting), and `toCome` the promised lists neither posted nor stood for by a revealed
+   * commander, all read unfiltered. Absent while the set has none.
    */
   early?: { lists: EarlyTile[]; posted: number; promised: number | null; listed: string[]; toCome: number };
 };
@@ -165,15 +166,19 @@ export function filterAnnounced(
     const posted = earlyByCode[set.code];
     const lists = posted ? filterEarly(posted.lists, { q, colours }, setMatches) : [];
     // A list that matches keeps its set, as a matching commander does.
-    const stays = all.length === 0 && lists.length === 0 ? !active || setMatches : !active || commanders.length > 0 || lists.length > 0;
+    // The empty-set exception is for a set with nothing posted at all: `lists` is already filtered, so a set whose
+    // lists the filters all drop is not one, and leaves as a set whose commanders all fail would.
+    const nothing = all.length === 0 && (posted?.lists.length ?? 0) === 0;
+    const stays = nothing ? !active || setMatches : !active || commanders.length > 0 || lists.length > 0;
     if (!stays) continue;
     const match: AnnouncedMatch = { set, commanders, matched: commanders.length, revealed: all.length };
     if (posted && posted.lists.length > 0) {
-      const listed = listedCommanderIds(posted.lists);
+      // A list that gave way to its release list still stands for its commander: not waiting, and not to come.
+      const listed = listedCommanderIds(posted.lists, posted.released);
       const waiting = all.filter((c) => !listed.has(c.oracleId)).length;
       match.early = {
         lists, posted: posted.lists.length, promised: posted.promised, listed: [...listed],
-        toCome: listsToCome(posted.lists.length, posted.promised, waiting),
+        toCome: listsToCome(posted.lists.length + (posted.releasedLists ?? 0), posted.promised, waiting),
       };
     }
     out.push(match);

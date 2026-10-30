@@ -100,6 +100,12 @@ export type IngestStore = {
   readUnmatched(): Promise<StoredDecklist[]>;
   /** Rewrites these lists' matches in place (the post row is untouched). */
   saveMatches(decklists: StoredDecklist[]): Promise<void>;
+  /**
+   * Moves the catalog generation (`stampCatalogRefresh`), called once at the end of a run that wrote a row. The
+   * Announced group's sets and early lists ride inside each reader's cached Precons page, keyed on the generation, so
+   * without it a reader saw a new post's tiles, count and `new` only when the cache's hour ran out.
+   */
+  stampCatalog(): Promise<void>;
 };
 
 export type IngestAlert =
@@ -355,6 +361,10 @@ export async function runAnnouncementsIngest(deps: IngestDeps): Promise<IngestRe
       rematched = changed.length;
     }
   }
+
+  // After every write, so a reader who misses the stamp by a moment keeps the old generation rather than meeting a new
+  // one over half-written rows. A run that wrote nothing moves nothing: the hourly run must not retire every cache.
+  if (saved > 0 || (rematched ?? 0) > 0) await store.stampCatalog();
 
   const at = now();
   for (const post of latest.values()) {

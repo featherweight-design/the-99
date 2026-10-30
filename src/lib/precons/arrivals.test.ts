@@ -11,6 +11,7 @@ import {
   seenKeysFor,
   visitSeenKeys,
 } from "./arrivals";
+import type { EarlyTile } from "../announcements/early-tiles";
 import type { PreconArrival } from "./arrivals-read";
 import type { RevealedCommander } from "./revealed";
 import type { UpcomingSet } from "./upcoming";
@@ -258,5 +259,28 @@ describe("filterAnnounced", () => {
     expect(filterAnnounced([empty], byCode, { q: "kirk", colours: [] })).toEqual([]);
     expect(filterAnnounced([empty], byCode, { q: "", colours: ["W"] })).toEqual([]);
     expect(filterAnnounced([empty], byCode, { q: "empty", colours: [] })).toMatchObject([{ set: empty, matched: 0, revealed: 0 }]);
+  });
+  const list = (position: number, name: string, c: RevealedCommander): EarlyTile => ({
+    href: `/decks/precons/early/post-1/${position}`, name,
+    commanders: [{ oracleId: c.oracleId, name: c.name, imageUri: null, colorIdentity: c.colorIdentity }],
+    identity: c.colorIdentity, owned: 10, of: 100,
+  });
+
+  it("drops a set with early lists and none revealed when the filters drop every list, its name matching or not", () => {
+    const early = { emp: { lists: [list(0, "Boldly Go", kirk)], promised: 2 } };
+    // The set's name matches, but no list is blue-black: the lists, filtered, are not "no lists".
+    expect(filterAnnounced([empty], {}, { q: "empty", colours: ["U", "B"] }, early)).toEqual([]);
+    expect(filterAnnounced([empty], {}, { q: "", colours: ["B"] }, early)).toEqual([]);
+    expect(filterAnnounced([empty], {}, { q: "empty", colours: ["R"] }, early).map((m) => m.early?.lists.length)).toEqual([1]);
+  });
+
+  it("never reads a commander whose list gave way to its release list as waiting, nor its list as still to come", () => {
+    // Kirk's list reached the catalog before release; Chapel's is still early. Three promised.
+    const early = { trc: { lists: [list(1, "Final Frontier", chapel)], promised: 3, released: ["kirk"], releasedLists: 1 } };
+    const [m] = filterAnnounced([trc], byCode, { q: "", colours: [] }, early);
+    expect(m.early?.lists.map((l) => l.name)).toEqual(["Final Frontier"]);
+    expect([...(m.early?.listed ?? [])].sort()).toEqual(["chapel", "kirk"]);
+    // Three promised, one early, one released, none waiting: one to come, not two.
+    expect(m.early?.toCome).toBe(1);
   });
 });

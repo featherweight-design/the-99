@@ -22,8 +22,20 @@ export type EarlyTile = {
   of: number;
 };
 
-/** A set's posted lists, in post order, and how many the post promised (null: it did not say). */
-export type EarlySet = { lists: EarlyTile[]; promised: number | null };
+/**
+ * A set's posted lists, in post order, and how many the post promised (null: it did not say). `released` holds the
+ * commanders of the set's posted lists that have given way to their release list (STATES 3.4): no longer drawn as an
+ * early tile, but still stood for, so a revealed one among them never reads as waiting for its list, and its list
+ * never as still to come.
+ */
+export type EarlySet = {
+  lists: EarlyTile[];
+  promised: number | null;
+  /** The commanders (and co-commanders) of the lists that gave way to their release list; absent reads as none. */
+  released?: string[];
+  /** How many posted lists gave way: posted, not drawn, and so neither waiting nor still to come. */
+  releasedLists?: number;
+};
 
 /**
  * The early seen key (G2): `early:<code>:<count>`, kept apart from `lists:<code>` so seeing a set's early lists never
@@ -52,9 +64,12 @@ export function earlySeenKeys(early: Readonly<Record<string, EarlySet>>): string
   return Object.entries(early).flatMap(([code, s]) => (s.lists.length > 0 ? [earlySeenKey(code, s.lists.length)] : []));
 }
 
-/** The commanders a posted list already stands for: a revealed commander among them is drawn as its list, not again. */
-export function listedCommanderIds(lists: readonly EarlyTile[]): Set<string> {
-  return new Set(lists.flatMap((l) => l.commanders.map((c) => c.oracleId)));
+/**
+ * The commanders a posted list already stands for: a revealed commander among them is drawn as its list, not again.
+ * `released` adds the commanders whose posted list has given way to its release list: no tile, and no wait either.
+ */
+export function listedCommanderIds(lists: readonly EarlyTile[], released: readonly string[] = []): Set<string> {
+  return new Set([...lists.flatMap((l) => l.commanders.map((c) => c.oracleId)), ...released]);
 }
 
 /**

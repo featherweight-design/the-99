@@ -111,8 +111,16 @@ export async function loadEarlyListsBySet(userId: string, sets: readonly Upcomin
   for (const { code, lists } of resolved) {
     const set = wanted.get(code)!;
     const tiles: EarlyTile[] = [];
+    // A list whose release list is in leaves the tiles but still stands for its commander (and partner), so a sibling
+    // list still early never draws that revealed commander as "list to come".
+    const gaveWay: string[] = [];
+    let gaveWayLists = 0;
     for (const l of lists) {
-      if (l.commanderCardId && releasedIn.has(`${code}:${l.commanderCardId}`)) continue;
+      if (l.commanderCardId && releasedIn.has(`${code}:${l.commanderCardId}`)) {
+        gaveWay.push(l.commanderCardId, ...(l.partnerCardId ? [l.partnerCardId] : []));
+        gaveWayLists++;
+        continue;
+      }
       const page = assembleEarlyList({
         contentfulId: l.contentfulId,
         position: l.position,
@@ -132,8 +140,13 @@ export async function loadEarlyListsBySet(userId: string, sets: readonly Upcomin
     const held = out[code];
     const promised = lists[0].promised;
     out[code] = held
-      ? { lists: [...held.lists, ...tiles], promised: held.promised === null ? promised : promised === null ? held.promised : Math.max(held.promised, promised) }
-      : { lists: tiles, promised };
+      ? {
+          lists: [...held.lists, ...tiles],
+          promised: held.promised === null ? promised : promised === null ? held.promised : Math.max(held.promised, promised),
+          released: [...new Set([...(held.released ?? []), ...gaveWay])],
+          releasedLists: (held.releasedLists ?? 0) + gaveWayLists,
+        }
+      : { lists: tiles, promised, released: [...new Set(gaveWay)], releasedLists: gaveWayLists };
   }
   return out;
 }
