@@ -1,7 +1,7 @@
 {
   "feature": "Upload flow layout fixes: the comparison step fills the area with Cancel in the foot, long review buckets scroll in a capped box, the phone's scroll ends above the foot",
   "clearAbout": true,
-  "note": "Needs COLLECTION_EDIT_ENABLED=true, a scratch branch, and UPLOAD_PASTE (a pasted list of card lines). The paste rows leave unconfirmed uploads behind.",
+  "note": "Needs a scratch branch, and UPLOAD_PASTE (a pasted list of card lines). The paste rows leave unconfirmed uploads behind.",
   "rows": [
     {
       "id": "loading",

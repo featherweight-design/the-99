@@ -24,8 +24,7 @@
 // and ledger entries the run made are deleted. The one thing not restored is a ledger entry the write's own
 // retention prune removes, which only an entry past the retention window can be.
 //
-// The server: `next start` of a build with the worktree's `.env`, started with
-//   COLLECTION_EDIT_ENABLED=true (Sync follows it; its own switch is retired)
+// The server: `next start` of a build with the worktree's `.env` (Sync's switch and collection editing's are retired)
 //
 // Written for PR 3 and run against it: it passes at 390 and 1300. Browser probes are run by hand, not in CI.
 //

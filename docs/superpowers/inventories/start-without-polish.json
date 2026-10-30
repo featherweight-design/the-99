@@ -1,6 +1,6 @@
 {
   "feature": "Start without a collection, polish: first-run spacing at 390, `select` not `tick`, a commander thumb on the precon pick rows, one shared checkbox",
-  "note": "Signed in as the empty onboard-probe account on a SCRATCH branch of local-dev (emptied: no decks, no collection), with COLLECTION_EDIT_ENABLED, NO_COLLECTION_ENTRY_ENABLED and PRECONS_ENABLED on. The rows write nothing: the pick rows select boxes (a press of the row's label) without pressing the add, and the import row fills a form it never submits. The checkboxes on the surfaces that need other fixtures (the cart's deck select and group rows, the pod's spares share and add-friends rows, the scan lab's Keep this frame) are the same `Checkbox` component, held by `checkbox-usage.test.ts`, and are photographed by their own inventories.",
+  "note": "Signed in as the empty onboard-probe account on a SCRATCH branch of local-dev (emptied: no decks, no collection); collection editing, the no-collection entry and precons are retired (always on). The rows write nothing: the pick rows select boxes (a press of the row's label) without pressing the add, and the import row fills a form it never submits. The checkboxes on the surfaces that need other fixtures (the cart's deck select and group rows, the pod's spares share and add-friends rows, the scan lab's Keep this frame) are the same `Checkbox` component, held by `checkbox-usage.test.ts`, and are photographed by their own inventories.",
   "rows": [
     {
       "id": "first-run-foot",

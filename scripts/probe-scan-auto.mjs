@@ -9,7 +9,7 @@
 //
 //   PROBE_BASE=http://localhost:3418 pnpm probe:scan-auto
 //
-// The server needs COLLECTION_EDIT_ENABLED, and a network for the models.
+// The server needs a network for the models.
 import path from "node:path";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";

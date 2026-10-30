@@ -1,7 +1,6 @@
 import { howItWorksEnabled } from "../about/how-it-works-flag";
 import { announcementsEnabled } from "../announcements/flag";
 import { listCacheEnabled } from "../cache/list-cache-flag";
-import { collectionEditEnabled } from "../collection/edit-flag";
 import { changeCommanderEnabled } from "../commander-change/flag";
 import { allDecksCartEnabled } from "../decks/all-decks-cart-flag";
 import { analysisTabEnabled } from "../decks/analysis-flag";
@@ -40,7 +39,6 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   ANNOUNCEMENTS_ENABLED: announcementsEnabled,
   BRACKET_REACH_ENABLED: bracketReachEnabled,
   CHANGE_COMMANDER_ENABLED: changeCommanderEnabled,
-  COLLECTION_EDIT_ENABLED: collectionEditEnabled,
   DECK_NOTES_ENABLED: deckNotesEnabled,
   DECK_PRINTINGS_ENABLED: deckPrintingsEnabled,
   DECK_STATS_ENABLED: deckStatsEnabled,

@@ -109,7 +109,7 @@ async function main() {
     );
     await writeArrivalsReceipt({
       userId: USER, uploadId: upload, ownedBefore: {}, ownedAfter: { [wanted]: 1 }, buyBefore: [], unmatched: [], parseErrorCount: 0,
-      env: { ...process.env, COLLECTION_EDIT_ENABLED: "true" },
+      env: process.env,
     });
     const upRow = (await rowsOf(entryId)).find((x) => x.oracleId === wanted);
     check("6. an upload's entry keeps the deck its copy went to",

@@ -1,7 +1,7 @@
 {
   "feature": "Collection screens PR 5c: the upload choice (A1) and the Add review (A3)",
   "clearAbout": true,
-  "note": "Needs COLLECTION_EDIT_ENABLED=true and an account with a collection. Neither row presses a confirm, so nothing is written. Replace's review is in collection-short-warning.json.",
+  "note": "Needs an account with a collection. Neither row presses a confirm, so nothing is written. Replace's review is in collection-short-warning.json.",
   "rows": [
     {
       "id": "upload-choice",

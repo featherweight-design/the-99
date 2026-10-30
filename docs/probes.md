@@ -66,7 +66,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   no receipt; a forged `?added=` draws nothing and is stripped all the same; History titles the
   entry "Added from Probe Own". It writes a fixture precon of 31 cards the account does not own (`ProbePreconOwn`), and removes it, the
   decks it started, the History entries it wrote and the collection rows the adds made in a `finally`; it refuses staging and production
-  by `neon.branch_id`. Needs `COLLECTION_EDIT_ENABLED=true`, on a server started fresh for the run (the
+  by `neon.branch_id`. Needs a server started fresh for the run (the
   precon catalog is memoized per server for ten minutes).
 - `pnpm probe:cart-scroll` walks Shopping for all decks (`/decks/shopping`) at 390 and 1300 (bug batch D item 3,
   Hugh 2026-10-13). Phone: the document scrolls, the list is not its own scroll box, the switch and heading stay pinned
@@ -80,14 +80,12 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   since deleted.`, the cart link then one link per named deck, and the page does not scroll sideways. It writes three
   `collection_history` entries: a cart purchase sourced `shopping:cart:<ids>` (five of the account's decks and one id that
   is no deck), an add whose two rows kept `wentTo`, and an add mixing a held row with a brew's read; it deletes all three
-  in a `finally`; it refuses staging and production by `neon.branch_id`. Needs `COLLECTION_EDIT_ENABLED=true`
-  on the server and an account with five decks.
+  in a `finally`; it refuses staging and production by `neon.branch_id`. Needs an account with five decks.
 - `pnpm probe:history-went-to` (tsx, a real Postgres; History deck line, PR 2) proves an Add Cards save and an upload's
   receipt keep where the arriving copies went on the history row (`HistoryRow.wentTo`): a card two committed decks want
   is the senior deck's, a card only a brew wants is a `soft` read, a card no deck wants carries nothing, deleting the deck
   afterwards leaves the stored row alone, and a save made without the placement read stores none. It writes under a
-  per-run user_id and deletes it in a `finally`; refused on staging and production. The upload check passes
-  `COLLECTION_EDIT_ENABLED` in the env it hands the receipt, as the confirm's switches would.
+  per-run user_id and deletes it in a `finally`; refused on staging and production.
 - `pnpm probe:search-clear` presses a search field's ✕ ONCE with a real pointer (a touch tap at phone width, a
   mouse click at desktop) and reports the field's value, whether it is still the focused element, and whether the ✕
   held its box (`PROBE_BASE`, a signed-in `+clerk_test` user like its siblings; mutate-free, it only types into a
@@ -578,7 +576,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   re-read, presses `Take the file’s for all 3` as a rule, then confirms and checks the collection holds the merge
   the review drew and one `upload_sync` entry. It WRITES the signed-in account's collection and a base upload, so it
   runs on a scratch branch off local-dev only (it refuses production, staging and local-dev by `neon.branch_id`, `assertScratchBranch`; cut one as in the safety rules above), and puts back every table the confirm can write from a
-  snapshot in a `finally`. Run against `next start` with `COLLECTION_EDIT_ENABLED=true` (Sync follows it).
+  snapshot in a `finally`. Run against `next start`.
 
 - `pnpm probe:tool-landing` opens each deck tool's Try it address, `/decks/<id>?tool=<tool>`, in a real browser at
   390 and 1300 (discovery R2·2, E11). For each of Top off, Proposed cuts, Suggested changes, Mana Balance, Cheaper
@@ -2561,8 +2559,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   icon). Find a deck needs `SWAP_TOOLS_ENABLED` and `FIND_A_DECK_READ_ENABLED` on the server too. It writes nothing but
   the browser's own recent cards. `PROBE_SHOT` names a file for a screenshot when it stops.
 - `pnpm probe:card-search-followups` proves card search's three staging follow-ups at 390 and at 1300, against a server
-  started with `COLLECTION_EDIT_ENABLED` true (`PROBE_BASE`;
-  `PROBE_QUERY`, default `sol`). It presses Close (or a press outside, on the desktop), Escape and Back with a query
+  at `PROBE_BASE` (`PROBE_QUERY`, default `sol`). It presses Close (or a press outside, on the desktop), Escape and Back with a query
   typed and checks each opens empty; it adds a card to the wishlist from card details opened from the search, on
   Collection › Wishlist, and counts the tiles behind before, after and after Remove; and it samples every animation
   frame from the press on a result until the card is up (the card's read slowed by 700ms) and fails on any frame that
@@ -2671,8 +2668,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   match: the panel says Added (and the phone's tray, or the desktop's list, already holds the card) while the sheet's
   printings action is still held in flight; the scanner never says it is adding; a failed printings read takes the card
   back off the list with the `view.removed` toast and is not taken again while it stays in view. Mutation-checked:
-  drop the sheet's rollback and both widths fail. It writes nothing (the list is never saved). Needs a server with
-  `COLLECTION_EDIT_ENABLED`, at `PROBE_BASE`.
+  drop the sheet's rollback and both widths fail. It writes nothing (the list is never saved). Needs a server at `PROBE_BASE`.
 - `pnpm probe:card-scan-match` proves card scanning's server match (plan `2026-10-16-card-scan.md` PR 1) against the
   real every-printing index: the file checks refuse a wrong model, a row off unit length and a short file; the ingest
   CLI exits 2 on a target that is not the branch it names; `publishScanIndex` replaces the rows and the meta row in one
@@ -3280,7 +3276,7 @@ scratch branch only, and refuses staging and production by `neon.branch_id`.
   card (Scryfall's image) covering `share` of the picture, centred at (`cx`, `cy`) and turned `angle` degrees. The scanner then
   reads a real frame through the real detector and embedder, so `docs/superpowers/inventories/card-scan-outline.json` photographs
   the outline following a card held off-centre (phone-card, desktop-card) and the empty table with its one-line hint (phone-empty,
-  desktop-empty). It needs `COLLECTION_EDIT_ENABLED` on the server and a network (the card image, the
+  desktop-empty). It needs a network (the card image, the
   models and onnxruntime-web). The first request to a cold `next dev` can pass the sign-in's 30s, so warm the server first.
   It adds nothing: an add would write a ledger entry. The smallest card the detector reads, measured 2026-10-16 on the real
   models over a 1280x720 frame (two cards, flat and tilted 15 degrees, off-centre): the sharpness gate holds down to a card

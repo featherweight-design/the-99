@@ -8,7 +8,6 @@ import {
   committedShortfalls, countMoves, newlyShort, normalizeItems, placementToUndo, restoreToUndo, planAdd, planEdit, planReplace,
   planDigest, planRevert, staleEdits, unseenHoldings, staleRevert, warningCovers, type ShortDeck,
 } from "./write";
-import { collectionEditEnabled } from "./edit-flag";
 
 const A = "00000000-0000-0000-0000-00000000000a";
 const B = "00000000-0000-0000-0000-00000000000b";
@@ -17,15 +16,6 @@ const id = (oracleId: string, setCode = "lea"): CollectionItemIdentity =>
 const held = (oracleId: string, quantity: number, scryfallId: string | null = "s1", condition: string | null = "NM") =>
   ({ ...id(oracleId), quantity, scryfallId, condition });
 const coll = (...rows: ReturnType<typeof held>[]) => new Map(rows.map((r) => [collectionItemKey(r), r]));
-
-describe("the collection edit switch", () => {
-  it("is on only for the exact string 'true'", () => {
-    for (const v of [undefined, "", "false", "TRUE", "1", " true"]) {
-      expect(collectionEditEnabled({ COLLECTION_EDIT_ENABLED: v } as unknown as NodeJS.ProcessEnv)).toBe(false);
-    }
-    expect(collectionEditEnabled({ COLLECTION_EDIT_ENABLED: "true" } as unknown as NodeJS.ProcessEnv)).toBe(true);
-  });
-});
 
 describe("normalizeItems", () => {
   it("lowercases, defaults and folds to one item per key with the upload's own rule", () => {
