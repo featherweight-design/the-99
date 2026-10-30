@@ -1,3 +1,5 @@
+import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
+import { z } from "zod";
 import { describe, expect, it } from "vitest";
 
 import { lineSchemaV2, suggestedChangesV2ReplySchema, tuningResponseSchema } from "./response-schema";
@@ -49,6 +51,13 @@ describe("tuningResponseSchema", () => {
 });
 
 describe("suggestedChangesV2ReplySchema", () => {
+  it("sends the same JSON schema as the reply without its short-reason preprocess, so the cache key holds", () => {
+    const plain = z.object({
+      lines: z.array(z.object({ n: z.number().int() }).extend(lineSchemaV2.shape)).max(schemaCapFor(askFor(MAX_COUNT))),
+    });
+    expect(zodOutputFormat(suggestedChangesV2ReplySchema).schema).toEqual(zodOutputFormat(plain).schema);
+  });
+
   const v2 = { ...one, n: 1, evidence: [{ kind: "request", value: "more ramp" }] };
   it("is one list under the neutral key `lines`, the same for additions, cuts and both refills", () => {
     expect(suggestedChangesV2ReplySchema.safeParse({ lines: [v2] }).success).toBe(true);

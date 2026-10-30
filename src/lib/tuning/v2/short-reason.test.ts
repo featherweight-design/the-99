@@ -39,6 +39,11 @@ describe("shortReasonFrom", () => {
     expect(shortReasonFrom("Mr. Orfeo, the Boulder hits hard. Keep him.")).toBe("Mr. Orfeo, the Boulder hits hard.");
   });
 
+  it("ends a cut before a quote it would leave open", () => {
+    expect(shortReasonFrom("Your note asks to “cut the slow ramp and keep the early game, since the table races hard every single game”."))
+      .toBe("Your note asks to…");
+  });
+
   it("reads whitespace runs as one space", () => {
     expect(shortReasonFrom("  Cheap   ramp\nfor the plan.  ")).toBe("Cheap ramp for the plan.");
   });
@@ -61,5 +66,7 @@ describe("withShortReason", () => {
     expect(withShortReason(noRationale)).toBe(noRationale);
     expect(withShortReason(null)).toBeNull();
     expect(withShortReason("x")).toBe("x");
+    const thin = { ...line, rationale: "It." };
+    expect(withShortReason(thin)).toBe(thin);
   });
 });

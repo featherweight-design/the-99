@@ -58,7 +58,8 @@ export const lineSchemaV2 = lineSchema.extend({ evidence: z.array(citationSchema
  * in the client's whole-reply parse as in the engine's line parse, so one bad phone summary neither drops its line nor
  * marks the whole reply malformed (6 of 22 first calls in the v14 eval). A preprocess is invisible to the JSON schema
  * sent, which still asks for `minLength: 1` (the SDK sends it as a description hint, never enforced), so the format and
- * the prompt-cache key are unchanged.
+ * the prompt-cache key are unchanged. A short reason over the cap still fails its line: no eval run has written one, and a
+ * cut of the model's own summary is a different fix from a rebuild of a missing one.
  */
 // `n` comes FIRST: structured output writes properties in schema order, so the model commits to the number before the line.
 export const replyLineSchemaV2 = z.preprocess(withShortReason, z.object({ n: z.number().int() }).extend(lineSchemaV2.shape));

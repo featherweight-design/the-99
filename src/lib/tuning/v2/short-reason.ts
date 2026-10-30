@@ -31,13 +31,32 @@ export function isDegenerateShortReason(value: unknown): boolean {
  */
 export function shortReasonFrom(rationale: string): string {
   const text = rationale.replace(/\s+/g, " ").trim();
-  // The stop must close a word, as `about/caption.ts` reads a first sentence, and lie at least a clause's length in: a
-  // card name's own abbreviation ("Dr. Julius Jumblemorph", "Mr. Orfeo, the Boulder") is not a sentence's end.
-  const sentence = new RegExp(`^.{${MIN_CLAUSE - 2},}?\\S[.?!](?=\\s|$)`).exec(text)?.[0] ?? text;
-  if (sentence.length <= SHORT_REASON_MAX) return sentence;
+  const sentence = firstSentence(text);
+  if (sentence.length <= SHORT_REASON_MAX) return closedQuotes(sentence);
   const clause = /^(.*?\S)[,;:](?=\s)/.exec(sentence)?.[1];
-  if (clause && clause.length >= MIN_CLAUSE && clause.length <= SHORT_REASON_MAX) return clause;
-  return cutAtWord(sentence, SHORT_REASON_MAX);
+  if (clause && clause.length >= MIN_CLAUSE && clause.length <= SHORT_REASON_MAX) return closedQuotes(clause);
+  return closedQuotes(cutAtWord(sentence, SHORT_REASON_MAX));
+}
+
+/** Titles a card name opens with ("Dr. Julius Jumblemorph", "Mr. Orfeo, the Boulder"): their stop ends no sentence. */
+const ABBREVIATION = /(?:^|\s)(?:Dr|Mr|Mrs|Ms|St|Jr|Sr|vs)\.$/;
+
+/** The text up to its first stop that closes a word (as `about/caption.ts` reads a first sentence), past a title's stop. */
+function firstSentence(text: string): string {
+  for (const m of text.matchAll(/\S[.?!](?=\s|$)/g)) {
+    const end = m.index + m[0].length;
+    if (!ABBREVIATION.test(text.slice(0, end))) return text.slice(0, end);
+  }
+  return text;
+}
+
+/** A cut that leaves a quote open ends before that quote instead: the line check (`presentationFailures`) drops a line
+ *  with an unmatched quote mark, which would lose the card this rebuild keeps. */
+function closedQuotes(cut: string): string {
+  const marks = [...cut.matchAll(/["“”]/g)];
+  if (marks.length % 2 === 0) return cut;
+  const before = cut.slice(0, marks[marks.length - 1].index).replace(/[\s,;:(\-–]+$/, "");
+  return before.length > 0 ? `${before}…` : cut;
 }
 
 /**
@@ -49,5 +68,8 @@ export function withShortReason(raw: unknown): unknown {
   const line = raw as Record<string, unknown>;
   if (!isDegenerateShortReason(line.rationaleShort)) return raw;
   if (typeof line.rationale !== "string" || line.rationale.trim() === "") return raw;
-  return { ...line, rationaleShort: shortReasonFrom(line.rationale) };
+  const rebuilt = shortReasonFrom(line.rationale);
+  // A rationale too thin to summarize ("It.") rebuilds nothing usable: the line is judged as it came.
+  if (isDegenerateShortReason(rebuilt)) return raw;
+  return { ...line, rationaleShort: rebuilt };
 }
