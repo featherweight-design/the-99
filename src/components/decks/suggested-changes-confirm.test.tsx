@@ -164,6 +164,26 @@ describe("SuggestedChangesConfirm, held additions", () => {
   });
 });
 
+describe("SuggestedChangesConfirm, a holder whose draft already cuts the card", () => {
+  const leaving = holder("d-leaving", "HD - Leaving", { draftCut: true });
+  const line = v2Line("a8", "add", { cardName: "Leaving Card", availability: heldBy(leaving) });
+
+  it("says the copy is leaving that deck, and still offers Pull it", () => {
+    draw({ adds: [line] });
+    expect(sub("a8")!.textContent).toBe(review.heldByLeaving(leaving.name));
+    expect(screen.getByRole("button", { name: review.pullA11y(line.cardName, leaving.name) })).toBeTruthy();
+  });
+
+  it("counts the decks with 2+ sources, and reads pulls from {deck} once staged", () => {
+    const many = v2Line("a7", "add", { cardName: "Many Card", availability: heldBy(leaving, KRATOS) });
+    draw({ adds: [many] });
+    expect(sub("a7")!.textContent).toBe(review.heldByMany(2));
+    cleanup();
+    draw({ adds: [line], staged: new Map([["a8", leaving]]) });
+    expect(sub("a8")!.textContent).toBe(sc.confirm.pullsFrom(leaving.name));
+  });
+});
+
 describe("SuggestedChangesConfirm, a guarded holder", () => {
   // The guard tag is aria-hidden; the row's name carries why no Pull is offered, as Review changes' row does.
   it.each([
