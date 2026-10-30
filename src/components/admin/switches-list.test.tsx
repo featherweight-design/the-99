@@ -31,7 +31,7 @@ describe("SwitchesList", () => {
     draw({});
     expect(document.querySelectorAll("[data-switch]")).toHaveLength(SWITCH_NAMES.length);
     const [features, plumbing] = screen.getAllByRole("heading", { level: 2 });
-    expect(features.textContent).toBe("Features26");
+    expect(features.textContent).toBe("Features25");
     expect(plumbing).toHaveAttribute("data-testid", "switches-plumbing-head");
     expect(plumbing.textContent).toContain("app-wide only");
     const plumbingNames = [...plumbing.parentElement!.querySelectorAll("[data-switch]")].map((e) => e.getAttribute("data-switch"));
@@ -55,7 +55,7 @@ describe("SwitchesList", () => {
     fireEvent.click(chip(/^Overridden/));
     expect(chip(/^Overridden/)).toHaveAttribute("aria-checked", "true");
     expect([...document.querySelectorAll("[data-switch]")].map((e) => e.getAttribute("data-switch"))).toEqual(["DECK_STATS_ENABLED"]);
-    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe("Features26");
+    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe("Features25");
     // The Plumbing head hides when it has no rows (L3).
     expect(screen.queryByTestId("switches-plumbing-head")).toBeNull();
   });

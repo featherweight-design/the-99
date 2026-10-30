@@ -1,6 +1,6 @@
 {
   "feature": "Segmented switch",
-  "note": "PR 1: the deck toolbar's All · Shopping · Stats · Notes bar on SegmentedSwitch (a tablist, accent tone) and By type / By role beside the sort (a radiogroup, neutral tone). Needs a server with DECK_STATS_ENABLED set to 'true' (Notes is always on; DECK_NOTES_ENABLED is retired), and SWITCH_DECK a deck the signed-in account owns (local-dev: d0000000-0000-4000-8000-00000000cafe). The By role row presses the radio; the grouping persists in localStorage (`the99:deck-grouping`), so the row after it opens on By role too, which is the persistence check.",
+  "note": "PR 1: the deck toolbar's All · Shopping · Stats · Notes bar on SegmentedSwitch (a tablist, accent tone) and By type / By role beside the sort (a radiogroup, neutral tone). Needs a server with DECK_STATS_ENABLED set to 'true' (Notes is always on), and SWITCH_DECK a deck the signed-in account owns (local-dev: d0000000-0000-4000-8000-00000000cafe). The By role row presses the radio; the grouping persists in localStorage (`the99:deck-grouping`), so the row after it opens on By role too, which is the persistence check.",
   "clearAbout": true,
   "shares": { "module": "src/components/ui/segmented-switch.tsx", "binding": "SegmentedSwitch" },
   "rows": [
