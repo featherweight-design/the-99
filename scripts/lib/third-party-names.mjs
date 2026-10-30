@@ -3,8 +3,10 @@
 //
 // 1. WHO MINTS AND WHO REVEALS. `named()` (mint.ts) is imported only under `src/lib/social/` and `src/lib/person-name/`;
 //    `reveal()` (reveal.ts) only by the files in `REVEAL_ALLOW`; tests' `plain()` (testing.ts) only by tests. Every
-//    import is RESOLVED (relative, `@/` alias, `import()`, `require()`), so no spelling of the path gets past it, and a
-//    re-export of any of the three is a finding wherever it is: one would hand the function to every importer.
+//    import is RESOLVED (relative or `@/` alias), so no spelling of the path gets past it. A re-export of any of the
+//    three is a finding wherever it is, and so is any use of an imported binding other than calling it (`export {
+//    named }`, a const alias): either would hand the function to every importer. `import()` and `require()` of them
+//    are findings outright, since what they return cannot be tracked.
 // 2. WHAT THE TYPE ALLOWS. An object type is still accepted by a template, `String()`, `.toString()` and `+`, which
 //    draw a branded name as "[object Object]" and hide that it was meant to be drawn marked. Each of those over a
 //    name (or a list holding one) is a finding outside `src/lib/person-name/`, as are `as ThirdPartyName` (forging one)
@@ -132,7 +134,12 @@ export function thirdPartyNameFindings(root) {
       } else if (ts.isCallExpression(node)) {
         const [arg] = node.arguments;
         const loads = node.expression.kind === ts.SyntaxKind.ImportKeyword || (ts.isIdentifier(node.expression) && node.expression.text === "require");
-        if (loads && arg && ts.isStringLiteralLike(arg)) checkImport(node, arg.text, false);
+        // A guarded module is imported statically, or not at all: what `import()` or `require()` returns cannot be
+        // tracked as a binding (awaited, destructured, `.then`), so loading it that way is itself a finding.
+        if (loads && arg && ts.isStringLiteralLike(arg) && !test) {
+          const to = target(arg.text);
+          if (to && GUARDED.includes(to)) add(node, `loads ${to} dynamically (import it statically, and only call it)`);
+        }
         // String(name)
         if (ts.isIdentifier(node.expression) && node.expression.text === "String" && arg && typeNames(arg)) add(node, "String() of a third-party name");
         // name.toString()

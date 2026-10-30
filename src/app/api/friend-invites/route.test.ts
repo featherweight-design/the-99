@@ -12,10 +12,11 @@ vi.mock("../../../lib/social/friends", () => ({ inviteOutcomes: stub.read }));
 
 import { GET } from "./route";
 import { MAX_OPEN_INVITES } from "../../../lib/social/rules";
+import { named } from "../../../lib/person-name/mint";
 
 const A = "AbCdEfGhIjKlMnOpQrStUv";
 const B = "ZyXwVuTsRqPoNmLkJiHgFe";
-const OUT = { token: A, open: false, friend: { publicId: "p-mo", displayName: "Mo" } };
+const OUT = { token: A, open: false, friend: { publicId: "p-mo", displayName: named("Mo") } };
 const get = (qs: string) => GET(new NextRequest(`http://localhost/api/friend-invites?${qs}`));
 
 beforeEach(() => {

@@ -70,7 +70,10 @@ describe("thirdPartyNameFindings", () => {
     })).toEqual([
       "src/components/a.ts:1 imports src/lib/person-name/mint.ts",
       "src/components/a.ts:2 imports src/lib/person-name/reveal.ts",
-      "src/components/b.ts:1 imports src/lib/person-name/mint.ts",
+      // Listing them passes them on, as well as importing them where they may not be.
+      "src/components/a.ts:3 passes on named from src/lib/person-name/mint.ts (only call it)",
+      "src/components/a.ts:3 passes on reveal from src/lib/person-name/reveal.ts (only call it)",
+      "src/components/b.ts:1 loads src/lib/person-name/mint.ts dynamically (import it statically, and only call it)",
     ]);
   });
 
@@ -89,6 +92,16 @@ describe("thirdPartyNameFindings", () => {
       "src/lib/social/leak-a.ts:2 passes on named from src/lib/person-name/mint.ts (only call it)",
       "src/lib/social/leak-b.ts:2 passes on named from src/lib/person-name/mint.ts (only call it)",
       "src/lib/social/leak-c.ts:3 passes on m from src/lib/person-name/mint.ts (only call it)",
+    ]);
+  });
+
+  it("finds a guarded module loaded dynamically, even where a static import would be allowed", { timeout: 30_000 }, () => {
+    expect(whys({
+      "src/lib/social/leak-d.ts": `export const mint = (await import("../person-name/mint")).named;\n`,
+      "src/lib/social/leak-e.ts": `declare const require: (id: string) => { named: unknown };\nexport const mint = require("../person-name/mint").named;\n`,
+    })).toEqual([
+      "src/lib/social/leak-d.ts:1 loads src/lib/person-name/mint.ts dynamically (import it statically, and only call it)",
+      "src/lib/social/leak-e.ts:2 loads src/lib/person-name/mint.ts dynamically (import it statically, and only call it)",
     ]);
   });
 
