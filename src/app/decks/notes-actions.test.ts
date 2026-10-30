@@ -4,6 +4,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { NoteCardHit } from "../../lib/decks/notes-store";
 
 // The proxy resolves each reader's switches onto a request header; with no request here, the
 // action reads the environment alone, as it did before overrides.
@@ -25,6 +26,8 @@ const stub = vi.hoisted(() => ({
   readThrows: false,
   view: { open: [], done: [], readAt: 42 },
   found: true,
+  hits: [] as NoteCardHit[],
+  searchThrows: false,
 }));
 
 vi.mock("next/cache", () => ({ revalidatePath: (p: string) => void stub.paths.push(p) }));
@@ -45,10 +48,14 @@ vi.mock("../../lib/decks/notes-store", () => ({
   updateNoteBody: async (...args: unknown[]) => (stub.calls.push({ fn: "updateNoteBody", args }), stub.found),
   setNoteDone: async (...args: unknown[]) => (stub.calls.push({ fn: "setNoteDone", args }), stub.found),
   removeNote: async (...args: unknown[]) => (stub.calls.push({ fn: "removeNote", args }), stub.found),
-  searchNoteCards: async () => [],
+  searchNoteCards: async (...args: unknown[]) => {
+    stub.calls.push({ fn: "searchNoteCards", args });
+    if (stub.searchThrows) throw new Error("db down");
+    return stub.hits;
+  },
 }));
 
-const { addNote, editNote, setNoteDone, deleteNote } = await import("./notes-actions");
+const { addNote, editNote, setNoteDone, deleteNote, searchNoteCards } = await import("./notes-actions");
 
 beforeEach(() => {
   vi.unstubAllEnvs();
@@ -59,6 +66,8 @@ beforeEach(() => {
   stub.found = true;
   stub.namesThrow = false;
   stub.readThrows = false;
+  stub.hits = [];
+  stub.searchThrows = false;
 });
 
 describe("addNote", () => {
@@ -145,6 +154,25 @@ describe("the other writes", () => {
     expect((await deleteNote(DECK, ["x"] as unknown as string)).ok).toBe(false);
     expect((await setNoteDone(DECK, NOTE, "true" as unknown as boolean)).ok).toBe(false);
     expect(stub.calls).toEqual([]);
+  });
+});
+
+describe("searchNoteCards", () => {
+  it("answers the store's hits for a string query", async () => {
+    stub.hits = [{ oracleId: ID, name: "Thassa's Oracle", typeLine: "Creature", commanderLegal: true, imageUri: null, flavorName: null }];
+    expect(await searchNoteCards("thassa")).toEqual(stub.hits);
+    expect(stub.calls).toEqual([{ fn: "searchNoteCards", args: ["thassa"] }]);
+  });
+
+  it("answers null for a query that is not a string, before the store", async () => {
+    expect(await searchNoteCards(7 as unknown as string)).toBeNull();
+    expect(stub.calls).toEqual([]);
+  });
+
+  it("answers null when the search throws, never a rejected action", async () => {
+    stub.searchThrows = true;
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(await searchNoteCards("thassa")).toBeNull();
   });
 });
 

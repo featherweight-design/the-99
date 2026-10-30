@@ -101,13 +101,13 @@ describe("All features", () => {
   it("loses to the env kill and to the account's own Off, and beats group and app-wide", () => {
     const s = snap([
       all(),
-      row({ switchName: "FEEDBACK_ENABLED", scope: "user", userId: "u1", value: "off" }),
+      row({ switchName: "CHANGE_COMMANDER_ENABLED", scope: "user", userId: "u1", value: "off" }),
       row({ switchName: "DECK_STATS_ENABLED", scope: "group", groupId: "g1", value: "off" }),
       row({ switchName: "NOTICES_ENABLED", scope: "app", value: "off" }),
     ], { u1: "g1" });
     const env = resolveEnv(e({ NEVER_CUT_ENABLED: "off" }), s, "u1");
     expect(env.NEVER_CUT_ENABLED).toBe("off");
-    expect(env.FEEDBACK_ENABLED).toBe("false");
+    expect(env.CHANGE_COMMANDER_ENABLED).toBe("false");
     expect(env.DECK_STATS_ENABLED).toBe("true");
     expect(env.NOTICES_ENABLED).toBe("true");
     expect(decide("DECK_STATS_ENABLED", "feature", e({}), s, "u1").source).toEqual({ kind: "all" });
@@ -119,7 +119,7 @@ describe("All features", () => {
   });
 
   it("does nothing as an Off row, or at a scope other than an account", () => {
-    expect(resolveEnv(e({}), snap([all("u1"), row({ switchName: ALL_FEATURES, scope: "user", userId: "u2", value: "off" })]), "u2").FEEDBACK_ENABLED).toBeUndefined();
-    expect(resolveEnv(e({}), snap([row({ switchName: ALL_FEATURES, scope: "app", value: "on" })]), "u1").FEEDBACK_ENABLED).toBeUndefined();
+    expect(resolveEnv(e({}), snap([all("u1"), row({ switchName: ALL_FEATURES, scope: "user", userId: "u2", value: "off" })]), "u2").CHANGE_COMMANDER_ENABLED).toBeUndefined();
+    expect(resolveEnv(e({}), snap([row({ switchName: ALL_FEATURES, scope: "app", value: "on" })]), "u1").CHANGE_COMMANDER_ENABLED).toBeUndefined();
   });
 });
