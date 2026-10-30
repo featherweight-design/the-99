@@ -38,8 +38,7 @@ export const deckNotesCopy = {
     insertAria: "Insert a card tag",
   },
   add: {
-    placeholder: "Add a note. Type [[ to tag a card.",
-    placeholderShort: "Add a note · [[ tags a card",
+    placeholder: "Add a note",
     label: "Add a note",
     add: "Add",
     adding: "Adding…",

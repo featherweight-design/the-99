@@ -1,6 +1,5 @@
 "use client";
 
-import { useIsDesktop } from "../../ui/use-is-desktop";
 import { useRef, useState } from "react";
 import { addNote } from "../../../app/decks/notes-actions";
 import { deckNotesCopy, NOTES_PER_DECK, NOTES_SHOWN } from "../../../lib/copy/deck-notes";
@@ -40,7 +39,6 @@ export function DeckNotesPanel({
   const atCap = total >= NOTES_PER_DECK;
   const [text, setText] = useState("");
   const [picked, setPicked] = useState<Picked>(new Map());
-  const desktop = useIsDesktop();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showAllOpen, setShowAllOpen] = useState(false);
@@ -97,7 +95,7 @@ export function DeckNotesPanel({
       pending={busy}
       submitLabel={deckNotesCopy.add.add}
       pendingLabel={deckNotesCopy.add.adding}
-      placeholder={desktop ? deckNotesCopy.add.placeholder : deckNotesCopy.add.placeholderShort}
+      placeholder={deckNotesCopy.add.placeholder}
       ariaLabel={deckNotesCopy.add.label}
       onChange={(t, p) => { setText(t); setPicked(p); setError(null); }}
       onSubmit={submit}
