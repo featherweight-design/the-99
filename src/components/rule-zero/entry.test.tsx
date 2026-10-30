@@ -143,5 +143,6 @@ describe("Home's table card (E3, F3)", () => {
     const q = screen.getByRole("region").querySelector("p")!;
     expect(q.textContent).toBe(plain(e.homeBody(named("Colin"), "open", 6, CLOSES)));
     expect(q.childNodes[1].textContent).toBe(" seated you with ");
+    expect((q.firstElementChild as HTMLElement).classList.contains("ph-no-capture")).toBe(true);
   });
 });
