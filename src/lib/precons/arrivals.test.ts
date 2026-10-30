@@ -292,4 +292,12 @@ describe("filterAnnounced", () => {
     // A search matching the early list's commander keeps the set by that list.
     expect(filterAnnounced([trc], byCode, { q: "chapel", colours: [] }, early).map((m) => m.early?.lists.length)).toEqual([1]);
   });
+
+  it("drops a set whose search matches only an extra revealed legend once every promised list is posted: it waits for nothing", () => {
+    // One list promised and posted (Chapel's); Kirk is revealed but stands for no list.
+    const early = { trc: { lists: [list(1, "Final Frontier", chapel)], promised: 1 } };
+    expect(filterAnnounced([trc], byCode, { q: "kirk", colours: [] }, early)).toEqual([]);
+    const [m] = filterAnnounced([trc], byCode, { q: "", colours: [] }, early);
+    expect(m.early).toMatchObject({ posted: 1, promised: 1, toCome: 0 });
+  });
 });

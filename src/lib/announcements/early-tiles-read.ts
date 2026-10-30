@@ -11,6 +11,7 @@
 import { and, eq, gte, inArray, isNotNull, isNull } from "drizzle-orm";
 import { db } from "../../db";
 import { catalogFirstSeen, cards, collectionItems, preconCards, precons, userPrefs, wizardsAnnouncementDecklists, wizardsAnnouncements } from "../../db/schema";
+import { fold } from "../precons/list";
 import { RELEASED_GRACE_DAYS, utcDay, type UpcomingSet } from "../precons/upcoming";
 import { earlyListHref, resolvePostSet, type EarlyCardFacts } from "./early-list";
 import { assembleEarlyList, commanderPrintingsQuery, pickReleasePrecon, SET_WINDOW_AFTER_DAYS, type ReleaseCandidate } from "./early-list-read";
@@ -112,7 +113,19 @@ export async function loadEarlyListsBySet(userId: string, sets: readonly Upcomin
   }
   if (resolved.length === 0) return {};
 
-  const kept = resolved.flatMap((p) => p.lists);
+  // Two posts resolving to one set (a post re-published under a new id, repeating its lists and adding more) are read
+  // as one: each list once, its latest posting, and the larger promise. Every count below is then over distinct lists.
+  const byCode = new Map<string, { lists: typeof rows; promised: number | null }>();
+  for (const { code, lists } of resolved) {
+    const held = byCode.get(code);
+    const promised = lists[0].promised;
+    byCode.set(code, held
+      ? { lists: [...held.lists, ...lists], promised: held.promised === null ? promised : promised === null ? held.promised : Math.max(held.promised, promised) }
+      : { lists, promised });
+  }
+  for (const entry of byCode.values()) entry.lists = latestEachList(entry.lists);
+
+  const kept = [...byCode.values()].flatMap((p) => p.lists);
   const commanderIds = [...new Set(kept.flatMap((l) => (l.commanderCardId ? [l.commanderCardId] : [])))];
   const cardIds = [...new Set(kept.flatMap((l) => l.cards.flatMap((c) => (c.cardId ? [c.cardId] : []))))];
   const [released, factRows, ownedRows] = await Promise.all([
@@ -134,7 +147,7 @@ export async function loadEarlyListsBySet(userId: string, sets: readonly Upcomin
   const today = utcDay(now);
 
   const out: Record<string, EarlySet> = {};
-  for (const { code, lists } of resolved) {
+  for (const [code, { lists, promised }] of byCode) {
     const set = wanted.get(code)!;
     const tiles: EarlyTile[] = [];
     // A list whose release list is in leaves the tiles but still stands for its commander (and partner), so a sibling
@@ -159,12 +172,36 @@ export async function loadEarlyListsBySet(userId: string, sets: readonly Upcomin
       });
       tiles.push(earlyTileOf(earlyListHref(l.contentfulId, l.position), page));
     }
-    // Two posts resolving to one set (rare: a post re-published under a new id) are read as one: their lists in post
-    // order, and the larger promise. A post whose lists have all given way still merges its promise and its released
-    // lists, so a sibling post's set keeps them; a set with no tiles at all reads as none (`lists` empty).
-    out[code] = mergeEarlySet(out[code], { lists: tiles, promised: lists[0].promised, released: gaveWay, releasedLists: gaveWayLists });
+    // A set whose lists have all given way still carries its promise and its released lists; with no tiles at all it
+    // reads as none (`lists` empty).
+    out[code] = mergeEarlySet(undefined, { lists: tiles, promised, released: gaveWay, releasedLists: gaveWayLists });
   }
   return out;
+}
+
+/**
+ * A posted list's identity across posts: its commander and partner, by card id where the catalog matched them, else by
+ * name. A post re-published under a new id repeats its lists at new hrefs; this is what stays the same.
+ */
+export function earlyListKey(l: { commanderCardId: string | null; commanderName: string | null; partnerCardId: string | null; partnerName: string | null }): string {
+  const one = (id: string | null, name: string | null) => id ?? (name ? `name:${fold(name)}` : "");
+  return `${one(l.commanderCardId, l.commanderName)}|${one(l.partnerCardId, l.partnerName)}`;
+}
+
+/**
+ * Each list once (`earlyListKey`), at its latest posting: rows arrive in post order, so a later post's copy of a list
+ * replaces an earlier one's, and the lists keep the order the latest post gave them. Pure, for a test.
+ */
+export function latestEachList<T extends Parameters<typeof earlyListKey>[0]>(rows: readonly T[]): T[] {
+  const seen = new Set<string>();
+  const out: T[] = [];
+  for (let i = rows.length - 1; i >= 0; i--) {
+    const key = earlyListKey(rows[i]);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(rows[i]);
+  }
+  return out.reverse();
 }
 
 /**

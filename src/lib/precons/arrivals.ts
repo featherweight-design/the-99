@@ -7,7 +7,7 @@
  * for the first time (`PreconArrival`). A baseline stamp (`arrivedAt` null) is never one: it was already there
  * when stamping began.
  */
-import { earlyPosted, filterEarly, listedCommanderIds, listsToCome, type EarlySet, type EarlyTile } from "../announcements/early-tiles";
+import { allListsPosted, earlyPosted, filterEarly, listedCommanderIds, listsToCome, type EarlySet, type EarlyTile } from "../announcements/early-tiles";
 import { fold } from "./list";
 import type { PreconArrival } from "./arrivals-read";
 import type { RevealedCommander } from "./revealed";
@@ -175,7 +175,9 @@ export function filterAnnounced(
     // Only a commander the row will draw keeps the set: with posted lists that is one still waiting for its list
     // (`waitingCommanders`). A commander stood for by a list is kept by that list matching, or not at all, so a search
     // that matches only a released list's commander never keeps a row with nothing to show.
-    const drawn = commanders.filter((c) => !listed.has(c.oracleId)).length;
+    // Once every promised list is posted, none is waiting (`allListsPosted`), so none is drawn.
+    const complete = hasEarly && allListsPosted(earlyPosted(posted), posted.promised);
+    const drawn = complete ? 0 : commanders.filter((c) => !listed.has(c.oracleId)).length;
     const stays = nothing ? !active || setMatches : !active || drawn > 0 || lists.length > 0;
     if (!stays) continue;
     const match: AnnouncedMatch = { set, commanders, matched: commanders.length, revealed: all.length };

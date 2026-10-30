@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { db } from "../../db";
-import { earlyListsQuery, earlyTileOf, hasGivenWay, mergeEarlySet, releasedCommandersQuery } from "./early-tiles-read";
+import { earlyListKey, earlyListsQuery, earlyTileOf, hasGivenWay, latestEachList, mergeEarlySet, releasedCommandersQuery } from "./early-tiles-read";
 import type { EarlyTile } from "./early-tiles";
 
 describe("earlyListsQuery", () => {
@@ -70,6 +70,25 @@ describe("mergeEarlySet", () => {
   it("reads the larger promise, and a post that promised none defers to one that did", () => {
     expect(mergeEarlySet({ lists: [], promised: null }, { lists: [tile(0)], promised: 4 }).promised).toBe(4);
     expect(mergeEarlySet({ lists: [tile(0)], promised: 4 }, { lists: [], promised: null }).promised).toBe(4);
+  });
+});
+
+describe("latestEachList (a re-published post repeating its lists)", () => {
+  const row = (post: string, position: number, commanderCardId: string | null, commanderName: string, partnerCardId: string | null = null) =>
+    ({ post, position, commanderCardId, commanderName, partnerCardId, partnerName: partnerCardId ? `P ${partnerCardId}` : null });
+
+  it("reads 3 lists posted, then the same 3 and a 4th re-posted, as 4 lists, each at its latest posting", () => {
+    const first = [row("a", 0, "k1", "Kirk"), row("a", 1, "k2", "Spock"), row("a", 2, "k3", "Uhura")];
+    const again = [row("b", 0, "k1", "Kirk"), row("b", 1, "k2", "Spock"), row("b", 2, "k3", "Uhura"), row("b", 3, "k4", "Sulu")];
+    const out = latestEachList([...first, ...again]);
+    expect(out).toHaveLength(4);
+    expect(out.map((r) => `${r.post}/${r.position}`)).toEqual(["b/0", "b/1", "b/2", "b/3"]);
+  });
+
+  it("keeps lists that differ only by partner apart, and matches an unmatched commander by its name", () => {
+    expect(latestEachList([row("a", 0, "k1", "Kirk", "p1"), row("a", 1, "k1", "Kirk", "p2")])).toHaveLength(2);
+    expect(latestEachList([row("a", 0, null, "Tana, the Bloodsower"), row("b", 0, null, "TANA, THE BLOODSOWER")]).map((r) => r.post)).toEqual(["b"]);
+    expect(earlyListKey(row("a", 0, null, "Tana"))).not.toBe(earlyListKey(row("a", 0, "tana", "Tana")));
   });
 });
 

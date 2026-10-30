@@ -93,6 +93,14 @@ export function listedCommanderIds(lists: readonly EarlyTile[], released: readon
 }
 
 /**
+ * Every promised list is posted ("All 5 lists"): no revealed commander can still be waiting for one. A revealed legend
+ * no posted list stands for is then not a commander of any of the set's lists, and is drawn as nothing.
+ */
+export function allListsPosted(posted: number, promised: number | null): boolean {
+  return promised !== null && posted >= promised;
+}
+
+/**
  * The promised lists not yet posted nor stood for by a revealed commander still waiting for its list (STATES 3.2: "1 more
  * list to come"). Zero when the post promised no number.
  */

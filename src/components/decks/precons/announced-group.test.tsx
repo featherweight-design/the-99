@@ -779,6 +779,37 @@ describe("Announced: the new mark and early lists", () => {
     expect(within(row).queryByTestId("revealed-strip")).toBeNull();
   });
 
+  describe("a set whose every promised list is posted, with one extra revealed legend", () => {
+    // Both lists posted ("All 2 lists"); Ghalta is revealed but no list stands for him, so he waits for nothing.
+    const done: AnnouncedMatch = {
+      ...match(set("fdc", "Foundations Commander", "2026-11-13"), [giada, ghalta]),
+      early: {
+        lists: [early(0, "Calling All Angels", giada), { ...early(1, "Big Stompy", giada), commanders: [] }],
+        posted: 2, promised: 2, listed: [giada.oracleId], toCome: 0,
+      },
+    };
+    const drawDone = (view: "tiles" | "rows") =>
+      render(<G matches={[done]} today="2026-10-14" newCodes={[]} opensByItself view={view} listed={{}} />);
+
+    it("draws no waiting tile in tiles, only the lists", () => {
+      drawDone("tiles");
+      const grid = screen.getByTestId("revealed-tiles");
+      expect(within(grid).getAllByTestId("early-tile")).toHaveLength(2);
+      expect(within(grid).queryByTestId("revealed-tile")).toBeNull();
+      expect(within(grid).queryByTestId("none-plate")).toBeNull();
+      expect(screen.getByTestId("announced-set").textContent).toContain("All 2 lists");
+    });
+
+    it("draws no \"list to come\" row in rows", () => {
+      drawDone("rows");
+      const row = screen.getByTestId("announced-row");
+      fireEvent.click(within(row).getByRole("button"));
+      expect(within(row).getAllByTestId("early-row")).toHaveLength(2);
+      expect(within(row).queryByTestId("waiting-row")).toBeNull();
+      expect(row.textContent).not.toContain("list to come");
+    });
+  });
+
   describe("an early list whose identity is unknown (a commander the catalog cannot match yet)", () => {
     const tana = { oracleId: "unmatched:Tana, the Bloodsower", name: "Tana, the Bloodsower", imageUri: null, colorIdentity: [] as string[] };
     const drawWith = (view: "tiles" | "rows", tile: EarlyTile) => {

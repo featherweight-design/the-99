@@ -26,7 +26,7 @@ import { SheetGroupToggle } from "../../ui/sheet-group";
 import { collapsible, firstPaintCss } from "../../../lib/precons/announced-collapse";
 import { noteAppScroll } from "../../../lib/ui/reveal";
 import { announcedSetAnchor } from "../../../lib/announcements/early-list";
-import type { EarlyTile } from "../../../lib/announcements/early-tiles";
+import { allListsPosted, type EarlyTile } from "../../../lib/announcements/early-tiles";
 import type { PreconRow } from "../../../lib/precons/list";
 import Link from "next/link";
 import { PreconTile } from "./precon-tile";
@@ -175,9 +175,13 @@ export function earlyRow(tile: EarlyTile): PreconRow {
   };
 }
 
-/** The revealed commanders still waiting for their list: those no posted list stands for (all of them before any list). */
+/**
+ * The revealed commanders still waiting for their list: those no posted list stands for (all of them before any list),
+ * and none once every promised list is posted, so an extra revealed legend never reads "list to come" beside "All 5 lists".
+ */
 export function waitingCommanders(match: AnnouncedMatch): RevealedCommander[] {
   if (!match.early) return match.commanders;
+  if (allListsPosted(match.early.posted, match.early.promised)) return [];
   const listed = new Set(match.early.listed);
   return match.commanders.filter((c) => !listed.has(c.oracleId));
 }
