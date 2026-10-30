@@ -12,7 +12,7 @@ describe("readLaunchDate", () => {
     expect(readLaunchDate("2026-12-01T09:30:00Z")?.toISOString()).toBe("2026-12-01T09:30:00.000Z");
   });
   it("reads unset, empty and unreadable values as null, never as a date", () => {
-    for (const v of [undefined, "", "  ", "soon", "12/01/2026", "2026-13-45", "2026-12", "0"]) expect(readLaunchDate(v), String(v)).toBeNull();
+    for (const v of [undefined, "", "  ", "soon", "12/01/2026", "2026-13-45", "2026-02-30", "2026-04-31T00:00:00Z", "2026-12", "0"]) expect(readLaunchDate(v), String(v)).toBeNull();
   });
 });
 

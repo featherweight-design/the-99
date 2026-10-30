@@ -20,7 +20,13 @@ export function readLaunchDate(raw: string | undefined): Date | null {
   if (!v) return null;
   if (!/^\d{4}-\d{2}-\d{2}(T[0-9:.]+(Z|[+-]\d{2}:\d{2}))?$/.test(v)) return null;
   const t = new Date(v.length === 10 ? `${v}T00:00:00Z` : v);
-  return Number.isNaN(t.getTime()) ? null : t;
+  if (Number.isNaN(t.getTime())) return null;
+  // `new Date` rolls an impossible day over (2026-02-30 becomes March 2): the irreversible purge must not run on a
+  // day the operator never wrote, so the written Y-M-D has to survive a round trip through the calendar.
+  const [y, m, d] = v.slice(0, 10).split("-").map(Number);
+  const c = new Date(Date.UTC(y, m - 1, d));
+  if (c.getUTCFullYear() !== y || c.getUTCMonth() !== m - 1 || c.getUTCDate() !== d) return null;
+  return t;
 }
 
 /** True only for a real launch date whose retention has run out. */
