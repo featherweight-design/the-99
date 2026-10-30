@@ -15,7 +15,7 @@ import { socialFriendsEnabled } from "../../lib/social/flag";
 import { loadFriendDeckPrefs } from "../../lib/social/deck-visibility";
 import { loadInviteCount } from "../../lib/invites/read";
 import { requestSwitchEnv } from "../../lib/switches/request";
-import { clearSwitchSnapshot, resolveSwitchEnv } from "../../lib/switches/snapshot";
+import { clearSwitchSnapshot, resolveSwitchEnvStrict } from "../../lib/switches/snapshot";
 import { perfRoute } from "../../lib/perf/timing";
 import { ensureProfile, friendPublicId, loadFriendsAndLinks, profileAgeMs } from "../../lib/social/friends";
 import { spendFlyerOnSignUp } from "../../lib/flyer/spend";
@@ -72,7 +72,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
     // `already` re-reads too: a webhook or a concurrent request may have committed the group between the proxy's snapshot and now.
     if (recovery.spent || recovery.reason === "already") {
       clearSwitchSnapshot();
-      env = await resolveSwitchEnv(userId);
+      env = await resolveSwitchEnvStrict(userId); // strict: a failed read must not fall back to environment defaults and open the gate
     }
     // The root shell reads the proxy's header snapshot, which predates this spend: one redirect to the same URL lets the
     // next request's proxy re-snapshot. It cannot loop, since that request finds the spend `already` done.
