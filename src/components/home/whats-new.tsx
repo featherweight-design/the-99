@@ -312,7 +312,8 @@ function Offer({ offer, rule, onClosed }: { offer: FeedKind[]; rule: boolean; on
           type="button"
           aria-expanded={false}
           onClick={() => setOpen(true)}
-          className="absolute right-[12px] bottom-[10px] flex min-h-[32px] cursor-pointer items-center gap-[5px] whitespace-nowrap border-0 bg-transparent px-[6px] py-0 font-sans text-[13px] font-medium text-[color:var(--accent-text)]"
+          // Over the ✕'s 44 hit box on a phone, where the two meet in a 72 box: a press there opens, never hides for good.
+          className="absolute right-[12px] bottom-[10px] z-[2] flex min-h-[32px] cursor-pointer items-center gap-[5px] whitespace-nowrap border-0 bg-transparent px-[6px] py-0 font-sans text-[13px] font-medium text-[color:var(--accent-text)]"
         >
           {o.pick}
           <span aria-hidden>▾</span>

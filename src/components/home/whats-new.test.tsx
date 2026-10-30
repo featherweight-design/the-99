@@ -150,6 +150,11 @@ describe("WhatsNew, nothing in the window and something to offer (small items 5,
     await waitFor(() => expect(closeOffer).toHaveBeenCalledTimes(1));
   });
 
+  it("stacks the closed offer: Pick ▾ layered over the ✕'s phone hit box where they meet (small items 6, 6b)", () => {
+    render(<WhatsNew feed={allOff} now={NOW} />);
+    expect(screen.getByRole("button", { name: new RegExp(o.pick) }).className).toContain("z-[2]");
+  });
+
   it("a reader with every kind off after a choice sees the off line and the way back from the start", () => {
     const { container } = render(<WhatsNew feed={{ chosen: true, on: [], items: [], unseen: 0, lead: null }} now={NOW} />);
     expect(line(container)).toBeNull();
