@@ -11,7 +11,7 @@ import { readTuningHistory, readTuningPastRun } from "../../app/decks/tuning-hub
 import { deckCutsCopy } from "../../lib/copy/deck-cuts";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { suggestedChangesV2Copy } from "../../lib/copy/suggested-changes-v2";
-import { formatCents } from "../../lib/decks/price";
+import { formatCapCents } from "../../lib/decks/price";
 import { tuningHubCopy } from "../../lib/copy/tuning-hub";
 import { afterKey } from "../../lib/tuning/history";
 import type { HistoryOutcome, HistoryRow, HistorySummary, HistoryTier, HistoryTool, PastRun } from "../../lib/tuning/history";
@@ -71,15 +71,13 @@ export function v2RunningWords(phase: "additions" | "cuts"): string {
 }
 
 /** `$2`, or `$2.50`: the cap as History A quotes it ("found under $2"). */
-const capText = (cents: number) => (cents % 100 === 0 ? `$${cents / 100}` : formatCents(cents));
-
 /** History A: an ok run leads `3 in, 3 out`; a short or refunded one says `N asked`, and names the cap only there, where it
  *  explains the count. */
 function v2Summary(asked: number, s: Extract<HistorySummary, { kind: "suggestedV2" }>, short: boolean): string {
   const found = v2Copy.pair(s.found.add, s.found.cut);
   const applied = s.applied.add + s.applied.cut === 0 ? v2Copy.appliedNone : v2Copy.pair(s.applied.add, s.applied.cut);
   if (!short) return v2Copy.summaryOk(suggestedChangesV2Copy.run.askedCount(asked), found, applied);
-  return s.capCents === null ? v2Copy.summary(asked, found, applied) : v2Copy.summaryCapped(asked, found, capText(s.capCents), applied);
+  return s.capCents === null ? v2Copy.summary(asked, found, applied) : v2Copy.summaryCapped(asked, found, formatCapCents(s.capCents), applied);
 }
 
 function summaryOf(summary: HistorySummary): string {

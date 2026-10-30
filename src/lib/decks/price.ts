@@ -123,6 +123,11 @@ export function formatCents(cents: number): string {
   })}`;
 }
 
+/** A price cap as the reader set it: whole dollars drop the cents (`$2`), anything else is `formatCents` (`$2.50`). */
+export function formatCapCents(cents: number): string {
+  return cents % 100 === 0 ? `$${cents / 100}` : formatCents(cents);
+}
+
 /**
  * `foil` and `etched` each name which printing the figure belongs to, so the figure is
  * incomplete without it: a foil-only `$9.40` stated bare is the normal

@@ -13,7 +13,7 @@ import type { DeckClaim } from "../../lib/decks/availability";
 import { pullSourceChoices } from "../../lib/decks/draft-shape";
 import type { CardTypeGroup } from "../../lib/decks/grouping";
 import type { SourceDeckFigure } from "../../lib/decks/read";
-import { formatCents } from "../../lib/decks/price";
+import { formatCapCents } from "../../lib/decks/price";
 import type { MixRole } from "../../lib/decks/mix";
 import type { Bracket } from "../../lib/profile/types";
 import { heldInOtherDecks } from "../../lib/tuning/limits";
@@ -811,7 +811,7 @@ function YouAsked({ ask }: { ask: V2Ask }) {
   }
   if (ask.restrictions) {
     const { capCents, sets, ownedOnly, otherDecks } = ask.restrictions;
-    parts.push(capCents === null ? r.askedNoCap : r.askedCap(formatCents(capCents)));
+    parts.push(capCents === null ? r.askedNoCap : r.askedCap(formatCapCents(capCents)));
     parts.push(sets.length === 0 ? r.askedAnySet : r.askedSets(sets.map((s) => s.toUpperCase()).join(", ")));
     parts.push(!ownedOnly ? r.askedAnyCard : !otherDecks ? r.askedOwned : (
       <span key="owned">{r.askedOwned}, <b className="font-medium" style={{ color: "var(--fg-muted)" }}>{r.askedOtherDecks}</b></span>
@@ -1017,8 +1017,8 @@ function ShortHead({ facts, n, ask, credits, onNewRun }: {
   } else {
     const capCents = ask?.restrictions?.capCents ?? null;
     if (facts.reason === "overCap" && capCents !== null) {
-      head = `${sc.results.shortCap(facts.found, formatCents(capCents))}.`;
-      body = s.capBody(n, facts.dropped, formatCents(capCents), facts.found);
+      head = `${sc.results.shortCap(facts.found, formatCapCents(capCents))}.`;
+      body = s.capBody(n, facts.dropped, formatCapCents(capCents), facts.found);
       credit = s.capCredit(units);
       link = s.capLink;
     } else {
