@@ -196,7 +196,7 @@ describe("friend links", () => {
     m.redeemInvite.mockResolvedValue({ ok: false, reason: "self" });
     expect(await actions.redeemInviteAction(TOKEN)).toEqual({ ok: false, reason: "self" });
     expect(m.after).not.toHaveBeenCalled();
-    const ok = { ok: true, friend: { publicId: FRIEND, displayName: "Ana" }, alreadyFriends: false };
+    const ok = { ok: true, friend: { publicId: FRIEND }, alreadyFriends: false };
     m.redeemInvite.mockResolvedValue(ok);
     expect(await actions.redeemInviteAction(TOKEN)).toEqual(ok);
     expect(m.after).toHaveBeenCalledTimes(1);

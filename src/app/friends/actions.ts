@@ -198,7 +198,7 @@ export async function revokeInviteAction(token: unknown): Promise<DoneOutcome> {
 }
 
 export type RedeemOutcome =
-  | { ok: true; friend: { publicId: string; displayName: string }; alreadyFriends: boolean }
+  | { ok: true; friend: { publicId: string }; alreadyFriends: boolean }
   | Off
   | { ok: false; reason: "notFound" | "ended" | "self" };
 

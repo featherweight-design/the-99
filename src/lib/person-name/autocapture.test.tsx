@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // What `ph-no-capture` actually does to autocapture, with the REAL posthog-js (the pinned 1.412.1) on the production
-// options, not a mock: the PersonName components are only as good as this. Autocapture is still off in production
-// (`posthogOptions`); it is switched on here alone, and every event is caught in `before_send` and never sent.
+// options, not a mock: the PersonName components are only as good as this. Autocapture is on in production
+// (`posthogOptions`); here every event is caught in `before_send` and never sent.
 //
 // What it pins (plan risk 6):
 // - the class on the clicked element or a DOM ancestor drops the whole event;

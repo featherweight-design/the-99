@@ -12,10 +12,14 @@
 //    name (or a list holding one) is a finding outside `src/lib/person-name/`, as are `as ThirdPartyName` (forging one)
 //    and reading `.$tp` by access or destructuring, or naming it in an object (revealing or forging without the module). `personText` is the one template a name may enter.
 //
+// 3. THE READ LAYER. Under `src/lib/social/`, a select that projects `socialProfiles.displayName`, `pods.name` or a
+//    friend's `decks.name` must sit in a top-level function that also calls `named(`, `savedName(` or `feedFriend(`
+//    (or be listed in `RAW_ROW_READS`): a projected name that nothing mints is a plain string leaving the layer.
+//
 // Type-aware, so it builds the TypeScript program over `src/` (about as long as `pnpm typecheck`). Tests are exempt.
 import { join, relative, sep } from "node:path";
 import ts from "typescript";
-import { MINT, REVEAL, TESTING, isTestPath, mayImport } from "./third-party-names-rules.mjs";
+import { MINT, MINT_HELPERS, NAME_COLUMNS, RAW_ROW_READS, REVEAL, SOCIAL_DIR, TESTING, isTestPath, mayImport } from "./third-party-names-rules.mjs";
 
 const GUARDED = [MINT, REVEAL, TESTING];
 const BRAND_DIR = "src/lib/person-name/";
@@ -54,6 +58,101 @@ function keyText(name) {
   if (ts.isIdentifier(name) || ts.isStringLiteralLike(name) || ts.isNumericLiteral(name)) return name.text;
   if (ts.isComputedPropertyName(name) && ts.isStringLiteralLike(name.expression)) return name.expression.text;
   return null;
+}
+
+const NON_PROJECTION_CALLS = new Set(["asc", "desc", "eq", "ne", "and", "or", "inArray", "like", "ilike", "orderBy", "groupBy", "where", "having"]);
+
+/** `table.column` text of a property access on two plain identifiers, else null. */
+const columnRef = (node) =>
+  ts.isPropertyAccessExpression(node) && ts.isIdentifier(node.expression) ? `${node.expression.text}.${node.name.text}` : null;
+
+/** True when the name column at `node` is a select projection (an object-literal value), not an ordering or a filter. */
+function isProjection(node) {
+  for (let cur = node.parent; cur && !ts.isSourceFile(cur) && !ts.isBlock(cur); cur = cur.parent) {
+    if (ts.isCallExpression(cur)) {
+      const callee = ts.isIdentifier(cur.expression) ? cur.expression.text : ts.isPropertyAccessExpression(cur.expression) ? cur.expression.name.text : "";
+      if (NON_PROJECTION_CALLS.has(callee)) return false;
+    }
+    if (ts.isPropertyAssignment(cur) && ts.isObjectLiteralExpression(cur.parent)) return true;
+  }
+  return false;
+}
+
+/** The statement of `sf` holding `node`, and its name (a function declaration or a `const f = ...`). */
+function topLevel(sf, node) {
+  let cur = node;
+  while (cur.parent && cur.parent !== sf) cur = cur.parent;
+  let name = "";
+  if (ts.isFunctionDeclaration(cur) && cur.name) name = cur.name.text;
+  else if (ts.isVariableStatement(cur)) name = cur.declarationList.declarations.map((d) => (ts.isIdentifier(d.name) ? d.name.text : "")).join(",");
+  return { statement: cur, name };
+}
+
+/** True when `statement` calls a mint helper anywhere in its body. */
+function callsMint(statement) {
+  let found = false;
+  const walk = (n) => {
+    if (found) return;
+    if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && MINT_HELPERS.includes(n.expression.text)) found = true;
+    else ts.forEachChild(n, walk);
+  };
+  walk(statement);
+  return found;
+}
+
+/** True when `statement` names the identifier `name` (a call, or a reference). */
+function mentions(statement, name) {
+  if (!name) return false;
+  let found = false;
+  const walk = (n) => {
+    if (found) return;
+    if (ts.isIdentifier(n) && n.text === name) found = true;
+    else ts.forEachChild(n, walk);
+  };
+  walk(statement);
+  return found;
+}
+
+/**
+ * True when `statement` is reached from a statement of its file that mints: one that calls a mint helper, or that
+ * mentions (a call, a `typeof` or a type alias) something that in turn reaches it. A loader whose raw rows are shaped
+ * by a function that calls `named(` is reached; a new loader nothing mints from is not.
+ */
+function mintsWithin(sf, statement) {
+  const stmts = sf.statements.map((st) => ({ st, names: topLevelNames(st) }));
+  const reached = new Set(stmts.filter((x) => callsMint(x.st)).map((x) => x.st));
+  for (let changed = true; changed; ) {
+    changed = false;
+    for (const from of [...reached]) {
+      for (const to of stmts) {
+        if (reached.has(to.st) || to.names.length === 0) continue;
+        if (to.names.some((n) => mentions(from, n))) {
+          reached.add(to.st);
+          changed = true;
+        }
+      }
+    }
+  }
+  // And upward: a statement that mentions a minting statement (a loader awaiting its shaper) mints too.
+  const mints = new Set(reached);
+  for (let changed = true; changed; ) {
+    changed = false;
+    for (const from of stmts) {
+      if (mints.has(from.st)) continue;
+      if (stmts.some((m) => mints.has(m.st) && m.st !== from.st && m.names.some((n) => mentions(from.st, n)))) {
+        mints.add(from.st);
+        changed = true;
+      }
+    }
+  }
+  return mints.has(statement) || stmts.some((x) => mints.has(x.st) && x.st !== statement && topLevelNames(statement).some((n) => mentions(x.st, n)));
+}
+
+function topLevelNames(st) {
+  if (ts.isFunctionDeclaration(st) && st.name) return [st.name.text];
+  if (ts.isTypeAliasDeclaration(st)) return [st.name.text];
+  if (ts.isVariableStatement(st)) return st.declarationList.declarations.flatMap((d) => (ts.isIdentifier(d.name) ? [d.name.text] : []));
+  return [];
 }
 
 /** Every finding in the repository at `root`, as `{ path, line, why }`, and how many files were read. */
@@ -129,6 +228,15 @@ export function thirdPartyNameFindings(root) {
     };
 
     const visit = (node) => {
+      if (path.startsWith(SOCIAL_DIR) && !test && ts.isPropertyAccessExpression(node) && NAME_COLUMNS.includes(columnRef(node) ?? "") && isProjection(node)) {
+        const { statement, name } = topLevel(sf, node);
+        // The projection is minted by its own function, or by a function of the same file that calls it (a `...Query`
+        // returns raw rows and its caller mints them).
+        const mintedHere = mintsWithin(sf, statement);
+        if (!mintedHere && !RAW_ROW_READS.includes(`${path}#${name}`)) {
+          add(node, `projects ${columnRef(node)} in ${name || "a top-level statement"} with no named(, savedName( or feedFriend( call (mint it, or list ${path}#${name} in RAW_ROW_READS)`);
+        }
+      }
       if (ts.isIdentifier(node) && guardedSymbols.size > 0) {
         const to = passesOn(node);
         if (to) add(node, `passes on ${node.text} from ${to} (only call it)`);

@@ -38,7 +38,7 @@ import { escapeDismisses } from "../../lib/ui/search-dismiss";
 import { useIsDesktop } from "./use-is-desktop";
 import { Chevron } from "./chevron";
 import { noteAppScroll } from "../../lib/ui/reveal";
-import { NO_CAPTURE, PersonName, isThirdPartyName, type ThirdPartyName } from "../../lib/person-name";
+import { NO_CAPTURE, PersonName, PersonText, isThirdPartyName, type PersonParts, type ThirdPartyName } from "../../lib/person-name";
 import { reveal } from "../../lib/person-name/reveal";
 
 export type FilterPanelOption = {
@@ -274,6 +274,8 @@ export function FilterPanel({
     !portalSheet ? node : sheetHost ? createPortal(node, sheetHost) : null;
   const [query, setQuery] = useState("");
   const [activeCode, setActiveCode] = useState<string | null>(null);
+  // A friend's option is announced here, drawn marked, and never handed to `onAnnounce`, whose callers keep a string.
+  const [personAnnouncement, setPersonAnnouncement] = useState<PersonParts | null>(null);
   // Selection as it stood when the panel opened. Grouping is computed once, on
   // open, and NOT recomputed while it is open — re-sorting on every toggle would
   // move rows under the pointer mid-interaction.
@@ -544,7 +546,7 @@ export function FilterPanel({
           : Math.max(i < 0 ? 0 : i - 1, 0);
       const option = visible[next];
       setActiveCode(option.code);
-      onAnnounce?.(optionAria(option, selected.includes(option.code)));
+      announceOption(option, selected.includes(option.code));
       return;
     }
     // Space toggles only while a row is active; with no active row the caret is
@@ -557,7 +559,7 @@ export function FilterPanel({
         if (!first) return;
         e.preventDefault();
         setActiveCode(first.code);
-        onAnnounce?.(optionAria(first, selected.includes(first.code)));
+        announceOption(first, selected.includes(first.code));
         return;
       }
       if (!activeCode) return;
@@ -603,6 +605,21 @@ export function FilterPanel({
     dragStartY.current = null;
     setDragY(0);
     if (travelled >= DRAG_DISMISS_PX) close({ preventScroll: true });
+  }
+
+  /** A string option goes to `onAnnounce`; a friend's goes to the panel's own marked live region. */
+  function announceOption(option: FilterPanelPersonOption, isSelected: boolean) {
+    if (!isThirdPartyName(option.label)) {
+      onAnnounce?.(optionAria(option, isSelected));
+      return;
+    }
+    // The copy function takes a string, so it is fed a placeholder and the sentence is cut around it.
+    const mark = "\u0001";
+    const sentence = option.disabled
+      ? copy.optionAriaUnavailable(option.hint ? `${mark} (${option.hint})` : mark)
+      : copy.optionAria(option.hint ? `${mark} (${option.hint})` : mark, option.count, isSelected);
+    const [before, after = ""] = sentence.split(mark);
+    setPersonAnnouncement([before, option.label, after]);
   }
 
   function optionAria(option: FilterPanelPersonOption, isSelected: boolean): string {
@@ -1032,6 +1049,11 @@ export function FilterPanel({
 
   return (
     <div className={triggerLook === "field" ? "relative w-full" : "relative"}>
+      {personAnnouncement && (
+        <span className="sr-only" role="status" aria-live="polite">
+          <PersonText text={personAnnouncement} />
+        </span>
+      )}
       <button
         ref={triggerRef}
         type="button"

@@ -42,7 +42,7 @@ describe("startAnalytics", () => {
     expect(posthog.init).toHaveBeenCalledTimes(1);
     expect(posthog.init).toHaveBeenCalledWith("phc_test", {
       api_host: "https://us.i.posthog.com",
-      autocapture: false,
+      autocapture: true,
       mask_all_text: false,
       mask_all_element_attributes: false,
       capture_pageview: "history_change",
@@ -55,10 +55,10 @@ describe("startAnalytics", () => {
     });
   });
 
-  it("pauses clicks but keeps pageviews and pageleaves", async () => {
+  it("captures clicks, pageviews and pageleaves", async () => {
     const { posthogOptions } = await load();
     const options = posthogOptions("https://us.i.posthog.com");
-    expect(options.autocapture).toBe(false);
+    expect(options.autocapture).toBe(true);
     expect(options.capture_pageview).toBe("history_change");
     expect(options.capture_pageleave).toBe(true);
   });

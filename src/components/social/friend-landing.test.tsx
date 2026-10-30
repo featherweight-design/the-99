@@ -28,7 +28,7 @@ const ANA = named("Ana");
 const JO_BLOGGS = named("Jo Bloggs");
 const SOL = { oracleId: "o1", name: "Sol Ring Commander", artCropUri: "https://cards.scryfall.io/art_crop/x.jpg" };
 const OPEN = { kind: "open" as const, name: ANA, commander: SOL };
-const FRIEND = { publicId: "00000000-0000-4000-8000-000000000002", displayName: "Ana" };
+const FRIEND = { publicId: "00000000-0000-4000-8000-000000000002" };
 
 /** Lets the arrival's two animation frames run. */
 const arrive = () => act(() => { vi.advanceTimersByTime(40); });

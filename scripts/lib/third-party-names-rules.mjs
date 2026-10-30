@@ -34,3 +34,24 @@ export function mayImport(path, target) {
   if (target === TESTING) return false;
   return true;
 }
+
+/**
+ * The cross-user read layer (PR G). A select under `src/lib/social/` that PROJECTS `socialProfiles.displayName`,
+ * `pods.name` or a friend's `decks.name` hands a raw string to whatever follows, so the top-level function holding that
+ * projection must also call a mint (below), or be listed in `RAW_ROW_READS` with the reason the string stays plain.
+ */
+export const SOCIAL_DIR = "src/lib/social/";
+/** The columns that hold another reader's name, as `table.column`. */
+export const NAME_COLUMNS = ["socialProfiles.displayName", "pods.name", "decks.name"];
+/** The calls that mint (or are a thin wrapper over `named()`). */
+export const MINT_HELPERS = ["named", "savedName", "feedFriend"];
+/** `path#function` of a projection that returns a raw row on purpose; the row is minted by its caller in the same file. */
+export const RAW_ROW_READS = [
+  // The viewer's OWN name, drawn plain (the reader's own name is not another reader's).
+  "src/lib/social/friends.ts#ensureProfile",
+  "src/lib/social/home-friends.ts#loadHomeFriends",
+  // A game's save resolves a friend seat and writes the name into the game's snapshot columns; the name is branded
+  // on the way out (`savedName`, opponent-names.ts), never on the way in.
+  "src/lib/social/games.ts#friendshipsIn",
+  "src/lib/social/games.ts#friendDecksIn",
+];

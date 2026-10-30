@@ -1257,4 +1257,29 @@ describe("FilterPanel third-party names", () => {
     expect(trigger.classList.contains("ph-no-capture")).toBe(true);
     unmount();
   });
+
+  it("announces a friend's option in its own marked live region and never hands the name to onAnnounce", () => {
+    setViewport(true);
+    const onAnnounce = vi.fn();
+    const { unmount } = render(
+      <FilterPanel
+        copy={collectionFilterCopy.set}
+        options={[
+          { code: "f1", label: named("Ada Lovelace"), count: 3, disabled: false },
+          { code: "f2", label: named("Grace Hopper"), count: 2, disabled: false },
+        ]}
+        selected={[]}
+        onToggle={vi.fn()}
+        onClear={vi.fn()}
+        onAnnounce={onAnnounce}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Filter by set/ }));
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "ArrowDown" });
+    const live = screen.getByRole("status");
+    expect(live.textContent).toContain("Ada Lovelace");
+    expect(live.firstElementChild?.classList.contains("ph-no-capture")).toBe(true);
+    expect(onAnnounce).not.toHaveBeenCalled();
+    unmount();
+  });
 });
