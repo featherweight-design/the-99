@@ -249,9 +249,9 @@ export async function readVersionSynopsis(
   userId: string,
   /** As `readSynopsisState`'s. */
   env: NodeJS.ProcessEnv,
-): Promise<{ versionNumber: number; committedAt: Date; content: CheckedSynopsis; art: Record<string, string | null>; evidenceNames: Record<string, string> } | null> {
+): Promise<{ versionNumber: number; committedAt: Date; content: CheckedSynopsis; contractVersion: number; art: Record<string, string | null>; evidenceNames: Record<string, string> } | null> {
   const [row] = await db
-    .select({ versionNumber: deckVersions.number, committedAt: deckVersions.committedAt, deckId: deckVersions.deckId, content: deckSynopses.content })
+    .select({ versionNumber: deckVersions.number, committedAt: deckVersions.committedAt, deckId: deckVersions.deckId, content: deckSynopses.content, contractVersion: deckSynopses.contractVersion })
     .from(deckVersionSynopses)
     .innerJoin(deckSynopses, eq(deckSynopses.id, deckVersionSynopses.synopsisId))
     .innerJoin(deckVersions, eq(deckVersions.id, deckVersionSynopses.versionId))
@@ -261,5 +261,5 @@ export async function readVersionSynopsis(
   // no longer holds, and the page's own art covers only the deck as it is now.
   const v2 = overviewV2Enabled(env);
   const [art, evidenceNames] = await Promise.all([namedArt(row.content, userId, row.deckId, v2, env), v2 ? evidenceNamesOf(row.content) : {}]);
-  return { versionNumber: row.versionNumber, committedAt: row.committedAt, content: row.content, art, evidenceNames };
+  return { versionNumber: row.versionNumber, committedAt: row.committedAt, content: row.content, contractVersion: row.contractVersion, art, evidenceNames };
 }

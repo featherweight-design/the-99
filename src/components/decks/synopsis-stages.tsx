@@ -1,0 +1,220 @@
+"use client";
+
+import { useState } from "react";
+
+import { synopsisCopy } from "../../lib/copy/synopsis";
+import { normalizeName } from "../../lib/synopsis/facts";
+import { landFigure, markedCards, splitSeverity } from "../../lib/synopsis/stages-view";
+import type { CheckedSynopsis } from "../../lib/synopsis/types";
+import { CardDetailTrigger } from "../cards/card-detail-provider";
+import { NavIcon } from "../shell/nav-icons";
+import { usePreviewRow } from "./hover-preview";
+import type { FindingArt } from "./receipt-modal";
+import { CardName } from "./synopsis-text";
+
+/**
+ * The Overview modal's stages shape (lane e7, PR 3; `design_handoff_the99_overview_stages`, option
+ * B): the pieces `SynopsisSections` draws for a contract-13 row. Each is ONE tree drawn at both
+ * widths (md and up is the desktop sheet); the only duplication is none.
+ *
+ * Every card image is the shipped card-open, as `CardName` is: a press opens the details sheet and a
+ * hover shows the shared preview. The art is `FindingArt`'s. A card with no art draws no image and
+ * the line keeps its name; an image that fails to load removes itself, so nothing draws broken.
+ */
+
+const IMG = "block flex-none rounded-[4.5%/3.2%] object-cover shadow-[0_3px_10px_rgba(0,0,0,0.5)]";
+
+/** A full card image that opens the card. Draws nothing without art, or when the art fails to load. */
+export function CardImage({
+  oracleId, name, art, className, style,
+}: {
+  oracleId: string;
+  name: string;
+  art: FindingArt;
+  /** Size and placement, by the caller. */
+  className: string;
+  style?: React.CSSProperties;
+}) {
+  const imageUri = art.get(oracleId)?.imageUri ?? null;
+  const [broken, setBroken] = useState(false);
+  const preview = usePreviewRow(imageUri);
+  if (!imageUri || broken) return null;
+  return (
+    // As `CardName`: a press closes the hover box, which would otherwise sit above the card sheet.
+    <span {...preview} onClickCapture={preview.onMouseLeave} className="block flex-none" data-testid="synopsis-card-image">
+      <CardDetailTrigger oracleId={oracleId} name={name} imageUri={imageUri} className="block">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={imageUri} alt="" onError={() => setBroken(true)} className={`${IMG} ${className}`} style={style} />
+      </CardDetailTrigger>
+    </span>
+  );
+}
+
+/** Whether a card has art to draw, so a layout can drop the image column rather than leave a hole. */
+const hasArt = (art: FindingArt, oracleId: string) => !!art.get(oracleId)?.imageUri;
+
+type Draw = {
+  content: CheckedSynopsis;
+  art: FindingArt;
+  /** A line with its `[[marks]]` live. */
+  text: (t: string) => React.ReactNode;
+};
+
+/** The commander beside the Overview paragraph: the first card the paragraph names, tilted. */
+export function OverviewWithCommander({ content, art, text }: Draw) {
+  const lead = markedCards(content.overview ?? "", content.cards, 1)[0];
+  const show = lead && hasArt(art, lead.oracleId);
+  return (
+    <div className={show ? "grid grid-cols-[72px_minmax(0,1fr)] items-start gap-[14px] md:grid-cols-[96px_minmax(0,1fr)] md:gap-[18px]" : ""} data-testid="synopsis-overview-head">
+      {show ? (
+        <CardImage oracleId={lead.oracleId} name={lead.name} art={art} className="mt-[4px] h-[100px] w-[72px] -rotate-3 md:h-[134px] md:w-[96px]" />
+      ) : null}
+      <p className="text-[13.5px] leading-[1.65] md:text-[14.5px] md:leading-[1.7] text-[var(--fg-body)] [text-wrap:pretty]">{text(content.overview ?? "")}</p>
+    </div>
+  );
+}
+
+/** Game plan: three stages labeled by position, the timeline from md and the rail below it. */
+export function GamePlan({
+  content, art, text, basedOn, alternateBasedOn,
+}: Draw & { basedOn: (index: number, line: string) => React.ReactNode; alternateBasedOn: React.ReactNode }) {
+  const stages = content.primer?.strategy ?? [];
+  const labels = synopsisCopy.modal.plan.stages;
+  const alternate = content.alternate;
+  return (
+    <div className="flex flex-col gap-[9px]">
+      <div data-testid="synopsis-plan" className="relative flex flex-col gap-[12px] md:grid md:grid-cols-3 md:gap-[16px]">
+        {/* The line the diamonds sit on: a vertical rail on a phone, one horizontal line from md. */}
+        <span aria-hidden className="absolute bottom-[8px] left-[4.5px] top-[8px] w-px bg-[var(--fg-faint)] opacity-[0.55] md:bottom-auto md:left-[4px] md:right-[calc(33.333%-10px)] md:top-[6px] md:h-px md:w-auto" />
+        {stages.map((line, i) => {
+          const lead = markedCards(line, content.cards, 1)[0];
+          const image = !!lead && hasArt(art, lead.oracleId);
+          const last = i === stages.length - 1;
+          return (
+            <div key={i} data-testid="synopsis-stage" className="relative pl-[22px] md:flex md:flex-col md:pl-0 md:pt-[23px]">
+              <i aria-hidden className={`absolute left-0 top-[4px] block h-[10px] w-[10px] rotate-45 shadow-[0_0_0_4px_var(--surface-raised)] md:top-[1.5px] ${last ? "bg-[var(--accent)]" : "bg-[var(--fg-faint)]"}`} />
+              <div className={`relative min-w-0 flex-1 rounded-[10px] border border-[var(--border)] bg-[var(--surface-sunken)] px-[12px] py-[11px] md:p-[12px] ${image ? "grid grid-cols-[52px_minmax(0,1fr)] gap-[12px] md:flex md:flex-col md:gap-[10px]" : ""}`}>
+                {image ? <CardImage oracleId={lead.oracleId} name={lead.name} art={art} className="h-[72px] w-[52px] md:h-[100px] md:w-[72px]" /> : null}
+                <div className="min-w-0">
+                  <span className="mb-[5px] block font-mono text-[10px] font-medium uppercase leading-[13px] tracking-[0.14em] text-[var(--fg-body)] md:absolute md:left-[19px] md:top-[-23px] md:mb-0">{labels[i]}</span>
+                  <p className="m-0 text-[13px] leading-[1.55] text-[var(--fg-body)] [text-wrap:pretty]">{text(line)}{basedOn(i, line)}</p>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {alternate ? (
+        <div data-testid="synopsis-alternate" className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-[12px] rounded-[10px] border border-dashed border-[var(--border-dashed)] px-[14px] py-[12px]">
+          <span aria-hidden className="flex h-[34px] w-[34px] items-center justify-center rounded-full border border-[var(--border-strong)] bg-[var(--surface-sunken)] text-[var(--accent)]">
+            <NavIcon href="/commanders" />
+          </span>
+          <div className="min-w-0">
+            <span className="mb-[5px] block font-mono text-[9.5px] font-medium uppercase tracking-[0.14em] text-[var(--fg-body)]">{synopsisCopy.modal.plan.alternate}</span>
+            <p className="m-0 text-[13px] leading-[1.55] text-[var(--fg-body)] [text-wrap:pretty]">{text(alternate)}{alternateBasedOn}</p>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * The model's land line, led by its number as a figure when the line states exactly one. The number
+ * is READ OFF the stored line, because the facts are not in the browser and the line was checked
+ * against the app's own number when it was stored; a line that states none, or a range, draws the
+ * line alone.
+ */
+export function LandLine({ line, text, basedOn }: { line: string; text: (t: string) => React.ReactNode; basedOn: React.ReactNode }) {
+  const n = landFigure(line);
+  return (
+    <div data-testid="synopsis-land-line" className={n === null ? "" : "grid grid-cols-[auto_minmax(0,1fr)] items-center gap-[14px]"}>
+      {n === null ? null : (
+        <span data-testid="synopsis-land-figure" className="flex h-[64px] w-[64px] flex-col items-center justify-center rounded-[10px] border border-[var(--border-strong)] bg-[var(--surface-sunken)]">
+          <b className="font-display text-[26px] font-bold leading-none text-[var(--fg)]">{n}</b>
+          <span className="mt-[4px] font-mono text-[9px] font-medium uppercase tracking-[0.14em] text-[var(--fg-faint)]">{synopsisCopy.modal.plan.landsUnder}</span>
+        </span>
+      )}
+      <p className="m-0 text-[13px] leading-[1.55] text-[var(--fg-body)] [text-wrap:pretty]">{text(line)}{basedOn}</p>
+    </div>
+  );
+}
+
+/** Key tips: exactly two, each with its first two named cards fanned beside it. One column on a phone. */
+export function TipCards({
+  content, art, text, basedOn,
+}: Draw & { basedOn: (index: number, line: string) => React.ReactNode }) {
+  const tips = content.primer?.tips ?? [];
+  return (
+    <div className="grid grid-cols-1 gap-[12px] md:grid-cols-2">
+      {tips.map((tip, i) => {
+        const fan = markedCards(tip.text, content.cards).filter((c) => hasArt(art, c.oracleId)).slice(0, 2);
+        return (
+          <div key={i} data-testid="synopsis-tip" className={`grid items-center gap-[12px] rounded-[10px] border border-[var(--border)] bg-[var(--surface-sunken)] p-[12px] ${fan.length ? "grid-cols-[78px_minmax(0,1fr)]" : ""}`}>
+            {fan.length ? (
+              <div className="relative h-[86px] w-[78px]">
+                {fan.map((c, j) => (
+                  <CardImage
+                    key={c.oracleId}
+                    oracleId={c.oracleId}
+                    name={c.name}
+                    art={art}
+                    className="h-[72px] w-[52px]"
+                    style={{ position: "absolute", top: 6, left: j === 0 ? 0 : 24, transform: `rotate(${j === 0 ? -7 : 6}deg)` }}
+                  />
+                ))}
+              </div>
+            ) : null}
+            <p className="m-0 text-[13px] leading-[1.55] text-[var(--fg-body)] [text-wrap:pretty]">{text(tip.text)}{basedOn(i, tip.text)}</p>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Key cards as full card images, three across: name and job beside on desktop, under on a phone. */
+export function KeyCardGrid({
+  content, art, text, basedOn,
+}: Draw & { basedOn: (index: number, line: string, except?: string) => React.ReactNode }) {
+  return (
+    <div className="grid grid-cols-3 gap-x-[10px] gap-y-[12px] md:gap-[14px]">
+      {(content.keyCards ?? []).map((k, i) => {
+        // The key card's own name is resolved by the contract like any mark, under the same key.
+        const card = content.cards[normalizeName(k.card)];
+        const image = !!card && hasArt(art, card.oracleId);
+        return (
+          <div key={i} data-testid="synopsis-key-card" className={`min-w-0 ${image ? "flex flex-col gap-[6px] md:grid md:grid-cols-[63px_minmax(0,1fr)] md:items-start md:gap-[11px]" : ""}`}>
+            {image ? <CardImage oracleId={card.oracleId} name={k.card} art={art} className="aspect-[63/88] w-full md:h-[88px] md:w-[63px]" /> : null}
+            <div className="min-w-0">
+              <b className="mb-[4px] block text-[12px] leading-[1.35] [overflow-wrap:anywhere] md:mt-[2px] md:text-[13px]">
+                {card
+                  ? <CardName oracleId={card.oracleId} name={k.card} imageUri={art.get(card.oracleId)?.imageUri ?? null} />
+                  : <span className="font-semibold text-[var(--fg)]">{k.card}</span>}
+              </b>
+              <span className="text-[11.5px] leading-[1.45] text-[var(--fg-muted)] [text-wrap:pretty] md:text-[12.5px]">{text(k.job)}{basedOn(i, k.job, card?.oracleId)}</span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/** A weakness with its leading Moderate or Minor drawn as a chip (Moderate in the warning ink). */
+export function WeaknessLine({ line, text, basedOn }: { line: string; text: (t: string) => React.ReactNode; basedOn: React.ReactNode }) {
+  const sev = splitSeverity(line);
+  return (
+    <p className="m-0 grid grid-cols-1 items-baseline gap-[5px] text-[13px] leading-[1.55] text-[var(--fg-body)] [text-wrap:pretty] md:grid-cols-[82px_minmax(0,1fr)] md:gap-[10px] md:text-[13.5px]">
+      {sev ? (
+        <span
+          data-testid="synopsis-severity"
+          className={`justify-self-start rounded-full border px-[8px] py-[2px] font-mono text-[10px] font-medium uppercase tracking-[0.1em] ${sev.tier === "Moderate" ? "border-[color-mix(in_oklab,var(--warning)_45%,transparent)] text-[var(--warning)]" : "border-[var(--border-strong)] text-[var(--fg-muted)]"}`}
+        >
+          {sev.tier}
+        </span>
+      ) : null}
+      <span className={sev ? "" : "md:col-span-2"}>{text(sev ? sev.rest : line)}{basedOn}</span>
+    </p>
+  );
+}

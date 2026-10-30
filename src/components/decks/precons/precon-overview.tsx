@@ -59,6 +59,7 @@ export function PreconOverview({ overview, preconName, listArt }: {
         <PreconSynopsisModal
           preconName={preconName}
           content={content}
+          contractVersion={overview.contractVersion}
           art={art}
           evidenceNames={overview.evidenceNames}
           onClose={() => setOpen(false)}

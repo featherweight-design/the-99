@@ -26,6 +26,8 @@ export type PreconOverview = {
   art: Record<string, string | null>;
   /** The names its claims cite, for "Based on"; empty while `OVERVIEW_V2_ENABLED` is off. */
   evidenceNames: Record<string, string>;
+  /** The contract the row was written at, which picks the Overview modal's shape. */
+  contractVersion: number;
   /** The list it was written for (`list_fingerprint`): shown only beside that very list (`overviewForList`). */
   listFingerprint: string;
 };
@@ -97,5 +99,6 @@ export async function loadPreconOverview(fileName: string, env: NodeJS.ProcessEn
         .then((rows) => Object.fromEntries(rows.map((r) => [r.oracleId, r.imageUri]))),
     v2 ? evidenceNamesOf(content) : Promise.resolve({}),
   ]);
-  return { content, art, evidenceNames, listFingerprint: shown.listFingerprint };
+  // The shown row's own contract: a contract-12 fallback row draws the old shape.
+  return { content, art, evidenceNames, contractVersion: shown.contractVersion, listFingerprint: shown.listFingerprint };
 }
