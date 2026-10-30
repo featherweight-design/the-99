@@ -147,6 +147,7 @@ function PostPicture({ item, box }: { item: FeedView; box: string }) {
     return (
       <Link href={item.href} aria-hidden tabIndex={-1} data-feed-picture className={`${shape} block`}>
         {inner}
+        <PendingReporter href={item.href} />
       </Link>
     );
   }
