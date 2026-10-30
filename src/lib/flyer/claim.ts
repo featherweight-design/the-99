@@ -117,10 +117,15 @@ export async function startFlyerClaim(codeRaw: string, rawEmail: string, present
 
   const written = await db.transaction(async (tx) => {
     const now = await lockSenderIn(tx, code.createdBy, deps.now);
+    // The code is read again under the lock: a revoke (which takes the same lock) that committed meanwhile is seen here.
+    const [fresh] = await tx.select().from(flyerCodes).where(eq(flyerCodes.id, code.id));
+    if (!fresh) return ENDED;
     const row = await claimOf(tx, code.id, presented, true);
     const decision = decideStart(row, presented, email, now);
     if (decision.kind === "wait") return { ok: false as const, reason: "wait" as const, waitMs: decision.waitMs };
     if (decision.kind === "ended") return ENDED;
+    // A revoked code takes no re-send either: the claim it holds is released by the sweep.
+    if (fresh.revokedAt !== null) return { ok: false as const, reason: "closed" as const, closed: "revoked" as const };
     const sixDigits = newCode();
     if (decision.kind === "again") {
       await tx.update(flyerClaims).set({
@@ -136,7 +141,7 @@ export async function startFlyerClaim(codeRaw: string, rawEmail: string, present
       .where(eq(flyerClaims.codeId, code.id));
     const { count } = await readCountIn(tx, code.createdBy, now);
     // `count.left` already nets the claims holding on every one of Hugh's codes (`readCountIn`).
-    const openness = flyerOpenness(code, claims as FlyerClaimRow[], count.left, now);
+    const openness = flyerOpenness(fresh, claims as FlyerClaimRow[], count.left, now);
     if (!openness.open) return { ok: false as const, reason: "closed" as const, closed: openness.closed };
     const claimSecret = newClaimSecret();
     const [made] = await tx.insert(flyerClaims).values({
