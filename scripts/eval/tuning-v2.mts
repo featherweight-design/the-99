@@ -54,9 +54,9 @@ export const PLAN = Array.from({ length: REPS }, (_, r) => COUNTS.flatMap((n) =>
 const keyOf = (r: { deck: string; n: number; rep: number }) => `${r.deck}|${r.n}|${r.rep}`;
 
 /** A conservative input ceiling with no API call: ~3 characters a token, plus a margin (`count-mechanism.mts`'s). */
-// The cached prefix (\`cachedUser\`) is priced as plain input: the worst case, a call that reads nothing from the cache.
+// Priced as a cache write (\`cacheWrite\`, 1.25x input), the worst case: a call that reads nothing from the cache writes it.
 const inputCeiling = (m: { system: string; cachedUser: string; user: string }) => Math.ceil((m.system.length + m.cachedUser.length + m.user.length) / 3) + 1_500;
-const worstUsd = (m: { system: string; cachedUser: string; user: string }, maxTokens: number) => worstCaseMicroUsd(TUNING_MODEL, inputCeiling(m), maxTokens) / 1e6;
+const worstUsd = (m: { system: string; cachedUser: string; user: string }, maxTokens: number) => worstCaseMicroUsd(TUNING_MODEL, inputCeiling(m), maxTokens, { cacheWrite: true }) / 1e6;
 
 type StoredCall = { stage: V2Stage; ok: boolean; errorClass?: string; ms: number; usd: number; raw: unknown };
 type Row = {

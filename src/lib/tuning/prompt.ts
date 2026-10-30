@@ -44,7 +44,8 @@ export function buildPrompt(pack: EvidencePack): { system: string; user: string 
 }
 
 /**
- * Suggested changes v2's prompt (`PROMPT_VERSION_V2` 13; spec 2026-10-27 §4, §5, §10; plan PR 2 and H2, H3), for ONE call of
+ * Suggested changes v2's prompt (`PROMPT_VERSION_V2` 14: v13's cached prefix, with each call's tail asking for numbered
+ * lines (`numberLinesV2`); spec 2026-10-27 §4, §5, §10; plan PR 2 and H2, H3), for ONE call of
  * the two-call flow: the additions stage, asked ceil(1.5N) (`askFor`), or the cut stage that makes room for what is coming
  * in, first asked ceil(1.5·min(N, K1)) for the K1 additions call 1 kept (`cutPlanFor`), and either one's refill (asked the shortfall, told what stands and what fell and why). Composed from
  * v10's own lines, so every rule both share is one text: only the size and aim sentences, the citation kinds (`notes` is the

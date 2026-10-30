@@ -23,7 +23,8 @@ export function replyCeilingFor(ask: number): number {
   return Math.max(8_000, 600 * ask + 4_000);
 }
 
-/** The reply schema's per-list cap: LOOSE, twice the ask (§5.2), so one card too many never rejects a whole reply. */
+/** A reply schema's per-list cap: LOOSE, twice the ask (§5.2), so one card too many never rejects a whole reply. Since prompt v13
+ *  every v2 call sends the ONE schema (the cache key), capped at `schemaCapFor(askFor(MAX_COUNT))`, so a refill's cap is 60. */
 export function schemaCapFor(ask: number): number {
   return 2 * ask;
 }

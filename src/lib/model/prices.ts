@@ -203,8 +203,12 @@ export const FEATURE_CALLS: Readonly<Record<ModelFeature, {
   // A fifth, small call writes why these cards once both lists are final (`v2/why.ts`): its own step, at its own ceilings.
   suggested_changes_v2: {
     model: TUNING_MODEL, inputCeilingTokens: 16_000, maxTokens: replyCeilingFor(askFor(MAX_COUNT)), callsPerWrite: 5,
+    // The four list calls send the cached prefix (prompt v13), so a cold cache writes it: priced at the write rate. The why
+    // call sends no cached prefix, so it is priced at the plain input rate.
     steps: [
-      ...Array.from({ length: 4 }, () => ({ model: TUNING_MODEL, inputCeilingTokens: 16_000, maxTokens: replyCeilingFor(askFor(MAX_COUNT)) })),
+      ...Array.from({ length: 4 }, () => ({
+        model: TUNING_MODEL, inputCeilingTokens: 16_000, maxTokens: replyCeilingFor(askFor(MAX_COUNT)), cacheWrite: true,
+      })),
       { model: WHY_MODEL, inputCeilingTokens: WHY_INPUT_TOKENS, maxTokens: WHY_REPLY_TOKENS },
     ],
   },
