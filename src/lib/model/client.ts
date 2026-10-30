@@ -36,7 +36,7 @@ export type ModelErrorClass = "upstream_busy" | "upstream_rejected" | "timeout" 
 /**
  * What the call was billed for, ACCUMULATED across both attempts: a malformed first reply still
  * came back, and still burned its tokens. The cache meters are zero for a call that sends no
- * `cache_control` (`cacheSystem`), and are read anyway so a price can never silently leave them out.
+ * `cache_control` (`cacheSystem`, `cachedUser`), and are read anyway so a price can never silently leave them out.
  */
 export type ModelUsage = {
   inputTokens: number;
@@ -75,6 +75,11 @@ export type ModelRequest<T> = {
    *  byte-stable system prompt shared across calls, like the read's commander list: a later call
    *  inside the TTL reads it at 0.1x input. Omitted, the system prompt is the plain string it was. */
   cacheSystem?: boolean;
+  /** A cached prefix of the user message: sent as its own text block, marked \`cache_control\` (the 5-minute TTL), ahead of
+   *  \`user\` as a second block. The mark caches everything before it, the system prompt included, so calls that share the
+   *  system prompt and this block (Suggested changes v2's four calls of one run, \`buildPromptV2\`) read both at 0.1x after
+   *  the first. Omitted, the user message is the plain \`user\` string it was. */
+  cachedUser?: string;
   /** Called with every response that came back, before it is parsed: what the eval harness records
    *  per arm (why the model stopped). The outcome itself is unchanged. */
   onResponse?: (meta: { stopReason: string | null; outputTokens: number }) => void;
@@ -234,7 +239,7 @@ async function streamOnce<T>(
       system: req.cacheSystem
         ? [{ type: "text" as const, text: req.system, cache_control: { type: "ephemeral" as const } }]
         : req.system,
-      messages: [{ role: "user" as const, content: req.user }],
+      messages: [{ role: "user" as const, content: userContent(req) }],
       output_config: req.effort ? { format, effort: req.effort } : { format },
     };
     const stream = messages.stream(params, { signal: controller.signal, timeout: req.deadlineMs, maxRetries: 0 });
@@ -301,6 +306,16 @@ function deltaBuffer(): { push: (text: string) => void; end: () => void; iterabl
   };
 }
 
+/** The user message's content: the plain string, or the cached prefix block and then \`user\` (\`cachedUser\`). Both request
+ *  paths, streamed and not, send it through here. */
+function userContent(req: Pick<ModelRequest<unknown>, "user" | "cachedUser">): string | Anthropic.TextBlockParam[] {
+  if (req.cachedUser === undefined) return req.user;
+  return [
+    { type: "text", text: req.cachedUser, cache_control: { type: "ephemeral" } },
+    { type: "text", text: req.user },
+  ];
+}
+
 function realMessages(log: (line: string) => void): Messages | null {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -329,7 +344,7 @@ async function tryOnce<T>(
       system: req.cacheSystem
         ? [{ type: "text" as const, text: req.system, cache_control: { type: "ephemeral" as const } }]
         : req.system,
-      messages: [{ role: "user" as const, content: req.user }],
+      messages: [{ role: "user" as const, content: userContent(req) }],
       output_config: req.effort ? { format, effort: req.effort } : { format },
     };
     const options = { signal: controller.signal, timeout: remainingMs, maxRetries: 0 };

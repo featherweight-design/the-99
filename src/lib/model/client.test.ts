@@ -104,6 +104,26 @@ describe("callModel", () => {
     expect((cached.calls[0].body as { system?: unknown }).system).toEqual([{ type: "text", text: "s", cache_control: { type: "ephemeral" } }]);
   });
 
+  // Prompt v13 (Suggested changes v2): the evidence block shared by a run's calls is cached, the system prompt with it.
+  it("sends a cached user prefix as its own marked block ahead of the user text, only when asked", async () => {
+    const plain = scripted([reply({ answer: "x" })]);
+    await callModel(req, { messages: plain.messages, log: quiet });
+    expect((plain.calls[0].body as { messages?: unknown }).messages).toEqual([{ role: "user", content: req.user }]);
+    const cached = scripted([reply({ answer: "x" })]);
+    await callModel({ ...req, cachedUser: "evidence" }, { messages: cached.messages, log: quiet });
+    expect((cached.calls[0].body as { messages?: unknown }).messages).toEqual([{ role: "user", content: [
+      { type: "text", text: "evidence", cache_control: { type: "ephemeral" } },
+      { type: "text", text: req.user },
+    ] }]);
+    const { messages, calls } = streamed(['{"answer": "x"}']);
+    const call = streamModel({ ...req, cachedUser: "evidence" }, { messages, log: quiet });
+    await drain(call.deltas);
+    expect((calls[0].body as { messages?: unknown }).messages).toEqual([{ role: "user", content: [
+      { type: "text", text: "evidence", cache_control: { type: "ephemeral" } },
+      { type: "text", text: req.user },
+    ] }]);
+  });
+
   // Additive: a caller that names no effort sends the request it always sent.
   it("sends an effort only when the caller names one", async () => {
     const plain = scripted([reply({ answer: "x" })]);

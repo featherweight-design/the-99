@@ -8,7 +8,7 @@ import type { DeckGame } from "../decks/games";
 import { PLAYER_TEXT_SYSTEM_RULE } from "../model/player-text";
 import { buildPlayGroup } from "../profile/play";
 import type { EvidencePack } from "./evidence";
-import { buildPrompt, buildPromptV2 } from "./prompt";
+import { buildPrompt, buildPromptV2, type PromptV2Stage } from "./prompt";
 
 const game = (id: string, over: Partial<DeckGame> = {}): DeckGame => ({
   id, result: "loss", podSize: 4, playedAt: new Date("2026-09-01T20:00:00Z"),
@@ -442,30 +442,67 @@ describe("the strategy focus in the prompt", () => {
 
 describe("buildPromptV2", () => {
   const stage = { n: 4, ask: 6, aim: null } as const;
+  const owned = {
+    ...pack, limits: { capCents: null, sets: [], ownedOnly: true },
+    ownedCandidates: [{ oracleId: "a", name: "Lightning Greaves", typeLine: "Artifact" }],
+    ownedOffIndex: [{ oracleId: "o", name: "Thought Vessel", typeLine: "Artifact" }],
+  };
+  const fourCalls = (p: EvidencePack, aim: PromptV2Stage["aim"] = null) => [
+    buildPromptV2(p, { ...stage, aim, list: "additions" }),
+    buildPromptV2(p, { ...stage, aim, list: "cuts", comingIn: ["Cultivate", "Kodama's Reach"] }),
+    buildPromptV2(p, { ...stage, aim, ask: 2, list: "additions", refill: { kept: ["Cultivate"], rejected: [{ card: "Bolt", reason: "it is outside the commander's colors" }] } }),
+    buildPromptV2(p, { ...stage, aim, ask: 2, list: "cuts", comingIn: ["Cultivate"], refill: { kept: ["Ponder"], rejected: [] } }),
+  ];
+
+  // Prompt v13: the system message and the cached user block are what `client.ts` caches, so they must be byte for byte the
+  // same on every call of a run, whatever the stage, the ask, the bracket choice or the owned lists.
+  it("sends every call of a run the same cached prefix: the system message and the evidence block", () => {
+    const withFocus = { ...pack, notes: "more ramp", focus: { name: "Tokens", copies: 11, nonland: 62, on: ["Anointed Procession"], top: ["Tokens"], offTop: ["Ponder"], candidates: [] } };
+    for (const p of [pack, owned, withFocus]) {
+      for (const aim of [null, { choice: "keep", target: 3 } as const, { choice: "down", target: 2 } as const]) {
+        const calls = fourCalls(p, aim);
+        for (const c of calls) {
+          expect(c.system).toBe(calls[0].system);
+          expect(c.cachedUser).toBe(calls[0].cachedUser);
+          expect(c.user.startsWith("This step:\n")).toBe(true);
+        }
+      }
+    }
+    const { system, cachedUser } = buildPromptV2(pack, { ...stage, list: "additions" });
+    expect(system).toContain('come at the end of the message, under "This step".');
+    for (const text of [system, cachedUser]) {
+      expect(text).not.toContain("Propose exactly");
+      expect(text).not.toContain("The player wants 4 cards in.");
+      expect(text).not.toContain("Coming in");
+      expect(text).not.toContain("No rationale or citation may promise");
+    }
+  });
 
   it("asks the additions stage for exactly the ask, cuts left to a separate step, and fills the list", () => {
-    const { system } = buildPromptV2(pack, { ...stage, list: "additions" });
-    expect(system).toContain("Propose exactly 6 cards to add; the cuts are chosen in a separate step.");
-    expect(system).toContain("The player wants 4 cards in.");
-    expect(system).toContain("Fill the list: when the evidence thins, choose the soundest remaining cards rather than offering fewer.");
-    expect(system).not.toContain("Propose up to");
-    expect(system).not.toContain("offer fewer of either");
+    const { system, user } = buildPromptV2(pack, { ...stage, list: "additions" });
+    expect(user).toContain("Propose exactly 6 cards to add; the cuts are chosen in a separate step.");
+    expect(user).toContain("The player wants 4 cards in.");
+    expect(user).toContain("Fill the list: when the evidence thins, choose the soundest remaining cards rather than offering fewer.");
+    for (const text of [system, user]) {
+      expect(text).not.toContain("Propose up to");
+      expect(text).not.toContain("offer fewer of either");
+    }
   });
 
   it("shows the cut stage what is coming in and asks for the cuts that make room", () => {
-    const { system, user } = buildPromptV2(pack, { ...stage, list: "cuts", comingIn: ["Cultivate", "Kodama's Reach"] });
-    expect(system).toContain("Propose exactly 6 cards to cut");
-    expect(system).toContain("The player is adding 2 cards, listed under \"Coming in\", and the deck must stay its size.");
+    const { user } = buildPromptV2(pack, { ...stage, list: "cuts", comingIn: ["Cultivate", "Kodama's Reach"] });
+    expect(user).toContain("Propose exactly 6 cards to cut");
+    expect(user).toContain("The player is adding 2 cards, listed under \"Coming in\", and the deck must stay its size.");
     expect(user.endsWith("\nComing in (2): Cultivate; Kodama's Reach.")).toBe(true);
   });
 
   it("calls the run's words the request: the citation kind, its rule, and the words through playerText", () => {
-    const { system, user } = buildPromptV2({ ...pack, notes: "more ramp" }, { ...stage, list: "additions" });
+    const { system, cachedUser } = buildPromptV2({ ...pack, notes: "more ramp" }, { ...stage, list: "additions" });
     expect(system).toContain("games, note, decklist, intent, mix, request, and focus");
     expect(system).toContain("A request citation uses the player's own words from what they asked for this run.");
     expect(system).not.toContain("A notes citation");
     expect(system).toContain(PLAYER_TEXT_SYSTEM_RULE);
-    expect(user).toContain("<<<PLAYER_TEXT>>>\nmore ramp\n<<<END_PLAYER_TEXT>>>");
+    expect(cachedUser).toContain("<<<PLAYER_TEXT>>>\nmore ramp\n<<<END_PLAYER_TEXT>>>");
   });
 
   it("states the signal-trust order: the request, the overview, the focus, then the description", () => {
@@ -473,28 +510,28 @@ describe("buildPromptV2", () => {
     expect(system).toContain("strongest first: what the player is asking for this run, then how the deck plays (its overview), then the player's focus, then what the deck is for.");
   });
 
-  it("names the bracket choice per stage, and never asks the model to name one", () => {
-    const keep = buildPromptV2(pack, { ...stage, list: "cuts", comingIn: [], aim: { choice: "keep", target: 3 } }).system;
+  it("names the bracket choice per stage, in the step, and never asks the model to name one", () => {
+    const keep = buildPromptV2(pack, { ...stage, list: "cuts", comingIn: [], aim: { choice: "keep", target: 3 } }).user;
     expect(keep).toContain("no card you suggest may move it out of bracket 3");
     expect(keep).toContain("Never name a bracket in a rationale or a citation");
-    expect(buildPromptV2(pack, { ...stage, list: "cuts", comingIn: [], aim: { choice: "down", target: 2 } }).system).toContain("favor cuts that bring it down");
-    expect(buildPromptV2(pack, { ...stage, list: "additions", aim: { choice: "down", target: 2 } }).system).toContain("every addition must keep it within bracket 2");
-    expect(buildPromptV2(pack, { ...stage, list: "additions", aim: { choice: "up", target: 4 } }).system).toContain("favor additions that move it there");
-    expect(buildPromptV2(pack, { ...stage, list: "additions" }).system).not.toContain("bracket 3");
+    expect(buildPromptV2(pack, { ...stage, list: "cuts", comingIn: [], aim: { choice: "down", target: 2 } }).user).toContain("favor cuts that bring it down");
+    expect(buildPromptV2(pack, { ...stage, list: "additions", aim: { choice: "down", target: 2 } }).user).toContain("every addition must keep it within bracket 2");
+    expect(buildPromptV2(pack, { ...stage, list: "additions", aim: { choice: "up", target: 4 } }).user).toContain("favor additions that move it there");
+    expect(buildPromptV2(pack, { ...stage, list: "additions" }).user).not.toContain("bracket 3");
   });
 
   it("asks a refill for exactly the shortfall, naming what stands and what fell", () => {
-    const { system, user } = buildPromptV2(pack, { ...stage, ask: 2, list: "additions", refill: { kept: ["Cultivate"], rejected: [{ card: "Bolt", reason: "it is outside the commander's colors" }] } });
-    expect(system).toContain("Propose exactly 2 cards to add");
+    const { user } = buildPromptV2(pack, { ...stage, ask: 2, list: "additions", refill: { kept: ["Cultivate"], rejected: [{ card: "Bolt", reason: "it is outside the commander's colors" }] } });
+    expect(user).toContain("Propose exactly 2 cards to add");
     expect(user).toContain("Kept, additions: Cultivate.\nRejected, and why:\n- Bolt: it is outside the commander's colors\nPropose exactly 2 more additions, following every rule above. Name none of the cards listed here.");
   });
 
   it("lets a v2 cut say stronger or more focused, as its validator does, and keeps the rule on additions and v10 (round 5)", () => {
-    const cuts = buildPromptV2(pack, { ...stage, list: "cuts" }).system;
-    const additions = buildPromptV2(pack, { ...stage, list: "additions" }).system;
-    expect(cuts).toContain("A cut's rationale may say the deck gets stronger or more focused without the card.");
-    expect(cuts).not.toContain("make the deck stronger.");
-    expect(additions).toContain("make the deck stronger.");
+    const cuts = buildPromptV2(pack, { ...stage, list: "cuts" });
+    const additions = buildPromptV2(pack, { ...stage, list: "additions" });
+    expect(cuts.user).toContain("A cut's rationale may say the deck gets stronger or more focused without the card.");
+    for (const text of [cuts.system, cuts.cachedUser, cuts.user]) expect(text).not.toContain("make the deck stronger.");
+    expect(additions.user).toContain(`This step's rules. A suggestion that breaks any of these is discarded before the player sees it, as with the rules above:\n- ${deckTuningCopy.suggestionRules.noResultClaim}`);
     expect(buildPrompt(pack).system).toContain("make the deck stronger.");
   });
 
@@ -506,36 +543,38 @@ describe("buildPromptV2", () => {
     expect(buildPromptV2(pack, { ...stage, list: "cuts" }).system).not.toContain(line);
   });
 
-  // Prompt v12: the owned lists are what the additions choose from, so only the additions calls (and their refill) see them.
+  // Prompt v12: the owned lists are what the additions choose from, so only the additions calls (and their refill) see them;
+  // v13 puts them, and the rule that names them, in the step, after the shared prefix.
   it("sends the owned lists to the additions calls only, never to a cut call or its refill", () => {
-    const owned = {
-      ...pack, limits: { capCents: null, sets: [], ownedOnly: true },
-      ownedCandidates: [{ oracleId: "a", name: "Lightning Greaves", typeLine: "Artifact" }],
-      ownedOffIndex: [{ oracleId: "o", name: "Thought Vessel", typeLine: "Artifact" }],
-    };
     const refill = { kept: ["Cultivate"], rejected: [] };
     for (const p of [buildPromptV2(owned, { ...stage, list: "additions" }), buildPromptV2(owned, { ...stage, list: "additions", refill })]) {
       expect(p.user).toContain("Cards the player owns that fit this deck (the ones most decks with this commander play first):\n- Lightning Greaves (Artifact)");
       expect(p.user).toContain("Other cards the player owns that fit this deck's colors:\n- Thought Vessel (Artifact)");
-      expect(p.system).toContain("Prefer the first list");
+      expect(p.user).toContain("Prefer the first list");
+      expect(p.cachedUser).not.toContain("Lightning Greaves");
     }
     for (const p of [buildPromptV2(owned, { ...stage, list: "cuts", comingIn: ["X"] }), buildPromptV2(owned, { ...stage, list: "cuts", comingIn: ["X"], refill })]) {
-      for (const text of [p.system, p.user]) {
+      for (const text of [p.system, p.cachedUser, p.user]) {
         expect(text).not.toContain("Lightning Greaves");
         expect(text).not.toContain("Thought Vessel");
         expect(text).not.toContain("Cards the player owns that fit");
         expect(text).not.toContain("Other cards the player owns");
       }
-      expect(p.user).toContain("Every suggested add must be a card the player already owns.");
     }
+    // The shared part states the listless owned-only rule, true for every call.
+    expect(buildPromptV2(owned, { ...stage, list: "additions" }).cachedUser).toContain("Every suggested add must be a card the player already owns.");
   });
 
-  it("changes only its own lines: every other line of v10's system message is there, in order", () => {
+  it("changes only its own lines: every other line of v10's system message is there, in order, and the stage's lines are in the step", () => {
     const v10 = buildPrompt(pack).system.split("\n");
-    const v2 = buildPromptV2(pack, { ...stage, list: "additions" }).system.split("\n");
+    const p = buildPromptV2(pack, { ...stage, list: "additions" });
+    const v2 = p.system.split("\n");
     const changed = v10.filter((l) => !v2.includes(l));
-    expect(changed).toHaveLength(4);
+    // The size, aim and result-claim lines move to the step; the two citation lines are reworded for the request.
+    expect(changed).toHaveLength(5);
     expect(v2.filter((l) => v10.includes(l))).toEqual(v10.filter((l) => v2.includes(l)));
+    expect(p.user).toContain(`- ${deckTuningCopy.suggestionRules.noResultClaim}`);
     expect(buildPrompt(pack).system).toContain("Propose up to 6 cards to add and up to 6 cards to cut");
+    expect(p.cachedUser).toBe(buildPrompt(pack).user);
   });
 });

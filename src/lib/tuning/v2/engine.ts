@@ -56,6 +56,11 @@ export type V2CallRequest = {
   /** How many lines this call asks for (its prompt's count): the staged stub answers exactly that many. */
   ask: number;
   system: string;
+  /** The user message's cached prefix, the deck's evidence: byte for byte the same on every call of a run, so the transport
+   *  sends it as a cached block (\`client.ts\`'s \`cachedUser\`) and calls 2 to 4 read it, and \`system\`, at 0.1x. Absent on
+   *  the why call, which runs on its own model and so could read no other call's cache. */
+  cachedUser?: string;
+  /** The rest of the user message: this call's own step (\`buildPromptV2\`). */
   user: string;
   schema: z.ZodTypeAny;
   maxTokens: number;
@@ -258,12 +263,12 @@ export async function runV2(args: RunV2Args): Promise<V2Report> {
       return null;
     }
     const deadlineMs = Math.min(callCap, left);
-    const { system, user } = buildPromptV2(pack, prompt);
+    const { system, cachedUser, user } = buildPromptV2(pack, prompt);
     const here: V2CallReport = { stage, ask: prompt.ask, ok: false, ms: 0, lines: 0, kept: 0, malformed: 0 };
     calls.push(here);
     const t = now();
     const call = args.callModel({
-      stage, ask: prompt.ask, system, user,
+      stage, ask: prompt.ask, system, cachedUser, user,
       schema: suggestedChangesV2Schema(schemaCapFor(prompt.ask), prompt.list),
       maxTokens: replyCeilingFor(prompt.ask),
       deadlineMs,

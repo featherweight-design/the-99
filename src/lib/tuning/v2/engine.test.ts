@@ -84,8 +84,11 @@ describe("runV2", () => {
     const seen: string[] = [];
     const r = await runV2({ ...base, n: 3, callModel: f.callModel, now: f.now, onLine: (side, l) => { seen.push(`${side}:${l.card}`); } });
     expect(f.requests.map((q) => q.stage)).toEqual(["additions", "cuts"]);
-    expect(f.requests[0].system).toContain("Propose exactly 5 cards to add");
+    expect(f.requests[0].user).toContain("Propose exactly 5 cards to add");
     expect(f.requests[1].user).toContain("Coming in (5): Add 1; Add 2; Add 3; Add 4; Add 5.");
+    // Prompt v13: both calls carry the same cached prefix, so the cut call reads it from the cache.
+    expect(f.requests[1].system).toBe(f.requests[0].system);
+    expect(f.requests[1].cachedUser).toBe(f.requests[0].cachedUser);
     expect(f.requests[0].maxTokens).toBe(replyCeilingFor(5));
     // Each call carries its own ask, which the staged stub answers (not N).
     expect(f.requests.map((q) => q.ask)).toEqual([5, 5]);
@@ -105,7 +108,7 @@ describe("runV2", () => {
     expect(f.events.slice(0, 3)).toEqual(["start additions", "end additions", "start additionsRefill"]);
     expect(f.events.indexOf("start cuts")).toBeLessThan(f.events.indexOf("end additionsRefill"));
     const refill = f.requests.find((q) => q.stage === "additionsRefill")!;
-    expect(refill.system).toContain("Propose exactly 2 cards to add");
+    expect(refill.user).toContain("Propose exactly 2 cards to add");
     expect(refill.user).toContain("Kept, additions: Add 1; Add 2.");
     expect(refill.user).toContain("- Bolt: it is outside the commander's colors");
     // The cut call saw call 1's kept additions, not the refill's, and was asked for room for them: ceil(1.5 x 2), not
@@ -113,7 +116,7 @@ describe("runV2", () => {
     const cut = f.requests.find((q) => q.stage === "cuts")!;
     expect(cut.user).toContain("Coming in (2): Add 1; Add 2.");
     expect(cut.ask).toBe(3);
-    expect(cut.system).toContain("Propose exactly 3 cards to cut");
+    expect(cut.user).toContain("Propose exactly 3 cards to cut");
     expect(asks).toEqual([3]);
     expect(f.requests.find((q) => q.stage === "cutsRefill")!.ask).toBe(1);
     expect(r.additions).toMatchObject({ refilled: true });
@@ -252,7 +255,7 @@ describe("runV2", () => {
     const f = fake({ additions: { cards: adds(1, 6) }, cuts: { cards: [...cutsOf(1, 2), "Commander"] }, cutsRefill: { cards: cutsOf(3, 2) } });
     const r = await runV2({ ...base, n: 4, callModel: f.callModel, now: f.now });
     const refill = f.requests.find((q) => q.stage === "cutsRefill")!;
-    expect(refill.system).toContain("Propose exactly 2 cards to cut");
+    expect(refill.user).toContain("Propose exactly 2 cards to cut");
     expect(refill.user).toContain("Coming in (6)");
     expect(refill.user).toContain("- Commander: it is the commander");
     expect(r.cuts.kept).toHaveLength(4);
@@ -282,7 +285,7 @@ describe("runV2", () => {
     const f = fake({ additions: { cards: [] }, additionsRefill: { cards: adds(1, 2) }, cuts: { cards: cutsOf(1, 3) } });
     const r = await runV2({ ...base, n: 5, callModel: f.callModel, now: f.now });
     expect(f.requests.map((q) => q.stage)).toEqual(["additions", "additionsRefill", "cuts"]);
-    expect(f.requests[2].system).toContain("Propose exactly 3 cards to cut");
+    expect(f.requests[2].user).toContain("Propose exactly 3 cards to cut");
     expect(r.cuts.kept).toHaveLength(3);
   });
 
@@ -362,15 +365,15 @@ describe("runV2", () => {
     const r = await runV2({ ...base, n: 2, aim: { choice: "keep", target: 3 }, bracketAfter, callModel: f.callModel, now: f.now });
     expect(r.additions.drops.map((d) => d.rule)).toEqual(["bracketAim", "bracketAim", "bracketAim"]);
     expect(r.additions.kept.map((l) => l.card)).toEqual(["Add 3"]);
-    expect(f.requests[0].system).toContain("stay in bracket 3");
+    expect(f.requests[0].user).toContain("stay in bracket 3");
     expect(r.charge).toEqual({ outcome: "spent" });
   });
 
   it("tells the model a Keep over a range may settle anywhere in it (review round 1)", async () => {
     const f = fake({ additions: { cards: adds(1, 2) }, cuts: { cards: cutsOf(1, 2) } });
     await runV2({ ...base, n: 2, aim: { choice: "keep", target: 5, low: 4 }, callModel: f.callModel, now: f.now });
-    expect(f.requests[0].system).toContain("stay in bracket 4 or 5");
-    expect(f.requests[0].system).not.toContain("out of bracket 5.");
+    expect(f.requests[0].user).toContain("stay in bracket 4 or 5");
+    expect(f.requests[0].user).not.toContain("out of bracket 5.");
   });
 
   it("drops a Down addition whose card alone bars the target, through cardFloor", async () => {
@@ -427,7 +430,7 @@ describe("runV2", () => {
     const quoted = { ...line("Add 1"), evidence: [{ kind: "request", value: "more ramp" }] };
     const f = fake({ additions: { text: JSON.stringify({ additions: [quoted, ...adds(2, 4).map(line)] }) }, cuts: { cards: cutsOf(1, 5) } });
     const r = await runV2({ ...base, n: 3, request: "more ramp", callModel: f.callModel, now: f.now });
-    expect(f.requests[0].user).toContain("<<<PLAYER_TEXT>>>\nmore ramp\n<<<END_PLAYER_TEXT>>>");
+    expect(f.requests[0].cachedUser).toContain("<<<PLAYER_TEXT>>>\nmore ramp\n<<<END_PLAYER_TEXT>>>");
     expect(r.additions.kept[0].evidence).toEqual([{ kind: "request", value: "more ramp" }]);
   });
 });

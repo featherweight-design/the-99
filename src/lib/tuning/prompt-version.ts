@@ -46,4 +46,8 @@ export const PROMPT_VERSION = 10;
 // 12 (2026-10-29): an owned-only run's additions are offered a second owned list, "Other cards the player owns that fit
 // this deck's colors" (owned cards off the commander's index, ranked by its neighbour commanders), and told to prefer the
 // first; the cut calls are sent neither owned list.
-export const PROMPT_VERSION_V2 = 12;
+// 13 (2026-10-30, the cached prefix): every call of a run sends one identical prefix, the rules every call shares and then
+// the deck's evidence, sent as a cached block; what a call says and another does not (its size, aim and bracket lines, the
+// cut's narrowed result-claim rule, the additions' owned lists and the rule that names them, "Coming in", the refill) moves
+// after it, under "This step". The owned-only rule in the shared part is the listless sentence for every call.
+export const PROMPT_VERSION_V2 = 13;
