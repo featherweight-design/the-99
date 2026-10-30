@@ -11,6 +11,7 @@ import type { PrintedInSet } from "../../lib/sets/printed-in";
 import { SetsField, setsTriggerCount } from "../intake/sets-field";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { AFFIX_FOCUS, AFFIX_INPUT } from "../ui/text-field";
+import { Checkbox } from "../ui/checkbox";
 
 const copy = deckDescriptionCopy.limits;
 
@@ -54,6 +55,9 @@ export function TuningLimitsBox({
   onSetsChange,
   ownedOnly,
   onOwnedOnlyChange,
+  otherDecksOffered,
+  otherDecks,
+  onOtherDecksChange,
 }: {
   /** Every set that printed a commander, newest first — the same list `SetsField`'s other
    *  caller (help-me-choose's intake form) reads. */
@@ -71,6 +75,11 @@ export function TuningLimitsBox({
   onSetsChange: (next: string[]) => void;
   ownedOnly: boolean;
   onOwnedOnlyChange: (next: boolean) => void;
+  /** Include my other decks (Small items 4, item 2): offered only on a v2 run (its Apply pulls the held copies), and
+   *  shown only while `ownedOnly` is on. */
+  otherDecksOffered: boolean;
+  otherDecks: boolean;
+  onOtherDecksChange: (next: boolean) => void;
 }) {
   const [capDraft, setCapDraft] = useState(capDollars === null ? "" : String(capDollars));
   // A revalidated `capDollars` (another tab's save, or the page's own "unedited" sync in
@@ -86,9 +95,10 @@ export function TuningLimitsBox({
   return (
     <div
       data-testid="tuning-limits-box"
-      className="flex flex-col gap-[14px] rounded-[10px] border border-[color:var(--border)] bg-[color:var(--surface-sunken)] p-[14px]"
+      // From lg (1024, where all three fit beside the rail; review round 3): cap, set and own on one row (200 · 200 · up to 320), the other-decks choice a foot row across all three.
+      className="flex flex-col gap-[14px] rounded-[10px] border border-[color:var(--border)] bg-[color:var(--surface-sunken)] p-[14px] lg:grid lg:max-w-[820px] lg:grid-cols-[200px_200px_minmax(0,320px)] lg:items-end lg:gap-[16px]"
     >
-      <h3 className="m-0 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--fg-faint)]">
+      <h3 className="m-0 lg:col-span-full font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--fg-faint)]">
         {copy.heading}
       </h3>
 
@@ -132,8 +142,12 @@ export function TuningLimitsBox({
         </div>
       </div>
 
-      {/* No label row of its own — SetsField's trigger already reads "Any set" / "Set n". */}
-      <SetsField sets={sets} value={selectedSets} onChange={onSetsChange} wide={wide} copy={SETS_PANEL_COPY} />
+      <div className="flex min-w-0 flex-col gap-[6px]">
+        <span className="block font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--fg-faint)]">
+          {copy.setLabel}
+        </span>
+        <SetsField sets={sets} value={selectedSets} onChange={onSetsChange} wide={wide} copy={SETS_PANEL_COPY} triggerLook="field" />
+      </div>
 
       <div className="flex flex-col gap-[6px]">
         <span className="block font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--fg-faint)]">
@@ -141,6 +155,17 @@ export function TuningLimitsBox({
         </span>
         <OwnedOnlyToggle value={ownedOnly} onChange={onOwnedOnlyChange} />
       </div>
+
+      {/* With Any card, cards in other decks are already offered (marked, with a buy tag), so there is no choice to make. */}
+      {otherDecksOffered && ownedOnly && (
+        <label className="flex min-h-[44px] cursor-pointer items-start gap-[10px] px-[2px] pt-[4px] lg:col-span-full lg:min-h-0 lg:items-center lg:border-t lg:border-solid lg:border-[color:var(--border)] lg:pt-[12px]">
+          <Checkbox checked={otherDecks} onChange={onOtherDecksChange} className="mt-[1px]" />
+          <span className="flex flex-col gap-[3px] lg:flex-row lg:items-baseline lg:gap-[10px]">
+            <span className="text-[13px] font-medium text-[color:var(--fg)]">{copy.otherDecks}</span>
+            <span className="text-[12px] leading-[1.45] text-[color:var(--fg-muted)]">{copy.otherDecksLine}</span>
+          </span>
+        </label>
+      )}
     </div>
   );
 }

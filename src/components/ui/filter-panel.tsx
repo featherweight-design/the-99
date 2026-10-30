@@ -138,7 +138,13 @@ export function FilterPanel({
   note,
   desktopTriggerHeightPx,
   compactTriggerHeightPx,
+  triggerLook = "chip",
 }: {
+  /**
+   * `field` draws the trigger as a form field instead of a chip: full width, 40px, the cap field's box beside it, the
+   * chevron at the far edge (Small items 4, the Kept for this deck box). Every other caller keeps the chip.
+   */
+  triggerLook?: "chip" | "field";
   /**
    * Pins the wide trigger's height. The commander rack holds every control at the chassis's 34px
    * rhythm, and the trigger's own padding draws about 38. The compact trigger keeps its 44px.
@@ -1009,7 +1015,7 @@ export function FilterPanel({
             : copy.triggerAriaWithSelection(selected.length);
 
   return (
-    <div className="relative">
+    <div className={triggerLook === "field" ? "relative w-full" : "relative"}>
       <button
         ref={triggerRef}
         type="button"
@@ -1022,7 +1028,8 @@ export function FilterPanel({
         aria-controls={open ? panelId : undefined}
         aria-label={triggerAria}
         style={
-          isDesktop && desktopTriggerHeightPx
+          triggerLook === "field" ? undefined
+          : isDesktop && desktopTriggerHeightPx
             ? { height: desktopTriggerHeightPx, paddingBlock: 0 }
             : !isDesktop && compactTriggerHeightPx
               ? { height: compactTriggerHeightPx, paddingBlock: 0 }
@@ -1040,7 +1047,12 @@ export function FilterPanel({
         // chassis switches at 1000, so a `md:`-drawn trigger took its desktop
         // size across 768-999 while sitting in the compact frame — losing the
         // 44px target the compact form promises, beside controls that kept it.
-        className={[
+        className={triggerLook === "field" ? [
+          "flex h-[40px] w-full items-center justify-between gap-[8px] whitespace-nowrap rounded-[9px] px-[10px] font-sans text-[13px] border border-solid",
+          disabled
+            ? "cursor-not-allowed bg-[color:var(--surface-raised)] text-[color:var(--fg-locked)] border-[color:var(--border)]"
+            : `cursor-pointer text-[color:var(--fg)] bg-[color:var(--surface)] ${open ? "border-[color:var(--accent)]" : "border-[color:var(--border-strong)]"}`,
+        ].join(" ") : [
           "inline-flex items-center gap-[8px] whitespace-nowrap",
           isDesktop ? "rounded-lg" : "rounded-full",
           "font-sans font-medium",
@@ -1100,7 +1112,8 @@ export function FilterPanel({
             {selected.length}
           </span>
         )}
-        <Chevron open={open} />
+        {/* The field look's chevron is the board's 12px (the cap field's affix size); the chip keeps the shared size. */}
+        <Chevron open={open} style={triggerLook === "field" ? { fontSize: 12 } : undefined} />
       </button>
 
       {open &&

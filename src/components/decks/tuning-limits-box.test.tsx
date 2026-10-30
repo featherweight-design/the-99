@@ -10,6 +10,7 @@ function renderBox(overrides: Partial<Parameters<typeof TuningLimitsBox>[0]> = {
   const onCapDraftInvalid = vi.fn();
   const onSetsChange = vi.fn();
   const onOwnedOnlyChange = vi.fn();
+  const onOtherDecksChange = vi.fn();
   render(
     <TuningLimitsBox
       sets={sets}
@@ -20,10 +21,13 @@ function renderBox(overrides: Partial<Parameters<typeof TuningLimitsBox>[0]> = {
       onSetsChange={onSetsChange}
       ownedOnly={false}
       onOwnedOnlyChange={onOwnedOnlyChange}
+      otherDecksOffered
+      otherDecks={false}
+      onOtherDecksChange={onOtherDecksChange}
       {...overrides}
     />,
   );
-  return { onCapChange, onCapDraftInvalid, onSetsChange, onOwnedOnlyChange };
+  return { onCapChange, onCapDraftInvalid, onSetsChange, onOwnedOnlyChange, onOtherDecksChange };
 }
 
 describe("parseCapDollars", () => {
@@ -98,14 +102,14 @@ describe("TuningLimitsBox (H35 PR 2, \"Kept for this deck\")", () => {
     const { rerender } = render(
       <TuningLimitsBox
         sets={sets} capDollars={25} onCapChange={vi.fn()} onCapDraftInvalid={vi.fn()} selectedSets={[]} onSetsChange={vi.fn()}
-        ownedOnly={false} onOwnedOnlyChange={vi.fn()}
+        ownedOnly={false} onOwnedOnlyChange={vi.fn()} otherDecksOffered otherDecks={false} onOtherDecksChange={vi.fn()}
       />,
     );
     expect(screen.getByLabelText("Most per card")).toHaveValue("25");
     rerender(
       <TuningLimitsBox
         sets={sets} capDollars={50} onCapChange={vi.fn()} onCapDraftInvalid={vi.fn()} selectedSets={[]} onSetsChange={vi.fn()}
-        ownedOnly={false} onOwnedOnlyChange={vi.fn()}
+        ownedOnly={false} onOwnedOnlyChange={vi.fn()} otherDecksOffered otherDecks={false} onOtherDecksChange={vi.fn()}
       />,
     );
     expect(screen.getByLabelText("Most per card")).toHaveValue("50");
@@ -148,5 +152,31 @@ describe("TuningLimitsBox (H35 PR 2, \"Kept for this deck\")", () => {
     renderBox({ ownedOnly: true });
     expect(screen.getByRole("radio", { name: "Only cards I own" })).toHaveAttribute("aria-checked", "true");
     expect(screen.getByRole("radio", { name: "Any card" })).toHaveAttribute("aria-checked", "false");
+  });
+});
+
+describe("Include my other decks", () => {
+  it("is not offered on a v10 run, whose Apply has no pull", () => {
+    renderBox({ ownedOnly: true, otherDecksOffered: false });
+    expect(screen.queryByRole("checkbox", { name: /Include my other decks/ })).toBeNull();
+  });
+
+  it("is not offered with Any card", () => {
+    renderBox({ ownedOnly: false });
+    expect(screen.queryByRole("checkbox", { name: /Include my other decks/ })).toBeNull();
+  });
+
+  it("shows under Only cards I own, reads its value, and saves a press", () => {
+    const { onOtherDecksChange } = renderBox({ ownedOnly: true, otherDecks: false });
+    const box = screen.getByRole("checkbox", { name: /Include my other decks/ });
+    expect(box).not.toBeChecked();
+    expect(screen.getByText("Apply asks whether to pull each one from its deck.")).toBeInTheDocument();
+    fireEvent.click(box);
+    expect(onOtherDecksChange).toHaveBeenCalledWith(true);
+  });
+
+  it("draws a kept choice checked", () => {
+    renderBox({ ownedOnly: true, otherDecks: true });
+    expect(screen.getByRole("checkbox", { name: /Include my other decks/ })).toBeChecked();
   });
 });

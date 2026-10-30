@@ -8,6 +8,7 @@ import { loadPrices } from "../decks/price-query";
 import { readOwnedOracleIds } from "../decks/tuning-read";
 import { printedIn } from "../sets/printed-in-sql";
 import type { EvidencePack } from "./evidence";
+import { ownedCopyOffered } from "./limits";
 import { nameResolver } from "./resolve-names";
 import type { TuningResponse } from "./response-schema";
 import { validateSuggestions, type ResolvedCard } from "./validate";
@@ -90,7 +91,7 @@ export async function readResolvedRows(args: {
     return {
       ...r,
       priceCents: fact ? priceOf(fact, state) : null,
-      owned: suggestedOwned.has(r.oracleId) && (avail === undefined || avail.free > 0),
+      owned: suggestedOwned.has(r.oracleId) && ownedCopyOffered(avail?.free, limits),
     };
   });
   return rows;

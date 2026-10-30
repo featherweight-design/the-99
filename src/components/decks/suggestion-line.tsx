@@ -178,14 +178,17 @@ export function SuggestionLine({
  * An addition's collection mark: the claim marker when its copies are spoken for, the buy tag when it must be bought, or
  * both. Null for a cut, and for a free owned addition. Shared with Suggested changes v2's pick row.
  */
-export function addMarkOf(item: LineItem, newestPriceAsOf: Date | null): React.ReactNode {
+export function addMarkOf(item: LineItem, newestPriceAsOf: Date | null, opts: { ownedFromOtherDecks?: boolean } = {}): React.ReactNode {
   if (item.side !== "add") return null;
   const selfExcluded = item.inDeck;
   const marked = item.owned && item.availability !== null
     && availabilityState(item.availability, { selfExcluded }) !== "free";
   // Owned but with no copy free for it, or already overcommitted: the marker says why, and the buy
   // tag beside it says what the copy costs, the pair a Shopping row draws for a spoken-for card.
-  const needsBuy = suggestionNeedsBuy({ owned: item.owned, availability: item.availability, selfExcluded, typeLine: item.cardTypeLine });
+  // A run that offered copies held in other decks (Small items 4, item 2) never tags an owned one to buy: the player
+  // asked for cards they own, and which deck the copy leaves is Apply's question.
+  const needsBuy = !(opts.ownedFromOtherDecks && item.owned)
+    && suggestionNeedsBuy({ owned: item.owned, availability: item.availability, selfExcluded, typeLine: item.cardTypeLine });
   const marker = marked ? (
     <AvailabilityMarker bareOne
       availability={item.availability!}

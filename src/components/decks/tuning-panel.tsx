@@ -153,7 +153,7 @@ export type TuningFacts = {
   cards: number;
   intent: string | null;
   /** "Kept for this deck" (H35, PR 2). Null/empty/false until the player sets them. */
-  limits: { capCents: number | null; sets: readonly string[]; ownedOnly: boolean };
+  limits: { capCents: number | null; sets: readonly string[]; ownedOnly: boolean; otherDecks?: boolean };
   /** The deck's strategy focus, held by the shell (`useStrategyFocus`); absent or null with none. */
   focus?: StrategyKey | null;
   /** Moves each time the shell's focus write settles (`useHeldPick`'s `revision`), even onto the value it already
@@ -178,10 +178,10 @@ const STAGGER_MS = 350;
 /** Past this, the writing row grows its own mono line (STATES §3 state 7). */
 const LONG_WAIT_MS = 20_000;
 
-type LimitField = "capDollars" | "sets" | "ownedOnly";
+type LimitField = "capDollars" | "sets" | "ownedOnly" | "otherDecks";
 
 /** A limit field's value in one comparable form, as the page's facts spell it. */
-function limitWire(key: LimitField, patch: { capDollars?: number | null; sets?: readonly string[]; ownedOnly?: boolean }): string {
+function limitWire(key: LimitField, patch: { capDollars?: number | null; sets?: readonly string[]; ownedOnly?: boolean; otherDecks?: boolean }): string {
   if (key === "sets") return (patch.sets ?? []).map((code) => code.toLowerCase()).join(",");
   return String(patch[key]);
 }
@@ -346,6 +346,7 @@ export function TuningPanel({
   const [capDollars, setCapDollars] = useState(facts.limits.capCents === null ? null : facts.limits.capCents / 100);
   const [limitSets, setLimitSets] = useState(facts.limits.sets);
   const [ownedOnly, setOwnedOnly] = useState(facts.limits.ownedOnly);
+  const [otherDecks, setOtherDecks] = useState(facts.limits.otherDecks ?? false);
   const [limitsError, setLimitsError] = useState<string | null>(null);
   // "Kept for this deck" (H35, PR 2). Which fields carry an edit this panel has not yet seen
   // ACKNOWLEDGED by the server — not "does the current value differ from the last-seen prop",
@@ -361,7 +362,7 @@ export function TuningPanel({
   const [heldLimits, setHeldLimits] = useState<Partial<Record<LimitField, { sent: string; from: string; ours: readonly string[] }>>>({});
   // Every value this panel has sent per field since the field's hold began: the page echoing an
   // EARLIER one of ours (a revert queued behind a slower save) is not a change from elsewhere.
-  const sentLimitValues = useRef<Record<LimitField, Set<string>>>({ capDollars: new Set(), sets: new Set(), ownedOnly: new Set() });
+  const sentLimitValues = useRef<Record<LimitField, Set<string>>>({ capDollars: new Set(), sets: new Set(), ownedOnly: new Set(), otherDecks: new Set() });
   const propLimitRef = useRef<Record<LimitField, string> | null>(null);
   // Reconciled every render, not gated behind "did `facts.limits` change reference" — a field
   // whose dirty marker was SKIPPED while its prop changed never got a second look once that
@@ -380,6 +381,7 @@ export function TuningPanel({
     capDollars: String(wantedCapDollars),
     sets: facts.limits.sets.map((code) => code.toLowerCase()).join(","),
     ownedOnly: String(facts.limits.ownedOnly),
+    otherDecks: String(facts.limits.otherDecks ?? false),
   };
   const caughtUp = (Object.keys(heldLimits) as LimitField[]).filter(
     (key) => {
@@ -410,6 +412,7 @@ export function TuningPanel({
   if (!dirtyLimitFields.has("capDollars") && capDollars !== wantedCapDollars) setCapDollars(wantedCapDollars);
   if (!dirtyLimitFields.has("sets") && limitSets !== facts.limits.sets) setLimitSets(facts.limits.sets);
   if (!dirtyLimitFields.has("ownedOnly") && ownedOnly !== facts.limits.ownedOnly) setOwnedOnly(facts.limits.ownedOnly);
+  if (!dirtyLimitFields.has("otherDecks") && otherDecks !== (facts.limits.otherDecks ?? false)) setOtherDecks(facts.limits.otherDecks ?? false);
   const headingRef = useRef<HTMLHeadingElement>(null);
   // Each press takes a token, so a superseded press cannot land over what the reader did next.
   const token = useRef(0);
@@ -481,7 +484,7 @@ export function TuningPanel({
   // 2). Two edits to DIFFERENT fields inside the same pause merge into one request; a save
   // already dispatched when a new edit lands is never raced — `limitsChain` serializes every
   // send, and the next one starts only once the last has settled.
-  type LimitsPatch = { capDollars?: number | null; sets?: readonly string[]; ownedOnly?: boolean };
+  type LimitsPatch = { capDollars?: number | null; sets?: readonly string[]; ownedOnly?: boolean; otherDecks?: boolean };
   const saveLimitsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingLimits = useRef<LimitsPatch | null>(null);
   const limitsChain = useRef<Promise<unknown>>(Promise.resolve());
@@ -497,7 +500,7 @@ export function TuningPanel({
   // (pre-open review round 3). Checking "is this key still in `pendingLimits`" only caught an
   // edit queued in the SAME unsent patch; a newer edit that had already moved into its OWN,
   // separately-chained send was invisible to that check.
-  const limitFieldRevision = useRef<Record<LimitField, number>>({ capDollars: 0, sets: 0, ownedOnly: 0 });
+  const limitFieldRevision = useRef<Record<LimitField, number>>({ capDollars: 0, sets: 0, ownedOnly: 0, otherDecks: 0 });
   const sendLimits = useCallback(
     (patch: LimitsPatch, revisionAtSend: Partial<Record<LimitField, number>>): Promise<boolean> => {
       const keys = Object.keys(patch) as LimitField[];
@@ -1385,6 +1388,12 @@ export function TuningPanel({
         onOwnedOnlyChange={(next) => {
           setOwnedOnly(next);
           saveLimits({ ownedOnly: next });
+        }}
+        otherDecksOffered={v2 !== null}
+        otherDecks={otherDecks}
+        onOtherDecksChange={(next) => {
+          setOtherDecks(next);
+          saveLimits({ otherDecks: next });
         }}
       />
       {limitsError ? <MutationError message={limitsError} /> : null}

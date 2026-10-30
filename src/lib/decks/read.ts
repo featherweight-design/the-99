@@ -250,7 +250,7 @@ export type DeckDetail = {
   intentSeeded: boolean;
   /** "Kept for this deck" (H35, PR 2). Null/empty/false until the player sets them. Optional on
    *  the type — not every caller builds this field by hand — but `getDeckDetail` always sets it. */
-  limits?: { capCents: number | null; sets: readonly string[]; ownedOnly: boolean };
+  limits?: { capCents: number | null; sets: readonly string[]; ownedOnly: boolean; otherDecks?: boolean };
   /**
    * How many of each note-bearing kind this deck's list already holds, counted by COPIES.
    *
@@ -312,6 +312,7 @@ export function deckDetailReads(deckId: string, userId: string) {
         tuningCapCents: decks.tuningCapCents,
         tuningSets: decks.tuningSets,
         tuningOwnedOnly: decks.tuningOwnedOnly,
+        tuningOtherDecks: decks.tuningOtherDecks,
       })
       .from(decks)
       .where(ownDeck),
@@ -606,6 +607,7 @@ export async function getDeckDetail(
       capCents: deck.tuningCapCents,
       sets: deck.tuningSets ?? [],
       ownedOnly: deck.tuningOwnedOnly ?? false,
+      otherDecks: deck.tuningOtherDecks ?? false,
     },
     noteCounts: countNoteKinds(cardRows, commanderRows, bracketFlags),
     printingPicks: deckPrintingsEnabled(env)

@@ -132,7 +132,7 @@ export type V2RunReport = {
   /** `requestHash` of N, the request and the bracket choice: half of "same request as your last run" (G4). */
   requestHash: string;
   /** The deck's limits as this run read them, so history shows what bound an old run. */
-  restrictions: { capCents: number | null; sets: readonly string[]; ownedOnly: boolean };
+  restrictions: { capCents: number | null; sets: readonly string[]; ownedOnly: boolean; otherDecks?: boolean };
   /** A list is in when its last call ended (H1). */
   in: { add: boolean; cut: boolean };
   /** A refill call is out for the list (the wait's 45-second note). */
