@@ -11,7 +11,7 @@ const build = (over: Partial<Parameters<typeof buildInviteTree>[0]> = {}) =>
     ownerId: "u_hugh",
     balances: new Map([["u_hugh", 37], ["u_jun", 2]]),
     open: [],
-    flyerCodes: [{ id: "c1", code: "MOX4QK", label: "Mox Boston", createdBy: "u_hugh", createdAt: day(30) }],
+    flyerCodes: [{ id: "c1", code: "MOX4QK", label: "Mox Boston", capacity: 50, createdBy: "u_hugh", createdAt: day(30) }],
     flyerEdges: [
       { codeId: "c1", invitee: "u_dev", joinedAt: day(1, 11) },
       { codeId: "c1", invitee: "u_jun", joinedAt: day(31) },
@@ -42,6 +42,8 @@ describe("the tree's flyer node", () => {
     const t = build();
     expect(t.roots.map((r) => (r.kind === "account" ? r.name : r.kind))).toEqual(["Hugh"]);
     expect(t.accounts).toBe(5);
+    // The header total counts friend invites only: the two flyer sign-ups hang under their code, not under an inviter.
+    expect(t.invited).toBe(2);
     const none = build({ flyerEdges: [] });
     expect(flattenTree(none.roots).some((r) => r.kind === "flyer")).toBe(false);
   });

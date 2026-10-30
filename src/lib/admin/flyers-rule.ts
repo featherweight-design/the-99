@@ -74,7 +74,7 @@ export function flyersView(read: FlyersRead, now: Date): FlyersView {
         state,
         taken: c.taken,
         figure: String(c.taken),
-        of: copy.used(c.taken).replace(/^\d+ /, "") + (state === "full" ? ` · ${copy.full}` : ""),
+        of: copy.used(c.taken, c.capacity).replace(/^\d+ /, "") + (state === "full" ? ` · ${copy.full}` : ""),
         percent: Math.min(100, Math.round((c.taken / c.capacity) * 100)),
         made: fmtDay(c.createdAt),
         revoked: c.revokedAt === null ? null : copy.revokedOn(fmtDay(c.revokedAt)),

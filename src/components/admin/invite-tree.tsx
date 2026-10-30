@@ -88,7 +88,7 @@ function AccountRow({ row }: { row: Extract<TreeRow, { kind: "account" }> }) {
 /** A flyer code's node (Admin-Desktop A1): the accent diamond, its code, its sign-ups, and no friend link to its maker. */
 function FlyerRow({ row }: { row: Extract<TreeRow, { kind: "flyer" }> }) {
   const href = `/admin/invites/flyers/${row.code}`;
-  const taken = flyerAdminCopy.used(row.taken);
+  const taken = flyerAdminCopy.used(row.taken, row.capacity);
   return (
     <div data-node={`flyer-${row.code}`} className={ROW}>
       <Rails cells={row.cells} />

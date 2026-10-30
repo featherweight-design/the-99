@@ -23,7 +23,7 @@ type AccountNode = { kind: "account"; id: string; name: string; initials: string
 type DeletedNode = { kind: "deleted"; key: string; joined: string | null; children: TreeNode[] };
 type WaitingNode = { kind: "waiting"; id: string; how: string; email: string; returns: string };
 /** A flyer code that took sign-ups, under the account that made it; its sign-ups are its children (no friend link to anyone). */
-type FlyerNode = { kind: "flyer"; key: string; code: string; store: string; taken: number; children: TreeNode[] };
+type FlyerNode = { kind: "flyer"; key: string; code: string; store: string; taken: number; capacity: number; children: TreeNode[] };
 export type TreeNode = AccountNode | DeletedNode | WaitingNode | FlyerNode;
 
 export type TreeRow =
@@ -83,7 +83,7 @@ export function buildInviteTree(input: {
       .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime() || a.id.localeCompare(b.id))
       .map((c) => {
         const ups = [...signUpsOf.get(c.id)!].sort((a, b) => a.joinedAt.getTime() - b.joinedAt.getTime() || (rank.get(a.invitee) ?? 0) - (rank.get(b.invitee) ?? 0));
-        return { kind: "flyer", key: `flyer-${c.id}`, code: c.code, store: c.label, taken: ups.length, children: ups.map((e) => account(e.invitee)) };
+        return { kind: "flyer", key: `flyer-${c.id}`, code: c.code, store: c.label, taken: ups.length, capacity: c.capacity, children: ups.map((e) => account(e.invitee)) };
       });
 
   let waitingTotal = 0;
@@ -125,14 +125,16 @@ export function buildInviteTree(input: {
     };
   }
 
-  const invitees = new Set([...input.edges.flatMap((e) => (e.invitee === null ? [] : [e.invitee])), ...flyerEdges.map((e) => e.invitee)]);
+  const edgeInvitees = new Set(input.edges.flatMap((e) => (e.invitee === null ? [] : [e.invitee])));
+  // Flyer sign-ups keep an account off the roots (they hang under their code) but are not friend invites, so they stay out of the header total.
+  const invitees = new Set([...edgeInvitees, ...flyerEdges.map((e) => e.invitee)]);
   const roots: TreeNode[] = order.filter((id) => !invitees.has(id)).map(account);
   const orphans = childrenOf(null);
   if (orphans.length > 0) roots.push({ kind: "deleted", key: "deleted-root", joined: null, children: orphans });
   // A cycle cannot form (each account joins once, after its inviter), but an id never reached stays visible.
   for (const id of order) if (!seen.has(id)) roots.push(account(id));
 
-  return { roots, accounts: seen.size, invited: invitees.size, waiting: waitingTotal };
+  return { roots, accounts: seen.size, invited: edgeInvitees.size, waiting: waitingTotal };
 }
 
 /** The tree cut to the accounts a search names, with the line to each from its root kept. An empty query keeps all. */

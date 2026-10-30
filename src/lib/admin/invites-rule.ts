@@ -23,7 +23,7 @@ export type OpenRow = HoldingRow & { userId: string };
 export type Edge = { inviter: string | null; invitee: string | null; kind: InviteKind; joinedAt: Date };
 
 /** A flyer code with at least one sign-up, as the tree draws its node under whoever made it. */
-export type FlyerNodeRow = { id: string; code: string; label: string; createdBy: string; createdAt: Date };
+export type FlyerNodeRow = { id: string; code: string; label: string; capacity: number; createdBy: string; createdAt: Date };
 /** One sign-up a flyer code took (a spent claim): the code and the new account. Not an invite edge: no friend link. */
 export type FlyerEdge = { codeId: string; invitee: string; joinedAt: Date };
 

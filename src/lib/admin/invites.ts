@@ -23,7 +23,7 @@ const toEdge = (e: RawEdge): Edge => ({ ...e, joinedAt: utc(e.joinedAt)! });
 type RawFlyer = { userId: string; holdsUntil: string };
 const toFlyer = (f: RawFlyer): OpenRow => ({ ...flyerHoldRow(utc(f.holdsUntil)!), userId: f.userId });
 
-type RawFlyerCode = { id: string; code: string; label: string; createdBy: string; createdAt: string };
+type RawFlyerCode = { id: string; code: string; label: string; capacity: number; createdBy: string; createdAt: string };
 type RawFlyerEdge = { codeId: string; invitee: string; joinedAt: string };
 
 /** `flyerCodes` and `flyerEdges` are the SPENT claims: the codes that took a sign-up and the accounts they made. */
@@ -50,7 +50,7 @@ export async function readEveryInvite(): Promise<EveryInvite> {
     coalesce((select json_agg(json_build_object('userId', c.created_by, 'holdsUntil', f.holds_until))
       from flyer_claims f join flyer_codes c on c.id = f.code_id where f.state in ('open', 'proven')), '[]'::json) as flyer,
     coalesce((select json_agg(json_build_object(
-      'id', c.id, 'code', c.code, 'label', c.label, 'createdBy', c.created_by, 'createdAt', c.created_at
+      'id', c.id, 'code', c.code, 'label', c.label, 'capacity', c.capacity, 'createdBy', c.created_by, 'createdAt', c.created_at
     )) from flyer_codes c where exists (select 1 from flyer_claims s where s.code_id = c.id and s.state = 'spent')), '[]'::json) as "flyerCodes",
     coalesce((select json_agg(json_build_object('codeId', s.code_id, 'invitee', s.user_id, 'joinedAt', s.resolved_at))
       from flyer_claims s where s.state = 'spent'), '[]'::json) as "flyerEdges",
