@@ -52,12 +52,12 @@ export function carryOverDecision(input: {
 
 /**
  * The stored row a reader or a carry-over works from, among a file's rows at the owner's role basis.
- * The owner's own contract wins while its row is current. Otherwise the FALLBACK contract's row stands in
- * (the pre-batch period, `synopsisPreconFallbackContract`), but only while ITS OWN `current` flag still
- * holds: the contract bump does not touch that flag (build and copy re-check only the contract they write),
- * so a 12 row rejected earlier for moved inputs stays rejected and one that was current stays current. The
- * list is still decided by `carryOverDecision`. With neither, the owner's own row (or none) is returned
- * and the decision gives its usual reason.
+ * A file with a row at the owner's contract uses it, current or not (a catalog change that marked it not
+ * current is not undone by an older row). Only a file with NO such row falls back to the FALLBACK
+ * contract's row (the pre-batch period, `synopsisPreconFallbackContract`), and that row keeps its own
+ * `current` flag: the contract bump does not touch it, so one rejected earlier stays rejected (its Overview
+ * is not shown or carried, `carryOverDecision`) while its stored reading is still offered, judged on its own
+ * freshness (`reading-rule.ts`). The list is decided by `carryOverDecision` as always.
  */
 export function pickOverviewRow<R extends PreconOverviewHead>(
   rows: readonly R[],
@@ -65,10 +65,9 @@ export function pickOverviewRow<R extends PreconOverviewHead>(
   fallback: number | null,
 ): { row: R | null; viaFallback: boolean } {
   const own = rows.find((r) => r.contractVersion === contract) ?? null;
-  if (own?.current) return { row: own, viaFallback: false };
+  if (own) return { row: own, viaFallback: false };
   const old = fallback === null ? null : rows.find((r) => r.contractVersion === fallback) ?? null;
-  if (old?.current) return { row: old, viaFallback: true };
-  return { row: own, viaFallback: false };
+  return { row: old, viaFallback: old !== null };
 }
 
 /**
