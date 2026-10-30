@@ -32,6 +32,7 @@ vi.mock("./access", () => ({ resolveFriend: m.resolveFriend }));
 vi.mock("../decks/read", () => ({ listDecksWithStats: m.listDecksWithStats, getDeckDetail: m.getDeckDetail }));
 vi.mock("../switches/snapshot", () => ({ resolveSwitchEnv: m.resolveSwitchEnv }));
 
+import { named } from "../person-name/mint";
 import { loadFriendDeck, loadFriendDecks } from "./decks";
 
 const ON = { FRIEND: "env", SOCIAL_FRIENDS_ENABLED: "true" };
@@ -71,7 +72,7 @@ describe("loadFriendDecks", () => {
   it("returns name, commander, status and count, and nothing else of a deck", async () => {
     const [deck] = (await loadFriendDecks("user_viewer", "x"))!;
     expect(deck).toEqual({
-      id: null, name: "Thopter Factory", commanderName: "Sai, Master Thopterist", partnerName: null, colorIdentity: ["U"],
+      id: null, name: named("Thopter Factory"), commanderName: "Sai, Master Thopterist", partnerName: null, colorIdentity: ["U"],
       artCropUri: "https://cards.example/sai.jpg", status: "To buy", built: 99, bodySize: 99, toBuy: 8,
     });
     expect(JSON.stringify(deck)).not.toMatch(/deck-secret-id|private note|Shelf/);
