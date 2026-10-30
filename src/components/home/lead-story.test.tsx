@@ -147,3 +147,57 @@ describe("LeadSlot", () => {
     expect(container.querySelector("[data-lead-story]")).toBeNull();
   });
 });
+
+describe("LeadStory, a Wizards post (announcements board Lead-Story)", () => {
+  const URL_OK = "https://magic.wizards.com/en/news/announcements/jaws";
+  const POST: FeedView = {
+    ...LEAD, key: "post:jaws", kind: "secret-lair", card: null, friend: null, ask: undefined, outbound: URL_OK,
+    post: { title: "Secret Lair x JAWS is live", summary: "Five full-art cards.", hero: "https://images.ctfassets.net/jaws.jpg", lists: null },
+  };
+
+  it("draws the hero landscape (a phone band at -1.5deg, 272x153 at -3deg from md) over its blurred hero, never the card", () => {
+    const { container } = render(<LeadStory item={POST} now={NOW} />);
+    const hero = container.querySelector("[data-lead-hero]")!;
+    expect(hero.className).toMatch(/(^|\s)h-\[164px\](\s|$)/);
+    expect(hero.className).toContain("-rotate-[1.5deg]");
+    expect(hero.className).toMatch(/md:h-\[153px\] md:w-\[272px\] md:-rotate-3/);
+    expect(hero.querySelector("img")!.getAttribute("src")).toBe("https://images.ctfassets.net/jaws.jpg");
+    expect(container.querySelector("[data-commander-thumb]")).toBeNull();
+    expect(container.querySelector("[data-lead-blur]")).not.toBeNull();
+    // On a phone the hero stands above the words; from md beside them.
+    expect(container.querySelector("[data-lead-story]")!.className).toMatch(/flex-col .*md:flex-row/);
+  });
+
+  it("presses out to the post with the filled button, its words the post's own", () => {
+    render(<LeadStory item={POST} now={NOW} />);
+    expect(screen.getByRole("heading", { level: 3 }).textContent).toBe("Secret Lair x JAWS is live");
+    expect(screen.getByText("Five full-art cards.")).toBeTruthy();
+    const press = screen.getByRole("link");
+    expect(press).toHaveAttribute("href", URL_OK);
+    expect(press).toHaveAttribute("target", "_blank");
+    expect(press.className).toContain("bg-[color:var(--accent)]");
+    expect(press.textContent).toMatch(/^Read on Wizards/);
+  });
+
+  it("draws its ✕ on a post (feed_dismissals admits post: keys)", () => {
+    render(<LeadStory item={POST} now={NOW} onDismiss={() => {}} />);
+    expect(screen.getByRole("button", { name: /Hide/ })).toBeInTheDocument();
+  });
+
+  it("drops the hero band, and the blur, when the hero fails or there is none", () => {
+    const { container } = render(<LeadStory item={POST} now={NOW} />);
+    fireEvent.error(container.querySelector("[data-lead-hero] img")!);
+    expect(container.querySelector("[data-lead-hero]")).toBeNull();
+    expect(container.querySelector("[data-lead-blur]")).toBeNull();
+    cleanup();
+    const none = render(<LeadStory item={{ ...POST, post: { ...POST.post!, hero: null } }} now={NOW} />);
+    expect(none.container.querySelector("[data-lead-hero]")).toBeNull();
+    expect(none.container.querySelector("img")).toBeNull();
+  });
+
+  it("gives a decklists lead its mono lists line and Read the post", () => {
+    const { container } = render(<LeadStory item={{ ...POST, kind: "commander-decklists", post: { ...POST.post!, lists: { n: 3, of: 5 } } }} now={NOW} />);
+    expect(container.querySelector("[data-lead-lists]")!.textContent).toBe("3 of 5 lists so far");
+    expect(screen.getByRole("link").textContent).toMatch(/^Read the post/);
+  });
+});

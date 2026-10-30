@@ -16,7 +16,7 @@ import { db } from "../../db";
 import { pushOutbox, pushSubscriptions, userPrefs } from "../../db/schema";
 import { catalogBranch, type CatalogGate } from "../feed/read";
 import { CATALOG_KINDS, DEFAULT_ON_KINDS, type CatalogKind, type FeedKind } from "../feed/kinds";
-import { catalogBatchKey, catalogPushKinds, parseCatalogKey } from "./catalog-rule";
+import { PUSH_CATALOG_KINDS, catalogBatchKey, catalogPushKinds, parseCatalogKey } from "./catalog-rule";
 import { pushKindEnabledAt } from "./kind-gate";
 
 type Q = Pick<typeof db, "execute">;
@@ -27,7 +27,7 @@ type Q = Pick<typeof db, "execute">;
  * still hears a default-on kind; for a kind that is not default on, a missing row reads as off, as before. `defaultOn`
  * is the default-on set, a parameter only so a test can render the arm no catalog kind takes yet.
  */
-export function catalogReadersQuery(kinds: readonly CatalogKind[] = CATALOG_KINDS, defaultOn: readonly FeedKind[] = DEFAULT_ON_KINDS): SQL {
+export function catalogReadersQuery(kinds: readonly CatalogKind[] = PUSH_CATALOG_KINDS, defaultOn: readonly FeedKind[] = DEFAULT_ON_KINDS): SQL {
   const on = sql.join(kinds.map((k) => sql`${pushKindEnabledAt(sql`cup`, sql`${k}::text`, defaultOn)} is not null`), sql` or `);
   return sql`select distinct cps.user_id as user_id
     from ${pushSubscriptions} cps

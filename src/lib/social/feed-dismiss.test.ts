@@ -21,9 +21,10 @@ describe("parseDismissKey", () => {
     expect(parseDismissKey(`ask:${ID}`)).toEqual({ kind: "ask", requestId: ID });
     expect(parseDismissKey("set:dsk")).toEqual({ kind: "catalog", key: "set:dsk" });
     expect(parseDismissKey("precon:DuskmournHouseOfHorrorJumpScare_DSC")).toEqual({ kind: "catalog", key: "precon:DuskmournHouseOfHorrorJumpScare_DSC" });
+    expect(parseDismissKey("post:4bqFzQ1x2y3Z")).toEqual({ kind: "catalog", key: "post:4bqFzQ1x2y3Z" });
   });
   it("refuses anything else", () => {
-    for (const bad of [null, 3, "", "item:nope", "ask:", "set:", `precon:${"x".repeat(201)}`, "set:a\nb", "card:abc", `item:${ID}x`]) {
+    for (const bad of [null, 3, "", "item:nope", "ask:", "set:", `precon:${"x".repeat(201)}`, "set:a\nb", "post:", "card:abc", `item:${ID}x`]) {
       expect(parseDismissKey(bad)).toBeNull();
     }
   });

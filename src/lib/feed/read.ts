@@ -12,6 +12,8 @@
   compared with (a reader who opts in while a set is upcoming still hears of its release).
  * - New precon: the same for a `precons` row (the stamp's key is its `file_name`), released by today, no twin. A
  *   precon is listed by MTGJSON only at release, so this is the released one; announced sets stay on /decks/precons.
+ * - Wizards' announcements (Secret Lair, Commander decklists, Wizards news): a `wizards_announcements` post of that
+ *   kind that is not the BASELINE, at its `first_seen_at`, keyed `post:<contentful id>`.
  * - The stored kinds, from the stored items, with the live friend grant re-joined (`lib/social/feed-items.ts`).
  *
  * Every item is inside the window (`FEED_WINDOW_DAYS`) and at or before `now`. Unseen is created after the cursor:
@@ -20,13 +22,14 @@
 import { sql, type SQL } from "drizzle-orm";
 
 import { db } from "../../db";
-import { catalogFirstSeen, feedDismissals, precons, sets, userPrefs } from "../../db/schema";
+import { catalogFirstSeen, feedDismissals, precons, sets, userPrefs, wizardsAnnouncementDecklists, wizardsAnnouncements } from "../../db/schema";
 import { RELEASE_SET_TYPES } from "../catalog/index-due";
 import { answerOpened, storedFeedBranch } from "../social/feed-items";
 import { unseenAnswersCount } from "../social/spare-requests";
 import { answerOf, type Answer } from "../social/spare-request-rules";
 import { availableFeedKinds } from "./flag";
-import { CATALOG_KINDS, feedOrder, isStoredKind, windowFloor, type CatalogKind, type FeedKind, type StoredKind } from "./kinds";
+import { kindEnabledAt } from "./kind-gate";
+import { CATALOG_KINDS, feedOrder, isAnnouncementKind, isStoredKind, windowFloor, type AnnouncementFeedKind, type CatalogKind, type FeedKind, type StoredKind } from "./kinds";
 
 type Executor = Pick<typeof db, "execute">;
 
@@ -39,13 +42,16 @@ export type FeedCursor = "feed_seen_at" | "friends_seen_at";
 /**
  * What a catalog branch is filtered by, beyond the arrival rules every reader shares: `moment` is the item's time (the
  * later of the stamp and the release day), `prefs` the reader's `user_prefs` row (LEFT joined: a reader with no row
- * reads every column null, so the gate decides, and a stamp-only gate reads nothing for them), `id` the set's code or the
- * precon's file name.
+ * reads every column null, so the gate decides), `id` the set's code, the precon's file name or the post's Contentful id.
  */
 export type CatalogGate = (at: { moment: SQL; prefs: SQL; id: SQL }) => SQL;
 
-/** The feed's gate: newer than the kind's own `enabledAt` in `user_prefs.feed_kinds`. */
-const feedGate = (kind: CatalogKind): CatalogGate => ({ moment, prefs }) => sql`${moment} > (${prefs}.feed_kinds ->> ${sql.raw(`'${kind}'`)})::timestamptz`;
+/**
+ * The feed's gate: newer than the kind's `enabledAt` (`kindEnabledAt`): its stamp in `user_prefs.feed_kinds`, or always
+ * for a default-on kind the reader never declined, so Wizards' announcements reach a reader who never chose (and one
+ * with no prefs row at all). A kind that is neither stamped nor default on reads nothing.
+ */
+const feedGate = (kind: CatalogKind): CatalogGate => ({ moment, prefs }) => sql`${moment} > ${kindEnabledAt(prefs, sql`${kind}::text`)}`;
 
 /**
  * One catalog kind's branch: its arrivals (`catalog_first_seen`, not the baseline, released by today; a set of a release
@@ -53,6 +59,7 @@ const feedGate = (kind: CatalogKind): CatalogGate => ({ moment, prefs }) => sql`
  * (`lib/push/catalog.ts`), so a push names exactly what Home lists.
  */
 export function catalogBranch(kind: CatalogKind, viewerId: string, now: Date, gate: CatalogGate): SQL {
+  if (isAnnouncementKind(kind)) return announcementBranch(kind, viewerId, gate);
   const today = utcDay(now);
   if (kind === "new-set") {
     const moment = sql`greatest(sf.first_seen_at at time zone 'UTC', s.released_at::timestamp at time zone 'UTC')`;
@@ -86,9 +93,30 @@ export function catalogBranch(kind: CatalogKind, viewerId: string, now: Date, ga
 }
 
 /**
+ * One Announcements kind's posts: not the baseline (the back catalogue the first run found), at the moment the ingest
+ * first saw the post. `data` carries what the row draws (title, excerpt, hero, the post's address, the lists promised and
+ * the lists stored), so Home needs no lookup of its own. The lists' count is a correlated subquery: aliased and qualified.
+ */
+function announcementBranch(kind: AnnouncementFeedKind, viewerId: string, gate: CatalogGate): SQL {
+  const moment = sql`wa.first_seen_at`;
+  return sql`select wa.kind as kind, 'post:' || wa.contentful_id as key,
+      ${moment} as created_at,
+      null::text as code, wa.title as name, null::text as file_name,
+      null::uuid as oracle_id, null::text as variant_id, null::text as friend_public_id, null::text as friend_name,
+      jsonb_build_object('title', wa.title, 'excerpt', wa.excerpt, 'hero', wa.hero_image_url, 'url', wa.url,
+        'promised', wa.promised_decks,
+        'lists', (select count(*) from ${wizardsAnnouncementDecklists} wad where wad.announcement_id = wa.id)::int) as data
+    from ${wizardsAnnouncements} wa
+    left join ${userPrefs} aup on aup.user_id = ${viewerId}
+    where wa.kind = ${kind}::text and wa.baseline = false
+      and not exists (select 1 from ${feedDismissals} afd where afd.user_id = ${viewerId} and afd.key = 'post:' || wa.contentful_id)
+      and ${gate({ moment, prefs: sql`aup`, id: sql`wa.contentful_id` })}`;
+}
+
+/**
  * The union of every branch for these kinds, or null when none is left. Every branch LEFT JOINS the reader's own prefs
- * row. The catalog branches' feed gate is the kind's stamp alone, so a reader with no row reads nothing of those; the
- * stored branch's is `kindEnabledAt`, so a default-on kind reaches a reader with no row (spare requests G4).
+ * row. Every branch's feed gate is `kindEnabledAt`, so a default-on kind (a spare request, G4; Wizards' announcements)
+ * reaches a reader with no row, and any other kind needs its stamp.
  */
 export function feedUnion(viewerId: string, kinds: readonly FeedKind[], now: Date): SQL | null {
   const branches: SQL[] = [];
@@ -152,9 +180,13 @@ export function markSeenQuery(viewerId: string, kinds: readonly FeedKind[], now:
 
 type FeedBase = { key: string; createdAt: Date; unseen: boolean };
 
+/** A Wizards post as the feed carries it: `lists` is the stored lists' count, `promised` the post's own count of them. */
+export type FeedPost = { title: string; excerpt: string | null; hero: string | null; url: string; promised: number | null; lists: number };
+
 export type FeedItem =
   | (FeedBase & { kind: "new-set"; code: string; name: string; href: string })
   | (FeedBase & { kind: "new-precon"; fileName: string; name: string; setCode: string; href: string })
+  | (FeedBase & { kind: AnnouncementFeedKind; post: FeedPost })
   | (FeedBase & {
       kind: StoredKind;
       oracleId: string | null;
@@ -188,6 +220,7 @@ export function toFeedItem(r: FeedRow): FeedItem {
   if (r.kind === "new-precon") {
     return { ...base, kind: r.kind, fileName: r.file_name!, name: r.name!, setCode: r.code!, href: `/decks/precons/${encodeURIComponent(r.file_name!)}` };
   }
+  if (isAnnouncementKind(r.kind)) return { ...base, kind: r.kind, post: toPost(r.data ?? {}, r.name ?? "") };
   return {
     ...base,
     kind: r.kind,
@@ -197,6 +230,14 @@ export function toFeedItem(r: FeedRow): FeedItem {
     data: r.data ?? {},
     answer: r.kind === "spare-request" ? answerOf(r.data) : null,
   };
+}
+
+const text = (v: unknown): string | null => (typeof v === "string" && v.length > 0 ? v : null);
+const count = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
+
+/** A post's `data`, read defensively (it is jsonb): a missing excerpt or hero is null, the lists' count 0. */
+export function toPost(d: Record<string, unknown>, name: string): FeedPost {
+  return { title: text(d.title) ?? name, excerpt: text(d.excerpt), hero: text(d.hero), url: text(d.url) ?? "", promised: count(d.promised), lists: count(d.lists) ?? 0 };
 }
 
 /** The reader's feed: every item in the window, waiting on you first, then newest, each with `unseen`. */

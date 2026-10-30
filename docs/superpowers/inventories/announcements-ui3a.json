@@ -1,0 +1,182 @@
+{
+  "feature": "Announcements UI 3a: Wizards' posts (Secret Lair, Commander decklists, Wizards news) on Home behind ANNOUNCEMENTS_ENABLED (handoff design_handoff_the99_announcements: Home-Rows, Lead-Story, Row-States, Offer frame 6)",
+  "clearAbout": true,
+  "note": "Run on a SCRATCH branch migrated through 0195, with HOME_FEED_ENABLED and ANNOUNCEMENTS_ENABLED on for the account (flag_overrides, scope user). Each row names its `phase`: the database state it needs, set before that phase and again before each width (one width per run), because a Home visit moves feed_seen_at and the dismiss row writes a dismissal. The runner does not read `phase`; run the phases one at a time with a filtered copy of this file. Phases: `unseen` = one baseline=false post of each kind (decklists promising 5 with 3 stored), feed_seen_at null; `row-states` = a long title and summary (Secret Lair), no hero (Wizards news), a hero URL that 404s (Secret Lair), all seen; `lists` = a decklists post at 3 of 5 and one at 5 of 5, seen; `sl-lead` = a Secret Lair and a Wizards news post, unseen; `decklists-lead` = a 5-of-5 decklists post and a Secret Lair post, unseen; `news-only` = two Wizards news posts, unseen; `quiet` = no post in the window and Secret Lair declined (feed_kinds_declined), so the quiet line names the kinds still on; `switch-off` = the `unseen` posts with ANNOUNCEMENTS_ENABLED off for the account (allow the 30-second override memo to pass). Widths are 390 and 1300 drawn tall (2000 and 1200) so What's new below the decks is in frame without fullPage, where the fixed tab bar lands mid-page.",
+  "out": "contact-sheets/announcements-ui3a",
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 2000
+    },
+    {
+      "label": "desktop",
+      "width": 1300,
+      "height": 1200
+    }
+  ],
+  "rows": [
+    {
+      "id": "home-unseen",
+      "phase": "unseen",
+      "label": "Home: the three kinds unseen; Commander decklists leads (3 of 5 lists), Secret Lair and Wizards news rows with the diamond",
+      "view": "src/components/home/whats-new.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "[data-feed-item=secret-lair][data-unseen]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "home-seen",
+      "phase": "unseen",
+      "label": "Home, the second visit: all three seen, no lead, three rows without the diamond",
+      "view": "src/components/home/whats-new.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "[data-feed-item=commander-decklists]:not([data-unseen])",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "settings-on",
+      "phase": "unseen",
+      "label": "/settings with ANNOUNCEMENTS_ENABLED on: Secret Lair drops, Commander decklists and Other Wizards news after New precons, no push box on the three",
+      "view": "src/components/settings/news-section.tsx",
+      "steps": [
+        {
+          "goto": "/settings",
+          "wait": "#settings-news",
+          "settle": 1500
+        }
+      ],
+      "fullPage": true
+    },
+    {
+      "id": "home-row-states",
+      "phase": "row-states",
+      "label": "Home: a long title (wraps) and summary (two lines), no hero (the plate), a failed hero (the plate)",
+      "view": "src/components/feed/feed-item.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "[data-feed-post-plate]",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "home-dismiss",
+      "phase": "row-states",
+      "label": "Home: the Wizards news row's ✕ pressed, the row gone",
+      "view": "src/components/feed/feed-item.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "[data-feed-item=wizards-news] [data-feed-dismiss]",
+          "settle": 2000
+        },
+        {
+          "click": "[data-feed-item=wizards-news] [data-feed-dismiss]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "home-lists",
+      "phase": "lists",
+      "label": "Home: Commander decklists rows at 3 of 5 lists so far and All 5 lists, seen",
+      "view": "src/components/feed/feed-item.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "[data-feed-lists]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "home-sl-lead",
+      "phase": "sl-lead",
+      "label": "Home: Secret Lair leads (hero landscape over its blur, the filled Read on Wizards), Wizards news a row",
+      "view": "src/components/home/lead-story.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "[data-lead-hero]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "home-decklists-lead",
+      "phase": "decklists-lead",
+      "label": "Home: Commander decklists leads over Secret Lair (All 5 lists), Secret Lair a row",
+      "view": "src/components/home/lead-story.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "[data-lead-lists]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "home-news-only",
+      "phase": "news-only",
+      "label": "Home: only Wizards news, unseen; it never leads, so no lead story",
+      "view": "src/components/home/whats-new.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "[data-feed-item=wizards-news][data-unseen]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "home-quiet",
+      "phase": "quiet",
+      "label": "Home: the quiet line with Secret Lair off, naming only the kinds still on in their own casing",
+      "view": "src/components/home/whats-new.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "[data-feed-quiet]",
+          "settle": 2000
+        }
+      ]
+    },
+    {
+      "id": "home-switch-off",
+      "phase": "switch-off",
+      "label": "Home with ANNOUNCEMENTS_ENABLED off: no Wizards rows and no Wizards lead",
+      "view": "src/components/home/whats-new.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "[data-whats-new]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "settings-off",
+      "phase": "switch-off",
+      "label": "/settings with ANNOUNCEMENTS_ENABLED off: the three Wizards rows absent",
+      "view": "src/components/settings/news-section.tsx",
+      "steps": [
+        {
+          "goto": "/settings",
+          "wait": "#settings-news",
+          "settle": 1500
+        }
+      ],
+      "fullPage": true
+    }
+  ]
+}

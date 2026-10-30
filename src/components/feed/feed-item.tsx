@@ -4,9 +4,13 @@
 // shape, never the art crop, or the shipped two-card-combo mark), a mono kicker naming the kind with the item's age,
 // one title, one line, one press. The whole row is the press (a stretched link or button); its label names where it
 // goes. Unseen items carry the accent diamond; a seen kicker steps down to `--fg-locked`.
+//
+// A Wizards post (announcements handoff, boards Home-Rows and Row-States) is the same row: its hero cropped into the
+// picture's slot (never a card's shadow; the post-glyph plate when it is missing or fails), its title, its summary
+// clamped at two lines, a Commander decklists post's mono count of lists, and one press out to the post.
 
 import Link from "next/link";
-import { useId, type ReactNode } from "react";
+import { useId, useState, type ReactNode } from "react";
 import { twMerge } from "tailwind-merge";
 import { feedCopy } from "../../lib/copy/feed";
 import { spareCopy } from "../../lib/copy/social";
@@ -71,7 +75,65 @@ export function feedText(item: FeedView): { title: string; line: ReactNode; pres
         line: item.combo ? c.line.combo(item.combo.added) : null,
         press: c.press.combo,
       };
+    case "secret-lair":
+    case "commander-decklists":
+    case "wizards-news":
+      return {
+        title: item.post?.title ?? c.kicker[item.kind],
+        line: item.post?.summary ?? null,
+        // Only with somewhere to go: a stored address that is not a magic.wizards.com page draws no press (`wizardsPostUrl`).
+        press: item.outbound ? (item.kind === "commander-decklists" ? c.press.readPost : c.press.readOnWizards) : null,
+      };
   }
+}
+
+/** A Commander decklists post's lists line ("3 of 5 lists so far", "All 5 lists"), or null. */
+export function listsText(item: FeedView): string | null {
+  const l = item.post?.lists;
+  if (!l) return null;
+  return l.n >= l.of ? c.line.listsAll(l.n) : c.line.listsSoFar(l.n, l.of);
+}
+
+/** The post glyph, a page of lines, drawn in the plate that stands for a missing or failed hero (board Row-States §3). */
+export function PostGlyph() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M5 3.5h10a1.5 1.5 0 0 1 1.5 1.5v10A1.5 1.5 0 0 1 15 16.5H5A1.5 1.5 0 0 1 3.5 15V5A1.5 1.5 0 0 1 5 3.5z" />
+      <path d="M6.5 7h7M6.5 10h7M6.5 13h4" />
+    </svg>
+  );
+}
+
+/** A post's hero, while it is there and has not failed to load: one failure and the plate takes its place for good. */
+export function usePostHero(item: FeedView): { hero: string | null; onError: () => void } {
+  const [failed, setFailed] = useState<string | null>(null);
+  const hero = item.post?.hero ?? null;
+  return { hero: hero && hero !== failed ? hero : null, onError: () => setFailed(hero) };
+}
+
+/** The post's hero cropped into the 46x64 slot (radius 4, centre crop, no card shadow), or the plate with the post glyph. */
+function PostPicture({ item, box }: { item: FeedView; box: string }) {
+  const { hero, onError } = usePostHero(item);
+  const inner = hero ? (
+    <>
+      {/* eslint-disable-next-line @next/next/no-img-element -- a Wizards hero, cropped by its box; a failure draws the plate */}
+      <img src={hero} alt="" onError={onError} data-feed-hero className="absolute inset-0 block h-full w-full object-cover" />
+      <span className="absolute inset-0 rounded-[inherit] shadow-[inset_0_0_0_1px_rgba(0,0,0,.25)]" />
+    </>
+  ) : (
+    <span data-feed-post-plate className="flex h-full w-full items-center justify-center rounded-[inherit] [border:1px_solid_var(--border-strong)] bg-[color:var(--surface-raised)] text-[color:var(--fact)]">
+      <PostGlyph />
+    </span>
+  );
+  const shape = `${box} overflow-hidden rounded-[4px] ${hero ? "bg-[color:var(--surface-sunken)]" : ""}`;
+  if (item.outbound) {
+    return (
+      <a href={item.outbound} target="_blank" rel="noopener" aria-hidden tabIndex={-1} data-feed-picture className={`${shape} block`}>
+        {inner}
+      </a>
+    );
+  }
+  return <span aria-hidden data-feed-picture className={`${shape} block`}>{inner}</span>;
 }
 
 /** An answer to the reader's own ask: Your requests' own words for it (`spareCopy.request.mine`). */
@@ -206,6 +268,8 @@ function Picture({ item, face }: { item: FeedView; face: Pick<ProfileCommander, 
       </span>
     );
   }
+  const box = "relative z-[1] row-span-2 h-[64px] w-[46px] self-start md:row-span-1 md:self-center";
+  if (item.post) return <PostPicture item={item} box={box} />;
   const art = (
     <>
       <span className="block rounded-[3px] shadow-[0_2px_6px_rgba(0,0,0,.45)]">
@@ -218,7 +282,6 @@ function Picture({ item, face }: { item: FeedView; face: Pick<ProfileCommander, 
       )}
     </>
   );
-  const box = "relative z-[1] row-span-2 h-[64px] w-[46px] self-start md:row-span-1 md:self-center";
   // A linked row's picture is a real link to the same place (out of the tab order, hidden from readers: the press is
   // the named link), so a modified or middle press behaves natively. A row that opens the card's detail passes the
   // press on to its button.
@@ -259,6 +322,7 @@ export function FeedItemRow({ item, now, face, onDismiss }: {
 }) {
   const titleId = useId();
   const text = feedText(item);
+  const lists = listsText(item);
   const waiting = item.kind === "spare-request" && !item.answer;
   const kickerInk = !item.unseen ? "text-[color:var(--fg-locked)]" : waiting ? "text-[color:var(--accent-text)]" : "text-[color:var(--fg-faint)]";
   return (
@@ -276,7 +340,9 @@ export function FeedItemRow({ item, now, face, onDismiss }: {
           <small data-feed-age className={`${KICKER_AGE} text-[color:var(--fg-locked)]`}>{feedAge(item.at, now)}</small>
         </div>
         <p id={titleId} className="m-0 font-sans [overflow-wrap:anywhere] text-[14px] leading-[1.35] font-semibold text-[color:var(--fg)]">{text.title}</p>
-        {text.line && <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)]">{text.line}</p>}
+        {/* A post's summary can run to a paragraph: two lines, then an ellipsis (Row-States §2). The title never clamps. */}
+        {text.line && <p data-feed-line className={`m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] ${item.post ? "line-clamp-2" : ""}`}>{text.line}</p>}
+        {lists && <p data-feed-lists className="m-0 mt-[1px] font-mono text-[10.5px] text-[color:var(--fg-muted)]">{lists}</p>}
       </div>
       {/* The action line (board `Dismiss-X`, `.d4n .ac`): the press, then the ✕ at its end. Under the text on a phone
           (the text column's 3px gap plus 2px), the row's third column from desktop. A row with no press keeps the line

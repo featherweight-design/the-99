@@ -137,7 +137,8 @@ function Rows({ items, now, faces, expanded, onExpand, onDismiss }: {
 }
 
 function Quiet({ on }: { on: FeedKind[] }) {
-  const names = nameList(on.map((k) => feedCopy.news.kinds[k].name.toLowerCase()));
+  // Each kind's own inline form (announcements G1): lowercasing a name would print "secret lair".
+  const names = nameList(on.map((k) => c.quietName[k]));
   return (
     <div data-feed-quiet className="flex flex-col gap-[6px] p-[14px]">
       <p className="m-0 text-[13px] leading-[1.55] text-[color:var(--fg-body)]">

@@ -2,9 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUserId } from "../../lib/auth";
-import { availableFeedKinds } from "../../lib/feed/flag";
 import { parseChosenKinds } from "../../lib/feed/prefs";
 import { pushAvailable } from "../../lib/push/available";
+import { pushableFeedKinds } from "../../lib/push/catalog-rule";
 import { isPushEndpoint, parseDevice } from "../../lib/push/endpoint";
 import { setPushKinds } from "../../lib/push/prefs";
 import { removeDevice, saveDevice } from "../../lib/push/subscriptions";
@@ -22,7 +22,7 @@ export async function savePushKinds(on: unknown, offered: unknown): Promise<Save
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!pushAvailable(env)) return { ok: false, reason: "off" };
-  const scope = parseChosenKinds(offered, availableFeedKinds(env));
+  const scope = parseChosenKinds(offered, pushableFeedKinds(env));
   const kinds = scope && parseChosenKinds(on, scope);
   if (!scope || !kinds) return { ok: false, reason: "invalid" };
   const changed = await setPushKinds(userId, kinds, new Date(), scope);

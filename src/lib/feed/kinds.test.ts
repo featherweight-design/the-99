@@ -1,13 +1,18 @@
 import { describe, expect, it } from "vitest";
 
-import { CATALOG_KINDS, FEED_KINDS, FEED_WINDOW_DAYS, LEAD_PRIORITY, STORED_KINDS, feedOrder, isFeedKind, isStoredKind, leadStory, windowFloor, type FeedKind } from "./kinds";
+import {
+  ANNOUNCEMENT_KINDS, CATALOG_KINDS, DEFAULT_ON_KINDS, FEED_KINDS, FEED_WINDOW_DAYS, LEAD_PRIORITY, NEVER_LEADS, PUSH_OUTBOX_KINDS, STORED_KINDS,
+  feedOrder, isAnnouncementKind, isDefaultOn, isFeedKind, isStoredKind, leadStory, windowFloor, type FeedKind,
+} from "./kinds";
 
 const at = (iso: string) => new Date(iso);
 const item = (kind: FeedKind, iso: string, unseen = true, key = `${kind}:${iso}`) => ({ kind, createdAt: at(iso), unseen, key });
 
 describe("the feed's kinds", () => {
-  it("is the closed set of six the board draws, split into catalog and stored with nothing left over", () => {
-    expect([...FEED_KINDS].sort()).toEqual(["combo", "new-precon", "new-set", "price-drop", "spare-request", "trade-match"]);
+  it("is the closed set of nine, split into catalog and stored with nothing left over", () => {
+    expect([...FEED_KINDS].sort()).toEqual([
+      "combo", "commander-decklists", "new-precon", "new-set", "price-drop", "secret-lair", "spare-request", "trade-match", "wizards-news",
+    ]);
     expect([...CATALOG_KINDS, ...STORED_KINDS].sort()).toEqual([...FEED_KINDS].sort());
     expect(isFeedKind("combo")).toBe(true);
     expect(isFeedKind("news")).toBe(false);
@@ -16,13 +21,51 @@ describe("the feed's kinds", () => {
     expect(isStoredKind("trade-match")).toBe(true);
   });
 
-  it("orders the lead story spare request, trade match, combo, price drop, precon, set (the board's rule)", () => {
-    expect(LEAD_PRIORITY).toEqual(["spare-request", "trade-match", "combo", "price-drop", "new-precon", "new-set"]);
-    expect([...LEAD_PRIORITY].sort()).toEqual([...FEED_KINDS].sort());
+  it("orders the lead story by the boards' rule, every kind once there or in NEVER_LEADS", () => {
+    expect(LEAD_PRIORITY).toEqual(["spare-request", "trade-match", "combo", "price-drop", "commander-decklists", "new-precon", "new-set", "secret-lair"]);
+    expect(NEVER_LEADS).toEqual(["wizards-news"]);
+    expect([...LEAD_PRIORITY, ...NEVER_LEADS].sort()).toEqual([...FEED_KINDS].sort());
+  });
+
+  it("makes the Announcements kinds catalog family and default on, after New precons in Settings' order", () => {
+    for (const k of ANNOUNCEMENT_KINDS) {
+      expect(CATALOG_KINDS).toContain(k);
+      expect(isDefaultOn(k)).toBe(true);
+      expect(isAnnouncementKind(k)).toBe(true);
+    }
+    expect(DEFAULT_ON_KINDS).toEqual(["spare-request", "secret-lair", "commander-decklists", "wizards-news"]);
+    expect(isDefaultOn("new-set")).toBe(false);
+    expect(isAnnouncementKind("new-set")).toBe(false);
+    expect(FEED_KINDS.slice(0, 5)).toEqual(["new-set", "new-precon", "secret-lair", "commander-decklists", "wizards-news"]);
+  });
+
+  it("keeps the outbox's kinds every feed kind, in the order migration 0193's check was generated in", () => {
+    expect([...PUSH_OUTBOX_KINDS].sort()).toEqual([...FEED_KINDS].sort());
+    expect(PUSH_OUTBOX_KINDS).toEqual(["new-set", "new-precon", "price-drop", "trade-match", "spare-request", "combo", "secret-lair", "commander-decklists", "wizards-news"]);
   });
 });
 
 describe("leadStory", () => {
+  it("lets a decklists post lead ahead of a precon, and a Secret Lair drop only behind a set", () => {
+    expect(leadStory([item("new-precon", "2026-10-22T10:00:00Z"), item("commander-decklists", "2026-10-20T10:00:00Z")])?.kind).toBe("commander-decklists");
+    expect(leadStory([item("secret-lair", "2026-10-22T10:00:00Z"), item("new-set", "2026-10-20T10:00:00Z")])?.kind).toBe("new-set");
+    expect(leadStory([item("secret-lair", "2026-10-22T10:00:00Z")])?.kind).toBe("secret-lair");
+  });
+
+  it("never leads with Wizards news, even alone, and passes it over for anything else", () => {
+    expect(leadStory([item("wizards-news", "2026-10-22T10:00:00Z")])).toBeNull();
+    // First in the list, so a rule that only skipped it when comparing would still seat it as the first best.
+    expect(leadStory([item("wizards-news", "2026-10-22T10:00:00Z"), item("secret-lair", "2026-10-20T10:00:00Z")])?.kind).toBe("secret-lair");
+  });
+
+  it("sorts a kind missing from LEAD_PRIORITY LAST, never first (indexOf's -1)", () => {
+    const stray = item("stray" as FeedKind, "2026-10-22T10:00:00Z");
+    expect(leadStory([stray, item("secret-lair", "2026-10-20T10:00:00Z")])?.kind).toBe("secret-lair");
+    expect(leadStory([item("secret-lair", "2026-10-20T10:00:00Z"), stray])?.kind).toBe("secret-lair");
+    // Alone, it can still lead: last is not never.
+    expect(leadStory([stray])?.kind).toBe("stray");
+  });
+
   it("takes the first UNSEEN item by priority, not the newest", () => {
     const lead = leadStory([item("new-set", "2026-10-22T10:00:00Z"), item("combo", "2026-10-20T10:00:00Z"), item("trade-match", "2026-10-19T10:00:00Z", false)]);
     expect(lead?.kind).toBe("combo");

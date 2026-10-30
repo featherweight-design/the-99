@@ -54,7 +54,7 @@ describe("the readers the cron looks at", () => {
     expect(flat(r.sql)).toBe(
       `select distinct cps.user_id as user_id from "push_subscriptions" cps left join "user_prefs" cup on cup.user_id = cps.user_id where ${gate(1)} or ${gate(5)}`,
     );
-    expect(r.params).toEqual(["new-set", "new-set", ["spare-request"], "new-set", "new-precon", "new-precon", ["spare-request"], "new-precon"]);
+    expect(r.params).toEqual(["new-set", "new-set", ["spare-request", "secret-lair", "commander-decklists", "wizards-news"], "new-set", "new-precon", "new-precon", ["spare-request", "secret-lair", "commander-decklists", "wizards-news"], "new-precon"]);
   });
 
   it("for a default-on kind, passes the kind as default on to the gate", () => {

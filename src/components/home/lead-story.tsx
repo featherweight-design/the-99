@@ -11,6 +11,11 @@
 // as the action lands. `LeadSlot` therefore HOLDS the story from the press: the same item, so the same instance, keeps
 // its receipt for the visit; a failed answer lets it go again. A server lead the held story displaces is drawn by What's
 // new as one of its rows (`held-lead.tsx`), so it is never marked seen without being drawn.
+//
+// A Wizards post leads (Secret Lair or Commander decklists; Wizards news never does, `NEVER_LEADS`) with its hero
+// landscape, the only place it is shown whole (board Lead-Story): a 164px band across the top at -1.5deg on a phone,
+// 272x153 at -3deg where the card stands from `md`, over its own blurred hero. With no hero, or one that fails, the
+// words take the band alone. Its press is the filled button, out to the post.
 
 import { useRef, useState } from "react";
 import type { FeedView } from "../../lib/feed/home";
@@ -19,7 +24,7 @@ import { shortName } from "../../lib/cards/short-name";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { feedCopy } from "../../lib/copy/feed";
 import type { ProfileCommander } from "../../lib/social/commander";
-import { FeedPress, feedText } from "../feed/feed-item";
+import { FeedPress, feedText, listsText, usePostHero } from "../feed/feed-item";
 import { feedAge } from "../../lib/feed/age";
 import { Face } from "../social/face";
 import { ArtLayer } from "../ui/art-layer";
@@ -84,6 +89,9 @@ export function LeadStory({
   const root = useRef<HTMLElement | null>(null);
   const land = useLandFocus(root);
   const { busy, answer, toast } = useSpareAnswer(shared);
+  const post = item.post ?? null;
+  const postHero = usePostHero(item);
+  const lists = listsText(item);
   const friend = item.friend?.displayName ?? "";
   const cardName = item.card?.name ?? "";
   const receipt = ask && answered ? receiptText(answered, shortName(cardName), friend) : null;
@@ -104,7 +112,7 @@ export function LeadStory({
     setAnswered(a);
     land('[data-testid="spare-receipt-status"]', from);
   }
-  const art = item.card?.art ?? null;
+  const art = post ? postHero.hero : item.card?.art ?? null;
   const image = item.card?.image ?? null;
   return (
     <section
@@ -113,26 +121,35 @@ export function LeadStory({
       data-answered={answered ?? undefined}
       data-feed-lead
       aria-labelledby="home-lead-title"
-      className={`relative flex gap-[16px] overflow-hidden rounded-[14px] [border:1px_solid_var(--accent)] bg-[color:var(--surface-rail)] p-[16px_16px_16px_14px] md:items-center md:gap-[28px] md:p-[20px_24px_20px_26px] ${className}`}
+      className={`relative flex ${post ? "flex-col gap-[14px] md:flex-row" : "gap-[16px]"} overflow-hidden rounded-[14px] [border:1px_solid_var(--accent)] bg-[color:var(--surface-rail)] p-[16px_16px_16px_14px] md:items-center md:gap-[28px] md:p-[20px_24px_20px_26px] ${className}`}
     >
       {art && (
         <div aria-hidden data-lead-blur className="pointer-events-none absolute inset-[-40px] opacity-[.28] [filter:blur(34px)_saturate(1.25)]">
           <ArtLayer src={art} />
         </div>
       )}
-      <div aria-hidden className="relative m-[6px_2px_0_4px] h-[134px] w-[96px] flex-none -rotate-4 md:m-0 md:h-[168px] md:w-[120px]">
-        <span className="block rounded-[5px] shadow-[0_10px_24px_rgba(0,0,0,.6)] md:hidden">
-          <CommanderThumb imageUri={image} colorIdentity={item.card?.colorIdentity ?? null} size="lead" />
-        </span>
-        <span className="hidden rounded-[6px] shadow-[0_10px_24px_rgba(0,0,0,.6)] md:block">
-          <CommanderThumb imageUri={image} colorIdentity={item.card?.colorIdentity ?? null} size="leadWide" />
-        </span>
-        {item.friend && (
-          <span data-lead-face className="absolute right-[-10px] bottom-[-8px] h-[36px] w-[36px] rotate-4 overflow-hidden rounded-[10px] [border:2px_solid_var(--surface-rail)]">
-            <Face name={item.friend.displayName} commander={face ?? null} size={36} className="h-full! w-full! rounded-none!" />
+      {post ? (
+        postHero.hero && (
+          <span aria-hidden data-lead-hero className="relative m-[4px_4px_0] block h-[164px] flex-none -rotate-[1.5deg] overflow-hidden rounded-[8px] shadow-[0_10px_24px_rgba(0,0,0,.55)] md:m-0 md:h-[153px] md:w-[272px] md:-rotate-3">
+            {/* eslint-disable-next-line @next/next/no-img-element -- a Wizards hero, cropped by its band; a failure drops the band */}
+            <img src={postHero.hero} alt="" onError={postHero.onError} className="block h-full w-full object-cover" />
           </span>
-        )}
-      </div>
+        )
+      ) : (
+        <div aria-hidden className="relative m-[6px_2px_0_4px] h-[134px] w-[96px] flex-none -rotate-4 md:m-0 md:h-[168px] md:w-[120px]">
+          <span className="block rounded-[5px] shadow-[0_10px_24px_rgba(0,0,0,.6)] md:hidden">
+            <CommanderThumb imageUri={image} colorIdentity={item.card?.colorIdentity ?? null} size="lead" />
+          </span>
+          <span className="hidden rounded-[6px] shadow-[0_10px_24px_rgba(0,0,0,.6)] md:block">
+            <CommanderThumb imageUri={image} colorIdentity={item.card?.colorIdentity ?? null} size="leadWide" />
+          </span>
+          {item.friend && (
+            <span data-lead-face className="absolute right-[-10px] bottom-[-8px] h-[36px] w-[36px] rotate-4 overflow-hidden rounded-[10px] [border:2px_solid_var(--surface-rail)]">
+              <Face name={item.friend.displayName} commander={face ?? null} size={36} className="h-full! w-full! rounded-none!" />
+            </span>
+          )}
+        </div>
+      )}
       <div data-testid={receipt ? "spare-receipt-status" : undefined} tabIndex={receipt ? -1 : undefined} className="relative flex min-w-0 flex-1 flex-col gap-[6px]">
         <p className={`m-0 flex items-center gap-[8px] font-mono text-[10px] font-medium tracking-[.14em] uppercase ${answered === "yes" ? "text-[color:var(--success)]" : answered === "no" ? "text-[color:var(--fg-muted)]" : "text-[color:var(--accent-text)]"}`}>
           <span className="min-w-0">{receipt ? receipt.kind : feedCopy.home.kicker[item.kind]}</span>
@@ -142,6 +159,7 @@ export function LeadStory({
           {text.title}
         </h3>
         {text.line && <p className="m-0 text-[13px] leading-[1.5] text-[color:var(--fg-body)] md:max-w-[640px] md:text-[13.5px]">{text.line}</p>}
+        {lists && <p data-lead-lists className="m-0 font-mono text-[10.5px] text-[color:var(--fg-muted)]">{lists}</p>}
         {/* The action line (board `Dismiss-X`, `.d4n .ld .la`): the press, or Yes, No and the days left, then the ✕ at
             its end, the band's right edge from desktop. On a phone the ✕ holds the first line's end while the days left
             wraps under Yes and No. */}

@@ -35,8 +35,11 @@ import { PushHowSheet } from "./push-how-sheet";
 const c = feedCopy.news;
 const p = pushSettingsCopy;
 
-/** What the server hands the push column: the kinds with push on, and the VAPID PUBLIC key a browser subscribes with. */
-export type PushSettings = { publicKey: string; on: FeedKind[] };
+/**
+ * What the server hands the push column: the kinds with push on, the VAPID PUBLIC key a browser subscribes with, and the
+ * kinds that can push (`pushableFeedKinds`; absent, every row): a row outside them keeps the column's width, no box.
+ */
+export type PushSettings = { publicKey: string; on: FeedKind[]; kinds?: FeedKind[] };
 
 /** The device row as drawn: its state, what it calls the device, and the two iPhone variants of its lines. */
 type DeviceView = { state: DeviceState; word: DeviceWord; installedIphone: boolean; oldIos: boolean };
@@ -260,13 +263,15 @@ export function NewsSection({ kinds, push = null }: { kinds: NewsSetting[]; push
 
   async function togglePush(kind: FeedKind, checked: boolean) {
     if (saving || !device) return;
-    const next = offered.filter((k) => (k === kind ? checked : pushOn.includes(k)));
+    // Offered: the rows that draw a push box, so a kind with no box (`push.kinds`) keeps what it had.
+    const pushOffered = push?.kinds ? offered.filter((k) => push.kinds!.includes(k)) : offered;
+    const next = pushOffered.filter((k) => (k === kind ? checked : pushOn.includes(k)));
     setPushOn(next);
     setSaving(true);
     // The tick is SAVED first: the save is sent before anything else happens. The prompt (or the iPhone's sheet) then
     // follows in this same press without waiting for the save's round trip, which would spend the press's user
     // activation and leave the browser refusing to ask.
-    const save = savePushKinds(next, offered);
+    const save = savePushKinds(next, pushOffered);
     if (checked && device.state === "not-on" && !deviceBusy) void turnOn(true);
     if (checked && device.state === "home-screen") setSheet(true);
     const fail = () => {
@@ -374,7 +379,7 @@ export function NewsSection({ kinds, push = null }: { kinds: NewsSetting[]; push
               <label className={CELL}>
                 <Checkbox checked={on.includes(kind)} disabled={saving} ariaLabel={c.inAppAria(k.name)} onChange={(v) => toggle(kind, v)} />
               </label>
-              {column && (
+              {column && (!push?.kinds || push.kinds.includes(kind) ? (
                 <label className={CELL}>
                   <Checkbox
                     checked={pushOn.includes(kind)}
@@ -383,7 +388,9 @@ export function NewsSection({ kinds, push = null }: { kinds: NewsSetting[]; push
                     onChange={(v) => togglePush(kind, v)}
                   />
                 </label>
-              )}
+              ) : (
+                <span aria-hidden data-push-none className="w-[52px] flex-none" />
+              ))}
             </li>
           );
         })}

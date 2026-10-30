@@ -12,9 +12,10 @@ import { notFound } from "next/navigation";
 import { requireUserId } from "../../lib/auth";
 import { friendDecksEnabled, socialFriendsEnabled } from "../../lib/social/flag";
 import { loadFriendDeckPrefs } from "../../lib/social/deck-visibility";
-import { availableFeedKinds, homeFeedEnabled } from "../../lib/feed/flag";
+import { homeFeedEnabled } from "../../lib/feed/flag";
 import { loadNewsSettings } from "../../lib/feed/prefs";
 import { pushAvailable } from "../../lib/push/available";
+import { pushableFeedKinds } from "../../lib/push/catalog-rule";
 import { pushConfig } from "../../lib/push/config";
 import { loadPushKinds } from "../../lib/push/prefs";
 import { requestSwitchEnv } from "../../lib/switches/request";
@@ -40,11 +41,11 @@ export default async function SettingsPage() {
   const config = pushAvailable(env) ? pushConfig(env) : null;
   const [news, pushOn, spares, deckPrefs] = await Promise.all([
     loadNewsSettings(userId, env),
-    config ? loadPushKinds(userId, availableFeedKinds(env)) : null,
+    config ? loadPushKinds(userId, pushableFeedKinds(env)) : null,
     friends ? loadSpares(userId) : null,
     friendDecksEnabled(env) ? loadFriendDeckPrefs(userId) : null,
   ]);
-  const push = config && pushOn ? { publicKey: config.publicKey, on: pushOn } : null;
+  const push = config && pushOn ? { publicKey: config.publicKey, on: pushOn, kinds: pushableFeedKinds(env) } : null;
   return (
     <SettingsView>
       <NewsSection kinds={news} push={push} />

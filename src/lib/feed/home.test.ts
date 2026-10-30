@@ -13,7 +13,7 @@ vi.mock("../social/spare-requests", async (importOriginal) => ({
 // The reader owns Sai in another printing: the row draws the chain's picture, the one card details opens.
 vi.mock("../cards/chain-art", () => ({ chainArt: async () => new Map([["c1", "sai-owned.jpg"]]) }));
 
-import { comboPieces, feedCardsQuery, homeFeedAfter, loadHomeFeed, preconCommandersQuery, preconOwnedQuery, setCardsQuery, splitLead, toViews, withAnswerDetails, withLeadAsk, type FeedView, type HomeFeed } from "./home";
+import { comboPieces, feedCardsQuery, homeFeedAfter, loadHomeFeed, postLists, preconCommandersQuery, preconOwnedQuery, setCardsQuery, splitLead, toViews, withAnswerDetails, withLeadAsk, wizardsPostUrl, type FeedView, type HomeFeed } from "./home";
 import type { IncomingAsk } from "../social/spare-requests";
 import type { FeedItem } from "./read";
 
@@ -277,5 +277,61 @@ describe("a spare request leading Home (spare requests PR 3d)", () => {
     const drop = row({ kind: "price-drop", key: "item:d", created_at: "2026-10-22T10:00:00Z", oracle_id: "c1", data: { fromCents: 2, toCents: 1 } });
     await loadHomeFeed("u1", ON, NOW, fake({ "price-drop": "2026-10-01T00:00:00Z" }, { feed: [drop] }));
     expect(marks.asks).not.toHaveBeenCalled();
+  });
+});
+
+describe("a Wizards post", () => {
+  const empty = { sets: new Map(), precons: new Map(), owned: new Map(), cards: new Map() };
+  const URL_OK = "https://magic.wizards.com/en/news/announcements/foundations-commander-decklists";
+  const post = (kind: "secret-lair" | "commander-decklists" | "wizards-news", over: Record<string, unknown> = {}) => ({
+    kind, key: `post:${kind}`, createdAt: NOW, unseen: true,
+    post: { title: "Foundations Commander: the decklists", excerpt: "Every card in three of the five decks.", hero: "https://images.ctfassets.net/h.jpg", url: URL_OK, promised: 5, lists: 3, ...over },
+  }) as FeedItem;
+
+  it("draws its title, summary and hero, out to the post, with no card and no lookup", () => {
+    const [v] = toViews([post("commander-decklists")], empty);
+    expect(v).toMatchObject({
+      kind: "commander-decklists", card: null, href: null, opens: null, outbound: URL_OK,
+      post: { title: "Foundations Commander: the decklists", summary: "Every card in three of the five decks.", hero: "https://images.ctfassets.net/h.jpg", lists: { n: 3, of: 5 } },
+    });
+  });
+
+  it("carries a null hero through for the plate, and no lists line on a kind that is not decklists", () => {
+    const [v] = toViews([post("secret-lair", { hero: null, excerpt: null })], empty);
+    expect(v.post).toEqual({ title: "Foundations Commander: the decklists", summary: null, hero: null, lists: null });
+  });
+
+  it("draws no press for an address off magic.wizards.com", () => {
+    expect(toViews([post("wizards-news", { url: "https://evil.example/x" })], empty)[0].outbound).toBeNull();
+  });
+
+  it("goes out only to an https page on magic.wizards.com", () => {
+    expect(wizardsPostUrl(URL_OK)).toBe(URL_OK);
+    for (const bad of ["http://magic.wizards.com/en/news/x", "https://magic.wizards.com.evil.com/x", "https://evil.com/?magic.wizards.com", "javascript:alert(1)", "", "not a url", "https://wizards.com/x"]) {
+      expect(wizardsPostUrl(bad)).toBeNull();
+    }
+  });
+
+  it("counts a decklists post's lists out of those promised: some, then all, never fewer than are stored", () => {
+    expect(postLists("commander-decklists", { lists: 3, promised: 5 })).toEqual({ n: 3, of: 5 });
+    expect(postLists("commander-decklists", { lists: 5, promised: 5 })).toEqual({ n: 5, of: 5 });
+    expect(postLists("commander-decklists", { lists: 4, promised: null })).toEqual({ n: 4, of: 4 });
+    expect(postLists("commander-decklists", { lists: 6, promised: 5 })).toEqual({ n: 6, of: 6 });
+    expect(postLists("commander-decklists", { lists: 0, promised: 5 })).toBeNull();
+    expect(postLists("secret-lair", { lists: 3, promised: 5 })).toBeNull();
+  });
+
+  it("reaches a reader who never chose, with ANNOUNCEMENTS_ENABLED on, and Wizards news never leads", async () => {
+    const env = { HOME_FEED_ENABLED: "true", ANNOUNCEMENTS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+    const data = { title: "Magic’s 2027 release schedule", excerpt: "Every set.", hero: null, url: URL_OK, promised: null, lists: 0 };
+    const q = fake({}, { feed: [row({ kind: "wizards-news", key: "post:n1", created_at: NOW.toISOString(), name: data.title, data })] });
+    const feed = await loadHomeFeed("u1", env, NOW, q);
+    expect(feed).toMatchObject({ chosen: true, on: ["secret-lair", "commander-decklists", "wizards-news"], lead: null, unseen: 1 });
+    expect(feed?.chosen && feed.items.map((i) => [i.kind, i.outbound])).toEqual([["wizards-news", URL_OK]]);
+  });
+
+  it("offers nothing of Wizards' with ANNOUNCEMENTS_ENABLED off", async () => {
+    const feed = await loadHomeFeed("u1", { HOME_FEED_ENABLED: "true" } as unknown as NodeJS.ProcessEnv, NOW, fake({}, {}));
+    expect(feed).toEqual({ chosen: false, offer: ["new-set", "new-precon", "combo"], alsoOn: false });
   });
 });

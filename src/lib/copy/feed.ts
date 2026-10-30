@@ -14,6 +14,10 @@ export const feedCopy = {
     kinds: {
       "new-set": { name: "New sets", line: "When a set comes out." },
       "new-precon": { name: "New precons", line: "When a Commander precon comes out." },
+      // Wizards' announcements (announcements handoff, call 7): drafts for `/copy-review`. Default on, so `defaultOn` follows each line.
+      "secret-lair": { name: "Secret Lair drops", line: "When Wizards announces a Secret Lair drop." },
+      "commander-decklists": { name: "Commander decklists", line: "When Wizards posts a Commander set’s decklists." },
+      "wizards-news": { name: "Other Wizards news", line: "Everything else Wizards announces." },
       "price-drop": { name: "Price drops on your wishlist", line: "A card you want gets cheaper." },
       "trade-match": { name: "Trade matches", line: "A friend has a spare of a card on your wishlist." },
       "spare-request": { name: "Friends asking for your spares", line: "A friend asks for a card you have spare." },
@@ -48,6 +52,21 @@ export const feedCopy = {
     /** Kinds on, nothing in the window: the bold lead, then the kinds that are on, by name. */
     quietLead: "Nothing new right now.",
     quietRest: (kinds: string) => `You hear about ${kinds} here.`,
+    /**
+     * Each kind as the quiet line names it, mid-sentence (announcements G1): its own inline form, never a lowercased
+     * Settings name, which would print "secret lair". The three Wizards kinds keep their capitals; every other entry is what lowercasing gave.
+     */
+    quietName: {
+      "new-set": "new sets",
+      "new-precon": "new precons",
+      "secret-lair": "Secret Lair drops",
+      "commander-decklists": "Commander decklists",
+      "wizards-news": "Wizards news",
+      "price-drop": "price drops on your wishlist",
+      "trade-match": "trade matches",
+      "spare-request": "friends asking for your spares",
+      combo: "combos you can make",
+    } satisfies Record<FeedKind, string>,
     /** The inline opt-in while every kind is off (handoff call 7). The boxes reuse `news.kinds`. */
     optIn: {
       title: "Choose what shows here",
@@ -61,6 +80,9 @@ export const feedCopy = {
     kicker: {
       "new-set": "New set",
       "new-precon": "New precon",
+      "secret-lair": "Secret Lair",
+      "commander-decklists": "Commander decklists",
+      "wizards-news": "Wizards news",
       "price-drop": "Price drop",
       "trade-match": "Trade match",
       "spare-request": "Spare request",
@@ -85,6 +107,9 @@ export const feedCopy = {
       spareRequest: "Answer in Friends.",
       /** Source-neutral: an upload, a hand add and a bought card all complete a pair. */
       combo: (added: string) => `You added ${added}.`,
+      /** A Commander decklists post's mono count of lists out, under its summary (board `Row-States` §5). */
+      listsSoFar: (n: number, of: number) => `${n} of ${of} lists so far`,
+      listsAll: (n: number) => `All ${n} lists`,
     },
     /** The press, ending `›` where drawn as a link. */
     press: {
@@ -97,6 +122,10 @@ export const feedCopy = {
       /** With spare requests on, the press opens that card's spares sheet with Ask (signature card call 9). */
       tradeMatchAsk: (friend: string) => `Ask ${friend}`,
       combo: "See the combo",
+      /** A Secret Lair or Wizards news post, on magic.wizards.com in a new tab (the link-out icon and the spoken suffix are `FeedPress`'s). */
+      readOnWizards: "Read on Wizards",
+      /** A Commander decklists post, the same way. "See the lists ›", its in-app press, lands with the early lists. */
+      readPost: "Read the post",
       /** An answer to the reader's own spare request: opens that one request over Home (small items item 3). */
       answer: "Your request",
     },

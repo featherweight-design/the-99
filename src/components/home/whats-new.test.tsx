@@ -81,6 +81,14 @@ describe("WhatsNew, kinds on", () => {
     expect(screen.getByRole("link", { name: /Choose what shows/ })).toBeInTheDocument();
   });
 
+  it("names Wizards' kinds by their own inline form, never lowercased, and only the kinds still on (G1)", () => {
+    const { container } = render(<WhatsNew feed={chosen([], { on: ["new-set", "secret-lair", "wizards-news"] })} now={NOW} />);
+    const quiet = container.querySelector("[data-feed-quiet]")!.textContent!;
+    expect(quiet).toContain("new sets, Secret Lair drops and Wizards news");
+    expect(quiet).not.toMatch(/secret lair|wizards news|Commander decklists/);
+    expect(container.querySelector("[data-feed-quiet]")!.textContent).not.toContain("Other Wizards news");
+  });
+
   it("draws nothing under a lead that was the only item", () => {
     const { container } = render(<WhatsNew feed={chosen([], { lead: view(1, 1, { unseen: true }), unseen: 1 })} now={NOW} />);
     expect(container.querySelector("[data-whats-new]")).toBeNull();
