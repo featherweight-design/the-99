@@ -533,8 +533,12 @@ describe("TuningPanel with Suggested changes v2 on: the wait and the results (UI
       <ReviewRunProvider value={{ tool: "suggested", runId: RUN, past: { at: at.toISOString(), tier: "credit", back: vi.fn() } }}>{node}</ReviewRunProvider>
     ));
     expect(document.querySelector("[data-sc-run]")!.getAttribute("data-sc-run")).toBe("results");
-    expect(document.querySelector("[data-sc-bar]")).not.toBeNull();
-    expect(document.querySelector("[data-sc-apply]")).not.toBeNull();
+    // Read-only with the switch off (ruling F2(a)): its rows drawn, no Apply, Undo or pick control.
+    expect(screen.getAllByRole("article", { name: "Card a0" }).length).toBeGreaterThan(0);
+    expect(document.querySelector("[data-sc-bar]")).toBeNull();
+    expect(document.querySelector("[data-sc-apply]")).toBeNull();
+    expect(document.querySelector("[data-sc-pick]")).toBeNull();
+    expect(screen.queryByRole("button", { name: sc.bar.undo(2) })).toBeNull();
     for (const name of [deckTuningCopy.lists.add, deckTuningCopy.lists.reject, deckTuningCopy.lists.applyAll]) {
       expect(screen.queryByRole("button", { name })).toBeNull();
     }
@@ -544,6 +548,17 @@ describe("TuningPanel with Suggested changes v2 on: the wait and the results (UI
     expect(screen.queryByRole("button", { name: deckTuningCopy.panel.again })).toBeNull();
     expect(screen.queryByLabelText(deckDescriptionCopy.notes.label)).toBeNull();
     expect(screen.queryByRole("button", { name: deckTuningCopy.panel.suggest })).toBeNull();
+  });
+
+  it("the same stored v2 run with the switch on keeps its Apply bar and pick controls", async () => {
+    const d = { ...deps(), v2: v2Actions() };
+    d.read = vi.fn(async () => ({ ...finished, review: { runId: RUN, at, readVersion: 4 } }));
+    await draw(d, v2At(), [2], (node) => (
+      <ReviewRunProvider value={{ tool: "suggested", runId: RUN, past: { at: at.toISOString(), tier: "credit", back: vi.fn() } }}>{node}</ReviewRunProvider>
+    ));
+    expect(document.querySelector("[data-sc-bar]")).not.toBeNull();
+    expect(document.querySelector("[data-sc-apply]")).not.toBeNull();
+    expect(document.querySelector("[data-sc-pick]")).not.toBeNull();
   });
 
   it("a run History reopened (History B): its way back and meta above the heading, its note and live picks; gone with New run", async () => {

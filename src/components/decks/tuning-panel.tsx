@@ -1214,7 +1214,9 @@ export function TuningPanel({
         onChanged={reread}
         onAnnounce={setAnnounced}
         onNewRun={openNewRun}
-        readOnly={reviewing && state.retired !== null}
+        // With the reader's switch off, a stored v2 run is drawn read-only (ruling F2(a)): its rows, picks and receipt stay,
+        // no Apply, Undo or pick control, since the v2 actions refuse a reader with the switch off.
+        readOnly={(reviewing && state.retired !== null) || v2 === null}
         past={reviewing && review?.past ? {
           date: historyDay(review.past.at), stale: state.retired !== null, version: state.review?.readVersion ?? null, moved: state.review?.moved ?? null,
         } : null}
