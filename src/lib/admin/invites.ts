@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { flyerHoldRow } from "../flyer/rules";
 import type { InviteKind, ReservationState } from "../invites/rules";
-import type { Edge, InviteEvent, OpenRow, ReservationRow } from "./invites-rule";
+import type { Edge, FlyerEdge, FlyerNodeRow, InviteEvent, OpenRow, ReservationRow } from "./invites-rule";
 
 /**
  * The admin's invite reads (plan `2026-10-16-invites.md`, PR 6). SERVER-ONLY. Each is ONE statement, so a page is
@@ -12,7 +12,7 @@ import type { Edge, InviteEvent, OpenRow, ReservationRow } from "./invites-rule"
  */
 
 // A timestamp inside json_build_object arrives as text, without a zone; the columns hold UTC.
-const utc = (text: string | null) => (text === null ? null : new Date(`${text}Z`));
+export const utc = (text: string | null) => (text === null ? null : new Date(`${text}Z`));
 
 type RawOpen = { userId: string; kind: InviteKind; state: ReservationState; qrExpiresAt: string | null; holdsUntil: string | null };
 type RawEdge = { inviter: string | null; invitee: string | null; kind: InviteKind; joinedAt: string };
@@ -23,7 +23,11 @@ const toEdge = (e: RawEdge): Edge => ({ ...e, joinedAt: utc(e.joinedAt)! });
 type RawFlyer = { userId: string; holdsUntil: string };
 const toFlyer = (f: RawFlyer): OpenRow => ({ ...flyerHoldRow(utc(f.holdsUntil)!), userId: f.userId });
 
-export type EveryInvite = { balances: Map<string, number>; open: ReservationRow[]; flyer: OpenRow[]; edges: Edge[] };
+type RawFlyerCode = { id: string; code: string; label: string; capacity: number; createdBy: string; createdAt: string };
+type RawFlyerEdge = { codeId: string; invitee: string; joinedAt: string };
+
+/** `flyerCodes` and `flyerEdges` are the SPENT claims: the codes that took a sign-up and the accounts they made. */
+export type EveryInvite = { balances: Map<string, number>; open: ReservationRow[]; flyer: OpenRow[]; flyerCodes: FlyerNodeRow[]; flyerEdges: FlyerEdge[]; edges: Edge[] };
 
 /**
  * M1 and M4: every account's stock, open rows (with the address, which only the admin sees) and every edge, a
@@ -34,6 +38,8 @@ export async function readEveryInvite(): Promise<EveryInvite> {
     balances: { userId: string; held: number }[];
     open: (RawOpen & { id: string; email: string | null })[];
     flyer: RawFlyer[];
+    flyerCodes: RawFlyerCode[];
+    flyerEdges: RawFlyerEdge[];
     edges: RawEdge[];
   }>(sql`select
     coalesce((select json_agg(json_build_object('userId', b.user_id, 'held', b.held)) from invite_balances b), '[]'::json) as balances,
@@ -44,6 +50,11 @@ export async function readEveryInvite(): Promise<EveryInvite> {
     coalesce((select json_agg(json_build_object('userId', c.created_by, 'holdsUntil', f.holds_until))
       from flyer_claims f join flyer_codes c on c.id = f.code_id where f.state in ('open', 'proven')), '[]'::json) as flyer,
     coalesce((select json_agg(json_build_object(
+      'id', c.id, 'code', c.code, 'label', c.label, 'capacity', c.capacity, 'createdBy', c.created_by, 'createdAt', c.created_at
+    )) from flyer_codes c where exists (select 1 from flyer_claims s where s.code_id = c.id and s.state = 'spent')), '[]'::json) as "flyerCodes",
+    coalesce((select json_agg(json_build_object('codeId', s.code_id, 'invitee', s.user_id, 'joinedAt', s.resolved_at))
+      from flyer_claims s where s.state = 'spent'), '[]'::json) as "flyerEdges",
+    coalesce((select json_agg(json_build_object(
       'inviter', e.inviter_user_id, 'invitee', e.invitee_user_id, 'kind', e.kind, 'joinedAt', e.joined_at
     )) from invite_edges e), '[]'::json) as edges`);
   const [row] = rows;
@@ -51,6 +62,8 @@ export async function readEveryInvite(): Promise<EveryInvite> {
     balances: new Map(row.balances.map((b) => [b.userId, b.held])),
     open: row.open.map((r) => ({ ...toOpen(r), id: r.id, email: r.email })),
     flyer: row.flyer.map(toFlyer),
+    flyerCodes: row.flyerCodes.map((c) => ({ ...c, createdAt: utc(c.createdAt)! })),
+    flyerEdges: row.flyerEdges.map((e) => ({ ...e, joinedAt: utc(e.joinedAt)! })),
     edges: row.edges.map(toEdge),
   };
 }

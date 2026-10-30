@@ -22,6 +22,11 @@ export type OpenRow = HoldingRow & { userId: string };
 /** One invite that made an account. Either side is null once that account was deleted. */
 export type Edge = { inviter: string | null; invitee: string | null; kind: InviteKind; joinedAt: Date };
 
+/** A flyer code with at least one sign-up, as the tree draws its node under whoever made it. */
+export type FlyerNodeRow = { id: string; code: string; label: string; capacity: number; createdBy: string; createdAt: Date };
+/** One sign-up a flyer code took (a spent claim): the code and the new account. Not an invite edge: no friend link. */
+export type FlyerEdge = { codeId: string; invitee: string; joinedAt: Date };
+
 /** What an account's invites read as, from its stock (`held`, 0 when it has no row) and its open rows. */
 export function countFor(held: number | undefined, open: readonly HoldingRow[], now: Date) {
   return inviteCount(held ?? 0, open, now);

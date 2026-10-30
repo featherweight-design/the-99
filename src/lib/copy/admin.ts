@@ -714,6 +714,44 @@ export const adminMaskCopy = {
 } as const;
 
 /**
+ * The Flyer codes section on the Invites tab and the tree's flyer node (flyer trial R1b, boards Admin-Desktop and
+ * Admin-Phone). Frozen to the handoff's `flyer-trial · copy strings.ts`; admin-only, so out of /copy-review's scope.
+ * The form, the revoke dialog and the print bar are drawn by later PRs and wait here.
+ */
+export const flyerAdminCopy = {
+  section: "Flyer codes",
+  meta: (live: number, left: number, listed: number) => `${live} live · from your invites, ${left} left · ${listed} on the launch list`,
+  newCode: "New flyer code",
+  cols: { store: "Store", code: "Code", signups: "Sign-ups", group: "Group", made: "Made" },
+  used: (n: number, capacity: number) => `${n} of ${capacity}`,
+  full: "full",
+  print: "Print",
+  revoke: "Revoke",
+  revokedOn: (day: string) => `revoked ${day}`,
+  store: "Store",
+  storeHelp: "Printed on nothing. Only you read it.",
+  group: "Group",
+  groupNew: (name: string) => `New group: ${name}`,
+  groupHelp: "Its sign-ups and the people they invite join it.",
+  facts: ["50 sign-ups", "3 free runs a day", "15 welcome credits", "3 invites each", "ends at launch"],
+  spends: "Each sign-up spends one of your invites.",
+  make: "Make code",
+  cancel: "Cancel",
+  revokeTitle: (store: string) => `Revoke ${store}’s code?`,
+  revokeBody: (code: string, n: number) =>
+    `People can no longer join with ${code}. The ${n} who joined keep their accounts, their group and their invites. Printed flyers will say it no longer works.`,
+  keep: "Keep it",
+  revokeConfirm: "Revoke code",
+  treeNode: (store: string) => `Flyer · ${store}`,
+  noFriendLink: "no friend link to Hugh",
+  launchList: (n: number) => `Launch list · ${n}`,
+  launchListMeta: "emails left on used-up and ended flyers",
+  csv: "Download CSV",
+  printBar: "Letter · black ink on coloured paper · the toolbar doesn’t print",
+  downloadQr: "Download QR",
+} as const;
+
+/**
  * Each switch's name and one plain line (admin STATES L1; READINESS G9). The canvas drew 21 of them
  * (`n:` and `d:` in `Admin R2.dc.html`); the rest, and the canvas lines the code has since moved
  * past, are new here and owed to /copy-review. A parent's line names what needs it; a child's tag
@@ -723,7 +761,7 @@ export const switchCopy: Readonly<Record<SwitchName, { label: string; descriptio
   ALL_DECKS_CART_ENABLED: { label: "Shopping for all decks", description: "One shopping list across every deck, at /decks/shopping." },
   ANALYSIS_TAB_ENABLED: { label: "Analysis tab", description: "The Analysis tab on a deck. Three switches need it." },
   FEEDBACK_ENABLED: { label: "Feedback", description: "Report a problem, the check-in on Home and the Feedback tab here. No surface yet." },
-  FLYER_TRIAL_ENABLED: { label: "Flyer trial", description: "Flyer codes on /join, their sign-ups, the Flyer codes section here and the launch list. Off at launch retires every code. No surface yet." },
+  FLYER_TRIAL_ENABLED: { label: "Flyer trial", description: "Gates the /join/<CODE> flyer sign-ups and the Flyer codes section on /admin/invites. Off retires every code." },
   ANNOUNCEMENTS_ENABLED: { label: "Announcements", description: "Wizards announcements on Home, in Settings and as pushes. No surface yet." },
   BRACKET_REACH_ENABLED: { label: "Bracket reach", description: "Help me choose places owned cards that reach the bracket asked for." },
   CHANGE_COMMANDER_ENABLED: { label: "Change commander", description: "Change a deck’s commander and keep the 99." },
