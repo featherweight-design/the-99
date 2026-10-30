@@ -8,7 +8,7 @@ const lines = (src: string, path = "x.ts") => switchReadsIn(path, src).map((f) =
 
 describe("switchReadsIn", () => {
   it("finds process.env handed to a flag function, or to any call", () => {
-    expect(lines("const on = deckNotesEnabled(process.env);")).toEqual([1]);
+    expect(lines("const on = feedbackEnabled(process.env);")).toEqual([1]);
     expect(lines("x;\nawait loadThing(u, process.env, tx);")).toEqual([2]);
     expect(lines('const on = tuningEnabled(process["env"]);')).toEqual([1]);
   });

@@ -8,7 +8,6 @@
 // It WRITES: it creates a deck of its own under the signed-in account (three catalog cards), walks the notes
 // on it, and deletes the deck (notes and cards cascade) in a `finally`. It refuses staging, production and an unknown branch before the first write by
 // `neon.branch_id`. Point DATABASE_URL (and the server it names) at local-dev, never production.
-// Needs the server started with DECK_NOTES_ENABLED=true.
 //
 // Run: PROBE_BASE=http://localhost:3201 node scripts/probe-deck-notes.mjs
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";

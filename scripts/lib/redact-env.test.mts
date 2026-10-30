@@ -30,7 +30,7 @@ describe("redactSecrets", () => {
       NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_live_z",
       CACHE_URL: "redis://:hunter2@host:6379",
       LABEL_MAX_TOKENS: "4000",
-      DECK_NOTES_ENABLED: "true",
+      FEEDBACK_ENABLED: "true",
       NODE_ENV: "test",
       PLAIN_URL: "https://example.com/x",
       EMPTY_SECRET: "",
@@ -41,7 +41,7 @@ describe("redactSecrets", () => {
       "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY", "SENTRY_AUTH_TOKEN", "SOME_URL", "THE_99_CLERK_SECRET_KEY",
       "THE_99_NEON_STAGING_DIRECT",
     ]);
-    expect(env.DECK_NOTES_ENABLED).toBe("true");
+    expect(env.FEEDBACK_ENABLED).toBe("true");
     expect(env.NODE_ENV).toBe("test");
     expect(env.LABEL_MAX_TOKENS).toBe("4000");
     expect(env.PLAIN_URL).toBe("https://example.com/x");

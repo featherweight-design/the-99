@@ -3036,7 +3036,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   (visual viewport above any foot bar) when it did not, not pinned to the top (Hugh, 2026-10-22). `TAG_SCROLL_ROOM=1` adds 2000px under `<main>` so a short page's end cannot hide a jump;
   `TAG_SCROLL_DECK` names the deck (else the first on `/decks`). It submits nothing; the description box saves on blur,
   so it puts back the words the box held, and it refuses a `PROBE_BASE` that is not localhost. Needs
-  `DECK_NOTES_ENABLED`, `HELP_ME_CHOOSE_ENABLED`, `TUNING_ENABLED` and `ANALYSIS_TAB_ENABLED` true. Measured 2026-10-21
+  `HELP_ME_CHOOSE_ENABLED`, `TUNING_ENABLED` and `ANALYSIS_TAB_ENABLED` true. Measured 2026-10-21
   on local-dev: all checks pass in both modes; on the previous picker four failed (the page moved 374 to 482px with the
   list's room to spare).
 
