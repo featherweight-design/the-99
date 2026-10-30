@@ -161,7 +161,7 @@ export function middleBrackets(middle: number): Bracket[] {
 
 /**
  * The table a deck page's Games tab opens prefilled from (plan §PR 8): the `table` parameter `logGameHref` writes, read
- * only while the URL lands on Games and `socialGamesEnabled` is on. Anything else
+ * only while the URL lands on Games and friends are on (`socialFriendsEnabled`: opponents follow friends). Anything else
  * reads nothing; whether the viewer may log from that table is the server's read, `tablePrefill`.
  */
 export function logPrefillTable(query: Record<string, string | string[] | undefined>, on: boolean): string | null {

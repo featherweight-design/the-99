@@ -20,7 +20,7 @@ export const socialCopy = {
     all: "All friends", // the › is drawn
     you: "You", // under your own face, in the no-friends state only
     invite: "Add the people you play with.",
-    /** G5: the line's second sentence names Opponents only while SOCIAL_GAMES_ENABLED is on. */
+    /** G5: the line's second sentence names Opponents only while SOCIAL_FRIENDS_ENABLED is on (opponents follow friends). */
     inviteMore: (games: boolean) =>
       games ? "Seat them when you log a game, and see their spares when you shop." : "See their spares when you shop.",
     more: (n: number) => `+${n}`, // the overflow slot, aria-hidden

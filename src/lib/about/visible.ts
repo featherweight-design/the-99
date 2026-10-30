@@ -16,7 +16,7 @@ import { deckStatsEnabled } from "../decks/stats-flag";
 import { deckNotesEnabled } from "../decks/notes-flag";
 import { collectionEditEnabled, collectionSyncEnabled } from "../collection/edit-flag";
 import {
-  socialFriendsEnabled, socialGamesEnabled, socialInvitesEnabled,
+  socialFriendsEnabled, socialInvitesEnabled,
 } from "../social/flag";
 import { wishlistEnabled } from "../wishlist/flag";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
@@ -78,9 +78,10 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   FIND_A_DECK_READ_ENABLED: findADeckReadEnabled,
   // Starting without a collection ended on exactly when collection edit is.
   NO_COLLECTION_ENTRY_ENABLED: collectionEditEnabled,
-  // The Social line: `SOCIAL_GAMES_ENABLED` already needs `SOCIAL_FRIENDS_ENABLED` inside its own function.
+  // The Social line. Opponents' switch is retired: its name stays the lines' historical identity and follows its
+  // parent, `SOCIAL_FRIENDS_ENABLED`, which it needed.
   SOCIAL_FRIENDS_ENABLED: socialFriendsEnabled,
-  SOCIAL_GAMES_ENABLED: socialGamesEnabled,
+  SOCIAL_GAMES_ENABLED: socialFriendsEnabled,
   SOCIAL_WISHLIST_ENABLED: wishlistEnabled,
   // The launch-end batch. Invites already need SOCIAL_FRIENDS_ENABLED, and scanning COLLECTION_EDIT_ENABLED, inside
   // their own functions. Rule 0's switch is retired: its name stays the entry's historical identity and follows its parent.

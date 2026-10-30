@@ -1,6 +1,6 @@
 /**
  * A deck's games with their opponents and the matchups drawn from them (Social R3 plan, PR 1). The deck page's
- * Games tab reads it, behind `SOCIAL_GAMES_ENABLED`.
+ * Games tab reads it, behind `SOCIAL_FRIENDS_ENABLED` (opponents follow friends since their own switch retired).
  *
  * **It never throws.** Opponents are an ornament on a game the player already logged: a read that fails leaves
  * the games exactly as they were, with no opponents and no Matchups, and never an error on the deck page.
@@ -9,7 +9,7 @@
  */
 import { loadOpeningArt } from "../cards/opening-printing";
 import { loadCatalogArt } from "./catalog-art";
-import { socialGamesEnabled } from "../social/flag";
+import { socialFriendsEnabled } from "../social/flag";
 import type { DeckGame } from "./games";
 import { listGameOpponents, type GameOpponent, type OpponentCommander } from "./game-opponents";
 import { summarizeMatchups, type Matchups } from "./matchups";
@@ -58,7 +58,7 @@ export async function loadDeckOpponents(
   // Injected so a test can fail the read. The page passes none.
   read: typeof listGameOpponents = listGameOpponents,
 ): Promise<DeckOpponents | null> {
-  if (!socialGamesEnabled(env) || games.length === 0) return null;
+  if (!socialFriendsEnabled(env) || games.length === 0) return null;
   try {
     const opponents = await withArt(await read(deckId, userId));
     return { opponents, matchups: summarizeMatchups(games, opponents) };

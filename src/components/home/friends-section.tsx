@@ -31,7 +31,7 @@ export type FriendsSectionProps = {
   links: { token: string; createdAt: Date; expiresAt: Date }[];
   /** The render's one clock, from the server. */
   now: string;
-  /** SOCIAL_GAMES_ENABLED: the no-friends line names seating friends in a game only while it is on (G5). */
+  /** SOCIAL_FRIENDS_ENABLED (opponents follow friends since their own switch retired): the no-friends line names seating friends in a game only while it is on (G5). */
   games: boolean;
   /** A face opens the friend's own page, which needs the friends switch alone (menu and Home PR 7); false opens /friends. */
   friendPages: boolean;

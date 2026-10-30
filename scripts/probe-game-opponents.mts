@@ -170,15 +170,15 @@ async function main() {
     const g2 = await log(V, mine, "win", [{ friend: f.publicId }]);
     check("a friend seats with no deck known", g2 !== null && (await opp.listGameOpponents(mine, V)).get(g2!)?.[0].friend?.name === "Fay");
 
-    // The deck page's read (R3 PR 1): the seats and the matchups, behind the switch, never throwing.
-    const ON = { SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_GAMES_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+    // The deck page's read (R3 PR 1): the seats and the matchups, behind friends (opponents' own switch is retired), never throwing.
+    const ON = { SOCIAL_FRIENDS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
     const played = await listDeckGames(mine, V);
     const loaded = await loadDeckOpponents(mine, V, played, ON);
     check("the deck read gives each game's seats and a matchup summary", loaded !== null
       && loaded.opponents.get(g1!)?.length === 2 && loaded.matchups.games === played.length && loaded.matchups.recorded === 2,
       JSON.stringify(loaded?.matchups.recorded));
     check("another player's deck id reads no seats", (await loadDeckOpponents(mine, S, played, ON))?.opponents.size === 0);
-    check("with the switch off the read is null and reads nothing", (await loadDeckOpponents(mine, V, played, {} as NodeJS.ProcessEnv)) === null);
+    check("with friends off the read is null and reads nothing", (await loadDeckOpponents(mine, V, played, {} as NodeJS.ProcessEnv)) === null);
     check("a failing read is null, not a throw", (await loadDeckOpponents(mine, V, played, ON, async () => { throw new Error("down"); })) === null);
 
     const before = await games(mine);

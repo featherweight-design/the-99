@@ -7,9 +7,9 @@ describe("liveMoments", () => {
     expect(live).toEqual(["precons", "top-off", "card-assignments", "lineup"]);
   });
 
-  it("follows a tool's parent, as the screen does: Matchups needs friends as well as games", () => {
+  it("follows friends for Matchups, as the screen does: the retired opponents switch alone raises nothing", () => {
     const env = { SOCIAL_GAMES_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
     expect(liveMoments(env)).not.toContain("matchups");
-    expect(liveMoments({ ...env, SOCIAL_FRIENDS_ENABLED: "true" })).toContain("matchups");
+    expect(liveMoments({ SOCIAL_FRIENDS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv)).toContain("matchups");
   });
 });

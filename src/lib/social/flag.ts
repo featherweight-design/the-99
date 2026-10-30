@@ -8,16 +8,6 @@ export function socialFriendsEnabled(env: NodeJS.ProcessEnv): boolean {
 }
 
 /**
- * `SOCIAL_GAMES_ENABLED`: opponents in the game log (scope §4, Feature C). `'true'` on staging, unset on
- * production until Hugh walks it. It requires `SOCIAL_FRIENDS_ENABLED` (scope §6: every child switch does,
- * except the wishlist), checked here so an override of this one never raises its parent. Dark until its
- * UI PR: `logGame` refuses opponents while it is off.
- */
-export function socialGamesEnabled(env: NodeJS.ProcessEnv): boolean {
-  return env.SOCIAL_GAMES_ENABLED === "true" && socialFriendsEnabled(env);
-}
-
-/**
  * `SOCIAL_INVITES_ENABLED`: inviting someone new and invite counts (plan `2026-10-16-invites.md`). `'true'` on
  * staging, unset on production until the invite-only launch. It requires `SOCIAL_FRIENDS_ENABLED`, checked here so
  * an override of this one never raises its parent: an account with friends off has no /friends to invite from. Off,

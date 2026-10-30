@@ -1,7 +1,7 @@
 {
   "feature": "Social R3 PR 3: the seat picker's friends, a friend's decks and Seat a pod",
   "clearAbout": true,
-  "note": "Needs SOCIAL_FRIENDS_ENABLED=true and SOCIAL_GAMES_ENABLED=true, GAMES_DECK, and a SCRATCH branch seeded with scripts/seed-r3-picker-fixture.mts (Dave with 2 decks, Jo with none, Samantha Rivers with 1, a pod Thursday of Hugh, Dave and Samantha). Logs nothing.",
+  "note": "Needs SOCIAL_FRIENDS_ENABLED=true, GAMES_DECK, and a SCRATCH branch seeded with scripts/seed-r3-picker-fixture.mts (Dave with 2 decks, Jo with none, Samantha Rivers with 1, a pod Thursday of Hugh, Dave and Samantha). Logs nothing.",
   "rows": [
     {
       "id": "picker-friends",

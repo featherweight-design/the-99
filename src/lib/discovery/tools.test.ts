@@ -97,7 +97,7 @@ describe("toolLanding", () => {
     expect(toolLanding(undefined, allOn)).toBeNull();
     expect(toolLanding("tour:banner", allOn)).toBeNull();
     expect(toolLanding("stand-ins", offFor("SWAP_TOOLS_ENABLED"))).toBeNull();
-    expect(toolLanding("matchups", offFor("SOCIAL_GAMES_ENABLED"))).toBeNull();
+    expect(toolLanding("matchups", offFor("SOCIAL_FRIENDS_ENABLED"))).toBeNull();
     expect(isToolId("nope")).toBe(false);
   });
 });

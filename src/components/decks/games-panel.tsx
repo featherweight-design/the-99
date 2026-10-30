@@ -23,9 +23,9 @@ export interface GamesPanelProps {
   tuned?: boolean;
   /** Presses the Analysis tab, for the pointer line. */
   onOpenAnalysis?: () => void;
-  /** The log form's "Across the table" row, for a reader with `SOCIAL_GAMES_ENABLED` on. Absent: the shipped form. */
+  /** The log form's "Across the table" row, for a reader with `SOCIAL_FRIENDS_ENABLED` on. Absent: the shipped form. */
   opponents?: GameLogFormProps["opponents"];
-  /** The seats of each game and the matchups drawn from them (Social R3), for a reader with `SOCIAL_GAMES_ENABLED` on. Null: no Matchups, no `vs` lines. */
+  /** The seats of each game and the matchups drawn from them (Social R3), for a reader with `SOCIAL_FRIENDS_ENABLED` on. Null: no Matchups, no `vs` lines. */
   gameOpponents?: DeckOpponentsWire | null;
   /** A Rule 0 table's seats, for the form to open with (plan §PR 8). Passed to whichever form this panel draws. */
   prefill?: GameLogFormProps["prefill"];

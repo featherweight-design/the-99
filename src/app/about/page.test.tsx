@@ -66,7 +66,7 @@ const tiles = async (query: Record<string, string | string[]> = {}) => find(awai
 
 const DECK_SWITCHES = [
   "PROPOSED_CUTS_ENABLED", "TUNING_ENABLED", "MANA_BALANCE_ENABLED", "SWAP_TOOLS_ENABLED", "SOCIAL_FRIENDS_ENABLED",
-  "SOCIAL_GAMES_ENABLED", "ANALYSIS_TAB_ENABLED",
+  "ANALYSIS_TAB_ENABLED",
 ];
 
 beforeEach(() => {

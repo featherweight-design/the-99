@@ -1378,18 +1378,17 @@ describe("logGame", () => {
     ]);
   });
 
-  // Opponents (social Feature C) ride the same log. Dark: refused outright while the reader's resolved
-  // SOCIAL_GAMES_ENABLED is off, and nothing is written, not even the game.
+  // Opponents (social Feature C) ride the same log. Refused outright while the reader's resolved
+  // SOCIAL_FRIENDS_ENABLED is off (opponents follow friends since their own switch retired), and nothing is written,
+  // not even the game.
   describe("with opponents", () => {
     // The reader's resolved switches are the file's ENV sentinel, not process.env.
     afterEach(() => {
-      delete ENV.SOCIAL_GAMES_ENABLED;
       delete ENV.SOCIAL_FRIENDS_ENABLED;
     });
     const seats = [{ label: "Sam", won: true }];
 
     it("refuses opponents while the switch is off, writing nothing", async () => {
-      ENV.SOCIAL_GAMES_ENABLED = "true";
       ENV.SOCIAL_FRIENDS_ENABLED = "false";
       const result = await logGame("deck_1", { result: "loss", podSize: 4, worked: [], hurt: [], opponents: seats });
       expect(result.ok).toBe(false);
@@ -1397,7 +1396,6 @@ describe("logGame", () => {
     });
 
     it("writes a seat per opponent, numbered from 1, when the switch is on", async () => {
-      ENV.SOCIAL_GAMES_ENABLED = "true";
       ENV.SOCIAL_FRIENDS_ENABLED = "true";
       const result = await logGame("deck_1", { result: "loss", podSize: 4, worked: [], hurt: [], opponents: seats });
       expect(result).toEqual({ ok: true });
@@ -1419,7 +1417,6 @@ describe("logGame", () => {
     afterEach(() => { stub.state.cards.length = 0; });
 
     it("refuses two legal commanders that cannot pair, writing nothing", async () => {
-      ENV.SOCIAL_GAMES_ENABLED = "true";
       ENV.SOCIAL_FRIENDS_ENABLED = "true";
       pairOf("Flying");
       const result = await logGame("deck_1", {
@@ -1430,7 +1427,6 @@ describe("logGame", () => {
     });
 
     it("seats a pair that can pair", async () => {
-      ENV.SOCIAL_GAMES_ENABLED = "true";
       ENV.SOCIAL_FRIENDS_ENABLED = "true";
       pairOf("Partner (You can have two commanders if both have partner.)");
       const result = await logGame("deck_1", {
@@ -1442,7 +1438,6 @@ describe("logGame", () => {
     });
 
     it("refuses a seat whose commander cannot lead a deck", async () => {
-      ENV.SOCIAL_GAMES_ENABLED = "true";
       ENV.SOCIAL_FRIENDS_ENABLED = "true";
       stub.state.cards.push(commanderCard({ oracleId: PAIR_A, typeLine: "Instant", layout: "normal" }));
       const result = await logGame("deck_1", { result: "win", podSize: 4, worked: [], hurt: [], opponents: [{ commander: PAIR_A }] });
@@ -1451,7 +1446,6 @@ describe("logGame", () => {
     });
 
     it("refuses a winner on a game the player won", async () => {
-      ENV.SOCIAL_GAMES_ENABLED = "true";
       ENV.SOCIAL_FRIENDS_ENABLED = "true";
       const result = await logGame("deck_1", { result: "win", podSize: 4, worked: [], hurt: [], opponents: seats });
       expect(result.ok).toBe(false);
@@ -1481,7 +1475,6 @@ describe("logGame", () => {
             deckId: "dec0dec0-0000-4000-8000-0000000000a0", deckName: "Gisa Zombies", commanderOracleId: GISA, partnerOracleId: GISA_PARTNER }),
         ];
         table = { id: TABLE_ID, seating: seatingHash(TABLE_ID, tableRows.rows) };
-        ENV.SOCIAL_GAMES_ENABLED = "true";
         ENV.SOCIAL_FRIENDS_ENABLED = "true";
       });
       const log = (opponents: OpponentInput[], over: Partial<LogGameInput> = {}) =>

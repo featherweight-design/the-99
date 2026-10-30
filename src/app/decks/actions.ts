@@ -17,7 +17,7 @@ import {
 } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
 import { requestSwitchEnv } from "../../lib/switches/request";
-import { socialGamesEnabled } from "../../lib/social/flag";
+import { socialFriendsEnabled } from "../../lib/social/flag";
 import {
   insertOpponentsIn, opponentCommandersValid, parseOpponents, resolveOpponentsIn, SeatRefused, withTableSeats, type OpponentInput,
 } from "../../lib/decks/game-opponents";
@@ -1174,7 +1174,7 @@ export type LogGameInput = {
    *  predicate everywhere rather than two. */
   note?: string;
   /** Who sat across the table, seat 1 upward (social Feature C). Optional, and refused outright while
-   *  `SOCIAL_GAMES_ENABLED` is off for this reader. Shape-checked by `parseOpponents`. */
+   *  `SOCIAL_FRIENDS_ENABLED` is off for this reader. Shape-checked by `parseOpponents`. */
   opponents?: OpponentInput[];
   /** The Rule 0 table the game was logged from, and the seating its prefill was drawn from (`TablePrefill.table`).
    *  Required when any opponent is a `tableSeat`, and ignored when none is. */
@@ -1271,7 +1271,7 @@ export async function logGame(
   if (table !== null && !isTableRef(table)) return refuse;
   if (opponents.length > 0) {
     const env = await requestSwitchEnv(userId);
-    if (!socialGamesEnabled(env)) return refuse;
+    if (!socialFriendsEnabled(env)) return refuse;
     if (!(await opponentCommandersValid(opponents))) return refuse;
   }
 

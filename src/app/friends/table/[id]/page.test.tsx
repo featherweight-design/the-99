@@ -8,7 +8,6 @@ const m = vi.hoisted(() => ({
   requireUserId: vi.fn(),
   requestSwitchEnv: vi.fn(),
   socialFriendsEnabled: vi.fn(),
-  socialGamesEnabled: vi.fn(),
   loadTable: vi.fn(),
   loadClosedTable: vi.fn(),
   howItWorksEnabled: vi.fn(),
@@ -20,7 +19,7 @@ vi.mock("next/navigation", () => ({
 vi.mock("../actions", () => ({ markTableSeen: async () => true }));
 vi.mock("../../../../lib/auth", () => ({ requireUserId: m.requireUserId }));
 vi.mock("../../../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitchEnv }));
-vi.mock("../../../../lib/social/flag", () => ({ socialFriendsEnabled: m.socialFriendsEnabled, socialGamesEnabled: m.socialGamesEnabled }));
+vi.mock("../../../../lib/social/flag", () => ({ socialFriendsEnabled: m.socialFriendsEnabled }));
 vi.mock("../../../../lib/social/rule-zero-table", () => ({ loadTable: m.loadTable, loadClosedTable: m.loadClosedTable }));
 vi.mock("../../../../lib/about/how-it-works-flag", () => ({ howItWorksEnabled: m.howItWorksEnabled }));
 
@@ -34,7 +33,6 @@ beforeEach(() => {
   m.requireUserId.mockResolvedValue("user_viewer");
   m.requestSwitchEnv.mockResolvedValue({});
   m.socialFriendsEnabled.mockReturnValue(true);
-  m.socialGamesEnabled.mockReturnValue(true);
   m.loadTable.mockResolvedValue(null);
   m.loadClosedTable.mockResolvedValue(null);
   m.howItWorksEnabled.mockReturnValue(false);
@@ -61,9 +59,9 @@ describe("TablePage", () => {
     expect(m.loadClosedTable).not.toHaveBeenCalled();
   });
 
-  it("leaves Log this game out with games off", async () => {
+  it("leaves Log this game out with friends off (opponents follow friends)", async () => {
     m.loadTable.mockResolvedValue(TABLES.T1);
-    m.socialGamesEnabled.mockReturnValue(false);
+    m.socialFriendsEnabled.mockReturnValue(false);
     await page();
     expect(screen.queryByText("Log this game")).toBeNull();
   });

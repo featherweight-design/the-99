@@ -1,7 +1,7 @@
 {
   "feature": "Social R3 PR 2: the game log form's Across the table row (your seat, anyone-by-commander seats, who won, the held pod)",
   "clearAbout": true,
-  "note": "Needs SOCIAL_FRIENDS_ENABLED=true and SOCIAL_GAMES_ENABLED=true on the server, and GAMES_DECK (any deck of the signed-in account). Opens the form, searches the catalog and seats two commanders; it logs nothing (no Save press). Games or friends off: the row is absent, which the component tests hold. The held pod's line (a press on a held size) is drawn by the component tests: Playwright will not click an aria-disabled control.",
+  "note": "Needs SOCIAL_FRIENDS_ENABLED=true on the server, and GAMES_DECK (any deck of the signed-in account). Opens the form, searches the catalog and seats two commanders; it logs nothing (no Save press). Friends off: the row is absent, which the component tests hold. The held pod's line (a press on a held size) is drawn by the component tests: Playwright will not click an aria-disabled control.",
   "rows": [
     {
       "id": "seats-empty",

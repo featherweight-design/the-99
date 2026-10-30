@@ -53,14 +53,14 @@ export interface GameLogFormProps {
    */
   initialOpen?: boolean;
   /**
-   * The "Across the table" row (Social R3), present only where `SOCIAL_GAMES_ENABLED` is on for this reader:
+   * The "Across the table" row (Social R3), present only where `SOCIAL_FRIENDS_ENABLED` is on for this reader:
    * absent, the form is the shipped form and no space is kept. The deck's own commander is the You seat.
    */
   opponents?: { you: YouSeat };
   /**
    * A Rule 0 table's seats (plan §PR 8), read on the server for the table the player pressed `Log this game` on. The
    * form opens with the pod size and every other seat filled, under a line saying where they came from. Drawn only
-   * beside `opponents`: the page passes it only while Rule 0 and `SOCIAL_GAMES_ENABLED` are both on.
+   * beside `opponents`: the page passes it only while Rule 0 is on (which needs friends).
    */
   prefill?: TablePrefill;
   /**

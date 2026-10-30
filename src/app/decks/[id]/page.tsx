@@ -74,7 +74,7 @@ import { loadStatsAverage } from "../../../lib/decks/stats-average-load";
 import { loadLandMana } from "../../../lib/decks/land-mana";
 import { loadSourceMana } from "../../../lib/decks/source-mana";
 import { loadDeckOpponents, opponentsWire } from "../../../lib/decks/deck-opponents-read";
-import { socialFriendsEnabled, socialGamesEnabled } from "../../../lib/social/flag";
+import { socialFriendsEnabled } from "../../../lib/social/flag";
 import { loadFriendDeckPrefs } from "../../../lib/social/deck-visibility";
 import { tablePrefill } from "../../../lib/social/rule-zero-log";
 import { logPrefillTable } from "../../../lib/rule-zero/table-view";
@@ -271,15 +271,15 @@ export default async function DeckBuilderPage({
     ? early(perf.timed("strategy", () => loadDeckStrategy(userId, id, env)).catch(() => null))
     : null;
   const gamesRead = early(perf.timed("games", () => listDeckGames(id, userId)));
-  // Who sat across the table, and the matchups drawn from it (Social R3), behind `SOCIAL_GAMES_ENABLED`. Never
+  // Who sat across the table, and the matchups drawn from it (Social R3), wherever friends are on. Never
   // throws: a failed read draws no Matchups and no `vs` lines, and the games stand as they were.
-  const opponentsRead = socialGamesEnabled(env)
+  const opponentsRead = socialFriendsEnabled(env)
     ? early(gamesRead.then((g) => perf.timed("opponents", () => loadDeckOpponents(id, userId, g, env))))
     : null;
   // The game log's seats from a Rule 0 table (plan §PR 8), when `Log this game` brought the reader here. Read per
   // request and outside every cached payload: it is one table's seating right now. Any mismatch (not seated, the
   // table closed, another deck in the seat) or a failed read is null, and the Games tab opens as it always has.
-  const prefillTable = logPrefillTable(query, socialGamesEnabled(env));
+  const prefillTable = logPrefillTable(query, socialFriendsEnabled(env));
   const prefillRead = prefillTable === null
     ? null
     : early(perf.timed("tablePrefill", () => tablePrefill(userId, prefillTable, id)).catch(() => null));
@@ -769,7 +769,7 @@ export default async function DeckBuilderPage({
         : null}
       tuningEnabled={tuned}
       strategy={strategy}
-      socialGames={socialGamesEnabled(env)}
+      socialGames={socialFriendsEnabled(env)}
       gamePrefill={prefillRead ? await prefillRead : null}
       proposedCutsEnabled={proposedCutsEnabled(env)}
       manaBalanceEnabled={manaBalanceEnabled(env)}
