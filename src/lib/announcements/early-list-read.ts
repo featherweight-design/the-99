@@ -197,6 +197,10 @@ export type ListEvidence = {
 /** A release list shares at least this much of the early list's matched cards (production 2026-10-30: every true release 0.94 to 1). */
 export const RELEASE_OVERLAP = 0.8;
 
+/** Overlap counts as evidence only over at least this many of the list's own matched cards, so a list the catalog has
+ *  barely matched cannot clear the bar on one or two shared staples; a name match still carries it. */
+export const RELEASE_OVERLAP_MIN_CARDS = 10;
+
 /** A list or precon name, folded for comparison: the Secret Lair and "Commander Deck" wrapping, case and punctuation dropped. */
 export function foldDeckName(name: string): string {
   return name.toLowerCase()
@@ -216,7 +220,7 @@ function evidenceOf(c: ReleaseCandidate, list: ListEvidence): { named: boolean; 
   let hits = 0;
   for (const id of ids) if (listed.has(id)) hits++;
   const title = list.title ? foldDeckName(list.title) : "";
-  return { named: title !== "" && title === foldDeckName(c.name), overlap: ids.size === 0 ? 0 : hits / ids.size };
+  return { named: title !== "" && title === foldDeckName(c.name), overlap: ids.size < RELEASE_OVERLAP_MIN_CARDS ? 0 : hits / ids.size };
 }
 
 /**

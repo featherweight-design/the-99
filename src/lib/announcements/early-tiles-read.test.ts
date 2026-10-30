@@ -30,8 +30,10 @@ describe("releasedCommandersQuery", () => {
 
 describe("hasGivenWay (the early page's pickReleasePrecon)", () => {
   const posted = new Date("2026-10-29T16:00:00Z");
-  const list = { commanderCardId: "cmd-1", publishedAt: posted, title: "Calling All Angels", partnerCardId: null, partnerRole: null, cards: [{ name: "Lyra", cardId: "cmd-1" }, { name: "Card 1", cardId: "card-1" }] };
-  const c = (fileName: string, setCode: string, firstSeenAt: string | null, baseline: boolean | null = firstSeenAt ? false : null, cardIds = ["card-1"]) =>
+  // Ten own cards, the overlap evidence's floor (RELEASE_OVERLAP_MIN_CARDS).
+  const OWN = Array.from({ length: 10 }, (_, i) => `card-${i}`);
+  const list = { commanderCardId: "cmd-1", publishedAt: posted, title: "Calling All Angels", partnerCardId: null, partnerRole: null, cards: [{ name: "Lyra", cardId: "cmd-1" }, ...OWN.map((cardId) => ({ name: cardId, cardId }))] };
+  const c = (fileName: string, setCode: string, firstSeenAt: string | null, baseline: boolean | null = firstSeenAt ? false : null, cardIds: string[] = OWN) =>
     ({ fileName, setCode, firstSeenAt: firstSeenAt ? new Date(firstSeenAt) : null, baseline, name: fileName, cardIds: ["cmd-1", ...cardIds] });
   const by = (...cs: ReturnType<typeof c>[]) => new Map([["cmd-1", cs]]);
 
@@ -49,6 +51,10 @@ describe("hasGivenWay (the early page's pickReleasePrecon)", () => {
   it("gives way to an unstamped precon only in the post's own set", () => {
     expect(hasGivenWay(list, "cmm", by(c("A_CMM", "CMM", null)))).toBe(true);
     expect(hasGivenWay(list, "fdc", by(c("A_CMM", "CMM", null)))).toBe(false);
+  });
+
+  it("gives way to a release carrying the list's name, as the page does", () => {
+    expect(hasGivenWay(list, "fdc", by({ ...c("Angels_SLD", "SLD", "2026-11-02T08:00:00Z", false, []), name: "Calling All Angels" }))).toBe(true);
   });
 
   it("stays early when the only release shares the commander but none of the list's evidence, as the page does", () => {

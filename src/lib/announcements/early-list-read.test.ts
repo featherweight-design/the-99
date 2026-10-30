@@ -81,22 +81,33 @@ describe("pickReleasePrecon", () => {
   });
 
   it("counts an alternate second line among the list's own cards, and leaves out a co-commander", () => {
-    // Four own cards and a second line. As an alternate it is a fifth own card, so a candidate missing it shares 4 of 5;
-    // as a co-commander it is left out.
+    // Ten own cards and a second line. As an alternate it is an eleventh own card; as a co-commander it is left out.
     const second = { name: "Second", cardId: "second" };
-    const list = (partnerRole: string) => ({ ...listed, partnerCardId: "second", partnerRole, cards: [CMD, second, ...lines(IDS.slice(0, 4)).slice(1)] });
-    const missing = c("A", "SLD", "2026-11-02T08:00:00Z", false, IDS.slice(0, 4));
-    expect(pickReleasePrecon([missing], posted, null, list("alternate"))).toBe("A");
-    // With the second line and three of the four: 4 of 5 as an alternate (passes), 3 of 4 as a co-commander (fails).
-    const withSecond = c("A", "SLD", "2026-11-02T08:00:00Z", false, ["second", ...IDS.slice(0, 3)]);
+    const list = (partnerRole: string) => ({ ...listed, partnerCardId: "second", partnerRole, cards: [CMD, second, ...lines(IDS).slice(1)] });
+    // The second line and eight of the ten: 9 of 11 as an alternate (passes), 8 of 10 as a co-commander (passes);
+    // without the second line and with eight: 8 of 11 as an alternate (fails), 8 of 10 as a co-commander (passes).
+    const withSecond = c("A", "SLD", "2026-11-02T08:00:00Z", false, ["second", ...IDS.slice(0, 8)]);
+    const without = c("A", "SLD", "2026-11-02T08:00:00Z", false, IDS.slice(0, 8));
     expect(pickReleasePrecon([withSecond], posted, null, list("alternate"))).toBe("A");
-    expect(pickReleasePrecon([withSecond], posted, null, list("co-commander"))).toBeNull();
-    expect(pickReleasePrecon([c("A", "SLD", "2026-11-02T08:00:00Z", false, ["second", ...IDS.slice(0, 4)])], posted, null, list("co-commander"))).toBe("A");
+    expect(pickReleasePrecon([without], posted, null, list("alternate"))).toBeNull();
+    expect(pickReleasePrecon([without], posted, null, list("co-commander"))).toBe("A");
+  });
+
+  it("takes no overlap evidence from fewer than RELEASE_OVERLAP_MIN_CARDS own matched cards", () => {
+    // One matched own card that the candidate lists would be 1 of 1; below the floor it is no evidence.
+    const sparse = { ...listed, cards: [CMD, { name: "Sol Ring", cardId: "card-0" }, ...IDS.slice(1).map(() => ({ name: "Unknown", cardId: null }))] };
+    expect(pickReleasePrecon([c("Other", "SLD", "2026-11-02T08:00:00Z", false, ["card-0"])], posted, null, sparse)).toBeNull();
+  });
+
+  it("drops an in-set precon with no evidence for an evidenced one elsewhere", () => {
+    const inSet = c("Other_FDC", "FDC", "2026-11-02T08:00:00Z", false, []);
+    const elsewhere = c("Angels_SLD", "SLD", "2026-11-03T08:00:00Z");
+    expect(pickReleasePrecon([inSet, elsewhere], posted, "fdc", listed)).toBe("Angels_SLD");
   });
 
   it("leaves a basic out of the evidence even when the post tags its printing or art", () => {
     // Every other line unmatched: a tagged Island the catalog matched must not make any precon holding Island a 1/1 match.
-    const tagged = { ...listed, cards: [CMD, ...IDS.map(() => ({ name: "Unknown", cardId: null })), { name: "Island (Villains)", cardId: "island" }, { name: "Island art 2", cardId: "island" }] };
+    const tagged = { ...listed, cards: [CMD, ...IDS.map(() => ({ name: "Unknown", cardId: null })), { name: "Island (Villains)", cardId: "island" }, { name: "Island art 2", cardId: "island" }, { name: "Island (Villains) art 2", cardId: "island" }] };
     expect(pickReleasePrecon([c("Other", "SLD", "2026-11-02T08:00:00Z", false, [])], posted, null, tagged)).toBeNull();
   });
 

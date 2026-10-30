@@ -53,8 +53,12 @@ const NAME_TAGS = [/\s*\([^()]*\)$/, /\s+art\s+\d+$/];
 
 /** A post's card name with its printing or art-variant tag dropped (`Island (Villains)` is `Island`). */
 export function untaggedName(name: string): string {
+  // Until nothing changes, so a doubly tagged `Island (Villains) art 2` comes back as `Island` too.
   let bare = name.trim();
-  for (const tag of NAME_TAGS) bare = bare.replace(tag, "") || bare;
+  for (let prev = ""; prev !== bare; ) {
+    prev = bare;
+    for (const tag of NAME_TAGS) bare = bare.replace(tag, "") || bare;
+  }
   return bare;
 }
 
