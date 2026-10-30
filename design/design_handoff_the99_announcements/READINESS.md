@@ -76,3 +76,28 @@ Ruled 2026-10-30 (Hugh, through the orchestrator): the rework ships with the app
 unchanged. The board's failed-save toast (danger dot, close ✕, its own radius, gap, padding and shadow) and its checkbox
 `line-height: 1` differ from those shared components; whether that look should apply app-wide is a Design note, not
 this PR.
+
+### Engineering audit: UI 3a (Home)
+
+2026-10-30, against origin/main. Home's rows, the lead and the quiet line, behind
+`ANNOUNCEMENTS_ENABLED` per reader. Push (3b) and the offer (3c) are not in this PR.
+
+- **Kind key.** `wizards-news` stands (migration 0193); the boards' `wizards-other` is the same kind. Its reader-facing
+  words come from `feedCopy` ("Wizards news" kicker and quiet name, "Other Wizards news" in Settings).
+- **Switch.** All three kinds are available exactly when `ANNOUNCEMENTS_ENABLED` is on for the reader
+  (`feedKindAvailable`); `UPCOMING_PRECONS_ENABLED` is read nowhere new.
+- **Default on reaches readers who never chose.** The catalog branches' feed gate is `kindEnabledAt`, not the stamp
+  alone, so a reader with no prefs row reads posts (probed on the scratch branch).
+- **Lead.** `LEAD_PRIORITY` per call 2; `NEVER_LEADS` holds `wizards-news`; a kind missing from the priority sorts
+  last, never first. A post leading with no hero, or one that fails, drops the hero band (the boards draw no such lead).
+- **"See the lists ›" is omitted** until the early lists (UI 6). A decklists row and lead carry "Read the post" alone,
+  as the primary press; the mono lists line stands.
+- **Press target.** The post's stored address, only when it is an https page on `magic.wizards.com`; otherwise no
+  press. 3b moves every post press onto its own redirect route.
+- **Push D4 stands.** The Lead-Story board's caption "a push tap marks the row seen" contradicts push D4 ("a landing
+  never marks anything seen"): a push landing never visits Home, so marking the row seen would hide news the reader was
+  never shown. 3b follows D4.
+- **Push in 3a.** Nothing queues a post (`PUSH_CATALOG_KINDS`), and Settings draws no push box on the three rows
+  (`pushableFeedKinds`); 3b lifts both.
+- **Open: the ✕ on a post.** `feed_dismissals_key_check` admits only `item:`, `ask:`, `set:` and `precon:` keys, so a
+  `post:` dismissal is refused (probed). Post rows and leads draw no ✕ until a migration widens the check.
