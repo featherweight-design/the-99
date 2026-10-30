@@ -216,4 +216,50 @@ describe("LeadStory, a Wizards post (announcements board Lead-Story)", () => {
     expect(container.querySelector("[data-lead-lists]")!.textContent).toBe("3 of 5 lists so far");
     expect(screen.getByRole("link").textContent).toMatch(/^Read the post/);
   });
+
+  it("leads a decklists post whose lists are in with See the lists filled, then Read the post as a ghost (Announcements UI 6b)", () => {
+    const item: FeedView = { ...POST, kind: "commander-decklists", href: "/decks/precons#announced-fdc", outbound: "/out/wizards/d1", post: { ...POST.post!, lists: { n: 3, of: 5 } } };
+    const { container } = render(<LeadStory item={item} now={NOW} onDismiss={() => {}} />);
+    const group = container.querySelector("[data-lead-two]")!;
+    expect(group.className).toContain("gap-x-[16px]");
+    expect(group.className).toContain("gap-y-[8px]");
+    const [lists, out] = within(group as HTMLElement).getAllByRole("link");
+    // Board `.ba`: filled, 40px on a phone and 36 from md, no ›.
+    expect(lists).toHaveAttribute("href", "/decks/precons#announced-fdc");
+    expect(lists.textContent).toBe(feedCopy.home.press.seeLists);
+    expect(lists).not.toHaveAttribute("target");
+    expect(lists.className).toContain("bg-[color:var(--accent)]");
+    expect(lists.className).toMatch(/(^|\s)h-\[40px\](\s|$)/);
+    expect(lists.className).toContain("md:h-[36px]");
+    // Board `.gh`: --fg-muted, 40/36, padding 0 4px, out to the post with the link-out icon.
+    expect(out).toHaveAttribute("href", "/out/wizards/d1");
+    expect(out).toHaveAttribute("target", "_blank");
+    expect(out.textContent).toMatch(/^Read the post/);
+    expect(out.querySelector("svg[data-link-out]")).not.toBeNull();
+    expect(out.className).toContain("text-[color:var(--fg-muted)]");
+    expect(out.className).not.toContain("bg-[color:var(--accent)]");
+    expect(out.className).toContain("px-[4px]");
+    expect(out.className).toMatch(/(^|\s)h-\[40px\](\s|$)/);
+    // The ✕ still ends the action line.
+    expect(screen.getByRole("button", { name: /Hide/ })).toBeInTheDocument();
+  });
+
+  it("leads with See the lists alone, filled, when the post's address is off magic.wizards.com", () => {
+    const item: FeedView = { ...POST, kind: "commander-decklists", href: "/decks/precons#announced-fdc", outbound: null, post: { ...POST.post!, lists: { n: 3, of: 5 } } };
+    const { container } = render(<LeadStory item={item} now={NOW} />);
+    expect(container.querySelector("[data-lead-two]")).toBeNull();
+    const links = screen.getAllByRole("link");
+    expect(links).toHaveLength(1);
+    expect(links[0]).toHaveAttribute("href", "/decks/precons#announced-fdc");
+    expect(links[0]).not.toHaveAttribute("target");
+    expect(links[0].textContent).toBe(feedCopy.home.press.seeLists);
+    expect(links[0].className).toContain("bg-[color:var(--accent)]");
+  });
+
+  it("keeps a Secret Lair lead's one filled press, href or not", () => {
+    const { container } = render(<LeadStory item={{ ...POST, href: "/decks/precons" }} now={NOW} />);
+    expect(container.querySelector("[data-lead-two]")).toBeNull();
+    expect(screen.getAllByRole("link")).toHaveLength(1);
+    expect(screen.getByRole("link")).toHaveAttribute("href", URL_OK);
+  });
 });

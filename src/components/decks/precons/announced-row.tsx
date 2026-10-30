@@ -13,6 +13,7 @@ import { WUBRG_COLOR } from "../../../lib/collection/browse";
 import { countdown, type AnnouncedMatch } from "../../../lib/precons/arrivals";
 import { CommanderThumb } from "../../ui/commander-thumb";
 import { FOCUS_RING, NEW_TAG, RevealedStrip } from "./announced-parts";
+import { announcedSetAnchor } from "../../../lib/announcements/early-list";
 
 const copy = preconsCopy.upcoming;
 
@@ -76,7 +77,7 @@ export function AnnouncedRow({ match, today, isNew, identity }: {
   );
 
   return (
-    <li className="flex flex-col rounded-[10px] border border-dashed border-[color:var(--border-dashed)] md:rounded-[11px]" data-testid="announced-row">
+    <li id={announcedSetAnchor(set.code)} className="flex flex-col rounded-[10px] border border-dashed border-[color:var(--border-dashed)] md:rounded-[11px]" data-testid="announced-row">
       {/* The name is the row's heading, as a set block's is (each set an `<h3>`). */}
       <h3 className="m-0 font-normal">
         {canOpen ? (

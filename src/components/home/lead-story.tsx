@@ -15,7 +15,9 @@
 // A Wizards post leads (Secret Lair or Commander decklists; Wizards news never does, `NEVER_LEADS`) with its hero
 // landscape, the only place it is shown whole (board Lead-Story): a 164px band across the top at -1.5deg on a phone,
 // 272x153 at -3deg where the card stands from `md`, over its own blurred hero. With no hero, or one that fails, the
-// words take the band alone. Its press is the filled button, out to the post.
+// words take the band alone. Its press is the filled button, out to the post; a Commander decklists post whose lists
+// are in (Announcements UI 6b, board Lead-Story `.yg2`) leads with See the lists filled, into Precons, and Read the
+// post beside it as a ghost (`--fg-muted`).
 
 import { useRef, useState } from "react";
 import type { FeedView } from "../../lib/feed/home";
@@ -24,7 +26,7 @@ import { shortName } from "../../lib/cards/short-name";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { feedCopy } from "../../lib/copy/feed";
 import type { ProfileCommander } from "../../lib/social/commander";
-import { FeedPress, feedText, listsText, pressWraps, usePostHero } from "../feed/feed-item";
+import { FeedPress, feedText, listsText, pressWraps, seesLists, usePostHero } from "../feed/feed-item";
 import { feedAge } from "../../lib/feed/age";
 import { Face } from "../social/face";
 import { ArtLayer } from "../ui/art-layer";
@@ -92,6 +94,7 @@ export function LeadStory({
   const post = item.post ?? null;
   const postHero = usePostHero(item);
   const lists = listsText(item);
+  const two = seesLists(item);
   const friend = item.friend?.displayName ?? "";
   const cardName = item.card?.name ?? "";
   const receipt = ask && answered ? receiptText(answered, shortName(cardName), friend) : null;
@@ -165,7 +168,23 @@ export function LeadStory({
             wraps under Yes and No. */}
         {(text.press || (ask && !receipt) || dismiss) && (
           <div data-lead-actions className="mt-[6px] flex min-w-0 flex-nowrap items-start gap-[8px] md:items-center">
-            {text.press && (
+            {two && text.press ? (
+              // Board `.ld .la .yg2`: the filled See the lists, then the ghost Read the post, 8px 16px apart.
+              <span data-lead-two className="flex min-w-0 flex-wrap items-center gap-x-[16px] gap-y-[8px]">
+                <FeedPress
+                  item={two.lists}
+                  label={feedCopy.home.press.seeLists}
+                  stretch=""
+                  className="inline-flex h-[40px] items-center justify-center rounded-[8px] bg-[color:var(--accent)] px-[16px] font-sans text-[13.5px] font-semibold whitespace-nowrap text-[color:var(--bg)] md:h-[36px] md:text-[13px]"
+                />
+                <FeedPress
+                  item={two.post}
+                  label={text.press}
+                  stretch=""
+                  className="inline-flex h-[40px] items-center px-[4px] font-sans text-[13.5px] font-medium whitespace-nowrap text-[color:var(--fg-muted)] md:h-[36px] md:text-[13px]"
+                />
+              </span>
+            ) : text.press && (
               <FeedPress
                 item={item}
                 label={text.press}

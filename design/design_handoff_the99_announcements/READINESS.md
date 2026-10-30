@@ -223,3 +223,34 @@ string ships as drawn.
   by their quiet names: the first three, then "and more" (copy review, 2026-10-30).
 - **The shared Checkbox stays** (Hugh's ruling, recorded in #2408's erratum): the Offer board's 20×20 dashed box and CSS
   check are not built; the boxes draw the shipped `Checkbox`.
+
+## Engineering audit: UI 6b (See the lists)
+
+**Scope.** STATES 1.9 and the decklists lead: a Commander decklists row (board Home-Rows `.fi .ac .two`) carries "See
+the lists ›" as its main, stretched, in-app press and "Read the post" as the quiet `.lnk.out` (`--fg-muted`) out to
+`/out/wizards/<id>`; one line 16px apart on a phone, stacked and right-aligned from `md`, 28px each. The decklists lead
+(board Lead-Story `.yg2`) draws "See the lists" filled (`.ba`, 40/36px, no ›) and "Read the post" as the ghost `.gh`.
+Secret Lair, Wizards news and a decklists post with no list declaring a commander are unchanged.
+
+**Target.** Read per request on Home, in ONE statement for every decklists post on the page (`postListRowsQuery`), by
+the early page's own set rule (`resolvePostSet`, same window and set types):
+- the resolved set is released (on or before today, UTC) and `precons` holds it: `/decks/precons?q=<CODE>`. The list
+  has no set filter or set anchor, so this searches by the set code, with the code as the removable search chip. The
+  search (`filterPrecons`) is a substring match over name, twin name, set code and commanders, so it can also match
+  other precons whose names contain the code;
+- otherwise, while the Announced group draws the set (`drawnInAnnounced`, the group's own rule: a Commander set
+  releasing later, or released within `RELEASED_GRACE_DAYS` with no precon yet), its block:
+  `/decks/precons#announced-<code>`;
+- otherwise, or when no set resolves: `/decks/precons#announced`.
+
+**Anchors.** The Announced group opens on `#announced-<code>` as on `#announced`, over a stored close, and scrolls to
+that set's block once open (the server draws the group closed, so the browser's own jump found no height). The rows
+view's set row carries the same id as the tiles view's block.
+
+**Off-host post (ruling).** See the lists is in-app, so it draws whenever a list qualifies; only Read the post depends
+on the stored address being https on magic.wizards.com. Off-host, See the lists is the one press (the row's stretched
+link, the lead's filled button).
+
+**Deviation.** The row's picture links where the stretched press goes (See the lists), not out to the post.
+
+**Copy review.** "See the lists" ships as drawn.

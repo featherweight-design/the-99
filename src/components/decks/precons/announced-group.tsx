@@ -8,8 +8,9 @@
 //
 // The head is a disclosure, CLOSED by default (rule 9: the group never pushes the decklists down unasked). It
 // opens by itself when it holds a set this reader has not been shown, or when the address names `#announced`
-// (the banner's link), or while a filter is on and a set matches it (the reader asked); otherwise this browser's
-// last press holds (`the99:precons:announced`, mirrored into a cookie so the server draws it).
+// (the banner's link) or one set's block (`#announced-<code>`, Home's See the lists, which it then scrolls to), or
+// while a filter is on and a set matches it (the reader asked); otherwise this browser's last press holds
+// (`the99:precons:announced`, mirrored into a cookie so the server draws it).
 
 import { Chevron } from "../../ui/chevron";
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
@@ -20,6 +21,7 @@ import { CardDetailProvider, type ViewPrinting } from "../../cards/card-detail-p
 import { HoverPreviewProvider } from "../hover-preview";
 import { useStoredView } from "../../ui/use-stored-view";
 import { PRECONS_ANNOUNCED_COOKIE } from "../../ui/view-cookie";
+import { noteAppScroll } from "../../../lib/ui/reveal";
 import { AnnouncedSet, FOCUS_RING, NEW_TAG, setIdentity, type ListedJump } from "./announced-parts";
 import { AnnouncedRow } from "./announced-row";
 
@@ -29,6 +31,23 @@ const copy = preconsCopy.upcoming;
 export const ANNOUNCED_KEY = "the99:precons:announced";
 /** The hash the banner's link carries; the group's own id. */
 export const ANNOUNCED_HASH = "#announced";
+
+/**
+ * Whether an address's hash opens the group: the banner's `#announced`, or one set's block, `#announced-<code>`
+ * (`announcedSetAnchor`; Home's See the lists, Announcements UI 6b). Pure, for a test.
+ */
+export function opensOnHash(hash: string): boolean {
+  return hash === ANNOUNCED_HASH || setAnchorOf(hash) !== null;
+}
+
+/** The group's own ids under the same prefix, which name no set. */
+const OWN_IDS = new Set(["announced-sets", "announced-head"]);
+
+/** The set block a hash names (`#announced-<code>`, its element id), or null on any other hash. */
+export function setAnchorOf(hash: string): string | null {
+  const id = hash.slice(1);
+  return /^#announced-[a-z0-9]+$/.test(hash) && !OWN_IDS.has(id) ? id : null;
+}
 
 type Press = "open" | "closed";
 const isPress = (v: string): v is Press => v === "open" || v === "closed";
@@ -51,12 +70,24 @@ export type AnnouncedVisit = {
   /** The set codes a reader pressed Show all on this visit (addendum A1): held here for the same reason, and never stored. */
   openSets: ReadonlySet<string>;
   toggleSet: (code: string) => void;
+  /** The set block the arrival named (`#announced-<code>`), latched as the arrival is, so the open group can scroll to it once;
+   * null once it has been landed on, for the whole visit, so a group that unmounts and mounts again never jumps back. */
+  landOn: string | null;
+  landed: (anchor: string) => void;
 };
 
 export function useAnnouncedVisit(): AnnouncedVisit {
-  const onLink = useSyncExternalStore(subscribeHash, () => window.location.hash === ANNOUNCED_HASH, () => false);
+  const hash = useSyncExternalStore(subscribeHash, () => window.location.hash, () => "");
+  const onLink = opensOnHash(hash);
   const [arrivedByLink, setArrivedByLink] = useState(false);
   if (onLink && !arrivedByLink) setArrivedByLink(true);
+  // A set's anchor, latched: the server drew the group closed, so the browser's own jump to the fragment found a
+  // block with no height; the group scrolls to it once it is open (`AnnouncedGroup`).
+  const anchor = setAnchorOf(hash);
+  const [landOn, setLandOn] = useState<string | null>(null);
+  if (anchor && anchor !== landOn) setLandOn(anchor);
+  const [landedOn, setLandedOn] = useState<string | null>(null);
+  const target = landOn ?? anchor;
   const [pressed, setPressed] = useState<boolean | null>(null);
   const [openSets, setOpenSets] = useState<ReadonlySet<string>>(() => new Set());
   const toggleSet = useCallback((code: string) => {
@@ -66,7 +97,7 @@ export function useAnnouncedVisit(): AnnouncedVisit {
       return next;
     });
   }, []);
-  return { arrivedByLink: arrivedByLink || onLink, pressed, press: setPressed, openSets, toggleSet };
+  return { arrivedByLink: arrivedByLink || onLink, pressed, press: setPressed, openSets, toggleSet, landOn: target === landedOn ? null : target, landed: setLandedOn };
 }
 
 export type AnnouncedGroupProps = {
@@ -130,6 +161,18 @@ export function AnnouncedGroup({
     store(next ? "open" : "closed");
   }, [open, store, setPressed]);
 
+  // Arrived on one set's block (`#announced-<code>`): once the group is open, that block is scrolled to, once per anchor.
+  // While a landing is pending the region opens without its transition (below), so the block is at its final place.
+  const { landOn, landed } = visit;
+  useEffect(() => {
+    if (!open || !landOn) return;
+    const el = document.getElementById(landOn);
+    if (!el) return;
+    landed(landOn);
+    noteAppScroll();
+    el.scrollIntoView({ block: "start" });
+  }, [open, landOn, landed, matches]);
+
   const viewPrintings = useMemo(() => announcedPrintings(matches), [matches]);
   if (matches.length === 0) return null;
   const hasNew = matches.some((m) => newCodes.includes(m.set.code));
@@ -164,7 +207,7 @@ export function AnnouncedGroup({
         inert={!open}
         data-open={open ? "true" : "false"}
         data-settled={settled ? "true" : "false"}
-        className={`grid ${settled ? "transition-[grid-template-rows,visibility] duration-[160ms] ease-out motion-reduce:transition-none" : ""} ${open ? "visible grid-rows-[1fr]" : "invisible grid-rows-[0fr]"}`}
+        className={`grid ${settled && !landOn ? "transition-[grid-template-rows,visibility] duration-[160ms] ease-out motion-reduce:transition-none" : ""} ${open ? "visible grid-rows-[1fr]" : "invisible grid-rows-[0fr]"}`}
       >
         {/* The clip the collapse needs, widened 4px past the rows on each side and below (padding, taken back by a
             matching negative margin), so a row's 2px ring at its 2px offset draws whole. */}

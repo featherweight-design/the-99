@@ -130,8 +130,9 @@ export const feedCopy = {
       /** Source-neutral: an upload, a hand add and a bought card all complete a pair. */
       combo: (added: string) => `You added ${added}.`,
       /** A Commander decklists post's mono count of lists out, under its summary (board `Row-States` §5). */
-      listsSoFar: (n: number, of: number) => `${n} of ${of} lists so far`,
-      listsAll: (n: number) => `All ${n} lists`,
+      listsSoFar: (n: number, of: number) => `${n} of ${of} ${of === 1 ? "list" : "lists"} so far`,
+      /** One list is just "1 list": "All 1 lists" read as a defect. */
+      listsAll: (n: number) => (n === 1 ? "1 list" : `All ${n} lists`),
     },
     /** The press, ending `›` where drawn as a link. */
     press: {
@@ -146,8 +147,10 @@ export const feedCopy = {
       combo: "See the combo",
       /** A Secret Lair or Wizards news post, on magic.wizards.com in a new tab (the link-out icon and the spoken suffix are `FeedPress`'s). */
       readOnWizards: "Read on Wizards",
-      /** A Commander decklists post, the same way. "See the lists ›", its in-app press, lands with the early lists. */
+      /** A Commander decklists post, the same way; beside See the lists, it is the row's quieter press. */
       readPost: "Read the post",
+      /** A Commander decklists post's in-app press, the row's main one: the post's set on Precons (Announcements UI 6b). */
+      seeLists: "See the lists",
       /** An answer to the reader's own spare request: opens that one request over Home (small items item 3). */
       answer: "Your request",
     },

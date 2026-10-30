@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { db } from "../../db";
-import { RELEASED_GRACE_DAYS, SEEN_KEY, markUpcomingSeen, upcomingSeenWrite, upcomingSetsQuery, utcDay } from "./upcoming";
+import { RELEASED_GRACE_DAYS, SEEN_KEY, drawnInAnnounced, markUpcomingSeen, upcomingSeenWrite, upcomingSetsQuery, utcDay } from "./upcoming";
 
 describe("utcDay", () => {
   it("is the UTC calendar day, whatever the zone the process runs in", () => {
@@ -39,6 +39,31 @@ describe("upcomingSetsQuery", () => {
     expect(params).toContain("set");
     expect(sql).toContain(`left join "user_prefs" on "user_prefs"."user_id" = $`);
     expect(params).toContain("user_1");
+  });
+});
+
+describe("drawnInAnnounced (the group's rule, in code)", () => {
+  const NOW = new Date("2026-10-29T12:00:00Z");
+  const set = (releasedAt: string, o: { setType?: string; hasPrecons?: boolean } = {}) => ({ setType: "commander", hasPrecons: false, releasedAt, ...o });
+
+  it("draws a Commander set releasing after today, precons listed or not", () => {
+    expect(drawnInAnnounced(set("2026-11-13"), NOW)).toBe(true);
+    expect(drawnInAnnounced(set("2026-11-13", { hasPrecons: true }), NOW)).toBe(true);
+  });
+
+  it("draws one released inside the grace with no precon, and not once a precon lists it", () => {
+    expect(drawnInAnnounced(set("2026-10-29"), NOW)).toBe(true);
+    expect(drawnInAnnounced(set("2026-10-20", { hasPrecons: true }), NOW)).toBe(false);
+  });
+
+  it(`drops one released more than ${RELEASED_GRACE_DAYS} days ago with no precon, as the read does`, () => {
+    const edge = utcDay(new Date(NOW.getTime() - RELEASED_GRACE_DAYS * 86_400_000));
+    expect(drawnInAnnounced(set(edge), NOW)).toBe(false);
+    expect(drawnInAnnounced(set("2026-09-01"), NOW)).toBe(false);
+  });
+
+  it("never draws a set that is not a Commander set", () => {
+    expect(drawnInAnnounced(set("2027-01-08", { setType: "masters", hasPrecons: true }), NOW)).toBe(false);
   });
 });
 
