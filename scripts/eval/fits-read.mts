@@ -97,7 +97,7 @@ const coverageRows = (await db.execute(sql`
     select distinct on (deck_id) deck_id, contract_version from deck_synopses
     where user_id = ${HUGH} and status = 'done' and content->'verdicts' @> '[{"status":"ok"}]'
     order by deck_id, created_at desc)
-  select case when contract_version in (11, 12) then 'v2' when contract_version is not null then 'older' else 'none' end as plan,
+  select case when contract_version in (11, 12, 13) then 'v2' when contract_version is not null then 'older' else 'none' end as plan,
          count(*)::int as decks
   from decks d left join newest n on n.deck_id = d.id where d.user_id = ${HUGH} group by 1 order by 1`)).rows as { plan: string; decks: number }[];
 const coverage = Object.fromEntries(coverageRows.map((r) => [r.plan, r.decks]));
