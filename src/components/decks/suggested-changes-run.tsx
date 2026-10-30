@@ -334,7 +334,8 @@ export function SuggestedChangesRun({
   const sideIn = (side: "add" | "cut") => !waiting || (side === "add" ? live.in.add : live.in.cut);
   // A side groups once it is all in, never while it is arriving (Wait B), and only from N = 4.
   const grouped = (side: "add" | "cut") => groupsAt(n) && sideIn(side);
-  const showGroupSwitch = groupsAt(n) && (sideIn("add") || sideIn("cut"));
+  // The switch draws once the run is in, never while it streams (Wait A to E draw none).
+  const showGroupSwitch = groupsAt(n) && !waiting;
   const chip = (side: "add" | "cut") => {
     const k = (side === "add" ? pickedAdds : pickedCuts).length;
     const applied = appliedSet ? appliedSet.filter((l) => l.side === side).length : 0;
@@ -370,9 +371,9 @@ export function SuggestedChangesRun({
         key={side}
         aria-label={title}
         data-sc-side={side}
-        className={`${half === side ? "flex" : "hidden"} min-w-0 flex-col gap-[10px] md:flex md:gap-[8px]`}
+        className={`${half === side ? "flex" : "hidden"} min-w-0 flex-col gap-[8px] md:flex`}
       >
-        <div className="flex min-h-[32px] items-center gap-[10px]">
+        <div className="sticky top-0 flex min-h-[32px] items-center gap-[10px]">
           <h3 className="m-0 flex items-baseline gap-[7px] text-[14px] font-semibold" style={{ color: "var(--fg)" }}>
             {title}
             <span className="font-mono text-[11px] font-normal" style={{ color: "var(--fg-faint)" }}>
@@ -538,8 +539,8 @@ export function SuggestedChangesRun({
 
   return (
     <div data-sc-run={waiting ? "wait" : "results"} data-sc-past={past ? (past.stale ? "stale" : "live") : undefined}
-      // History B and C: 16px between the note, You asked and the lead; B's note sits 10px under the heading.
-      className={`flex flex-col ${past ? `${past.stale ? "mt-[12px]" : "mt-[10px]"} gap-[16px]` : "mt-[12px] gap-[14px]"}`}>
+      // `.sc` gap 16px, live run and History alike; History B's note sits 10px under the heading.
+      className={`flex flex-col gap-[16px] ${past && !past.stale ? "mt-[10px]" : "mt-[12px]"}`}>
       {past ? (past.stale ? (
         // History C: the shipped past-run note, in History's own box.
         <p data-sc-past-note="" className="m-0 rounded-[10px] px-[14px] py-[11px] text-[12.5px] leading-[1.55]" style={{ color: "var(--fg-body)", border: "1px solid var(--border-strong)", background: "var(--surface-sunken)" }}>
@@ -651,7 +652,7 @@ export function SuggestedChangesRun({
           })}
         />
       </div>
-      <div className="grid grid-cols-1 gap-[16px] md:grid-cols-2 md:gap-[18px]">
+      <div className="grid grid-cols-1 items-start gap-[16px] md:grid-cols-2 md:gap-[18px]">
         {column("add")}
         {short?.kind === "noCuts" ? (
           <p data-sc-no-cuts="" className={`${half === "cut" ? "block" : "hidden"} m-0 text-[12.5px] md:block`} style={{ color: "var(--fg-body)" }}>{sc.short.noCuts(ask?.units ?? 1)}</p>

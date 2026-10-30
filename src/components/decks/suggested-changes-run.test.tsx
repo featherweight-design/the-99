@@ -159,6 +159,17 @@ describe("the wait", () => {
     expect(document.querySelector('[data-sc-side="cut"] [data-sc-group]')).toBeNull();
   });
 
+  it("draws no group switch while the run streams, even with a side in; draws it once the run is done", () => {
+    const both = [...adds(6), ...cuts(6)];
+    const t = setup({ ask: ask(4), live: liveOf(both, { phase: "cuts", in: { add: true, cut: false } }), lines: both, startedAt: new Date() });
+    expect(screen.queryByRole("radiogroup", { name: DECK_GROUPING_ARIA })).toBeNull();
+    // Both sides in, still streaming: Wait draws no switch.
+    act(() => t.rerender({ live: liveOf(both, { phase: "cuts", in: { add: true, cut: true } }) }));
+    expect(screen.queryByRole("radiogroup", { name: DECK_GROUPING_ARIA })).toBeNull();
+    act(() => t.rerender({ live: null, startedAt: null, finishedHere: true }));
+    expect(screen.getByRole("radiogroup", { name: DECK_GROUPING_ARIA })).toBeTruthy();
+  });
+
   it("saves picks as they are made, capped at N a side", async () => {
     const t = setup({ live: liveOf(adds(5)), lines: adds(5), startedAt: new Date() });
     await press(pick("a0"));
