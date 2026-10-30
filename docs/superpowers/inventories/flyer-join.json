@@ -3,6 +3,7 @@
   "note": "Signed out. Seeded rows of scratch-flyer-3-* on local-dev; FLYER_TRIAL_ENABLED=true on the server; LNCHDX's creator has an off override.",
   "out": "contact-sheets/flyer-join",
   "signedOut": true,
+  "launchListEmailVar": "FLYER_LAUNCH_EMAIL",
   "cookies": [
     {
       "name": "flyer_claim_CDSTEP",
@@ -88,7 +89,7 @@
         },
         {
           "fill": "input[type=email]",
-          "text": "sam@scratch-flyer-3.test"
+          "text": "${FLYER_LAUNCH_EMAIL}"
         },
         {
           "clickRole": "button",

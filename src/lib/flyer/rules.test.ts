@@ -18,7 +18,7 @@ describe("parseFlyerCode", () => {
   });
   it("refuses the wrong length and a 43-character invite token", () => {
     expect(parseFlyerCode("MOX4Q")).toBeNull();
-    expect(parseFlyerCode("MOX4QKK")).toBeNull();
+    expect(parseFlyerCode("MAX4QKK")).toBeNull();
     expect(parseFlyerCode("A".repeat(43))).toBeNull();
     expect(FLYER_CODE_LENGTH).toBe(6);
   });

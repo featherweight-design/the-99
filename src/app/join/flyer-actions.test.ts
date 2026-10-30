@@ -29,7 +29,7 @@ describe("saveLaunchListAction", () => {
     m.find.mockResolvedValue(null);
     expect(await saveLaunchListAction("NOSUCH", "a@x.dev")).toEqual({ ok: false, reason: "throttled" });
     m.find.mockResolvedValue({ createdBy: "u" });
-    expect(await saveLaunchListAction("MOX4QK", "a@x.dev")).toEqual({ ok: false, reason: "throttled" });
+    expect(await saveLaunchListAction("MAX4QK", "a@x.dev")).toEqual({ ok: false, reason: "throttled" });
     expect(m.find).not.toHaveBeenCalled();
     expect(m.save).not.toHaveBeenCalled();
   });
@@ -38,14 +38,14 @@ describe("saveLaunchListAction", () => {
     m.find.mockResolvedValue(null);
     expect(await saveLaunchListAction("NOSUCH", "a@x.dev")).toEqual({ ok: true });
     m.find.mockResolvedValue({ createdBy: "u" });
-    expect(await saveLaunchListAction("MOX4QK", "a@x.dev")).toEqual({ ok: true });
+    expect(await saveLaunchListAction("MAX4QK", "a@x.dev")).toEqual({ ok: true });
     expect(m.save).toHaveBeenCalledTimes(2);
   });
 
   it("answers launched once the creator's trial is off, and saves nothing", async () => {
     m.find.mockResolvedValue({ createdBy: "u" });
     m.env.mockResolvedValue({ FLYER_TRIAL_ENABLED: "off" });
-    expect(await saveLaunchListAction("MOX4QK", "a@x.dev")).toEqual({ ok: false, reason: "launched" });
+    expect(await saveLaunchListAction("MAX4QK", "a@x.dev")).toEqual({ ok: false, reason: "launched" });
     expect(m.save).not.toHaveBeenCalled();
   });
 

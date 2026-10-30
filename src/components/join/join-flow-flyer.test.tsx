@@ -16,7 +16,7 @@ vi.mock("../ui/art-layer", () => ({ ArtLayer: () => null }));
 import { JoinFlow } from "./join-flow";
 import type { FlyerJoinView } from "../../lib/flyer/join-read";
 
-const CODE = "MOX4QK";
+const CODE = "MAX4QK";
 const draw = (v: FlyerJoinView) => render(<JoinFlow token={CODE} start={v} flyer />);
 const line = (parts: Parts) => {
   const want = parts.map((p) => (typeof p === "object" && "em" in p ? p.em : String(p))).join("");

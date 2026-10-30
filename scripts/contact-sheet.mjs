@@ -403,6 +403,8 @@ const browser = await chromium.launch();
 const cameraBrowsers = new Set();
 /** The account's About columns as the run found them, when an inventory clears the gate or restores them. */
 let aboutPrior = null;
+/** The launch-list address this run made, when the inventory names `launchListEmailVar`: deleted in the `finally`. */
+let launchEmail = null;
 try {
   // `"restoreAbout": true`: a walk whose pages WRITE the account's About row as they are opened (an About page records
   // its visit, About visual PR 6b) puts both columns back exactly in the `finally`. Production and staging are refused
@@ -411,6 +413,15 @@ try {
   if (inventory.restoreAbout) {
     const [row] = await aboutSql()`select current_setting('neon.branch_id', true) as branch`;
     assertNotSharedBranch(row?.branch, `contact sheet ${path.basename(inventoryPath)}`);
+  }
+  // `"launchListEmailVar": "NAME"`: a walk that saves an address to the launch list (the form writes a real row through the
+  // server). The run makes a per-run address into `$NAME` for `fill` to type, refuses production and staging by
+  // `neon.branch_id` before the first page loads, and deletes exactly that row in the `finally`.
+  if (inventory.launchListEmailVar) {
+    const [row] = await aboutSql()`select current_setting('neon.branch_id', true) as branch`;
+    assertNotSharedBranch(row?.branch, `contact sheet ${path.basename(inventoryPath)}`);
+    launchEmail = `sheet-${Date.now()}-${process.pid}@scratch-contact-sheet.test`;
+    process.env[inventory.launchListEmailVar] = launchEmail;
   }
   await clerkSetup();
   for (const size of WIDTHS) {
@@ -592,6 +603,15 @@ try {
       console.log("INFO  the account's About row is restored as the run found it");
     } catch (error) {
       console.error("COULD NOT RESTORE the About row; the account's About state is changed:", error);
+      process.exitCode = 1;
+    }
+  }
+  if (launchEmail) {
+    try {
+      await aboutSql()`delete from launch_list where email = ${launchEmail}`;
+      console.log("INFO  the launch-list row this run saved is deleted");
+    } catch (error) {
+      console.error("COULD NOT DELETE the launch-list row this run saved:", launchEmail, error);
       process.exitCode = 1;
     }
   }

@@ -26,8 +26,10 @@ export type FlyerJoinView =
 
 export async function readFlyerJoin(code: string, secret: string | null, now: Date = new Date()): Promise<FlyerJoinView> {
   const row = await findFlyerCode(code);
+  // A code nobody made has no creator: the app-wide switch decides, so a mistyped one after launch reads as E3, not as a
+  // form whose save answers `launched` (as `saveLaunchListAction` resolves it).
+  if (!flyerTrialEnabled(await resolveSwitchEnv(row ? row.createdBy : null))) return { kind: "launched" };
   if (!row) return { kind: "closed", closed: "revoked" };
-  if (!flyerTrialEnabled(await resolveSwitchEnv(row.createdBy))) return { kind: "launched" };
   if (row.revokedAt !== null) return { kind: "closed", closed: "revoked" };
 
   // This browser's own claim, when one still stands: the step it reached.

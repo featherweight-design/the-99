@@ -61,24 +61,24 @@ describe("/join/[token]", () => {
 describe("/join/[code] for a flyer code", () => {
   it("redirects a lower-case code to its upper-case form before reading anything: the cookie path is case-sensitive", async () => {
     m.auth.mockResolvedValue({ userId: null });
-    await expect(JoinPage({ params: Promise.resolve({ token: "mox4qk" }) })).rejects.toThrow("redirect:/join/MOX4QK");
+    await expect(JoinPage({ params: Promise.resolve({ token: "max4qk" }) })).rejects.toThrow("redirect:/join/MAX4QK");
     expect(m.readFlyerJoin).not.toHaveBeenCalled();
     expect(m.readJoin).not.toHaveBeenCalled();
   });
 
   it("reads the code against this code's own claim cookie, and never reads an invite", async () => {
     m.auth.mockResolvedValue({ userId: null });
-    m.cookie.mockImplementation((name: string) => (name === "flyer_claim_MOX4QK" ? { value: "secret" } : undefined));
+    m.cookie.mockImplementation((name: string) => (name === "flyer_claim_MAX4QK" ? { value: "secret" } : undefined));
     m.readFlyerJoin.mockResolvedValue({ kind: "email" });
-    render(await JoinPage({ params: Promise.resolve({ token: "MOX4QK" }) }));
-    expect(m.readFlyerJoin).toHaveBeenCalledWith("MOX4QK", "secret");
+    render(await JoinPage({ params: Promise.resolve({ token: "MAX4QK" }) }));
+    expect(m.readFlyerJoin).toHaveBeenCalledWith("MAX4QK", "secret");
     expect(m.readJoin).not.toHaveBeenCalled();
     expect(screen.getByRole("heading", { name: flyerJoinCopy.title })).toBeTruthy();
   });
 
   it("sends a signed-in reader Home for a code too", async () => {
     m.auth.mockResolvedValue({ userId: "u" });
-    await expect(JoinPage({ params: Promise.resolve({ token: "MOX4QK" }) })).rejects.toThrow("redirect:/");
+    await expect(JoinPage({ params: Promise.resolve({ token: "MAX4QK" }) })).rejects.toThrow("redirect:/");
     expect(m.readFlyerJoin).not.toHaveBeenCalled();
   });
 
@@ -86,7 +86,7 @@ describe("/join/[code] for a flyer code", () => {
     m.auth.mockResolvedValue({ userId: null });
     m.cookie.mockReturnValue(undefined);
     m.readFlyerJoin.mockResolvedValue({ kind: "email" });
-    const { container } = render(await JoinPage({ params: Promise.resolve({ token: "MOX4QK" }) }));
+    const { container } = render(await JoinPage({ params: Promise.resolve({ token: "MAX4QK" }) }));
     const main = container.querySelector("main")!;
     expect(main.className).toContain("pt-[44px]");
     expect(main.className).toContain("md:pt-[72px]");
