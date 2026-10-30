@@ -10,7 +10,7 @@ const { spendMomentAction } = await import("./moments-actions");
 
 beforeEach(() => {
   spendMoment.mockClear();
-  env = { PRECONS_ENABLED: "true" };
+  env = {};
 });
 
 describe("spendMomentAction", () => {
@@ -28,7 +28,7 @@ describe("spendMomentAction", () => {
   it("spends nothing for a moment whose tool is off", async () => {
     await spendMomentAction("matchups");
     env = {};
-    await spendMomentAction("precons");
+    await spendMomentAction("help-me-choose");
     expect(spendMoment).not.toHaveBeenCalled();
   });
 });
