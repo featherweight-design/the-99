@@ -93,12 +93,6 @@ describe("Show me", () => {
     const envs = [ALL_ON, env(t.switch ? withNeeds(t.switch) : {})];
     for (const e of envs) expect(showMeLabel(t.labels, visibleSections(e)), t.id).not.toBeNull();
   });
-
-  it("falls back to New deck for Help me choose with the Commanders place off", () => {
-    const hmc = TOOLS.find((t) => t.id === "help-me-choose")!;
-    expect(showMeLabel(hmc.labels, visibleSections(env(withNeeds("HELP_ME_CHOOSE_ENABLED"))))).toBe("decks/your-decks/new-deck");
-    expect(showMeLabel(hmc.labels, visibleSections(ALL_ON))).toBe("commanders/for-you/places");
-  });
 });
 
 describe("seen translation", () => {
@@ -312,7 +306,8 @@ describe("a section's sub-line", () => {
     for (const sec of ABOUT_SECTIONS) {
       // With every switch on, every screen is on, and no sub says otherwise.
       expect(sub(ALL_ON, sec.id), sec.id).not.toContain(ABOUT_SCREEN_OFF.trim());
-      for (const sw of switchesOfSection(sec)) {
+      // A retired switch is gone from the registry and always on: there is no off state to assert.
+      for (const sw of switchesOfSection(sec).filter((n) => (SWITCH_NAMES as readonly string[]).includes(n))) {
         const e = off(sw);
         const drawn = visibleSections(e).find((s) => s.id === sec.id)!;
         const text = sub(e, sec.id);
