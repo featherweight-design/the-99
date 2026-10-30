@@ -43,6 +43,12 @@ describe("velocity", () => {
     expect(v.commanderTurn).toBe(7);
   });
 
+  it("never reads a turn-1 cast for a two-drop commander, whatever the ramp: a turn-1 ramp piece makes no mana until turn 2", () => {
+    const body = [land("Forest", { quantity: 36 }), card("Dork", { manaValue: 1, quantity: 30 })];
+    expect(velocity([card("Thorin", { commander: true, manaValue: 2 }), ...body], 30).commanderTurn).toBe(2);
+    expect(velocity([card("Dockside", { commander: true, manaValue: 1 }), ...body], 30).commanderTurn).toBe(1);
+  });
+
   it("counts a ramp commander's own ramp: it is in the command zone every game", () => {
     const v = velocity([card("Selvala", { commander: true, manaValue: 3, jobs: [job({ kind: "ramp" })] })], 0);
     expect(v.counted.map((l) => [l.card.name, l.points])).toEqual([["Selvala", 0.5]]);
