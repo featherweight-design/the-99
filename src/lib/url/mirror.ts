@@ -33,7 +33,17 @@ export function mirrorUrl(href: string | URL, state: unknown = null): void {
   // Back or Forward has moved the address but not yet the page.
   if (routePath !== null && window.location.pathname !== routePath) return;
   // The caller's own form, so a relative `?query` stays relative exactly as it was written.
-  window.history.replaceState(state, "", href);
+  window.history.replaceState(withoutRouterMarks(state), "", href);
+}
+
+// Next's patched `replaceState` treats a state carrying `__NA` or `_N` as its own write and skips
+// adopting the URL, so `useSearchParams` and the router's canonical URL would keep the old query.
+// A caller passing `window.history.state` hands those marks over; Next copies its own internals
+// back onto the state it is given, so dropping them loses nothing.
+function withoutRouterMarks(state: unknown): unknown {
+  if (state === null || typeof state !== "object" || !("__NA" in state || "_N" in state)) return state;
+  const { __NA: _na, _N: _n, ...rest } = state as Record<string, unknown>;
+  return rest;
 }
 
 /** The shell's navigation-pending provider reports the router's committed path here. */

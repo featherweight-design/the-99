@@ -33,6 +33,12 @@ describe("mirrorUrl", () => {
     expect(window.location.pathname + window.location.search).toBe("/collection?sort=set");
   });
 
+  // Next skips adopting a write whose state carries its marks, so the router kept the old query.
+  it("drops Next's router marks from the state, keeping the rest", () => {
+    mirrorUrl("/collection?sort=set", { __NA: true, _N: true, __PRIVATE_NEXTJS_INTERNALS_TREE: 1, kept: true });
+    expect(replace).toHaveBeenCalledWith({ __PRIVATE_NEXTJS_INTERNALS_TREE: 1, kept: true }, "", "/collection?sort=set");
+  });
+
   it("passes the history state it is given through", () => {
     const state = { kept: true };
     mirrorUrl("/collection?sort=set", state);
