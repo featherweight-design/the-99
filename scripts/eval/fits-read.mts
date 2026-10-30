@@ -89,9 +89,9 @@ const { loadFitsReadInputs, V2_CONTRACTS } = await import("../../src/lib/swaps/f
 
 // ---- coverage ----------------------------------------------------------------------------------
 // Re-measured at the start of every run (Finding 1 moves as Hugh writes Overviews). `V2_CONTRACTS` is
-// the code's own pair, so the SQL is checked against it rather than trusted.
+// the code's own set, so the SQL is checked against it rather than trusted.
 const v2 = [...V2_CONTRACTS].sort();
-if (v2.join(",") !== "11,12") throw new Error(`the v2 Overview contracts are now ${v2.join(",")}; update the coverage SQL`);
+if (v2.join(",") !== "11,12,13") throw new Error(`the v2 Overview contracts are now ${v2.join(",")}; update the coverage SQL`);
 const coverageRows = (await db.execute(sql`
   with newest as (
     select distinct on (deck_id) deck_id, contract_version from deck_synopses

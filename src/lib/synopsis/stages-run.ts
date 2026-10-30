@@ -154,13 +154,16 @@ export function settleStages(content: CheckedSynopsis, facts: SynopsisFacts, sco
   }
   const p = out.primer;
   if (p && (!scope || scope.includes("primer"))) {
+    const byFullName = new Map(Object.values(content.cards).map((c) => [normalizeName(c.name), c.oracleId]));
+    const idOf = (name: string) => content.cards[normalizeName(name)]?.oracleId ?? byFullName.get(normalizeName(name));
     const gone: Set<string>[] = [];
     const tips = p.tips.map((t, i) => {
       const text = doc.tips[i]?.text ?? t.text;
       gone[i] = droppedIds(t.text, text, content.cards);
       if (text === t.text) return t;
-      const marked = new Set(marksIn(text).map(normalizeName));
-      return { text, cards: t.cards.filter((c) => marked.has(normalizeName(c))) };
+      // By oracle id, never by spelling: a mark may be a face's name ("Fire") for a card listed under its full one ("Fire // Ice").
+      const marked = new Set(marksIn(text).map((m) => content.cards[normalizeName(m)]?.oracleId ?? normalizeName(m)));
+      return { text, cards: t.cards.filter((c) => marked.has(idOf(c) ?? normalizeName(c))) };
     });
     if (tips.some((t, i) => t !== p.tips[i])) {
       const ev = out.evidence;
