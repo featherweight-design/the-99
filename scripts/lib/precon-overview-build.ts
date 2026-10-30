@@ -103,14 +103,14 @@ export async function runBuild<V>(input: {
   // A first answer whose repair was only for advisory targets (no section refused) is publishable as it
   // stands once settled, so a repair that fails, comes back empty or is held by the cap never discards it.
   const advisoryOnly = (p: Pending) => !!p.first && refused(p.first.content).length === 0;
-  const storeFirst = async (p: Pending, micro: number, usage: { input: number; output: number }): Promise<void> => {
-    const content = p.job.settle ? p.job.settle(p.first!.content) : p.first!.content;
+  const storeSettled = async (job: Job<V>, first: CheckedSynopsis, micro: number, usage: { input: number; output: number }): Promise<void> => {
+    const content = job.settle ? job.settle(first) : first;
     const failing = refused(content);
     if (failing.length > 0) {
-      result.failed.push({ file: p.job.file, reason: `refused: ${failing.join(", ")}` });
+      result.failed.push({ file: job.file, reason: `refused: ${failing.join(", ")}` });
       return;
     }
-    const s = { file: p.job.file, content, micro, usage };
+    const s = { file: job.file, content, micro, usage };
     await input.store(s);
     result.stored.push(s);
   };
@@ -123,7 +123,7 @@ export async function runBuild<V>(input: {
           continue;
         }
         try {
-          await storeFirst(p, p.first!.micro, p.first!.usage);
+          await storeSettled(p.job, p.first!.content, p.first!.micro, p.first!.usage);
         } catch (e) {
           result.failed.push({ file: p.job.file, reason: `first answer could not be handled: ${e instanceof Error ? e.message : String(e)}` });
         }
@@ -142,7 +142,7 @@ export async function runBuild<V>(input: {
       if (!reply) {
         if (advisoryOnly(p)) {
           try {
-            await storeFirst(p, p.first!.micro, p.first!.usage);
+            await storeSettled(p.job, p.first!.content, p.first!.micro, p.first!.usage);
           } catch (e) {
             result.failed.push({ file: p.job.file, reason: `first answer could not be handled: ${e instanceof Error ? e.message : String(e)}` });
           }
@@ -161,7 +161,7 @@ export async function runBuild<V>(input: {
         // targets sent it to repair, failed when it had a refused section.
         if (advisoryOnly(p)) {
           try {
-            await storeFirst(p, micro, usage);
+            await storeSettled(p.job, p.first!.content, micro, usage);
           } catch (e) {
             result.failed.push({ file: p.job.file, reason: `first answer could not be handled: ${e instanceof Error ? e.message : String(e)}` });
           }
@@ -179,7 +179,14 @@ export async function runBuild<V>(input: {
         // The repair is for the refused sections and, at contract 13, the ones the stages checks name.
         const failing0 = p.first ? [] : [...new Set([...refused(content), ...(p.job.extra?.(content, reply.value) ?? [])])];
         if (failing0.length > 0) {
-          next.push({ job: p.job, out: await p.job.repair(content, failing0, reply.value), first: { content, failing: failing0, micro, usage } });
+          try {
+            next.push({ job: p.job, out: await p.job.repair(content, failing0, reply.value), first: { content, failing: failing0, micro, usage } });
+          } catch (e) {
+            // A repair that cannot be prepared costs a publishable first answer nothing: only a refused section needs it.
+            if (refused(content).length > 0) throw e;
+            input.log(`${p.job.file}: the advisory repair could not be prepared (${e instanceof Error ? e.message : String(e)}); storing the first answer`);
+            await storeSettled(p.job, content, micro, usage);
+          }
           continue;
         }
         if (p.job.settle) content = p.job.settle(content);

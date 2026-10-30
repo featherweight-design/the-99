@@ -127,6 +127,15 @@ describe("runBuild", () => {
     expect(r.failed).toEqual([]);
   });
 
+  it("stores the first answer when its advisory-only repair cannot be prepared", async () => {
+    const j = { ...job("a", 100, "ok"), extra: () => ["keyCards" as const], settle: (c: CheckedSynopsis) => c, repair: async () => { throw new Error("count_tokens 503"); } } as Job<string>;
+    const { send } = sender([j], 1);
+    const stored: string[] = [];
+    const r = await runBuild({ jobs: [j], send, capMicro: 1_000, store: async (s) => { stored.push(s.file); }, log: () => {} });
+    expect(stored).toEqual(["a"]);
+    expect(r.failed).toEqual([]);
+  });
+
   it("fails a precon whose settled content has a refused section, and stores nothing for it", async () => {
     const j = { ...job("a", 100, "ok"), settle: () => refused() } as Job<string>;
     const { send } = sender([j], 1);
