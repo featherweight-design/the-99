@@ -332,6 +332,6 @@ describe("a Wizards post", () => {
 
   it("offers nothing of Wizards' with ANNOUNCEMENTS_ENABLED off", async () => {
     const feed = await loadHomeFeed("u1", { HOME_FEED_ENABLED: "true" } as unknown as NodeJS.ProcessEnv, NOW, fake({}, {}));
-    expect(feed).toEqual({ chosen: false, offer: ["new-set", "combo"], alsoOn: false });
+    expect(feed).toEqual({ chosen: false, offer: ["new-set", "new-precon", "combo"], alsoOn: false });
   });
 });

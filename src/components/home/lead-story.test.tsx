@@ -179,9 +179,9 @@ describe("LeadStory, a Wizards post (announcements board Lead-Story)", () => {
     expect(press.textContent).toMatch(/^Read on Wizards/);
   });
 
-  it("draws no ✕ on a post yet (feed_dismissals' key check refuses post: keys)", () => {
+  it("draws its ✕ on a post (feed_dismissals admits post: keys)", () => {
     render(<LeadStory item={POST} now={NOW} onDismiss={() => {}} />);
-    expect(screen.queryByRole("button", { name: /Hide/ })).toBeNull();
+    expect(screen.getByRole("button", { name: /Hide/ })).toBeInTheDocument();
   });
 
   it("drops the hero band, and the blur, when the hero fails or there is none", () => {

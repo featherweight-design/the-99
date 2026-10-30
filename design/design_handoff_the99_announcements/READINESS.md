@@ -99,5 +99,6 @@ this PR.
   never shown. 3b follows D4.
 - **Push in 3a.** Nothing queues a post (`PUSH_CATALOG_KINDS`), and Settings draws no push box on the three rows
   (`pushableFeedKinds`); 3b lifts both.
-- **Open: the ✕ on a post.** `feed_dismissals_key_check` admits only `item:`, `ask:`, `set:` and `precon:` keys, so a
-  `post:` dismissal is refused (probed). Post rows and leads draw no ✕ until a migration widens the check.
+- **The ✕ on a post.** `feed_dismissals_key_check` admitted only `item:`, `ask:`, `set:` and `precon:` keys, so a
+  `post:` dismissal was refused (probed). Migration 0195 widens the check to `post:`, and `parseDismissKey` admits it, so
+  post rows and leads draw their ✕ like every other row.

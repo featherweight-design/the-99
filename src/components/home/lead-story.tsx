@@ -24,7 +24,7 @@ import { shortName } from "../../lib/cards/short-name";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { feedCopy } from "../../lib/copy/feed";
 import type { ProfileCommander } from "../../lib/social/commander";
-import { FeedPress, canDismiss, feedText, listsText, usePostHero } from "../feed/feed-item";
+import { FeedPress, feedText, listsText, usePostHero } from "../feed/feed-item";
 import { feedAge } from "../../lib/feed/age";
 import { Face } from "../social/face";
 import { ArtLayer } from "../ui/art-layer";
@@ -101,7 +101,7 @@ export function LeadStory({
       ? { title: feed.title, line: spareCopy.request.incomingDetail(ask.spare, friend, ask.copies, ask.deckName), press: null }
       : feed;
   // The ✕ is absent while an answer is out and on the receipt, as shipped.
-  const dismiss = receipt || busy || !canDismiss(item) ? undefined : onDismiss;
+  const dismiss = receipt || busy ? undefined : onDismiss;
   async function press(a: Answer, from: Element) {
     if (!ask || busy) return;
     onHold?.(true);

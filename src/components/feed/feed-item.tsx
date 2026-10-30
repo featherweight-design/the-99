@@ -313,14 +313,7 @@ function Picture({ item, face }: { item: FeedView; face: Pick<ProfileCommander, 
   );
 }
 
-/**
- * Whether an item can be hidden with its ✕. A Wizards post cannot YET: `feed_dismissals_key_check` admits only `item:`,
- * `ask:`, `set:` and `precon:` keys, so a `post:` dismissal would be refused and come back with the failure toast. It
- * draws no ✕ until the check admits `post:` (Announcements UI 3a, an open ruling).
- */
-export const canDismiss = (item: FeedView): boolean => !item.post;
-
-export function FeedItemRow({ item, now, face, onDismiss: dismissIfAny }: {
+export function FeedItemRow({ item, now, face, onDismiss }: {
   item: FeedView;
   now: string;
   face?: Pick<ProfileCommander, "artCropUri"> | null;
@@ -330,7 +323,6 @@ export function FeedItemRow({ item, now, face, onDismiss: dismissIfAny }: {
   const titleId = useId();
   const text = feedText(item);
   const lists = listsText(item);
-  const onDismiss = canDismiss(item) ? dismissIfAny : undefined;
   const waiting = item.kind === "spare-request" && !item.answer;
   const kickerInk = !item.unseen ? "text-[color:var(--fg-locked)]" : waiting ? "text-[color:var(--accent-text)]" : "text-[color:var(--fg-faint)]";
   return (

@@ -122,7 +122,7 @@ export const feedCopy = {
       /** With spare requests on, the press opens that card's spares sheet with Ask (signature card call 9). */
       tradeMatchAsk: (friend: string) => `Ask ${friend}`,
       combo: "See the combo",
-      /** A Secret Lair or Wizards news post, on magic.wizards.com in a new tab (the ↗ and the spoken suffix are `FeedPress`'s). */
+      /** A Secret Lair or Wizards news post, on magic.wizards.com in a new tab (the link-out icon and the spoken suffix are `FeedPress`'s). */
       readOnWizards: "Read on Wizards",
       /** A Commander decklists post, the same way. "See the lists ›", its in-app press, lands with the early lists. */
       readPost: "Read the post",

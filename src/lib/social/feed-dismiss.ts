@@ -13,10 +13,10 @@ export type DismissTarget =
   | { kind: "catalog"; key: string }
   | { kind: "ask"; requestId: string };
 
-/** A catalog key's code or file name: short, and no control characters. */
-const CATALOG = /^(set|precon):[^\u0000-\u001f]{1,200}$/;
+/** A catalog key's code, file name or Wizards post id: short, and no control characters. */
+const CATALOG = /^(set|precon|post):[^\u0000-\u001f]{1,200}$/;
 
-/** The client's key, checked. `item:<uuid>` and `set:`/`precon:` are Home's own keys; `ask:<uuid>` is a Waiting row. */
+/** The client's key, checked. `item:<uuid>` and `set:`/`precon:`/`post:` are Home's own keys; `ask:<uuid>` is a Waiting row. */
 export function parseDismissKey(raw: unknown): DismissTarget | null {
   if (typeof raw !== "string") return null;
   if (raw.startsWith("item:")) return isUuid(raw.slice(5)) ? { kind: "item", id: raw.slice(5).toLowerCase() } : null;

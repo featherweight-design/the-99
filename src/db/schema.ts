@@ -3832,7 +3832,7 @@ export const feedItems = pgTable("feed_items", {
 /**
  * What a reader pressed ✕ on (Hugh's ruling 2026-10-27, the menu-home plan's product call 6): Home's What's new, its
  * lead story and /friends' Waiting on you leave it out, for good. `key` is Home's own opaque key (`FeedView.key`):
- * `item:<feed_items id>` for a stored item, `set:<code>` or `precon:<file>` for a catalog one, and `ask:<request id>`
+ * `item:<feed_items id>` for a stored item, `set:<code>`, `precon:<file>` or `post:<contentful id>` for a catalog one, and `ask:<request id>`
  * for an incoming ask hidden from Waiting on you (with its holder's feed item for it too, when there is one: a holder
  * who turned the kind off has none). Never a writer's dedupe key, which for a trade match names another account. A
  * stored item is never written twice (its dedupe key holds it, `feed_items_dedupe_unique`) and only the purge deletes
@@ -3845,7 +3845,7 @@ export const feedDismissals = pgTable("feed_dismissals", {
   dismissedAt: timestamp("dismissed_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
   primaryKey({ columns: [t.userId, t.key] }),
-  check("feed_dismissals_key_check", sql`${t.key} ~ '^((item|ask):[0-9a-f-]{36}|set:.+|precon:.+)$'`),
+  check("feed_dismissals_key_check", sql`${t.key} ~ '^((item|ask):[0-9a-f-]{36}|set:.+|precon:.+|post:.+)$'`),
 ]);
 
 /**

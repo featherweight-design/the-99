@@ -218,7 +218,8 @@ describe("a Wizards post's row (announcements boards Home-Rows and Row-States)",
     const press = container.querySelector("[data-feed-press]")!;
     expect(press).toHaveAttribute("href", URL_OK);
     expect(press).toHaveAttribute("target", "_blank");
-    expect(press.textContent).toMatch(/^Read on Wizards\u00a0↗/);
+    expect(press.textContent).toMatch(/^Read on Wizards/);
+    expect(press.querySelector("svg[data-link-out]")).not.toBeNull();
     expect(press.querySelector(".sr-only")!.textContent).toMatch(/opens in a new tab/);
     // No card: not the card thumb, no card shadow.
     expect(container.querySelector('[data-commander-thumb="feed"]')).toBeNull();
@@ -276,10 +277,10 @@ describe("a Wizards post's row (announcements boards Home-Rows and Row-States)",
 });
 
 describe("a Wizards post and its ✕", () => {
-  it("draws no ✕ yet: feed_dismissals' key check refuses post: keys", () => {
+  it("draws its ✕ beside the press: feed_dismissals admits post: keys", () => {
     const item = view({ kind: "secret-lair", card: null, outbound: "https://magic.wizards.com/en/news/x", post: { title: "T", summary: null, hero: null, lists: null } });
     const { container } = list(<FeedItemRow item={item} now={NOW} onDismiss={() => {}} />);
-    expect(screen.queryByRole("button", { name: /Hide/ })).toBeNull();
-    expect([...container.querySelector("[data-feed-actions]")!.children].map((c) => c.textContent?.slice(0, 15))).toEqual(["Read on Wizards"]);
+    expect(screen.getByRole("button", { name: /Hide/ })).toBeInTheDocument();
+    expect(container.querySelector("[data-feed-actions]")!.textContent).toMatch(/^Read on Wizards/);
   });
 });

@@ -1,0 +1,2 @@
+ALTER TABLE "feed_dismissals" DROP CONSTRAINT "feed_dismissals_key_check";--> statement-breakpoint
+ALTER TABLE "feed_dismissals" ADD CONSTRAINT "feed_dismissals_key_check" CHECK ("feed_dismissals"."key" ~ '^((item|ask):[0-9a-f-]{36}|set:.+|precon:.+|post:.+)$');

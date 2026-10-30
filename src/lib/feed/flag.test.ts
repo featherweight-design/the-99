@@ -45,13 +45,13 @@ describe("the kinds available to a reader", () => {
   it("offers Wizards' three announcement kinds only with ANNOUNCEMENTS_ENABLED, whatever else is on", () => {
     const kinds = ["secret-lair", "commander-decklists", "wizards-news"] as const;
     // Every other switch on, the feed on: still none of the three.
-    const rest = env({ ...feed, PRECONS_ENABLED: "true", UPCOMING_PRECONS_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" });
+    const rest = env({ ...feed, SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" });
     for (const k of kinds) expect(feedKindAvailable(k, rest)).toBe(false);
     expect(availableFeedKinds(rest).filter((k) => (kinds as readonly string[]).includes(k))).toEqual([]);
     for (const k of kinds) expect(feedKindAvailable(k, env({ ANNOUNCEMENTS_ENABLED: "1" }))).toBe(false);
     const on = env({ ...feed, ANNOUNCEMENTS_ENABLED: "true" });
     for (const k of kinds) expect(feedKindAvailable(k, on)).toBe(true);
-    expect(availableFeedKinds(on)).toEqual(["new-set", "secret-lair", "commander-decklists", "wizards-news", "combo"]);
+    expect(availableFeedKinds(on)).toEqual(["new-set", "new-precon", "secret-lair", "commander-decklists", "wizards-news", "combo"]);
     // The feed off still offers nothing.
     expect(availableFeedKinds(env({ ANNOUNCEMENTS_ENABLED: "true" }))).toEqual([]);
   });
