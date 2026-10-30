@@ -24,3 +24,25 @@ export const reportCopy = {
   failed: "We couldn’t send that. Try again.",
   retry: "Try again",
 } as const;
+
+// The check-in on Home (flyer trial PR 6; `Survey-Phone`, `Survey-Desktop`), verbatim from `flyer-trial · copy strings.ts`
+// `checkInCopy`. The sheet's Close and Try again and the "optional" tag are `reportCopy`'s.
+export const checkInCopy = {
+  title: "How’s it going?",
+  intro: "You’ve been using The 99 for a couple of weeks. Three quick questions.",
+  rating: "How is it working for you?",
+  ratingEnds: ["not well", "really well"],
+  uses: "What do you use most?",
+  pickAny: "pick any",
+  useOptions: ["Collection", "Commanders", "Decks", "Shopping", "Friends", "Precons"],
+  pod: "Would you tell your pod about it?",
+  podOptions: ["Yes", "Maybe", "Already have"],
+  more: "Anything else?",
+  morePlaceholder: "Anything you’d change, or love",
+  hint: "Takes a minute",
+  notNow: "Not now",
+  send: "Send",
+  sentTitle: "Thanks, that helps.",
+  sentBody: "We read every answer. You can always tell us more from About › Report a problem.",
+  failed: "We couldn’t send that. Try again.",
+} as const;
