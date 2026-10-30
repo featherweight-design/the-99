@@ -15,7 +15,7 @@ import { readProfileHead } from "../profile/load";
 import { readStoredReading, requestProfileDeps, sameList, type StoredProfileDeps } from "../profile/stored";
 import { loadUniversalStaples } from "../staples/universal";
 import { buildSynopsisFacts, deckNameIndex, normalizeName, type SynopsisFacts } from "./facts";
-import { SYNOPSIS_CONTRACT_VERSION, SYNOPSIS_CONTRACT_VERSION_STAGES, SYNOPSIS_CONTRACT_VERSION_V2, SYNOPSIS_DEADLINE_MS, SYNOPSIS_MAX_TOKENS, SYNOPSIS_MAX_TOKENS_V8, SYNOPSIS_REPAIR_MIN_MS, synopsisPlayerContractVersion } from "./limits";
+import { SYNOPSIS_CONTRACT_VERSION, SYNOPSIS_CONTRACT_VERSION_STAGES, SYNOPSIS_DEADLINE_MS, SYNOPSIS_MAX_TOKENS, SYNOPSIS_MAX_TOKENS_V8, SYNOPSIS_REPAIR_MIN_MS, synopsisPlayerContractVersion } from "./limits";
 import { FREE_ATTEMPTS, freeRunAvailable, freeRunsFor, methodNoticeOf } from "./method-notice";
 import { SYNOPSIS_EFFORT, SYNOPSIS_EFFORT_V7, SYNOPSIS_MODEL, SYNOPSIS_MODEL_V7 } from "./model";
 import { buildSynopsisPrompt, isRepair } from "./prompt";
@@ -527,7 +527,7 @@ export async function startRun(
             replacing ? sql`${deckSynopses.seenSeq} >= ${seenSeq}` : sql`true`,
             // A paid rewrite counts only an overview already at the new contract: the older one it
             // replaces is exactly what the press is for.
-            rewrite ? sql`${deckSynopses.contractVersion} >= ${SYNOPSIS_CONTRACT_VERSION_V2}` : sql`true`,
+            rewrite ? sql`${deckSynopses.contractVersion} >= ${SYNOPSIS_CONTRACT_VERSION_STAGES}` : sql`true`,
             // A rewrite counts only an overview that PASSED: a partial run (another section ok) is not one.
             sql`${deckSynopses.content} -> 'verdicts' @> ${rewrite ? '[{"section":"overview","status":"ok"}]' : '[{"status":"ok"}]'}::jsonb`))
           .limit(1);

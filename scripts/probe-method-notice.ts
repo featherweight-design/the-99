@@ -234,7 +234,7 @@ async function scenarios() {
 
   // 7 · A REVERT: the free run's overview belongs to another list now, so the shown row is the old
   // (7 or 9) one again, and the free rewrite already produced an overview: no second one.
-  await db.execute(sql`update deck_synopses set fingerprint = 'another-list' where deck_id = ${ok}::uuid and contract_version in (${SYNOPSIS_CONTRACT_VERSION_V2}, ${SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS}, ${SYNOPSIS_CONTRACT_VERSION_STAGES})`);
+  await db.execute(sql`update deck_synopses set fingerprint = 'another-list' where deck_id = ${ok}::uuid and contract_version = ${SYNOPSIS_CONTRACT_VERSION_STAGES}`);
   s = await state(ok);
   check("a revert to the old overview offers no second free rewrite", [s.synopsis?.contractVersion, s.methodNotice], [oldContract.get(ok), null]);
 

@@ -2,6 +2,8 @@
 // write read must still be the live one when the reservation is made, or the write refuses with
 // nothing reserved. The lock itself is a fact about two connections, and `probe:synopsis`'s race
 // proves it; this proves the refusal comes before the charge.
+import { PgDialect } from "drizzle-orm/pg-core";
+import type { SQL } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ENV_VIEW } from "@/test/env-view";
 
@@ -10,9 +12,12 @@ import type { ProfileHead } from "../profile/load";
 
 /** Each awaited select, in order: the locked deck row, then the stored reading. */
 const queue: unknown[][] = [];
+/** Every `where` clause a select was given, so a test can read the predicate a query emitted. */
+const wheres: unknown[] = [];
 function chain() {
   const q: Record<string, unknown> = {};
-  for (const m of ["from", "where", "for", "limit", "orderBy", "innerJoin"]) q[m] = () => q;
+  for (const m of ["from", "for", "limit", "orderBy", "innerJoin"]) q[m] = () => q;
+  q.where = (w: unknown) => { wheres.push(w); return q; };
   q.then = (ok: (v: unknown) => unknown, bad: (e: unknown) => unknown) => Promise.resolve(queue.shift() ?? []).then(ok, bad);
   return q;
 }
@@ -146,6 +151,17 @@ describe("startRun: the free method-change rewrite", () => {
     lock([run("done", false), run("done", false)]);
     queue.push([{ id: "syn-new" }], [{ id: "syn-new", content: { verdicts: [] } }]);
     expect((await startRun("deck", "user", LIST, "stub", new Date(), null, true, 0, false, 8, "paid", ENV_VIEW)).kind).toBe("reused");
+  });
+
+  it("the paid rewrite's reuse check only counts an overview already at contract 13, so an 11 or 12 row never blocks it", async () => {
+    lock([run("done", false), run("done", false)]);
+    queue.push([]);
+    wheres.length = 0;
+    await startRun("deck", "user", LIST, "stub", new Date(), null, true, 0, false, 8, "paid", ENV_VIEW);
+    const dialect = new PgDialect();
+    const reuse = wheres.map((w) => dialect.sqlToQuery(w as SQL)).find((q) => /"contract_version" >= \$/.test(q.sql));
+    expect(reuse, "the reuse query carries a contract_version >= predicate").toBeDefined();
+    expect(reuse!.params).toContain(13);
   });
 
   it("a rewrite that produced an overview since the press read it returns that overview, reserving nothing", async () => {
