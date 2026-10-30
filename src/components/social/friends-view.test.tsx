@@ -592,8 +592,8 @@ describe("friend links", () => {
 
   it("makes a link from the pod sheet's no-friends Add a friend, and opens the dialog on it", async () => {
     a.createInviteAction.mockResolvedValue({ ok: true, token: "t", url: "https://the-99.dev/friend/t", expiresAt: new Date("2026-10-22T21:41:00Z") });
-    const me = { publicId: "p-me", displayName: "Hugh", joinedAt: NOW, isOwner: true, isYou: true, isFriend: false, commander: null };
-    const pod = { id: "pod-1", name: "Thursday", isOwner: true, members: [me], nextOwner: null };
+    const me = { publicId: "p-me", displayName: named("Hugh"), joinedAt: NOW, isOwner: true, isYou: true, isFriend: false, commander: null };
+    const pod = { id: "pod-1", name: named("Thursday"), isOwner: true, members: [me], nextOwner: null };
     draw({ friends: [], pods: <PodsPane pods={[pod]} sharedIds={[]} friends={[]} /> });
     await act(async () => fireEvent.click(screen.getByRole("button", { name: socialCopy.pods.addFriends })));
     const sheet = screen.getByRole("dialog");

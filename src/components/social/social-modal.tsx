@@ -17,6 +17,7 @@
 import { useEffect, useId, useRef, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { useDialogA11y } from "../../lib/a11y/dialog";
+import { PersonText, type PersonParts } from "../../lib/person-name";
 import { useSheetHost } from "../ui/sheet-host";
 import { useVisualViewportFrame, VV_FRAME } from "../ui/visual-viewport";
 
@@ -37,8 +38,8 @@ export function SocialModal({
   raised = false,
   children,
 }: {
-  title: string;
-  sub?: string;
+  title: string | PersonParts;
+  sub?: string | PersonParts;
   closeLabel: string;
   onClose: () => void;
   initialFocusRef?: RefObject<HTMLElement | null>;
@@ -114,7 +115,7 @@ export function SocialModal({
             </button>
           ) : null}
           <h2 id={`${id}-title`} className="m-0 min-w-0 flex-1 font-display text-[18px] font-bold md:text-[19px] text-[color:var(--fg)]">
-            {title}
+            <PersonText text={title} />
           </h2>
           <button
             ref={close}
@@ -127,7 +128,7 @@ export function SocialModal({
           </button>
         </div>
         {sub ? (
-          <p className={`mx-[18px] mt-0 text-[13px] text-[color:var(--fg-muted)] ${setup ? "mb-[12px] leading-[1.55] md:mx-[24px] md:mb-[16px]" : "mb-[14px] leading-[1.5] md:mx-[20px]"}`}>{sub}</p>
+          <p className={`mx-[18px] mt-0 text-[13px] text-[color:var(--fg-muted)] ${setup ? "mb-[12px] leading-[1.55] md:mx-[24px] md:mb-[16px]" : "mb-[14px] leading-[1.5] md:mx-[20px]"}`}><PersonText text={sub} /></p>
         ) : null}
         <div data-social-modal-body="" className={`flex min-h-0 flex-1 flex-col overflow-y-auto px-[18px] ${setup ? "pb-[18px] md:px-[24px] md:pb-[22px]" : "pb-[24px] md:px-[20px] md:pb-[18px]"}`}>{children}</div>
         {footer ? (

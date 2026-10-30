@@ -259,7 +259,7 @@ export async function listPickerFriends(viewerId: string): Promise<PickerFriend[
 }
 
 /** A pod the viewer is in, as a quick-seat chip: its name and how many people sit in it, the viewer included. */
-export type PickerPod = { id: string; name: string; memberCount: number };
+export type PickerPod = { id: string; name: ThirdPartyName; memberCount: number };
 
 export async function listPickerPods(viewerId: string): Promise<PickerPod[]> {
   const pods = await listPods(viewerId);
