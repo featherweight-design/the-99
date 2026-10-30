@@ -9,6 +9,11 @@ describe("an announced set's lists count (announcements UI 5)", () => {
     expect(listsSoFar(5, 5)).toBe("All 5 lists");
   });
 
+  it("counts every posted list once more are posted than promised", () => {
+    expect(listsSoFar(4, 3)).toBe("All 4 lists");
+    expect(listsSoFar(2, 1)).toBe("All 2 lists");
+  });
+
   it("never says 'All 1 lists' or '0 of 1 lists'", () => {
     expect(listsSoFar(1, 1)).toBe("1 list");
     expect(listsSoFar(0, 1)).toBe("0 of 1 list so far");

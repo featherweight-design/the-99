@@ -14,7 +14,7 @@ import { catalogFirstSeen, cards, collectionItems, preconCards, precons, userPre
 import { fold } from "../precons/list";
 import { RELEASED_GRACE_DAYS, utcDay, type UpcomingSet } from "../precons/upcoming";
 import { earlyListHref, resolvePostSet, type EarlyCardFacts } from "./early-list";
-import { assembleEarlyList, commanderPrintingsQuery, pickReleasePrecon, SET_WINDOW_AFTER_DAYS, type ReleaseCandidate } from "./early-list-read";
+import { assembleEarlyList, commanderPrintingsQuery, earlyListCommanderIds, pickReleasePrecon, SET_WINDOW_AFTER_DAYS, type ReleaseCandidate } from "./early-list-read";
 import type { EarlySet, EarlyTile } from "./early-tiles";
 
 type Reader = Pick<typeof db, "select" | "selectDistinct">;
@@ -156,7 +156,8 @@ export async function loadEarlyListsBySet(userId: string, sets: readonly Upcomin
     let gaveWayLists = 0;
     for (const l of lists) {
       if (l.commanderCardId && hasGivenWay(l, code, candidatesByCommander)) {
-        gaveWay.push(l.commanderCardId, ...(l.partnerCardId ? [l.partnerCardId] : []));
+        // The commanders its tile drew (`assembleEarlyList`): an alternate never was one, so it keeps its waiting row.
+        gaveWay.push(...earlyListCommanderIds(l));
         gaveWayLists++;
         continue;
       }

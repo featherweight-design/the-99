@@ -260,6 +260,16 @@ export function isBasicName(name: string): boolean {
   return n === "wastes" || n === "snow-covered wastes" || BASIC_TYPES.some((t) => n === t || n === `snow-covered ${t}`);
 }
 
+/** A list's partner is a commander of it only as a co-commander; an alternate commander stays one of its cards. */
+export function isCoCommanderPartner(list: { partnerRole: string | null }): boolean {
+  return list.partnerRole === "co-commander";
+}
+
+/** An early list's commanders by card id: its commander and its co-commander, never an alternate (`isCoCommanderPartner`). */
+export function earlyListCommanderIds(list: { commanderCardId: string | null; partnerCardId: string | null; partnerRole: string | null }): string[] {
+  return [list.commanderCardId, isCoCommanderPartner(list) ? list.partnerCardId : null].filter((x): x is string => x !== null);
+}
+
 /** The page's payload from what the reads returned. Pure, for a test. */
 export function assembleEarlyList(input: {
   contentfulId: string;
@@ -284,7 +294,7 @@ export function assembleEarlyList(input: {
 }): EarlyListPage {
   const { list, owned, set } = input;
   const { matched, unmatched } = splitEarlyLines(list.cards, input.facts);
-  const commanderIds = new Set([list.commanderCardId, list.partnerRole === "co-commander" ? list.partnerCardId : null].filter((x): x is string => x !== null));
+  const commanderIds = new Set(earlyListCommanderIds(list));
 
   const cardsOut: OpenPreconCard[] = matched.map(({ facts: f, count }) => ({
     oracleId: f.oracleId,
@@ -327,7 +337,7 @@ export function assembleEarlyList(input: {
   // and an unknown identity (`unknownCommanders`), so the head never loses it or calls it colorless.
   const stated = [
     { id: list.commanderCardId, name: list.commanderName },
-    ...(list.partnerRole === "co-commander" ? [{ id: list.partnerCardId, name: list.partnerName }] : []),
+    ...(isCoCommanderPartner(list) ? [{ id: list.partnerCardId, name: list.partnerName }] : []),
   ];
   const unknownCommanders: string[] = [];
   const named = stated.flatMap((s) => {
