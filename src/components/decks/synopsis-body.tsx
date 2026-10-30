@@ -344,7 +344,7 @@ export function SynopsisSections({
         {content.weaknesses && stages ? (
           <div className="flex flex-col gap-[10px]">
             {content.weaknesses.map((w, i) => (
-              <WeaknessLine key={i} line={w} text={text} basedOn={basedOn("weaknesses", i, w)} />
+              <WeaknessLine key={i} line={w} text={text} />
             ))}
           </div>
         ) : content.weaknesses ? (

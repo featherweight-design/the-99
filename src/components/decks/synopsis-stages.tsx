@@ -119,7 +119,7 @@ export function GamePlan({
               <div className={`relative min-w-0 flex-1 rounded-[10px] border border-[var(--border)] bg-[var(--surface-sunken)] px-[12px] py-[11px] md:p-[12px] ${image ? "grid grid-cols-[52px_minmax(0,1fr)] gap-[12px] md:flex md:flex-col md:gap-[10px]" : ""}`}>
                 {image ? <CardImage oracleId={lead.oracleId} name={lead.name} art={art} onFail={onFail} className="h-[72px] w-[52px] md:h-[100px] md:w-[72px]" /> : null}
                 <div className="min-w-0">
-                  <span className="mb-[5px] block font-mono text-[10px] font-medium uppercase leading-[13px] tracking-[0.14em] text-[var(--fg-body)] md:absolute md:left-[18px] md:top-[-24px] md:mb-0">{labels[i]}</span>
+                  <span className="mb-[5px] block font-mono text-[10px] font-medium uppercase leading-[13px] tracking-[0.14em] text-[var(--fg-body)] md:absolute md:left-[12px] md:top-[-24px] md:mb-0 md:bg-[var(--surface-raised)] md:px-[6px]">{labels[i]}</span>
                   <p className="m-0 text-[13px] leading-[1.55] text-[var(--fg-body)] [text-wrap:pretty]">{text(line)}{basedOn(i, line)}</p>
                 </div>
               </div>
@@ -229,8 +229,8 @@ export function KeyCardGrid({
   );
 }
 
-/** A weakness with its leading Moderate or Minor drawn as a chip (Moderate in the warning ink). */
-export function WeaknessLine({ line, text, basedOn }: { line: string; text: (t: string) => React.ReactNode; basedOn: React.ReactNode }) {
+/** A weakness with its leading Moderate or Minor drawn as a chip (Moderate in the warning ink). It draws no "Based on" row (Hugh, 2026-10-30): the line says why. */
+export function WeaknessLine({ line, text }: { line: string; text: (t: string) => React.ReactNode }) {
   const sev = splitSeverity(line);
   return (
     <p className="m-0 grid grid-cols-1 items-baseline gap-[5px] text-[13px] leading-[1.55] text-[var(--fg-body)] [text-wrap:pretty] md:grid-cols-[82px_minmax(0,1fr)] md:gap-[10px]">
@@ -242,7 +242,7 @@ export function WeaknessLine({ line, text, basedOn }: { line: string; text: (t: 
           {sev.tier}
         </span>
       ) : null}
-      <span className={sev ? "" : "md:col-span-2"}>{text(sev ? sev.rest : line)}{basedOn}</span>
+      <span className={sev ? "" : "md:col-span-2"}>{text(sev ? sev.rest : line)}</span>
     </p>
   );
 }
