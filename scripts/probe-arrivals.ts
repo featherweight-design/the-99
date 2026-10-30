@@ -1,5 +1,6 @@
 // The confirm's own lock, and the receipt it stores, proved against a real Postgres by
-// calling the real `replaceCollection`.
+// calling the real `replaceCollection`, and a first import's guard proved through the ledger
+// writer `applyCollectionChange`, the path every upload confirm now takes.
 //
 // Two things live here that no unit test in this repository can reach:
 //
@@ -25,7 +26,9 @@ import { Pool, neonConfig } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import { sql } from "drizzle-orm";
 import ws from "ws";
+import { randomUUID } from "node:crypto";
 import { replaceCollection } from "../src/lib/collection/import";
+import { applyCollectionChange } from "../src/lib/collection/write";
 import { pendingItemsToOwnedCounts, writeArrivalsReceipt } from "../src/lib/collection/arrivals-write";
 import type { ArrivalsSummary } from "../src/lib/collection/arrivals";
 
@@ -232,11 +235,21 @@ async function main() {
       shapes.includes(final.shape ?? ""), true);
 
     // 8. A FIRST IMPORT'S GUARD, AT THE WRITE (prod walk 2026-09-28, item 5a; Copilot on #1097).
+    //    Exercised through `applyCollectionChange` with the change and options `confirmUpload` builds
+    //    for a Replace-mode first import, because that is the write every upload confirm now takes:
+    //    proving it on `replaceCollection` would leave the path players use unwatched.
     //    A first import skips the confirm because there is nothing to lose, and `onlyIfEmpty`
     //    is the replace refusing when there is. The race it exists for: another tab's import
     //    holds the lock and is about to commit a collection, while this confirm waits. A check
     //    read before the lock saw an empty collection and would delete that import with no
     //    confirm. Read under the lock, it sees the committed rows and writes nothing.
+    const confirmFirstImport = (uploadId: string) =>
+      applyCollectionChange(
+        USER,
+        { kind: "replace", items, uploadId, tokens: undefined },
+        // A probe outside a request: the environment's switches are the ones under test.
+        { id: randomUUID(), onlyIfEmpty: true, confirmShort: undefined, ownedCounts: true, env: process.env },
+      );
     await fixture.execute(sql`delete from collection_items where user_id = ${USER}`);
     const firstTry = await newUpload();
     const holder = await pool.connect();
@@ -247,12 +260,13 @@ async function main() {
         "insert into collection_items (user_id, oracle_id, quantity, set_code) values ($1, $2, 1, 'probe')",
         [USER, first],
       );
-      const waiting = replaceCollection(USER, items, { confirmUploadId: firstTry, onlyIfEmpty: true });
+      const waiting = confirmFirstImport(firstTry);
       // Long enough for the confirm to reach the lock and block on it.
       await new Promise((resolve) => setTimeout(resolve, 750));
       await holder.query("commit");
       const refused = await waiting;
-      check("a first-import confirm behind another import refuses, naming what it found", refused.notEmpty, 1);
+      check("a first-import confirm behind another import refuses", refused.status, "notEmpty");
+      check("and names what it found", refused.status === "notEmpty" ? refused.owned : null, 1);
       const { rows: [kept] } = await fixture.execute<{ shape: string; stamped: number }>(sql`
         select
           (select string_agg(oracle_id::text || 'x' || quantity, ',') from collection_items
@@ -270,16 +284,20 @@ async function main() {
     await fixture.execute(sql`delete from collection_items where user_id = ${USER}`);
     const twin = await newUpload();
     const [twinA, twinB] = await Promise.all([
-      replaceCollection(USER, items, { confirmUploadId: twin, onlyIfEmpty: true }),
-      replaceCollection(USER, items, { confirmUploadId: twin, onlyIfEmpty: true }),
+      confirmFirstImport(twin),
+      confirmFirstImport(twin),
     ]);
     check("two submits of one first import: one writes, the other is already confirmed",
-      [twinA, twinB].map((r) => `${r.alreadyConfirmed}/${r.notEmpty}`).sort().join(" "), "false/null true/null");
+      [twinA, twinB].map((r) => r.status).sort().join(" "), "alreadyConfirmed applied");
     // The guard passes an empty collection, or it would refuse every first import.
     await fixture.execute(sql`delete from collection_items where user_id = ${USER}`);
-    const clean = await replaceCollection(USER, items, { confirmUploadId: await newUpload(), onlyIfEmpty: true });
-    check("a first-import confirm over an empty collection goes through", clean.notEmpty, null);
+    const clean = await confirmFirstImport(await newUpload());
+    check("a first-import confirm over an empty collection goes through", clean.status, "applied");
   } finally {
+    // The ledger writer's entries, first: their self-references are checked at the statement's end.
+    await fixture.execute(sql`delete from collection_history where user_id = ${USER}`);
+    await fixture.execute(sql`delete from commander_scores where user_id = ${USER}`);
+    await fixture.execute(sql`delete from user_data_stamps where user_id = ${USER}`);
     await fixture.execute(sql`delete from decks where user_id = ${USER}`);
     await fixture.execute(sql`delete from csv_uploads where user_id = ${USER}`);
     await fixture.execute(sql`delete from collection_items where user_id = ${USER}`);
