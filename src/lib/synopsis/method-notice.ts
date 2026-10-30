@@ -1,15 +1,18 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 import type { db } from "../../db";
 import { deckSynopses, modelCalls } from "../../db/schema";
-import { SYNOPSIS_CONTRACT_VERSION_STAGES, SYNOPSIS_CONTRACT_VERSION_V2, SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS } from "./limits";
+import { SYNOPSIS_CONTRACT_VERSION_STAGES } from "./limits";
 
 /**
  * The method-changed notice and the free rewrite (plan `2026-10-10-overview-accuracy.md` §7.4;
  * the addendum_method_notice READINESS audit, build rules 3, 4 and 11).
  *
  * A deck is ELIGIBLE for one free rewrite per method version when its shown overview was written
- * under an older contract and no free run has produced an overview yet. The free run is written
+ * under an older contract and no free run has produced an overview yet. The current method is
+ * contract 13 (the stages shape): every overview written at 12 or below, a carried-over precon
+ * Overview at 12 included, is an older method. A free rewrite a deck was given at 11 or 12 does not
+ * count against 13, so each deck gets one for this method version. The free run is written
  * with `origin = 'system'`, so it never touches the player allowance, which means the bound on its
  * cost is this file's two rules and nothing else: at most `FREE_ATTEMPTS` free calls per deck per
  * contract, whatever they settled as, and none once one has produced an overview.
@@ -19,7 +22,7 @@ export const FREE_ATTEMPTS = 2;
 /** `attemptsLeft` 2 or 1 offers the free press; 0 is the paid fallback (the audit's 1e). */
 export type MethodNotice = { attemptsLeft: number };
 
-/** What the deck's free runs at the new contract came to: every one counts, and whether any produced an overview. */
+/** What the deck's free runs at the current method (contract 13) came to: every one counts, and whether any produced an overview. */
 export type FreeRuns = { attempts: number; succeeded: boolean };
 
 /**
@@ -37,10 +40,10 @@ export function methodNoticeOf(input: {
   if (!v2 || !shown || runs.succeeded) return null;
   if (shown.overviewOk === false) {
     // A partial row (another section passed, the Overview was refused) is no old-method OVERVIEW.
-    // The one exception is a new-method row a free run of ours wrote: it stands in for the legacy
-    // overview that run was started over, which exists because the free run does.
-    if (shown.contractVersion < SYNOPSIS_CONTRACT_VERSION_V2 || runs.attempts === 0) return null;
-  } else if (shown.contractVersion >= SYNOPSIS_CONTRACT_VERSION_V2) {
+    // The one exception is a current-method (13) row a free run of ours wrote: it stands in for the
+    // older overview that run was started over, which exists because the free run does.
+    if (shown.contractVersion < SYNOPSIS_CONTRACT_VERSION_STAGES || runs.attempts === 0) return null;
+  } else if (shown.contractVersion >= SYNOPSIS_CONTRACT_VERSION_STAGES) {
     return null;
   }
   return { attemptsLeft: Math.max(0, FREE_ATTEMPTS - runs.attempts) };
@@ -66,10 +69,9 @@ export async function freeRunsFor(q: Pick<typeof db, "select">, deckId: string):
     .innerJoin(modelCalls, eq(modelCalls.id, deckSynopses.modelCallId))
     .where(and(
       eq(deckSynopses.deckId, deckId),
-      // EVERY current-method contract: a free rewrite with the benchmarks on was written at 12, and
-      // counting 11 alone let a failing one retry free without end. A player deck's rewrite is now
-      // written at 13 (the stages shape); 11 and 12 stay counted for the free runs already made.
-      inArray(deckSynopses.contractVersion, [SYNOPSIS_CONTRACT_VERSION_V2, SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS, SYNOPSIS_CONTRACT_VERSION_STAGES]),
+      // Only the current method's contract: a free rewrite given back at 11 or 12 does not spend this
+      // method version's two tries, so a deck that used it still gets one for 13.
+      eq(deckSynopses.contractVersion, SYNOPSIS_CONTRACT_VERSION_STAGES),
       eq(modelCalls.origin, "system"),
     ));
   return {
