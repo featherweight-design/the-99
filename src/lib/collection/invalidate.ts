@@ -116,6 +116,8 @@ export const COLLECTION_ROUTES: CollectionRoute[] = [
   // The friend page's other tabs (menu and Home PR 7) read the same friend's collection (their wishlist, their spares and the
   // status of their decks), never this reader's; listed as the page above is.
   { path: "/friends/[publicId]/wishlist", dynamic: true },
+  { path: "/friends/[publicId]/spares", dynamic: true },
+  // Where the Decks tab lived before it became the page's default (2026-10-30): a redirect now, kept for saved links.
   { path: "/friends/[publicId]/decks", dynamic: true },
   // A friend's deck, read-only (friend decks G1), marks what THIS reader owns of it: a replace moves its dots and its
   // own band, so it is listed for the figure, not only for the import.

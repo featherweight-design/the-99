@@ -51,7 +51,7 @@ describe("FriendDeckView", () => {
   it("heads the page with the friend's back link, the eyebrow and the deck", () => {
     draw();
     const back = screen.getByRole("link", { name: "‹ Colin’s decks" });
-    expect(back.getAttribute("href")).toBe("/friends/00000000-0000-4000-8000-000000000002/decks");
+    expect(back.getAttribute("href")).toBe("/friends/00000000-0000-4000-8000-000000000002");
     expect(screen.getByTestId("friend-deck-eyebrow").textContent).toBe("COColin’s deck · read-only");
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Thopter Factory");
     expect(screen.getByTestId("friend-deck-commanders").textContent).toBe("Sai, Master Thopterist");

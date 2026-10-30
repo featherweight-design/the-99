@@ -30,11 +30,11 @@ describe("one item of each kind (the handoff's table)", () => {
     });
   });
   it("trade match: the friend's page", () => {
-    expect(toMessage([match("m1", "Colin", "p-colin")])).toMatchObject({ title: "Colin has a spare Ghoulcaller Gisa", body: "It’s on your wishlist.", route: "/friends/p-colin?spare=o-m1" });
+    expect(toMessage([match("m1", "Colin", "p-colin")])).toMatchObject({ title: "Colin has a spare Ghoulcaller Gisa", body: "It’s on your wishlist.", route: "/friends/p-colin/spares?spare=o-m1" });
   });
   it("trade match with spare requests on: the body says to ask, and the tap opens the card's sheet", () => {
     expect(toMessage([{ ...match("m1", "Colin", "p-colin"), askable: true } as PushItem])).toMatchObject({
-      body: "It’s on your wishlist. Ask Colin for it.", route: "/friends/p-colin?spare=o-m1",
+      body: "It’s on your wishlist. Ask Colin for it.", route: "/friends/p-colin/spares?spare=o-m1",
     });
   });
   it("spare request: says where to answer, lands on Friends", () => {

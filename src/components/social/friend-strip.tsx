@@ -1,5 +1,5 @@
 "use client";
-// The strip under a friend's head: Spares, Wishlist, Decks (menu and Home PR 7), the Collection place's own `PlaceStrip`
+// The strip under a friend's head: Decks, Wishlist, Spares (Hugh, 2026-10-30; it was Spares first, menu and Home PR 7), the Collection place's own `PlaceStrip`
 // with each tab's figure after its label. Mounted once by the page group's layout, so a tab press swaps the page below
 // and never remounts it. A tab with no figure is absent (every tab follows Friends alone now the wishlist's switch is retired).
 
@@ -14,9 +14,9 @@ export type FriendTab = "spares" | "wishlist" | "decks";
 /** Which tab a path is, for a friend's public id; null for any other path. */
 export function friendTabFromPathname(pathname: string, publicId: string): FriendTab | null {
   const base = `/friends/${publicId}`;
-  if (pathname === base) return "spares";
+  if (pathname === base) return "decks";
   if (pathname === `${base}/wishlist`) return "wishlist";
-  if (pathname === `${base}/decks`) return "decks";
+  if (pathname === `${base}/spares`) return "spares";
   return null;
 }
 
@@ -28,15 +28,15 @@ export function FriendStrip({
   counts,
 }: {
   publicId: string;
-  /** Each drawn tab's figure; a tab with no entry is not drawn. Spares is first, as the board draws. */
+  /** Each drawn tab's figure; a tab with no entry is not drawn. Decks is first, the page's default (Hugh, 2026-10-30). */
   counts: Partial<Record<FriendTab, number>>;
 }) {
-  const current = friendTabFromPathname(usePathname(), publicId) ?? "spares";
+  const current = friendTabFromPathname(usePathname(), publicId) ?? "decks";
   const base = `/friends/${publicId}`;
   const all: (PlaceTab & { place: FriendTab })[] = [
-    { place: "spares", href: base, label: p.tabs.spares, count: counts.spares },
+    { place: "decks", href: base, label: p.tabs.decks, count: counts.decks },
     { place: "wishlist", href: `${base}/wishlist`, label: p.tabs.wishlist, count: counts.wishlist },
-    { place: "decks", href: `${base}/decks`, label: p.tabs.decks, count: counts.decks },
+    { place: "spares", href: `${base}/spares`, label: p.tabs.spares, count: counts.spares },
   ];
   const tabs = all.filter((t) => t.count !== undefined || t.place === current);
   return <PlaceStrip tabs={tabs} current={current} ariaLabel={p.tabsAria} testIdPrefix="friend-tab" frame={FRIEND_STRIP_FRAME} />;

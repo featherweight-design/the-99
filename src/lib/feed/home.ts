@@ -280,7 +280,7 @@ export function toViews(
       }
       case "trade-match":
         // The card's modal opens on landing (signature card call 9): `?spare=` names it.
-        return { ...base, card, friend, askable: found.askable === true, href: friend ? `/friends/${encodeURIComponent(friend.publicId)}${item.oracleId ? `?spare=${encodeURIComponent(item.oracleId)}` : ""}` : null };
+        return { ...base, card, friend, askable: found.askable === true, href: friend ? `/friends/${encodeURIComponent(friend.publicId)}/spares${item.oracleId ? `?spare=${encodeURIComponent(item.oracleId)}` : ""}` : null };
       case "combo": {
         const c = comboPieces(item.data);
         return { ...base, card, opens: c?.first ?? item.oracleId, combo: c && { pieces: c.pieces, added: c.added } };

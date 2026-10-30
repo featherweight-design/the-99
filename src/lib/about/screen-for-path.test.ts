@@ -33,7 +33,7 @@ describe("screenForPath: a Rule 0 table", () => {
 
 describe("screenForPath: a friend's pages", () => {
   it("is Friends' screen, where `friend-decks` lives: the page, its tabs and a friend's deck", () => {
-    for (const p of ["/friends/p1", "/friends/p1/wishlist", "/friends/p1/decks", "/friends/p1/decks/7a0e0000-0000-4000-8000-000000000001"]) {
+    for (const p of ["/friends/p1", "/friends/p1/wishlist", "/friends/p1/spares", "/friends/p1/decks", "/friends/p1/decks/7a0e0000-0000-4000-8000-000000000001"]) {
       expect(screenForPath(p), p).toBe("friends");
     }
   });

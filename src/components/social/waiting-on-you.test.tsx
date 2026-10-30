@@ -66,7 +66,7 @@ describe("WaitingOnYou", () => {
     expect(age.className).toContain("--fg-faint");
     // One link, on the action line before the ✕, at both widths.
     const link = within(row).getByRole("link", { name: w.seeSpares("Colin") });
-    expect(link.getAttribute("href")).toBe("/friends/pub-colin?spare=ghalta");
+    expect(link.getAttribute("href")).toBe("/friends/pub-colin/spares?spare=ghalta");
     expect(link.parentElement!.nextElementSibling?.hasAttribute("data-feed-dismiss")).toBe(true);
   });
 
@@ -75,7 +75,7 @@ describe("WaitingOnYou", () => {
     const row = screen.getByTestId("waiting-row");
     const links = within(row).getAllByRole("link", { name: w.askFriend("Colin") });
     expect(links.length).toBeGreaterThan(0);
-    for (const l of links) expect(l.getAttribute("href")).toBe("/friends/pub-colin?spare=ghalta");
+    for (const l of links) expect(l.getAttribute("href")).toBe("/friends/pub-colin/spares?spare=ghalta");
     expect(within(row).queryByRole("link", { name: w.seeSpares("Colin") })).toBeNull();
   });
 

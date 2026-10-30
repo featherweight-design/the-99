@@ -143,6 +143,12 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
 
 ## Friend decks (always on where `SOCIAL_FRIENDS_ENABLED` is)
 
+**Tab order and default (Hugh, 2026-10-30, no Design round):** a friend's page opens on Decks, and its strip reads Decks,
+Wishlist, Spares on every width. The routes follow: `/friends/[publicId]` is Decks, `/wishlist`, and `/spares` (Spares moved
+off the bare address). Two redirects keep old links working: `/friends/[publicId]/decks` goes to the bare page, and a bare
+page with `?spare=` goes to `/spares?spare=` before any read (pushes and feed rows sent before the move). Every link
+builder (`friendRoute` in `push/message.ts`, the Home feed, Waiting on you) writes `/spares?spare=` directly.
+
 Handoff `design/design_handoff_the99_friend_decks/` (R2, Green, Hugh 2026-10-22). A friend's Decks tab, and a friend's
 deck opened read-only, show only what the OWNER lets friends see. The rule is one pure function, `friendCanSeeDeck`, and
 both reads share one list (`visibleDecks` in `decks.ts`), so a tile the tab shows always opens and one it hides never

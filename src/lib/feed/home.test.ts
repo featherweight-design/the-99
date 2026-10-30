@@ -109,7 +109,7 @@ describe("loadHomeFeed", () => {
     if (!feed?.chosen) throw new Error("expected a chosen feed");
     // The trade match leads (priority over the newer price drop) and leaves the list.
     expect(feed.lead?.key).toBe("item:2");
-    expect(feed.lead?.href).toBe("/friends/p1?spare=c2");
+    expect(feed.lead?.href).toBe("/friends/p1/spares?spare=c2");
     expect(feed.items.map((i) => i.key)).toEqual(["item:1", "set:sos"]);
     expect(feed.unseen).toBe(2);
     // A price drop opens the card on Mana Pool (Hugh, 2026-10-27), by the card details link's builder, never its detail.
