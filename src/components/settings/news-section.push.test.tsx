@@ -137,6 +137,19 @@ describe("the column", () => {
     expect(pushBox("price-drop").checked).toBe(true);
   });
 
+  it("draws no push box for a kind that cannot push yet (Wizards' posts, until UI 3b), and leaves it out of the save", async () => {
+    deviceIs({ permission: "granted", subscribed: true });
+    const kinds: NewsSetting[] = [...KINDS, { kind: "secret-lair", on: true }];
+    render(<NewsSection kinds={kinds} push={{ ...PUSH, kinds: ["new-set", "price-drop", "spare-request"] }} />);
+    await act(async () => {});
+    expect(screen.queryByRole("checkbox", { name: P.kindAria("secret-lair") })).toBeNull();
+    // Its row keeps the column's width, so the other boxes stay in line, and its Home box stands.
+    expect(document.querySelectorAll("[data-push-none]")).toHaveLength(1);
+    expect(homeBox("secret-lair").checked).toBe(true);
+    await act(async () => fireEvent.click(pushBox("price-drop")));
+    expect(m.savePush).toHaveBeenCalledWith(["price-drop", "spare-request"], OFFERED);
+  });
+
   it("puts a failed push save back and says so in the shared toast", async () => {
     deviceIs({ permission: "granted", subscribed: true });
     m.savePush.mockResolvedValue({ ok: false, reason: "invalid" });

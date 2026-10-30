@@ -9,7 +9,7 @@ const q = sql.replace(/\s+/g, " ");
 describe("storedFeedBranch", () => {
   it("reads only the viewer's own rows of the kinds asked for", () => {
     expect(q).toMatch(/where fi\.user_id = \$1 and fi\.kind = any\(\$2::text\[\]\)/);
-    expect(params).toEqual(["viewer_1", ["trade-match", "combo", "spare-request"], ["spare-request"], "2026-10-08T12:00:00.000Z"]);
+    expect(params).toEqual(["viewer_1", ["trade-match", "combo", "spare-request"], ["spare-request", "secret-lair", "commander-decklists", "wizards-news"], "2026-10-08T12:00:00.000Z"]);
   });
 
   it("left joins the reader's prefs and gates each kind on its effective enabledAt: the stamp, else always for a default-on kind not declined (G4)", () => {

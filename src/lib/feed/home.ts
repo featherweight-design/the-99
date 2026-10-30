@@ -28,7 +28,7 @@ import { availableFeedKinds, homeFeedEnabled } from "./flag";
 import { spareRequestsEnabled } from "../social/flag";
 import { leadStory, type FeedKind } from "./kinds";
 import { effectiveKinds, markFeedSeen, readFeedPrefs } from "./prefs";
-import { loadFeed, type FeedItem } from "./read";
+import { loadFeed, type FeedItem, type FeedPost } from "./read";
 
 type Executor = Pick<typeof db, "execute">;
 
@@ -53,9 +53,11 @@ export type FeedView = {
   /**
    * An address OFF the app the press opens in a new tab: a price drop's card on Mana Pool, by the card details link's
    * own builder (`manapoolCardUrl`; Hugh's ruling 2026-10-27, the menu-home plan's product call 7, over the boards'
-   * "Open the card"). Null on every other item.
+   * "Open the card"), or a Wizards post on magic.wizards.com (`wizardsPostUrl`). Null on every other item.
    */
   outbound: string | null;
+  /** A Wizards post (Secret Lair, Commander decklists, Wizards news): what its row and its lead draw. Null or absent on every other item. */
+  post?: PostView | null;
   /** A new set's or precon's name. */
   name: string | null;
   /** A new set's card count. */
@@ -85,6 +87,34 @@ export type FeedView = {
   /** Home only (`withAnswerDetails`): what the answer's line says. Absent on a push. */
   answerDetail?: AnswerDetail;
 };
+
+/**
+ * A Wizards post as drawn: its title, its summary (the excerpt), its hero (null: the post-glyph plate), and for a
+ * Commander decklists post the lists out of those promised (null: no line).
+ */
+export type PostView = { title: string; summary: string | null; hero: string | null; lists: { n: number; of: number } | null };
+
+/**
+ * The post's address, ONLY when it is an https page on magic.wizards.com: the ingest stores what the sitemap said, and a
+ * press must never send a reader anywhere else. Anything else is null, and the row draws no press.
+ */
+export function wizardsPostUrl(url: string): string | null {
+  try {
+    const u = new URL(url);
+    return u.protocol === "https:" && u.hostname === "magic.wizards.com" ? u.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * A Commander decklists post's lists line: the lists stored, of those the post promised (never fewer than are stored).
+ * None before the first list is out, and none on another kind.
+ */
+export function postLists(kind: FeedKind, post: Pick<FeedPost, "lists" | "promised">): { n: number; of: number } | null {
+  if (kind !== "commander-decklists" || post.lists <= 0) return null;
+  return { n: post.lists, of: Math.max(post.promised ?? post.lists, post.lists) };
+}
 
 /** An answer's line: Yes points at the buy press while Shopping has it; No names who else has a spare now. */
 export type AnswerDetail = { canBuy: boolean; others: string[] };
@@ -189,6 +219,7 @@ export function toViews(
       href: null,
       opens: null,
       outbound: null,
+      post: null,
       name: null,
       setSize: null,
       owned: null,
@@ -203,6 +234,15 @@ export function toViews(
     }
     if (item.kind === "new-precon") {
       return { ...base, card: found.precons.get(item.fileName) ?? null, href: item.href, name: item.name, owned: found.owned.get(item.fileName) ?? null };
+    }
+    if ("post" in item) {
+      const p = item.post;
+      return {
+        ...base,
+        card: null,
+        outbound: wizardsPostUrl(p.url),
+        post: { title: p.title, summary: p.excerpt, hero: p.hero, lists: postLists(item.kind, p) },
+      };
     }
     const card = item.oracleId ? found.cards.get(item.oracleId) ?? null : null;
     const friend = item.friend;
@@ -239,7 +279,7 @@ export async function lookups(userId: string, items: readonly FeedItem[], q: Exe
   const ids = [
     ...new Set(
       items.flatMap((i) => {
-        if (i.kind === "new-set" || i.kind === "new-precon") return [];
+        if (i.kind === "new-set" || i.kind === "new-precon" || "post" in i) return [];
         // A combo's row draws its mark, but as the lead story it is drawn with the piece the reader's write added.
         return i.oracleId ? [i.oracleId] : [];
       }),

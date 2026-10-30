@@ -53,6 +53,6 @@ describe("the push stamp", () => {
     expect(g.sql).toContain("pup.push_kinds");
     expect(g.sql).toContain("pup.push_kinds_declined");
     expect(g.sql).toContain("'-infinity'::timestamptz");
-    expect(g.params).toContainEqual(["spare-request"]);
+    expect(g.params).toContainEqual(["spare-request", "secret-lair", "commander-decklists", "wizards-news"]);
   });
 });

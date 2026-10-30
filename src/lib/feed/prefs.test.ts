@@ -7,7 +7,11 @@ import {
   effectiveKinds, feedKindsUpdate, kindsOn, loadNewsSettings, markFeedSeen, markFriendsSeen, nextFeedPrefs, parseChosenKinds,
   parseDeclined, parseFeedKinds, setFeedKinds, type FeedKindsMap,
 } from "./prefs";
-import type { FeedKind } from "./kinds";
+import { DEFAULT_ON_KINDS, FEED_KINDS, isAnnouncementKind, type FeedKind } from "./kinds";
+
+/** The scope of a form drawn with ANNOUNCEMENTS_ENABLED off: every kind but Wizards' three, so they are never touched. */
+const noPosts = FEED_KINDS.filter((k) => !isAnnouncementKind(k));
+const POSTS = ["secret-lair", "commander-decklists", "wizards-news"] as const;
 
 /** A resolved env for a test. */
 const env = (e: Record<string, string> = {}): NodeJS.ProcessEnv => e as unknown as NodeJS.ProcessEnv;
@@ -26,7 +30,7 @@ describe("parseFeedKinds", () => {
 
 /** The map after a save, for kinds that start off (no default-on kind is touched by these cases). */
 const nextFeedKinds = (map: FeedKindsMap, on: readonly FeedKind[], now: Date, scope?: readonly FeedKind[]) =>
-  nextFeedPrefs({ map, declined: ["spare-request"] }, on, now, scope)?.map ?? null;
+  nextFeedPrefs({ map, declined: [...DEFAULT_ON_KINDS] }, on, now, scope)?.map ?? null;
 
 describe("nextFeedPrefs (the map after a save)", () => {
   it("stamps a kind turned on with now", () => {
@@ -65,27 +69,34 @@ describe("nextFeedPrefs (the map after a save)", () => {
   });
 });
 
-describe("a default-on kind (spare-request, G4)", () => {
+describe("a default-on kind (spare-request, G4; Wizards' three)", () => {
   const none = { map: {}, declined: [] as FeedKind[] };
-  it("is on for a reader who never chose, and only it", () => {
-    expect(effectiveKinds(none)).toEqual(["spare-request"]);
-    expect(effectiveKinds({ map: { combo: EARLIER }, declined: [] })).toEqual(["spare-request", "combo"]);
-    expect(effectiveKinds({ map: {}, declined: ["spare-request"] })).toEqual([]);
+  it("is on for a reader who never chose, and only those", () => {
+    expect(effectiveKinds(none)).toEqual([...POSTS, "spare-request"]);
+    expect(effectiveKinds({ map: { combo: EARLIER }, declined: [] })).toEqual([...POSTS, "spare-request", "combo"]);
+    expect(effectiveKinds({ map: {}, declined: ["spare-request"] })).toEqual([...POSTS]);
+    expect(effectiveKinds({ map: {}, declined: [...DEFAULT_ON_KINDS] })).toEqual([]);
   });
 
   it("left alone by a save, writes nothing for it", () => {
-    expect(nextFeedPrefs(none, ["spare-request"], NOW)).toBeNull();
-    expect(nextFeedPrefs(none, ["spare-request", "combo"], NOW)).toEqual({ map: { combo: NOW.toISOString() }, declined: [] });
+    expect(nextFeedPrefs(none, ["spare-request"], NOW, noPosts)).toBeNull();
+    expect(nextFeedPrefs(none, ["spare-request", "combo"], NOW, noPosts)).toEqual({ map: { combo: NOW.toISOString() }, declined: [] });
+    expect(nextFeedPrefs(none, [...POSTS, "spare-request"], NOW)).toBeNull();
   });
 
   it("turned off: off the map and onto the declined list", () => {
-    expect(nextFeedPrefs(none, [], NOW)).toEqual({ map: {}, declined: ["spare-request"] });
-    expect(nextFeedPrefs({ map: { "spare-request": EARLIER }, declined: [] }, [], NOW)).toEqual({ map: {}, declined: ["spare-request"] });
+    expect(nextFeedPrefs(none, [], NOW, noPosts)).toEqual({ map: {}, declined: ["spare-request"] });
+    expect(nextFeedPrefs({ map: { "spare-request": EARLIER }, declined: [] }, [], NOW, noPosts)).toEqual({ map: {}, declined: ["spare-request"] });
+    // A form that offers them (the switch on) and leaves them unticked declines Wizards' three too, in FEED_KINDS order.
+    expect(nextFeedPrefs(none, ["spare-request"], NOW)).toEqual({ map: {}, declined: [...POSTS] });
   });
 
   it("turned on again: off the declined list and stamped NOW, so what arrived while off never comes back", () => {
-    expect(nextFeedPrefs({ map: {}, declined: ["spare-request"] }, ["spare-request"], NOW)).toEqual({
+    expect(nextFeedPrefs({ map: {}, declined: ["spare-request"] }, ["spare-request"], NOW, noPosts)).toEqual({
       map: { "spare-request": NOW.toISOString() }, declined: [],
+    });
+    expect(nextFeedPrefs({ map: {}, declined: ["secret-lair"] }, ["secret-lair"], NOW, ["secret-lair"])).toEqual({
+      map: { "secret-lair": NOW.toISOString() }, declined: [],
     });
   });
 
@@ -144,7 +155,7 @@ describe("setFeedKinds", () => {
   }
 
   it("writes nothing when the choice is what the row holds", async () => {
-    const { q, writes } = fake({ feedKinds: { combo: EARLIER }, declined: ["spare-request"] });
+    const { q, writes } = fake({ feedKinds: { combo: EARLIER }, declined: [...DEFAULT_ON_KINDS] });
     expect(await setFeedKinds("u", ["combo"], NOW, undefined, q)).toBe(false);
     expect(writes).toEqual([]);
   });
@@ -152,7 +163,8 @@ describe("setFeedKinds", () => {
   it("inserts the reader's row when there is none", async () => {
     const { q, writes } = fake(undefined);
     expect(await setFeedKinds("u", ["new-set", "spare-request"], NOW, undefined, q)).toBe(true);
-    expect(writes).toEqual([{ userId: "u", feedKinds: { "new-set": NOW.toISOString() }, feedKindsDeclined: [] }]);
+    // The whole set offered, Wizards' three unticked: declined.
+    expect(writes).toEqual([{ userId: "u", feedKinds: { "new-set": NOW.toISOString() }, feedKindsDeclined: [...POSTS] }]);
   });
 
   it("re-reads and decides again when another save landed first", async () => {

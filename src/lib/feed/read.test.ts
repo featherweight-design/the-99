@@ -3,7 +3,7 @@ import type { SQL } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 
 import { FEED_KINDS } from "./kinds";
-import { feedQuery, feedUnion, loadFeed, markSeenQuery, toFeedItem, unseenCount, unseenCountQuery, unseenFriendsCount } from "./read";
+import { catalogBranch, feedQuery, feedUnion, loadFeed, markSeenQuery, toFeedItem, toPost, unseenCount, unseenCountQuery, unseenFriendsCount } from "./read";
 
 /** A resolved env for a test. */
 const env = (e: Record<string, string> = {}): NodeJS.ProcessEnv => e as unknown as NodeJS.ProcessEnv;
@@ -36,12 +36,22 @@ describe("feedUnion", () => {
   it("shows each kind only what arrived after ITS OWN enabledAt (absent when off, so nothing)", () => {
     // Against the item's own moment (the later of the stamp and the release), so a set first seen before the
     // reader opted in but released after still arrives, and one released before still does not.
+    // Every catalog branch through `kindEnabledAt` too: the stamp, else always for a default-on kind (none of these two).
     const flatQ = q.replace(/\s+/g, " ");
-    expect(flatQ).toContain(`and greatest(sf.first_seen_at at time zone 'UTC', s.released_at::timestamp at time zone 'UTC') > (sup.feed_kinds ->> 'new-set')::timestamptz`);
-    expect(flatQ).toContain(`and greatest(pf.first_seen_at at time zone 'UTC', p.release_date::timestamp at time zone 'UTC') > (pup.feed_kinds ->> 'new-precon')::timestamptz`);
+    const gate = (moment: string, alias: string) =>
+      `and ${moment} > coalesce((${alias}.feed_kinds ->> $`;
+    const tail = (alias: string) => `::text = any(coalesce(${alias}.feed_kinds_declined, '{}'::text[]))) then '-infinity'::timestamptz end)`;
+    expect(flatQ).toContain(gate("greatest(sf.first_seen_at at time zone 'UTC', s.released_at::timestamp at time zone 'UTC')", "sup"));
+    expect(flatQ).toContain(gate("greatest(pf.first_seen_at at time zone 'UTC', p.release_date::timestamp at time zone 'UTC')", "pup"));
+    expect(flatQ).toContain(gate("wa.first_seen_at", "aup"));
+    for (const a of ["sup", "pup", "aup"]) expect(flatQ).toContain(tail(a));
+    // The stamp-only gate is gone: a reader with no row would read nothing.
+    expect(flatQ).not.toMatch(/> \(\w+\.feed_kinds ->> '[a-z-]+'\)::timestamptz/);
+    expect(params).toContain("new-set");
+    expect(params).toContain("new-precon");
     // Stored kinds go through `kindEnabledAt`: the stamp, else always for a default-on kind not declined (G4).
     expect(flatQ).toMatch(/fi\.created_at > coalesce\(\(fup\.feed_kinds ->> fi\.kind\)::timestamptz, case when fi\.kind = any\(\$\d+::text\[\]\) and not \(fi\.kind = any\(coalesce\(fup\.feed_kinds_declined, '\{\}'::text\[\]\)\)\) then '-infinity'::timestamptz end\)/);
-    expect(params).toContainEqual(["spare-request"]);
+    expect(params).toContainEqual(["spare-request", "secret-lair", "commander-decklists", "wizards-news"]);
   });
 
   it("left joins the reader's prefs in the stored branch, so a reader with no row still reads a default-on kind", () => {
@@ -49,12 +59,13 @@ describe("feedUnion", () => {
   });
 
   it("joins only the READER's prefs row in every branch", () => {
-    // LEFT joined (a reader with no row reads nulls, and the stamp-only feed gate then reads nothing of these kinds).
+    // LEFT joined (a reader with no row reads nulls, and the gate then reads only the default-on kinds).
     expect(q).toMatch(/left join "user_prefs" sup on sup\.user_id = \$\d+/);
     expect(q).toMatch(/left join "user_prefs" pup on pup\.user_id = \$\d+/);
+    expect(q).toMatch(/left join "user_prefs" aup on aup\.user_id = \$\d+/);
     expect(q).toMatch(/where fi\.user_id = \$\d+ and fi\.kind = any\(\$\d+::text\[\]\)/);
-    // Three prefs joins, and each catalog branch's own dismissals (✕) read by the same reader.
-    expect(params.filter((p) => p === "user_1")).toHaveLength(5);
+    // Five catalog branches' prefs joins and dismissals (✕), and the stored branch's reader: all the same reader.
+    expect(params.filter((p) => p === "user_1")).toHaveLength(11);
     expect(q).toMatch(/not exists \(select 1 from "feed_dismissals" sfd where sfd\.user_id = \$\d+ and sfd\.key = 'set:' \|\| s\.code\)/);
     expect(q).toMatch(/not exists \(select 1 from "feed_dismissals" pfd where pfd\.user_id = \$\d+ and pfd\.key = 'precon:' \|\| p\.file_name\)/);
   });
@@ -71,6 +82,39 @@ describe("feedUnion", () => {
     // AGENTS.md, a correlated subquery must alias and qualify: every column reference in the union is `alias.column`.
     const bare = q.match(/(?:select|where|and|on|by|,)\s+(?!null|'|count|exists|lower|greatest|coalesce|1\b|\()("?[a-z_]+"?)(?=\s*(?:=|>|<|,|as\b))/g) ?? [];
     expect(bare).toEqual([]);
+  });
+});
+
+describe("the Announcements branch", () => {
+  const { sql, params } = render(feedUnion("user_1", ["commander-decklists"], NOW));
+  const q = flat(sql);
+
+  it("reads one kind's posts, never the baseline, at first_seen_at, keyed post:<contentful id>", () => {
+    expect(q).toMatch(/^select wa\.kind as kind, 'post:' \|\| wa\.contentful_id as key, wa\.first_seen_at as created_at,/);
+    expect(q).toMatch(/from "wizards_announcements" wa left join "user_prefs" aup on aup\.user_id = \$\d+ where wa\.kind = \$\d+::text and wa\.baseline = false/);
+    expect(params).toContain("commander-decklists");
+    // The one branch asked for, and no other.
+    expect(q).not.toContain(`"sets"`);
+    expect(q).not.toContain(`"feed_items"`);
+    expect(q.match(/from "wizards_announcements"/g)).toHaveLength(1);
+  });
+
+  it("honors the reader's ✕ by the same key", () => {
+    expect(q).toMatch(/not exists \(select 1 from "feed_dismissals" afd where afd\.user_id = \$\d+ and afd\.key = 'post:' \|\| wa\.contentful_id\)/);
+  });
+
+  it("gates on kindEnabledAt with the kind default on, so a reader who never chose (or has no prefs row) reads a post", () => {
+    expect(q).toMatch(/and wa\.first_seen_at > coalesce\(\(aup\.feed_kinds ->> \$\d+::text\)::timestamptz, case when \$\d+::text = any\(\$\d+::text\[\]\)/);
+    expect(params).toContainEqual(["spare-request", "secret-lair", "commander-decklists", "wizards-news"]);
+  });
+
+  it("carries the row's words in data, the lists' count an aliased, qualified correlated subquery", () => {
+    expect(q).toContain(`jsonb_build_object('title', wa.title, 'excerpt', wa.excerpt, 'hero', wa.hero_image_url, 'url', wa.url, 'promised', wa.promised_decks, 'lists', (select count(*) from "wizards_announcement_decklists" wad where wad.announcement_id = wa.id)::int) as data`);
+  });
+
+  it("is the branch push reads too, with its own gate", () => {
+    const pushed = flat(new PgDialect().sqlToQuery(catalogBranch("secret-lair", "u", NOW, ({ id }) => id)).sql);
+    expect(pushed).toMatch(/and wa\.contentful_id$/);
   });
 });
 
@@ -139,6 +183,16 @@ describe("toFeedItem", () => {
     expect(toFeedItem({ ...row, kind: "new-precon", key: "precon:A B", created_at: NOW, code: "soc", name: "Ashling", file_name: "A B" })).toMatchObject({
       href: "/decks/precons/A%20B", setCode: "soc",
     });
+  });
+
+  it("reads a Wizards post from its data, defensively", () => {
+    const item = toFeedItem({
+      ...row, kind: "secret-lair", key: "post:abc", created_at: NOW, name: "JAWS",
+      data: { title: "JAWS is live", excerpt: "Five cards.", hero: "https://images.ctfassets.net/x.jpg", url: "https://magic.wizards.com/en/news/x", promised: null, lists: 0 },
+    });
+    expect(item).toMatchObject({ kind: "secret-lair", key: "post:abc", post: { title: "JAWS is live", excerpt: "Five cards.", hero: "https://images.ctfassets.net/x.jpg", url: "https://magic.wizards.com/en/news/x", promised: null, lists: 0 } });
+    expect(toPost({}, "Named")).toEqual({ title: "Named", excerpt: null, hero: null, url: "", promised: null, lists: 0 });
+    expect(toPost({ title: "", excerpt: "", hero: 3, lists: "5", promised: 5 }, "N")).toEqual({ title: "N", excerpt: null, hero: null, url: "", promised: 5, lists: 0 });
   });
 
   it("names a friend by public id and display name, never more", () => {

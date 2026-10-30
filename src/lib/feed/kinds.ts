@@ -4,45 +4,47 @@
  * checked against it.
  *
  * Two families:
- * - CATALOG kinds (`new-set`, `new-precon`) are READ, never written: they come from `catalog_first_seen` at read
- *   time (`read.ts`), so no ingest fans out per account under the `catalog-ingest` lock.
+ * - CATALOG kinds are READ, never written: `new-set` and `new-precon` come from `catalog_first_seen` and the
+ *   Announcements kinds from `wizards_announcements`, at read time (`read.ts`), so no ingest fans out per account.
  * - STORED kinds persist as stored items, written by the job that knows the event (`recordFeedItem`, `lib/social/feed-write.ts`).
  *
  * Client-safe: no imports.
  */
-export const FEED_KINDS = ["new-set", "new-precon", "price-drop", "trade-match", "spare-request", "combo"] as const;
+/**
+ * The Announcements kinds (handoff `design_handoff_the99_announcements`): Wizards' own posts, one row per post in
+ * `wizards_announcements` (its `kind` column holds exactly these keys) and nothing per account, so they are CATALOG
+ * family, read at read time like `new-set`, and default on. `wizards-news` is the classifier's "Other" (the boards'
+ * `wizards-other`: the key shipped in migration 0193 stands).
+ */
+export const ANNOUNCEMENT_KINDS = ["secret-lair", "commander-decklists", "wizards-news"] as const;
+export type AnnouncementFeedKind = (typeof ANNOUNCEMENT_KINDS)[number];
+
+/** In Settings' order: the three Announcements kinds sit after New precons (handoff README, call 7). */
+export const FEED_KINDS = ["new-set", "new-precon", ...ANNOUNCEMENT_KINDS, "price-drop", "trade-match", "spare-request", "combo"] as const;
 
 export type FeedKind = (typeof FEED_KINDS)[number];
 
-export const CATALOG_KINDS = ["new-set", "new-precon"] as const satisfies readonly FeedKind[];
+export const CATALOG_KINDS = ["new-set", "new-precon", ...ANNOUNCEMENT_KINDS] as const satisfies readonly FeedKind[];
 export type CatalogKind = (typeof CATALOG_KINDS)[number];
 
 export const STORED_KINDS = ["price-drop", "trade-match", "spare-request", "combo"] as const satisfies readonly FeedKind[];
 export type StoredKind = (typeof STORED_KINDS)[number];
 
-/**
- * The Announcements kinds (handoff `design_handoff_the99_announcements`): Wizards' own posts, one row per post in
- * `wizards_announcements` (its `kind` column holds exactly these keys) and nothing per account, so they are CATALOG
- * family, read at read time like `new-set`. `wizards-news` is the classifier's "Other".
- *
- * NOT YET in `FEED_KINDS`, `CATALOG_KINDS` or `DEFAULT_ON_KINDS`: those sets ARE the reader surface (Settings draws a
- * checkbox per available `FEED_KINDS` entry, Home reads `effectiveKinds`, and every `Record<FeedKind, ...>` copy table and
- * `catalogBranch` would need the kind), so joining them waits for the UI PRs that draw them. They will join all three
- * (catalog family, default on). Until then only the push outbox's constraint (`PUSH_OUTBOX_KINDS`) and the stored table
- * name them.
- */
-export const ANNOUNCEMENT_KINDS = ["secret-lair", "commander-decklists", "wizards-news"] as const;
-export type AnnouncementFeedKind = (typeof ANNOUNCEMENT_KINDS)[number];
+const ANNOUNCEMENT_SET = new Set<string>(ANNOUNCEMENT_KINDS);
+export const isAnnouncementKind = (k: unknown): k is AnnouncementFeedKind => typeof k === "string" && ANNOUNCEMENT_SET.has(k);
 
-/** Every kind a `push_outbox` row may carry (its `push_outbox_kind_check`): the feed's kinds and the announcements'. */
-export const PUSH_OUTBOX_KINDS = [...FEED_KINDS, ...ANNOUNCEMENT_KINDS] as const;
+/**
+ * Every kind a `push_outbox` row may carry (its `push_outbox_kind_check`): every feed kind. Spelled in the order the
+ * constraint was generated in (migration 0193), so the schema renders the same check and no migration follows.
+ */
+export const PUSH_OUTBOX_KINDS = ["new-set", "new-precon", "price-drop", "trade-match", "spare-request", "combo", ...ANNOUNCEMENT_KINDS] as const satisfies readonly FeedKind[];
 
 /**
  * The kinds ON for a reader who never chose (spare requests G4): "a friend wants your spare" waits on the reader's
- * answer, so it is heard of by default. A default-on kind is on while it is stamped in `feed_kinds` or absent from both
+ * answer, so it is heard of by default, and Wizards' own announcements start on (handoff README, call 7). A default-on kind is on while it is stamped in `feed_kinds` or absent from both
  * `feed_kinds` and `feed_kinds_declined`; turned off, it moves to `feed_kinds_declined`. Every other kind starts off.
  */
-export const DEFAULT_ON_KINDS = ["spare-request"] as const satisfies readonly StoredKind[];
+export const DEFAULT_ON_KINDS = ["spare-request", ...ANNOUNCEMENT_KINDS] as const satisfies readonly FeedKind[];
 export const isDefaultOn = (k: FeedKind): boolean => (DEFAULT_ON_KINDS as readonly FeedKind[]).includes(k);
 
 const KIND_SET = new Set<string>(FEED_KINDS);
@@ -52,10 +54,21 @@ export const isFeedKind = (k: unknown): k is FeedKind => typeof k === "string" &
 export const isStoredKind = (k: unknown): k is StoredKind => typeof k === "string" && STORED_SET.has(k);
 
 /**
- * The lead story's order (Feed-Kinds board, Rules): the first UNSEEN item by this order leads Home, waiting on
- * you first. Every kind appears exactly once.
+ * The lead story's order (Feed-Kinds board, Rules; Announcements call 2): the first UNSEEN item by this order leads
+ * Home, waiting on you first. Every kind appears exactly once here or in `NEVER_LEADS`.
  */
-export const LEAD_PRIORITY: readonly FeedKind[] = ["spare-request", "trade-match", "combo", "price-drop", "new-precon", "new-set"];
+export const LEAD_PRIORITY: readonly FeedKind[] = [
+  "spare-request", "trade-match", "combo", "price-drop", "commander-decklists", "new-precon", "new-set", "secret-lair",
+];
+
+/** The kinds that are only ever a row (Announcements call 2: Wizards news never leads). */
+export const NEVER_LEADS: readonly FeedKind[] = ["wizards-news"];
+
+/** A kind's place in `LEAD_PRIORITY`; a kind missing from it sorts LAST, never first (`indexOf`'s -1 would be best). */
+const leadRank = (k: FeedKind): number => {
+  const i = LEAD_PRIORITY.indexOf(k);
+  return i === -1 ? Infinity : i;
+};
 
 /** How long an item stays in the feed (the board: "Fourteen days kept"). */
 export const FEED_WINDOW_DAYS = 14;
@@ -75,18 +88,18 @@ const waits = (i: { kind: FeedKind } & MaybeAnswer): boolean => WAITING_KINDS.in
 
 /**
  * The lead story: the first unseen item by `LEAD_PRIORITY`, newest first within a kind; null when nothing is unseen.
- * An answer item never leads.
+ * An answer item never leads, nor a kind in `NEVER_LEADS`.
  */
 export function leadStory<T extends { kind: FeedKind; unseen: boolean; createdAt: Date } & MaybeAnswer>(items: readonly T[]): T | null {
   let best: T | null = null;
   for (const item of items) {
-    if (!item.unseen || item.answer) continue;
+    if (!item.unseen || item.answer || NEVER_LEADS.includes(item.kind)) continue;
     if (!best) {
       best = item;
       continue;
     }
-    const a = LEAD_PRIORITY.indexOf(item.kind);
-    const b = LEAD_PRIORITY.indexOf(best.kind);
+    const a = leadRank(item.kind);
+    const b = leadRank(best.kind);
     if (a < b || (a === b && item.createdAt.getTime() > best.createdAt.getTime())) best = item;
   }
   return best;

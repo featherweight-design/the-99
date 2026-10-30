@@ -30,5 +30,10 @@ export function toPushItem(view: FeedView, batch: string): PushItem | null {
     case "combo":
       if (!card || !view.combo || !view.opens) return null;
       return { ...base, kind: "combo", oracleId: view.opens, a: view.combo.pieces[0], b: view.combo.pieces[1], added: view.combo.added, image: card.image };
+    case "secret-lair":
+    case "commander-decklists":
+    case "wizards-news":
+      // Not pushed until Announcements UI 3b (`PUSH_CATALOG_KINDS`): nothing queues one, so nothing reaches here.
+      return null;
   }
 }

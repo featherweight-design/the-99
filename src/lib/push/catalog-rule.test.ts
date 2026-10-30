@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { catalogBatchKey, catalogKey, catalogPushKinds, parseCatalogKey } from "./catalog-rule";
+import { catalogBatchKey, catalogKey, catalogPushKinds, parseCatalogKey, pushableFeedKinds } from "./catalog-rule";
 
 const env = (over: Record<string, string> = {}) =>
   ({ PUSH_ENABLED: "true", HOME_FEED_ENABLED: "true", ...over }) as unknown as NodeJS.ProcessEnv;
@@ -48,5 +48,25 @@ describe("the catalog kinds a reader's switches allow pushing", () => {
   it("none with push off, or Home's news off", () => {
     expect(catalogPushKinds(env({ PUSH_ENABLED: "false" }))).toEqual([]);
     expect(catalogPushKinds(env({ HOME_FEED_ENABLED: "false" }))).toEqual([]);
+  });
+});
+
+describe("Wizards' posts, read on Home but not yet pushed (Announcements UI 3b lifts this)", () => {
+  const on = env({ ANNOUNCEMENTS_ENABLED: "true" });
+
+  it("are never a catalog push kind, even with ANNOUNCEMENTS_ENABLED on", () => {
+    expect(catalogPushKinds(on)).toEqual(["new-set", "new-precon"]);
+  });
+
+  it("draw no push box in Settings, while every other available kind keeps its own", () => {
+    expect(pushableFeedKinds(on)).toEqual(["new-set", "new-precon", "combo"]);
+    expect(pushableFeedKinds(env())).toEqual(["new-set", "new-precon", "combo"]);
+    expect(pushableFeedKinds(env({ HOME_FEED_ENABLED: "false", ANNOUNCEMENTS_ENABLED: "true" }))).toEqual([]);
+  });
+
+  it("key a post post:<contentful id>, under each of the three kinds", () => {
+    expect(catalogKey("secret-lair", "abc")).toBe("post:abc");
+    expect(parseCatalogKey("wizards-news", "post:abc")).toBe("abc");
+    expect(parseCatalogKey("commander-decklists", "set:abc")).toBeNull();
   });
 });

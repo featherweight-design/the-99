@@ -6,12 +6,30 @@
  * `catalogBranch` in `lib/feed/read.ts`), so a push names exactly what Home lists and the landing's keys match Home's.
  */
 import { availableFeedKinds } from "../feed/flag";
-import { CATALOG_KINDS, type CatalogKind } from "../feed/kinds";
+import { isAnnouncementKind, type CatalogKind, type FeedKind } from "../feed/kinds";
 import { pushEnabled } from "./flag";
 
-const PREFIX: Record<CatalogKind, string> = { "new-set": "set:", "new-precon": "precon:" };
+const PREFIX: Record<CatalogKind, string> = {
+  "new-set": "set:",
+  "new-precon": "precon:",
+  "secret-lair": "post:",
+  "commander-decklists": "post:",
+  "wizards-news": "post:",
+};
 
-/** The feed's key for a set (by code) or a precon (by file name). The SQL twin is `catalogBranch`'s `key` column. */
+/**
+ * The catalog kinds that push today. Wizards' posts are read on Home but not yet pushed: their message and the landing
+ * that leaves the app for the post come in Announcements UI 3b, which lifts this filter. Until then nothing queues them,
+ * and Settings offers no push box for them (`pushableFeedKinds`).
+ */
+export const PUSH_CATALOG_KINDS = ["new-set", "new-precon"] as const satisfies readonly CatalogKind[];
+
+/** The kinds a reader may tick under Push in Settings: the available kinds, less Wizards' posts until UI 3b. */
+export function pushableFeedKinds(env: NodeJS.ProcessEnv): FeedKind[] {
+  return availableFeedKinds(env).filter((k) => !isAnnouncementKind(k));
+}
+
+/** The feed's key for a set (by code), a precon (by file name) or a Wizards post (by Contentful id). The SQL twin is `catalogBranch`'s `key` column. */
 export const catalogKey = (kind: CatalogKind, id: string): string => `${PREFIX[kind]}${id}`;
 
 /** The set code or precon file name a key of this kind names, or null when it is not a key of this kind (or names nothing). */
@@ -32,5 +50,5 @@ export const catalogBatchKey = (kind: CatalogKind, now: Date): string => `${kind
 export function catalogPushKinds(env: NodeJS.ProcessEnv): CatalogKind[] {
   if (!pushEnabled(env)) return [];
   const available = availableFeedKinds(env);
-  return CATALOG_KINDS.filter((k) => available.includes(k));
+  return PUSH_CATALOG_KINDS.filter((k) => available.includes(k));
 }

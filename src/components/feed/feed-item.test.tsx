@@ -198,3 +198,88 @@ describe("FeedItemRow", () => {
     expect(c2.querySelector<HTMLElement>('[data-commander-thumb="feed"]')!.style.background).not.toBe(identity);
   });
 });
+
+describe("a Wizards post's row (announcements boards Home-Rows and Row-States)", () => {
+  const URL_OK = "https://magic.wizards.com/en/news/announcements/x";
+  const post = (o: Partial<FeedView> = {}, p: Partial<NonNullable<FeedView["post"]>> = {}) =>
+    view({
+      kind: "secret-lair", card: null, outbound: URL_OK,
+      post: { title: "Secret Lair x JAWS is live", summary: "Five full-art cards: the shark, the boat and the beach.", hero: "https://images.ctfassets.net/jaws.jpg", lists: null, ...p },
+      ...o,
+    });
+
+  it("draws the kicker, the title, the summary clamped at two lines, and Read on Wizards out in a new tab", () => {
+    const { container } = list(<FeedItemRow item={post()} now={NOW} />);
+    expect(screen.getByText("Secret Lair")).toBeInTheDocument();
+    const title = screen.getByText("Secret Lair x JAWS is live");
+    // The title never clamps.
+    expect(title.className).not.toContain("line-clamp");
+    expect(screen.getByText("Five full-art cards: the shark, the boat and the beach.").className).toMatch(/(^|\s)line-clamp-2(\s|$)/);
+    const press = container.querySelector("[data-feed-press]")!;
+    expect(press).toHaveAttribute("href", URL_OK);
+    expect(press).toHaveAttribute("target", "_blank");
+    expect(press.textContent).toMatch(/^Read on Wizards\u00a0↗/);
+    expect(press.querySelector(".sr-only")!.textContent).toMatch(/opens in a new tab/);
+    // No card: not the card thumb, no card shadow.
+    expect(container.querySelector('[data-commander-thumb="feed"]')).toBeNull();
+  });
+
+  it("clamps only a post's line, never another kind's", () => {
+    list(<FeedItemRow item={view({ name: "Secrets", setSize: 288, href: "/x" })} now={NOW} />);
+    expect(screen.getByText("288 cards.").className).not.toContain("line-clamp");
+  });
+
+  it("crops the hero into the 46x64 slot, radius 4, and swaps in the plate with the post glyph when it fails", () => {
+    const { container } = list(<FeedItemRow item={post()} now={NOW} />);
+    const picture = container.querySelector("[data-feed-picture]")!;
+    expect(picture.className).toMatch(/h-\[64px\] w-\[46px\]/);
+    expect(picture.className).toContain("rounded-[4px]");
+    expect(picture.className).toContain("overflow-hidden");
+    expect(picture).toHaveAttribute("href", URL_OK);
+    const img = container.querySelector("[data-feed-hero]")!;
+    expect(img.className).toContain("object-cover");
+    expect(container.querySelector("[data-feed-post-plate]")).toBeNull();
+    fireEvent.error(img);
+    expect(container.querySelector("[data-feed-hero]")).toBeNull();
+    const plate = container.querySelector("[data-feed-post-plate]")!;
+    expect(plate.className).toContain("text-[color:var(--fact)]");
+    expect(plate.querySelector("svg")).not.toBeNull();
+  });
+
+  it("draws the plate for a post with no hero, never a broken image", () => {
+    const { container } = list(<FeedItemRow item={post({}, { hero: null })} now={NOW} />);
+    expect(container.querySelector("img")).toBeNull();
+    expect(container.querySelector("[data-feed-post-plate]")).not.toBeNull();
+  });
+
+  it("gives a decklists post its mono lists line, some then all, and Read the post", () => {
+    const some = list(<FeedItemRow item={post({ kind: "commander-decklists" }, { lists: { n: 3, of: 5 } })} now={NOW} />);
+    expect(some.container.querySelector("[data-feed-lists]")!.textContent).toBe("3 of 5 lists so far");
+    expect(some.container.querySelector("[data-feed-lists]")!.className).toContain("font-mono");
+    expect(some.container.querySelector("[data-feed-press]")!.textContent).toMatch(/^Read the post/);
+    some.unmount();
+    const all = list(<FeedItemRow item={post({ kind: "commander-decklists" }, { lists: { n: 5, of: 5 } })} now={NOW} />);
+    expect(all.container.querySelector("[data-feed-lists]")!.textContent).toBe("All 5 lists");
+  });
+
+  it("names Wizards news by its kicker and draws no lists line on it", () => {
+    const { container } = list(<FeedItemRow item={post({ kind: "wizards-news" })} now={NOW} />);
+    expect(screen.getByText("Wizards news")).toBeInTheDocument();
+    expect(container.querySelector("[data-feed-lists]")).toBeNull();
+  });
+
+  it("draws no press for a post whose address is not a magic.wizards.com page", () => {
+    const { container } = list(<FeedItemRow item={post({ outbound: null })} now={NOW} />);
+    expect(container.querySelector("[data-feed-press]")).toBeNull();
+    expect(container.querySelector("a[data-feed-picture]")).toBeNull();
+  });
+});
+
+describe("a Wizards post and its ✕", () => {
+  it("draws no ✕ yet: feed_dismissals' key check refuses post: keys", () => {
+    const item = view({ kind: "secret-lair", card: null, outbound: "https://magic.wizards.com/en/news/x", post: { title: "T", summary: null, hero: null, lists: null } });
+    const { container } = list(<FeedItemRow item={item} now={NOW} onDismiss={() => {}} />);
+    expect(screen.queryByRole("button", { name: /Hide/ })).toBeNull();
+    expect([...container.querySelector("[data-feed-actions]")!.children].map((c) => c.textContent?.slice(0, 15))).toEqual(["Read on Wizards"]);
+  });
+});
