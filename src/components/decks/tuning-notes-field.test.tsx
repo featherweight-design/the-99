@@ -26,32 +26,14 @@ describe("TuningNotesField", () => {
     expect(screen.getByText("15 / 500")).toBeInTheDocument();
   });
 
-  it("keeps the draft when Escape closes the open help tip", () => {
+  it("draws the framed foot: the tag button, its words and the counter, and keeps the draft on Escape", () => {
     const onChange = vi.fn();
-    render(<TuningNotesField value="more removal" onChange={onChange} />);
-    const tip = document.querySelector('button[aria-describedby="tuning-notes-field-info"]') as HTMLElement;
-    fireEvent.pointerEnter(tip, { pointerType: "mouse" });
-    expect(tip).toHaveAttribute("aria-expanded", "true");
-    fireEvent.keyDown(screen.getByLabelText("Additional notes"), { key: "Escape" });
-    expect(onChange).not.toHaveBeenCalled();
-  });
-
-  it("clears the draft on Escape rather than committing it", () => {
-    const onChange = vi.fn();
-    render(<TuningNotesField value="more removal" onChange={onChange} />);
-    fireEvent.keyDown(screen.getByLabelText("Additional notes"), { key: "Escape" });
-    expect(onChange).toHaveBeenCalledWith("");
-  });
-
-  // Copilot review: Escape cancels an IME composition candidate first (typing Japanese/Chinese/
-  // Korean) — it must not also clear the whole draft in the same keystroke.
-  it("ignores Escape while an IME composition is active", () => {
-    const onChange = vi.fn();
-    render(<TuningNotesField value="more removal" onChange={onChange} />);
-    fireEvent.keyDown(screen.getByLabelText("Additional notes"), {
-      key: "Escape",
-      isComposing: true,
-    });
+    render(<TuningNotesField value="more removal" onChange={onChange} tagHelp="tag a card" />);
+    const box = screen.getByLabelText("Additional notes");
+    expect(box.closest("[data-framed-box]")).not.toBeNull();
+    expect(screen.getByRole("button", { name: /tag/i })).toBeInTheDocument();
+    expect(screen.getByText("tag a card")).toBeInTheDocument();
+    fireEvent.keyDown(box, { key: "Escape" });
     expect(onChange).not.toHaveBeenCalled();
   });
 
@@ -94,7 +76,7 @@ describe("TuningNotesField", () => {
       expect(box.value).toBe(typed);
     });
 
-    it("closes the list on Escape and keeps the draft, and clears the draft on the next Escape", async () => {
+    it("closes the list on Escape and keeps the draft on the next Escape too", async () => {
       const seen = vi.fn();
       function Watched() {
         const [value, setValue] = useState("swap out ");
@@ -109,7 +91,7 @@ describe("TuningNotesField", () => {
       expect(screen.queryByRole("option")).toBeNull();
       expect(seen).not.toHaveBeenCalled();
       fireEvent.keyDown(box, { key: "Escape" });
-      expect(seen).toHaveBeenCalledWith("");
+      expect(seen).not.toHaveBeenCalled();
     });
   });
 });
