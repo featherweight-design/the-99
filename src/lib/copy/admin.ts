@@ -714,6 +714,44 @@ export const adminMaskCopy = {
 } as const;
 
 /**
+ * The Flyer codes section on the Invites tab and the tree's flyer node (flyer trial R1b, boards Admin-Desktop and
+ * Admin-Phone). Frozen to the handoff's `flyer-trial · copy strings.ts`; admin-only, so out of /copy-review's scope.
+ * The form, the revoke dialog and the print bar are drawn by later PRs and wait here.
+ */
+export const flyerAdminCopy = {
+  section: "Flyer codes",
+  meta: (live: number, left: number, listed: number) => `${live} live · from your invites, ${left} left · ${listed} on the launch list`,
+  newCode: "New flyer code",
+  cols: { store: "Store", code: "Code", signups: "Sign-ups", group: "Group", made: "Made" },
+  used: (n: number) => `${n} of 50`,
+  full: "full",
+  print: "Print",
+  revoke: "Revoke",
+  revokedOn: (day: string) => `revoked ${day}`,
+  store: "Store",
+  storeHelp: "Printed on nothing. Only you read it.",
+  group: "Group",
+  groupNew: (name: string) => `New group: ${name}`,
+  groupHelp: "Its sign-ups and the people they invite join it.",
+  facts: ["50 sign-ups", "3 free runs a day", "15 welcome credits", "3 invites each", "ends at launch"],
+  spends: "Each sign-up spends one of your invites.",
+  make: "Make code",
+  cancel: "Cancel",
+  revokeTitle: (store: string) => `Revoke ${store}’s code?`,
+  revokeBody: (code: string, n: number) =>
+    `People can no longer join with ${code}. The ${n} who joined keep their accounts, their group and their invites. Printed flyers will say it no longer works.`,
+  keep: "Keep it",
+  revokeConfirm: "Revoke code",
+  treeNode: (store: string) => `Flyer · ${store}`,
+  noFriendLink: "no friend link to Hugh",
+  launchList: (n: number) => `Launch list · ${n}`,
+  launchListMeta: "emails left on used-up and ended flyers",
+  csv: "Download CSV",
+  printBar: "Letter · black ink on coloured paper · the toolbar doesn’t print",
+  downloadQr: "Download QR",
+} as const;
+
+/**
  * Each switch's name and one plain line (admin STATES L1; READINESS G9). The canvas drew 21 of them
  * (`n:` and `d:` in `Admin R2.dc.html`); the rest, and the canvas lines the code has since moved
  * past, are new here and owed to /copy-review. A parent's line names what needs it; a child's tag

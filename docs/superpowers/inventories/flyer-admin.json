@@ -1,0 +1,33 @@
+{
+  "feature": "Flyer trial PR 4a: the Flyer codes section and the tree's flyer node on /admin/invites (boards Admin-Desktop A1, Admin-Phone P1)",
+  "note": "Signed in as an admin (ADMIN_USER_IDS naming the account, ADMIN_ENV_LABEL set), FLYER_TRIAL_ENABLED=true on the server, on local-dev or a scratch branch. Writes nothing: the walk only loads and scrolls. Seed beforehand, outside this run, the board's own data under the admin: four flyer_codes (one at 50 spent claims, one revoked), spent claims whose user_id names real accounts so the tree has a flyer node with sign-ups under it, and launch_list rows on two of the codes. Print links to /admin/invites/flyers/<CODE>, which ships in PR 4c, so it is photographed but not pressed. New flyer code and Revoke are PR 4b: neither is on the sheet, and the board's phone frame draws no tree, so the node row reads from the shared tree rows at 390 as the tree's own responsive rules give it.",
+  "out": "contact-sheets/flyer-admin",
+  "rows": [
+    {
+      "id": "flyer-codes",
+      "label": "/admin/invites: the Flyer codes section (live, full, revoked rows)",
+      "view": "src/components/admin/flyer-codes.tsx",
+      "steps": [
+        { "goto": "/admin/invites", "wait": "[data-testid='flyer-codes']", "settle": 1500 }
+      ]
+    },
+    {
+      "id": "flyer-launch-list",
+      "label": "/admin/invites: the launch-list card (count only, no CSV)",
+      "view": "src/components/admin/flyer-codes.tsx",
+      "steps": [
+        { "goto": "/admin/invites", "wait": "[data-testid='launch-list-card']", "settle": 1500 },
+        { "scrollTo": "[data-testid='launch-list-card']", "settle": 500 }
+      ]
+    },
+    {
+      "id": "flyer-tree-node",
+      "label": "/admin/invites: the tree's flyer node, its sign-ups beneath it",
+      "view": "src/components/admin/invite-tree.tsx",
+      "steps": [
+        { "goto": "/admin/invites", "wait": "[data-mark='flyer']", "settle": 1500 },
+        { "scrollTo": "[data-mark='flyer']", "settle": 500 }
+      ]
+    }
+  ]
+}

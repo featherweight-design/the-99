@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { revokeInvite } from "../../app/admin/invites/actions";
 import { childRails, filterTree, nodeMeta, treeDepth, type RailCell, type TreeNode, type TreeRow } from "../../lib/admin/invite-tree-rule";
-import { adminCopy } from "../../lib/copy/admin";
+import { adminCopy, flyerAdminCopy } from "../../lib/copy/admin";
 import { PendingReporter } from "../shell/pending-reporter";
 import { SearchField } from "../ui/text-field";
 
@@ -85,6 +85,38 @@ function AccountRow({ row }: { row: Extract<TreeRow, { kind: "account" }> }) {
   );
 }
 
+/** A flyer code's node (Admin-Desktop A1): the accent diamond, its code, its sign-ups, and no friend link to its maker. */
+function FlyerRow({ row }: { row: Extract<TreeRow, { kind: "flyer" }> }) {
+  const href = `/admin/invites/flyers/${row.code}`;
+  const taken = flyerAdminCopy.used(row.taken);
+  return (
+    <div data-node={`flyer-${row.code}`} className={ROW}>
+      <Rails cells={row.cells} />
+      <span
+        aria-hidden
+        data-mark="flyer"
+        className={`${FACE} border border-solid border-[color:var(--accent-shadow)] bg-[color-mix(in_srgb,var(--accent)_10%,var(--surface-sunken))] font-mono text-[11px] text-[color:var(--accent-text)]`}
+      >
+        ◆
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col md:flex-row md:items-center md:gap-[10px]">
+        <b className="font-medium text-[color:var(--fg)] [overflow-wrap:anywhere]">{flyerAdminCopy.treeNode(row.store)}</b>
+        <span className="hidden flex-none rounded-full border border-solid border-[color:var(--accent-shadow)] px-[7px] py-[2px] font-mono text-[10px] tracking-[0.08em] text-[color:var(--accent-text)] md:inline">
+          {row.code}
+        </span>
+        <small className={`hidden md:inline ${SMALL}`}>{taken}</small>
+        <small className={`md:hidden ${SMALL}`}>{`${row.code} · ${taken}`}</small>
+      </span>
+      <span className="ml-auto hidden flex-none items-center gap-[16px] md:flex">
+        <small className={SMALL}>{flyerAdminCopy.noFriendLink}</small>
+        <Link href={href} prefetch={false} className={TEXT_BUTTON}>
+          {flyerAdminCopy.print}
+        </Link>
+      </span>
+    </div>
+  );
+}
+
 function DeletedRow({ row }: { row: Extract<TreeRow, { kind: "deleted" }> }) {
   return (
     <div data-node="deleted" className={ROW}>
@@ -156,7 +188,7 @@ function Branch({ nodes, parent, onRevoke, busy, label, style }: {
         const { children, ...rest } = n;
         return (
           <li key={n.kind === "account" ? n.id : n.key}>
-            {rest.kind === "account" ? <AccountRow row={{ ...rest, cells }} /> : <DeletedRow row={{ ...rest, cells }} />}
+            {rest.kind === "account" ? <AccountRow row={{ ...rest, cells }} /> : rest.kind === "flyer" ? <FlyerRow row={{ ...rest, cells }} /> : <DeletedRow row={{ ...rest, cells }} />}
             {children.length > 0 && <Branch nodes={children} parent={cells} onRevoke={onRevoke} busy={busy} />}
           </li>
         );

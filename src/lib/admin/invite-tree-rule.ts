@@ -3,7 +3,7 @@ import { holdsInvite } from "../invites/rules";
 import type { Account } from "./accounts";
 import { maskEmail, unlistedAccount } from "./mask";
 import { initials, matchesAccount } from "./account-page-rule";
-import { countFor, fmtDay, type Edge, type OpenRow, type ReservationRow } from "./invites-rule";
+import { countFor, fmtDay, type Edge, type FlyerEdge, type FlyerNodeRow, type OpenRow, type ReservationRow } from "./invites-rule";
 import { accountName } from "./names";
 
 /**
@@ -22,11 +22,14 @@ export type RailCell = "v" | "blank" | "tv" | "t";
 type AccountNode = { kind: "account"; id: string; name: string; initials: string | null; owner: boolean; joined: string | null; left: number; invited: number; children: TreeNode[] };
 type DeletedNode = { kind: "deleted"; key: string; joined: string | null; children: TreeNode[] };
 type WaitingNode = { kind: "waiting"; id: string; how: string; email: string; returns: string };
-export type TreeNode = AccountNode | DeletedNode | WaitingNode;
+/** A flyer code that took sign-ups, under the account that made it; its sign-ups are its children (no friend link to anyone). */
+type FlyerNode = { kind: "flyer"; key: string; code: string; store: string; taken: number; children: TreeNode[] };
+export type TreeNode = AccountNode | DeletedNode | WaitingNode | FlyerNode;
 
 export type TreeRow =
   | (Omit<AccountNode, "children"> & { cells: RailCell[] })
   | (Omit<DeletedNode, "children"> & { cells: RailCell[] })
+  | (Omit<FlyerNode, "children"> & { cells: RailCell[] })
   | (WaitingNode & { cells: RailCell[] });
 
 export type InviteTree = { roots: TreeNode[]; accounts: number; invited: number; waiting: number };
@@ -39,6 +42,9 @@ export function buildInviteTree(input: {
   open: readonly ReservationRow[];
   /** Claims holding on flyer codes: each holds one of its code creator's invites, so `left` nets them; never drawn as rows. */
   flyer?: readonly OpenRow[];
+  /** The codes that took a sign-up and the accounts they made (spent claims): drawn as a node under the code's maker. */
+  flyerCodes?: readonly FlyerNodeRow[];
+  flyerEdges?: readonly FlyerEdge[];
   edges: readonly Edge[];
   now: Date;
 }): InviteTree {
@@ -46,7 +52,15 @@ export function buildInviteTree(input: {
   // An id Clerk did not list (Clerk down, or not yet listed) is still drawn, by its id: one an edge names, one
   // holding a stock, or one with a reservation open, so a sender's waiting invites and their Revoke never vanish.
   const order = [...input.accounts.map((a) => a.id)];
-  const extra = [...input.edges.flatMap((e) => [e.inviter, e.invitee]), ...input.balances.keys(), ...input.open.map((r) => r.userId)];
+  const flyerCodes = input.flyerCodes ?? [];
+  const flyerEdges = input.flyerEdges ?? [];
+  const extra = [
+    ...input.edges.flatMap((e) => [e.inviter, e.invitee]),
+    ...input.balances.keys(),
+    ...input.open.map((r) => r.userId),
+    ...flyerCodes.map((c) => c.createdBy),
+    ...flyerEdges.map((e) => e.invitee),
+  ];
   for (const id of extra) if (id !== null && !byId.has(id) && !order.includes(id)) order.push(id);
   const rank = new Map(order.map((id, i) => [id, i]));
 
@@ -57,7 +71,20 @@ export function buildInviteTree(input: {
   const madeBy = new Map<string | null, Edge[]>();
   for (const e of input.edges) madeBy.set(e.inviter, [...(madeBy.get(e.inviter) ?? []), e]);
   const byJoin = (a: Edge, b: Edge) => a.joinedAt.getTime() - b.joinedAt.getTime() || (rank.get(a.invitee ?? "") ?? 0) - (rank.get(b.invitee ?? "") ?? 0);
-  const joinedOf = new Map(input.edges.filter((e) => e.invitee !== null).map((e) => [e.invitee!, e.joinedAt]));
+  const joinedOf = new Map([
+    ...input.edges.filter((e) => e.invitee !== null).map((e): [string, Date] => [e.invitee!, e.joinedAt]),
+    ...flyerEdges.map((e): [string, Date] => [e.invitee, e.joinedAt]),
+  ]);
+  const signUpsOf = new Map<string, FlyerEdge[]>();
+  for (const e of flyerEdges) signUpsOf.set(e.codeId, [...(signUpsOf.get(e.codeId) ?? []), e]);
+  const flyerNodesOf = (creator: string): FlyerNode[] =>
+    flyerCodes
+      .filter((c) => c.createdBy === creator && signUpsOf.has(c.id))
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime() || a.id.localeCompare(b.id))
+      .map((c) => {
+        const ups = [...signUpsOf.get(c.id)!].sort((a, b) => a.joinedAt.getTime() - b.joinedAt.getTime() || (rank.get(a.invitee) ?? 0) - (rank.get(b.invitee) ?? 0));
+        return { kind: "flyer", key: `flyer-${c.id}`, code: c.code, store: c.label, taken: ups.length, children: ups.map((e) => account(e.invitee)) };
+      });
 
   let waitingTotal = 0;
   const seen = new Set<string>();
@@ -84,6 +111,7 @@ export function buildInviteTree(input: {
       left: countFor(input.balances.get(id), [...open, ...(flyerOf.get(id) ?? [])], input.now).left,
       invited: (madeBy.get(id) ?? []).length,
       children: [
+        ...flyerNodesOf(id),
         ...childrenOf(id),
         ...waiting.map((r): WaitingNode => ({
           kind: "waiting",
@@ -97,7 +125,7 @@ export function buildInviteTree(input: {
     };
   }
 
-  const invitees = new Set(input.edges.flatMap((e) => (e.invitee === null ? [] : [e.invitee])));
+  const invitees = new Set([...input.edges.flatMap((e) => (e.invitee === null ? [] : [e.invitee])), ...flyerEdges.map((e) => e.invitee)]);
   const roots: TreeNode[] = order.filter((id) => !invitees.has(id)).map(account);
   const orphans = childrenOf(null);
   if (orphans.length > 0) roots.push({ kind: "deleted", key: "deleted-root", joined: null, children: orphans });
