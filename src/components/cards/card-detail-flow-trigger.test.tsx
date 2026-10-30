@@ -53,6 +53,12 @@ describe("CardDetailFlowTrigger", () => {
     expect(open).toHaveBeenCalledWith("a", a());
   });
 
+  it("Enter while an IME composition is confirming opens nothing", () => {
+    draw();
+    fireEvent.keyDown(a(), { key: "Enter", isComposing: true });
+    expect(open).not.toHaveBeenCalled();
+  });
+
   it("Space does nothing on keydown (and does not scroll), opens once on keyup", () => {
     draw();
     expect(fireEvent.keyDown(a(), { key: " " })).toBe(false);

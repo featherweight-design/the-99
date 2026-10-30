@@ -48,7 +48,8 @@ export function CardDetailFlowTrigger({
   const armed = useRef(false);
 
   const onKeyDown = (e: KeyboardEvent<HTMLSpanElement>) => {
-    if (disabled || e.target !== e.currentTarget) return;
+    if (disabled || e.target !== e.currentTarget || e.nativeEvent.isComposing) return;
+    // Activation goes through click(), not openFrom: a parent's click capture (CardName's preview cleanup) must see a keyboard press too.
     if (e.key === "Enter") {
       e.preventDefault();
       if (!e.repeat) e.currentTarget.click();
@@ -83,8 +84,8 @@ export function CardDetailFlowTrigger({
       title={title}
       className={twMerge(
         "cursor-pointer box-decoration-clone focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]",
-        disabled && "cursor-default",
         className,
+        disabled && "cursor-default",
       )}
       style={{ opacity: pending ? 0.55 : undefined }}
     >
