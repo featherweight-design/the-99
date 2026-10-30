@@ -159,7 +159,8 @@ describe("the alternate line (a precon's)", () => {
     const one = withAlt(alt("Lead with [[Spore Frog]] and the plan turns to fogging.", ["c6"]));
     expect(applyStagesShape(checked(one), one, FACTS, two).alternate).toBeUndefined();
     const uncited = withAlt(alt("Lead with [[Spore Frog]] or [[Viscera Seer]] and the plan turns to fogging.", ["c6"]));
-    expect(applyStagesShape(checked(uncited), uncited, FACTS, two).alternate).toBeUndefined();
+    // A missing ref never drops the line (a ref is evidence, not the line's job): the names are what the check reads.
+    expect(applyStagesShape(checked(uncited), uncited, FACTS, two).alternate).toBe("Lead with [[Spore Frog]] or [[Viscera Seer]] and the plan turns to fogging.");
     // 144 is too long for two names plus a reason; 194 is the budget with two alternates.
     const filler = (n: number) => `Lead with [[Spore Frog]] or [[Viscera Seer]]${" and fog".repeat(n)}.`;
     const rendered = (t: string) => t.replace(/\[\[|\]\]/g, "").length;

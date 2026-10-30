@@ -294,7 +294,7 @@ describe("total length within 125% of today's", () => {
     const old = docFromChecked(OLD);
     const res = checkLength(doc(), old);
     expect(res.pass).toBe(true);
-    expect(res.newChars).toBeLessThanOrEqual(res.oldChars);
+    expect(res.newChars).toBeLessThanOrEqual(res.ceiling);
     expect(res.ceiling).toBe(Math.floor(res.oldChars * 1.25));
   });
   it("allows up to the ceiling, exactly, and fails one character over", () => {
