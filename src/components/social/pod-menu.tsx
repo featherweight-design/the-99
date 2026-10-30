@@ -19,10 +19,10 @@ const copy = socialCopy.pods;
 type Row = "rename" | "leave" | "del";
 type Mode = "menu" | "leave" | "del";
 
-/** What Leave says, by who is leaving (§8): the last member deletes it, an owner hands it on, a member asks back. */
 /** A pod as the pane draws it: the reader's own rename shows as typed until the page redraws. */
 export type ShownPod = Omit<Pod, "name"> & { name: string | ThirdPartyName };
 
+/** What Leave says, by who is leaving (§8): the last member deletes it, an owner hands it on, a member asks back. */
 export function leaveText(pod: ShownPod): { body: string | PersonParts; confirm: string } {
   if (pod.members.length <= 1) return { body: copy.leaveLastBody, confirm: copy.leaveLastConfirm };
   if (pod.isOwner && pod.nextOwner) return { body: copy.leaveOwnerBody(pod.nextOwner.displayName), confirm: copy.leaveConfirm };

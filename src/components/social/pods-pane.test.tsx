@@ -127,6 +127,7 @@ describe("the table", () => {
     expect(within(own).getAllByTestId("pod-seat")[0].hasAttribute("data-you")).toBe(true);
     const other = card("Adventurers");
     expect(other.textContent).toContain(plain(P.metaOther(3, named("Sam"))));
+    expect([...other.querySelectorAll(".ph-no-capture")].some((e) => e.textContent === plain(P.metaOther(3, named("Sam"))))).toBe(true);
   });
 
   it("draws art for you and friends with a commander, initials otherwise, and a wash only from art", () => {
@@ -210,6 +211,8 @@ describe("+ Add friends", () => {
     render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
     await press(screen.getByRole("button", { name: P.addFriends }));
     const dialog = screen.getByRole("dialog", { name: plain(P.addTitle(named("Thursday"))) });
+    const titles = within(dialog).getAllByText(plain(P.addTitle(named("Thursday"))));
+    expect(titles.every((t) => t.closest(".ph-no-capture") !== null)).toBe(true);
     const boxes = within(dialog).getAllByRole("checkbox") as HTMLInputElement[];
     expect(boxes.map((b) => b.closest("label")?.querySelector(".truncate")?.textContent)).toEqual(["Alex", "Zed"]);
     expect(boxes.every((b) => !b.checked)).toBe(true);

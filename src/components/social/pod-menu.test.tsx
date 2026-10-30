@@ -115,6 +115,7 @@ describe("the menu", () => {
     fireEvent.blur(row, { relatedTarget: null });
     await press(row);
     expect(screen.getByRole("dialog").getAttribute("aria-label")).toBe(plain(P.delHeading(named("Thursday"))));
+    expect(screen.getByRole("dialog").classList.contains("ph-no-capture")).toBe(true);
   });
 
   it("closes on a press outside", async () => {
