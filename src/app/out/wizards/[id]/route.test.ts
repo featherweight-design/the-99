@@ -49,7 +49,7 @@ describe("GET /out/wizards/[id]", () => {
     expect(stub.lookedUp).toHaveLength(1);
   });
 
-  it("sends a reader who is not signed in to Home, before reading anything", async () => {
+  it("sends a request with no session to Home, before reading anything (defense in depth: the proxy signs them in first)", async () => {
     stub.userId = null;
     const res = await get("7aBcDe");
     expect(res.status).toBe(307);

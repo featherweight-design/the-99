@@ -4,7 +4,9 @@
 //   - `ANNOUNCEMENTS_ENABLED` is re-checked for that reader (`requestSwitchEnv`);
 //   - the post's address is read from `wizards_announcements` by its Contentful id, and followed only when it is an
 //     https page on magic.wizards.com (`wizardsPostUrl`, the rule Home's row decides its press by);
-//   - anything else (signed out, the switch off, an unknown id, an address off that host) goes to Home, never an error;
+//   - a signed-out request never reaches this handler: the proxy sends it to sign-in; the handler's own signed-out branch
+//     (to Home) is defense in depth only;
+//   - anything else (the switch off, an unknown id, an address off that host) goes to Home, never an error;
 //   - it marks nothing seen (push D4: a landing never does; Home's own visit does);
 //   - `private, no-store`, because the answer depends on the reader's switch.
 // A route of the app's own because a notification's landing must stay on this origin (`public/sw.js`), and so the host

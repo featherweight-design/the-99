@@ -1,6 +1,7 @@
 // Hugh's staging test of the Announcements pushes (Announcements 3b): one push per announcement kind, to ONE account's devices.
 //
-// For each kind it takes the newest real `wizards_announcements` row and queues one `push_outbox` row for the named account
+// For each kind it takes the newest real `wizards_announcements` row the feed would show this account (not baseline, not
+// dismissed by it) and queues one `push_outbox` row for the named account
 // (key `post:<contentful id>`, the key the feed reads), then flushes THAT account only. It never writes or flushes another account's
 // rows: every write names `--user`, and the flush runs with `onlyUser`, which also skips the cron's catalog pass. A row an
 // earlier run of this script left is re-armed (sent_at cleared, created_at now), so the script can be run again.
@@ -35,7 +36,7 @@ async function main() {
 
   const { db } = await import("../src/db");
   const { sql } = await import("drizzle-orm");
-  const { pushOutbox, pushSubscriptions, wizardsAnnouncements } = await import("../src/db/schema");
+  const { feedDismissals, pushOutbox, pushSubscriptions, wizardsAnnouncements } = await import("../src/db/schema");
 
   const { rows } = await db.execute<{ b: string | null }>(sql`select current_setting('neon.branch_id', true) as b`);
   const branch = rows[0]?.b ?? null;
@@ -67,7 +68,9 @@ async function main() {
   for (const kind of KINDS) {
     const latest = await db.execute<{ id: string; title: string }>(sql`
       select wa.contentful_id as id, wa.title as title from ${wizardsAnnouncements} wa
-      where wa.kind = ${kind} order by wa.published_at desc nulls last, wa.id desc limit 1`);
+      where wa.kind = ${kind} and not wa.baseline
+        and not exists (select 1 from ${feedDismissals} fd where fd.user_id = ${userId} and fd.key = 'post:' || wa.contentful_id)
+      order by wa.published_at desc nulls last, wa.id desc limit 1`);
     const post = latest.rows[0];
     if (!post) { console.log(`skip ${kind}: no post of this kind on staging`); continue; }
     await db.execute(sql`
