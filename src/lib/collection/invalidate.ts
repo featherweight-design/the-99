@@ -62,6 +62,8 @@ export const COLLECTION_ROUTES: CollectionRoute[] = [
   { path: "/admin/models", dynamic: false },
   // The Invites tab (invites plan PR 6b) reads the account list and the invite tables, for the same schema import.
   { path: "/admin/invites", dynamic: false },
+  // A flyer code's print page (flyer trial 4c) reads the flyer tables, for the same schema import.
+  { path: "/admin/invites/flyers/[code]", dynamic: true },
   // The Payments tab (admin plan A2b) reads the Costs reads and the payment tables, for the same schema import.
   { path: "/admin/payments", dynamic: false },
   { path: "/collection", dynamic: false },
