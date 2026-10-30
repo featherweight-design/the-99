@@ -142,7 +142,7 @@ const lockButton = () => screen.queryByRole("button", { name: lockedCardsCopy.mo
 const doneButton = () => screen.queryByRole("button", { name: lockedCardsCopy.mode.done });
 
 describe("GroupToggle's Lock cards", () => {
-  it("is absent with the switch off, and draws no cluster for it", () => {
+  it("is absent without a mode handler, and draws no cluster for it", () => {
     render(<GroupToggle {...toolbar} filter="all" />);
     expect(lockButton()).toBeNull();
   });
@@ -317,7 +317,7 @@ const trigger = () => screen.getByRole("button", { name: /Sol Ring/, description
 describe("DecklistRow's lock", () => {
   const sol = mk("sol-ring", "Sol Ring");
 
-  it("draws nothing of the lock with the switch off", () => {
+  it("draws nothing of the lock outside a deck page (no lock context)", () => {
     renderRow(<DecklistRow deckId="d1" card={{ ...sol, locked: true }} newestAsOf={null} />, null);
     expect(screen.queryByTestId("row-lock-mark")).toBeNull();
     expect(screen.queryByTestId("lock-mark")).toBeNull();
@@ -447,7 +447,7 @@ const tileTrigger = () => screen.getByRole("button", { name: /Sol Ring/, descrip
 describe("DeckCardTile's lock", () => {
   const sol = mk("sol-ring", "Sol Ring", { imageUri: "https://cards.example/sol-ring.jpg" });
 
-  it("draws nothing of the lock with the switch off", () => {
+  it("draws nothing of the lock outside a deck page (no lock context)", () => {
     renderRow(<DeckCardTile deckId="d1" card={{ ...sol, locked: true }} />, null);
     expect(screen.queryByTestId("tile-lock-mark")).toBeNull();
     expect(screen.queryByTestId("lock-mark")).toBeNull();
@@ -613,7 +613,7 @@ function makeDeck(cards: DeckDetailCard[]): DeckDetail {
   } as DeckDetail;
 }
 
-function renderShell(cards: DeckDetailCard[], neverCut = true) {
+function renderShell(cards: DeckDetailCard[]) {
   return render(
     <BuilderShell
       mix={TEST_MIX}
@@ -624,7 +624,6 @@ function renderShell(cards: DeckDetailCard[], neverCut = true) {
       commanderIdentity={["B", "R", "G"]}
       arrivedFromImport={false}
       newestAsOf={null}
-      neverCut={neverCut}
     />,
   );
 }
@@ -634,12 +633,6 @@ const liveRegion = () => document.querySelector<HTMLElement>("[aria-live=polite]
 describe("the Lock cards mode, through BuilderShell", () => {
   const sol = mk("sol-ring", "Sol Ring");
   const signet = mk("arcane-signet", "Arcane Signet");
-
-  it("draws none of it with the switch off", () => {
-    renderShell([sol, signet], false);
-    expect(lockButton()).toBeNull();
-    expect(screen.queryByTestId("row-lock-mark")).toBeNull();
-  });
 
   it("enters and leaves the mode, saying so in the live region", async () => {
     renderShell([sol, signet]);
@@ -724,7 +717,6 @@ describe("the Lock cards mode, through BuilderShell", () => {
           commanderIdentity={["B", "R", "G"]}
           arrivedFromImport={false}
           newestAsOf={null}
-          neverCut
         />,
       );
     });
@@ -770,7 +762,7 @@ describe("the Lock cards mode, through BuilderShell", () => {
     const shell = (landingRequest: string | null) => (
       <LandingKeyed request={landingRequest}>
         <BuilderShell mix={TEST_MIX} deck={deck} suggestions={[]} degraded={false} firstRun={false}
-          commanderIdentity={["B", "R", "G"]} arrivedFromImport={false} newestAsOf={null} neverCut
+          commanderIdentity={["B", "R", "G"]} arrivedFromImport={false} newestAsOf={null}
           landing={landingRequest === null ? null : { tool: "stand-ins", target: "stand-ins", moment: "stand-ins", lands: { kind: "deck", tab: "deck", view: "shopping" } }}
           landingRequest={landingRequest} />
       </LandingKeyed>
@@ -904,7 +896,7 @@ describe("a lock write that settles on another deck", () => {
     setCardLocked.mockReturnValue(held.promise);
     const announce = vi.fn();
     const { result, rerender } = renderHook(
-      ({ deckId }) => useCardLocks({ enabled: true, deckId, cards: list, serverCards: list, announce }),
+      ({ deckId }) => useCardLocks({ deckId, cards: list, serverCards: list, announce }),
       { initialProps: { deckId: "deck-a" } },
     );
     act(() => result.current.value!.toggle(card));
@@ -920,7 +912,7 @@ describe("a lock write that settles on another deck", () => {
     const held = deferred<DeckMutationResult>();
     setCardLocked.mockReturnValue(held.promise);
     const { result, rerender } = renderHook(
-      ({ deckId }) => useCardLocks({ enabled: true, deckId, cards: list, serverCards: list, announce: vi.fn() }),
+      ({ deckId }) => useCardLocks({ deckId, cards: list, serverCards: list, announce: vi.fn() }),
       { initialProps: { deckId: "deck-a" } },
     );
     act(() => result.current.value!.toggle(card));
@@ -938,7 +930,7 @@ describe("a lock write that settles on another deck", () => {
     setCardLocked.mockReturnValue(held.promise);
     const announce = vi.fn();
     const { result, rerender } = renderHook(
-      ({ deckId }) => useCardLocks({ enabled: true, deckId, cards: list, serverCards: list, announce }),
+      ({ deckId }) => useCardLocks({ deckId, cards: list, serverCards: list, announce }),
       { initialProps: { deckId: "deck-a" } },
     );
     act(() => result.current.value!.toggle(card));
@@ -963,7 +955,7 @@ describe("Clear auto waits for the basics stepper's settling save", () => {
     });
     const island = mk("island", "Island", { typeLine: "Basic Land — Island", cardTypeGroup: "Lands", role: "land", quantity: 6, auto: true } as Partial<DeckDetailCard>);
     const signet = mk("arcane-signet", "Arcane Signet", { auto: true });
-    renderShell([island, signet], false);
+    renderShell([island, signet]);
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: addPanelCopy.basicStepper.moreAria("Island", 7) }));
     });
@@ -979,7 +971,7 @@ describe("Clear auto and a stepper save that did not confirm", () => {
     clearAutoCards.mockResolvedValue([]);
     const island = mk("island", "Island", { typeLine: "Basic Land — Island", cardTypeGroup: "Lands", role: "land", quantity: 6, auto: true } as Partial<DeckDetailCard>);
     const signet = mk("arcane-signet", "Arcane Signet", { auto: true });
-    renderShell([island, signet], false);
+    renderShell([island, signet]);
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: addPanelCopy.basicStepper.moreAria("Island", 7) }));
     });
@@ -994,7 +986,7 @@ describe("leaving the builder settles the basics stepper at once", () => {
   it("saves a pending count when the builder unmounts, without waiting out the settle", async () => {
     setBasicQuantity.mockResolvedValue({ ok: true, quantity: 7, changed: true });
     const island = mk("island", "Island", { typeLine: "Basic Land — Island", cardTypeGroup: "Lands", role: "land", quantity: 6 } as Partial<DeckDetailCard>);
-    const view = renderShell([island], false);
+    const view = renderShell([island]);
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: addPanelCopy.basicStepper.moreAria("Island", 7) }));
     });

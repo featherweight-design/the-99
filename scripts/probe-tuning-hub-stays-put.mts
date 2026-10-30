@@ -379,7 +379,7 @@ async function cutsToTheLine(browser: Browser, width: number, userId: string, de
   const inputs = (await readProposedCuts(deck, userId, process.env))!;
   const over = inputs.facts.over;
   const picks = inputs.facts.cards.slice(0, over);
-  const run = await startCutsRun(userId, deck, inputs.fingerprint, inputs.readVersion, { env: process.env });
+  const run = await startCutsRun(userId, deck, inputs.fingerprint, inputs.readVersion);
   if (run.kind !== "started") throw new Error(`start: ${run.kind}`);
   await persistCutsRun(run, picks.map((c, i) => ({ oracleId: c.oracleId, name: c.name, reason: `${c.name} is the least-played of the cards the list holds.`, cites: [{ kind: "offList" as const }], position: i })),
     { askedCount: over, survivedCount: picks.length, keptCount: picks.length, over, drops: [] });

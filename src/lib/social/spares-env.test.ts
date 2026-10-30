@@ -1,6 +1,6 @@
 // Admin PR 6f-1: a friend's spares come from the FRIEND's claim model, and that model decides
-// NEVER_CUT_ENABLED's `locked` key and CHANGE_COMMANDER_ENABLED's pending clause from the env it is
-// handed (the environment alone when none is). So it runs under the friend's resolved switches, never the
+// CHANGE_COMMANDER_ENABLED's pending clause from the env it is handed (the environment alone when none
+// is). So it runs under the friend's resolved switches, never the
 // viewer's: here the two hold opposite account overrides, and the env the friend's read is handed must be
 // the one resolved for the friend, by identity. Every env is built over an empty base, never the process
 // environment, and compared as a boolean, so a failure prints nothing real.
@@ -36,8 +36,6 @@ vi.mock("../switches/snapshot", async () => {
   const { resolveEnv } = await vi.importActual<typeof import("../switches/resolve")>("../switches/resolve");
   const SNAP: SwitchSnapshot = {
     overrides: [
-      { switchName: "NEVER_CUT_ENABLED", scope: "user", groupId: null, userId: "user_viewer", value: "off" },
-      { switchName: "NEVER_CUT_ENABLED", scope: "user", groupId: null, userId: "user_friend", value: "on" },
       { switchName: "CHANGE_COMMANDER_ENABLED", scope: "user", groupId: null, userId: "user_viewer", value: "on" },
       { switchName: "CHANGE_COMMANDER_ENABLED", scope: "user", groupId: null, userId: "user_friend", value: "off" },
     ],
@@ -63,7 +61,7 @@ describe("loadFriendSpares", () => {
     const handed = m.handed[0].env as NodeJS.ProcessEnv | undefined;
     expect(handed !== undefined && handed === m.resolved.get(FRIEND)).toBe(true);
     // The friend's overrides, which are the opposite of the viewer's.
-    expect(handed?.NEVER_CUT_ENABLED === "true" && handed?.CHANGE_COMMANDER_ENABLED === "false").toBe(true);
+    expect(handed?.CHANGE_COMMANDER_ENABLED === "false").toBe(true);
     expect(m.resolved.has(VIEWER)).toBe(false);
   });
 });

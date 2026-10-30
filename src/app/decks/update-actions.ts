@@ -18,7 +18,6 @@ import { touchDeck } from "../../lib/decks/touch";
 import { newestVersion } from "../../lib/decks/versions";
 import { pruneOrphanProxies } from "../../lib/decks/prune-proxies";
 import { liveLockedIds, lockedOracleIds, pruneOrphanLocks } from "../../lib/decks/locks";
-import { neverCutEnabled } from "../../lib/decks/never-cut-flag";
 import {
   deckImportMaxBytes,
   deckImportTooLargeMessage,
@@ -62,7 +61,7 @@ export type DeckUpdatePreview = {
   /**
    * The `out` rows the player has LOCKED (Locked, never cut). The review starts them KEPT (Hugh,
    * 2026-09-25, Q2): a locked card stays unless the player unticks it, and one they untick is
-   * removed and its lock goes dormant like any other removal. Empty while `NEVER_CUT_ENABLED` is off.
+   * removed and its lock goes dormant like any other removal.
    */
   lockedOut: string[];
   in: DeckUpdateChangedRow[];
@@ -235,7 +234,7 @@ export async function previewDeckUpdate(input: UpdateDeckInput): Promise<DeckUpd
   // FAIL CLOSED, never the display read's empty set: this read decides what the review starts KEPT,
   // and a locked card that silently starts unticked is deleted by an Apply nobody touched. A failed
   // read fails the preview, which the player can retry; it never offers a destructive default.
-  const locked = neverCutEnabled(env) && (plan.out.length > 0 || recount.some((r) => r.to < r.from))
+  const locked = (plan.out.length > 0 || recount.some((r) => r.to < r.from))
     ? await lockedOracleIds(input.deckId, userId, "throw")
     : new Set<string>();
   const printingPicks = await readModalPicks(userId, input.deckId);
@@ -362,7 +361,6 @@ export async function updateDeckFromList(
   input: ApplyDeckUpdateInput,
 ): Promise<ApplyDeckUpdateResult> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
   const maxBytes = deckImportMaxBytes(input.source);
   if (Buffer.byteLength(input.text, "utf8") > maxBytes) {
     throw new Error(deckImportTooLargeMessage(input.source));
@@ -442,7 +440,7 @@ export async function updateDeckFromList(
     // trusted to the preview. A removal of a card locked NOW that the preview did not show locked
     // is refused, and the whole update with it: the refusal leaves the deck exactly as it was.
     const cutting = [...removing.map((r) => r.oracleId), ...lowering.map((r) => r.oracleId)];
-    if (neverCutEnabled(env) && cutting.length > 0) {
+    if (cutting.length > 0) {
       const seen = new Set(input.lockedSeen ?? []);
       const lockedNow = await liveLockedIds(tx, input.deckId);
       if (cutting.some((id) => lockedNow.has(id) && !seen.has(id))) {

@@ -86,7 +86,6 @@ const { and, desc, eq, inArray } = await import("drizzle-orm");
 const schema = await import("../../src/db/schema");
 const { readCutSupport, readKeyCardNames } = await import("../../src/lib/decks/cuts-read");
 const { liveLockedIds } = await import("../../src/lib/decks/locks");
-const { neverCutEnabled } = await import("../../src/lib/decks/never-cut-flag");
 // `profileOfHead` is this behind the per-user data cache, which needs a Next server; the profile is the same.
 const { loadDeckProfileFromHead } = await import("../../src/lib/profile/load");
 const { castFaceText } = await import("../../src/lib/cards/facet");
@@ -136,7 +135,7 @@ for (const [i, d] of BLIND_DECKS.entries()) {
   // `readProposedCuts`'s inputs, from this rebuilt list: live locks under the same switch, the
   // deck's stored intent, the profile and the commander's support.
   // An offline eval run by hand with no signed-in reader: the environment's switch is the right one.
-  const locked = neverCutEnabled(process.env) ? [...(await liveLockedIds(db, d.id))] : [];
+  const locked = [...(await liveLockedIds(db, d.id))];
   const intent = deck.intent?.trim() ? deck.intent : null;
   const [profile, support] = await Promise.all([loadDeckProfileFromHead(head, process.env), readCutSupport(head.commanderOracleId, head.partnerOracleId)]);
   const facts = cutFacts({

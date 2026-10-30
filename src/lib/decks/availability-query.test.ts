@@ -1,21 +1,11 @@
-// The claim read's SQL with Locked's switch off must be the query it was before locks existed:
-// /collection and /commanders read it too, and neither knows about locks. The emitted text is
-// captured from a fake transaction and rendered with the real dialect.
+// The claim read's SQL, captured from a fake transaction and rendered with the real dialect.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
 import { loadAvailability, loadDeckBuyRows } from "./availability-query";
 import { ENV_VIEW } from "@/test/env-view";
 
-const was = process.env.NEVER_CUT_ENABLED;
-afterEach(() => {
-  if (was === undefined) delete process.env.NEVER_CUT_ENABLED;
-  else process.env.NEVER_CUT_ENABLED = was;
-});
-
-async function emitted(flag: string | undefined): Promise<string> {
-  if (flag === undefined) delete process.env.NEVER_CUT_ENABLED;
-  else process.env.NEVER_CUT_ENABLED = flag;
+async function emitted(): Promise<string> {
   let captured: SQL | null = null;
   const tx = { execute: async (q: SQL) => { captured = q; return { rows: [] }; } };
   await loadAvailability("user_1", { oracleIds: ["o1"], env: ENV_VIEW }, tx as never);
@@ -23,20 +13,12 @@ async function emitted(flag: string | undefined): Promise<string> {
 }
 
 describe("loadAvailability and the lock", () => {
-  it("emits no lock read at all with the switch off", async () => {
-    const off = await emitted(undefined);
-    expect(off).not.toContain("deck_locks");
-    expect(off).not.toContain("'locked'");
-  });
-
-  // Byte-identical: the ON query is the OFF query plus exactly the one key, and nothing else moved.
-  it("adds only the one key with the switch on", async () => {
-    const off = await emitted(undefined);
-    const on = await emitted("true");
-    expect(on).toContain("'locked', exists (");
-    const start = on.indexOf("            'locked', exists (");
-    const end = on.indexOf("),\n", start) + 3;
-    expect(on.slice(0, start) + on.slice(end)).toBe(off);
+  // Locked (L2): a live lock on a card still in that deck's list, qualified on both sides.
+  it("carries the locked key, read from a live lock on a card the deck still holds", async () => {
+    const q = await emitted();
+    expect(q).toContain("'locked', exists (");
+    expect(q).toContain("join deck_cards dk on dk.deck_id = lk.deck_id and dk.oracle_id = lk.oracle_id");
+    expect(q).toContain("where lk.deck_id = cd.deck_id and lk.oracle_id = cd.oracle_id and lk.removed_at is null");
   });
 });
 
@@ -61,14 +43,13 @@ describe("loadAvailability with unownedAsZero (the cart's chooser)", () => {
   });
 });
 
-// Admin adoption 6e: both claim readers decide NEVER_CUT_ENABLED (the `locked` key) and
-// CHANGE_COMMANDER_ENABLED (the moved-commander pending clause) from the env they are HANDED, the
+// Admin adoption 6e: both claim readers decide CHANGE_COMMANDER_ENABLED (the moved-commander pending
+// clause) from the env they are HANDED, the
 // reader's resolved switches, and never from the environment alone. The environment and the handed env
 // are given opposite values, so a reader that dropped its env would follow the environment and fail.
 describe("the claim readers decide their switches from the env they are handed", () => {
-  const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
-  const OFF = { NEVER_CUT_ENABLED: "false", CHANGE_COMMANDER_ENABLED: "false" } as unknown as NodeJS.ProcessEnv;
-  const LOCK = "'locked', exists (";
+  const ON = { CHANGE_COMMANDER_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+  const OFF = { CHANGE_COMMANDER_ENABLED: "false" } as unknown as NodeJS.ProcessEnv;
   const MOVED = "select 1 from decks lvd where lvd.id = nv.deck_id";
   const capture = () => {
     const seen: SQL[] = [];
@@ -76,24 +57,21 @@ describe("the claim readers decide their switches from the env they are handed",
     return { tx: tx as never, text: () => new PgDialect().sqlToQuery(seen[0]).sql };
   };
   const environment = (value: string) => {
-    vi.stubEnv("NEVER_CUT_ENABLED", value);
     vi.stubEnv("CHANGE_COMMANDER_ENABLED", value);
   };
   afterEach(() => vi.unstubAllEnvs());
 
-  it("loadAvailability: the reader's ON wins over an environment that has both off", async () => {
+  it("loadAvailability: the reader's ON wins over an environment that has it off", async () => {
     environment("false");
     const { tx, text } = capture();
     await loadAvailability("user_1", { oracleIds: ["o1"], env: ON }, tx);
-    expect(text()).toContain(LOCK);
     expect(text()).toContain(MOVED);
   });
 
-  it("loadAvailability: the reader's OFF wins over an environment that has both on", async () => {
+  it("loadAvailability: the reader's OFF wins over an environment that has it on", async () => {
     environment("true");
     const { tx, text } = capture();
     await loadAvailability("user_1", { oracleIds: ["o1"], env: OFF }, tx);
-    expect(text()).not.toContain(LOCK);
     expect(text()).not.toContain(MOVED);
   });
 
@@ -111,7 +89,7 @@ describe("the claim readers decide their switches from the env they are handed",
 
 describe("a claim whose deck's draft has cut the card", () => {
   it("probes that deck's own draft row, aliased and qualified on both sides, and hands the flag on", async () => {
-    const q = await emitted(undefined);
+    const q = await emitted();
     expect(q).toContain("select 1 from deck_cards dcut where dcut.deck_id = ac.deck_id and dcut.oracle_id = ac.oracle_id");
     expect(q).toContain("(nv.deck_id is not null and not bool_or(ac.is_commander) and not exists (");
     expect(q).toContain("'draftCut', cd.draft_cut");

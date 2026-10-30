@@ -27,11 +27,10 @@ beforeEach(() => {
 
 describe("loadHandOffAnswers", () => {
   it("hands the card chip the reader's env, by identity (admin PR 6f-2)", async () => {
-    // The chip's claim read decides NEVER_CUT_ENABLED and CHANGE_COMMANDER_ENABLED from it: a dropped
-    // argument reads the environment, which has both the other way.
-    vi.stubEnv("NEVER_CUT_ENABLED", "false");
+    // The chip's claim read decides CHANGE_COMMANDER_ENABLED from it: a dropped
+    // argument reads the environment, which has it the other way.
     vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
-    const env = envViewWith({ NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true" });
+    const env = envViewWith({ CHANGE_COMMANDER_ENABLED: "true" });
     try {
       await loadHandOffAnswers("u", COMMANDER, ask(), env);
       expect(stub.chip.mock.calls[0].slice(0, 2)).toEqual(["u", CARD]);

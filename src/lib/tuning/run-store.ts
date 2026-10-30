@@ -6,7 +6,6 @@ import { isUniqueViolation } from "../db-error";
 import { AllowanceSpentError, recordModelUsage, reserveModelCall, settleModelCall, type Billed } from "../model/allowance";
 import type { RefundReason } from "../model/allowance-rule";
 import type { ModelErrorClass } from "../model/client";
-import { neverCutEnabled } from "../decks/never-cut-flag";
 import { PROFILE_VERSION } from "../profile/version";
 import { intentTooLong, SUGGESTED_CHANGES_TOOL, TUNING_MODEL } from "./limits";
 import { PROMPT_VERSION, PROMPT_VERSION_V2 } from "./prompt-version";
@@ -68,21 +67,19 @@ export async function recordLate(tx: Tx, callId: string, billed: Billed | readon
  * `setCardLocked` also takes (Locked, never cut). The gate's read came from a snapshot taken
  * before this: a last card locked in between would otherwise still reserve a credit and call the
  * model for a deck with nothing to cut. Deck row first, then the unit, the order the overview's
- * `startRun` takes. Throws `AllLockedError`; a no-op while `NEVER_CUT_ENABLED` is off. Shared by
+ * `startRun` takes. Throws `AllLockedError`. Shared by
  * both tools' starts (`cuts-run-store.ts`).
  */
-export async function assertSomeCardOpen(tx: Tx, deckId: string, env: NodeJS.ProcessEnv): Promise<void> {
-  if (neverCutEnabled(env)) {
-    await tx.execute(sql`select 1 from ${decks} where ${decks.id} = ${deckId} for update`);
-    const { rows: [body] } = await tx.execute<{ cards: number; open: number }>(sql`
-      select count(*)::int as cards,
-             count(*) filter (where not exists (
-               select 1 from deck_locks l
-               where l.deck_id = dc.deck_id and l.oracle_id = dc.oracle_id and l.removed_at is null
-             ))::int as open
-      from deck_cards dc where dc.deck_id = ${deckId}`);
-    if (body && body.cards > 0 && body.open === 0) throw new AllLockedError();
-  }
+export async function assertSomeCardOpen(tx: Tx, deckId: string): Promise<void> {
+  await tx.execute(sql`select 1 from ${decks} where ${decks.id} = ${deckId} for update`);
+  const { rows: [body] } = await tx.execute<{ cards: number; open: number }>(sql`
+    select count(*)::int as cards,
+           count(*) filter (where not exists (
+             select 1 from deck_locks l
+             where l.deck_id = dc.deck_id and l.oracle_id = dc.oracle_id and l.removed_at is null
+           ))::int as open
+    from deck_cards dc where dc.deck_id = ${deckId}`);
+  if (body && body.cards > 0 && body.open === 0) throw new AllLockedError();
 }
 
 /**
@@ -103,7 +100,7 @@ export async function startRun(
    * and never another tab's (the row's default makes one when absent).
    */
   opts: {
-    runId?: string; now?: Date; env: NodeJS.ProcessEnv;
+    runId?: string; now?: Date;
     /** A Suggested changes v2 run (plan 2026-10-27, P1): reserved under its own feature, stamped with its own prompt
      *  version, and stored with the player's count, request and bracket choice and the report it starts with. */
     v2?: {
@@ -116,7 +113,7 @@ export async function startRun(
   const now = opts.now ?? new Date();
   try {
     const handle = await db.transaction(async (tx): Promise<RunHandle> => {
-      await assertSomeCardOpen(tx, deckId, opts.env);
+      await assertSomeCardOpen(tx, deckId);
       // A v2 run costs what its REQUESTED count costs (`unitsFor`): 2 credits over 10 swaps, else 1.
       const unit = opts.v2
         ? await reserveModelCall(tx, userId, "suggested_changes_v2", TUNING_MODEL, now, "player", unitsFor(opts.v2.requestedCount))

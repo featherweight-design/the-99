@@ -112,10 +112,9 @@ vi.mock("../../lib/collection/import", () => ({
 const newest = vi.hoisted(() => vi.fn());
 vi.mock("../../lib/decks/versions", () => ({ newestVersion: newest }));
 
-// Locked (never cut): off for every test but the ones that turn it on, with the deck's live locks
-// handed back from here, so the apply's re-check can be driven without a database.
-const locks = vi.hoisted(() => ({ on: false, live: new Set<string>() }));
-vi.mock("../../lib/decks/never-cut-flag", () => ({ neverCutEnabled: () => locks.on }));
+// Locked (never cut): the deck's live locks handed back from here (none unless a test sets them), so the
+// apply's re-check can be driven without a database.
+const locks = vi.hoisted(() => ({ live: new Set<string>() }));
 vi.mock("../../lib/decks/locks", async (orig) => ({
   ...(await orig<typeof import("../../lib/decks/locks")>()),
   liveLockedIds: async () => locks.live,
@@ -128,7 +127,6 @@ beforeEach(() => {
   stub.state.updates.length = 0;
   stub.state.unclaimRows = [{ oracleId: "o-sol-ring" }];
   newest.mockReset();
-  locks.on = false;
   locks.live = new Set();
 });
 
@@ -311,7 +309,6 @@ describe("updateDeckFromList's result and a count drop", () => {
 
   it("refuses a drop of a card locked after the preview", async () => {
     newest.mockResolvedValue(null);
-    locks.on = true;
     locks.live = new Set(["o-island"]);
     await expect(
       updateDeckFromList({ deckId: "deck-1", text: "1 Sol Ring\n9 Island", source: "paste", keep: [] }),
@@ -320,7 +317,6 @@ describe("updateDeckFromList's result and a count drop", () => {
 
   it("lets a drop through when the preview showed the lock", async () => {
     newest.mockResolvedValue(null);
-    locks.on = true;
     locks.live = new Set(["o-island"]);
     await updateDeckFromList({
       deckId: "deck-1", text: "1 Sol Ring\n9 Island", source: "paste", keep: [],

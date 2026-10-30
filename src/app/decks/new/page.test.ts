@@ -56,11 +56,10 @@ describe("/decks/new", () => {
   });
 
   it("hands the hand-off read the reader's resolved env, not the environment", async () => {
-    // The card chip's claim read decides NEVER_CUT_ENABLED and CHANGE_COMMANDER_ENABLED from it: a dropped
-    // argument reads the environment, which has both the other way.
-    vi.stubEnv("NEVER_CUT_ENABLED", "false");
+    // The card chip's claim read decides CHANGE_COMMANDER_ENABLED from it: a dropped
+    // argument reads the environment, which has it the other way.
     vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
-    stub.env = envViewWith({ NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true" });
+    stub.env = envViewWith({ CHANGE_COMMANDER_ENABLED: "true" });
     try {
       await props({ commander: COMMANDER, t: "dinosaurs", v: "results" });
       expect(stub.answers.mock.calls[0][3] === stub.env).toBe(true);

@@ -75,7 +75,6 @@ import {
 } from "../../lib/decks/proxies";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
-import { neverCutEnabled } from "../../lib/decks/never-cut-flag";
 import { addCardToDeckFor, deckValidationContext, revalidateAdd } from "../../lib/decks/add-card";
 import { readDeckOriginAndStart } from "../../lib/precons/start-version";
 
@@ -356,9 +355,8 @@ export async function addCardToDeck(
   opts: { relock?: boolean } = {},
 ): Promise<DeckMutationResult> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
   // The literal `true` only: this is a public endpoint, and `{ relock: "false" }` must not revive.
-  const relock = typeof opts === "object" && opts !== null && opts.relock === true && neverCutEnabled(env);
+  const relock = typeof opts === "object" && opts !== null && opts.relock === true;
   const outcome = await addCardToDeckFor(userId, deckId, oracleId, { relock });
   revalidateAdd(deckId, userId, outcome);
   return outcome.result;
@@ -448,8 +446,7 @@ export async function setCardProxied(
  *
  * Locking UPSERTS with `removed_at = null`, so a stray dormant row can never swallow a lock.
  * Unlocking deletes the row, live or dormant.
- *
- * Refused outright with the switch off (D3): a lock row must not be writable where nothing reads it.
+
  */
 export async function setCardLocked(
   deckId: string,
@@ -457,8 +454,6 @@ export async function setCardLocked(
   on: boolean,
 ): Promise<DeckMutationResult> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
-  if (!neverCutEnabled(env)) return { ok: false, message: lockedCardsCopy.mode.refused };
   if (typeof on !== "boolean") return { ok: false, message: lockedCardsCopy.mode.refused };
   if (!isUuid(deckId) || !isUuid(oracleId)) return { ok: false, message: lockedCardsCopy.mode.refused };
   await requireDeck(deckId, userId);
@@ -711,7 +706,6 @@ export type SweptRow = { oracleId: string; quantity: number };
     already doing. */
 export async function clearAutoCards(deckId: string): Promise<SweptRow[]> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
   await requireDeck(deckId, userId);
   // The transaction is the stamp's, not the sweep's: the delete still takes no
   // lock of its own and still relies on Postgres re-evaluating its WHERE after
@@ -724,12 +718,12 @@ export async function clearAutoCards(deckId: string): Promise<SweptRow[]> {
     // concurrent keep, so a card kept mid-sweep is still passed by.
     await tx.execute(sql`select 1 from ${decks} where ${decks.id} = ${deckId} for update`);
     // A LOCKED auto card stays (Locked, L3): the sweep never cuts it. Inside the delete, under the
-    // deck row lock above, and only while `NEVER_CUT_ENABLED` is on (D3).
+    // deck row lock above.
     const rows = await tx.delete(deckCards)
       .where(and(
         eq(deckCards.deckId, deckId),
         eq(deckCards.auto, true),
-        neverCutEnabled(env) ? notLiveLocked() : undefined,
+        notLiveLocked(),
       ))
       .returning({ oracleId: deckCards.oracleId, quantity: deckCards.quantity });
     if (rows.length > 0) {
@@ -1002,7 +996,6 @@ export async function undoFillPass(
   passId: string,
 ): Promise<{ removed: number; built: number }> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
   await requireDeck(deckId, userId);
   if (!isUuid(passId)) throw new Error("invalid pass id");
 
@@ -1109,7 +1102,7 @@ export async function undoFillPass(
             eq(deckCards.auto, true),
             gt(deckCards.quantity, held),
             // A locked stack keeps every copy: a decrement removes copies with no delete (L3).
-            neverCutEnabled(env) ? notLiveLocked() : undefined,
+            notLiveLocked(),
           ))
           .returning({ oracleId: deckCards.oracleId });
         if (decremented.length > 0) removedCards += held;
@@ -1131,7 +1124,7 @@ export async function undoFillPass(
         eq(deckCards.auto, true),
         lte(deckCards.quantity, held),
         inArray(deckCards.oracleId, oracleIds),
-        neverCutEnabled(env) ? notLiveLocked() : undefined,
+        notLiveLocked(),
       )).returning({ quantity: deckCards.quantity });
       removedCards += deleted.reduce((n, r) => n + r.quantity, 0);
       if (deleted.length > 0) {

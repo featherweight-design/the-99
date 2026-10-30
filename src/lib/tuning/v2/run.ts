@@ -134,7 +134,7 @@ export async function startTuningV2(args: {
     hadDescription: inputs.intent !== null && inputs.intent.trim() !== "",
   });
   const started = await startRun(userId, deckId, inputs.fingerprint, inputs.readVersion, {
-    runId: args.runId, env,
+    runId: args.runId,
     v2: {
       requestedCount: wire.requestedCount, requestText: request === "" ? null : request, bracket: wire.bracket, report: startReport,
       readList: { fingerprint: listFingerprint(inputs.head), cardIds: readListCardIds(inputs.head) },

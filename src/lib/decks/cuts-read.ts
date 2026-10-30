@@ -31,7 +31,6 @@ import type { CutsReport } from "../tuning/cuts-validate";
 import { proposedCutsEnabled } from "../tuning/flag";
 import { PROPOSED_CUTS_TOOL } from "../tuning/limits";
 import { reapCutoff } from "../tuning/reaper";
-import { neverCutEnabled } from "./never-cut-flag";
 import { liveLockedIds } from "./locks";
 import { profileOfHead } from "./tuning-read";
 
@@ -89,7 +88,7 @@ export function cutsFingerprint(head: ProfileHead, locked: readonly string[], in
 export type ProposedCutsInputs = {
   head: ProfileHead;
   facts: CutFacts;
-  /** The deck's live locks, read in the same snapshot as `head`. Empty while `NEVER_CUT_ENABLED` is off. */
+  /** The deck's live locks, read in the same snapshot as `head`. */
   locked: string[];
   /** Every card but the commander(s) is locked: nothing a run could cut. */
   allLocked: boolean;
@@ -120,7 +119,7 @@ export async function readProposedCuts(deckId: string, userId: string, env: Node
     if (!head) return null;
     const [v] = await tx.select({ n: max(deckVersions.number) }).from(deckVersions)
       .where(eq(deckVersions.deckId, deckId));
-    const locked = neverCutEnabled(env) ? [...(await liveLockedIds(tx, deckId))] : [];
+    const locked = [...(await liveLockedIds(tx, deckId))];
     const [d] = await tx.select({ intent: decks.intent }).from(decks)
       .where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
     return { head, readVersion: v?.n ?? null, locked, intent: d?.intent?.trim() ? d.intent : null };
@@ -252,7 +251,7 @@ export async function readCutsState(
       // One after the other: a transaction is one connection.
       const held = rows.length === 0 ? [] : await tx.select({ oracleId: deckCards.oracleId, quantity: deckCards.quantity }).from(deckCards).where(eq(deckCards.deckId, deckId));
       const [deck] = rows.length === 0 ? [] : await tx.select({ commander: decks.commanderOracleId, partner: decks.partnerOracleId }).from(decks).where(eq(decks.id, deckId));
-      const locks: ReadonlySet<string> = rows.length > 0 && neverCutEnabled(env) ? await liveLockedIds(tx, deckId) : new Set();
+      const locks: ReadonlySet<string> = rows.length > 0 ? await liveLockedIds(tx, deckId) : new Set();
       const inList = new Set(held.map((h) => h.oracleId));
       const copies = new Map(held.map((h) => [h.oracleId, h.quantity]));
       const commanders = new Set([deck?.commander, deck?.partner].filter((x): x is string => !!x));

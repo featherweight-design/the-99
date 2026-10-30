@@ -206,8 +206,7 @@ export function pullCandidate(a: Availability | undefined): DeckClaim | null {
   const sleeved = (a?.claims ?? []).filter((c) => c.mature);
   // A LOCKED claim is a guard like the commander one (L2): `PullControl` draws its tag and no
   // offer, so the row says the spare copy is locked in that deck. The commander goes first, by
-  // permanence: it never moves, and a lock is the player's own choice in that deck. `locked` is only ever set
-  // with NEVER_CUT_ENABLED on.
+  // permanence: it never moves, and a lock is the player's own choice in that deck.
   return sleeved.find((c) => c.commander) ?? sleeved.find((c) => c.locked) ?? null;
 }
 

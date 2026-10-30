@@ -23,7 +23,6 @@ import { validateCardForDeck } from "../decks/add-validation";
 import { isBasicLand } from "../decks/grouping";
 import { pruneOrphanProxies } from "../decks/prune-proxies";
 import { isLiveLocked, pruneOrphanLocks } from "../decks/locks";
-import { neverCutEnabled } from "../decks/never-cut-flag";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -43,7 +42,7 @@ export type SwapRefusal =
   /**
    * The player has locked the card being cut (Locked, F4): never cut. A FILTER here, under the deck
    * row lock both callers take, so tuning's Apply and the swap tools' Take refuse alike whatever a
-   * model or a stale list asked for. Only while `NEVER_CUT_ENABLED` is on (D3).
+   * model or a stale list asked for.
    */
   | "cutLocked";
 
@@ -64,7 +63,7 @@ async function readRow(tx: Tx, deckId: string, oracleId: string) {
  * suggestion first: an undo can only ever read the deck as it was before this very apply).
  */
 export async function planSwap(
-  tx: Tx, deckId: string, cutOracleId: string | null, addOracleId: string | null, env: NodeJS.ProcessEnv,
+  tx: Tx, deckId: string, cutOracleId: string | null, addOracleId: string | null,
 ): Promise<SwapPlan> {
   // One side may be absent: a line of tuning's two lists is an addition (no cut) or a cut (no add),
   // and each side's checks are then simply not asked. Both absent is no change at all.
@@ -79,7 +78,7 @@ export async function planSwap(
   if (!deck) return { ok: false, reason: "cutGone" };
   if (cutOracleId !== null) {
     if (!cut) return { ok: false, reason: "cutGone" };
-    if (neverCutEnabled(env) && (await isLiveLocked(tx, deckId, cutOracleId))) return { ok: false, reason: "cutLocked" };
+    if (await isLiveLocked(tx, deckId, cutOracleId)) return { ok: false, reason: "cutLocked" };
   }
 
   if (addOracleId !== null) {
@@ -152,7 +151,7 @@ export async function applySwap(
  * nothing. Does not touch the deck stamp.
  */
 export async function restoreSwap(
-  tx: Tx, deckId: string, cutOracleId: string | null, addOracleId: string | null, snap: ApplySnapshot, env: NodeJS.ProcessEnv,
+  tx: Tx, deckId: string, cutOracleId: string | null, addOracleId: string | null, snap: ApplySnapshot,
 ): Promise<boolean> {
   const add = addOracleId === null || !snap.add ? null : await readRow(tx, deckId, addOracleId);
   const cut = cutOracleId === null || !snap.cut ? null : await readRow(tx, deckId, cutOracleId);
@@ -167,7 +166,7 @@ export async function restoreSwap(
   if (!addAsApplied || !cutAsApplied) return false;
   // A lock put on the add since is an edit like a `keep` pressed since: the undo would take that
   // card back out (or a copy of it), so it refuses and writes nothing (Locked, the plan's PR 2).
-  if (snap.add && addOracleId !== null && neverCutEnabled(env) && (await isLiveLocked(tx, deckId, addOracleId))) return false;
+  if (snap.add && addOracleId !== null && (await isLiveLocked(tx, deckId, addOracleId))) return false;
 
   if (snap.add && addOracleId !== null) {
     if (snap.add.quantity === 0) {

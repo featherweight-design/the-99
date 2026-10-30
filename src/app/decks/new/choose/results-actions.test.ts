@@ -120,11 +120,10 @@ describe("moreRows", () => {
   });
 
   it("hands the page loader the reader's resolved env, not the environment", async () => {
-    // The search's claim reads decide NEVER_CUT_ENABLED and CHANGE_COMMANDER_ENABLED from it: a dropped
-    // argument would read the environment, which has both the other way.
-    vi.stubEnv("NEVER_CUT_ENABLED", "false");
+    // The search's claim reads decide CHANGE_COMMANDER_ENABLED from it: a dropped
+    // argument would read the environment, which has it the other way.
     vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
-    const env = envViewWith({ NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true" });
+    const env = envViewWith({ CHANGE_COMMANDER_ENABLED: "true" });
     vi.mocked(requestSwitchEnv).mockResolvedValueOnce(env);
     try {
       await moreRows("?t=dinosaurs", 12);

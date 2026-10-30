@@ -231,7 +231,7 @@ export async function applyPicks(args: {
       const now = new Date();
       const snapshots = new Map<string, ApplySnapshot>();
       for (const line of [...plan.cuts, ...plan.adds]) {
-        const swap = await planSwap(tx, run.deckId, line.cutOracleId, line.addOracleId, env);
+        const swap = await planSwap(tx, run.deckId, line.cutOracleId, line.addOracleId);
         if (!swap.ok) throw new Refused({ kind: "swap", itemId: line.id });
         // The verdict and the snapshot first, as `applyItem` writes them: the snapshot is the deck before this line.
         await tx.update(deckSuggestionItems)
@@ -288,8 +288,8 @@ export async function applyPicks(args: {
  * back to open and still picked (H4: an Undo keeps the picks). Any line whose restore no longer fits the deck refuses the
  * whole undo, so a set is never half undone. Returns the set's item ids for the panel to re-select.
  */
-export async function undoSet(args: { applySet: string; userId: string; env: NodeJS.ProcessEnv }): Promise<ApplySetResult> {
-  const { userId, env } = args;
+export async function undoSet(args: { applySet: string; userId: string }): Promise<ApplySetResult> {
+  const { userId } = args;
   const applySet = args.applySet.toLowerCase();
   try {
     return await db.transaction(async (tx) => {
@@ -328,7 +328,7 @@ export async function undoSet(args: { applySet: string; userId: string; env: Nod
       // card (the engine keeps one line per card), so within a side the order cannot change what a restore finds.
       const order = [...set.filter((l) => l.cutOracleId !== null), ...set.filter((l) => l.addOracleId !== null)].reverse();
       for (const line of order) {
-        if (!line.undoSnapshot || !(await restoreSwap(tx, run.deckId, line.cutOracleId, line.addOracleId, line.undoSnapshot, env))) {
+        if (!line.undoSnapshot || !(await restoreSwap(tx, run.deckId, line.cutOracleId, line.addOracleId, line.undoSnapshot))) {
           throw new Refused({ kind: "swap", itemId: line.id });
         }
         await tx.update(deckSuggestionItems)
