@@ -1,0 +1,182 @@
+{
+  "feature": "Small items 6 close-out: What's new with every kind off and the stacked offer (items 6/6b), About v2 errata (item 3), the Overview Critical chip (item 4), TaggedBox states (item 5)",
+  "clearAbout": true,
+  "out": "contact-sheets/small-items-6",
+  "note": "Run on a SCRATCH branch off local-dev only (it writes). Server: ANALYSIS_TAB_ENABLED, TUNING_ENABLED, SUGGESTED_CHANGES_V2_ENABLED, HELP_ME_CHOOSE_ENABLED, OVERVIEW_V2_ENABLED on; SOCIAL_FRIENDS_ENABLED and ANNOUNCEMENTS_ENABLED off, so no default-on kind is available; a dummy ANTHROPIC_API_KEY (stub model). Before the run the audit account must have never chosen (user_prefs feed_kinds {}, feed_kinds_declined {}, feed_offer_closed_at null). whats-new-off presses the offer's ✕, which saves the empty choice, so reset feed_offer_closed_at to null after the phone pass or the desktop offer row finds no offer. CRITICAL_DECK holds a contract-13 deck_synopses row (status done, fresh fingerprint) whose weaknesses are Critical/Moderate/Minor; DESCRIBE_DECK has no stored reading, so its Analysis tab draws the description field; the field refuses typing past 240 and decks_intent_length_check refuses storing it, so the over-cap state needs that check dropped on the scratch branch and a 241+ intent written (re-add it after). help-locked presses Find commanders under a hold, spending one stub credit.",
+  "rows": [
+    {
+      "id": "whats-new-offer",
+      "label": "Item 6b: Home What's new, a never-chose reader, the stacked offer (✕ top right, Pick ▾ bottom right)",
+      "view": "src/components/home/whats-new.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "[data-feed-offer='closed']",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "#home-whats-new"
+        },
+        {
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "whats-new-off",
+      "label": "Item 6: Home What's new after the ✕ with every kind off: Choose what shows › and the off line",
+      "view": "src/components/home/whats-new.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "[data-feed-offer='closed']",
+          "settle": 1200
+        },
+        {
+          "clickRole": "button",
+          "name": "^Hide this for good$",
+          "settle": 800
+        },
+        {
+          "goto": "/",
+          "wait": "[data-feed-quiet='off']",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "#home-whats-new"
+        },
+        {
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "about-pick",
+      "label": "Item 3: About › Decks, v2 on: the pick card in Good to know",
+      "view": "src/components/about/pages/rule-diagrams.tsx",
+      "steps": [
+        {
+          "goto": "/about/decks#analysis",
+          "wait": "[data-about-shot][data-loaded]",
+          "settle": 800
+        },
+        {
+          "scrollTo": "[data-rule='rule/pick']"
+        },
+        {
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "about-credits",
+      "label": "Item 3: About › Decks, v2 on: the credits card's two dashed rows",
+      "view": "src/components/about/pages/rule-diagrams.tsx",
+      "steps": [
+        {
+          "goto": "/about/decks#analysis",
+          "wait": "[data-about-shot][data-loaded]",
+          "settle": 800
+        },
+        {
+          "scrollTo": "[data-rule='rule/credits']"
+        },
+        {
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "overview-critical",
+      "label": "Item 4: the full overview's weaknesses, Critical first with its chip",
+      "view": "src/components/decks/synopsis-stages.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${CRITICAL_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "wait": "[data-testid='synopsis-overview']",
+          "settle": 900
+        },
+        {
+          "clickRole": "button",
+          "name": "View full overview",
+          "settle": 300
+        },
+        {
+          "wait": "[data-testid='receipt-modal']",
+          "settle": 500
+        },
+        {
+          "scrollTo": "[data-testid='synopsis-severity']"
+        },
+        {
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "tag-over-cap",
+      "label": "Item 5a: Describe your deck over the 240 cap, focused: a 2px danger edge, no ring",
+      "view": "src/components/cards/tagged-box.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${DESCRIBE_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 600
+        },
+        {
+          "wait": "#deck-description-field",
+          "settle": 600
+        },
+        {
+          "scrollTo": "#deck-description-field"
+        },
+        {
+          "click": "#deck-description-field",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "help-locked",
+      "label": "Item 5e: Help me choose with the intake locked: the foot drawn, the key disabled",
+      "view": "src/components/intake/intake-form.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new/choose?w=a+Landfall+deck+unlike+mine",
+          "wait": "textarea",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "textarea"
+        },
+        {
+          "hold": "**/choose**",
+          "ms": 15000
+        },
+        {
+          "clickRole": "button",
+          "name": "Find commanders",
+          "settle": 900
+        },
+        {
+          "wait": "[data-intake-locked]",
+          "settle": 300
+        }
+      ]
+    }
+  ]
+}
