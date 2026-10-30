@@ -301,7 +301,7 @@ async function pageDrawsWithoutLanding(page, tool) {
 
 async function walkPages(page, w, userId) {
   for (const tool of PAGE_TOOLS) {
-    // Precons, Lineup and the Wishlist have no switch any more: they land the same in both modes, so the off-mode walk
+    // Precons, Lineup, the Wishlist and Collection Sync have no switch any more: they land the same in both modes, so the off-mode walk
     // leaves them out.
     if (SWITCHES_OFF && (tool.id === "precons" || tool.id === "lineup" || tool.id === "wishlist" || tool.id === "collection-sync")) continue;
     await unspend(userId, tool.id);
