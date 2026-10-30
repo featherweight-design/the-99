@@ -106,16 +106,16 @@ export const isOverrideName = (name: string): name is OverrideName => name === A
  * path, where the key parsing may not), so they would describe a column that is not there. Both Vercel projects carry the
  * keys (Production scope) and previews are not built, so that only happens on a local server run without them.
  * `SIGNATURE_CARD_ENABLED` held it from 2026-10-27 and left it with the `friends` entry's signature-card caption line (retired since).
- * `FLYER_TRIAL_ENABLED` and `FEEDBACK_ENABLED` hold it from 2026-10-30, until the first PR that ships a usable surface for each
- * (flyer: the `/join` page, PR 3; feedback: Report a problem, PR 5). Raised early, an account would see half a trial.
- * It holds the two above; a switch that joins it carries its reason beside it.
+ * `FEEDBACK_ENABLED` holds it from 2026-10-30, until the first PR that ships a usable surface (Report a problem, flyer trial PR 5).
+ * Raised early, an account would see half a feature. `FLYER_TRIAL_ENABLED` held it from 2026-10-30 and left it with the `/join`
+ * page for a flyer code (PR 3); its admin section follows (PR 4).
+ * A switch that joins it carries its reason beside it.
  * The model switches need `ANTHROPIC_API_KEY`, and without it a run ends refused rather than throwing
  * (`src/lib/model/client.ts`, `realMessages`); payment, webhook and cron secrets sit behind no switch;
  * every table a switch reads ships in a migration production applies on deploy.
  */
 export const ALL_FEATURES_EXCLUDED: Readonly<Partial<Record<SwitchName, string>>> = {
   FEEDBACK_ENABLED: "no feedback surface yet; it joins All features with Report a problem (flyer trial PR 5)",
-  FLYER_TRIAL_ENABLED: "no flyer surface yet; it joins All features with the `/join` page (flyer trial PR 3)",
   // SUGGESTED_CHANGES_V2_ENABLED left on 2026-10-29 (Hugh: switches are on by default for his account), once
   // its intake, wait, results and apply had shipped; its History view and in-flight tile follow in later PRs.
 };
