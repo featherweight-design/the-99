@@ -145,13 +145,13 @@ export async function saveDeckHeader(
  */
 export async function saveDeckLimits(
   deckId: string,
-  fields: { capDollars?: number | null; sets?: readonly string[]; ownedOnly?: boolean },
+  fields: { capDollars?: number | null; sets?: readonly string[]; ownedOnly?: boolean; otherDecks?: boolean },
 ): Promise<DeckMutationResult> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!tuningEnabled(env) || !isUuid(deckId)) return { ok: false, message: deckDescriptionCopy.limits.refused };
   if (typeof fields !== "object" || fields === null) return { ok: false, message: deckDescriptionCopy.limits.refused };
-  const { capDollars, sets, ownedOnly } = fields;
+  const { capDollars, sets, ownedOnly, otherDecks } = fields;
   if (
     (capDollars !== undefined && !(capDollars === null || (Number.isInteger(capDollars) && capDollars >= 1 && capDollars <= MAX_BUDGET_DOLLARS)))
     // Same set-code shape `validateCreateAnswers` checks (`answers.ts`): a malformed code (a
@@ -163,8 +163,9 @@ export async function saveDeckLimits(
     // twice into a paid model request and once into SQL every run.
     || (sets !== undefined && (!Array.isArray(sets) || sets.length > MAX_SETS || sets.some((s) => typeof s !== "string" || !/^[a-z0-9]{2,8}$/.test(s.toLowerCase()))))
     || (ownedOnly !== undefined && typeof ownedOnly !== "boolean")
+    || (otherDecks !== undefined && typeof otherDecks !== "boolean")
   ) return { ok: false, message: deckDescriptionCopy.limits.refused };
-  const set: { tuningCapCents?: number | null; tuningSets?: string[]; tuningOwnedOnly?: boolean } = {};
+  const set: { tuningCapCents?: number | null; tuningSets?: string[]; tuningOwnedOnly?: boolean; tuningOtherDecks?: boolean } = {};
   if (capDollars !== undefined) set.tuningCapCents = capDollars === null ? null : capDollars * 100;
   if (sets !== undefined) {
     // Deduped and lower-cased: the wire is untrusted, and `SetsField`'s own codes are already
@@ -172,6 +173,7 @@ export async function saveDeckLimits(
     set.tuningSets = [...new Set(sets.map((s) => s.toLowerCase()))];
   }
   if (ownedOnly !== undefined) set.tuningOwnedOnly = ownedOnly;
+  if (otherDecks !== undefined) set.tuningOtherDecks = otherDecks;
   if (Object.keys(set).length === 0) return { ok: true };
   const updated = await db.update(decks)
     .set({ ...set, lastEditedAt: sql`clock_timestamp()` })

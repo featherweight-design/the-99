@@ -666,6 +666,9 @@ export const decks = pgTable("decks", {
   /** Only cards the player owns. Null reads as false — "Any card" — same as `answerOwnedOnly`'s
    *  own default, but nullable here because this one is never seeded at creation. */
   tuningOwnedOnly: boolean("tuning_owned_only"),
+  /** With Only cards I own, also offer owned copies that sit in the player's other decks (Small items 4, item 2). Null
+   *  reads as false, as `tuningOwnedOnly` does; it means nothing while `tuningOwnedOnly` is off. */
+  tuningOtherDecks: boolean("tuning_other_decks"),
   /**
    * What the player asked for in Help me choose, when the deck was started from it (F1): the budget
    * cap in whole dollars as cents, the bracket, and the card to build around. Stored as data, so a

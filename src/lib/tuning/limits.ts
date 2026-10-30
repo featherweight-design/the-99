@@ -170,3 +170,30 @@ export const OWNED_SHORTLIST_MAX = 80;
  * which is what lets a v2 run call the pool spent.
  */
 export const OWNED_OFF_INDEX_MAX = 40;
+
+/**
+ * Whether an owned card's copies let an owned-only run offer it: a copy free of every other deck, or, with Also cards
+ * in my other decks (`limits.otherDecks`, Small items 4 item 2), any owned copy, a held one included. `free` is the
+ * availability read's `free` from the asking deck's vantage (`excludeDeckId`); undefined when the read has no row,
+ * which no claim holds. Every owned-only reader decides it here: the three candidate tiers and the answer's `owned`.
+ */
+export function ownedCopyOffered(free: number | undefined, limits: { otherDecks?: boolean }): boolean {
+  return free === undefined || free > 0 || limits.otherDecks === true;
+}
+
+/**
+ * Ties go to a spare copy (Small items 4 item 2): among cards a tier ranks equally (`sameRank`, on rows already in rank
+ * order), the ones with a free copy go ahead of the ones held in another deck, each group in its old order. A stable
+ * reorder inside each run of ties, so it moves nothing a run's ranking separates and nothing at all without held cards.
+ */
+export function spareBeforeHeld<T>(rows: readonly T[], sameRank: (a: T, b: T) => boolean, held: (r: T) => boolean): T[] {
+  const out: T[] = [];
+  for (let i = 0; i < rows.length;) {
+    let j = i + 1;
+    while (j < rows.length && sameRank(rows[i], rows[j])) j++;
+    const run = rows.slice(i, j);
+    out.push(...run.filter((r) => !held(r)), ...run.filter(held));
+    i = j;
+  }
+  return out;
+}

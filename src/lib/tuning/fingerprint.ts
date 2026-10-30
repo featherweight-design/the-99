@@ -56,7 +56,7 @@ export type FingerprintInput = {
    * day it ships, so every gate reopens once on deploy — the same one-time "changed" a
    * `PROMPT_VERSION` bump already causes deliberately, not a bug to guard against.
    */
-  limits: { capCents: number | null; sets: readonly string[]; ownedOnly: boolean };
+  limits: { capCents: number | null; sets: readonly string[]; ownedOnly: boolean; otherDecks?: boolean };
 };
 
 const byteOrder = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
@@ -90,6 +90,9 @@ export function tuningFingerprint(input: FingerprintInput): string {
       // gate for a prompt only these send. So it joins the hash for them alone: an owned-only deck
       // reads as changed once, and every other deck hashes exactly as before.
       ...(input.limits.ownedOnly ? { ownedShortlist: 1, collectionGeneration: input.collectionGeneration ?? null } : {}),
+      // Copies held in the player's other decks widen an owned-only run's pool (Small items 4, item 2). Hashed only when
+      // it can change the answer, so every deck without it hashes exactly as before.
+      ...(input.limits.ownedOnly && input.limits.otherDecks ? { otherDecks: 1 } : {}),
     }))
     .digest("hex");
 }

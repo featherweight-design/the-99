@@ -186,7 +186,7 @@ export type V2Ask = {
   request: string | null;
   /** `low`: Keep on a deck read as a range, the range's bottom. */
   bracket: { choice: "keep" | "down" | "up"; target: number; low?: number } | null;
-  restrictions: { capCents: number | null; sets: readonly string[]; ownedOnly: boolean } | null;
+  restrictions: { capCents: number | null; sets: readonly string[]; ownedOnly: boolean; otherDecks?: boolean } | null;
 };
 
 export type TuningLive = {

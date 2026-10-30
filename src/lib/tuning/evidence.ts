@@ -75,7 +75,7 @@ export type EvidencePack = {
   /** "Kept for this deck" (H35, PR 4a): hard filters, told to the model up front AND enforced by
    *  the validator against the model's own resolved cards. Null/empty/false until the player sets
    *  them, same shape as `TuningFacts["limits"]`. */
-  limits: { capCents: number | null; sets: readonly string[]; ownedOnly: boolean };
+  limits: { capCents: number | null; sets: readonly string[]; ownedOnly: boolean; otherDecks?: boolean };
   /**
    * The cards the player owns that this deck could take, most played with this commander first
    * (`loadOwnedCandidates`). Present only for a run whose "owned only" limit is set, and then the
@@ -118,7 +118,7 @@ export function buildEvidencePack(input: {
   universal?: readonly { oracleId: string; name: string }[];
   /** "Kept for this deck" (H35, PR 4a). Optional: a neutral default (no filter) for every
    *  caller that does not carry limits — the eval harness, and older tests. */
-  limits?: { capCents: number | null; sets: readonly string[]; ownedOnly: boolean };
+  limits?: { capCents: number | null; sets: readonly string[]; ownedOnly: boolean; otherDecks?: boolean };
   /** The owned shortlist for an owned-only run, or null/absent. See `EvidencePack.ownedCandidates`. */
   ownedCandidates?: EvidencePack["ownedCandidates"];
   ownedCandidatesComplete?: boolean;

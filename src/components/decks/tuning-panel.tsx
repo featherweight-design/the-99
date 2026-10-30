@@ -153,7 +153,7 @@ export type TuningFacts = {
   cards: number;
   intent: string | null;
   /** "Kept for this deck" (H35, PR 2). Null/empty/false until the player sets them. */
-  limits: { capCents: number | null; sets: readonly string[]; ownedOnly: boolean };
+  limits: { capCents: number | null; sets: readonly string[]; ownedOnly: boolean; otherDecks?: boolean };
   /** The deck's strategy focus, held by the shell (`useStrategyFocus`); absent or null with none. */
   focus?: StrategyKey | null;
   /** Moves each time the shell's focus write settles (`useHeldPick`'s `revision`), even onto the value it already

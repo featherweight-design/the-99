@@ -21,6 +21,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cardLabels, cards, collectionItems, commanderSupportCards, formatStaples } from "../../db/schema";
 import { loadAvailability } from "../decks/availability-query";
+import { ownedCopyOffered, spareBeforeHeld } from "../tuning/limits";
 import { priceOf, priceState } from "../decks/price";
 import { loadPrices } from "../decks/price-query";
 import { castFaceText } from "../cards/facet";
@@ -53,7 +54,7 @@ export type CandidateArgs = {
    *  fallback when the exact one has none, so a deck served by `count:3` keeps its staples. */
   stapleCondition: string;
   inDeck: ReadonlySet<string>;
-  limits: { capCents: number | null; sets: readonly string[]; ownedOnly: boolean };
+  limits: { capCents: number | null; sets: readonly string[]; ownedOnly: boolean; otherDecks?: boolean };
 };
 
 /**
@@ -196,16 +197,18 @@ export async function readFocusCandidates(args: FocusCandidateArgs, read: Reader
       args.limits.ownedOnly ? loadAvailability(args.userId, { oracleIds: ids, excludeDeckId: args.deckId, env: args.env }) : null,
       capCents === null ? null : loadPrices(ids),
     ]);
-    for (const r of slice) {
-      if (availability) {
-        const free = availability.get(r.oracleId);
-        if (free !== undefined && free.free <= 0) continue;
-      }
+    const passing = slice.filter((r) => {
+      if (availability && !ownedCopyOffered(availability.get(r.oracleId)?.free, args.limits)) return false;
       if (priced !== null && capCents !== null) {
         const fact = priced.prices.get(r.oracleId) ?? null;
         const cents = fact ? priceOf(fact, priceState(fact, priced.newestAsOf)) : null;
-        if (cents !== null && cents > capCents) continue;
+        if (cents !== null && cents > capCents) return false;
       }
+      return true;
+    });
+    // `rankCandidates`' own keys before the name: equal on both is a tie, and a tie goes to a spare copy.
+    const sameRank = (a: (typeof slice)[number], b: (typeof slice)[number]) => a.inclusion === b.inclusion && a.stapleShare === b.stapleShare;
+    for (const r of spareBeforeHeld(passing, sameRank, (r) => (availability?.get(r.oracleId)?.free ?? 1) <= 0)) {
       out.push({ oracleId: r.oracleId, name: r.name, typeLine: r.typeLine, roles: rolesOf(r, args.roleBasis) });
       if (out.length >= max) break;
     }

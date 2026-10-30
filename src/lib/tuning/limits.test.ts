@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { RESERVATION_TTL_MS } from "../model/allowance-rule";
 import {
   ANSWER_TOKENS_WORST_CASE, ASK_PER_LIST, CUTS_MAX_TOKENS, CUTS_MODEL_TIMEOUT_MS, MODEL_TIMEOUT_MS, REAPER_CUTOFF_MS, THINKING_HEADROOM_TOKENS, TUNING_MAX_TOKENS,
-  TUNING_RETRY_FLOOR_MS, V2_REAPER_CUTOFF_MS, V2_RUN_BUDGET_MS, intentTooLong,
+  TUNING_RETRY_FLOOR_MS, V2_REAPER_CUTOFF_MS, V2_RUN_BUDGET_MS, intentTooLong, ownedCopyOffered, spareBeforeHeld,
 } from "./limits";
 
 /** The deck page's `maxDuration`, in ms. Read from the page's source: Next requires the export to be a literal, and
@@ -109,3 +109,34 @@ describe("intentTooLong", () => {
   });
 });
 
+
+describe("ownedCopyOffered", () => {
+  it("offers a free copy, or a card the read has no row for, under every owned-only run", () => {
+    expect(ownedCopyOffered(1, {})).toBe(true);
+    expect(ownedCopyOffered(undefined, {})).toBe(true);
+  });
+
+  it("offers a held copy only with Also cards in my other decks", () => {
+    expect(ownedCopyOffered(0, {})).toBe(false);
+    expect(ownedCopyOffered(-1, { otherDecks: false })).toBe(false);
+    expect(ownedCopyOffered(0, { otherDecks: true })).toBe(true);
+    expect(ownedCopyOffered(-2, { otherDecks: true })).toBe(true);
+  });
+});
+
+describe("spareBeforeHeld", () => {
+  type R = { name: string; rank: number; held: boolean };
+  const r = (name: string, rank: number, held = false): R => ({ name, rank, held });
+  const order = (rows: R[]) => spareBeforeHeld(rows, (a, b) => a.rank === b.rank, (x) => x.held).map((x) => x.name);
+
+  it("puts a spare copy ahead of a held one only among equally ranked cards", () => {
+    expect(order([r("a", 3, true), r("b", 3), r("c", 3, true), r("d", 3)])).toEqual(["b", "d", "a", "c"]);
+    // A held card ranked higher stays ahead: the ranking is the run's, the tie-break is all this decides.
+    expect(order([r("a", 5, true), r("b", 3), r("c", 3, true), r("d", 1)])).toEqual(["a", "b", "c", "d"]);
+  });
+
+  it("leaves a list with no held card exactly as it was", () => {
+    expect(order([r("a", 3), r("b", 3), r("c", 2)])).toEqual(["a", "b", "c"]);
+    expect(order([])).toEqual([]);
+  });
+});

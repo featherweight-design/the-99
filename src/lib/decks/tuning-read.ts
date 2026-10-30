@@ -68,7 +68,7 @@ export type TuningInputs = {
   /** The commander's name when every other card is locked, else null (the gate's `allLocked`). */
   allLocked: string | null;
   /** "Kept for this deck" (H35, PR 2). Null/empty/false until the player sets them — no seeding. */
-  limits: { capCents: number | null; sets: readonly string[]; ownedOnly: boolean };
+  limits: { capCents: number | null; sets: readonly string[]; ownedOnly: boolean; otherDecks?: boolean };
   /** The deck's strategy focus, read only with the Analysis tab on; a retired key reads as none. */
   focus: StrategyKey | null;
 };
@@ -94,6 +94,7 @@ export async function tuningInputs(deckId: string, userId: string, env: NodeJS.P
       tuningCapCents: decks.tuningCapCents,
       tuningSets: decks.tuningSets,
       tuningOwnedOnly: decks.tuningOwnedOnly,
+      tuningOtherDecks: decks.tuningOtherDecks,
       strategyFocus: decks.strategyFocus,
     })
       .from(decks)
@@ -114,6 +115,7 @@ export async function tuningInputs(deckId: string, userId: string, env: NodeJS.P
     capCents: deck.tuningCapCents,
     sets: deck.tuningSets ?? [],
     ownedOnly: deck.tuningOwnedOnly ?? false,
+    otherDecks: deck.tuningOtherDecks ?? false,
   };
   const fingerprint = tuningFingerprint({
     list: listFingerprint(head),

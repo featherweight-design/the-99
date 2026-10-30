@@ -11,7 +11,7 @@ import { loadAvailability } from "../decks/availability-query";
 import { priceOf, priceState } from "../decks/price";
 import { loadPrices } from "../decks/price-query";
 import { printedIn } from "../sets/printed-in-sql";
-import { OWNED_OFF_INDEX_MAX, OWNED_SHORTLIST_MAX } from "./limits";
+import { OWNED_OFF_INDEX_MAX, OWNED_SHORTLIST_MAX, ownedCopyOffered, spareBeforeHeld } from "./limits";
 
 /**
  * The cards the player owns that this deck could take, for a run whose "owned only" limit is set.
@@ -49,7 +49,7 @@ type OwnedCandidateArgs = {
   commanderOracleIds: readonly string[];
   colorIdentity: readonly string[];
   inDeck: ReadonlySet<string>;
-  limits: { capCents: number | null; sets: readonly string[] };
+  limits: { capCents: number | null; sets: readonly string[]; otherDecks?: boolean };
   max?: number;
   /** The reader's resolved switches (`requestSwitchEnv`), for the claim model's `locked` key and
    *  pending clause; a probe, with no signed-in reader, passes `process.env`. */
@@ -81,7 +81,7 @@ export async function readOwnedCandidates(args: OwnedCandidateArgs): Promise<{ c
   let rowsRanOut = false;
   for (let page = 0; page < MAX_PAGES && out.length < max; page++) {
     const rows = await db
-      .select({ oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine })
+      .select({ oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine, inclusion: sql<number | null>`max(${commanderSupportCards.inclusion})::float8` })
       .from(commanderSupportCards)
       .innerJoin(cards, eq(cards.oracleId, commanderSupportCards.oracleId))
       .where(and(
@@ -110,14 +110,17 @@ export async function readOwnedCandidates(args: OwnedCandidateArgs): Promise<{ c
       loadAvailability(userId, { oracleIds: ids, excludeDeckId: deckId, env: args.env }),
       capCents === null ? null : loadPrices(ids),
     ]);
-    for (const r of rows) {
-      const free = availability.get(r.oracleId);
-      if (free !== undefined && free.free <= 0) continue;
+    const passing = rows.filter((r) => {
+      if (!ownedCopyOffered(availability.get(r.oracleId)?.free, limits)) return false;
       if (priced !== null && capCents !== null) {
         const fact = priced.prices.get(r.oracleId) ?? null;
         const cents = fact ? priceOf(fact, priceState(fact, priced.newestAsOf)) : null;
-        if (cents !== null && cents > capCents) continue;
+        if (cents !== null && cents > capCents) return false;
       }
+      return true;
+    });
+    const held = (r: (typeof rows)[number]) => (availability.get(r.oracleId)?.free ?? 1) <= 0;
+    for (const r of spareBeforeHeld(passing, (a, b) => Number(a.inclusion ?? 0) === Number(b.inclusion ?? 0), held)) {
       out.push({ oracleId: r.oracleId, name: r.name, typeLine: r.typeLine });
       if (out.length >= max) break;
     }
@@ -154,7 +157,7 @@ export type OffIndexArgs = {
   commanderOracleIds: readonly string[];
   colorIdentity: readonly string[];
   inDeck: ReadonlySet<string>;
-  limits: { capCents: number | null; sets: readonly string[] };
+  limits: { capCents: number | null; sets: readonly string[]; otherDecks?: boolean };
   /** Cards already offered by an earlier tier (the index cards and the focus candidates), never offered twice. */
   exclude?: ReadonlySet<string>;
   /** The room this tier fills: at most `OWNED_OFF_INDEX_MAX`, and what is left under `OWNED_SHORTLIST_MAX`. */
@@ -327,14 +330,18 @@ export async function readOwnedOffIndex(args: OffIndexArgs, read: Reader = db): 
       loadAvailability(args.userId, { oracleIds: ids, excludeDeckId: args.deckId, env: args.env }),
       capCents === null ? null : loadPrices(ids),
     ]);
-    for (const r of slice) {
-      const free = availability.get(r.oracleId);
-      if (free !== undefined && free.free <= 0) continue;
+    const passing = slice.filter((r) => {
+      if (!ownedCopyOffered(availability.get(r.oracleId)?.free, args.limits)) return false;
       if (priced !== null && capCents !== null) {
         const fact = priced.prices.get(r.oracleId) ?? null;
         const cents = fact ? priceOf(fact, priceState(fact, priced.newestAsOf)) : null;
-        if (cents !== null && cents > capCents) continue;
+        if (cents !== null && cents > capCents) return false;
       }
+      return true;
+    });
+    const sameRank = (a: (typeof slice)[number], b: (typeof slice)[number]) =>
+      score(a.neighbourInclusion) === score(b.neighbourInclusion) && score(a.identityInclusion) === score(b.identityInclusion);
+    for (const r of spareBeforeHeld(passing, sameRank, (r) => (availability.get(r.oracleId)?.free ?? 1) <= 0)) {
       out.push({ oracleId: r.oracleId, name: r.name, typeLine: r.typeLine });
       if (out.length >= max) break;
     }

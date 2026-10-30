@@ -64,6 +64,10 @@ describe("tuningFingerprint", () => {
     // Pinned to the literal: `ownedOnly` itself is in the hash, so a comparison alone stays green with
     // the marker removed. This moves once, deliberately, for owned-only decks.
     expect(ownedOnly).toBe("ebd21e09ce15f8369d6df82d9012443881100b7d2170dafb3e1abc8f9dc6701a");
+    // Also cards in my other decks moves an owned-only deck's hash and no other's; off reads as absent.
+    expect(tuningFingerprint({ ...base, limits: { ...base.limits, ownedOnly: true, otherDecks: true } })).not.toBe(ownedOnly);
+    expect(tuningFingerprint({ ...base, limits: { ...base.limits, ownedOnly: true, otherDecks: false } })).toBe(ownedOnly);
+    expect(tuningFingerprint({ ...base, limits: { ...base.limits, otherDecks: true } })).toBe(at);
     const ordered = tuningFingerprint({ ...base, limits: { ...base.limits, sets: ["mh3", "lci"] } });
     expect(tuningFingerprint({ ...base, limits: { ...base.limits, sets: ["lci", "mh3"] } })).toBe(ordered);
   });
