@@ -11,7 +11,7 @@ import { JOB_VARIABLE_NAMES, type JobVariable } from "./models";
  * ONE fixed log line that carries nothing from the request or the response. Of the response, only the values of the listed names are kept.
  */
 
-export const GITHUB_VARIABLES_URL = "https://api.github.com/repos/HartiganHM/the-99/actions/variables?per_page=100";
+export const GITHUB_VARIABLES_URL = "https://api.github.com/repos/featherweight-design/the-99/actions/variables?per_page=100";
 export const GITHUB_TIMEOUT_MS = 5_000;
 /** A value longer than this is cut: these are switches and dollar figures, never prose. */
 const MAX_VALUE_CHARS = 64;
