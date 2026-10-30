@@ -36,3 +36,17 @@ option taken. Nothing below blocks the build; each open item has a drawn default
 8. **Kind switched off** leaves Precons unaffected.
 9. **Quiet line** (G1): an inline name per kind instead of lowercasing.
 10. **Mobile and desktop** ship together in each PR.
+
+### Engineering audit of item 6, the link-out icon (2026-10-30, UI PR 1, against origin/main)
+
+**Verdict: Green.** Item 6's claims hold, with two corrections to its list:
+
+- Every ↗ named is real and replaced: `ExternalLink`, the feed press, credits (history, plan card, return band), the
+  public printings and top bar, the Fan Content notice, and the copy strings in `deck-analysis` (`provenance.source`,
+  used by the all-brackets sheet, provenance panel, lean line and combo receipt), and `mana-balance` (`buyLink`).
+- `decks-builder` `detailHint` had no consumer on main: it is deleted, not given an icon.
+- Not in the list: Mana Balance's TCGplayer citation drew its own arrow-only SVG (`mana-evidence.tsx` `LinkOut`, no
+  glyph, so a search for ↗ misses it). It now draws `LinkOutIcon` too.
+- Left as they are: `short-deck-warning`, `cost-strip`, `precon-pick-view` and `receipt-link` open new tabs but drew no
+  arrow before, so the icon's "replaces every ↗" does not reach them.
+- After the change `grep -rn '↗' src scripts` matches only the three scraped announcement fixtures.
