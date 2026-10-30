@@ -56,12 +56,15 @@ export function useAnchoredPanel<T extends HTMLElement = HTMLButtonElement>({
   open,
   width,
   remeasure,
+  gap: fixedGap,
 }: {
   open: boolean;
   /** The panel's width. It may change with the panel's mode; the panel is re-placed when it does. */
   width: number;
   /** Anything else that changes the panel's height, such as its mode. */
   remeasure?: unknown;
+  /** The panel's distance below or above its trigger, where its board draws one; else 4 from 640px, 6 below. */
+  gap?: number;
 }) {
   /**
    * Null only before the first open. `place()` runs in the same batch as the open, so there is no
@@ -82,7 +85,7 @@ export function useAnchoredPanel<T extends HTMLElement = HTMLButtonElement>({
     if (!box) return;
     const w = widthRef.current;
     const margin = 8;
-    const gap = window.innerWidth >= 640 ? 4 : 6;
+    const gap = fixedGap ?? (window.innerWidth >= 640 ? 4 : 6);
     const height = naturalHeight(panelRef.current);
 
     const wanted = box.right - w;
