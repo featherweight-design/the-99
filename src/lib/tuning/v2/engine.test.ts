@@ -5,8 +5,8 @@ import type { DeckGame } from "../../decks/games";
 import type { EvidencePack } from "../evidence";
 import { OWNED_OFF_INDEX_MAX, OWNED_SHORTLIST_MAX } from "../limits";
 import type { ResolvedCard } from "../validate";
-import { replyCeilingFor } from "./count";
-import { completeOwnedPool, runV2, type V2CallModel, type V2CallRequest, type V2Stage } from "./engine";
+import { askFor, replyCeilingFor } from "./count";
+import { additionPosition, completeOwnedPool, OFF_INDEX_POSITION_BASE, runV2, type V2CallModel, type V2CallRequest, type V2Stage } from "./engine";
 
 const game = (id: string, over: Partial<DeckGame> = {}): DeckGame => ({
   id, result: "loss", podSize: 4, playedAt: new Date("2026-09-01T20:00:00Z"),
@@ -184,6 +184,46 @@ describe("runV2", () => {
     expect(offFull.stages).toContain("additionsRefill");
     const firstCut = await run({ ...owned, ownedCandidatesComplete: false });
     expect(firstCut.r.additions.poolExhausted).toBe(false);
+  });
+
+  it("lists the index tier before the off-index tier, in the model's order inside each, saved and reported alike", async () => {
+    const card = (name: string) => ({ oracleId: name, name, typeLine: "Creature" });
+    const ownedResolve = (name: string) => { const c = resolveName(name); return c ? { ...c, owned: true } : null; };
+    // The model answers off-index cards (Add 1, Add 3, Add 5) first and interleaved with the index tier's.
+    const owned: EvidencePack = {
+      ...pack, limits: { capCents: null, sets: [], ownedOnly: true },
+      ownedCandidates: ["Add 2", "Add 4", "Add 6", "Add 8"].map(card), ownedOffIndex: ["Add 1", "Add 3", "Add 5", "Add 7"].map(card),
+    };
+    const f = fake({ additions: { cards: ["Add 1", "Add 3", "Add 2", "Add 5", "Add 4", "Add 6"] }, cuts: { cards: cutsOf(1, 6) } });
+    const saved: { card: string; position: number }[] = [];
+    const r = await runV2({
+      ...base, pack: owned, resolveName: ownedResolve, n: 4, callModel: f.callModel, now: f.now,
+      onLine: (side, l) => { if (side === "add") saved.push({ card: l.card, position: l.position }); },
+    });
+    const order = ["Add 2", "Add 4", "Add 6", "Add 1", "Add 3", "Add 5"];
+    expect(r.additions.kept.map((l) => l.card)).toEqual(order);
+    // Every reader orders a run's lines by `position`: the saved positions sort to the same partition.
+    expect([...saved].sort((a, b) => a.position - b.position).map((l) => l.card)).toEqual(order);
+    expect(r.additions.kept.map((l) => l.position)).toEqual([0, 1, 2, OFF_INDEX_POSITION_BASE, OFF_INDEX_POSITION_BASE + 1, OFF_INDEX_POSITION_BASE + 2]);
+    // Cuts keep their arrival order and plain positions.
+    expect(r.cuts.kept.map((l) => l.position)).toEqual(r.cuts.kept.map((_, i) => i));
+
+    // A run with no off-index tier keeps the model's order exactly.
+    const g = fake({ additions: { cards: adds(1, 6) }, cuts: { cards: cutsOf(1, 6) } });
+    const plain = await runV2({ ...base, n: 4, callModel: g.callModel, now: g.now });
+    expect(plain.additions.kept.map((l) => l.card)).toEqual(adds(1, 6));
+    expect(plain.additions.kept.map((l) => l.position)).toEqual([0, 1, 2, 3, 4, 5]);
+  });
+
+  it("places a kept addition by tier, stable inside each tier", () => {
+    const at = (positions: number[], offIndex: boolean) => additionPosition(positions.map((position) => ({ position })), offIndex);
+    expect(at([], false)).toEqual({ position: 0, at: 0 });
+    expect(at([], true)).toEqual({ position: OFF_INDEX_POSITION_BASE, at: 0 });
+    expect(at([OFF_INDEX_POSITION_BASE, OFF_INDEX_POSITION_BASE + 1], false)).toEqual({ position: 0, at: 0 });
+    expect(at([0, OFF_INDEX_POSITION_BASE], false)).toEqual({ position: 1, at: 1 });
+    expect(at([0, 1, OFF_INDEX_POSITION_BASE], true)).toEqual({ position: OFF_INDEX_POSITION_BASE + 1, at: 3 });
+    // The base sits past any list's ask, so an index-tier position never reaches it.
+    expect(OFF_INDEX_POSITION_BASE).toBeGreaterThan(askFor(20));
   });
 
   it("calls an owned pool complete only with both tiers complete and under every cap", () => {

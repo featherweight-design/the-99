@@ -166,6 +166,7 @@ export const OWNED_SHORTLIST_MAX = 80;
  * Most names an owned-only run's second tier sends: owned cards that fit the deck's colors but sit on no row of this
  * commander's index (`loadOwnedOffIndex`, ranked by the commanders whose lists overlap the deck most). They only fill room
  * under `OWNED_SHORTLIST_MAX` in total, after the index cards and the focus candidates. A tier that came back under this
- * (and a pool under `OWNED_SHORTLIST_MAX`) is every such card that scores, which is what lets a v2 run call the pool spent.
+ * (and a pool under `OWNED_SHORTLIST_MAX`) is every such card that scores and does a job (`offIndexWorthOffering`),
+ * which is what lets a v2 run call the pool spent.
  */
 export const OWNED_OFF_INDEX_MAX = 40;

@@ -1,7 +1,12 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "../../db";
-import { cards, collectionItems, commanderSupportCards } from "../../db/schema";
+import { cardLabels, cards, collectionItems, commanderSupportCards } from "../../db/schema";
+import { cardFacet } from "../cards/facet";
+import { freshJobsOf } from "../labels/read";
+import type { Job } from "../labels/types";
+import { classifyRoles } from "../recs/roles";
+import { landColors, type Color } from "../swaps/land";
 import { loadAvailability } from "../decks/availability-query";
 import { priceOf, priceState } from "../decks/price";
 import { loadPrices } from "../decks/price-query";
@@ -138,6 +143,10 @@ type Reader = Pick<typeof db, "select">;
  * with the deck as it stands (`neighbourQuery`). A candidate scores its summed inclusion on those lists; ties go to its
  * summed inclusion on every list inside the identity, then to the name (`rankOffIndex`). A card scoring nothing on both
  * is no evidence-backed fit and is not offered.
+ *
+ * AND ONLY A CARD THAT DOES A JOB (`offIndexWorthOffering`). A paid eval on an Elves deck offered Omnipresence, Lure,
+ * Aggressive Urge, Mithril Coat, Moment's Peace and four colorless or mono-green utility lands: cards some neighbour
+ * commander runs, but filler beside the index tier. The rule is read off the card's labels, see the predicate.
  */
 export type OffIndexArgs = {
   userId: string;
@@ -174,9 +183,10 @@ export function neighbourQuery(q: Reader, args: Pick<OffIndexArgs, "commanderOra
 }
 
 /**
- * Every owned card off the index that passes the catalog filters, with its two ranking sums. A single-table select, so
- * every correlated subquery aliases its own table and qualifies the outer one (`${cards}.oracle_id`): Drizzle drops the
- * qualification of a bare column here, and `csc.oracle_id = "oracle_id"` would compare csc with itself.
+ * Every owned card off the index that passes the catalog filters, with its two ranking sums and its label row. Every
+ * correlated subquery aliases its own table and qualifies the outer one (`${cards}.oracle_id`), as AGENTS.md asks of a
+ * single-table select: the label join makes this one a join, but the rule is kept so a later edit dropping the join
+ * cannot turn `csc.oracle_id = "oracle_id"` into csc compared with itself.
  */
 export function offIndexQuery(q: Reader, args: Pick<OffIndexArgs, "userId" | "commanderOracleIds" | "colorIdentity" | "inDeck" | "limits"> & { neighbours: readonly string[] }) {
   const identity = sql.param([...args.colorIdentity]);
@@ -186,10 +196,20 @@ export function offIndexQuery(q: Reader, args: Pick<OffIndexArgs, "userId" | "co
       oracleId: cards.oracleId,
       name: cards.name,
       typeLine: cards.typeLine,
+      oracleText: cards.oracleText,
+      layout: cards.layout,
+      manaCost: cards.manaCost,
+      keywords: cards.keywords,
+      // The label row whole, with the inputs its freshness is judged on (`freshJobsOf`), for `offIndexWorthOffering`.
+      labels: cardLabels.labels,
+      labelModel: cardLabels.model,
+      promptVersion: cardLabels.promptVersion,
+      inputHash: cardLabels.inputHash,
       neighbourInclusion: sql<number | null>`(select sum(csc.inclusion)::float8 from ${commanderSupportCards} csc where csc.oracle_id = ${cards}.oracle_id and csc.commander_oracle_id = any(${sql.param([...args.neighbours])}::uuid[]))`,
       identityInclusion: sql<number | null>`(select sum(csc.inclusion)::float8 from ${commanderSupportCards} csc join ${cards} cc on cc.oracle_id = csc.commander_oracle_id where csc.oracle_id = ${cards}.oracle_id and cc.color_identity <@ ${identity}::text[])`,
     })
     .from(cards)
+    .leftJoin(cardLabels, eq(cardLabels.oracleId, cards.oracleId))
     .where(and(
       sql`${cards}.commander_legal = true`,
       // `isBasicLand`'s own word test (grouping.ts): "Basic Snow Land" is a basic too.
@@ -208,6 +228,58 @@ export function offIndexQuery(q: Reader, args: Pick<OffIndexArgs, "userId" | "co
 }
 
 export type OffIndexRow = { oracleId: string; name: string; neighbourInclusion: number | null; identityInclusion: number | null };
+
+/** The card facts `offIndexWorthOffering` reads: its type line and text, and its FRESH label jobs (null: none usable). */
+export type OffIndexFitCard = {
+  name: string; typeLine: string; oracleText: string | null; keywords: readonly string[]; jobs: readonly Job[] | null;
+};
+
+/** The role jobs that make a noncreature, nonland off-index card worth offering whatever the deck. `draw` is not one of
+ *  them alone: a one-shot draw is a cantrip as often as a draw spell (Aggressive Urge), so only a repeatable one counts. */
+const WORKING_ROLES: ReadonlySet<string> = new Set(["ramp", "removal", "wipes", "tutor", "counterspell"]);
+
+/** The classifier's roles that stand in when a card has no fresh label (its row is stale, malformed or empty). Not
+ *  `draw`: the text classifier cannot tell a repeatable draw from a cantrip's one-shot one (Aggressive Urge). */
+const TEXT_ROLES: ReadonlySet<string> = new Set(["ramp", "removal", "wipes"]);
+
+/**
+ * Whether an owned off-index card is worth a place on the second tier: pure, and nothing about owning.
+ *
+ * - A CREATURE is (the front face, `cardFacet`): the tier is ranked by the commanders that run it, and a creature is
+ *   the body a typal deck counts whatever its labels say. Taunting Elf and Mirkwood Pathmaker carry no label at all.
+ * - A LAND is only when it makes two or more of the deck's colors (`landColors`): fixing a basic cannot give. A land
+ *   making one color, or none, is a worse basic here, whatever else it does (Urza's Cave, Hidden Nursery, Slippery
+ *   Karst, Temple of the False God); a deck's own utility lands come from its index tier.
+ * - ANY OTHER CARD is only when it does a deck job: a role label of ramp, removal, a wipe, a tutor or a counterspell, a
+ *   REPEATABLE draw, or a typal (`tribal`) theme. Theme-only cards (Omnipresence's free casts, Lure's goad, Mithril
+ *   Coat's protection, Moment's Peace's fog) and a cantrip's one-shot draw (Aggressive Urge) are left out. A card with
+ *   no fresh label falls back to the text classifier's ramp, removal or wipes, so a stale row is not a refusal.
+ */
+export function offIndexWorthOffering(card: OffIndexFitCard, colorIdentity: readonly string[]): boolean {
+  const facet = cardFacet(card.typeLine);
+  if (facet === "creature") return true;
+  if (facet === "land") {
+    const colors = landColors({ name: card.name, typeLine: card.typeLine, oracleText: card.oracleText });
+    return colorIdentity.filter((c) => colors.has(c as Color)).length >= 2;
+  }
+  if (card.jobs === null) {
+    return classifyRoles({ typeLine: card.typeLine, oracleText: card.oracleText, keywords: [...card.keywords] }).some((r) => TEXT_ROLES.has(r));
+  }
+  return card.jobs.some((j) => (j.space === "role" && (WORKING_ROLES.has(j.kind) || (j.kind === "draw" && j.recurrence === "repeatable")))
+    || (j.space === "theme" && j.kind === "tribal"));
+}
+
+/** A query row's fresh jobs, by the rule every label reader applies (`freshJobsOf`); null with no row or a stale one. */
+function jobsOf(r: {
+  oracleId: string; name: string; typeLine: string; oracleText: string | null; layout: string; manaCost: string | null;
+  labels: unknown; labelModel: string | null; promptVersion: string | null; inputHash: string | null;
+}): Job[] | null {
+  if (r.labelModel === null || r.promptVersion === null || r.inputHash === null) return null;
+  return freshJobsOf({
+    oracle_id: r.oracleId, labels: r.labels, model: r.labelModel, prompt_version: r.promptVersion, input_hash: r.inputHash,
+    name: r.name, mana_cost: r.manaCost, type_line: r.typeLine, oracle_text: r.oracleText, layout: r.layout,
+  });
+}
 
 const score = (n: number | null) => (n === null ? 0 : Number(n) || 0);
 
@@ -228,8 +300,8 @@ export async function loadOwnedOffIndex(args: OffIndexArgs, read: Reader = db): 
 
 /**
  * The off-index tier and whether it is COMPLETE: every ranked card was tested and the tier stayed under its room, so it
- * holds every owned off-index card that scores. A tier that filled its room is the top of a longer list, and one given no
- * room was never read: neither is complete. Only a complete tier lets a v2 run call its owned pool spent.
+ * holds every owned off-index card that scores and does a job (`offIndexWorthOffering`). A tier that filled its room
+ * is the top of a longer list, and one given no room was never read: neither is complete. Only a complete tier lets a v2 run call its owned pool spent.
  */
 export async function readOwnedOffIndex(args: OffIndexArgs, read: Reader = db): Promise<{ cards: OwnedCandidate[]; complete: boolean }> {
   const max = Math.min(args.max ?? OWNED_OFF_INDEX_MAX, OWNED_OFF_INDEX_MAX);
@@ -237,7 +309,10 @@ export async function readOwnedOffIndex(args: OffIndexArgs, read: Reader = db): 
   if (args.commanderOracleIds.length === 0) return { cards: [], complete: true };
   const neighbours = args.inDeck.size > 0 ? (await neighbourQuery(read, args)).map((r) => r.commanderOracleId) : [];
   const exclude = args.exclude ?? new Set<string>();
-  const ranked = rankOffIndex((await offIndexQuery(read, { ...args, neighbours })).filter((r) => !exclude.has(r.oracleId)));
+  const rows = (await offIndexQuery(read, { ...args, neighbours }))
+    .filter((r) => !exclude.has(r.oracleId))
+    .filter((r) => offIndexWorthOffering({ ...r, jobs: jobsOf(r) }, args.colorIdentity));
+  const ranked = rankOffIndex(rows);
 
   const capCents = args.limits.capCents;
   const out: OwnedCandidate[] = [];
