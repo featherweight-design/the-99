@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { creditsPageCopy } from "../credits-page";
 import { HISTORY_RETENTION_DAYS } from "../../collection/retention";
+import { FLYER_HOLD_MS, FLYER_PROVEN_HOLD_MS } from "../../flyer/rules";
 import { HOLD_MS } from "../../invites/rules";
 import { PAID_DAILY_LIMIT } from "../../model/allowance-rule";
 import { PACKS } from "../../payments/packs";
@@ -25,6 +26,12 @@ describe("the numbers", () => {
   it("states the invite hold as the code holds it", () => {
     expect(HOLD_MS).toBe(7 * 24 * 60 * 60 * 1000);
     expect(privacy).toContain("An invite is valid for up to 7 days");
+  });
+
+  it("states the flyer hold as the claim holds it", () => {
+    expect([FLYER_HOLD_MS, FLYER_PROVEN_HOLD_MS]).toEqual([10 * 60 * 1000, 60 * 60 * 1000]);
+    expect(privacy).toContain("hold the email you type for 10 minutes while you finish, or up to an hour once you have entered the emailed code");
+    expect(privacy).toContain("delete all three 30 days after the launch date");
   });
 
   it("states the welcome grant and the pack as the ledger grants them", () => {
