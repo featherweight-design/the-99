@@ -1,7 +1,7 @@
 # The 99 · Small items 6 (account 2, 2026-10-30)
 
 Canvas: https://claude.ai/artifact/KwwT9g3hUxan4HQxqQTUtD
-Status: R1b drawn (Hugh's feedback 2026-10-30), awaiting Hugh's review.
+Status: R1c drawn (Hugh's feedback 2026-10-30; R1c: the offer is stacked on every board, Every-Kind-Off included), awaiting Hugh's review.
 
 Six small undrawn states and errata on shipped surfaces, each drawn over the shipped surface at 390 and 1300, with what shipped beside it. Brief: Hugh's "Small items 6" design prompt, 2026-10-30.
 

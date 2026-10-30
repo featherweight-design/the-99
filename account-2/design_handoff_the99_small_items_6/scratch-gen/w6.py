@@ -22,7 +22,6 @@ kit.CSS += r"""
 .arrowc{align-self:center;font:400 22px 'IBM Plex Sans';color:var(--fg-faint)}
 """
 
-OFFER_ALONE = A.offer().replace('class="ofr chg"', 'class="ofr alone"', 1)
 def offer_stk(alone=False, chg=True):
     return (f'<div class="ofr stk{" alone" if alone else ""}{" chg" if chg else ""}"><p><b>Pick what else you want to hear about.</b> New sets, price drops, trade matches and more.</p>'
             f'{A.X}<span class="pk">Pick ▾</span></div>')
@@ -42,10 +41,10 @@ def dk(feed_html, h=560):
 
 
 def board_off():
-    t1 = ph(A.feed([], foot=OFFER_ALONE, choose=False))
+    t1 = ph(A.feed([], foot=offer_stk(alone=True, chg=False), choose=False))
     t2 = ph(A.feed([], foot=QUIET_LEAD, choose=False))
     b2 = ph(A.feed([], foot=OFF_LINE, choose=True).replace('<span class="r">', '<span class="r chg" style="padding:2px 4px">', 1))
-    d1 = dk(A.feed([], foot=OFFER_ALONE, choose=False))
+    d1 = dk(A.feed([], foot=offer_stk(alone=True, chg=False), choose=False))
     d2 = dk(A.feed([], foot=OFF_LINE, choose=True).replace('<span class="r">', '<span class="r chg" style="padding:2px 4px">', 1))
     calls = col(
         note("Who sees every kind off",
@@ -70,7 +69,7 @@ def board_off():
                        "A reader who turned every kind off in Settings gets the same box straight away, never the offer. Dashed orange outlines mark what changes against what shipped (#2419). "
                        "Strings are drafts for copy review.", tag="R1")
             + '<div class="seq">'
-            + frame("<b>Today</b> · 390 · every kind off", t1, "The offer line alone, every visit.")
+            + frame("<b>Today</b> · 390 · every kind off", t1, "The offer line alone, every visit (stacked, as on 6b).")
             + '<span class="arrowc">→ ✕</span>'
             + frame("<b>Today</b> · 390 · after the ✕", t2, "<i>Nothing new right now.</i> alone. The offer returns next visit.")
             + frame("<b>Drawn</b> · 390 · after the ✕, and every visit after", b2,
@@ -83,7 +82,6 @@ def board_off():
 
 def board_stack():
     rows = [A.irow("price"), A.irow("match")]
-    t_rows = ph(A.feed(rows, n=2, foot=A.offer().replace('class="ofr chg"', 'class="ofr"', 1), choose=False))
     p_rows = ph(A.feed(rows, n=2, foot=offer_stk(), choose=False))
     p_quiet = ph(A.feed([], foot=QUIET_NAMES + offer_stk(), choose=False))
     p_alone = ph(A.feed([], foot=offer_stk(alone=True), choose=False))
@@ -94,15 +92,14 @@ def board_stack():
                        "where the opened offer already puts it (Pick pressed: ✕ top right over the boxes), so the line and its opened form now share one ✕ position. "
                        "Same in every place the offer stands: under rows, under the quiet line, alone. Rows keep their shipped action line (press, then ✕), since there the ✕ belongs to one row. "
                        "Engineering: <code>Offer</code>’s closed form becomes a two-column grid (words + Pick ▾ left, the shipped <code>DismissButton</code> right, top-aligned, 44 on a phone / 32 from md). "
-                       "Amends the announcements Offer board and small items 5’s Offer-Empty.", tag="R1b")
+                       "Amends the announcements Offer board and small items 5’s Offer-Empty.", tag="R1c")
             + '<div class="seq">'
-            + frame("<b>Today</b> · 390 · under rows", t_rows, "Pick ▾ and ✕ side by side at the line’s end.")
             + frame("<b>Drawn</b> · 390 · under rows", p_rows, "Pick ▾ starts its own line under the words; ✕ in the corner.")
             + frame("<b>Drawn</b> · 390 · under the quiet line", p_quiet)
             + frame("<b>Drawn</b> · 390 · alone (nothing on yet)", p_alone)
             + '</div>'
             + frames(frame("<b>Drawn</b> · 1300 · under rows", d_rows, "On desktop the same two lines; the ✕ at 32.")))
-    return doc("Offer stacked", body, 390 * 4 + 36 * 3 + 112)
+    return doc("Offer stacked", body, 1412)
 
 
 BOARDS = [("Offer-Stacked", board_stack, "6b · The offer line, stacked"), ("Every-Kind-Off", board_off, "6 · What’s new with every kind off")]
