@@ -30,6 +30,7 @@ import { commanderCard } from "./commander";
 import { socialFriendsEnabled } from "./flag";
 import { isUuid } from "./rules";
 import type { ThirdPartyName } from "../person-name/brand";
+import { named } from "../person-name/mint";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -112,7 +113,7 @@ export function podSeatsQuery(viewerId: string, podId: string, q: Reader = db) {
     .orderBy(asc(podMembers.joinedAt), asc(podMembers.userId));
 }
 
-export type PodSeat = { publicId: string; displayName: string };
+export type PodSeat = { publicId: string; displayName: ThirdPartyName };
 
 /**
  * One tap seats a pod: each friend in it, in join order. Members only: a seated friend's decks are read by
@@ -120,7 +121,8 @@ export type PodSeat = { publicId: string; displayName: string };
  */
 export async function listPodSeats(viewerId: string, podId: unknown): Promise<PodSeat[]> {
   if (!isUuid(podId)) return [];
-  return podSeatsQuery(viewerId, podId);
+  const rows = await podSeatsQuery(viewerId, podId);
+  return rows.map((r) => ({ publicId: r.publicId, displayName: named(r.displayName) }));
 }
 
 /** A friend seat as the game log asked for it: a friend, and optionally one of their decks. */

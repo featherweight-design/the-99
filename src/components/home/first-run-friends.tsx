@@ -30,7 +30,7 @@ import { useAddFriend, type FriendLink } from "../social/use-add-friend";
 const c = socialCopy.checklist;
 
 export type FirstRunFriendsProps = {
-  friends: { publicId: string; displayName: string | ThirdPartyName; commander: ProfileCommander | null }[];
+  friends: { publicId: string; displayName: ThirdPartyName; commander: ProfileCommander | null }[];
   links: FriendLink[];
   /** The render's one clock, from the server. */
   now: string;

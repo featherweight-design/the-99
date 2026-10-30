@@ -380,10 +380,12 @@ describe("the friends list", () => {
   it("removes a friend through the menu and the shared pane, Keep it first", async () => {
     a.unfriendAction.mockResolvedValue({ ok: true });
     draw();
-    fireEvent.click(screen.getByRole("button", { name: plain(socialCopy.friends.menuAria(named("Dave"))) }));
+    const menu = screen.getByRole("button", { name: plain(socialCopy.friends.menuAria(named("Dave"))) });
+    expect(menu.classList.contains("ph-no-capture")).toBe(true);
+    fireEvent.click(menu);
     fireEvent.click(screen.getByRole("button", { name: socialCopy.friends.remove }));
     expect(screen.getByText(plain(socialCopy.friends.removeHeading(named("Dave"))))).toBeTruthy();
-    expect(screen.getByText(plain(socialCopy.friends.removeBody(named("Dave"))))).toBeTruthy();
+    expect(screen.getByText(plain(socialCopy.friends.removeBody(named("Dave")))).closest(".ph-no-capture")).not.toBeNull();
     expect(screen.getByRole("button", { name: "Keep it" })).toHaveFocus();
     await act(async () => fireEvent.click(screen.getByRole("button", { name: socialCopy.friends.removeConfirm })));
     expect(a.unfriendAction).toHaveBeenCalledWith("p-dave");
@@ -429,6 +431,7 @@ describe("the receipt after Accept (E10)", () => {
     draw({ accepted: { ...DAVE, since: NOW } , friends: [{ ...DAVE, since: NOW }, JO] });
     const strip = screen.getByRole("status");
     expect(strip.textContent).toContain(plain(socialCopy.page.accepted("Dave")));
+    expect(strip.querySelector(".ph-no-capture")).not.toBeNull();
     expect(screen.getByText(socialCopy.friends.since("today")).className).toContain("--success");
     fireEvent.click(within(strip).getByRole("button", { name: socialCopy.page.close }));
     expect(screen.queryByText(plain(socialCopy.page.accepted("Dave")))).toBeNull();
