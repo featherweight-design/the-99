@@ -9,6 +9,7 @@ import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import type { Bracket } from "../../lib/profile/types";
 import { bracketShift } from "../../lib/tuning/bracket-shift";
+import { heldInOtherDecks } from "../../lib/tuning/limits";
 import type { LineItem } from "../../lib/tuning/state";
 import { useCardDetail, useCardIntent } from "../cards/card-detail-provider";
 import { AvailabilityMarker } from "../ui/availability-marker";
@@ -181,8 +182,11 @@ export function SuggestionLine({
 export function addMarkOf(item: LineItem, newestPriceAsOf: Date | null, opts: { ownedFromOtherDecks?: boolean } = {}): React.ReactNode {
   if (item.side !== "add") return null;
   const selfExcluded = item.inDeck;
-  const marked = item.owned && item.availability !== null
-    && availabilityState(item.availability, { selfExcluded }) !== "free";
+  // A run that offered copies held in other decks marks exactly what Apply's confirmation offers to pull
+  // (`heldInOtherDecks`): a soft claim with a spare copy is free on both sides. Every other run marks as it always has.
+  const marked = opts.ownedFromOtherDecks
+    ? heldInOtherDecks(item, true)
+    : item.owned && item.availability !== null && availabilityState(item.availability, { selfExcluded }) !== "free";
   // Owned but with no copy free for it, or already overcommitted: the marker says why, and the buy
   // tag beside it says what the copy costs, the pair a Shopping row draws for a spoken-for card.
   // A run that offered copies held in other decks (Small items 4, item 2) never tags an owned one to buy: the player

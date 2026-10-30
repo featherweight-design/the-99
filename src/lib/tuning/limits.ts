@@ -1,3 +1,4 @@
+import { availabilityState, type Availability } from "../decks/availability";
 import { countCharacters } from "../text/count-characters";
 import { deckDescriptionCopy } from "../copy/deck-description";
 
@@ -179,6 +180,25 @@ export const OWNED_OFF_INDEX_MAX = 40;
  */
 export function ownedCopyOffered(free: number | undefined, limits: { otherDecks?: boolean }): boolean {
   return free === undefined || free > 0 || limits.otherDecks === true;
+}
+
+/**
+ * An addition whose owned copies are all held in the player's other decks, on a run that offered them
+ * (`ownedFromOtherDecks`, Small items 4 item 2). ONE predicate for both sides of the feature, so they cannot disagree:
+ * the results list's held mark (`addMarkOf`) and Apply's confirmation (its held row, foot line, staged pulls and the
+ * picker's figures).
+ *
+ * `hard` and `over` only, never "not free": `soft` is a copy a brew asks for while a spare still sits in the box
+ * (owned 2, free 1), so it is free on both sides, and a pull would take nothing the deck needs (Apply skips it as
+ * covered).
+ */
+export function heldInOtherDecks(
+  l: { side: "add" | "cut"; owned: boolean; availability: Availability | null; inDeck: boolean },
+  ownedFromOtherDecks: boolean,
+): boolean {
+  if (!ownedFromOtherDecks || l.side !== "add" || !l.owned || l.availability === null) return false;
+  const state = availabilityState(l.availability, { selfExcluded: l.inDeck });
+  return state === "hard" || state === "over";
 }
 
 /**

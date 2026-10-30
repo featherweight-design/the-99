@@ -16,6 +16,7 @@ import type { SourceDeckFigure } from "../../lib/decks/read";
 import { formatCents } from "../../lib/decks/price";
 import type { MixRole } from "../../lib/decks/mix";
 import type { Bracket } from "../../lib/profile/types";
+import { heldInOtherDecks } from "../../lib/tuning/limits";
 import type { LineItem, TuningLive, V2Ask } from "../../lib/tuning/state";
 import type { ValidationReport } from "../../lib/tuning/validate";
 import { askFor } from "../../lib/tuning/v2/count";
@@ -27,7 +28,7 @@ import {
 import { SegmentedSwitch } from "../ui/segmented-switch";
 import { useStoredView } from "../ui/use-stored-view";
 import { MutationError } from "./mutation-error";
-import { heldElsewhere, SuggestedChangesConfirm } from "./suggested-changes-confirm";
+import { SuggestedChangesConfirm } from "./suggested-changes-confirm";
 import { DriftLine, leadSentence, LINK, NOTICE_BOX, noticeStyle } from "./suggested-changes-intake";
 import { SuggestedChangesPickLine } from "./suggested-changes-pick-line";
 import { historyDay } from "./tuning-history";
@@ -183,7 +184,7 @@ export function SuggestedChangesRun({
   const pickedAdds = adds.filter(isPicked);
   // Every choosable source of every held addition coming in, while the confirmation is open: the picker's figures.
   const figurePairs = confirming && ownedFromOtherDecks
-    ? pickedAdds.filter((l) => heldElsewhere(l, true)).flatMap((l) => pullSourceChoices(l.availability ?? undefined)
+    ? pickedAdds.filter((l) => heldInOtherDecks(l, true)).flatMap((l) => pullSourceChoices(l.availability ?? undefined)
       .filter((c) => !c.commander && !c.locked)
       .map((c) => `${c.id}:${l.cardOracleId}`)).join(",")
     : "";
@@ -255,7 +256,7 @@ export function SuggestedChangesRun({
     const setId = crypto.randomUUID();
     const pulls = pickedAdds.flatMap((l) => {
       const claim = staged.get(l.id);
-      return claim && heldElsewhere(l, ownedFromOtherDecks) ? [{ itemId: l.id, sourceDeckId: claim.id }] : [];
+      return claim && heldInOtherDecks(l, ownedFromOtherDecks) ? [{ itemId: l.id, sourceDeckId: claim.id }] : [];
     });
     const r = await actions
       .apply(runId, pickedAdds.map((l) => l.id), pickedCuts.map((l) => l.id), setId, ...(pulls.length > 0 ? [pulls] : []))

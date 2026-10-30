@@ -5,9 +5,10 @@ import { useEffect, useId, useRef } from "react";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { suggestedChangesV2Copy } from "../../lib/copy/suggested-changes-v2";
-import { availabilityState, type DeckClaim } from "../../lib/decks/availability";
+import type { DeckClaim } from "../../lib/decks/availability";
 import { pullCandidate, pullSourceChoices } from "../../lib/decks/draft-shape";
 import type { SourceDeckFigure } from "../../lib/decks/read";
+import { heldInOtherDecks } from "../../lib/tuning/limits";
 import type { LineItem } from "../../lib/tuning/state";
 import { PullControl } from "./pull-control";
 import { ModalChrome } from "./receipt-modal";
@@ -16,19 +17,6 @@ import { Name, Thumb } from "./suggestion-line";
 const copy = suggestedChangesV2Copy;
 const review = deckVersioningCopy.review;
 
-/**
- * An addition whose owned copies are all held in the player's other decks (Small items 4, item 2): a run that offered
- * them (`ownedFromOtherDecks`), and the confirmation asks which deck it leaves.
- *
- * `hard` and `over` only, never "not free": `soft` is a copy a brew asks for while a spare still sits in the box
- * (owned 2, free 1), so a pull would take nothing the deck needs and Apply would skip it as covered. The one test the
- * row, the foot line, the staged pulls Apply sends and the picker's figures all read, so they cannot disagree.
- */
-export function heldElsewhere(l: LineItem, ownedFromOtherDecks: boolean): boolean {
-  if (!ownedFromOtherDecks || l.side !== "add" || !l.owned || l.availability === null) return false;
-  const state = availabilityState(l.availability, { selfExcluded: l.inDeck });
-  return state === "hard" || state === "over";
-}
 
 /** A held addition's Pull: the claim Review changes would offer and its full picker list (`review-changes.tsx`). */
 function pullOffer(l: LineItem) {
@@ -67,7 +55,7 @@ export function SuggestedChangesConfirm({
   onClose: () => void;
 }) {
   const n = adds.length;
-  const anyHeld = adds.some((l) => heldElsewhere(l, ownedFromOtherDecks));
+  const anyHeld = adds.some((l) => heldInOtherDecks(l, ownedFromOtherDecks));
   return (
     <ModalChrome
       eyebrow={copy.confirm.eyebrow}
@@ -133,7 +121,7 @@ function Side({ label, sign, lines, held }: { label: string; sign: "+" | "−"; 
     <section aria-label={label} className="flex min-w-0 flex-col">
       <h3 className="m-0 mb-[6px] font-mono text-[10px] font-medium uppercase tracking-[0.14em]" style={{ color: "var(--fg-faint)" }}>{label}</h3>
       <ul className="m-0 flex list-none flex-col p-0">
-        {lines.map((l) => held && heldElsewhere(l, held.ownedFromOtherDecks) ? (
+        {lines.map((l) => held && heldInOtherDecks(l, held.ownedFromOtherDecks) ? (
           <HeldRow key={l.id} line={l} held={held} />
         ) : (
           <li key={l.id} className="flex min-h-[30px] items-center gap-[8px]">

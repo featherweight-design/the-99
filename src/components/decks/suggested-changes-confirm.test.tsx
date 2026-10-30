@@ -10,7 +10,9 @@ import { suggestedChangesV2Copy } from "../../lib/copy/suggested-changes-v2";
 import type { Availability, DeckClaim } from "../../lib/decks/availability";
 import type { LineItem } from "../../lib/tuning/state";
 import { v2Line } from "../../lib/tuning/v2/results-fixture";
-import { heldElsewhere, SuggestedChangesConfirm } from "./suggested-changes-confirm";
+import { heldInOtherDecks } from "../../lib/tuning/limits";
+import { addMarkOf } from "./suggestion-line";
+import { SuggestedChangesConfirm } from "./suggested-changes-confirm";
 
 vi.mock("../../app/decks/actions", () => ({ pullCardFromDeck: vi.fn() }));
 vi.mock("../cards/card-detail-provider", async (importActual) => ({
@@ -67,13 +69,13 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-describe("heldElsewhere", () => {
+describe("heldInOtherDecks", () => {
   it("is an owned addition with no copy free, and only on a run that offered copies from other decks", () => {
-    expect(heldElsewhere(path, true)).toBe(true);
-    expect(heldElsewhere(path, false)).toBe(false);
-    expect(heldElsewhere(spare, true)).toBe(false);
-    expect(heldElsewhere({ ...path, availability: { ...path.availability!, free: 1 } }, true)).toBe(false);
-    expect(heldElsewhere({ ...cut, availability: path.availability }, true)).toBe(false);
+    expect(heldInOtherDecks(path, true)).toBe(true);
+    expect(heldInOtherDecks(path, false)).toBe(false);
+    expect(heldInOtherDecks(spare, true)).toBe(false);
+    expect(heldInOtherDecks({ ...path, availability: { ...path.availability!, free: 1 } }, true)).toBe(false);
+    expect(heldInOtherDecks({ ...cut, availability: path.availability }, true)).toBe(false);
   });
 
   // A brew asks for a copy while a spare still sits in the box: "soft", not held. A pull would take nothing the deck
@@ -81,15 +83,15 @@ describe("heldElsewhere", () => {
   it("is not a soft claim with a spare copy free", () => {
     const soft = { owned: 2, hard: 0, soft: 1, free: 1, claims: [holder("d-brew", "HD - Brew", { mature: false, senior: false })] } as unknown as Availability;
     const line = v2Line("a5", "add", { cardName: "Soft Card", availability: soft });
-    expect(heldElsewhere(line, true)).toBe(false);
+    expect(heldInOtherDecks(line, true)).toBe(false);
     draw({ adds: [line] });
     expect(row("a5")).toBeNull();
     expect(foot()).toBeNull();
   });
 
   it("is a hard claim with none free, and an over-claimed card", () => {
-    expect(heldElsewhere({ ...path, availability: { ...path.availability!, free: 0 } }, true)).toBe(true);
-    expect(heldElsewhere(path, true)).toBe(true);
+    expect(heldInOtherDecks({ ...path, availability: { ...path.availability!, free: 0 } }, true)).toBe(true);
+    expect(heldInOtherDecks(path, true)).toBe(true);
   });
 });
 
@@ -191,5 +193,36 @@ describe("SuggestedChangesConfirm while Apply is in flight", () => {
     });
     expect(screen.queryByRole("radiogroup")).toBeNull();
     expect(trigger().disabled).toBe(true);
+  });
+});
+
+// The orchestrator's ruling (#2425): the results list's held mark and Apply's confirmation decide by ONE predicate, so a
+// card is held on both sides or on neither.
+describe("the results mark and the confirmation agree on a held card", () => {
+  const soft = holder("d-brew", "HD - Brew", { mature: false, senior: false });
+  const cases = [
+    ["a soft claim with a spare copy", { owned: 2, hard: 0, soft: 1, free: 1, claims: [soft] }, false],
+    ["a hard claim with none free", { owned: 1, hard: 1, soft: 0, free: 0, claims: [GISHATH] }, true],
+    ["an over-claimed card", { owned: 1, hard: 2, soft: 0, free: -1, claims: [GISHATH, KRATOS] }, true],
+  ] as const;
+  it.each(cases)("%s: marked and held alike", (_label, availability, held) => {
+    const line = v2Line("a7", "add", { cardName: "Shared Card", availability: availability as unknown as Availability });
+    expect(heldInOtherDecks(line, true)).toBe(held);
+    const mark = render(<>{addMarkOf(line, null, { ownedFromOtherDecks: true })}</>);
+    expect(mark.container.querySelector("[data-availability]") !== null).toBe(held);
+    // Never a buy tag on an owned card of such a run, held or free.
+    expect(mark.container.textContent).not.toMatch(/buy/);
+    mark.unmount();
+    draw({ adds: [line] });
+    expect(row("a7") !== null).toBe(held);
+    expect(foot() !== null).toBe(held);
+  });
+
+  it("leaves an Any card run's marker as it was: a soft claim with a spare is still marked there", () => {
+    const line = v2Line("a8", "add", {
+      cardName: "Any Card", availability: { owned: 2, hard: 0, soft: 1, free: 1, claims: [soft] } as unknown as Availability,
+    });
+    const mark = render(<>{addMarkOf(line, null)}</>);
+    expect(mark.container.querySelector("[data-availability]")?.getAttribute("data-availability")).toBe("soft");
   });
 });
