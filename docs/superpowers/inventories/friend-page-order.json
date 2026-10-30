@@ -35,7 +35,7 @@
     {
       "id": "old-decks-link",
       "label": "/friends/Colin/decks (an old link): lands on the page, on Decks",
-      "view": "src/app/friends/[publicId]/(tabs)/decks/page.tsx",
+      "view": "src/components/social/friend-strip.tsx",
       "steps": [
         { "goto": "/friends/${COLIN_PUBLIC_ID}/decks", "wait": "[data-testid=friend-tab-decks][aria-current=page]", "settle": 2500 }
       ]
@@ -43,7 +43,7 @@
     {
       "id": "old-spare-link",
       "label": "/friends/Colin?spare= (an old push): lands on Spares",
-      "view": "src/app/friends/[publicId]/(tabs)/page.tsx",
+      "view": "src/components/social/friend-strip.tsx",
       "steps": [
         { "goto": "/friends/${COLIN_PUBLIC_ID}?spare=00000000-0000-4000-8000-000000000000", "wait": "[data-testid=friend-tab-spares][aria-current=page]", "settle": 2500 }
       ]

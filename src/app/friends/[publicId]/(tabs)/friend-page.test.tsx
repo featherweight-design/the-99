@@ -133,7 +133,7 @@ describe("a friend's page group", () => {
     expect(html).toContain("Colin");
     expect(html).toContain(`href="/friends/${COLIN.publicId}"`);
     expect(html).toContain(`href="/friends/${COLIN.publicId}/wishlist"`);
-    expect(html).toContain(`href="/friends/${COLIN.publicId}/decks"`);
+    expect(html).toContain(`href="/friends/${COLIN.publicId}/spares"`);
     expect(html).toMatch(/data-testid="friend-tab-spares-count"[^>]*>2</);
     expect(html).toMatch(/data-testid="friend-tab-wishlist-count"[^>]*>1</);
     expect(html).toMatch(/data-testid="friend-tab-decks-count"[^>]*>1</);

@@ -89,7 +89,7 @@ describe("several of one kind, as one", () => {
     });
   });
   it("trade matches from one friend land on that friend; from several, on Friends", () => {
-    expect(toMessage([match("1", "Colin", "p-colin"), match("2", "Colin", "p-colin"), match("3", "Colin", "p-colin")])).toMatchObject({ title: "Colin has 3 spares you want", route: "/friends/p-colin" });
+    expect(toMessage([match("1", "Colin", "p-colin"), match("2", "Colin", "p-colin"), match("3", "Colin", "p-colin")])).toMatchObject({ title: "Colin has 3 spares you want", route: "/friends/p-colin/spares" });
     expect(toMessage([match("1", "Colin", "p-colin"), match("2", "Peter", "p-peter")])).toMatchObject({ title: "2 spares you want", body: "From Colin and Peter.", route: "/friends" });
   });
   it("combos land on Home with nothing open", () => {
