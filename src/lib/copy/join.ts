@@ -58,6 +58,19 @@ export const inviteOnlyCopy = {
 } as const;
 
 /**
+ * The printed flyer's words (flyer trial R1b, `Print.dc.html`). Placeholder copy owed to /copy-review, except the Fan Content
+ * passage the flyer carries, which is `fanContentNotice.passageOne` verbatim (locked) and is not repeated here.
+ */
+export const flyerCopy = {
+  kicker: "Magic: The Gathering · Commander",
+  pitch: "Build Commander decks from the cards you already own.",
+  sub: "We’re looking for players to try it before it launches. Scan, sign up, tell us what you think.",
+  scan: "Scan to join",
+  orType: "or type",
+  facts: ["Free to try", "3 invites for your pod", "the-99.dev"],
+} as const;
+
+/**
  * The flyer's `/join/<CODE>` (flyer trial R1b, boards `Join-Phone` V1 to E3; handoff `flyer-trial · copy strings.ts`).
  * Placeholder copy owed to /copy-review. The title is one the page balances; "The" and "99" stay on one line.
  * Everything else on the page (email field, Send code, the code step, Confirm) is `joinCopy`.

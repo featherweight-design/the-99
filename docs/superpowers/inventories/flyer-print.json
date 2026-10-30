@@ -1,0 +1,42 @@
+{
+  "feature": "Flyer trial PR 4c: the print page /admin/invites/flyers/[code] (board Print.dc.html, desktop only; the phone layout is the bar wrapped and the sheet scaled to fit)",
+  "note": "Signed in as an admin (ADMIN_USER_IDS naming the account, ADMIN_ENV_LABEL set), FLYER_TRIAL_ENABLED=true on the server, on local-dev or a scratch branch. Seed beforehand, outside this run, one live flyer_codes row with code MOX4QK and a revoked one with code REV8ZZ. Writes nothing: the walk loads the page, never pressing Print or Download QR. The runner photographs at 390 and 1300. The revoked code's page is the app's 404 (the board gives a revoked code no Print).",
+  "out": "contact-sheets/flyer-print",
+  "rows": [
+    {
+      "id": "flyer-print",
+      "label": "/admin/invites/flyers/MOX4QK: the bar and the letter-size flyer with its QR",
+      "view": "src/components/admin/flyer-sheet.tsx",
+      "steps": [
+        {
+          "goto": "/admin/invites/flyers/MOX4QK",
+          "wait": "[data-testid='flyer-sheet']",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "flyer-print-bar",
+      "label": "/admin/invites/flyers/MOX4QK: the screen-only bar (back, store, code, Download QR, Print)",
+      "view": "src/components/admin/flyer-print-bar.tsx",
+      "steps": [
+        {
+          "goto": "/admin/invites/flyers/MOX4QK",
+          "wait": "[data-testid='flyer-bar']",
+          "settle": 1000
+        }
+      ]
+    },
+    {
+      "id": "flyer-print-revoked",
+      "label": "/admin/invites/flyers/REV8ZZ: a revoked code is the 404",
+      "view": "src/app/admin/invites/flyers/[code]/page.tsx",
+      "steps": [
+        {
+          "goto": "/admin/invites/flyers/REV8ZZ",
+          "settle": 1000
+        }
+      ]
+    }
+  ]
+}
