@@ -31,6 +31,7 @@ import { HeaderNoticeTag, type HeaderNotice } from "./notice-tag";
 import type { TileBracket } from "../../lib/decks/read";
 import { useDeckHeaderEdit } from "./use-deck-header-edit";
 import { CardTagList } from "../cards/card-tag-picker";
+import { TaggedBox } from "../cards/tagged-box";
 import { searchDescriptionCards } from "../cards/description-tag-search";
 import { useTaggedField } from "../cards/use-tagged-field";
 import { NOTES_TAGS_MAX } from "../../lib/tuning/limits";
@@ -161,6 +162,8 @@ export function SpineDesktop({
   const overInk = `var(${STATUS_TOKEN[status]})`;
   const rename = useDeckHeaderEdit(deck.id, deck.name, deck.intent ?? null, () => setRenaming(false));
   const descriptionFieldRef = useRef<HTMLTextAreaElement>(null);
+  // The dashed frame the description sits in: the card list is anchored to it, not to the field.
+  const descriptionFrameRef = useRef<HTMLDivElement>(null);
   // The editor's two halves sit in separate flex columns of the header row, with the partner's
   // card-details trigger between them in DOM order — so blur has to be checked against BOTH
   // halves explicitly (pre-open review round 2), not against one shared ancestor that would
@@ -327,6 +330,18 @@ export function SpineDesktop({
                   }}
                 />
                 <div className="relative">
+                  <TaggedBox
+                    onInsert={descriptionTags.picker.insertTag}
+                    open={descriptionTags.picker.open}
+                    count={descriptionTags.picker.count}
+                    max={deckDescriptionCopy.description.maxLength}
+                    warnAt={deckDescriptionCopy.description.warnAt}
+                    fill="sunken"
+                    dashed
+                    footPad="compact"
+                    accent="none"
+                    frameRef={descriptionFrameRef}
+                  >
                   <textarea
                     ref={descriptionFieldRef}
                     value={descriptionTags.field.text}
@@ -341,20 +356,18 @@ export function SpineDesktop({
                     rows={2}
                     placeholder={deckDescriptionCopy.description.placeholder}
                     aria-label={deckDescriptionCopy.description.fieldAria}
-                    className="resize-none font-sans"
+                    className="resize-none bg-transparent font-sans"
                     style={{
                       width: "100%",
                       boxSizing: "border-box",
-                      background: "var(--surface-sunken)",
-                      border: "1px dashed var(--border-strong)",
-                      borderRadius: 8,
-                      padding: "6px 10px",
+                      padding: "6px 10px 2px",
                       fontSize: pointerFine ? 13.5 : 16,
                       lineHeight: 1.45,
                       color: "var(--fg)",
                     }}
                   />
-                  {descriptionTags.picker.open && <CardTagList {...descriptionTags.picker.list} anchor={descriptionFieldRef} />}
+                  </TaggedBox>
+                  {descriptionTags.picker.open && <CardTagList {...descriptionTags.picker.list} anchor={descriptionFrameRef} />}
                 </div>
               </div>
             ) : (

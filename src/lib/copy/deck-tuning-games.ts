@@ -28,9 +28,9 @@ export const deckTuningGamesCopy = {
     hint: "one line, in your words",
     hintShort: "optional",
     // A count with its denominator, like everything else on this surface.
-    // ABSENT until the field has focus or content; `--warning` from `warnAt`;
-    // a hard stop at `maxLength` with no error, because a cap you cannot
-    // exceed does not need one.
+    // Always drawn, from 0 / N (the foot of the TaggedBox); `--warning` from
+    // `warnAt`; a hard stop at `maxLength` with no error, because a cap you
+    // cannot exceed does not need one.
     counter: (n: string, max: string) => `${n} / ${max}`,
     maxLength: 140,
     warnAt: 130,

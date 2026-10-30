@@ -40,6 +40,7 @@ const F18_FACED = "@max-[344px]:hidden";
 const F18_MARKS = "hidden @max-[344px]:contents";
 import { useDeckHeaderEdit } from "./use-deck-header-edit";
 import { CardTagList } from "../cards/card-tag-picker";
+import { TaggedBox } from "../cards/tagged-box";
 import { searchDescriptionCards } from "../cards/description-tag-search";
 import { useTaggedField } from "../cards/use-tagged-field";
 import { NOTES_TAGS_MAX } from "../../lib/tuning/limits";
@@ -97,6 +98,8 @@ export function SpineMobile({
   const overInk = `var(${STATUS_TOKEN[status]})`;
   const rename = useDeckHeaderEdit(deck.id, deck.name, deck.intent ?? null, () => setRenaming(false));
   const descriptionFieldRef = useRef<HTMLTextAreaElement>(null);
+  // The dashed frame the description sits in: the card list is anchored to it, not to the field.
+  const descriptionFrameRef = useRef<HTMLDivElement>(null);
   // The description takes the `[[` card tag: the hook holds the BODY, the box shows names (card-tags plan, PR 3).
   const descriptionTags = useTaggedField({
     value: rename.description, onChange: rename.setDescription, search: searchDescriptionCards,
@@ -331,6 +334,21 @@ export function SpineMobile({
                 }}
               />
               <div className="relative">
+                <TaggedBox
+                  onInsert={descriptionTags.picker.insertTag}
+                  open={descriptionTags.picker.open}
+                  count={descriptionTags.picker.count}
+                  max={deckDescriptionCopy.description.maxLength}
+                  warnAt={deckDescriptionCopy.description.warnAt}
+                  fill="sunken"
+                  dashed
+                  footPad="compact"
+                  accent="none"
+                  frameRef={descriptionFrameRef}
+                  // Inside `press-through` (pointer-events: none): the frame and its foot take presses back, so the
+                  // foot's preventDefault holds the field's focus instead of letting the press blur it.
+                  className="pointer-events-auto"
+                >
                 <textarea
                   ref={descriptionFieldRef}
                   value={descriptionTags.field.text}
@@ -347,16 +365,17 @@ export function SpineMobile({
                   aria-label={deckDescriptionCopy.description.fieldAria}
                   // 16px, not 13.5: iOS Safari zooms the viewport on focusing an input under 16px
                   // (pre-open review) — the retired single-field editor used 16px on a phone too.
-                  className="w-full resize-none rounded-[8px] border border-dashed border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] text-left font-sans"
+                  className="w-full resize-none bg-transparent text-left font-sans"
                   style={{
                     boxSizing: "border-box",
-                    padding: "8px 12px",
+                    padding: "8px 12px 2px",
                     fontSize: 16,
                     lineHeight: 1.45,
                     color: "var(--fg)",
                   }}
                 />
-                {descriptionTags.picker.open && <CardTagList {...descriptionTags.picker.list} anchor={descriptionFieldRef} />}
+                </TaggedBox>
+                {descriptionTags.picker.open && <CardTagList {...descriptionTags.picker.list} anchor={descriptionFrameRef} />}
               </div>
               {rename.error ? (
                 <p role="alert" className="font-mono" style={{ fontSize: 11, color: "var(--danger)" }}>

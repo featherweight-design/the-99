@@ -96,6 +96,15 @@ describe("TaggedBox", () => {
     for (const c of ring) expect(cls()).toContain(c);
   });
 
+  it("accent none draws no focus-within accent on the frame and adds no ring class; the foot takes pointer events", () => {
+    box({ accent: "none" });
+    const frame = document.querySelector("[data-framed-box]")!;
+    expect(frame.className).not.toContain("focus-within");
+    expect(frame.className).not.toContain("has-[:focus-visible]");
+    expect(frame.className).toContain("border-[color:var(--border-strong)]");
+    expect(screen.getByText("0 / 240").parentElement!.className).toContain("pointer-events-auto");
+  });
+
   it("draws the danger frame past the cap on its own, and an explicit error=false or true wins", () => {
     const { rerender } = box({ count: 241, accent: "always" });
     const cls = () => document.querySelector("[data-framed-box]")!.className;

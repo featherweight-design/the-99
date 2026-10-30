@@ -165,6 +165,15 @@ describe("SpineDesktop", () => {
   // Both Save and Cancel refuse the mousedown, for opposite reasons: Cancel so
   // the blur does not save the edit it is refusing, Save so the blur does not
   // send the same rename the click is about to send.
+  it("the description's tag frame takes no accent on focus and the textarea keeps its focus ring", () => {
+    renderSpine(<SpineDesktop {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
+    const field = screen.getByLabelText(deckDescriptionCopy.description.fieldAria);
+    const frame = field.closest("[data-framed-box]")!;
+    expect(frame.className).not.toContain("focus-within");
+    expect(field.className).not.toContain("outline-none");
+  });
+
   it("neither action lets the field's blur fire first", () => {
     renderSpine(<SpineDesktop {...props} />);
     fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
@@ -469,5 +478,59 @@ describe("SpineDesktop — the commit offer and Export", () => {
     renderSpine(<SpineDesktop {...props} />);
     expect(screen.getByRole("button", { name: /Export/ }).className).toContain(FILL);
     expect(screen.queryByRole("link", { name: deckVersioningCopy.pending.firstCommitCta })).toBeNull();
+  });
+});
+
+describe("SpineDesktop — the description's tag-a-card box", () => {
+  const openEditor = () => {
+    renderSpine(<SpineDesktop {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
+    return screen.getByLabelText(deckDescriptionCopy.description.fieldAria) as HTMLTextAreaElement;
+  };
+  const counter = (n: number) => screen.getByText(`${n} / ${deckDescriptionCopy.description.maxLength}`);
+
+  it("draws a dashed sunken frame with the key, its words and the counter in the foot", () => {
+    const description = openEditor();
+    const frame = description.closest("[data-framed-box]") as HTMLElement;
+    expect(frame).toHaveClass("border-dashed", "bg-[color:var(--surface-sunken)]");
+    const key = screen.getByRole("button", { name: deckDescriptionCopy.notes.tagHelp.insertAria });
+    expect(frame).toContainElement(key);
+    expect(frame).toHaveTextContent("tag a card");
+    expect(frame).toContainElement(counter(0));
+  });
+
+  it("counts what is drawn, and turns warning-colored from 220", () => {
+    const description = openEditor();
+    const { warnAt } = deckDescriptionCopy.description;
+    expect(warnAt).toBe(220);
+    fireEvent.change(description, { target: { value: "x".repeat(warnAt - 1) } });
+    expect(counter(warnAt - 1)).toHaveStyle({ color: "var(--fg-faint)" });
+    fireEvent.change(description, { target: { value: "x".repeat(warnAt) } });
+    expect(counter(warnAt)).toHaveStyle({ color: "var(--warning)" });
+  });
+
+  it("the key starts a tag without blurring the pair: mousedown is prevented and the editor stays open", () => {
+    const description = openEditor();
+    const key = screen.getByRole("button", { name: deckDescriptionCopy.notes.tagHelp.insertAria });
+    // fireEvent returns false when a handler called preventDefault.
+    expect(fireEvent.mouseDown(key)).toBe(false);
+    fireEvent.click(key);
+    expect(description.value).toContain("[[");
+    expect(saveDeckHeader).not.toHaveBeenCalled();
+    expect(screen.getByLabelText("Deck name")).toBeTruthy();
+  });
+
+  it("a press on the counter or the foot does not blur the pair either", () => {
+    openEditor();
+    expect(fireEvent.mouseDown(counter(0))).toBe(false);
+    expect(fireEvent.mouseDown(counter(0).parentElement!)).toBe(false);
+  });
+
+  it("does not commit when focus moves from the description field to the key", () => {
+    const description = openEditor();
+    fireEvent.change(screen.getByLabelText("Deck name"), { target: { value: "Changed Name" } });
+    const key = screen.getByRole("button", { name: deckDescriptionCopy.notes.tagHelp.insertAria });
+    fireEvent.blur(description, { relatedTarget: key });
+    expect(saveDeckHeader).not.toHaveBeenCalled();
   });
 });

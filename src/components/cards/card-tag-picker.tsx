@@ -251,6 +251,9 @@ export function useCardTagPicker(o: CardTagPickerOptions) {
     open, options, count, activeIndex, remoteStatus, local, query,
     id,
     insertTag: () => {
+      // Focus first, synchronously: the field's onFocus reads its caret, and a focus deferred to the next frame would
+      // read the end of the already-updated value and close the list the insert just opened.
+      field.current?.focus({ preventScroll: true });
       const at = field.current?.selectionStart ?? value.length;
       const next = insertOpenTag(value, at);
       place(next.text, next.caret);

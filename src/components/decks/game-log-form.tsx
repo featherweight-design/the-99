@@ -14,6 +14,7 @@ import { countCharacters } from "../../lib/text/count-characters";
 import { plainText } from "../../lib/decks/notes-body";
 import { NOTES_TAGS_MAX } from "../../lib/tuning/limits";
 import { CardTagList } from "../cards/card-tag-picker";
+import { TaggedBox } from "../cards/tagged-box";
 import { searchGameNoteCards } from "../cards/description-tag-search";
 import { useTaggedField } from "../cards/use-tagged-field";
 import {
@@ -171,17 +172,8 @@ export function GameLogForm({
   const [worked, setWorked] = useState<GameAxisKey[]>([]);
   const [hurt, setHurt] = useState<GameAxisKey[]>([]);
   const [moved, setMoved] = useState<{ key: GameAxisKey; to: "worked" | "hurt" } | null>(null);
-  // The note, and whether its counter has earned its place. The counter is
-  // absent until the field has focus or content (S1 state 1), so "has it been
-  // touched" is a second fact the value alone cannot answer — an emptied field
-  // that still has focus keeps its `0 / 140`.
+  // The note. Its counter is always drawn in the frame's foot (Tag-Places d2), so no touched state is kept.
   const [note, setNote] = useState("");
-  // Touched, not focused. The counter appears on focus or content and must
-  // then STAY — S1 states 6 and 7 freeze it through a save and preserve it
-  // through a refusal, and clicking Save blurs the field first. Keyed on focus
-  // alone, an empty note's counter vanished on the way into the mutation it was
-  // supposed to be frozen during. Cleared only by `collapse()`.
-  const [noteTouched, setNoteTouched] = useState(false);
   // What the counter counts, and what the action checks: code points, the way the column does. The picker holds the
   // field to the cap on what is DRAWN (the input's own `maxLength` counts UTF-16 units, and would count a tag's id).
   // The note takes the `[[` card tag (card-tags plan, PR 3): `note` is the BODY, a tag as `[[id|Name]]`, and the action
@@ -203,9 +195,10 @@ export function GameLogForm({
   // A Seat a pod read is in flight: seats, pod size and Save wait for it, so the fill lands on what the player sees.
   const [podPending, setPodPending] = useState(false);
   const noteField = useRef<HTMLInputElement>(null);
+  const noteFrame = useRef<HTMLDivElement>(null);
   const noteTags = useTaggedField({
     value: note,
-    onChange: (body) => { setNote(body); setNoteTouched(true); },
+    onChange: setNote,
     search: searchGameNoteCards,
     max: deckTuningGamesCopy.note.maxLength,
     maxTags: NOTES_TAGS_MAX,
@@ -274,10 +267,9 @@ export function GameLogForm({
     setHurt([]);
     setMoved(null);
     setError(null);
-    // S1 state 8: reopening is a blank field and no counter. The form never
+    // S1 state 8: reopening is a blank field, counter back at 0 / 140. The form never
     // pre-fills from history — a note is about one game.
     setNote("");
-    setNoteTouched(false);
   }
 
   // State 6. Ticking an axis in one column removes it from the other, so the
@@ -578,27 +570,22 @@ export function GameLogForm({
             <span className="md:hidden">{deckTuningGamesCopy.note.hintShort}</span>
             <span className="hidden md:inline">{deckTuningGamesCopy.note.hint}</span>
           </span>
-          {/* S1 states 1–5. Absent until focus or content; `--warning` from
-              `warnAt`, and at the cap it says so rather than erroring — a limit
-              the field will not let you pass needs no error. */}
-          {noteTouched && (
-            <span
-              id={counterId}
-              className={`ml-auto font-mono text-[9.5px] md:text-[10px] md:tabular-nums ${
-                noteLength >= deckTuningGamesCopy.note.warnAt ? "text-warning" : "text-fg-locked"
-              }`}
-            >
-              {deckTuningGamesCopy.note.counter(
-                String(noteLength),
-                String(deckTuningGamesCopy.note.maxLength),
-              )}
-            </span>
-          )}
         </div>
 
         {/* An input, never a textarea: one line is the whole promise, and a
             textarea invites a paragraph the cap would then cut off. */}
         <div className="relative">
+        <TaggedBox
+          onInsert={noteTags.picker.insertTag}
+          open={noteTags.picker.open}
+          count={noteLength}
+          max={deckTuningGamesCopy.note.maxLength}
+          warnAt={deckTuningGamesCopy.note.warnAt}
+          counterId={counterId}
+          fill="sunken"
+          disabled={busy}
+          frameRef={noteFrame}
+        >
         <input
           ref={noteField}
           id={noteId}
@@ -609,12 +596,12 @@ export function GameLogForm({
           onChange={(e) => noteTags.picker.typed(e.target.value, e.target.selectionStart)}
           // The picker owns its keys while its list is open (Enter and Tab pick, Escape closes it).
           onKeyDown={(e) => { noteTags.picker.onKeyDown(e); }}
-          onFocus={() => setNoteTouched(true)}
-          aria-describedby={noteTouched ? `${describedById} ${counterId}` : describedById}
-          className="block md:flex md:items-center w-full min-h-[48px] md:min-h-[46px] px-[13px] md:px-[14px] py-[11px] md:py-[12px] rounded-[8px] bg-surface-sunken border border-border-strong focus:border-[color:var(--accent)] text-[16px] [@media(pointer:fine)]:text-[13.5px] leading-[1.45] md:leading-normal text-fg disabled:cursor-not-allowed disabled:opacity-50"
+          aria-describedby={`${describedById} ${counterId}`}
+          className="block min-h-[calc(1.5em+12px)] w-full bg-transparent outline-none px-[12px] pt-[9px] pb-[3px] text-[16px] [@media(pointer:fine)]:text-[13.5px] leading-[1.5] text-fg disabled:cursor-not-allowed"
         />
-        {/* Floats over the page, held to the room in the window: the form sits low on the Games tab, where a list placed in the flow ends below the fold. Not drawn while a save is out: a pick then would change a field the save already read. */}
-        {noteTags.picker.open && <CardTagList {...noteTags.picker.list} anchor={noteField} />}
+        </TaggedBox>
+        {/* Floats over the page, held to the room in the window: the form sits low on the Games tab, where a list placed in the flow ends below the fold. Anchored to the frame, under its foot. Not drawn while a save is out: a pick then would change a field the save already read. */}
+        {noteTags.picker.open && <CardTagList {...noteTags.picker.list} anchor={noteFrame} />}
         </div>
         <span id={describedById} className="sr-only">
           {deckTuningGamesCopy.note.ariaDescription}

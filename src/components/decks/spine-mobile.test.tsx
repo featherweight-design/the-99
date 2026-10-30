@@ -138,6 +138,23 @@ describe("SpineMobile", () => {
 
   // Round 5: `onDone` closes the editor on success, so the announcement has to come from a
   // region that outlives the editor's unmount to ever be heard.
+  it("the description's tag frame takes pointer events back inside press-through", () => {
+    renderSpine(<SpineMobile {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
+    const description = screen.getByLabelText(deckDescriptionCopy.description.fieldAria);
+    const frame = description.closest(".pointer-events-auto");
+    expect(frame).not.toBeNull();
+    expect(frame!.closest(".press-through")).not.toBeNull();
+    const foot = screen.getByText(/ \/ \d+$/).parentElement!;
+    expect(foot.className).toContain("pointer-events-auto");
+    expect(frame!.className).toContain("pointer-events-auto");
+    // The frame is the nearest ancestor of the foot, so nothing between them resets the inheritance.
+    expect(foot.parentElement).toBe(frame);
+    // And the header description takes no frame accent on focus.
+    expect(frame!.className).not.toContain("focus-within");
+    expect(description.className).not.toContain("outline-none");
+  });
+
   it("announces a successful description save through a status region that outlives the editor", async () => {
     renderSpine(<SpineMobile {...props} />);
     fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
@@ -544,5 +561,59 @@ describe("SpineMobile — the commit offer", () => {
     expect(exportButton.compareDocumentPosition(commit) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(commit.compareDocumentPosition(trigger) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(commit.className).toContain("bg-[color:var(--fg)]");
+  });
+});
+
+describe("SpineMobile — the description's tag-a-card box", () => {
+  const openEditor = () => {
+    renderSpine(<SpineMobile {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
+    return screen.getByLabelText(deckDescriptionCopy.description.fieldAria) as HTMLTextAreaElement;
+  };
+  const counter = (n: number) => screen.getByText(`${n} / ${deckDescriptionCopy.description.maxLength}`);
+
+  it("draws a dashed sunken frame with the key, its words and the counter in the foot", () => {
+    const description = openEditor();
+    const frame = description.closest("[data-framed-box]") as HTMLElement;
+    expect(frame).toHaveClass("border-dashed", "bg-[color:var(--surface-sunken)]");
+    const key = screen.getByRole("button", { name: deckDescriptionCopy.notes.tagHelp.insertAria });
+    expect(frame).toContainElement(key);
+    expect(frame).toHaveTextContent("tag a card");
+    expect(frame).toContainElement(counter(0));
+  });
+
+  it("counts what is drawn, and turns warning-colored from 220", () => {
+    const description = openEditor();
+    const { warnAt } = deckDescriptionCopy.description;
+    expect(warnAt).toBe(220);
+    fireEvent.change(description, { target: { value: "x".repeat(warnAt - 1) } });
+    expect(counter(warnAt - 1)).toHaveStyle({ color: "var(--fg-faint)" });
+    fireEvent.change(description, { target: { value: "x".repeat(warnAt) } });
+    expect(counter(warnAt)).toHaveStyle({ color: "var(--warning)" });
+  });
+
+  it("the key starts a tag without blurring the pair: mousedown is prevented and the editor stays open", () => {
+    const description = openEditor();
+    const key = screen.getByRole("button", { name: deckDescriptionCopy.notes.tagHelp.insertAria });
+    // fireEvent returns false when a handler called preventDefault.
+    expect(fireEvent.mouseDown(key)).toBe(false);
+    fireEvent.click(key);
+    expect(description.value).toContain("[[");
+    expect(saveDeckHeader).not.toHaveBeenCalled();
+    expect(screen.getByLabelText("Deck name")).toBeTruthy();
+  });
+
+  it("a press on the counter or the foot does not blur the pair either", () => {
+    openEditor();
+    expect(fireEvent.mouseDown(counter(0))).toBe(false);
+    expect(fireEvent.mouseDown(counter(0).parentElement!)).toBe(false);
+  });
+
+  it("does not commit when focus moves from the description field to the key", () => {
+    const description = openEditor();
+    fireEvent.change(screen.getByLabelText("Deck name"), { target: { value: "Changed Name" } });
+    const key = screen.getByRole("button", { name: deckDescriptionCopy.notes.tagHelp.insertAria });
+    fireEvent.blur(description, { relatedTarget: key });
+    expect(saveDeckHeader).not.toHaveBeenCalled();
   });
 });
