@@ -48,6 +48,35 @@ export function inputTags(source: string): string[] {
   return tags;
 }
 
+/**
+ * The inputs written inside a `<TaggedBox ...>...</TaggedBox>` element: a simple balanced-tag scan (count
+ * `<TaggedBox` opens against `</TaggedBox>` closes, then take `<input` tags in the text between). Limit: it reads
+ * source text, not the JSX tree, so a TaggedBox spelled in a string or comment would confuse it, and an input
+ * reached through a child component (not written between the tags) is not seen as framed.
+ */
+export function framedInputs(source: string): string[] {
+  const out: string[] = [];
+  let from = 0;
+  for (;;) {
+    const open = source.indexOf("<TaggedBox", from);
+    if (open === -1) break;
+    let depth = 0;
+    let end = source.length;
+    const re = /<TaggedBox\b|<\/TaggedBox>/g;
+    re.lastIndex = open;
+    for (let m = re.exec(source); m; m = re.exec(source)) {
+      depth += m[0] === "</TaggedBox>" ? -1 : 1;
+      if (depth === 0) {
+        end = m.index;
+        break;
+      }
+    }
+    out.push(...inputTags(source.slice(open, end)));
+    from = end + 1;
+  }
+  return out;
+}
+
 /** Whether a tag is an inner input that draws (or suppresses) focus by itself rather than through the shared half. */
 export function looseInner(tag: string): boolean {
   if (/type=["'](?:checkbox|radio|hidden|file|range|color|date)["']/.test(tag) || /\bsr-only\b/.test(tag)) return false;
@@ -67,6 +96,20 @@ describe("wrapped inputs show focus on their field", () => {
     expect(inputTags('<input value={a > b ? "x" : "y"} className="outline-none" />')[0]).toContain("outline-none");
   });
 
+  it("exempts only inputs inside a TaggedBox: a loose input beside one is still flagged", () => {
+    const loose = '<input className="bg-transparent border-0 outline-none" />';
+    const inside = `<TaggedBox onInsert={x}><textarea /><input className="bg-transparent border-0 outline-none" /></TaggedBox>`;
+    const source = `${inside}<div>${loose}</div>`;
+    const framed = framedInputs(source);
+    expect(framed).toHaveLength(1);
+    const tags = inputTags(source);
+    expect(tags).toHaveLength(2);
+    // Same text, so tell them apart by position: the first is framed, the second (outside) is not.
+    expect(framedInputs(inside)).toHaveLength(1);
+    expect(framedInputs(`<div>${loose}</div>`)).toHaveLength(0);
+    expect(framedInputs(`<TaggedBox a><TaggedBox b><input /></TaggedBox><input className="outline-none" /></TaggedBox>${loose}`)).toHaveLength(2);
+  });
+
   it("holds on every input in src/components", () => {
     const offenders: string[] = [];
     const unwrapped: string[] = [];
@@ -75,10 +118,10 @@ describe("wrapped inputs show focus on their field", () => {
       if (ALLOWED[rel]) continue;
       const source = readFileSync(path, "utf8");
       const tags = inputTags(source);
-      // A field framed by a TaggedBox (imported and drawn here) takes its focus from that frame
-      // (`cards/tagged-box.tsx` rings the frame on focus-within), so its bare inner input is not loose.
-      const framed = /import\s*\{[^}]*\bTaggedBox\b[^}]*\}/.test(source) && source.includes("<TaggedBox");
-      if (!framed && tags.some(looseInner)) offenders.push(rel);
+      // An input written inside a TaggedBox takes its focus from that frame (`cards/tagged-box.tsx` rings the
+      // frame on focus-within), so it is not loose. Any other input in the file is still held to the rule.
+      const framed = /import\s*\{[^}]*\bTaggedBox\b[^}]*\}/.test(source) ? framedInputs(source) : [];
+      if (tags.some((t) => !framed.includes(t) && looseInner(t))) offenders.push(rel);
       // A use, not the import: the import line names it whether or not any field wears it.
       const body = source.split("\n").filter((line) => !line.startsWith("import ")).join("\n");
       if (tags.some((t) => t.includes("AFFIX_INPUT")) && !/AFFIX_FOCUS(?:_INPUT)?\b/.test(body)) unwrapped.push(rel);
