@@ -196,7 +196,7 @@ describe("every hover preview shows the printing card details opens", () => {
 
 // ---- Every card ROW has BOTH a hover preview and a press that opens card details (Hugh, 2026-10-12) ----
 
-const PRESS_BINDINGS = ["CardDetailTrigger", "useCardDetail", "useCardDetailIfAny", "FullCardTrigger"];
+const PRESS_BINDINGS = ["CardDetailTrigger", "CardDetailFlowTrigger", "useCardDetail", "useCardDetailIfAny", "FullCardTrigger"];
 
 const importsBinding = (src: string, name: string) =>
   new RegExp(`import\\s*(?:type\\s*)?\\{[^}]*\\b${name}\\b[^}]*\\}\\s*from`).test(src);
