@@ -458,7 +458,7 @@ function preloadCardArt(imageUri: string) {
 }
 
 export function CardDetailTrigger({
-  oracleId, name, siblings, className, style, title, ariaLabel, describedBy, testId, door = false, imageUri, preview = false, flow = false, children,
+  oracleId, name, siblings, className, style, title, ariaLabel, describedBy, testId, door = false, imageUri, preview = false, children,
 }: {
   oracleId: string;
   name: string;
@@ -504,42 +504,21 @@ export function CardDetailTrigger({
    * preview on leaving the name. A no-op with no provider, or with no `imageUri`.
    */
   preview?: boolean;
-  /**
-   * The name sits inside a sentence and must wrap with it. A `<button>` is always laid out as an
-   * atomic inline box whatever its `display`, so a long name jumps to a line of its own and wraps
-   * inside itself; a span with the button role flows as text. Same press, focus and keys.
-   */
-  flow?: boolean;
   children: ReactNode;
 }) {
   const { open, pendingOracleId } = useCardDetail();
   const intent = useCardIntent(oracleId, imageUri);
   const hover = usePreviewRow(preview ? imageUri : null);
   const pending = pendingOracleId === oracleId;
-  const flowProps = flow
-    ? {
-        role: "button" as const,
-        tabIndex: 0,
-        // Enter and Space press on keydown, once: a held key repeats keydown and must not open the card
-        // again for every repeat. (Space on keyup, as a native button, would let a release land on the
-        // next control after a Tab.)
-        onKeyDown: (e: React.KeyboardEvent<HTMLElement>) => {
-          if (e.key !== "Enter" && e.key !== " ") return;
-          e.preventDefault();
-          if (!e.repeat) e.currentTarget.click();
-        },
-      }
-    : { type: "button" as const };
-  const Tag = flow ? "span" : "button";
   return (
-    <Tag
-      {...flowProps}
+    <button
+      type="button"
       {...intent}
       {...(preview ? hover : {})}
       data-testid={testId}
       // The trigger names itself: Safari focuses no button on a click, so the dialog's own capture
       // of the focused element finds <body> there, and focus could never come back to this control.
-      onClick={(e: React.MouseEvent<HTMLElement>) => open(oracleId, siblings, undefined, { door, art: imageUri, opener: e.currentTarget })}
+      onClick={(e) => open(oracleId, siblings, undefined, { door, art: imageUri, opener: e.currentTarget })}
       aria-label={ariaLabel ?? cardDetailCopy.triggerAria(name)}
       aria-describedby={describedBy}
       aria-busy={pending}
@@ -560,7 +539,7 @@ export function CardDetailTrigger({
       }}
     >
       {children}
-    </Tag>
+    </button>
   );
 }
 
