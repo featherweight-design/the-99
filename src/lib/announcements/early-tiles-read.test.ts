@@ -30,7 +30,7 @@ describe("releasedCommandersQuery", () => {
 
 describe("hasGivenWay (the early page's pickReleasePrecon)", () => {
   const posted = new Date("2026-10-29T16:00:00Z");
-  const list = { commanderCardId: "cmd-1", publishedAt: posted, title: "Calling All Angels", partnerCardId: null, cards: [{ name: "Lyra", cardId: "cmd-1" }, { name: "Card 1", cardId: "card-1" }] };
+  const list = { commanderCardId: "cmd-1", publishedAt: posted, title: "Calling All Angels", partnerCardId: null, partnerRole: null, cards: [{ name: "Lyra", cardId: "cmd-1" }, { name: "Card 1", cardId: "card-1" }] };
   const c = (fileName: string, setCode: string, firstSeenAt: string | null, baseline: boolean | null = firstSeenAt ? false : null, cardIds = ["card-1"]) =>
     ({ fileName, setCode, firstSeenAt: firstSeenAt ? new Date(firstSeenAt) : null, baseline, name: fileName, cardIds: ["cmd-1", ...cardIds] });
   const by = (...cs: ReturnType<typeof c>[]) => new Map([["cmd-1", cs]]);

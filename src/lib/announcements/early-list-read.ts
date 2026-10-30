@@ -189,7 +189,7 @@ export type ReleaseCandidate = {
  * yet is null). The commanders matter only to be left out of the overlap: every candidate names the commander already.
  */
 export type ListEvidence = {
-  title: string | null; commanderCardId: string | null; partnerCardId: string | null;
+  title: string | null; commanderCardId: string | null; partnerCardId: string | null; partnerRole: string | null;
   cards: readonly { name: string; cardId: string | null }[];
 };
 
@@ -208,7 +208,8 @@ export function foldDeckName(name: string): string {
 function evidenceOf(c: ReleaseCandidate, list: ListEvidence): { named: boolean; overlap: number } {
   // Overlap is over the list's OWN cards: not its commanders, which every candidate lists by construction, and not the
   // basics, which every deck holds. Otherwise a list the catalog has matched little of clears the bar on those alone.
-  const own = new Set([list.commanderCardId, list.partnerCardId].filter((x): x is string => x !== null));
+  // An alternate second line is not a commander, so it stays among the list's own cards (`earlyListCommanderIds`).
+  const own = new Set(earlyListCommanderIds(list));
   const ids = new Set(list.cards.flatMap((l) => (l.cardId && !own.has(l.cardId) && !isBasicName(l.name) ? [l.cardId] : [])));
   const listed = new Set(c.cardIds);
   let hits = 0;
