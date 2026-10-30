@@ -4,9 +4,12 @@
 //
 // THE REQUEST IS THE APP'S OWN. Each precon's list is the one a start writes (`preparePreconDeck`),
 // its reading is `loadDeckProfileFromHead` over that list, its facts are `factsWithSource`, its
-// prompt is `buildSynopsisPrompt` under contract 12 (v2 with the evidence benchmarks, what
-// production writes), its reply is checked by `checkReply`, and a refused section gets ONE repair
-// through `repairPrompt` and `applyRepair`, exactly as an Analyze press's write does. Only the
+// prompt is `buildSynopsisPrompt` under contract 13 (the stages shape, with the benchmarks'
+// interaction reading; what a player's write makes too), its reply is checked by `checkReply`, and a
+// refused section, or one the stages checks name (`stagesRepairTargets`), gets ONE repair through
+// `repairPrompt` and `applyRepair`, then the explained-once pass (`settleStages`), exactly as an
+// Analyze press's write does. A box with alternate commanders (`preconAlternates`) is asked for the
+// alternate line too, and the line is stored when it passes `checkAlternateLine`. Only the
 // transport differs: the Batch API, at half price, with the request built by the eval harness's
 // `buildParams`, which `request.test.mts` holds equal to what `callModel` sends.
 //
@@ -64,7 +67,8 @@ async function main(): Promise<number> {
   const { db } = await import("../src/db");
   const { precons, preconSynopses } = await import("../src/db/schema");
   const { checkReply, repairPrompt, applyRepair } = await import("../src/lib/synopsis/generate");
-  const { synopsisResponseSchemaV8Wire } = await import("../src/lib/synopsis/response-schema");
+  const { stagesSchemaFor } = await import("../src/lib/synopsis/stages");
+  const { settleStages, stagesRepairTargets } = await import("../src/lib/synopsis/stages-run");
   const { PRECON_OVERVIEW_CONTRACT, buildPreconRequest, preconOverviewCall, preconRequestParams, preconRoleBasis } = await import("./lib/precon-overview-request");
   const { STUB_MODEL, stubReply } = await import("../src/lib/synopsis/stub");
   const { batchCostMicroUsd } = await import("../src/lib/model/prices");
@@ -82,6 +86,7 @@ async function main(): Promise<number> {
   type Outgoing = import("./lib/precon-overview-build").Outgoing;
   type SynopsisFacts = import("../src/lib/synopsis/facts").SynopsisFacts;
   type SynopsisReply = import("../src/lib/synopsis/response-schema").SynopsisReply;
+  type StagesReply = import("../src/lib/synopsis/stages").StagesReply;
 
   const { rows: [branch] } = await db.execute<{ id: string | null }>(sql`select current_setting('neon.branch_id', true) as id`);
   if (branch?.id !== process.env.PRECON_OVERVIEW_TARGET_BRANCH) {
@@ -131,6 +136,9 @@ async function main(): Promise<number> {
   const inputTokensOf = async (params: object) => (live ? countTokens(params as never) : Math.ceil(JSON.stringify(params).length / 3));
 
   const facts = new Map<string, SynopsisFacts>();
+  // Per custom id: the box's alternates, which decide the reply schema the answer is parsed with and the stub's line.
+  const alternatesOf = new Map<string, string[]>();
+  const withAlternate = new Set<string>();
   const meta = new Map<string, { file: string; list: string; hash: string }>();
   const jobs: Job[] = [];
   const skipped: { file: string; why: string }[] = [];
@@ -175,19 +183,26 @@ async function main(): Promise<number> {
     }
     const customId = customIdFor(i, hash);
     facts.set(customId, req.facts);
+    alternatesOf.set(customId, req.alternates);
+    if (req.alternates.length > 0) withAlternate.add(file);
     meta.set(customId, { file, list, hash });
     const f = req.facts;
+    const alts = req.alternates;
     jobs.push({
       file,
       first: { customId, params, worstMicro: worstMicroUsd(call.model, await inputTokensOf(params), call.maxTokens) },
-      check: (v) => checkReply(v as SynopsisReply, f, true),
+      check: (v) => checkReply(v as SynopsisReply, f, true, true, alts),
+      extra: (content, v) => stagesRepairTargets(content, v as StagesReply, f, { alternates: alts }).sections,
+      settle: (content) => ({ ...settleStages(content, f), interactionShared: true }),
       repair: async (content, failing, v): Promise<Outgoing> => {
-        const p = preconRequestParams(repairPrompt(f, content, failing, true, v as SynopsisReply));
+        const { reasons } = stagesRepairTargets(content, v as StagesReply, f, { alternates: alts });
+        const p = preconRequestParams(repairPrompt(f, content, failing, true, v as SynopsisReply, { reasons, alternates: alts }), alts);
         const repairId = customIdFor(i, hash, true);
         facts.set(repairId, f);
+        alternatesOf.set(repairId, alts);
         return { customId: repairId, params: p, worstMicro: worstMicroUsd(call.model, await inputTokensOf(p), call.maxTokens) };
       },
-      merge: (first, v, failing) => applyRepair(first, { ok: true, value: v as SynopsisReply, usage: { inputTokens: 0, outputTokens: 0 } } as never, failing, f, true),
+      merge: (first, v, failing) => applyRepair(first, { ok: true, value: v as SynopsisReply, usage: { inputTokens: 0, outputTokens: 0 } } as never, failing, f, true, true, alts),
     });
   }
 
@@ -235,7 +250,7 @@ async function main(): Promise<number> {
     const u = g.message.usage;
     const usage = { input: u.input_tokens, output: u.output_tokens };
     const micro = batchCostMicroUsd(call.model, { inTokens: u.input_tokens, outTokens: u.output_tokens, cacheWriteTokens: u.cache_creation_input_tokens ?? 0, cacheReadTokens: u.cache_read_input_tokens ?? 0 });
-    const parsed = parseReply(synopsisResponseSchemaV8Wire, g.message);
+    const parsed = parseReply(stagesSchemaFor(3, alternatesOf.get(g.customId) ?? []), g.message);
     return parsed.ok
       ? { customId: g.customId, ok: true as const, value: parsed.value as unknown, micro, usage }
       : { customId: g.customId, ok: false as const, reason: parsed.reason, micro, usage };
@@ -253,6 +268,7 @@ async function main(): Promise<number> {
     const now = await buildPreconRequest(s.file, basis);
     const fits = now.ok && now.hash === m.hash && now.list === m.list;
     if (!fits) moved.push(s.file);
+    if (withAlternate.has(s.file) && s.content.alternate === undefined) console.log(`  ${s.file}: stored without its alternate line (the box has alternates; the reply's line failed its check or was absent)`);
     const row = {
       preconFile: s.file, contractVersion: contract, roleBasis: basis, listFingerprint: m.list, inputHash: m.hash, model, content: s.content,
       inputTokens: s.usage.input, outputTokens: s.usage.output, costMicroUsd: s.micro, current: fits, createdAt: new Date(), checkedAt: new Date(),
@@ -280,7 +296,13 @@ async function main(): Promise<number> {
         continue;
       }
       try {
-        const content = await job.check(r.value);
+        const first = await job.check(r.value);
+        // A first answer a normal run would repair is left to that run, not stored short of the app's rules.
+        if ((job.extra?.(first, r.value) ?? []).length > 0) {
+          left += 1;
+          continue;
+        }
+        const content = job.settle ? job.settle(first) : first;
         if (content.verdicts.every((v) => v.status === "ok")) {
           await store({ file: job.file, content, micro: r.micro, usage: r.usage });
           kept += 1;
@@ -308,7 +330,7 @@ async function main(): Promise<number> {
         return {
           batchId: `stub-${Date.now()}`,
           replies: batch.map((o) => {
-            const out = stubReply(facts.get(o.customId)!, "survived", o.customId.endsWith("-r"), true);
+            const out = stubReply(facts.get(o.customId)!, "survived", o.customId.endsWith("-r"), true, true, alternatesOf.get(o.customId) ?? []);
             return out.ok
               ? { customId: o.customId, ok: true as const, value: out.value as unknown, micro: 0, usage: { input: 0, output: 0 } }
               : { customId: o.customId, ok: false as const, reason: out.errorClass, micro: 0, usage: { input: 0, output: 0 } };

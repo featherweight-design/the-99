@@ -6,6 +6,7 @@ import {
   SYNOPSIS_CONTRACT_VERSION_V2,
   synopsisContractVersion,
   synopsisPlayerContractVersion,
+  synopsisPreconContractVersion,
   SYNOPSIS_ANSWER_TOKENS_WORST_CASE,
   SYNOPSIS_MAX_TOKENS,
   SYNOPSIS_MAX_TOKENS_V8,
@@ -49,7 +50,15 @@ describe("a player deck's contract", () => {
     expect(synopsisPlayerContractVersion(true, true)).toBe(13);
     expect(synopsisPlayerContractVersion(false)).toBe(SYNOPSIS_CONTRACT_VERSION);
     expect(synopsisPlayerContractVersion(false, true)).toBe(synopsisContractVersion(false, true));
-    // Precons, their carry-over and their readers still look up 12.
+    // The pre-13 lookup still names 12 (the eval harness reads it); precons no longer use it.
     expect(synopsisContractVersion(true, true)).toBe(12);
+  });
+});
+
+describe("a precon's contract", () => {
+  it("is 13 while the v2 method is on, the benchmarks' 9 otherwise, never the old 12", () => {
+    expect(synopsisPreconContractVersion(true)).toBe(SYNOPSIS_CONTRACT_VERSION_STAGES);
+    expect(synopsisPreconContractVersion(false)).toBe(synopsisContractVersion(false, true));
+    expect(synopsisPreconContractVersion(true)).not.toBe(synopsisContractVersion(true, true));
   });
 });

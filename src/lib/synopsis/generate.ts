@@ -213,7 +213,9 @@ export function mergeRetry(
   // fresh one fills it only when the stored row had none (it failed its check).
   const landKeep = stored.landKeep ?? fresh.landKeep;
   if (landKeep !== undefined) content.landKeep = landKeep;
-  if (stored.alternate !== undefined) content.alternate = stored.alternate;
+  // The alternate line (a precon's) follows the same rule: the stored one stands, a fresh one fills a gap.
+  const alternate = stored.alternate ?? fresh.alternate;
+  if (alternate !== undefined) content.alternate = alternate;
   // Contract 8: the evidence follows its section, and the checklist follows the Weaknesses it chose
   // them from. A stored answer with neither (contract 7) stays without.
   if (stored.evidence && fresh.evidence) {
@@ -230,7 +232,8 @@ export function mergeRetry(
     };
     const landIds = stored.landKeep !== undefined ? e.landKeep : f.landKeep;
     if (landKeep !== undefined && landIds) content.evidence.landKeep = landIds;
-    if (e.alternate) content.evidence.alternate = e.alternate;
+    const altIds = stored.alternate !== undefined ? e.alternate : f.alternate;
+    if (alternate !== undefined && altIds) content.evidence.alternate = altIds;
   }
   const assessment = take("weaknesses") ? fresh.assessment : stored.assessment;
   if (assessment) content.assessment = assessment;
@@ -369,7 +372,7 @@ async function sharedInteraction(
 }
 
 /** Check a reply under the contract it was written for: the one validator the write, the repair and the eval harness all call. */
-export async function checkReply(value: SynopsisReply, facts: SynopsisFacts, v2: boolean, stages = false): Promise<CheckedSynopsis> {
+export async function checkReply(value: SynopsisReply, facts: SynopsisFacts, v2: boolean, stages = false, alternates: readonly string[] = []): Promise<CheckedSynopsis> {
   if (!v2) {
     const reply = value as SynopsisResponse;
     return validateSynopsis(reply, facts, await catalogFor(reply, facts));
@@ -377,12 +380,12 @@ export async function checkReply(value: SynopsisReply, facts: SynopsisFacts, v2:
   const reply = normalizeV8(value as SynopsisReplyV8Wire);
   const checked = validateSynopsisV8(reply, facts, await catalogFor({ weaknesses: weaknessLines(reply) }, facts));
   // Contract 13: the contract-8 part above, then the stages shape's counts and the land line.
-  return stages ? applyStagesShape(checked, value as StagesReply, facts) : checked;
+  return stages ? applyStagesShape(checked, value as StagesReply, facts, alternates) : checked;
 }
 
 /** The one repair call's prompt: the facts, the passing sections to return unchanged, each refused section's reason. Shared by the write and the eval harness. */
-export function repairPrompt(facts: SynopsisFacts, content: CheckedSynopsis, failing: SectionId[], v2: boolean, first?: SynopsisReply, stages?: { reasons: readonly string[] }) {
-  const built = buildSynopsisPrompt(facts, { keep: content, refused: failing, first }, { v2, contract8: v2, ...(stages ? { stages: stagesPromptOption(facts) } : {}) });
+export function repairPrompt(facts: SynopsisFacts, content: CheckedSynopsis, failing: SectionId[], v2: boolean, first?: SynopsisReply, stages?: { reasons: readonly string[]; /** A precon's box alternates; absent for a player's deck. */ alternates?: readonly string[] }) {
+  const built = buildSynopsisPrompt(facts, { keep: content, refused: failing, first }, { v2, contract8: v2, ...(stages ? { stages: stagesPromptOption(facts, stages.alternates) } : {}) });
   return stages && stages.reasons.length > 0 ? { ...built, user: `${built.user}\n${repairNote(stages.reasons)}` } : built;
 }
 
@@ -399,9 +402,10 @@ export async function applyRepair(
   facts: SynopsisFacts,
   v2: boolean,
   stages = false,
+  alternates: readonly string[] = [],
 ): Promise<CheckedSynopsis> {
   if (!repair.ok) return first;
-  return mergeRetry(first, await checkReply(repair.value, facts, v2, stages), failing).content;
+  return mergeRetry(first, await checkReply(repair.value, facts, v2, stages, alternates), failing).content;
 }
 
 /** The catalog cards Weaknesses names that the deck does not hold. Exported for the eval harness,

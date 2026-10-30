@@ -36,7 +36,7 @@ import { liveOffendingIds } from "../notices/read";
 import { listFingerprint, profileFingerprint } from "../profile/fingerprint";
 import { PROFILE_VERSION } from "../profile/version";
 import { isNewestVersion } from "../profile/stored";
-import { synopsisContractVersion } from "../synopsis/limits";
+import { synopsisPreconContractVersion } from "../synopsis/limits";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
 import { carryOverDecision } from "./overview";
 import { preconReadingFresh, readPreconCarry } from "./reading";
@@ -57,7 +57,7 @@ export async function carryStoredOnArrival(deckId: string, userId: string, env: 
   // (`arrivalDeckQuery`), so they are one snapshot: the write below re-reads the stamp under the lock, and any
   // edit after this read moves it. Round trips are the cost here (measured: 9 came to ~380ms at the median
   // from a laptop), so every independent read shares one.
-  const contract = synopsisContractVersion(overviewV2Enabled(env), true);
+  const contract = synopsisPreconContractVersion(overviewV2Enabled(env));
   const [[deck], stored] = await Promise.all([
     arrivalDeckQuery(deckId, userId),
     readPreconCarry({ deckId, userId }, contract, roleBasisFromEnv(env)),

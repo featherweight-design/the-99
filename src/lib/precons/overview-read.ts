@@ -13,7 +13,7 @@ import { cards, preconSynopses } from "../../db/schema";
 import { analysisTabEnabled } from "../decks/analysis-flag";
 import { roleBasisFromEnv } from "../decks/label-counts-flag";
 import { allEvidenceIds } from "../synopsis/based-on";
-import { synopsisContractVersion } from "../synopsis/limits";
+import { synopsisPreconContractVersion } from "../synopsis/limits";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
 import type { CheckedSynopsis } from "../synopsis/types";
 import { listFingerprint } from "../profile/fingerprint";
@@ -55,7 +55,7 @@ export function overviewForList<T extends { listFingerprint: string }>(overview:
 
 /** The row's key at the reader's switches: which contract and basis an Analyze press would write at. */
 export function preconOverviewKey(env: NodeJS.ProcessEnv) {
-  return { contract: synopsisContractVersion(overviewV2Enabled(env), true), basis: roleBasisFromEnv(env) };
+  return { contract: synopsisPreconContractVersion(overviewV2Enabled(env)), basis: roleBasisFromEnv(env) };
 }
 
 /** Pure: whether a stored row is shown at all. */

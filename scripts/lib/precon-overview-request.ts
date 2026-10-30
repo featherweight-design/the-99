@@ -6,6 +6,10 @@
  *
  * Reads through `src/db`, so import it (dynamically) after DATABASE_URL names the database.
  */
+import { eq } from "drizzle-orm";
+import { db } from "../../src/db";
+import { cards, preconCards } from "../../src/db/schema";
+import { preconAlternates } from "../../src/lib/precons/alternates";
 import { synopsisRequestHash } from "../../src/lib/precons/overview";
 import { preparePreconDeck } from "../../src/lib/precons/start";
 import { listFingerprint } from "../../src/lib/profile/fingerprint";
@@ -15,13 +19,18 @@ import type { DeckProfile } from "../../src/lib/profile/types";
 import { analyzedOracleIds } from "../../src/lib/notices/log";
 import type { SynopsisFacts } from "../../src/lib/synopsis/facts";
 import { factsWithSource, synopsisCallSettings } from "../../src/lib/synopsis/generate";
-import { SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS } from "../../src/lib/synopsis/limits";
+import { SYNOPSIS_CONTRACT_VERSION_STAGES } from "../../src/lib/synopsis/limits";
 import { buildSynopsisPrompt } from "../../src/lib/synopsis/prompt";
-import { synopsisResponseSchemaV8Wire } from "../../src/lib/synopsis/response-schema";
+import { stagesSchemaFor } from "../../src/lib/synopsis/stages";
+import { stagesPromptOption } from "../../src/lib/synopsis/stages-run";
 import { buildParams, type Params } from "../eval/lib/request.mjs";
 
-/** The contract every precon Overview is written at: v2 with the evidence benchmarks, what production writes. */
-export const PRECON_OVERVIEW_CONTRACT = SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS;
+/**
+ * The contract every precon Overview is written at: 13, the stages shape with the benchmarks'
+ * interaction reading (`synopsisPreconContractVersion`, the key the app's readers select by). A stored
+ * 12 row is never installed or carried to a new deck; a deck that already holds one keeps reading it.
+ */
+export const PRECON_OVERVIEW_CONTRACT = SYNOPSIS_CONTRACT_VERSION_STAGES;
 
 /**
  * The role basis a run builds at: `PRECON_OVERVIEW_ROLE_BASIS`, `labels` or `classifier`, never
@@ -39,18 +48,33 @@ export function preconRoleBasis(value: string | undefined): RoleBasis {
 export const envAtBasis = (env: NodeJS.ProcessEnv, basis: RoleBasis): NodeJS.ProcessEnv =>
   ({ ...env, LABEL_ROLE_COUNTS_ENABLED: basis === "labels" ? "true" : "" });
 
-/** The model call contract 12 makes (`synopsisCallSettings(true)`): model, effort and output ceiling. */
+/** The model call contract 13 makes (`synopsisCallSettings(true)`, as 12 did): model, effort and output ceiling. */
 export const preconOverviewCall = synopsisCallSettings(true);
 
-/** The request for a prompt, as `callModel` would send it under contract 12, minus the streaming a batch cannot do. */
-export function preconRequestParams(prompt: { system: string; user: string }): Params {
+/**
+ * The request for a prompt, as `callModel` would send it under contract 13 (`stagesSchemaFor(3, alternates)`:
+ * the alternate line is required of the reply exactly when the box has alternates), minus the streaming a
+ * batch cannot do. Same model, effort and 16,000-token ceiling as 12: the land and alternate lines add about 100 tokens.
+ */
+export function preconRequestParams(prompt: { system: string; user: string }, alternates: readonly string[] = []): Params {
   const c = preconOverviewCall;
-  return buildParams({ model: c.model, system: prompt.system, user: prompt.user, maxTokens: c.maxTokens, schema: synopsisResponseSchemaV8Wire }, { effort: c.effort });
+  return buildParams({ model: c.model, system: prompt.system, user: prompt.user, maxTokens: c.maxTokens, schema: stagesSchemaFor(3, alternates) }, { effort: c.effort });
+}
+
+/** The box's alternate commanders (`preconAlternates`), read from this database's catalog rows for `file`. */
+export async function readPreconAlternates(file: string): Promise<string[]> {
+  const rows = await db.select({
+    oracleId: preconCards.oracleId, name: cards.name, isCommander: preconCards.isCommander, foilQuantity: preconCards.foilQuantity,
+    commanderLegal: cards.commanderLegal, typeLine: cards.typeLine, oracleText: cards.oracleText, manaCost: cards.manaCost, layout: cards.layout,
+  }).from(preconCards).innerJoin(cards, eq(cards.oracleId, preconCards.oracleId)).where(eq(preconCards.fileName, file));
+  return preconAlternates(rows);
 }
 
 export type PreconRequest =
   | {
     ok: true; file: string; list: string; facts: SynopsisFacts; params: Params; hash: string;
+    /** The box's alternate commanders, sorted: in the prompt, the reply schema and so the hash. Empty for most. */
+    alternates: string[];
     /** The reading the request was built from (`loadDeckProfileFromHead`, no model): what a start's first
      *  reading would be, stored beside the Overview (`preconReadingColumns`, PR 6a), and the cards it analyzed. */
     profile: DeckProfile; analyzedOracleIds: string[];
@@ -78,12 +102,18 @@ export async function buildPreconRequest(file: string, basis: RoleBasis): Promis
   } catch (e) {
     return { ok: false, file, why: `the reading could not be built: ${e instanceof Error ? e.message : String(e)}` };
   }
-  // Contract 12 quotes the benchmarks' interaction reading; a failed label read falls back to the
-  // classifier's, which is another contract. Never written (or installed) under the wrong one.
-  if (!built.shared) return { ok: false, file, why: "the label read failed, so contract 12's interaction reading is unavailable" };
-  const params = preconRequestParams(buildSynopsisPrompt(built.facts, undefined, { v2: true, contract8: true }));
+  // Contract 13 quotes the benchmarks' interaction reading; a failed label read falls back to the
+  // classifier's, which is another reading. Never written (or installed) under the wrong one.
+  if (!built.shared) return { ok: false, file, why: "the label read failed, so the benchmarks' interaction reading is unavailable" };
+  let alternates: string[];
+  try {
+    alternates = await readPreconAlternates(file);
+  } catch (e) {
+    return { ok: false, file, why: `the alternate commanders could not be read: ${e instanceof Error ? e.message : String(e)}` };
+  }
+  const params = preconRequestParams(buildSynopsisPrompt(built.facts, undefined, { v2: true, contract8: true, stages: stagesPromptOption(built.facts, alternates) }), alternates);
   return {
-    ok: true, file, list: listFingerprint(prepared), facts: built.facts, params, hash: synopsisRequestHash(params),
+    ok: true, file, list: listFingerprint(prepared), facts: built.facts, alternates, params, hash: synopsisRequestHash(params),
     profile, analyzedOracleIds: analyzedOracleIds(prepared), head: { partnerOracleId: prepared.partnerOracleId, cards: prepared.cards },
   };
 }
