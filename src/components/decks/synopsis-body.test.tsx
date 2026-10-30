@@ -231,10 +231,31 @@ describe("the stages shape (contract 13)", () => {
     expect(screen.getByText("Folds to a board wipe.")).toBeInTheDocument();
   });
 
-  it("puts the commander image beside the Overview paragraph, from the paragraph's first card", () => {
-    drawStages(stage13(), 13);
+  it("draws the commander the caller names beside the Overview paragraph, not a card read from it", () => {
+    // The paragraph's first mark is Sol Ring; the commander is Craterhoof, so Craterhoof is drawn.
+    render(
+      <CardDetailProvider fetchCard={async () => null}>
+        <HoverPreviewProvider>
+          <SynopsisSections content={stage13()} contractVersion={13} commanderId="craterhoof" art={art} onRetry={null} busy={false} />
+        </HoverPreviewProvider>
+      </CardDetailProvider>,
+    );
     const head = screen.getByTestId("synopsis-overview-head");
     expect(within(head).getAllByTestId("synopsis-card-image")).toHaveLength(1);
-    expect(within(head).getByTestId("synopsis-card-image").querySelector("img")).toHaveAttribute("src", "https://img/sol.jpg");
+    expect(within(head).getByTestId("synopsis-card-image").querySelector("img")).toHaveAttribute("src", "https://img/hoof.jpg");
+  });
+
+  it("draws no commander image, and the paragraph alone, without an id or without art for it", () => {
+    drawStages(stage13(), 13);
+    expect(within(screen.getByTestId("synopsis-overview-head")).queryAllByTestId("synopsis-card-image")).toHaveLength(0);
+    expect(screen.getByTestId("synopsis-overview-head")).toHaveTextContent("leads a ramp deck");
+    render(
+      <CardDetailProvider fetchCard={async () => null}>
+        <HoverPreviewProvider>
+          <SynopsisSections content={stage13()} contractVersion={13} commanderId="no-art" art={art} onRetry={null} busy={false} />
+        </HoverPreviewProvider>
+      </CardDetailProvider>,
+    );
+    expect(within(screen.getAllByTestId("synopsis-overview-head")[1]).queryAllByTestId("synopsis-card-image")).toHaveLength(0);
   });
 });

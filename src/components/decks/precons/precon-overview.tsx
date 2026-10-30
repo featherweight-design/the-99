@@ -15,9 +15,11 @@ import { HoverPreviewProvider } from "../hover-preview";
  * `View full overview →`, which opens the shipped Overview modal read only. No credit, no write press and
  * no state but present: the page draws nothing at all for a precon with no Overview yet.
  */
-export function PreconOverview({ overview, preconName, listArt }: {
+export function PreconOverview({ overview, preconName, commanderId = null, listArt }: {
   overview: PreconOverviewData;
   preconName: string;
+  /** The precon's face commander (the first of its commanders), drawn beside the Overview in the stages shape. */
+  commanderId?: string | null;
   /** The precon's own cards' art, by oracle id: it wins over the catalog's for a card both cover. */
   listArt: ReadonlyMap<string, { name: string; imageUri: string | null }>;
 }) {
@@ -60,6 +62,7 @@ export function PreconOverview({ overview, preconName, listArt }: {
           preconName={preconName}
           content={content}
           contractVersion={overview.contractVersion}
+          commanderId={commanderId}
           art={art}
           evidenceNames={overview.evidenceNames}
           onClose={() => setOpen(false)}

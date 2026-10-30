@@ -60,14 +60,17 @@ type Draw = {
   text: (t: string) => React.ReactNode;
 };
 
-/** The commander beside the Overview paragraph: the first card the paragraph names, tilted. */
-export function OverviewWithCommander({ content, art, text }: Draw) {
-  const lead = markedCards(content.overview ?? "", content.cards, 1)[0];
-  const show = lead && hasArt(art, lead.oracleId);
+/**
+ * The commander beside the Overview paragraph, tilted. It is the commander the caller names, never a
+ * card read out of the paragraph: with no id, or no art for it, the paragraph draws alone.
+ */
+export function OverviewWithCommander({ content, art, text, commanderId }: Draw & { commanderId: string | null }) {
+  const name = (commanderId && art.get(commanderId)?.name) || (commanderId ? Object.values(content.cards).find((c) => c.oracleId === commanderId)?.name : "") || "Commander";
+  const show = !!commanderId && hasArt(art, commanderId);
   return (
     <div className={show ? "grid grid-cols-[72px_minmax(0,1fr)] items-start gap-[14px] md:grid-cols-[96px_minmax(0,1fr)] md:gap-[18px]" : ""} data-testid="synopsis-overview-head">
       {show ? (
-        <CardImage oracleId={lead.oracleId} name={lead.name} art={art} className="mt-[4px] h-[100px] w-[72px] -rotate-3 md:h-[134px] md:w-[96px]" />
+        <CardImage oracleId={commanderId} name={name} art={art} className="mt-[4px] h-[100px] w-[72px] -rotate-3 md:h-[134px] md:w-[96px]" />
       ) : null}
       <p className="text-[13.5px] leading-[1.65] md:text-[14.5px] md:leading-[1.7] text-[var(--fg-body)] [text-wrap:pretty]">{text(content.overview ?? "")}</p>
     </div>

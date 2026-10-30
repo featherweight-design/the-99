@@ -225,8 +225,8 @@ export async function readSynopsisState(
  * and the card it opened drew different frames). The deck's own printing picks come first, since the
  * details it opens draw them too. Fail-soft through `resolveDeckOwnedPrintings`.
  */
-export async function namedArt(content: CheckedSynopsis, userId: string, deckId: string, withEvidence: boolean, env: NodeJS.ProcessEnv): Promise<Record<string, string | null>> {
-  const named = [...new Set([...Object.values(content.cards).map((c) => c.oracleId), ...(withEvidence ? allEvidenceIds(content) : [])])];
+export async function namedArt(content: CheckedSynopsis, userId: string, deckId: string, withEvidence: boolean, env: NodeJS.ProcessEnv, extraIds: readonly string[] = []): Promise<Record<string, string | null>> {
+  const named = [...new Set([...Object.values(content.cards).map((c) => c.oracleId), ...(withEvidence ? allEvidenceIds(content) : []), ...extraIds])];
   if (named.length === 0) return {};
   const [rows, owned] = await Promise.all([
     db.select({ oracleId: cards.oracleId, imageUri: cards.imageUri }).from(cards).where(inArray(cards.oracleId, named)),
@@ -249,9 +249,9 @@ export async function readVersionSynopsis(
   userId: string,
   /** As `readSynopsisState`'s. */
   env: NodeJS.ProcessEnv,
-): Promise<{ versionNumber: number; committedAt: Date; content: CheckedSynopsis; contractVersion: number; art: Record<string, string | null>; evidenceNames: Record<string, string> } | null> {
+): Promise<{ versionNumber: number; committedAt: Date; content: CheckedSynopsis; contractVersion: number; commanderOracleId: string; art: Record<string, string | null>; evidenceNames: Record<string, string> } | null> {
   const [row] = await db
-    .select({ versionNumber: deckVersions.number, committedAt: deckVersions.committedAt, deckId: deckVersions.deckId, content: deckSynopses.content, contractVersion: deckSynopses.contractVersion })
+    .select({ versionNumber: deckVersions.number, committedAt: deckVersions.committedAt, deckId: deckVersions.deckId, content: deckSynopses.content, contractVersion: deckSynopses.contractVersion, commanderOracleId: deckVersions.commanderOracleId })
     .from(deckVersionSynopses)
     .innerJoin(deckSynopses, eq(deckSynopses.id, deckVersionSynopses.synopsisId))
     .innerJoin(deckVersions, eq(deckVersions.id, deckVersionSynopses.versionId))
@@ -260,6 +260,6 @@ export async function readVersionSynopsis(
   // The art for every card it names, as the draft read carries: a version can name cards the deck
   // no longer holds, and the page's own art covers only the deck as it is now.
   const v2 = overviewV2Enabled(env);
-  const [art, evidenceNames] = await Promise.all([namedArt(row.content, userId, row.deckId, v2, env), v2 ? evidenceNamesOf(row.content) : {}]);
-  return { versionNumber: row.versionNumber, committedAt: row.committedAt, content: row.content, contractVersion: row.contractVersion, art, evidenceNames };
+  const [art, evidenceNames] = await Promise.all([namedArt(row.content, userId, row.deckId, v2, env, [row.commanderOracleId]), v2 ? evidenceNamesOf(row.content) : {}]);
+  return { versionNumber: row.versionNumber, committedAt: row.committedAt, content: row.content, contractVersion: row.contractVersion, commanderOracleId: row.commanderOracleId, art, evidenceNames };
 }

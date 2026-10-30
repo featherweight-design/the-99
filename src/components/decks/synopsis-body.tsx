@@ -31,6 +31,7 @@ export function SynopsisModal({
   synopsis,
   stale,
   deckName,
+  commanderId,
   art,
   evidenceNames,
   busy,
@@ -43,6 +44,8 @@ export function SynopsisModal({
   synopsis: SynopsisRow;
   stale: boolean;
   deckName: string;
+  /** The deck's commander, for the stages shape's commander image. */
+  commanderId?: string | null;
   art: FindingArt;
   evidenceNames: Record<string, string>;
   busy: boolean;
@@ -96,7 +99,7 @@ export function SynopsisModal({
             ) : null}
           </div>
         ) : null}
-        <SynopsisSections content={synopsis.content} contractVersion={synopsis.contractVersion} art={art} evidenceNames={evidenceNames} onRetry={onRetry} busy={busy} note={retryNote} spent={spent} />
+        <SynopsisSections content={synopsis.content} contractVersion={synopsis.contractVersion} commanderId={commanderId} art={art} evidenceNames={evidenceNames} onRetry={onRetry} busy={busy} note={retryNote} spent={spent} />
       </div>
     </ModalChrome>
   );
@@ -112,6 +115,7 @@ export function VersionSynopsisModal({
   committedAt,
   content,
   contractVersion,
+  commanderId,
   art,
   evidenceNames,
   onClose,
@@ -121,6 +125,8 @@ export function VersionSynopsisModal({
   content: CheckedSynopsis;
   /** The contract the row was written at, which picks the stages shape (13 and later). */
   contractVersion?: number;
+  /** The commander, for the stages shape's commander image. */
+  commanderId?: string | null;
   art: FindingArt;
   evidenceNames: Record<string, string>;
   onClose: () => void;
@@ -140,7 +146,7 @@ export function VersionSynopsisModal({
         <p data-testid="synopsis-version-record" className="m-0 border-b border-b-[color:var(--border)] border-[var(--border)] pb-[14px] text-[12.5px] leading-[1.55] text-[var(--fg-muted)]">
           {synopsisCopy.version.record(versionNumber)}
         </p>
-        <SynopsisSections content={content} contractVersion={contractVersion} art={art} evidenceNames={evidenceNames} onRetry={null} busy={false} />
+        <SynopsisSections content={content} contractVersion={contractVersion} commanderId={commanderId} art={art} evidenceNames={evidenceNames} onRetry={null} busy={false} />
       </div>
     </ModalChrome>
   );
@@ -156,6 +162,7 @@ export function PreconSynopsisModal({
   preconName,
   content,
   contractVersion,
+  commanderId,
   art,
   evidenceNames,
   onClose,
@@ -164,6 +171,8 @@ export function PreconSynopsisModal({
   content: CheckedSynopsis;
   /** The contract the row was written at, which picks the stages shape (13 and later). */
   contractVersion?: number;
+  /** The commander, for the stages shape's commander image. */
+  commanderId?: string | null;
   art: FindingArt;
   evidenceNames: Record<string, string>;
   onClose: () => void;
@@ -180,7 +189,7 @@ export function PreconSynopsisModal({
     >
       <div className="flex flex-col gap-[18px] px-[16px] pt-[16px] pb-[28px] md:gap-[20px] md:px-[22px] md:pt-[20px] md:pb-[26px]">
         <span className="md:hidden font-mono text-[11px] text-[var(--fg-faint)]" data-testid="synopsis-aside">{aside}</span>
-        <SynopsisSections content={content} contractVersion={contractVersion} art={art} evidenceNames={evidenceNames} onRetry={null} busy={false} />
+        <SynopsisSections content={content} contractVersion={contractVersion} commanderId={commanderId} art={art} evidenceNames={evidenceNames} onRetry={null} busy={false} />
       </div>
     </ModalChrome>
   );
@@ -190,6 +199,7 @@ export function PreconSynopsisModal({
 export function SynopsisSections({
   content,
   contractVersion,
+  commanderId = null,
   art,
   evidenceNames = {},
   onRetry,
@@ -203,6 +213,8 @@ export function SynopsisSections({
    * figure, card images); anything older, or unknown, draws exactly the shape every older row has.
    */
   contractVersion?: number | null;
+  /** The commander's oracle id (the first of a pair): the stages shape draws its image beside the Overview paragraph. */
+  commanderId?: string | null;
   art: FindingArt;
   /** The names of the cards the claims cite, by oracle id. Empty draws no "Based on" line. */
   evidenceNames?: Record<string, string>;
@@ -242,7 +254,7 @@ export function SynopsisSections({
     <>
       <Section id="overview" first>
         {content.overview && stages
-          ? <OverviewWithCommander content={content} art={art} text={text} />
+          ? <OverviewWithCommander content={content} art={art} text={text} commanderId={commanderId} />
           : content.overview
           ? <p className="text-[13.5px] leading-[1.65] md:text-[14.5px] md:leading-[1.7] text-[var(--fg-body)] [text-wrap:pretty]">{text(content.overview)}</p>
           : refused(verdict("overview"))}
