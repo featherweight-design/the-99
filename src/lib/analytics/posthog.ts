@@ -1,7 +1,7 @@
 /**
- * Product analytics: usage basics in PostHog. Pageviews (client-side navigations included) and autocaptured
- * clicks, keyed to the Clerk user once signed in. No session replay, and never what a reader types: posthog-js
- * does not record input values, whatever the text-masking options say.
+ * Product analytics: usage basics in PostHog. Pageviews (client-side navigations included) and pageleaves, keyed
+ * to the Clerk user once signed in. Clicks are paused (no autocapture) until third-party names are marked at the
+ * source. No session replay, and never what a reader types: posthog-js does not record input values.
  *
  * DORMANT unless BOTH gates pass: `NEXT_PUBLIC_POSTHOG_KEY` is set, and the page is served from the production
  * hostname. Local, preview and staging builds have no key; the hostname gate is the second line, because staging
@@ -91,21 +91,20 @@ export function redactCapture(event: CaptureResult | null): CaptureResult | null
   };
 }
 
-/** Any URL on the admin (`/admin` and below), matched against the page's full href. */
-export const ADMIN_URL = /^https?:\/\/[^/]+\/admin(?:[/?#]|$)/i;
-
 /** The init options. */
 export function posthogOptions(apiHost: string): Partial<PostHogConfig> {
   return {
     api_host: apiHost,
-    // Clicks, submits and changes on interactive elements. Element text and attributes are kept so a captured
-    // button still says what it was; input VALUES are never recorded by the SDK. Not on `/admin`: its rows carry
-    // other readers' Clerk ids in attributes and text, which no URL redaction reaches.
-    autocapture: { url_ignorelist: [ADMIN_URL] },
+    // Clicks are PAUSED: a click event carries the element's text and attributes, which can be another reader's
+    // name (a friend's row, an admin row). Autocapture resumes once third-party names are marked at the source
+    // (the later PersonName line of work).
+    autocapture: false,
     mask_all_text: false,
     mask_all_element_attributes: false,
     // A pageview on load and on every App Router navigation, which moves the URL through the History API.
     capture_pageview: "history_change",
+    // Pageleave stays on (explicit, not left to the SDK default).
+    capture_pageleave: true,
     disable_session_recording: true,
     respect_dnt: true,
     // A person profile only for a signed-in reader.
@@ -163,7 +162,7 @@ function withClient(run: (posthog: PostHog) => void): void {
   });
 }
 
-/** Ties later events to the Clerk user, with their display name as the person's `name`. Never an email. */
+/** Ties later events to the Clerk user, with their first name as the person's `name`, or none. Never an email. */
 export function identifyReader(userId: string, name: string | null | undefined): void {
   withClient((posthog) => (name ? posthog.identify(userId, { name }) : posthog.identify(userId)));
 }
