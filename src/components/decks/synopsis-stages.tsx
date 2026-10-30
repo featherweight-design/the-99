@@ -134,12 +134,14 @@ export function GamePlan({
         })}
       </div>
       {backup ? (
-        <div data-testid="synopsis-backup" className="relative pl-[22px]">
-          <i aria-hidden className="absolute left-0 top-[4px] block h-[10px] w-[10px] rotate-45 border border-[var(--fg-faint)] bg-[var(--surface-raised)] shadow-[0_0_0_4px_var(--surface-raised)]" />
+        <div data-testid="synopsis-backup" className="pl-[22px] md:pl-0">
           <div className={`rounded-[10px] border border-[var(--border)] bg-[var(--surface-sunken)] px-[12px] py-[11px] md:p-[12px] ${backupImage ? "grid grid-cols-[52px_minmax(0,1fr)] gap-[12px]" : ""}`}>
             {backupImage ? <CardImage oracleId={backupLead.oracleId} name={backupLead.name} art={art} onFail={onFail} className="h-[72px] w-[52px]" /> : null}
             <div className="min-w-0">
-              <span className="relative z-[1] mb-[5px] block font-mono text-[10px] font-medium uppercase leading-[13px] tracking-[0.14em] text-[var(--fg-body)]">{synopsisCopy.modal.plan.backup}</span>
+              <span className="relative z-[1] mb-[5px] flex items-center gap-[8px] font-mono text-[10px] font-medium uppercase leading-[13px] tracking-[0.14em] text-[var(--fg-body)]">
+                <i aria-hidden className="block h-[8px] w-[8px] flex-none rotate-45 border border-[var(--fg-faint)] bg-[var(--surface-raised)]" />
+                {synopsisCopy.modal.plan.backup}
+              </span>
               <p className="m-0 text-[13px] leading-[1.55] text-[var(--fg-body)] [text-wrap:pretty]">{text(backup)}</p>
             </div>
           </div>
