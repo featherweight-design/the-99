@@ -165,6 +165,8 @@ export type TuningFacts = {
   /** Moves each time the shell's focus write settles (`useHeldPick`'s `revision`), even onto the value it already
    *  held; the panel re-reads its gate on it. Absent, the panel follows `focus` alone. */
   focusRevision?: number;
+  /** The bracket the player declared for the deck (`useDeclaration`); absent or null with none. */
+  declared?: Bracket | null;
 };
 
 /** The checklist's own vocabulary (H35, PR 3) — a row the panel already knows how to draw,
@@ -1194,6 +1196,7 @@ export function TuningPanel({
         startedAt={live ? state.run?.createdAt ?? null : null}
         report={live ? null : state.itemsValidationReport}
         permits={permits}
+        declared={facts.declared ?? null}
         newestPriceAsOf={live ? live.newestPriceAsOf : state.newestPriceAsOf}
         figures={{ typeCounts: v2.typeCounts ?? {}, roles: v2.noticed.roles }}
         drift={v2.over !== 0 ? { at: v2.at, over: v2.over, onTopOff: v2.onTopOff, onProposedCuts: v2.onProposedCuts } : null}
@@ -1653,18 +1656,30 @@ function Lead({ children, desktopOnly = false, wide = false }: { children: React
   );
 }
 
+/**
+ * Whether the shown run read the deck's description and its limits, for `ReadFrom`. The run's OWN record decides where it
+ * has one: a v2 run stores the limits it read (`v2.restrictions`) and whether it read a description (`hadDescription`),
+ * because its own Apply moves the list, which marks the result stale though nothing it read has changed. Without that
+ * record (a v10 run, a v2 run from before it), the LIVE deck values speak only over a FRESH result (review round 4): a
+ * stale result was generated before the player's latest edit, and the tuning fingerprint includes both
+ * (`src/lib/tuning/fingerprint.ts`). "your limits" needs a limit actually set, since an unset one filters nothing. Pure.
+ */
+export function runReads(state: Pick<TuningState, "stale" | "itemsValidationReport">, facts: Pick<TuningFacts, "intent" | "limits">): {
+  description: boolean; limits: boolean;
+} {
+  const own = state.itemsValidationReport;
+  const set = (l: { capCents: number | null; sets: readonly string[]; ownedOnly: boolean }) => l.capCents !== null || l.sets.length > 0 || l.ownedOnly;
+  const restrictions = own?.v2?.restrictions;
+  return {
+    description: own?.hadDescription ?? (!state.stale && facts.intent !== null),
+    limits: restrictions ? set(restrictions) : !state.stale && set(facts.limits),
+  };
+}
+
 function ReadFrom({ state, facts }: { state: TuningState; facts: TuningFacts }) {
-  // "your limits" (H35, PR 4a): only when a limit is actually set, since an unset limit reads
-  // nothing and filters nothing (`descriptionManifest.readLimits`, "Kept for this deck"). And
-  // only over a FRESH result (review round 4): `facts.limits` is the LIVE deck setting, and a
-  // stale result on screen was generated before the player's latest limits edit — the tuning
-  // fingerprint already includes limits (`src/lib/tuning/fingerprint.ts`), so `state.stale` is
-  // exactly the signal that the live setting still describes the shown run.
-  const { capCents, sets, ownedOnly } = facts.limits;
-  const limitsRead = !state.stale && (capCents !== null || sets.length > 0 || ownedOnly) ? [descriptionManifest.readLimits] : [];
-  // "your description" (H35, PR 4b): the same staleness rule as limits — `facts.intent` is the
-  // LIVE deck value, and a stale result was generated before the player's latest edit to it.
-  const descriptionRead = !state.stale && facts.intent !== null ? [descriptionManifest.readDescription] : [];
+  const reads = runReads(state, facts);
+  const limitsRead = reads.limits ? [descriptionManifest.readLimits] : [];
+  const descriptionRead = reads.description ? [descriptionManifest.readDescription] : [];
   // "your notes" (H35, PR 4b): the Additional notes field is never saved, so only the run's own
   // record (`validationReport.hadNotes`) can say whether it carried text — there is no LIVE
   // value to compare against. Read off `itemsValidationReport`, the report belonging to the

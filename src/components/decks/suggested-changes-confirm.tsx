@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef } from "react";
+import { createPortal } from "react-dom";
 
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
@@ -10,6 +11,7 @@ import { pullCandidate, pullSourceChoices } from "../../lib/decks/draft-shape";
 import type { SourceDeckFigure } from "../../lib/decks/read";
 import { heldInOtherDecks } from "../../lib/tuning/limits";
 import type { LineItem } from "../../lib/tuning/state";
+import { useSheetHost } from "../ui/sheet-host";
 import { PullControl } from "./pull-control";
 import { ModalChrome } from "./receipt-modal";
 import { Name, Thumb } from "./suggestion-line";
@@ -31,6 +33,11 @@ function pullOffer(l: LineItem) {
  * desktop and the shipped sheet on a phone, capped at min(640px, 100dvh − 96px) and 88% (`cap`). Coming in and Going out
  * by name with the card, and the bracket outcome in the lead. The head and the one Apply stay; the lists scroll under a
  * bottom fade. ✕ is the only way out with nothing changed: no second cancel.
+ *
+ * PORTALLED out of the panel that opens it, into the shared sheet host (`sheet-host.ts`): drawn in place, its `fixed`
+ * frame, the Pull's popover and the source picker's sheet were all placed against whatever ancestor held a transform
+ * (the Tuning hub's tool panel arrives on `.anim-gentle-in`), so the box sat clipped above the window on desktop and the
+ * phone sheet was inset to that panel's width.
  */
 export function SuggestedChangesConfirm({
   adds, cuts, bracket, busy, onApply, onClose, deckId = "", ownedFromOtherDecks = false, staged = new Map(), onStage, sourceFigures,
@@ -56,7 +63,9 @@ export function SuggestedChangesConfirm({
 }) {
   const n = adds.length;
   const anyHeld = adds.some((l) => heldInOtherDecks(l, ownedFromOtherDecks));
-  return (
+  const host = useSheetHost(true);
+  if (!host) return null;
+  return createPortal(
     <ModalChrome
       eyebrow={copy.confirm.eyebrow}
       title={copy.confirm.title(n)}
@@ -102,7 +111,8 @@ export function SuggestedChangesConfirm({
           style={{ background: "linear-gradient(to bottom, transparent, var(--surface-raised))" }}
         />
       </div>
-    </ModalChrome>
+    </ModalChrome>,
+    host,
   );
 }
 

@@ -7,9 +7,12 @@ import type { V2List, V2Report } from "./engine";
  * engine's report into the run's final row and how its unit settles (`charge.ts`, plan P4).
  */
 
-export function v2StartReport(args: { requestHash: string; restrictions: V2RunReport["restrictions"]; hadRequest: boolean; focus?: string }): ValidationReport {
+export function v2StartReport(args: {
+  requestHash: string; restrictions: V2RunReport["restrictions"]; hadRequest: boolean; focus?: string; hadDescription?: boolean;
+}): ValidationReport {
   return {
     askedCount: 0, survivedCount: 0, keptCount: 0, hadNotes: args.hadRequest,
+    ...(args.hadDescription !== undefined ? { hadDescription: args.hadDescription } : {}),
     ...(args.focus ? { focus: args.focus } : {}),
     v2: {
       requestHash: args.requestHash,

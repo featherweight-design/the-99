@@ -125,7 +125,9 @@ export async function startTuningV2(args: {
   // An abandoned run would hold the one-pending index and read as "already running": the panel's read reaps it, and so
   // does this press, since v2 reads no panel state first.
   await reapReaderRuns(deckId, userId);
-  const startReport = v2StartReport({ requestHash: hash, restrictions: inputs.limits, hadRequest: request !== "", focus: inputs.focus ?? undefined });
+  const startReport = v2StartReport({ requestHash: hash, restrictions: inputs.limits, hadRequest: request !== "", focus: inputs.focus ?? undefined,
+    hadDescription: inputs.intent !== null && inputs.intent.trim() !== "",
+  });
   const started = await startRun(userId, deckId, inputs.fingerprint, inputs.readVersion, {
     runId: args.runId, env,
     v2: {

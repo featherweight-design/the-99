@@ -187,3 +187,27 @@ describe("shortOfAsk", () => {
     expect(shortOfAsk(10, [...adds(15), ...cuts(15)], report({}))).toBeNull();
   });
 });
+
+// The bar's and the confirmation's bracket names the bracket the player DECLARED while the permits hold it: a deck read as
+// [1,2] and declared Core stays "2 · Core", never the range's floor (the 390/1300 walk read "stays 1 · Exhibition").
+describe("bracketOutcome with a declared bracket", () => {
+  const keep = { choice: "keep" as const, target: 2, low: 1 };
+  it("names the declared bracket inside a range", () => {
+    expect(bracketOutcome([1, 2], keep, adds(1), null, 2)).toEqual({ kind: "stays", bracket: 2 });
+    expect(bracketOutcome([1, 2], null, [], null, 2)).toEqual({ kind: "stays", bracket: 2 });
+  });
+  it("names the lowest permitted with no declaration, or one the permits do not hold", () => {
+    expect(bracketOutcome([1, 2], keep, adds(1))).toEqual({ kind: "stays", bracket: 1 });
+    expect(bracketOutcome([3], { choice: "keep", target: 3 }, adds(1), null, 1)).toEqual({ kind: "stays", bracket: 3 });
+  });
+  it("starts a reach or a miss from the declared bracket", () => {
+    const up = { choice: "up" as const, target: 3 };
+    expect(bracketOutcome([1, 2], up, [v2Line("f", "add", { bracketAfter: [3] })], null, 2)).toEqual({ kind: "reached", from: 2, to: 3 });
+    expect(bracketOutcome([1, 2], up, adds(1), null, 2)).toEqual({ kind: "missed", from: 2, aim: up });
+  });
+  it("names it for a whole set only while the set's own permits still hold it", () => {
+    const two = [...adds(2), ...cuts(2)];
+    expect(bracketOutcome([1, 2], keep, two, [1, 2], 2)).toEqual({ kind: "stays", bracket: 2 });
+    expect(bracketOutcome([1, 2], keep, two, [1], 2)).toEqual({ kind: "stays", bracket: 1 });
+  });
+});

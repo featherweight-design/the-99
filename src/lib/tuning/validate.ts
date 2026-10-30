@@ -108,6 +108,10 @@ export type ValidationReport = {
    *  Absent for a run persisted before this column's meaning existed, same as every other
    *  optional field here. */
   hadNotes?: boolean;
+  /** Whether THIS run read the deck's description (Suggested changes v2), for `ReadFrom`'s "your description": the live
+   *  value cannot say once the run's own Apply has moved the list and marked it stale. Absent on a v10 run and on a v2
+   *  run from before it, which fall back to the live value. */
+  hadDescription?: boolean;
   /** The strategy focus THIS run aimed at (`StrategyKey`), which the panel's `ReadFrom` names (strategy focus PR 4b).
    *  Absent with no focus. */
   focus?: string;

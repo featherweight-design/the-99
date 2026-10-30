@@ -72,7 +72,7 @@ export const SLOWER_NOTE_MS = 120_000;
  * (`pick`), so they survive leaving, a return and an Undo.
  */
 export function SuggestedChangesRun({
-  runId, ask, lines: readLines, live, startedAt, report, permits, newestPriceAsOf, figures, drift, finishedHere = false,
+  runId, ask, lines: readLines, live, startedAt, report, permits, declared = null, newestPriceAsOf, figures, drift, finishedHere = false,
   readFrom, actions, onChanged, onAnnounce, onNewRun, readOnly = false, credits = null, past = null, deckId,
 }: {
   runId: string;
@@ -86,6 +86,8 @@ export function SuggestedChangesRun({
   /** The finished run's own report: its short reasons, its charge, a failed cut call. */
   report: ValidationReport | null;
   permits: readonly Bracket[];
+  /** The bracket the player declared for the deck, or null with none: the outcome names it while the permits hold it. */
+  declared?: Bracket | null;
   newestPriceAsOf: Date | null;
   figures: RunFigures;
   /** The deck is off 99: Apply is held with the intake's drift line and its link. */
@@ -217,7 +219,7 @@ export function SuggestedChangesRun({
     return () => { live = false; clearTimeout(timer); };
   }, [setKey, waiting, runId, actions.setBracket, setRead?.key]);
   const outcome = bracketOutcome(
-    permits, ask?.bracket ?? null, [...pickedAdds, ...pickedCuts], setRead && setRead.key === setKey ? setRead.permits : null,
+    permits, ask?.bracket ?? null, [...pickedAdds, ...pickedCuts], setRead && setRead.key === setKey ? setRead.permits : null, declared,
   );
 
   // The applied sets, each its own Undo (spec §7a); the bar offers the one this visit applied, else the one found.
@@ -651,7 +653,9 @@ export function SuggestedChangesRun({
         <div
           data-sc-bar=""
           data-sc-bar-done={appliedBar || undefined}
-          className="sticky bottom-0 z-10 -mx-[16px] flex flex-col items-stretch gap-[8px] px-[16px] pb-[12px] pt-[10px] [border-top:1px_solid_var(--border-strong)] md:mx-0 md:flex-row md:flex-wrap md:items-center md:gap-[14px] md:rounded-[11px] md:py-[10px] md:pl-[16px] md:pr-[12px] md:[border:1px_solid_var(--border-strong)]"
+          // Pinned over the phone's shell foot, never under it: the tab bar (`--tabbar-h`) and whatever bar holds the deck
+          // page's foot (the quick-add dock, `--deck-foot-h`, which `useDeckFootClearance` publishes, 0 when none is drawn).
+          className="sticky bottom-[calc(var(--tabbar-h,0px)+var(--deck-foot-h,0px))] md:bottom-0 z-10 -mx-[16px] flex flex-col items-stretch gap-[8px] px-[16px] pb-[12px] pt-[10px] [border-top:1px_solid_var(--border-strong)] md:mx-0 md:flex-row md:flex-wrap md:items-center md:gap-[14px] md:rounded-[11px] md:py-[10px] md:pl-[16px] md:pr-[12px] md:[border:1px_solid_var(--border-strong)]"
           style={{
             background: "var(--elevated-hover)",
             boxShadow: "0 -10px 24px rgba(0,0,0,.35)",
@@ -933,7 +937,7 @@ function ShortHead({ facts, n, ask, credits, onNewRun }: {
   if (facts.kind === "noCuts") {
     return <Notice edge="var(--warning)" data="no-cuts" text={s.noCuts} />;
   }
-  const word = facts.side === "add" ? s.additions : s.cuts;
+  const word = (facts.side === "add" ? s.additions : s.cuts)(facts.found);
   let head: string;
   let body: string;
   let credit: string;

@@ -1635,6 +1635,7 @@ export function BuilderShell({
         // The focus the server holds, not the press in flight: the panel re-reads its gate when it moves.
         focus: strategyFocus.settled,
         focusRevision: strategyFocus.settledRevision,
+        declared: declaration.declared,
       }}
       printedInSets={printedInSets}
       onLogGame={() => setView("games")}
