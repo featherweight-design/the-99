@@ -35,8 +35,8 @@ export const LEDGER_LIMITS = {
   "ledger-count-mechanism.jsonl": { hardCapUsd: 15, askAtUsd: null },
   /** Suggested changes v2's engine, M1 (`tuning-v2.mts`; Hugh's HARD $4, plan 2026-10-27): a hard cap, no ask line. */
   "ledger-tuning-v2.jsonl": { hardCapUsd: 4, askAtUsd: null },
-  /** The Overview stage-shape test (`overview-stages.mts`, lane a6, 2026-10-29): $2 hard, raised to $2.75 by Hugh (2026-10-29) for the five precons he knows; ask at $1.50. */
-  "ledger-overview-stages.jsonl": { hardCapUsd: 2.75, askAtUsd: 1.5 },
+  /** The Overview stage-shape test (`overview-stages.mts`, lane a6, 2026-10-29): $2 hard, raised to $2.75 by Hugh (2026-10-29) for the five precons he knows, then to $5 (2026-10-29) for the explained-once proof; ask at $1.50. */
+  "ledger-overview-stages.jsonl": { hardCapUsd: 5, askAtUsd: 1.5 },
 } as const satisfies Record<string, LedgerLimits>;
 
 export type LedgerFileName = keyof typeof LEDGER_LIMITS;

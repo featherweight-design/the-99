@@ -21,13 +21,23 @@ import { LEDGER_LIMITS } from "../../src/lib/eval/ledger-limits";
  *   pnpm eval:overview-stages --iteration N --cap <usd> [--only id,id] [--no-repair] [--ask-approved]
  *       The paid run, REAL-TIME through the app's `callModel` at contract 12's model, effort and
  *       ceiling. N is 1, 2 or 3 (a fourth is refused). Writes under
- *       docs/superpowers/eval/runs/overview-stages-<N>[-<label>]/: per deck old.json, new.json, checks.json;
- *       summary.json; compare.html. A deck whose new.json exists is kept (a run resumes).
+ *       docs/superpowers/eval/runs/overview-stages-<N>[-<label>]/: per deck old.json, new.json, checks.json,
+ *       facts.json; summary.json; compare.html. A deck whose new.json exists is kept (a run resumes).
+ *   pnpm eval:overview-stages --replay <runDir> [--out-label x]
+ *       FREE: no model call, no token count, no ledger. Re-runs the iteration-3 post-pass and every
+ *       check over a finished run's stored replies and writes runs/<runDir's name>-replay[-x]/ (per
+ *       deck checks.json and shown.json, replay.json with each check before and after, compare.html),
+ *       never over the run it reads. A run without facts.json rebuilds a precon's facts from staging.
  *
  * ITERATION 3 (Hugh, 2026-10-29) is a second shape (`shapeOfIteration`, `stages.ts`): no Wins by, a
  * land line stating the deck's own land number (`landKeepNumber`) in place of the fixed range, deck-card
  * mulligan lines only, Key cards that skip what a stage explained, exactly 2 tips, the alternate line
  * for a precon whose box carries one. Iterations 1 and 2 keep iteration 2's prompt byte for byte.
+ * After the i3 run (2026-10-29), iteration 3 also REQUIRES the alternate line in the schema for such a
+ * precon (`stagesSchemaFor`), and runs a deterministic explained-once post-pass on the reply
+ * (`dedupeSections`: stages, then Key cards, then tips keep a card in that order) before it is shown
+ * and checked; `checkNoCardTwice` fails what the pass cannot fix. The pass and its checks run on the
+ * first write BEFORE the one repair is chosen, so what they fail is sent for that repair too (`i3RepairTargets`).
  *
  *   PROD_READONLY_DATABASE_URL=... pnpm eval:overview-stages --list-prod-decks
  *       Lists Hugh's production decks (read-only, SELECT only, nothing else runs): id, name,
@@ -49,7 +59,7 @@ import { LEDGER_LIMITS } from "../../src/lib/eval/ledger-limits";
  * `neon.branch_id` is production's and sets and asserts `default_transaction_read_only` before its
  * first query, reads with SELECT only, and hands back facts and the stored synopsis as JSON.
  *
- * THE CAP ($2.75 since Hugh's raise of 2026-10-29, `ledger-overview-stages.jsonl`, ask at $1.50; `LEDGER_LIMITS`). Every call is checked
+ * THE CAP ($5 since Hugh's second raise of 2026-10-29, `ledger-overview-stages.jsonl`, ask at $1.50; `LEDGER_LIMITS`). Every call is checked
  * BEFORE it is sent against its worst case (a repair is checked on its own before it is sent), recorded pending at
  * that worst case and settled at its metered cost, as `corpus.mts` does: a crash after the API billed
  * still leaves the charge counted. `--cap` is this run's own ceiling, required for a paid run.
@@ -114,6 +124,7 @@ const { values: args } = parseArgs({
     "prod-prepare": { type: "string" },
     "prod-ids": { type: "string" },
     "list-prod-decks": { type: "boolean", default: false },
+    replay: { type: "string" },
   },
 });
 
@@ -230,6 +241,182 @@ if (args["prod-prepare"]) {
     });
   }
   writeFileSync(out, JSON.stringify(prepared));
+  process.exit(0);
+}
+
+// ---------------------------------------------------------------------------------------------
+// The new side's shown doc and its checks, shared by the paid run and `--replay`.
+
+type StagesModule = typeof import("../../src/lib/synopsis/stages");
+const EMPTY_CHECKED: Checked = { verdicts: [], overview: null, primer: null, keyCards: null, weaknesses: null, cards: {} } as unknown as Checked;
+
+/**
+ * What a reader of the new side is shown, and its checks. Iteration 3 runs the explained-once
+ * post-pass (`dedupeSections`: stages, then Key cards, then tips) on what is shown and on the reply
+ * the checks read; iterations 1 and 2 are unchanged.
+ */
+function checkedNew(stages: StagesModule, input: {
+  content: Checked; effective: import("../../src/lib/synopsis/stages").StagesReply; oldContent: Checked | null; facts: Facts;
+  alternates: string[]; shape: import("../../src/lib/synopsis/stages").StagesShape; kind: "precon" | "player deck";
+}) {
+  const raw = stages.docShownNew(input.content, input.effective, input.shape);
+  const shownPass = input.shape === 3 ? stages.dedupeSections(raw, input.facts) : null;
+  const shownNew = shownPass?.doc ?? raw;
+  const oldDoc = stages.docFromChecked(input.oldContent ?? EMPTY_CHECKED);
+  const checks = stages.stagesChecks({ reply: input.effective, shownNew, oldDoc, facts: input.facts, alternates: input.alternates, shape: input.shape, kind: input.kind, postPass: input.shape === 3 });
+  return { shownNew, oldDoc, checks, shownDedupe: shownPass?.report ?? null };
+}
+
+// ---------------------------------------------------------------------------------------------
+// `--replay <runDir>`: re-run the post-pass and the checks over a finished run's stored replies.
+// NO model call, no token count, no ledger: the stored replies are read, never re-asked for. A deck's
+// facts come from its facts.json; a run older than that file rebuilds a precon's from staging
+// (read-only, as the paid run does) and a player's deck's from production only through the shell's
+// PROD_READONLY_DATABASE_URL. Without either, the deck is re-checked on the cards its own lines name
+// (exact for the post-pass and the repetition checks, which read only those lines and the commanders,
+// on a run whose "cards in the list" check passed); every other check is carried over as stored.
+
+if (args.replay) {
+  const runDir = args.replay.replace(/\/+$/, "");
+  if (!existsSync(join(runDir, "summary.json"))) throw new Error(`overview-stages: --replay ${runDir} has no summary.json`);
+  const stagesMod: StagesModule = await import("../../src/lib/synopsis/stages");
+  const { compareHtml } = await import("./lib/overview-stages-html.mjs");
+  const { readdirSync, statSync } = await import("node:fs");
+  const stagesMarks = await import("../../src/lib/synopsis/validate");
+  const { basename } = await import("node:path");
+  const outDir = new URL(`runs/${basename(runDir)}-replay${args["out-label"] ? `-${args["out-label"]}` : ""}/`, EVAL);
+  if (fileURLToPath(outDir).replace(/\/+$/, "") === runDir) throw new Error("overview-stages: --replay never writes over the run it reads");
+  mkdirSync(outDir, { recursive: true });
+  const stored = JSON.parse(readFileSync(join(runDir, "summary.json"), "utf8")) as { iteration: number };
+  const shapeR = stagesMod.shapeOfIteration(stored.iteration);
+  const read = <T,>(p: string): T | null => (existsSync(p) ? JSON.parse(readFileSync(p, "utf8")) as T : null);
+  type NewFile = { id: string; kind: "precon" | "player deck"; alternates: string[]; content: Checked; reply: import("../../src/lib/synopsis/stages").StagesReply; repairReply: import("../../src/lib/synopsis/stages").StagesReply | null; firstVerdicts: Checked["verdicts"]; repaired?: string[]; failed?: string };
+  type OldFile = { name: string; commanders: string[]; landLine: string; note: string; content: Checked | null; source: string; shown: import("../../src/lib/synopsis/stages").OverviewDoc | null };
+  type Checks = import("../../src/lib/synopsis/stages").StagesChecks;
+  const dirs = readdirSync(runDir).filter((d) => statSync(join(runDir, d)).isDirectory() && existsSync(join(runDir, d, "new.json")));
+
+  let staging: { buildPreconRequest: typeof import("../lib/precon-overview-request").buildPreconRequest } | null = null;
+  const prodFacts = new Map<string, Facts>();
+  const prodIds = dirs.filter((d) => isDeckId(d) && !existsSync(join(runDir, d, "facts.json")));
+  if (prodIds.length > 0 && process.env.PROD_READONLY_DATABASE_URL) {
+    const tmp = mkdtempSync(join(tmpdir(), "overview-stages-"));
+    try {
+      const tsx = fileURLToPath(new URL("../../node_modules/.bin/tsx", import.meta.url));
+      const r = spawnSync(tsx, [fileURLToPath(import.meta.url), "--prod-prepare", join(tmp, "prod.json"), "--prod-ids", prodIds.join(",")], { stdio: ["ignore", "inherit", "inherit"], env: process.env });
+      if (r.status !== 0) throw new Error(`overview-stages: the production read failed (exit ${r.status})`);
+      for (const p of JSON.parse(readFileSync(join(tmp, "prod.json"), "utf8")) as ProdPrepared[]) if (p.facts) prodFacts.set(p.id, p.facts);
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  }
+
+  /** The cards a deck's own lines name, as facts: enough for the post-pass and the repetition checks alone. */
+  const namedFacts = (reply: import("../../src/lib/synopsis/stages").StagesReply, commanders: string[]): Facts => {
+    const d = stagesMod.docFromStagesReply(reply, shapeR);
+    const { marksIn } = stagesMarks;
+    const names = new Set<string>([...commanders, ...d.keyCards.map((k) => k.card)]);
+    for (const l of [...d.overview, ...d.stages, ...d.alternate, ...d.tips, ...d.keyCards.map((k) => k.job), ...d.landKeep, ...d.keep, ...d.sendBack]) for (const m of marksIn(l.text)) names.add(m);
+    return { commanders, cards: [...names].map((name) => ({ oracleId: name.toLowerCase(), name, typeLine: "", quantity: 1, categories: [], oracleText: null })) } as unknown as Facts;
+  };
+  type Row = { id: string; name: string; basis: string; before: Record<string, boolean>; after: Record<string, boolean>; regressed: string[]; fixed: string[]; schemaNow: string; dedupe: unknown; shownDedupe: unknown; offenders: { explainedOnce: unknown; noCardTwice: unknown; shape: unknown } };
+  const rows: Row[] = [];
+  const pages: Parameters<typeof compareHtml>[1][number][] = [];
+  const passes = (c: Checks | null): Record<string, boolean> => (c ? {
+    cardsInList: c.cardsInList.pass, turnNumbers: c.turnNumbers.pass, explainedOnce: c.explainedOnce.pass, explainedOnceExceptCommanders: c.explainedOnce.passExceptCommanders,
+    stageFit: c.stageFit.pass, stagesNameCards: c.stagesNameCards.pass, length: c.length.pass, shape: c.shape.pass,
+    ...(c.landKeep ? { landKeep: c.landKeep.pass } : {}), ...(c.mulliganSpecific ? { mulliganSpecific: c.mulliganSpecific.pass } : {}), ...(c.deckKind ? { deckKind: c.deckKind.pass } : {}),
+    ...(c.noCardTwice ? { noCardTwice: c.noCardTwice.pass } : {}),
+    allPass: stagesMod.allChecksPass(c, false), allPassExceptCommanderRepeats: stagesMod.allChecksPass(c, true),
+  } : {});
+
+  for (const id of dirs.sort()) {
+    const neu = read<NewFile>(join(runDir, id, "new.json"))!;
+    const old = read<OldFile>(join(runDir, id, "old.json"));
+    const before = read<{ checks: Checks | null }>(join(runDir, id, "checks.json"))?.checks ?? null;
+    if (neu.failed || !neu.reply) { console.log(`${id}: the stored call failed (${neu.failed ?? "no reply"}); nothing to replay`); continue; }
+    const commanders = old?.commanders ?? [];
+    let facts = read<Facts>(join(runDir, id, "facts.json"));
+    let basis = facts ? "facts.json" : "";
+    if (!facts && !isDeckId(id)) {
+      if (!staging) {
+        const { connectStaging } = await import("./lib/staging.mjs");
+        await connectStaging();
+        staging = { buildPreconRequest: (await import("../lib/precon-overview-request")).buildPreconRequest };
+      }
+      const req = await staging.buildPreconRequest(id, BASIS);
+      if (req.ok) { facts = req.facts; basis = "facts rebuilt from staging (read-only)"; }
+    }
+    if (!facts && prodFacts.has(id)) { facts = prodFacts.get(id)!; basis = "facts read from production (read-only)"; }
+    // The sections the repair rewrote: stored since iteration 3 sends the post-pass's failures too;
+    // an older run's are its refused first verdicts.
+    const failing = neu.repaired ?? (neu.firstVerdicts ?? []).filter((v) => v.status === "refused").map((v) => v.section);
+    const effective = stagesMod.mergeStagesReply(neu.reply, neu.repairReply, failing);
+    const partial = !facts;
+    if (partial) {
+      if (!before || !before.cardsInList.pass) { console.log(`${id}: no facts, and no stored "cards in the list" pass to lean on; not replayed`); continue; }
+      // From the merged reply the checks read, so a card only the repair named is in the index.
+      facts = namedFacts(effective, commanders);
+      basis = `PARTIAL: facts not stored and not rebuildable here; ${shapeR === 3 ? "the post-pass, " : ""}the repetition checks, shape and length re-run on the cards the deck's own lines name, every other check carried over as stored`;
+    }
+    let res: { shownNew: import("../../src/lib/synopsis/stages").OverviewDoc; checks: Checks; shownDedupe: unknown };
+    if (!partial) {
+      res = checkedNew(stagesMod, { content: neu.content, effective, oldContent: old?.content ?? null, facts: facts!, alternates: neu.alternates, shape: shapeR, kind: neu.kind });
+    } else {
+      // The partial facts carry names alone: run only the checks that read names and the commanders.
+      // The post-pass and `checkNoCardTwice` are iteration 3's alone; an iteration 1 or 2 run is re-read as it was.
+      const i3 = shapeR === 3;
+      const shownRaw = stagesMod.docShownNew(neu.content, effective, shapeR);
+      const replyRaw = stagesMod.docFromStagesReply(effective, shapeR);
+      const shownPass = i3 ? stagesMod.dedupeSections(shownRaw, facts!) : null;
+      const replyPass = i3 ? stagesMod.dedupeSections(replyRaw, facts!) : null;
+      const shownDoc = shownPass?.doc ?? shownRaw;
+      const replyDoc = replyPass?.doc ?? replyRaw;
+      res = {
+        shownNew: shownDoc, shownDedupe: shownPass?.report ?? null,
+        checks: {
+          ...before!,
+          explainedOnce: stagesMod.checkExplainedOnce(replyDoc, facts!, { keyCardNames: i3 }),
+          shape: i3 ? stagesMod.checkShapeShown(replyDoc, shownDoc, neu.alternates, shapeR) : stagesMod.checkShape(replyDoc, neu.alternates, shapeR),
+          length: stagesMod.checkLength(shownDoc, stagesMod.docFromChecked(old?.content ?? EMPTY_CHECKED)),
+          ...(i3 ? { noCardTwice: stagesMod.checkNoCardTwice(replyDoc, facts!), dedupe: replyPass!.report } : {}),
+        },
+      };
+    }
+    const after: Checks = res.checks;
+    // The stored checks predate `checkNoCardTwice` (iteration 3's alone): read it on the stored reply as it was, before the post-pass.
+    const b = passes(before && !before.noCardTwice && shapeR === 3 ? { ...before, noCardTwice: stagesMod.checkNoCardTwice(stagesMod.docFromStagesReply(effective, shapeR), facts!) } : before);
+    const a = passes(after);
+    const keys = [...new Set([...Object.keys(b), ...Object.keys(a)])];
+    const schemaOk = stagesMod.stagesSchemaFor(shapeR, neu.alternates).safeParse(neu.reply).success;
+    rows.push({
+      id, name: old?.name ?? id, basis, before: b, after: a,
+      regressed: keys.filter((k) => b[k] === true && a[k] === false),
+      fixed: keys.filter((k) => b[k] === false && a[k] === true),
+      schemaNow: schemaOk ? "accepts the stored reply" : "REJECTS the stored reply (the alternate line is required for this deck); a paid run could not get this reply back",
+      dedupe: after.dedupe ?? null, shownDedupe: res.shownDedupe,
+      offenders: { explainedOnce: after.explainedOnce.offenders, noCardTwice: after.noCardTwice?.offenders ?? null, shape: after.shape.offenders },
+    });
+    mkdirSync(new URL(`${id}/`, outDir), { recursive: true });
+    writeFileSync(new URL(`${id}/checks.json`, outDir), `${JSON.stringify({ id, basis, checks: after, before }, null, 2)}\n`);
+    writeFileSync(new URL(`${id}/shown.json`, outDir), `${JSON.stringify(res.shownNew, null, 2)}\n`);
+    pages.push({
+      id, name: old?.name ?? id, commanders, kind: neu.kind, landLine: old?.landLine ?? "", note: `replayed: ${basis}`,
+      old: { doc: old?.shown ?? null, refused: [], source: old?.source ?? "no old" },
+      new: { doc: res.shownNew, refused: [], source: "the stored reply after the explained-once post-pass (no model call)" },
+      checks: after,
+    });
+  }
+  const tally = (k: string, side: "before" | "after") => rows.filter((r) => r[side][k]).length;
+  const lines = [
+    `Replay of ${runDir} (iteration ${stored.iteration}): ${rows.length} decks, NO model call.`,
+    ...["noCardTwice", "explainedOnceExceptCommanders", "shape", "length", "allPassExceptCommanderRepeats", "allPass"].map((k) => `${k}: ${tally(k, "before")} of ${rows.length} before, ${tally(k, "after")} after.`),
+    `Regressions (a check that passed and now fails): ${rows.filter((r) => r.regressed.length).map((r) => `${r.id}: ${r.regressed.join(", ")}`).join("; ") || "none"}.`,
+  ];
+  writeFileSync(new URL("replay.json", outDir), `${JSON.stringify({ runDir, iteration: stored.iteration, rows }, null, 2)}\n`);
+  writeFileSync(new URL("compare.html", outDir), compareHtml(`Overview iteration ${stored.iteration}, replayed with the explained-once post-pass`, pages, lines));
+  for (const r of rows) console.log(`${r.id}: fixed [${r.fixed.join(", ")}] regressed [${r.regressed.join(", ")}]; schema now ${r.schemaNow.split(" (")[0]}; ${r.basis.split(";")[0]}`);
+  for (const l of lines) console.log(l);
+  console.log(`wrote ${fileURLToPath(outDir)}`);
   process.exit(0);
 }
 
@@ -355,7 +542,8 @@ const stagesOpt = (it: Item, oldContent: Checked | null = it.old?.content ?? nul
     ...(oldContent ? { maxChars: stages.renderedTotal(stages.docFromChecked(oldContent)) } : {}),
     ...(shape === 3 ? { shape, landKeep: stages.landKeepNumber(it.facts) } : {}),
   });
-const newSchema = stages.stagesSchemaFor(shape);
+/** Iteration 3 requires the alternate line in the schema for a deck whose box carries one (`stagesSchemaFor`). */
+const newSchema = (it: Item) => stages.stagesSchemaFor(shape, it.alternates);
 const newPrompt = (it: Item, oldContent?: Checked | null) => buildSynopsisPrompt(it.facts, undefined, { v2: true, contract8: true, stages: stagesOpt(it, oldContent) });
 const oldPrompt = (it: Item) => buildSynopsisPrompt(it.facts, undefined, { v2: true, contract8: true });
 const paramsOf = (p: { system: string; user: string }, schema: unknown) =>
@@ -388,7 +576,7 @@ const worstOf = (inTok: number) => worstCaseUsd(call.model, inTok, call.maxToken
 type Plan = { it: Item; newIn: number; oldIn: number | null; projected: number; worst: number };
 const plans: Plan[] = [];
 for (const it of items) {
-  const newIn = await inputTokens(newPrompt(it), newSchema);
+  const newIn = await inputTokens(newPrompt(it), newSchema(it));
   const oldIn = it.old ? null : await inputTokens(oldPrompt(it), synopsisResponseSchemaV8Wire);
   plans.push({
     it, newIn, oldIn,
@@ -508,7 +696,7 @@ for (const [i, p] of plans.entries()) {
   let saved = readJson<NewFirst>(firstFile);
   if (!saved) {
     const started = Date.now();
-    const first = await ask<StagesReply>(it, "new-write", newPrompt(it, old.content), newSchema, SYNOPSIS_DEADLINE_MS, 1, i);
+    const first = await ask<StagesReply>(it, "new-write", newPrompt(it, old.content), newSchema(it), SYNOPSIS_DEADLINE_MS, 1, i);
     if (!first) break;
     if (!first.out.ok) {
       writeFileSync(new URL("new.json", dir), `${JSON.stringify({ id: it.id, failed: first.out.errorClass, usd: first.usd, usage: first.usage, stops: first.stops, alternates: it.alternates }, null, 2)}\n`);
@@ -523,20 +711,30 @@ for (const [i, p] of plans.entries()) {
   let content = firstChecked;
   let repairReply: StagesReply | null = null;
   let repairUsd: number | undefined;
-  const failing = refusedSections(firstChecked);
+  const refused = refusedSections(firstChecked);
+  // Iteration 3: the explained-once post-pass and its checks run on the first write BEFORE the one
+  // repair is chosen, so a Key cards section the pass leaves short, a tip it leaves without a subject
+  // or a card still in two sections is rewritten too, not only a section the validator refused.
+  const i3First = shape === 3
+    ? stages.i3RepairTargets(checkedNew(stages, { content: firstChecked, effective: reply, oldContent: old.content, facts: it.facts, alternates: it.alternates, shape, kind: it.kind }).checks)
+    : { sections: [], reasons: [] };
+  const failing = [...new Set([...refused, ...i3First.sections])];
   const left = SYNOPSIS_DEADLINE_MS - saved.latencyMs;
   if (repairOn && failing.length > 0 && left >= SYNOPSIS_REPAIR_MIN_MS) {
-    const repPrompt = buildSynopsisPrompt(it.facts, { keep: firstChecked, refused: failing, first: reply }, { v2: true, contract8: true, stages: stagesOpt(it, old.content) });
-    const rep = await ask<StagesReply>(it, "new-repair", repPrompt, newSchema, left, 1, i);
+    const built = buildSynopsisPrompt(it.facts, { keep: firstChecked, refused: failing, first: reply }, { v2: true, contract8: true, stages: stagesOpt(it, old.content) });
+    const repPrompt = i3First.reasons.length > 0
+      ? { ...built, user: `${built.user}\nThese also broke the rule that each card is explained in one section only: ${i3First.reasons.join("; ")}.` }
+      : built;
+    const rep = await ask<StagesReply>(it, "new-repair", repPrompt, newSchema(it), left, 1, i);
     if (!rep) break;
     repairUsd = rep.usd;
     if (rep.out.ok) repairReply = rep.out.value;
     content = await applyRepair(firstChecked, rep.out, failing, it.facts, true);
   }
   const effective = stages.mergeStagesReply(reply, repairReply, failing);
-  const shownNew = stages.docShownNew(content, effective, shape);
-  const oldDoc = old.content ? stages.docFromChecked(old.content) : stages.docFromChecked({ verdicts: [], overview: null, primer: null, keyCards: null, weaknesses: null, cards: {} });
-  const checks = stages.stagesChecks({ reply: effective, shownNew, oldDoc, facts: it.facts, alternates: it.alternates, shape, kind: it.kind });
+  // The facts the checks read, so a later `--replay` re-checks this deck with no database and no model.
+  writeFileSync(new URL("facts.json", dir), `${JSON.stringify(it.facts)}\n`);
+  const { shownNew, checks } = checkedNew(stages, { content, effective, oldContent: old.content, facts: it.facts, alternates: it.alternates, shape, kind: it.kind });
   const validatorPass = content.verdicts.every((v) => v.status === "ok");
   writeFileSync(new URL("new.json", dir), `${JSON.stringify({
     id: it.id, kind: it.kind, shape, arm: call, repair: repairOn, alternates: it.alternates, castTurn: it.facts.stats?.commanderCastTurn ?? null,
@@ -544,7 +742,7 @@ for (const [i, p] of plans.entries()) {
     // Each section shown, with whether only a precon has it (`SECTION_SCOPE`): a player's deck shows none of those.
     sections: stages.sectionsOf(shownNew),
     usd: saved.usd, repairUsd, usage: saved.usage, stops: saved.stops, latencyMs: saved.latencyMs,
-    firstVerdicts: firstChecked.verdicts, content, reply, repairReply, shown: shownNew,
+    firstVerdicts: firstChecked.verdicts, ...(shape === 3 ? { i3BeforeRepair: i3First } : {}), repaired: repairReply ? failing : [], content, reply, repairReply, shown: shownNew,
   }, null, 2)}\n`);
   writeFileSync(new URL("checks.json", dir), `${JSON.stringify({ id: it.id, validatorPass, verdicts: content.verdicts, checks }, null, 2)}\n`);
 }
@@ -585,6 +783,8 @@ const summary = {
   genericLinesNew: decks.reduce((n, d) => n + (d.chk?.checks?.mulliganSpecific?.offenders.length ?? 0), 0),
   genericLinesToday: decks.reduce((n, d) => n + (d.chk?.checks?.mulliganSpecificToday?.offenders.length ?? 0), 0),
   deckKind: tally((c) => c.deckKind?.pass ?? false),
+  noCardTwice: tally((c) => c.noCardTwice?.pass ?? false),
+  tipsWithoutSubject: decks.reduce((n, d) => n + (d.chk?.checks?.dedupe?.tipsWithoutSubject.length ?? 0), 0),
   landTable: shape === 3 ? stages.landKeepTable(decks.flatMap((d) => (d.chk?.checks?.landKeep ? [{
     id: d.p.it.id, name: d.p.it.name, kind: d.p.it.kind, target: d.chk.checks.landKeep.target, stated: d.chk.checks.landKeep.stated, why: d.chk.checks.landKeep.why, curve: d.chk.checks.landKeep.curve,
   }] : []))) : null,
@@ -605,6 +805,7 @@ const lines = [
     `Land line states the deck's own number with a reason: ${summary.landKeep} of ${n}. Numbers stated: ${summary.landTable.distinctStated.join(", ") || "none"} (the rule's: ${summary.landTable.distinctTargets.join(", ")}); ${summary.landTable.differs ? "it differs across decks" : "it does NOT differ across decks"}${summary.landTable.everyStatedIsTheDecks ? ", every deck stating its own" : ", not every deck stating its own"}.`,
     `No generic mulligan line: ${summary.mulliganSpecific} of ${n} (${summary.genericLinesNew} generic lines; today ${summary.genericLinesToday} on ${n - summary.mulliganSpecificToday} decks).`,
     `Player decks read right with no precon-only section: ${summary.deckKind} of ${n}.`,
+    `No non-commander card in two sections after the post-pass: ${summary.noCardTwice} of ${n} (${summary.tipsWithoutSubject} tips would mark under 2 cards and were left for a repair).`,
   ] : []),
   ...notes,
 ];

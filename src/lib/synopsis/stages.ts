@@ -3,9 +3,9 @@ import { z } from "zod";
 import { refIndex } from "./claims";
 import { deckNameIndex, HAND_SIZE, normalizeName, type FactCard, type SynopsisFacts } from "./facts";
 import { isLandFace, playableAsLand } from "../cards/facet";
-import { CHAR_BUDGETS } from "./limits";
+import { CHAR_BUDGETS, SECTION_COUNTS, TIP_MIN_CARDS } from "./limits";
 import { synopsisResponseSchemaV8Wire } from "./response-schema";
-import type { CheckedSynopsis } from "./types";
+import type { CheckedSynopsis, SectionId } from "./types";
 import { figuresIn, marksIn, rendered } from "./validate";
 
 /**
@@ -64,7 +64,16 @@ export const stagesResponseSchemaWire = synopsisResponseSchemaV8Wire.extend({ al
 /** Iteration 3's reply: iteration 2's plus the REQUIRED land line. Iteration 2's schema is left as it was. */
 export const stagesResponseSchemaWireV3 = stagesResponseSchemaWire.extend({ landKeep: claimed });
 export type StagesReply = z.infer<typeof stagesResponseSchemaWire> & { landKeep?: z.infer<typeof claimed> };
-export const stagesSchemaFor = (shape: StagesShape) => (shape === 3 ? stagesResponseSchemaWireV3 : stagesResponseSchemaWire);
+/**
+ * Iteration 3's reply for a precon whose box carries an alternate commander: the alternate line is
+ * REQUIRED in the schema, not only asked for in the prompt. The reply is constrained server-side to
+ * the schema (`callModel`, `output_config.format`), so the model cannot leave it out; the prompt
+ * alone did not hold (CounterIntelligence_EOC, iteration 3, 2026-10-29).
+ */
+export const stagesResponseSchemaWireV3Alternate = stagesResponseSchemaWireV3.extend({ alternate: claimed });
+/** The schema a deck's reply is asked for in: iteration 3 requires the alternate line when the box carries one. Iteration 2's is unchanged. */
+export const stagesSchemaFor = (shape: StagesShape, alternates: readonly string[] = []) =>
+  (shape === 3 ? (alternates.length > 0 ? stagesResponseSchemaWireV3Alternate : stagesResponseSchemaWireV3) : stagesResponseSchemaWire);
 
 /**
  * The alternate commanders a precon's box carries: the MTGJSON deck file's main-board cards that are
@@ -295,6 +304,99 @@ export function checkExplainedOnce(doc: OverviewDoc, facts: Pick<SynopsisFacts, 
 }
 
 /**
+ * THE EXPLAINED-ONCE POST-PASS (iteration 3, after the i3 run: ScrappySurvivors_PIP named Mantle of
+ * the Ancients as a Key card and in a tip; CounterIntelligence_EOC named Hangarback Walker in a stage
+ * and a tip, and Kappa Cannoneer in a stage and as a Key card). Deterministic, no model call.
+ *
+ * The sections are read in order, stages, then Key cards, then tips, and the EARLIER one keeps a
+ * non-commander card (the commander is never touched):
+ *  - a Key card whose own card a stage already explained is DROPPED (the row is about that card and
+ *    has nothing left); a job that marks such a card keeps its words and loses the mark. Nothing
+ *    refills the section: a Key cards section the drop leaves under `SECTION_COUNTS.keyCards.min`
+ *    fails `checkShape` (iteration 3) and the reply needs a repair;
+ *  - a tip that marks such a card keeps its words and loses that card's MARK (and its evidence ref),
+ *    so the tip's subject is the cards it still marks. A tip is never deleted: tips are exactly 2;
+ *  - a tip that would mark fewer than `TIP_MIN_CARDS` cards once the earlier-explained ones are taken
+ *    out (the validator refuses such a tip, `tip_too_few_cards`) has lost a subject it needs: it is
+ *    left exactly as written and REPORTED (`tipsWithoutSubject`), so `checkNoCardTwice` still fails
+ *    it and the reply needs a repair, never a silent fix.
+ * A mark is what makes a card a line's subject (`checkExplainedOnce` and `checkNoCardTwice` count
+ * marks); a name left as plain text is a reference to a card explained elsewhere.
+ */
+export type DedupeReport = {
+  droppedKeyCards: { card: string; explainedIn: "stages" }[];
+  unmarked: { where: string; card: string; explainedIn: "stages" | "keyCards" }[];
+  tipsWithoutSubject: { tip: number; text: string; cards: string[] }[];
+};
+export function dedupeSections(doc: OverviewDoc, facts: Pick<SynopsisFacts, "cards" | "commanders">): { doc: OverviewDoc; report: DedupeReport } {
+  const deck = deckOf(facts);
+  const report: DedupeReport = { droppedKeyCards: [], unmarked: [], tipsWithoutSubject: [] };
+  const explained = new Map<string, "stages" | "keyCards">();
+  const idOf = (name: string) => {
+    const c = deck.names.get(normalizeName(name));
+    return c && !deck.commanders.has(c.oracleId) ? c.oracleId : null;
+  };
+  const note = (text: string, section: "stages" | "keyCards") => {
+    for (const m of marksIn(text)) { const id = idOf(m); if (id && !explained.has(id)) explained.set(id, section); }
+  };
+  /** The line with every mark of an already-explained card written as plain text, and those cards' refs dropped. */
+  const unmark = (line: Line, where: string): { line: Line; removed: string[]; left: string[] } => {
+    const removed: string[] = [];
+    const left: string[] = [];
+    const text = line.text.replace(/\[\[([^\[\]]+)\]\]/g, (whole, name: string) => {
+      const id = idOf(name);
+      const from = id ? explained.get(id) : undefined;
+      if (!from) { left.push(name); return whole; }
+      removed.push(name);
+      report.unmarked.push({ where, card: deck.byId.get(id!)!.name, explainedIn: from });
+      return name;
+    });
+    const gone = new Set(removed.flatMap((n) => { const id = idOf(n); return id ? [id] : []; }));
+    const refs = line.refs?.filter((r) => { const c = refCard(deck, r); return !c || !gone.has(c.oracleId); });
+    return { line: { ...line, text, ...(line.refs ? { refs } : {}) }, removed, left };
+  };
+
+  for (const l of [...doc.stages, ...doc.strategy]) note(l.text, "stages");
+  const keyCards: OverviewDoc["keyCards"] = [];
+  doc.keyCards.forEach((k) => {
+    const id = idOf(k.card);
+    if (id && explained.get(id) === "stages") { report.droppedKeyCards.push({ card: deck.byId.get(id)!.name, explainedIn: "stages" }); return; }
+    const job = unmark(k.job, `keyCards[${keyCards.length}] (${k.card})`).line;
+    keyCards.push({ card: k.card, job });
+  });
+  for (const k of keyCards) { const id = idOf(k.card); if (id && !explained.has(id)) explained.set(id, "keyCards"); note(k.job.text, "keyCards"); }
+  const tips = doc.tips.map((t, i) => {
+    const marked = marksIn(t.text);
+    const subjects = marked.filter((m) => { const id = idOf(m); return !id || !explained.has(id); });
+    // Counted by the card each mark resolves to, as the validator counts a tip's cards, so `[[Fire]]`
+    // and `[[Ice]]` are one subject (Fire // Ice); a mark that resolves to nothing counts by its spelling.
+    const cardOf = (m: string) => deck.names.get(normalizeName(m))?.oracleId ?? `?${normalizeName(m)}`;
+    if (subjects.length < marked.length && new Set(subjects.map(cardOf)).size < TIP_MIN_CARDS) {
+      report.tipsWithoutSubject.push({ tip: i, text: t.text, cards: marked });
+      return t;
+    }
+    return unmark(t, `tips[${i}]`).line;
+  });
+  return { doc: { ...doc, keyCards, tips }, report };
+}
+
+/**
+ * NO NON-COMMANDER CARD IN TWO SECTIONS (iteration 3): a deck card other than a commander that is
+ * marked in, or is the Key card of, more than one of the overview, the stages, the alternate line,
+ * the Key cards (name and job) and the tips is an offender. The commander's own repeats are
+ * `checkExplainedOnce`'s to report. Run after `dedupeSections`, it fails exactly what the pass could
+ * not fix: a tip left under `TIP_MIN_CARDS` marked cards, a card the overview and a later section
+ * share, and a card the alternate line shares with any other section (the post-pass never reads the
+ * alternate line, so a stage, Key card or tip naming the alternate's card fails here for a repair).
+ */
+export function checkNoCardTwice(doc: OverviewDoc, facts: Pick<SynopsisFacts, "cards" | "commanders">): CheckResult<{ card: string; sections: RepetitionSection[] }> {
+  const offenders = checkExplainedOnce(doc, facts, { keyCardNames: true }).offenders
+    .filter((o) => !o.commander)
+    .map(({ card, sections }) => ({ card, sections }));
+  return { pass: offenders.length === 0, offenders };
+}
+
+/**
  * The most an Early card may cost: the computed cast turn plus one (turn 3 when the cast turn is
  * unknown). The rule chosen: Early is the turns up to the commander, and a card a turn after it is
  * still setup; anything dearer is the engine or the close. Commanders are exempt (the cast turn is theirs).
@@ -346,7 +448,8 @@ export function checkLength(newDoc: OverviewDoc, oldDoc: OverviewDoc): { pass: b
  * The shape's own counts and budgets: three stages of at most 144, Wins by (iteration 2) and the
  * alternate at most 144, exactly 2 tips, and the alternate line present exactly when the facts carry
  * an alternate commander, naming one of them. Iteration 3: no Wins by line, and exactly one land line
- * of at most 120.
+ * of at most 120, and the Key cards within `SECTION_COUNTS.keyCards` (the explained-once post-pass
+ * can drop one below the minimum, and nothing refills it).
  */
 export function checkShape(doc: OverviewDoc, alternates: readonly string[], shape: StagesShape = 2): CheckResult<string> {
   const offenders: string[] = [];
@@ -360,6 +463,8 @@ export function checkShape(doc: OverviewDoc, alternates: readonly string[], shap
     if (doc.winsBy.length > 0) offenders.push("a Wins by line, which iteration 3 drops");
     if (doc.landKeep.length !== 1) offenders.push(`${doc.landKeep.length} land lines, not 1`);
     doc.landKeep.forEach((l) => { if (len(l) > STAGES_LIMITS.landKeep) offenders.push(`the land line is ${len(l)} characters`); });
+    const { min, max } = SECTION_COUNTS.keyCards;
+    if (doc.keyCards.length < min || doc.keyCards.length > max) offenders.push(`${doc.keyCards.length} Key cards, not ${min} to ${max}`);
   }
   if (doc.tips.length < STAGES_LIMITS.tips.min || doc.tips.length > STAGES_LIMITS.tips.max) offenders.push(`${doc.tips.length} tips`);
   if (alternates.length === 0 && doc.alternate.length > 0) offenders.push("an alternate line with no alternate commander in the facts");
@@ -369,6 +474,17 @@ export function checkShape(doc: OverviewDoc, alternates: readonly string[], shap
     const wanted = new Set(alternates.map(normalizeName));
     if (alternates.length > 0 && !marksIn(l.text).some((m) => wanted.has(normalizeName(m)))) offenders.push("the alternate line names none of the alternate commanders");
   }
+  return { pass: offenders.length === 0, offenders };
+}
+
+/**
+ * The shape of the reply the checks read AND of the doc a reader is shown: an offender of either
+ * fails, the shown doc's marked "shown: " (and left out when the reply already has the same one).
+ */
+export function checkShapeShown(replyDoc: OverviewDoc, shownDoc: OverviewDoc, alternates: readonly string[], shape: StagesShape = 2): CheckResult<string> {
+  const reply = checkShape(replyDoc, alternates, shape).offenders;
+  const shown = checkShape(shownDoc, alternates, shape).offenders.filter((o) => !reply.includes(o)).map((o) => `shown: ${o}`);
+  const offenders = [...reply, ...shown];
   return { pass: offenders.length === 0, offenders };
 }
 
@@ -493,8 +609,8 @@ const LAND_COUNT_WORDS: Record<string, number> = { zero: 0, one: 1, two: 2, thre
  * lands"), outside card marks. A deck-total phrase, which the prompt hands the land line as a reason,
  * is told apart by its WORDS, never by its number (a deck's total may equal the hand count): "on 37
  * lands", "plays (only) 37 lands", "runs 37 lands", "its 37 lands", "37 lands in the deck", "with 37
- * lands" (unless a hand comes just before: "a hand with 3 lands" is a hand count). "3 of its 37
- * lands" states 3.
+ * lands" (unless a hand comes just before: "a hand with 3 lands" is a hand count), "a 37-land deck". "3 of its
+ * 37 lands" states 3.
  */
 export function statedLandNumbers(text: string): number[] {
   const bare = text.replace(/\[\[[^\[\]]+\]\]/g, " ");
@@ -516,8 +632,8 @@ const TOTAL_BEFORE = /\b(?:on|plays?|playing|runs?|running|its|of\s+(?:the|your)
 /** "with" before a land count, which is the deck's total unless a hand comes just before it. */
 const WITH_BEFORE = /\bwith\s+(?:only\s+|just\s+)?$/i;
 const HAND_WITH_BEFORE = /\b(?:hand|seven|opener|opening\s+\w+)\s+with\s+(?:only\s+|just\s+)?$/i;
-/** Words after a land count that make it the deck's total: "in the deck", "in the list", "in the 99". */
-const TOTAL_AFTER = /^\s+in\s+(?:the|this|your)\s+(?:deck|list|99|library)\b/i;
+/** Words after a land count that make it the deck's total: "in the deck", "in the list", "in the 99", and "deck" itself ("a 40-land deck"). */
+const TOTAL_AFTER = /^(?:\s+in\s+(?:the|this|your)\s+(?:deck|list|99|library)|\s+(?:deck|list|build))\b/i;
 
 function isDeckTotal(before: string, after: string): boolean {
   if (TOTAL_AFTER.test(after) || TOTAL_BEFORE.test(before)) return true;
@@ -694,12 +810,19 @@ export type StagesChecks = {
   mulliganSpecificToday?: ReturnType<typeof checkMulliganSpecific>;
   /** Iteration 3 only. */
   deckKind?: ReturnType<typeof checkDeckKind>;
+  /** Iteration 3 only: no non-commander card in two sections, read after the post-pass when it ran. */
+  noCardTwice?: ReturnType<typeof checkNoCardTwice>;
+  /** Iteration 3 with `postPass`: what `dedupeSections` changed or reported on the reply the checks read. */
+  dedupe?: DedupeReport;
 };
 
 /** Every auto-pass check on one deck's new reply, against its old shown content. */
-export function stagesChecks(input: { reply: StagesReply; shownNew: OverviewDoc; oldDoc: OverviewDoc; facts: SynopsisFacts; alternates: readonly string[]; shape?: StagesShape; kind?: "precon" | "player deck" }): StagesChecks {
+export function stagesChecks(input: { reply: StagesReply; shownNew: OverviewDoc; oldDoc: OverviewDoc; facts: SynopsisFacts; alternates: readonly string[]; shape?: StagesShape; kind?: "precon" | "player deck"; postPass?: boolean }): StagesChecks {
   const shape = input.shape ?? 2;
-  const doc = docFromStagesReply(input.reply, shape);
+  const raw = docFromStagesReply(input.reply, shape);
+  // Iteration 3's explained-once post-pass, when the caller ran it on what it shows (`dedupeSections`).
+  const passed = shape === 3 && input.postPass ? dedupeSections(raw, input.facts) : null;
+  const doc = passed?.doc ?? raw;
   const castTurn = input.facts.stats?.commanderCastTurn ?? null;
   const base: StagesChecks = {
     cardsInList: checkCardsInList(doc, input.facts),
@@ -708,7 +831,9 @@ export function stagesChecks(input: { reply: StagesReply; shownNew: OverviewDoc;
     stageFit: checkStageFit(doc, input.facts, castTurn),
     stagesNameCards: checkStagesNameCards(doc, input.facts),
     length: checkLength(input.shownNew, input.oldDoc),
-    shape: checkShape(doc, input.alternates, shape),
+    // After the post-pass the reader is shown the VALIDATED sections deduped, which can hold fewer
+    // Key cards than the reply did (validation kept 5 of 6, the pass dropped one more): both are read.
+    shape: passed ? checkShapeShown(doc, input.shownNew, input.alternates, shape) : checkShape(doc, input.alternates, shape),
   };
   if (shape === 2) return base;
   const land = landKeepNumber(input.facts);
@@ -718,14 +843,46 @@ export function stagesChecks(input: { reply: StagesReply; shownNew: OverviewDoc;
     mulliganSpecific: checkMulliganSpecific(doc, input.facts, land),
     mulliganSpecificToday: checkMulliganSpecific(input.oldDoc, input.facts, land),
     deckKind: checkDeckKind(input.shownNew, input.kind ?? "precon"),
+    noCardTwice: checkNoCardTwice(doc, input.facts),
+    ...(passed ? { dedupe: passed.report } : {}),
   };
+}
+
+/** The contract-8 section a repetition section's lines come from (the alternate and Wins by lines are no contract-8 section, so no repair rewrites them). */
+const REPAIR_SECTION_OF: Record<RepetitionSection, SectionId | null> = { overview: "overview", stages: "primer", winsBy: null, alternate: null, tips: "primer", keyCardJobs: "keyCards" };
+
+/**
+ * What iteration 3's post-pass and its checks leave for the app's one repair: the sections to
+ * rewrite and why. A Key cards section under its minimum (on the reply or on what is shown), a tip
+ * the pass left without a subject, and a card still in two sections (the LATER section is rewritten,
+ * as the pass keeps the earlier one; the earlier when the later is a line no repair rewrites).
+ */
+/** The post-pass's priority: the earlier section keeps a card (stages, then Key cards, then tips). */
+const PASS_ORDER: Record<RepetitionSection, number> = { overview: 0, stages: 1, keyCardJobs: 2, tips: 3, alternate: 4, winsBy: 5 };
+
+export function i3RepairTargets(c: StagesChecks): { sections: SectionId[]; reasons: string[] } {
+  const sections = new Set<SectionId>();
+  const reasons: string[] = [];
+  for (const o of c.shape.offenders) if (/ Key cards, not /.test(o)) { sections.add("keyCards"); reasons.push(`keyCards: ${o.replace(/^shown: /, "")} once a Key card a stage already explains is dropped; name other cards`); }
+  for (const t of c.dedupe?.tipsWithoutSubject ?? []) { sections.add("primer"); reasons.push(`primer: tip ${t.tip + 1} needs ${TIP_MIN_CARDS} cards no earlier section explains (it names ${t.cards.join(", ")})`); }
+  for (const o of c.noCardTwice?.offenders ?? []) {
+    // In the post-pass's priority (it keeps the earlier section), never the order the check listed them.
+    const ordered = [...o.sections].sort((a, b) => PASS_ORDER[a] - PASS_ORDER[b]);
+    // A line no repair rewrites (the alternate) keeps the card, so every editable section naming it is rewritten.
+    const fixed = ordered.some((s) => REPAIR_SECTION_OF[s] === null);
+    const later = (fixed ? ordered : ordered.slice(1)).flatMap((s) => REPAIR_SECTION_OF[s] ?? []);
+    const targets = later.length > 0 ? later : ordered.flatMap((s) => REPAIR_SECTION_OF[s] ?? []);
+    for (const s of targets) sections.add(s);
+    if (targets.length > 0) reasons.push(`${[...new Set(targets)].join(", ")}: ${o.card} is explained in ${o.sections.join(" and ")}; explain each card in one section only`);
+  }
+  return { sections: [...sections], reasons: [...new Set(reasons)] };
 }
 
 /** Whether every check that applies to the shape passes. `exceptCommanders` reads the repetition rule with the commanders exempt. */
 export function allChecksPass(c: StagesChecks, exceptCommanders: boolean): boolean {
   return c.cardsInList.pass && c.turnNumbers.pass && (exceptCommanders ? c.explainedOnce.passExceptCommanders : c.explainedOnce.pass)
     && c.stageFit.pass && c.stagesNameCards.pass && c.length.pass && c.shape.pass
-    && (c.landKeep?.pass ?? true) && (c.mulliganSpecific?.pass ?? true) && (c.deckKind?.pass ?? true);
+    && (c.landKeep?.pass ?? true) && (c.mulliganSpecific?.pass ?? true) && (c.deckKind?.pass ?? true) && (c.noCardTwice?.pass ?? true);
 }
 
 /**

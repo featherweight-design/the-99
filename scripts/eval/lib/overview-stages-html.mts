@@ -70,6 +70,12 @@ function checksBlock(c: StagesChecks | null): string {
     ...(x.mulliganSpecific ? [row("No generic mulligan line (each names a deck card or a deck-specific number)", x.mulliganSpecific.pass, x.mulliganSpecific.offenders.map((o) => `${o.where}: ${o.text}`))] : []),
     ...(x.mulliganSpecificToday ? [row("Today's mulligan lines, same rule (for comparison)", x.mulliganSpecificToday.pass, x.mulliganSpecificToday.offenders.map((o) => `${o.where}: ${o.text}`))] : []),
     ...(x.deckKind ? [row("Reads right for its kind (a player's deck shows no precon-only section)", x.deckKind.pass, x.deckKind.offenders)] : []),
+    ...(x.noCardTwice ? [row("No non-commander card in two sections (after the post-pass)", x.noCardTwice.pass, x.noCardTwice.offenders.map((o) => `${o.card}: ${o.sections.join(", ")}`))] : []),
+    ...(x.dedupe ? [row("Post-pass (stages, then Key cards, then tips): no tip left under 2 marked cards", x.dedupe.tipsWithoutSubject.length === 0, [
+      ...x.dedupe.droppedKeyCards.map((d) => `dropped Key card ${d.card} (explained in ${d.explainedIn})`),
+      ...x.dedupe.unmarked.map((u) => `${u.where}: ${u.card} left as plain text (explained in ${u.explainedIn})`),
+      ...x.dedupe.tipsWithoutSubject.map((t) => `tip ${t.tip + 1} would mark under 2 cards (${t.cards.join(", ")}), left as written: ${t.text}`),
+    ])] : []),
   ];
   if (!c) return `<div class="checks"><p>No checks: the new answer did not come back.</p></div>`;
   const row = (name: string, pass: boolean, detail: unknown[]) =>
