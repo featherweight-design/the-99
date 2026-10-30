@@ -60,7 +60,8 @@ export function windowWhere(now: Date) {
 /** The free window's rows for every account at once. */
 async function windowRows(now: Date): Promise<(LedgerRow & { userId: string })[]> {
   const rows = await db
-    .select({ userId: modelCalls.userId, status: modelCalls.status, createdAt: modelCalls.createdAt })
+    // `units`: the window counts credits, never rows (`allowanceFrom`).
+    .select({ userId: modelCalls.userId, status: modelCalls.status, createdAt: modelCalls.createdAt, units: modelCalls.units })
     .from(modelCalls)
     .where(windowWhere(now));
   return rows as (LedgerRow & { userId: string })[];

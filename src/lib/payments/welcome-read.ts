@@ -21,10 +21,10 @@ type Writer = Pick<typeof db, "insert">;
 
 /**
  * The reader's welcome grant row with what it holds (welcome credits G1): ONE indexed read, by the partial unique index
- * `credit_grants_welcome_once` (one welcome lot per account), whose two subqueries count the lot's ledger rows through
+ * `credit_grants_welcome_once` (one welcome lot per account), whose two subqueries sum the units of the lot's ledger rows through
  * `model_calls_credit_grant_idx`. Unlike the allowance's read it keeps an expired lot, so the state rule can tell used
  * up, expired and no lot apart. What a lot has left is still `credit-rule.ts`'s `remaining`: the SQL only gathers its
- * inputs (spent rows as a count, reservations young enough to count, whole), as `grantBalances` does.
+ * inputs (the spent rows' units summed, reservations young enough to count, whole), as `grantBalances` does.
  *
  * The subqueries are correlated in the PROJECTION of a single-table select, so each aliases `model_calls` and names the
  * outer table in full (AGENTS.md: Drizzle leaves a bare column there, and `id` would resolve against `model_calls`).
@@ -39,13 +39,16 @@ export function welcomeLotQuery(userId: string, now: Date, q: Reader = db) {
       revokedUnits: creditGrants.revokedUnits,
       expiresAt: creditGrants.expiresAt,
       createdAt: creditGrants.createdAt,
+      // CREDITS, not rows: a run's `units` (a Suggested changes v2 run over 10 swaps costs 2).
       spent: sql<number>`(
-        select count(*) from ${modelCalls} mc
+        select coalesce(sum(mc.units), 0) from ${modelCalls} mc
         where mc.credit_grant_id = ${creditGrants}.id and mc.status = 'spent'
       )::int`,
-      // Epoch milliseconds, as JSON, for the reason `grantBalances` gives.
+      // Epoch milliseconds, as JSON, for the reason `grantBalances` gives: one entry per CREDIT, so a 2-unit
+      // reservation appears twice (`generate_series` over its units), as `GrantUsage` reads it.
       reserved: sql<number[] | null>`(
         select json_agg((extract(epoch from mc.created_at) * 1000)::float8) from ${modelCalls} mc
+        cross join lateral generate_series(1, mc.units) as unit
         where mc.credit_grant_id = ${creditGrants}.id and mc.status = 'reserved' and mc.created_at > ${reservedSince}::timestamp
       )`,
     })

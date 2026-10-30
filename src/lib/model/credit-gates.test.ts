@@ -125,3 +125,66 @@ describe("the paid limit", () => {
     expect(hasCredit({ used: 5, limit: 5, pack: 9 })).toBe(true);
   });
 });
+
+/**
+ * CREDITS ARE SUMMED, NEVER COUNTED (Suggested changes v2 pricing, Hugh 2026-10-30). A run over 10 swaps costs 2 credits
+ * and is still ONE `model_calls` row (`units` = 2), so a counter that takes `count(*)` over the ledger's rows charges it
+ * one: the free window, a lot's balance, the paid limit and every reader of them sum `model_calls.units`. This fails on
+ * any SQL `count(` whose table (the first `from` after it, comments aside) is `model_calls`, unless its alias is one of
+ * the counters below that count presses or accounts on purpose and are never a balance.
+ */
+const LEDGER_TABLES = new Set(["modelCalls", "model_calls"]);
+const FROM = /\.from\(\s*(\w+)|\bfrom\s+(?:\$\{\s*(\w+)\s*\}|"?(\w+)"?)/;
+/** `file:alias` of every count over the ledger that is not a credit counter, with why. */
+const NOT_CREDITS = new Set([
+  // The Costs page: runs and accounts in a month, for dollars per run. Never a balance.
+  "lib/admin/costs.ts:runs",
+  "lib/admin/costs.ts:playerAccounts",
+  "lib/admin/costs.ts:previousRuns",
+  // The admin account page's presses per feature this month, refunds included: a press count, not credits.
+  "lib/admin/account-page.ts:presses",
+]);
+const stripComments = (text: string) => text.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|\s)\/\/.*$/gm, "$1");
+
+/** The alias of every `count(` over the ledger in `text` ("" when it has none). */
+function ledgerCounts(raw: string): string[] {
+  const text = stripComments(raw);
+  const found: string[] = [];
+  for (const m of text.matchAll(/\bcount\(/g)) {
+    const from = text.slice(m.index, m.index + 2000).match(FROM);
+    const table = from ? from[1] ?? from[2] ?? from[3] : null;
+    if (!table || !LEDGER_TABLES.has(table)) continue;
+    found.push(text.slice(Math.max(0, m.index - 200), m.index).match(/(\w+)\s*:\s*sql(?:<[^`]*?>)?`[^`]*$/)?.[1] ?? "");
+  }
+  return found;
+}
+
+describe("credits over model_calls are summed units, never counted rows", () => {
+  it("no source file counts ledger rows as credits", () => {
+    const found = sourceFiles(SRC).flatMap((path) => {
+      const file = relative(SRC, path);
+      return ledgerCounts(readFileSync(path, "utf8")).map((alias) => `${file}:${alias}`).filter((key) => !NOT_CREDITS.has(key));
+    });
+    expect(found).toEqual([]);
+  });
+
+  it("sees the shapes the counters were written in, and not a sum or another table", () => {
+    for (const shape of [
+      "spent: sql<string>`count(*) filter (where ${modelCalls.status} = 'spent')`,\n reserved: x,\n })\n .from(modelCalls)",
+      "spent: sql<number>`(\n select count(*) from ${modelCalls} mc\n where mc.status = 'spent')::int`",
+      "const { rows } = await tx.execute(sql`select count(*) as n from model_calls where user_id = ${id}`);",
+      "used: sql<number>`count(${modelCalls.id})::int`,\n}).from(modelCalls)",
+    ]) expect(ledgerCounts(shape)).toHaveLength(1);
+    for (const fine of [
+      "spent: sql<string>`coalesce(sum(${modelCalls.units}) filter (where ${modelCalls.status} = 'spent'), 0)`,\n }).from(modelCalls)",
+      "cards: sql<number>`count(*)::int`,\n}).from(deckCards)",
+      // A comment naming the ledger is not its table.
+      "n: sql<number>`count(*)::int`, // not from model_calls\n}).from(decks)",
+    ]) expect(ledgerCounts(fine)).toEqual([]);
+  });
+
+  it("names every exemption it still needs, so none outlives its counter", () => {
+    const seen = new Set(sourceFiles(SRC).flatMap((path) => ledgerCounts(readFileSync(path, "utf8")).map((alias) => `${relative(SRC, path)}:${alias}`)));
+    expect([...NOT_CREDITS].filter((key) => !seen.has(key))).toEqual([]);
+  });
+});

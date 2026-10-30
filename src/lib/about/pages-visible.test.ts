@@ -89,6 +89,7 @@ describe("Suggested changes v2 follows its own switch, and its parents'", () => 
   const V2 = "asks how many cards to change and what you’re after";
   const OTHER_DECKS = "Include my other decks also offers cards your other decks hold";
   const REFUND = "A Suggested changes run that comes back short gives its credit back too";
+  const TWO = "So does each Suggested changes run, or two for more than 10 changes.";
   const textOf = (e: Record<string, string>, key: string) =>
     units(visibleSections(env(e))).find((u) => u.key === key)?.text;
   const PARENTS = { ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true" };
@@ -100,6 +101,7 @@ describe("Suggested changes v2 follows its own switch, and its parents'", () => 
     expect(label).not.toContain(OTHER_DECKS);
     const credits = textOf(PARENTS, "rule/credits")!;
     expect(credits).toContain("So does each Suggested changes run.");
+    expect(credits).not.toContain(TWO);
     expect(credits).not.toContain(REFUND);
   });
 
@@ -109,7 +111,10 @@ describe("Suggested changes v2 follows its own switch, and its parents'", () => 
     expect(label).toContain(V2);
     expect(label).toContain(OTHER_DECKS);
     expect(label).not.toContain(V1);
-    expect(textOf(on, "rule/credits")).toContain(REFUND);
+    const credits = textOf(on, "rule/credits")!;
+    expect(credits).toContain(REFUND);
+    expect(credits).toContain(TWO);
+    expect(credits).not.toContain("So does each Suggested changes run.");
   });
 
   it.each([

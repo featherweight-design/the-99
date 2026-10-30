@@ -108,7 +108,17 @@ export const ALLOWANCE_WINDOW_MS = 24 * 60 * 60 * 1000;
  */
 export const RESERVATION_TTL_MS = 10 * 60 * 1000;
 
-export type LedgerRow = { status: "reserved" | "spent" | "refunded"; createdAt: Date };
+/**
+ * One `model_calls` row as the counters read it. `units` is what the run costs (`model_calls.units`, 1 or 2; a
+ * Suggested changes v2 run over 10 swaps costs 2, `unitsFor`). Absent reads as 1, so a fixture written before units
+ * still counts as it did; every database reader selects the column.
+ */
+export type LedgerRow = { status: "reserved" | "spent" | "refunded"; createdAt: Date; units?: number };
+
+/** The credits one ledger row holds: its `units`, 1 when absent. Every counter sums this, never counts rows. */
+export function unitsOf(row: Pick<LedgerRow, "units">): number {
+  return row.units ?? 1;
+}
 
 /** Whether one ledger row counts against the allowance at `now`. */
 export function counts(row: LedgerRow, now: Date): boolean {
@@ -183,8 +193,9 @@ export type Allowance = {
  * says anything about the owner's share: `ownerShare` refuses a press whatever the credits, and every
  * caller checks it first.
  */
-export function freeRoom(a: { used: number; limit: number }): boolean {
-  return a.used < a.limit;
+export function freeRoom(a: { used: number; limit: number }, units = 1): boolean {
+  // A run costing `units` credits must fit in the free allowance whole: it is never split with a lot.
+  return a.used + units <= a.limit;
 }
 
 /** Free credits left, never below zero: the count a credit line shows. Never a gate: ask `hasCredit`. */
@@ -205,8 +216,9 @@ export function heldCredits(a: HeldLots): number {
  * It gates paid runs only, and `hasCredit` applies it after the free allowance, so it can never refuse a
  * run the free allowance can fund. `credit-gates.test.ts` fails on any other comparison of the two.
  */
-export function paidRoom(a: { paidUsed: number; paidLimit: number }): boolean {
-  return a.paidUsed < a.paidLimit;
+export function paidRoom(a: { paidUsed: number; paidLimit: number }, units = 1): boolean {
+  // The paid limit counts credits: a 2-credit paid run needs room for both.
+  return a.paidUsed + units <= a.paidLimit;
 }
 
 /**
@@ -219,6 +231,8 @@ export function paidAtLimit(a: HeldLots & { paidUsedToday?: number | null; paidL
   return a.paidUsedToday != null && a.paidLimit != null && !paidRoom({ paidUsed: a.paidUsedToday, paidLimit: a.paidLimit });
 }
 
+/** A one-credit run's gate. A run costing 2 (Suggested changes v2 over 10 swaps) is decided by `reserveModelCall`
+ *  alone, with `freeRoom` and `paidRoom` taking its units; the panel's cue for it comes with the Small items 7 handoff. */
 export function hasCredit(a: HeldLots & {
   used: number; limit: number;
   paidUsedToday?: number | null; paidLimit?: number | null;
@@ -245,9 +259,10 @@ export function allowanceFrom(
   now: Date,
   limit: number = MODEL_DEFAULT_DAILY_ALLOWANCE,
 ): Allowance {
+  // One entry per CREDIT, not per row: a 2-unit run counts twice and frees both credits at its one expiry.
   const expiries = rows
     .filter((r) => counts(r, now))
-    .map(expiresAt)
+    .flatMap((r) => Array.from({ length: unitsOf(r) }, () => expiresAt(r)))
     .sort((a, b) => a - b);
   const used = expiries.length;
   const nextAt = used > 0 ? new Date(expiries[0]) : null;

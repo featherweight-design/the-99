@@ -51,10 +51,11 @@ export function isLive(grant: CreditGrant, now: Date): boolean {
 }
 
 /**
- * What a lot's ledger rows hold, as the ledger reads it: every `spent` row is counted, so it arrives
- * as a count (a lot's spend grows without bound); the `reserved` rows arrive whole, because whether
+ * What a lot's ledger rows hold, as the ledger reads it: every `spent` row's units are summed into one
+ * number (a lot's spend grows without bound); the `reserved` rows arrive whole, because whether
  * each still counts is `countsAgainstGrant`'s to decide at `now`. Refunded rows never count and are
- * not read.
+ * not read. Both are in CREDITS, not rows (`model_calls.units`): `spent` is the sum of the spent rows'
+ * units, and a reservation of 2 units arrives as its `createdAt` twice.
  */
 export type GrantUsage = { spent: number; reserved: readonly Date[] };
 
@@ -79,9 +80,12 @@ function spendOrder(a: CreditGrant, b: CreditGrant): number {
   return ac !== bc ? ac - bc : a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
 }
 
-/** The lot the next paid run is funded from, or null when no lot has a credit left. */
-export function pickGrant(balances: readonly GrantBalance[]): CreditGrant | null {
-  const open = balances.filter((b) => b.remaining > 0).map((b) => b.grant).sort(spendOrder);
+/**
+ * The lot the next paid run is funded from: the first in spend order holding the run's whole cost (`units`), or null
+ * when none does. A run is never split across two lots (Hugh, 2026-10-30).
+ */
+export function pickGrant(balances: readonly GrantBalance[], units = 1): CreditGrant | null {
+  const open = balances.filter((b) => b.remaining >= units).map((b) => b.grant).sort(spendOrder);
   return open[0] ?? null;
 }
 

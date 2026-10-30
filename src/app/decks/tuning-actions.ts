@@ -192,12 +192,12 @@ export async function saveDeckLimits(
  * pending row, committed before any network call. Everything after that sits in one `try`, so a
  * throw anywhere fails the run and refunds its unit: no unit is ever spent on a call never made.
  */
-export async function runTuning(deckId: string, opts: V2RunOpts): Promise<DeckMutationResult | SameRequest>;
+export async function runTuning(deckId: string, opts: V2RunOpts): Promise<DeckMutationResult | SameRequest | CostsMore>;
 export async function runTuning(deckId: string, opts?: { anyway?: boolean; runId?: string; notes?: string }): Promise<DeckMutationResult>;
 export async function runTuning(
   deckId: string,
   opts: { anyway?: boolean; runId?: string; notes?: string } | V2RunOpts = {},
-): Promise<DeckMutationResult | SameRequest> {
+): Promise<DeckMutationResult | SameRequest | CostsMore> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!tuningEnabled(env) || !isUuid(deckId)) return { ok: false, message: deckTuningCopy.run.refused };
@@ -406,7 +406,11 @@ export type V2RunOpts = {
 /** `refunded`: that run gave its credit back, so its reopened head says `refunded` as History does. */
 export type SameRequest = { ok: false; confirm: "same_request"; runId: string; at: string; refunded?: boolean };
 
-async function runTuningV2(deckId: string, userId: string, env: NodeJS.ProcessEnv, opts: V2RunOpts): Promise<DeckMutationResult | SameRequest> {
+/** A v2 refusal that is about the run's cost, not an empty balance: it costs `costs` credits (over 10 swaps) and no
+ *  single source holds them, while a one-credit run would start. Data only; `message` is the ordinary refusal. */
+export type CostsMore = { ok: false; message: string; costs: number };
+
+async function runTuningV2(deckId: string, userId: string, env: NodeJS.ProcessEnv, opts: V2RunOpts): Promise<DeckMutationResult | SameRequest | CostsMore> {
   const wire = parseV2Wire(opts as Record<string, unknown>);
   if (!wire) return { ok: false, message: deckTuningCopy.run.refused };
   const requested = opts.runId;
@@ -422,7 +426,7 @@ async function runTuningV2(deckId: string, userId: string, env: NodeJS.ProcessEn
     request = resolved.text.trim();
   }
   const started = await startTuningV2({ deckId, userId, env, runId: requested, wire, request });
-  if (started.kind === "refused") return { ok: false, message: started.message };
+  if (started.kind === "refused") return started.costs ? { ok: false, message: started.message, costs: started.costs } : { ok: false, message: started.message };
   if (started.kind === "confirm") return { ok: false, confirm: "same_request", runId: started.runId, at: started.at, refunded: started.refunded };
   after(() => started.work(() => revalidateDeck(deckId)));
   return { ok: true };

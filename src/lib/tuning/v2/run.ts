@@ -95,7 +95,9 @@ export async function readLastV2Run(deckId: string, userId: string) {
 }
 
 export type V2Start =
-  | { kind: "refused"; message: string }
+  /** `costs`: refused only because this run costs that many credits (over 10 swaps, `unitsFor`) and no single source
+   *  holds them; a one-credit run would start. Absent on every other refusal. */
+  | { kind: "refused"; message: string; costs?: number }
   | { kind: "confirm"; runId: string; at: string; refunded: boolean }
   | { kind: "started"; runId: string; work: (revalidate: () => void) => Promise<void> };
 
@@ -136,7 +138,11 @@ export async function startTuningV2(args: {
     },
   });
   if (started.kind === "ownerShare") return { kind: "refused", message: creditsCopy.ownerShare(new Date()) };
-  if (started.kind === "allowance") return { kind: "refused", message: deckTuningCopy.allowance.spent };
+  if (started.kind === "allowance") {
+    return started.costs
+      ? { kind: "refused", message: deckTuningCopy.allowance.costsTwo, costs: started.costs }
+      : { kind: "refused", message: deckTuningCopy.allowance.spent };
+  }
   if (started.kind === "in_flight") return { kind: "refused", message: deckTuningCopy.announce.started };
   if (started.kind === "allLocked") return { kind: "refused", message: deckTuningCopy.run.refused };
   const run: RunHandle = { runId: started.runId, callId: started.callId };
