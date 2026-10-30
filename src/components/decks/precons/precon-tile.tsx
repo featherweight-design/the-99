@@ -66,19 +66,31 @@ function PairArt({ commanders, eager }: { commanders: [PreconCommander, PreconCo
 
 const FOOT_META = "font-mono text-[9.5px] leading-[1.3]";
 
-export function PreconTile({ row, href, eager = false, isNew = false }: {
+export function PreconTile({ row, href, eager = false, isNew = false, early = false, hidden = false }: {
   row: Row;
   href: string;
   /** In the list's first screen (`GRID_EAGER_TILES`), so the art is in the server HTML. */
   eager?: boolean;
   /** Listed in the last 14 days (upcoming precons L2, L3): `new ·` before `you own`. */
   isNew?: boolean;
+  /**
+   * An early list in the Announced group (announcements call 5): the sub-line says "early list" in `--fact`, no box,
+   * where the set and month go; the solid edge stays (it opens); no foot (no decks, twin or catalog line yet).
+   */
+  early?: boolean;
+  /** Folded away by the Announced set's Show all (addendum A1): `display: none` as well, which the shell's display outranks. */
+  hidden?: boolean;
 }) {
   const [first, second] = row.commanders;
   const identity = row.identity.length > 0 ? row.identity : ["C"];
-  const hasFoot = row.built.length > 0 || row.twinName !== null || row.unmapped > 0;
+  const hasFoot = !early && (row.built.length > 0 || row.twinName !== null || row.unmapped > 0);
   return (
-    <li className={`${TILE_SHELL} art-lift-host relative min-w-0 border border-solid border-[color:var(--border)] bg-[color:var(--surface)] md:hover:border-[color:var(--border-strong)] transition-colors`}>
+    <li
+      className={`${TILE_SHELL} art-lift-host relative min-w-0 border border-solid border-[color:var(--border)] bg-[color:var(--surface)] md:hover:border-[color:var(--border-strong)] transition-colors`}
+      data-testid={early ? "early-tile" : undefined}
+      hidden={hidden || undefined}
+      style={hidden ? { display: "none" } : undefined}
+    >
       <div
         aria-hidden
         className={`relative w-full overflow-hidden bg-[color:var(--surface-sunken)] ${TILE_ART_CLIP}`}
@@ -106,9 +118,11 @@ export function PreconTile({ row, href, eager = false, isNew = false }: {
         name={
           <Link
             href={href}
-            aria-label={row.commanders.length > 0
-              ? copy.aria(row.name, row.commanders.map((c) => c.name), row.owned, row.of)
-              : rowCopy.aria(row.name, row.owned, row.of)}
+            aria-label={early
+              ? preconsCopy.upcoming.earlyAria(row.name, row.commanders.map((c) => c.name), row.owned, row.of)
+              : row.commanders.length > 0
+                ? copy.aria(row.name, row.commanders.map((c) => c.name), row.owned, row.of)
+                : rowCopy.aria(row.name, row.owned, row.of)}
             className="text-[color:var(--fg)] no-underline after:absolute after:inset-0 after:rounded-[inherit] after:content-['']"
           >
             {row.name}
@@ -128,7 +142,9 @@ export function PreconTile({ row, href, eager = false, isNew = false }: {
                 />
               ))}
             </span>
-            <span className="min-w-0 truncate">{copy.meta(row.setCode, preconMonth(row.releaseDate))}</span>
+            {early
+              ? <span className="min-w-0 truncate text-[color:var(--fact)]" data-testid="early-mark">{preconsCopy.upcoming.earlyList}</span>
+              : <span className="min-w-0 truncate">{copy.meta(row.setCode, preconMonth(row.releaseDate))}</span>}
           </span>
         }
       />

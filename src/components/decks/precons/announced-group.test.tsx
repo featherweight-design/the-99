@@ -8,6 +8,8 @@ import { ANNOUNCED_KEY, AnnouncedGroup, announcedPrintings, opensOnHash, setAnch
 import { AnnouncedSet, TILE_FOCUS_RING } from "./announced-parts";
 import { PRECON_TILES_CLASS } from "./precon-grid";
 import { TILE_SHELL } from "../../ui/card-tile-caption";
+import { earlyListHref } from "../../../lib/announcements/early-list";
+import type { EarlyTile } from "../../../lib/announcements/early-tiles";
 
 // jsdom ships no scrollIntoView; the hash-open tests spy on it, so it must exist first. Only when missing.
 if (!Element.prototype.scrollIntoView) {
@@ -675,3 +677,99 @@ describe("Announced collapse (A1)", () => {
   });
 });
 
+
+// Announcements UI 5 (handoff `design_handoff_the99_announcements`, R1b-2, call 5, STATES 3.1, 3.2, 3.10).
+describe("Announced: the new mark and early lists", () => {
+  const giada = commander(6, "Giada, Font of Hope", ["W"]);
+  const ghalta = commander(5, "Ghalta, Primal Hunger", ["G"]);
+  const early = (position: number, name: string, c: RevealedCommander): EarlyTile => ({
+    href: earlyListHref("post-1", position), name,
+    commanders: [{ oracleId: c.oracleId, name: c.name, imageUri: c.imageUri, imageUriSmall: c.imageUriSmall, colorIdentity: c.colorIdentity }],
+    identity: c.colorIdentity, owned: 20, of: 68,
+  });
+  const fdc: AnnouncedMatch = {
+    ...match(set("fdc", "Foundations Commander", "2026-11-13"), [giada, ghalta]),
+    early: { lists: [early(0, "Calling All Angels", giada)], posted: 1, promised: 3, listed: [giada.oracleId], toCome: 1 },
+  };
+  const drawFdc = (view: "tiles" | "rows", newCodes: string[] = ["fdc"]) =>
+    render(<G matches={[fdc]} today="2026-10-14" newCodes={newCodes} opensByItself view={view} listed={{}} />);
+  const marks = (root: HTMLElement) => [...root.querySelectorAll<HTMLElement>('[data-testid="new-mark"]')];
+  const unboxed = (el: HTMLElement) => {
+    expect(el.textContent).toBe("new");
+    expect(el.className).toContain("var(--accent-text)");
+    expect(el.className).not.toMatch(/border|rounded|px-/);
+  };
+
+  it("draws `new` with no box in the group head (\"1 set · new\") and leading the set block's meta lines", () => {
+    const { container } = drawFdc("tiles");
+    const headMarks = marks(head());
+    expect(headMarks).toHaveLength(1);
+    unboxed(headMarks[0]);
+    expect(headMarks[0].parentElement?.textContent).toBe("1 set · new");
+    const block = screen.getByTestId("announced-set");
+    // One on the desktop line, one on the phone's first line.
+    const blockMarks = marks(block);
+    expect(blockMarks).toHaveLength(2);
+    blockMarks.forEach(unboxed);
+    const [desk, phone] = blockMarks.map((m) => m.parentElement?.textContent);
+    expect(desk).toBe("new · FDC · Nov 13, 2026 · in 30 days · 1 of 3 lists so far");
+    expect(phone).toBe("new · Nov 13, 2026 · in 30 days");
+    expect(container.textContent).not.toContain("newnew");
+  });
+
+  it("draws `new` with no box on the set row's third line, after the dots", () => {
+    drawFdc("rows");
+    const row = screen.getByTestId("announced-row");
+    const rowMarks = marks(row);
+    expect(rowMarks).toHaveLength(1);
+    unboxed(rowMarks[0]);
+    expect(rowMarks[0].parentElement?.textContent).toBe("new · FDC · Nov 13, 2026");
+  });
+
+  it("draws no mark anywhere for a set that is not new", () => {
+    const { container } = drawFdc("tiles", []);
+    expect(marks(container)).toHaveLength(0);
+  });
+
+  it("draws each early list as a precon tile in the set's grid: solid edge, \"early list\" in --fact, linked to its early page", () => {
+    drawFdc("tiles");
+    const grid = screen.getByTestId("revealed-tiles");
+    const tiles = within(grid).getAllByTestId("early-tile");
+    expect(tiles).toHaveLength(1);
+    const tile = tiles[0];
+    expect(tile.className).toContain("border-solid");
+    expect(tile.className).not.toContain("border-dashed");
+    const mark = within(tile).getByTestId("early-mark");
+    expect(mark.textContent).toBe("early list");
+    expect(mark.className).toContain("var(--fact)");
+    expect(mark.className).not.toMatch(/border|rounded/);
+    expect(within(tile).getByRole("link").getAttribute("href")).toBe(earlyListHref("post-1", 0));
+    expect(within(tile).getByRole("link").getAttribute("href")).toBe("/decks/precons/early/post-1/0");
+    expect(tile.textContent).toContain("20 of 68");
+    // The list comes first; Giada's list stands for her, so only Ghalta stays a revealed tile; then the note.
+    expect(grid.firstElementChild).toBe(tile);
+    expect(within(grid).getAllByTestId("revealed-tile")).toHaveLength(1);
+    expect(within(grid).getByTestId("none-plate").textContent).toBe("1 more list to come");
+  });
+
+  it("opens the set row to its early lists, the waiting commander and the note, and counts lists first on line 2", () => {
+    drawFdc("rows");
+    const row = screen.getByTestId("announced-row");
+    expect(row.textContent).toContain("1 of 3 lists so far · Giada, Font of Hope and Ghalta, Primal Hunger");
+    fireEvent.click(within(row).getByRole("button"));
+    const list = within(row).getByTestId("early-row");
+    expect(within(list).getByRole("link").getAttribute("href")).toBe(earlyListHref("post-1", 0));
+    expect(within(list).getByTestId("early-mark").textContent).toBe("early list");
+    expect(within(row).getByTestId("waiting-row").textContent).toContain("Ghalta, Primal Hunger");
+    expect(within(row).getByTestId("to-come").textContent).toBe("1 more list to come");
+    expect(within(row).queryByTestId("revealed-strip")).toBeNull();
+  });
+
+  it("draws no early tile for a set the payload carries no lists for (the switch off)", () => {
+    const { container } = render(
+      <G matches={[match(set("fdc", "Foundations Commander", "2026-11-13"), [giada, ghalta])]} today="2026-10-14" newCodes={[]} opensByItself view="tiles" listed={{}} />,
+    );
+    expect(container.querySelector('[data-testid="early-tile"]')).toBeNull();
+    expect(container.textContent).not.toContain("early list");
+  });
+});

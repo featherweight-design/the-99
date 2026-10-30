@@ -7,6 +7,7 @@
  * for the first time (`PreconArrival`). A baseline stamp (`arrivedAt` null) is never one: it was already there
  * when stamping began.
  */
+import { filterEarly, listedCommanderIds, listsToCome, type EarlySet, type EarlyTile } from "../announcements/early-tiles";
 import { fold } from "./list";
 import type { PreconArrival } from "./arrivals-read";
 import type { RevealedCommander } from "./revealed";
@@ -130,6 +131,13 @@ export type AnnouncedMatch = {
   matched: number;
   /** Every commander the set has revealed, the `15`. */
   revealed: number;
+  /**
+   * The set's posted early lists (announcements UI 5): `lists` those the filters keep, `posted` every one (the meta's
+   * "3 of 5 lists so far" counts them all), `promised` the post's own count, `listed` the commanders every posted list
+   * stands for (a revealed one among them is drawn as its list, not again), and `toCome` the promised lists neither
+   * posted nor stood for by a revealed commander, all read unfiltered. Absent while the set has none.
+   */
+  early?: { lists: EarlyTile[]; posted: number; promised: number | null; listed: string[]; toCome: number };
 };
 
 /**
@@ -144,6 +152,7 @@ export function filterAnnounced(
   sets: readonly UpcomingSet[],
   commandersByCode: Readonly<Record<string, readonly RevealedCommander[]>>,
   { q, colours }: AnnouncedFilter,
+  earlyByCode: Readonly<Record<string, EarlySet>> = {},
 ): AnnouncedMatch[] {
   const needle = fold(q.trim());
   const active = needle !== "" || colours.length > 0;
@@ -153,8 +162,21 @@ export function filterAnnounced(
     const setMatches = needle !== "" && [set.name, set.code].some((h) => fold(h).includes(needle));
     const commanders = all.filter((c) =>
       colours.every((x) => c.colorIdentity.includes(x)) && (needle === "" || setMatches || fold(c.name).includes(needle)));
-    const stays = all.length === 0 ? !active || setMatches : !active || commanders.length > 0;
-    if (stays) out.push({ set, commanders, matched: commanders.length, revealed: all.length });
+    const posted = earlyByCode[set.code];
+    const lists = posted ? filterEarly(posted.lists, { q, colours }, setMatches) : [];
+    // A list that matches keeps its set, as a matching commander does.
+    const stays = all.length === 0 && lists.length === 0 ? !active || setMatches : !active || commanders.length > 0 || lists.length > 0;
+    if (!stays) continue;
+    const match: AnnouncedMatch = { set, commanders, matched: commanders.length, revealed: all.length };
+    if (posted && posted.lists.length > 0) {
+      const listed = listedCommanderIds(posted.lists);
+      const waiting = all.filter((c) => !listed.has(c.oracleId)).length;
+      match.early = {
+        lists, posted: posted.lists.length, promised: posted.promised, listed: [...listed],
+        toCome: listsToCome(posted.lists.length, posted.promised, waiting),
+      };
+    }
+    out.push(match);
   }
   return out;
 }

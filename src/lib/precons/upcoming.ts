@@ -38,10 +38,11 @@ export type Reader = Pick<typeof db, "select">;
 type Writer = Pick<typeof db, "insert">;
 
 /**
- * A key `upcoming_seen_codes` holds: a set code (`trc`, the set was announced) or `lists:` and a set code
- * (`lists:trc`, its decklists were listed). Exactly those two forms, lowercase, as `sets.code` is.
+ * A key `upcoming_seen_codes` holds: a set code (`trc`, the set was announced), `lists:` and a set code
+ * (`lists:trc`, its decklists were listed), or `early:`, a set code and a count (`early:trc:3`, the reader was shown
+ * three of its early lists; announcements G2). Exactly those three forms, lowercase, as `sets.code` is.
  */
-export const SEEN_KEY = /^(?:lists:)?[a-z0-9]{2,8}$/;
+export const SEEN_KEY = /^(?:(?:lists:)?[a-z0-9]{2,8}|early:[a-z0-9]{2,8}:\d{1,3})$/;
 const MAX_CODES = 50;
 
 /**
@@ -137,8 +138,8 @@ export function upcomingSeenWrite(userId: string, keys: string[], q: Writer = db
 }
 
 /**
- * Records that `userId` has been shown these sets (`trc`) or their decklists (`lists:trc`). A key of neither
- * form is dropped. Every key already held writes nothing. The keys are written `MAX_CODES` to a statement, so a
+ * Records that `userId` has been shown these sets (`trc`), their decklists (`lists:trc`) or their early lists
+ * (`early:trc:3`). A key of none of these forms is dropped. Every key already held writes nothing. The keys are written `MAX_CODES` to a statement, so a
  * reader with many arrivals (each lists line is two keys) is never refused a dismiss: a refusal here was swallowed
  * by the ✕ and the banner came back on every load.
  */

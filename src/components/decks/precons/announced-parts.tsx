@@ -26,6 +26,12 @@ import { SheetGroupToggle } from "../../ui/sheet-group";
 import { collapsible, firstPaintCss } from "../../../lib/precons/announced-collapse";
 import { noteAppScroll } from "../../../lib/ui/reveal";
 import { announcedSetAnchor } from "../../../lib/announcements/early-list";
+import type { EarlyTile } from "../../../lib/announcements/early-tiles";
+import type { PreconRow } from "../../../lib/precons/list";
+import Link from "next/link";
+import { PreconTile } from "./precon-tile";
+import { CommanderThumb } from "../../ui/commander-thumb";
+import { PendingReporter } from "../../shell/pending-reporter";
 
 const copy = preconsCopy.upcoming;
 
@@ -33,12 +39,30 @@ const copy = preconsCopy.upcoming;
 const INNER_EDGE = "pointer-events-none absolute inset-0 rounded-[inherit] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.25)]";
 /** 2px `--accent`, 2px off (STATES H8, C3). */
 export const FOCUS_RING = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]";
-/** The `new` tag (design table: `new` tag). */
-export const NEW_TAG = "flex-none rounded-[4px] border border-solid border-[color:color-mix(in_srgb,var(--accent)_45%,transparent)] px-[5px] font-mono text-[10px] leading-[16px] tracking-[0.06em] text-[color:var(--accent-text)]";
+/**
+ * The `new` mark (announcements R1b-2): no box, the word in `--accent-text`, leading the set's mono meta line, the rows
+ * view's third line and following the group head's count, as the precon tiles say "new · you own…". It takes the
+ * line's own font. `lead` puts the separator after it (it leads a line); otherwise before it (it trails the head's count).
+ */
+export function NewMark({ lead = true }: { lead?: boolean }) {
+  return (
+    <>
+      {!lead && copy.sep}
+      <span className="text-[color:var(--accent-text)]" data-testid="new-mark">{copy.newTag}</span>
+      {lead && copy.sep}
+    </>
+  );
+}
 
 /** A set's dots: its revealed commanders' identities, in WUBRG order. */
 export function setIdentity(commanders: readonly RevealedCommander[]): string[] {
   return ["W", "U", "B", "R", "G"].filter((c) => commanders.some((x) => x.colorIdentity.includes(c)));
+}
+
+/** A set row's dots: its revealed commanders' and its posted early lists' identities, in WUBRG order. */
+export function matchIdentity(m: AnnouncedMatch): string[] {
+  const lists = m.early?.lists ?? [];
+  return ["W", "U", "B", "R", "G"].filter((c) => m.commanders.some((x) => x.colorIdentity.includes(c)) || lists.some((l) => l.identity.includes(c)));
 }
 
 function Dots({ identity, size }: { identity: readonly string[]; size: string }) {
@@ -126,11 +150,112 @@ function RevealedCard({ card, siblings }: { card: RevealedCommander; siblings: r
  * NOTE that nothing is revealed, not a stand-in for a tile, so it must not read as a missing card (design review B,
  * 2026-10-15).
  */
-function NonePlate() {
+function NonePlate({ label = copy.nonePlate, className = "", hidden = false }: { label?: string; className?: string; hidden?: boolean }) {
   return (
-    <li className="flex h-[106px] w-[76px] flex-none items-center justify-center rounded-[4px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-sunken)] px-[6px] text-center md:h-[117px] md:w-[84px]" data-testid="none-plate">
-      <span className="font-mono text-[9px] text-[color:var(--fg-locked)]">{copy.nonePlate}</span>
+    <li
+      className={`flex h-[106px] w-[76px] flex-none items-center justify-center rounded-[4px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-sunken)] px-[6px] text-center md:h-[117px] md:w-[84px] ${className}`}
+      data-testid="none-plate"
+      hidden={hidden || undefined}
+      style={hidden ? { display: "none" } : undefined}
+    >
+      <span className="font-mono text-[9px] text-[color:var(--fg-locked)]">{label}</span>
     </li>
+  );
+}
+
+/** An early list as the precon tile and row read it: the shipped `PreconRow` shape, with no set, decks or twin. */
+export function earlyRow(tile: EarlyTile): PreconRow {
+  return {
+    fileName: tile.href, name: tile.name, setCode: "", releaseDate: "", twinName: null,
+    commanders: tile.commanders, identity: tile.identity, owned: tile.owned, of: tile.of, unmapped: 0, built: [],
+  };
+}
+
+/** The revealed commanders still waiting for their list: those no posted list stands for (all of them before any list). */
+export function waitingCommanders(match: AnnouncedMatch): RevealedCommander[] {
+  if (!match.early) return match.commanders;
+  const listed = new Set(match.early.listed);
+  return match.commanders.filter((c) => !listed.has(c.oracleId));
+}
+
+/** The row shell the opened set row's early lists and waiting commanders share (board `Announced`, rows view). */
+const SUB_ROW = "relative flex min-h-[60px] items-center gap-[11px] rounded-[10px] border p-[6px_8px_6px_10px]";
+const SUB_META = "flex min-w-0 items-center gap-[6px] font-mono text-[10.5px] text-[color:var(--fg-faint)]";
+
+/**
+ * One early list in the opened set row (STATES 3.1, rows view): the shipped precon row's anatomy, solid-edged since it
+ * opens, its name stretched over the row to the early page; line 2 is its dots, "early list" in `--fact` and what the
+ * reader owns.
+ */
+export function EarlyRow({ tile }: { tile: EarlyTile }) {
+  const lead = tile.commanders[0];
+  return (
+    <li className={`${SUB_ROW} border-solid border-[color:var(--border)] bg-[color:var(--surface)]`} data-testid="early-row">
+      <CommanderThumb imageUri={lead?.imageUriSmall ?? lead?.imageUri ?? null} colorIdentity={tile.identity} size="list" lazy />
+      <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
+        <Link
+          href={tile.href}
+          aria-label={copy.earlyAria(tile.name, tile.commanders.map((c) => c.name), tile.owned, tile.of)}
+          className={`truncate text-[13.5px] font-semibold text-[color:var(--fg)] no-underline after:absolute after:inset-0 after:rounded-[inherit] after:content-[''] ${FOCUS_RING}`}
+        >
+          {tile.name}
+          <PendingReporter href={tile.href} />
+        </Link>
+        <span className={SUB_META}>
+          <span className="sr-only">{tile.identity.length > 0 ? colorNames(tile.identity).join(", ") : preconsCopy.row.colorless}</span>
+          <Dots identity={tile.identity} size="h-[9px] w-[9px]" />
+          <span className="text-[color:var(--fact)]" data-testid="early-mark">{copy.earlyList}</span>
+          <span aria-hidden>·</span>
+          <span className="truncate">
+            {preconsCopy.row.ownLead} <b className="font-semibold text-[color:var(--fg)]">{preconsCopy.row.own(tile.owned, tile.of)}</b>
+          </span>
+        </span>
+      </span>
+    </li>
+  );
+}
+
+/** A revealed commander still waiting for its list, in the opened set row: dashed (nothing to open but its card). */
+function WaitingRow({ card, siblings }: { card: RevealedCommander; siblings: readonly string[] }) {
+  return (
+    <li className={`${SUB_ROW} border-dashed border-[color:var(--border-dashed)] bg-transparent`} data-testid="waiting-row">
+      <CommanderPress
+        card={card}
+        siblings={siblings}
+        className="relative block h-[48px] w-[34px] flex-none overflow-hidden rounded-[3px] bg-[color:var(--surface-sunken)]"
+      >
+        {card.imageUriSmall && (
+          <HydratedImg src={card.imageUriSmall} decoding="async" className="absolute inset-0 h-full w-full object-cover" />
+        )}
+        <span className={INNER_EDGE} />
+      </CommanderPress>
+      <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
+        <span aria-hidden className="truncate text-[13.5px] font-semibold text-[color:var(--fg)]">{card.name}</span>
+        <span className={SUB_META}>
+          <Dots identity={card.colorIdentity} size="h-[9px] w-[9px]" />
+          {copy.waiting}
+        </span>
+      </span>
+    </li>
+  );
+}
+
+/**
+ * The opened set row's lists (rows view, once Wizards posts them): each early list, then each revealed commander still
+ * waiting for its list, then the note for lists still to come.
+ */
+export function EarlyRowList({ match }: { match: AnnouncedMatch }) {
+  const waiting = waitingCommanders(match);
+  const siblings = waiting.map((c) => c.oracleId);
+  const toCome = match.early?.toCome ?? 0;
+  return (
+    <div className="flex flex-col gap-[8px]" data-testid="early-rows">
+      <ul className="m-0 flex list-none flex-col gap-[8px] p-0">
+        {match.early?.lists.map((t) => <EarlyRow key={t.href} tile={t} />)}
+        {waiting.map((c) => <WaitingRow key={c.oracleId} card={c} siblings={siblings} />)}
+      </ul>
+      {toCome > 0 && <p className="m-0 p-[4px_2px] font-mono text-[10.5px] text-[color:var(--fg-locked)]" data-testid="to-come">{copy.toCome(toCome)}</p>}
+    </div>
   );
 }
 
@@ -273,8 +398,13 @@ function useGridColumns(ref: React.RefObject<HTMLElement | null>, watch: boolean
  * visit. Hidden tiles are `display: none`, so they leave the tab and reading order; card details still page every
  * commander of the set (`siblings`).
  */
-function RevealedTiles({ commanders, setName, code, filtering, expanded, onToggleExpanded }: {
+function RevealedTiles({ commanders, early = [], toCome = 0, setName, code, filtering, expanded, onToggleExpanded }: {
+  /** The revealed commanders to draw: with posted lists, only those still waiting for theirs (`waitingCommanders`). */
   commanders: readonly RevealedCommander[];
+  /** The set's posted early lists, first in the grid as precon tiles (announcements STATES 3.1). */
+  early?: readonly EarlyTile[];
+  /** Promised lists not posted yet: the none plate's note, last in the grid (STATES 3.2). */
+  toCome?: number;
   setName: string;
   code: string;
   filtering: boolean;
@@ -284,8 +414,10 @@ function RevealedTiles({ commanders, setName, code, filtering, expanded, onToggl
   const gridId = useId();
   const gridRef = useRef<HTMLUListElement>(null);
   const toggleRef = useRef<HTMLDivElement>(null);
-  const columns = useGridColumns(gridRef, commanders.length > 4 && !filtering);
-  const folds = columns !== null && collapsible(commanders.length, columns, filtering);
+  // Lists and commanders are one grid, and fold together: the fold counts every tile.
+  const tiles = early.length + commanders.length;
+  const columns = useGridColumns(gridRef, tiles > 4 && !filtering);
+  const folds = columns !== null && collapsible(tiles, columns, filtering);
   const collapsed = folds && !expanded;
   // Show fewer lifts the toggle with the tiles it folds away: if that would leave it above the window, bring it back.
   const wasExpanded = useRef(expanded);
@@ -297,12 +429,13 @@ function RevealedTiles({ commanders, setName, code, filtering, expanded, onToggl
     }
     wasExpanded.current = expanded;
   }, [expanded]);
-  if (commanders.length === 0) {
+  if (tiles === 0) {
     return <ul className="m-0 flex list-none p-0"><NonePlate /></ul>;
   }
   const siblings = commanders.map((c) => c.oracleId);
   // The server cannot know the columns: until they are measured, CSS keyed on the grid's width hides what a fold would.
-  const guess = columns === null && !filtering && !expanded ? firstPaintCss(code, commanders.length) : "";
+  const guess = columns === null && !filtering && !expanded ? firstPaintCss(code, tiles) : "";
+  const shown = columns ?? 0;
   return (
     <>
       {guess && <style>{guess}</style>}
@@ -315,9 +448,13 @@ function RevealedTiles({ commanders, setName, code, filtering, expanded, onToggl
           data-collapse={guess ? code : undefined}
           data-measured={columns !== null ? "" : undefined}
         >
-          {commanders.map((c, i) => (
-            <RevealedTile key={c.oracleId} card={c} siblings={siblings} hidden={collapsed && i >= (columns ?? 0)} />
+          {early.map((t, i) => (
+            <PreconTile key={t.href} row={earlyRow(t)} href={t.href} early hidden={collapsed && i >= shown} />
           ))}
+          {commanders.map((c, i) => (
+            <RevealedTile key={c.oracleId} card={c} siblings={siblings} hidden={collapsed && early.length + i >= shown} />
+          ))}
+          {toCome > 0 && <NonePlate label={copy.toCome(toCome)} className="self-start" hidden={collapsed} />}
         </ul>
       </div>
       {folds && (
@@ -325,9 +462,9 @@ function RevealedTiles({ commanders, setName, code, filtering, expanded, onToggl
           <SheetGroupToggle
             all={expanded}
             onToggle={onToggleExpanded}
-            label={copy.showAll(commanders.length)}
+            label={copy.showAll(tiles)}
             fewer={copy.showFewer}
-            ariaLabel={expanded ? copy.showFewerAria(setName) : copy.showAllAria(commanders.length, setName)}
+            ariaLabel={expanded ? copy.showFewerAria(setName) : copy.showAllAria(tiles, setName)}
             controls={gridId}
             rule={false}
             className={`pl-0 ${FOCUS_RING}`}
@@ -349,6 +486,11 @@ export function whenLine(releasesOn: string, today: string, lead = false): strin
 /** The count half: the matches when a filter narrowed the commanders, else how many are revealed. */
 export function countLine(m: AnnouncedMatch): string {
   return m.matched < m.revealed ? copy.matches(m.matched, m.revealed) : copy.revealed(m.revealed);
+}
+
+/** The meta's count half: once Wizards posts the set's lists, how many of those promised (STATES 3.2); else the revealed count. */
+export function countHalf(m: AnnouncedMatch): string {
+  return m.early ? copy.listsSoFar(m.early.posted, m.early.promised) : countLine(m);
 }
 
 export type ListedJump = { count: number; year: string };
@@ -381,13 +523,21 @@ export function AnnouncedSet({ match, today, isNew, listed, compact = false, fil
       <div className="flex flex-col gap-[3px]">
         <div className="flex items-center gap-[8px]">
           <h3 className="m-0 font-display text-[15px] font-normal text-[color:var(--fg)] md:text-[16px]">{set.name}</h3>
-          {isNew && <span className={NEW_TAG}>{copy.newTag}</span>}
         </div>
+        {/* R1b-2: `new` leads the meta line, no box. Posted lists' count reads in body ink (board `Announced`). */}
         <span className="hidden font-mono text-[11px] leading-[1.5] text-[color:var(--fg-faint)] md:block">
-          {copy.meta(code, whenLine(set.releasesOn, today), countLine(match))}
+          {isNew && <NewMark />}
+          {copy.meta(code, whenLine(set.releasesOn, today), "")}
+          <span className={match.early ? "text-[color:var(--fg-body)]" : undefined}>{countHalf(match)}</span>
         </span>
-        <span className="font-mono text-[11px] leading-[1.5] text-[color:var(--fg-faint)] md:hidden">{whenLine(set.releasesOn, today, true)}</span>
-        <span className="font-mono text-[11px] leading-[1.5] text-[color:var(--fg-faint)] md:hidden">{copy.metaCode(code, countLine(match))}</span>
+        <span className="font-mono text-[11px] leading-[1.5] text-[color:var(--fg-faint)] md:hidden">
+          {isNew && <NewMark />}
+          {whenLine(set.releasesOn, today, !isNew)}
+        </span>
+        <span className="font-mono text-[11px] leading-[1.5] text-[color:var(--fg-faint)] md:hidden">
+          {copy.metaCode(code, "")}
+          <span className={match.early ? "text-[color:var(--fg-body)]" : undefined}>{countHalf(match)}</span>
+        </span>
         {listed && (
           <a
             href={`#precons-${listed.year}`}
@@ -397,7 +547,18 @@ export function AnnouncedSet({ match, today, isNew, listed, compact = false, fil
           </a>
         )}
       </div>
-      {compact ? <RevealedStrip commanders={match.commanders} /> : <RevealedTiles commanders={match.commanders} setName={set.name} code={set.code} filtering={filtering} expanded={expanded} onToggleExpanded={onToggleExpanded} />}
+      {compact ? <RevealedStrip commanders={match.commanders} /> : (
+        <RevealedTiles
+          commanders={waitingCommanders(match)}
+          early={match.early?.lists}
+          toCome={match.early?.toCome}
+          setName={set.name}
+          code={set.code}
+          filtering={filtering}
+          expanded={expanded}
+          onToggleExpanded={onToggleExpanded}
+        />
+      )}
     </li>
   );
 }

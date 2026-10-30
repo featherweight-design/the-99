@@ -254,3 +254,53 @@ link, the lead's filled button).
 **Deviation.** The row's picture links where the stretched press goes (See the lists), not out to the post.
 
 **Copy review.** "See the lists" ships as drawn.
+
+### Engineering audit: UI 5 (Announced)
+
+2026-10-29, against origin/main after UI 6a (#2412); UI 6b (the set rows' `#announced-<code>` ids and hash-open) is
+not on main yet. Behind `ANNOUNCEMENTS_ENABLED` per reader: the precons page's cached load decides it from the key's
+env, and with it off no early list or early seen key is read. No migration: `upcoming_seen_codes` has no CHECK
+constraint, only the `SEEN_KEY` pattern in code, which now admits the third form.
+
+**Shipped.**
+- **R1b-2, the `new` mark.** The boxed `NEW_TAG` is gone from all three surfaces. `new` in `--accent-text`, in the
+  line's own font, leads the set block's meta ("new · Nov 13, 2026 · in 15 days" on a phone, "new · FDC · Nov 13, 2026 ·
+  in 15 days · 3 of 5 lists so far" from `md`), leads the set row's third line after the dots ("new · FDC · Nov 13,
+  2026"), and follows the group head's count ("1 set · new"). One component, `NewMark`.
+- **Early lists (3.1, 3.2, call 5).** A set whose Commander decklists post has lists draws each as a precon tile in the
+  block's own grid (the shipped `PreconTile`, `early`): the commander's card, "you own N of M", the list's name, and on
+  the sub-line its dots and "early list" in `--fact`, no box; solid edge; no foot; linked with `earlyListHref`. Then the
+  revealed commanders no list stands for, then the none plate's note "N more lists to come" when the post promised more
+  lists than are posted or stood for by a waiting commander. The fold (addendum A1) counts lists and commanders together.
+  In rows, the set row opens to the lists as rows (line 2: dots, "early list", "you own N of M"), then each waiting
+  commander as a dashed row ("revealed · list to come", its thumb opens card details), then the note; the row's line 2
+  counts lists before the names ("3 of 5 lists so far · Ghalta and 3 more"). The meta's count half becomes the lists'
+  ("3 of 5 lists so far", "All 5 lists", "3 lists so far" with no number promised), in `--fg-body`.
+- **The data.** `loadEarlyListsBySet` (`lib/announcements/early-tiles-read.ts`) reads every Commander decklists post of
+  the last 210 days (180 of the set window, 30 of grace), resolves each post's set exactly as the early page does
+  (`commanderPrintingsQuery` + `resolvePostSet`), keeps those resolving to a set in the group, and builds each tile's
+  figures with the early page's own `assembleEarlyList`, so a tile's "you own N of M" is the page's. It rides in the
+  cached precons payload; `wizards_announcements` is already a catalog table to the list cache.
+- **G2, the early seen key.** `early:<code>:<count>` in `upcoming_seen_codes`, apart from `lists:<code>`. A set is new
+  while the reader holds no `early:<code>:<k>` with k at least its posted count, so a further list (3 → 5) lights the
+  block and head again. A Precons visit writes the keys for the lists it could show, beside the arrivals' keys, in the
+  same `after()`. Neither key says anything about the other, nor about the set's own key.
+
+**Forks resolved.**
+- **Key shape.** The brief's "an early seen key carrying the list count" read as `early:<code>:<count>`; a reader holding
+  a larger count is not re-lit when a list is withdrawn.
+- **Early news opens the group.** An unseen early list is news, so it opens the group by itself as an unseen set does
+  (rule 9 holds: the visit acknowledges it, so the group does not stay open on its own). No arrival window: every early
+  list in the group is pre-release by construction.
+- **A list whose release list is in.** A list whose commander already heads a plain-edition precon in the resolved set
+  is left out of the block (STATES 3.4), so the block never offers an early page that would only redirect.
+- **Filters.** Early lists filter with the list as revealed commanders do (colours by containment; a search by the set,
+  the list's name or a commander's name), and a matching list keeps its set. The meta and the note count unfiltered.
+- **Two posts resolving to one set** (a post re-published under a new id) read as one: lists in post order, the larger
+  promise.
+
+**Undrawn.**
+- The rows view's sub-rows (an early list, a waiting commander) are drawn at one size on the board (390 only); the same
+  classes serve `md`.
+- A tile for a list whose commander the catalog cannot match yet draws the shipped no-art plate with no name (the precon
+  tile's rule), and its name only in the caption.

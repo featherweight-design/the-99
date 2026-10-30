@@ -24,7 +24,7 @@ const DAY_MS = 86_400_000;
 /** A Commander set counts for a post released from this many days before the post's day... */
 const SET_WINDOW_BEFORE_DAYS = 60;
 /** ...to this many after it (a decklists post goes up two to four weeks before the street date). */
-const SET_WINDOW_AFTER_DAYS = 180;
+export const SET_WINDOW_AFTER_DAYS = 180;
 
 export type EarlyListPage = {
   /** The list as the open precon view draws it; every card's printing is null (the post names cards, not printings). */
