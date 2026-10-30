@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { db } from "../../db";
-import { earlyListsQuery, mergeEarlySet, releasedCommandersQuery } from "./early-tiles-read";
+import { earlyListsQuery, earlyTileOf, mergeEarlySet, releasedCommandersQuery } from "./early-tiles-read";
 import type { EarlyTile } from "./early-tiles";
 
 describe("earlyListsQuery", () => {
@@ -26,7 +26,7 @@ describe("releasedCommandersQuery", () => {
 });
 
 describe("mergeEarlySet", () => {
-  const tile = (n: number): EarlyTile => ({ href: `/decks/precons/early/p/${n}`, name: `List ${n}`, commanders: [], identity: [], owned: 0, of: 99 });
+  const tile = (n: number): EarlyTile => ({ href: `/decks/precons/early/p/${n}`, name: `List ${n}`, commanders: [], identity: [], identityKnown: true, owned: 0, of: 99 });
 
   it("keeps a post's promise and released lists when every one of its lists gave way, whichever post comes first", () => {
     const early = { lists: [tile(1)], promised: 3, released: ["a"], releasedLists: 0 };
@@ -39,5 +39,30 @@ describe("mergeEarlySet", () => {
   it("reads the larger promise, and a post that promised none defers to one that did", () => {
     expect(mergeEarlySet({ lists: [], promised: null }, { lists: [tile(0)], promised: 4 }).promised).toBe(4);
     expect(mergeEarlySet({ lists: [tile(0)], promised: 4 }, { lists: [], promised: null }).promised).toBe(4);
+  });
+});
+
+describe("earlyTileOf", () => {
+  const tana = { oracleId: "unmatched:Tana, the Bloodsower", name: "Tana, the Bloodsower", imageUri: null, colorIdentity: [] as string[] };
+  const tymna = { oracleId: "tymna", name: "Tymna the Weaver", imageUri: null, colorIdentity: ["W", "B"] };
+  const page = (commanders: (typeof tana)[], identity: string[], unknownCommanders: string[]) =>
+    ({ precon: { row: { name: "Party Time", commanders, identity, owned: 12, of: 68 } }, unknownCommanders });
+
+  it("keeps the page's figures, and calls the identity known when every commander matched", () => {
+    expect(earlyTileOf("/decks/precons/early/p/0", page([tymna], ["W", "B"], []))).toEqual({
+      href: "/decks/precons/early/p/0", name: "Party Time", commanders: [tymna], identity: ["W", "B"], identityKnown: true, owned: 12, of: 68,
+    });
+  });
+
+  it("calls the identity unknown when a commander the catalog cannot match yet leaves it empty", () => {
+    const tile = earlyTileOf("/e/1", page([tana], [], [tana.oracleId]));
+    expect(tile.identityKnown).toBe(false);
+    expect(tile.commanders).toEqual([tana]);
+  });
+
+  it("calls a partly matched pair's identity unknown, never its known partner's colors as the whole", () => {
+    const tile = earlyTileOf("/e/2", page([tana, tymna], ["W", "B"], [tana.oracleId]));
+    expect(tile.identityKnown).toBe(false);
+    expect(tile.identity).toEqual(["W", "B"]);
   });
 });

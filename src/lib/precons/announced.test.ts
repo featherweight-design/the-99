@@ -31,7 +31,7 @@ describe("announcedProps", () => {
 });
 
 describe("announcedProps: early lists (announcements G2)", () => {
-  const tile = (n: number) => ({ href: `/decks/precons/early/p/${n}`, name: `List ${n}`, commanders: [], identity: [], owned: 0, of: 99 });
+  const tile = (n: number) => ({ href: `/decks/precons/early/p/${n}`, name: `List ${n}`, commanders: [], identity: [], identityKnown: true, owned: 0, of: 99 });
   const early = (count: number) => ({ fdc: { lists: Array.from({ length: count }, (_, i) => tile(i)), promised: 5 } });
 
   it("marks a set new while the reader has not been shown its lists at their count, and opens the group", () => {

@@ -131,8 +131,7 @@ export async function loadEarlyListsBySet(userId: string, sets: readonly Upcomin
         set: { code, name: set.name, releaseDate: set.releasesOn },
         today,
       });
-      const row = page.precon.row;
-      tiles.push({ href: earlyListHref(l.contentfulId, l.position), name: row.name, commanders: row.commanders, identity: row.identity, owned: row.owned, of: row.of });
+      tiles.push(earlyTileOf(earlyListHref(l.contentfulId, l.position), page));
     }
     // Two posts resolving to one set (rare: a post re-published under a new id) are read as one: their lists in post
     // order, and the larger promise. A post whose lists have all given way still merges its promise and its released
@@ -140,6 +139,23 @@ export async function loadEarlyListsBySet(userId: string, sets: readonly Upcomin
     out[code] = mergeEarlySet(out[code], { lists: tiles, promised: lists[0].promised, released: gaveWay, releasedLists: gaveWayLists });
   }
   return out;
+}
+
+/**
+ * An early list's tile, read off its early page: the page's figures, and whether its identity is known. A list can name
+ * a commander the catalog cannot match yet even when a sibling list resolved the post's set; its page carries that as
+ * `unknownCommanders`, and the tile keeps it, so it never draws a partial or empty identity as the whole one.
+ */
+export function earlyTileOf(
+  href: string,
+  page: { precon: { row: Pick<EarlyTile, "name" | "commanders" | "identity" | "owned" | "of"> }; unknownCommanders: readonly string[] },
+): EarlyTile {
+  const row = page.precon.row;
+  return {
+    href, name: row.name, commanders: row.commanders,
+    identity: row.identity, identityKnown: page.unknownCommanders.length === 0,
+    owned: row.owned, of: row.of,
+  };
 }
 
 /**

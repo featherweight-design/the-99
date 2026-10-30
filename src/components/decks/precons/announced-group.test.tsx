@@ -53,6 +53,15 @@ vi.mock("../hover-preview", async (importOriginal) => {
   };
 });
 
+/**
+ * Matches the one element whose whole text is `text`: a meta line's count half (and a leading new mark) sit in their
+ * own spans, so the line reads as one string only across its children.
+ */
+function wholeText(text: string) {
+  return (_: string, el: Element | null) =>
+    el?.textContent === text && Array.from(el.children).every((child) => child.textContent !== text);
+}
+
 /** The group with its visit state held one level up, as the list view holds it. */
 function G(props: Omit<AnnouncedGroupProps, "visit">) {
   const visit = useAnnouncedVisit();
@@ -108,7 +117,12 @@ describe("AnnouncedGroup", () => {
     expect(region(container)).not.toHaveAttribute("inert");
     const trcBlock = screen.getAllByTestId("announced-set")[0];
     expect(within(trcBlock).getByRole("heading", { level: 3 })).toHaveTextContent("Star Trek Commander");
-    expect(within(trcBlock).getByText("new")).toBeInTheDocument();
+    // R1b-2: the unboxed mark follows the head's count ("2 sets · new") and leads the set's meta line, on both the
+    // desktop line and the phone's date line.
+    expect(within(head()).getByTestId("new-mark")).toHaveTextContent("new");
+    expect(within(trcBlock).getAllByTestId("new-mark")).toHaveLength(2);
+    for (const mark of within(trcBlock).getAllByTestId("new-mark")) expect(mark).toHaveTextContent("new");
+    expect(within(screen.getAllByTestId("announced-set")[1]).queryByTestId("new-mark")).toBeNull();
   });
 
   it("opens by itself on the banner's #announced link", () => {
@@ -217,9 +231,9 @@ describe("AnnouncedGroup", () => {
     expect(within(chapel.closest("li") as HTMLElement).getByTestId("revealed-art")).toHaveAttribute("aria-hidden", "true");
     expect(within(chapel.closest("li") as HTMLElement).getAllByRole("button")).toHaveLength(1);
     expect(within(mdcBlock).getByRole("button", { name: "View details for Gargantos, the Endbringer, Black, Green. Revealed commander." })).toBeInTheDocument();
-    expect(within(trcBlock).getByText("TRC · Nov 13, 2026 · in 30 days · 15 commanders revealed")).toBeInTheDocument();
+    expect(within(trcBlock).getByText(wholeText("TRC · Nov 13, 2026 · in 30 days · 15 commanders revealed"))).toBeInTheDocument();
     expect(within(trcBlock).getByText("Nov 13, 2026 · in 30 days")).toBeInTheDocument();
-    expect(within(mdcBlock).getByText("MDC · Apr 9, 2027 · in 6 months · 1 commander revealed")).toBeInTheDocument();
+    expect(within(mdcBlock).getByText(wholeText("MDC · Apr 9, 2027 · in 6 months · 1 commander revealed"))).toBeInTheDocument();
   });
 
   describe("revealed commanders open card details (Hugh, 2026-10-15, reversing G2)", () => {
@@ -399,13 +413,13 @@ describe("AnnouncedGroup", () => {
   it("draws one plate for a set with none revealed (T2)", () => {
     draw({ matches: [match(set("mdc", "Darkhold Destiny Commander", "2027-04-09"), [])], opensByItself: true });
     expect(screen.getByTestId("none-plate")).toHaveTextContent("none revealed yet");
-    expect(screen.getByText("MDC · Apr 9, 2027 · in 6 months · no commanders revealed yet")).toBeInTheDocument();
+    expect(screen.getByText(wholeText("MDC · Apr 9, 2027 · in 6 months · no commanders revealed yet"))).toBeInTheDocument();
   });
 
   it("reads `out` on release day, and offers the jump to listed decklists (L1, L2)", () => {
     const out = match(set("trc", "Star Trek Commander", "2026-11-13", { released: true }), trcCards);
     draw({ matches: [out, mdc], today: "2026-11-13", opensByItself: true, listed: { mdc: { count: 2, year: "2027" } } });
-    expect(screen.getByText("TRC · out Nov 13, 2026 · decklists not listed yet · 15 commanders revealed")).toBeInTheDocument();
+    expect(screen.getByText(wholeText("TRC · out Nov 13, 2026 · decklists not listed yet · 15 commanders revealed"))).toBeInTheDocument();
     expect(screen.getByText("Out Nov 13, 2026 · decklists not listed yet")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "2 decklists listed ↓" })).toHaveAttribute("href", "#precons-2027");
     // The next release a closed head names is the next one still to come.
@@ -415,7 +429,7 @@ describe("AnnouncedGroup", () => {
 
   it("says how many of the revealed match when a filter narrowed them (T6)", () => {
     draw({ matches: [match(trc.set, [trcCards[0]], 15)], opensByItself: true });
-    expect(screen.getByText("TRC · Nov 13, 2026 · in 30 days · 1 of 15 revealed matches")).toBeInTheDocument();
+    expect(screen.getByText(wholeText("TRC · Nov 13, 2026 · in 30 days · 1 of 15 revealed matches"))).toBeInTheDocument();
     expect(head()).toHaveTextContent("1 set");
   });
 
@@ -685,7 +699,7 @@ describe("Announced: the new mark and early lists", () => {
   const early = (position: number, name: string, c: RevealedCommander): EarlyTile => ({
     href: earlyListHref("post-1", position), name,
     commanders: [{ oracleId: c.oracleId, name: c.name, imageUri: c.imageUri, imageUriSmall: c.imageUriSmall, colorIdentity: c.colorIdentity }],
-    identity: c.colorIdentity, owned: 20, of: 68,
+    identity: c.colorIdentity, identityKnown: true, owned: 20, of: 68,
   });
   const fdc: AnnouncedMatch = {
     ...match(set("fdc", "Foundations Commander", "2026-11-13"), [giada, ghalta]),
@@ -763,6 +777,42 @@ describe("Announced: the new mark and early lists", () => {
     expect(within(row).getByTestId("waiting-row").textContent).toContain("Ghalta, Primal Hunger");
     expect(within(row).getByTestId("to-come").textContent).toBe("1 more list to come");
     expect(within(row).queryByTestId("revealed-strip")).toBeNull();
+  });
+
+  describe("an early list whose identity is unknown (a commander the catalog cannot match yet)", () => {
+    const tana = { oracleId: "unmatched:Tana, the Bloodsower", name: "Tana, the Bloodsower", imageUri: null, colorIdentity: [] as string[] };
+    const drawWith = (view: "tiles" | "rows", tile: EarlyTile) => {
+      const m: AnnouncedMatch = { ...fdc, early: { ...fdc.early!, lists: [tile] } };
+      render(<G matches={[m]} today="2026-10-14" newCodes={[]} opensByItself view={view} listed={{}} />);
+      if (view === "rows") fireEvent.click(within(screen.getByTestId("announced-row")).getByRole("button"));
+      return view === "tiles" ? screen.getByTestId("early-tile") : screen.getByTestId("early-row");
+    };
+    const dots = (el: HTMLElement) => el.querySelectorAll(".rounded-full");
+    const unknown: EarlyTile = { ...early(0, "Party Time", giada), commanders: [tana], identity: [], identityKnown: false };
+    // A partly matched pair: Giada matched (W), Tana not. Its known colors are not its identity.
+    const partial: EarlyTile = { ...early(0, "Party Time", giada), commanders: [tana, early(0, "", giada).commanders[0]], identity: ["W"], identityKnown: false };
+
+    for (const view of ["tiles", "rows"] as const) {
+      it(`${view}: draws no dots and never says Colorless for an unmatched commander`, () => {
+        const el = drawWith(view, unknown);
+        expect(dots(el)).toHaveLength(0);
+        expect(within(el).queryByText("Colorless")).toBeNull();
+        expect(within(el).getByTestId("early-mark").textContent).toBe("early list");
+      });
+
+      it(`${view}: draws no dots and names no colors for a partly matched pair`, () => {
+        const el = drawWith(view, partial);
+        expect(dots(el)).toHaveLength(0);
+        expect(within(el).queryByText("White")).toBeNull();
+        expect(within(el).queryByText("Colorless")).toBeNull();
+      });
+
+      it(`${view}: still draws the dots and names the colors when the identity is known`, () => {
+        const el = drawWith(view, early(0, "Calling All Angels", giada));
+        expect(dots(el).length).toBeGreaterThan(0);
+        expect(within(el).getByText("White")).toHaveClass("sr-only");
+      });
+    }
   });
 
   it("draws no early tile for a set the payload carries no lists for (the switch off)", () => {

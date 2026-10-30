@@ -263,7 +263,7 @@ describe("filterAnnounced", () => {
   const list = (position: number, name: string, c: RevealedCommander): EarlyTile => ({
     href: `/decks/precons/early/post-1/${position}`, name,
     commanders: [{ oracleId: c.oracleId, name: c.name, imageUri: null, colorIdentity: c.colorIdentity }],
-    identity: c.colorIdentity, owned: 10, of: 100,
+    identity: c.colorIdentity, identityKnown: true, owned: 10, of: 100,
   });
 
   it("drops a set with early lists and none revealed when the filters drop every list, its name matching or not", () => {

@@ -16,8 +16,14 @@ export type EarlyTile = {
   name: string;
   /** The list's commanders, the commander first; a partner when it is a co-commander. */
   commanders: PreconCommander[];
-  /** The commanders' union, in WUBRG order. */
+  /** The commanders' union, in WUBRG order. Read only when `identityKnown`. */
   identity: string[];
+  /**
+   * Every commander the list names is in the catalog, so `identity` is its whole identity. False when one is not yet
+   * (the early page's `unknownCommanders`): `identity` is then empty or only a partner's colors, and the tile and row
+   * draw no dots and name no colors, as the early page's head does, never "Colorless" for a card the catalog has not got.
+   */
+  identityKnown: boolean;
   owned: number;
   of: number;
 };

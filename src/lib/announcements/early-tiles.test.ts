@@ -5,7 +5,7 @@ import { earlyListHref } from "./early-list";
 const tile = (position: number, name: string, commander: string, identity: string[]): EarlyTile => ({
   href: earlyListHref("post-1", position), name,
   commanders: [{ oracleId: `o-${commander}`, name: commander, imageUri: null, colorIdentity: identity }],
-  identity, owned: 10, of: 68,
+  identity, identityKnown: true, owned: 10, of: 68,
 });
 
 describe("the early seen key (G2)", () => {
@@ -65,7 +65,7 @@ describe("filterEarly", () => {
 });
 
 describe("earlyPosted", () => {
-  const t = (n: number): EarlyTile => ({ href: `/e/${n}`, name: `L${n}`, commanders: [], identity: [], owned: 0, of: 99 });
+  const t = (n: number): EarlyTile => ({ href: `/e/${n}`, name: `L${n}`, commanders: [], identity: [], identityKnown: true, owned: 0, of: 99 });
 
   it("counts the lists that gave way to their release list with the early ones, and none once no early list remains", () => {
     expect(earlyPosted(undefined)).toBe(0);

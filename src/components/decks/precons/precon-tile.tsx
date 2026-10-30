@@ -66,7 +66,7 @@ function PairArt({ commanders, eager }: { commanders: [PreconCommander, PreconCo
 
 const FOOT_META = "font-mono text-[9.5px] leading-[1.3]";
 
-export function PreconTile({ row, href, eager = false, isNew = false, early = false, hidden = false }: {
+export function PreconTile({ row, href, eager = false, isNew = false, early = false, identityKnown = true, hidden = false }: {
   row: Row;
   href: string;
   /** In the list's first screen (`GRID_EAGER_TILES`), so the art is in the server HTML. */
@@ -78,6 +78,11 @@ export function PreconTile({ row, href, eager = false, isNew = false, early = fa
    * where the set and month go; the solid edge stays (it opens); no foot (no decks, twin or catalog line yet).
    */
   early?: boolean;
+  /**
+   * False for an early list naming a commander the catalog cannot match yet: its identity is unknown, so the sub-line
+   * draws no dots and names no colors (never "Colorless"), as the early page's head does.
+   */
+  identityKnown?: boolean;
   /** Folded away by the Announced set's Show all (addendum A1): `display: none` as well, which the shell's display outranks. */
   hidden?: boolean;
 }) {
@@ -132,16 +137,20 @@ export function PreconTile({ row, href, eager = false, isNew = false, early = fa
         nameSub={
           <span className="flex min-w-0 items-center gap-[5px]">
             {/* The dots are color alone; the names say it in words. */}
-            <span className="sr-only">{row.identity.length > 0 ? colorNames(row.identity).join(", ") : rowCopy.colorless}</span>
-            <span aria-hidden className="flex flex-none gap-[3px]">
-              {identity.map((c) => (
-                <span
-                  key={c}
-                  className="h-[8px] w-[8px] rounded-full md:h-[9px] md:w-[9px]"
-                  style={{ background: c === "C" ? "var(--fg-faint)" : WUBRG_COLOR[c] }}
-                />
-              ))}
-            </span>
+            {identityKnown && (
+              <>
+                <span className="sr-only">{row.identity.length > 0 ? colorNames(row.identity).join(", ") : rowCopy.colorless}</span>
+                <span aria-hidden className="flex flex-none gap-[3px]" data-testid="tile-dots">
+                  {identity.map((c) => (
+                    <span
+                      key={c}
+                      className="h-[8px] w-[8px] rounded-full md:h-[9px] md:w-[9px]"
+                      style={{ background: c === "C" ? "var(--fg-faint)" : WUBRG_COLOR[c] }}
+                    />
+                  ))}
+                </span>
+              </>
+            )}
             {early
               ? <span className="min-w-0 truncate text-[color:var(--fact)]" data-testid="early-mark">{preconsCopy.upcoming.earlyList}</span>
               : <span className="min-w-0 truncate">{copy.meta(row.setCode, preconMonth(row.releaseDate))}</span>}

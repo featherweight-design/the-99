@@ -191,7 +191,8 @@ export function EarlyRow({ tile }: { tile: EarlyTile }) {
   const lead = tile.commanders[0];
   return (
     <li className={`${SUB_ROW} border-solid border-[color:var(--border)] bg-[color:var(--surface)]`} data-testid="early-row">
-      <CommanderThumb imageUri={lead?.imageUriSmall ?? lead?.imageUri ?? null} colorIdentity={tile.identity} size="list" lazy />
+      {/* An unknown identity falls back to the stripes, never a colorless gradient. */}
+      <CommanderThumb imageUri={lead?.imageUriSmall ?? lead?.imageUri ?? null} colorIdentity={tile.identityKnown ? tile.identity : null} size="list" lazy />
       <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
         <Link
           href={tile.href}
@@ -202,8 +203,13 @@ export function EarlyRow({ tile }: { tile: EarlyTile }) {
           <PendingReporter href={tile.href} />
         </Link>
         <span className={SUB_META}>
-          <span className="sr-only">{tile.identity.length > 0 ? colorNames(tile.identity).join(", ") : preconsCopy.row.colorless}</span>
-          <Dots identity={tile.identity} size="h-[9px] w-[9px]" />
+          {/* A commander the catalog cannot match yet leaves the identity unknown: no dots, no colors named. */}
+          {tile.identityKnown && (
+            <>
+              <span className="sr-only">{tile.identity.length > 0 ? colorNames(tile.identity).join(", ") : preconsCopy.row.colorless}</span>
+              <Dots identity={tile.identity} size="h-[9px] w-[9px]" />
+            </>
+          )}
           <span className="text-[color:var(--fact)]" data-testid="early-mark">{copy.earlyList}</span>
           <span aria-hidden>·</span>
           <span className="truncate">
@@ -449,7 +455,7 @@ function RevealedTiles({ commanders, early = [], toCome = 0, setName, code, filt
           data-measured={columns !== null ? "" : undefined}
         >
           {early.map((t, i) => (
-            <PreconTile key={t.href} row={earlyRow(t)} href={t.href} early hidden={collapsed && i >= shown} />
+            <PreconTile key={t.href} row={earlyRow(t)} href={t.href} early identityKnown={t.identityKnown} hidden={collapsed && i >= shown} />
           ))}
           {commanders.map((c, i) => (
             <RevealedTile key={c.oracleId} card={c} siblings={siblings} hidden={collapsed && early.length + i >= shown} />
