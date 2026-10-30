@@ -23,10 +23,14 @@ describe("releaseCandidatesQuery", () => {
 describe("pickReleasePrecon", () => {
   const posted = new Date("2026-10-29T16:00:00Z");
   // Every candidate below lists the early list's cards unless a test says otherwise: these cases are about stamps and sets.
+  // As real data reads: the commander's line is always matched, every candidate lists it, and the list holds basics too.
   const IDS = Array.from({ length: 10 }, (_, i) => `card-${i}`);
-  const listed = { title: "Calling All Angels", cards: IDS.map((cardId) => ({ cardId })) };
+  const CMD = { name: "Lyra Dawnbringer", cardId: "cmd-1" };
+  const ISLAND = { name: "Island", cardId: "island" };
+  const lines = (ids: readonly (string | null)[]) => [CMD, ...ids.map((cardId, i) => ({ name: `Card ${i}`, cardId })), ISLAND];
+  const listed = { title: "Calling All Angels", commanderCardId: "cmd-1", partnerCardId: null, cards: lines(IDS) };
   const c = (fileName: string, setCode: string, firstSeenAt: string | null, baseline: boolean | null = firstSeenAt ? false : null, cardIds: readonly string[] = IDS, name = fileName) =>
-    ({ fileName, setCode, firstSeenAt: firstSeenAt ? new Date(firstSeenAt) : null, baseline, name, cardIds });
+    ({ fileName, setCode, firstSeenAt: firstSeenAt ? new Date(firstSeenAt) : null, baseline, name, cardIds: ["cmd-1", "island", ...cardIds] });
 
   it("matches a new deck in a long-running set by its first-seen stamp, whatever the set's release date (SLD)", () => {
     // The post's lists resolve to no set (SLD released in 2019, outside the window), and the redirect still finds it.
@@ -77,12 +81,13 @@ describe("pickReleasePrecon", () => {
   });
 
   it("carries a list the catalog cannot card-match yet on its deck name alone, through the Secret Lair wrapping", () => {
-    const unmatched = { title: "Secret Lair Commander Deck: Odds and Ends", cards: IDS.map(() => ({ cardId: null })) };
+    // The commander is matched (it always is where this runs), the rest not yet: commander and basics alone are no evidence.
+    const unmatched = { ...listed, title: "Secret Lair Commander Deck: Odds and Ends", cards: lines(IDS.map(() => null)) };
     const release = c("OddsAndEnds_SLD", "SLD", "2026-11-02T08:00:00Z", false, IDS, "Odds and Ends");
     expect(pickReleasePrecon([release], posted, null, unmatched)).toBe("OddsAndEnds_SLD");
     expect(pickReleasePrecon([{ ...release, name: "Goblin Storm" }], posted, null, unmatched)).toBeNull();
     expect(pickReleasePrecon([c("Win_SLD", "SLD", "2026-11-02T08:00:00Z", false, [], "20 Ways to Win")], posted, null,
-      { title: "20 Ways to Win Commander Deck", cards: [] })).toBe("Win_SLD");
+      { ...listed, title: "20 Ways to Win Commander Deck", cards: lines([]) })).toBe("Win_SLD");
   });
 
   it("prefers the name match, then the larger overlap, over the earlier stamp", () => {

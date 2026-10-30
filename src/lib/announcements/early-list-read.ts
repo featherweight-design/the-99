@@ -184,8 +184,14 @@ export type ReleaseCandidate = {
   name: string; cardIds: readonly string[];
 };
 
-/** What an early list says of itself: its title, and the cards the catalog matched (a line it cannot match yet is null). */
-export type ListEvidence = { title: string | null; cards: readonly { cardId: string | null }[] };
+/**
+ * What an early list says of itself: its title, its commanders, and the cards the catalog matched (a line it cannot match
+ * yet is null). The commanders matter only to be left out of the overlap: every candidate names the commander already.
+ */
+export type ListEvidence = {
+  title: string | null; commanderCardId: string | null; partnerCardId: string | null;
+  cards: readonly { name: string; cardId: string | null }[];
+};
 
 /** A release list shares at least this much of the early list's matched cards (production 2026-10-30: every true release 0.94 to 1). */
 export const RELEASE_OVERLAP = 0.8;
@@ -198,9 +204,12 @@ export function foldDeckName(name: string): string {
     .replace(/[^\p{L}\p{N}]+/gu, "");
 }
 
-/** How a candidate's list evidence reads: whether the names agree, and the share of the list's matched cards it lists. */
+/** How a candidate's list evidence reads: whether the names agree, and the share of the list's own matched cards it lists. */
 function evidenceOf(c: ReleaseCandidate, list: ListEvidence): { named: boolean; overlap: number } {
-  const ids = new Set(list.cards.flatMap((l) => (l.cardId ? [l.cardId] : [])));
+  // Overlap is over the list's OWN cards: not its commanders, which every candidate lists by construction, and not the
+  // basics, which every deck holds. Otherwise a list the catalog has matched little of clears the bar on those alone.
+  const own = new Set([list.commanderCardId, list.partnerCardId].filter((x): x is string => x !== null));
+  const ids = new Set(list.cards.flatMap((l) => (l.cardId && !own.has(l.cardId) && !isBasicName(l.name) ? [l.cardId] : [])));
   const listed = new Set(c.cardIds);
   let hits = 0;
   for (const id of ids) if (listed.has(id)) hits++;
@@ -210,7 +219,7 @@ function evidenceOf(c: ReleaseCandidate, list: ListEvidence): { named: boolean; 
 
 /**
  * The release list that replaces an early one, among the precons naming its commander (STATES 3.4) that carry the list's
- * evidence: the same deck name, or at least `RELEASE_OVERLAP` of the list's matched cards. A commander and a stamp alone
+ * evidence: the same deck name, or at least `RELEASE_OVERLAP` of the list's own matched cards (commanders and basics out). A commander and a stamp alone
  * are not enough, so another product sharing the commander (a staple-heavy deck elsewhere) never takes the address, and a
  * name alone carries a list the catalog cannot card-match yet. Among those, in this order:
  *
