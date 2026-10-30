@@ -3,8 +3,9 @@ import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { TablePrefill } from "../../lib/social/rule-zero-log";
 import { useHeldPrefill } from "./held-prefill";
+import { named } from "../../lib/person-name/mint";
 
-const prefill = (id: string): TablePrefill => ({ table: { id, seating: "a".repeat(64) }, podName: "Thursday night", podSize: 4, seats: [] });
+const prefill = (id: string): TablePrefill => ({ table: { id, seating: "a".repeat(64) }, podName: named("Thursday night"), podSize: 4, seats: [] });
 
 describe("useHeldPrefill", () => {
   it("keeps an unspent prefill through a refresh drawn without one (a game deleted while the form is open)", () => {

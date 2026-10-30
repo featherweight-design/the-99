@@ -10,26 +10,26 @@
  * - a color identity is named as `colorLabel` names it (Izzet, Jeskai); what it does not name (none, four,
  *   five colors) comes from the copy, and four colors name the missing one beneath.
  */
+import type { ThirdPartyName } from "../person-name/brand";
 import { colorLabel } from "./format";
 import type { OpponentCommander } from "./game-opponents";
 import type { Matchups } from "./matchups";
 import { gameMatchupsCopy } from "../copy/game-matchups";
-import { faceInitials } from "../names/initials";
 
 export type MatchupSplit = "commanders" | "identities" | "friends";
 
 export type Thumb =
   | { kind: "art"; imageUri: string }
   | { kind: "pips"; colorIdentity: string[] }
-  /** Two letters of the name, for a friend seated with no commander. */
-  | { kind: "initials"; text: string }
+  /** Two letters of the friend's name, for a friend seated with no commander: drawn by `PersonInitials`, never as text. */
+  | { kind: "initials"; name: ThirdPartyName }
   /** A commander the catalog has no art for. */
   | { kind: "blank" };
 
 export type MatchupRow = {
   key: string;
   thumb: Thumb;
-  name: string;
+  name: string | ThirdPartyName;
   sub: string | null;
   /** One letter per game, W then D then L; null past `SQUARES_MAX` games. */
   squares: ("W" | "D" | "L")[] | null;
@@ -48,9 +48,6 @@ export const SQUARES_MAX = 10;
 const MISSING: Record<string, string> = { W: "white", U: "blue", B: "black", R: "red", G: "green" };
 
 const shortName = (name: string) => name.split(",")[0].trim();
-
-/** The face's initials, or `?` when the name holds no letter or digit: one rule with the friend faces (`faceInitials`). */
-export const initialsOf = (name: string): string => faceInitials(name) || "?";
 
 function commanderThumb(c: OpponentCommander | null): Thumb {
   return c?.imageUri ? { kind: "art", imageUri: c.imageUri } : { kind: "blank" };
@@ -103,7 +100,7 @@ export function matchupRows(matchups: Matchups, split: MatchupSplit): MatchupRow
   }
   return matchups.friends.map((c) => ({
     key: c.key,
-    thumb: c.commander?.imageUri ? { kind: "art", imageUri: c.commander.imageUri } : { kind: "initials", text: initialsOf(c.name) },
+    thumb: c.commander?.imageUri ? { kind: "art", imageUri: c.commander.imageUri } : { kind: "initials", name: c.name },
     name: c.name,
     sub: null,
     beat: c.beatMe,

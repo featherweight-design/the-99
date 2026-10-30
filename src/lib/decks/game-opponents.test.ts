@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { named } from "../person-name/mint";
 import { assembleOpponents, gameOpponentsQuery, opponentRows, parseOpponents, withTableSeats, type ResolvedOpponent } from "./game-opponents";
 
 const A = "6f1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b";
@@ -173,11 +174,25 @@ describe("assembleOpponents", () => {
       row({ gameId: "g2", seat: 2, friendUserId: null, friendNameThen: "Gone" }),
       row({ gameId: "g3", friendUserId: null, friendNameThen: "Gone" }),
     ]);
-    expect(out.get("g1")![0].friend).toEqual({ key: "f1", name: "Dave" });
-    expect(out.get("g2")!.map((s) => s.friend)).toEqual([{ key: "f1", name: "David" }, { key: "gone:g2:2", name: "Gone" }]);
+    expect(out.get("g1")![0].friend).toEqual({ key: "f1", name: named("Dave") });
+    expect(out.get("g2")!.map((s) => s.friend)).toEqual([{ key: "f1", name: named("David") }, { key: "gone:g2:2", name: named("Gone") }]);
     // Two seats of deleted accounts sharing a name are not assumed to be one person.
     expect(out.get("g3")![0].friend!.key).not.toBe(out.get("g2")![1].friend!.key);
     expect(JSON.stringify([...out.values()])).not.toContain("user_dave");
+  });
+
+  // A friend's name, their deck's name and a non-friend's saved label (a Rule 0 seat's display name, stored plain) are
+  // each a person's name: the read brands all three, so no surface can draw one unmarked.
+  it("brands a friend's name, their deck's name and a saved label as they are read", () => {
+    const seat = assembleOpponents([
+      row({ friendUserId: "user_dave", friendNameThen: "Dave", deckNameThen: "Avengers Tempo" }),
+      row({ gameId: "g2", label: "Max the Longest Display Name A" }),
+    ]);
+    expect(seat.get("g1")![0].deckName).toEqual(named("Avengers Tempo"));
+    expect(seat.get("g1")![0].label).toBeNull();
+    expect(seat.get("g2")![0].label).toEqual(named("Max the Longest Display Name A"));
+    expect(seat.get("g2")![0].friend).toBeNull();
+    expect(seat.get("g2")![0].deckName).toBeNull();
   });
 
   it("joins the pair's color identity in WUBRG order", () => {

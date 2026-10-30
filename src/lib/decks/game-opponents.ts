@@ -18,6 +18,8 @@ import { cards, deckGameOpponents, deckGames } from "../../db/schema";
 import { isCommanderCandidate } from "../recs/score";
 import { resolveFriendSeatsIn, type FriendSeatAsk, type FriendSeatFacts } from "../social/games";
 import { SEATS_MAX } from "../social/client-rules";
+import { savedName } from "../social/opponent-names";
+import type { ThirdPartyName } from "../person-name/brand";
 import type { TableSeatResolution } from "../social/rule-zero-log";
 import { cleanName, isUuid } from "../social/rules";
 import { canPair, partnerAbility } from "./partner";
@@ -235,14 +237,15 @@ export type GameOpponent = {
   seat: number;
   /** A friend, by the name they had then. `key` groups one person's seats within this read; it is not an id.
    *  A seat whose friend's account has gone keys alone, so it groups with no other seat. */
-  friend: { key: string; name: string } | null;
+  friend: { key: string; name: ThirdPartyName } | null;
   /** The friend's deck, by the name it had then. */
-  deckName: string | null;
+  deckName: ThirdPartyName | null;
   commander: OpponentCommander | null;
   partner: OpponentCommander | null;
   /** The commanders' color identity, in WUBRG order. Empty for colorless, or for no commander. */
   colorIdentity: string[];
-  label: string | null;
+  /** Who sat there when the owner named them, or a non-friend's name saved from a Rule 0 table: a person's name either way. */
+  label: ThirdPartyName | null;
   won: boolean;
 };
 
@@ -290,17 +293,17 @@ export function assembleOpponents(rows: Awaited<ReturnType<typeof gameOpponentsQ
         if (!keys.has(r.friendUserId)) keys.set(r.friendUserId, `f${keys.size + 1}`);
         key = keys.get(r.friendUserId)!;
       }
-      friend = { key, name: r.friendNameThen };
+      friend = { key, name: savedName(r.friendNameThen) };
     }
     const identity = new Set([...(r.commanderIdentity ?? []), ...(r.partnerIdentity ?? [])]);
     const seat: GameOpponent = {
       seat: r.seat,
       friend,
-      deckName: r.deckNameThen,
+      deckName: savedName(r.deckNameThen),
       commander: r.commanderOracleId !== null && r.commanderName !== null ? { oracleId: r.commanderOracleId, name: r.commanderName } : null,
       partner: r.partnerOracleId !== null && r.partnerName !== null ? { oracleId: r.partnerOracleId, name: r.partnerName } : null,
       colorIdentity: WUBRG.filter((c) => identity.has(c)),
-      label: r.label,
+      label: savedName(r.label),
       won: r.won,
     };
     const list = out.get(r.gameId);

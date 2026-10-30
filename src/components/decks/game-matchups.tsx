@@ -18,6 +18,8 @@ import { matchupRows, singleGameCaption, type MatchupRow, type MatchupSplit, typ
 import type { Matchups } from "../../lib/decks/matchups";
 import { IdentityPips } from "../commanders/commander-art";
 import { ArtLayer } from "../ui/art-layer";
+import { PersonName } from "../../lib/person-name";
+import { OpponentInitials } from "./opponent-initials";
 import { TrophyIcon } from "./trophy-icon";
 
 const copy = gameMatchupsCopy.matchups;
@@ -39,7 +41,7 @@ function ThumbView({ thumb }: { thumb: Thumb }) {
     >
       {thumb.kind === "art" && <ArtLayer src={thumb.imageUri} style={{ backgroundPosition: "50% 20%" }} />}
       {thumb.kind === "pips" && <IdentityPips colorIdentity={thumb.colorIdentity} size={8} gap={2} />}
-      {thumb.kind === "initials" && thumb.text}
+      {thumb.kind === "initials" && <OpponentInitials n={thumb.name} />}
     </span>
   );
 }
@@ -71,7 +73,7 @@ function Row({ row }: { row: MatchupRow }) {
       <ThumbView thumb={row.thumb} />
       <span className="flex min-w-0 flex-1 flex-col gap-[5px] lg:contents">
         <span className="flex min-w-0 flex-col lg:min-w-0">
-          <span className="truncate text-[14px] text-[color:var(--fg)]">{row.name}</span>
+          <span className="truncate text-[14px] text-[color:var(--fg)]"><PersonName n={row.name} /></span>
           {row.sub && <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{row.sub}</span>}
         </span>
         <Squares row={row} />

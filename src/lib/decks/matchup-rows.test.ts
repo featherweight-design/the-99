@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { identityName, initialsOf, matchupRows, singleGameCaption, SQUARES_MAX } from "./matchup-rows";
+import { identityName, matchupRows, singleGameCaption, SQUARES_MAX } from "./matchup-rows";
+import { named } from "../person-name/mint";
 import type { Matchups } from "./matchups";
 import type { GameSummary } from "./games";
 
@@ -55,20 +56,11 @@ describe("rows by split", () => {
   });
   it("draws a friend by the commander they played, else their initials", () => {
     const rows = matchupRows({ ...base, friends: [
-      { ...cell("f1", summary(1, 0)), name: "Dave", commander: yuriko },
-      { ...cell("f2", summary(0, 1)), name: "Jo Park", commander: null },
+      { ...cell("f1", summary(1, 0)), name: named("Dave"), commander: yuriko },
+      { ...cell("f2", summary(0, 1)), name: named("Jo Park"), commander: null },
     ] }, "friends");
     expect(rows[0].thumb).toEqual({ kind: "art", imageUri: "y.jpg" });
-    expect(rows[1].thumb).toEqual({ kind: "initials", text: "JP" });
-  });
-  it("makes initials from letters and digits only", () => {
-    expect(initialsOf("Jo")).toBe("JO");
-    expect(initialsOf("  Émile  Zola ")).toBe("ÉZ");
-    expect(initialsOf("*** !!")).toBe("?");
-    expect(initialsOf("Dave")).toBe("DA");
-    // One rule with the friend faces (`faceInitials`): words are whitespace-separated, so a hyphenated name is one word.
-    expect(initialsOf("Jo-Ann Lee")).toBe("JL");
-    expect(initialsOf("O’Brien")).toBe("OB");
+    expect(rows[1].thumb).toEqual({ kind: "initials", name: named("Jo Park") });
   });
 });
 

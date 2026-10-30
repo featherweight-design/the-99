@@ -6,19 +6,19 @@
 
 import { gameMatchupsCopy } from "../../lib/copy/game-matchups";
 import type { GameOpponent } from "../../lib/decks/game-opponents";
-import { initialsOf } from "../../lib/decks/matchup-rows";
+import { PersonName, PersonText, personText, type ThirdPartyName } from "../../lib/person-name";
+import { OpponentInitials } from "./opponent-initials";
 import { ArtLayer } from "../ui/art-layer";
 import { TrophyIcon } from "./trophy-icon";
 
 const shortName = (name: string) => name.split(",")[0].trim();
 
 /** The name and the `· sub` a seat reads as: a friend by name with their deck or commander, anyone by their name or commander. */
-export function vsParts(seat: GameOpponent): { name: string; sub: string | null } {
+export function vsParts(seat: GameOpponent): { name: string | ThirdPartyName; sub: string | ThirdPartyName | null } {
   // A pair keeps both names, as the Matchups rows do.
   const commander = seat.commander ? (seat.partner ? `${shortName(seat.commander.name)} + ${shortName(seat.partner.name)}` : shortName(seat.commander.name)) : null;
   if (seat.friend) return { name: seat.friend.name, sub: seat.deckName ?? commander };
-  const label = seat.label?.trim() || null;
-  if (label) return { name: label, sub: commander };
+  if (seat.label) return { name: seat.label, sub: commander };
   return { name: commander ?? "?", sub: null };
 }
 
@@ -38,10 +38,10 @@ export function GameVsLine({ seats }: { seats: readonly GameOpponent[] }) {
               aria-hidden
               className="relative flex h-[20px] w-[20px] shrink-0 items-center justify-center overflow-hidden rounded-[5px] bg-[color:var(--elevated)] font-mono text-[8px] font-medium text-[color:var(--fg-muted)] md:h-[22px] md:w-[22px] md:text-[8.5px]"
             >
-              {s.commander?.imageUri ? <ArtLayer src={s.commander.imageUri} style={{ backgroundPosition: "50% 20%" }} /> : initialsOf(name)}
+              {s.commander?.imageUri ? <ArtLayer src={s.commander.imageUri} style={{ backgroundPosition: "50% 20%" }} /> : <OpponentInitials n={name} />}
             </span>
-            <span className="min-w-0 [overflow-wrap:anywhere]">{name}</span>
-            {sub && <span className="min-w-0 text-fg-faint [overflow-wrap:anywhere]">{`· ${sub}`}</span>}
+            <span className="min-w-0 [overflow-wrap:anywhere]"><PersonName n={name} /></span>
+            {sub && <span className="min-w-0 text-fg-faint [overflow-wrap:anywhere]"><PersonText text={personText`· ${sub}`} /></span>}
           </span>
         );
       })}

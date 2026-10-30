@@ -16,6 +16,8 @@ import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
 import { cards, decks, friendLinks, podMembers, pods, ruleZeroSeats, ruleZeroTables, socialProfiles, userPrefs } from "../../db/schema";
 // `SEAT_LABEL_MAX` is `OPPONENT_LABEL_MAX`: that module is read only by the game log's own (game-opponents.test.ts).
+import type { ThirdPartyName } from "../person-name/brand";
+import { named } from "../person-name/mint";
 import { SEAT_LABEL_MAX } from "../decks/game-seats";
 import { ruledSeatOwnersOf, seatDeckVisible } from "./rule-zero";
 import { cleanName, isUuid } from "./rules";
@@ -25,9 +27,10 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 /** One other seat as the log form draws it. Nothing in it names a deck, a player's `publicId` or an account. */
 export type TablePrefillSeat = {
   seat: number;
-  name: string;
+  /** The seat player's display name, another reader's. */
+  name: ThirdPartyName;
   /** Null while the seat waits for its player's deck. */
-  deckName: string | null;
+  deckName: ThirdPartyName | null;
   commanderName: string | null;
   artCropUri: string | null;
   friend: boolean;
@@ -36,7 +39,7 @@ export type TablePrefillSeat = {
 export type TablePrefill = {
   /** What the save hands back: the table, and the seating the prefill was drawn from. */
   table: { id: string; seating: string };
-  podName: string;
+  podName: ThirdPartyName;
   /** Every seat the grant returns, the viewer's own included. */
   podSize: number;
   /** Every seat but the viewer's, in seat order. */
@@ -112,12 +115,12 @@ export function prefillFrom(rows: readonly TableSeatRow[], viewerId: string, tab
   if (!mine || mine.deckId !== deckId) return null;
   return {
     table: { id: tableId, seating: seatingHash(tableId, rows) },
-    podName: mine.podName,
+    podName: named(mine.podName),
     podSize: rows.length,
     seats: rows.filter((r) => r.userId !== viewerId).map((r) => ({
       seat: r.seat,
-      name: r.displayName,
-      deckName: r.deckId === null ? null : r.deckName,
+      name: named(r.displayName),
+      deckName: r.deckId === null || r.deckName === null ? null : named(r.deckName),
       commanderName: r.deckId === null ? null : r.commanderName,
       artCropUri: r.deckId === null ? null : r.commanderArt,
       friend: r.friend !== null,

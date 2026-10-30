@@ -13,7 +13,6 @@ import { listPickerPodsAction, listPodSeatsAction } from "../../app/decks/[id]/o
 import { gameSeatsCopy } from "../../lib/copy/game-seats";
 import { ruleZeroCopy } from "../../lib/copy/rule-zero";
 import { hasRoom, podFill, seatCount, seatedFriends, seatName, shortName, SEAT_LABEL_MAX, type Seat, type SeatFriend, type SeatPick } from "../../lib/decks/game-seats";
-import { faceInitials } from "../../lib/names/initials";
 import { joinNames, PersonInitials, PersonName, PersonText, personAttrs, personText, type PersonParts, type ThirdPartyName } from "../../lib/person-name";
 import type { PickerPod } from "../../lib/social/games";
 import { ArtLayer } from "../ui/art-layer";
@@ -72,7 +71,7 @@ function SeatView({
       >
         {seat.table ? (
           // A seat from a Rule 0 table (plan §PR 8) draws the table's art for it, or the player's initials while it waits.
-          <Art uri={seat.table.artCropUri} initials={faceInitials(seat.table.name)} />
+          <Art uri={seat.table.artCropUri} initials={<PersonInitials n={seat.table.name} />} />
         ) : (
           <Art uri={seat.commander?.imageUri ?? null} initials={seat.friend ? <PersonInitials n={seat.friend.name} /> : null} />
         )}

@@ -19,6 +19,8 @@ const F = `probe_frdeck_f_${run}`; // the friend whose decks are read
 const S = `probe_frdeck_s_${run}`; // a stranger to F
 
 let failed = 0;
+// A saved name is another reader's (`ThirdPartyName`), which a probe cannot read as a string: compare its shape.
+const isName = (n: unknown, text: string) => JSON.stringify(n) === JSON.stringify({ $tp: text });
 const check = (label: string, ok: boolean, detail = "") => {
   console.log(`${ok ? "ok  " : "FAIL"} ${label}${detail ? ` (${detail})` : ""}`);
   if (!ok) failed++;
@@ -152,9 +154,9 @@ async function main() {
     await db.execute(sql`update rule_zero_seats set deck_id = ${myDeck.id} where table_id = ${tableId} and user_id = ${V}`);
     const prefillSeat = async () => {
       const p = await lg.tablePrefill(V, tableId, myDeck.id);
-      return p === null ? "no prefill" : (p.seats.find((s) => s.name === "Finn")?.deckName ?? null);
+      return p === null ? "no prefill" : (p.seats.find((s) => isName(s.name, "Finn"))?.deckName ?? null);
     };
-    check("rule 0 log prefill: the seated friend's shown deck is prefilled", (await prefillSeat()) === "Probe Shown", String(await prefillSeat()));
+    check("rule 0 log prefill: the seated friend's shown deck is prefilled", isName(await prefillSeat(), "Probe Shown"), JSON.stringify(await prefillSeat()));
     await vis.setDeckHiddenFromFriends(F, shown, true);
     check("rule 0 log prefill: hidden since the pick, it prefills as no deck", (await prefillSeat()) === null, String(await prefillSeat()));
     await vis.setDeckHiddenFromFriends(F, shown, false);
