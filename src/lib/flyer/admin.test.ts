@@ -1,4 +1,4 @@
-// The flyer-code writes over a recording transaction: make takes the locks in order, retries a taken code without a
+// The flyer-code writes over a recording transaction: make takes the sender then the switch lock, retries a taken code without a
 // unique violation, refuses a missing group; revoke locks the creator, stamps once, is idempotent, and leaves claims alone.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -60,10 +60,10 @@ beforeEach(() => {
 });
 
 describe("makeFlyerCode", () => {
-  it("locks the switch writes, then the sender, makes the code and records flyer_code_made", async () => {
+  it("locks the sender, then the switch writes, makes the code and records flyer_code_made", async () => {
     const out = await makeFlyerCode("u_hugh", { store: " Mox Boston ", groupId: "g1" }, { pick: () => 0 });
     expect(out).toEqual({ ok: true, id: "flyer-1", code: "AAAAAA" });
-    expect(log.slice(0, 2)).toEqual(["switch-lock", "sender:u_hugh"]);
+    expect(log.slice(0, 2)).toEqual(["sender:u_hugh", "switch-lock"]);
     expect(inserted[0]).toMatchObject({ label: "Mox Boston", groupId: "g1", createdBy: "u_hugh", code: "AAAAAA" });
     expect(events).toEqual([expect.objectContaining({ actorId: "u_hugh", kind: "flyer_code_made", userId: "u_hugh", groupId: "g1", newValue: "AAAAAA", note: "Mox Boston" })]);
   });

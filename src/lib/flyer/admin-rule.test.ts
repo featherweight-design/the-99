@@ -11,6 +11,7 @@ describe("parseStore", () => {
     expect(parseStore("x".repeat(STORE_MAX))).toBe("x".repeat(STORE_MAX));
     expect(parseStore("x".repeat(STORE_MAX + 1))).toBeNull();
     expect(parseStore("a\nb")).toBeNull();
+    expect(parseStore("!!!")).toBeNull();
   });
 });
 

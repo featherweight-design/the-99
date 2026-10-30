@@ -11,7 +11,7 @@ import { ModalChrome } from "../decks/receipt-modal";
 // draw no failed state: a refusal or a lost reply shows the smallest existing admin error line and keeps the modal.
 
 const copy = flyerAdminCopy;
-const BUTTON = "flex h-[44px] flex-1 items-center justify-center whitespace-nowrap rounded-[10px] border border-solid px-[14px] text-[14px] disabled:opacity-60 md:flex-none";
+const BUTTON = "flex h-[44px] flex-1 items-center justify-center whitespace-nowrap rounded-[10px] border border-solid px-[14px] text-[14px] disabled:opacity-60 md:h-[32px] md:flex-none md:rounded-[8px] md:text-[12.5px]";
 
 export type RevokeTarget = { id: string; store: string; code: string; taken: number };
 
@@ -45,7 +45,7 @@ export function FlyerRevokeModal({ target, onClose }: { target: RevokeTarget; on
       onClose={onClose}
       width={480}
       fit
-      titleClassName="text-[15px] leading-tight md:text-[16px]"
+      titleClassName="!font-sans !font-semibold text-[15px] leading-tight md:text-[16px] md:leading-[17px]"
       foot={
         <div className="flex gap-[10px] px-[16px] pb-[24px] md:justify-end md:px-[18px] md:pb-[18px]">
           <button type="button" onClick={onClose} disabled={pending} className={`${BUTTON} border-[color:var(--border-strong)] bg-transparent text-[color:var(--fg)]`}>
@@ -57,7 +57,7 @@ export function FlyerRevokeModal({ target, onClose }: { target: RevokeTarget; on
         </div>
       }
     >
-      <div className="flex flex-col gap-[14px] px-[16px] pb-[18px] pt-[16px] md:px-[18px]">
+      <div className="flex flex-col gap-[14px] px-[16px] pb-[24px] pt-[14px] md:px-[18px] md:pb-[18px] md:pt-[16px]">
         <p className="m-0 text-[14px] leading-[1.55] text-[color:var(--fg-body)]">
           {lead}
           <b className="font-semibold text-[color:var(--fg)]">{target.code}</b>

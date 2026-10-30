@@ -30,10 +30,10 @@ describe("flyersView", () => {
     expect(rows.find((r) => r.id === "knt")).toMatchObject({ figure: "50", of: "of 50 · full", percent: 100, state: "full" });
   });
 
-  it("keeps a revoked row, last and dated, with its group and no state of a live one", () => {
+  it("keeps a revoked row, last and dated, the live ones newest first, with its group and no state of a live one", () => {
     const rows = flyersView(read, now).rows;
-    expect(rows.map((r) => r.code)).toEqual(["MOX4QK", "PDM7RW", "KNT3HZ", "PZA9TC"]);
-    expect(rows[3]).toMatchObject({ state: "revoked", revoked: "revoked Nov 2", group: "pizza-pod", made: "Oct 30" });
+    expect(rows.map((r) => r.code)).toEqual(["KNT3HZ", "MOX4QK", "PDM7RW", "PZA9TC"]);
+    expect(rows.at(-1)).toMatchObject({ state: "revoked", revoked: "revoked Nov 2", group: "pizza-pod", made: "Oct 30" });
   });
 
   it("writes the meta line: live codes (revoked excluded), the viewer's invites left, the launch list", () => {

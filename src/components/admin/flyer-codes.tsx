@@ -84,14 +84,17 @@ function Row({ row, onRevoke }: { row: FlyerRowView; onRevoke: (row: FlyerRowVie
 export function FlyerCodes({ view, groups = [] }: { view: FlyersView; groups?: readonly FlyerGroupChoice[] }) {
   const cols = copy.cols;
   const [making, setMaking] = useState(false);
-  const [revoking, setRevoking] = useState<RevokeTarget | null>(null);
+  // Only the row's code is kept: the count the modal shows is read from the live row, so a refresh updates it.
+  const [revokingCode, setRevokingCode] = useState<string | null>(null);
+  const live = revokingCode === null ? undefined : view.rows.find((r) => r.code === revokingCode);
+  const revoking: RevokeTarget | null = live ? { id: live.id, store: live.store, code: live.code, taken: live.taken } : null;
   return (
     <section aria-label={copy.section} data-testid="flyer-codes" className="flex flex-col gap-[12px] px-[16px] pt-[16px] md:px-[28px] md:pt-[22px]">
       <div className="flex flex-wrap items-baseline gap-x-[10px] gap-y-[2px] pt-[10px]">
         <h2 className="m-0 text-[15px] font-semibold text-[color:var(--fg)]">{copy.section}</h2>
         <small className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{view.meta}</small>
         {!making && (
-          <button type="button" data-testid="flyer-new-open" onClick={() => setMaking(true)} className={`${TEXT_BUTTON} ml-auto cursor-pointer border-0 bg-transparent`}>
+          <button type="button" data-testid="flyer-new-open" onClick={() => setMaking(true)} className={`${TEXT_BUTTON} ml-auto cursor-pointer border-0 bg-transparent md:px-0 md:font-normal`}>
             {copy.newCode}
           </button>
         )}
@@ -112,7 +115,7 @@ export function FlyerCodes({ view, groups = [] }: { view: FlyersView; groups?: r
           </div>
           <ul role="list" className="m-0 list-none p-0">
             {view.rows.map((r) => (
-              <Row key={r.id} row={r} onRevoke={(row) => setRevoking({ id: row.id, store: row.store, code: row.code, taken: row.taken })} />
+              <Row key={r.id} row={r} onRevoke={(row) => setRevokingCode(row.code)} />
             ))}
           </ul>
         </div>
@@ -121,7 +124,7 @@ export function FlyerCodes({ view, groups = [] }: { view: FlyersView; groups?: r
         <b className="text-[14px] font-semibold text-[color:var(--fg)]">{view.launch.title}</b>
         <span className={MONO_FAINT}>{view.launch.meta}</span>
       </div>
-      {revoking && <FlyerRevokeModal target={revoking} onClose={() => setRevoking(null)} />}
+      {revoking && <FlyerRevokeModal target={revoking} onClose={() => setRevokingCode(null)} />}
     </section>
   );
 }

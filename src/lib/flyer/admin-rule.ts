@@ -12,12 +12,14 @@ export const FLYER_GROUP_ALLOWANCE = 3;
 /** How many codes are drawn before a make gives up: the alphabet holds 32^6, so one retry is already rare. */
 export const MAKE_ATTEMPTS = 8;
 
-/** The trimmed label, or null when it is empty, too long or carries a control character. */
+/** The trimmed label, or null when it is empty, too long, carries a control character or leaves no group name. */
 export function parseStore(raw: unknown): string | null {
   if (typeof raw !== "string") return null;
   const store = raw.trim();
   if (store === "" || store.length > STORE_MAX) return null;
   if (/[\u0000-\u001f\u007f]/.test(store)) return null;
+  // A label that names no group (`!!!`) is refused with it: the form's default is a group named from the store.
+  if (flyerGroupName(store) === null) return null;
   return store;
 }
 

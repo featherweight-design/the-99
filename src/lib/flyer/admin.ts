@@ -3,9 +3,10 @@
  * already decided the actor is an admin (`src/app/admin/invites/flyer-actions.ts`). Each write records one
  * `admin_events` line.
  *
- * MAKE takes the switch writes' lock (so the group it names cannot be deleted under it), then the sender's invite lock,
- * and draws a code, retrying on the rare collision. The group is made BEFORE, by the group write (the action's), which
- * takes the same lock.
+ * MAKE takes the sender's invite lock, then the switch writes' lock (so the group it names cannot be deleted under it):
+ * the order both sign-up spends take them in (`invites/spend.ts`, `flyer/spend.ts`), so no two writers wait on each
+ * other. It draws a code, retrying on the rare collision. The group is made BEFORE, by the group write (the action's),
+ * which takes the switch lock alone; `discardEmptyGroup` removes a group a failed make leaves behind.
  *
  * REVOKE takes the creator's invite lock, the one every claim takes before it reads the code (`claim.ts`), so a claim
  * is either decided before the revoke or sees the code ended. It stamps `revoked_at` and nothing else: claims already
@@ -13,7 +14,7 @@
  * sign-ups already made keep their accounts, their group and their invites.
  */
 import { randomInt } from "node:crypto";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { adminEvents, flagGroups, flyerCodes } from "../../db/schema";
 import { lockSenderIn } from "../invites/send";
@@ -31,10 +32,10 @@ export async function makeFlyerCode(
   if (store === null) return { ok: false, reason: "invalid" };
   const pick = deps.pick ?? ((n: number) => randomInt(n));
   return db.transaction(async (tx) => {
+    const now = await lockSenderIn(tx, actorId, deps.now);
     await lockSwitchWrites(tx);
     const [group] = await tx.select({ id: flagGroups.id }).from(flagGroups).where(eq(flagGroups.id, input.groupId));
     if (!group) return { ok: false as const, reason: "group" as const };
-    const now = await lockSenderIn(tx, actorId, deps.now);
     for (let attempt = 0; attempt < MAKE_ATTEMPTS; attempt++) {
       const code = drawFlyerCode(pick);
       // A taken code is skipped, not raised: a unique violation would abort the whole transaction.
@@ -47,6 +48,20 @@ export async function makeFlyerCode(
       return { ok: true as const, id: made.id, code };
     }
     return { ok: false as const, reason: "failed" as const };
+  });
+}
+
+/**
+ * Deletes a group the make just created when no code was made in it, so a retry names it afresh rather than as `-2`.
+ * Under the switch writes' lock; a group that has gained a member or a code in the meantime is left alone.
+ */
+export async function discardEmptyGroup(groupId: string): Promise<void> {
+  await db.transaction(async (tx) => {
+    await lockSwitchWrites(tx);
+    await tx.execute(sql`
+      delete from flag_groups g where g.id = ${groupId}::uuid
+        and not exists (select 1 from flag_group_members m where m.group_id = g.id)
+        and not exists (select 1 from flyer_codes c where c.group_id = g.id)`);
   });
 }
 

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "../../../lib/admin/access";
 import { isGroupId } from "../../../lib/admin/groups-rule";
 import { writeGroup } from "../../../lib/admin/group-writes";
-import { makeFlyerCode, revokeFlyerCode, type MakeFlyerCodeResult } from "../../../lib/flyer/admin";
+import { discardEmptyGroup, makeFlyerCode, revokeFlyerCode, type MakeFlyerCodeResult } from "../../../lib/flyer/admin";
 import { FLYER_GROUP_ALLOWANCE, flyerGroupName, parseStore } from "../../../lib/flyer/admin-rule";
 import { flyerTrialEnabled } from "../../../lib/flyer/flag";
 import { requestSwitchEnv } from "../../../lib/switches/request";
@@ -25,7 +25,7 @@ export type MakeResult =
 /**
  * Makes a code for `store`. `groupId` null is the form's default: a NEW group named from the store, with daily credits 3;
  * otherwise the sign-ups join that existing group. The group write and the code write are two commits, so a code that
- * fails after a new group leaves that (empty, nameable) group behind.
+ * fails (or throws) after a new group removes that group again when it is still empty, and a retry names it afresh.
  */
 export async function makeCode(store: string, groupId: string | null): Promise<MakeResult> {
   const { userId } = await requireAdmin();
@@ -35,20 +35,40 @@ export async function makeCode(store: string, groupId: string | null): Promise<M
   if (groupId !== null && (typeof groupId !== "string" || !UUID.test(groupId))) return { ok: false, error: "group" };
 
   let target = groupId;
+  let created = false;
   if (target === null) {
     for (let n = 1; target === null; n++) {
       const name = n <= NAME_TRIES ? flyerGroupName(label, n) : null;
       if (name === null) return { ok: false, error: n === 1 ? "store" : "failed" };
       const made = await writeGroup(userId, null, { name, dailyAllowance: FLYER_GROUP_ALLOWANCE, members: [] });
-      if (made.ok) target = made.id;
+      if (made.ok) {
+        target = made.id;
+        created = true;
+      }
       else if (made.error !== "name") return { ok: false, error: "failed" };
     }
   } else if (!isGroupId(target)) {
     return { ok: false, error: "group" };
   }
 
-  const result: MakeFlyerCodeResult = await makeFlyerCode(userId, { store: label, groupId: target });
-  if (!result.ok) return { ok: false, error: result.reason === "invalid" ? "store" : result.reason };
+  let result: MakeFlyerCodeResult;
+  try {
+    result = await makeFlyerCode(userId, { store: label, groupId: target });
+  } catch (error) {
+    // A deadlock or a lost connection: the transaction rolled back, so no code exists.
+    console.error("admin: a flyer code could not be made", error);
+    result = { ok: false, reason: "failed" };
+  }
+  if (!result.ok) {
+    if (created) {
+      try {
+        await discardEmptyGroup(target);
+      } catch (error) {
+        console.error("admin: the group of a failed flyer code could not be removed", error);
+      }
+    }
+    return { ok: false, error: result.reason === "invalid" ? "store" : result.reason };
+  }
   revalidatePath("/admin", "layout");
   return { ok: true, code: result.code };
 }
