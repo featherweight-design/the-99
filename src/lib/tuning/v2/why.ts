@@ -126,6 +126,9 @@ export function britishSpelling(text: string): boolean {
 const COUNT = `\\d+|${words.counts.join("|")}`;
 /** A count the model wrote: one that opens the phrase, where the app's word goes, or one counting cards. */
 const WROTE_COUNT = new RegExp(`^(?:${COUNT})\\b|\\b(?:${COUNT})\\s+(?:of|cards?|more|others?|are|is)\\b`, "i");
+/** A count of cards in the lead ("Seven additions fix the mana"), which nothing checks against the kept rows. A number
+ *  in what the cards do ("at one or two mana", "three colors") is not one. */
+const LEAD_COUNT = new RegExp(`\\b(?:${COUNT})\\s+(?:of|cards?|additions?|adds|cuts?|swaps?|changes?|more|others?)\\b`, "i");
 
 /** Text the player will read, or null when it fails: empty, British spelling, an em-dash (the copy rule), or a
  *  rationale's checks. */
@@ -210,7 +213,7 @@ export function checkWhy(
   const parsed = whySchema.safeParse(raw);
   if (!parsed.success) return null;
   const lead = checkText(parsed.data.lead, quotable, {});
-  if (lead === null || lead.length > WHY_LEAD_MAX) return null;
+  if (lead === null || lead.length > WHY_LEAD_MAX || LEAD_COUNT.test(lead)) return null;
   return {
     lead,
     add: sideLine(parsed.data.add, keptAdds, (l) => l.addOracleId, quotable, {}),

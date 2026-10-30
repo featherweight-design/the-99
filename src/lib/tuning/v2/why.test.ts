@@ -104,3 +104,21 @@ describe("britishSpelling", () => {
     for (const w of ["color", "colorless", "favored", "defense", "optimize", "emphasis", "realism", "gray"]) expect(britishSpelling(w)).toBe(false);
   });
 });
+
+describe("checkWhy's counts (PR #2452 round 1)", () => {
+  it("drops the why when the lead counts cards, and keeps a lead whose numbers are what the cards do", () => {
+    expect(checkWhy(reply({ lead: "Seven additions fix the mana." }), adds, cuts)).toBeNull();
+    expect(checkWhy(reply({ lead: "Swap 3 cards for faster answers." }), adds, cuts)).toBeNull();
+    expect(checkWhy(reply({ lead: "Answers at one or two mana, in three colors." }), adds, cuts)?.lead)
+      .toBe("Answers at one or two mana, in three colors.");
+  });
+
+  it("writes a group of up to thirty kept rows, the most a side keeps at N = 20", () => {
+    const many = Array.from({ length: 30 }, (_, i) => row(`Card ${i + 1}`));
+    const r = checkWhy(reply({ add: [{ phrase: "are answers", cards: many.map((l) => l.card) }] }), many, cuts);
+    expect(r?.add?.[0]).toEqual({ text: "Thirty are answers, like " });
+    const some = many.slice(0, 21);
+    expect(checkWhy(reply({ add: [{ phrase: "are answers", cards: some.map((l) => l.card) }] }), some, cuts)?.add?.[0])
+      .toEqual({ text: "Twenty-one are answers, like " });
+  });
+});

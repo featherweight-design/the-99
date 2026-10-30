@@ -471,7 +471,8 @@ describe("runV2: why these cards", () => {
       const r = await runV2({ ...base, n: 6, callModel: f.callModel, now: f.now });
       expect(r.why).toBeNull();
       expect(r.charge).toEqual({ outcome: "spent" });
-      expect(r.additions.kept).toHaveLength(6);
+      // The engine keeps the whole valid pool (ceil(1.5N) = 9 at N = 6), never trims it to N.
+      expect(r.additions.kept).toHaveLength(9);
       expect(r.calls.at(-1)).toMatchObject({ stage: "why", ok: false });
     }
   });

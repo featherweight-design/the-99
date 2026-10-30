@@ -284,10 +284,13 @@ export const suggestedChangesV2Copy = {
   // around the model's group phrases ("Five are answers at one or two mana, like Swords to Plowshares; three keep cards
   // coming."). The model writes no counts; the app counts each group's cards still kept and writes the word.
   why: {
-    // A group's count as a word, by its value (`counts[5]` is "five"). The first group's word is capitalized.
+    // A group's count as a word, by its value (`counts[5]` is "five"), through 30: a side keeps up to `askFor(20)` rows.
+    // The first group's word is capitalized.
     counts: [
       "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
       "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty",
+      "twenty-one", "twenty-two", "twenty-three", "twenty-four", "twenty-five", "twenty-six", "twenty-seven", "twenty-eight",
+      "twenty-nine", "thirty",
     ],
     // Before a group's card link.
     like: ", like ",
