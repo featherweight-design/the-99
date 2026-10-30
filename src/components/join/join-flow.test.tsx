@@ -2,6 +2,8 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { joinCopy, type Parts } from "../../lib/copy/join";
+import { named } from "../../lib/person-name/mint";
+import { plain } from "../../lib/person-name/testing";
 
 const m = vi.hoisted(() => ({ claim: vi.fn(), confirm: vi.fn(), hand: vi.fn() }));
 vi.mock("../../app/join/actions", () => ({ claimInviteAction: m.claim, confirmCodeAction: m.confirm, handOverAction: m.hand }));
@@ -11,10 +13,10 @@ vi.mock("../ui/art-layer", () => ({ ArtLayer: () => null }));
 
 import { JoinFlow, type JoinStart } from "./join-flow";
 
-const sender = { displayName: "Ada", commander: null };
+const sender = { displayName: named("Ada"), commander: null };
 // A body with an emphasized phrase is several nodes: match the paragraph whose whole text is the line.
 const line = (parts: Parts) => {
-  const want = parts.map((p) => (typeof p === "string" ? p : p.em)).join("");
+  const want = parts.map((p) => (typeof p === "object" && "em" in p ? p.em : plain(p))).join("");
   return (_: string, el: Element | null) => el?.tagName === "P" && el.textContent === want;
 };
 // The group and the field carry the same label; the field is the textbox.
@@ -34,7 +36,7 @@ describe("JoinFlow", () => {
   it("N1 to N3: sends the code and moves to the code step naming the address", async () => {
     m.claim.mockResolvedValue({ ok: true, mailed: true });
     start({ kind: "email", sender });
-    expect(screen.getByRole("heading", { name: joinCopy.title("Ada") })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: plain(joinCopy.title(sender.displayName)) })).toBeTruthy();
     fireEvent.change(screen.getByLabelText(joinCopy.emailLabel), { target: { value: "new@x.dev" } });
     fireEvent.click(screen.getByRole("button", { name: joinCopy.sendCode }));
     await screen.findByText(line(joinCopy.codeBody("new@x.dev")));
@@ -86,7 +88,7 @@ describe("JoinFlow", () => {
     start({ kind: "proven", sender, email: "a@x.dev" });
     fireEvent.click(screen.getByRole("button", { name: joinCopy.toSignUp }));
     await waitFor(() => expect(screen.getByText(joinCopy.haveAccountTitle)).toBeTruthy());
-    expect(screen.getByText(line(joinCopy.haveAccountBody("a@x.dev", "Ada")))).toBeTruthy();
+    expect(screen.getByText(line(joinCopy.haveAccountBody("a@x.dev", sender.displayName)))).toBeTruthy();
   });
 
   it("N11 and N12 draw their cards with the quiet Sign in link", () => {
@@ -222,7 +224,8 @@ describe("JoinFlow", () => {
     const front = screen.getByTestId("friend-card-front");
     expect(front.className).toContain("p-[8px]");
     expect(front.className).toContain("text-left"); // the page column centres text; the card face reads left, as the table has it
-    expect(screen.getByText(joinCopy.cardRules(sender.displayName), { exact: false }).className).toContain("text-[14px]");
+    // The rules name the sender, so they are a marked span inside the text box.
+    expect(screen.getByText(plain(joinCopy.cardRules(sender.displayName)), { exact: false }).closest("p")!.className).toContain("text-[14px]");
   });
 
   it("N6: the check badge sits on the card, hidden from assistive tech", () => {

@@ -17,6 +17,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { useRouter } from "next/navigation";
 import type { Friend } from "../../lib/social/access";
 import type { InviteOutcome, OpenInvite, OwnCommander, OwnProfile } from "../../lib/social/friends";
+import { PersonText, type ThirdPartyName } from "../../lib/person-name";
 import type { CommanderTile } from "../../lib/decks/commander-picker";
 import { socialCopy } from "../../lib/copy/social";
 import { ACCEPTED_PARAM, INVITE_PARAM, invitePath } from "../../lib/social/client-rules";
@@ -75,7 +76,8 @@ function useFieldWrite<T>(served: T, show: (v: T) => void) {
 }
 
 type Shown = { token: string; url: string; expiresAt: Date; friendsBefore: ReadonlySet<string> };
-type Receipt = { publicId: string; displayName: string };
+/** The friend just accepted: from `Friend` (still a plain string until PR B) or from the invite watch (branded). */
+type Receipt = { publicId: string; displayName: string | ThirdPartyName };
 
 export function FriendsView({
   profile,
@@ -413,7 +415,7 @@ export function FriendsView({
       {receipt ? (
         <div role="status" className="flex min-h-[52px] items-center gap-[10px] bg-[color:var(--surface-rail)] pl-[16px] pr-[6px] text-[13px] text-[color:var(--fg)] [border-bottom:1px_solid_var(--border)] md:gap-[11px] md:py-[4px] md:pl-[30px] md:pr-[18px] md:text-[13.5px]">
           <span aria-hidden className="text-[14px] text-[color:var(--success)]">✓</span>
-          <span className="min-w-0 flex-1">{p.accepted(receipt.displayName)}</span>
+          <span className="min-w-0 flex-1"><PersonText text={p.accepted(receipt.displayName)} /></span>
           <button
             type="button"
             aria-label={p.close}

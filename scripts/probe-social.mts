@@ -11,6 +11,7 @@
 //
 //   PROBE_DB_BRANCH=br-… pnpm probe:social
 import "./lib/env.mjs";
+import { plain } from "../src/lib/person-name/testing";
 
 const PROTECTED = new Set(["br-polished-pond-a6e63y0b", "br-noisy-violet-a6vw4ess", "br-patient-hall-a6nbonvo"]);
 const run = Date.now().toString(36);
@@ -59,7 +60,7 @@ async function main() {
     const invite = await friends.createInvite(A);
     if (!invite.ok) throw new Error("createInvite refused the first invite");
     const view = await friends.readInvite(B, invite.token);
-    check("the landing read says who invited, and nothing else", view?.state === "open" && view.inviterName === "Alice" && !view.self && !view.alreadyFriends);
+    check("the landing read says who invited, and nothing else", view?.state === "open" && plain(view.inviterName) === "Alice" && !view.self && !view.alreadyFriends);
     check("an inviter cannot accept their own link", (await friends.redeemInvite(A, invite.token)).ok === false);
     const accepted = await friends.redeemInvite(B, invite.token);
     check("the friend accepts", accepted.ok && accepted.friend.publicId === a.publicId);
@@ -322,7 +323,7 @@ async function main() {
     const inv = await friends.createInvite(E);
     if (!inv.ok) throw new Error("createInvite refused");
     const openView = await friends.readInvite(F, inv.token);
-    check("an open link names its inviter and shows their face", openView?.state === "open" && openView.inviterName === "Eve"
+    check("an open link names its inviter and shows their face", openView?.state === "open" && plain(openView.inviterName) === "Eve"
       && openView.commander?.oracleId === L1.oracle_id && !openView.self && !openView.alreadyFriends && openView.friendsSince === null);
     const ownView = await friends.readInvite(E, inv.token);
     check("your own open link shows your own card", ownView?.state === "open" && ownView.self && ownView.commander?.oracleId === L1.oracle_id);

@@ -1,22 +1,25 @@
 // The newcomer's pages (invites R1, plan `2026-10-16-invites.md` PR 5): `/join/[token]` (boards N1 to N12) and the
 // invite-only `/sign-up` (I1, I2). Transcribed from the handoff's copy strings; owed to /copy-review with PR 4's.
-// `name` is the sender's display name. A line with an emphasized phrase is `Parts`: the copy owns every word, the page
-// draws the `em` pieces in `--fg` at weight 500 (`Emphasis`).
+// `name` is the sender's display name, a `ThirdPartyName` (lib/person-name): a line naming them is `PersonParts`, drawn
+// marked. A line with an emphasized phrase is `Parts`: the copy owns every word, the page draws the `em` pieces in
+// `--fg` at weight 500 (`Emphasis`).
 
-export type Parts = ReadonlyArray<string | { em: string }>;
+import { personText, type ThirdPartyName } from "../person-name/brand";
+
+export type Parts = ReadonlyArray<string | ThirdPartyName | { em: string }>;
 
 export const joinCopy = {
   brand: "The Ninety-Nine",
   cardType: "Invitation",
-  cardRules: (name: string) => `Join The 99 as ${name}’s friend. Your decks and your collection stay yours.`,
+  cardRules: (name: ThirdPartyName) => personText`Join The 99 as ${name}’s friend. Your decks and your collection stay yours.`,
   // "The" and "99" are held together by a no-break space, so the heading never breaks before the 99.
-  title: (name: string) => `${name} invited you to The\u00A099`,
+  title: (name: ThirdPartyName) => personText`${name} invited you to The\u00A099`,
   body: "Type your own email. We’ll send it a code to check it’s yours, then you’ll make your account.",
   emailLabel: "Your email",
   emailPlaceholder: "name@example.com",
   sendCode: "Send code",
   sendingCode: "Sending code…",
-  fine: (name: string) => `${name} won’t see your email. This invite works once, and only for the next 15 minutes.`,
+  fine: (name: ThirdPartyName) => personText`${name} won’t see your email. This invite works once, and only for the next 15 minutes.`,
   notAnEmail: "Enter an email address, like name@example.com.",
   codeTitle: "Check your email",
   codeBody: (email: string): Parts => ["We sent a 6-digit code to ", { em: email }, ". It works for 10 minutes."],
@@ -29,11 +32,11 @@ export const joinCopy = {
   codeWrong: "That code isn’t right. Check the email and try again.",
   codeExpired: "That code has expired. Send a new one.",
   okTitle: "That’s your email",
-  okBody: (name: string) => `Now make your account. You’ll join as ${name}’s friend.`,
+  okBody: (name: ThirdPartyName) => personText`Now make your account. You’ll join as ${name}’s friend.`,
   toSignUp: "Continue to sign-up",
   continuing: "Continuing…",
   haveAccountTitle: "You already have an account",
-  haveAccountBody: (email: string, name: string): Parts => [{ em: email }, ` is already on The 99. Sign in, then ask ${name} for a friend link.`],
+  haveAccountBody: (email: string, name: ThirdPartyName): Parts => [{ em: email }, ...personText` is already on The 99. Sign in, then ask ${name} for a friend link.`],
   signIn: "Sign in",
   expiredTitle: "This invite QR has run out",
   expiredBody: "An invite QR lasts 15 minutes. Ask whoever showed it to make a new one.",

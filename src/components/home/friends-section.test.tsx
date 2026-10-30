@@ -22,6 +22,7 @@ vi.mock("../social/use-invite-watch", () => watch);
 
 import { socialCopy } from "../../lib/copy/social";
 import { FriendsSection, seatPlan, type FriendsSectionProps } from "./friends-section";
+import { plain } from "../../lib/person-name/testing";
 
 const NOW = "2026-10-16T12:00:00.000Z";
 const friend = (name: string) => ({ publicId: `pub-${name}`, displayName: name, commander: null });
@@ -176,7 +177,7 @@ describe("FriendsSection", () => {
     const onEnded = watch.useInviteWatch.mock.calls.at(-1)![1] as (e: unknown[]) => void;
     act(() => { onEnded([{ token: "t9", friend: { publicId: "pub-Colin", displayName: "Colin" } }]); });
     expect(screen.queryByRole("dialog", { name: "Invite chooser" })).toBeNull();
-    expect(screen.getByText(socialCopy.page.accepted("Colin"))).toBeTruthy();
+    expect(screen.getByText(plain(socialCopy.page.accepted("Colin")))).toBeTruthy();
   });
 
   it("ignores a link that has already expired", () => {

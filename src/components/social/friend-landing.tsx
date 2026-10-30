@@ -16,6 +16,7 @@ import { PendingReporter } from "../shell/pending-reporter";
 import type { ProfileCommander } from "../../lib/social/commander";
 import { socialCopy } from "../../lib/copy/social";
 import type { LandingView } from "../../lib/social/landing";
+import { PersonText, type PersonParts, type ThirdPartyName } from "../../lib/person-name";
 import { friendsReceiptPath, invitePath } from "../../lib/social/client-rules";
 import { prefersReducedMotion } from "../../lib/ui/motion";
 import { sinceDay } from "../../lib/social/when";
@@ -26,7 +27,7 @@ import { SocialToast, type SocialToastState } from "./social-toast";
 
 const copy = socialCopy.landing;
 
-type Shown = LandingView | { kind: "declined"; name: string };
+type Shown = LandingView | { kind: "declined"; name: ThirdPartyName };
 
 /** The turn's length, for the column to wait on before it changes (README 23). */
 const turnMs = () => (prefersReducedMotion() ? 120 : 520);
@@ -72,10 +73,10 @@ export function LandingColumn({
    * the accent at 500 11px .2em; the heading 22px (26px from md) at 1.25; the body 14px (15px from md) at 1.6; the
    * press 10px more under the body than the section's gap; the fine line in --fg-muted at 1.6, 4px more under the press than the column's gap. */
   signedOut?: boolean;
-  title: string;
-  body?: string;
+  title: string | PersonParts;
+  body?: string | PersonParts;
   actions: ReactNode;
-  fine?: string;
+  fine?: string | PersonParts;
   landing?: "wait" | "go";
 }) {
   // A display name is up to 30 characters with no space required, so the column breaks a long one anywhere.
@@ -87,11 +88,11 @@ export function LandingColumn({
         {kicker}
       </p>
       <h1 id="friend-landing-title" tabIndex={-1} className={`m-0 font-display outline-none font-bold text-[color:var(--fg)] ${signedOut ? "text-[22px] leading-[1.25] md:text-[26px]" : "text-[21px] leading-[1.15] md:text-[28px]"} ${land}`}>
-        {title}
+        <PersonText text={title} />
       </h1>
-      {body && <p className={`m-0 font-sans text-[14px] text-[color:var(--fg-body)] ${signedOut ? "leading-[1.6] md:text-[15px]" : "leading-[1.55] md:text-[14.5px]"} ${land}`}>{body}</p>}
+      {body && <p className={`m-0 font-sans text-[14px] text-[color:var(--fg-body)] ${signedOut ? "leading-[1.6] md:text-[15px]" : "leading-[1.55] md:text-[14.5px]"} ${land}`}><PersonText text={body} /></p>}
       <div className={`flex flex-col gap-[8px] md:flex-row md:gap-[10px] ${signedOut ? "mt-[10px]" : "mt-[6px] md:mt-[12px]"} ${land}`}>{actions}</div>
-      {fine && <p className={`m-0 font-mono text-[11px] ${signedOut ? "mt-[4px] leading-[1.6] text-[color:var(--fg-muted)]" : "mt-[6px] text-[color:var(--fg-faint)]"} ${land}`}>{fine}</p>}
+      {fine && <p className={`m-0 font-mono text-[11px] ${signedOut ? "mt-[4px] leading-[1.6] text-[color:var(--fg-muted)]" : "mt-[6px] text-[color:var(--fg-faint)]"} ${land}`}><PersonText text={fine} /></p>}
     </section>
   );
 }
@@ -148,7 +149,7 @@ export function FriendLanding({ token, view, nowMs, signature = false }: {
     setUp(false);
     setShown({ kind: "ended" });
   }
-  function becomeSelf(v: { name: string; commander: ProfileCommander | null }) {
+  function becomeSelf(v: { name: ThirdPartyName; commander: ProfileCommander | null }) {
     const self: LandingView = { kind: "self", ...v };
     setFace(faceOf(self, since, signature));
     setShown(self);

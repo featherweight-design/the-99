@@ -25,6 +25,7 @@ vi.mock("../../app/collection/edit-actions", () => ({ settleCollectionWrite: vi.
 import { socialCopy } from "../../lib/copy/social";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { FirstRunFriendsRow, friendsRowState, type FirstRunFriendsProps } from "./first-run-friends";
+import { plain } from "../../lib/person-name/testing";
 
 const { FirstRunChecklist } = await import("./first-run");
 
@@ -107,7 +108,7 @@ describe("FirstRunFriendsRow", () => {
   it("C3: done at one friend, the accepted line and their face, and the row opens /friends", () => {
     const { container } = render(<FirstRunFriendsRow {...props({ friends: [friend("Colin")], links: [link(inDays(6))] })} />);
     expect(row(container).getAttribute("data-friends-row")).toBe("done");
-    const press = screen.getByRole("link", { name: c.doneAria(socialCopy.page.accepted("Colin")) });
+    const press = screen.getByRole("link", { name: plain(c.doneAria(socialCopy.page.accepted("Colin"))) });
     expect(press.getAttribute("aria-label")).toBe("Friends. You and Colin are friends. Open Friends");
     expect(press.getAttribute("href")).toBe("/friends");
     expect(press.textContent).toContain(c.doneTitle);
@@ -117,7 +118,7 @@ describe("FirstRunFriendsRow", () => {
 
   it("C3 with more than one friend counts them", () => {
     render(<FirstRunFriendsRow {...props({ friends: [friend("Colin"), friend("Dana"), friend("Eli")] })} />);
-    expect(screen.getByRole("link", { name: c.doneAria("You have 3 friends.") })).toBeTruthy();
+    expect(screen.getByRole("link", { name: plain(c.doneAria("You have 3 friends.")) })).toBeTruthy();
   });
 
   it("watches the reader's links, and a link accepted with its dialog open closes it and says so", () => {
@@ -129,8 +130,8 @@ describe("FirstRunFriendsRow", () => {
     expect(screen.queryByRole("dialog", { name: "Add a friend" })).toBeNull();
     // The redraw lands the friend: the row is done, and the toast survives the change of state.
     rerender(<FirstRunFriendsRow {...props({ friends: [friend("Colin")] })} />);
-    expect(screen.getByRole("link", { name: c.doneAria(socialCopy.page.accepted("Colin")) })).toBeTruthy();
-    expect(screen.getAllByText(socialCopy.page.accepted("Colin")).length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByRole("link", { name: plain(c.doneAria(socialCopy.page.accepted("Colin"))) })).toBeTruthy();
+    expect(screen.getAllByText(plain(socialCopy.page.accepted("Colin"))).length).toBeGreaterThanOrEqual(2);
   });
 
   it("a dialog closed after the row changed state returns focus to the row as it now stands", async () => {
@@ -156,7 +157,7 @@ describe("FirstRunFriendsRow", () => {
     expect(document.activeElement).toBe(show);
     // The refresh lands the friend: C2's button becomes C3's link, and focus moves with the row.
     rerender(<FirstRunFriendsRow {...props({ friends: [friend("Colin")] })} />);
-    expect(document.activeElement).toBe(screen.getByRole("link", { name: c.doneAria(socialCopy.page.accepted("Colin")) }));
+    expect(document.activeElement).toBe(screen.getByRole("link", { name: plain(c.doneAria(socialCopy.page.accepted("Colin"))) }));
   });
 });
 

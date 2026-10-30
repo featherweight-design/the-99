@@ -3,6 +3,8 @@
 // its field), the modals' Close and the commander picker. The friends list, the open links and the Add a friend
 // dialog arrive with PR C2, the request card with PR D (`landing`) and the pods with PR E (`pods`).
 
+import { personText, type PersonParts, type ThirdPartyName } from "../person-name/brand";
+
 const members = (x: number) => (x === 1 ? "Just you" : `${x} members`);
 const friends = (x: number) => (x === 1 ? "1 friend" : `${x} friends`);
 
@@ -38,7 +40,7 @@ export const socialCopy = {
     doneTitle: "Friends",
     /** C3 at more than one friend; at one it is `page.accepted(name)`. */
     doneMany: (n: number) => `You have ${friends(n)}.`,
-    doneAria: (line: string) => `Friends. ${line} Open Friends`,
+    doneAria: (line: string | PersonParts) => personText`Friends. ${line} Open Friends`,
   },
   // The account menu row (popover and sheet), second, under About. Absent with the switch off.
   menu: { friends: "Friends" },
@@ -72,7 +74,7 @@ export const socialCopy = {
     // Held at MAX_OPEN_INVITES; the line under the held button, joined to it by aria-describedby.
     held: "10 friend links open, the most at once. Revoke one, or wait for one to be used.",
     // Receipt strip after Accept, role status, bare ✕ (aria-label "Close").
-    accepted: (name: string) => `You and ${name} are friends.`,
+    accepted: (name: string | ThirdPartyName) => personText`You and ${name} are friends.`,
     close: "Close",
   },
 
@@ -295,26 +297,26 @@ export const socialCopy = {
     signedOutBody: "Sign in to turn the card over and see who it’s from.",
     signIn: "Sign in",
     signedOutFine: "No account? The 99 is invite-only. Ask whoever sent this to invite you.",
-    openTitle: (name: string) => `${name} wants to be friends`,
+    openTitle: (name: ThirdPartyName) => personText`${name} wants to be friends`,
     // The card's text box (rules text), not a paragraph beside it.
-    openRules: (name: string) => `When you accept, you and ${name} become friends. Each of you sees the other’s name and commander, and nothing else until one of you shares more.`,
+    openRules: (name: ThirdPartyName) => personText`When you accept, you and ${name} become friends. Each of you sees the other’s name and commander, and nothing else until one of you shares more.`,
     typeRequest: "Friend request",
     typeOwn: "Your friend link",
     typeFriend: (since: string) => `Friend · since ${since}`,
     ownRules: "This is what a friend sees when they open your link: your name, your commander, and an Accept.",
-    friendRules: (name: string) => `You and ${name} are friends. Each of you sees the other’s name and commander.`,
+    friendRules: (name: ThirdPartyName) => personText`You and ${name} are friends. Each of you sees the other’s name and commander.`,
     // With the signature card on (handoff 20, call 1), the three rules and the empty credit name the face as it is.
-    openRulesSignature: (name: string) => `When you accept, you and ${name} become friends. Each of you sees the other’s name and signature card, and nothing else until one of you shares more.`,
+    openRulesSignature: (name: ThirdPartyName) => personText`When you accept, you and ${name} become friends. Each of you sees the other’s name and signature card, and nothing else until one of you shares more.`,
     ownRulesSignature: "This is what a friend sees when they open your link: your name, your signature card, and an Accept.",
-    friendRulesSignature: (name: string) => `You and ${name} are friends. Each of you sees the other’s name and signature card.`,
+    friendRulesSignature: (name: ThirdPartyName) => personText`You and ${name} are friends. Each of you sees the other’s name and signature card.`,
     noSignature: "No signature card chosen",
     credit: (commander: string) => `Art · ${commander}`, // drawn uppercase by CSS
     noCommander: "No commander chosen",
     mark: "The 99", // the card's footer, right; drawn uppercase by CSS
-    cardAria: (name: string, commander: string | null, type: string) => `${name}${commander ? `, ${commander}` : ""}. ${type}`,
+    cardAria: (name: string | ThirdPartyName, commander: string | null, type: string) => personText`${name}${commander ? `, ${commander}` : ""}. ${type}`,
     accept: "Accept",
     decline: "Decline",
-    openFine: (name: string) => `${name} isn’t told if you decline.`,
+    openFine: (name: ThirdPartyName) => personText`${name} isn’t told if you decline.`,
     expiredTitle: "This friend link has expired",
     expiredBody: "Friend links last 7 days. Ask for a new one.",
     // Redeemed, declined, revoked and not found: one card, no name.
@@ -326,10 +328,10 @@ export const socialCopy = {
     copyLink: "Copy link",
     copied: "✓ Copied",
     copyFailed: "We couldn’t copy the link. Copy it from the address bar.", // toast, no retry
-    alreadyTitle: (name: string) => `You and ${name} are already friends`,
+    alreadyTitle: (name: ThirdPartyName) => personText`You and ${name} are already friends`,
     alreadyBody: "Nothing to accept. This link is used up now.", // opening it spent it (SpendFriendLink)
     declinedTitle: "Request declined",
-    declinedBody: (name: string) => `${name} isn’t told. The link no longer works.`,
+    declinedBody: (name: ThirdPartyName) => personText`${name} isn’t told. The link no longer works.`,
     toFriends: "Go to Friends",
     toHome: "Go to Home",
     acceptFailed: "We couldn’t accept that friend request. Try again.", // toast, Try again

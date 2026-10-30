@@ -7,8 +7,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ToastFrame, useToastClock } from "../collection/edit-toast";
+import { PersonText, type PersonParts } from "../../lib/person-name";
 
-export type SocialToastState = { id: number; text: string; retry?: { label: string; run: () => void } };
+/** `text` that names someone is `PersonParts` (`personText`): `PersonText` marks the span holding it. */
+export type SocialToastState = { id: number; text: string | PersonParts; retry?: { label: string; run: () => void } };
 
 export function SocialToast({
   toast,
@@ -48,7 +50,7 @@ export function SocialToast({
       frameRef={ref}
       role={role}
       onHold={(kind, on) => (kind === "hover" ? setHover : setFocus)(on)}
-      title={toast.text}
+      title={<PersonText text={toast.text} />}
       actions={toast.retry ? (
         <button
           type="button"

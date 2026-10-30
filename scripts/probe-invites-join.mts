@@ -21,6 +21,8 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { socialCopy } from "../src/lib/copy/social";
 import { chromium } from "playwright";
 import { joinCopy, inviteOnlyCopy } from "../src/lib/copy/join";
+import { named as nameOf } from "../src/lib/person-name/mint";
+import { plain } from "../src/lib/person-name/testing";
 
 const PROTECTED = new Set(["br-polished-pond-a6e63y0b", "br-noisy-violet-a6vw4ess", "br-patient-hall-a6nbonvo"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
@@ -96,7 +98,7 @@ async function main() {
         const sideways = () => page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
 
         let r = await open(`/join/${T.open}`, "n1-email");
-        check(`${w}: N1 public (no redirect to sign-in), sender named`, r?.url().includes("/join/") === true && (await heading()) === joinCopy.title("Ana Sender"), await heading());
+        check(`${w}: N1 public (no redirect to sign-in), sender named`, r?.url().includes("/join/") === true && (await heading()) === plain(joinCopy.title(nameOf("Ana Sender"))), await heading());
         check(`${w}: N1 no sideways scroll`, !(await sideways()));
         await page.getByLabel(joinCopy.emailLabel).fill("nope");
         await page.getByRole("button", { name: joinCopy.sendCode }).click();

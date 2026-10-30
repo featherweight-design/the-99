@@ -19,6 +19,7 @@
 import Link from "next/link";
 import { useCallback, useRef } from "react";
 import { socialCopy } from "../../lib/copy/social";
+import { PersonText, personAttrs } from "../../lib/person-name";
 import type { ProfileCommander } from "../../lib/social/commander";
 import { underADay } from "../../lib/social/when";
 import type { InviteCount } from "../../lib/invites/rules";
@@ -87,7 +88,7 @@ export function FirstRunFriendsRow({ friends, links, now, invites = null }: Firs
     const first = friends[0];
     const line = friends.length === 1 ? socialCopy.page.accepted(first.displayName) : c.doneMany(friends.length);
     row = (
-      <Link ref={rowRef} href="/friends" data-friends-row="done" aria-label={c.doneAria(line)} className={`${BOX} border-[color:var(--border)]`}>
+      <Link ref={rowRef} href="/friends" data-friends-row="done" {...personAttrs({ "aria-label": c.doneAria(line) }, `${BOX} border-[color:var(--border)]`)}>
         <PendingReporter href="/friends" />
         <span
           aria-hidden
@@ -97,7 +98,7 @@ export function FirstRunFriendsRow({ friends, links, now, invites = null }: Firs
         </span>
         <span className={TEXT}>
           <span className={`${TITLE} text-[color:var(--fg-body)]`}>{c.doneTitle}</span>
-          <span className={BODY}>{line}</span>
+          <span className={BODY}><PersonText text={line} /></span>
         </span>
         <span aria-hidden className={TRAIL}>
           <Face name={first.displayName} commander={first.commander} size={26} />

@@ -12,6 +12,8 @@ import { db } from "../../db";
 import { friendInvites, friendLinks, podMembers, podSpareShares, pods, socialProfiles } from "../../db/schema";
 import { listFriends, resolveFriend, type Friend, type Reader } from "./access";
 import { commanderCard, commanderColumns, facePrinting, faceJoin, toCommander, type ProfileCommander } from "./commander";
+import { named } from "../person-name/mint";
+import type { ThirdPartyName } from "../person-name/brand";
 import {
   cleanDisplayName, friendshipRows, INVITE_TTL_MS, inviteState, MAX_OPEN_INVITES, newInviteToken, type InviteState,
 } from "./rules";
@@ -130,7 +132,8 @@ export async function revokeInvite(viewerId: string, token: string, now = new Da
 export type InviteView =
   | {
       state: "open";
-      inviterName: string;
+      /** Branded: a third party's, or the reader's own on their own link (`self`), drawn alike. */
+      inviterName: ThirdPartyName;
       commander: ProfileCommander | null;
       self: boolean;
       alreadyFriends: boolean;
@@ -181,7 +184,7 @@ export function shapeInvite(row: Awaited<ReturnType<typeof inviteQuery>>[number]
   if (state !== "open") return { state };
   return {
     state,
-    inviterName: row.inviterName,
+    inviterName: named(row.inviterName),
     commander: toCommander(row),
     self: row.inviterUserId === viewerId,
     alreadyFriends: row.friendsSince !== null,
@@ -218,7 +221,7 @@ export async function loadFriendsAndLinks(viewerId: string, now = new Date()): P
   }, { isolationLevel: "repeatable read" });
 }
 
-export type InviteOutcome = { token: string; open: boolean; friend: { publicId: string; displayName: string } | null };
+export type InviteOutcome = { token: string; open: boolean; friend: { publicId: string; displayName: ThirdPartyName } | null };
 
 /**
  * What became of the viewer's own links, for /friends' watch while one is shown or open: whether each is still
@@ -250,7 +253,7 @@ export function shapeOutcome(r: OutcomeRow, now: Date): InviteOutcome {
   return {
     token: r.token,
     open: inviteState(r, now) === "open",
-    friend: r.redeemedAt && r.publicId && r.displayName ? { publicId: r.publicId, displayName: r.displayName } : null,
+    friend: r.redeemedAt && r.publicId && r.displayName ? { publicId: r.publicId, displayName: named(r.displayName) } : null,
   };
 }
 
@@ -284,7 +287,7 @@ export async function welcomeInvitedIn(tx: Tx, senderId: string, newcomerId: str
 }
 
 /** What `/join/[token]` shows of the account that invited the newcomer (ruling B): a name and a commander, or null. */
-export type InviteSender = { displayName: string; commander: ProfileCommander | null };
+export type InviteSender = { displayName: ThirdPartyName; commander: ProfileCommander | null };
 
 export async function readInviteSender(senderId: string): Promise<InviteSender | null> {
   const [row] = await db
@@ -293,7 +296,7 @@ export async function readInviteSender(senderId: string): Promise<InviteSender |
     .leftJoin(commanderCard, eq(commanderCard.oracleId, socialProfiles.commanderOracleId))
     .leftJoin(facePrinting, faceJoin)
     .where(eq(socialProfiles.userId, senderId));
-  return row ? { displayName: row.displayName, commander: toCommander(row) } : null;
+  return row ? { displayName: named(row.displayName), commander: toCommander(row) } : null;
 }
 
 /**
