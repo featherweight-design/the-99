@@ -126,7 +126,7 @@ async function readBuilds(userId: string, ids: string[], brews: ReadonlySet<stri
       // The whole collection's claim model, once (lock 3, lock 4).
       loadAvailability(userId, { env }),
       // Shopping's own buy rows, so a row's to-buy count is the cart's.
-      loadDeckBuyRows(userId, ids, undefined, env),
+      loadDeckBuyRows(userId, ids),
     ]);
     buys = buyRows;
     jobs = Object.fromEntries([...labels].map(([id, j]) => [id, jobRowsOf(j)]));

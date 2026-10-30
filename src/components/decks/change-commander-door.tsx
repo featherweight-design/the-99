@@ -1,9 +1,8 @@
 "use client";
 // The door to Change commander (handoff R3-E): ONE joined plate on the commander's art, the card
 // details control and the new one side by side on desktop and stacked on a phone. It takes the
-// place `FullCardTrigger` holds on the deck header, and draws exactly that control when the
-// feature is off — the provider is only mounted with `CHANGE_COMMANDER_ENABLED` on, so a deck page
-// without it reads `useChangeCommander()` as null and renders today's trigger unchanged (audit F6).
+// place `FullCardTrigger` holds on the deck header, and draws exactly that control outside the
+// provider (the deck page mounts it), where `useChangeCommander()` reads null (audit F6).
 //
 // THE PLATE is FullCardTrigger's: opaque `--bg` under one `--border-strong` hairline at radius 7,
 // 26px drawn, each half its own 44px target. The two halves are divided by a hairline in the same

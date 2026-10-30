@@ -229,8 +229,8 @@ describe("pressFitsRead: outcomes and the unit (lock 4)", () => {
   });
 });
 
-// Admin PR 6f-2: the free list's claim read takes the reader's env. Opposite to the environment on both
-// claim-model switches, so a dropped argument would read the other way; checked by identity, never compared.
+// Admin PR 6f-2: the free list's claim read takes the reader's env. Opposite to the environment on the
+// claim model's switch, so a dropped argument would read the other way; checked by identity, never compared.
 describe("the reader's env", () => {
   const ENV = envViewWith({ CHANGE_COMMANDER_ENABLED: "true" });
   beforeEach(() => {

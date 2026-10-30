@@ -1,8 +1,7 @@
 "use client";
 // A commander change's words on the review page and in Discard (handoff §4). The pending banner's
 // own commander line retired with its card: the deck page's pending row counts the move as a change,
-// and Review names it. Nothing here draws unless the draft's commander moved, which it never does
-// with CHANGE_COMMANDER_ENABLED off.
+// and Review names it. Nothing here draws unless the draft's commander moved.
 
 import type { DraftState } from "../../lib/decks/draft-shape";
 import { changeCommanderCopy as copy } from "../../lib/copy/change-commander";

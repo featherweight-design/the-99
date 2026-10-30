@@ -65,24 +65,22 @@ describe("writeArrivalsReceipt's claim read", () => {
     expect(stub.loadAvailability.mock.calls[0][2]).toBe(stub.tx);
     expect(stub.tx.select).toHaveBeenCalledTimes(1);
     // The money rows too, or a pick between them keeps A's row beside a line saying B.
-    expect((stub.loadDeckBuyRows.mock.calls[0] as unknown[]).slice(0, 3)).toEqual(["u1", undefined, stub.tx]);
+    expect(stub.loadDeckBuyRows.mock.calls[0] as unknown[]).toEqual(["u1", undefined, stub.tx]);
   });
 
-  it("hands every claim read the reader's env, switch on, by identity", async () => {
+  it("hands the claim read the reader's env, switch on, by identity", async () => {
     stubEnvironment(OFF);
     const env = envViewWith(ON);
     await receipt(env);
     const opts = stub.loadAvailability.mock.calls[0][1] as { env?: unknown };
     expect(opts.env === env).toBe(true);
-    expect((stub.loadDeckBuyRows.mock.calls[0] as unknown[])[3] === env).toBe(true);
   });
 
-  it("hands every claim read the reader's env, switch off, by identity", async () => {
+  it("hands the claim read the reader's env, switch off, by identity", async () => {
     stubEnvironment(ON);
     const env = envViewWith(OFF);
     await receipt(env);
     const opts = stub.loadAvailability.mock.calls[0][1] as { env?: unknown };
     expect(opts.env === env).toBe(true);
-    expect((stub.loadDeckBuyRows.mock.calls[0] as unknown[])[3] === env).toBe(true);
   });
 });

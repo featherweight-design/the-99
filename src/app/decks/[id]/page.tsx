@@ -85,7 +85,6 @@ import { loadDeckTokens } from "../../../lib/tokens/read";
 import { DeckTokensProvider } from "../../../components/decks/deck-tokens-context";
 import { DeckPageSwitches } from "../../../components/decks/deck-page-switches";
 import { GotItProvider } from "../../../components/decks/got-it";
-import { changeCommanderEnabled } from "../../../lib/commander-change/flag";
 import { ChangeCommanderProvider } from "../../../components/decks/change-commander-context";
 import { readShoppingLimit } from "../../../lib/swaps/read";
 import { BODY_PARAM, initialBuilderView, readBuilderView, readDeckBody, TAB_PARAM } from "../../../lib/decks/builder-view";
@@ -793,9 +792,8 @@ export default async function DeckBuilderPage({
   const tooled = swapTools ? (
     <SwapToolsProvider deckId={id} deckName={detail.name} storedLimitCents={shoppingLimit}>{bought}</SwapToolsProvider>
   ) : bought;
-  // Change commander's door and sheet read this context; without it the deck header draws exactly
-  // the card-details trigger it drew before the feature (audit F6).
-  const page = changeCommanderEnabled(env) ? (
+  // Change commander's door and sheet read this context.
+  const page = (
     <ChangeCommanderProvider
       // One provider per deck: a client navigation to another deck must not carry an open sheet
       // or its chosen candidate across, where it would be written against the new deck.
@@ -807,7 +805,7 @@ export default async function DeckBuilderPage({
     >
       {tooled}
     </ChangeCommanderProvider>
-  ) : tooled;
+  );
   // A new Try it landing (`?tool=`) remounts everything that is this deck's own state, the builder and every
   // deck-local provider around it (an open stand-ins modal, I got it's confirm, Change commander's sheet), so it lands
   // as an arrival from another route does. Keyed per deck too.

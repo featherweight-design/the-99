@@ -62,7 +62,7 @@ export async function loadYourRequests(userId: string, env: NodeJS.ProcessEnv, n
   const sparesCards = [...new Set([...openCards, ...expiredCards, ...declinedCards])];
   const [spares, buy] = await Promise.all([
     sparesCards.length === 0 ? Promise.resolve([]) : loadFriendSpares(userId, sparesCards),
-    openCards.length === 0 ? Promise.resolve(null) : loadDeckBuyRows(userId, undefined, undefined, env),
+    openCards.length === 0 ? Promise.resolve(null) : loadDeckBuyRows(userId),
   ]);
   const offered = new Set(spares.map((s) => offerKey(s.oracleId, s.friend.publicId)));
   const all = deriveMyAsks(

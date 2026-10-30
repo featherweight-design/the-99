@@ -29,7 +29,7 @@ export async function loadCart(
   env: NodeJS.ProcessEnv,
 ): Promise<CartPayload> {
   const [rows, [{ total }]] = await Promise.all([
-    loadDeckBuyRows(userId, undefined, undefined, env),
+    loadDeckBuyRows(userId),
     db.select({ total: sql<number>`count(*)::int` }).from(decks).where(eq(decks.userId, userId)),
   ]);
   if (rows.length === 0) return { totalDecks: total, decks: [], lines: [], priced: true, newestAsOf: null, holders: [] };

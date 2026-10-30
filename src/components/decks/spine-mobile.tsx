@@ -291,7 +291,7 @@ export function SpineMobile({
             Not with no crop: then there is no printing to open (§G). */}
         {!renaming && commander.artCropUri ? <BandTapTarget oracleId={commander.oracleId} siblings={commanderSiblings} /> : null}
         {/* §G — with no crop there is no printing to open; the door then draws its ⇄ half
-            alone, or nothing with the switch off. */}
+            alone, or nothing outside the provider. */}
         {/* Hidden while editing (STATES §2, state 3: "the corner buttons hide"). */}
         {!renaming && (
           <ChangeCommanderDoor oracleId={commander.oracleId} width="mobile" hasCrop={Boolean(commander.artCropUri)} siblings={commanderSiblings} />

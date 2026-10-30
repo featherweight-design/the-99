@@ -268,7 +268,7 @@ export async function markBoughtForDecks(
       };
     }
     case "stale": {
-      const billed = await loadDeckBuyRows(userId, deckIds, undefined, env);
+      const billed = await loadDeckBuyRows(userId, deckIds);
       return { stale: result.current, need: billed.filter((r) => r.oracleId === oracleId).reduce((n, r) => n + r.quantity, 0) };
     }
     case "missingCard": return { missingCard: result.names };

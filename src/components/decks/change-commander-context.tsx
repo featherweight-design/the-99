@@ -1,8 +1,7 @@
 "use client";
 // Change commander's client state: which door opened the sheet, and the deck it is for. Mounted
-// around the deck page's shell ONLY with `CHANGE_COMMANDER_ENABLED` on, the way
-// `SwapToolsProvider` is, so with the switch off `useChangeCommander()` is null and every consumer
-// draws what it drew before.
+// around the deck page's shell, so anywhere else `useChangeCommander()` is null and every consumer
+// draws what it would without the feature.
 //
 // The provider does NOT render the sheet. The card modal a name opens needs `CardDetailProvider`,
 // which lives inside the shell this wraps, so the door that was pressed renders it (through a

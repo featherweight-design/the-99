@@ -200,7 +200,7 @@ async function reservationSection() {
     //     assumed. (With the reservation terms dropped from this query alone, the
     //     figures below swap.)
     const owes = async (deckId: string) => {
-      const rows = await loadDeckBuyRows(USER_R, [deckId], undefined, process.env);
+      const rows = await loadDeckBuyRows(USER_R, [deckId]);
       return rows.filter((r) => r.oracleId === card).reduce((n, r) => n + r.quantity, 0);
     };
     check("the displaced senior deck is billed for a copy", await owes(a), 1);
@@ -337,7 +337,7 @@ async function reservationSection() {
     check("a reservation naming a brew is granted", brewClaim?.granted, 1);
     check("and covers the brew", await free(brew), 0);
     check("and the brew is billed for none",
-      (await loadDeckBuyRows(USER_R, [brew], undefined, process.env)).find((r) => r.oracleId === card)?.quantity ?? 0, 0);
+      (await loadDeckBuyRows(USER_R, [brew])).find((r) => r.oracleId === card)?.quantity ?? 0, 0);
     check("the senior committed deck it displaced buys instead", await free(a), -1);
     const offList = (await loadAvailability(USER_R, { oracleIds: [card], env: process.env })).get(card);
     check("off any decklist the brew's granted copy is hard", offList?.hard, hardBefore + 1);
@@ -381,7 +381,7 @@ async function reservationSection() {
       check("a brew is short by what it asks, not by the seniors' shortfall", await free(brew), -1);
       const whole = (await loadAvailability(USER_R, { oracleIds: [card], env: process.env })).get(card)?.free ?? null;
       check("off every deck the collection still reads the over-commitment", whole, -1);
-      const bill = (await loadDeckBuyRows(USER_R, [brew], undefined, process.env)).find((r) => r.oracleId === card)?.quantity ?? 0;
+      const bill = (await loadDeckBuyRows(USER_R, [brew])).find((r) => r.oracleId === card)?.quantity ?? 0;
       check("and the brew's bill is the one copy its marker says", bill, 1);
       await fixture.execute(sql`delete from decks where id = ${brew}`);
     }
@@ -902,7 +902,7 @@ async function commanderBuySection() {
   const cmd = legends[0].oracle_id;
   const partner = legends[1].oracle_id;
   const owes = async (deckId: string, oracleId: string) =>
-    (await loadDeckBuyRows(USER_K, [deckId], undefined, process.env)).find((r) => r.oracleId === oracleId)?.quantity ?? 0;
+    (await loadDeckBuyRows(USER_K, [deckId])).find((r) => r.oracleId === oracleId)?.quantity ?? 0;
   // A body card the collection never holds, so the deck is not empty (Hugh, 2026-10-02: a deck
   // with no body bills nothing, its commander included).
   const { rows: [filler] } = await fixture.execute<{ oracle_id: string }>(sql`
@@ -1000,9 +1000,9 @@ async function emptyBodyClaimSection() {
     `);
     const av = await loadAvailability(USER_E, { oracleIds: [cmd], excludeDeckId: later.id, env: process.env });
     check("an empty-body deck still claims its owned commander (loadAvailability)", av.get(cmd)?.free, -1);
-    const owes = (await loadDeckBuyRows(USER_E, [later.id], undefined, process.env)).find((r) => r.oracleId === cmd)?.quantity ?? 0;
+    const owes = (await loadDeckBuyRows(USER_E, [later.id])).find((r) => r.oracleId === cmd)?.quantity ?? 0;
     check("an empty-body deck still claims its owned commander (loadDeckBuyRows)", owes, 1);
-    const heldOwes = (await loadDeckBuyRows(USER_E, [held.id], undefined, process.env)).find((r) => r.oracleId === cmd)?.quantity ?? 0;
+    const heldOwes = (await loadDeckBuyRows(USER_E, [held.id])).find((r) => r.oracleId === cmd)?.quantity ?? 0;
     check("and, having no body, is billed nothing itself", heldOwes, 0);
   } finally {
     await fixture.execute(sql`delete from decks where user_id = ${USER_E}`);
@@ -1070,7 +1070,7 @@ async function pullReleaseSection() {
     return a.get(card)?.free ?? null;
   };
   const owes = async (deckId: string) => {
-    const rows = await loadDeckBuyRows(USER_P, [deckId], undefined, process.env);
+    const rows = await loadDeckBuyRows(USER_P, [deckId]);
     return rows.filter((r) => r.oracleId === card).reduce((n, r) => n + r.quantity, 0);
   };
   // The asker's figure through each reader, labelled, so a failure names the reader that moved.

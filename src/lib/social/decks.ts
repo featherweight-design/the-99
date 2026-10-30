@@ -87,7 +87,7 @@ export async function loadFriendDecks(viewerId: string, publicId: unknown, viewe
   const [rows, buys] = await Promise.all([
     visibleDecks(friendId, env),
     // The open tile draws no money, so the tab's own to-buy read is skipped (the shared stats read still runs its own).
-    open ? Promise.resolve([]) : loadDeckBuyRows(friendId, undefined, undefined, env),
+    open ? Promise.resolve([]) : loadDeckBuyRows(friendId),
   ]);
   if ((await resolveFriend(viewerId, publicId)) !== friendId) return null;
   const toBuy = new Map<string, number>();

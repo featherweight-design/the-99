@@ -80,7 +80,7 @@ export async function loadToolFits(
   const shops = asked.has("stand-ins") || asked.has("friend-spares");
   const [list, rows, decks, played] = await Promise.all([
     listDecksWithStats(userId, "name", { env }),
-    shops ? loadDeckBuyRows(userId, undefined, undefined, env) : [],
+    shops ? loadDeckBuyRows(userId) : [],
     shops ? deckLimits(userId) : [],
     asked.has("matchups") ? decksWithOpponents(userId) : new Set<string>(),
   ]);

@@ -85,12 +85,12 @@ describe("loadFriendDecks", () => {
   });
 
   // A fully owned junior deck whose copies senior decks hold reads To buy with toBuyCount 0: the figure is what the
-  // friend's Shopping buys for it, under the friend's switches, as their own tile draws it.
+  // friend's Shopping buys for it, as their own tile draws it.
   it("counts To buy from the friend's Shopping rows, not toBuyCount (seniority, no basics)", async () => {
     m.listDecksWithStats.mockResolvedValue([{ ...ROW, toBuyCount: 0 }, { ...ROW, id: "owned-deck", statusPill: "Complete", toBuyCount: 0 }]);
     const decks = (await loadFriendDecks("user_viewer", "x"))!;
     expect(decks.map((d) => d.toBuy)).toEqual([8, 0]);
-    expect(m.loadDeckBuyRows).toHaveBeenCalledWith("user_friend", undefined, undefined, { FRIEND: "env" });
+    expect(m.loadDeckBuyRows).toHaveBeenCalledWith("user_friend");
   });
 
   it("returns nothing when the friendship ends while the decks are read", async () => {

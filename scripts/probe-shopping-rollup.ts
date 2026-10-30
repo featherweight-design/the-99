@@ -44,7 +44,7 @@ async function main() {
   }
 
   for (const userId of userIds) {
-    const rollup = await loadShoppingRollup(userId, undefined, process.env);
+    const rollup = await loadShoppingRollup(userId);
     const tiles = await listDecksWithStats(userId, "lastPlayed", { includeProxyStats: true, env: process.env });
     const tileTotal = tiles.reduce((n, d) => n + d.toBuyCount, 0);
 

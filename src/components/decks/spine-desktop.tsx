@@ -261,7 +261,7 @@ export function SpineDesktop({
         />
       </div>
       {/* §G — with no crop there is no printing to open, so the pill is absent (the door then
-          draws its ⇄ half alone, or nothing with the switch off). It is absolutely
+          draws its ⇄ half alone, or nothing outside the provider). It is absolutely
           positioned, so its absence shifts nothing. Hidden while editing (STATES §2, state 3:
           "the corner buttons hide"). */}
       {!renaming && (

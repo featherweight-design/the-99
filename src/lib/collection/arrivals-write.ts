@@ -133,7 +133,7 @@ export async function writeArrivalsReceipt(args: {
   type Reservations = Map<string, { deckId: string; copies: number }[]>;
   type Read = { buyAfter: Awaited<ReturnType<typeof loadDeckBuyRows>>; availability: Awaited<ReturnType<typeof loadAvailability>>; reservations: Reservations };
   const read: Read = await db.transaction(async (tx): Promise<Read> => {
-    const buyAfter = await loadDeckBuyRows(userId, undefined, tx, env);
+    const buyAfter = await loadDeckBuyRows(userId, undefined, tx);
     if (arrivedIds.length === 0) return { buyAfter, availability: new Map(), reservations: new Map() };
     const availability = await loadAvailability(userId, { oracleIds: arrivedIds, env }, tx);
     // The reservations, OLDEST FIRST: the claim model's order (`created_at`, then `deck_id`),

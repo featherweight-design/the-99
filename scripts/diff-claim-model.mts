@@ -75,7 +75,7 @@ for (const d of decks) {
 }
 const rowsOf = (rows: { deckId: string; oracleId: string; quantity: number }[]) =>
   new Map(rows.map((r) => [`${r.deckId}|${r.oracleId}`, r.quantity]));
-compareMaps("buyRows", "buyRows", rowsOf(await OLD.loadDeckBuyRows(userId, undefined, undefined, process.env)), rowsOf(await NEW.loadDeckBuyRows(userId, undefined, undefined, process.env)));
+compareMaps("buyRows", "buyRows", rowsOf(await OLD.loadDeckBuyRows(userId)), rowsOf(await NEW.loadDeckBuyRows(userId)));
 
 console.log(`loadDeckBuyRows: ${tally.buyRows.compared} rows compared, ${tally.buyRows.differ} differ`);
 console.log(`loadAvailability: ${tally.availability.compared} rows compared, ${tally.availability.differ} differ`);
@@ -87,7 +87,7 @@ const time = async (fn: () => Promise<unknown>) => {
   return Math.round(ms.sort((x, y) => x - y)[2]);
 };
 for (const [name, mod] of [["old", OLD], ["new", NEW]] as const) {
-  console.log(`${name}: loadDeckBuyRows ${await time(() => mod.loadDeckBuyRows(userId, undefined, undefined, process.env))}ms · loadAvailability(user) ${await time(() => mod.loadAvailability(userId, { env: process.env }))}ms`);
+  console.log(`${name}: loadDeckBuyRows ${await time(() => mod.loadDeckBuyRows(userId))}ms · loadAvailability(user) ${await time(() => mod.loadAvailability(userId, { env: process.env }))}ms`);
 }
 
 if (process.env.DIFF_EXPLAIN === "1") {
@@ -99,7 +99,7 @@ if (process.env.DIFF_EXPLAIN === "1") {
       plan = (res.rows as { "QUERY PLAN": string }[]).map((r) => r["QUERY PLAN"]).join("\n");
       return { rows: [] };
     };
-    await mod.loadDeckBuyRows(userId, undefined, undefined, process.env);
+    await mod.loadDeckBuyRows(userId);
     (db as { execute: unknown }).execute = execute;
     console.log(`\n── EXPLAIN ANALYZE loadDeckBuyRows (${name})\n${plan.split("\n").filter((l) => /Execution Time|Planning Time|loops=\d{3,}/.test(l)).join("\n")}`);
   }

@@ -980,7 +980,7 @@ export async function applyCollectionChange(
           )),
           ...(opts.receipt!.owesFor
             ? {
-                owes: Object.fromEntries((await loadDeckBuyRows(userId, opts.receipt!.owesFor, tx, opts.env))
+                owes: Object.fromEntries((await loadDeckBuyRows(userId, opts.receipt!.owesFor, tx))
                   .filter((r) => r.oracleId === oracleId)
                   .map((r) => [r.deckId, r.quantity])),
               }

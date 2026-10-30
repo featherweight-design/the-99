@@ -10,9 +10,9 @@ import { ChangeCommanderProvider } from "./change-commander-context";
 const html = (node: React.ReactNode) =>
   render(<CardDetailProvider fetchCard={async () => null}>{node}</CardDetailProvider>).container.innerHTML;
 
-describe("ChangeCommanderDoor with the switch off (no provider)", () => {
-  // The spines mount the door where they mounted FullCardTrigger; production (switch off) must
-  // draw the same DOM it drew before, byte for byte.
+describe("ChangeCommanderDoor outside the provider", () => {
+  // The spines mount the door where they mounted FullCardTrigger; outside the deck page's provider it
+  // draws the same DOM that trigger does, byte for byte.
   it("draws exactly today's desktop trigger", () => {
     expect(html(<ChangeCommanderDoor oracleId="o1" width="desktop" hasCrop />)).toBe(
       html(<FullCardTrigger oracleId="o1" placement="deck-desktop" bandTapTarget={false} />),
@@ -26,7 +26,7 @@ describe("ChangeCommanderDoor with the switch off (no provider)", () => {
   });
 });
 
-describe("ChangeCommanderDoor with the switch off and no crop", () => {
+describe("ChangeCommanderDoor outside the provider, with no crop", () => {
   it("draws nothing, exactly as the spines drew nothing before", () => {
     expect(html(<ChangeCommanderDoor oracleId="o1" width="desktop" hasCrop={false} />)).toBe(html(null));
     expect(html(<ChangeCommanderDoor oracleId="o1" width="mobile" hasCrop={false} />)).toBe(html(null));

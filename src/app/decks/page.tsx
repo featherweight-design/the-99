@@ -99,7 +99,7 @@ export default async function DecksPage({
       })),
       // The tile's To buy figure reads its copies and its cost from the same
       // roll-up, so the count and the price always cover the same cards.
-      perf.timed("shoppingRollup", () => loadShoppingRollup(userId, undefined, env)),
+      perf.timed("shoppingRollup", () => loadShoppingRollup(userId)),
       // The shelf line's own read, and it cannot be derived from the decks above:
       // a folder holding no decks has no deck row to be named by, and landing on
       // that empty shelf is the whole loop the create flow teaches.

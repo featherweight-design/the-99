@@ -14,15 +14,12 @@ import {
   poolCountFromMaskTally,
   countNoteKinds,
   readNoteFlags,
-  deckPendingSql,
-  pendingChangesSql,
 } from "./read";
 import * as realFlagsRead from "../bracket/flags-read";
 
 const flagsRead = realFlagsRead as unknown as { loadBracketFlags: ReturnType<typeof vi.fn> };
 import { deckCounts, groupByCardType, groupByRole, unresolvedCardCount } from "./grouping";
 import type { DeckDetailCard, DeckUnresolvedRow } from "./grouping";
-import { ENV_VIEW } from "@/test/env-view";
 
 // ---------------------------------------------------------------------------
 // colorIdentityMask
@@ -545,20 +542,5 @@ describe("deckAvailabilityRead", () => {
     const load = vi.fn();
     expect(deckAvailabilityRead("u", "d", [], Promise.resolve(new Map()), ENV, load as never)).toBeNull();
     expect(load).not.toHaveBeenCalled();
-  });
-});
-
-// Admin PR 6b: the deck list's pending count follows the reader's resolved switches. The environment has
-// Change commander off and the reader's override turns it on, so the count must add the commander move.
-describe("deckPendingSql", () => {
-  it("follows the reader's resolved env over the environment", () => {
-    vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
-    try {
-      expect(deckPendingSql(ENV_VIEW)).toBe(pendingChangesSql);
-      const resolved = deckPendingSql({ CHANGE_COMMANDER_ENABLED: "true" } as unknown as NodeJS.ProcessEnv);
-      expect(resolved).not.toBe(pendingChangesSql);
-    } finally {
-      vi.unstubAllEnvs();
-    }
   });
 });

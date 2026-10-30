@@ -96,7 +96,7 @@ const free = async (oracleId: string, deckId: string) => {
 // What this deck is told to buy, in copies, for one card. The buy rows are a
 // different query from the claim model and this is the only reader of it here.
 const buyCopies = async (deckId: string, oracleId: string) => {
-  const rows = await loadDeckBuyRows(USER, [deckId], undefined, process.env);
+  const rows = await loadDeckBuyRows(USER, [deckId]);
   return rows.filter((r) => r.deckId === deckId && r.oracleId === oracleId)
     .reduce((n, r) => n + r.quantity, 0);
 };
