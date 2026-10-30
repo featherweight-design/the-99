@@ -174,6 +174,8 @@ async function main() {
   const browser = await chromium.launch();
   try {
     const context = await browser.newContext({ viewport: { width: 1300, height: 900 } });
+    // tsx (esbuild keepNames) wraps named functions in `__name(...)`, which Playwright serializes into the page where it does not exist.
+    await context.addInitScript("window.__name = (f) => f;");
     const page = await context.newPage();
     const userId = await signIn(page, EMAIL, PASSWORD ?? "");
 
