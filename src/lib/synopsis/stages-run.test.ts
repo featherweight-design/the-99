@@ -138,11 +138,12 @@ describe("the alternate line (a precon's)", () => {
   it("reaches the prompt option and the repair targets only for a precon", () => {
     expect(stagesPromptOption(FACTS).alternates).toEqual([]);
     expect(stagesPromptOption(FACTS, ALTS).alternates).toEqual(ALTS);
-    const r = withAlt(undefined);
-    const forPlayer = stagesRepairTargets(checked(r), r, FACTS);
+    // Stage 3 already explains Spore Frog, so an alternate line leading with it repeats a card; the line itself
+    // is never rewritten, so the stage that shares it is the repair's target.
+    const r = withAlt(alt("Lead with [[Spore Frog]] instead and fog every turn."));
     const forPrecon = stagesRepairTargets(checked(r), r, FACTS, { alternates: ALTS });
-    expect(forPlayer.reasons.join(" ")).not.toMatch(/alternate/);
-    expect(forPrecon.sections).toEqual(expect.any(Array));
+    expect(forPrecon.sections).toContain("primer");
+    expect(forPrecon.reasons.join(" ")).toMatch(/alternate/);
   });
 });
 
