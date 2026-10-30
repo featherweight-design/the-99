@@ -284,7 +284,7 @@ describe("a friend's page group", () => {
       expect(within(tile).queryByRole("link")).toBeNull();
       expect(tile.textContent).toContain("To buy");
       expect(screen.queryByText(p.decks.lineOpen)).toBeNull();
-      expect(screen.getByText(plain(p.decks.line(named("Colin"))))).toBeTruthy();
+      expect(screen.getByText(plain(p.decks.line(named("Colin")))).closest(".ph-no-capture")).not.toBeNull();
     });
 
     it("defers the art of every tile after the first four", async () => {
@@ -320,13 +320,14 @@ describe("FriendHead and the wishlist tab", () => {
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Colin");
     expect(screen.getByText("Friend since Oct 2")).toBeTruthy();
     expect(screen.queryByText(/Sai, Master Thopterist/)).toBeNull();
-    expect(screen.getByRole("button", { name: plain(socialCopy.friends.menuAria(named("Colin"))) })).toBeTruthy();
+    expect(screen.getByRole("button", { name: plain(socialCopy.friends.menuAria(named("Colin"))) }).classList.contains("ph-no-capture")).toBe(true);
   });
 
   it("heads the wishlist with its count and view only, and captions a tile `wants N`, never an owned count", () => {
     draw();
     const head = screen.getByRole("heading", { level: 2 });
     expect(head.textContent).toBe(`${plain(p.head(named("Colin")))}1${p.viewOnly}`);
+    expect(head.querySelector(".ph-no-capture")).not.toBeNull();
     const tile = screen.getByRole("listitem");
     expect(within(tile).getByText("Rhystic Study")).toBeTruthy();
     expect(within(tile).getByTestId("wishlist-tile-caption").textContent).toBe("wants 2");
@@ -345,8 +346,8 @@ describe("FriendHead and the wishlist tab", () => {
 
   it("draws the empty state with no tiles", () => {
     draw([]);
-    expect(screen.getByText(plain(p.emptyTitle(named("Colin"))))).toBeTruthy();
-    expect(screen.getByText(plain(p.emptyBody(named("Colin"))))).toBeTruthy();
+    expect(screen.getByText(plain(p.emptyTitle(named("Colin")))).closest(".ph-no-capture")).not.toBeNull();
+    expect(screen.getByText(plain(p.emptyBody(named("Colin")))).closest(".ph-no-capture")).not.toBeNull();
     expect(screen.queryByRole("listitem")).toBeNull();
     expect(screen.getByRole("heading", { level: 2 }).textContent).toContain("0");
   });

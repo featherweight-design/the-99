@@ -71,6 +71,7 @@ describe("FriendsSection", () => {
     expect(screen.getByRole("heading", { name: "Friends · 1" })).toBeTruthy();
     expect(screen.getByRole("link", { name: /All friends/ }).getAttribute("href")).toBe("/friends");
     expect(screen.getByRole("link", { name: plain(socialCopy.friends.openAria(named("Colin"))) }).getAttribute("href")).toBe("/friends/pub-Colin");
+    expect(screen.getByRole("link", { name: plain(socialCopy.friends.openAria(named("Colin"))) }).classList.contains("ph-no-capture")).toBe(true);
     expect(seats(container)).toHaveLength(4);
     expect(screen.queryByText(socialCopy.home.you)).toBeNull();
   });
@@ -178,7 +179,7 @@ describe("FriendsSection", () => {
     const onEnded = watch.useInviteWatch.mock.calls.at(-1)![1] as (e: unknown[]) => void;
     act(() => { onEnded([{ token: "t9", friend: { publicId: "pub-Colin", displayName: "Colin" } }]); });
     expect(screen.queryByRole("dialog", { name: "Invite chooser" })).toBeNull();
-    expect(screen.getByText(plain(socialCopy.page.accepted("Colin")))).toBeTruthy();
+    expect(screen.getByText(plain(socialCopy.page.accepted("Colin"))).closest(".ph-no-capture")).not.toBeNull();
   });
 
   it("ignores a link that has already expired", () => {

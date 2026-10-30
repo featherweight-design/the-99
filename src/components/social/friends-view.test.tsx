@@ -431,7 +431,7 @@ describe("the receipt after Accept (E10)", () => {
     draw({ accepted: { ...DAVE, since: NOW } , friends: [{ ...DAVE, since: NOW }, JO] });
     const strip = screen.getByRole("status");
     expect(strip.textContent).toContain(plain(socialCopy.page.accepted("Dave")));
-    expect(strip.querySelector(".ph-no-capture")).not.toBeNull();
+    expect(within(strip).getByText(plain(socialCopy.page.accepted("Dave"))).closest(".ph-no-capture")).not.toBeNull();
     expect(screen.getByText(socialCopy.friends.since("today")).className).toContain("--success");
     fireEvent.click(within(strip).getByRole("button", { name: socialCopy.page.close }));
     expect(screen.queryByText(plain(socialCopy.page.accepted("Dave")))).toBeNull();
