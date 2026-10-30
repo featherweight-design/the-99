@@ -121,7 +121,16 @@ function withLine(content: CheckedSynopsis, line: { text: string; evidence: stri
 export function stagesRepairTargets(content: CheckedSynopsis, reply: StagesReply, facts: SynopsisFacts, precon?: { alternates: readonly string[] }): { sections: SectionId[]; reasons: string[] } {
   const shown = dedupeSections(docShownNew(content, reply, 3), facts).doc;
   const checks = stagesChecks({ reply, shownNew: shown, oldDoc: shown, facts, alternates: precon?.alternates ?? [], shape: 3, kind: precon ? "precon" : "player deck", postPass: true });
-  return i3RepairTargets(checks);
+  const targets = i3RepairTargets(checks);
+  // A box with alternates REQUIRES the alternate line, and `applyStagesShape` drops one that fails its check,
+  // leaving the content without it. No section holds that line, so the repair is sent through the overview (the
+  // shortest section) with the reason: the repair reply carries a fresh alternate and the merge fills the gap.
+  const alternates = precon?.alternates ?? [];
+  if (alternates.length > 0 && content.alternate === undefined) {
+    if (!targets.sections.includes("overview")) targets.sections.push("overview");
+    targets.reasons.push(`alternate: the alternate line was missing or did not name every alternate commander (${alternates.join("; ")}); the reply MUST include "alternate" naming each one as [[Name]] with its ref`);
+  }
+  return targets;
 }
 
 /** The line added to the repair's user message for the explained-once failures, as the harness words it. */

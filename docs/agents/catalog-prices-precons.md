@@ -71,6 +71,7 @@ Collector's Edition twin resolves to its plain edition through `twin_of`). No FK
   `--limit N` caps what is sent, never what is checked: every precon is still hashed and marked.
   A precon whose request cannot be built has its row marked not current too, and each answer is re-checked
   against the database's own request AT THE WRITE: one whose inputs moved during the batch is stored not current.
+- **`PRECON_OVERVIEW_FORCE`** (the workflow's `force` input, comma-separated precon files) rewrites those rows though their hash still matches: for a row stored without a line it should have. Same cap, target guard and checks. A precon whose box has alternates but whose stored content lacks the alternate line is sent to the one repair (`stagesRepairTargets`, through the overview).
 - **The cap** is a worst-case stop in dollars: `PRECON_OVERVIEW_MAX_USD` or `--max-usd`, default and CEILING $15
   (`capMicroUsd` clamps), and a batch is sent only while dollars spent plus its worst case (counted input plus the full
   16,000-token output ceiling, at batch rates) fit (`scripts/lib/precon-overview-build.ts`). Spend goes to one
