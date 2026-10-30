@@ -48,4 +48,16 @@ describe("the staged v2 stub (plan PR 3)", () => {
     expect(JSON.parse(await drain(stub({ stage: "additionsRefill", ask: 3 }).deltas))).toEqual({ additions: [] });
     expect(slept).toEqual([]);
   });
+
+  it("answers the why call a delay later with one group per list over every staged card", async () => {
+    const slept: number[] = [];
+    const stub = stagedStubOutcome({ TUNING_V2_STUB_DELAY_MS: "1000" }, names, async (ms) => { slept.push(ms); })!;
+    const why = stub({ stage: "why", ask: 0 });
+    const reply = JSON.parse(await drain(why.deltas));
+    expect(reply.lead).toBe("A staged stand-in lead for the probe.");
+    expect(reply.add).toEqual([{ phrase: "are staged stand-in additions", cards: names.adds, like: names.adds[0] }]);
+    expect(reply.cut).toEqual([{ phrase: "are staged stand-in cuts", cards: names.cuts, like: names.cuts[0] }]);
+    expect(await why.outcome).toEqual({ ok: true });
+    expect(slept).toEqual([1000]);
+  });
 });

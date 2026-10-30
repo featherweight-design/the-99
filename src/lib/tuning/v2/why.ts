@@ -36,8 +36,9 @@ export const WHY_LINKS_MAX = 2;
 export const WHY_GROUP_MIN = 2;
 /** The why call's reply ceiling: a lead and six short groups of names, with room. */
 export const WHY_REPLY_TOKENS = 1_500;
-/** The why call's input ceiling: its rules (about 1,600 characters), and at N = 20 up to 50 rows at about 140 characters
- *  each (a name and a short reason), about 3,000 tokens at 3 characters a token; doubled for room. */
+/** The why call's input ceiling: its rules (about 1,400 characters), and at N = 20 up to 60 rows (each list keeps up to
+ *  `askFor(20)` = 30) at about 140 characters each (a name and a short reason): about 3,300 tokens at 3 characters a
+ *  token, with room. */
 export const WHY_INPUT_TOKENS = 6_000;
 /** Its model. */
 export const WHY_MODEL = TUNING_MODEL;

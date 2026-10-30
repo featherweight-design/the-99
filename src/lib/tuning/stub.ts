@@ -31,7 +31,9 @@ export async function heldStubOutcome(env: Record<string, string | undefined>): 
  * and settle before the cuts. Off unless `TUNING_V2_STUB_DELAY_MS` is set, never in a production build (the same rule as
  * `heldStubOutcome`, which stays as it is for Proposed cuts and `probe:run-after`). Each call waits the delay, then
  * streams its answer a line at a time with a fifth of the delay between lines, so the additions are saved one by one,
- * the cut call (started as call 1 settles) arrives a delay later, and a refill answers an empty list at once.
+ * the cut call (started as call 1 settles) arrives a delay later, and a refill answers an empty list at once. The why
+ * call (`v2/why.ts`, N >= 6) answers a delay after the cuts with one group per list over every staged card, so the
+ * probe sees the box fill.
  *
  * Canned names, not a model: the caller hands the stub the cards it may name, additions a deck does not hold and cuts it
  * does, and each answer names the first `ask` of them, so the run's real validator keeps them. It bills nothing.
@@ -54,6 +56,7 @@ export function stagedStubOutcome(
   const delay = v2StubDelayMs(env);
   if (delay === null) return null;
   return ({ stage, ask }) => {
+    if (stage === "why") return whyStub(names, delay, sleep);
     const list = stage.startsWith("additions") ? "additions" : "cuts";
     const refill = stage.endsWith("Refill");
     const cards = refill ? [] : (list === "additions" ? names.adds : names.cuts).slice(0, ask);
@@ -81,4 +84,29 @@ export function stagedStubOutcome(
     })();
     return { deltas, outcome };
   };
+}
+
+/** The staged why reply: a lead, and one group per list naming every staged card (the app counts what it kept). */
+function whyStub(
+  names: { adds: readonly string[]; cuts: readonly string[] },
+  delay: number,
+  sleep: (ms: number) => Promise<void>,
+): { deltas: AsyncIterable<string>; outcome: Promise<{ ok: true; usage?: undefined }> } {
+  const group = (phrase: string, cards: readonly string[]) => [{ phrase, cards: [...cards], like: cards[0] }];
+  const text = JSON.stringify({
+    lead: "A staged stand-in lead for the probe.",
+    add: group("are staged stand-in additions", names.adds),
+    cut: group("are staged stand-in cuts", names.cuts),
+  });
+  let done!: () => void;
+  const outcome = new Promise<{ ok: true; usage?: undefined }>((r) => { done = () => r({ ok: true }); });
+  const deltas = (async function* () {
+    try {
+      await sleep(delay);
+      yield text;
+    } finally {
+      done();
+    }
+  })();
+  return { deltas, outcome };
 }
