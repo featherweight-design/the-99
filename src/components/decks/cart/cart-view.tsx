@@ -8,6 +8,7 @@
 import Link from "next/link";
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
+import { compareNames } from "../../../lib/person-name";
 import type { ProvenanceForm } from "../../../lib/decks/price";
 import { cartTotal, checkoutLinks, ownFact, selectLine, type CartPayload, type SelectedLine } from "../../../lib/decks/cart";
 import {
@@ -329,7 +330,7 @@ function CartBody({
           any: rowsFor({ friend: "any" }).rows.length,
           friends: [...knownFriends.values()]
             .map((f) => ({ friend: f, count: rowsFor({ friend: [f.publicId] }).rows.length }))
-            .sort((a, b) => b.count - a.count || a.friend.displayName.localeCompare(b.friend.displayName, "en-US", { sensitivity: "base" })),
+            .sort((a, b) => b.count - a.count || compareNames(a.friend.displayName, b.friend.displayName, "en-US", { sensitivity: "base" })),
         };
   const ownedCounts = {
     any: rowsFor({ owned: "any" }).rows.length, some: rowsFor({ owned: "some" }).rows.length, none: rowsFor({ owned: "none" }).rows.length,

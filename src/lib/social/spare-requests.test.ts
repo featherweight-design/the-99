@@ -16,6 +16,7 @@ import {
 import { loadFriendSpares, loadOwnOffered } from "./spares";
 import { resolveFriend } from "./access";
 import { declineFloor, openFloor, shownFloor } from "./spare-request-rules";
+import { named } from "../person-name/mint";
 
 const NOW = new Date("2026-10-22T12:00:00Z");
 const CARD = "0b6b8d7c-2f4e-4b1a-9a3e-1c2d3e4f5a6b";
@@ -234,7 +235,7 @@ describe("Ask instead (G1: one transaction)", () => {
       try { return await fn(tx); } catch (e) { seen.rolledBack = true; throw e; }
     }) as never);
     vi.mocked(resolveFriend).mockResolvedValueOnce("h2");
-    vi.mocked(loadFriendSpares).mockResolvedValueOnce([{ oracleId: CARD, friend: { publicId: REQ, displayName: "Hope", commander: null, pods: [] }, spare: 2 }]);
+    vi.mocked(loadFriendSpares).mockResolvedValueOnce([{ oracleId: CARD, friend: { publicId: REQ, displayName: named("Hope"), commander: null, pods: [] }, spare: 2 }]);
     return Object.assign(ran, { seen });
   }
   const FRIENDS = { rows: [{ user_id: "a" }, { user_id: "h2" }] };
@@ -340,7 +341,7 @@ describe("loadMyAsks", () => {
         { ...base, id: "r4", oracle_id: CARD, status: "withdrawn", created_at: "2026-10-21T12:00:00Z", answered_at: null, public_id: "p2", display_name: "Gus" },
       ],
     } as never);
-    vi.mocked(loadFriendSpares).mockResolvedValueOnce([{ oracleId: CARD, friend: { publicId: "p1", displayName: "Fay", commander: null, pods: [] }, spare: 1 }]);
+    vi.mocked(loadFriendSpares).mockResolvedValueOnce([{ oracleId: CARD, friend: { publicId: "p1", displayName: named("Fay"), commander: null, pods: [] }, spare: 1 }]);
     const asks = await loadMyAsks("a", ON, NOW);
     expect(asks.map((x) => [x.id, x.state, x.daysLeft])).toEqual([["r1", "open", 12], ["r2", "expired", null]]);
     expect(asks[0].holder).toEqual({ publicId: "p1", displayName: "Fay", commander: null });
@@ -355,7 +356,7 @@ describe("loadMyAsks", () => {
       ],
     } as never);
     // Fay still offers CARD; Gus no longer offers OTHER.
-    vi.mocked(loadFriendSpares).mockResolvedValueOnce([{ oracleId: CARD, friend: { publicId: "p1", displayName: "Fay", commander: null, pods: [] }, spare: 1 }]);
+    vi.mocked(loadFriendSpares).mockResolvedValueOnce([{ oracleId: CARD, friend: { publicId: "p1", displayName: named("Fay"), commander: null, pods: [] }, spare: 1 }]);
     const asks = await loadMyAsks("a", ON, NOW, { stillNeeded: new Set([OTHER]) });
     expect(vi.mocked(loadFriendSpares).mock.calls.at(-1)).toEqual(["a", [CARD, OTHER]]);
     expect(asks.map((x) => [x.id, x.state])).toEqual([["r1", "unneeded"], ["r2", "unavailable"]]);

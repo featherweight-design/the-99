@@ -38,6 +38,8 @@ import { escapeDismisses } from "../../lib/ui/search-dismiss";
 import { useIsDesktop } from "./use-is-desktop";
 import { Chevron } from "./chevron";
 import { noteAppScroll } from "../../lib/ui/reveal";
+import { NO_CAPTURE, PersonName, isThirdPartyName, type ThirdPartyName } from "../../lib/person-name";
+import { reveal } from "../../lib/person-name/reveal";
 
 export type FilterPanelOption = {
   /**
@@ -66,6 +68,12 @@ export type FilterPanelOption = {
    */
   leadingGlyph?: ReactNode;
 };
+
+/**
+ * An option whose name may be another reader's (the cart's Friend filter): every element holding the name is marked,
+ * and the panel reads it only to hand the copy functions a string.
+ */
+export type FilterPanelPersonOption = Omit<FilterPanelOption, "label"> & { label: string | ThirdPartyName };
 
 /** Desktop option-row minimum height, when the caller does not ask for a taller one. */
 const DESKTOP_ROW_MIN = 40;
@@ -117,6 +125,9 @@ function layoutViewportWidth(): number {
   return document.documentElement.clientWidth;
 }
 
+/** The option's name as the copy functions take it: a friend's name is read here, where every element drawing it is marked. */
+const labelText = (option: FilterPanelPersonOption): string => (isThirdPartyName(option.label) ? reveal(option.label) : option.label);
+
 export function FilterPanel({
   copy,
   options,
@@ -163,7 +174,7 @@ export function FilterPanel({
    */
   note?: string;
   copy: FilterPanelCopy;
-  options: FilterPanelOption[];
+  options: FilterPanelPersonOption[];
   selected: string[];
   onToggle: (code: string) => void;
   onClear: () => void;
@@ -301,7 +312,10 @@ export function FilterPanel({
   const panelId = `${uid}-panel`;
   const optionDomId = (code: string) => `${listId}-${code}`;
 
-  const matches = useMemo(() => rankSetOptions(options, query), [options, query]);
+  const matches = useMemo(
+    () => rankSetOptions(options.map((o) => ({ o, code: o.code, label: labelText(o) })), query).map((r) => r.o),
+    [options, query],
+  );
   const hasQuery = query.trim() !== "";
   const noResults = hasQuery && matches.length === 0;
 
@@ -475,7 +489,7 @@ export function FilterPanel({
    *   keyboard user has to be able to see where focus went, and a thumb has not asked to be
    *   returned to a control it deliberately scrolled away from.
    */
-  function toggle(option: FilterPanelOption, fromPointer: boolean) {
+  function toggle(option: FilterPanelPersonOption, fromPointer: boolean) {
     if (option.disabled) return; // 0-count rows never toggle, by pointer or by key
     onToggle(option.code);
     // A multi-select pick keeps the search it came from: picking several of what one search finds ("bloom",
@@ -591,10 +605,11 @@ export function FilterPanel({
     if (travelled >= DRAG_DISMISS_PX) close({ preventScroll: true });
   }
 
-  function optionAria(option: FilterPanelOption, isSelected: boolean): string {
+  function optionAria(option: FilterPanelPersonOption, isSelected: boolean): string {
     // The hint joins the accessible name because it is searchable: someone
     // typing "MH3" needs to hear which row matched their query.
-    const name = option.hint ? `${option.label} (${option.hint})` : option.label;
+    const label = labelText(option);
+    const name = option.hint ? `${label} (${option.hint})` : label;
     return option.disabled
       ? copy.optionAriaUnavailable(name)
       : copy.optionAria(name, option.count, isSelected);
@@ -602,7 +617,7 @@ export function FilterPanel({
 
   function buildGroups(
     pins: string[],
-  ): { label: string; options: FilterPanelOption[] }[] {
+  ): { label: string; options: FilterPanelPersonOption[] }[] {
     if (hasQuery) {
       // Grouping is dropped under a query: one "N matches" label, ranked list.
       return [{ label: copy.groupMatches(matches.length), options: matches }];
@@ -629,11 +644,11 @@ export function FilterPanel({
    * top, so the raw option order disagrees with what the user sees and with the
    * `aria-posinset` the same row announces.
    */
-  function visibleOptions(): FilterPanelOption[] {
+  function visibleOptions(): FilterPanelPersonOption[] {
     return groups().flatMap((g) => g.options);
   }
 
-  function renderRow(option: FilterPanelOption, posInSet: number, setSize: number) {
+  function renderRow(option: FilterPanelPersonOption, posInSet: number, setSize: number) {
     const isSelected = selected.includes(option.code);
     const isActive = activeCode === option.code;
     return (
@@ -652,7 +667,7 @@ export function FilterPanel({
         // sit two levels down (group → inner ul), so AT cannot infer "2 of 254".
         aria-posinset={posInSet}
         aria-setsize={setSize}
-        title={option.label}
+        title={labelText(option)}
         style={isDesktop ? { minHeight: desktopRowMinPx } : undefined}
         onClick={(e) => toggle(option, byPointer(e))}
         className={[
@@ -664,6 +679,7 @@ export function FilterPanel({
           // the caller's, applied inline because Tailwind cannot compile an
           // interpolated class and this value is a prop.
           "min-h-[48px]",
+          isThirdPartyName(option.label) ? NO_CAPTURE : "",
           option.disabled ? "pointer-events-none opacity-[0.42]" : "cursor-pointer",
           // The keyboard-active row never also takes the hover fill (§Keyboard-
           // active: "Hover fill — none, never combined"). The class is withheld
@@ -702,7 +718,7 @@ export function FilterPanel({
             option.disabled ? "text-[color:var(--fg-muted)]" : "text-[color:var(--fg)]",
           ].join(" ")}
         >
-          {option.label}
+          <PersonName n={option.label} />
         </span>
         {option.hint ? (
           <span
@@ -984,8 +1000,8 @@ export function FilterPanel({
     selected.length !== 1
       ? null
       : selectionMode === "single" && oneOption?.hint
-        ? `${oneOption.label} · ${oneOption.hint}`
-        : oneOption?.label ?? selected[0];
+        ? `${labelText(oneOption)} · ${oneOption.hint}`
+        : oneOption ? labelText(oneOption) : selected[0];
   // The copy module has no key for the exactly-one accessible name, nor for any
   // of the expanded variants (every key it ships ends "collapsed"), so both are
   // composed here from panelAriaLabel. The canvas's keyboard-walk frame reads
@@ -1075,7 +1091,7 @@ export function FilterPanel({
               : selectionOrnament && selected.length > 0
                 ? "cursor-pointer text-[color:var(--fg)] bg-[color:var(--elevated)] border-[color:var(--accent)] md:hover:bg-[color:var(--border-strong)] transition-colors"
                 : "cursor-pointer text-[color:var(--fg)] bg-[color:var(--elevated)] border-[color:var(--border-strong)] md:hover:bg-[color:var(--border-strong)] md:hover:border-[color:var(--border-dashed)] transition-colors",
-        ].join(" ")}
+        ].join(" ") + (oneOption && isThirdPartyName(oneOption.label) ? ` ${NO_CAPTURE}` : "")}
       >
         {copy.triggerCount ? (
           // The label and a hidden sizer share one grid cell, so the trigger is as wide as its

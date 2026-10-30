@@ -3,11 +3,8 @@
 // its field), the modals' Close and the commander picker. The friends list, the open links and the Add a friend
 // dialog arrive with PR C2, the request card with PR D (`landing`) and the pods with PR E (`pods`).
 
-import { personText, type PersonParts, type ThirdPartyName } from "../person-name/brand";
+import { joinNames, personText, type PersonParts, type ThirdPartyName } from "../person-name/brand";
 
-/** A list of names joined by `sep` (default ", "), as parts: each name stays a name. */
-const joinNames = (names: readonly ThirdPartyName[], sep = ", "): PersonParts =>
-  names.flatMap((n, i) => (i === 0 ? [n] : [sep, n]));
 /** `A`, `A and B`, `A, B, and C` over names, as `Intl.ListFormat` writes it; each name stays a name. */
 const listNames = (names: readonly ThirdPartyName[]): PersonParts =>
   new Intl.ListFormat("en-US", { type: "conjunction" })

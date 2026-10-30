@@ -13,7 +13,6 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import type { SpareRequestRow, TradeMatchRow, WaitingRow } from "../../lib/social/waiting";
 import { feedAge } from "../../lib/feed/age";
-import { feedCopy } from "../../lib/copy/feed";
 import { socialCopy, spareCopy } from "../../lib/copy/social";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { shortName } from "../../lib/cards/short-name";

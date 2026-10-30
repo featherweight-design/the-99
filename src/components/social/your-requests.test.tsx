@@ -6,6 +6,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { spareCopy } from "../../lib/copy/social";
 import type { YourRequest } from "../../lib/social/your-requests";
 import { requestText, YourRequests } from "./your-requests";
+import { named } from "../../lib/person-name/mint";
+import { plain } from "../../lib/person-name/testing";
 
 const actions = vi.hoisted(() => ({ askSpareAction: vi.fn(), closeSpareAction: vi.fn(), refresh: vi.fn() }));
 vi.mock("../../app/friends/spare-actions", () => ({ askSpareAction: actions.askSpareAction, closeSpareAction: actions.closeSpareAction }));
@@ -13,12 +15,13 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: actions.refresh
 
 const r = spareCopy.request;
 const m = r.mine;
+const txt = (t: ReturnType<typeof requestText>) => ({ ...t, title: plain(t.title), detail: plain(t.detail) });
 const NOW = new Date("2026-10-22T12:00:00Z");
 const DAY = 86_400_000;
 
 const req = (id: string, state: YourRequest["state"], over: Partial<YourRequest> = {}): YourRequest => ({
   id, oracleId: `card-${id}`, card: { name: "Jace, Multiverse Architect", imageUri: null }, copies: 1,
-  deckName: "Thopter Works", deckId: "deck-1", holder: { publicId: "pub-colin", displayName: "Colin", commander: null },
+  deckName: "Thopter Works", deckId: "deck-1", holder: { publicId: "pub-colin", displayName: named("Colin"), commander: null },
   state, daysLeft: state === "open" || state === "unavailable" || state === "unneeded" ? 12 : null,
   createdAt: new Date(NOW.getTime() - 2 * DAY), answeredAt: null, seenAt: null, cleared: false, standalone: false, unseen: false, othersWithSpare: [],
   canAskAgain: state === "expired", ...over,
@@ -34,41 +37,41 @@ afterEach(cleanup);
 describe("requestText", () => {
   it("Requested: you asked, for the deck, with the days left (the days alone with no deck)", () => {
     const t = requestText(req("a", "open"), NOW);
-    expect([t.kind, t.title, t.detail]).toEqual(["Requested", "You asked Colin for Jace, Multiverse Architect", "For Thopter Works · 12 days left"]);
-    expect(requestText(req("a", "open", { deckName: null }), NOW).detail).toBe("12 days left");
+    expect([t.kind, plain(t.title), plain(t.detail)]).toEqual(["Requested", "You asked Colin for Jace, Multiverse Architect", "For Thopter Works · 12 days left"]);
+    expect(plain(requestText(req("a", "open", { deckName: null }), NOW).detail)).toBe("12 days left");
   });
 
   it("Accepted: the friend can spare it, and the handover line, timed at the answer", () => {
     const answeredAt = new Date(NOW.getTime() - 3_600_000);
     const t = requestText(req("a", "yes", { answeredAt }), NOW);
-    expect([t.kind, t.title, t.detail]).toEqual(["Accepted", "Colin can spare Jace, Multiverse Architect", m.acceptedDetail]);
+    expect([t.kind, plain(t.title), plain(t.detail)]).toEqual(["Accepted", "Colin can spare Jace, Multiverse Architect", m.acceptedDetail]);
     // No buy press on the rows (mark-bought off): the line points at the collection instead.
-    expect(requestText(req("a", "yes", { answeredAt }), NOW, false).detail).toBe(m.acceptedDetailNoBuy);
+    expect(plain(requestText(req("a", "yes", { answeredAt }), NOW, false).detail)).toBe(m.acceptedDetailNoBuy);
     // A standalone ask (a friend's Spares tab) may be for a card on no deck's list: never pointed at Shopping.
-    expect(requestText(req("a", "yes", { answeredAt, standalone: true }), NOW, true).detail).toBe(m.acceptedDetailNoBuy);
+    expect(plain(requestText(req("a", "yes", { answeredAt, standalone: true }), NOW, true).detail)).toBe(m.acceptedDetailNoBuy);
     expect(t.at).toBe(answeredAt);
   });
 
   it("Declined: the friend is keeping it; nobody else, or who else has one", () => {
-    expect(requestText(req("a", "no"), NOW).title).toBe("Colin is keeping Jace, Multiverse Architect");
-    expect(requestText(req("a", "no"), NOW).detail).toBe("Nobody else you know has a spare of it.");
-    expect(requestText(req("a", "no", { othersWithSpare: ["Max"] }), NOW).detail).toBe("Max has a spare too.");
-    expect(requestText(req("a", "no", { othersWithSpare: ["Max", "Chris", "Sam"] }), NOW).detail).toBe("Max and 2 more have a spare too.");
+    expect(plain(requestText(req("a", "no"), NOW).title)).toBe("Colin is keeping Jace, Multiverse Architect");
+    expect(plain(requestText(req("a", "no"), NOW).detail)).toBe("Nobody else you know has a spare of it.");
+    expect(plain(requestText(req("a", "no", { othersWithSpare: [named("Max")] }), NOW).detail)).toBe("Max has a spare too.");
+    expect(plain(requestText(req("a", "no", { othersWithSpare: [named("Max"), named("Chris"), named("Sam")] }), NOW).detail)).toBe("Max and 2 more have a spare too.");
   });
 
   it("No answer: the friend didn't answer, requested N days ago (the ask's own age), timed at the expiry", () => {
     const createdAt = new Date(NOW.getTime() - 15 * DAY);
     const t = requestText(req("a", "expired", { createdAt }), NOW);
-    expect([t.kind, t.title, t.detail]).toEqual(["No answer", "Colin didn’t answer about Jace, Multiverse Architect", "Requested 15 days ago, for Thopter Works."]);
+    expect([t.kind, plain(t.title), plain(t.detail)]).toEqual(["No answer", "Colin didn’t answer about Jace, Multiverse Architect", "Requested 15 days ago, for Thopter Works."]);
     expect(t.at.getTime()).toBe(createdAt.getTime() + 14 * DAY);
     // Whole days elapsed, never the expiry window's length: 21 days and a few hours read 21.
     const old = new Date(NOW.getTime() - 21 * DAY - 5 * 3_600_000);
-    expect(requestText(req("a", "expired", { createdAt: old, deckName: null }), NOW).detail).toBe("Requested 21 days ago.");
+    expect(plain(requestText(req("a", "expired", { createdAt: old, deckName: null }), NOW).detail)).toBe("Requested 21 days ago.");
   });
 
   it("No longer spare and No longer needed", () => {
-    expect(requestText(req("a", "unavailable"), NOW)).toMatchObject({ kind: "No longer spare", title: "Colin no longer has a spare Jace, Multiverse Architect", detail: m.noLongerSpareDetail });
-    expect(requestText(req("a", "unneeded"), NOW)).toMatchObject({ kind: "No longer needed", title: "You asked Colin for Jace, Multiverse Architect", detail: m.noLongerNeededDetail });
+    expect(txt(requestText(req("a", "unavailable"), NOW))).toMatchObject({ kind: "No longer spare", title: "Colin no longer has a spare Jace, Multiverse Architect", detail: m.noLongerSpareDetail });
+    expect(txt(requestText(req("a", "unneeded"), NOW))).toMatchObject({ kind: "No longer needed", title: "You asked Colin for Jace, Multiverse Architect", detail: m.noLongerNeededDetail });
   });
 });
 
@@ -103,8 +106,8 @@ describe("YourRequests", () => {
 
   it("names the ✕ for what it does: withdraw an open ask, clear the rest", () => {
     render(<YourRequests rows={[req("a", "open"), req("b", "yes")]} now={NOW} />);
-    expect(screen.getByRole("button", { name: m.withdrawAria("Colin", "Jace, Multiverse Architect") })).toBeTruthy();
-    expect(screen.getByRole("button", { name: m.clearAria("Colin", "Jace, Multiverse Architect") })).toBeTruthy();
+    expect(screen.getByRole("button", { name: plain(m.withdrawAria("Colin", "Jace, Multiverse Architect")) })).toBeTruthy();
+    expect(screen.getByRole("button", { name: plain(m.clearAria("Colin", "Jace, Multiverse Architect")) })).toBeTruthy();
   });
 
   it("marks an unseen answer, and only that one", () => {
@@ -119,7 +122,7 @@ describe("YourRequests", () => {
   it("offers Ask again only on an unanswered ask the server would take", () => {
     render(<YourRequests rows={[req("a", "expired"), req("b", "expired", { canAskAgain: false }), req("c", "no", { canAskAgain: true })]} now={NOW} />);
     const [free, refused, declined] = screen.getAllByTestId("your-request");
-    expect(within(free).getByRole("button", { name: r.askAgainAria("Colin", "Jace, Multiverse Architect") })).toBeTruthy();
+    expect(within(free).getByRole("button", { name: plain(r.askAgainAria("Colin", "Jace, Multiverse Architect")) })).toBeTruthy();
     expect(within(refused).queryByTestId("friend-spare-ask")).toBeNull();
     expect(within(declined).queryByTestId("friend-spare-ask")).toBeNull();
   });
@@ -155,7 +158,7 @@ describe("YourRequests", () => {
   it("asks again as standalone when the expired ask came from a friend's Spares tab", async () => {
     actions.askSpareAction.mockResolvedValue({ ok: true, id: "new" });
     render(<YourRequests rows={[req("a", "expired", { deckId: null, deckName: null, standalone: true })]} now={NOW} />);
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: r.askAgainAria("Colin", "Jace, Multiverse Architect") })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: plain(r.askAgainAria("Colin", "Jace, Multiverse Architect")) })));
     expect(actions.askSpareAction).toHaveBeenCalledWith(expect.objectContaining({ deckId: null, standalone: true }));
   });
 
@@ -163,7 +166,7 @@ describe("YourRequests", () => {
     actions.askSpareAction.mockResolvedValue({ ok: true, id: "new" });
     const expired = req("a", "expired", { copies: 2 });
     const { rerender } = render(<YourRequests rows={[expired]} now={NOW} />);
-    const again = screen.getByRole("button", { name: r.askAgainAria("Colin", "Jace, Multiverse Architect") });
+    const again = screen.getByRole("button", { name: plain(r.askAgainAria("Colin", "Jace, Multiverse Architect")) });
     again.focus();
     await act(async () => fireEvent.click(again));
     expect(actions.askSpareAction).toHaveBeenCalledWith({ friendPublicId: "pub-colin", oracleId: "card-a", copies: 2, deckId: "deck-1", standalone: false });

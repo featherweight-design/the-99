@@ -10,6 +10,7 @@
 
 import { createContext, useContext, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
+import { PersonName, PersonText, joinNames, namesKey, type ThirdPartyName } from "../../../lib/person-name";
 
 /** The pill after the names: `+N` names left out, or `more` when the only thing hidden is the end of one cut name. */
 export type FitPill = { kind: "count"; rest: number } | { kind: "more" } | null;
@@ -144,14 +145,14 @@ export function NameFitProvider({ children }: { children: ReactNode }) {
  * The fit for one list of names in one slot: measured before paint and again whenever the list's observer sees the
  * slot change size. Without a provider nothing is measured and every name shows.
  */
-function useNameFit(names: readonly string[]) {
+function useNameFit(names: readonly (string | ThirdPartyName)[]) {
   const registry = useContext(FitContext);
   const slot = useRef<HTMLSpanElement>(null);
   const ruler = useRef<HTMLSpanElement>(null);
   const [fit, setFit] = useState<Fit>({ shown: names.length, cut: false, pill: null });
   // Bumped by every measurement, even one that leaves the fit as it was, so a reader can tell a fresh measurement apart.
   const [measured, setMeasured] = useState(0);
-  const key = names.join("\u0000");
+  const key = namesKey(names);
   // The measurement itself, kept for `remeasure`: a fold changes what is drawn without changing the slot's size.
   const measureRef = useRef<(() => void) | null>(null);
   useLayoutEffect(() => {
@@ -177,7 +178,8 @@ function useNameFit(names: readonly string[]) {
 
 const pillKey = (p: FitPill) => (p === null ? "" : p.kind === "more" ? "more" : `+${p.rest}`);
 
-export type FactItem = { name: string; count: number };
+/** A name is another reader's (a friend with a spare) or a deck's, the reader's own. */
+export type FactItem = { name: string | ThirdPartyName; count: number };
 
 /**
  * One fact: the phone's label in its 44px gutter, then the count and what fits of the names, then the pill. Open, the
@@ -255,7 +257,7 @@ export function CartFact({
   });
   const listId = useId();
   const pill: FitPill = fallback !== undefined ? null : (held ?? fit.pill);
-  const shown = names.slice(0, fit.shown).join(", ");
+  const shown = joinNames(names.slice(0, fit.shown));
   const line = (
     <span
       // Beside a lead the line takes the rest of the row (`flex-1`): shrunk to the names it shows, its slot would never
@@ -280,12 +282,12 @@ export function CartFact({
             {open ? (
               <span key="head" className="min-w-0 truncate">{head}</span>
             ) : (
-              <span key="names" aria-hidden data-fact-names className="min-w-0 flex-[0_1_auto] truncate">{shown}</span>
+              <span key="names" aria-hidden data-fact-names className="min-w-0 flex-[0_1_auto] truncate"><PersonText text={shown} /></span>
             )}
             {/* What fits is drawn; every name in full is read. */}
-            {open ? null : <span key="read" className="sr-only">{names.join(", ")}</span>}
+            {open ? null : <span key="read" className="sr-only"><PersonText text={joinNames(names)} /></span>}
             <span key="ruler" ref={ruler} aria-hidden className="invisible absolute left-0 top-0 h-0 w-0 overflow-hidden whitespace-nowrap">
-              {names.map((nm, i) => <span key={i} className="inline-block">{nm}</span>)}
+              {names.map((nm, i) => <span key={i} className="inline-block"><PersonName n={nm} /></span>)}
               <span className="inline-block whitespace-pre">{", "}</span>
             </span>
             {open || pill !== null ? (
@@ -317,7 +319,7 @@ export function CartFact({
         >
           {items.map((it, i) => (
             <li key={i} className="col-span-2 grid grid-cols-subgrid">
-              <span className="min-w-0 [overflow-wrap:anywhere]">{it.name}</span>
+              <span className="min-w-0 [overflow-wrap:anywhere]"><PersonName n={it.name} /></span>
               <span className="text-right text-[color:var(--fg-muted)]">{it.count}</span>
             </li>
           ))}

@@ -17,6 +17,9 @@ export const TESTING = "src/lib/person-name/testing.ts";
 export const REVEAL_ALLOW = [
   "src/lib/person-name/person-name.tsx",
   TESTING,
+  // The shared filter panel: its copy functions take a string name, so it reads a friend's label to hand them one and
+  // marks every element that carries it (PR C, the cart's Friend filter).
+  "src/components/ui/filter-panel.tsx",
   "src/lib/push/to-push-item.ts",
   "src/lib/social/feed-write.ts",
 ];

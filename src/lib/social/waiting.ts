@@ -86,7 +86,7 @@ async function loadTradeMatchRows(viewerId: string, env: NodeJS.ProcessEnv, now:
       unseen: m.unseen,
       card,
       friend: { publicId: grant.publicId, displayName: named(grant.displayName), commander: toCommander(grant) },
-      pods: grant.pods.map(named),
+      pods: grant.pods.map((pod) => named(pod)),
       askable,
     }];
   });

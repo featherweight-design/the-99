@@ -66,3 +66,8 @@ export function compareNames(
   const str = (n: string | ThirdPartyName) => (typeof n === "string" ? n : reveal(n));
   return str(a).localeCompare(str(b), locales, options);
 }
+
+/** An identity for a list of names (an effect's dependency): compared, never drawn. */
+export function namesKey(names: ReadonlyArray<string | ThirdPartyName>): string {
+  return names.map((n) => (typeof n === "string" ? n : reveal(n))).join("\u0000");
+}

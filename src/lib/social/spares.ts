@@ -104,7 +104,7 @@ export type SpareFriend = {
 
 /** A grant's friend as a spare row draws it: the name and the pods' names branded where they leave the read. */
 export function spareFriendOf(g: Pick<GrantDetails, "publicId" | "displayName" | "pods"> & Parameters<typeof toCommander>[0]): SpareFriend {
-  return { publicId: g.publicId, displayName: named(g.displayName), commander: toCommander(g), pods: g.pods.map(named) };
+  return { publicId: g.publicId, displayName: named(g.displayName), commander: toCommander(g), pods: g.pods.map((pod) => named(pod)) };
 }
 export type FriendSpare = { oracleId: string; friend: SpareFriend; spare: number };
 

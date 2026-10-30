@@ -14,6 +14,7 @@ import Link from "next/link";
 import { useContext, useEffect, useId, useMemo, useRef, useState, type CSSProperties } from "react";
 import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
 import { socialCopy, spareCopy } from "../../../lib/copy/social";
+import { PersonName, PersonText, compareNames, personAttrs } from "../../../lib/person-name";
 import type { OwnFact, SelectedLine } from "../../../lib/decks/cart";
 import type { FriendSpare, SpareFriend } from "../../../lib/social/spares";
 import { frontFaceName } from "../../../lib/cards/faces";
@@ -58,7 +59,7 @@ export function groupByFriend(
   }
   return [...groups.values()].sort((a, b) =>
     b.spares - a.spares
-    || a.friend.displayName.localeCompare(b.friend.displayName, "en-US", { sensitivity: "base" })
+    || compareNames(a.friend.displayName, b.friend.displayName, "en-US", { sensitivity: "base" })
     || (a.friend.publicId < b.friend.publicId ? -1 : 1));
 }
 
@@ -228,8 +229,7 @@ function FriendPanel({ group: g, open, onFold, children }: { group: FriendGroup;
     <section
       data-testid="friend-panel"
       data-friend={g.friend.publicId}
-      aria-label={copy.byFriend.panelAria(g.friend.displayName)}
-      className="overflow-clip rounded-[12px] border border-[color:var(--border-strong)] bg-[color:var(--bg)]"
+      {...personAttrs({ "aria-label": copy.byFriend.panelAria(g.friend.displayName) }, "overflow-clip rounded-[12px] border border-[color:var(--border-strong)] bg-[color:var(--bg)]")}
     >
       <h3 data-panel-head className="m-0 md:sticky md:top-0 md:z-[1]">
         <button
@@ -237,17 +237,19 @@ function FriendPanel({ group: g, open, onFold, children }: { group: FriendGroup;
           onClick={onFold}
           aria-expanded={open}
           aria-controls={open ? bodyId : undefined}
-          aria-label={copy.byFriend.foldAria(g.friend.displayName, open)}
+          {...personAttrs(
+            { "aria-label": copy.byFriend.foldAria(g.friend.displayName, open) },
+            `flex min-h-[52px] w-full cursor-pointer items-center focus-visible:-outline-offset-2 gap-[11px] bg-[color:var(--elevated)] py-[9px] pl-[14px] pr-[8px] text-left font-[inherit] ${
+              open ? "border-b border-b-[color:var(--border-strong)]" : ""
+            }`,
+          )}
           aria-describedby={figureId}
-          className={`flex min-h-[52px] w-full cursor-pointer items-center focus-visible:-outline-offset-2 gap-[11px] bg-[color:var(--elevated)] py-[9px] pl-[14px] pr-[8px] text-left font-[inherit] ${
-            open ? "border-b border-b-[color:var(--border-strong)]" : ""
-          }`}
         >
           <Face name={g.friend.displayName} commander={g.friend.commander} size={30} />
           <span className="flex min-w-0 flex-1 flex-col gap-[1px]">
-            <b className="truncate text-[15px] font-semibold text-[color:var(--fg)]">{g.friend.displayName}</b>
+            <b className="truncate text-[15px] font-semibold text-[color:var(--fg)]"><PersonName n={g.friend.displayName} /></b>
             {g.friend.pods.length > 0 ? (
-              <span className="truncate font-mono text-[11px] text-[color:var(--fg-faint)]">{copy.byFriend.via(g.friend.pods)}</span>
+              <span className="truncate font-mono text-[11px] text-[color:var(--fg-faint)]"><PersonText text={copy.byFriend.via(g.friend.pods)} /></span>
             ) : null}
           </span>
           <small id={figureId} data-testid="friend-panel-figure" className="flex-none whitespace-nowrap font-mono text-[11px] text-[color:var(--fg-muted)]">

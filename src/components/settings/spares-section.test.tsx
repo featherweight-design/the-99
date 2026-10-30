@@ -27,6 +27,7 @@ import { collectionRowSpoken } from "../collection/rows-view";
 import { spokenManaCost } from "../../lib/copy/card-surfaces";
 import { settingsCopy } from "../../lib/copy/settings";
 import type { BrowseListCard } from "../../lib/collection/browse";
+import { named } from "../../lib/person-name/mint";
 
 const C = settingsCopy.spares;
 const SOL = "11111111-1111-4111-8111-111111111111";
@@ -115,7 +116,7 @@ describe("the threshold stepper", () => {
 
 describe("who sees them", () => {
   it("names the shared pods and points to Friends, where each pod's switch lives", () => {
-    render(<SparesSection spareMin={1} pods={["Thursday pod", "Cube night"]} kept={[]} />);
+    render(<SparesSection spareMin={1} pods={[named("Thursday pod"), named("Cube night")]} kept={[]} />);
     expect(screen.getByText(/Offered to/).textContent).toBe(`${C.offeredTo} Thursday pod and Cube night. ${C.choose}`);
     expect(screen.getByRole("link", { name: C.friendsAria }).getAttribute("href")).toBe("/friends");
     expect(screen.queryByRole("checkbox")).toBeNull();

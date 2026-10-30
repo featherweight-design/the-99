@@ -8,6 +8,8 @@ import { FEED_SHOWN } from "../feed/show-all";
 import { socialCopy, spareCopy } from "../../lib/copy/social";
 import { feedCopy } from "../../lib/copy/feed";
 import type { SpareRequestRow, WaitingRow } from "../../lib/social/waiting";
+import { named } from "../../lib/person-name/mint";
+import { plain } from "../../lib/person-name/testing";
 
 const actions = vi.hoisted(() => ({ answerSpareAction: vi.fn() }));
 vi.mock("../../app/friends/spare-actions", () => actions);
@@ -17,8 +19,8 @@ const NOW = new Date("2026-10-22T12:00:00Z");
 const ROW: WaitingRow = {
   key: "item:1", kind: "trade-match", createdAt: new Date(NOW.getTime() - 5 * 3_600_000), unseen: true,
   card: { oracleId: "ghalta", name: "Ghalta, Primal Hunger", imageUri: null },
-  friend: { publicId: "pub-colin", displayName: "Colin", commander: null },
-  pods: ["Thursday pod"],
+  friend: { publicId: "pub-colin", displayName: named("Colin"), commander: null },
+  pods: [named("Thursday pod")],
   askable: false,
 };
 
@@ -56,8 +58,8 @@ describe("WaitingOnYou", () => {
   it("draws a trade match: title, detail with the pods, time, and a link to the friend's Spares tab", () => {
     render(<WaitingOnYou rows={[ROW]} now={NOW} />);
     const row = screen.getByTestId("waiting-row");
-    expect(within(row).getByText(w.tradeTitle("Colin", "Ghalta, Primal Hunger"))).toBeTruthy();
-    expect(within(row).getByText(w.tradeDetail("Colin", ["Thursday pod"]))).toBeTruthy();
+    expect(within(row).getByText(plain(w.tradeTitle("Colin", "Ghalta, Primal Hunger")))).toBeTruthy();
+    expect(within(row).getByText(plain(w.tradeDetail("Colin", [named("Thursday pod")])))).toBeTruthy();
     // The age once, after the kind on the kicker line at both widths (small items R1b: `Trade match · 5h ago`).
     const age = within(row).getByText("5h ago");
     expect(age.previousElementSibling?.textContent).toBe(w.kind["trade-match"]);
@@ -65,7 +67,7 @@ describe("WaitingOnYou", () => {
     // /friends keeps `--fg-faint` for the time (its PR 7b contrast ruling), not the board's `--fg-locked`.
     expect(age.className).toContain("--fg-faint");
     // One link, on the action line before the ✕, at both widths.
-    const link = within(row).getByRole("link", { name: w.seeSpares("Colin") });
+    const link = within(row).getByRole("link", { name: plain(w.seeSpares("Colin")) });
     expect(link.getAttribute("href")).toBe("/friends/pub-colin/spares?spare=ghalta");
     expect(link.parentElement!.nextElementSibling?.hasAttribute("data-feed-dismiss")).toBe(true);
   });
@@ -73,10 +75,10 @@ describe("WaitingOnYou", () => {
   it("names the link Ask {friend} when the landing opens the card's sheet with Ask (spare requests on)", () => {
     render(<WaitingOnYou rows={[{ ...ROW, askable: true }]} now={NOW} />);
     const row = screen.getByTestId("waiting-row");
-    const links = within(row).getAllByRole("link", { name: w.askFriend("Colin") });
+    const links = within(row).getAllByRole("link", { name: plain(w.askFriend("Colin")) });
     expect(links.length).toBeGreaterThan(0);
     for (const l of links) expect(l.getAttribute("href")).toBe("/friends/pub-colin/spares?spare=ghalta");
-    expect(within(row).queryByRole("link", { name: w.seeSpares("Colin") })).toBeNull();
+    expect(within(row).queryByRole("link", { name: plain(w.seeSpares("Colin")) })).toBeNull();
   });
 
   // A 30-character name must not clip the phone's link: it wraps there, and holds one line only from desktop.
@@ -103,14 +105,14 @@ const ASK: SpareRequestRow = {
   key: "req-1", kind: "spare-request", createdAt: new Date(NOW.getTime() - 2 * 3_600_000), unseen: true,
   ask: {
     id: "req-1", oracleId: "lathliss", card: { name: "Lathliss, Dragon Queen", imageUri: null }, copies: 1,
-    deckName: "Dragons of Tarkir", spare: 2, asker: { publicId: "pub-peter", displayName: "Peter", commander: null },
+    deckName: named("Dragons of Tarkir"), spare: 2, asker: { publicId: "pub-peter", displayName: named("Peter"), commander: null },
     createdAt: new Date(NOW.getTime() - 2 * 3_600_000), daysLeft: 13,
   },
 };
 const ASK2: SpareRequestRow = {
   ...ASK, key: "req-2",
   ask: { ...ASK.ask, id: "req-2", oracleId: "giada", card: { name: "Giada, Font of Hope", imageUri: null }, deckName: null, spare: 1,
-    asker: { publicId: "pub-chris", displayName: "Chris", commander: null }, daysLeft: 14 },
+    asker: { publicId: "pub-chris", displayName: named("Chris"), commander: null }, daysLeft: 14 },
 };
 
 describe("WaitingOnYou, spare requests", () => {
@@ -125,8 +127,8 @@ describe("WaitingOnYou, spare requests", () => {
     expect(within(row).getByText(w.kind["spare-request"])).toBeTruthy();
     expect(within(row).getByText(feedCopy.home.title.spareRequest("Peter", "Lathliss, Dragon Queen"))).toBeTruthy();
     expect(within(row).getByText("You have 2 spare. Peter wants 1 for Dragons of Tarkir.")).toBeTruthy();
-    expect(within(row).getByRole("button", { name: r.yesAria("Peter", "Lathliss, Dragon Queen") }).textContent).toBe("Yes");
-    expect(within(row).getByRole("button", { name: r.noAria("Peter", "Lathliss, Dragon Queen") }).textContent).toBe("No");
+    expect(within(row).getByRole("button", { name: plain(r.yesAria("Peter", "Lathliss, Dragon Queen")) }).textContent).toBe("Yes");
+    expect(within(row).getByRole("button", { name: plain(r.noAria("Peter", "Lathliss, Dragon Queen")) }).textContent).toBe("No");
     expect(within(row).getByText("13 days left")).toBeTruthy();
     expect(row.hasAttribute("data-unseen")).toBe(true);
   });
@@ -139,7 +141,7 @@ describe("WaitingOnYou, spare requests", () => {
   it("Yes answers through the action and turns the row into the sparing receipt, focused, the head counting what still waits", async () => {
     actions.answerSpareAction.mockResolvedValue({ ok: true });
     render(<WaitingOnYou rows={[ASK, ASK2]} now={NOW} />);
-    const yes = within(screen.getAllByTestId("waiting-row")[0]).getByRole("button", { name: r.yesAria("Peter", "Lathliss, Dragon Queen") });
+    const yes = within(screen.getAllByTestId("waiting-row")[0]).getByRole("button", { name: plain(r.yesAria("Peter", "Lathliss, Dragon Queen")) });
     yes.focus();
     await act(async () => fireEvent.click(yes));
     expect(actions.answerSpareAction).toHaveBeenCalledWith("req-1", "yes");
@@ -147,7 +149,7 @@ describe("WaitingOnYou, spare requests", () => {
     expect(receipt.dataset.answer).toBe("yes");
     expect(within(receipt).getByText(r.receiptKind.yes)).toBeTruthy();
     expect(within(receipt).getByText("You’re sparing Lathliss for Peter")).toBeTruthy();
-    expect(within(receipt).getByText(r.sparingDetail("Peter", "Lathliss"))).toBeTruthy();
+    expect(within(receipt).getByText(plain(r.sparingDetail("Peter", "Lathliss")))).toBeTruthy();
     expect(within(receipt).queryByRole("button")).toBeNull();
     expect(document.activeElement).toBe(within(receipt).getByTestId("spare-receipt-status"));
     // The receipt keeps the row's place, first; the head counts the one ask still waiting.
@@ -181,7 +183,7 @@ describe("WaitingOnYou, spare requests", () => {
     const items = screen.getByTestId("waiting-on-you").querySelectorAll("li");
     expect(items[0].dataset.testid).toBe("waiting-receipt");
     expect(within(items[0] as HTMLElement).getByText("You’re keeping Lathliss")).toBeTruthy();
-    expect(within(items[0] as HTMLElement).getByText(r.keepingDetail("Peter"))).toBeTruthy();
+    expect(within(items[0] as HTMLElement).getByText(plain(r.keepingDetail("Peter")))).toBeTruthy();
     expect(items[1].dataset.kind).toBe("spare-request");
   });
 

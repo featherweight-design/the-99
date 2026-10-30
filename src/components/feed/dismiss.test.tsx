@@ -22,6 +22,8 @@ import type { FeedView, HomeFeed } from "../../lib/feed/home";
 import type { WaitingRow } from "../../lib/social/waiting";
 import { feedCopy } from "../../lib/copy/feed";
 import { socialCopy } from "../../lib/copy/social";
+import { named } from "../../lib/person-name/mint";
+import { plain } from "../../lib/person-name/testing";
 
 const d = feedCopy.home.dismiss;
 const w = socialCopy.waiting;
@@ -46,7 +48,7 @@ describe("the ✕ itself", () => {
   it("ends the action line: in flow at ml-auto, 44px on a phone, 32px from desktop with a 44px coarse hit, named for the item", () => {
     const onDismiss = vi.fn();
     render(<ul><FeedItemRow item={view(1)} now={NOW} onDismiss={onDismiss} /></ul>);
-    const x = screen.getByRole("button", { name: d.aria(titleOf(1)) });
+    const x = screen.getByRole("button", { name: plain(d.aria(titleOf(1))) });
     const cls = x.className.split(/\s+/);
     for (const c of ["ml-auto", "h-[44px]", "w-[44px]", "md:h-[32px]", "md:w-[32px]", "mr-[-10px]", "md:mr-[-6px]", "relative", "pointer-coarse:after:h-[44px]", "pointer-coarse:after:w-[44px]"]) {
       expect(cls).toContain(c);
@@ -79,7 +81,7 @@ describe("What's new on Home", () => {
   it("hides the row at once, sends Home's key, and takes it off the new count", async () => {
     render(<WhatsNew feed={feed([view(1), view(2)])} now={NOW} />);
     expect(screen.getByText(feedCopy.home.newCount(2), { exact: false })).toBeInTheDocument();
-    await act(async () => { fireEvent.click(screen.getByRole("button", { name: d.aria(titleOf(1)) })); });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: plain(d.aria(titleOf(1))) })); });
     expect(m.dismiss).toHaveBeenCalledWith("set:s1");
     expect(screen.queryByText(titleOf(1))).toBeNull();
     expect(screen.getByText(titleOf(2))).toBeInTheDocument();
@@ -89,11 +91,11 @@ describe("What's new on Home", () => {
   it("rings the next ✕ (2px accent, radius 8) even after a pointer press", async () => {
     const raf = vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => { cb(0); return 0; });
     render(<WhatsNew feed={feed([view(1), view(2)])} now={NOW} />);
-    const second = screen.getByRole("button", { name: d.aria(titleOf(2)) });
+    const second = screen.getByRole("button", { name: plain(d.aria(titleOf(2))) });
     expect(second.className.split(/\s+/)).toEqual(expect.arrayContaining(["rounded-[8px]", "focus-visible:outline-transparent", "focus-visible:shadow-[0_0_0_2px_var(--accent)]"]));
     // A transparent outline, never none: forced-colors mode drops the shadow and paints the outline in a system color.
     expect(second.className).not.toContain("focus-visible:outline-none");
-    await act(async () => { fireEvent.click(screen.getByRole("button", { name: d.aria(titleOf(1)) })); });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: plain(d.aria(titleOf(1))) })); });
     expect(document.activeElement).toBe(second);
     // The ring rides a marker, since :focus-visible does not match after a pointer press; blur clears it.
     expect(second).toHaveAttribute("data-ring");
@@ -106,7 +108,7 @@ describe("What's new on Home", () => {
   it("lands on the section's head when its last row goes and the section stays", async () => {
     const raf = vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => { cb(0); return 0; });
     render(<WhatsNew feed={feed([view(1)])} now={NOW} />);
-    await act(async () => { fireEvent.click(screen.getByRole("button", { name: d.aria(titleOf(1)) })); });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: plain(d.aria(titleOf(1))) })); });
     expect(document.activeElement?.id).toBe("home-whats-new");
     // The head takes focus plainly: no forced ring after a pointer press.
     expect(document.getElementById("home-whats-new")).not.toHaveAttribute("data-ring");
@@ -116,7 +118,7 @@ describe("What's new on Home", () => {
   it("brings the row back with the toast when the write fails", async () => {
     m.dismiss.mockResolvedValue({ ok: false, reason: "off" });
     render(<WhatsNew feed={feed([view(1)])} now={NOW} />);
-    await act(async () => { fireEvent.click(screen.getByRole("button", { name: d.aria(titleOf(1)) })); });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: plain(d.aria(titleOf(1))) })); });
     expect(screen.getByText(titleOf(1))).toBeInTheDocument();
     expect(screen.getByText(d.failed)).toBeInTheDocument();
   });
@@ -127,7 +129,7 @@ describe("the lead story", () => {
     const lead = view(9, { key: "item:0f4b1c9e-1d2a-4c3b-8e5f-6a7b8c9d0e1f" });
     render(<LeadSlot lead={lead} now={NOW} />);
     expect(screen.getByText(titleOf(9))).toBeInTheDocument();
-    await act(async () => { fireEvent.click(screen.getByRole("button", { name: d.aria(titleOf(9)) })); });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: plain(d.aria(titleOf(9))) })); });
     expect(m.dismiss).toHaveBeenCalledWith(lead.key);
     expect(screen.queryByText(titleOf(9))).toBeNull();
   });
@@ -173,13 +175,13 @@ describe("the lead and the count (Copilot round 1, #2285)", () => {
     );
     const { unmount } = render(both());
     expect(screen.getByText(feedCopy.home.newCount(2), { exact: false })).toBeInTheDocument();
-    await act(async () => { fireEvent.click(screen.getByRole("button", { name: d.aria(titleOf(9)) })); });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: plain(d.aria(titleOf(9))) })); });
     expect(screen.getByText(feedCopy.home.newCount(1), { exact: false })).toBeInTheDocument();
     unmount();
 
     m.dismiss.mockResolvedValue({ ok: false, reason: "off" });
     render(both());
-    await act(async () => { fireEvent.click(screen.getByRole("button", { name: d.aria(titleOf(9)) })); });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: plain(d.aria(titleOf(9))) })); });
     expect(screen.getByText(titleOf(9))).toBeInTheDocument();
     expect(screen.getByText(feedCopy.home.newCount(2), { exact: false })).toBeInTheDocument();
   });
@@ -190,13 +192,13 @@ describe("Waiting on you", () => {
   const trade: WaitingRow = {
     key: "item:aaaaaaaa-1d2a-4c3b-8e5f-6a7b8c9d0e1f", kind: "trade-match", createdAt: new Date(NOW_D.getTime() - 3_600_000), unseen: true,
     card: { oracleId: "ghalta", name: "Ghalta, Primal Hunger", imageUri: null },
-    friend: { publicId: "pub-colin", displayName: "Colin", commander: null }, pods: ["Thursday pod"], askable: false,
+    friend: { publicId: "pub-colin", displayName: named("Colin"), commander: null }, pods: [named("Thursday pod")], askable: false,
   };
   const ask = {
     key: "bbbbbbbb-1d2a-4c3b-8e5f-6a7b8c9d0e1f", kind: "spare-request", createdAt: new Date(NOW_D.getTime() - 7_200_000), unseen: true,
     ask: {
       id: "bbbbbbbb-1d2a-4c3b-8e5f-6a7b8c9d0e1f", card: { oracleId: "sol", name: "Sol Ring", imageUri: null },
-      asker: { publicId: "pub-ana", displayName: "Ana", commander: null }, spare: 2, copies: 1, deckName: null, daysLeft: 13, createdAt: new Date(NOW_D.getTime() - 7_200_000),
+      asker: { publicId: "pub-ana", displayName: named("Ana"), commander: null }, spare: 2, copies: 1, deckName: null, daysLeft: 13, createdAt: new Date(NOW_D.getTime() - 7_200_000),
     },
   } as unknown as WaitingRow;
 
@@ -214,7 +216,7 @@ describe("Waiting on you", () => {
 
   it("ends each row's action line with its ✕, after the presses, with no reserve on the text column", () => {
     render(<WaitingOnYou rows={[ask, trade]} now={NOW_D} />);
-    for (const title of [feedCopy.home.title.spareRequest("Ana", "Sol Ring"), w.tradeTitle("Colin", "Ghalta, Primal Hunger")]) {
+    for (const title of [plain(w.askTitle(named("Ana"), "Sol Ring")), plain(w.tradeTitle(named("Colin"), "Ghalta, Primal Hunger"))]) {
       expect(screen.getByText(title).parentElement!.className).not.toMatch(/pr-\[/);
     }
     const [askRow, tradeRow] = screen.getAllByTestId("waiting-row");

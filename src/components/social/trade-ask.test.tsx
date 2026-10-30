@@ -15,6 +15,7 @@ import { LeadStory } from "../home/lead-story";
 import { WaitingOnYou } from "./waiting-on-you";
 import { useState } from "react";
 import { TradeAskFrame, TradeAskProvider } from "./trade-ask";
+import { named } from "../../lib/person-name/mint";
 
 const m = vi.hoisted(() => ({ ask: vi.fn(), refresh: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn(), replace: vi.fn() }), usePathname: () => "/" }));
@@ -27,7 +28,7 @@ const NOW = "2026-10-27T12:00:00.000Z";
 const CARDS = [{ oracleId: GHALTA, name: "Ghalta, Primal Hunger", imageUri: null }];
 const AS_OF = new Date("2026-10-26T00:00:00Z");
 const PRICES = { [GHALTA]: { cents: 210, foilCents: null, etchedCents: null, asOf: AS_OF } };
-const friend = (name: string, publicId: string, spare: number) => ({ oracleId: GHALTA, friend: { publicId, displayName: name, commander: null, pods: ["Walk pod"] }, spare });
+const friend = (name: string, publicId: string, spare: number) => ({ oracleId: GHALTA, friend: { publicId, displayName: named(name), commander: null, pods: [named("Walk pod")] }, spare });
 // Ana holds more than Colin, so the shipped order would put her first: Colin first proves the row's friend leads.
 const READ = [friend("Ana", "p-ana", 3), friend("Colin", COLIN.publicId, 1)];
 const item: FeedView = {
@@ -39,10 +40,10 @@ const item: FeedView = {
 const trade: TradeMatchRow = {
   key: item.key, kind: "trade-match", createdAt: new Date(NOW), unseen: true,
   card: { oracleId: GHALTA, name: "Ghalta, Primal Hunger", imageUri: null },
-  friend: { ...COLIN, commander: null }, pods: ["Walk pod"], askable: true,
+  friend: { ...COLIN, displayName: named("Colin"), commander: null }, pods: [named("Walk pod")], askable: true,
 };
 const open = (state: AskStateLine["state"]): AskStateLine => ({
-  id: "req-1", oracleId: GHALTA, holder: COLIN, state, daysLeft: state === "open" ? 14 : null, createdAt: NOW, answeredAt: null,
+  id: "req-1", oracleId: GHALTA, holder: { ...COLIN, displayName: named("Colin") }, state, daysLeft: state === "open" ? 14 : null, createdAt: NOW, answeredAt: null,
 });
 
 const fetchMock = vi.fn();

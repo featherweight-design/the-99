@@ -57,6 +57,8 @@ import FriendDecksMoved from "./decks/page";
 import { FriendHead } from "../../../../components/social/friend-head";
 import { FriendWishlist } from "../../../../components/social/friend-wishlist";
 import { socialCopy } from "../../../../lib/copy/social";
+import { named } from "../../../../lib/person-name/mint";
+import { plain } from "../../../../lib/person-name/testing";
 
 const p = socialCopy.friendPage;
 const BOTH = { SOCIAL_FRIENDS_ENABLED: "true" };
@@ -193,7 +195,7 @@ describe("a friend's page group", () => {
 
   it("draws the spares tab: wishlist cards marked and first, each with its count", async () => {
     const html = renderToString(await FriendSparesPage({ params: params() }));
-    expect(html).toContain(p.spares.line(["Thursday pod"], true));
+    expect(html).toContain(plain(p.spares.line([named("Thursday pod")], true)));
     expect(m.loadFriendSpareList).toHaveBeenCalledWith("user_viewer", COLIN.publicId, true);
     expect(html.indexOf("Ghalta, Primal Hunger")).toBeLessThan(html.indexOf("Sol Ring"));
     expect(html).toContain("2 spares");
@@ -215,9 +217,9 @@ describe("a friend's page group", () => {
 
   it("says a friend who shares nothing with the reader is not sharing, and an empty share is empty", async () => {
     m.loadFriendSpareList.mockResolvedValue(null);
-    expect(renderToString(await FriendSparesPage({ params: params() }))).toContain(p.spares.noneTitle("Colin"));
+    expect(renderToString(await FriendSparesPage({ params: params() }))).toContain(plain(p.spares.noneTitle("Colin")));
     m.loadFriendSpareList.mockResolvedValue({ pods: ["Thursday pod"], lines: [] });
-    expect(renderToString(await FriendSparesPage({ params: params() }))).toContain(p.spares.emptyTitle("Colin"));
+    expect(renderToString(await FriendSparesPage({ params: params() }))).toContain(plain(p.spares.emptyTitle("Colin")));
   });
 
   it("draws a deck as a name, a commander, a status and a count, with no link and no card list", async () => {

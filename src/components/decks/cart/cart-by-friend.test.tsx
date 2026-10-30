@@ -33,6 +33,8 @@ import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
 import { socialCopy, spareCopy } from "../../../lib/copy/social";
 import { gotItCopy } from "../../../lib/copy/i-got-it";
 import type { CartPayload } from "../../../lib/decks/cart";
+import { named } from "../../../lib/person-name/mint";
+import { plain } from "../../../lib/person-name/testing";
 
 const r = spareCopy.request;
 const NOW = "2026-10-20T00:00:00.000Z";
@@ -65,10 +67,10 @@ function cart(over: Partial<CartPayload> = {}): CartPayload {
   };
 }
 
-const friend = (name: string, pods = ["Thursday pod"]) => ({ publicId: `p-${name}`, displayName: name, commander: null, pods });
+const friend = (name: string, pods = ["Thursday pod"]) => ({ publicId: `p-${name}`, displayName: named(name), commander: null, pods: pods.map((pod) => named(pod)) });
 const spare = (oracleId: string, name: string, n = 1, pods?: string[]) => ({ oracleId, friend: friend(name, pods), spare: n });
 const ask = (oracleId: string, name: string, state: AskStateLine["state"]): AskStateLine => ({
-  id: `req-${name}-${oracleId.slice(0, 2)}-${state}`, oracleId, holder: { publicId: `p-${name}`, displayName: name }, state,
+  id: `req-${name}-${oracleId.slice(0, 2)}-${state}`, oracleId, holder: { publicId: `p-${name}`, displayName: named(name) }, state,
   daysLeft: state === "open" ? 12 : null, createdAt: "2026-10-18T00:00:00Z", answeredAt: null,
 });
 
@@ -206,7 +208,7 @@ describe("By friend's panels", () => {
     const line = (oracleId: string) => ({ ...cart().lines[0], oracleId, selectedRows: [], copies: 1, cents: 0, pricedCopies: 0 });
     const byCard = new Map([[JACE, [spare(JACE, "Zed", 3), spare(JACE, "Ana", 1)]], [BRAIN, [spare(BRAIN, "Bo", 1), spare(BRAIN, "Ana", 1)]]]);
     const groups = groupByFriend([line(JACE), line(BRAIN)] as never, byCard);
-    expect(groups.map((g) => [g.friend.displayName, g.spares])).toEqual([["Zed", 3], ["Ana", 2], ["Bo", 1]]);
+    expect(groups.map((g) => [plain(g.friend.displayName), g.spares])).toEqual([["Zed", 3], ["Ana", 2], ["Bo", 1]]);
     expect(Object.fromEntries(groups[1].spareOf)).toEqual({ [JACE]: 1, [BRAIN]: 1 });
     expect(Object.fromEntries(groups[0].spareOf)).toEqual({ [JACE]: 3 });
   });
@@ -280,10 +282,10 @@ describe("By friend's v2 row and panel (PR 6)", () => {
     served = { spares: BOARD, asks: [] };
     await mount({ initialView: "friend" });
     expect(head("Colin").getAttribute("aria-expanded")).toBe("true");
-    expect(head("Colin").getAttribute("aria-label")).toBe(copy.byFriend.foldAria("Colin", true));
+    expect(head("Colin").getAttribute("aria-label")).toBe(plain(copy.byFriend.foldAria("Colin", true)));
     fireEvent.click(head("Colin"));
     expect(head("Colin").getAttribute("aria-expanded")).toBe("false");
-    expect(head("Colin").getAttribute("aria-label")).toBe(copy.byFriend.foldAria("Colin", false));
+    expect(head("Colin").getAttribute("aria-label")).toBe(plain(copy.byFriend.foldAria("Colin", false)));
     expect(panel("Colin").queryAllByRole("listitem")).toHaveLength(0);
     // Folded, the head keeps its figure and drops its rule.
     expect(panel("Colin").getByTestId("friend-panel-figure").textContent).toBe("2 cards · 2 spares");
@@ -390,7 +392,7 @@ describe("By friend's line", () => {
     actions.askSpareAction.mockResolvedValue({ ok: true, id: "new-1" });
     await mount({ initialView: "friend" });
     const press = within(lineIn("Colin", "Brainstorm")).getByTestId("friend-spare-ask");
-    expect(press.getAttribute("aria-label")).toBe(r.askAria("Colin", "Brainstorm"));
+    expect(press.getAttribute("aria-label")).toBe(plain(r.askAria("Colin", "Brainstorm")));
     await act(async () => { fireEvent.click(press); });
     expect(actions.askSpareAction).toHaveBeenCalledWith({ friendPublicId: "p-Colin", oracleId: BRAIN, copies: 2, deckId: null, standalone: false });
     expect(within(lineIn("Colin", "Brainstorm")).getByTestId("friend-spare-status").textContent).toBe(r.requested);

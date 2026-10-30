@@ -2,6 +2,7 @@
 // CartCardLine is By card's, CartFriendLine By friend's (PR 6), and By deck draws CartFactsRow itself.
 
 import type { ReactNode } from "react";
+import { compareNames } from "../../../lib/person-name";
 import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
 import { gotItCopy } from "../../../lib/copy/i-got-it";
 import type { PriceFact } from "../../../lib/decks/price";
@@ -200,7 +201,7 @@ export function CartFactsRow({
 }) {
   // Most spares first, then by name, so the name that leads is the friend most likely to have one to give.
   const friends = [...spares]
-    .sort((a, b) => b.spare - a.spare || a.friend.displayName.localeCompare(b.friend.displayName))
+    .sort((a, b) => b.spare - a.spare || compareNames(a.friend.displayName, b.friend.displayName))
     .map((s) => ({ name: s.friend.displayName, count: s.spare }));
   const spareCount = friends.reduce((n, f) => n + f.count, 0);
   // G1: the decks holding the copies, by name, only when they account for every copy. Otherwise the shipped row's facts:

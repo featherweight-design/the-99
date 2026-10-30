@@ -16,6 +16,7 @@ vi.mock("../cards/chain-art", () => ({ chainArt: async () => new Map([["c1", "sa
 import { comboPieces, feedCardsQuery, homeFeedAfter, loadHomeFeed, postLists, preconCommandersQuery, preconOwnedQuery, setCardsQuery, splitLead, toViews, withAnswerDetails, withListTargets, withLeadAsk, wizardsPostUrl, type FeedView, type HomeFeed } from "./home";
 import type { IncomingAsk } from "../social/spare-requests";
 import type { FeedItem } from "./read";
+import { named } from "../person-name/mint";
 
 const ON = { SOCIAL_FRIENDS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 const NOW = new Date("2026-10-22T12:00:00Z");
@@ -261,14 +262,14 @@ describe("the feed's card lookups carry the card's colour identity", () => {
 describe("a spare request leading Home (spare requests PR 3d)", () => {
   const SPARE = ON;
   const incoming = (o: Partial<IncomingAsk> = {}): IncomingAsk => ({
-    id: "req-1", oracleId: "c1", card: { name: "Lathliss", imageUri: null }, copies: 1, deckName: "Dragons", spare: 2,
-    asker: { publicId: "p1", displayName: "Peter", commander: null }, createdAt: NOW, daysLeft: 13, ...o,
+    id: "req-1", oracleId: "c1", card: { name: "Lathliss", imageUri: null }, copies: 1, deckName: named("Dragons"), spare: 2,
+    asker: { publicId: "p1", displayName: named("Peter"), commander: null }, createdAt: NOW, daysLeft: 13, ...o,
   });
   const lead = view({ key: "item:s", kind: "spare-request", card: { oracleId: "c1", name: "Lathliss", image: null, art: null, colorIdentity: null }, friend: { publicId: "p1", displayName: "Peter" } });
   const feedOf = (l: FeedView | null): HomeFeed => ({ chosen: true, on: ["spare-request"], items: [], unseen: 1, lead: l });
 
   it("attaches the lead's own ask, by card and asker", () => {
-    const out = withLeadAsk(feedOf(lead), [incoming({ id: "other", oracleId: "c2" }), incoming({ id: "x", asker: { publicId: "p2", displayName: "Ann", commander: null } }), incoming()]);
+    const out = withLeadAsk(feedOf(lead), [incoming({ id: "other", oracleId: "c2" }), incoming({ id: "x", asker: { publicId: "p2", displayName: named("Ann"), commander: null } }), incoming()]);
     expect(out.chosen && out.lead?.ask).toEqual({ id: "req-1", spare: 2, copies: 1, deckName: "Dragons", daysLeft: 13 });
   });
 

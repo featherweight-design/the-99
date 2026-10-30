@@ -8,6 +8,8 @@ import type { FeedView } from "../../lib/feed/home";
 import { feedCopy } from "../../lib/copy/feed";
 import { spareCopy } from "../../lib/copy/social";
 import { LeadSlot, LeadStory } from "./lead-story";
+import { named } from "../../lib/person-name/mint";
+import { plain } from "../../lib/person-name/testing";
 
 const actions = vi.hoisted(() => ({ answerSpareAction: vi.fn() }));
 vi.mock("../../app/friends/spare-actions", () => actions);
@@ -19,7 +21,7 @@ const LEAD: FeedView = {
   key: "item:1", kind: "spare-request", at: "2026-10-22T10:00:00.000Z", unseen: true,
   card: { oracleId: "lathliss", name: "Lathliss, Dragon Queen", image: "l.jpg", art: "l-art.jpg", colorIdentity: ["R"] },
   friend: { publicId: "pub-peter", displayName: "Peter" }, href: null, opens: null, outbound: null, name: null, setSize: null, owned: null, drop: null, combo: null, answer: null, askable: false,
-  ask: { id: "req-1", spare: 2, copies: 1, deckName: "Dragons of Tarkir", daysLeft: 13 },
+  ask: { id: "req-1", spare: 2, copies: 1, deckName: named("Dragons of Tarkir"), daysLeft: 13 },
 };
 
 beforeEach(() => {
@@ -33,14 +35,14 @@ describe("LeadStory, a spare request", () => {
     const story = screen.getByRole("region");
     expect(within(story).getByRole("heading", { level: 3 }).textContent).toBe(feedCopy.home.title.spareRequest("Peter", "Lathliss, Dragon Queen"));
     expect(within(story).getByText("You have 2 spare. Peter wants 1 for Dragons of Tarkir.")).toBeTruthy();
-    expect(within(story).getByRole("button", { name: r.yesAria("Peter", "Lathliss, Dragon Queen") })).toBeTruthy();
-    expect(within(story).getByRole("button", { name: r.noAria("Peter", "Lathliss, Dragon Queen") })).toBeTruthy();
+    expect(within(story).getByRole("button", { name: plain(r.yesAria("Peter", "Lathliss, Dragon Queen")) })).toBeTruthy();
+    expect(within(story).getByRole("button", { name: plain(r.noAria("Peter", "Lathliss, Dragon Queen")) })).toBeTruthy();
     expect(within(story).getByText("13 days left")).toBeTruthy();
   });
 
   it.each([
-    ["yes", /^Yes,/, "You’re sparing Lathliss for Peter", r.sparingDetail("Peter", "Lathliss"), r.receiptKind.yes],
-    ["no", /^No,/, "You’re keeping Lathliss", r.keepingDetail("Peter"), r.receiptKind.no],
+    ["yes", /^Yes,/, "You’re sparing Lathliss for Peter", plain(r.sparingDetail("Peter", "Lathliss")), r.receiptKind.yes],
+    ["no", /^No,/, "You’re keeping Lathliss", plain(r.keepingDetail("Peter")), r.receiptKind.no],
   ] as const)("%s answers through the action and turns the story into its receipt, focused", async (answer, name, title, detail, kind) => {
     actions.answerSpareAction.mockResolvedValue({ ok: true });
     render(<LeadStory item={LEAD} now={NOW} />);
