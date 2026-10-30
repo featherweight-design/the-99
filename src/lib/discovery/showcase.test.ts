@@ -191,7 +191,8 @@ describe("writtenForYou", () => {
     expect(on.what).toBe(writtenForYouCopy.suggestedV2.what);
     expect(on.cost).toBe(writtenForYouCopy.suggestedV2.cost);
     expect(on.short).toBe(writtenForYouCopy.suggestedV2.short);
-    expect(on.line).toBe(writtenForYouCopy.rows[1].line);
+    // The caption's v2 bullet (the credits entry draws it with v2 on), so the row reads the line it replaces.
+    expect(on.line).toBe("- Each “Suggested changes” run, or two for more than 10 changes");
     const off = writtenForYou(caption, false)!.rows.find((r) => r.id === "suggested")!;
     expect(off).toEqual(writtenForYouCopy.rows[1]);
     expect(`${off.what} ${off.cost} ${off.short}`).not.toMatch(/\b2\b|20/);

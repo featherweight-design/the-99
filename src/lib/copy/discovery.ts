@@ -4,7 +4,7 @@
 
 import type { AboutScreen, DeckView } from './about';
 import type { SwitchName } from '../switches/registry';
-import { tuningHubCopy } from './tuning-hub';
+import { suggestedChangesV2Cost } from './suggested-changes-v2-price';
 
 /** Each screen's name as the Reference and the "?" print it (README-r2, "Screens: every entry's `screen`"). */
 export const SCREEN_NAMES: Record<AboutScreen, string> = {
@@ -127,8 +127,7 @@ export const writtenForYouCopy = {
     // The credits entry's v2 bullet (`captionLineSwitches`), which takes the shipped one's place for a v2 reader.
     line: '- Each “Suggested changes” run, or two for more than 10 changes',
     what: SUGGESTED_V2_LINE,
-    // Written once, in the hub's copy (`tuningHubCopy.tools.suggested.costV2`).
-    cost: tuningHubCopy.tools.suggested.costV2,
+    cost: suggestedChangesV2Cost,
     short: '1 or 2 per run',
   },
   /** The free line, whole while the credits entry still carries its History line, else its bracket half alone. */
