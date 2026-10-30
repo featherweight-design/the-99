@@ -162,6 +162,7 @@ export function AnnouncedGroup({
   }, [open, store, setPressed]);
 
   // Arrived on one set's block (`#announced-<code>`): once the group is open, that block is scrolled to, once per anchor.
+  // While a landing is pending the region opens without its transition (below), so the block is at its final place.
   const { landOn, landed } = visit;
   useEffect(() => {
     if (!open || !landOn) return;
@@ -206,7 +207,7 @@ export function AnnouncedGroup({
         inert={!open}
         data-open={open ? "true" : "false"}
         data-settled={settled ? "true" : "false"}
-        className={`grid ${settled ? "transition-[grid-template-rows,visibility] duration-[160ms] ease-out motion-reduce:transition-none" : ""} ${open ? "visible grid-rows-[1fr]" : "invisible grid-rows-[0fr]"}`}
+        className={`grid ${settled && !landOn ? "transition-[grid-template-rows,visibility] duration-[160ms] ease-out motion-reduce:transition-none" : ""} ${open ? "visible grid-rows-[1fr]" : "invisible grid-rows-[0fr]"}`}
       >
         {/* The clip the collapse needs, widened 4px past the rows on each side and below (padding, taken back by a
             matching negative margin), so a row's 2px ring at its 2px offset draws whole. */}
