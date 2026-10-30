@@ -52,6 +52,14 @@ describe("heldOnGrant", () => {
       { status: "reserved", createdAt: old }, { status: "refunded", createdAt: young },
     ], now)).toBe(2);
   });
+  it("holds a row's units, not one per row: a 2-credit run holds two", () => {
+    const old = new Date(now.getTime() - 3_600_000);
+    const young = new Date(now.getTime() - 60_000);
+    expect(heldOnGrant([
+      { status: "spent", createdAt: old, units: 2 }, { status: "reserved", createdAt: young, units: 2 },
+      { status: "reserved", createdAt: old, units: 2 }, { status: "refunded", createdAt: young, units: 2 },
+    ], now)).toBe(4);
+  });
 });
 
 describe("planDispute", () => {
