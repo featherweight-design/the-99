@@ -35,19 +35,28 @@ describe("Analytics", () => {
     expect(startAnalytics.mock.invocationCallOrder[0]).toBeLessThan(resetReader.mock.invocationCallOrder[0]);
   });
 
-  it("identifies a signed-in reader by Clerk id and display name, never the email", () => {
+  it("identifies a signed-in reader by Clerk id and trimmed first name only", () => {
     useUser.mockReturnValue({
       isLoaded: true,
-      user: { id: "user_1", fullName: "Ada Lovelace", username: "ada", primaryEmailAddress: { emailAddress: "ada@example.com" } },
+      user: {
+        id: "user_1",
+        firstName: "  Ada ",
+        fullName: "Ada Lovelace",
+        username: "ada",
+        primaryEmailAddress: { emailAddress: "ada@example.com" },
+      },
     });
     render(<Analytics />);
-    expect(identifyReader).toHaveBeenCalledWith("user_1", "Ada Lovelace");
+    expect(identifyReader).toHaveBeenCalledWith("user_1", "Ada");
   });
 
-  it("falls back to the username", () => {
-    useUser.mockReturnValue({ isLoaded: true, user: { id: "user_2", fullName: null, username: "grace" } });
-    render(<Analytics />);
-    expect(identifyReader).toHaveBeenCalledWith("user_2", "grace");
+  it("identifies without a name when the first name is null or blank, whatever else exists", () => {
+    for (const firstName of [null, "", "   "]) {
+      vi.clearAllMocks();
+      useUser.mockReturnValue({ isLoaded: true, user: { id: "user_2", firstName, fullName: "Grace Hopper", username: "grace" } });
+      render(<Analytics />).unmount();
+      expect(identifyReader).toHaveBeenCalledWith("user_2", null);
+    }
   });
 
   it("resets when signed out", () => {
