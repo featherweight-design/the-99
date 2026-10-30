@@ -30,7 +30,7 @@ export function parseCell(spec: string, appModel: string): Cell {
     sonnet: { model: appModel },
     "sonnet-low": { model: appModel, effort: "low" },
     "sonnet-medium": { model: appModel, effort: "medium" },
-    haiku: { model: "claude-haiku-4-5" },
+    haiku: { model: "claude-haiku-5-5" }, // the 5.5 model, always, where one exists (Hugh, 2026-10-30)
     // The model-tiering arms (2026-10-12): the same effort as the app's, one variable changed.
     "sonnet55-medium": { model: "claude-sonnet-5-5", effort: "medium" },
     "haiku55-medium": { model: "claude-haiku-5-5", effort: "medium" },

@@ -51,14 +51,14 @@ import { type LabelScope, scopeCondition, scopeDeck, scopeList } from "../../src
 import { labelTrialPool } from "../../src/lib/swaps/gather";
 import { listScopeIds } from "./label-list";
 import type { Job } from "../../src/lib/labels/types";
-import { ALL_MODELS, PRICING } from "./card-labels-pricing.mjs";
+import { ALL_MODELS, DEFAULT_LABEL_MODEL, PRICING } from "./card-labels-pricing.mjs";
 import { BODY_OVERHEAD_TOKENS, expiredReserveFor, OPEN_STATUSES, PER_CARD_TOKENS, requestWorstFor, SYSTEM_TOKENS } from "../../src/lib/labels/reserve";
 
 /** The four provider calls a run makes, and nothing else — what a probe's fake has to answer. */
 export type BatchClient = Pick<Anthropic["messages"]["batches"], "create" | "retrieve" | "results" | "list">;
 
-/** Sonnet 4.5, Hugh's pick (2026-09-26), chosen on the restriction family rather than price. */
-export const MODEL = process.env.LABEL_MODEL ?? "claude-sonnet-4-5";
+/** Card labels' model: `DEFAULT_LABEL_MODEL` (`card-labels-pricing.mjs`, shared with the copy) unless `LABEL_MODEL` says otherwise. */
+export const MODEL = process.env.LABEL_MODEL ?? DEFAULT_LABEL_MODEL;
 
 /**
  * Batch rates for the model actually selected, and a REFUSAL for one this repository has no

@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 
 import { BATCH_DISCOUNT, CACHE_READ, CACHE_WRITE_5M, RATES } from "../eval/lib/pricing.mjs";
 import { batchCostMicroUsd } from "../../src/lib/model/prices";
-import { ALL_MODELS, costOf, PRICING } from "./card-labels-pricing.mjs";
+import { ALL_MODELS, costOf, DEFAULT_LABEL_MODEL, PRICING } from "./card-labels-pricing.mjs";
+import { CARD_LABELS_MODEL } from "../../src/lib/admin/models";
 
 /**
  * This module's rates must be the canonical table's, halved by the Batch API.
@@ -24,6 +25,7 @@ describe("the label pricing is the canonical table at batch rates", () => {
     haiku: "claude-haiku-4-5",
     sonnet: "claude-sonnet-4-5",
     sonnet5: "claude-sonnet-5",
+    sonnet55: "claude-sonnet-5-5",
   } as const satisfies Record<keyof typeof PRICING, string>;
 
   // COVERAGE first, so a model added to `ALL_MODELS` cannot quietly escape the comparison
@@ -87,5 +89,14 @@ describe("PRICING reads its rates from prices.ts", () => {
     for (const row of Object.values(fresh)) expect(row).toMatchObject(sentinel);
     vi.doUnmock("../../src/lib/model/prices.ts");
     vi.resetModules();
+  });
+});
+
+// The builder and the copy read one constant; the admin Costs page mirrors it by hand (it cannot import a script), so
+// this is what keeps the three from drifting (2026-10-30). The default is also a model the runner can price.
+describe("the label default model", () => {
+  it("is the admin mirror's, and a priced, submittable model", () => {
+    expect(CARD_LABELS_MODEL).toBe(DEFAULT_LABEL_MODEL);
+    expect(Object.values(ALL_MODELS)).toContain(DEFAULT_LABEL_MODEL);
   });
 });
