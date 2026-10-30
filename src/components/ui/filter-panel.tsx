@@ -1015,7 +1015,7 @@ export function FilterPanel({
             : copy.triggerAriaWithSelection(selected.length);
 
   return (
-    <div className="relative">
+    <div className={triggerLook === "field" ? "relative w-full" : "relative"}>
       <button
         ref={triggerRef}
         type="button"

@@ -11,7 +11,7 @@ import { loadAvailability } from "../decks/availability-query";
 import { priceOf, priceState } from "../decks/price";
 import { loadPrices } from "../decks/price-query";
 import { printedIn } from "../sets/printed-in-sql";
-import { OWNED_OFF_INDEX_MAX, OWNED_SHORTLIST_MAX, ownedCopyOffered, spareBeforeHeld } from "./limits";
+import { OWNED_OFF_INDEX_MAX, OWNED_SHORTLIST_MAX, ownedCopyOffered, spareBeforeHeld, tieClosed } from "./limits";
 
 /**
  * The cards the player owns that this deck could take, for a run whose "owned only" limit is set.
@@ -72,14 +72,17 @@ export async function readOwnedCandidates(args: OwnedCandidateArgs): Promise<{ c
   if (commanderOracleIds.length === 0) return { cards: [], complete: true };
 
   const capCents = limits.capCents;
-  const out: OwnedCandidate[] = [];
+  // Every row that passes, in rank order, with whether its copy is held in another deck. Read until the max-th card's
+  // tie group is closed (`tieClosed`), so `spareBeforeHeld` sees the whole group a spare copy could still move up in.
+  const pool: { r: { oracleId: string; name: string; typeLine: string; inclusion: number | null }; held: boolean }[] = [];
+  const sameRank = (a: (typeof pool)[number], b: (typeof pool)[number]) => Number(a.r.inclusion ?? 0) === Number(b.r.inclusion ?? 0);
   // Ranked rows are read a page at a time until the shortlist is full or the index is exhausted. The
   // free-copy and price tests need the other tables' reads, so they cannot sit in this query; a single
   // fixed read-ahead would let a collection whose top-ranked cards are claimed elsewhere (or over the
   // cap) come back empty, and an empty list sends the run to cards to buy while the player owns fits.
   // Whether the ranked rows ran out: a short page, or an empty one, is the end of the index.
   let rowsRanOut = false;
-  for (let page = 0; page < MAX_PAGES && out.length < max; page++) {
+  for (let page = 0; page < MAX_PAGES && !tieClosed(pool, max, sameRank); page++) {
     const rows = await db
       .select({ oracleId: cards.oracleId, name: cards.name, typeLine: cards.typeLine, inclusion: sql<number | null>`max(${commanderSupportCards.inclusion})::float8` })
       .from(commanderSupportCards)
@@ -119,13 +122,10 @@ export async function readOwnedCandidates(args: OwnedCandidateArgs): Promise<{ c
       }
       return true;
     });
-    const held = (r: (typeof rows)[number]) => (availability.get(r.oracleId)?.free ?? 1) <= 0;
-    for (const r of spareBeforeHeld(passing, (a, b) => Number(a.inclusion ?? 0) === Number(b.inclusion ?? 0), held)) {
-      out.push({ oracleId: r.oracleId, name: r.name, typeLine: r.typeLine });
-      if (out.length >= max) break;
-    }
+    for (const r of passing) pool.push({ r, held: (availability.get(r.oracleId)?.free ?? 1) <= 0 });
     if (rows.length < PAGE) { rowsRanOut = true; break; }
   }
+  const out = spareBeforeHeld(pool, sameRank, (p) => p.held).slice(0, max).map(({ r }) => ({ oracleId: r.oracleId, name: r.name, typeLine: r.typeLine }));
   return { cards: out, complete: rowsRanOut && out.length < max };
 }
 
@@ -319,11 +319,14 @@ export async function readOwnedOffIndex(args: OffIndexArgs, read: Reader = db): 
   const ranked = rankOffIndex(rows);
 
   const capCents = args.limits.capCents;
-  const out: OwnedCandidate[] = [];
+  // As the index tier does: every passing card with whether it is held, read until the max-th card's tie group closes.
+  const pool: { r: (typeof ranked)[number]; held: boolean }[] = [];
+  const sameRank = (a: (typeof pool)[number], b: (typeof pool)[number]) =>
+    score(a.r.neighbourInclusion) === score(b.r.neighbourInclusion) && score(a.r.identityInclusion) === score(b.r.identityInclusion);
   // As the focus candidates do: the free-copy and price tests need other tables' reads, so they run over the ranked list
   // a slice at a time until the tier is full, and a top slice claimed elsewhere never leaves it short.
   const SLICE = max * 3;
-  for (let at = 0; at < ranked.length && out.length < max; at += SLICE) {
+  for (let at = 0; at < ranked.length && !tieClosed(pool, max, sameRank); at += SLICE) {
     const slice = ranked.slice(at, at + SLICE);
     const ids = slice.map((r) => r.oracleId);
     const [availability, priced] = await Promise.all([
@@ -339,12 +342,8 @@ export async function readOwnedOffIndex(args: OffIndexArgs, read: Reader = db): 
       }
       return true;
     });
-    const sameRank = (a: (typeof slice)[number], b: (typeof slice)[number]) =>
-      score(a.neighbourInclusion) === score(b.neighbourInclusion) && score(a.identityInclusion) === score(b.identityInclusion);
-    for (const r of spareBeforeHeld(passing, sameRank, (r) => (availability.get(r.oracleId)?.free ?? 1) <= 0)) {
-      out.push({ oracleId: r.oracleId, name: r.name, typeLine: r.typeLine });
-      if (out.length >= max) break;
-    }
+    for (const r of passing) pool.push({ r, held: (availability.get(r.oracleId)?.free ?? 1) <= 0 });
   }
+  const out = spareBeforeHeld(pool, sameRank, (p) => p.held).slice(0, max).map(({ r }) => ({ oracleId: r.oracleId, name: r.name, typeLine: r.typeLine }));
   return { cards: out, complete: out.length < max };
 }

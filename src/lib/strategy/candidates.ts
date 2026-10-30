@@ -21,7 +21,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cardLabels, cards, collectionItems, commanderSupportCards, formatStaples } from "../../db/schema";
 import { loadAvailability } from "../decks/availability-query";
-import { ownedCopyOffered, spareBeforeHeld } from "../tuning/limits";
+import { ownedCopyOffered, spareBeforeHeld, tieClosed } from "../tuning/limits";
 import { priceOf, priceState } from "../decks/price";
 import { loadPrices } from "../decks/price-query";
 import { castFaceText } from "../cards/facet";
@@ -186,11 +186,14 @@ export async function readFocusCandidates(args: FocusCandidateArgs, read: Reader
   }));
 
   const capCents = args.limits.capCents;
-  const out: FocusCandidate[] = [];
+  // Every passing card with whether it is held, read until the max-th card's tie group closes (`tieClosed`).
+  const pool: { r: (typeof onFocus)[number]; held: boolean }[] = [];
+  // `rankCandidates`' own keys before the name: equal on both is a tie, and a tie goes to a spare copy.
+  const sameRank = (a: (typeof pool)[number], b: (typeof pool)[number]) => a.r.inclusion === b.r.inclusion && a.r.stapleShare === b.r.stapleShare;
   // The free-copy and price tests need other tables' reads, so they run over the ranked list a slice at a time until
   // the list is full: a fixed read-ahead could come back short when the top cards are claimed elsewhere or over the cap.
   const SLICE = max * 3;
-  for (let at = 0; at < onFocus.length && out.length < max; at += SLICE) {
+  for (let at = 0; at < onFocus.length && !tieClosed(pool, max, sameRank); at += SLICE) {
     const slice = onFocus.slice(at, at + SLICE);
     const ids = slice.map((r) => r.oracleId);
     const [availability, priced] = await Promise.all([
@@ -206,13 +209,10 @@ export async function readFocusCandidates(args: FocusCandidateArgs, read: Reader
       }
       return true;
     });
-    // `rankCandidates`' own keys before the name: equal on both is a tie, and a tie goes to a spare copy.
-    const sameRank = (a: (typeof slice)[number], b: (typeof slice)[number]) => a.inclusion === b.inclusion && a.stapleShare === b.stapleShare;
-    for (const r of spareBeforeHeld(passing, sameRank, (r) => (availability?.get(r.oracleId)?.free ?? 1) <= 0)) {
-      out.push({ oracleId: r.oracleId, name: r.name, typeLine: r.typeLine, roles: rolesOf(r, args.roleBasis) });
-      if (out.length >= max) break;
-    }
+    for (const r of passing) pool.push({ r, held: (availability?.get(r.oracleId)?.free ?? 1) <= 0 });
   }
+  const out: FocusCandidate[] = spareBeforeHeld(pool, sameRank, (p) => p.held).slice(0, max)
+    .map(({ r }) => ({ oracleId: r.oracleId, name: r.name, typeLine: r.typeLine, roles: rolesOf(r, args.roleBasis) }));
   // The query is not limited, so the loop stops short of `max` only when every ranked row was tested.
   return { cards: out, complete: out.length < max };
 }

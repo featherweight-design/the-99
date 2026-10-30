@@ -197,3 +197,12 @@ export function spareBeforeHeld<T>(rows: readonly T[], sameRank: (a: T, b: T) =>
   }
   return out;
 }
+
+/**
+ * Whether a tier reading ranked cards in pages can stop: it holds `max` passing cards and the last one it read no longer
+ * ties the max-th (`sameRank`). Until then a card still to be read could tie the max-th, and `spareBeforeHeld` must see
+ * it, or a page boundary would let held copies keep an equally ranked spare out of the tier.
+ */
+export function tieClosed<T>(pool: readonly T[], max: number, sameRank: (a: T, b: T) => boolean): boolean {
+  return pool.length >= max && !sameRank(pool[max - 1], pool[pool.length - 1]);
+}

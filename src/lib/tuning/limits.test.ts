@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { RESERVATION_TTL_MS } from "../model/allowance-rule";
 import {
   ANSWER_TOKENS_WORST_CASE, ASK_PER_LIST, CUTS_MAX_TOKENS, CUTS_MODEL_TIMEOUT_MS, MODEL_TIMEOUT_MS, REAPER_CUTOFF_MS, THINKING_HEADROOM_TOKENS, TUNING_MAX_TOKENS,
-  TUNING_RETRY_FLOOR_MS, V2_REAPER_CUTOFF_MS, V2_RUN_BUDGET_MS, intentTooLong, ownedCopyOffered, spareBeforeHeld,
+  TUNING_RETRY_FLOOR_MS, V2_REAPER_CUTOFF_MS, V2_RUN_BUDGET_MS, intentTooLong, ownedCopyOffered, spareBeforeHeld, tieClosed,
 } from "./limits";
 
 /** The deck page's `maxDuration`, in ms. Read from the page's source: Next requires the export to be a literal, and
@@ -140,3 +140,18 @@ describe("spareBeforeHeld", () => {
     expect(order([])).toEqual([]);
   });
 });
+
+describe("tieClosed", () => {
+  const same = (a: number, b: number) => a === b;
+
+  it("keeps reading until the tier holds max cards", () => {
+    expect(tieClosed([5, 4], 3, same)).toBe(false);
+  });
+
+  it("keeps reading while the last card read still ties the max-th, so a spare past a page boundary is seen", () => {
+    expect(tieClosed([5, 3, 3], 2, same)).toBe(false);
+    expect(tieClosed([5, 3, 3, 2], 2, same)).toBe(true);
+    expect(tieClosed([5, 4, 3], 2, same)).toBe(true);
+  });
+});
+
