@@ -21,6 +21,7 @@ import {
   opponentsFor, podSizeHeld, POD_SIZE_MAX, POD_SIZE_MIN, prefillSeats, seatLabelled, seatWith, seatWithout, seatWon, seatsForResult, type Seat,
 } from "../../lib/decks/game-seats";
 import { ruleZeroCopy } from "../../lib/copy/rule-zero";
+import { PersonText, type ThirdPartyName } from "../../lib/person-name";
 import type { TablePrefill } from "../../lib/social/rule-zero-log";
 import { TableGlyph } from "../rule-zero/table-glyph";
 import { GameSeats, type YouSeat } from "./game-seats";
@@ -123,7 +124,7 @@ function useRoving<T>(values: readonly T[], onChange: (next: T) => void) {
 }
 
 /** Where a prefilled form's seats came from (L2, H2): the table glyph, and the pod's phrase in bold. */
-function FromLine({ pod }: { pod: string }) {
+function FromLine({ pod }: { pod: string | ThirdPartyName }) {
   const [before, after] = ruleZeroCopy.log.from(SLOT).split(SLOT);
   return (
     <div
@@ -133,7 +134,7 @@ function FromLine({ pod }: { pod: string }) {
       <TableGlyph size={16} />
       <span>
         {before}
-        <b className="font-semibold text-fg">{ruleZeroCopy.log.fromPod(pod)}</b>
+        <b className="font-semibold text-fg"><PersonText text={ruleZeroCopy.log.fromPod(pod)} /></b>
         {after}
       </span>
     </div>

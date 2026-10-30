@@ -7,6 +7,8 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push: m.push, refresh: m
 vi.mock("../../app/friends/table/setup-actions", () => ({ loadPodSetupAction: m.loadPodSetupAction, setTableAction: m.setTableAction }));
 
 import { ruleZeroCopy } from "../../lib/copy/rule-zero";
+import { named } from "../../lib/person-name/mint";
+import { plain } from "../../lib/person-name/testing";
 import type { OpenTable } from "../../lib/social/rule-zero";
 import { closesWhen } from "../../lib/social/when";
 import { FriendInviteContext } from "../social/invite-context";
@@ -20,14 +22,14 @@ afterEach(() => {
 });
 
 const NOW = new Date("2026-10-16T21:40:00Z");
-const face = (displayName: string, you = false, art: string | null = null) => ({ displayName, you, commander: art ? { oracleId: "o", name: "c", artCropUri: art } : null });
+const face = (displayName: string, you = false, art: string | null = null) => ({ displayName: you ? displayName : named(displayName), you, commander: art ? { oracleId: "o", name: "c", artCropUri: art } : null });
 const TABLE: OpenTable = {
   tableId: "t1",
   podId: "p1",
-  podName: "Thursday night",
+  podName: named("Thursday night"),
   closesAt: new Date("2026-10-17T21:40:00Z"),
   setByYou: false,
-  setterName: "Colin",
+  setterName: named("Colin"),
   yourDeck: "Ghalta Stompy",
   seats: [face("Hugh", true, "a.jpg"), face("Colin", false, "b.jpg"), face("Peter"), face("Max"), face("Chris"), face("Dee")],
 };
@@ -36,7 +38,7 @@ const CLOSES = closesWhen(TABLE.closesAt, NOW);
 
 describe("the pod row (E1, E2, F1, F2)", () => {
   it("is Rule 0 check with no open table, and opens setup for this pod", async () => {
-    m.loadPodSetupAction.mockResolvedValue({ setup: { podId: "p1", podName: "Thursday night", owner: null, members: [] }, invites: false });
+    m.loadPodSetupAction.mockResolvedValue({ setup: { podId: "p1", podName: named("Thursday night"), owner: null, members: [] }, invites: false });
     render(<PodRuleZeroRow podId="p1" table={null} now={NOW} />);
     const row = screen.getByTestId("pod-rule-zero");
     expect(row.tagName).toBe("BUTTON");
@@ -49,9 +51,9 @@ describe("the pod row (E1, E2, F1, F2)", () => {
 
   it("opens Invite someone new in place on /friends (the invite context), and sets the table then goes to it", async () => {
     m.loadPodSetupAction.mockResolvedValue({
-      setup: { podId: "p1", podName: "Thursday night", owner: null, members: [
+      setup: { podId: "p1", podName: named("Thursday night"), owner: null, members: [
         { publicId: "a", displayName: "Hugh", commander: null, kind: "you", isOwner: true, decks: [], start: null },
-        { publicId: "b", displayName: "Colin", commander: null, kind: "picksOwn", isOwner: false, decks: [], start: null },
+        { publicId: "b", displayName: named("Colin"), commander: null, kind: "picksOwn", isOwner: false, decks: [], start: null },
       ] },
       invites: true,
     });
@@ -99,7 +101,10 @@ describe("Home's table card (E3, F3)", () => {
     render(<HomeTableCard table={TABLE} now={NOW} />);
     const card = screen.getByRole("region", { name: e.homeKicker });
     expect(within(card).getByRole("heading", { name: "Thursday night" })).toBeTruthy();
-    expect(card.querySelector("p")?.textContent).toBe(e.homeBody("Colin", "Ghalta Stompy", 6, CLOSES));
+    expect(card.querySelector("p")?.textContent).toBe(plain(e.homeBody(named("Colin"), "Ghalta Stompy", 6, CLOSES)));
+    // The setter and the pod are drawn marked, on the elements holding the names.
+    expect(within(card).getByRole("heading", { name: "Thursday night" }).querySelector(".ph-no-capture")?.textContent).toBe("Thursday night");
+    expect(card.querySelector("p .ph-no-capture")?.textContent).toBe("Colin");
     expect(within(card).getByText("Ghalta Stompy").tagName).toBe("B");
     expect(card.querySelectorAll("[data-face]")).toHaveLength(6);
     expect(within(card).getByRole("link", { name: e.homeOpen }).getAttribute("href")).toBe("/friends/table/t1");
@@ -107,17 +112,17 @@ describe("Home's table card (E3, F3)", () => {
 
   it("says you're seated when you set it, and where to pick when your seat waits", () => {
     render(<HomeTableCard table={{ ...TABLE, setByYou: true }} now={NOW} />);
-    expect(screen.getByRole("region").querySelector("p")?.textContent).toBe(e.homeBodyOwn("Ghalta Stompy", 6, CLOSES));
+    expect(screen.getByRole("region").querySelector("p")?.textContent).toBe(plain(e.homeBodyOwn("Ghalta Stompy", 6, CLOSES)));
     cleanup();
     render(<HomeTableCard table={{ ...TABLE, yourDeck: null }} now={NOW} />);
-    expect(screen.getByRole("region").querySelector("p")?.textContent).toBe(e.homeBodyWaiting("Colin", 6, CLOSES));
+    expect(screen.getByRole("region").querySelector("p")?.textContent).toBe(plain(e.homeBodyWaiting(named("Colin"), 6, CLOSES)));
     cleanup();
     // A setter whose profile is gone names nobody, never the pod as if it were a person.
     render(<HomeTableCard table={{ ...TABLE, setterName: null }} now={NOW} />);
-    expect(screen.getByRole("region").querySelector("p")?.textContent).toBe(e.homeBodyOwn("Ghalta Stompy", 6, CLOSES));
+    expect(screen.getByRole("region").querySelector("p")?.textContent).toBe(plain(e.homeBodyOwn("Ghalta Stompy", 6, CLOSES)));
     cleanup();
     render(<HomeTableCard table={{ ...TABLE, setterName: null, yourDeck: null }} now={NOW} />);
-    expect(screen.getByRole("region").querySelector("p")?.textContent).toBe(e.homeBodyWaiting(null, 6, CLOSES));
+    expect(screen.getByRole("region").querySelector("p")?.textContent).toBe(plain(e.homeBodyWaiting(null, 6, CLOSES)));
     expect(screen.getByRole("region").querySelector("p")?.textContent).not.toContain("You set");
     cleanup();
     render(<HomeTableCard table={{ ...TABLE, setByYou: true, yourDeck: null }} now={NOW} />);
@@ -125,16 +130,19 @@ describe("Home's table card (E3, F3)", () => {
   });
 
   it("bolds the deck even when the setter's name contains it", () => {
-    render(<HomeTableCard table={{ ...TABLE, setterName: "Maxine", yourDeck: "Max" }} now={NOW} />);
+    render(<HomeTableCard table={{ ...TABLE, setterName: named("Maxine"), yourDeck: "Max" }} now={NOW} />);
     const p = screen.getByRole("region").querySelector("p")!;
-    expect(p.textContent).toBe(e.homeBody("Maxine", "Max", 6, CLOSES));
+    expect(p.textContent).toBe(plain(e.homeBody(named("Maxine"), "Max", 6, CLOSES)));
     expect(p.querySelector("b")?.textContent).toBe("Max");
-    expect(p.firstChild?.textContent).toBe("Maxine seated you with ");
+    expect(p.firstElementChild?.className).toContain("ph-no-capture");
+    expect(p.firstElementChild?.textContent).toBe("Maxine");
+    expect(p.childNodes[1].textContent).toBe(" seated you with ");
     cleanup();
     // A deck named like a word in the sentence's tail bolds the slot, never the tail.
     render(<HomeTableCard table={{ ...TABLE, yourDeck: "open" }} now={NOW} />);
     const q = screen.getByRole("region").querySelector("p")!;
-    expect(q.textContent).toBe(e.homeBody("Colin", "open", 6, CLOSES));
-    expect(q.firstChild?.textContent).toBe("Colin seated you with ");
+    expect(q.textContent).toBe(plain(e.homeBody(named("Colin"), "open", 6, CLOSES)));
+    expect(q.childNodes[1].textContent).toBe(" seated you with ");
+    expect((q.firstElementChild as HTMLElement).classList.contains("ph-no-capture")).toBe(true);
   });
 });

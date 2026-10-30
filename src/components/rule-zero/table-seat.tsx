@@ -20,7 +20,7 @@ import { ChangeDeck } from "./change-deck";
 import { SeatOffer } from "./swap";
 import type { Drivers } from "../../lib/rule-zero/rules";
 import type { RangeLine, SeatDraw } from "../../lib/rule-zero/table-view";
-import { faceInitials } from "../../lib/names/initials";
+import { PersonInitials, PersonName, PersonText, personAttrs, type PersonParts, type ThirdPartyName } from "../../lib/person-name";
 import { BracketChip } from "../decks/bracket-chip";
 import { FindingMark } from "../decks/finding-mark";
 import { FadingImg } from "../ui/hydrated-art";
@@ -29,7 +29,7 @@ import { FLAG_INK, FlagTag, flagKind } from "./flag-tag";
 const copy = ruleZeroCopy.seat;
 
 /** The name a seat prints: the game log's `You` for the viewer, else the display name as seated. */
-export const seatName = (d: SeatDraw): string => (d.seat.you ? gameSeatsCopy.seats.you : d.seat.displayName);
+export const seatName = (d: SeatDraw): string | ThirdPartyName => (d.seat.you ? gameSeatsCopy.seats.you : d.seat.displayName);
 
 export function TableSeat({
   draw,
@@ -49,23 +49,22 @@ export function TableSeat({
   const why = driversSentence(draw);
   const art = deck?.commander.artCropUri ?? null;
 
-  return (
-    <article
-      aria-label={copy.label(seat.you ? null : seat.displayName)}
-      data-testid="table-seat"
-      data-state={state.kind}
-      data-you={seat.you ? "" : undefined}
-      data-flag={kind ?? undefined}
-      style={kind ? ({ "--flag": FLAG_INK[kind] } as CSSProperties) : undefined}
-      className={
+  const articleClass =
         "relative overflow-hidden rounded-[12px] border bg-[color:var(--surface-rail)] "
         + (seat.you
           ? "border-[color:var(--accent)] shadow-[0_0_0_1px_var(--accent)] "
           : kind
             ? "border-[color:color-mix(in_oklab,var(--flag)_70%,transparent)] "
             : "border-[color:var(--border-strong)] ")
-        + (kind ? "xl:bg-[color:color-mix(in_srgb,var(--flag)_7%,var(--surface-rail))]" : "")
-      }
+        + (kind ? "xl:bg-[color:color-mix(in_srgb,var(--flag)_7%,var(--surface-rail))]" : "");
+  return (
+    <article
+      {...personAttrs({ "aria-label": copy.label(seat.you ? null : seat.displayName) }, articleClass)}
+      data-testid="table-seat"
+      data-state={state.kind}
+      data-you={seat.you ? "" : undefined}
+      data-flag={kind ?? undefined}
+      style={kind ? ({ "--flag": FLAG_INK[kind] } as CSSProperties) : undefined}
     >
       {art ? (
         <span aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -98,7 +97,7 @@ export function TableSeat({
             <FadingImg src={art} alt="" className="block h-full w-full object-cover" />
           ) : (
             <span data-testid="seat-initials" className="font-display text-[22px] font-bold text-[color:var(--fg-muted)] xl:text-[26px]">
-              {faceInitials(seat.displayName)}
+              <PersonInitials n={seat.displayName} />
             </span>
           )}
         </span>
@@ -111,12 +110,12 @@ export function TableSeat({
         >
           <span className="flex min-w-0 items-baseline gap-[7px] text-[15px] font-semibold text-[color:var(--fg)] xl:gap-[8px] xl:text-[16px]">
             {/* A display name runs to 30 characters with no break; it truncates so the tag beside it stays in view. */}
-            <span data-testid="seat-name" className="min-w-0 truncate">{name}</span>
+            <span data-testid="seat-name" className="min-w-0 truncate"><PersonName n={name} /></span>
             <SeatTag draw={draw} />
           </span>
           {deck ? (
             <>
-              <span className="truncate text-[13.5px] text-[color:var(--fg-body)] xl:text-[14px]">{deck.name}</span>
+              <span className="truncate text-[13.5px] text-[color:var(--fg-body)] xl:text-[14px]"><PersonName n={deck.name} /></span>
               <span className="truncate font-mono text-[10.5px] text-[color:var(--fg-faint)]">{deck.partner ? copy.commanders(deck.commander.name, deck.partner.name) : deck.commander.name}</span>
             </>
           ) : state.kind === "waiting" ? (
@@ -205,7 +204,7 @@ const MORE = "relative mx-[12px] mb-[12px] xl:mb-[14px] xl:ml-[162px] xl:mr-[16p
 const WAIT = `${MORE} rounded-[9px] border-[1.5px] border-dashed border-[color:var(--border-dashed)] px-[12px] py-[10px] text-[13px] leading-[1.55] text-[color:var(--fg-muted)]`;
 
 /** What opens under the seat: the reason it is flagged, or why it is not in the read. */
-function SeatMore({ draw, why }: { draw: SeatDraw; why: string | null }) {
+function SeatMore({ draw, why }: { draw: SeatDraw; why: string | PersonParts | null }) {
   const { state, seat } = draw;
   if (state.kind === "illegal") {
     const short = state.cards < 100;
@@ -238,7 +237,7 @@ function SeatMore({ draw, why }: { draw: SeatDraw; why: string | null }) {
     return (
       <div data-testid="seat-wait" className={WAIT}>
         <b className="font-semibold text-[color:var(--fg-body)]">{copy.needsAnalysis}</b>{" "}
-        {copy.needsAnalysisBody(seat.you ? null : seat.displayName)}
+        <PersonText text={copy.needsAnalysisBody(seat.you ? null : seat.displayName)} />
       </div>
     );
   }
@@ -246,7 +245,7 @@ function SeatMore({ draw, why }: { draw: SeatDraw; why: string | null }) {
   if (state.kind === "waiting" && !seat.you) {
     return (
       <div data-testid="seat-wait" className={WAIT}>
-        {copy.waiting(seat.displayName)}
+        <PersonText text={copy.waiting(seat.displayName)} />
       </div>
     );
   }
@@ -256,7 +255,7 @@ function SeatMore({ draw, why }: { draw: SeatDraw; why: string | null }) {
         data-testid="seat-why"
         className={`${MORE} rounded-[9px] border border-[color:color-mix(in_oklab,var(--flag)_35%,transparent)] bg-[color:color-mix(in_srgb,var(--flag)_9%,var(--surface-sunken))] px-[12px] py-[10px] text-[13px] leading-[1.55] text-[color:var(--fg-body)] xl:bg-[color:color-mix(in_srgb,var(--flag)_10%,var(--surface-sunken))]`}
       >
-        <b className="font-semibold text-[color:var(--fg)]">{copy.whyLead}</b> {why}
+        <b className="font-semibold text-[color:var(--fg)]">{copy.whyLead}</b> <PersonText text={why} />
       </div>
     );
   }
@@ -310,7 +309,7 @@ function rangeLineText(line: RangeLine): string {
  * names its two cards and the tutors that reach it; a low seat says nothing counted passes its bracket, and that
  * counts can miss cards.
  */
-export function driversSentence(draw: SeatDraw): string | null {
+export function driversSentence(draw: SeatDraw): string | PersonParts | null {
   const d: Drivers = draw.drivers;
   if (d.kind === "low") {
     // T6: a low range nobody answered says the rules leave its two ends to the player.

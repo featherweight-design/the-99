@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { named } from "../person-name/mint";
+import { plain } from "../person-name/testing";
 import { ruleZeroCopy as copy, whose } from "./rule-zero";
 
 /** Every string the module holds, functions called with sample arguments, so a sweep can read them all. */
@@ -19,12 +21,12 @@ describe("ruleZeroCopy", () => {
   it("keeps the copy review's edits", () => {
     expect(copy.swap.sub("Upgraded")).toBe("Your decks that read nearer Upgraded. A swap changes it for everyone at the table.");
     expect(copy.setup.leaveItSub).toBe("their seat waits until they pick");
-    expect(copy.setup.notFriendRow("Max")).toBe("Max picks their own");
+    expect(plain(copy.setup.notFriendRow(named("Max")))).toBe("Max picks their own");
     expect(copy.setup.notFriendSub).toBe("not your friend, so their decks aren’t listed");
     expect(copy.setup.tooFew).toBe("Seat one more player.");
     expect(copy.setup.friendDecksFoot).toBe("Name and commander only. Brackets appear once the table is set.");
     expect(copy.read.nothingBody).toBe("A read needs two seats with decks we’ve read.");
-    expect(copy.expired.body("Thursday night", "Colin")).toBe(
+    expect(plain(copy.expired.body(named("Thursday night"), named("Colin")))).toBe(
       "Thursday night’s table closed 24 hours after Colin set it. Games logged from it stay on each deck’s Games tab.",
     );
   });
@@ -57,8 +59,8 @@ describe("ruleZeroCopy", () => {
   });
 
   it("opens a headline on the seat's owner, capitalized for the viewer", () => {
-    expect(copy.read.high(whose("Colin"), "Zimone Combo")).toBe("Colin’s Zimone Combo reads above the table.");
-    expect(copy.read.low(whose(null), "Giada Angels")).toBe("Your Giada Angels reads below the table.");
+    expect(plain(copy.read.high(whose(named("Colin")), named("Zimone Combo")))).toBe("Colin’s Zimone Combo reads above the table.");
+    expect(plain(copy.read.low(whose(null), "Giada Angels"))).toBe("Your Giada Angels reads below the table.");
   });
 
   // US English, no em dash, and no "tick" (readiness gap 14).

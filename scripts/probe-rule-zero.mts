@@ -102,7 +102,7 @@ async function main() {
     check("A owns the pod: no owner name for the invite row", forA?.owner === null && ofA(A)?.isOwner === true);
     const bSetup = await rz.podSetup(B, P1);
     const cForB = bSetup?.members.find((m) => m.publicId === pub[C]);
-    check("B sees A as the owner, by name", bSetup?.owner === "Ava");
+    check("B sees A as the owner, by name", JSON.stringify(bSetup?.owner) === JSON.stringify({ $tp: "Ava" }));
     check("a non-friend lists no decks and draws no art", cForB?.kind === "picksOwn" && cForB.decks.length === 0 && cForB.start === null && cForB.commander === null);
     check("you lead setup's members", bSetup?.members[0]?.publicId === pub[B]);
     check("setup is null for a non-member", (await rz.podSetup(E, P1)) === null);
@@ -127,7 +127,7 @@ async function main() {
     const againB = await rz.setTable(B, P1, [seat(pub[B]), seat(pub[A])]);
     check("a seated player's setup opens the existing table", againB.kind === "open" && againB.tableId === T1);
     const againD = await rz.setTable(D, P1, [seat(pub[D]), seat(pub[A])]);
-    check("an unseated member's setup is occupied, by Ava", againD.kind === "occupied" && againD.setBy === "Ava", JSON.stringify(againD));
+    check("an unseated member's setup is occupied, by Ava", againD.kind === "occupied" && JSON.stringify(againD.setBy) === JSON.stringify({ $tp: "Ava" }), JSON.stringify(againD));
     check("still one table on the pod", (await count(sql`select count(*)::int as n from rule_zero_tables where pod_id = ${P1}`)) === 1);
 
     // The reads: a seated non-friend sees the table and its faces, an unseated member sees nothing.

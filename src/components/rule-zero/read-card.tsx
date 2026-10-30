@@ -4,12 +4,13 @@
 // honesty line with the shipped provenance opener. No model call and no credit chip: every figure is the shipped
 // bracket reading (`slotDeck`, `findings`), compared by `rules.ts`.
 
-import type { CSSProperties } from "react";
+import { Fragment, type CSSProperties, type ReactNode } from "react";
 
 import { FINDING_ORDER } from "../../lib/bracket/findings";
 import type { Bracket } from "../../lib/bracket/types";
 import { BRACKET_NAMES, bracketPhrase, deckAnalysisCopy } from "../../lib/copy/deck-analysis";
-import { leftOutCards, readsList, ruleZeroCopy, seatNames, whose } from "../../lib/copy/rule-zero";
+import { joinSaid, leftOutCards, readsList, ruleZeroCopy, seatNames, whose, type Said } from "../../lib/copy/rule-zero";
+import { isThirdPartyName, PersonName, type PersonParts } from "../../lib/person-name";
 import { middleBrackets, sharedReading, type Headline, type SeatDraw, type TableDraw } from "../../lib/rule-zero/table-view";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { BracketMark } from "../decks/bracket-mark";
@@ -78,54 +79,67 @@ export function ReadCard({ draw, updated }: { draw: TableDraw; /** `updated just
 }
 
 /** ` Colin swapped to **Sai Thopters**.`: the copy's sentence with its deck in bold. */
-function Swapped({ name, deck }: { name: string; deck: string }) {
-  const text = copy.read.swappedTo(name, deck);
-  const at = text.lastIndexOf(deck);
+function Swapped({ name, deck }: { name: Said; deck: Said }) {
   return (
     <>
       {" "}
-      {text.slice(0, at)}
-      <b className="font-semibold text-[color:var(--fg)]">{deck}</b>
-      {text.slice(at + deck.length)}
+      <Emphasized text={copy.read.swappedTo(name, em(deck))} />
     </>
   );
 }
 
-/** The headline's phrase in its flag's ink: the words carry it, and the ink repeats the seat's tag. */
-function Inked({ text, ink }: { text: string; ink: { phrase: string; kind: FlagKind } | null }) {
-  const at = ink ? text.toLowerCase().indexOf(ink.phrase.toLowerCase()) : -1;
-  if (!ink || at < 0) return <>{text}</>;
-  const end = at + ink.phrase.length;
+const asParts = (x: Said): PersonParts => (typeof x === "string" || isThirdPartyName(x) ? [x] : x);
+
+/** The headline's phrase in its flag's ink: the words carry it, and the ink repeats the seat's tag. Only the copy's own words are searched. */
+function Inked({ text, ink }: { text: PersonParts; ink: { phrase: string; kind: FlagKind } | null }) {
+  const at = ink ? text.findIndex((p) => typeof p === "string" && p.toLowerCase().includes(ink.phrase.toLowerCase())) : -1;
+  if (!ink || at < 0) return <Emphasized text={text} />;
+  const piece = text[at] as string;
+  const from = piece.toLowerCase().indexOf(ink.phrase.toLowerCase());
+  const end = from + ink.phrase.length;
   return (
     <>
-      {text.slice(0, at)}
-      <span data-ink={ink.kind} style={{ color: FLAG_INK[ink.kind] }}>{text.slice(at, end)}</span>
-      {text.slice(end)}
+      <Emphasized text={text.slice(0, at)} />
+      {piece.slice(0, from)}
+      <span data-ink={ink.kind} style={{ color: FLAG_INK[ink.kind] }}>{piece.slice(from, end)}</span>
+      {piece.slice(end)}
+      <Emphasized text={text.slice(at + 1)} />
     </>
   );
 }
 
 /**
  * The sentence names brackets in bold (the boards' `<b>`): `em` marks a phrase where the sentence is spoken, and
- * `Emphasized` draws the marks. The copy module's sentences stay plain strings.
+ * `Emphasized` draws the marks. The copy module's sentences stay parts: a name inside one is drawn by `PersonName`.
  */
 const OPEN = "\u0001";
 const CLOSE = "\u0002";
-const em = (phrase: string): string => `${OPEN}${phrase}${CLOSE}`;
+const em = (phrase: Said): PersonParts => [OPEN, ...asParts(phrase), CLOSE];
 
-function Emphasized({ text }: { text: string }) {
-  const parts = text.split(new RegExp(`${OPEN}(.*?)${CLOSE}`, "g"));
-  return (
-    <>
-      {parts.map((p, i) =>
-        i % 2 === 1 ? (
-          <b key={i} className="font-semibold text-[color:var(--fg)]">{p}</b>
-        ) : (
-          p
-        ),
-      )}
-    </>
-  );
+function Emphasized({ text }: { text: PersonParts }) {
+  // Walk the runs, toggling bold at each mark; a name between the marks is a bold name.
+  const nodes: Array<{ bold: boolean; node: ReactNode }> = [];
+  let bold = false;
+  text.forEach((part, i) => {
+    if (isThirdPartyName(part)) {
+      nodes.push({ bold, node: <PersonName key={i} n={part} /> });
+      return;
+    }
+    part.split(new RegExp(`(${OPEN}|${CLOSE})`)).forEach((piece, j) => {
+      if (piece === OPEN) bold = true;
+      else if (piece === CLOSE) bold = false;
+      else if (piece !== "") nodes.push({ bold, node: <Fragment key={`${i}-${j}`}>{piece}</Fragment> });
+    });
+  });
+  const out: ReactNode[] = [];
+  for (let i = 0; i < nodes.length; ) {
+    let j = i;
+    while (j < nodes.length && nodes[j].bold === nodes[i].bold) j++;
+    const run = nodes.slice(i, j).map((n) => n.node);
+    out.push(nodes[i].bold ? <b key={i} className="font-semibold text-[color:var(--fg)]">{run}</b> : <Fragment key={i}>{run}</Fragment>);
+    i = j;
+  }
+  return <>{out}</>;
 }
 
 /** The bracket a seat reads, spoken: the answer, the single bracket, or the range. */
@@ -136,13 +150,13 @@ function readsPhrase(s: SeatDraw): string {
 }
 
 /** Who owns a seat in a sentence: `Colin’s`, or `Your` for the viewer. */
-const whoseSeat = (s: SeatDraw): string => whose(s.seat.you ? null : s.seat.displayName);
+const whoseSeat = (s: SeatDraw): PersonParts => whose(s.seat.you ? null : s.seat.displayName);
 
 /** One seat's part of a read sentence (T4 to T6): what it declared, the range it is measured from, or its bracket. */
-function seatPart(s: SeatDraw): string {
+function seatPart(s: SeatDraw): PersonParts {
   const r = copy.read;
   const deck = s.seat.deck?.name ?? "";
-  if (!s.chip || !s.read) return "";
+  if (!s.chip || !s.read) return [];
   if (s.chip.answered !== null && s.chip.permits.length > 1) {
     return r.seatDeclared(s.seat.you ? "You" : s.seat.displayName, em(BRACKET_NAMES[s.chip.answered]));
   }
@@ -153,7 +167,7 @@ function seatPart(s: SeatDraw): string {
 }
 
 /** The read seats, the viewer's first, as T8 and T9 name them, and what they all read (null when they differ). */
-function compared(draw: TableDraw): { names: string; both: boolean; reads: string | null } {
+function compared(draw: TableDraw): { names: PersonParts; both: boolean; reads: PersonParts | null } {
   const read = draw.seats.filter((s) => s.read).sort((a, b) => Number(b.seat.you) - Number(a.seat.you));
   const shared = sharedReading(read);
   return {
@@ -163,34 +177,36 @@ function compared(draw: TableDraw): { names: string; both: boolean; reads: strin
   };
 }
 
-function speak(draw: TableDraw): { title: string; ink: { phrase: string; kind: FlagKind } | null; body: string | null } {
+type Speech = { title: PersonParts; ink: { phrase: string; kind: FlagKind } | null; body: PersonParts | null };
+
+function speak(draw: TableDraw): Speech {
   const h: Headline = draw.headline;
   const r = copy.read;
-  let out: { title: string; ink: { phrase: string; kind: FlagKind } | null; body: string | null };
+  let out: Speech;
   switch (h.kind) {
     case "nothing":
-      return { title: r.nothing, ink: null, body: r.nothingBody };
+      return { title: [r.nothing], ink: null, body: [r.nothingBody] };
     case "split":
       out = {
-        title: r.split,
+        title: [r.split],
         ink: { phrase: copy.seat.split, kind: "split" },
-        body: `${r.splitBody} ${readsList(draw.seats.filter((s) => s.read).map(seatPart))}`,
+        body: joinSaid([r.splitBody, readsList(draw.seats.filter((s) => s.read).map(seatPart))]),
       };
       break;
     case "balanced":
-      out = { title: h.reads ? r.balanced(bracketPhrase(h.reads)) : r.balancedMixed, ink: null, body: r.balancedBody };
+      out = { title: [h.reads ? r.balanced(bracketPhrase(h.reads)) : r.balancedMixed], ink: null, body: [r.balancedBody] };
       break;
     case "one": {
       const deck = h.seat.seat.deck?.name ?? "";
       const who = whose(h.seat.seat.you ? null : h.seat.seat.displayName);
-      const middle = draw.read.kind === "read" ? em(bracketPhrase(middleBrackets(draw.read.middle))) : "";
+      const middle = draw.read.kind === "read" ? em(bracketPhrase(middleBrackets(draw.read.middle))) : [];
       const reads = em(readsPhrase(h.seat));
       const line = h.seat.rangeLine;
       // T7: a drifted declaration replaces the closing line; T3: a low seat closes on its own line.
       const body = line?.kind === "drifted"
-        ? `${r.sitsAt(middle, deck, reads)} ${r.driftNote(who, BRACKET_NAMES[line.declared])}`
+        ? joinSaid([r.sitsAt(middle, deck, reads), r.driftNote(who, BRACKET_NAMES[line.declared])])
         : h.seat.seat.you && draw.closer > 0
-          ? `${r.sitsAt(middle, deck, reads)} ${r.closer(draw.closer)}`
+          ? joinSaid([r.sitsAt(middle, deck, reads), r.closer(draw.closer)])
           : h.dir === "high" ? r.oneBody(middle, deck, reads) : r.lowBody(middle, deck, reads);
       out = h.dir === "high"
         ? { title: r.high(who, deck), ink: { phrase: copy.seat.above, kind: "high" }, body }
@@ -199,9 +215,9 @@ function speak(draw: TableDraw): { title: string; ink: { phrase: string; kind: F
     }
     case "two":
     case "many": {
-      const middle = draw.read.kind === "read" ? em(bracketPhrase(middleBrackets(draw.read.middle))) : "";
+      const middle = draw.read.kind === "read" ? em(bracketPhrase(middleBrackets(draw.read.middle))) : [];
       const parts = readsList(draw.seats.filter((s) => s.read?.flag).map(seatPart));
-      out = { title: h.kind === "two" ? r.two : r.many(h.n), ink: null, body: `${r.middleIs(middle)} ${parts}` };
+      out = { title: [h.kind === "two" ? r.two : r.many(h.n)], ink: null, body: joinSaid([r.middleIs(middle), parts]) };
       break;
     }
     case "reading": {
@@ -218,18 +234,18 @@ function speak(draw: TableDraw): { title: string; ink: { phrase: string; kind: F
         s.state.kind === "illegal" ? [{ name: s.seat.you ? null : s.seat.displayName, cards: s.state.cards }] : [],
       );
       const comparing = c.reads ? r.comparing(c.names, c.both, c.reads) : r.comparingMixed(c.names);
-      const body = [comparing, leftOutCards(sized)].filter(Boolean).join(" ");
-      out = { title: r.leftOut(h.n), ink: null, body };
+      const body = joinSaid([comparing, leftOutCards(sized)].filter((x) => x.length > 0));
+      out = { title: [r.leftOut(h.n)], ink: null, body };
       break;
     }
   }
   // S2: the viewer's own swap this visit replaces the sentence, until the visit ends. A read that says a seat is still
   // being read, or which seats it leaves out, keeps that after it: the swap does not make it untrue.
   const keeps = h.kind === "reading" || h.kind === "leftOut";
-  if (draw.youSwapped !== null) out.body = [r.youSwapped(em(draw.youSwapped)), keeps ? out.body : null].filter(Boolean).join(" ");
+  if (draw.youSwapped !== null) out.body = joinSaid([r.youSwapped(em(draw.youSwapped)), ...(keeps && out.body ? [out.body] : [])]);
   // The headline says it leaves seats out (decision 3): the sentence that follows says so whenever the headline
   // itself does not.
-  if (draw.leftOut > 0 && !keeps) out.body = [out.body, r.leftOut(draw.leftOut)].filter(Boolean).join(" ");
+  if (draw.leftOut > 0 && !keeps) out.body = joinSaid([...(out.body ? [out.body] : []), r.leftOut(draw.leftOut)]);
   return out;
 }
 

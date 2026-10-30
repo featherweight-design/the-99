@@ -9,10 +9,12 @@ vi.mock("../../app/friends/table/actions", () => ({ markTableSeen: m.seen, swapS
 vi.mock("../../app/friends/table/setup-actions", () => ({ loadTableSetupAction: vi.fn(), reseatTableAction: vi.fn() }));
 
 import { ruleZeroCopy as copy } from "../../lib/copy/rule-zero";
-import { TABLES, VIEWER_DECK_ID } from "../../lib/rule-zero/table-fixtures";
+import { plain } from "../../lib/person-name/testing";
+import { TABLES, VIEWER_DECK_ID } from "../../lib/social/rule-zero-fixtures";
 import type { TableView } from "../../lib/social/rule-zero-table";
 import { TableBody } from "./table-body";
 import { TableLive } from "./table-live";
+import { named } from "../../lib/person-name/mint";
 
 const AT = new Date("2026-10-16T21:40:00Z");
 const s = copy.swap;
@@ -84,7 +86,7 @@ describe("Swap in (S2, W2)", () => {
     await act(async () => fireEvent.click(screen.getByRole("button", { name: `${s.swapIn}: Sai Thopters` })));
     expect(m.swap).toHaveBeenCalledWith(S1.tableId, "deck-viewer-sai");
     // The read says it in place of its sentence; the seat carries this visit's change; the offer is gone.
-    expect(readCard().textContent).toContain(copy.read.youSwapped("Sai Thopters"));
+    expect(readCard().textContent).toContain(plain(copy.read.youSwapped("Sai Thopters")));
     expect(within(seatOf("You")).getByTestId("changed")).toBeTruthy();
     expect(screen.queryByTestId("seat-offer")).toBeNull();
     // The answer is a fresh read of the table: it stamps `updated` as a check does (no check answers in this test).
@@ -97,7 +99,7 @@ describe("Swap in (S2, W2)", () => {
     expect(screen.queryByRole("status")).toBeNull();
     // Undone: the seat and the read are as they were.
     expect(within(seatOf("You")).queryByTestId("changed")).toBeNull();
-    expect(readCard().textContent).not.toContain(copy.read.youSwapped("Sai Thopters"));
+    expect(readCard().textContent).not.toContain(plain(copy.read.youSwapped("Sai Thopters")));
   });
 
   it("drops a check that was in flight when the swap landed, so the old deck never draws again", async () => {
@@ -127,7 +129,7 @@ describe("Swap in (S2, W2)", () => {
     const newer: TableView = {
       ...mine,
       revision: later,
-      seats: mine.seats.map((x) => (x.displayName === "Colin" && x.deck ? { ...x, changedAt: later, deck: { ...x.deck, name: "Colin's Other Deck" } } : x)),
+      seats: mine.seats.map((x) => (plain(x.displayName) === "Colin" && x.deck ? { ...x, changedAt: later, deck: { ...x.deck, name: named("Colin's Other Deck") } } : x)),
     };
     await act(async () => answer(new Response(JSON.stringify({ kind: "open", view: newer }), { status: 200 })));
     await act(async () => swapped({ ok: true, view: mine }));
@@ -154,7 +156,7 @@ describe("Swap in (S2, W2)", () => {
     render(<TableBody view={TABLES.T8} gamesEnabled now={AT} swappedTo={deck} />);
     const said = readCard().querySelector("p")?.textContent ?? "";
     const you = TABLES.T8.seats.find((x) => x.you)!.deck!.name;
-    expect(said.startsWith(copy.read.youSwapped(you))).toBe(true);
+    expect(said.startsWith(plain(copy.read.youSwapped(you)))).toBe(true);
     expect(said).toContain("87 of 100");
   });
 
@@ -162,13 +164,13 @@ describe("Swap in (S2, W2)", () => {
     const colinMoved: TableView = {
       ...S1,
       seenAt: AT,
-      seats: S1.seats.map((x) => (x.displayName === "Colin" ? { ...x, changedAt: new Date(AT.getTime() + 30_000) } : x)),
+      seats: S1.seats.map((x) => (plain(x.displayName) === "Colin" ? { ...x, changedAt: new Date(AT.getTime() + 30_000) } : x)),
     };
     m.swap.mockResolvedValueOnce({ ok: true, view: { ...swappedTo(colinMoved, "Sai Thopters", "deck-viewer-sai") } });
     render(<TableLive initial={colinMoved} gamesEnabled now={AT} />);
     await act(async () => fireEvent.click(screen.getByRole("button", { name: `${s.swapIn}: Sai Thopters` })));
     expect(within(readCard()).getByTestId("since")).toBeTruthy();
-    expect(readCard().textContent).toContain(copy.read.youSwapped("Sai Thopters"));
+    expect(readCard().textContent).toContain(plain(copy.read.youSwapped("Sai Thopters")));
   });
 
   it("says a refused swap aloud and keeps the table as it was", async () => {

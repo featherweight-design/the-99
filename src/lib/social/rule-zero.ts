@@ -18,6 +18,8 @@ import { and, asc, eq, inArray, notInArray, or, sql, type SQL } from "drizzle-or
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
 import { cards, deckGames, decks, friendLinks, podMembers, pods, ruleZeroSeats, ruleZeroSeen, ruleZeroTables, socialProfiles, userPrefs } from "../../db/schema";
+import type { ThirdPartyName } from "../person-name/brand";
+import { named } from "../person-name/mint";
 import { resolveSwitchEnv } from "../switches/snapshot";
 import type { Reader } from "./access";
 import { commanderCard, commanderColumns, facePrinting, faceJoin, toCommander, type ProfileCommander } from "./commander";
@@ -42,7 +44,7 @@ export type SetTableResult =
   /** The pod already has an open table and the viewer sits at it: open that one. */
   | { kind: "open"; tableId: string }
   /** The pod already has an open table the viewer is not seated at: nothing written. */
-  | { kind: "occupied"; setBy: string | null; closesAt: Date }
+  | { kind: "occupied"; setBy: ThirdPartyName | null; closesAt: Date }
   | { kind: "refused"; reason: SeatRefusal };
 
 /** The asks are a list of 2 to 8 distinct members, each a uuid, each deck a uuid or null. */
@@ -172,7 +174,7 @@ export async function setTable(viewerId: string, podId: unknown, rawSeats: unkno
     if (open) {
       return open.seated !== null
         ? ({ kind: "open", tableId: open.id } as const)
-        : ({ kind: "occupied", setBy: open.setBy, closesAt: open.closesAt } as const);
+        : ({ kind: "occupied", setBy: open.setBy === null ? null : named(open.setBy), closesAt: open.closesAt } as const);
     }
     const seats = await resolveSeatsIn(tx, viewerId, podId, asks);
     if (typeof seats === "string") return { kind: "refused", reason: seats } as const;
@@ -328,16 +330,17 @@ export async function markSeen(viewerId: string, tableId: unknown, seenThrough: 
 }
 
 /** A seated player as the pod row and Home's card draw them: a face and a name, in seat order. */
-export type TableFace = { displayName: string; you: boolean; commander: ProfileCommander | null };
+/** `displayName` is branded unless the face is the viewer's own. */
+export type TableFace = { displayName: string | ThirdPartyName; you: boolean; commander: ProfileCommander | null };
 
 export type OpenTable = {
   tableId: string;
   podId: string;
-  podName: string;
+  podName: ThirdPartyName;
   closesAt: Date;
   setByYou: boolean;
-  /** The setter's display name (Home's `Colin seated you with …`), or null when they no longer have a profile. */
-  setterName: string | null;
+  /** The setter's display name (Home's `Colin seated you with …`), or null when they no longer have a profile. Branded unless the viewer set it. */
+  setterName: string | ThirdPartyName | null;
   /** The viewer's own seated deck's name, or null while their seat waits. */
   yourDeck: string | null;
   seats: TableFace[];
@@ -407,16 +410,16 @@ export async function openTablesFor(viewerId: string): Promise<OpenTable[]> {
     return tables.map((t) => ({
       tableId: t.tableId,
       podId: t.podId,
-      podName: t.podName,
+      podName: named(t.podName),
       closesAt: t.closesAt,
       setByYou: t.setBy === viewerId,
-      setterName: t.setterName,
+      setterName: t.setterName === null || t.setBy === viewerId ? t.setterName : named(t.setterName),
       yourDeck: t.yourDeck,
       seats: faces
         .filter((f) => f.tableId === t.tableId)
         .map((f) => {
           const you = f.userId === viewerId;
-          return { displayName: f.displayName, you, commander: you || f.friend !== null ? toCommander(f) : null };
+          return { displayName: you ? f.displayName : named(f.displayName), you, commander: you || f.friend !== null ? toCommander(f) : null };
         }),
     }));
   // Repeatable read, never read-only: a read-only transaction poisons the pooled connection (cuts-read.ts).
@@ -430,7 +433,8 @@ export async function openTablesFor(viewerId: string): Promise<OpenTable[]> {
  */
 export type SetupMember = {
   publicId: string;
-  displayName: string;
+  /** Branded unless this member is the viewer (`kind: "you"`). */
+  displayName: string | ThirdPartyName;
   commander: ProfileCommander | null;
   kind: "you" | "hasDecks" | "noDecks" | "picksOwn";
   isOwner: boolean;
@@ -445,13 +449,13 @@ export type SetupMember = {
  * the client here, as the game log's picker sends it (`listFriendDecks`): it is the id `setTable` checks against the
  * viewer's own friendship. A non-friend's never does, and the table's own payload carries none (decision 5).
  */
-export type SetupDeck = { deckId: string; name: string; commanderName: string; artCropUri: string | null };
+export type SetupDeck = { deckId: string; name: string | ThirdPartyName; commanderName: string; artCropUri: string | null };
 
 export type PodSetup = {
   podId: string;
-  podName: string;
+  podName: ThirdPartyName;
   /** The owner's display name, or null when the viewer owns the pod (the invite row's two sentences). */
-  owner: string | null;
+  owner: ThirdPartyName | null;
   members: SetupMember[];
 };
 
@@ -477,7 +481,7 @@ export function setupDecksQuery(viewerId: string, podId: string, ruledOwners: re
     order by sp.public_id, d.created_at desc, d.id`;
 }
 
-type SetupDeckRow = SetupDeck & { publicId: string; lastPlayed: string | Date | null; lastEdited: string | Date };
+type SetupDeckRow = Omit<SetupDeck, "name"> & { name: string; publicId: string; lastPlayed: string | Date | null; lastEdited: string | Date };
 
 const ms = (d: string | Date | null) => (d === null ? -Infinity : new Date(d).getTime());
 
@@ -522,19 +526,19 @@ async function podSetupIn(tx: Tx, viewerId: string, podId: string): Promise<PodS
   const ordered = [...rows.filter((r) => r.userId === viewerId), ...rows.filter((r) => r.userId !== viewerId)];
   return {
     podId,
-    podName: pod.name,
-    owner: pod.ownerUserId === viewerId ? null : pod.owner,
+    podName: named(pod.name),
+    owner: pod.ownerUserId === viewerId || pod.owner === null ? null : named(pod.owner),
     members: ordered.map((r) => {
       const own = r.userId === viewerId;
       const listed = own || r.friend !== null ? byMember.get(r.publicId) ?? [] : [];
       return {
         publicId: r.publicId,
-        displayName: r.displayName,
+        displayName: own ? r.displayName : named(r.displayName),
         // D2: a member who is not the viewer's friend is drawn as initials, as the pod card draws them.
         commander: own || r.friend !== null ? toCommander(r) : null,
         kind: own ? "you" : r.friend === null ? "picksOwn" : listed.length > 0 ? "hasDecks" : "noDecks",
         isOwner: r.userId === pod.ownerUserId,
-        decks: listed.map((d) => ({ deckId: d.deckId, name: d.name, commanderName: d.commanderName, artCropUri: d.artCropUri })),
+        decks: listed.map((d) => ({ deckId: d.deckId, name: own ? d.name : named(d.name), commanderName: d.commanderName, artCropUri: d.artCropUri })),
         start: startDeck(listed),
       };
     }),
@@ -553,7 +557,7 @@ export async function podSetupMembers(viewerId: string, podId: unknown): Promise
 }
 
 /** A seat as `Seats` reopens it: its player, and the deck they sit with (any seat's, as the table shows it). */
-export type SeatedNow = { publicId: string; deck: { name: string; commanderName: string; artCropUri: string | null } | null };
+export type SeatedNow = { publicId: string; deck: { name: string | ThirdPartyName; commanderName: string; artCropUri: string | null } | null };
 
 export type TableSetup = PodSetup & { tableId: string; seated: SeatedNow[] };
 
@@ -586,7 +590,7 @@ export async function tableSetup(viewerId: string, tableId: unknown): Promise<Ta
       tableId,
       seated: seated.map((s) => ({
         publicId: s.publicId,
-        deck: s.name === null || (s.deckId !== null && hidden.has(s.deckId)) ? null : { name: s.name, commanderName: s.commanderName ?? "", artCropUri: s.artCropUri },
+        deck: s.name === null || (s.deckId !== null && hidden.has(s.deckId)) ? null : { name: s.ownerId === viewerId ? s.name : named(s.name), commanderName: s.commanderName ?? "", artCropUri: s.artCropUri },
       })),
     };
   }, { isolationLevel: "repeatable read" });

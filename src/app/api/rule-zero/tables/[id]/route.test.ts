@@ -17,12 +17,13 @@ vi.mock("../../../../../lib/social/rule-zero-table", () => ({
 }));
 
 import { GET } from "./route";
+import { named } from "../../../../../lib/person-name/mint";
 
 const TABLE = "6f1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b";
 const get = (id = TABLE) => GET(new NextRequest(`http://localhost/api/rule-zero/tables/${id}`), { params: Promise.resolve({ id }) });
 const seat = (n: number, kind: string) => ({ seat: n, state: { kind } });
 const view = (...seats: ReturnType<typeof seat>[]) => ({ tableId: TABLE, seats });
-const CLOSED = { podName: "Thursday", setBy: null, faces: [] };
+const CLOSED = { podName: named("Thursday"), setBy: null, faces: [] };
 
 beforeEach(() => {
   stub.userId = "user_1";

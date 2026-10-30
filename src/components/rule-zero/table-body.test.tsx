@@ -9,12 +9,14 @@ vi.mock("next/navigation", () => ({ useRouter: () => nav }));
 vi.mock("../../app/friends/table/setup-actions", () => ({ loadTableSetupAction: vi.fn(), reseatTableAction: vi.fn() }));
 
 import { ruleZeroCopy as copy } from "../../lib/copy/rule-zero";
-import { TABLES, VIEWER_DECK_ID } from "../../lib/rule-zero/table-fixtures";
+import { TABLES, VIEWER_DECK_ID } from "../../lib/social/rule-zero-fixtures";
 import type { TableView } from "../../lib/rule-zero/table-view";
 import { closesWhen } from "../../lib/social/when";
 import { TableBody } from "./table-body";
 import { TableClosed } from "./table-closed";
 import { driversSentence } from "./table-seat";
+import { named } from "../../lib/person-name/mint";
+import { plain } from "../../lib/person-name/testing";
 
 const NOW = new Date("2026-10-16T21:40:00Z");
 const draw = (view: TableView, gamesEnabled = true) =>
@@ -205,11 +207,30 @@ describe("TableBody", () => {
   });
 });
 
+describe("another reader's names are marked", () => {
+  it("marks the pod, the setter, each seat's name, deck and aria-label, and the headline's names, and not the viewer's own", () => {
+    draw(TABLES.T2);
+    const metaMarks = Array.from(meta().querySelectorAll(".ph-no-capture")).map((e) => e.textContent);
+    expect(metaMarks).toEqual(["Thursday night", " · set by Colin · 4 seated"]);
+    for (const who of ["Colin", "Peter", "Max"]) {
+      const seat = seatOf(who);
+      expect(seat.className).toContain("ph-no-capture");
+      expect(within(seat).getByTestId("seat-name").querySelector(".ph-no-capture")?.textContent).toBe(who);
+    }
+    expect(within(seatOf("Colin")).getByText("Zimone Combo").className).toContain("ph-no-capture");
+    const you = seatOf("You");
+    expect(you.className).not.toContain("ph-no-capture");
+    expect(you.querySelector(".ph-no-capture")).toBeNull();
+    expect(headline().querySelector(".ph-no-capture")?.textContent).toBe("Colin");
+  });
+});
+
 describe("TableClosed", () => {
   it("says the table closed, why, and that logged games stay, with Back to Friends", () => {
-    render(<TableClosed podName="Thursday night" setBy="Colin" faces={[{ name: "Hugh", artCropUri: null }, { name: "Colin", artCropUri: "https://cards.example/a.jpg" }]} />);
+    render(<TableClosed podName={named("Thursday night")} setBy={named("Colin")} faces={[{ name: "Hugh", artCropUri: null }, { name: named("Colin"), artCropUri: "https://cards.example/a.jpg" }]} />);
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("This table has closed");
-    expect(screen.getByText(copy.expired.body("Thursday night", "Colin"))).toBeInTheDocument();
+    expect(screen.getByText(plain(copy.expired.body(named("Thursday night"), named("Colin"))))).toBeInTheDocument();
+    expect(screen.getByText(plain(copy.expired.body(named("Thursday night"), named("Colin")))).className).toContain("ph-no-capture");
     expect(screen.getByRole("link", { name: "Back to Friends" })).toHaveAttribute("href", "/friends");
   });
 
@@ -226,7 +247,7 @@ describe("TableClosed", () => {
 
   it("words an extra-turn reason at Core or Upgraded as combos that loop turns, and at Exhibition as cards", () => {
     const seat = (below: 1 | 2 | 3, have: number) =>
-      ({ drivers: { kind: "ruledOut", below, reasons: [{ rule: "extraTurns", have, limit: 0 }] }, chip: null, rangeLine: null, seat: { you: false, displayName: "Colin" } }) as never;
+      ({ drivers: { kind: "ruledOut", below, reasons: [{ rule: "extraTurns", have, limit: 0 }] }, chip: null, rangeLine: null, seat: { you: false, displayName: named("Colin") } }) as never;
     expect(driversSentence(seat(3, 1))).toBe("1 combo that loops turns, where Upgraded allows 0.");
     expect(driversSentence(seat(2, 2))).toBe("2 combos that loop turns, where Core allows 0.");
     expect(driversSentence(seat(1, 1))).toBe("1 extra-turn card, where Exhibition allows 0.");
@@ -234,7 +255,7 @@ describe("TableClosed", () => {
 
   it("truncates a long unbroken display name and keeps its tag whole beside it", () => {
     const long = "Maximilianowiczaleksandrovski1";
-    draw({ ...TABLES.T1, seats: TABLES.T1.seats.map((x) => (x.displayName === "Max" ? { ...x, displayName: long } : x)) });
+    draw({ ...TABLES.T1, seats: TABLES.T1.seats.map((x) => (plain(x.displayName) === "Max" ? { ...x, displayName: named(long) } : x)) });
     const seat = seatOf(long);
     expect(within(seat).getByTestId("seat-name")).toHaveClass("min-w-0", "truncate");
     expect(within(seat).getByText("not a friend")).toHaveClass("flex-none");

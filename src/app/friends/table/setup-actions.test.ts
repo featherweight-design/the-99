@@ -17,6 +17,7 @@ vi.mock("next/cache", () => ({ revalidatePath: m.revalidatePath }));
 vi.mock("../../../lib/social/rule-zero", () => ({ podSetup: m.podSetup, tableSetup: m.tableSetup, setTable: m.setTable, reseatTable: m.reseatTable }));
 
 import { loadPodSetupAction, loadTableSetupAction, reseatTableAction, setTableAction } from "./setup-actions";
+import { named } from "../../../lib/person-name/mint";
 
 const ON = { SOCIAL_FRIENDS_ENABLED: "true" };
 const SEATS = [{ member: "a", deck: null }];
@@ -55,7 +56,7 @@ describe("on", () => {
     expect(await setTableAction("p", SEATS)).toEqual({ ok: true, tableId: "t1" });
     m.setTable.mockResolvedValueOnce({ kind: "open", tableId: "t2" });
     expect(await setTableAction("p", SEATS)).toEqual({ ok: true, tableId: "t2" });
-    m.setTable.mockResolvedValueOnce({ kind: "occupied", setBy: "Colin", closesAt: new Date() });
+    m.setTable.mockResolvedValueOnce({ kind: "occupied", setBy: named("Colin"), closesAt: new Date() });
     expect(await setTableAction("p", SEATS)).toEqual({ ok: false, reason: "occupied" });
     m.setTable.mockResolvedValueOnce({ kind: "refused", reason: "deck" });
     expect(await setTableAction("p", SEATS)).toEqual({ ok: false, reason: "refused" });

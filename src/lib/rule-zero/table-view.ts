@@ -6,6 +6,7 @@
  */
 import type { DeclarationAsk } from "../bracket/declaration-ask";
 import type { FindingId } from "../bracket/findings";
+import type { ThirdPartyName } from "../person-name/brand";
 import type { Bracket } from "../bracket/types";
 import type { TableSeat, TableView } from "../social/rule-zero-table";
 import { ownChanged, seatChanged, sinceYouLooked } from "./live";
@@ -62,9 +63,9 @@ export type TableDraw = {
   /** Seats not in the read, for the sentence that says so. */
   leftOut: number;
   /** `Since you looked`: each changed seat holding a deck, and the deck it holds now. Empty: no line. */
-  since: { name: string; deck: string }[];
+  since: { name: string | ThirdPartyName; deck: string | ThirdPartyName }[];
   /** The deck the viewer swapped to this visit (S2): the read says so in place of its sentence. Null: none. */
-  youSwapped: string | null;
+  youSwapped: string | ThirdPartyName | null;
   /** How many decks `Closer to the table` offers on the viewer's own flagged seat (the read's own sentence, S1, S6). */
   closer: number;
 };

@@ -2,7 +2,7 @@
 // open table draws the read, and a table whose night has ended draws the expired page (L4, H3).
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { TABLES } from "../../../../lib/rule-zero/table-fixtures";
+import { TABLES } from "../../../../lib/social/rule-zero-fixtures";
 
 const m = vi.hoisted(() => ({
   requireUserId: vi.fn(),
@@ -24,6 +24,7 @@ vi.mock("../../../../lib/social/rule-zero-table", () => ({ loadTable: m.loadTabl
 vi.mock("../../../../lib/about/how-it-works-flag", () => ({ howItWorksEnabled: m.howItWorksEnabled }));
 
 import TablePage from "./page";
+import { named } from "../../../../lib/person-name/mint";
 
 const ID = "6f1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b";
 const page = async () => render(await TablePage({ params: Promise.resolve({ id: ID }) }));
@@ -60,7 +61,7 @@ describe("TablePage", () => {
   });
 
   it("draws the expired page when the night has ended", async () => {
-    m.loadClosedTable.mockResolvedValue({ podName: "Thursday night", setBy: "Colin", faces: [{ name: "Colin", artCropUri: null }] });
+    m.loadClosedTable.mockResolvedValue({ podName: named("Thursday night"), setBy: named("Colin"), faces: [{ name: named("Colin"), artCropUri: null }] });
     await page();
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("This table has closed");
     expect(screen.getByText(/Thursday night’s table closed 24 hours after Colin set it/)).toBeInTheDocument();
