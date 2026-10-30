@@ -162,11 +162,22 @@ export function IntakeForm({
   const wordsRef = useRef<HTMLTextAreaElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
   // Grows with its content (no resize handle: the board draws none). jsdom reports a 0 scrollHeight, so this is a no-op there.
+  // Re-measured when the box's width changes too (a rotation, a resize, a late font), or the height goes stale and clips.
   useEffect(() => {
     const el = wordsRef.current;
     if (!el) return;
-    el.style.height = "auto";
-    if (el.scrollHeight > 0) el.style.height = `${el.scrollHeight}px`;
+    const grow = () => {
+      el.style.height = "auto";
+      if (el.scrollHeight > 0) el.style.height = `${el.scrollHeight}px`;
+    };
+    grow();
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", grow);
+      return () => window.removeEventListener("resize", grow);
+    }
+    const observer = new ResizeObserver(grow);
+    observer.observe(el);
+    return () => observer.disconnect();
   }, [words]);
   const picker = useCardTagPicker({
     value: words, picked: tags, search: searchIntakeCards, max: READ_WORDS_MAX_CHARS, measure: wordsLength, maxTags: READ_TAGS_MAX, field: wordsRef, disabled: submitting,
@@ -394,7 +405,7 @@ export function IntakeForm({
               max={READ_WORDS_MAX_CHARS}
               fill="sunken"
               accent={written && closed === null ? "always" : "focus"}
-              keyProps={{ "data-lock-hide": "" }}
+              footProps={{ "data-lock-hide": "" }}
               frameRef={frameRef}
             >
               <textarea

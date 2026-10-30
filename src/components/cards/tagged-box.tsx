@@ -23,9 +23,10 @@ export function TaggedBox({
   words = TAG_A_CARD_WORDS,
   fill = "surface",
   dashed = false,
-  error = false,
+  error,
   accent = "focus",
   keyProps,
+  footProps,
   footPad = "default",
   frameRef,
   className = "",
@@ -47,11 +48,14 @@ export function TaggedBox({
   words?: string;
   fill?: "surface" | "sunken";
   dashed?: boolean;
+  /** The danger frame; absent, drawn exactly while the count is past the cap (`over`). It outranks the accent edge. */
   error?: boolean;
   /** `focus`: the accent edge on focus-within; `always`: the accent edge at rest too (an editor opened in place). */
   accent?: "focus" | "always";
   /** Spread on the key (e.g. `data-lock-hide`). */
   keyProps?: Record<string, string>;
+  /** Spread on the whole foot (e.g. `data-lock-hide`, to hide the key, words and counter together). */
+  footProps?: Record<string, string>;
   /** `compact`: the dashed header description's 2 10 7 foot. */
   footPad?: "default" | "compact";
   /** The frame element, for a list anchored to it. */
@@ -62,7 +66,7 @@ export function TaggedBox({
   const isOver = over ?? count > max;
   const color = isOver ? "var(--danger)" : warnAt !== undefined && count >= warnAt ? "var(--warning)" : "var(--fg-faint)";
   // The border is a class, never inline, so the focus edge can take it (an inline border outranks it).
-  const edge = error
+  const edge = (error ?? isOver)
     ? "border-[color:var(--danger)]"
     : accent === "always"
       ? "border-[color:var(--accent)]"
@@ -77,6 +81,9 @@ export function TaggedBox({
       <span
         className={`flex items-center gap-[8px] font-mono text-[11px] ${footPad === "compact" ? "px-[10px] pt-[2px] pb-[7px]" : "px-[12px] pt-[2px] pb-[8px]"}`}
         style={{ color: "var(--fg-faint)" }}
+        // A press on the foot's padding or the counter must not blur the field (a box that saves on blur).
+        onMouseDown={(e) => e.preventDefault()}
+        {...footProps}
       >
         <button
           type="button"
@@ -86,7 +93,7 @@ export function TaggedBox({
           onClick={onInsert}
           {...keyProps}
           // Drawn 24 high at every pointer; under a coarse pointer only its hit box grows (the pseudo-element belongs to the button).
-          className={`relative h-[24px] cursor-pointer rounded-[6px] border border-solid border-[color:var(--border-strong)] px-[8px] font-mono text-[11px] pointer-coarse:after:absolute pointer-coarse:after:-inset-x-[4px] pointer-coarse:after:-inset-y-[10px] pointer-coarse:after:content-[''] ${open ? "bg-[color:var(--elevated)] text-[color:var(--fg)]" : "text-[color:var(--fg-muted)]"}`}
+          className={`relative h-[24px] shrink-0 cursor-pointer rounded-[6px] border border-solid border-[color:var(--border-strong)] px-[8px] font-mono text-[11px] pointer-coarse:after:absolute pointer-coarse:after:-inset-x-[8px] pointer-coarse:after:-inset-y-[10px] pointer-coarse:after:content-[''] ${open ? "bg-[color:var(--elevated)] text-[color:var(--fg)]" : "text-[color:var(--fg-muted)]"}`}
         >
           {copy.tagHelp.insert}
         </button>

@@ -37,6 +37,34 @@ describe("the intake form", () => {
   });
 });
 
+describe("Anything else? box, board fixes", () => {
+  it("draws the key, the words and a 0 counter in the foot, hides the whole foot on lock, and takes the accent edge when read", () => {
+    const standing = { used: 1, limit: 10, nextAt: "2026-10-12T02:01:00.000Z", reopensAt: null, ownerShare: false, now: "2026-10-11T12:00:00.000Z" };
+    const { unmount } = render(<IntakeForm themes={[]} initial={emptyParams()} standing={standing} />);
+    const box = screen.getByLabelText(/Anything else\?/);
+    const frame = box.closest("[data-framed-box]")!;
+    const foot = screen.getByText("0 / 800").parentElement!;
+    expect(foot).toHaveAttribute("data-lock-hide");
+    expect(foot.querySelector("button")).not.toHaveAttribute("data-lock-hide");
+    expect(within(foot).getByRole("button", { name: "Insert a card tag" })).toBeTruthy();
+    expect(within(foot).getByText("tag a card")).toBeTruthy();
+    expect(frame.className).not.toContain("border-[color:var(--accent)]");
+    unmount();
+    render(<IntakeForm themes={[]} initial={{ ...emptyParams(), words: "scary" }} standing={standing} />);
+    expect(screen.getByLabelText(/Anything else\?/).closest("[data-framed-box]")!.className).toContain("border-[color:var(--accent)]");
+  });
+
+  it("re-measures the box on a resize of the textarea, and disconnects", () => {
+    const observed: Element[] = [];
+    const disconnect = vi.fn();
+    globalThis.ResizeObserver = class { observe(el: Element) { observed.push(el); } unobserve() {} disconnect = disconnect; } as unknown as typeof ResizeObserver;
+    const { unmount } = render(<IntakeForm themes={[]} initial={emptyParams()} />);
+    expect(observed).toContain(screen.getByLabelText(/Anything else\?/));
+    unmount();
+    expect(disconnect).toHaveBeenCalled();
+  });
+});
+
 describe("the Theme field's join", () => {
   const themes = [
     { slug: "orcs", label: "Orcs", commanders: 20 },

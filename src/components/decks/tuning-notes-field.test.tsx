@@ -21,6 +21,23 @@ describe("TuningNotesField", () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  it("observes its textarea for a resize, and the danger frame follows a value past the cap", () => {
+    const saved = globalThis.ResizeObserver;
+    const observed: Element[] = [];
+    globalThis.ResizeObserver = class { observe(el: Element) { observed.push(el); } unobserve() {} disconnect() {} } as unknown as typeof ResizeObserver;
+    try {
+      const { rerender } = render(<TuningNotesField value="" onChange={() => {}} />);
+      const field = screen.getByRole("combobox");
+      expect(observed).toContain(field);
+      const frame = field.closest("[data-framed-box]")!;
+      expect(frame.className).not.toContain("border-[color:var(--danger)]");
+      rerender(<TuningNotesField value={"a".repeat(501)} onChange={() => {}} />);
+      expect(frame.className).toContain("border-[color:var(--danger)]");
+    } finally {
+      globalThis.ResizeObserver = saved;
+    }
+  });
+
   it("shows the counter at n / 500", () => {
     render(<TuningNotesField value="Nothing over $5" onChange={vi.fn()} />);
     expect(screen.getByText("15 / 500")).toBeInTheDocument();

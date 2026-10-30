@@ -67,7 +67,7 @@ export function DeckDescriptionField({
             // desktop size the retired single-field editor used. The frame's accent edge (focus-within)
             // is the focus mark here, so the field draws no outline of its own.
             className="w-full resize-none bg-transparent font-sans text-[16px] leading-[1.5] outline-none [@media(pointer:fine)]:md:text-[13.5px]"
-            style={{ padding: "10px 12px 4px", color: "var(--fg)" }}
+            style={{ padding: "10px 12px 4px", color: "var(--fg)", minHeight: 72 }}
           />
         </TaggedBox>
         {picker.open && <CardTagList {...picker.list} />}

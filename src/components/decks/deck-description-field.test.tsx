@@ -24,6 +24,15 @@ describe("DeckDescriptionField (STATES-deck-description.md §1)", () => {
     expect(screen.getByText("220 / 240")).toHaveStyle({ color: "var(--warning)" });
   });
 
+  it("keeps a 72 floor, and draws the danger frame when the value is past the cap", () => {
+    const { rerender } = render(<DeckDescriptionField value="" onChange={() => {}} onBlur={() => {}} saving={false} refused={null} />);
+    expect(screen.getByRole("combobox").style.minHeight).toBe("72px");
+    const frame = () => screen.getByRole("combobox").closest("[data-framed-box]")!;
+    expect(frame().className).not.toContain("border-[color:var(--danger)]");
+    rerender(<DeckDescriptionField value={"a".repeat(241)} onChange={() => {}} onBlur={() => {}} saving={false} refused={null} />);
+    expect(frame().className).toContain("border-[color:var(--danger)]");
+  });
+
   // Round 5: an `aria-label` here used to override the visible `<label htmlFor>` with
   // different words ("Deck description" vs. "Describe your deck"), so a voice-control user
   // reading the label on screen could not target the field by it.

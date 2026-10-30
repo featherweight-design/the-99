@@ -80,6 +80,25 @@ describe("TaggedBox", () => {
     expect(document.querySelector("[data-framed-box]")!.className).toContain("border-[color:var(--danger)]");
   });
 
+  it("draws the danger frame past the cap on its own, and an explicit error=false or true wins", () => {
+    const { rerender } = box({ count: 241, accent: "always" });
+    const cls = () => document.querySelector("[data-framed-box]")!.className;
+    expect(cls()).toContain("border-[color:var(--danger)]");
+    expect(cls()).not.toContain("border-[color:var(--accent)]");
+    rerender(<TaggedBox onInsert={() => {}} count={241} max={240} error={false}><textarea aria-label="field" /></TaggedBox>);
+    expect(cls()).not.toContain("border-[color:var(--danger)]");
+    rerender(<TaggedBox onInsert={() => {}} count={3} max={240}><textarea aria-label="field" /></TaggedBox>);
+    expect(cls()).not.toContain("border-[color:var(--danger)]");
+  });
+
+  it("keeps the field's focus on a press of the foot's padding or counter, and spreads footProps on the foot", () => {
+    box({ footProps: { "data-lock-hide": "" } });
+    const foot = screen.getByText("0 / 240").parentElement!;
+    expect(foot).toHaveAttribute("data-lock-hide");
+    expect(fireEvent.mouseDown(foot)).toBe(false);
+    expect(fireEvent.mouseDown(screen.getByText("0 / 240"))).toBe(false);
+  });
+
   it("spreads keyProps on the key and keeps the field's focus on a press", () => {
     const onInsert = vi.fn();
     box({ onInsert, keyProps: { "data-lock-hide": "" } });
@@ -93,6 +112,8 @@ describe("TaggedBox", () => {
     box({ footPad: "compact" });
     expect(key().className).toContain("h-[24px]");
     expect(key().className).toContain("pointer-coarse:after:-inset-y-[10px]");
+    expect(key().className).toContain("pointer-coarse:after:-inset-x-[8px]");
+    expect(key().className).toContain("shrink-0");
     expect(key().parentElement!.className).toContain("pb-[7px]");
   });
 });

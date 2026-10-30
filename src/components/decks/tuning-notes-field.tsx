@@ -74,6 +74,7 @@ export function TuningNotesField({
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    const grow = () => {
     if (fill) {
       el.style.flex = "none";
       el.style.height = "auto";
@@ -87,6 +88,16 @@ export function TuningNotesField({
     el.style.height = "auto";
     const next = el.scrollHeight;
     if (next > 0) el.style.height = `${next}px`;
+    };
+    grow();
+    // Re-measured on a resize too (a rotation, a late font), or the height goes stale and clips.
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", grow);
+      return () => window.removeEventListener("resize", grow);
+    }
+    const observer = new ResizeObserver(grow);
+    observer.observe(el);
+    return () => observer.disconnect();
   }, [field.text, fill]);
   // The appended words, highlighted for a beat with the caret following them (Intake board C b). Run after the text the
   // tail belongs to is drawn: keyed on the nonce, read off the box as it stands.
