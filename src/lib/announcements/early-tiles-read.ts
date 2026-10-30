@@ -14,7 +14,7 @@ import { catalogFirstSeen, cards, collectionItems, preconCards, precons, userPre
 import { fold } from "../precons/list";
 import { RELEASED_GRACE_DAYS, utcDay, type UpcomingSet } from "../precons/upcoming";
 import { earlyListHref, resolvePostSet, type EarlyCardFacts } from "./early-list";
-import { assembleEarlyList, commanderPrintingsQuery, earlyListCommanderIds, pickReleasePrecon, SET_WINDOW_AFTER_DAYS, type ReleaseCandidate } from "./early-list-read";
+import { assembleEarlyList, commanderPrintingsQuery, earlyListCommanderIds, pickReleasePrecon, preconCardIds, SET_WINDOW_AFTER_DAYS, type ListEvidence, type ReleaseCandidate } from "./early-list-read";
 import type { EarlySet, EarlyTile } from "./early-tiles";
 
 type Reader = Pick<typeof db, "select" | "selectDistinct">;
@@ -53,7 +53,7 @@ export function earlyListsQuery(since: Date, q: Reader = db) {
 }
 
 /**
- * Every plain-edition precon that names any of these commanders, in any set, with its first-seen stamp: the candidates
+ * Every plain-edition precon that names any of these commanders, in any set, with its first-seen stamp, name and cards: the candidates
  * `releaseCandidatesQuery` reads for the early page, for every commander at once; apart so a test can render its SQL.
  */
 export function releasedCommandersQuery(commanderIds: string[], q: Reader = db) {
@@ -64,6 +64,8 @@ export function releasedCommandersQuery(commanderIds: string[], q: Reader = db) 
       setCode: precons.setCode,
       firstSeenAt: catalogFirstSeen.firstSeenAt,
       baseline: catalogFirstSeen.baseline,
+      name: precons.name,
+      cardIds: preconCardIds,
     })
     .from(preconCards)
     .innerJoin(precons, eq(precons.fileName, preconCards.fileName))
@@ -77,12 +79,12 @@ export function releasedCommandersQuery(commanderIds: string[], q: Reader = db) 
  * Pure, for a test.
  */
 export function hasGivenWay(
-  list: { commanderCardId: string | null; publishedAt: Date },
+  list: { commanderCardId: string | null; publishedAt: Date } & ListEvidence,
   setCode: string,
   candidatesByCommander: ReadonlyMap<string, readonly ReleaseCandidate[]>,
 ): boolean {
   if (!list.commanderCardId) return false;
-  return pickReleasePrecon(candidatesByCommander.get(list.commanderCardId) ?? [], list.publishedAt, setCode) !== null;
+  return pickReleasePrecon(candidatesByCommander.get(list.commanderCardId) ?? [], list.publishedAt, setCode, list) !== null;
 }
 
 /** The early seen keys the reader holds (`early:<code>:<count>`); the other forms in the array are not this read's. */

@@ -18,6 +18,9 @@ import type { OpenPrecon, OpenPreconCard } from "../precons/open-read";
 import { drawnInAnnounced, utcDay } from "../precons/upcoming";
 import { postListTargets, resolvePostSet, splitEarlyLines, type EarlyCardFacts, type PostListRow, type UnmatchedLine } from "./early-list";
 
+/** Every card a precon lists, by oracle id: the overlap half of a release list's evidence. Aliased and qualified (AGENTS.md). */
+export const preconCardIds = sql<string[]>`coalesce((select array_agg(pe.oracle_id::text) from ${preconCards} pe where pe.file_name = ${precons}.file_name), '{}')`;
+
 type Reader = Pick<typeof db, "select" | "selectDistinct">;
 
 const DAY_MS = 86_400_000;
@@ -101,8 +104,9 @@ export function commanderPrintingsQuery(commanderIds: string[], postDay: Date, q
 
 /**
  * Every plain-edition precon (not a Collector's Edition twin) that names this commander, in any set, with when the
- * catalog first showed it (`catalog_first_seen`, kind `precon`, as the arrivals read takes it); apart so a test can
- * render its SQL. The correlated subquery aliases its table and qualifies both sides (AGENTS.md).
+ * catalog first showed it (`catalog_first_seen`, kind `precon`, as the arrivals read takes it), and its name and cards for
+ * the list evidence `pickReleasePrecon` weighs; apart so a test can render its SQL. The correlated subqueries alias their
+ * table and qualify both sides (AGENTS.md).
  */
 export function releaseCandidatesQuery(commanderId: string, q: Reader = db) {
   return q
@@ -111,6 +115,8 @@ export function releaseCandidatesQuery(commanderId: string, q: Reader = db) {
       setCode: precons.setCode,
       firstSeenAt: catalogFirstSeen.firstSeenAt,
       baseline: catalogFirstSeen.baseline,
+      name: precons.name,
+      cardIds: preconCardIds,
     })
     .from(precons)
     .leftJoin(catalogFirstSeen, and(eq(catalogFirstSeen.kind, "precon"), eq(catalogFirstSeen.key, precons.fileName)))
@@ -172,26 +178,67 @@ export async function loadPostListTargets(contentfulIds: readonly string[], now:
 /** How long before the post a precon may first show in the catalog and still be its release list (clock and ingest skew). */
 export const RELEASE_SLACK_DAYS = 3;
 
-export type ReleaseCandidate = { fileName: string; setCode: string; firstSeenAt: Date | null; baseline: boolean | null };
+export type ReleaseCandidate = {
+  fileName: string; setCode: string; firstSeenAt: Date | null; baseline: boolean | null;
+  /** The precon's name and every card it lists: the list evidence a candidate must carry. */
+  name: string; cardIds: readonly string[];
+};
+
+/** What an early list says of itself: its title, and the cards the catalog matched (a line it cannot match yet is null). */
+export type ListEvidence = { title: string | null; cards: readonly { cardId: string | null }[] };
+
+/** A release list shares at least this much of the early list's matched cards (production 2026-10-30: every true release 0.94 to 1). */
+export const RELEASE_OVERLAP = 0.8;
+
+/** A list or precon name, folded for comparison: the Secret Lair and "Commander Deck" wrapping, case and punctuation dropped. */
+export function foldDeckName(name: string): string {
+  return name.toLowerCase()
+    .replace(/^secret lair commander deck:/, "")
+    .replace(/commander deck$/, "")
+    .replace(/[^\p{L}\p{N}]+/gu, "");
+}
+
+/** How a candidate's list evidence reads: whether the names agree, and the share of the list's matched cards it lists. */
+function evidenceOf(c: ReleaseCandidate, list: ListEvidence): { named: boolean; overlap: number } {
+  const ids = new Set(list.cards.flatMap((l) => (l.cardId ? [l.cardId] : [])));
+  const listed = new Set(c.cardIds);
+  let hits = 0;
+  for (const id of ids) if (listed.has(id)) hits++;
+  const title = list.title ? foldDeckName(list.title) : "";
+  return { named: title !== "" && title === foldDeckName(c.name), overlap: ids.size === 0 ? 0 : hits / ids.size };
+}
 
 /**
- * The release list that replaces an early one, among the precons naming its commander (STATES 3.4), in this order:
+ * The release list that replaces an early one, among the precons naming its commander (STATES 3.4) that carry the list's
+ * evidence: the same deck name, or at least `RELEASE_OVERLAP` of the list's matched cards. A commander and a stamp alone
+ * are not enough, so another product sharing the commander (a staple-heavy deck elsewhere) never takes the address, and a
+ * name alone carries a list the catalog cannot card-match yet. Among those, in this order:
  *
  * 1. a precon in the set the post's lists resolve to (`resolvePostSet`), unless the catalog stamped it before the post's
  *    day (less `RELEASE_SLACK_DAYS`): the resolved set is the strongest evidence, so a later product elsewhere sharing the
- *    commander cannot take over the address. Earliest stamp first, an unstamped or `baseline` one after, then by name;
+ *    commander cannot take over the address;
  * 2. failing that, a precon in ANY set the catalog first showed on or after that day, so a new deck in a long-running set
- *    (Secret Lair) whose release date falls outside the post's window still matches. Earliest stamp wins.
+ *    (Secret Lair) whose release date falls outside the post's window still matches.
+ *
+ * Within either, a name match first, then the larger overlap, then the earliest stamp (an unstamped or `baseline` one
+ * after), then by file name.
  *
  * A precon stamped before the post is never the release list. Pure, for a test.
  */
-export function pickReleasePrecon(candidates: readonly ReleaseCandidate[], postedAt: Date, setCode: string | null): string | null {
+export function pickReleasePrecon(
+  candidates: readonly ReleaseCandidate[], postedAt: Date, setCode: string | null, list: ListEvidence,
+): string | null {
   const floor = postedAt.getTime() - RELEASE_SLACK_DAYS * DAY_MS;
+  const evidence = new Map(candidates.map((c) => [c, evidenceOf(c, list)]));
+  const evidenced = (c: ReleaseCandidate) => evidence.get(c)!.named || evidence.get(c)!.overlap >= RELEASE_OVERLAP;
   const byName = (a: ReleaseCandidate, b: ReleaseCandidate) => (a.fileName < b.fileName ? -1 : a.fileName > b.fileName ? 1 : 0);
   const usable = (c: ReleaseCandidate) => c.firstSeenAt !== null && c.baseline === false;
   const stampOf = (c: ReleaseCandidate) => (usable(c) ? c.firstSeenAt!.getTime() : Number.POSITIVE_INFINITY);
-  const notBefore = candidates.filter((c) => !usable(c) || c.firstSeenAt!.getTime() >= floor);
-  const order = (a: ReleaseCandidate, b: ReleaseCandidate) => stampOf(a) - stampOf(b) || byName(a, b);
+  const notBefore = candidates.filter((c) => evidenced(c) && (!usable(c) || c.firstSeenAt!.getTime() >= floor));
+  const order = (a: ReleaseCandidate, b: ReleaseCandidate) => {
+    const ea = evidence.get(a)!, eb = evidence.get(b)!;
+    return Number(eb.named) - Number(ea.named) || eb.overlap - ea.overlap || stampOf(a) - stampOf(b) || byName(a, b);
+  };
   if (setCode) {
     const inSet = notBefore.filter((c) => c.setCode.toLowerCase() === setCode.toLowerCase()).sort(order);
     if (inSet[0]) return inSet[0].fileName;
@@ -215,7 +262,7 @@ export async function loadEarlyList(userId: string, contentfulId: string, positi
   const setCode = resolvePostSet(siblings.map((s) => s.commanderCardId), candidates);
 
   if (list.commanderCardId) {
-    const release = pickReleasePrecon(await releaseCandidatesQuery(list.commanderCardId), list.publishedAt, setCode);
+    const release = pickReleasePrecon(await releaseCandidatesQuery(list.commanderCardId), list.publishedAt, setCode, list);
     if (release) return { kind: "release", fileName: release };
   }
 

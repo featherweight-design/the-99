@@ -18,7 +18,8 @@ describe("earlyListsQuery", () => {
 describe("releasedCommandersQuery", () => {
   it("qualifies both tables of its join and keeps plain-edition commanders only", () => {
     const { sql } = releasedCommandersQuery(["c1", "c2"], db).toSQL();
-    expect(sql).toContain('select distinct "precon_cards"."oracle_id", "precons"."file_name", "precons"."set_code", "catalog_first_seen"."first_seen_at", "catalog_first_seen"."baseline"');
+    expect(sql).toContain('select distinct "precon_cards"."oracle_id", "precons"."file_name", "precons"."set_code", "catalog_first_seen"."first_seen_at", "catalog_first_seen"."baseline", "precons"."name"');
+    expect(sql).toContain('(select array_agg(pe.oracle_id::text) from "precon_cards" pe where pe.file_name = "precons".file_name)');
     expect(sql).toContain('left join "catalog_first_seen" on ("catalog_first_seen"."kind" = $');
     expect(sql).toContain('"catalog_first_seen"."key" = "precons"."file_name"');
     expect(sql).toContain('inner join "precons" on "precons"."file_name" = "precon_cards"."file_name"');
@@ -29,9 +30,9 @@ describe("releasedCommandersQuery", () => {
 
 describe("hasGivenWay (the early page's pickReleasePrecon)", () => {
   const posted = new Date("2026-10-29T16:00:00Z");
-  const list = { commanderCardId: "cmd-1", publishedAt: posted };
-  const c = (fileName: string, setCode: string, firstSeenAt: string | null, baseline: boolean | null = firstSeenAt ? false : null) =>
-    ({ fileName, setCode, firstSeenAt: firstSeenAt ? new Date(firstSeenAt) : null, baseline });
+  const list = { commanderCardId: "cmd-1", publishedAt: posted, title: "Calling All Angels", cards: [{ cardId: "card-1" }] };
+  const c = (fileName: string, setCode: string, firstSeenAt: string | null, baseline: boolean | null = firstSeenAt ? false : null, cardIds = ["card-1"]) =>
+    ({ fileName, setCode, firstSeenAt: firstSeenAt ? new Date(firstSeenAt) : null, baseline, name: fileName, cardIds });
   const by = (...cs: ReturnType<typeof c>[]) => new Map([["cmd-1", cs]]);
 
   it("gives way to a release stamped after the post in ANOTHER set, as the page redirects to it", () => {
@@ -50,9 +51,13 @@ describe("hasGivenWay (the early page's pickReleasePrecon)", () => {
     expect(hasGivenWay(list, "fdc", by(c("A_CMM", "CMM", null)))).toBe(false);
   });
 
+  it("stays early when the only release shares the commander but none of the list's evidence, as the page does", () => {
+    expect(hasGivenWay(list, "fdc", by({ ...c("Other_SLD", "SLD", "2026-11-02T08:00:00Z", false, []), name: "Goblin Storm" }))).toBe(false);
+  });
+
   it("stays early with no candidates or no commander", () => {
     expect(hasGivenWay(list, "fdc", new Map())).toBe(false);
-    expect(hasGivenWay({ commanderCardId: null, publishedAt: posted }, "fdc", by(c("A_FDC", "FDC", null)))).toBe(false);
+    expect(hasGivenWay({ ...list, commanderCardId: null }, "fdc", by(c("A_FDC", "FDC", null)))).toBe(false);
   });
 });
 
