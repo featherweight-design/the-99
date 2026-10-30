@@ -280,6 +280,13 @@ async function openLanding(data) {
     if (data.openCombo === true) url.searchParams.set("push-combo", "1");
   }
   const href = url.href;
+  // A route under /out/ leaves the app by a redirect (a Wizards post on magic.wizards.com). An app window navigated there
+  // ends off this origin, so `navigate()` resolves to null and the fallback below would open a SECOND window. It opens one
+  // window for it instead, and the app's own window stays where the reader left it.
+  if (url.pathname.startsWith("/out/")) {
+    await self.clients.openWindow(href);
+    return;
+  }
   const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
   const mine = windows.find((w) => new URL(w.url).origin === self.location.origin);
   if (mine) {

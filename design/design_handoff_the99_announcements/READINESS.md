@@ -102,3 +102,27 @@ this PR.
 - **The ✕ on a post.** `feed_dismissals_key_check` admitted only `item:`, `ask:`, `set:` and `precon:` keys, so a
   `post:` dismissal was refused (probed). Migration 0195 widens the check to `post:`, and `parseDismissKey` admits it, so
   post rows and leads draw their ✕ like every other row.
+
+### Engineering audit: UI 3b (push + redirect)
+
+2026-10-29, against origin/main after UI 3a (#2407). Pushes of Wizards' posts and the route every post press goes
+through, behind `ANNOUNCEMENTS_ENABLED` (and `PUSH_ENABLED`) per reader. No migration: `push_outbox_kind_check` already
+admits the three kinds (migration 0193).
+
+- **Pushed.** `PUSH_CATALOG_KINDS` is every catalog kind and `pushableFeedKinds` every available kind, so the three
+  rows get their Push box in Settings and the cron queues posts. A post is queued exactly as a new set is: the feed's own
+  branch (not the baseline, not dismissed), at the moment the ingest first saw it, newer than the kind's PUSH stamp,
+  inside the 24-hour stale window. The three kinds are default on, so their push is on for a reader with a device until
+  they untick it, as the README's "On from the start" reads.
+- **The message.** One post: its title, its summary (with none, "Read it on Wizards."), its hero when https, tagged by
+  its kind, landing on its out route. Several of one kind from one day, or one night's held release: "<kicker>: N new
+  posts", the titles, landing on Home. A post with no press (an address off magic.wizards.com) is not pushed.
+- **The out route.** Every post press, Home's row, Home's lead and a push, goes to `/out/wizards/<contentful id>`
+  (signed in, not public), which re-checks the reader's switch, reads the post's address from the database and
+  redirects (307, `private, no-store`) only to an https page on `magic.wizards.com`; anything else goes to Home. A
+  push's landing therefore stays on the app's origin, as the service worker requires, and no payload or cached page
+  carries the off-site address.
+- **Every path under `/out/` leaves the app.** The service worker opens a window for such a landing and never navigates
+  the app's own window there: `navigate()` to a page that redirects off-origin resolves null, and the fallback opened a
+  second window.
+- **Push D4 stands.** The route and the landing mark nothing seen; Home's own visit does.

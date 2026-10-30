@@ -41,25 +41,25 @@ describe("a catalog batch", () => {
 });
 
 describe("the catalog kinds a reader's switches allow pushing", () => {
-  it("both, with push and Home's news on", () => {
+  it("sets and precons, with push and Home's news on and Announcements off", () => {
     expect(catalogPushKinds(env())).toEqual(["new-set", "new-precon"]);
   });
 
-  it("none with push off, or Home's news off", () => {
+  it("Wizards' three kinds too, with ANNOUNCEMENTS_ENABLED on (Announcements UI 3b)", () => {
+    expect(catalogPushKinds(env({ ANNOUNCEMENTS_ENABLED: "true" }))).toEqual(["new-set", "new-precon", "secret-lair", "commander-decklists", "wizards-news"]);
+  });
+
+  it("none with push off, or Home's news off, Announcements on or not", () => {
     expect(catalogPushKinds(env({ PUSH_ENABLED: "false" }))).toEqual([]);
     expect(catalogPushKinds(env({ HOME_FEED_ENABLED: "false" }))).toEqual([]);
+    expect(catalogPushKinds(env({ PUSH_ENABLED: "false", ANNOUNCEMENTS_ENABLED: "true" }))).toEqual([]);
+    expect(catalogPushKinds(env({ HOME_FEED_ENABLED: "false", ANNOUNCEMENTS_ENABLED: "true" }))).toEqual([]);
   });
 });
 
-describe("Wizards' posts, read on Home but not yet pushed (Announcements UI 3b lifts this)", () => {
-  const on = env({ ANNOUNCEMENTS_ENABLED: "true" });
-
-  it("are never a catalog push kind, even with ANNOUNCEMENTS_ENABLED on", () => {
-    expect(catalogPushKinds(on)).toEqual(["new-set", "new-precon"]);
-  });
-
-  it("draw no push box in Settings, while every other available kind keeps its own", () => {
-    expect(pushableFeedKinds(on)).toEqual(["new-set", "new-precon", "combo"]);
+describe("Wizards' posts in Settings' Push column", () => {
+  it("draw a push box with ANNOUNCEMENTS_ENABLED on, none with it off", () => {
+    expect(pushableFeedKinds(env({ ANNOUNCEMENTS_ENABLED: "true" }))).toEqual(["new-set", "new-precon", "secret-lair", "commander-decklists", "wizards-news", "combo"]);
     expect(pushableFeedKinds(env())).toEqual(["new-set", "new-precon", "combo"]);
     expect(pushableFeedKinds(env({ HOME_FEED_ENABLED: "false", ANNOUNCEMENTS_ENABLED: "true" }))).toEqual([]);
   });
@@ -68,5 +68,6 @@ describe("Wizards' posts, read on Home but not yet pushed (Announcements UI 3b l
     expect(catalogKey("secret-lair", "abc")).toBe("post:abc");
     expect(parseCatalogKey("wizards-news", "post:abc")).toBe("abc");
     expect(parseCatalogKey("commander-decklists", "set:abc")).toBeNull();
+    expect(parseCatalogKey("secret-lair", "post:")).toBeNull();
   });
 });

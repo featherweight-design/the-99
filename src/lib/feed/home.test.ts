@@ -291,7 +291,7 @@ describe("a Wizards post", () => {
   it("draws its title, summary and hero, out to the post, with no card and no lookup", () => {
     const [v] = toViews([post("commander-decklists")], empty);
     expect(v).toMatchObject({
-      kind: "commander-decklists", card: null, href: null, opens: null, outbound: URL_OK,
+      kind: "commander-decklists", card: null, href: null, opens: null, outbound: "/out/wizards/commander-decklists",
       post: { title: "Foundations Commander: the decklists", summary: "Every card in three of the five decks.", hero: "https://images.ctfassets.net/h.jpg", lists: { n: 3, of: 5 } },
     });
   });
@@ -303,6 +303,14 @@ describe("a Wizards post", () => {
 
   it("draws no press for an address off magic.wizards.com", () => {
     expect(toViews([post("wizards-news", { url: "https://evil.example/x" })], empty)[0].outbound).toBeNull();
+    expect(toViews([post("wizards-news", { url: "http://magic.wizards.com/en/news/x" })], empty)[0].outbound).toBeNull();
+  });
+
+  it("presses through the app's own out route by the post's Contentful id, never the stored address (Announcements UI 3b)", () => {
+    const item = { ...post("secret-lair"), key: "post:7aBc De/f" } as FeedItem;
+    expect(toViews([item], empty)[0].outbound).toBe("/out/wizards/7aBc%20De%2Ff");
+    // A key that names no post draws no press.
+    expect(toViews([{ ...post("secret-lair"), key: "post:" } as FeedItem], empty)[0].outbound).toBeNull();
   });
 
   it("goes out only to an https page on magic.wizards.com", () => {
@@ -327,7 +335,7 @@ describe("a Wizards post", () => {
     const q = fake({}, { feed: [row({ kind: "wizards-news", key: "post:n1", created_at: NOW.toISOString(), name: data.title, data })] });
     const feed = await loadHomeFeed("u1", env, NOW, q);
     expect(feed).toMatchObject({ chosen: true, on: ["secret-lair", "commander-decklists", "wizards-news"], lead: null, unseen: 1 });
-    expect(feed?.chosen && feed.items.map((i) => [i.kind, i.outbound])).toEqual([["wizards-news", URL_OK]]);
+    expect(feed?.chosen && feed.items.map((i) => [i.kind, i.outbound])).toEqual([["wizards-news", "/out/wizards/n1"]]);
   });
 
   it("offers nothing of Wizards' with ANNOUNCEMENTS_ENABLED off", async () => {

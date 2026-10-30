@@ -8,6 +8,8 @@ const drop = (key: string, card: string, batch = "run-1"): PushItem => ({ kind: 
 const match = (key: string, friend: string, publicId: string, card = "Ghoulcaller Gisa", batch = "w-1"): PushItem => ({ kind: "trade-match", key, batch, friend, publicId, oracleId: `o-${key}`, card, image: `img-${key}`, askable: false });
 const ask = (key: string, friend = "Peter"): PushItem => ({ kind: "spare-request", key, batch: key, friend, card: "Lathliss, Dragon Queen", image: null });
 const answer = (key: string, friend: string, said: "yes" | "no"): PushItem => ({ kind: "spare-request", key, batch: key, friend, card: "Lathliss, Dragon Queen", image: null, answer: said });
+const post = (key: string, title: string, kind: "secret-lair" | "commander-decklists" | "wizards-news" = "secret-lair", over: Partial<{ excerpt: string | null; image: string | null }> = {}): PushItem =>
+  ({ kind, key: `post:${key}`, batch: `${kind}:2026-10-29`, title, excerpt: "A drop of five.", image: "https://images.ctfassets.net/h.jpg", href: `/out/wizards/${key}`, ...over });
 const combo = (key: string, batch = "u-1"): PushItem => ({ kind: "combo", key, batch, oracleId: `o-${key}`, a: "Thassa's Oracle", b: "Demonic Consultation", added: "Demonic Consultation", image: `img-${key}` });
 
 describe("one item of each kind (the handoff's table)", () => {
@@ -47,6 +49,30 @@ describe("one item of each kind (the handoff's table)", () => {
     expect(toMessage([combo("c1")])).toMatchObject({
       title: "You can make a combo", body: "Thassa's Oracle + Demonic Consultation. You added Demonic Consultation.", route: "/", openCard: "o-c1", openCombo: true,
     });
+  });
+});
+
+describe("a Wizards post (Announcements UI 3b)", () => {
+  it("one post: its title and summary, the hero, tagged by its kind, landing on its out route", () => {
+    expect(toMessage([post("abc", "Secret Lair x Jaws")])).toEqual({
+      title: "Secret Lair x Jaws", body: "A drop of five.", route: "/out/wizards/abc", tag: "secret-lair", keys: ["post:abc"],
+      openCard: null, openCombo: false, image: "https://images.ctfassets.net/h.jpg",
+    });
+  });
+  it("a post with no summary says where a tap goes; a hero not on https is never sent", () => {
+    expect(toMessage([post("n1", "Release schedule", "wizards-news", { excerpt: null, image: "http://x.example/h.jpg" })])).toMatchObject({
+      body: "Read it on Wizards.", image: null, tag: "wizards-news", route: "/out/wizards/n1",
+    });
+  });
+  it("several posts of one kind: the kind by its kicker, the titles, landing on Home", () => {
+    expect(toMessage([post("a", "Alpha", "commander-decklists"), post("b", "Beta", "commander-decklists"), post("c", "Gamma", "commander-decklists")])).toMatchObject({
+      title: "Commander decklists: 3 new posts", body: "Alpha, Beta and 1 more.", route: "/", tag: "commander-decklists", image: null, keys: ["post:a", "post:b", "post:c"],
+    });
+  });
+  it("collapses only within a kind", () => {
+    expect(messagesFor([post("a", "A"), post("b", "B", "wizards-news"), post("c", "C")], "live").map((m) => [m.tag, m.keys])).toEqual([
+      ["secret-lair", ["post:a", "post:c"]], ["wizards-news", ["post:b"]],
+    ]);
   });
 });
 

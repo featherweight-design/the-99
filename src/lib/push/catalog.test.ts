@@ -44,6 +44,37 @@ describe("queueing one reader's catalog arrivals", () => {
   });
 });
 
+describe("queueing one reader's Wizards posts (Announcements UI 3b)", () => {
+  const post = render(enqueueCatalogQuery("u1", "secret-lair", NOW, DAY_MS));
+  const q = flat(post.sql);
+
+  it("inserts the feed's own post:<contentful id> key at the moment the ingest first saw the post, with the day's batch", () => {
+    expect(q).toMatch(/^insert into "push_outbox" \(user_id, kind, item_key, batch_key, payload, created_at\) select \$1, f\.kind, f\.key, \$2, '\{\}'::jsonb, f\.created_at from \(/);
+    expect(post.params.slice(0, 2)).toEqual(["u1", "secret-lair:2026-10-22"]);
+    expect(q).toContain("select wa.kind as kind, 'post:' || wa.contentful_id as key, wa.first_seen_at as created_at");
+    expect(q).toMatch(/on conflict \(user_id, kind, item_key\) do nothing returning id$/);
+  });
+
+  it("reads the feed's rules for a post: its kind, never the baseline, never one the reader dismissed", () => {
+    expect(q).toContain(`from "wizards_announcements" wa left join "user_prefs" aup on aup.user_id = $`);
+    expect(q).toMatch(/where wa\.kind = \$\d+::text and wa\.baseline = false/);
+    expect(post.params).toContain("secret-lair");
+    expect(q).toMatch(/not exists \(select 1 from "feed_dismissals" afd where afd\.user_id = \$\d+ and afd\.key = 'post:' \|\| wa\.contentful_id\)/);
+  });
+
+  it("judges the post's first sight against the PUSH stamp, inside the stale window and not after now", () => {
+    expect(q).toContain("wa.first_seen_at > coalesce((aup.push_kinds ->> $");
+    expect(q).not.toContain("feed_kinds");
+    expect(q).toMatch(/wa\.first_seen_at > \$\d+::timestamptz and wa\.first_seen_at <= \$\d+::timestamptz/);
+    expect(post.params).toContain("2026-10-21T16:00:00.000Z");
+    expect(post.params).toContain(NOW.toISOString());
+  });
+
+  it("counts a post's lists by an aliased, qualified subquery", () => {
+    expect(q).toContain(`(select count(*) from "wizards_announcement_decklists" wad where wad.announcement_id = wa.id)::int`);
+  });
+});
+
 describe("the readers the cron looks at", () => {
   const gate = (n: number) =>
     `coalesce((cup.push_kinds ->> $${n}::text)::timestamptz, case when $${n + 1}::text = any($${n + 2}::text[]) ` +
@@ -52,9 +83,11 @@ describe("the readers the cron looks at", () => {
   it("have a device and a catalog kind's push on, the prefs row LEFT joined", () => {
     const r = render(catalogReadersQuery());
     expect(flat(r.sql)).toBe(
-      `select distinct cps.user_id as user_id from "push_subscriptions" cps left join "user_prefs" cup on cup.user_id = cps.user_id where ${gate(1)} or ${gate(5)}`,
+      `select distinct cps.user_id as user_id from "push_subscriptions" cps left join "user_prefs" cup on cup.user_id = cps.user_id where ${[1, 5, 9, 13, 17].map(gate).join(" or ")}`,
     );
-    expect(r.params).toEqual(["new-set", "new-set", ["spare-request", "secret-lair", "commander-decklists", "wizards-news"], "new-set", "new-precon", "new-precon", ["spare-request", "secret-lair", "commander-decklists", "wizards-news"], "new-precon"]);
+    const defaults = ["spare-request", "secret-lair", "commander-decklists", "wizards-news"];
+    // Every catalog kind, Wizards' three posts' kinds included (Announcements UI 3b).
+    expect(r.params).toEqual(["new-set", "new-precon", "secret-lair", "commander-decklists", "wizards-news"].flatMap((k) => [k, k, defaults, k]));
   });
 
   it("for a default-on kind, passes the kind as default on to the gate", () => {
@@ -77,6 +110,21 @@ describe("resolving catalog keys", () => {
     expect(q).not.toContain("feed_kinds");
     expect(q).not.toContain("push_kinds");
     expect(q).toContain("false as unseen");
+  });
+
+  it("reads a Wizards post by the Contentful id its post:<id> key names, under its own kind", () => {
+    const r = render(catalogItemsByKeyQuery("u1", [
+      { kind: "commander-decklists", key: "post:abc" }, { kind: "commander-decklists", key: "post:def" }, { kind: "wizards-news", key: "post:n1" },
+    ], NOW)!);
+    const q = flat(r.sql);
+    expect(q).toContain(`from "wizards_announcements" wa`);
+    expect(q.match(/and wa\.contentful_id = any\(\$\d+::text\[\]\)/g)).toHaveLength(2);
+    expect(r.params).toContainEqual(["abc", "def"]);
+    expect(r.params).toContainEqual(["n1"]);
+    expect(r.params).toContain("commander-decklists");
+    expect(r.params).toContain("wizards-news");
+    expect(q).not.toContain("push_kinds");
+    expect(q).not.toContain(`"sets"`);
   });
 
   it("is null with nothing to read, a key that names nothing included", () => {
@@ -113,6 +161,13 @@ describe("the cron's catalog pass", () => {
     const out = await enqueueCatalogArrivals({ now: NOW, staleMs: DAY_MS, q, resolveEnv: async (u) => (u === "b" ? { ...on, PUSH_ENABLED: "false" } : on) });
     expect(out).toEqual({ queued: 2, failed: 0 });
     expect(statements.filter((s) => s.startsWith("insert"))).toHaveLength(2);
+  });
+
+  it("queues Wizards' three kinds too for a reader with Announcements on", async () => {
+    const { q, statements } = fakeQ(["a"]);
+    const out = await enqueueCatalogArrivals({ now: NOW, staleMs: DAY_MS, q, resolveEnv: async () => ({ ...on, ANNOUNCEMENTS_ENABLED: "true" }) as unknown as NodeJS.ProcessEnv });
+    expect(out).toEqual({ queued: 5, failed: 0 });
+    expect(statements.filter((s) => s.startsWith("insert") && s.includes(`"wizards_announcements"`))).toHaveLength(3);
   });
 
   it("one reader failing never stops the others", async () => {

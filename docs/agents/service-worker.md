@@ -42,6 +42,8 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   notification, focuses an open window of the app and navigates it, or opens one (also when the window refuses to navigate, or `navigate()` resolves to null because it went away). What
   Home should open rides in the ADDRESS, `push-card=<oracle id>` and `push-combo=1`, never a `postMessage`: a message sent at a
   navigation reaches the page being left, and a window opened cold has no listener yet. The landing PR reads and strips them.
+  A landing under `/out/` (a redirect off the app, e.g. `/out/wizards/<id>`) never navigates an app window: it only opens a new
+  one, because `navigate()` to a URL that redirects off-origin resolves null and would otherwise open a second window.
   `src/app/sw.test.ts` pins all of it, including that a push touches no cache. The `VERSION` bump drops the v1 caches once; the install
   keeps `/offline` again.
 

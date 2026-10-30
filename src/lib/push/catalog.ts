@@ -1,12 +1,13 @@
 /**
- * The catalog kinds' outbox rows (plan `2026-10-22-push.md`, D2 as amended; PR 3c). A new set or precon has no per-reader
- * row: Home reads it from `catalog_first_seen` at read time. So the CRON flush, never the ingest (which holds the
+ * The catalog kinds' outbox rows (plan `2026-10-22-push.md`, D2 as amended; PR 3c; Wizards' posts since Announcements UI
+ * 3b). A new set, precon or Wizards post has no per-reader row: Home reads it from `catalog_first_seen` or
+ * `wizards_announcements` at read time. So the CRON flush, never the ingest (which holds the
  * `catalog-ingest` lock), computes each subscribed reader's arrivals itself and queues one `push_outbox` row per arrival,
  * and the per-device machinery (held hours, collapse, landing, done-tracking, pruning) delivers them like any other row.
  *
  * An arrival is queued for a reader with a device, whose PUSH kind is on (`pushKindEnabledAt`) and available under their
  * switches (`catalogPushKinds`), when the feed lists it (`catalogBranch`: not the baseline, released, a release-type set or a
- * precon with no twin), its moment is newer than the kind's push stamp, and it is younger than the flush's stale window.
+ * precon with no twin; a post not the baseline, not dismissed, at the moment the ingest first saw it), its moment is newer than the kind's push stamp, and it is younger than the flush's stale window.
  * The unique index (user, kind, item key) makes every later run free; the row's `created_at` is the item's own moment, so
  * the stamp, the stale window and a device's subscribe time are judged on the event, as for a stored kind.
  */
@@ -24,8 +25,9 @@ type Q = Pick<typeof db, "execute">;
 /**
  * The readers to look at: a device, and a catalog kind's push on (`pushKindEnabledAt`: stamped, or default on and not
  * declined). Switches are judged per reader after. The prefs row is LEFT joined, so a reader who never chose (no row)
- * still hears a default-on kind; for a kind that is not default on, a missing row reads as off, as before. `defaultOn`
- * is the default-on set, a parameter only so a test can render the arm no catalog kind takes yet.
+ * still hears a default-on kind (Wizards' three posts' kinds are default on, so every reader with a device is looked at);
+ * for a kind that is not default on, a missing row reads as off, as before. `defaultOn` is the default-on set, a parameter
+ * only so a test can pin both arms.
  */
 export function catalogReadersQuery(kinds: readonly CatalogKind[] = PUSH_CATALOG_KINDS, defaultOn: readonly FeedKind[] = DEFAULT_ON_KINDS): SQL {
   const on = sql.join(kinds.map((k) => sql`${pushKindEnabledAt(sql`cup`, sql`${k}::text`, defaultOn)} is not null`), sql` or `);
