@@ -98,5 +98,5 @@ export async function rememberCommandersAvail(avail: unknown): Promise<void> {
 export async function refreshCommanderCounts(): Promise<{ owned: number; discover: number } | null> {
   const userId = await requireUserId();
   const stats = await getCollectionStats(userId);
-  return stats.uniqueCards === 0 ? null : loadCommanderCounts(userId);
+  return stats.uniqueCards === 0 ? null : loadCommanderCounts(userId, await requestSwitchEnv(userId));
 }

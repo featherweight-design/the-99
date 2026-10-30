@@ -2,6 +2,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, collectionItems, commanderScores, commanderSupport } from "../../db/schema";
 import { notBuiltBy } from "../decks/built";
+import { scoreWriterVersion } from "../recs/writer-version";
 
 /**
  * The two figures on the Commanders place's title line (menu and Home, PR 1): the commanders the reader owns and has
@@ -16,12 +17,20 @@ import { notBuiltBy } from "../decks/built";
  * Both are per reader and read live, as a count over indexed rows is cheaper than a cache entry the reader's decks
  * would have to invalidate: building a deck moves both figures, and no tag drops on a deck write.
  */
-export async function loadCommanderCounts(userId: string): Promise<{ owned: number; discover: number }> {
+export async function loadCommanderCounts(userId: string, env: NodeJS.ProcessEnv): Promise<{ owned: number; discover: number }> {
   const [owned, discover] = await Promise.all([
     db
       .select({ n: sql<number>`count(*)::int` })
       .from(commanderScores)
-      .where(and(eq(commanderScores.userId, userId), notBuiltBy(userId, commanderScores.oracleId))),
+      .where(
+        and(
+          eq(commanderScores.userId, userId),
+          // Only rows this deployment's writer would serve: a stale set is recomputed by the next ranking, and counting it
+          // meanwhile would state a figure that omits what the recompute adds (`loadScores` refuses it the same way).
+          eq(commanderScores.writerVersion, scoreWriterVersion(env)),
+          notBuiltBy(userId, commanderScores.oracleId),
+        ),
+      ),
     db
       .select({ n: sql<number>`count(*)::int` })
       .from(commanderSupport)
