@@ -3,7 +3,7 @@ import type { z } from "zod";
 import type { ModelErrorClass, ModelUsage } from "../../model/client";
 import type { EvidencePack } from "../evidence";
 import { buildPromptV2, type PromptV2Stage } from "../prompt";
-import { OWNED_SHORTLIST_MAX } from "../limits";
+import { OWNED_OFF_INDEX_MAX, OWNED_SHORTLIST_MAX } from "../limits";
 import { lineSchemaV2, suggestedChangesV2Schema } from "../response-schema";
 import { validateSuggestions, type Drop, type ResolvedCard, type ValidatedSuggestion } from "../validate";
 import { aimDrops, type BracketAim } from "./bracket-aim";
@@ -27,8 +27,8 @@ import { lineStream } from "./stream-lines";
  * 3. The cut list's target is min(N, the additions finally kept); a cut list short of it (the refill brought more
  *    additions than call 1 kept, or cuts dropped) refills once.
  *
- * An owned-only run whose shortlist is complete (`ownedCandidatesComplete`: every tier under its cap and page limit, so
- * under `OWNED_SHORTLIST_MAX`) holds every owned card that fits: once each
+ * An owned-only run whose pool is complete (the shortlist, `ownedCandidatesComplete`, under `OWNED_SHORTLIST_MAX`, and the
+ * off-index tier, `ownedOffIndexComplete`, under its room) holds every owned card that fits: once each
  * of them is kept or dropped, the additions list is `poolExhausted`, no refill is asked (there is nothing left to ask
  * for), and a short list is the player's limit, not the model's shortfall (`charge.ts`, `report.ts`).
  *
@@ -93,7 +93,7 @@ export type V2List = {
   overAsk: number;
   /** Some call on this list returned fewer lines than it asked for (`charge.ts`: a short list with it is refunded). */
   underProduced: boolean;
-  /** Additions only: an owned-only run's whole shortlist (complete, `ownedCandidatesComplete`: every owned card that fits) was
+  /** Additions only: an owned-only run's whole pool, both tiers (complete, so every owned card that fits), was
    *  kept or dropped. No card is left to ask for, so the list is short by the player's own limit (`charge.ts`). */
   poolExhausted: boolean;
 };
@@ -132,6 +132,24 @@ export type RunV2Args = {
   /** The cut call is about to ask for `ask` cuts: the figure the wait's "asked for" states (plan PR 7, follow-up c). */
   onCutAsk?: (ask: number) => void | Promise<void>;
 };
+
+/**
+ * An owned-only run's whole pool, both tiers, when it is COMPLETE: the index tier (focus cards included) holds every card
+ * that qualifies (`ownedCandidatesComplete`) and is under `OWNED_SHORTLIST_MAX`, and the off-index tier ran out of ranked
+ * cards below its room (`ownedOffIndexComplete`; a tier that filled its room is the top of a longer list), with the two
+ * together under `OWNED_SHORTLIST_MAX` and the second under `OWNED_OFF_INDEX_MAX`. Null for any other run, or a pool that
+ * may be the top of a longer list.
+ */
+export function completeOwnedPool(
+  pack: Pick<EvidencePack, "limits" | "ownedCandidates" | "ownedCandidatesComplete" | "ownedOffIndex" | "ownedOffIndexComplete">,
+): { oracleId: string; name: string }[] | null {
+  const first = pack.ownedCandidates;
+  const offIndex = pack.ownedOffIndex ?? [];
+  if (!pack.limits.ownedOnly || !first || !pack.ownedCandidatesComplete || !pack.ownedOffIndexComplete) return null;
+  const pool = [...first, ...offIndex];
+  if (first.length >= OWNED_SHORTLIST_MAX || offIndex.length >= OWNED_OFF_INDEX_MAX || pool.length >= OWNED_SHORTLIST_MAX) return null;
+  return pool;
+}
 
 export async function runV2(args: RunV2Args): Promise<V2Report> {
   const now = args.now ?? Date.now;
@@ -268,14 +286,13 @@ export async function runV2(args: RunV2Args): Promise<V2Report> {
   const rejected = (list: V2List) => list.drops.map((d) => ({ card: d.name ?? "?", reason: reasonFor(d) }));
 
   /**
-   * Whether an owned-only run has used its whole shortlist: the shortlist is complete (`ownedCandidatesComplete`: every
-   * tier of it, the owned read and a focus run's candidates, holds every card that fits, none cut at its cap or page
-   * limit) and under its cap, and each of its cards was kept or dropped on the additions side. A drop is matched by the
-   * card it resolves to, else by the name the model wrote.
+   * Whether an owned-only run has used its whole pool, both tiers: the pool is complete (`completeOwnedPool`), and each
+   * of its cards was kept or dropped on the additions side. A drop is matched by the card it resolves to, else by the
+   * name the model wrote.
    */
   function poolExhausted(): boolean {
-    const pool = pack.ownedCandidates;
-    if (!pack.limits.ownedOnly || !pool || !pack.ownedCandidatesComplete || pool.length >= OWNED_SHORTLIST_MAX) return false;
+    const pool = completeOwnedPool(pack);
+    if (!pool) return false;
     const seen = new Set<string>(additions.kept.map((l) => l.addOracleId).filter((id): id is string => id !== null));
     const names = new Set<string>();
     for (const d of additions.drops) {

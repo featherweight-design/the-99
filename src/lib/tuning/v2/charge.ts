@@ -26,7 +26,8 @@ export type ListOutcome = {
   /** Any call on this list returned fewer lines than it asked for. Aggregate counts cannot tell this apart from
    *  restriction drops (7 kept with 8 over the cap, then a refill of 3 that returned 2), so the engine says it. */
   underProduced?: boolean;
-  /** Owned-only, and every card on the owned shortlist was kept or dropped (`V2List.poolExhausted`): the list is short by
+  /** Owned-only, and every card of a complete owned pool (both tiers, `completeOwnedPool`) was kept or dropped
+   *  (`V2List.poolExhausted`): the list is short by
    *  the player's limit, so neither under-producing nor a gap past the restriction drops refunds it. A model-caused drop
    *  still does. */
   poolExhausted?: boolean;

@@ -62,6 +62,19 @@ describe("buildEvidencePack", () => {
     expect(JSON.stringify(buildEvidencePack(input()))).not.toMatch(/\b0\.\d+\b/);
   });
 
+  it("carries the off-index tier and each tier's completeness onto the pack (prompt v12)", () => {
+    const own = [{ oracleId: "own", name: "Own", typeLine: "Artifact" }];
+    const off = [{ oracleId: "off", name: "Off", typeLine: "Artifact" }];
+    const full = buildEvidencePack({ ...input(), ownedCandidates: own, ownedCandidatesComplete: true, ownedOffIndex: off, ownedOffIndexComplete: true });
+    expect(full).toMatchObject({ ownedCandidates: own, ownedCandidatesComplete: true, ownedOffIndex: off, ownedOffIndexComplete: true });
+    // An empty second tier is left off, but its completeness stays: a tier that found nothing is still a complete read.
+    const empty = buildEvidencePack({ ...input(), ownedCandidates: own, ownedCandidatesComplete: true, ownedOffIndex: [], ownedOffIndexComplete: true });
+    expect(empty.ownedOffIndex).toBeUndefined();
+    expect(empty.ownedOffIndexComplete).toBe(true);
+    const cut = buildEvidencePack({ ...input(), ownedCandidates: own, ownedCandidatesComplete: true, ownedOffIndex: off, ownedOffIndexComplete: false });
+    expect(cut.ownedOffIndexComplete).toBeUndefined();
+  });
+
   it("marks the commander so a cut can be refused for naming one", () => {
     const pack = buildEvidencePack(input());
     expect(pack.cards.filter((c) => c.commander).map((c) => c.oracleId)).toEqual(["cmd"]);

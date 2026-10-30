@@ -3,9 +3,10 @@ import { describe, expect, it } from "vitest";
 import { buildPlayGroup } from "../../profile/play";
 import type { DeckGame } from "../../decks/games";
 import type { EvidencePack } from "../evidence";
+import { OWNED_OFF_INDEX_MAX, OWNED_SHORTLIST_MAX } from "../limits";
 import type { ResolvedCard } from "../validate";
 import { replyCeilingFor } from "./count";
-import { runV2, type V2CallModel, type V2CallRequest, type V2Stage } from "./engine";
+import { completeOwnedPool, runV2, type V2CallModel, type V2CallRequest, type V2Stage } from "./engine";
 
 const game = (id: string, over: Partial<DeckGame> = {}): DeckGame => ({
   id, result: "loss", podSize: 4, playedAt: new Date("2026-09-01T20:00:00Z"),
@@ -126,7 +127,7 @@ describe("runV2", () => {
     // Three cards fit the owned shortlist: two are kept and Add 3 is dropped (its last free copy went elsewhere), so
     // nothing is left to ask for. Two of four is the player's own limit, though the model wrote three lines of six.
     const shortlist = adds(1, 3).map((name) => ({ oracleId: name, name, typeLine: "Creature" }));
-    const owned: EvidencePack = { ...pack, limits: { capCents: null, sets: [], ownedOnly: true }, ownedCandidates: shortlist, ownedCandidatesComplete: true };
+    const owned: EvidencePack = { ...pack, limits: { capCents: null, sets: [], ownedOnly: true }, ownedCandidates: shortlist, ownedCandidatesComplete: true, ownedOffIndexComplete: true };
     const ownedResolve = (name: string) => { const c = resolveName(name); return c ? { ...c, owned: name !== "Add 3" } : null; };
     const f = fake({ additions: { cards: adds(1, 3) }, additionsRefill: { cards: adds(4, 1) }, cuts: { cards: cutsOf(1, 5) } });
     const r = await runV2({ ...base, pack: owned, resolveName: ownedResolve, n: 4, callModel: f.callModel, now: f.now });
@@ -152,6 +153,59 @@ describe("runV2", () => {
     expect(h.requests.map((q) => q.stage)).toContain("additionsRefill");
     expect(t.additions.poolExhausted).toBe(false);
     expect(t.charge).toEqual({ outcome: "refunded", why: "shortByModel" });
+  });
+
+  // Prompt v12: the pool is both tiers. It is spent only when every card of BOTH was kept or dropped, and only when it is
+  // complete: neither tier cut short at its cap, and the two together under OWNED_SHORTLIST_MAX.
+  it("calls the owned pool spent only over both tiers, and only when the pool is complete", async () => {
+    const card = (name: string) => ({ oracleId: name, name, typeLine: "Creature" });
+    const ownedResolve = (name: string) => { const c = resolveName(name); return c ? { ...c, owned: name !== "Add 3" } : null; };
+    const owned: EvidencePack = { ...pack, limits: { capCents: null, sets: [], ownedOnly: true }, ownedCandidates: adds(1, 2).map(card), ownedCandidatesComplete: true, ownedOffIndex: [card("Add 3")], ownedOffIndexComplete: true };
+    const run = async (p: EvidencePack) => {
+      const f = fake({ additions: { cards: adds(1, 3) }, additionsRefill: { cards: [] }, cuts: { cards: cutsOf(1, 5) } });
+      const r = await runV2({ ...base, pack: p, resolveName: ownedResolve, n: 4, callModel: f.callModel, now: f.now });
+      return { r, stages: f.requests.map((q) => q.stage) };
+    };
+
+    // Every card of both tiers kept or dropped: spent, no refill.
+    const spent = await run(owned);
+    expect(spent.r.additions.poolExhausted).toBe(true);
+    expect(spent.stages).not.toContain("additionsRefill");
+
+    // An off-index card the model never named is still there to ask for.
+    const unnamed = await run({ ...owned, ownedOffIndex: [card("Add 3"), card("Add 9")] });
+    expect(unnamed.r.additions.poolExhausted).toBe(false);
+    expect(unnamed.stages).toContain("additionsRefill");
+
+    // The same pool, every card kept or dropped, but the off-index tier filled its room (`readOwnedOffIndex` reports it
+    // incomplete): owned off-index cards past it were never offered, so the pool is not spent. Likewise the first tier.
+    const offFull = await run({ ...owned, ownedOffIndexComplete: false });
+    expect(offFull.r.additions.poolExhausted).toBe(false);
+    expect(offFull.stages).toContain("additionsRefill");
+    const firstCut = await run({ ...owned, ownedCandidatesComplete: false });
+    expect(firstCut.r.additions.poolExhausted).toBe(false);
+  });
+
+  it("calls an owned pool complete only with both tiers complete and under every cap", () => {
+    const named = (n: number, prefix: string) => Array.from({ length: n }, (_, i) => ({ oracleId: `${prefix}${i}`, name: `${prefix} ${i}`, typeLine: "Creature" }));
+    const on = { capCents: null, sets: [], ownedOnly: true };
+    const done = { limits: on, ownedCandidatesComplete: true, ownedOffIndexComplete: true };
+    expect(completeOwnedPool({ ...done, ownedCandidates: named(2, "I"), ownedOffIndex: named(3, "O") })?.map((c) => c.name)).toEqual(["I 0", "I 1", "O 0", "O 1", "O 2"]);
+    expect(completeOwnedPool({ ...done, ownedCandidates: named(10, "I"), ownedOffIndex: named(OWNED_OFF_INDEX_MAX - 1, "O") })).toHaveLength(10 + OWNED_OFF_INDEX_MAX - 1);
+    // Either tier reported incomplete: the off-index tier filled its room, or the first tier was cut.
+    expect(completeOwnedPool({ ...done, ownedOffIndexComplete: false, ownedCandidates: named(2, "I"), ownedOffIndex: named(3, "O") })).toBeNull();
+    expect(completeOwnedPool({ ...done, ownedOffIndexComplete: undefined, ownedCandidates: named(2, "I") })).toBeNull();
+    expect(completeOwnedPool({ ...done, ownedCandidatesComplete: false, ownedCandidates: named(2, "I"), ownedOffIndex: named(3, "O") })).toBeNull();
+    // The off-index tier at its own cap.
+    expect(completeOwnedPool({ ...done, ownedCandidates: named(2, "I"), ownedOffIndex: named(OWNED_OFF_INDEX_MAX, "O") })).toBeNull();
+    // The two together at the total cap, each under its own.
+    expect(completeOwnedPool({ ...done, ownedCandidates: named(OWNED_SHORTLIST_MAX - 30, "I"), ownedOffIndex: named(30, "O") })).toBeNull();
+    expect(completeOwnedPool({ ...done, ownedCandidates: named(OWNED_SHORTLIST_MAX - 31, "I"), ownedOffIndex: named(30, "O") })).toHaveLength(OWNED_SHORTLIST_MAX - 1);
+    // The index tier at its cap.
+    expect(completeOwnedPool({ ...done, ownedCandidates: named(OWNED_SHORTLIST_MAX, "I") })).toBeNull();
+    // No first tier read; owned-only off.
+    expect(completeOwnedPool({ ...done, ownedOffIndex: named(2, "O") })).toBeNull();
+    expect(completeOwnedPool({ ...done, limits: { ...on, ownedOnly: false }, ownedCandidates: named(2, "I") })).toBeNull();
   });
 
   it("refills a short cut list against min(N, additions kept) and shows it every addition coming in", async () => {

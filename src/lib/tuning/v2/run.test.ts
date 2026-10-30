@@ -34,8 +34,11 @@ const s = vi.hoisted(() => ({
   ownedShortlist: undefined as unknown[] | undefined,
   // Whether each loader reports its list complete (every card that qualifies), and what the run told the pack.
   ownedComplete: true,
+  offIndex: [] as { oracleId: string; name: string; typeLine: string }[],
+  offIndexComplete: true,
+  offIndexArgs: null as null | { exclude?: ReadonlySet<string>; max?: number },
   focusComplete: true,
-  packArgs: null as null | { ownedCandidates?: unknown[]; ownedCandidatesComplete?: boolean },
+  packArgs: null as null | { ownedCandidates?: unknown[]; ownedCandidatesComplete?: boolean; ownedOffIndex?: unknown[]; ownedOffIndexComplete?: boolean },
   focusPacked: null as null | unknown[],
 }));
 
@@ -57,7 +60,10 @@ vi.mock("../../strategy/candidates", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../strategy/candidates")>()),
   readFocusCandidates: async (args: { limits: { ownedOnly: boolean } }) => ({ cards: s.focusLoad?.(args.limits) ?? [], complete: s.focusComplete }),
 }));
-vi.mock("../owned-candidates", () => ({ readOwnedCandidates: async () => ({ cards: s.ownedShortlist ?? [], complete: s.ownedComplete }) }));
+vi.mock("../owned-candidates", () => ({
+  readOwnedCandidates: async () => ({ cards: s.ownedShortlist ?? [], complete: s.ownedComplete }),
+  readOwnedOffIndex: async (a: { exclude?: ReadonlySet<string>; max?: number }) => { s.offIndexArgs = a; return { cards: s.offIndex, complete: s.offIndexComplete }; },
+}));
 vi.mock("../../strategy/run", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../strategy/run")>();
   return {
@@ -102,7 +108,7 @@ vi.mock("../answer", () => ({
   },
 }));
 vi.mock("../evidence", () => ({
-  buildEvidencePack: (a: { ownedCandidates?: unknown[]; ownedCandidatesComplete?: boolean }) => { s.packArgs = a; return structuredClone(pack); },
+  buildEvidencePack: (a: NonNullable<typeof s.packArgs>) => { s.packArgs = a; return structuredClone(pack); },
 }));
 vi.mock("../run-store", () => ({
   startRun: async (...args: unknown[]) => { s.started.push(args); return s.start; },
@@ -120,7 +126,7 @@ vi.mock("../run-store", () => ({
 }));
 
 import { listFingerprint } from "../../profile/fingerprint";
-import { deckTotal, parseV2Wire, startTuningV2, V2_DECK_TOTAL, type V2Wire } from "./run";
+import { deckTotal, ownedOffIndexRoom, parseV2Wire, startTuningV2, V2_DECK_TOTAL, type V2Wire } from "./run";
 import { requestHash } from "./request-hash";
 
 const body = Array.from({ length: 98 }, (_, i) => `Card ${i + 1}`);
@@ -177,6 +183,9 @@ beforeEach(() => {
   s.focusLoad = null;
   s.ownedShortlist = undefined;
   s.ownedComplete = true;
+  s.offIndex = [];
+  s.offIndexComplete = true;
+  s.offIndexArgs = null;
   s.focusComplete = true;
   s.packArgs = null;
   s.focusPacked = null;
@@ -420,6 +429,28 @@ describe("the v2 run's work", () => {
     expect(s.packArgs!.ownedCandidatesComplete).toBe(false);
   });
 
+  // Prompt v12: the off-index tier fills the room the first tier leaves, never repeats one of its cards, and carries its
+  // own completeness to the pack.
+  it("an owned-only run reads the off-index tier into the room the shortlist leaves, with its completeness", async () => {
+    s.inputs = inputs({ limits: { capCents: null, sets: [], ownedOnly: true } });
+    s.ownedShortlist = [{ oracleId: "own", name: "Own", typeLine: "Artifact" }];
+    s.offIndex = [{ oracleId: "off", name: "Off", typeLine: "Artifact" }];
+    s.offIndexComplete = false;
+    await run();
+    expect(s.offIndexArgs!.max).toBe(40);
+    expect([...s.offIndexArgs!.exclude!]).toEqual(["own"]);
+    expect(s.packArgs).toMatchObject({ ownedOffIndex: s.offIndex, ownedOffIndexComplete: false, ownedCandidatesComplete: true });
+
+    s.offIndexComplete = true;
+    await run();
+    expect(s.packArgs!.ownedOffIndexComplete).toBe(true);
+
+    // A first tier of 60 leaves 20 of the 80: the room follows the first tier's size, under the off-index cap.
+    s.ownedShortlist = Array.from({ length: 60 }, (_, i) => ({ oracleId: `own${i}`, name: `Own ${i}`, typeLine: "Artifact" }));
+    await run();
+    expect(s.offIndexArgs!.max).toBe(20);
+  });
+
   it("a run that is no longer pending when a line is saved fails, and makes no further call (round 2)", async () => {
     s.goneRun = true;
     const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
@@ -437,5 +468,16 @@ describe("the v2 run's work", () => {
     expect(s.persisted).toEqual([]);
     expect(s.failed).toEqual([[{ runId: "run_1", callId: "call_1" }, []]]);
     expect(revalidate).toHaveBeenCalledTimes(1);
+  });
+});
+
+// Prompt v12: the off-index tier fills only the room the index cards and focus candidates leave, at most its own cap.
+describe("ownedOffIndexRoom", () => {
+  it("is the room under the pool's total, never past the tier's own cap, never below zero", () => {
+    expect(ownedOffIndexRoom(0)).toBe(40);
+    expect(ownedOffIndexRoom(40)).toBe(40);
+    expect(ownedOffIndexRoom(50)).toBe(30);
+    expect(ownedOffIndexRoom(80)).toBe(0);
+    expect(ownedOffIndexRoom(95)).toBe(0);
   });
 });
