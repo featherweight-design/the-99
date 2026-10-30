@@ -111,6 +111,7 @@ function FlyerRow({ row }: { row: Extract<TreeRow, { kind: "flyer" }> }) {
         <small className={SMALL}>{flyerAdminCopy.noFriendLink}</small>
         <Link href={href} prefetch={false} className={TEXT_BUTTON}>
           {flyerAdminCopy.print}
+          <PendingReporter href={href} />
         </Link>
       </span>
     </div>

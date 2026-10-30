@@ -1,3 +1,4 @@
+import { PendingReporter } from "../shell/pending-reporter";
 import Link from "next/link";
 import { flyerAdminCopy } from "../../lib/copy/admin";
 import type { FlyerRowView, FlyersView } from "../../lib/admin/flyers-rule";
@@ -56,6 +57,7 @@ function Row({ row }: { row: FlyerRowView }) {
         <span className="col-span-2 -mt-[4px] -mb-[8px] -ml-[6px] flex justify-start gap-[8px] md:col-span-1 md:m-0 md:justify-end">
           <Link href={`/admin/invites/flyers/${row.code}`} prefetch={false} className={TEXT_BUTTON}>
             {copy.print}
+            <PendingReporter href={`/admin/invites/flyers/${row.code}`} />
           </Link>
         </span>
       )}
