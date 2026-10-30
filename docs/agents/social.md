@@ -31,7 +31,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   (`SpareFriend`, `SharedPod`, `OtherSide`, an ask's `deckName` as the holder sees it, `waiting.ts`, `your-requests.ts`;
   the friend page's Spares tab, the stand-ins and cart spare rows, Waiting on you, Your requests, the answer sheet,
   the lead story's ask and receipt, Settings' pod list, and the cart's Friend filter, By friend panels and fact
-  lists); PR D, the feed and push (`FeedItem.friend` and `FeedView.friend` are `FeedFriend`, minted by `feedFriend()` in `social/feed-items.ts`, the one place a feed name is minted; `feedText` returns `string | PersonParts` for title and press, the press draws through `PersonText` and a trade-ask press carries the marker on the button itself; `feedCopy.home.title.spareRequest` is also Waiting on you's ask title; `toPushItem` is the one server-side reveal, because a notification is not a page); and PRs B1 and B2, friends and pods (`access.ts`: `Friend.displayName`, `PodMember.displayName`, `Pod.name`,
+  lists); PR D, the feed and push (`FeedItem.friend` and `FeedView.friend` are `FeedFriend`, minted by `feedFriend()` in `social/feed-items.ts`, the one place a feed name is minted; `feedText` returns `string | PersonParts` for title and press, the press draws through `PersonText` and a trade-ask press carries the marker on the button itself; `feedCopy.home.title.spareRequest` is also Waiting on you's ask title; `toPushItem` is the one server-side reveal, because a notification is not a page); PR E, friend decks (`FriendDeck.name` and `FriendDeckPage.name` in `social/decks.ts` and the picker's `FriendDeck.name` in `social/games.ts` are minted there; the Decks tab tile and its aria-label through `personAttrs`, the deck page title, the seat picker row and a seat's deck line draw through `PersonName`; `commanderRepeats` reads a deck name through `testName`; the viewer's own decks, `shares[].deckName` included, stay plain); and PRs B1 and B2, friends and pods (`access.ts`: `Friend.displayName`, `PodMember.displayName`, `Pod.name`,
   `Pod.nextOwner`, all branded, a pod's name for its creator too; the Friends list, row link and menu, the friend page's
   head and Decks and Wishlist tabs, a friend's deck page eyebrow and back link, the pods pane, card, menu, seats and Add
   friends sheet, the Leave and Delete confirms, the receipt after Accept on `/friends?accepted=`, Home's Friends section
@@ -43,11 +43,9 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   pod's rename field starts from `draftText(name)` and carries `NO_CAPTURE` itself; a typed filter reads a name through
   `nameIncludes`, a sort through `compareNames`. The shared `FilterPanel` (`filter-panel.tsx`, the one `REVEAL_ALLOW`
   entry PR C adds) reads a friend's label only to hand its copy functions a string and marks the row, the trigger and
-  the label span. NOT yet marked, because they read other families (friend decks and the cart's
-  deck names, PR E; Rule 0 and the game log's saved opponents, PR F): `FilterPanel`'s live-region announcement, which
+  the label span. NOT yet marked, because they read other families (Rule 0 and the game log's saved opponents, PR F): `FilterPanel`'s live-region announcement, which
   reads a friend's option as a string, a game's saved opponent names (`friendNameThen`), and `redeemInviteAction`'s
-  answer, which still carries the inviter's plain name though nothing draws it. Friend decks and Rule 0 follow (PRs E,
-  F); autocapture comes back on in G.
+  answer, which still carries the inviter's plain name though nothing draws it. Rule 0 follows (PR F); autocapture comes back on in G.
 
   **Spares are view-only and shared per pod** (Q3, Q12): `loadFriendSpares(viewer, oracleIds)` reads the grants (the
   friendship, the friend's `pod_spare_shares` grant, the friend's membership of that pod and the viewer's, in one

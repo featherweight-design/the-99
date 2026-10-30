@@ -6,7 +6,7 @@
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import type { FriendDeck, OpenFriendDeck, ShippedFriendDeck } from "../../lib/social/decks";
-import { PersonText, type ThirdPartyName } from "../../lib/person-name";
+import { PersonName, PersonText, personAttrs, type ThirdPartyName } from "../../lib/person-name";
 import { socialCopy } from "../../lib/copy/social";
 import { commanderRepeats } from "../../lib/decks/commander-repeats";
 import { colorLabel } from "../../lib/decks/format";
@@ -70,7 +70,7 @@ export function FriendDecksTab({ name, decks, publicId, open = false }: {
                   <img src={d.artCropUri} alt="" loading={i < 4 ? "eager" : "lazy"} className="block h-full w-full object-cover" />
                 )}
                 <span aria-hidden className="absolute inset-0" style={{ background: "linear-gradient(180deg, transparent 40%, color-mix(in oklab, var(--bg) 90%, transparent))" }} />
-                <b className="absolute bottom-[8px] left-[12px] right-[12px] z-[2] truncate font-display text-[14px] font-bold text-[color:var(--fg)]">{d.name}</b>
+                <b className="absolute bottom-[8px] left-[12px] right-[12px] z-[2] truncate font-display text-[14px] font-bold text-[color:var(--fg)]"><PersonName n={d.name} /></b>
               </div>
               <div className="flex flex-col gap-[8px] px-[12px] pb-[12px] pt-[10px]">
                 <span className="truncate font-mono text-[10.5px] text-[color:var(--fg-body)]">
@@ -130,11 +130,11 @@ function FriendDeckTile({ deck, href, deferArt }: { deck: OpenFriendDeck; href: 
       {/* The band and the count are presentation: the press names them, and with no press a line a screen reader reads
           does. The ring is drawn inside the tile, whose `overflow-hidden` would clip the app's outset one. */}
       {href ? (
-        <Link href={href} className="absolute inset-0 rounded-[14px] focus-visible:outline-offset-[-2px]" aria-label={label}>
+        <Link href={href} {...personAttrs({ "aria-label": label }, "absolute inset-0 rounded-[14px] focus-visible:outline-offset-[-2px]")}>
           <PendingReporter href={href} />
         </Link>
       ) : (
-        <span className="sr-only">{label}</span>
+        <span className="sr-only"><PersonText text={label} /></span>
       )}
     </article>
   );

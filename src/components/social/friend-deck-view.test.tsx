@@ -35,7 +35,7 @@ const card = (oracleId: string, name: string, typeLine: string, owned: boolean, 
 const SAI = card("sai", "Sai, Master Thopterist", "Legendary Creature — Human Artificer", true, { commander: true, printedSetCode: "m19", printedCollectorNumber: "69" });
 const FOIL_SAI = { ...SAI, foil: "etched" as const };
 const DECK: FriendDeckPage = {
-  id: "d1", name: "Thopter Factory", commanders: [SAI],
+  id: "d1", name: named("Thopter Factory"), commanders: [SAI],
   cards: [
     card("sol", "Sol Ring", "Artifact", true, { printedSetCode: "cmm", printedCollectorNumber: "1", printedScryfallId: "sf-sol", printedBackImageUri: null, foil: "foil" }),
     card("ws", "Whirler Rogue", "Creature — Human Rogue", false),
@@ -56,6 +56,7 @@ describe("FriendDeckView", () => {
     expect(back.getAttribute("href")).toBe("/friends/00000000-0000-4000-8000-000000000002");
     expect(screen.getByTestId("friend-deck-eyebrow").textContent).toBe("COColin’s deck · read-only");
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Thopter Factory");
+    expect(screen.getByRole("heading", { level: 1 }).querySelector(".ph-no-capture")?.textContent).toBe("Thopter Factory");
     expect(screen.getByTestId("friend-deck-commanders").textContent).toBe("Sai, Master Thopterist");
     expect(screen.getByText(/^29 cards/)).toBeTruthy();
   });
@@ -63,7 +64,7 @@ describe("FriendDeckView", () => {
   it("drops the commander line when the deck's name repeats the commander, whole or before the comma", () => {
     for (const name of ["Sai, Master Thopterist", "Sai"]) {
       cleanup();
-      draw({ ...DECK, name });
+      draw({ ...DECK, name: named(name) });
       expect(screen.queryByTestId("friend-deck-commanders")).toBeNull();
     }
   });
@@ -120,7 +121,7 @@ describe("FriendDeckView", () => {
 
   it("a pair heads its group Commanders and names both", () => {
     const thrasios = card("th", "Thrasios, Triton Hero", "Legendary Creature — Merfolk Wizard", false, { commander: true });
-    draw({ ...DECK, name: "Tymna Thrasios", commanders: [{ ...SAI, name: "Tymna the Weaver", oracleId: "ty" }, thrasios] });
+    draw({ ...DECK, name: named("Tymna Thrasios"), commanders: [{ ...SAI, name: "Tymna the Weaver", oracleId: "ty" }, thrasios] });
     expect(screen.getByTestId("friend-deck-commanders").textContent).toBe("Tymna the Weaver + Thrasios, Triton Hero");
     expect(screen.getAllByTestId("group")[0].querySelector("h2")!.textContent).toBe("Commanders");
   });

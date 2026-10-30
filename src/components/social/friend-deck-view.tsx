@@ -6,7 +6,7 @@
 // auto tag, proxy, lock, notes, tabs or ⋯.
 
 import Link from "next/link";
-import { PersonText, type ThirdPartyName } from "../../lib/person-name";
+import { PersonName, PersonText, type ThirdPartyName } from "../../lib/person-name";
 import { socialCopy } from "../../lib/copy/social";
 import { preconsCopy } from "../../lib/copy/precons";
 import { WUBRG_COLOR } from "../../lib/collection/browse";
@@ -110,7 +110,7 @@ export function FriendDeckView({
                 <Face name={name} commander={friend.commander} size={16} />
                 <PersonText text={copy.eyebrow(name)} />
               </span>
-              <h1 className="m-0 font-display text-[22px] font-normal leading-[1.15] text-[color:var(--fg)] md:text-[26px]">{deck.name}</h1>
+              <h1 className="m-0 font-display text-[22px] font-normal leading-[1.15] text-[color:var(--fg)] md:text-[26px]"><PersonName n={deck.name} /></h1>
               {!repeats && <span data-testid="friend-deck-commanders" className="text-[13.5px] text-[color:var(--fg-body)]">{commanderLine}</span>}
               <span className="flex flex-wrap items-center gap-[8px] font-mono text-[11px] text-[color:var(--fg-faint)]">
                 {copy.cards(deck.built)}

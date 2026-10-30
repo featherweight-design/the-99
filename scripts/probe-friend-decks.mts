@@ -101,7 +101,7 @@ async function main() {
     check("hidden: its page is nothing", (await read.loadFriendDeck(V, f.publicId, hidden)) === null);
 
     const page = await read.loadFriendDeck(V, f.publicId, shown);
-    check("the shown deck's page reads", page !== null && page.name === "Probe Shown");
+    check("the shown deck's page reads", page !== null && JSON.stringify(page.name) === '{"$tp":"Probe Shown"}');
     const mark = Object.fromEntries((page?.cards ?? []).map((c) => [c.oracleId, c.owned]));
     check("the page marks the VIEWER's ownership", mark[A] === true && mark[B] === false, JSON.stringify(mark));
     check("the commander is first, alone", page?.commanders.length === 1 && page.commanders[0].oracleId === C);

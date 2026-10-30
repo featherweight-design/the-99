@@ -179,7 +179,7 @@ function Decks({ friend, onPick, onCommander, onBack, describedBy }: {
                 {d.commanderImageUri && <ArtLayer src={d.commanderImageUri} style={{ backgroundPosition: "50% 20%" }} />}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-[13.5px] font-medium text-[color:var(--fg)]">{d.name}</span>
+                <span className="block truncate text-[13.5px] font-medium text-[color:var(--fg)]"><PersonName n={d.name} /></span>
                 <span className="block truncate font-mono text-[10.5px] text-[color:var(--fg-faint)]">{shortName(d.commanderName)}</span>
               </span>
             </button>

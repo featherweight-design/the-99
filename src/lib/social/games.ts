@@ -37,7 +37,8 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 /** A deck as the picker draws it: its name and its commander's name and art, nothing of its list. */
 export type FriendDeck = {
   deckId: string;
-  name: string;
+  /** The owner's deck name: another reader's text. */
+  name: ThirdPartyName;
   commanderOracleId: string;
   partnerOracleId: string | null;
   commanderName: string;
@@ -77,9 +78,9 @@ export function friendDecksQuery(viewerId: string, friendPublicIds: readonly str
     .orderBy(asc(socialProfiles.publicId), desc(decks.createdAt), asc(decks.id));
 }
 
-const deckOf = (r: FriendDeck): FriendDeck => ({
+const deckOf = (r: Omit<FriendDeck, "name"> & { name: string }): FriendDeck => ({
   deckId: r.deckId,
-  name: r.name,
+  name: named(r.name),
   commanderOracleId: r.commanderOracleId,
   partnerOracleId: r.partnerOracleId,
   commanderName: r.commanderName,

@@ -83,6 +83,14 @@ export function nameIncludes(n: string | ThirdPartyName, query: string, locale =
   return str.toLocaleLowerCase(locale).includes(query.toLocaleLowerCase(locale));
 }
 
+/**
+ * A yes/no or a count about a name that may be someone else's (a deck name that repeats its commander): the string is
+ * read here, in a file that may reveal, and only a boolean or a number leaves.
+ */
+export function testName<T extends boolean | number>(n: string | ThirdPartyName, test: (s: string) => T): T {
+  return test(typeof n === "string" ? n : reveal(n));
+}
+
 /** An identity for a list of names (an effect's dependency): compared, never drawn. */
 export function namesKey(names: ReadonlyArray<string | ThirdPartyName>): string {
   return names.map((n) => (typeof n === "string" ? n : reveal(n))).join("\u0000");

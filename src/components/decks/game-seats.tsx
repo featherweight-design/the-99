@@ -82,7 +82,7 @@ function SeatView({
           <PersonName n={name} />
           {seat.table?.mark && <small className="ml-[6px] font-mono text-[9.5px] text-[color:var(--fg-faint)]">{ruleZeroCopy.log.fromTable}</small>}
         </span>
-        {sub && !seat.won && <span className="block truncate font-mono text-[10.5px] text-[color:var(--fg-faint)]">{sub}</span>}
+        {sub && !seat.won && <span className="block truncate font-mono text-[10.5px] text-[color:var(--fg-faint)]"><PersonName n={sub} /></span>}
         {seat.won ? (
           <span className="block truncate font-mono text-[10.5px] text-[color:var(--fg)]">{copy.wonLine}</span>
         ) : seat.table ? null : seat.friend ? (

@@ -83,7 +83,7 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-const DECK = { id: null as string | null, name: "Thopter Factory", commanderName: "Sai, Master Thopterist", partnerName: null, colorIdentity: ["U"], artCropUri: null, status: "To buy", built: 99, bodySize: 99, toBuy: 8 };
+const DECK = { id: null as string | null, name: named("Thopter Factory"), commanderName: "Sai, Master Thopterist", partnerName: null, colorIdentity: ["U"], artCropUri: null, status: "To buy", built: 99, bodySize: 99, toBuy: 8 };
 const SPARE = { oracleId: "00000000-0000-4000-8000-0000000000c1", name: "Ghalta, Primal Hunger", imageUri: null, spare: 2, onWishlist: true };
 
 describe("a friend's page group", () => {
@@ -224,7 +224,7 @@ describe("a friend's page group", () => {
 
   it("draws a deck as a name, a commander, a status and a count, with no link and no card list", async () => {
     const html = renderToString(await FriendDecksPage({ params: params() }));
-    expect(html).toContain("Thopter Factory");
+    expect(html).toContain('<span class="ph-no-capture">Thopter Factory</span>');
     expect(html).toContain("Sai, Master Thopterist");
     expect(html).toContain("To buy");
     expect(html).toContain("99 / 99 · 8 cards");
@@ -234,7 +234,7 @@ describe("a friend's page group", () => {
 
   // The board's pill on this surface only (d9, 2026-10-22): no hairline edge, and Building in --fg-body.
   it("draws the board's pill: no edge, Building in --fg-body, the other statuses in the app's own ink", async () => {
-    m.loadFriendDecks.mockResolvedValue([{ ...DECK, status: "Building", built: 40 }, { ...DECK, name: "Big Dinos", status: "Complete" }]);
+    m.loadFriendDecks.mockResolvedValue([{ ...DECK, status: "Building", built: 40 }, { ...DECK, name: named("Big Dinos"), status: "Complete" }]);
     render(await FriendDecksPage({ params: params() }));
     const [building, complete] = screen.getAllByTestId("friend-deck").map((t) => within(t).getByText(/^(Building|Complete)$/));
     expect(building.style.color).toBe("var(--fg-body)");
@@ -244,7 +244,7 @@ describe("a friend's page group", () => {
   });
 
   it("keeps the app's edge on a status the board does not draw, where the edge carries it (Over's red, Draft's dash)", async () => {
-    m.loadFriendDecks.mockResolvedValue([{ ...DECK, status: "Over", built: 101 }, { ...DECK, name: "Big Dinos", status: "Draft" }]);
+    m.loadFriendDecks.mockResolvedValue([{ ...DECK, status: "Over", built: 101 }, { ...DECK, name: named("Big Dinos"), status: "Draft" }]);
     render(await FriendDecksPage({ params: params() }));
     const [over, draft] = screen.getAllByTestId("friend-deck").map((t) => within(t).getByText(/^(Over|Draft)/));
     expect(over.style.borderStyle).not.toBe("none");
@@ -261,17 +261,20 @@ describe("a friend's page group", () => {
       const press = within(tile).getByRole("link");
       expect(press.getAttribute("href")).toBe(`/friends/${COLIN.publicId}/decks/${ID}`);
       expect(press.getAttribute("aria-label")).toBe("Thopter Factory, Sai, Master Thopterist, Blue, 99 cards");
+      expect(press.className).toContain("ph-no-capture");
+      expect(within(tile).getByRole("heading", { level: 3, hidden: true }).querySelector(".ph-no-capture")?.textContent).toBe("Thopter Factory");
       expect(tile.textContent).toContain("99 cards");
       expect(tile.textContent).not.toMatch(/To buy|99 \/ 99/);
       expect(screen.getByText(p.decks.lineOpen)).toBeTruthy();
     });
 
     it("keeps the colour alone when the deck is named for its commander", async () => {
-      m.loadFriendDecks.mockResolvedValue([{ ...DECK, id: ID, name: "Sai" }]);
+      m.loadFriendDecks.mockResolvedValue([{ ...DECK, id: ID, name: named("Sai") }]);
       render(await FriendDecksPage({ params: params() }));
       const tile = screen.getByTestId("friend-deck");
       expect(tile.textContent).not.toContain("Sai, Master Thopterist");
       expect(within(tile).getByRole("link").getAttribute("aria-label")).toBe("Sai, Blue, 99 cards");
+      expect(within(tile).getByRole("link").className).toContain("ph-no-capture");
     });
 
     // Close-out: the owner's switch off leaves the read with no ids. The tab is then as it shipped, rather than open tiles
@@ -288,7 +291,7 @@ describe("a friend's page group", () => {
     });
 
     it("defers the art of every tile after the first four", async () => {
-      m.loadFriendDecks.mockResolvedValue(Array.from({ length: 6 }, (_, i) => ({ ...DECK, id: `${ID.slice(0, -1)}${i}`, name: `Deck ${i}`, artCropUri: `https://crop/${i}.jpg` })));
+      m.loadFriendDecks.mockResolvedValue(Array.from({ length: 6 }, (_, i) => ({ ...DECK, id: `${ID.slice(0, -1)}${i}`, name: named(`Deck ${i}`), artCropUri: `https://crop/${i}.jpg` })));
       const html = renderToString(await FriendDecksPage({ params: params() }));
       for (let i = 0; i < 4; i++) expect(html).toContain(`https://crop/${i}.jpg`);
       for (let i = 4; i < 6; i++) expect(html).not.toContain(`https://crop/${i}.jpg`);

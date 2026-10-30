@@ -2,6 +2,7 @@
 // (`deck-card.tsx`, with its ⋯ as children) and a friend's tile (`friend-decks-tab.tsx`, with nothing), so the two are
 // one band rather than a copy (friend decks handoff, call 6).
 import type { ReactNode } from "react";
+import { PersonName, type ThirdPartyName } from "../../lib/person-name";
 import { ArtWash, INK_SHADOW } from "../ui/art-wash";
 
 export function DeckTileArt({
@@ -17,7 +18,8 @@ export function DeckTileArt({
 }: {
   artCropUri: string | null;
   colorIdentity: string[];
-  name: string;
+  /** The owner's own deck name is a plain string; a friend's is a `ThirdPartyName`. */
+  name: string | ThirdPartyName;
   /** The commander as the tile names it (the printed name of the copy the art is from, on the owner's tile). */
   commanderName: string;
   partnerName: string | null;
@@ -98,7 +100,7 @@ export function DeckTileArt({
             className="truncate font-display text-[17px] font-semibold sm:text-[15px]"
             style={{ color: "var(--fg)", lineHeight: 1.15, textShadow: INK_SHADOW }}
           >
-            {name}
+            <PersonName n={name} />
           </h3>
           {/* Two spans, not one truncating string. The colour is the half that
               survives at a 189px column — it is what the pips came off FOR — and

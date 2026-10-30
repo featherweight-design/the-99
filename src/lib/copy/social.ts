@@ -157,8 +157,8 @@ export const socialCopy = {
       lineOpen: "Newest first. Open one to see its list.",
       emptyBodyOpen: (name: ThirdPartyName) => personText`A deck ${name} shares shows here, with its whole list.`,
       /** The tile's press, named with what the tile shows, in its order. */
-      tileAria: (deck: string, commander: string | null, colour: string, cards: string) =>
-        [deck, commander, colour, cards].filter(Boolean).join(", "),
+      tileAria: (deck: string | ThirdPartyName, commander: string | null, colour: string, cards: string): PersonParts =>
+        joinNames([deck, commander, colour, cards].filter((x): x is string | ThirdPartyName => Boolean(x))),
     },
   },
 
