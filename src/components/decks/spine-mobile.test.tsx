@@ -150,9 +150,9 @@ describe("SpineMobile", () => {
     expect(frame!.className).toContain("pointer-events-auto");
     // The frame is the nearest ancestor of the foot, so nothing between them resets the inheritance.
     expect(foot.parentElement).toBe(frame);
-    // And the header description takes no frame accent on focus.
-    expect(frame!.className).not.toContain("focus-within");
-    expect(description.className).not.toContain("outline-none");
+    // And the one dashed frame takes the accent edge on focus; the textarea draws no ring of its own (Tag-Places d).
+    expect(frame!.className).toContain("focus-within:border-[color:var(--accent)]");
+    expect(description.className.split(/\s+/)).toContain("outline-none");
   });
 
   it("the header description grows with its words from the moment the editor opens (Tag-Places d)", () => {

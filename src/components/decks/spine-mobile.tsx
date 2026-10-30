@@ -346,7 +346,6 @@ export function SpineMobile({
                   fill="sunken"
                   dashed
                   footPad="compact"
-                  accent="none"
                   frameRef={descriptionFrameRef}
                   // Inside `press-through` (pointer-events: none): the frame and its foot take presses back, so the
                   // foot's preventDefault holds the field's focus instead of letting the press blur it.
@@ -368,7 +367,7 @@ export function SpineMobile({
                   aria-label={deckDescriptionCopy.description.fieldAria}
                   // 16px, not 13.5: iOS Safari zooms the viewport on focusing an input under 16px
                   // (pre-open review) — the retired single-field editor used 16px on a phone too.
-                  className="w-full resize-none overflow-hidden bg-transparent text-left font-sans"
+                  className="w-full resize-none overflow-hidden bg-transparent text-left font-sans outline-none"
                   style={{
                     boxSizing: "border-box",
                     padding: "8px 12px 2px",

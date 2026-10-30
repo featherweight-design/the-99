@@ -96,12 +96,12 @@ describe("TaggedBox", () => {
     for (const c of ring) expect(cls()).toContain(c);
   });
 
-  it("accent none draws no focus-within accent on the frame and adds no ring class; the foot takes pointer events", () => {
-    box({ accent: "none" });
+  it("a dashed frame takes the accent edge on focus like every other place (Tag-Control 1); the foot takes pointer events", () => {
+    box({ dashed: true });
     const frame = document.querySelector("[data-framed-box]")!;
-    expect(frame.className).not.toContain("focus-within");
+    expect(frame.className).toContain("border-dashed");
+    expect(frame.className).toContain("focus-within:border-[color:var(--accent)]");
     expect(frame.className).not.toContain("has-[:focus-visible]");
-    expect(frame.className).toContain("border-[color:var(--border-strong)]");
     expect(screen.getByText("0 / 240").parentElement!.className).toContain("pointer-events-auto");
   });
 

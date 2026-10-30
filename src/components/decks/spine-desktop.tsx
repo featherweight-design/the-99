@@ -342,7 +342,6 @@ export function SpineDesktop({
                     fill="sunken"
                     dashed
                     footPad="compact"
-                    accent="none"
                     frameRef={descriptionFrameRef}
                   >
                   <textarea
@@ -359,7 +358,7 @@ export function SpineDesktop({
                     rows={2}
                     placeholder={deckDescriptionCopy.description.placeholder}
                     aria-label={deckDescriptionCopy.description.fieldAria}
-                    className="resize-none overflow-hidden bg-transparent font-sans"
+                    className="resize-none overflow-hidden bg-transparent font-sans outline-none"
                     style={{
                       width: "100%",
                       boxSizing: "border-box",
