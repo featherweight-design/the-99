@@ -114,11 +114,11 @@ describe("the stages shape (contract 13)", () => {
     ["sol-ring", { name: "Sol Ring", imageUri: "https://img/sol.jpg" }],
     ["craterhoof", { name: "Craterhoof Behemoth", imageUri: "https://img/hoof.jpg" }],
   ]);
-  const drawStages = (content: ReturnType<typeof checkedSynopsis>, contractVersion: number | undefined, a = art) =>
+  const drawStages = (content: ReturnType<typeof checkedSynopsis>, contractVersion: number | undefined, a = art, evidenceNames?: Record<string, string>) =>
     render(
       <CardDetailProvider fetchCard={async () => null}>
         <HoverPreviewProvider>
-          <SynopsisSections content={content} contractVersion={contractVersion} art={a} onRetry={null} busy={false} />
+          <SynopsisSections content={content} contractVersion={contractVersion} art={a} evidenceNames={evidenceNames} onRetry={null} busy={false} />
         </HoverPreviewProvider>
       </CardDetailProvider>,
     );
@@ -137,6 +137,41 @@ describe("the stages shape (contract 13)", () => {
     // The lead card's image is the first mark's, and the third stage names none, so it has none.
     expect(within(stages[0]).getAllByTestId("synopsis-card-image")).toHaveLength(1);
     expect(within(stages[2]).queryAllByTestId("synopsis-card-image")).toHaveLength(0);
+  });
+
+  it("draws the timeline as one segment per stage after its label, never a line behind the labels", () => {
+    drawStages(stage13(), 13);
+    const plan = screen.getByTestId("synopsis-plan");
+    const stages = screen.getAllByTestId("synopsis-stage");
+    // From md every stage but the last owns ONE segment, a sibling AFTER its label in the same row, so the line starts
+    // past the label's text and ends at the next diamond; the old single line behind all three ran through the labels.
+    const segment = (s: HTMLElement) => [...s.querySelectorAll("span[aria-hidden]")].filter((e) => e.className.includes("md:block") && e.className.includes("h-px"));
+    expect(stages.map((s) => segment(s).length)).toEqual([1, 1, 0]);
+    for (const s of stages.slice(0, 2)) {
+      const seg = segment(s)[0];
+      const label = seg.previousElementSibling!;
+      expect(label.textContent).toMatch(/^(Early|Mid)$/);
+      expect(seg.parentElement).toBe(label.parentElement);
+      expect(seg.className).toContain("flex-1");
+      expect(seg.className).toContain("hidden");
+    }
+    // No plan-wide horizontal line is drawn at md (the phone's rail is vertical and hidden from md).
+    const direct = [...plan.children].filter((e) => e.tagName === "SPAN");
+    expect(direct).toHaveLength(1);
+    expect(direct[0].className).toContain("md:hidden");
+    expect(direct[0].className).toContain("w-px");
+  });
+
+  it("draws no Based on row under a weakness in the stages shape, and keeps it for a 12 row", () => {
+    const evidence = { strategy: [[], [], []], keep: [[]], sendBack: [[]], tips: [[], []], keyCards: [[]], weaknesses: [["sol-ring"], []] };
+    const names = { "sol-ring": "Sol Ring" };
+    // The weakness text names no card, so its cited Sol Ring would be a Based on row wherever one is drawn.
+    const content = stage13({ evidence, weaknesses: ["Moderate: Folds to a board wipe.", "Minor: Few ways to draw."] });
+    const first = drawStages(content, 13, art, names);
+    expect(screen.queryAllByTestId("synopsis-based-on").map((e) => e.textContent)).not.toContain("Based onSol Ring");
+    first.unmount();
+    drawStages(stage13({ evidence, lands: { keep: { low: 2, high: 4 }, sendBack: { none: 0, under: 1, over: 5 } }, weaknesses: ["Folds to a board wipe.", "Few ways to draw."] }), 12, art, names);
+    expect(screen.getAllByTestId("synopsis-based-on").map((e) => e.textContent)).toContain("Based onSol Ring");
   });
 
   it("draws a 12 row exactly as before: Core strategy, the fixed range, no figure, no images", () => {
