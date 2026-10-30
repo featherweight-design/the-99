@@ -1,6 +1,6 @@
 // /settings (menu and Home handoff, `Settings.dc.html`; plan `2026-10-22-menu-home.md` PR 3 and 4): one page under the
 // account menu. Notifications comes first (`HOME_FEED_ENABLED`), then Spares (`SOCIAL_FRIENDS_ENABLED`), then Your
-// decks (`FRIEND_DECKS_ENABLED`, friend decks README 4b). Each
+// decks (`SOCIAL_FRIENDS_ENABLED`, friend decks README 4b). Each
 // section follows its own switch; with both off for this reader the page has nothing to show, so the route does not
 // exist.
 //
@@ -10,7 +10,7 @@
 
 import { notFound } from "next/navigation";
 import { requireUserId } from "../../lib/auth";
-import { friendDecksEnabled, socialFriendsEnabled } from "../../lib/social/flag";
+import { socialFriendsEnabled } from "../../lib/social/flag";
 import { loadFriendDeckPrefs } from "../../lib/social/deck-visibility";
 import { homeFeedEnabled } from "../../lib/feed/flag";
 import { loadNewsSettings } from "../../lib/feed/prefs";
@@ -34,7 +34,7 @@ export default async function SettingsPage() {
   const friends = socialFriendsEnabled(env);
   if (!friends && !homeFeedEnabled(env)) notFound();
   // `loadNewsSettings` reads nothing and returns [] while the feed is off, and the section then draws nothing.
-  // Your decks (`FRIEND_DECKS_ENABLED`, which needs the friends switch): the reader's own two rules.
+  // Your decks (`SOCIAL_FRIENDS_ENABLED`, which needs the friends switch): the reader's own two rules.
   // Push (`PUSH_ENABLED` and the VAPID keys, push handoff calls 1 to 4): the push column's ticks among the same kinds,
   // and the PUBLIC key a browser subscribes with. Unavailable, the section is as shipped. The private key never leaves
   // the server.
@@ -43,7 +43,7 @@ export default async function SettingsPage() {
     loadNewsSettings(userId, env),
     config ? loadPushKinds(userId, pushableFeedKinds(env)) : null,
     friends ? loadSpares(userId) : null,
-    friendDecksEnabled(env) ? loadFriendDeckPrefs(userId) : null,
+    socialFriendsEnabled(env) ? loadFriendDeckPrefs(userId) : null,
   ]);
   const push = config && pushOn ? { publicKey: config.publicKey, on: pushOn, kinds: pushableFeedKinds(env) } : null;
   return (

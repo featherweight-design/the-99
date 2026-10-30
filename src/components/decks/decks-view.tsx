@@ -120,7 +120,7 @@ export type DecksViewProps = {
   precons?: { summary: PreconSummary | null } | null;
   /** `HELP_ME_CHOOSE_ENABLED`, read on the server: the zero state's door (discovery R3 E1). */
   helpMeChoose?: boolean;
-  /** The reader's own friend deck rules with `FRIEND_DECKS_ENABLED` on for them, else null: the tiles' Hidden from friends. */
+  /** The reader's own friend deck rules with `SOCIAL_FRIENDS_ENABLED` on for them, else null: the tiles' Hidden from friends. */
   friendPrefs?: FriendDeckPrefs | null;
   /** Commanders in the ready-to-build set. Only the zero state prints it. */
   buildable: number;

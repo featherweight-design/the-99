@@ -107,7 +107,7 @@ export interface SpineBandProps {
   /** The deck menu's Move, with the page's read of the shelves. Absent, the menu carries Delete alone. */
   move?: DeckMove;
   /**
-   * Hidden from friends (`FRIEND_DECKS_ENABLED` for the reader; friend decks README 4): the deck's own flag and the
+   * Hidden from friends (`SOCIAL_FRIENDS_ENABLED` for the reader; friend decks README 4): the deck's own flag and the
    * owner's two Settings rules. Absent while the switch is off: no menu row, no mark.
    */
   friendHide?: { hidden: boolean; prefs: FriendDeckPrefs };

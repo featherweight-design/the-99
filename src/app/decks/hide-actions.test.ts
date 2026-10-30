@@ -1,4 +1,4 @@
-// Hidden from friends' action (friend decks G2): FRIEND_DECKS_ENABLED decided for the READER, `invalid` before any
+// Hidden from friends' action (friend decks G2): Friends decided for the READER, `invalid` before any
 // write for a malformed argument or a deck that is not theirs, and both surfaces that draw the mark revalidated.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -17,16 +17,14 @@ const DECK = "11111111-1111-4111-8111-111111111111";
 beforeEach(() => {
   vi.clearAllMocks();
   m.requireUserId.mockResolvedValue("user_me");
-  m.requestSwitchEnv.mockResolvedValue({ SOCIAL_FRIENDS_ENABLED: "true", FRIEND_DECKS_ENABLED: "true" });
+  m.requestSwitchEnv.mockResolvedValue({ SOCIAL_FRIENDS_ENABLED: "true" });
   m.setDeckHiddenFromFriends.mockResolvedValue(true);
 });
 
 describe("setDeckHiddenFromFriendsAction", () => {
-  it("refuses as off, writing nothing, unless the switch and its parent are on for the reader", async () => {
-    for (const env of [{}, { FRIEND_DECKS_ENABLED: "true" }]) {
-      m.requestSwitchEnv.mockResolvedValue(env);
-      expect(await setDeckHiddenFromFriendsAction(DECK, true)).toEqual({ ok: false, reason: "off" });
-    }
+  it("refuses as off, writing nothing, unless Friends is on for the reader", async () => {
+    m.requestSwitchEnv.mockResolvedValue({});
+    expect(await setDeckHiddenFromFriendsAction(DECK, true)).toEqual({ ok: false, reason: "off" });
     expect(m.setDeckHiddenFromFriends).not.toHaveBeenCalled();
     expect(m.revalidatePath).not.toHaveBeenCalled();
   });

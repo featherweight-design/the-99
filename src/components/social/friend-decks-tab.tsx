@@ -1,4 +1,4 @@
-// A friend's Decks tab (menu and Home PR 7; handoff G4; friend decks handoff call 6). With `FRIEND_DECKS_ENABLED` on for
+// A friend's Decks tab (menu and Home PR 7; handoff G4; friend decks handoff call 6). With `SOCIAL_FRIENDS_ENABLED` on for
 // the reader, each tile is the owner's /decks tile read-only: the same art band and identity block (`DeckTileArt`), no ⋯,
 // no status, the card count alone, and the whole tile a press to the deck's own page when the owner's read carried its
 // id. Off, the tab is as it shipped: view-only tiles with the status and the count, and no press.
@@ -24,7 +24,7 @@ export function FriendDecksTab({ name, decks, publicId, open = false }: {
   /** The friend's public id, for each tile's press. */
   publicId?: string;
   /**
-   * `FRIEND_DECKS_ENABLED` for the reader. With decks drawn the READ decides: its tiles are the open kind only while the
+   * `SOCIAL_FRIENDS_ENABLED` for the reader. With decks drawn the READ decides: its tiles are the open kind only while the
    * owner's switch is on too, so a mixed pair draws the tab as it shipped rather than tiles that promise a press. With
    * none, this alone picks the empty body.
    */

@@ -68,8 +68,7 @@ describe("each sentence follows its own switch", () => {
     ["a fill without Help me choose", {}, "rule/autofill", "then uses your Collection", "Help me choose"],
     ["a fill with Help me choose", { HELP_ME_CHOOSE_ENABLED: "true" }, "rule/autofill", "any cards will do", undefined],
     ["friends see a wishlist only with the wishlist", { SOCIAL_FRIENDS_ENABLED: "true" }, "rule/friends-see", "spares you offer", "wishlist"],
-    ["friends see each deck's status before friend decks", { SOCIAL_FRIENDS_ENABLED: "true" }, "rule/friends-see", "names, status", "can open"],
-    ["friends open decks with friend decks", { SOCIAL_FRIENDS_ENABLED: "true", FRIEND_DECKS_ENABLED: "true" }, "rule/friends-see", "can open the decks", "names, status"],
+    ["friends open decks", { SOCIAL_FRIENDS_ENABLED: "true" }, "rule/friends-see", "can open the decks", "names, status"],
     ["bracket marks are explained with the Analysis tab off, as they are drawn", {}, "decks/your-deck/bracket-marks", "Game Changers", undefined],
   ] as const)("%s", (_name, e, key, has, lacks) => {
     const text = textOf(e as Record<string, string>, key);

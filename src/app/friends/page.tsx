@@ -11,7 +11,7 @@ import { after } from "next/server";
 import { headers } from "next/headers";
 import { currentUser } from "@clerk/nextjs/server";
 import { requireUserId } from "../../lib/auth";
-import { friendDecksEnabled, ruleZeroEnabled, signatureCardEnabled, socialFriendsEnabled, socialInvitesEnabled } from "../../lib/social/flag";
+import { ruleZeroEnabled, signatureCardEnabled, socialFriendsEnabled, socialInvitesEnabled } from "../../lib/social/flag";
 import { loadFriendDeckPrefs } from "../../lib/social/deck-visibility";
 import { loadInviteCount } from "../../lib/invites/read";
 import { requestSwitchEnv } from "../../lib/switches/request";
@@ -82,7 +82,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
     ruleZero ? perf.timed("openTables", () => openTablesFor(userId)) : Promise.resolve(null),
     perf.timed("waitingOnYou", () => loadWaitingOnYou(userId, env, now)),
     // The head's privacy line under friend decks: the reader's own two rules (README 4b).
-    friendDecksEnabled(env) ? perf.timed("friendDeckPrefs", () => loadFriendDeckPrefs(userId)) : Promise.resolve(null),
+    socialFriendsEnabled(env) ? perf.timed("friendDeckPrefs", () => loadFriendDeckPrefs(userId)) : Promise.resolve(null),
     // Your requests (spare requests PR 3d): the reader's own asks, under Waiting on you. Empty with the switch off. Read
     // before `after()` moves the Friends cursor, so an answer this visit shows is still marked new.
     perf.timed("yourRequests", () => loadYourRequests(userId, env, now)),

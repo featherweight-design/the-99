@@ -734,7 +734,6 @@ export const switchCopy: Readonly<Record<SwitchName, { label: string; descriptio
   DECK_PRINTINGS_ENABLED: { label: "Deck printings", description: "Choose the printing of each card in a deck." },
   DECK_STATS_ENABLED: { label: "Deck stats", description: "The Stats view on a deck." },
   FIND_A_DECK_READ_ENABLED: { label: "Find a deck read", description: "A one-credit run inside Find a deck for it." },
-  FRIEND_DECKS_ENABLED: { label: "Friend decks", description: "Open a friend’s deck, and hide a deck from friends. Needs Friends." },
   HOME_FEED_ENABLED: { label: "Home feed", description: "What’s new on Home, its badge, and the news switches in Settings." },
   HELP_ME_CHOOSE_ENABLED: { label: "Help me choose", description: "Find a commander from a few words, and Look deeper." },
   HOW_IT_WORKS_ENABLED: { label: "How it works", description: "The How it works page in About." },

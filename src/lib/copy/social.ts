@@ -49,7 +49,7 @@ export const socialCopy = {
     nameLine: (name: string) => ({ before: "Friends see you as ", name, action: "Change" }),
     // The privacy line (menu and Home PR 7, G4): what a friend's Decks tab shows of yours. Undrawn; words through /copy-review.
     decksSeen: "Friends see your deck names, commanders and statuses, never the lists.",
-    // With friend decks on (`FRIEND_DECKS_ENABLED`), the line follows the reader's own two Settings rules, and
+    // With friend decks on (`SOCIAL_FRIENDS_ENABLED`), the line follows the reader's own two Settings rules, and
     // `settings` is drawn as a link to /settings. Passed /copy-review.
     decksSeenBy: {
       finished: "Friends can see your decks and their lists, except drafts and decks you’re building.",

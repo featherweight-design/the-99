@@ -63,7 +63,7 @@ export function FriendsHead({
    */
   inviteCount?: ReactNode;
   /**
-   * The reader's own friend deck rules with `FRIEND_DECKS_ENABLED` on for them: the privacy line then says what their
+   * The reader's own friend deck rules with `SOCIAL_FRIENDS_ENABLED` on for them: the privacy line then says what their
    * rules let a friend open, and links to Settings. Null (off): the shipped line.
    */
   decksSeen?: FriendDeckPrefs | null;

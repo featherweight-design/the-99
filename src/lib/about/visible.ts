@@ -16,7 +16,7 @@ import { deckStatsEnabled } from "../decks/stats-flag";
 import { deckNotesEnabled } from "../decks/notes-flag";
 import { collectionEditEnabled, collectionSyncEnabled } from "../collection/edit-flag";
 import {
-  friendDecksEnabled, ruleZeroEnabled, signatureCardEnabled, socialFriendsEnabled, socialGamesEnabled, socialInvitesEnabled, spareRequestsEnabled,
+  ruleZeroEnabled, signatureCardEnabled, socialFriendsEnabled, socialGamesEnabled, socialInvitesEnabled, spareRequestsEnabled,
 } from "../social/flag";
 import { wishlistEnabled } from "../wishlist/flag";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
@@ -94,8 +94,9 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   // The menu and Home line: the feed, and Commanders as one place.
   HOME_FEED_ENABLED: homeFeedEnabled,
   COMMANDERS_PLACE_ENABLED: commandersPlaceEnabled,
-  // Friend decks (close-out): a KEY line only, swapping the friends key's privacy sentence. Already needs SOCIAL_FRIENDS_ENABLED.
-  FRIEND_DECKS_ENABLED: friendDecksEnabled,
+  // Retired (always on where friends are): the name stays as the lines' historical identity. It was on exactly when
+  // SOCIAL_FRIENDS_ENABLED is, which it needed.
+  FRIEND_DECKS_ENABLED: socialFriendsEnabled,
   // Spare requests (close-out): `friend-spares`' variant only. Already needs SOCIAL_FRIENDS_ENABLED.
   SPARE_REQUESTS_ENABLED: spareRequestsEnabled,
   // Combos one piece away (close-out): its own entry, and combo-awareness's card-details key.

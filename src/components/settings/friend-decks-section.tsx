@@ -1,5 +1,5 @@
 "use client";
-// Settings' "Your decks" section (friend decks handoff, README 4b; `FRIEND_DECKS_ENABLED`), last, after Spares: what a
+// Settings' "Your decks" section (friend decks handoff, README 4b; `SOCIAL_FRIENDS_ENABLED`), last, after Spares: what a
 // friend's Decks tab shows of the reader's. Two boxes, drawn as the news section's rows, each saved as it changes
 // (`setFriendDeckPrefsAction`, both rules at once). The second sits under the first, indented, and with the first off
 // it dims, reads unticked and cannot be pressed: there is nothing for it to include. A write that fails puts both back

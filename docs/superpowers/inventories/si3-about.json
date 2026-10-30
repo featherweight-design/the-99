@@ -1,7 +1,7 @@
 {
   "feature": "Small items 3, items 1, 3 and 4: About's Good to know rows in one 250px column (dashed dim edges, no opacity, body-ink muted tags and captions), the prices diagram's right-aligned buy chips, and the About copy pass (Discover's Order label, the theme-deck caption, every section's sub-line).",
   "restoreAbout": true,
-  "note": "Not read-only: opening an About page records the visit, so restoreAbout puts the audit account's About columns back; run against local-dev or a scratch branch (refused on production and staging). Each Good to know row scrolls its rule's card into view (on a phone the swipe row brings it in). hidden-deck follows FRIEND_DECKS_ENABLED, off for the audit account, so it has no row: its layout is pinned by rule-card.test.tsx.",
+  "note": "Not read-only: opening an About page records the visit, so restoreAbout puts the audit account's About columns back; run against local-dev or a scratch branch (refused on production and staging). Each Good to know row scrolls its rule's card into view (on a phone the swipe row brings it in). hidden-deck follows Friends (the retired FRIEND_DECKS_ENABLED was its switch before), so it has no row: its layout is pinned by rule-card.test.tsx.",
   "rows": [
     {
       "id": "si3-one-copy",

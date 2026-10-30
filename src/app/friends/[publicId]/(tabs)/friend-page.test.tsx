@@ -134,8 +134,8 @@ describe("a friend's page group", () => {
     expect(html).toMatch(/data-testid="friend-tab-wishlist-count"[^>]*>1</);
     expect(html).toMatch(/data-testid="friend-tab-decks-count"[^>]*>1</);
     expect(html).toContain("<p>tab</p>");
-    // The reader's own FRIEND_DECKS_ENABLED (off here) rides the read, so the layout and the tab share one cached read.
-    expect(m.loadFriendDecks).toHaveBeenCalledWith("user_viewer", COLIN.publicId, false);
+    // The reader's friends switch (on here) rides the read, so the layout and the tab share one cached read.
+    expect(m.loadFriendDecks).toHaveBeenCalledWith("user_viewer", COLIN.publicId, true);
   });
 
   it("leaves the Wishlist tab out, and never reads it, while its switch is off", async () => {
@@ -223,12 +223,10 @@ describe("a friend's page group", () => {
     expect(draft.style.borderStyle).not.toBe("none");
   });
 
-  describe("with FRIEND_DECKS_ENABLED on for the reader (friend decks call 6)", () => {
-    const OPEN = { ...BOTH, FRIEND_DECKS_ENABLED: "true" };
+  describe("the open tiles (friend decks call 6)", () => {
     const ID = "11111111-1111-4111-8111-111111111111";
 
     it("draws the read-only /decks tile: the art band's identity, the count alone, no status, the whole tile a press", async () => {
-      m.requestSwitchEnv.mockResolvedValue(OPEN);
       m.loadFriendDecks.mockResolvedValue([{ ...DECK, id: ID }]);
       render(await FriendDecksPage({ params: params() }));
       const tile = screen.getByTestId("friend-deck");
@@ -241,7 +239,6 @@ describe("a friend's page group", () => {
     });
 
     it("keeps the colour alone when the deck is named for its commander", async () => {
-      m.requestSwitchEnv.mockResolvedValue(OPEN);
       m.loadFriendDecks.mockResolvedValue([{ ...DECK, id: ID, name: "Sai" }]);
       render(await FriendDecksPage({ params: params() }));
       const tile = screen.getByTestId("friend-deck");
@@ -252,7 +249,6 @@ describe("a friend's page group", () => {
     // Close-out: the owner's switch off leaves the read with no ids. The tab is then as it shipped, rather than open tiles
     // with no press under a line that says to open one.
     it("draws the tab as it shipped when the owner's read carried no ids: the status, no press, no Open one", async () => {
-      m.requestSwitchEnv.mockResolvedValue(OPEN);
       m.loadFriendDecks.mockResolvedValue([DECK]);
       render(await FriendDecksPage({ params: params() }));
       expect(m.loadFriendDecks).toHaveBeenCalledWith("user_viewer", COLIN.publicId, true);
@@ -264,7 +260,6 @@ describe("a friend's page group", () => {
     });
 
     it("defers the art of every tile after the first four", async () => {
-      m.requestSwitchEnv.mockResolvedValue(OPEN);
       m.loadFriendDecks.mockResolvedValue(Array.from({ length: 6 }, (_, i) => ({ ...DECK, id: `${ID.slice(0, -1)}${i}`, name: `Deck ${i}`, artCropUri: `https://crop/${i}.jpg` })));
       const html = renderToString(await FriendDecksPage({ params: params() }));
       for (let i = 0; i < 4; i++) expect(html).toContain(`https://crop/${i}.jpg`);
@@ -272,7 +267,6 @@ describe("a friend's page group", () => {
     });
 
     it("rewords the empty tab's body: a deck shared shows with its whole list", async () => {
-      m.requestSwitchEnv.mockResolvedValue(OPEN);
       m.loadFriendDecks.mockResolvedValue([]);
       expect(renderToString(await FriendDecksPage({ params: params() }))).toContain(p.decks.emptyBodyOpen("Colin"));
     });

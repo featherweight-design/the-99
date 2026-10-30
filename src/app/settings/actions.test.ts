@@ -86,20 +86,16 @@ describe("on", () => {
   });
 });
 
-// Your decks (friend decks G2): FRIEND_DECKS_ENABLED decided for the reader, two booleans or `invalid`, /settings redrawn.
+// Your decks (friend decks G2): the friends switch decided for the reader, two booleans or `invalid`, /settings redrawn.
 describe("setFriendDeckPrefsAction", () => {
-  const FRIEND_DECKS = { SOCIAL_FRIENDS_ENABLED: "true", FRIEND_DECKS_ENABLED: "true" };
-
-  it("refuses as off with Friend decks off for the reader, Friends on or not, and writes nothing", async () => {
-    for (const env of [ON, { FRIEND_DECKS_ENABLED: "true" }]) {
-      m.requestSwitchEnv.mockResolvedValue(env);
-      expect(await setFriendDeckPrefsAction(true, false)).toEqual({ ok: false, reason: "off" });
-    }
+  it("refuses as off with Friends off for the reader, and writes nothing", async () => {
+    m.requestSwitchEnv.mockResolvedValue({});
+    expect(await setFriendDeckPrefsAction(true, false)).toEqual({ ok: false, reason: "off" });
     expect(m.writeFriendDeckPrefs).not.toHaveBeenCalled();
   });
 
   it("refuses anything but two booleans", async () => {
-    m.requestSwitchEnv.mockResolvedValue(FRIEND_DECKS);
+    m.requestSwitchEnv.mockResolvedValue(ON);
     for (const [a, b] of [["true", false], [true, null], [1, 0]] as const) {
       expect(await setFriendDeckPrefsAction(a, b)).toEqual({ ok: false, reason: "invalid" });
     }
@@ -107,7 +103,7 @@ describe("setFriendDeckPrefsAction", () => {
   });
 
   it("writes the reader's own two rules and redraws /settings", async () => {
-    m.requestSwitchEnv.mockResolvedValue(FRIEND_DECKS);
+    m.requestSwitchEnv.mockResolvedValue(ON);
     expect(await setFriendDeckPrefsAction(false, true)).toEqual({ ok: true });
     expect(m.writeFriendDeckPrefs).toHaveBeenCalledWith("user_me", { seeDecks: false, seeUnfinished: true });
     expect(m.revalidatePath).toHaveBeenCalledWith("/settings");

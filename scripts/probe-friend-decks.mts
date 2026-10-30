@@ -32,7 +32,6 @@ async function main() {
   process.env.DATABASE_URL = url;
   // The owner's switches decide the filter (`resolveSwitchEnv`), and this process's environment is their default.
   process.env.SOCIAL_FRIENDS_ENABLED = "true";
-  process.env.FRIEND_DECKS_ENABLED = "true";
   const { db } = await import("../src/db");
   const { sql } = await import("drizzle-orm");
   const { rows } = await db.execute<{ b: string | null }>(sql`select current_setting('neon.branch_id', true) as b`);

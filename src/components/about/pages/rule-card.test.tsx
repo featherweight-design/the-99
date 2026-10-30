@@ -82,7 +82,7 @@ describe("GoodToKnow", () => {
     const { container } = render(<GoodToKnow sectionId="notes" rules={[]} />);
     expect(container.innerHTML).toBe("");
     // Friends' three rules are all switched: with Friends off the section keeps its screen and loses Good to know.
-    expect(rulesOf(without("SOCIAL_FRIENDS_ENABLED", "FRIEND_DECKS_ENABLED", "SOCIAL_INVITES_ENABLED"), "friends")).toEqual([]);
+    expect(rulesOf(without("SOCIAL_FRIENDS_ENABLED", "SOCIAL_INVITES_ENABLED"), "friends")).toEqual([]);
   });
 
   it("heads the cards with the mark, the title and its sub-line", () => {

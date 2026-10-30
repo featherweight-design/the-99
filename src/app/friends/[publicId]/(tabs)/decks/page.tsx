@@ -3,7 +3,7 @@
 // not run again.
 import { notFound } from "next/navigation";
 import { requireUserId } from "../../../../../lib/auth";
-import { friendDecksEnabled, socialFriendsEnabled } from "../../../../../lib/social/flag";
+import { socialFriendsEnabled } from "../../../../../lib/social/flag";
 import { requestSwitchEnv } from "../../../../../lib/switches/request";
 import { loadFriend } from "../../../../../lib/social/access";
 import { friendDecks } from "../../../../../lib/social/friend-page-data";
@@ -14,7 +14,7 @@ export default async function FriendDecksPage({ params }: { params: Promise<{ pu
   const env = await requestSwitchEnv(userId);
   if (!socialFriendsEnabled(env)) notFound();
   const { publicId } = await params;
-  const [friend, decks] = await Promise.all([loadFriend(userId, publicId), friendDecks(userId, publicId, friendDecksEnabled(env))]);
+  const [friend, decks] = await Promise.all([loadFriend(userId, publicId), friendDecks(userId, publicId, socialFriendsEnabled(env))]);
   if (!friend || decks === null) notFound();
-  return <FriendDecksTab name={friend.displayName} decks={decks} publicId={friend.publicId} open={friendDecksEnabled(env)} />;
+  return <FriendDecksTab name={friend.displayName} decks={decks} publicId={friend.publicId} open={socialFriendsEnabled(env)} />;
 }

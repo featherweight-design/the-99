@@ -126,13 +126,11 @@ describe("/about, the index (call 3)", () => {
 
   it("counts the screens and the rules the reader is drawn (visibleSections)", async () => {
     vi.stubEnv("SOCIAL_FRIENDS_ENABLED", "");
-    vi.stubEnv("FRIEND_DECKS_ENABLED", "");
     vi.stubEnv("SOCIAL_INVITES_ENABLED", "");
     const off = Object.fromEntries((await tiles()).map((x) => [x.area, x.count]));
     expect(off.home).toBe("2 screens");
     expect(off.friends).toBe("1 screen");
     vi.stubEnv("SOCIAL_FRIENDS_ENABLED", "true");
-    vi.stubEnv("FRIEND_DECKS_ENABLED", "true");
     vi.stubEnv("SOCIAL_INVITES_ENABLED", "true");
     const on = Object.fromEntries((await tiles()).map((x) => [x.area, x.count]));
     expect(on.friends).toBe("1 screen · 3 good to know");

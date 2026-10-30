@@ -41,7 +41,6 @@ export const SWITCHES = [
   { name: "FIND_A_DECK_READ_ENABLED", kind: "model", needs: "SWAP_TOOLS_ENABLED" },
   { name: "HELP_ME_CHOOSE_ENABLED", kind: "model" },
   { name: "FLYER_TRIAL_ENABLED", kind: "feature" },
-  { name: "FRIEND_DECKS_ENABLED", kind: "feature", needs: "SOCIAL_FRIENDS_ENABLED" },
   { name: "HOME_FEED_ENABLED", kind: "feature" },
   { name: "HOW_IT_WORKS_ENABLED", kind: "plumbing" },
   { name: "LABEL_ROLE_COUNTS_ENABLED", kind: "plumbing" },
@@ -110,7 +109,7 @@ export const isOverrideName = (name: string): name is OverrideName => name === A
  * `COMMANDERS_PLACE_ENABLED` and `HOME_FEED_ENABLED` on 2026-10-22 while their surfaces landed (menu and Home), until
  * Home drew the feed. It held `SPARE_REQUESTS_ENABLED` from 2026-10-22 until spare requests'
  * close-out (the asks and answers drawn, its About lines shipped). `NEAR_COMBOS_ENABLED` held it from 2026-10-22 and left it with its
- * About entry (`combos-one-away`) once the deck page and card details drew it. `FRIEND_DECKS_ENABLED` left it on 2026-10-22 with its About entry (`friend-decks`).
+ * About entry (`combos-one-away`) once the deck page and card details drew it.
  * `STRATEGY_FOCUS_ENABLED` left it on 2026-10-22 with Suggested changes aiming at the focus and its About entry (`deck-focus`).
  * `PUSH_ENABLED` held it from 2026-10-22 and left it on 2026-10-23 with its About entry (`push`), once Settings drew the push
  * column and the cron sent. Without the VAPID keys Settings draws no push column and nothing is sent (`pushAvailable`),
