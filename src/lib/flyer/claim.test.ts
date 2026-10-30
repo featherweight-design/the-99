@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { codeHmac, secretHash } from "../invites/tokens";
-import { decideConfirm, decideStart } from "./claim";
+import { decideConfirm, decideStart, resentHold } from "./claim";
 
 const now = new Date("2026-10-30T12:00:00Z");
 const at = (ms: number) => new Date(now.getTime() + ms);
@@ -50,5 +50,18 @@ describe("decideConfirm", () => {
   });
   it("answers a retry on a proven claim as proven", () => {
     expect(decideConfirm(row({ state: "proven", codeHmac: null, codeExpiresAt: null }), COOKIE, "999999", SECRET, now)).toEqual({ kind: "proven" });
+  });
+});
+
+describe("resentHold", () => {
+  it("reaches ten minutes past the re-send, the mail's promise", () => {
+    expect(resentHold({ holdsUntil: at(2 * 60_000), createdAt: at(-8 * 60_000) }, now)).toEqual(at(10 * 60_000));
+  });
+  it("keeps a longer hold it already had", () => {
+    expect(resentHold({ holdsUntil: at(20 * 60_000), createdAt: at(0) }, now)).toEqual(at(20 * 60_000));
+  });
+  it("stops at thirty minutes from the first send, however often it is re-sent", () => {
+    expect(resentHold({ holdsUntil: at(5 * 60_000), createdAt: at(-25 * 60_000) }, now)).toEqual(at(5 * 60_000));
+    expect(resentHold({ holdsUntil: at(1), createdAt: at(-29 * 60_000) }, now)).toEqual(at(60_000));
   });
 });

@@ -15,7 +15,7 @@ import { readCountIn } from "../invites/read";
 import { CODE_MAX_TRIES, codeState, CODE_TTL_MS, isClaimSecretShape, isEmailShape, normalizeEmail, parseCode, resendWaitMs } from "../invites/rules";
 import { lockSenderIn } from "../invites/send";
 import { codeHmac, inviteSecret, newClaimSecret, newCode, sameHex, secretHash } from "../invites/tokens";
-import { FLYER_HOLD_MS, FLYER_PROVEN_HOLD_MS, flyerOpenness, parseFlyerCode, type FlyerClaimRow, type FlyerClosed } from "./rules";
+import { FLYER_HOLD_MS, FLYER_PROVEN_HOLD_MS, FLYER_RESEND_CEILING_MS, flyerOpenness, parseFlyerCode, type FlyerClaimRow, type FlyerClosed } from "./rules";
 
 type Row = typeof flyerClaims.$inferSelect;
 type CodeRow = typeof flyerCodes.$inferSelect;
@@ -67,6 +67,12 @@ export function decideStart(row: Row | undefined, presented: string | null, emai
   return { kind: "again", changed: row.email !== email };
 }
 
+/** A re-sent code works for ten minutes, so the hold reaches that far, but never past `FLYER_RESEND_CEILING_MS` from the first send. */
+export function resentHold(row: Pick<Row, "holdsUntil" | "createdAt">, now: Date): Date {
+  const wanted = Math.max(row.holdsUntil.getTime(), now.getTime() + FLYER_HOLD_MS);
+  return new Date(Math.min(wanted, row.createdAt.getTime() + FLYER_RESEND_CEILING_MS));
+}
+
 export type StartResult =
   | { ok: true; claimSecret: string; mailed: boolean }
   | { ok: false; reason: "invalid" | "unconfigured" | "wait" | "failed"; waitMs?: number }
@@ -116,6 +122,8 @@ export async function startFlyerClaim(codeRaw: string, rawEmail: string, present
     if (decision.kind === "again") {
       await tx.update(flyerClaims).set({
         email, codeHmac: codeHmac(secret, row!.id, sixDigits), codeExpiresAt: new Date(now.getTime() + CODE_TTL_MS), codeSentAt: now,
+        // The mail says ten minutes, so the hold reaches that far, up to a ceiling so a resend loop cannot hold a place for good.
+        holdsUntil: resentHold(row!, now),
         // A different address has to be proven again.
         ...(decision.changed ? { provenAt: null } : {}),
       }).where(eq(flyerClaims.id, row!.id));

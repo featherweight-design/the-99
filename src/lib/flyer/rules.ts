@@ -15,6 +15,8 @@ export const FLYER_CODE_LENGTH = 6;
 /** A claim holds its place for ten minutes, until the emailed code is proven or the account exists. */
 export const FLYER_HOLD_MS = 10 * 60 * 1000;
 /** Once the emailed code is proven the place holds longer, for the newcomer to finish Clerk's sign-up. */
+/** However often the code is re-sent, an unproven claim holds its place no longer than this from its first send. */
+export const FLYER_RESEND_CEILING_MS = 30 * 60 * 1000;
 export const FLYER_PROVEN_HOLD_MS = 60 * 60 * 1000;
 
 const CODE_SHAPE = new RegExp(`^[${FLYER_ALPHABET}]{${FLYER_CODE_LENGTH}}$`);

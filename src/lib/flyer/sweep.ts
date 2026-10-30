@@ -36,7 +36,7 @@ export async function sweepFlyerClaims(deps: { now?: Date; clerk?: ClerkInvites 
       if (!(got.rows[0] as { ok: boolean }).ok) return null;
       // Read under the lock: a hand-over that finished first has stored its ticket id, which this run then revokes.
       const [cur] = await tx.select({ email: flyerClaims.email, clerkInvitationId: flyerClaims.clerkInvitationId, state: flyerClaims.state, holdsUntil: flyerClaims.holdsUntil })
-        .from(flyerClaims).where(eq(flyerClaims.id, row.id)).for("update");
+        .from(flyerClaims).where(eq(flyerClaims.id, row.id));
       if (!cur) return 0;
       const lapsedNow = (["open", "proven"].includes(cur.state) && cur.holdsUntil.getTime() <= now.getTime()) || (cur.state === "released" && cur.clerkInvitationId !== null);
       if (!lapsedNow) return 0;
@@ -50,7 +50,14 @@ export async function sweepFlyerClaims(deps: { now?: Date; clerk?: ClerkInvites 
       }
       const updated = await tx.update(flyerClaims)
         .set({ state: "released", email: null, clerkInvitationId: null, codeHmac: null, codeExpiresAt: null, resolvedAt: now })
-        .where(eq(flyerClaims.id, row.id))
+        // Guarded by what it read, not by a row lock held across Clerk: a confirm or resend that moved the hold, or a
+        // late ticket id stored meanwhile, fails the predicate and the claim is left for the next run.
+        .where(and(
+          eq(flyerClaims.id, row.id),
+          eq(flyerClaims.state, cur.state),
+          eq(flyerClaims.holdsUntil, cur.holdsUntil),
+          sql`${flyerClaims.clerkInvitationId} is not distinct from ${cur.clerkInvitationId}`,
+        ))
         .returning({ id: flyerClaims.id });
       return updated.length;
     });
