@@ -19,13 +19,13 @@
 // `user_prefs` row read before any page and put back exactly in `finally`, then re-read as a check. Its About state is
 // driven by that row alone: "current" is the floor, every catalog id and every unit key the pages can draw; one launch
 // is that less Lock cards' key and its legacy `locked-cards`; two launches is that less the lock rule's key too. Both
-// follow NEVER_CUT_ENABLED, which the server must have on. The checklist states use a fresh Clerk test user on the
+// always draw (Never cut is always on). The checklist states use a fresh Clerk test user on the
 // DEVELOPMENT instance, deleted after with every row it wrote. The A2 arrival is a fixture `commander` set `pqbset`
 // with a day-old non-baseline `catalog_first_seen` stamp, removed in `finally`. Local-dev only: production and staging
 // are refused by branch id.
 //
 // The server: `next start` of a build with the worktree's `.env`, started with
-//   LIST_CACHE_ENABLED=true NEVER_CUT_ENABLED=true
+//   LIST_CACHE_ENABLED=true
 //
 //   PROBE_BASE=http://localhost:3312 pnpm probe:about-banner
 import { neon } from "@neondatabase/serverless";
@@ -74,11 +74,11 @@ const LOCK_RULE = "rule/lock";
 const ONE = CURRENT.filter((id) => id !== "locked-cards" && id !== LOCK);
 const TWO = ONE.filter((id) => id !== LOCK_RULE);
 const norm = (s: string | null | undefined) => (s ?? "").replace(/\s+/g, " ").trim();
-// The lines as the server words them, for a reader with NEVER_CUT_ENABLED on.
-const NEVER_CUT = { NEVER_CUT_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+// The lines as the server words them. The lock label and rule always draw, so no switch is needed.
+const NO_SWITCHES = {} as unknown as NodeJS.ProcessEnv;
 const wordsOf = (ids: string[]) => {
-  const line = aboutLine({ version: ABOUT_VERSION, ids }, visibleSections(NEVER_CUT), DEFAULT_THEME);
-  if (line?.kind !== "launches") throw new Error("the fixture state announces nothing: is the lock label still switched?");
+  const line = aboutLine({ version: ABOUT_VERSION, ids }, visibleSections(NO_SWITCHES), DEFAULT_THEME);
+  if (line?.kind !== "launches") throw new Error("the fixture state announces nothing: is the lock label still drawn?");
   return line.launches.map((l) => ({ key: l.key, text: norm(`${l.lead} ${l.text}`), href: l.href }));
 };
 const ONE_LINE = wordsOf(ONE);

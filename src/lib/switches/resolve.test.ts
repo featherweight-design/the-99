@@ -25,7 +25,7 @@ describe("resolveEnv", () => {
     expect(resolveEnv(e({}), s, "u2").FEEDBACK_ENABLED).toBe("true");
     expect(resolveEnv(e({ FEEDBACK_ENABLED: "true" }), s, "u3").FEEDBACK_ENABLED).toBe("false");
     expect(resolveEnv(e({ FEEDBACK_ENABLED: "true" }), s, null).FEEDBACK_ENABLED).toBe("false");
-    expect(resolveEnv(e({ NEVER_CUT_ENABLED: "true" }), s, "u3").NEVER_CUT_ENABLED).toBe("true");
+    expect(resolveEnv(e({ LABEL_SURFACES_ENABLED: "true" }), s, "u3").LABEL_SURFACES_ENABLED).toBe("true");
   });
 
   it("lets OFF win when two group rows apply", () => {
@@ -105,8 +105,8 @@ describe("All features", () => {
       row({ switchName: "ALL_DECKS_CART_ENABLED", scope: "group", groupId: "g1", value: "off" }),
       row({ switchName: "SOCIAL_FRIENDS_ENABLED", scope: "app", value: "off" }),
     ], { u1: "g1" });
-    const env = resolveEnv(e({ NEVER_CUT_ENABLED: "off" }), s, "u1");
-    expect(env.NEVER_CUT_ENABLED).toBe("off");
+    const env = resolveEnv(e({ LABEL_SURFACES_ENABLED: "off" }), s, "u1");
+    expect(env.LABEL_SURFACES_ENABLED).toBe("off");
     expect(env.CHANGE_COMMANDER_ENABLED).toBe("false");
     expect(env.ALL_DECKS_CART_ENABLED).toBe("true");
     expect(env.SOCIAL_FRIENDS_ENABLED).toBe("true");

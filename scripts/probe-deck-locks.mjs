@@ -26,7 +26,7 @@
 // Fixture, built per width under the signed-in account and deleted in a `finally` (cards, versions
 // and locks cascade): a committed copy of the template at version 10, twelve of its cards marked
 // auto, and one card cut from the draft so the toolbar carries a draft note. Needs a server with
-// NEVER_CUT_ENABLED=true and SWAP_TOOLS_ENABLED=true. Point it at `local-dev`, never production.
+// SWAP_TOOLS_ENABLED=true (Never cut is always on). Point it at `local-dev`, never production.
 //
 //   PROBE_BASE=http://localhost:3239 node scripts/probe-deck-locks.mjs
 import { readFileSync } from "node:fs";

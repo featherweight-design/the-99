@@ -64,16 +64,16 @@ describe("recordAboutPageVisit (About visual PR 6b)", () => {
   });
 
   it("decides the keys from the reader's own resolved switches", async () => {
-    resolved.env = { NEVER_CUT_ENABLED: "true" };
-    await recordAboutPageVisit("decks", rendered("decks", resolved.env));
+    resolved.env = { ALL_DECKS_CART_ENABLED: "true" };
+    await recordAboutPageVisit("shopping", rendered("shopping", resolved.env));
     expect(requestSwitchEnv).toHaveBeenCalledWith("user_1");
-    expect((markAboutVisited.mock.calls[0] as unknown as [string, number, string[]])[2]).toContain("decks/your-deck/lock");
+    expect((markAboutVisited.mock.calls[0] as unknown as [string, number, string[]])[2]).toContain("shopping/all-decks/cart");
     markAboutVisited.mockClear();
     // Rendered with it on, switched off for the reader before the visit: the key is not written.
-    const withLock = rendered("decks", { NEVER_CUT_ENABLED: "true" });
+    const withCart = rendered("shopping", { ALL_DECKS_CART_ENABLED: "true" });
     resolved.env = {};
-    await recordAboutPageVisit("decks", withLock);
-    expect((markAboutVisited.mock.calls[0] as unknown as [string, number, string[]])[2]).not.toContain("decks/your-deck/lock");
+    await recordAboutPageVisit("shopping", withCart);
+    expect((markAboutVisited.mock.calls[0] as unknown as [string, number, string[]])[2]).not.toContain("shopping/all-decks/cart");
   });
 
   it("takes a first-run reader's first visit as their whole baseline: the floor and every page's keys", async () => {
@@ -86,24 +86,24 @@ describe("recordAboutPageVisit (About visual PR 6b)", () => {
 
   // Review round 1: a switch turned on between the render (or a prefetch) and the visit names keys the reader never saw.
   it("writes only what the page rendered: a unit switched on after the render stays new (returning reader)", async () => {
-    const claim = rendered("decks", {});
-    resolved.env = { NEVER_CUT_ENABLED: "true" };
-    await recordAboutPageVisit("decks", claim);
+    const claim = rendered("shopping", {});
+    resolved.env = { ALL_DECKS_CART_ENABLED: "true" };
+    await recordAboutPageVisit("shopping", claim);
     const [, version, ids] = markAboutVisited.mock.calls[0] as unknown as [string, number, string[]];
     expect(version).toBe(9);
-    expect(ids).not.toContain("decks/your-deck/lock");
-    expect(unseenUnits(visibleSections(envViewWith(resolved.env)), { version, ids }).map((u) => u.key)).toContain("decks/your-deck/lock");
+    expect(ids).not.toContain("shopping/all-decks/cart");
+    expect(unseenUnits(visibleSections(envViewWith(resolved.env)), { version, ids }).map((u) => u.key)).toContain("shopping/all-decks/cart");
   });
 
   it("writes only what the page rendered: a first-run baseline does not take a unit switched on after the render", async () => {
     stored.seen = { version: 0, ids: [] };
     const claim = rendered("home", {});
-    resolved.env = { NEVER_CUT_ENABLED: "true" };
+    resolved.env = { ALL_DECKS_CART_ENABLED: "true" };
     await recordAboutPageVisit("home", claim);
     const [, version, ids] = markAboutVisited.mock.calls[0] as unknown as [string, number, string[]];
-    expect(ids).not.toContain("decks/your-deck/lock");
+    expect(ids).not.toContain("shopping/all-decks/cart");
     expect(new Set(ids)).toEqual(new Set(everyAnnouncement(visibleSections(envViewWith({}))).flatMap((u) => u.ack)));
-    expect(unseenUnits(visibleSections(envViewWith(resolved.env)), { version, ids }).map((u) => u.key)).toContain("decks/your-deck/lock");
+    expect(unseenUnits(visibleSections(envViewWith(resolved.env)), { version, ids }).map((u) => u.key)).toContain("shopping/all-decks/cart");
   });
 
   // Review round 6: both paths answer from the state the reader is left at, so a floor or legacy id another tab wrote
@@ -118,10 +118,10 @@ describe("recordAboutPageVisit (About visual PR 6b)", () => {
   });
 
   it("answers a write with the keys the resulting state covers, legacy ids and floor included", async () => {
-    stored.seen = { version: 14, ids: ["locked-cards"] };
-    resolved.env = { NEVER_CUT_ENABLED: "true" };
-    const claim = rendered("decks", resolved.env);
-    const answer = await recordAboutPageVisit("decks", claim);
+    stored.seen = { version: 14, ids: ["all-decks-cart"] };
+    resolved.env = { ALL_DECKS_CART_ENABLED: "true" };
+    const claim = rendered("shopping", resolved.env);
+    const answer = await recordAboutPageVisit("shopping", claim);
     expect(markAboutVisited).toHaveBeenCalled();
     const [, version, ids] = markAboutVisited.mock.calls[0] as unknown as [string, number, string[]];
     const after = { version: Math.max(14, version), ids: [...new Set([...stored.seen.ids, ...ids])] };
@@ -149,21 +149,21 @@ describe("recordAboutVisit (R6)", () => {
   // Review round 4: the page acknowledges this answer, not its render's forecast.
   it("returns what the write confirmed: the ids written and the unit keys the state it leaves covers", async () => {
     stored.seen = { version: 14, ids: [] };
-    resolved.env = { NEVER_CUT_ENABLED: "true" };
-    const confirmed = await recordAboutVisit(["locked-cards"]);
-    expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, ["locked-cards"]);
-    expect(confirmed).toContain("locked-cards");
-    expect(confirmed).toContain("decks/your-deck/lock");
+    resolved.env = { ALL_DECKS_CART_ENABLED: "true" };
+    const confirmed = await recordAboutVisit(["all-decks-cart"]);
+    expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, ["all-decks-cart"]);
+    expect(confirmed).toContain("all-decks-cart");
+    expect(confirmed).toContain("shopping/all-decks/cart");
     expect(confirmed).toContain("home/home/in-use");
   });
 
   it("confirms no unit a switch flipped off between the render and the visit took out of the write", async () => {
     stored.seen = { version: 14, ids: [] };
     resolved.env = {};
-    const confirmed = await recordAboutVisit(["locked-cards"]);
+    const confirmed = await recordAboutVisit(["all-decks-cart"]);
     expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, []);
-    expect(confirmed).not.toContain("locked-cards");
-    expect(confirmed).not.toContain("decks/your-deck/lock");
+    expect(confirmed).not.toContain("all-decks-cart");
+    expect(confirmed).not.toContain("shopping/all-decks/cart");
   });
 
   it("records the current version and the switched entries the page showed", async () => {
@@ -175,10 +175,10 @@ describe("recordAboutVisit (R6)", () => {
   });
 
   it("records every switched entry the page showed that the reader's switches draw, and only those", async () => {
-    extraEntries.push({ id: "locked-cards", switch: "NEVER_CUT_ENABLED" });
+    extraEntries.push({ id: "all-decks-cart", switch: "ALL_DECKS_CART_ENABLED" });
     try {
-      await recordAboutVisit(["locked-cards", "made-up"]);
-      expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, ["locked-cards"]);
+      await recordAboutVisit(["all-decks-cart", "made-up"]);
+      expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, ["all-decks-cart"]);
     } finally {
       extraEntries.length = 0;
     }

@@ -8,7 +8,6 @@
 import { changeCommanderEnabled } from "../commander-change/flag";
 import { analysisTabEnabled } from "../decks/analysis-flag";
 import { howItWorksEnabled } from "./how-it-works-flag";
-import { neverCutEnabled } from "../decks/never-cut-flag";
 import { helpMeChooseEnabled } from "../intake/flag";
 import { findADeckReadEnabled, swapToolsEnabled } from "../swaps/flag";
 import { manaBalanceEnabled, proposedCutsEnabled, suggestedChangesV2Enabled, tuningEnabled, tuningHubEnabled } from "../tuning/flag";
@@ -37,7 +36,8 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   // exactly when collection edit was, and it is retired (always on).
   CARD_SCAN_ENABLED: () => true,
   ADDED_COPY_ENABLED: () => true,
-  NEVER_CUT_ENABLED: neverCutEnabled,
+  // Retired (always on): Locked, never cut. The name stays as the entries', pages' and rules' historical identity.
+  NEVER_CUT_ENABLED: () => true,
   SWAP_TOOLS_ENABLED: swapToolsEnabled,
   HELP_ME_CHOOSE_ENABLED: helpMeChooseEnabled,
   CHANGE_COMMANDER_ENABLED: changeCommanderEnabled,

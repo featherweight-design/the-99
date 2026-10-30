@@ -49,17 +49,17 @@ describe("aboutLine", () => {
   });
 
   it("never names a unit switched off for the reader (Review Focus 2)", () => {
-    // Lock cards follows NEVER_CUT_ENABLED and is announced by its id alone.
+    // Shop all decks follows ALL_DECKS_CART_ENABLED and is announced by its id alone.
     const reader: SeenState = { version: 16, ids: ["something-else"] };
-    const on = aboutLine(reader, visibleSections(env({ NEVER_CUT_ENABLED: "true" })), THEME);
-    expect(on?.ids).toContain("decks/your-deck/lock");
+    const on = aboutLine(reader, visibleSections(env({ ALL_DECKS_CART_ENABLED: "true" })), THEME);
+    expect(on?.ids).toContain("shopping/all-decks/cart");
     const off = aboutLine(reader, visibleSections(OFF), THEME);
-    expect(off?.ids ?? []).not.toContain("decks/your-deck/lock");
+    expect(off?.ids ?? []).not.toContain("shopping/all-decks/cart");
     for (const k of off?.ids ?? []) expect(units(visibleSections(OFF)).map((u) => u.key)).toContain(k.split("@")[0]);
   });
 
   it("words one launch: its page, its lead and rest, Show me to the label lit, and a crop at each width", () => {
-    const line = aboutLine({ version: 16, ids: ["x"] }, visibleSections(env({ NEVER_CUT_ENABLED: "true" })), THEME);
+    const line = aboutLine({ version: 16, ids: ["x"] }, visibleSections(OFF), THEME);
     const lock = line?.kind === "launches" ? line.launches.find((l) => l.key === "decks/your-deck/lock") : undefined;
     expect(lock).toMatchObject({
       lead: "New on Decks:",
@@ -142,7 +142,7 @@ describe("aboutDismissal (the banner's ✕)", () => {
 
   it("writes nothing for a unit switched off since the page rendered", () => {
     const reader: SeenState = { version: 16, ids: ["x"] };
-    expect(aboutDismissal(["decks/your-deck/lock"], reader, visibleSections(OFF))).toBeNull();
+    expect(aboutDismissal(["shopping/all-decks/cart"], reader, visibleSections(OFF))).toBeNull();
   });
 
   it("gives a first-run reader the baseline a first visit writes", () => {
@@ -191,19 +191,19 @@ describe("aboutDismissal, a switch turned on between the render and the ✕", ()
   it("a first-run ✕ takes only the baseline it rendered: a unit and a sentence switched on since stay new", () => {
     const line = aboutLine(NEVER_SEEN, visibleSections(OFF), THEME);
     expect(line?.kind).toBe("firstRun");
-    const now = visibleSections(env({ NEVER_CUT_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true" }));
+    const now = visibleSections(env({ ALL_DECKS_CART_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true" }));
     const write = aboutDismissal(line?.kind === "firstRun" ? line.ack : [], NEVER_SEEN, now)!;
-    expect(write.ids).not.toContain("decks/your-deck/lock");
+    expect(write.ids).not.toContain("shopping/all-decks/cart");
     expect(write.ids).not.toContain(FRIEND);
     const after: SeenState = { version: write.version, ids: write.ids };
     const told = unseenUnits(now, after).map((u) => u.key);
-    expect(told).toContain("decks/your-deck/lock");
+    expect(told).toContain("shopping/all-decks/cart");
     expect(told).toContain(FRIEND);
   });
 
   it("cuts a claim past the bound, as a page never draws one that long", () => {
     const padded = [...Array.from({ length: 200 }, (_, i) => `pad/${i}`), "decks/your-deck/lock"];
-    expect(aboutDismissal(padded, { version: 16, ids: ["x"] }, visibleSections(env({ NEVER_CUT_ENABLED: "true" })))).toBeNull();
+    expect(aboutDismissal(padded, { version: 16, ids: ["x"] }, visibleSections(OFF))).toBeNull();
   });
 });
 

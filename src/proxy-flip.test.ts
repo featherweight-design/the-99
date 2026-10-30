@@ -45,13 +45,13 @@ beforeEach(() => {
   stored.ids = switchedIds(visibleEntries(process.env));
 });
 afterEach(() => {
-  delete process.env.NEVER_CUT_ENABLED;
+  delete process.env.ALL_DECKS_CART_ENABLED;
   delete process.env.ANALYSIS_TAB_ENABLED;
 });
 
 describe("a switch flipped on", () => {
   const line = () => aboutLine({ version: stored.version, ids: [...stored.ids] }, visibleSections(process.env), DEFAULT_THEME);
-  const visit = (area: "decks") => {
+  const visit = (area: "shopping") => {
     const after = afterVisit(visibleSections(process.env), area, { version: stored.version, ids: [...stored.ids] });
     stored.version = Math.max(stored.version, after.version);
     stored.ids = [...new Set([...stored.ids, ...after.ids])];
@@ -61,22 +61,22 @@ describe("a switch flipped on", () => {
     expect(line()).toBeNull();
     quiet(await load());
 
-    // Lock cards switched on: Home names its units, and the proxy still redirects nowhere.
-    process.env.NEVER_CUT_ENABLED = "true";
+    // The all-decks cart switched on: Home names its units, and the proxy still redirects nowhere.
+    process.env.ALL_DECKS_CART_ENABLED = "true";
     const first = line();
     expect(first?.kind).toBe("launches");
-    expect(first?.ids).toContain("decks/your-deck/lock");
+    expect(first?.ids).toContain("shopping/all-decks/cart");
     quiet(await load());
 
-    // The reader opens Decks (Show me lands there), which records that page's keys.
-    visit("decks");
+    // The reader opens Shopping (Show me lands there), which records that page's keys.
+    visit("shopping");
     expect(line()).toBeNull();
 
     // The Analysis tab switched on LATER. The floor would call this reader current; the unit is still new.
     process.env.ANALYSIS_TAB_ENABLED = "true";
     const second = line();
     expect(second?.ids.length).toBeGreaterThan(0);
-    expect(second?.ids.some((k) => k.startsWith("decks/your-deck/lock"))).toBe(false);
+    expect(second?.ids.some((k) => k.startsWith("shopping/all-decks/cart"))).toBe(false);
     quiet(await load());
   });
 });

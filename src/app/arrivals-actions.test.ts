@@ -66,15 +66,15 @@ describe("dismissArrivals", () => {
 // About's half (About visual PR 6b): ✕ writes each launch's ack and raises the floor, re-decided against the reader's
 // announcements now, from their own resolved switches.
 describe("dismissArrivals, About's lines", () => {
-  const LOCK = "decks/your-deck/lock";
+  const CART = "shopping/all-decks/cart";
 
   it("writes a launch the reader is still told, by its ack, with the floor", async () => {
-    stub.env = { NEVER_CUT_ENABLED: "true" };
+    stub.env = { ALL_DECKS_CART_ENABLED: "true" };
     about.seen = { version: ABOUT_VERSION, ids: ["x"] };
-    const written = await dismissArrivals([], [LOCK]);
+    const written = await dismissArrivals([], [CART]);
     expect(about.read).toHaveBeenCalledWith("user_1");
     const [, version, ids] = about.mark.mock.calls[0] as unknown as [string, number, string[]];
-    expect(ids).toContain(LOCK);
+    expect(ids).toContain(CART);
     // The state it leaves goes back to the banner, which acknowledges it (and ends a first run) in this document.
     expect(written).toEqual(expect.arrayContaining(["x", ...ids]));
     expect(version).toBeLessThanOrEqual(ABOUT_VERSION);
@@ -85,30 +85,30 @@ describe("dismissArrivals, About's lines", () => {
   it("never writes a key the page did not draw, one no longer new, or one switched off for the reader", async () => {
     stub.env = {};
     about.seen = { version: ABOUT_VERSION, ids: ["x"] };
-    const answer = await dismissArrivals([], [LOCK, "made/up/key"]);
-    expect(answer).not.toContain(LOCK);
+    const answer = await dismissArrivals([], [CART, "made/up/key"]);
+    expect(answer).not.toContain(CART);
     expect(answer).not.toContain("made/up/key");
     expect(about.mark).not.toHaveBeenCalled();
-    stub.env = { NEVER_CUT_ENABLED: "true" };
-    about.seen = { version: ABOUT_VERSION, ids: ["x", LOCK] };
-    await dismissArrivals([], [LOCK]);
+    stub.env = { ALL_DECKS_CART_ENABLED: "true" };
+    about.seen = { version: ABOUT_VERSION, ids: ["x", CART] };
+    await dismissArrivals([], [CART]);
     expect(about.mark).not.toHaveBeenCalled();
   });
 
   // Review round 7: a launch another tab already marked seen writes nothing here, and is still acknowledged.
   it("answers a no-write ✕ with the state the reader holds, so a launch seen in another tab is acknowledged", async () => {
-    stub.env = { NEVER_CUT_ENABLED: "true" };
-    about.seen = { version: ABOUT_VERSION, ids: ["x", LOCK] };
-    const answer = await dismissArrivals([], [LOCK]);
+    stub.env = { ALL_DECKS_CART_ENABLED: "true" };
+    about.seen = { version: ABOUT_VERSION, ids: ["x", CART] };
+    const answer = await dismissArrivals([], [CART]);
     expect(about.mark).not.toHaveBeenCalled();
-    expect(answer).toContain(LOCK);
+    expect(answer).toContain(CART);
     expect(answer).toContain("x");
   });
 
   it("takes both halves in one press", async () => {
-    stub.env = { ...stub.env, NEVER_CUT_ENABLED: "true" };
+    stub.env = { ...stub.env, ALL_DECKS_CART_ENABLED: "true" };
     about.seen = { version: ABOUT_VERSION, ids: ["x"] };
-    await dismissArrivals(["trc"], [LOCK]);
+    await dismissArrivals(["trc"], [CART]);
     expect(stub.mark).toHaveBeenCalledWith("user_1", ["trc"]);
     expect(about.mark).toHaveBeenCalled();
   });

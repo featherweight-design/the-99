@@ -3256,7 +3256,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `finally`, then re-read as a check. FIXTURES on local-dev only (production and staging refused by branch id): a
   `commander` set `pqbset` with a day-old non-baseline `catalog_first_seen` stamp, and the temporary user (its key must
   be `sk_test_`), all removed in its `finally` with every row the user wrote. `PROBE_BASE` must be loopback with a
-  port. Needs a `next start` on `PROBE_BASE` over the same database with `LIST_CACHE_ENABLED=true NEVER_CUT_ENABLED=true`; stop it by its own PID.
+  port. Needs a `next start` on `PROBE_BASE` over the same database with `LIST_CACHE_ENABLED=true` (Never cut is always on); stop it by its own PID.
 
 ## probe:lock-shift
 
@@ -3265,8 +3265,8 @@ lock and then the unlock on a real deck at 1300x900 and 390x844 and asserts the 
 rows and the document's own size (so a scrollbar appearing) are where they were, to half a pixel. The first version found
 the cause of Hugh's 2026-10-15 report: the first lock adds a `locked` entry to the mark key, and its 14px inline-flex
 sample sat on an inline wrapper's baseline, so the key's (hidden) slot grew 2.8px and pushed the list down. Fixed by
-making the wrapper a flex box and holding the room for the `locked` entry in the slot. Needs `NEVER_CUT_ENABLED=true` on
-the server and a deck with no locked card (`PROBE_DECK`); it locks one card and unlocks it. Writes to `local-dev` or a
+making the wrapper a flex box and holding the room for the `locked` entry in the slot. Never cut is always on, so it needs
+a deck with no locked card (`PROBE_DECK`); it locks one card and unlocks it. Writes to `local-dev` or a
 scratch branch only, and refuses staging and production by `neon.branch_id`.
 
 - **A contact-sheet width takes a `"camera"`** (card scanning, the card's outline, 2026-10-16), for a surface that reads the camera.

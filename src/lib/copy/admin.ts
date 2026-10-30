@@ -773,7 +773,6 @@ export const switchCopy: Readonly<Record<SwitchName, { label: string; descriptio
   LIST_CACHE_ENABLED: { label: "List cache", description: "Home and /decks cached per reader." },
   MANA_BALANCE_ENABLED: { label: "Mana Balance", description: "Mana Balance in the Tuning hub. Makes no model call." },
   NAV_STALL_LOG_ENABLED: { label: "Stuck-loader reports", description: "Logs a report when a loading screen stays up 8 seconds. Changes nothing on screen." },
-  NEVER_CUT_ENABLED: { label: "Never cut", description: "Mark cards a suggestion may not cut." },
   OVERVIEW_V2_ENABLED: { label: "Overview v2", description: "The Overview on contract 8, Sonnet 5.5." },
   PAYMENTS_ENABLED: { label: "Buying credits", description: "Buy credit packs. Off stops new purchases; payments already made still settle." },
   PROPOSED_CUTS_ENABLED: { label: "Proposed cuts", description: "Cuts proposed for a deck over 99." },

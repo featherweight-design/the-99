@@ -14,7 +14,7 @@
 // cards and locks cascade): two committed decks copied from a template. The HOLDER sleeves the
 // one copy the account owns of a card, and holds it LOCKED; the deck UNDER REVIEW adds that card,
 // and has removed two of its own cards, one of which it had locked (a dormant lock, as a removal
-// leaves it). Needs a server with NEVER_CUT_ENABLED=true. Point it at `local-dev`, never production.
+// leaves it). Never cut is always on, so the server needs no switch for it. Point it at `local-dev`, never production.
 //
 //   PROBE_BASE=http://localhost:3238 node scripts/probe-review-locks.mjs
 import { readFileSync } from "node:fs";

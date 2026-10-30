@@ -13,7 +13,7 @@
 //
 // THE FIXTURE IS A STORED RESULT, never a model call. It clones an over-100 deck under the probe
 // account (the first one on the database, or PROBE_CUTS_DECK), writes one ok run with three cuts
-// through the real run store (the SAME flags as the server it drives: pass NEVER_CUT_ENABLED to both or neither, because locks are in the fingerprint), and deletes the clone in a `finally`. Local-dev or a scratch branch
+// through the real run store (locks are in the fingerprint, and Never cut is always on, so the server reads the same ones), and deletes the clone in a `finally`. Local-dev or a scratch branch
 // only, NEVER staging or production: it writes. Needs a server with ANALYSIS_TAB_ENABLED and
 // PROPOSED_CUTS_ENABLED on, signed in through Clerk's dev instance.
 //
@@ -154,7 +154,7 @@ try {
     const inputs = (await readProposedCuts(deckId, owner, process.env))!;
     const picks = inputs.facts.cards.slice(0, 3);
     await q(`delete from deck_suggestion_runs where deck_id = $1`, [deckId]);
-    const run = await startCutsRun(owner, deckId, inputs.fingerprint, inputs.readVersion, { env: process.env });
+    const run = await startCutsRun(owner, deckId, inputs.fingerprint, inputs.readVersion);
     if (run.kind !== "started") throw new Error(`start: ${run.kind}`);
     // Recorded the moment it exists: a failure below must still reach the cleanup.
     callIds.push(run.callId);

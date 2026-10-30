@@ -271,7 +271,7 @@ async function run() {
       await page.goto(`${BASE}/decks/${deck.id}`, { waitUntil: "networkidle" });
       const lockButton = onPageRole(page, "button", /^Lock cards$/).filter({ visible: true }).first();
       if ((await lockButton.count()) === 0) {
-        report(`${width}px · Lock cards`, false, "no Lock cards control: NEVER_CUT_ENABLED is off, so this measured nothing");
+        report(`${width}px · Lock cards`, false, "no Lock cards control, so this measured nothing");
         continue;
       }
       await page.mouse.move(width - 2, 2);

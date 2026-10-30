@@ -213,7 +213,6 @@ describe("/about, the visit (R2 gap 10)", () => {
   // A behind reader's visit acknowledges the write's own answer (pinned in actions.test.ts), so the page hands it no
   // forecast; a current reader's writes nothing and acknowledges the unit keys their state already covers.
   it("hands a behind reader's visit no forecast: what it acknowledges is the write's answer", async () => {
-    vi.stubEnv("NEVER_CUT_ENABLED", "true");
     m.seen = { version: 14, ids: [] };
     const props = find(await draw({ tab: "reference" }), RecordVisit)!.props as {
       behind: boolean; shown: string[]; drawn: string[]; answered: string[];
@@ -223,10 +222,9 @@ describe("/about, the visit (R2 gap 10)", () => {
     expect(props.answered).toEqual([]);
   });
 
-  // Collection editing, Notes, Stats and deck printings are retired (always on), so their entries and those that
-  // followed them always draw: a current reader has met them too.
+  // Collection editing, Notes, Stats, deck printings and Locked (never cut) are retired (always on), so their entries
+  // and those that followed them always draw: a current reader has met them too.
   it("hands a current reader's visit the unit keys their state covers", async () => {
-    vi.stubEnv("NEVER_CUT_ENABLED", "true");
     const collectionEdit = [
       "collection-add", "card-scan", "start-without-a-collection", "upload-choice", "upload-choice@COLLECTION_SYNC_ENABLED",
       "added-copy", "edit-copies", "remove-card", "collection-history", "shopping-got-it",
