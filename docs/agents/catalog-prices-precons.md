@@ -132,7 +132,7 @@ Collector's Edition twin resolves to its plain edition through `twin_of`). No FK
   stores the deck's bracket READING through the Analyze press's own call (`computeAndStoreProfile`, no model; a press finds
   the version holding its list, so the reading is v0's; as a FIRST reading, so it never replaces a row a replay or a
   press already wrote), whether or not an Overview follows. Then, unless the deck holds a
-  card illegal in Commander (notices on), it attaches the precon's Overview at the owner's contract and role basis when that row is
+  card illegal in Commander, it attaches the precon's Overview at the owner's contract and role basis when that row is
   `current` and its list is the deck's (`carryOverDecision`): a `deck_synopses` row with `precon_file` set and no
   allowance unit, at the deck data log's head as of the row's last check (`checked_at`, never past the reading's `seen_seq`), so a change published since then reaches the deck's data-moved rule, under the deck's own lock, and named by v0's `deck_version_synopses`. A deck
   that already has a synopsis, or whose list moved, gets none. The first edit makes it stale through today's rules.
