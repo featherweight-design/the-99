@@ -189,6 +189,22 @@ describe("the search on the desktop", () => {
     expect(frame()).toBeNull();
   });
 
+  it("opens no card on ↵ while the results' host is inert under a navigation's screen", async () => {
+    pushRecent("u1", { oracleId: "a", name: "Alpha", imageUri: null, flavorName: null });
+    mount("Win32");
+    await press({ ctrlKey: true });
+    await act(async () => {});
+    const host = frame()?.querySelector("[data-covered-with-main]");
+    expect(host).toBeTruthy();
+    host?.setAttribute("inert", "");
+    await act(async () => void fireEvent.keyDown(combobox(), { key: "Enter" }));
+    expect(document.querySelector("[data-card-search-veil]")).toBeNull();
+    expect(frame()).not.toBeNull();
+    // Typing stays live.
+    await act(async () => void fireEvent.change(combobox(), { target: { value: "al" } }));
+    expect((combobox() as HTMLInputElement).value).toBe("al");
+  });
+
   it("D2: nothing is active once a query is typed", async () => {
     pushRecent("u1", { oracleId: "a", name: "Alpha", imageUri: null, flavorName: null });
     mount("Win32");

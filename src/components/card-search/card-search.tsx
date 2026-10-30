@@ -36,6 +36,7 @@ import { noteAppScroll } from "../../lib/ui/reveal";
 import type { SiblingCard } from "../cards/card-detail-provider";
 import { useVisualViewportFrame, VV_FRAME } from "../ui/visual-viewport";
 import type { OpenCard, SearchLayerProps } from "./search-layer";
+import { COVERED_WITH_MAIN } from "../shell/covered-layer";
 
 /** A read starts this long after the last key, and only from this many characters (S3). */
 export const SEARCH_DEBOUNCE_MS = 150;
@@ -247,6 +248,9 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
     (from: readonly CardSearchRow[], index: number) => {
       const card = from[index];
       if (!card) return;
+      // Under a navigation's screen the results' host is inert with <main> (`COVERED_WITH_MAIN`), but the field above
+      // it is live: its ↵ (and the phone's ↓ then ↵) must not open a card the reader cannot see. Typing and Close stay.
+      if (bodyRef.current?.closest("[inert]")) return;
       setRecents(pushRecent(userId, card));
       // The card joins the recents with the signals its row already holds, so it is not drawn as not owned later.
       setRecentSignals((s) => (s ? { ...s, [card.oracleId]: { owned: card.owned, decks: card.decks, wishlist: card.wishlist } } : s));
@@ -589,8 +593,11 @@ function PhoneFrame() {
       {busy ? <SearchProgress /> : null}
       {/* Offline is drawn here, not in the results' chunk, which may not have arrived (S7). */}
       {online ? null : <SearchOffline />}
+      {/* The results' host (`SearchLayer` portals into it), outside <main>: inert with it under a navigation's screen
+          (`COVERED_WITH_MAIN`). On the host, not the sheet, whose own `inert` React owns while veiled. */}
       <div
         ref={placeBody}
+        {...{ [COVERED_WITH_MAIN]: "" }}
         className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom)]"
       />
     </div>

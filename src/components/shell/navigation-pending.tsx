@@ -265,6 +265,27 @@ export function NavigationPendingProvider({ children, stall = null }: { children
         ? Array.from(document.querySelectorAll<HTMLElement>(`[${COVERED_WITH_MAIN}]`))
         : [];
     for (const el of coveredRef.current) el.setAttribute("inert", "");
+    // Only while the screen covers <main> itself, as above.
+    if (!next || next !== mainRef.current) return;
+    // A layer that mounts (or remounts as a new element) WHILE covered, such as a toast whose action resolves under
+    // the screen, is caught as it arrives and tracked with the rest, so the run's end frees it too.
+    const cover = (el: Element) => {
+      if (!(el instanceof HTMLElement) || !el.hasAttribute(COVERED_WITH_MAIN) || coveredRef.current.includes(el)) return;
+      el.setAttribute("inert", "");
+      coveredRef.current.push(el);
+    };
+    const observer = new MutationObserver((records) => {
+      for (const r of records) {
+        if (r.type === "attributes") cover(r.target as Element);
+        for (const node of r.addedNodes) {
+          if (!(node instanceof Element)) continue;
+          cover(node);
+          for (const el of node.querySelectorAll(`[${COVERED_WITH_MAIN}]`)) cover(el);
+        }
+      }
+    });
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: [COVERED_WITH_MAIN] });
+    return () => observer.disconnect();
   }, [busy, overlayBox]);
 
   useEffect(() => () => {

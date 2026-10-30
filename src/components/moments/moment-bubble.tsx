@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { COVERED_WITH_MAIN } from "../shell/covered-layer";
 import { momentsCopy, type MomentCopy } from "../../lib/copy/moments";
 import { visibleFocusables } from "../../lib/a11y/dialog";
 import { TOUCH_HIT } from "../ui/touch-hit";
@@ -174,6 +175,8 @@ export function MomentBubble({
   useEffect(() => {
     if (leaving) return;
     const onKey = (e: KeyboardEvent) => {
+      // Under a navigation's screen (`COVERED_WITH_MAIN`) the bubble is out of reach: its keys go to the live shell.
+      if (ref.current?.closest("[inert]")) return;
       if (e.key === "Escape") {
         e.stopPropagation();
         e.preventDefault();
@@ -227,58 +230,63 @@ export function MomentBubble({
           ? { top: -6, left: spot.nib - 5, borderWidth: "1px 0 0 1px" }
           : { bottom: -6, left: spot.nib - 5, borderWidth: "0 1px 1px 0" };
 
+  // On the body (outside <main>) its ✕ dismisses the page's moment, so it goes inert with <main> under a navigation's
+  // screen (`COVERED_WITH_MAIN`). The mark sits on a static wrapper, not the bubble, whose own `inert` React owns while
+  // it leaves; static, so the bubble's offset parent is still the body. In a modal (inside <main>) it needs none.
   return createPortal(
-    <div
-      ref={ref}
-      // The leave fade is a picture of a bubble already gone: nothing to name or reach.
-      id={leaving ? undefined : id}
-      role={leaving ? undefined : "note"}
-      aria-label={leaving ? undefined : momentsCopy.noteName(copy.tool)}
-      aria-hidden={leaving || undefined}
-      inert={leaving || undefined}
-      data-moment-bubble=""
-      style={{
-        top: spot?.top ?? 0,
-        left: spot?.left ?? 0,
-        width: spot?.width ?? undefined,
-        visibility: spot === null ? "hidden" : undefined,
-      }}
-      className={
-        "absolute z-[35] box-border flex items-start gap-[10px] rounded-[10px] border border-solid " +
-        "border-[color:var(--border-strong)] bg-[color:var(--elevated)] py-[10px] pl-[12px] pr-0 " +
-        "shadow-[0_12px_30px_rgba(0,0,0,0.45)] md:pr-[4px] " +
-        "transition-[opacity,translate] duration-200 ease-[var(--motion-ease-out)] motion-reduce:translate-y-0 " +
-        (leaving ? "pointer-events-none duration-[var(--motion-exit-quick)] motion-reduce:duration-0 " : "") +
-        (shown ? "translate-y-0 opacity-100" : "translate-y-[4px] opacity-0")
-      }
-    >
-      {nib && (
-        <span
-          aria-hidden="true"
-          style={nib}
-          className="absolute h-[10px] w-[10px] rotate-45 border-solid border-[color:var(--border-strong)] bg-[color:var(--elevated)]"
-        />
-      )}
-      <span aria-hidden="true" className="mt-[7px] inline-block h-[6px] w-[6px] shrink-0 rotate-45 bg-[color:var(--accent)]" />
-      <p className="m-0 line-clamp-3 min-w-0 flex-1 text-[13.5px] leading-[1.45] text-[color:var(--fg-body)] md:text-[13px]">
-        <span className="font-semibold text-[color:var(--fg)]">{copy.tool}</span> {copy.line}
-      </p>
-      <button
-        ref={closeRef}
-        type="button"
-        // Reached only after its control (the Tab handling above), never again at the portal's end of the document.
-        tabIndex={-1}
-        aria-label={momentsCopy.dismiss}
-        onClick={(e) => {
-          // A keyboard press (no pointer, `detail` 0) puts focus back on the control rather than losing it.
-          const keyboard = e.detail === 0;
-          onDismiss();
-          if (keyboard) backToControl();
+    <div {...(container === document.body ? { [COVERED_WITH_MAIN]: "" } : {})}>
+      <div
+        ref={ref}
+        // The leave fade is a picture of a bubble already gone: nothing to name or reach.
+        id={leaving ? undefined : id}
+        role={leaving ? undefined : "note"}
+        aria-label={leaving ? undefined : momentsCopy.noteName(copy.tool)}
+        aria-hidden={leaving || undefined}
+        inert={leaving || undefined}
+        data-moment-bubble=""
+        style={{
+          top: spot?.top ?? 0,
+          left: spot?.left ?? 0,
+          width: spot?.width ?? undefined,
+          visibility: spot === null ? "hidden" : undefined,
         }}
-        className={`${TOUCH_HIT} -mt-[4px] flex h-[28px] w-[28px] shrink-0 items-center justify-center rounded-[6px] border-0 bg-transparent p-0 text-[14px] leading-none text-[color:var(--fg-faint)] md:text-[13px] hover:text-[color:var(--fg)]`}
+        className={
+          "absolute z-[35] box-border flex items-start gap-[10px] rounded-[10px] border border-solid " +
+          "border-[color:var(--border-strong)] bg-[color:var(--elevated)] py-[10px] pl-[12px] pr-0 " +
+          "shadow-[0_12px_30px_rgba(0,0,0,0.45)] md:pr-[4px] " +
+          "transition-[opacity,translate] duration-200 ease-[var(--motion-ease-out)] motion-reduce:translate-y-0 " +
+          (leaving ? "pointer-events-none duration-[var(--motion-exit-quick)] motion-reduce:duration-0 " : "") +
+          (shown ? "translate-y-0 opacity-100" : "translate-y-[4px] opacity-0")
+        }
       >
-        ✕
-      </button>
+        {nib && (
+          <span
+            aria-hidden="true"
+            style={nib}
+            className="absolute h-[10px] w-[10px] rotate-45 border-solid border-[color:var(--border-strong)] bg-[color:var(--elevated)]"
+          />
+        )}
+        <span aria-hidden="true" className="mt-[7px] inline-block h-[6px] w-[6px] shrink-0 rotate-45 bg-[color:var(--accent)]" />
+        <p className="m-0 line-clamp-3 min-w-0 flex-1 text-[13.5px] leading-[1.45] text-[color:var(--fg-body)] md:text-[13px]">
+          <span className="font-semibold text-[color:var(--fg)]">{copy.tool}</span> {copy.line}
+        </p>
+        <button
+          ref={closeRef}
+          type="button"
+          // Reached only after its control (the Tab handling above), never again at the portal's end of the document.
+          tabIndex={-1}
+          aria-label={momentsCopy.dismiss}
+          onClick={(e) => {
+            // A keyboard press (no pointer, `detail` 0) puts focus back on the control rather than losing it.
+            const keyboard = e.detail === 0;
+            onDismiss();
+            if (keyboard) backToControl();
+          }}
+          className={`${TOUCH_HIT} -mt-[4px] flex h-[28px] w-[28px] shrink-0 items-center justify-center rounded-[6px] border-0 bg-transparent p-0 text-[14px] leading-none text-[color:var(--fg-faint)] md:text-[13px] hover:text-[color:var(--fg)]`}
+        >
+          ✕
+        </button>
+      </div>
     </div>,
     container,
   );

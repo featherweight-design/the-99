@@ -757,6 +757,9 @@ export function useDialogA11y(
       if (inert) return;
       const root = dialogRef.current;
       if (!root) return;
+      // A dialog under a navigation's screen (inert with <main>, `COVERED_WITH_MAIN`) has no reachable control, so
+      // its trap would swallow every Tab pressed in the live shell. Its keys wait until the screen lifts.
+      if (root.closest("[inert]")) return;
 
       // Another dialog's key is not this one's business. The listener is on
       // `window`, so EVERY mounted hook sees every key — and two dialogs can be

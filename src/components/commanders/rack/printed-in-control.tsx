@@ -15,6 +15,7 @@
 
 import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { COVERED_WITH_MAIN } from "../../shell/covered-layer";
 import type { PrintedInOption } from "../../../lib/commanders/printed-in-lane";
 import { filterCopy, printedInPanelCopy } from "../../../lib/copy/lanes";
 import { FilterPanel } from "../../ui/filter-panel";
@@ -114,7 +115,8 @@ export function PrintedInControl({
       </button>
       {layerOpen &&
         createPortal(
-          <div onKeyDown={(e) => e.stopPropagation()}>
+          // On the body, outside <main>: inert with it under a navigation's screen (`COVERED_WITH_MAIN`).
+          <div onKeyDown={(e) => e.stopPropagation()} {...{ [COVERED_WITH_MAIN]: "" }}>
             <SetListSheet
               copy={LIST_COPY}
               note={copy.hint}

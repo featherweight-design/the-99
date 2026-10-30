@@ -18,6 +18,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { COVERED_WITH_MAIN } from "../shell/covered-layer";
 
 import { useMinWidth } from "../ui/use-min-width";
 import { useMomentHold } from "../../lib/moments/hold";
@@ -310,6 +311,8 @@ function FinePointerTooltip({ text, lines, tap = false, holdMoments = false, chi
             // name, and this sentence is the same fact in more words.
             aria-hidden
             data-testid="fact-tooltip"
+            // On the body, outside <main>, and about the page: inert with it under a navigation's screen.
+            {...{ [COVERED_WITH_MAIN]: "" }}
             data-side={place.below ? "below" : "above"}
             data-align={place.align}
             className={`pointer-events-none fixed z-50 w-max rounded-[7px] px-[9px] py-[6px] text-left text-[11.5px] font-normal normal-case tracking-normal leading-[1.45] whitespace-normal${lines ? " flex flex-col gap-[5px]" : ""}`}
