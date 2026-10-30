@@ -1,0 +1,74 @@
+{
+  "v": 3,
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-10-30T16:40:00Z"
+  },
+  "title": "The 99 · Small items 6",
+  "launch": {
+    "view": "canvas"
+  },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1300,
+      "h": 686,
+      "title": "The calls"
+    },
+    "Backup.dc.html": {
+      "x": 1380,
+      "y": 0,
+      "w": 1712,
+      "h": 2439,
+      "title": "1 · Overview: the Backup line"
+    },
+    "Notes-Confirm.dc.html": {
+      "x": 3172,
+      "y": 0,
+      "w": 1808,
+      "h": 960,
+      "title": "2 · Additional notes: confirmed"
+    },
+    "About-Errata.dc.html": {
+      "x": 5060,
+      "y": 0,
+      "w": 1412,
+      "h": 3777,
+      "title": "3 · About: Suggested changes v2 errata"
+    },
+    "Critical.dc.html": {
+      "x": 6552,
+      "y": 0,
+      "w": 1712,
+      "h": 1312,
+      "title": "4 · Weaknesses: the Critical chip"
+    },
+    "Tag-States.dc.html": {
+      "x": 8344,
+      "y": 0,
+      "w": 1448,
+      "h": 2314,
+      "title": "5 · Tag box: the undrawn states"
+    },
+    "Every-Kind-Off.dc.html": {
+      "x": 9872,
+      "y": 0,
+      "w": 1886,
+      "h": 2331,
+      "title": "6 · What’s new with every kind off"
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Backup.dc.html",
+    "Notes-Confirm.dc.html",
+    "About-Errata.dc.html",
+    "Critical.dc.html",
+    "Tag-States.dc.html",
+    "Every-Kind-Off.dc.html"
+  ],
+  "notes": {},
+  "designSystems": []
+}
