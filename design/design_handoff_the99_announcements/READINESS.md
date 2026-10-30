@@ -138,4 +138,5 @@ newest drawing of the row (Home-Rows, Lead-Story, Row-States). Fixed for every k
 - **Lead button:** a fixed 40px (36 from `md`) on one line for a fixed label; a friend's name keeps the wrapping,
   `min-h` button.
 - **The ✕:** radius 8 and a 2px accent ring (`box-shadow`) in place of the global square outline. The ✕ that takes
-  focus after a dismiss is focused with `focusVisible`, so the ring shows after a pointer press too.
+  focus after a dismiss is focused with `focusVisible`, so the ring shows after a pointer press too; a fallback
+  (the section's head) is focused plainly and draws no outline after a pointer press.

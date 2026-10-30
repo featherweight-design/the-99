@@ -76,8 +76,9 @@ export function useFeedDismiss(fallback?: () => HTMLElement | null, onChange?: (
   function dismiss(key: string, from: HTMLElement, move = true) {
     const next = nextDismiss(from);
     put(key, true);
-    // `focusVisible`: the ring shows on the next ✕ after a pointer press too, as the boards draw it (Row-States).
-    if (move) requestAnimationFrame(() => (next ?? fallback?.())?.focus({ focusVisible: true } as FocusOptions));
+    // `focusVisible` on the next ✕ only: its ring shows after a pointer press too, as the boards draw it (Row-States).
+    // A fallback (the section's head) takes focus plainly, so a pointer press draws no outline on it.
+    if (move) requestAnimationFrame(() => (next ? next.focus({ focusVisible: true } as FocusOptions) : fallback?.()?.focus()));
     void dismissFeedItemAction(key)
       .then((r) => {
         if (!r.ok) throw new Error(r.reason);

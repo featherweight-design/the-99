@@ -101,9 +101,13 @@ describe("What's new on Home", () => {
 
   it("lands on the section's head when its last row goes and the section stays", async () => {
     const raf = vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => { cb(0); return 0; });
+    const focus = vi.spyOn(HTMLElement.prototype, "focus");
     render(<WhatsNew feed={feed([view(1)])} now={NOW} />);
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: d.aria(titleOf(1)) })); });
     expect(document.activeElement?.id).toBe("home-whats-new");
+    // The head takes focus plainly: no forced ring after a pointer press.
+    expect(focus).not.toHaveBeenCalledWith({ focusVisible: true });
+    focus.mockRestore();
     raf.mockRestore();
   });
 
