@@ -41,6 +41,22 @@ function draw(node: React.ReactNode) {
 afterEach(cleanup);
 
 describe("the review page's mounting", () => {
+  it("says the copy is leaving a deck whose draft already cuts it, in the same slot", () => {
+    draw(
+      <DiffRowIn
+        review
+        card={card({ committed: true, manaCost: "{1}{U}" })}
+        sourceLine={null}
+        heldBy="Kess Storm"
+        heldByLeaving
+        action={<button type="button">Pull it</button>}
+      />,
+    );
+    const held = screen.getByText(deckVersioningCopy.review.heldByLeaving("Kess Storm"));
+    expect(held.className).toContain("flex-1");
+    expect(screen.queryByText(deckVersioningCopy.review.heldBy("Kess Storm"))).toBeNull();
+  });
+
   it("names the deck sleeving the copy, and stacks the row at every width", () => {
     const row = draw(
       <DiffRowIn

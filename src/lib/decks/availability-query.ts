@@ -222,6 +222,17 @@ const claimModel = (userId: string, env: NodeJS.ProcessEnv) => sql`
       -- for a brew. One newest_version row per deck, so grouping on it cannot fan
       -- the aggregate out.
       nv.number as version_number,
+      -- The deck's draft has cut the card its version still lists: a sleeved list claim (never a commander one) whose
+      -- draft holds no copy. The copy is already on its way out of that deck, so a Pull from it moves no card, only
+      -- the claim. One probe of the (deck, card) row per claim, inside this one statement; aliased and qualified on
+      -- both sides (the correlated-subquery rule). A card the draft promoted to its commander or partner leaves the
+      -- list but stays in the deck (writeCommanderChange), so the deck's live command zone is excluded too.
+      (nv.deck_id is not null and not bool_or(ac.is_commander) and not exists (
+        select 1 from deck_cards dcut where dcut.deck_id = ac.deck_id and dcut.oracle_id = ac.oracle_id
+      ) and not exists (
+        select 1 from decks dlive
+        where dlive.id = ac.deck_id and ac.oracle_id in (dlive.commander_oracle_id, dlive.partner_oracle_id)
+      )) as draft_cut,
       sum(ac.quantity)::int as quantity
     from all_claims ac
     join decks d on d.id = ac.deck_id
@@ -556,7 +567,7 @@ export async function loadAvailability(
             -- The two pull guards. Both are render-time facts: a control that
             -- can only fail must not be drawn, and the refusal string the
             -- transaction returns arrives far too late to decide that.
-            'pending', cd.pending, 'commander', cd.commander,
+            'pending', cd.pending, 'commander', cd.commander, 'draftCut', cd.draft_cut,
 ${lockedClaim}            -- Whether free COUNTS this claim, which is the same question as
             -- whether releasing it could relieve the vantage deck's shortfall.
             -- The expression is senior_hard's own test, deliberately: free

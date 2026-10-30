@@ -31,6 +31,13 @@ export type DeckClaim = {
    */
   pending: boolean;
   /**
+   * This deck's draft has cut the card its newest version still lists (no copy left in the draft). A pull from it
+   * moves no card, since the copy is already leaving that deck; its release only frees the version's claim now
+   * rather than at that deck's next commit. Always false for a brew and for a commander claim. Optional: a claim
+   * built outside the claim read (a fixture, a summary) carries none and reads as not cut.
+   */
+  draftCut?: boolean;
+  /**
    * The card is this deck's commander or partner. Commander claims are in the
    * model, so a pull would otherwise be offered on a row where no route can
    * release it — there is no "go and fix it there" either, which is why this

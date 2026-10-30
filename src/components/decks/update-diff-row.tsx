@@ -321,10 +321,10 @@ export function useRowOpen(
  *  control (`probe:review`, 820px) — without a floor it went to zero and the row
  *  named a deck it did not print. With one it truncates and the line wraps
  *  instead. */
-function HeldBy({ deck }: { deck: string }) {
+function HeldBy({ deck, leaving }: { deck: string; leaving: boolean }) {
   return (
     <span className="flex-1 min-w-[90px] truncate font-mono text-[10px] text-[color:var(--fg-faint)]">
-      {deckVersioningCopy.review.heldBy(deck)}
+      {leaving ? deckVersioningCopy.review.heldByLeaving(deck) : deckVersioningCopy.review.heldBy(deck)}
     </span>
   );
 }
@@ -563,6 +563,7 @@ export function DiffRowIn({
   recount,
   review = false,
   heldBy = null,
+  heldByLeaving = false,
   heldByCount = null,
   pulledFrom = null,
 }: {
@@ -577,6 +578,9 @@ export function DiffRowIn({
    *  which no deck holds — and null whenever `heldByCount` or `pulledFrom` applies
    *  instead (addendum R1: a row shows exactly one of the three). */
   heldBy?: string | null;
+  /** `heldBy`'s draft already cuts the card (`DeckClaim.draftCut`): the line reads "leaving {deck}", since a pull
+   *  takes no card out of that deck. */
+  heldByLeaving?: boolean;
   /** 2+ sources a pull could choose between (addendum R1) — "in {n} decks" rather
    *  than naming one of them. */
   heldByCount?: number | null;
@@ -616,7 +620,7 @@ export function DiffRowIn({
       ) : heldByCount ? (
         <HeldByMany n={heldByCount} />
       ) : heldBy ? (
-        <HeldBy deck={heldBy} />
+        <HeldBy deck={heldBy} leaving={heldByLeaving} />
       ) : null}
       {/* The slot sits BEFORE the trailing column, not after it. The name is the
           only flexible item, so anything that can disappear has to sit on the

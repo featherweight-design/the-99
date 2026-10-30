@@ -178,6 +178,9 @@ export const deckVersioningCopy = {
       + (proxied > 0 ? ` · ${proxied} proxied` : ""),
 
     heldBy: (deck: string) => `in ${deck}`,
+    // The holder's draft already cuts the card its version still lists (`DeckClaim.draftCut`): the copy is on its way
+    // out of that deck, so a pull moves no card there and only frees the copy now rather than at that deck's commit.
+    heldByLeaving: (deck: string) => `leaving ${deck}`,
     // 2+ sources that can be chosen (addendum R1, "Pull it picks its source deck") — replaces
     // `heldBy(deck)` only in that case. The count is the picker's own candidate count, never
     // `claims.length`, which also counts guarded rows the control cannot act on.
