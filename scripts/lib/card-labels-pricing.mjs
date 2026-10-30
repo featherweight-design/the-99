@@ -20,6 +20,14 @@ import { batchRates } from "../../src/lib/model/prices.ts";
 
 /** @typedef {"haiku" | "sonnet" | "sonnet5"} ModelKey */
 
+/**
+ * Card labels' default model, read by the builder (`card-labels-build.ts`) and the copy (`copy-card-labels.ts`) alike,
+ * so the two cannot drift; `src/lib/admin/models.ts` mirrors it and `card-labels-pricing.test.mts` pins the mirror.
+ * Sonnet 4.5, Hugh's pick (2026-09-26), chosen on the restriction family rather than price. Labels are a large spend,
+ * so any change to this model goes to Hugh first (2026-10-30).
+ */
+export const DEFAULT_LABEL_MODEL = "claude-sonnet-4-5";
+
 /** @type {Record<ModelKey, {in:number,out:number,cacheWrite:number,cacheRead:number,caches:boolean}>} */
 export const PRICING = {
   haiku: { ...batchRates("claude-haiku-4-5"), caches: false },

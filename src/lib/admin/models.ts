@@ -18,7 +18,7 @@ import type { CostDetail, Origin } from "./costs-detail-rule";
 /** Card labels' default model: `MODEL` in `scripts/lib/card-labels-build.ts` (a `LABEL_MODEL` override aside). */
 export const CARD_LABELS_MODEL = "claude-sonnet-4-5";
 /** Commander prose's model: `MODEL` in `scripts/generate-commander-prose.ts`. */
-export const PROSE_MODEL = "claude-sonnet-4-6";
+export const PROSE_MODEL = "claude-sonnet-5-5";
 
 /** Which `model_calls` rows (and their parts) a row's spend is summed from, as the Costs detail splits them. */
 export type SpendMatch =

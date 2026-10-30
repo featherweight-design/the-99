@@ -3,7 +3,8 @@ import { generateCommanderProse } from "../src/lib/prose/generate";
 import { costUsd, rates, type Usage } from "./eval/lib/pricing.mjs";
 import { recordSystemSpend } from "./lib/system-spend";
 
-const MODEL = "claude-sonnet-4-6";
+// Sonnet 5.5 since 2026-10-30 (Hugh: the 5.5 model wherever one exists); it was Sonnet 4.6.
+export const MODEL = "claude-sonnet-5-5";
 const API_URL = "https://api.anthropic.com/v1/messages";
 
 const MAX_TOKENS = 200;

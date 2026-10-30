@@ -14,6 +14,7 @@ import { sql } from "drizzle-orm";
 import { cardLabels } from "../src/db/schema";
 import { planCopy, type SourceLabel, type TargetCard, type TargetLabel } from "../src/lib/labels/copy";
 import { LABEL_PROMPT_VERSION } from "../src/lib/labels/prompt";
+import { DEFAULT_LABEL_MODEL } from "./lib/card-labels-pricing.mjs";
 import { retirePersistedScoresIn } from "../src/lib/recs/score-lock";
 import {
   publishOnTarget, readSourceSnapshot, runCopyMain, withCopyPair, type CopyDb, type CopyPair, type CopyTx,
@@ -21,9 +22,9 @@ import {
 
 /**
  * The model the target's builds label with: reported against, never a filter (a row is judged
- * under its own model). Same default as `build-card-labels.ts`.
+ * under its own model). The builder's own default, from one constant (`DEFAULT_LABEL_MODEL`).
  */
-const LABEL_MODEL = process.env.LABEL_MODEL ?? "claude-sonnet-4-5";
+const LABEL_MODEL = process.env.LABEL_MODEL ?? DEFAULT_LABEL_MODEL;
 
 type CardRow = {
   oracleId: string; name: string; mana_cost: string | null; type_line: string;

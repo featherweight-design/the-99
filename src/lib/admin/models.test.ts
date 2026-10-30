@@ -13,6 +13,7 @@ import { JOB_VARIABLES, MODEL_ROWS, rowSpend, SCRIPT_MODEL_FILES, type ModelRowK
 // The repository root, read through process.cwd() (vitest runs from it), as the tree guards do.
 const ROOT = process.cwd();
 const row = (key: ModelRowKey) => MODEL_ROWS.find((r) => r.key === key)!;
+const LABEL_DEFAULT_FILE = "scripts/lib/card-labels-pricing.mjs";
 
 describe("the Models registry", () => {
   it("takes every app feature's model and effort from the constant the call reads", () => {
@@ -43,7 +44,10 @@ describe("the Models registry", () => {
   it("states each script job's model as the script itself names it", () => {
     for (const [key, file] of Object.entries(SCRIPT_MODEL_FILES) as [ModelRowKey, string][]) {
       const source = readFileSync(join(ROOT, file), "utf8");
-      expect(source, `${file} no longer names ${row(key).model}`).toContain(`"${row(key).model}"`);
+      // Card labels' builder reads its default from the shared `DEFAULT_LABEL_MODEL`, which the pricing module spells out.
+      const named = key === "labels" ? readFileSync(join(ROOT, LABEL_DEFAULT_FILE), "utf8") : source;
+      if (key === "labels") expect(source, `${file} no longer reads DEFAULT_LABEL_MODEL`).toMatch(/\?\? DEFAULT_LABEL_MODEL;/);
+      expect(named, `${key === "labels" ? LABEL_DEFAULT_FILE : file} no longer names ${row(key).model}`).toContain(`"${row(key).model}"`);
       expect(row(key).at.startsWith(file)).toBe(true);
     }
     expect(Object.keys(SCRIPT_MODEL_FILES).sort()).toEqual(["labels", "prose"]);
