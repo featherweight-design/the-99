@@ -106,7 +106,7 @@ export const adminCopy = {
       previous: "Previous month",
       next: "Next month",
       range: (last: number, mon: string, day: number | null, days: number) =>
-        `1 to ${last} ${mon} · UTC${day === null ? "" : ` · day ${day} of ${days}`}`,
+        `${mon} 1 to ${last} · UTC${day === null ? "" : ` · day ${day} of ${days}`}`,
       compare: (month: string, figure: string, runs: number) =>
         runs === 0 ? `${month}: no model calls.` : `${month}: ${figure} in ${plural(runs, "run", "runs")}.`,
     },
@@ -143,7 +143,7 @@ export const adminCopy = {
       orgUnread: "Read with the workspace above, so not read either.",
     },
     orgUnread: "not read",
-    /** `time` is `14:05 UTC`, or `17 Oct, 14:05 UTC` when not today. */
+    /** `time` is `14:05 UTC`, or `Oct 17, 14:05 UTC` when not today. */
     asOf: (time: string) => ` Read from Anthropic at ${time}, about five minutes behind.`,
     workspaceUnread: (figure: string) => `${figure} here · workspace not read`,
     // Why the workspace was not read, one per `CostUnread` kind. No upstream text ever reaches these.
@@ -175,7 +175,7 @@ export const adminCopy = {
       soFar: "so far",
       onPace: "on this pace",
       today: (v: string) => `${v} today`,
-      byEnd: (v: string, day: number, mon: string) => `${v} by ${day} ${mon}`,
+      byEnd: (v: string, day: number, mon: string) => `${v} by ${mon} ${day}`,
       byDay: (v: string) => `By day · tallest ${v}`,
       label: (month: string, v: string, pace: string | null) =>
         `Player runs in ${month}: ${v}${pace === null ? "." : `, on pace for ${pace} by month end.`}`,

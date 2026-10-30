@@ -109,7 +109,7 @@ describe("switchPage", () => {
     expect(rung(p, "app")).toMatchObject({ decides: "refused" });
     expect(rung(p, "group")).toMatchObject({ decides: "decides for none" });
     expect(rung(p, "env")).toMatchObject({ value: "off · refuses every override", tone: "danger", decides: "decides for 3" });
-    expect(p.accounts[0]).toMatchObject({ refused: true, note: "Early look", meta: "You · 11 Oct · 14:02 · refused, env var is off" });
+    expect(p.accounts[0]).toMatchObject({ refused: true, note: "Early look", meta: "You · Oct 11 · 14:02 · refused, env var is off" });
     expect(p.app).toMatchObject({ refused: true, note: "Refused while the env var is off." });
     expect(p.explanations.every((e) => e.kill && e.source === "env var is off")).toBe(true);
     expect(p.result.text).toBe("Off for all 3 accounts");
@@ -135,7 +135,7 @@ describe("switchPage", () => {
     expect(page("FEEDBACK_ENABLED", {}).app).toEqual({ value: "Not set", current: null, set: false, meta: "not set: the env var decides", note: "Not set falls back to the env var.", refused: false });
     expect(rung(page("FEEDBACK_ENABLED", {}), "env")?.value).toBe("unset");
     const set = page("FEEDBACK_ENABLED", {}, [ov({ name: "FEEDBACK_ENABLED", value: "off", note: "Held back", updatedBy: "u2" })]);
-    expect(set.app).toMatchObject({ value: "Off", set: true, meta: "set by Mara, 11 Oct · 14:02", note: "Note: “Held back” Not set falls back to the env var." });
+    expect(set.app).toMatchObject({ value: "Off", set: true, meta: "set by Mara, Oct 11 · 14:02", note: "Note: “Held back” Not set falls back to the env var." });
   });
 
   it("writes history in the copy file's shapes, naming the viewer as You and a gone group by its id", () => {
@@ -147,10 +147,10 @@ describe("switchPage", () => {
       ev({ scope: "group", groupId: "g1" }),
     ]);
     expect(p.history).toEqual([
-      { when: "11 Oct · 14:02", what: "You set app-wide: not set → off", note: "Held back" },
-      { when: "11 Oct · 14:02", what: "Mara set account Hugh: off → on", note: null },
-      { when: "11 Oct · 14:02", what: "You cleared group 01234567 (was on)", note: null },
-      { when: "11 Oct · 14:02", what: "You set group friends: not set → off", note: null },
+      { when: "Oct 11 · 14:02", what: "You set app-wide: not set → off", note: "Held back" },
+      { when: "Oct 11 · 14:02", what: "Mara set account Hugh: off → on", note: null },
+      { when: "Oct 11 · 14:02", what: "You cleared group 01234567 (was on)", note: null },
+      { when: "Oct 11 · 14:02", what: "You set group friends: not set → off", note: null },
     ]);
   });
 
@@ -169,7 +169,7 @@ describe("switchPage", () => {
   });
 
   it("formats times in UTC with a 24-hour clock", () => {
-    expect(fmtWhen(new Date("2026-01-02T03:04:00Z"))).toBe("2 Jan · 03:04");
-    expect(fmtWhen(new Date("2026-10-11T23:59:00-05:00"))).toBe("12 Oct · 04:59");
+    expect(fmtWhen(new Date("2026-01-02T03:04:00Z"))).toBe("Jan 2 · 03:04");
+    expect(fmtWhen(new Date("2026-10-11T23:59:00-05:00"))).toBe("Oct 12 · 04:59");
   });
 });

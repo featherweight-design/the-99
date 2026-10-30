@@ -439,8 +439,8 @@ describe("AccountPageView (A4 to A7)", () => {
 
   it("marks a Show's log line in History with the accent diamond, and no other line (D8)", () => {
     const history = [
-      { when: "17 Oct · 19:37", what: "You showed Mara Q.’s name and email", note: null, reveal: true as const },
-      { when: "12 Oct · 17:31", what: "You set Mara Q.’s invites: 1 → 2", note: null },
+      { when: "Oct 17 · 19:37", what: "You showed Mara Q.’s name and email", note: null, reveal: true as const },
+      { when: "Oct 12 · 17:31", what: "You set Mara Q.’s invites: 1 → 2", note: null },
     ];
     render(<AccountPageView page={{ ...PAGE, invites: { ...PAGE.invites, history } }} />);
     const [shown, set] = within(screen.getByTestId("account-invites-history")).getAllByRole("listitem");

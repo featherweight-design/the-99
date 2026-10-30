@@ -30,7 +30,7 @@ const INVITES: AccountInvites = {
     { id: null, name: "deleted account", face: null, joined: "Oct 17" },
   ],
   waitingLines: [{ id: R1, how: "by email", email: "m.chen@example.com", sent: "Oct 20", returns: "Oct 27" }],
-  history: [{ when: "20 Oct · 18:12", what: "Colin sent an invitation: 1 waiting", note: null }],
+  history: [{ when: "Oct 20 · 18:12", what: "Colin sent an invitation: 1 waiting", note: null }],
   historyCut: false,
 };
 

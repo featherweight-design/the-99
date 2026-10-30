@@ -335,12 +335,12 @@ describe("groupHistory", () => {
       "You set Swap tools: not set → on",
       "You cleared Swap tools (was on)",
     ]);
-    expect(items[0].when).toBe("3 Oct · 11:02");
+    expect(items[0].when).toBe("Oct 3 · 11:02");
   });
 
   it("words an invite top-up with the group's name and the raised count, and draws its note as no note", () => {
     const [item] = groupHistory([{ ...ev("invites_topped_up", { newValue: "3", actorId: "u_mara" }), note: "2" }], accounts, "u_hugh", "testers");
-    expect(item).toEqual({ when: "3 Oct · 11:02", what: "Mara topped up testers to 3: 2 raised", note: null });
+    expect(item).toEqual({ when: "Oct 3 · 11:02", what: "Mara topped up testers to 3: 2 raised", note: null });
   });
 });
 
