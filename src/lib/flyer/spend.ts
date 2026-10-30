@@ -16,6 +16,7 @@ import { db } from "../../db";
 import { accountTombstones, flagGroupMembers, flyerClaims, flyerCodes, inviteBalances } from "../../db/schema";
 import { tombstoneHash } from "../account/purge";
 import { lockSenderIn } from "../invites/send";
+import { lockSwitchWrites } from "../admin/rise-confirm";
 import { createProfileIn } from "../social/friends";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -84,6 +85,9 @@ export async function spendFlyerOnSignUp(
       state: "spent", userId: newUserId, email: null, codeHmac: null, codeExpiresAt: null, resolvedAt: now,
     }).where(eq(flyerClaims.id, row.id));
     if (code.groupId !== null) {
+      // A group move is an override change for this account: it waits on the same lock every switch write and group save
+      // takes, so a confirmation an admin read against the old membership still holds when it applies.
+      await lockSwitchWrites(tx);
       await tx.insert(flagGroupMembers).values({ userId: newUserId, groupId: code.groupId, addedBy: code.createdBy })
         .onConflictDoNothing();
     }

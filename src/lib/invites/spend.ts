@@ -9,6 +9,7 @@
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { accountTombstones, flagGroupMembers, flyerClaims, flyerCodes, inviteBalances, inviteEdges, inviteReservations } from "../../db/schema";
+import { lockSwitchWrites } from "../admin/rise-confirm";
 import { tombstoneHash } from "../account/purge";
 import { welcomeInvitedIn } from "../social/friends";
 import { CODE_MAX_TRIES } from "./rules";
@@ -89,6 +90,7 @@ export async function spendInviteOnSignUp(
       const [membership] = await tx.select({ groupId: flagGroupMembers.groupId }).from(flagGroupMembers)
         .where(eq(flagGroupMembers.userId, row.userId));
       if (membership) {
+        await lockSwitchWrites(tx); // as a flyer sign-up's own group join does: a group move waits on every switch write
         await tx.insert(flagGroupMembers).values({ userId: newUserId, groupId: membership.groupId, addedBy: fromFlyer.admin })
           .onConflictDoNothing();
       }

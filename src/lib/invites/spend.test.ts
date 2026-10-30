@@ -22,6 +22,7 @@ const fakeTx = {
 vi.mock("../../db", () => ({
   db: { select: () => chain(() => h.reads.shift() ?? []), transaction: async (cb: (tx: unknown) => unknown) => cb(fakeTx) },
 }));
+vi.mock("../admin/rise-confirm", () => ({ lockSwitchWrites: async () => undefined }));
 vi.mock("../account/purge", () => ({ tombstoneHash: (id: string) => `hash:${id}` }));
 vi.mock("./send", () => ({ lockSenderIn: async (_tx: unknown, _id: string, given?: Date) => given ?? new Date() }));
 vi.mock("../social/friends", () => ({ welcomeInvitedIn: h.welcome }));
