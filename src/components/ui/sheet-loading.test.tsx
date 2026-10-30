@@ -1,9 +1,10 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("../cards/card-detail-provider", () => ({
-  useCardDetail: () => ({ registerSheet: () => () => {}, openOracleId: null, pendingOracleId: null, revealing: false }),
-}));
+vi.mock("../cards/card-detail-provider", () => {
+  const detail = () => ({ registerSheet: () => () => {}, openOracleId: null, pendingOracleId: null, revealing: false });
+  return { useCardDetail: detail, useCardDetailIfAny: detail };
+});
 
 const { ModalChrome, ModalPanel } = await import("../decks/receipt-modal");
 const { SheetLoading } = await import("./sheet-loading");
