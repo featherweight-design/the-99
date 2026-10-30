@@ -142,3 +142,42 @@ newest drawing of the row (Home-Rows, Lead-Story, Row-States). Fixed for every k
   focus after a dismiss carries a `data-ring` marker (cleared on blur), so the ring shows after a pointer press too, in
   every browser (`focus({ focusVisible })` is not supported everywhere); a fallback
   (the section's head) is focused plainly and draws no outline after a pointer press.
+
+### Engineering audit: UI 6 (early lists)
+
+**Shipped.** An early decklist's own page: the open precon view (`open-precon-view.tsx`) in a view-only mode driven by
+its `early` prop. Head with the eyebrow "Early decklist · view-only", the dashed `--fact` band with "Read the post"
+(the shared `LinkOutIcon`; linked only when the stored url is https on magic.wizards.com), the own band, List or Cards,
+read-only rows with the owned dot and no SET number, and a last group "Not in our catalog yet" (G3: dashed rows, no
+dot, pips or press; they count toward M, never toward owned). No Start, Link a deck, dock, Overview or power reading.
+The shipped `EmptyCollectionBand` sits under the early band with no collection (3.7). Frame 7's skeleton (3.8) is not
+built: segments own no `loading.tsx` (`route-loading.test.ts`), so the shell draws the wait, as on the open precon. Each Announced set block carries `id="announced-<code>"`.
+
+**Route (G4).** `/decks/precons/early/<contentfulId>/<position>`: the post's Contentful id and the list's position in
+it. The board's `<code>/<slug>` was an example; a list has no slug. An unknown id or position, or a position that is
+not a plain integer, is a 404.
+
+**Set resolver and redirect (3.4).** Read at request time, no migration. Every list in the post votes with its
+commander's printings in paper Commander sets (`sets`, type `commander`, not digital) released from 60 days before to
+180 days after the post's day; the set with the most lists wins (a tie goes to the earlier release, then the lower
+code). The early address redirects to `/decks/precons/<fileName>` once a plain-edition precon names the same
+commander, preferring the resolved set: first a precon in that set (unless the catalog first showed it, by
+`catalog_first_seen`, more than three days before the post), then, only when the resolved set has none, a precon in any
+set whatever its release date that the catalog first showed no earlier than three days before the post (a new Secret
+Lair deck matches; a later product elsewhere cannot take over a resolved set's release; an older precon never matches). "Released, still waiting" (3.5) is the resolved set's
+release day on or before today with no such precon.
+
+**Switch.** `ANNOUNCEMENTS_ENABLED` (off: 404). `UPCOMING_PRECONS_ENABLED` was retired in #2399, so item 7's wording
+is superseded.
+
+**Deviations.**
+- The head thumb is the board's 64x89 (84x117 from `md`) and the back link its 24px press on the early page only;
+  the shipped precon page keeps its 46x64 / 56x78 thumb and back link unchanged.
+- The own band keeps the catalog line but drops "so K are listed": the early page lists those cards, in its last
+  group. It reads "2 cards in this precon aren't in our catalog yet."
+
+**Copy review.** The released-but-waiting band was tightened from three sentences to one: "**Out Nov 13, but this is
+still Wizards' early list:** you can start a deck from this precon once the release list is in." Every other early
+string ships as drawn.
+
+**Follow-up.** The "See the lists" presses on Home and in the lead story ship in UI 6b.

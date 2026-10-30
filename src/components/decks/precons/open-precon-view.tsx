@@ -35,6 +35,8 @@ import { PreconOverview } from "./precon-overview";
 import type { PreconOverview as PreconOverviewData } from "../../../lib/precons/overview-read";
 import { parseEdition, type PreconEdition } from "../../../lib/precons/edition";
 import { useLiveQuery } from "../../../lib/commanders/live-query";
+import type { UnmatchedLine } from "../../../lib/announcements/early-list";
+import { EarlyBand, UnmatchedGroup, type EarlyBandContent } from "./early-list-parts";
 
 /** The open precon's view, kept apart from the deck page's (`the99:deck-view`): one is a reading
  *  choice, the other a building one. List is the default and what the server draws, so no cookie. */
@@ -83,8 +85,17 @@ export function byCard(cards: OpenPreconCard[]): ByCard[] {
   return [...merged.values()];
 }
 
-export function OpenPreconView({ precon, fromNew, canOwn = false, edition: initialEdition = "regular", overview = null }: {
+export function OpenPreconView({ precon, fromNew, canOwn = false, edition: initialEdition = "regular", overview = null, early = null }: {
   precon: Loaded;
+  /**
+   * An early decklist (announcements STATES 3.3): view-only, so no Start, no Link a deck and no Overview; its dashed
+   * band, and its unmatched lines as a last group (G3). Its cards carry no printing, so no row shows a SET number.
+   */
+  early?: (EarlyBandContent & {
+    unmatched: readonly UnmatchedLine[];
+    /** Head commanders the catalog cannot match yet: named, drawn with no art, and no color identity claimed. */
+    unknownCommanders?: readonly string[];
+  }) | null;
   /** The precon's pre-written Overview (`loadPreconOverview`); null draws no block (small items 5). */
   overview?: PreconOverviewData | null;
   fromNew: boolean;
@@ -131,6 +142,15 @@ export function OpenPreconView({ precon, fromNew, canOwn = false, edition: initi
   const listed = body.filter((c) => !c.basic);
   const total = cards.reduce((n, c) => n + c.quantity, 0);
   const bodyCount = body.reduce((n, c) => n + c.quantity, 0);
+  // An early list's unmatched lines are copies it lists too (its last group), so the pair line counts them: a commander
+  // the catalog cannot match yet among them is a commander, not the body.
+  const unknown = new Set(early?.unknownCommanders ?? []);
+  const unknownNames = new Set(headCommanders.filter((c) => unknown.has(c.oracleId)).map((c) => c.name));
+  const unmatchedCopies = (early?.unmatched ?? []).reduce((n, l) => n + l.count, 0);
+  const unmatchedBody = (early?.unmatched ?? []).reduce((n, l) => n + (unknownNames.has(l.name) ? 0 : l.count), 0);
+  const headPair = (early ? headCommanders.length : commanders.length) === 2;
+  // An identity is known only when every commander's is: never "C" for a commander the catalog has not got.
+  const identityKnown = unknown.size === 0;
   const basicCopies = basics.reduce((n, c) => n + c.quantity, 0);
   const share = row.of === 0 ? 0 : row.owned / row.of;
   const groups = groupByCardType(listed.map((c) => ({ ...c, cardTypeGroup: cardTypeGroup(c.typeLine) })));
@@ -153,7 +173,7 @@ export function OpenPreconView({ precon, fromNew, canOwn = false, edition: initi
   const foilInView = card
     ? [...commanders, ...groups.flatMap(([, g]) => g), ...basics].some((c) => c.imageUri && allFoil(c))
     : [...commanders, ...groups.flatMap(([, g]) => g)].some(allFoil);
-  const ident = row.identity.length > 0 ? row.identity.join("") : "C";
+  const ident = !identityKnown ? "" : row.identity.length > 0 ? row.identity.join("") : "C";
   const linked = row.built.filter((b) => b.linked);
   const linkDeck = (className: string) => (
     <LinkDeckButton fileName={row.fileName} preconName={row.name} of={row.of} decks={precon.decks} className={className} />
@@ -177,7 +197,8 @@ export function OpenPreconView({ precon, fromNew, canOwn = false, edition: initi
     <CardDetailProvider deckPrintingPicks={printingPicks} viewPrintings={viewPrintings}>
       <div className="pb-[96px]">
         <header className="flex flex-col gap-[12px] border-x-0 border-t-0 border-b-[1px] border-solid border-b-[color:var(--border)] p-[12px_16px_14px] md:p-[16px_22px_18px]">
-          <Link href={fromNew ? "/decks/precons?from=new" : "/decks/precons"} className="font-mono text-[11px] text-[color:var(--fg-faint)] no-underline">
+          {/* An early list's back link is the board's 24px press (`.z-bk`); the precon page's is unchanged. */}
+          <Link href={fromNew ? "/decks/precons?from=new" : "/decks/precons"} className={`font-mono text-[11px] text-[color:var(--fg-faint)] no-underline${early ? " flex min-h-[24px] items-center self-start" : ""}`}>
             {fromNew ? copy.open.backNew : copy.open.back}
             <PendingReporter href="/decks/precons" />
           </Link>
@@ -185,27 +206,29 @@ export function OpenPreconView({ precon, fromNew, canOwn = false, edition: initi
             <div className="flex flex-none gap-[6px]">
               {headCommanders.map((c) => (
                 <span key={c.oracleId}>
-                  <CommanderThumb imageUri={c.imageUri} colorIdentity={c.colorIdentity} size="open" className="md:hidden" />
-                  <CommanderThumb imageUri={c.imageUri} colorIdentity={c.colorIdentity} size="openWide" className="hidden md:block" />
+                  <CommanderThumb imageUri={c.imageUri} colorIdentity={unknown.has(c.oracleId) ? null : c.colorIdentity} size={early ? "early" : "open"} className="md:hidden" />
+                  <CommanderThumb imageUri={c.imageUri} colorIdentity={unknown.has(c.oracleId) ? null : c.colorIdentity} size={early ? "earlyWide" : "openWide"} className="hidden md:block" />
                 </span>
               ))}
             </div>
             <div className="flex min-w-0 flex-1 flex-col gap-[4px]">
-              <span className="font-mono text-[9.5px] uppercase tracking-[0.08em] text-[color:var(--fg-faint)]">{copy.open.eyebrow}</span>
+              <span className="font-mono text-[9.5px] uppercase tracking-[0.08em] text-[color:var(--fg-faint)]">{early ? copy.early.eyebrow : copy.open.eyebrow}</span>
               <h1 className="m-0 font-display text-[22px] font-normal leading-[1.15] text-[color:var(--fg)] md:text-[26px]">{row.name}</h1>
               <span className="text-[13.5px] text-[color:var(--fg-body)]">{row.commanders.map((c) => c.name).join(" + ")}</span>
               <span className="flex items-center gap-[6px] font-mono text-[11px] text-[color:var(--fg-faint)]">
-                <span aria-hidden className="flex gap-[3px]">
-                  {(row.identity.length > 0 ? row.identity : ["C"]).map((c) => (
-                    <span key={c} className="h-[10px] w-[10px] rounded-full" style={{ background: c === "C" ? "var(--fg-faint)" : WUBRG_COLOR[c] }} />
-                  ))}
-                </span>
-                {copy.open.meta(ident, row.setCode, precon.setName, preconDate(row.releaseDate))}
+                {identityKnown && (
+                  <span aria-hidden className="flex gap-[3px]">
+                    {(row.identity.length > 0 ? row.identity : ["C"]).map((c) => (
+                      <span key={c} className="h-[10px] w-[10px] rounded-full" style={{ background: c === "C" ? "var(--fg-faint)" : WUBRG_COLOR[c] }} />
+                    ))}
+                  </span>
+                )}
+                {copy.open.meta(ident, row.setCode, precon.setName, row.releaseDate ? preconDate(row.releaseDate) : "")}
               </span>
             </div>
-            {/* R3 K7: a ghost beside Start at 900; docked beside it at 390, inside Start's dock. */}
-            {linkDeck("hidden h-[40px] flex-none rounded-[8px] px-[16px] text-[13px] md:inline-flex md:items-center")}
-            <StartPrecon
+            {/* R3 K7: a ghost beside Start at 900; docked beside it at 390, inside Start's dock. An early list has neither. */}
+            {!early && linkDeck("hidden h-[40px] flex-none rounded-[8px] px-[16px] text-[13px] md:inline-flex md:items-center")}
+            {!early && <StartPrecon
               row={row}
               cards={total}
               body={bodyCount}
@@ -216,7 +239,7 @@ export function OpenPreconView({ precon, fromNew, canOwn = false, edition: initi
               addedOn={edition === "collector" && precon.collector ? precon.collector.addedOn : precon.addedOn}
               addFileName={edition === "collector" && precon.collector ? precon.collector.fileName : row.fileName}
               canOwn={canOwn}
-            />
+            />}
           </div>
 
           {precon.collector && (
@@ -227,6 +250,8 @@ export function OpenPreconView({ precon, fromNew, canOwn = false, edition: initi
               )}
             </div>
           )}
+          {/* Where the edition switch would sit: an early list has no Collector's Edition. */}
+          {early && <EarlyBand lead={early.lead} tail={early.tail} postUrl={early.postUrl} />}
           {!precon.hasCollection && <EmptyCollectionBand />}
           <section aria-label={`${copy.open.ownLead} ${copy.open.own(row.owned, row.of)} ${copy.open.ownTail}`} className="flex flex-col gap-[8px] rounded-[10px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-sunken)] p-[11px_13px] md:p-[12px_16px]">
             <p className="m-0 flex flex-wrap items-baseline gap-x-[6px] text-[14px] text-[color:var(--fg-body)]">
@@ -253,10 +278,10 @@ export function OpenPreconView({ precon, fromNew, canOwn = false, edition: initi
             {/* The edition switch already names the twin; the line stays only where no switch is drawn. */}
             {row.twinName && !precon.collector && <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.open.twin(row.twinName)}</p>}
             {row.unmapped > 0 && (
-              <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.open.unmapped(row.unmapped, total)}</p>
+              <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{early ? copy.early.unmapped(row.unmapped) : copy.open.unmapped(row.unmapped, total)}</p>
             )}
-            {commanders.length === 2 && (
-              <p className="m-0 font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.open.pair(bodyCount, total)}</p>
+            {headPair && (
+              <p className="m-0 font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.open.pair(bodyCount + unmatchedBody, total + unmatchedCopies)}</p>
             )}
           </section>
           {overview ? (
@@ -271,7 +296,7 @@ export function OpenPreconView({ precon, fromNew, canOwn = false, edition: initi
           <div className="flex items-center justify-between gap-[12px]">
             <p className="m-0 min-w-0 font-mono text-[10.5px] text-[color:var(--fg-faint)] md:hidden">{copy.open.listNotePhone}</p>
             <p className="m-0 hidden min-w-0 font-mono text-[10.5px] text-[color:var(--fg-faint)] md:block">
-              {card ? copy.open.listNoteCard : copy.open.listNote}
+              {early ? (card ? copy.early.listNoteCard : copy.early.listNote) : card ? copy.open.listNoteCard : copy.open.listNote}
             </p>
             <ViewToggle options={DECK_VIEWS} value={view} onChange={storeView} />
           </div>
@@ -288,7 +313,8 @@ export function OpenPreconView({ precon, fromNew, canOwn = false, edition: initi
         {/* No gap: each group carries its own bottom margin. */}
         <HoverPreviewProvider className="flex flex-col px-[16px] py-[12px] md:px-[26px] md:py-[14px]">
           {/* `deckId` is empty: a read-only row calls no deck action, which is all it is read for. */}
-          <DecklistGroup
+          {/* An early list whose commander the catalog cannot match yet has none here: it is in the last group. */}
+          {commanders.length > 0 && <DecklistGroup
             readOnly
             deckId=""
             view={view}
@@ -298,7 +324,7 @@ export function OpenPreconView({ precon, fromNew, canOwn = false, edition: initi
             note={commanderNote(commanders)}
             noteColor="var(--fg-muted)"
             newestAsOf={null}
-          />
+          />}
           {groups.map(([label, group]) => {
             const o = groupOwned(group);
             const lands = label === "Lands";
@@ -327,6 +353,7 @@ export function OpenPreconView({ precon, fromNew, canOwn = false, edition: initi
               <BasicTiles basics={basics} siblings={siblings} />
             </ul>
           ) : <BasicsLine basics={basics} />)}
+          {early && <UnmatchedGroup lines={early.unmatched} />}
         </HoverPreviewProvider>
       </div>
     </CardDetailProvider>

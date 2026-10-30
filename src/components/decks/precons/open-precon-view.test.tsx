@@ -26,7 +26,9 @@ vi.mock("./start-precon", () => ({
 const linkActions = vi.hoisted(() => ({ linkPrecon: vi.fn(), unlinkPrecon: vi.fn() }));
 const mirrored = vi.hoisted(() => ({ urls: [] as string[] }));
 vi.mock("../../ui/commander-thumb", () => ({
-  CommanderThumb: ({ imageUri, size }: { imageUri: string | null; size: string }) => <span data-testid={`thumb-${size}`} data-src={imageUri ?? ""} />,
+  CommanderThumb: ({ imageUri, size, colorIdentity }: { imageUri: string | null; size: string; colorIdentity?: string[] | null }) => (
+    <span data-testid={`thumb-${size}`} data-src={imageUri ?? ""} data-identity={colorIdentity === null ? "unknown" : (colorIdentity ?? []).join("")} />
+  ),
 }));
 vi.mock("../../../lib/url/mirror", () => ({ mirrorUrl: (u: string) => { mirrored.urls.push(u); } }));
 vi.mock("../../../app/decks/precon-link-actions", () => linkActions);
@@ -39,6 +41,7 @@ vi.mock("../decklist-group", () => ({
   ),
 }));
 import { OpenPreconView } from "./open-precon-view";
+import { preconsCopy } from "../../../lib/copy/precons";
 import { cardMarkCopy } from "../../../lib/copy/card-mark";
 import { foilMarkCopy } from "../../../lib/copy/foil-mark";
 
@@ -475,5 +478,57 @@ describe("the precon's Overview", () => {
     render(<OpenPreconView precon={precon()} fromNew={false} overview={null} />);
     expect(screen.queryByTestId("precon-overview")).toBeNull();
     expect(screen.queryByText("written for this precon’s list")).toBeNull();
+  });
+});
+
+describe("OpenPreconView, an early list", () => {
+  const early = (over: Record<string, unknown> = {}) => ({
+    lead: "Early list.", tail: "Then a deck.", postUrl: null,
+    unmatched: [{ name: "Tana, the Bloodsower", count: 1 }, { name: "Seraph of the Dawnfire", count: 2 }],
+    unknownCommanders: ["unmatched:Tana, the Bloodsower"],
+    ...over,
+  });
+  const pair = () => precon(
+    {
+      commanders: [
+        { oracleId: "unmatched:Tana, the Bloodsower", name: "Tana, the Bloodsower", imageUri: null, colorIdentity: [] },
+        { oracleId: "Tymna", name: "Tymna", imageUri: "tymna.jpg", colorIdentity: ["W", "B"] },
+      ],
+      identity: ["W", "B"],
+      unmapped: 3,
+    },
+    [
+      { ...card("Tymna", { isCommander: true, typeLine: "Legendary Creature — Human" }), printing: null },
+      { ...card("Sol Ring", { typeLine: "Artifact" }), printing: null },
+      { ...card("Plains", { typeLine: "Basic Land — Plains", basic: true, quantity: 5 }), printing: null },
+    ],
+  );
+
+  it("counts the unmatched copies it lists in the pair line's body and total, a commander among them as a commander", () => {
+    render(<OpenPreconView precon={pair()} fromNew={false} early={early()} />);
+    // Body: Sol Ring 1 + Plains 5 + Seraph 2 (Tana is a commander). Total: Tymna 1 + 6 matched + 3 unmatched.
+    expect(screen.getByText(preconsCopy.open.pair(8, 10))).toBeInTheDocument();
+  });
+
+  it("names a commander the catalog cannot match yet, with no art and no identity claimed, never colorless", () => {
+    render(<OpenPreconView precon={pair()} fromNew={false} early={early()} />);
+    expect(screen.getByText("Tana, the Bloodsower + Tymna")).toBeInTheDocument();
+    const thumbs = screen.getAllByTestId("thumb-early");
+    expect(thumbs.map((t) => [t.dataset.src, t.dataset.identity])).toEqual([["", "unknown"], ["tymna.jpg", "WB"]]);
+    // The meta line claims no identity: no "WB", and never "C".
+    expect(screen.queryByText(/^WB · /)).toBeNull();
+    expect(screen.queryByText(/^C · /)).toBeNull();
+    expect(screen.getByText("CMM · Commander Masters · Aug 4, 2023")).toBeInTheDocument();
+  });
+
+  it("draws no Commander group when no commander matched", () => {
+    const solo = precon(
+      { commanders: [{ oracleId: "unmatched:Tana, the Bloodsower", name: "Tana, the Bloodsower", imageUri: null, colorIdentity: [] }], identity: [] },
+      [{ ...card("Sol Ring", { typeLine: "Artifact" }), printing: null }],
+    );
+    render(<OpenPreconView precon={solo} fromNew={false} early={early({ unmatched: [{ name: "Tana, the Bloodsower", count: 1 }] })} />);
+    expect(screen.queryByRole("heading", { name: preconsCopy.group.commander })).toBeNull();
+    // Named in the head and listed in the last group.
+    expect(screen.getAllByText("Tana, the Bloodsower")).toHaveLength(2);
   });
 });
