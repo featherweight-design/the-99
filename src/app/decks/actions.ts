@@ -17,7 +17,7 @@ import {
 } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
 import { requestSwitchEnv } from "../../lib/switches/request";
-import { ruleZeroEnabled, socialGamesEnabled } from "../../lib/social/flag";
+import { socialGamesEnabled } from "../../lib/social/flag";
 import {
   insertOpponentsIn, opponentCommandersValid, parseOpponents, resolveOpponentsIn, SeatRefused, withTableSeats, type OpponentInput,
 } from "../../lib/decks/game-opponents";
@@ -1272,7 +1272,6 @@ export async function logGame(
   if (opponents.length > 0) {
     const env = await requestSwitchEnv(userId);
     if (!socialGamesEnabled(env)) return refuse;
-    if (tableSeats.length > 0 && !ruleZeroEnabled(env)) return refuse;
     if (!(await opponentCommandersValid(opponents))) return refuse;
   }
 

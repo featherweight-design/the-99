@@ -11,7 +11,7 @@ import { after } from "next/server";
 import { headers } from "next/headers";
 import { currentUser } from "@clerk/nextjs/server";
 import { requireUserId } from "../../lib/auth";
-import { ruleZeroEnabled, signatureCardEnabled, socialFriendsEnabled, socialInvitesEnabled } from "../../lib/social/flag";
+import { socialFriendsEnabled, socialInvitesEnabled } from "../../lib/social/flag";
 import { loadFriendDeckPrefs } from "../../lib/social/deck-visibility";
 import { loadInviteCount } from "../../lib/invites/read";
 import { requestSwitchEnv } from "../../lib/switches/request";
@@ -73,7 +73,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
     : Promise.resolve(null);
   // Friends and open links from one snapshot, so a redraw never drops a redeemed link before its friend's row.
   // Rule 0's pod rows (plan decision 6): read fresh beside the pods, since this page caches nothing.
-  const ruleZero = ruleZeroEnabled(env);
+  const ruleZero = socialFriendsEnabled(env);
   const [profile, { friends, links }, pods, shared, tables, waiting, deckPrefs, mine] = await Promise.all([
     perf.timed("ensureProfile", () => ensureProfile(userId, user?.firstName)),
     perf.timed("friendsAndLinks", () => loadFriendsAndLinks(userId, now)),
@@ -136,7 +136,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
       friendPages
       invites={invites}
       decksSeen={deckPrefs}
-      signature={signatureCardEnabled(env)}
+      signature={socialFriendsEnabled(env)}
     />
     </>
   );

@@ -20,7 +20,7 @@ import { analysisTabEnabled } from "../lib/decks/analysis-flag";
 import { cachePageForUser, type PageLoad } from "../lib/cache/page-cache";
 import { recordSoftFailure } from "../lib/cache/soft-failure";
 import { requestSwitchEnv } from "../lib/switches/request";
-import { ruleZeroEnabled, signatureCardEnabled, socialFriendsEnabled, socialGamesEnabled, socialInvitesEnabled } from "../lib/social/flag";
+import { socialFriendsEnabled, socialGamesEnabled, socialInvitesEnabled } from "../lib/social/flag";
 import { faceAskPlaces, facePromptDone } from "../lib/discovery/face-prompt";
 import { SignatureRow, SignatureStrip } from "../components/home/signature-ask";
 import { loadHomeTables } from "../lib/social/rule-zero-home";
@@ -266,7 +266,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   // a rename and an expiry show on the next request. A failed read draws no card. Read
   // before the first-run return: a reader with no cards and no decks can still sit at a table, their seat waiting.
   let homeTables: Awaited<ReturnType<typeof loadHomeTables>> = [];
-  if (ruleZeroEnabled(env)) {
+  if (socialFriendsEnabled(env)) {
     try {
       homeTables = await loadHomeTables(userId);
     } catch (error) {
@@ -299,11 +299,11 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       })
     : null;
 
-  // Asked once for a signature card (avatar handoff 20, calls 4 and 5; SIGNATURE_CARD_ENABLED). Decided per request
+  // Asked once for a signature card (avatar handoff 20, calls 4 and 5). Decided per request
   // beside the friends read it draws from, never inside the cached payload: the face is a friends-table read the
   // stamp does not cover. The flag is `user_prefs`, so Skip, ✕ and a pick all move the stamp too. A failed friends read
   // asks nothing, as it draws no Friends row; a flag that cannot be read asks nothing either.
-  const ask = homeFriends && signatureCardEnabled(env)
+  const ask = homeFriends && socialFriendsEnabled(env)
     ? await facePromptDone(userId).then(
         (done) => ({ face: homeFriends.you?.commander ?? null, name: homeFriends.you?.displayName ?? null, done }),
         (error: unknown) => {

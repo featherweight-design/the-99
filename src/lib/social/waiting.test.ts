@@ -60,8 +60,8 @@ describe("loadWaitingOnYou", () => {
     }]);
   });
 
-  it("marks a match askable only with spare requests on for the reader", async () => {
-    const rows = await loadWaitingOnYou("user_viewer", { ...ENV, SOCIAL_FRIENDS_ENABLED: "true", SPARE_REQUESTS_ENABLED: "true" }, NOW);
+  it("marks a match askable only with friends on for the reader", async () => {
+    const rows = await loadWaitingOnYou("user_viewer", { ...ENV, SOCIAL_FRIENDS_ENABLED: "true" }, NOW);
     expect(rows.map((r) => (r.kind === "trade-match" ? r.askable : null))).toEqual([true]);
   });
 

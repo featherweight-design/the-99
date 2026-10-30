@@ -17,7 +17,7 @@ import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { requireUserId } from "../../lib/auth";
 import { ensureSenderProfile } from "./sender-profile";
-import { signatureCardEnabled, socialFriendsEnabled } from "../../lib/social/flag";
+import { socialFriendsEnabled } from "../../lib/social/flag";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import {
   createInvite, declineInvite, readInvite, redeemInvite, revokeInvite, setDisplayName, spendAlreadyFriendsInvite, unfriend,
@@ -93,15 +93,15 @@ export async function searchFaceCommandersAction(query: unknown): Promise<Picker
   return { ok: true, tiles: await searchFaceCommanders(query) };
 }
 
-// --- The signature card (`SIGNATURE_CARD_ENABLED`, plan `2026-10-27-signature-card.md`) -----------------------------
-// Each decides the switch for the reader, as the rest of this file decides `SOCIAL_FRIENDS_ENABLED` (it needs it). A
+// --- The signature card (plan `2026-10-27-signature-card.md`; its own switch is retired) ---------------------------
+// Each decides `SOCIAL_FRIENDS_ENABLED` for the reader, as the rest of this file does. A
 // pick is saved by `setCommanderAction` above, with the printing the screen offered.
 
-/** The signed-in reader, when their signature card switch (and so their friends switch) is on; null otherwise. */
+/** The signed-in reader, when their friends switch is on; null otherwise. */
 async function signatureReader(): Promise<{ userId: string; env: NodeJS.ProcessEnv } | null> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  return signatureCardEnabled(env) ? { userId, env } : null;
+  return socialFriendsEnabled(env) ? { userId, env } : null;
 }
 
 export type FaceDeckTilesOutcome = { ok: true; tiles: FaceTile[] } | Off;

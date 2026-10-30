@@ -1,7 +1,7 @@
 {
   "feature": "Signature card (handoff design_handoff_the99_avatar, R1b; plan 2026-10-27-signature-card.md): the /friends head with a face (P7), the any-card search (P2, P3) and the printings screen (P5, P8, D2). PR 3 adds Home's first-run row and strip; PR 4 the Spares tab.",
   "clearAbout": true,
-  "note": "Needs SOCIAL_FRIENDS_ENABLED and SIGNATURE_CARD_ENABLED on. The audit account's face is Mystical Tutor, picked in a printing whose art crop was nulled on a SCRATCH branch, so the pick reads as gone (P8). Seed it with SQL on the scratch branch only, never local-dev or staging. Read-only: no row saves.",
+  "note": "Needs SOCIAL_FRIENDS_ENABLED on. The audit account's face is Mystical Tutor, picked in a printing whose art crop was nulled on a SCRATCH branch, so the pick reads as gone (P8). Seed it with SQL on the scratch branch only, never local-dev or staging. Read-only: no row saves.",
   "out": "contact-sheets/signature-card",
   "rows": [
     {

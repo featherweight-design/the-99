@@ -5,7 +5,7 @@ import { aboutEntries } from "../copy/about-entries";
 import { creditsEntryOf, drawnEntry, isFirstRun, isSeen, resolveEntry, switchedIds, unseenEntries, variantId, visibleEntries, type SeenState } from "./visible";
 
 // TUNING_ENABLED also requires ANALYSIS_TAB_ENABLED (`tuningEnabled()`), already "true" here.
-const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", DECK_STATS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true", SHOPPING_MARK_BOUGHT_ENABLED: "true", DECK_PRINTINGS_ENABLED: "true", MANA_BALANCE_ENABLED: "true", ALL_DECKS_CART_ENABLED: "true", DECK_NOTES_ENABLED: "true", ADDED_COPY_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true", FIND_A_DECK_READ_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_GAMES_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true", HELP_PANEL_ENABLED: "true", FIRST_RUN_TOUR_ENABLED: "true", RULE_ZERO_ENABLED: "true", SOCIAL_INVITES_ENABLED: "true", CARD_SCAN_ENABLED: "true", NEAR_COMBOS_ENABLED: "true", PUSH_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", DECK_STATS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true", SHOPPING_MARK_BOUGHT_ENABLED: "true", DECK_PRINTINGS_ENABLED: "true", MANA_BALANCE_ENABLED: "true", ALL_DECKS_CART_ENABLED: "true", DECK_NOTES_ENABLED: "true", ADDED_COPY_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true", FIND_A_DECK_READ_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_GAMES_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true", HELP_PANEL_ENABLED: "true", FIRST_RUN_TOUR_ENABLED: "true", SOCIAL_INVITES_ENABLED: "true", CARD_SCAN_ENABLED: "true", NEAR_COMBOS_ENABLED: "true", PUSH_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 const OFF = {} as unknown as NodeJS.ProcessEnv;
 
 /** Two switched entries, a and b, beside one plain one, shaped like the launch entries. */
@@ -646,25 +646,20 @@ describe("whats-new's line switches, in every state of the three switches they n
   });
 });
 
-// Spare requests close-out: `friend-spares` says a spare is view only while requests are off; with them on it reads its
-// variant, which says how to ask and how an ask is answered, and the flip announces it.
-describe("friend-spares' requests form (SPARE_REQUESTS_ENABLED)", () => {
-  const FRIENDS = { SOCIAL_FRIENDS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
-  const ASKS = { SOCIAL_FRIENDS_ENABLED: "true", SPARE_REQUESTS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+// Spare requests close-out: `friend-spares` reads its requests variant, which says how to ask and how an ask is answered.
+// SPARE_REQUESTS_ENABLED is retired: the variant keeps the name as its identity and follows SOCIAL_FRIENDS_ENABLED, so
+// the view-only form no longer draws.
+describe("friend-spares' requests form (SPARE_REQUESTS_ENABLED, retired)", () => {
+  const ASKS = { SOCIAL_FRIENDS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
   const drawn = (env: NodeJS.ProcessEnv) => visibleEntries(env).find((e) => e.id === "friend-spares");
   const VIEW_ONLY = "It’s view only";
-  const ASK = "Press “Ask” beside a friend";
 
-  it("keeps view only with the switch off and reads the ask with it on", () => {
-    expect(drawn(FRIENDS)!.caption).toContain(VIEW_ONLY);
-    expect(drawn(FRIENDS)!.caption).not.toContain(ASK);
-    expect(drawn(FRIENDS)!.variantOn).toBeUndefined();
+  it("reads the ask whenever friends are on", () => {
     const on = drawn(ASKS)!;
     expect(on.caption).toContain("drafts included. Press “Ask”");
     expect(on.caption).not.toContain(VIEW_ONLY);
     expect(on.variantOn).toBe("SPARE_REQUESTS_ENABLED");
-    // SPARE_REQUESTS_ENABLED needs its parent: alone the entry does not draw at all.
-    expect(drawn({ SPARE_REQUESTS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv)).toBeUndefined();
+    expect(drawn({} as unknown as NodeJS.ProcessEnv)).toBeUndefined();
   });
 
   it("keeps the entry's key switches in its requests form", () => {
@@ -672,12 +667,6 @@ describe("friend-spares' requests form (SPARE_REQUESTS_ENABLED)", () => {
     expect(keys).not.toContain("The same mark shows on the cart for all your decks.");
     expect(drawn({ ...ASKS, ALL_DECKS_CART_ENABLED: "true" } as unknown as NodeJS.ProcessEnv)!.keys)
       .toContain("The same mark shows on the cart for all your decks.");
-  });
-
-  it("is announced on the flip, with no version bump, to a reader who met the view-only form", () => {
-    const met = seen(ABOUT_VERSION, switchedIds(visibleEntries(FRIENDS)));
-    expect(unseenEntries(visibleEntries(FRIENDS), met)).toEqual([]);
-    expect(unseenEntries(visibleEntries(ASKS), met).map((e) => e.id)).toContain("friend-spares");
   });
 });
 
@@ -711,12 +700,11 @@ describe("push (close-out): each line follows the kind's own availability (`feed
     expect(push(env({}))!.caption).toContain("- A set or a precon that just came out\n");
   });
 
-  it("names the spare-request kind, and its starting tick, only with spare requests on", () => {
-    const off = push(env({ SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" }))!;
+  it("names the spare-request kind, and its starting tick, only with friends on (spare requests follow them)", () => {
+    const off = push(env({ SOCIAL_WISHLIST_ENABLED: "true" }))!;
     expect(off.caption).not.toContain("asking for one of your spares");
-    expect(off.caption).toContain("- A friend with a spare of a card on your wishlist");
     expect(off.keys[0]).toBe("Nothing is sent until you allow it on a device.");
-    const on = push(env({ SOCIAL_FRIENDS_ENABLED: "true", SPARE_REQUESTS_ENABLED: "true" }))!;
+    const on = push(env({ SOCIAL_FRIENDS_ENABLED: "true" }))!;
     expect(on.caption).toContain("- A friend asking for one of your spares");
     expect(on.keys[0]).toBe("Only a friend asking for your spare starts ticked. Nothing is sent until you allow it on a device.");
     expect(on.keys).toHaveLength(4);
@@ -731,13 +719,12 @@ describe("push (close-out): each line follows the kind's own availability (`feed
 
 describe("the friends entry under the signature card", () => {
   const friends = aboutEntries.find((e) => e.id === "friends")!;
-  const env = (signature: boolean) =>
-    ({ SOCIAL_FRIENDS_ENABLED: "true", SIGNATURE_CARD_ENABLED: signature ? "true" : "" }) as unknown as NodeJS.ProcessEnv;
+  // SIGNATURE_CARD_ENABLED is retired: its lines follow SOCIAL_FRIENDS_ENABLED, which the friends entry needs anyway.
+  const env = () => ({ SOCIAL_FRIENDS_ENABLED: "true" }) as unknown as NodeJS.ProcessEnv;
   it.each([
-    [false, "your name, your commander and the decks", "Pick a commander and its art"],
-    [true, "your name, your signature card and the decks", "Pick a signature card, any card in any printing, and its art"],
-  ])("draws one privacy key and one face sentence (signature card %s)", (signature, key, face) => {
-    const e = resolveEntry(friends, env(signature));
+    ["your name, your signature card and the decks", "Pick a signature card, any card in any printing, and its art"],
+  ])("draws one privacy key and one face sentence (%s)", (key, face) => {
+    const e = resolveEntry(friends, env());
     const privacy = e.keys.filter((k) => k.startsWith("Friends see your name"));
     expect(privacy).toHaveLength(1);
     expect(privacy[0]).toContain(key);

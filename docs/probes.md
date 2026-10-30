@@ -651,8 +651,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `next start` (`PROBE_BASE`, loopback with a port) of a build on the same scratch branch, with EVERY reader-facing
   switch in `src/lib/switches/registry.ts` on (less the plumbing ones and the payments line, but for `PAYMENTS_ENABLED`
   itself: a deck's Stats and Notes tabs, the all-decks cart and the buy tag each have a switch of their own, and a frame
-  missing one is not captured), `RULE_ZERO_ENABLED` and
-  `SOCIAL_INVITES_ENABLED` (with `SOCIAL_FRIENDS_ENABLED`) and `PAYMENTS_ENABLED` on, so the frames show the ?, the account menu's `Take the tour` row, the pod's
+  missing one is not captured),
+  `SOCIAL_INVITES_ENABLED` (with `SOCIAL_FRIENDS_ENABLED`, which also draws Rule 0) and `PAYMENTS_ENABLED` on, so the frames show the ?, the account menu's `Take the tour` row, the pod's
   `Rule 0 check` row, the invite count line and `/credits` (the launch-end About batch), and no sheet. A screen frame missing what it
   must draw inside the photographed 390x844 (the ? on every screen frame but a deck view's, which is shot with its tabs at
   the top and its header scrolled away; the tour row on `account`; the Rule 0 row and the invite count on `friends`;

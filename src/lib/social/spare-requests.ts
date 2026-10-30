@@ -3,7 +3,7 @@
  * friend answers Yes or No. The rules are `spare-request-rules.ts`; this module is every read and write of
  * `spare_requests`, and it lives here because each one reaches another account (`check:social-reads`).
  *
- * - An ask needs `SPARE_REQUESTS_ENABLED` for the asker, a current friendship, and the card to be one of that friend's
+ * - An ask needs `SOCIAL_FRIENDS_ENABLED` for the asker, a current friendship, and the card to be one of that friend's
  *   spares OFFERED to the asker by the one rule every surface reads (`loadFriendSpares`: the pod grant, the friend's
  *   `spare_min` and `spare_keep`). That read runs before the write, in its own snapshots, as the stand-ins modal's
  *   does: a spare that stops being offered a moment later still leaves an ask the friend can answer No to.
@@ -33,7 +33,7 @@ import { resolveFriend } from "./access";
 import { MAX_SPARES_BATCH } from "./client-rules";
 import type { ProfileCommander } from "./commander";
 import { recordFeedItem } from "./feed-write";
-import { spareRequestsEnabled } from "./flag";
+import { socialFriendsEnabled } from "./flag";
 import { isUuid } from "./rules";
 import {
   answerData, askRefusal, askShown, askerState, capCopies, daysLeft, declineFloor, isAnswer, openFloor, requestState, shownFloor,
@@ -143,7 +143,7 @@ export async function askIn(tx: Tx, a: Asking): Promise<AskOutcome> {
 async function prepareAsk(
   askerId: string, friendPublicId: unknown, oracleId: unknown, env: NodeJS.ProcessEnv, now: Date, extras: AskExtras,
 ): Promise<Asking | Extract<AskOutcome, { ok: false }>> {
-  if (!spareRequestsEnabled(env)) return { ok: false, reason: "off" };
+  if (!socialFriendsEnabled(env)) return { ok: false, reason: "off" };
   if (!isUuid(oracleId)) return { ok: false, reason: "not-spare" };
   const holderId = await resolveFriend(askerId, friendPublicId);
   if (!holderId) return { ok: false, reason: "not-friend" };
@@ -251,7 +251,7 @@ export function clearQuery(askerId: string, requestId: string, now: Date): SQL {
 export async function closeSpareRequest(
   askerId: string, requestId: unknown, env: NodeJS.ProcessEnv, now = new Date(), q: Executor = db,
 ): Promise<CloseOutcome> {
-  if (!spareRequestsEnabled(env)) return { ok: false, reason: "off" };
+  if (!socialFriendsEnabled(env)) return { ok: false, reason: "off" };
   if (!isUuid(requestId)) return { ok: false, reason: "gone" };
   const landed = (r: { rowCount?: number | null; rows: unknown[] }) => (r.rowCount ?? r.rows.length) > 0;
   if (landed(await q.execute(withdrawQuery(askerId, requestId, now)))) return { ok: true, closed: "withdrawn" };
@@ -284,7 +284,7 @@ export function answerQuery(holderId: string, requestId: string, answer: "yes" |
 export async function answerSpareRequest(
   holderId: string, requestId: unknown, answer: unknown, env: NodeJS.ProcessEnv, now = new Date(),
 ): Promise<AnswerOutcome> {
-  if (!spareRequestsEnabled(env)) return { ok: false, reason: "off" };
+  if (!socialFriendsEnabled(env)) return { ok: false, reason: "off" };
   if (!isUuid(requestId) || !isAnswer(answer)) return { ok: false, reason: "gone" };
   return db.transaction(async (tx) => {
     // Both friendship rows first, in the purge's order (`lockFriendshipQuery`), as every ask path takes them: the answer
@@ -372,7 +372,7 @@ type IncomingRow = Face & {
  * it is not theirs to answer any more (G3). `env` is the holder's own resolved switches.
  */
 export async function loadIncomingAsks(holderId: string, env: NodeJS.ProcessEnv, now = new Date(), q: Executor = db): Promise<IncomingAsk[]> {
-  if (!spareRequestsEnabled(env)) return [];
+  if (!socialFriendsEnabled(env)) return [];
   const rows = (await q.execute<IncomingRow>(incomingAsksQuery(holderId, now))).rows as IncomingRow[];
   if (rows.length === 0) return [];
   const offered = await loadOwnOffered(holderId, rows.map((r) => r.oracle_id), env);
@@ -527,7 +527,7 @@ export function canAskAgain(ask: MyAsk, asks: readonly MyAsk[], now: Date, offer
 export async function loadMyAsks(
   askerId: string, env: NodeJS.ProcessEnv, now = new Date(), opts: MyAsksOptions = {}, q: Executor = db,
 ): Promise<MyAsk[]> {
-  if (!spareRequestsEnabled(env)) return [];
+  if (!socialFriendsEnabled(env)) return [];
   const shown = await readShownAsks(askerId, now, opts, q);
   const openCards = openAskCards(shown, now);
   const offered = new Set(
@@ -622,7 +622,7 @@ export function markAnswerSeenQuery(askerId: string, requestId: string, now: Dat
 
 /** Marks one answer seen; whether it wrote. Nothing while the switch is off. */
 export async function markAnswerSeen(askerId: string, requestId: string, env: NodeJS.ProcessEnv, now = new Date(), q: Executor = db): Promise<boolean> {
-  if (!spareRequestsEnabled(env)) return false;
+  if (!socialFriendsEnabled(env)) return false;
   const done = await q.execute(markAnswerSeenQuery(askerId, requestId, now));
   return (done.rowCount ?? 0) > 0;
 }
@@ -638,19 +638,19 @@ async function countOf(query: SQL, q: Executor): Promise<number> {
  * the badge and Waiting on you always agree.
  */
 export async function waitingAsksCount(holderId: string, env: NodeJS.ProcessEnv, now = new Date(), q: Executor = db): Promise<number> {
-  if (!spareRequestsEnabled(env)) return 0;
+  if (!socialFriendsEnabled(env)) return 0;
   if ((await countOf(waitingAsksCountQuery(holderId, now), q)) === 0) return 0;
   return (await loadIncomingAsks(holderId, env, now, q)).length;
 }
 
 /** Answers this asker has not seen on `/friends`; 0 while the switch is off. */
 export async function unseenAnswersCount(askerId: string, env: NodeJS.ProcessEnv, now = new Date(), q: Executor = db): Promise<number> {
-  return spareRequestsEnabled(env) ? countOf(unseenAnswersCountQuery(askerId, now), q) : 0;
+  return socialFriendsEnabled(env) ? countOf(unseenAnswersCountQuery(askerId, now), q) : 0;
 }
 
 /** Marks this asker's answers seen; whether it wrote. */
 export async function markAnswersSeen(askerId: string, env: NodeJS.ProcessEnv, now = new Date(), q: Executor = db): Promise<boolean> {
-  if (!spareRequestsEnabled(env)) return false;
+  if (!socialFriendsEnabled(env)) return false;
   const done = await q.execute(markAnswersSeenQuery(askerId, now));
   return (done.rowCount ?? 0) > 0;
 }

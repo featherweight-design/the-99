@@ -98,7 +98,7 @@ export function LandingColumn({
 
 export function FriendLanding({ token, view, nowMs, signature = false }: {
   token: string; view: LandingView; nowMs: number;
-  /** `SIGNATURE_CARD_ENABLED` for the reader: the card names the face a signature card. */
+  /** `SOCIAL_FRIENDS_ENABLED` for the reader: the card names the face a signature card. */
   signature?: boolean;
 }) {
   // The friendship's `since` as /friends draws it (`sinceDay`): in UTC until hydrated, as the server drew it, and

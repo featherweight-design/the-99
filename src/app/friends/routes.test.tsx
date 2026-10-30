@@ -57,6 +57,8 @@ vi.mock("../../lib/invites/spend", async (orig) => ({
 vi.mock("../../lib/social/deck-visibility", () => ({ loadFriendDeckPrefs: async () => ({ seeDecks: true, seeUnfinished: false }) }));
 vi.mock("../../lib/social/access", () => ({ listFriends: m.listFriends, listPods: m.listPods }));
 vi.mock("../../lib/social/spares", () => ({ listSharedPods: m.listSharedPods }));
+// Rule 0 tables now follow the friends switch alone (RULE_ZERO_ENABLED retired), so every enabled render reads them.
+vi.mock("../../lib/social/rule-zero", async (orig) => ({ ...(await orig<typeof import("../../lib/social/rule-zero")>()), openTablesFor: async () => [] }));
 // Waiting on you and its after() work have their own tests (`waiting.test.ts`, `waiting-on-you.test.tsx`).
 vi.mock("../../lib/social/waiting", () => ({ loadWaitingOnYou: m.loadWaitingOnYou }));
 vi.mock("../../lib/social/your-requests", () => ({ loadYourRequests: m.loadYourRequests }));

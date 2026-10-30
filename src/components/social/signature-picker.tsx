@@ -1,6 +1,6 @@
 "use client";
 // The signature card picker (avatar handoff 20, calls 2, 3 and 7; boards P1 to P8 and D1 to D2), drawn in place of
-// `CommanderPicker` while `SIGNATURE_CARD_ENABLED` is on. The same `SocialModal` (a tall sheet at phone, 520 at
+// `CommanderPicker` wherever a signature card is named. The same `SocialModal` (a tall sheet at phone, 520 at
 // desktop), the same search field and the same From your decks row, each deck's lead in the printing that deck holds.
 // The search finds ANY game card, its type line under the name. A card with one printing saves on press; one with
 // more reads `N printings ›` and opens a second screen in the same modal: a preview of the face, the printing tiles

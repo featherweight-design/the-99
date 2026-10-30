@@ -16,7 +16,7 @@ vi.mock("./spares", () => ({ loadFriendSpares: m.spares, loadOwnOffered: vi.fn()
 import { answerUnseen, loadYourRequests, answeredRequestIdQuery } from "./your-requests";
 import type { ShownAsk } from "./spare-requests";
 
-const ON = { SOCIAL_FRIENDS_ENABLED: "true", SPARE_REQUESTS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const ON = { SOCIAL_FRIENDS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 const NOW = new Date("2026-10-22T12:00:00Z");
 const DAY = 86_400_000;
 const ago = (days: number) => new Date(NOW.getTime() - days * DAY);

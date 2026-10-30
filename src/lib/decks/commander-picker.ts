@@ -184,7 +184,7 @@ export type FaceCardHit = {
 };
 
 /**
- * The signature card search, `SIGNATURE_CARD_ENABLED`'s picker: any GAME card by name (the rule `setCommander` saves
+ * The signature card search, the signature picker's: any GAME card by name (the rule `setCommander` saves
  * by, `isGameCardWhere`), best name match first, then by name. Too short a query asks for nothing.
  */
 export async function searchFaceCards(query: unknown): Promise<FaceCardHit[]> {

@@ -20,12 +20,11 @@ describe("the kinds available to a reader", () => {
     expect(feedKindAvailable("trade-match", env({ SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" }))).toBe(true);
   });
 
-  it("offers a spare request only with SPARE_REQUESTS_ENABLED and friends (G5)", () => {
-    const all = env({ ...feed, SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" });
-    expect(feedKindAvailable("spare-request", all)).toBe(false);
-    expect(availableFeedKinds(all)).toEqual(["new-set", "new-precon", "price-drop", "trade-match", "combo"]);
-    expect(feedKindAvailable("spare-request", env({ SPARE_REQUESTS_ENABLED: "true" }))).toBe(false);
-    const on = env({ ...feed, SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true", SPARE_REQUESTS_ENABLED: "true" });
+  it("offers a spare request only with friends (G5)", () => {
+    const noFriends = env({ ...feed, SOCIAL_WISHLIST_ENABLED: "true" });
+    expect(feedKindAvailable("spare-request", noFriends)).toBe(false);
+    expect(availableFeedKinds(noFriends)).toEqual(["new-set", "new-precon", "price-drop", "combo"]);
+    const on = env({ ...feed, SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" });
     expect(feedKindAvailable("spare-request", on)).toBe(true);
     expect(availableFeedKinds(on)).toEqual(["new-set", "new-precon", "price-drop", "trade-match", "spare-request", "combo"]);
   });

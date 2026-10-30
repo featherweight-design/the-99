@@ -3,7 +3,7 @@ import { NextRequest } from "next/server";
 
 const stub = vi.hoisted(() => ({
   userId: "user_1" as string | null,
-  env: { SOCIAL_FRIENDS_ENABLED: "true", SPARE_REQUESTS_ENABLED: "true" } as Record<string, string>,
+  env: { SOCIAL_FRIENDS_ENABLED: "true" } as Record<string, string>,
   load: vi.fn(),
 }));
 vi.mock("@clerk/nextjs/server", () => ({ auth: async () => ({ userId: stub.userId }) }));
@@ -24,7 +24,7 @@ const get = (qs: string) => GET(new NextRequest(`http://localhost/api/spare-requ
 
 beforeEach(() => {
   stub.userId = "user_1";
-  stub.env = { SOCIAL_FRIENDS_ENABLED: "true", SPARE_REQUESTS_ENABLED: "true" };
+  stub.env = { SOCIAL_FRIENDS_ENABLED: "true" };
   stub.load.mockReset();
   stub.load.mockResolvedValue([ASK]);
 });
@@ -44,10 +44,8 @@ describe("GET /api/spare-requests", () => {
     expect(stub.load).not.toHaveBeenCalled();
   });
 
-  it("is not there with spare requests off for the reader, or friends off under it", async () => {
-    stub.env = { SOCIAL_FRIENDS_ENABLED: "true" };
-    expect((await get(`ids=${A}`)).status).toBe(404);
-    stub.env = { SPARE_REQUESTS_ENABLED: "true" };
+  it("is not there with friends off for the reader", async () => {
+    stub.env = {};
     expect((await get(`ids=${A}`)).status).toBe(404);
     expect(stub.load).not.toHaveBeenCalled();
   });

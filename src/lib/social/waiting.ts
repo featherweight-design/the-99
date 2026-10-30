@@ -23,7 +23,7 @@ import { feedOrder, type FeedKind } from "../feed/kinds";
 import { toCommander, type ProfileCommander } from "./commander";
 import { loadIncomingAsks, type IncomingAsk } from "./spare-requests";
 import { spareGrantDetailsQuery } from "./spares";
-import { spareRequestsEnabled } from "./flag";
+import { socialFriendsEnabled } from "./flag";
 
 /** The kinds the section draws, in the order they wait on the reader. */
 export const WAITING_ON_YOU_KINDS: readonly FeedKind[] = ["spare-request", "trade-match"];
@@ -43,7 +43,7 @@ export type TradeMatchRow = {
   friend: { publicId: string; displayName: string; commander: ProfileCommander | null };
   /** The pods the friend's share reaches the reader through, in name order. */
   pods: string[];
-  /** `SPARE_REQUESTS_ENABLED` for the reader: the link opens the card's spares sheet with Ask. */
+  /** `SOCIAL_FRIENDS_ENABLED` for the reader: the link opens the card's spares sheet with Ask. */
   askable: boolean;
 };
 
@@ -70,7 +70,7 @@ async function loadTradeMatchRows(viewerId: string, env: NodeJS.ProcessEnv, now:
     db.select({ oracleId: cards.oracleId, name: cards.name, imageUri: cards.imageUri }).from(cards)
       .where(inArray(cards.oracleId, [...new Set(matches.map((m) => m.oracleId))])),
   ]);
-  const askable = spareRequestsEnabled(env);
+  const askable = socialFriendsEnabled(env);
   const grantOf = new Map(grants.map((g) => [g.publicId, g]));
   const cardOf = new Map(info.map((c) => [c.oracleId, c]));
   return matches.flatMap((m) => {

@@ -92,10 +92,6 @@ describe("All features", () => {
     expect(tuningEnabled(mine)).toBe(true);
   });
 
-  it("raises spare requests now that their surfaces and About lines have shipped (close-out)", () => {
-    expect(ALL_FEATURES_RAISES.has("SPARE_REQUESTS_ENABLED")).toBe(true);
-  });
-
   it("raises a switch added later: the set is the registry's, not a list kept with the row", () => {
     expect([...ALL_FEATURES_RAISES].sort()).toEqual(
       SWITCHES.filter((s) => s.kind !== "plumbing" && !(s.name in ALL_FEATURES_EXCLUDED)).map((s) => s.name).sort(),

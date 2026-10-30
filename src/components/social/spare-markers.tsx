@@ -161,7 +161,7 @@ export function FriendSparesProvider({
   /** The cards the deck is buying: one read covers every row that can carry a marker. */
   oracleIds: readonly string[];
   newestAsOf: Date | null;
-  /** `SPARE_REQUESTS_ENABLED` for the reader, decided by the page: the asks are read beside the spares, and the modal
+  /** `SOCIAL_FRIENDS_ENABLED` for the reader, decided by the page: the asks are read beside the spares, and the modal
    *  offers Ask. Off, nothing reads them and the modal is as shipped. */
   requests?: boolean;
   /** The deck an Ask is for: the deck page's Shopping names it, the cart sends null (G2). */

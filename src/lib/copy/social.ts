@@ -221,8 +221,8 @@ export const socialCopy = {
     failed: "We couldn’t save your commander. Try again.", // toast, role alert
   },
 
-  // The signature card (avatar handoff 20, `SIGNATURE_CARD_ENABLED`): the face as any card in any printing. Drawn in
-  // place of `commander` while the switch is on; `commander` is what ships with it off.
+  // The signature card (avatar handoff 20): the face as any card in any printing. Drawn in place of `commander`
+  // wherever the surface names a signature card; `commander` is what a surface without it draws.
   signature: {
     choose: "Choose your signature card", // the head's press, the empty tile's aria-label, and the ask's
     changeAria: (card: string) => `Your signature card: ${card}. Change`,

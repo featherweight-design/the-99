@@ -28,7 +28,7 @@ import { loadIncomingAsks, type IncomingAsk } from "../social/spare-requests";
 import { loadFriendSpares, type FriendSpare } from "../social/spares";
 import { noticeTradeMatches } from "../social/trade-match";
 import { availableFeedKinds } from "./flag";
-import { spareRequestsEnabled } from "../social/flag";
+import { socialFriendsEnabled } from "../social/flag";
 import { leadStory, type FeedKind } from "./kinds";
 import { effectiveKinds, markFeedSeen, neverChose, readFeedPrefs } from "./prefs";
 import { loadFeed, type FeedItem, type FeedPost } from "./read";
@@ -91,7 +91,7 @@ export type FeedView = {
    */
   answer: Answer | null;
   /**
-   * A trade match whose press opens the card's spares sheet with Ask: `SPARE_REQUESTS_ENABLED` for the reader. False on
+   * A trade match whose press opens the card's spares sheet with Ask: `SOCIAL_FRIENDS_ENABLED` for the reader. False on
    * every other item, and on a trade match with spare requests off (the press then opens the friend's Spares tab).
    */
   askable: boolean;
@@ -226,7 +226,7 @@ export function toViews(
     precons: Map<string, FeedCard>;
     owned: Map<string, { owned: number; of: number }>;
     cards: Map<string, FeedCard>;
-    /** `SPARE_REQUESTS_ENABLED` for the reader: a trade match's press asks. */
+    /** `SOCIAL_FRIENDS_ENABLED` for the reader: a trade match's press asks. */
     askable?: boolean;
   },
 ): FeedView[] {
@@ -321,7 +321,7 @@ export async function lookups(userId: string, items: readonly FeedItem[], q: Exe
     precons: new Map(preconRows.map((r) => [r.file_name, toCard(r)])),
     owned: new Map(ownedRows.map((r) => [r.file_name, { owned: Number(r.owned), of: Number(r.total) }])),
     cards: new Map(cardRows.map((r) => [r.oracle_id, { ...toCard(r), image: art.get(r.oracle_id) ?? r.image }])),
-    askable: spareRequestsEnabled(env),
+    askable: socialFriendsEnabled(env),
   };
 }
 

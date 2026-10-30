@@ -23,7 +23,7 @@ import { FriendSparesProvider, SparesSheetHost, usePageSpares, type SpareCard } 
 import { rowAsk } from "./friend-spares";
 import { SocialToast, type SocialToastState } from "./social-toast";
 
-/** Spare requests on this tab (`SPARE_REQUESTS_ENABLED` for the reader), decided by the page; absent, the tab is as shipped. */
+/** Spare requests on this tab (`SOCIAL_FRIENDS_ENABLED` for the reader), decided by the page; absent, the tab is as shipped. */
 export type FriendSparesAsks = {
   friend: { publicId: string; displayName: string; commander: ProfileCommander | null };
   /** `?spare=`'s card, a uuid, or null. */

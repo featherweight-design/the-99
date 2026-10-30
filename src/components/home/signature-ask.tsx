@@ -1,6 +1,6 @@
 "use client";
 // Asking for a signature card once (avatar handoff 20, calls 4 to 6; Onboarding board O1 to O4, D1 and D2), behind
-// `SIGNATURE_CARD_ENABLED`. Two places, one picker:
+// `SOCIAL_FRIENDS_ENABLED`. Two places, one picker:
 //
 // - The first-run row (`SignatureRow`): unnumbered, after step 3 and before Add your friends, in the Choose your news
 //   row's box (the board's `.frw`). To do, it opens the picker over Home and carries a Skip, which takes the row away

@@ -58,7 +58,7 @@ export function FriendCard({
   word?: string;
   /** The check badge on the card's corner (N6). Compact only. */
   badge?: boolean;
-  /** `SIGNATURE_CARD_ENABLED` for the reader: an empty credit says no signature card, not no commander. */
+  /** `SOCIAL_FRIENDS_ENABLED` for the reader: an empty credit says no signature card, not no commander. */
   signature?: boolean;
 }) {
   const turn = (

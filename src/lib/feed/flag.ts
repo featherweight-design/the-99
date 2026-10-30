@@ -4,13 +4,13 @@
  * (`requestSwitchEnv`).
  */
 import { announcementsEnabled } from "../announcements/flag";
-import { socialFriendsEnabled, spareRequestsEnabled } from "../social/flag";
+import { socialFriendsEnabled } from "../social/flag";
 import { wishlistEnabled } from "../wishlist/flag";
 import { FEED_KINDS, type FeedKind } from "./kinds";
 
 /**
- * Whether a kind can be offered and read for this reader, the feed itself aside: a price drop is about the wishlist; a trade match needs friends and the wishlist; a spare request needs `SPARE_REQUESTS_ENABLED` (G5), which
- * needs friends; Wizards' announcements need `ANNOUNCEMENTS_ENABLED`, all three kinds alike. A kind that is not available is
+ * Whether a kind can be offered and read for this reader, the feed itself aside: a price drop is about the wishlist; a trade match needs friends and the wishlist; a spare request needs friends (G5; its own switch
+ * is retired); Wizards' announcements need `ANNOUNCEMENTS_ENABLED`, all three kinds alike. A kind that is not available is
  * neither offered in Settings nor read, nor pushed (`catalogPushKinds` and the flush's `stillWanted` read this set),
  * though a reader's choice for it is kept.
  */
@@ -25,7 +25,7 @@ export function feedKindAvailable(kind: FeedKind, env: NodeJS.ProcessEnv): boole
     case "trade-match":
       return socialFriendsEnabled(env) && wishlistEnabled(env);
     case "spare-request":
-      return spareRequestsEnabled(env);
+      return socialFriendsEnabled(env);
     case "secret-lair":
     case "commander-decklists":
     case "wizards-news":

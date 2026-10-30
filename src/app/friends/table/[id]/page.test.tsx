@@ -7,7 +7,7 @@ import { TABLES } from "../../../../lib/rule-zero/table-fixtures";
 const m = vi.hoisted(() => ({
   requireUserId: vi.fn(),
   requestSwitchEnv: vi.fn(),
-  ruleZeroEnabled: vi.fn(),
+  socialFriendsEnabled: vi.fn(),
   socialGamesEnabled: vi.fn(),
   loadTable: vi.fn(),
   loadClosedTable: vi.fn(),
@@ -20,7 +20,7 @@ vi.mock("next/navigation", () => ({
 vi.mock("../actions", () => ({ markTableSeen: async () => true }));
 vi.mock("../../../../lib/auth", () => ({ requireUserId: m.requireUserId }));
 vi.mock("../../../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitchEnv }));
-vi.mock("../../../../lib/social/flag", () => ({ ruleZeroEnabled: m.ruleZeroEnabled, socialGamesEnabled: m.socialGamesEnabled }));
+vi.mock("../../../../lib/social/flag", () => ({ socialFriendsEnabled: m.socialFriendsEnabled, socialGamesEnabled: m.socialGamesEnabled }));
 vi.mock("../../../../lib/social/rule-zero-table", () => ({ loadTable: m.loadTable, loadClosedTable: m.loadClosedTable }));
 vi.mock("../../../../lib/about/how-it-works-flag", () => ({ howItWorksEnabled: m.howItWorksEnabled }));
 
@@ -33,7 +33,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   m.requireUserId.mockResolvedValue("user_viewer");
   m.requestSwitchEnv.mockResolvedValue({});
-  m.ruleZeroEnabled.mockReturnValue(true);
+  m.socialFriendsEnabled.mockReturnValue(true);
   m.socialGamesEnabled.mockReturnValue(true);
   m.loadTable.mockResolvedValue(null);
   m.loadClosedTable.mockResolvedValue(null);
@@ -41,8 +41,8 @@ beforeEach(() => {
 });
 
 describe("TablePage", () => {
-  it("is not found with RULE_ZERO_ENABLED off, and reads nothing", async () => {
-    m.ruleZeroEnabled.mockReturnValue(false);
+  it("is not found with SOCIAL_FRIENDS_ENABLED off, and reads nothing", async () => {
+    m.socialFriendsEnabled.mockReturnValue(false);
     await expect(page()).rejects.toThrow("NOT_FOUND");
     expect(m.loadTable).not.toHaveBeenCalled();
   });

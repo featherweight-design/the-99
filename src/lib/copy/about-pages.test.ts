@@ -77,8 +77,8 @@ describe("about pages copy model", () => {
       ...ABOUT_SECTIONS.flatMap((s) => Object.values(s.subSentences ?? {})),
     ].filter((x): x is AboutLineSwitch => x != null).flatMap(switchesOf);
     // A retired switch stays the unit's historical identity: About's seen-state keys units and sentences by it, so
-    // dropping the name would mark an unread announcement as seen. `visible.ts` maps each to always-on.
-    const RETIRED_IDENTITIES = ["HELP_PANEL_ENABLED", "CARD_SCAN_ENABLED", "FIRST_RUN_TOUR_ENABLED", "ADDED_COPY_ENABLED", "UPCOMING_PRECONS_ENABLED", "PRECONS_ENABLED", "DECK_TOKENS_ENABLED", "LINEUP_ENABLED", "FRIEND_DECKS_ENABLED", "COMMANDERS_PLACE_ENABLED", "HOME_FEED_ENABLED"];
+    // dropping the name would mark an unread announcement as seen. `visible.ts` maps each to always-on or its live parent.
+    const RETIRED_IDENTITIES = ["HELP_PANEL_ENABLED", "CARD_SCAN_ENABLED", "FIRST_RUN_TOUR_ENABLED", "ADDED_COPY_ENABLED", "UPCOMING_PRECONS_ENABLED", "PRECONS_ENABLED", "DECK_TOKENS_ENABLED", "LINEUP_ENABLED", "FRIEND_DECKS_ENABLED", "COMMANDERS_PLACE_ENABLED", "HOME_FEED_ENABLED", "SIGNATURE_CARD_ENABLED", "RULE_ZERO_ENABLED", "SPARE_REQUESTS_ENABLED"];
     for (const n of named) expect([...SWITCH_NAMES, ...RETIRED_IDENTITIES], n).toContain(n);
   });
 

@@ -46,13 +46,14 @@ const row = (o: Record<string, unknown>) => ({
 describe("loadHomeFeed", () => {
   it("answers the offer alone while every kind the reader can be offered is off, reading no feed", async () => {
     const q = fake({}, {});
-    const feed = await loadHomeFeed("u1", ON, NOW, q);
-    expect(feed).toEqual({ chosen: false, offer: ["new-set", "new-precon", "price-drop", "trade-match", "combo"], on: [] });
+    // Friends off: spare requests (default on) follow friends since SPARE_REQUESTS_ENABLED retired, and trade matches need them.
+    const feed = await loadHomeFeed("u1", { ...ON, SOCIAL_FRIENDS_ENABLED: "" } as NodeJS.ProcessEnv, NOW, q);
+    expect(feed).toEqual({ chosen: false, offer: ["new-set", "new-precon", "price-drop", "combo"], on: [] });
     expect((q as unknown as { execute: ReturnType<typeof vi.fn> }).execute).not.toHaveBeenCalled();
   });
 
   describe("the offer line (announcements call 3)", () => {
-    const SPARE = { ...ON, SPARE_REQUESTS_ENABLED: "true" } as NodeJS.ProcessEnv;
+    const SPARE = ON;
     // The default-on kind already on is not offered: an unticked box there would save it off.
     const OFFER = ["new-set", "new-precon", "price-drop", "trade-match", "combo"];
     const ask = () => row({ kind: "spare-request", key: "item:s", created_at: "2026-10-22T10:00:00Z", friend_public_id: "p1", friend_name: "Peter" });
@@ -258,7 +259,7 @@ describe("the feed's card lookups carry the card's colour identity", () => {
 });
 
 describe("a spare request leading Home (spare requests PR 3d)", () => {
-  const SPARE = { ...ON, SPARE_REQUESTS_ENABLED: "true" } as NodeJS.ProcessEnv;
+  const SPARE = ON;
   const incoming = (o: Partial<IncomingAsk> = {}): IncomingAsk => ({
     id: "req-1", oracleId: "c1", card: { name: "Lathliss", imageUri: null }, copies: 1, deckName: "Dragons", spare: 2,
     asker: { publicId: "p1", displayName: "Peter", commander: null }, createdAt: NOW, daysLeft: 13, ...o,
