@@ -900,6 +900,14 @@ describe("iteration 3: the color name the model is handed", () => {
     expect(user(lands, s3)).toContain("Colors the lands make: colorless");
   });
 
+  it("names an unnamed combination 'multicolor' and spells the digit-form sentence five-color for iteration 3 only", () => {
+    expect(user({ ...FACTS, identity: ["W", "X"], identityName: "Multi" }, s3)).toContain("Color identity: multicolor\n");
+    const sys = (stages: object) => buildSynopsisPrompt(FACTS, undefined, { v2: true, contract8: true, stages: stages as never }).system;
+    expect(sys(s3)).toContain("such as five-color");
+    expect(sys(s3)).not.toContain("such as 5-color");
+    expect(sys({ alternates: [], maxChars: 1834 })).toContain("such as 5-color");
+  });
+
   it("tells the model to put the color name in a plain phrase, for iteration 3 only", () => {
     const sys = (stages: object) => buildSynopsisPrompt(FACTS, undefined, { v2: true, contract8: true, stages: stages as never }).system;
     expect(sys(s3)).toContain('inside a plain phrase such as "a red deck"');

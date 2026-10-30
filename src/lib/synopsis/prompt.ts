@@ -206,16 +206,20 @@ export const V2_FACT_RULES_V8 = `${V2_COMBO_RULES_V8}\n${V2_SHARED_RULES}`;
  */
 const STAGES_COMBO_PLACE = "A listed combo is the primary win condition only when the deck is built to assemble it; otherwise the overview and the strategy name it as a backup or an alternate win, after the primary plan.";
 const STAGES_COMBO_EVERY = "Whenever the overview or a strategy step names a listed combo, that sentence names every card of the combo.";
+const FIVE_COLOR_DIGITS = "such as 5-color";
+
 function stagesFactRules(shape: 2 | 3 = 2): string {
-  if (!V2_FACT_RULES_V8.includes(STAGES_COMBO_PLACE) || !V2_FACT_RULES_V8.includes(STAGES_COMBO_EVERY)) {
+  if (!V2_FACT_RULES_V8.includes(STAGES_COMBO_PLACE) || !V2_FACT_RULES_V8.includes(STAGES_COMBO_EVERY) || !V2_FACT_RULES_V8.includes(FIVE_COLOR_DIGITS)) {
     throw new Error("buildSynopsisPrompt: contract 8's combo rules moved; the stages variant replaces two of their sentences");
   }
-  return V2_FACT_RULES_V8
+  const rules = V2_FACT_RULES_V8
     .replace(STAGES_COMBO_PLACE, shape === 3
       ? "A listed combo is the primary win condition only when the deck is built to assemble it; otherwise it is a backup or an alternate win. Either way its cards other than the commander are named in ONE place only: the Close line, never also in the overview, another stage, a tip, a Key card or a Key card's job."
       : "A listed combo is the primary win condition only when the deck is built to assemble it; otherwise it is a backup or an alternate win. Either way its cards other than the commander are named in ONE place only: the Close line (or \"Wins by\", when the combo is the win there), never also in the overview, another stage, a tip or a Key card's job.")
-    .replace(STAGES_COMBO_EVERY, "The one line that names a listed combo names every card of the combo.")
-    .concat(shape === 3 ? `\n${STAGES_COLOR_RULE}` : "");
+    .replace(STAGES_COMBO_EVERY, "The one line that names a listed combo names every card of the combo.");
+  if (shape !== 3) return rules;
+  // Shape 3 hands the model "five-color", not "5-color": the shipped sentence names the digit form.
+  return `${rules.replace(FIVE_COLOR_DIGITS, "such as five-color")}\n${STAGES_COLOR_RULE}`;
 }
 
 /**
@@ -337,7 +341,7 @@ function stagesSections(facts: SynopsisFacts, stages: StagesOption): string[] {
  */
 export function stagesColorName(label: string): string {
   if (label === "5-color") return "five-color";
-  if (label === "Multi") return label;
+  if (label === "Multi") return "multicolor";
   const proper = new Set(["Azorius", "Dimir", "Rakdos", "Gruul", "Selesnya", "Orzhov", "Izzet", "Golgari", "Boros", "Simic", "Bant", "Esper", "Grixis", "Jund", "Naya", "Abzan", "Jeskai", "Sultai", "Mardu", "Temur"]);
   return proper.has(label) ? label : label.toLowerCase();
 }
