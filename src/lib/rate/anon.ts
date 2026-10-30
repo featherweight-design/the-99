@@ -3,7 +3,7 @@ import { after } from "next/server";
 import { resolveSwitchEnv } from "../switches/snapshot";
 import { rateLimitEnabled } from "./flag";
 import { recordHit } from "./observe";
-import { overLimit, RATE_RULES } from "./rules";
+import { overLimit, RATE_RULES, type RateBucket } from "./rules";
 
 /**
  * Anonymous reads (launch epic F3 groundwork, PR 2): the public card and commander pages have a visitor and no account.
@@ -98,4 +98,17 @@ export async function observeAnonymousHit(headers: Pick<Headers, "get">): Promis
       // Counting is best effort by design.
     }
   });
+}
+
+/**
+ * An ENFORCED anonymous hit: counts one in `bucket` under the visitor's key and says whether it is over the rule. Unlike
+ * `observeAnonymousHit` it counts before answering and does not look at `RATE_LIMIT_ENABLED`; the launch list is a stranger's
+ * write. A counting failure lets the hit through (fail open): a database hiccup must not turn every reader away.
+ */
+export async function overAnonymousLimit(headers: Pick<Headers, "get">, bucket: RateBucket): Promise<boolean> {
+  try {
+    return overLimit(await recordHit(anonKey(clientAddress(headers)), bucket), RATE_RULES[bucket]);
+  } catch {
+    return false;
+  }
 }
