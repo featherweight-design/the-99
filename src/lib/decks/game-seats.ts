@@ -31,7 +31,7 @@ export type Seat = {
   commander: SeatCommander | null;
   friend: SeatFriend | null;
   /** The friend's deck, when one was picked: today's name, drawn on the seat. Its commander is `commander`. */
-  deck: { id: string; name: string } | null;
+  deck: { id: string; name: string | ThirdPartyName } | null;
   /** Who sat there, in the player's words. Empty is none. */
   label: string;
   won: boolean;
@@ -54,7 +54,7 @@ export const podSizeHeld = (podSize: number, filled: number) => seatCount(podSiz
 export const hasRoom = (podSize: number, filled: number) => filled < seatCount(podSize);
 
 /** What a picker press names: anyone by commander, or a friend (with a deck, or a commander of their own, or neither). */
-export type SeatPick = { friend: SeatFriend | null; deck: { id: string; name: string } | null; commander: SeatCommander | null };
+export type SeatPick = { friend: SeatFriend | null; deck: { id: string; name: string | ThirdPartyName } | null; commander: SeatCommander | null };
 
 /**
  * The seat a picker press fills: a new one at the end, or the named one changed in place (`won` kept). A friend

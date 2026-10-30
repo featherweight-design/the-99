@@ -9,11 +9,12 @@ import { plain } from "../../lib/person-name/testing";
 import { SeatPicker } from "./seat-picker";
 
 vi.mock("../ui/use-is-desktop", () => ({ useIsDesktop: () => true }));
+const decksRead = vi.hoisted(() => ({ list: [] as { deckId: string; name: ThirdPartyName; commanderOracleId: string; partnerOracleId: string | null; commanderName: string; commanderImageUri: string | null }[] }));
 const friends = vi.hoisted(() => ({ list: [] as { publicId: string; displayName: ThirdPartyName; commanderArt: string | null; deckCount: number; withheld?: boolean }[] }));
 vi.mock("../../app/decks/[id]/opponent-actions", () => ({
   searchOpponentCommandersAction: async () => [],
   listPickerFriendsAction: async () => friends.list,
-  listFriendDecksAction: async () => [],
+  listFriendDecksAction: async () => decksRead.list,
 }));
 
 // A browser will not focus an element under `visibility: hidden`; jsdom will. The panel is hidden until it is
@@ -111,6 +112,18 @@ describe("SeatPicker at desktop width", () => {
     expect(slots[0]!.textContent).toBe("?");
     expect(slots[1]!.querySelector("[data-search-icon]")).not.toBeNull();
     expect(slots[2]!.textContent).toBe("PQ");
+    anchor.remove();
+  });
+
+  it("marks a friend's deck name on the element that holds it", async () => {
+    friends.list = [{ publicId: "p1", displayName: named("Rowan"), commanderArt: null, deckCount: 1 }];
+    decksRead.list = [{ deckId: "d1", name: named("Thopter Factory"), commanderOracleId: "o1", partnerOracleId: null, commanderName: "Sai, Master Thopterist", commanderImageUri: null }];
+    const anchor = document.createElement("button");
+    document.body.appendChild(anchor);
+    render(<SeatPicker anchor={anchor} onClose={() => {}} onPick={() => {}} seated={new Set()} openAt={{ publicId: "p1", name: named("Rowan") }} />);
+    const deck = await screen.findByText("Thopter Factory", { selector: ".ph-no-capture" });
+    expect(deck.closest("button")).not.toBeNull();
+    decksRead.list = [];
     anchor.remove();
   });
 });

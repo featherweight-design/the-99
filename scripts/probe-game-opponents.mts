@@ -108,7 +108,7 @@ async function main() {
     // The offers.
     const offered = await listFriendDecks(V, f.publicId);
     check("a friend's decks are offered, by name and commander", offered.length === 2
-      && offered.some((d) => d.deckId === fay1 && d.name === "Fay's first" && d.commanderOracleId === C2), JSON.stringify(offered));
+      && offered.some((d) => d.deckId === fay1 && JSON.stringify(d.name) === '{"$tp":"Fay\'s first"}' && d.commanderOracleId === C2), JSON.stringify(offered));
     check("and carry no owner id", !JSON.stringify(offered).includes(F));
     check("a stranger's decks are not", (await listFriendDecks(V, s.publicId)).length === 0);
     const v = await friends.ensureProfile(V, "Vic");

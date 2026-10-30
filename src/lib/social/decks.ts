@@ -28,6 +28,8 @@ import { db } from "../../db";
 import { collectionItems, decks, printings } from "../../db/schema";
 import { getDeckDetail, listDecksWithStats, type DeckListItem } from "../decks/read";
 import { cardTypeGroup, type DeckDetailCard } from "../decks/grouping";
+import { named } from "../person-name/mint";
+import type { ThirdPartyName } from "../person-name";
 import { resolveFriend } from "./access";
 import { friendCanSeeDeck, loadFriendDeckPrefs, unfinishedPill } from "./deck-visibility";
 import { socialFriendsEnabled } from "./flag";
@@ -38,7 +40,8 @@ import { sharedWith } from "../precons/shared";
 
 /** What both kinds of friend tile draw. */
 type FriendDeckBase = {
-  name: string;
+  /** The owner's deck name: another reader's text. */
+  name: ThirdPartyName;
   commanderName: string;
   /** The second commander of a pair, or null. */
   partnerName: string | null;
@@ -91,7 +94,7 @@ export async function loadFriendDecks(viewerId: string, publicId: unknown, viewe
   for (const b of buys) toBuy.set(b.deckId, (toBuy.get(b.deckId) ?? 0) + b.quantity);
   return rows.map((d): FriendDeck => {
     const base: FriendDeckBase = {
-      name: d.name,
+      name: named(d.name),
       commanderName: d.commanderName,
       partnerName: d.partnerName,
       // The pair's whole identity, as the owner's tile and the deck page draw it.
@@ -138,7 +141,7 @@ export type FriendDeckCard = Pick<
 
 export type FriendDeckPage = {
   id: string;
-  name: string;
+  name: ThirdPartyName;
   /** The commander first, then the second of a pair, each with the viewer's `owned`. */
   commanders: FriendDeckCard[];
   /** The list, commanders excluded, in the owner's order. */
@@ -226,7 +229,7 @@ export async function loadFriendDeck(viewerId: string, publicId: unknown, deckId
   }));
   return {
     id: detail.id,
-    name: detail.name,
+    name: named(detail.name),
     commanders,
     cards: detail.cards.map((c) => ({ ...friendCard(c, owned), ...printed(c) })),
     colorIdentity: deckIdentity(detail.commander.colorIdentity, detail.partner?.colorIdentity ?? null),
