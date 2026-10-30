@@ -424,6 +424,24 @@ describe("a page's surface portalled to the body", () => {
     act(() => local(<PortalApp open />));
     expect(portalled().hasAttribute("inert")).toBe(false);
   });
+
+  it("catches one that mounts while the screen is already up, and frees it at commit", async () => {
+    cleanup();
+    state.path = "/";
+    state.pending.clear();
+    const { rerender: local } = render(<PortalApp open={false} />);
+    state.pending.set("/commanders", true);
+    act(() => local(<PortalApp open={false} />));
+    act(() => vi.advanceTimersByTime(OVERLAY_AFTER_MS));
+    expect(main().inert).toBe(true);
+    // Mounted under the screen (a toast whose action resolves there): the observer's records arrive as a microtask.
+    await act(async () => local(<PortalApp open />));
+    expect(portalled().hasAttribute("inert")).toBe(true);
+    state.path = "/commanders";
+    state.pending.set("/commanders", false);
+    act(() => local(<PortalApp open />));
+    expect(portalled().hasAttribute("inert")).toBe(false);
+  });
 });
 
 describe("the URL mirrors write only on the router's committed page", () => {
