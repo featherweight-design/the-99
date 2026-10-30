@@ -1,12 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { normalizeName, type SynopsisFacts } from "./facts";
+import type { SynopsisFacts } from "./facts";
 import { SYNOPSIS_CONTRACT_VERSION_STAGES } from "./limits";
 import { stagesSchemaFor, landKeepNumber, type StagesReply } from "./stages";
 import { applyStagesShape, repairNote, settleStages, stagesPromptOption, stagesRepairTargets } from "./stages-run";
 import { stubReply } from "./stub";
 import { validateSynopsisV8 } from "./validate-v8";
-import { marksIn } from "./validate";
 
 // Contract 13's pure rules (`stages-run.ts`): each is shown holding on a reply built to pass, then
 // broken one way and shown failing, so a rule that always answers clean cannot hide here.
@@ -149,16 +148,18 @@ describe("the explained-once pass on what is stored", () => {
     expect(status(settled, "keyCards")).toEqual(status(c, "keyCards"));
   });
 
-  it("drops the evidence of a card whose mark the pass removed from a tip or a Key card job", () => {
-    const r = reply();
-    const c = applyStagesShape(checked(r), r, FACTS);
-    const settled = settleStages(c, FACTS);
-    const idsMarked = (text: string) => new Set(marksIn(text).map((m) => settled.cards[normalizeName(m)]?.oracleId));
-    (settled.primer?.tips ?? []).forEach((t, i) => {
-      const was = c.primer?.tips[i];
-      const dropped = marksIn(was?.text ?? "").map((m) => c.cards[normalizeName(m)]?.oracleId).filter((id) => id && !idsMarked(t.text).has(id));
-      for (const id of dropped) expect(settled.evidence?.tips[i]).not.toContain(id);
+  it("drops the mark, the listed card and the evidence of a tip card a stage already explains", () => {
+    const r = reply((x) => {
+      x.primer.tips[0] = { text: "[[Satyr Wayfinder]] and [[Eternal Witness]] both refill the hand.", evidence: ["c2", "c5"] };
     });
+    const c = applyStagesShape(checked(r), r, FACTS);
+    expect(c.primer?.tips[0].cards).toContain("Satyr Wayfinder");
+    expect(c.evidence?.tips[0]).toContain("s");
+    const settled = settleStages(c, FACTS);
+    expect(settled.primer?.tips[0].text).not.toContain("[[Satyr Wayfinder]]");
+    expect(settled.primer?.tips[0].cards).not.toContain("Satyr Wayfinder");
+    expect(settled.evidence?.tips[0]).not.toContain("s");
+    expect(settled.evidence?.tips[0]).toContain("e");
   });
 
   it("is idempotent, so a section retry can run it over sections it kept", () => {
