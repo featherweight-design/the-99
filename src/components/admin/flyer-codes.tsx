@@ -22,7 +22,7 @@ function Row({ row }: { row: FlyerRowView }) {
       className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-[10px] gap-y-[6px] border-0 border-t border-solid border-[color:var(--border)] px-[14px] py-[12px] text-[13.5px] text-[color:var(--fg-body)] first:border-t-0 md:grid-cols-[minmax(0,1.5fr)_92px_minmax(0,1.3fr)_minmax(0,1fr)_84px_130px] md:gap-[14px] md:py-0 md:pl-[16px] md:pr-[10px] md:min-h-[56px]"
     >
       <span className={`truncate font-mono text-[15px] ${off ? "text-[color:var(--fg-muted)]" : "text-[color:var(--fg)]"}`}>{row.store}</span>
-      <span>
+      <span className="justify-self-end md:justify-self-start">
         <span
           className={`inline-flex h-[24px] items-center rounded-[6px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] px-[8px] font-mono text-[12px] tracking-[0.06em] ${off ? "text-[color:var(--fg-muted)]" : "text-[color:var(--fg)]"}`}
         >
@@ -46,14 +46,14 @@ function Row({ row }: { row: FlyerRowView }) {
       </span>
       {/* The phone's made line is a revoked row's date instead; from `md` the Made column keeps the day it was made and
           a revoked row's note takes its actions' place. */}
-      <span className={`col-span-2 md:col-span-1 ${MONO_FAINT}`}>
+      <span className={`col-span-2 leading-[14px] md:col-span-1 md:leading-normal ${MONO_FAINT}`}>
         <span className="md:hidden">{off ? row.revoked : row.made}</span>
         <span className="hidden md:inline">{row.made}</span>
       </span>
       {off ? (
         <span className={`hidden justify-end md:flex ${MONO_FAINT}`}>{row.revoked}</span>
       ) : (
-        <span className="col-span-2 -mb-[8px] -ml-[6px] flex justify-start gap-[8px] md:col-span-1 md:m-0 md:justify-end">
+        <span className="col-span-2 -mt-[4px] -mb-[8px] -ml-[6px] flex justify-start gap-[8px] md:col-span-1 md:m-0 md:justify-end">
           <Link href={`/admin/invites/flyers/${row.code}`} prefetch={false} className={TEXT_BUTTON}>
             {copy.print}
           </Link>
