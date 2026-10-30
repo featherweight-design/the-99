@@ -104,6 +104,9 @@ export function GamePlan({
   const { has, onFail } = useArtFailures(art);
   const labels = synopsisCopy.modal.plan.stages;
   const alternate = content.alternate;
+  const backup = content.backup;
+  const backupLead = backup ? markedCards(backup, content.cards, 1)[0] : undefined;
+  const backupImage = !!backupLead && has(backupLead.oracleId);
   return (
     <div className="flex flex-col gap-[9px]">
       <div data-testid="synopsis-plan" className="relative flex flex-col gap-[12px] md:grid md:grid-cols-3 md:gap-[16px]">
@@ -120,7 +123,7 @@ export function GamePlan({
                 {image ? <CardImage oracleId={lead.oracleId} name={lead.name} art={art} onFail={onFail} className="h-[72px] w-[52px] md:h-[100px] md:w-[72px]" /> : null}
                 <div className="min-w-0">
                   <div className="md:absolute md:left-[18px] md:right-[-14px] md:top-[-24px] md:flex md:items-center md:gap-[8px]">
-                    <span className="mb-[5px] block font-mono text-[10px] font-medium uppercase leading-[13px] tracking-[0.14em] text-[var(--fg-body)] md:mb-0">{labels[i]}</span>
+                    <span className="mb-[5px] block font-mono text-[10px] font-medium uppercase leading-[13px] tracking-[0.14em] text-[var(--fg-body)] md:relative md:z-[1] md:mb-0 md:bg-[var(--surface-raised)] md:pr-[8px]">{labels[i]}</span>
                     {last ? null : <span aria-hidden className="hidden h-px min-w-0 flex-1 bg-[var(--fg-faint)] opacity-[0.55] md:block" />}
                   </div>
                   <p className="m-0 text-[13px] leading-[1.55] text-[var(--fg-body)] [text-wrap:pretty]">{text(line)}{basedOn(i, line)}</p>
@@ -130,6 +133,18 @@ export function GamePlan({
           );
         })}
       </div>
+      {backup ? (
+        <div data-testid="synopsis-backup" className="relative pl-[22px]">
+          <i aria-hidden className="absolute left-0 top-[4px] block h-[10px] w-[10px] rotate-45 border border-[var(--fg-faint)] bg-[var(--surface-raised)] shadow-[0_0_0_4px_var(--surface-raised)]" />
+          <div className={`rounded-[10px] border border-[var(--border)] bg-[var(--surface-sunken)] px-[12px] py-[11px] md:p-[12px] ${backupImage ? "grid grid-cols-[52px_minmax(0,1fr)] gap-[12px]" : ""}`}>
+            {backupImage ? <CardImage oracleId={backupLead.oracleId} name={backupLead.name} art={art} onFail={onFail} className="h-[72px] w-[52px]" /> : null}
+            <div className="min-w-0">
+              <span className="relative z-[1] mb-[5px] block font-mono text-[10px] font-medium uppercase leading-[13px] tracking-[0.14em] text-[var(--fg-body)]">{synopsisCopy.modal.plan.backup}</span>
+              <p className="m-0 text-[13px] leading-[1.55] text-[var(--fg-body)] [text-wrap:pretty]">{text(backup)}</p>
+            </div>
+          </div>
+        </div>
+      ) : null}
       {alternate ? (
         <div data-testid="synopsis-alternate" className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-[12px] rounded-[10px] border border-dashed border-[var(--border-dashed)] px-[14px] py-[12px]">
           <span aria-hidden className="flex h-[34px] w-[34px] items-center justify-center rounded-full border border-[var(--border-strong)] bg-[var(--surface-sunken)] text-[var(--accent-text)]">

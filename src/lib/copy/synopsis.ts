@@ -125,7 +125,7 @@ export const synopsisCopy = {
      * must equal `STAGE_LABELS` (pinned in `synopsis-body.test.tsx`); the model never writes them.
      * `landsUnder` is the word under the land figure.
      */
-    plan: { title: "Game plan", stages: ["Early", "Mid", "Close"], alternate: "Alternate commander", landsUnder: "lands" },
+    plan: { title: "Game plan", stages: ["Early", "Mid", "Close"], backup: "Backup", alternate: "Alternate commander", landsUnder: "lands" },
     keep: "Keep",
     sendBack: "Send back",
     /** The label of the line under a claim that lists the cards it is about (Overview accuracy,

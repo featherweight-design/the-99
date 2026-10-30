@@ -702,7 +702,7 @@ describe("iteration 3: Key cards skip what a stage explained", () => {
 });
 
 describe("iteration 3: the shape", () => {
-  const shape3 = (f: (r: StagesReply) => void = () => {}) => { const r = goodReply(); r.landKeep = { text: "Keep 2 lands: the curve is low.", evidence: [] }; f(r); return r; };
+  const shape3 = (f: (r: StagesReply) => void = () => {}) => { const r = goodReply(); r.landKeep = { text: "Keep 2 lands: the curve is low.", evidence: [] }; r.tipKinds = r.primer.tips.map(() => "plan" as const); f(r); return r; };
   it("drops Wins by from the doc and carries the land line", () => {
     const d = docFromStagesReply(shape3(), 3);
     expect(d.winsBy).toEqual([]);
@@ -763,7 +763,8 @@ describe("iteration 3: the prompt", () => {
   it("drops Wins by, asks for the land line at the deck's number, deck-card mulligan lines, and Key cards the stages leave out", () => {
     const { system, user } = buildSynopsisPrompt(FACTS, undefined, opts());
     expect(system).not.toContain("Wins by");
-    expect(system).toContain("The plans are never shown to the reader");
+    expect(system).toContain('"primary" is never shown to the reader');
+    expect(system).toContain("The FIRST entry of \"backups\" IS shown, under Close, as the Backup line");
     expect(system).toContain("- landKeep: ONE { text, evidence }, at most 120 characters");
     expect(system).toContain("holds 4 lands (write the number as the digit 4, never a range)");
     expect(system).toContain("EVERY line names a card of this decklist as [[Name]]");
@@ -771,7 +772,7 @@ describe("iteration 3: the prompt", () => {
     expect(system).toContain("EXACTLY 2 tips");
     expect(system).toContain("A tip names NO card that a stage line, a Key card (the card or its job) or the alternate line names");
     expect(system).toContain("the stage lines first, then the Key cards from the cards the stages leave out, then the tips");
-    expect(system).toContain("named in ONE place only: the Close line, never also");
+    expect(system).toContain("named in ONE place only: the Close line when it is the primary win, the Backup line");
     expect(system).toContain("- alternate: leave it out.");
     expect(user).toContain("Keep-line land number");
     expect(user).toContain("- Lands in a keepable seven: 4");
@@ -793,7 +794,7 @@ describe("iteration 3: the prompt", () => {
     expect(system).not.toContain("names the commander, and leaves");
     // The explained-once rule no longer lists the overview; the teaser and the mulligan lines are outside it.
     expect(system).toContain("EACH CARD IS EXPLAINED ONCE. The three stage lines, the alternate line, the tips and the Key cards");
-    expect(system).toContain("The overview (the teaser) and the mulligan lines are outside this rule");
+    expect(system).toContain("The overview (the teaser), the Backup line and the mulligan lines are outside this rule");
     // Shape 2 still carries the old overview rule, untouched.
     const two = buildSynopsisPrompt(FACTS, undefined, { v2: true, contract8: true, stages: { alternates: [] } }).system;
     expect(two).toContain("it names the commander, and leaves the other cards to the stages, tips and Key cards");
@@ -833,7 +834,8 @@ describe("iteration 3: the prompt", () => {
     expect(system).toContain("Write each weakness line as: what hurts, so the kind of answer or tax that helps.");
     expect(system).toContain("Moderate: Much damage comes through combat, so Propaganda style taxes or fogs slow the deck.");
     expect(system).toContain("Each line is a concrete step of THIS deck's plan: it names a card, says what that card does and why it matters to the plan");
-    expect(system).not.toContain("Backup");
+    expect(system).toContain("THE FIRST TIP MUST BE A PLAN-LEVEL TIP");
+    expect(system).toContain("a 3-mana rock cannot pay for a 4-drop on turn 3");
     expect(system).toContain("Rank the tips by plan impact: prefer a tip that changes how the deck plays (a plan-level line where two cards together do something) over a minor trick.");
     expect(system).toContain("If nothing better is left among the cards the other sections skip, a trick is fine.");
   });
@@ -1049,7 +1051,7 @@ describe("iteration 3: the explained-once post-pass and the no-card-twice check"
 });
 
 describe("iteration 3: the alternate line is required by the schema when the box carries one", () => {
-  const reply = () => ({ ...goodReply(), landKeep: { text: "Keep 3 lands: the curve is low.", evidence: [] } });
+  const reply = () => { const r = goodReply(); return { ...r, landKeep: { text: "Keep 3 lands: the curve is low.", evidence: [] }, tipKinds: r.primer.tips.map(() => "plan" as const) }; };
   it("rejects a reply with no alternate line for a precon with an alternate, as CounterIntelligence_EOC's was", () => {
     expect(stagesSchemaFor(3, ["Grave Titan"]).safeParse(reply()).success).toBe(false);
     expect(stagesSchemaFor(3, ["Grave Titan"]).safeParse({ ...reply(), alternate: { text: "Lead with [[Grave Titan]].", evidence: ["c4"] } }).success).toBe(true);
