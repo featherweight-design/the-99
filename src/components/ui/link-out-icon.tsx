@@ -2,7 +2,7 @@
  * The app's one link-out mark (announcements R1b-3, Hugh: the arrow glyph was too large, and the
  * box-and-arrow is standard): an open box with an arrow leaving its corner, on a 24 grid with round caps and joins at stroke 2.4,
  * so it holds at 11px. A 0.72em square on the baseline, 0.3em after the word, in the colour of the text it follows
- * (`currentColor`, so a call site's colour class is the glyph's colour was). Decorative: a press that opens a new tab
+ * (`currentColor`, so it inherits the call site's text color). Decorative: a press that opens a new tab
  * says so in words (`NEW_TAB_SUFFIX` or its own label), never through the icon.
  *
  * `data-link-out` is the stable marker tests and probes find it by.
