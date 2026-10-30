@@ -134,6 +134,10 @@ export type StoredEvidence = {
   tips: string[][];
   keyCards: string[][];
   weaknesses: string[][];
+  /** Contract 13 only: the oracle ids the land line cites. Present only with `landKeep`. */
+  landKeep?: string[];
+  /** Contract 13 only, and never written for a player's deck: the alternate line's. */
+  alternate?: string[];
 };
 
 export type CheckedSynopsis = {
@@ -148,6 +152,23 @@ export type CheckedSynopsis = {
   assessment?: StoredAssessment[];
   /** Contract 8 only. */
   evidence?: StoredEvidence;
+  /**
+   * Contract 13 (the stages shape, `stages-run.ts`): the model's land line, stating the deck's own
+   * keep number with a reason. Absent when the line failed its check, and on every older row.
+   *
+   * GRACEFUL DEGRADE, on purpose: a contract-13 row is also a valid contract-8 row. `primer.strategy`
+   * holds the three stage lines in order (Early, Mid, Close; the labels come from `STAGE_LABELS` by
+   * position and are never stored), `primer.tips` holds exactly two, and `lands` still holds the
+   * fixed range. A renderer that knows nothing of contract 13 draws the stages as numbered steps and
+   * the fixed land range, which is acceptable; one that does draws the labels and this line in the
+   * range's place. No Wins by line is stored.
+   */
+  /** Contract 13 only: whether the interaction figures quoted were the benchmarks' reading (true) or the
+   *  classifier's fallback (false). The contract no longer tells the two apart, so a section retry compares it. */
+  interactionShared?: boolean;
+  landKeep?: string;
+  /** Contract 13: the alternate-commander line. A precon's alone; absent for a player's deck. */
+  alternate?: string;
   /** Every resolved mark, keyed by `normalizeName` of the name as written (case, curly quotes and
    *  spacing folded), to the card it opens. A renderer looks a mark up through `normalizeName`. */
   cards: Record<string, { oracleId: string; name: string }>;

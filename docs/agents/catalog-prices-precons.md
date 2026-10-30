@@ -137,6 +137,15 @@ Collector's Edition twin resolves to its plain edition through `twin_of`). No FK
   that already has a synopsis, or whose list moved, gets none. The first edit makes it stale through today's rules.
   `importDeckOwned` is the pasted-list import, not a precon start, and carries nothing.
 
+## Overview contract 13: the stages shape (lane e7, PR 1a-1)
+
+A PLAYER deck's Overview is written at contract 13 (`SYNOPSIS_CONTRACT_VERSION_STAGES`, `synopsisPlayerContractVersion`) whenever `OVERVIEW_V2_ENABLED` is on, whatever the benchmarks switch says (the interaction reading is its own axis; 11 and 12 differed only by it). No new switch. Precons, their carry-over and every precon reader still use `synopsisContractVersion` (12) until the precon PR moves them, so a carried-over Overview stays a contract-12 row. Contract 12 and older rows draw and behave exactly as before; every `>= 11` comparison (`methodNoticeOf`, the rewrite-eligibility check in `startRun`) treats 13 as the current method, and the two lists of "current method" contracts (`freeRunsFor`, `V2_CONTRACTS` in `fits-read-load.ts`) name it.
+
+- **Shape**: `primer.strategy` is exactly three stage lines (Early, Mid, Close; the labels come from `STAGE_LABELS` by position and are never stored), `primer.tips` exactly two, no Wins by, and a land line `landKeep` stating the deck's own keep number (`landKeepNumber`) with a reason. `alternate` is absent for a player deck. All optional fields on `CheckedSynopsis` and `StoredEvidence`; content is jsonb, so no migration. A row is also a valid contract-8 row, so the shipped renderer draws the stages as numbered steps and the fixed land range from `lands` until the renderer PR draws the labels and `landKeep`.
+- **Generation**: `buildSynopsisPrompt` with `stages: { alternates: [], shape: 3, landKeep }` (`stagesPromptOption`), the model call constrained to `stagesSchemaFor(3, [])`, same model, effort and ceiling as contract 11 and 12 (the extra field is about 60 tokens against 16,000).
+- **Checks** (`stages-run.ts`, the header comment is the list): the contract-8 validator, then `applyStagesShape` (the Primer must hold 3 stages and 2 tips, else `wrong_count`; the land line is stored only if `checkLandKeep` passes and its refs and marks resolve), then `stagesRepairTargets` (`i3RepairTargets`) adds sections to the ONE repair, and `settleStages` applies the explained-once post-pass to what is stored, refusing Key cards left under their minimum. Every other `stagesChecks` check is advisory, as in the eval harness (`scripts/eval/overview-stages.mts`, which is the reference for any change here).
+- **Stub**: `SYNOPSIS_STUB` modes work at contract 13 (`stubReply(..., v2, stages)`).
+
 ## From AGENTS.md (moved 2026-10-28)
 
 The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbatim. Where they and the text above differ in wording, both are current.

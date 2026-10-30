@@ -8,7 +8,7 @@ export const SYNOPSIS_MODEL_V7 = "claude-sonnet-5";
 export const SYNOPSIS_EFFORT_V7 = "low" as const;
 
 /**
- * The model the v2 contracts (11 and 12) are written by (lane brief, "Model"). A named constant and nothing more:
+ * The model the v2 contracts (11, 12 and 13) are written by (lane brief, "Model"). A named constant and nothing more:
  * the eval harness (sub-project 10) may change it before launch, so no code branches on its value.
  * Every run stores the model it used, so a change is visible in the outcomes it produces.
  */

@@ -111,14 +111,16 @@ describe("the contract a write stamps on its run", () => {
 
   it.each([
     [false, 9],
-    [true, 12],
+    [true, 13],
   ])("v2=%s stamps %i", async (v2, contract) => {
     expect(await stampedContract({ v2 })).toBe(contract);
   });
 
-  it("stamps 7 or 11, never 9 or 12, when the label read fails and the figures fall back", async () => {
+  // A player deck's write is contract 13 whenever the v2 method is on (the stages shape); without it
+  // a failed label read falls back to 7, never 9.
+  it("stamps 7, never 9, when the label read fails and the figures fall back without the v2 method", async () => {
     expect(await stampedContract({ v2: false, labelsFail: true })).toBe(7);
-    expect(await stampedContract({ v2: true, labelsFail: true })).toBe(11);
+    expect(await stampedContract({ v2: true, labelsFail: true })).toBe(13);
   });
 });
 

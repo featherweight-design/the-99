@@ -218,12 +218,13 @@ function stagesFactRules(shape: 2 | 3 = 2): string {
 }
 
 /**
- * THE STAGES VARIANT (eval tooling only; lane a6, `scripts/eval/overview-stages.mts`). Contract 8's
+ * THE STAGES VARIANT (lane a6, `scripts/eval/overview-stages.mts`; production since contract 13, lane
+ * e7: `generate.ts` passes shape 3 for a player's deck, `stages-run.ts`). Contract 8's
  * sections with the Core strategy replaced by three stage lines (Early, Mid, Close, labeled by the
  * app from their position), `plans.primary` rendered as the "Wins by" line, an optional alternate
  * commander line, exactly 2 tips, and one rule against repetition. The reply schema is contract 8's
- * plus `alternate` (`stagesResponseSchemaWire`, `stages.ts`). NOT wired into the app: nothing but
- * the eval harness passes `stages`, so every shipped prompt is byte for byte what it was.
+ * plus `alternate` (`stagesResponseSchemaWire`, `stages.ts`). Only a contract-13 write
+ * and the eval harness pass `stages`, so every contract-12 and older prompt is byte for byte what it was.
  */
 export type StagesOption = {
   /** The alternate commanders the facts carry (a precon box's foil alternates); empty for a player's deck. */
