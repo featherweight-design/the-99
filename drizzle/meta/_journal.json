@@ -1415,6 +1415,13 @@
       "when": 1793344279952,
       "tag": "0201_retire_signature_card_rule_zero_spare_requests_switches",
       "breakpoints": true
+    },
+    {
+      "idx": 202,
+      "version": "7",
+      "when": 1793346672427,
+      "tag": "0202_retire_social_games_invites_wishlist_switches",
+      "breakpoints": true
     }
   ]
 }
