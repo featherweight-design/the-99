@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useId, useState, type ReactNode } from "react";
 
 import type { ApplySetActionResult } from "../../app/decks/tuning-v2-actions";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
@@ -833,13 +833,15 @@ function YouAsked({ ask }: { ask: V2Ask }) {
 /** Why these cards (Why-These A to C, `.owhy`): the You asked box's look, its lead, or the held line while the run
  *  streams (`lead` null). */
 function WhyBox({ lead }: { lead: string | null }) {
+  const titleId = useId();
   return (
-    <div
+    <section
+      aria-labelledby={titleId}
       data-sc-why={lead === null ? "held" : ""}
       className="flex flex-col gap-[8px] rounded-[10px] px-[14px] py-[12px]"
       style={{ background: "var(--surface-rail)", border: "1px solid var(--border)" }}
     >
-      <p className="m-0 font-mono text-[10px] font-medium uppercase tracking-[0.14em]" style={{ color: "var(--fg-faint)" }}>
+      <p id={titleId} className="m-0 font-mono text-[10px] font-medium uppercase tracking-[0.14em]" style={{ color: "var(--fg-faint)" }}>
         {sc.whyBox.title}
       </p>
       {lead === null ? (
@@ -847,7 +849,7 @@ function WhyBox({ lead }: { lead: string | null }) {
       ) : (
         <p className="m-0 text-[13.5px] leading-[1.55]" style={{ color: "var(--fg)", textWrap: "pretty" }}>{lead}</p>
       )}
-    </div>
+    </section>
   );
 }
 
