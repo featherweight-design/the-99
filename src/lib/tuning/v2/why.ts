@@ -22,8 +22,7 @@ import type { V2Line } from "./engine";
  * The lead and every phrase are player-visible model text, so they pass `presentationFailures` as a rationale does (no
  * game result, no bracket, no misquote; a cut's phrase may say "stronger", as a cut's rationale may), and US spelling
  * (`britishSpelling`) with no em-dash: a failed lead drops the why, a failed phrase its group. A phrase that writes a count of its own
- * ("five are answers", "3 of the cuts") is dropped too; a number inside what the cards DO ("answers at one or two mana")
- * is the phrase's meaning and stays.
+ * ("five are answers", "3 of the cuts") is dropped too, and so is any other number, as digits or a word.
  */
 
 /** The smallest count asked for a why: 12+ changes (the handoff's N = 6). The one constant. */
@@ -63,11 +62,11 @@ const SYSTEM = [
   `- lead: one sentence of at most 15 words and ${WHY_LEAD_MAX - 30} characters, on what the whole set does for the deck, and for the player's request when there is one.`,
   `- add: up to ${WHY_GROUPS_MAX} groups of the cards coming in that share one job. Each group has a phrase, its cards and like.`,
   "- cut: the same, for the cards going out.",
-  "A phrase follows a number the app writes, so it starts with a plural verb: \"are answers at one or two mana\", \"keep cards coming\", \"fix the mana\". At most 50 characters.",
+  "A phrase follows a number the app writes, so it starts with a plural verb: \"are cheap answers\", \"keep cards coming\", \"fix the mana\". At most 50 characters.",
   "cards: every card in the group, at least two, each written exactly as it is listed. A card goes in one group at most; leave out a card that fits no group.",
   "like: one card from the group, the clearest example.",
   "Rules:",
-  "- Never write a count or a number of cards; the app writes it.",
+  "- Never write a number, as digits or as a word; the app writes the counts.",
   "- Never promise a game result: not that a change will win or lose games. A cut's phrase may say the deck is stronger or more focused without those cards.",
   "- Never name a bracket. Never quote the player.",
   "- Name only cards in the lists below.",
@@ -126,18 +125,12 @@ export function britishSpelling(text: string): boolean {
 const COUNT = `\\d+|${words.counts.join("|")}`;
 /** A phrase that opens on a count, where the app's word goes. */
 const OPENS_ON_COUNT = new RegExp(`^(?:${COUNT})\\b`, "i");
-/** What a number may measure: what the cards DO ("at one or two mana", "three colors", "two turns"), never how many
- *  cards there are. A connector ("one or two", "two to four") counts only when the number it leads to is measured. */
-const MEASURE = "mana|colors?|life|damage|turns?|players?|opponents?|counters?|power|toughness";
-const MEASURED = new RegExp(`\\b(?:${COUNT})(?:\\s+(?:or|to)\\s+(?:${COUNT}))?[\\s-]+(?:${MEASURE})\\b`, "gi");
-/** Power and toughness, or a counter, written as numbers ("1/1 tokens", "+1/+1 counters"). */
-const STATS = /[+-]?\d+\/[+-]?\d+/g;
-const ANY_COUNT = new RegExp(`\\b(?:${COUNT})\\b`, "i");
-/** Whether the text writes a number that counts something other than what the cards do. An allowlist, because the
- *  ways to count cards are open ("Seven fix the mana", "six lands", "Cut six to lower the curve"), and a count the app
- *  did not write is checked against nothing. */
+const COUNT_WORD = new RegExp(`\\b(?:${words.counts.join("|")})\\b`, "i");
+/** Whether the text writes any number, as digits or a word. None at all: every attempt to allow the numbers that say what
+ *  the cards do ("one or two mana") also let a count of cards through ("two mana rocks", "1/3 of your cards"), and a count
+ *  the app did not write is checked against nothing (#2452, rounds 1 to 4 and the Claude review). */
 function writesCount(text: string): boolean {
-  return ANY_COUNT.test(text.replace(STATS, " ").replace(MEASURED, " "));
+  return /\d/.test(text) || COUNT_WORD.test(text);
 }
 
 /** Text the player will read, or null when it fails: empty, British spelling, an em-dash (the copy rule), or a

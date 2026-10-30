@@ -12,7 +12,7 @@ const cuts = ["Lure", "Fog", "Mithril Coat"].map((c) => row(c, "cut"));
 const reply = (over: object = {}) => ({
   lead: "Cheaper answers and steadier draw, for less of the slow stuff.",
   add: [
-    { phrase: "are answers at one or two mana", cards: ["Swords to Plowshares", "Path to Exile"], like: "Path to Exile" },
+    { phrase: "are cheap answers", cards: ["Swords to Plowshares", "Path to Exile"], like: "Path to Exile" },
     { phrase: "keep cards coming", cards: ["Rhystic Study", "Phyrexian Arena"] },
   ],
   cut: [{ phrase: "do nothing on their own", cards: ["Lure", "Fog", "Mithril Coat"], like: "Fog" }],
@@ -45,7 +45,7 @@ describe("checkWhy", () => {
     expect(checkWhy(reply(), adds, cuts)).toEqual({
       lead: "Cheaper answers and steadier draw, for less of the slow stuff.",
       add: [
-        { text: "Two are answers at one or two mana, like " }, { card: "Path to Exile", oracleId: "id-Path to Exile" },
+        { text: "Two are cheap answers, like " }, { card: "Path to Exile", oracleId: "id-Path to Exile" },
         { text: "; two keep cards coming, like " }, { card: "Rhystic Study", oracleId: "id-Rhystic Study" }, { text: "." },
       ],
       cut: [{ text: "Three do nothing on their own, like " }, { card: "Fog", oracleId: "id-Fog" }, { text: "." }],
@@ -94,7 +94,7 @@ describe("checkPhrase", () => {
     expect(checkPhrase("fix your colours", [])).toBeNull();
     expect(checkPhrase("are answers \u2014 cheap ones", [])).toBeNull();
     expect(checkPhrase("will win more games", [])).toBeNull();
-    expect(checkPhrase("are answers at one or two mana.", [])).toBe("are answers at one or two mana");
+    expect(checkPhrase("are cheap answers.", [])).toBe("are cheap answers");
   });
 });
 
@@ -105,28 +105,15 @@ describe("britishSpelling", () => {
   });
 });
 
-describe("checkWhy's counts (PR #2452 round 1)", () => {
-  it("drops the why when the lead counts cards, and keeps a lead whose numbers are what the cards do", () => {
-    expect(checkWhy(reply({ lead: "Seven additions fix the mana." }), adds, cuts)).toBeNull();
-    expect(checkWhy(reply({ lead: "Swap 3 cards for faster answers." }), adds, cuts)).toBeNull();
-    expect(checkWhy(reply({ lead: "Answers at one or two mana, in three colors." }), adds, cuts)?.lead)
-      .toBe("Answers at one or two mana, in three colors.");
-  });
-
-  it("drops any count that is not what the cards do, in the lead and in a phrase (round 3)", () => {
-    expect(checkWhy(reply({ lead: "Seven fix the mana." }), adds, cuts)).toBeNull();
-    expect(checkWhy(reply({ lead: "Six lands improve the mana." }), adds, cuts)).toBeNull();
-    expect(checkPhrase("are three additions for mana fixing", [])).toBeNull();
-    expect(checkPhrase("are two-mana answers", [])).toBe("are two-mana answers");
-    expect(checkPhrase("come down two turns earlier", [])).toBe("come down two turns earlier");
-  });
-
-  it("keeps power and toughness, and a connector only when its number is measured (round 4)", () => {
-    expect(checkPhrase("make 1/1 tokens", [])).toBe("make 1/1 tokens");
-    expect(checkPhrase("add +1/+1 counters", [])).toBe("add +1/+1 counters");
-    expect(checkPhrase("are six or more mana sources", [])).toBeNull();
-    expect(checkWhy(reply({ lead: "Cut six to lower the curve." }), adds, cuts)).toBeNull();
-    expect(checkPhrase("cost two to four mana", [])).toBe("cost two to four mana");
+describe("checkWhy's counts (PR #2452)", () => {
+  it("drops a lead or a phrase that writes any number, as digits or a word", () => {
+    for (const lead of ["Seven additions fix the mana.", "Swap 3 cards for faster answers.", "Seven fix the mana.", "Answers at one or two mana."]) {
+      expect(checkWhy(reply({ lead }), adds, cuts)).toBeNull();
+    }
+    for (const phrase of ["are three additions", "are two mana rocks", "make 1/1 tokens", "take 1/3 of your cards", "come down 1st"]) {
+      expect(checkPhrase(phrase, [])).toBeNull();
+    }
+    expect(checkWhy(reply({ lead: "Cheaper answers and steadier draw." }), adds, cuts)?.lead).toBe("Cheaper answers and steadier draw.");
   });
 
   it("writes a group of up to thirty kept rows, the most a side keeps at N = 20", () => {
