@@ -5,6 +5,7 @@ import { deckCards, deckSuggestionItems, deckSuggestionRuns, decks, deckVersions
 import { lockDecksInOrder, pullClaimants, pullInTx, type PulledDraftRow } from "../../decks/pull";
 import { readPullReleaseCopies, undoPullRelease } from "../../decks/pull-release";
 import { touchDeck } from "../../decks/touch";
+import { newestVersion } from "../../decks/versions";
 import { isUuid } from "../../uuid";
 import { readProfileHead } from "../../profile/load";
 import { applySwap, planSwap, restoreSwap } from "../../swaps/draft-swap";
@@ -221,7 +222,7 @@ export async function applyPicks(args: {
           throw new Refused({ kind: "pull", itemId: p.itemId, message: pulled.message });
         }
         await tx.update(deckSuggestionItems)
-          .set({ undoSnapshot: { ...snapshot, pull: { sourceDeckId: p.sourceDeckId, draft: pulled.draft } } })
+          .set({ undoSnapshot: { ...snapshot, pull: { sourceDeckId: p.sourceDeckId, draft: pulled.draft, versionId: pulled.versionId } } })
           .where(eq(deckSuggestionItems.id, line.id));
         pulledFrom.push(p.sourceDeckId);
       }
@@ -304,15 +305,17 @@ export async function undoSet(args: { applySet: string; userId: string; env: Nod
  * source's row lock, which the caller holds.
  *
  * - The source deck is gone: the copy went with it, so there is nothing to give back.
- * - Its release is gone (the source's commit or discard cleared it): a discard put the card back in that draft, so the
- *   pull is undone already; a commit made the removal that deck's version, and putting the card back would edit a list
- *   the player committed, so it refuses. A pull that only wrote a release (the draft had cut the card already) has
- *   nothing left to give back either way.
+ * - Its release is gone (the source's commit or discard cleared it). Which one is told by the source's newest version,
+ *   never by its draft row: a row can survive a commit (a pull that took 2 to 1 commits at 1). A newer version than
+ *   the one the pull saw is a commit, which made the removal that deck's list, so putting the card back would edit a
+ *   list the player committed: it refuses. The same version with the card back in the draft is a discard, so the pull
+ *   is undone already. A pull that only wrote a release (the draft had cut the card already) has nothing left to give
+ *   back either way.
  * - Otherwise the draft row must be as the pull left it (one copy fewer, or gone at one); an edit since refuses, as
  *   `restoreSwap` does.
  */
 async function undoPull(tx: Tx, p: {
-  userId: string; askingDeckId: string; oracleId: string; sourceDeckId: string; draft: PulledDraftRow;
+  userId: string; askingDeckId: string; oracleId: string; sourceDeckId: string; draft: PulledDraftRow; versionId?: string;
 }): Promise<{ ok: true } | { ok: false; deckName: string }> {
   const [source] = await tx.select({ name: decks.name }).from(decks)
     .where(and(eq(decks.id, p.sourceDeckId), eq(decks.userId, p.userId)));
@@ -321,7 +324,12 @@ async function undoPull(tx: Tx, p: {
   const copies = await readPullReleaseCopies(tx, key);
   const rowOf = and(eq(deckCards.deckId, p.sourceDeckId), eq(deckCards.oracleId, p.oracleId));
   const [row] = await tx.select({ quantity: deckCards.quantity, auto: deckCards.auto }).from(deckCards).where(rowOf).for("update");
-  if (copies === 0) return p.draft === null || row ? { ok: true } : { ok: false, deckName: source.name };
+  if (copies === 0) {
+    if (p.draft === null) return { ok: true };
+    const version = await newestVersion(p.sourceDeckId, tx);
+    const discarded = p.versionId !== undefined && version?.id === p.versionId && row !== undefined;
+    return discarded ? { ok: true } : { ok: false, deckName: source.name };
+  }
   if (p.draft === null) {
     await undoPullRelease(tx, key);
     return { ok: true };

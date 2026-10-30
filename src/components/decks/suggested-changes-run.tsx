@@ -123,6 +123,8 @@ export function SuggestedChangesRun({
   const [busy, setBusy] = useState<"apply" | "undo" | null>(null);
   // A key per refused Apply, so a second refusal arrives as a newer alert with its own eight seconds (small items 3, item 8).
   const [failed, setFailed] = useState<number | null>(null);
+  // The toast's detail line: a refused pull's own reason (`pullInTx`'s words), else the shipped retry line.
+  const [failedDetail, setFailedDetail] = useState<string>(sc.applyFailed.detail);
   const [undoError, setUndoError] = useState<string | null>(null);
   const [undone, setUndone] = useState<number | null>(null);
   const [lastSet, setLastSet] = useState<string | null>(null);
@@ -233,6 +235,19 @@ export function SuggestedChangesRun({
     setConfirming(false);
     if (!r.ok) {
       setBusy(null);
+      const refusal = r.refusal;
+      if (refusal?.kind === "pull") {
+        // A refused pull names why (a commander, a lock, another deck's claim), and that pull is unstaged: kept, it would
+        // refuse every retry. Apply again adds the card without pulling it; the player can stage another deck.
+        setFailedDetail(refusal.message || sc.applyFailed.detail);
+        setStaged((m) => {
+          const next = new Map(m);
+          next.delete(refusal.itemId);
+          return next;
+        });
+      } else {
+        setFailedDetail(sc.applyFailed.detail);
+      }
       setFailed((n) => (n ?? 0) + 1);
       onAnnounce(sc.applyFailed.title);
       return;
@@ -681,7 +696,7 @@ export function SuggestedChangesRun({
           })}
         />
       ) : null}
-      {failed !== null ? <DeckRefusalToast key={failed} title={sc.applyFailed.title} detail={sc.applyFailed.detail} onDone={() => setFailed(null)} /> : null}
+      {failed !== null ? <DeckRefusalToast key={failed} title={sc.applyFailed.title} detail={failedDetail} onDone={() => setFailed(null)} /> : null}
     </div>
   );
 }

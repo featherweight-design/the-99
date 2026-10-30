@@ -29,7 +29,9 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 export type PulledDraftRow = { quantity: number; auto: boolean } | null;
 
 export type PullInTxResult =
-  | { ok: true; draft: PulledDraftRow }
+  /** `versionId`: the source's newest version when the pull was made. Its commit since (a newer one) is how an undo tells
+   *  a commit, which made the removal that deck's list, from a discard, which put the card back. */
+  | { ok: true; draft: PulledDraftRow; versionId: string }
   /** `covered`: the asking deck already has the copies it needs (a copy came free since the page was drawn), so there is
    *  nothing to take out of anybody's box. A caller pulling as part of a larger write may treat it as done. */
   | { ok: false; message: string; covered?: boolean };
@@ -250,5 +252,5 @@ export async function pullInTx(tx: Tx, args: {
   }
   // The copy leaves the source's committed claim, which is what frees it for the asking deck.
   await writePullRelease(tx, { userId, sourceDeckId, oracleId, askingDeckId });
-  return { ok: true, draft: row ? { quantity: row.quantity, auto: row.auto === true } : null };
+  return { ok: true, draft: row ? { quantity: row.quantity, auto: row.auto === true } : null, versionId: version.id };
 }

@@ -216,6 +216,34 @@ describe("the results", () => {
     );
   });
 
+  it("says a refused pull's own reason in the toast and unstages it, so Apply again sends the set without it", async () => {
+    const GISHATH = { id: "d-gishath", name: "HD - Gishath", quantity: 1, mature: true, pending: false, commander: false, senior: true };
+    const held = { owned: 1, hard: 1, soft: 0, free: -1, claims: [GISHATH] } as unknown as NonNullable<LineItem["availability"]>;
+    const otherDecks = ask(3, { restrictions: { capCents: null, sets: [], ownedOnly: true, otherDecks: true } });
+    const t = setup({
+      ask: otherDecks,
+      lines: [...adds(5, (i) => ({ picked: i === 0, availability: i === 0 ? held : null })), ...cuts(5, (i) => ({ picked: i === 0 }))],
+    });
+    const reason = "That card is that deck’s commander.";
+    t.actions.apply.mockResolvedValueOnce({
+      ok: false, message: deckTuningCopy.lists.applyRefused, refusal: { kind: "pull", itemId: "a0", message: reason },
+    });
+    await press(apply());
+    await press(within(screen.getByRole("dialog")).getByRole("button", { name: deckVersioningCopy.review.pullA11y("Card a0", GISHATH.name) }));
+    await press(within(screen.getByRole("dialog")).getByRole("button", { name: sc.confirm.apply(2) }));
+    const alert = screen.getByRole("alert");
+    expect(alert.textContent).toContain(sc.applyFailed.title);
+    expect(alert.textContent).toContain(reason);
+    expect(alert.textContent).not.toContain(sc.applyFailed.detail);
+
+    // The retry: the row offers Pull it again, and the set goes without the refused pull.
+    await press(apply());
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.textContent).not.toContain(sc.confirm.pullsFrom(GISHATH.name));
+    await press(within(dialog).getByRole("button", { name: sc.confirm.apply(2) }));
+    expect(t.actions.apply).toHaveBeenLastCalledWith(RUN, ["a0"], ["c0"], expect.stringMatching(/^[0-9a-f-]{36}$/));
+  });
+
   it("takes a staged pull back with Undo, and then sends none", async () => {
     const GISHATH = { id: "d-gishath", name: "HD - Gishath", quantity: 1, mature: true, pending: false, commander: false, senior: true };
     const held = { owned: 1, hard: 1, soft: 0, free: -1, claims: [GISHATH] } as unknown as NonNullable<LineItem["availability"]>;

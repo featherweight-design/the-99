@@ -84,6 +84,9 @@ vi.mock("../../swaps/draft-swap", () => ({
   applySwap: vi.fn(async (_tx: unknown, _deck: string, cut: string | null, add: string | null) => { fx.events.push(`swap:${add ?? cut}`); }),
   restoreSwap: vi.fn(async (_tx: unknown, _deck: string, cut: string | null, add: string | null) => { fx.events.push(`restore:${add ?? cut}`); return true; }),
 }));
+// The source's newest version: the same id the pull saw means no commit since; a newer one means it committed.
+const versions = vi.hoisted(() => ({ newest: "v1" }));
+vi.mock("../../decks/versions", () => ({ newestVersion: vi.fn(async () => ({ id: versions.newest })) }));
 vi.mock("../../decks/touch", () => ({ touchDeck: vi.fn(async (_tx: unknown, id: string) => { fx.events.push(`touch:${id}`); }) }));
 vi.mock("../../profile/load", () => ({ readProfileHead: vi.fn(async () => ({})) }));
 vi.mock("./run", () => ({ deckTotal: () => 99, V2_DECK_TOTAL: 99 }));
@@ -109,9 +112,10 @@ beforeEach(() => {
   fx.sourceRow = null;
   release.copies = 1;
   release.undone = 0;
+  versions.newest = "v1";
   pull.pullInTx.mockImplementation(async (_tx: unknown, a: { oracleId: string }) => {
     fx.events.push(`pull:${a.oracleId}`);
-    return { ok: true, draft: { quantity: 1, auto: false } };
+    return { ok: true, draft: { quantity: 1, auto: false }, versionId: "v1" };
   });
 });
 
@@ -170,7 +174,7 @@ describe("applyPicks with staged pulls", () => {
     await apply([{ itemId: "a1", sourceDeckId: SOURCE }]);
     const recorded = fx.updates.find((u) => (u.undoSnapshot as ApplySnapshot | undefined)?.pull);
     expect(recorded).toEqual({
-      undoSnapshot: { cut: null, add: { quantity: 0, auto: false }, pull: { sourceDeckId: SOURCE, draft: { quantity: 1, auto: false } } },
+      undoSnapshot: { cut: null, add: { quantity: 0, auto: false }, pull: { sourceDeckId: SOURCE, draft: { quantity: 1, auto: false }, versionId: "v1" } },
     });
   });
 
@@ -196,7 +200,7 @@ describe("applyPicks with staged pulls", () => {
 
 describe("undoSet with a pull", () => {
   const applied = (draft: { quantity: number; auto: boolean } | null): Line[] => [
-    { ...open("a1", "add"), verdict: "accepted", applySet: SET, undoSnapshot: { cut: null, add: { quantity: 0, auto: false }, pull: { sourceDeckId: SOURCE, draft } } },
+    { ...open("a1", "add"), verdict: "accepted", applySet: SET, undoSnapshot: { cut: null, add: { quantity: 0, auto: false }, pull: { sourceDeckId: SOURCE, draft, versionId: "v1" } } },
     { ...open("c1", "cut"), verdict: "accepted", applySet: SET, undoSnapshot: { cut: { quantity: 1, auto: false, proxied: false }, add: null } },
   ];
   const undo = () => undoSet({ applySet: SET, userId: "me", env: ENV });
@@ -216,10 +220,25 @@ describe("undoSet with a pull", () => {
   it("refuses the whole undo, naming the deck, when the source committed since (its release is gone, the card with it)", async () => {
     fx.lines = applied({ quantity: 1, auto: false });
     release.copies = 0;
+    versions.newest = "v2";
     const r = await undo();
     expect(r).toEqual({ ok: false, refusal: { kind: "pullMoved", itemId: "a1", deckName: "HD - Gishath" } });
     expect(fx.events.some((e) => e.startsWith("restore:"))).toBe(false);
     expect(fx.inserts).toEqual([]);
+  });
+
+  // The pull took the source's row from 2 to 1 and the source then COMMITTED: its release is gone and the row survives
+  // at 1. A surviving row is not a discard; the newer version says the removal is that deck's list now.
+  it("refuses, naming the deck, when the source committed with the pulled row still in it", async () => {
+    fx.lines = applied({ quantity: 2, auto: false });
+    release.copies = 0;
+    fx.sourceRow = { quantity: 1, auto: false };
+    versions.newest = "v2";
+    const r = await undo();
+    expect(r).toEqual({ ok: false, refusal: { kind: "pullMoved", itemId: "a1", deckName: "HD - Gishath" } });
+    expect(fx.inserts).toEqual([]);
+    expect(release.undone).toBe(0);
+    expect(fx.events.some((e) => e.startsWith("restore:"))).toBe(false);
   });
 
   it("refuses when the source's row was edited since the pull", async () => {
@@ -231,10 +250,10 @@ describe("undoSet with a pull", () => {
     expect(release.undone).toBe(0);
   });
 
-  it("takes a discarded source as already undone: the card is back in its draft, and nothing more is written there", async () => {
-    fx.lines = applied({ quantity: 1, auto: false });
+  it("takes a discarded source as already undone: no commit since, the card is back in its draft, nothing more written", async () => {
+    fx.lines = applied({ quantity: 2, auto: false });
     release.copies = 0;
-    fx.sourceRow = { quantity: 1, auto: false };
+    fx.sourceRow = { quantity: 2, auto: false };
     const r = await undo();
     expect(r).toMatchObject({ ok: true });
     expect(fx.inserts).toEqual([]);
