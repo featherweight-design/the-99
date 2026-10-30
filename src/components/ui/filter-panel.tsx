@@ -1063,7 +1063,7 @@ export function FilterPanel({
         // chassis switches at 1000, so a `md:`-drawn trigger took its desktop
         // size across 768-999 while sitting in the compact frame — losing the
         // 44px target the compact form promises, beside controls that kept it.
-        className={triggerLook === "field" ? [
+        className={(triggerLook === "field" ? [
           "flex h-[40px] w-full items-center justify-between gap-[8px] whitespace-nowrap rounded-[9px] px-[10px] font-sans text-[13px] border border-solid",
           disabled
             ? "cursor-not-allowed bg-[color:var(--surface-raised)] text-[color:var(--fg-locked)] border-[color:var(--border)]"
@@ -1091,7 +1091,7 @@ export function FilterPanel({
               : selectionOrnament && selected.length > 0
                 ? "cursor-pointer text-[color:var(--fg)] bg-[color:var(--elevated)] border-[color:var(--accent)] md:hover:bg-[color:var(--border-strong)] transition-colors"
                 : "cursor-pointer text-[color:var(--fg)] bg-[color:var(--elevated)] border-[color:var(--border-strong)] md:hover:bg-[color:var(--border-strong)] md:hover:border-[color:var(--border-dashed)] transition-colors",
-        ].join(" ") + (oneOption && isThirdPartyName(oneOption.label) ? ` ${NO_CAPTURE}` : "")}
+        ].join(" ")) + (oneOption && isThirdPartyName(oneOption.label) ? ` ${NO_CAPTURE}` : "")}
       >
         {copy.triggerCount ? (
           // The label and a hidden sizer share one grid cell, so the trigger is as wide as its

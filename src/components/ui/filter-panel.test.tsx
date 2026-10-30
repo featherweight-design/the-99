@@ -1237,4 +1237,24 @@ describe("FilterPanel third-party names", () => {
     expect(row.classList.contains("ph-no-capture")).toBe(true);
     unmount();
   });
+
+  it("masks the field-look trigger too, which holds the friend's name in its accessible name", () => {
+    setViewport(true);
+    const { unmount } = render(
+      <FilterPanel
+        copy={collectionFilterCopy.set}
+        options={[
+          { code: "f1", label: named("Ada Lovelace"), count: 3, disabled: false },
+          { code: "f2", label: named("Grace Hopper"), count: 2, disabled: false },
+        ]}
+        selected={["f1"]}
+        triggerLook="field"
+        onToggle={vi.fn()}
+        onClear={vi.fn()}
+      />,
+    );
+    const trigger = screen.getByRole("button", { name: /Ada Lovelace/ });
+    expect(trigger.classList.contains("ph-no-capture")).toBe(true);
+    unmount();
+  });
 });
