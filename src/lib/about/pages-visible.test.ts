@@ -132,6 +132,36 @@ describe("Suggested changes v2 follows its own switch, and its parents'", () => 
   });
 });
 
+describe("Suggested changes v2's About errata (Small items 6, item 3)", () => {
+  const PARENTS = { ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true" };
+  const analysis = (e: Record<string, string>) => visibleSections(env(e)).find((s) => s.id === "analysis")!;
+  const creditRows = (e: Record<string, string>) =>
+    analysis(e).rules.find((r) => r.key === "rule/credits")!.diagram!.columns
+      .flatMap((c) => c.parts)
+      .flatMap((p) => (p.part === "row" ? [p.name] : []));
+
+  it("draws the pick card first in Good to know only with v2 on", () => {
+    expect(analysis(PARENTS).rules.map((r) => r.key)).not.toContain("rule/pick");
+    const on = analysis({ ...PARENTS, SUGGESTED_CHANGES_V2_ENABLED: "true" });
+    expect(on.rules[0].key).toBe("rule/pick");
+  });
+
+  it("swaps the credits card's empty-handed row for the two v2 rows with v2 on", () => {
+    expect(creditRows(PARENTS)).toEqual(["Read the bracket", "Suggested changes run", "Came back empty-handed"]);
+    expect(creditRows({ ...PARENTS, SUGGESTED_CHANGES_V2_ENABLED: "true" }))
+      .toEqual(["Read the bracket", "Suggested changes run", "Came back short or empty", "Short by your price cap"]);
+  });
+
+  it("keeps the shipped row when v2 is on but its parents are not", () => {
+    expect(creditRows({ ANALYSIS_TAB_ENABLED: "true", SUGGESTED_CHANGES_V2_ENABLED: "true" })).toContain("Came back empty-handed");
+  });
+
+  it("announces the pick card as new when v2 turns on, to a reader who has seen everything else", () => {
+    const pick = analysis({ ...PARENTS, SUGGESTED_CHANGES_V2_ENABLED: "true" }).rules[0];
+    expect(unitSeen(pick, { version: 999, ids: [] })).toBe(false);
+  });
+});
+
 describe("Show me", () => {
   /** A switch with every parent it needs, and nothing else on. */
   const withNeeds = (name: string): Record<string, string> => {

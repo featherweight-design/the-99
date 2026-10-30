@@ -3,7 +3,7 @@ import { aboutEntries } from "../copy/about-entries";
 import { showcaseCopy, writtenForYouCopy } from "../copy/discovery";
 import { creditsEntryOf, resolveEntry, visibleEntries } from "../about/visible";
 import type { SwitchName } from "../switches/registry";
-import { showcaseGroups, tryHref, writtenForYou, type ShowcaseInput } from "./showcase";
+import { showcaseGroups, toolCopyFor, tryHref, writtenForYou, type ShowcaseInput } from "./showcase";
 import { TOOLS } from "./tools";
 
 const ALL_ENTRIES = new Set(TOOLS.map((t) => t.entry));
@@ -23,6 +23,23 @@ function input(over: Partial<ShowcaseInput> = {}): ShowcaseInput {
 
 const card = (groups: ReturnType<typeof showcaseGroups>, id: string) =>
   groups.flatMap((g) => g.cards).find((c) => c.id === id);
+
+// Small items 6, item 3 (About-Errata board, call c): the Try it line follows Suggested changes v2's switch.
+describe("toolCopyFor", () => {
+  const V2_LINE = "Say what to change. Pick from more cards to add and to cut than you need.";
+  it("draws Suggested changes v2's line with v2 on and the shipped line with it off", () => {
+    const on = (n: SwitchName) => n === "SUGGESTED_CHANGES_V2_ENABLED";
+    expect(toolCopyFor("suggested-changes", on).line).toBe(V2_LINE);
+    expect(toolCopyFor("suggested-changes", () => false).line).toBe(showcaseCopy.tools["suggested-changes"].line);
+    expect(card(showcaseGroups(input()), "suggested-changes")!.copy.line).toBe(V2_LINE);
+    const off = card(showcaseGroups(input({ isOn: (n) => n !== "SUGGESTED_CHANGES_V2_ENABLED" })), "suggested-changes")!;
+    expect(off.copy.line).toBe("Up to five swaps, read from your games, your notes and the list.");
+  });
+
+  it("leaves a tool with no switched line as it is", () => {
+    expect(toolCopyFor("mana-balance", () => true)).toBe(showcaseCopy.tools["mana-balance"]);
+  });
+});
 
 describe("showcaseGroups", () => {
   it("draws all fourteen tools in C2's five groups, in order, with every switch on", () => {

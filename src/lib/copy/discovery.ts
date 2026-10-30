@@ -3,6 +3,7 @@
 // copy from `discovery-r2 · copy strings.ts` after /copy-review. Each PR of the line adds the strings it ships.
 
 import type { AboutScreen, DeckView } from './about';
+import type { SwitchName } from '../switches/registry';
 
 /** Each screen's name as the Reference and the "?" print it (README-r2, "Screens: every entry's `screen`"). */
 export const SCREEN_NAMES: Record<AboutScreen, string> = {
@@ -54,6 +55,9 @@ export const aboutShapeCopy = {
 export type ToolCopy = {
   name: string;
   line: string;
+  /** The line's form while a switch is on for the reader, in place of `line` (Small items 6, item 3, call c). Resolved
+   *  per reader by `toolCardOf`, as a label's sentences are; the first switch on wins. */
+  lineWhen?: Partial<Record<SwitchName, string>>;
   /** Where Try it goes for a tool that opens no deck, drawn as the card's footer (an arrow ring follows it). */
   press?: string;
   /** What the tool needs when no deck fits it. */
@@ -80,7 +84,14 @@ export const showcaseCopy = {
     precons: { name: 'Precons', line: 'Any Commander precon, with how many of its cards you already own.', press: 'Browse precons' },
     'top-off': { name: 'Top off', line: 'Ranks your own cards for a deck’s open slots. Nothing is added until you say so.', none: 'Needs a deck with open slots. All of yours are full.' },
     'proposed-cuts': { name: 'Proposed cuts', line: 'Counts where a deck runs long. A deeper look names the cuts.', none: 'Needs a deck that runs long. None of yours does.' },
-    'suggested-changes': { name: 'Suggested changes', line: 'Up to five swaps, read from your games, your notes and the list.', none: NEEDS_A_FULL_DECK },
+    'suggested-changes': {
+      name: 'Suggested changes',
+      line: 'Up to five swaps, read from your games, your notes and the list.',
+      // Suggested changes v2's Try it line, verbatim from its handoff (`suggested-changes-v2 · copy strings.ts`,
+      // about.tryIt), as the About-Errata board draws it.
+      lineWhen: { SUGGESTED_CHANGES_V2_ENABLED: 'Say what to change. Pick from more cards to add and to cut than you need.' },
+      none: NEEDS_A_FULL_DECK,
+    },
     'mana-balance': { name: 'Mana Balance', line: 'Counts every source of each color against what your spells ask for.', none: NEEDS_A_FULL_DECK },
     'stand-ins': { name: 'Cheaper stand-ins', line: 'For a card over your price limit: cards that do the same job for less.', none: 'Needs a card over a deck’s price limit. None of yours has one.' },
     'friend-spares': { name: 'Friends’ spares', line: 'A friend’s spare copy of a card your deck still needs, before you buy one.', none: 'Needs a friend with a spare of a card you’re missing. No one has one right now.', door: 'Open Friends →' },

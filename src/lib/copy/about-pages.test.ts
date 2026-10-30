@@ -142,6 +142,7 @@ describe("about pages copy model", () => {
       autofill: "split",
       lock: "card-row",
       targets: "role-cell",
+      pick: "card-row",
       intent: "bracket-medal",
       credits: "card-row",
       commit: "card-row",
@@ -162,6 +163,40 @@ describe("about pages copy model", () => {
     const short = diagramParts("one-copy").filter((p) => p.part === "row" && p.tag?.tone === "short");
     expect(ABOUT_RULES["one-copy"].text).toContain("two of them show it short");
     expect(short.map((p) => (p.part === "row" ? p.name : ""))).toEqual(["Sai", "Zimone"]);
+  });
+
+  // Small items 6, item 3 (About-Errata board, calls a and b).
+  it("draws v2's pick card as the board does: one 250 column, three offered a side, two picked and one left", () => {
+    const pick = ABOUT_RULES.pick;
+    expect(pick.switch).toBe("SUGGESTED_CHANGES_V2_ENABLED");
+    expect(pick.text).toContain("Ask for two and you get three to add and three to cut; pick two of each.");
+    expect(pick.diagram.columns).toHaveLength(1);
+    expect(pick.diagram.columns[0].w).toBe(250);
+    expect(diagramStrings("pick")).toEqual([
+      "Ghalta · add 2 of 3",
+      "Beast Within", "picked", "Heroic Intervention", "picked", "Return of the Wildspeaker", "pick",
+      "cut 2 of 3",
+      "Rampant Growth", "picked", "Kodama’s Reach", "picked", "Elvish Mystic", "pick",
+      "↓", "apply 4 changes · stays at 99",
+    ]);
+    const rows = diagramParts("pick").filter((p) => p.part === "row");
+    for (const r of rows) {
+      if (r.part !== "row") continue;
+      expect(r.compact, r.name).toBe(true);
+      // Picked rows carry the changed-row edge; the one left is dashed. Never both.
+      expect(Boolean(r.edge), r.name).toBe(r.tag?.text === "picked");
+      expect(Boolean(r.dim), r.name).toBe(r.tag?.text === "pick");
+    }
+    const analysis = ABOUT_SECTIONS.find((s) => s.id === "analysis")!;
+    expect(analysis.rules[0]).toBe("pick");
+  });
+
+  it("keeps the shipped empty-handed row with v2 off and draws the two dashed v2 rows with it on", () => {
+    const rows = diagramParts("credits").flatMap((p) => (p.part === "row" ? [p] : []));
+    const byName = Object.fromEntries(rows.map((r) => [r.name, r]));
+    expect(byName["Came back empty-handed"].switch).toBe("!SUGGESTED_CHANGES_V2_ENABLED");
+    expect(byName["Came back short or empty"]).toMatchObject({ switch: "SUGGESTED_CHANGES_V2_ENABLED", dim: true, tag: { text: "credit back", tone: "success" } });
+    expect(byName["Short by your price cap"]).toMatchObject({ switch: "SUGGESTED_CHANGES_V2_ENABLED", dim: true, tag: { text: "1 credit", tone: "accent" } });
   });
 
   it("puts every row in one column 250px wide or more, never beside another column (Small items 3, item 1)", () => {
