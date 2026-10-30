@@ -239,6 +239,35 @@ describe("QuickAddBar — the grid and card details", () => {
     expect(fireEvent.keyDown(field(), { key: "ArrowLeft" })).toBe(false);
   });
 
+  it("leaves a modified arrow to the field's own text editing (Copilot round 2)", async () => {
+    mountWithDetail();
+    await search();
+    for (const mod of ["shiftKey", "ctrlKey", "altKey", "metaKey"] as const) {
+      expect(fireEvent.keyDown(field(), { key: "ArrowRight", [mod]: true })).toBe(true);
+      expect(field()).toHaveAttribute("aria-activedescendant", addCell(rows()[0]).id);
+    }
+    key("ArrowRight");
+    expect(field()).toHaveAttribute("aria-activedescendant", nameCell(rows()[0]).id);
+    for (const mod of ["shiftKey", "ctrlKey", "altKey", "metaKey"] as const) {
+      expect(fireEvent.keyDown(field(), { key: "ArrowLeft", [mod]: true })).toBe(true);
+      expect(field()).toHaveAttribute("aria-activedescendant", nameCell(rows()[0]).id);
+    }
+  });
+
+  it("describes both cells with their row's card, so the active cell says which card it acts on (Copilot round 2)", async () => {
+    mountWithDetail();
+    await search();
+    for (const row of rows()) {
+      const label = row.getAttribute("aria-label")!;
+      expect(label.length).toBeGreaterThan(0);
+      expect(addCell(row)).toHaveAccessibleDescription(label);
+      expect(nameCell(row)).toHaveAccessibleDescription(label);
+    }
+    key("ArrowDown");
+    const active = document.getElementById(field().getAttribute("aria-activedescendant")!)!;
+    expect(active).toHaveAccessibleDescription(rows()[1].getAttribute("aria-label")!);
+  });
+
   it("swaps the hint with the active cell", async () => {
     const runs = () => Array.from(hint().children, (el) => el.textContent);
     mountWithDetail();

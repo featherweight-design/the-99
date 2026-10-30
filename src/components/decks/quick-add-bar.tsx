@@ -88,6 +88,11 @@ interface QuickAddBarProps {
   noteCounts: NoteCounts;
 }
 
+/** Shift, Ctrl, Alt or Meta held: the key belongs to the field's own text editing, never to the grid. */
+function modified(e: { shiftKey: boolean; ctrlKey: boolean; altKey: boolean; metaKey: boolean }): boolean {
+  return e.shiftKey || e.ctrlKey || e.altKey || e.metaKey;
+}
+
 export function QuickAddBar({
   deckId,
   commanderIdentity,
@@ -175,7 +180,7 @@ export function QuickAddBar({
   const identity = colorLabel(commanderIdentity);
   const unownedShown = results.filter((r) => !r.owned).length;
 
-  function cellId(i: number, cell: CardSearchColumn) {
+  function cellId(i: number, cell: CardSearchColumn | "row") {
     return `${listId}-${i}-${cell}`;
   }
 
@@ -200,11 +205,12 @@ export function QuickAddBar({
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       move(-1);
-    } else if (e.key === "ArrowRight" && open && column === "add" && detail) {
-      // Only while the list is open and the move is a real one; otherwise the caret moves in the text as usual.
+    } else if (e.key === "ArrowRight" && !modified(e) && open && column === "add" && detail) {
+      // Only while the list is open and the move is a real one; otherwise the caret moves in the text as usual. A
+      // modified arrow (Shift to select, Ctrl/Alt/Meta to jump by word or line) is always the field's own.
       e.preventDefault();
       setActiveColumn("name");
-    } else if (e.key === "ArrowLeft" && open && column === "name") {
+    } else if (e.key === "ArrowLeft" && !modified(e) && open && column === "name") {
       e.preventDefault();
       setActiveColumn("add");
     } else if (e.key === "Enter") {
@@ -369,6 +375,7 @@ export function QuickAddBar({
             {results.map((r, i) => (
               <QuickAddRow
                 key={r.oracleId}
+                rowId={cellId(i, "row")}
                 nameCellId={cellId(i, "name")}
                 addCellId={cellId(i, "add")}
                 activeColumn={i === activeIndex ? column : null}
@@ -459,6 +466,8 @@ export function QuickAddBar({
 }
 
 interface QuickAddRowProps {
+  /** The row's id: both cells take its label (the card and its figures) as their description. */
+  rowId: string;
   nameCellId: string;
   addCellId: string;
   /** The keyboard's cell on this row, or null when another row is active. */
@@ -484,6 +493,7 @@ interface QuickAddRowProps {
 }
 
 function QuickAddRow({
+  rowId,
   nameCellId,
   addCellId,
   activeColumn,
@@ -581,39 +591,41 @@ function QuickAddRow({
     if (registerAdd) registerAdd(() => handleAdd());
   }, [registerAdd, handleAdd]);
 
+  // The label has to carry everything the row draws, or a screen reader
+  // hears less than the screen shows: the owned figure and the in-deck
+  // state both change whether the row is worth acting on. Composed from the
+  // shipped strings rather than a new one.
+  const summary = [
+    addPanelCopy.quickAdd.rowAria(
+      result.name,
+      result.typeLine,
+      result.owned,
+      // `selfClaimed`, not `applied`: `applied` also covers a row the player
+      // has just added in this session, whose availability figures were read
+      // before the add and are not self-excluded for it.
+      result.availability
+        ? markerAria(result.availability, { selfExcluded: selfClaimed })
+        : null,
+    ),
+    result.flavorName
+      ? `${addPanelCopy.quickAdd.rowFlavorNamePrefix}${result.flavorName}`
+      : null,
+    result.owned ? addPanelCopy.quickAdd.rowOwned(result.ownedQty) : null,
+    // The words the phone row replaces with a glyph, so the ear gets the whole sentence.
+    comboPartner ? comboClauseSpoken(comboPartner.name, "completes") : null,
+    applied ? addPanelCopy.quickAdd.rowInDeck : null,
+    // The marks, then the note that elaborates them — the top-off row's order, and the
+    // order they are drawn in. Both are drawn aria-hidden, so this is where they are heard.
+    marks.length > 0 ? marks.map(cardFactName).join(", ") : null,
+    cardNoteSpoken(note) || null,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
   return (
     <li
       role="row"
-      // The label has to carry everything the row draws, or a screen reader
-      // hears less than the screen shows: the owned figure and the in-deck
-      // state both change whether the row is worth acting on. Composed from the
-      // shipped strings rather than a new one.
-      aria-label={[
-        addPanelCopy.quickAdd.rowAria(
-          result.name,
-          result.typeLine,
-          result.owned,
-          // `selfClaimed`, not `applied`: `applied` also covers a row the player
-          // has just added in this session, whose availability figures were read
-          // before the add and are not self-excluded for it.
-          result.availability
-            ? markerAria(result.availability, { selfExcluded: selfClaimed })
-            : null,
-        ),
-        result.flavorName
-          ? `${addPanelCopy.quickAdd.rowFlavorNamePrefix}${result.flavorName}`
-          : null,
-        result.owned ? addPanelCopy.quickAdd.rowOwned(result.ownedQty) : null,
-        // The words the phone row replaces with a glyph, so the ear gets the whole sentence.
-        comboPartner ? comboClauseSpoken(comboPartner.name, "completes") : null,
-        applied ? addPanelCopy.quickAdd.rowInDeck : null,
-        // The marks, then the note that elaborates them — the top-off row's order, and the
-        // order they are drawn in. Both are drawn aria-hidden, so this is where they are heard.
-        marks.length > 0 ? marks.map(cardFactName).join(", ") : null,
-        cardNoteSpoken(note) || null,
-      ]
-        .filter(Boolean)
-        .join(", ")}
+      aria-label={summary}
       onMouseEnter={onActivate}
       // Keeps focus in the field, so the next search can be typed straight after the add.
       onMouseDown={(e) => e.preventDefault()}
@@ -625,6 +637,10 @@ function QuickAddRow({
         border: `1px solid ${active ? "var(--accent)" : "var(--border)"}`,
       }}
     >
+      {/* Both cells' description: the active descendant is a cell, and its action alone would not say which card. */}
+      <span id={rowId} hidden>
+        {summary}
+      </span>
       <CardSearchRowBody
         result={result}
         query={query}
@@ -642,6 +658,9 @@ function QuickAddRow({
           <span
             id={nameCellId}
             role="gridcell"
+            // The active descendant is a cell, so each cell carries the row's card and figures as its description:
+            // ↑↓ land on a cell, and its action alone ("Add") would not say which card.
+            aria-describedby={rowId}
             aria-label={onOpenDetails ? cardDetailCopy.triggerAria(result.name) : result.name}
             {...(onOpenDetails ? intent : {})}
             onClick={
@@ -672,6 +691,7 @@ function QuickAddRow({
           <span
             id={addCellId}
             role="gridcell"
+            aria-describedby={rowId}
             aria-label={applied ? addPanelCopy.quickAdd.rowInDeck : addPanelCopy.quickAdd.rowAdd}
             // An in-deck row's Add is not actionable; its name still opens the card.
             aria-disabled={applied || undefined}
