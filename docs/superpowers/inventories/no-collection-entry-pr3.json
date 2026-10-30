@@ -1,6 +1,6 @@
 {
   "feature": "No-collection entry PR 3: Precons I own, /decks/precons?pick=own, and Home's receipt strip (handoff design_handoff_the99_no_collection_entry, S2 to S7; plan 2026-10-15-no-collection-entry.md, PR 3)",
-  "note": "Needs PRECONS_ENABLED=true, COLLECTION_EDIT_ENABLED=true and NO_COLLECTION_ENTRY_ENABLED=true for the reader. The S2 and S3 rows tick boxes without pressing the add, so they write nothing. The S5 row presses the add, so each cell ADDS one precon box to the signed-in account's collection (one History entry): run it on local-dev or a scratch branch only, never staging or production. S4 (pending) is transient, and S6 and S7 (a refused or part-failed add) cannot be forced from a browser; the component tests prove all three.",
+  "note": "Needs nothing switched on for the reader (precons, collection editing and the no-collection entry are retired). The S2 and S3 rows tick boxes without pressing the add, so they write nothing. The S5 row presses the add, so each cell ADDS one precon box to the signed-in account's collection (one History entry): run it on local-dev or a scratch branch only, never staging or production. S4 (pending) is transient, and S6 and S7 (a refused or part-failed add) cannot be forced from a browser; the component tests prove all three.",
   "out": "contact-sheets/no-collection-entry-pr3",
   "rows": [
     {

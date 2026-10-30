@@ -37,8 +37,8 @@
 // Stats switch, Add a friend), the parameter stripped, the moment spent. Find a deck's landing is DEFERRED: the
 // parameter goes at once and the next card details opened halo `Find a deck for it` once, so the probe presses a card
 // open. A control the page does not draw even without `?tool=` (the eligibility preflight) is a SKIP, never a PASS.
-// With `PROBE_SWITCHES=off` (the server started with the page tools' switches off too: `HELP_ME_CHOOSE_ENABLED`,
-// `COLLECTION_EDIT_ENABLED`, which Collection Sync follows), every page landing
+// With `PROBE_SWITCHES=off` (the server started with the page tools' switches off too: `HELP_ME_CHOOSE_ENABLED`;
+// Collection Sync has none since collection editing retired), every page landing
 // must draw no halo and write nothing: the route is gone (its not-found page), or the parameter is stripped.
 //
 //   PROBE_BASE=http://localhost:3311 pnpm probe:tool-landing
@@ -301,9 +301,9 @@ async function pageDrawsWithoutLanding(page, tool) {
 
 async function walkPages(page, w, userId) {
   for (const tool of PAGE_TOOLS) {
-    // Precons, Lineup and the Wishlist have no switch any more: they land the same in both modes, so the off-mode walk
+    // Precons, Lineup, the Wishlist and Collection Sync have no switch any more: they land the same in both modes, so the off-mode walk
     // leaves them out.
-    if (SWITCHES_OFF && (tool.id === "precons" || tool.id === "lineup" || tool.id === "wishlist")) continue;
+    if (SWITCHES_OFF && (tool.id === "precons" || tool.id === "lineup" || tool.id === "wishlist" || tool.id === "collection-sync")) continue;
     await unspend(userId, tool.id);
     const label = `${w.name} page ${tool.id}`;
     const noteName = tool.name === null ? null : `${tool.name}, a tip`;

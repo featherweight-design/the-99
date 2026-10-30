@@ -2,9 +2,8 @@
 
 The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section's rules; this file keeps the history, measurements and derivations behind them.
 
-- **Collection Sync** (plan `2026-10-15-collection-sync.md`), on wherever Collection edit is. Its own
-  switch, `COLLECTION_SYNC_ENABLED`, is retired (2026-10-30) and Sync follows `COLLECTION_EDIT_ENABLED`; with collection
-  editing off, the upload actions refuse `mode: "sync"` as an unknown mode. A Sync merges an upload against a BASE, per holding key: file-only
+- **Collection Sync** (plan `2026-10-15-collection-sync.md`), always on. Its own switch, `COLLECTION_SYNC_ENABLED`,
+  is retired (2026-10-30), and so is its parent's, `COLLECTION_EDIT_ENABLED` (collection editing is always on). A Sync merges an upload against a BASE, per holding key: file-only
   changes are taken, app-only changes kept, and a conflict (both moved, to different counts) is answered app or file,
   per card or by a bulk rule that decides every conflict, shown or not; nothing is pre-picked, and a confirm with one
   undecided refuses (`planSync`, `src/lib/collection/sync.ts`, pure). **The base is the last FILE, never the
@@ -26,21 +25,21 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   `pnpm measure:sync` prints the buckets for one account inside a read-only, repeatable-read transaction, and is the
   acceptance check for Hugh's production account before the flip.
 
-- **A way in without a collection** (plan `2026-10-15-no-collection-entry.md`), on whenever `COLLECTION_EDIT_ENABLED` is (its own switch, `NO_COLLECTION_ENTRY_ENABLED`, is retired; staging `'true'` from PR 1, production unset until the line closes; off, every
-  route is as shipped). PR 1 is the write, dark: `importDeck` with `own: true` and a uuid `actionId` adds the list's
+- **A way in without a collection** (plan `2026-10-15-no-collection-entry.md`), always on (its own switch, `NO_COLLECTION_ENTRY_ENABLED`, is retired, and so is collection editing's,
+  `COLLECTION_EDIT_ENABLED`). PR 1 is the write, dark: `importDeck` with `own: true` and a uuid `actionId` adds the list's
   cards to the collection and writes the deck in ONE transaction (`importDeckOwned`, `src/lib/decks/import-own.ts`):
   the add first, the deck inside its `inside` hook, so a refusal leaves neither. The lines are `deckOwnLines`, pure:
   every body line and each commander at the printing the import kept, else the list's first named printing, else none;
   an unresolved line adds nothing, and nothing is reserved. The deck's id is minted first so the ledger entry (kind
   `add`) carries source `deck:<deck id>`: History lists it as `Deck add` titled `Added from <deck>` by the deck's
   current name, Revert takes it back like any add and leaves the deck, and a retry with the same `actionId` finds the
-  deck through that source (no `decks` column). Off, or with `own` unset, the import is exactly as shipped.
+  deck through that source (no `decks` column). With `own` unset, the import is exactly as shipped.
   `pnpm probe:deck-own` proves it on a scratch branch.
 
 - **Card scanning matches on the server** (plan `2026-10-16-card-scan.md`, Hugh's decisions relayed 2026-10-16),
-  on whenever `COLLECTION_EDIT_ENABLED` is (the `CARD_SCAN_ENABLED` switch is retired). The
+  always on (the `CARD_SCAN_ENABLED` switch is retired, and so is collection editing's, `COLLECTION_EDIT_ENABLED`). The
   phone runs the detector and the dhvazquez fp32 embedder and sends the 256-float fingerprint to
-  `POST /api/card-scan/match` (signed in, collection edit re-checked for the reader, 404 off, `private, no-store`, counted
+  `POST /api/card-scan/match` (signed in, `private, no-store`, counted
   in the observe-only `card-scan` rate bucket). `scan_index` holds one pgvector `halfvec(256)` row per printing face
   of the every-printing gallery under an HNSW cosine index, and `scan_index_meta` its version and model (a request
   naming another model is 409). Each guess is the nearest row of a card not already guessed (`lookupGuesses`, one
@@ -134,7 +133,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
 
 The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbatim. Where they and the text above differ in wording, both are current.
 
-- **Collection Sync** (its switch, `COLLECTION_SYNC_ENABLED`, is retired; it follows Collection edit, `COLLECTION_EDIT_ENABLED`). A Sync merges an upload against a BASE per holding key; conflicts are answered app or file, nothing pre-picked, and a confirm with an undecided conflict refuses (`planSync`, pure). The base is the last FILE (the newest confirmed upload that is an ANCHOR, `readSyncBase`), never the collection after it. It writes through `writeRows` as one `upload_sync` ledger entry; the confirm REQUIRES the preview's `planDigest` and refuses as `stale` when the plan under the lock differs. A Sync changing nothing writes nothing. Proofs: `pnpm probe:collection-sync`, `pnpm measure:sync`.
-- **A way in without a collection** (on with `COLLECTION_EDIT_ENABLED`). `importDeck` with `own: true` and a uuid `actionId` adds the list's cards to the collection and writes the deck in ONE transaction (`importDeckOwned`), so a refusal leaves neither; the ledger entry carries source `deck:<deck id>`. Off, or with `own` unset, the import is as shipped. Proof: `pnpm probe:deck-own`.
-- **Card scanning matches on the server** (on with `COLLECTION_EDIT_ENABLED`). `POST /api/card-scan/match` takes a 256-float fingerprint (signed in, collection edit re-checked, 404 off, `private, no-store`); `scan_index` holds one pgvector `halfvec(256)` row per printing face. `pnpm db:seed:scan-index <dir>` publishes in ONE transaction on a NAMED target (`SCAN_INDEX_TARGET_URL`, `SCAN_INDEX_TARGET_BRANCH`, checked by `neon.branch_id`), refuses a wrong model, a row off unit length or under 100,000 rows, and never goes through the Neon MCP. `pnpm db:copy:scan-index` copies staging's index onto a named target through the catalog copy variables, verified by count and md5 before commit.
+- **Collection Sync** (always on; its switch, `COLLECTION_SYNC_ENABLED`, and its parent's, `COLLECTION_EDIT_ENABLED`, are retired). A Sync merges an upload against a BASE per holding key; conflicts are answered app or file, nothing pre-picked, and a confirm with an undecided conflict refuses (`planSync`, pure). The base is the last FILE (the newest confirmed upload that is an ANCHOR, `readSyncBase`), never the collection after it. It writes through `writeRows` as one `upload_sync` ledger entry; the confirm REQUIRES the preview's `planDigest` and refuses as `stale` when the plan under the lock differs. A Sync changing nothing writes nothing. Proofs: `pnpm probe:collection-sync`, `pnpm measure:sync`.
+- **A way in without a collection** (always on; `COLLECTION_EDIT_ENABLED` retired). `importDeck` with `own: true` and a uuid `actionId` adds the list's cards to the collection and writes the deck in ONE transaction (`importDeckOwned`), so a refusal leaves neither; the ledger entry carries source `deck:<deck id>`. With `own` unset, the import is as shipped. Proof: `pnpm probe:deck-own`.
+- **Card scanning matches on the server** (always on; `COLLECTION_EDIT_ENABLED` retired). `POST /api/card-scan/match` takes a 256-float fingerprint (signed in, `private, no-store`); `scan_index` holds one pgvector `halfvec(256)` row per printing face. `pnpm db:seed:scan-index <dir>` publishes in ONE transaction on a NAMED target (`SCAN_INDEX_TARGET_URL`, `SCAN_INDEX_TARGET_BRANCH`, checked by `neon.branch_id`), refuses a wrong model, a row off unit length or under 100,000 rows, and never goes through the Neon MCP. `pnpm db:copy:scan-index` copies staging's index onto a named target through the catalog copy variables, verified by count and md5 before commit.
 - **The wishlist** (always on; `SOCIAL_WISHLIST_ENABLED` retired). `wishlist_items` holds a card-level want with `quantity` copies IN ALL; a card the collection holds that many of is COLLECTED and leaves the list, swept by `sweepCollectedIn` INSIDE the write that reached the want. A read never deletes. A friend's wishlist is read only through `src/lib/social/wishlist.ts`. Proof: `pnpm probe:wishlist`.

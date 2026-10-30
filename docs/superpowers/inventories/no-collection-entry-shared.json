@@ -1,6 +1,6 @@
 {
   "feature": "A way in without a collection: the ways group, one component on step 1 and the empty Collection (check:shared, plus the two side by side)",
-  "note": "check:shared only, plus a contact sheet of both surfaces. Needs an account with ZERO cards and no decks, and COLLECTION_EDIT_ENABLED=true, NO_COLLECTION_ENTRY_ENABLED=true and PRECONS_ENABLED=true for the reader. Nothing here writes, so it may run read-only against staging on such an account, or on a scratch branch made from local-dev.",
+  "note": "check:shared only, plus a contact sheet of both surfaces. Needs an account with ZERO cards and no decks, and nothing switched on for the reader (collection editing, the no-collection entry and precons are retired). Nothing here writes, so it may run read-only against staging on such an account, or on a scratch branch made from local-dev.",
   "shares": {
     "module": "src/components/collection/ways-group.tsx",
     "binding": "WaysGroup",
