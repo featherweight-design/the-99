@@ -261,7 +261,7 @@ describe("the stages shape (contract 13)", () => {
     const chips = screen.getAllByTestId("synopsis-severity");
     expect(chips.map((c) => c.textContent)).toEqual(["Critical", "Moderate", "Minor"]);
     expect(chips[0].className).toContain("--danger");
-    expect(chips[0].className).toContain("#E07A65");
+    expect(chips[0].className).toContain("--critical-fg");
     expect(screen.queryByText(/Critical:/)).toBeNull();
   });
 

@@ -248,8 +248,8 @@ export function KeyCardGrid({
 }
 
 const SEVERITY_CHIP: Record<SeverityWord, string> = {
-  // Critical: the short-availability red as ink (5.5:1 on the modal); --danger is too dark as 10px text, so it draws only the edge.
-  Critical: "border-[color-mix(in_oklab,var(--danger)_60%,transparent)] text-[#E07A65]",
+  // Critical: --critical-fg as ink (5.5:1 on the modal); --danger is too dark as 10px text, so it draws only the edge.
+  Critical: "border-[color-mix(in_oklab,var(--danger)_60%,transparent)] text-[var(--critical-fg)]",
   Moderate: "border-[color-mix(in_oklab,var(--warning)_45%,transparent)] text-[var(--warning)]",
   Minor: "border-[var(--border-strong)] text-[var(--fg-muted)]",
 };
