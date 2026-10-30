@@ -19,7 +19,7 @@ export default async function CommandersListLayout({ children }: { children: Rea
   if (!commandersPlaceEnabled(env)) return <>{children}</>;
   // No cards, no figures: the tabs under the strip draw their own empty state.
   const stats = await getCollectionStats(userId);
-  const counts = stats.uniqueCards === 0 ? null : await loadCommanderCounts(userId, env);
+  const counts = stats.uniqueCards === 0 ? null : await loadCommanderCounts(userId);
   return (
     <>
       <CommandersPlaceHead helpMeChoose={helpMeChooseEnabled(env)} counts={counts} />
