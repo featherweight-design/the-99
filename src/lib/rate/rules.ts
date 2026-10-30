@@ -51,6 +51,8 @@ export const RATE_RULES = {
    * eleventh in an hour is refused. An honest reader leaves one address, a household a few.
    */
   "launch-list": { limit: 10, windowMs: 3_600_000 },
+  /** A problem report (flyer trial PR 5), per player. Observe-only: an honest reader sends one or two; dozens an hour is a loop. */
+  feedback: { limit: 20, windowMs: 3_600_000 },
 } as const satisfies Record<string, RateRule>;
 
 export type RateBucket = keyof typeof RATE_RULES;
