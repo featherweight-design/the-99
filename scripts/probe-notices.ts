@@ -45,6 +45,9 @@ import { STUB_MODEL, stubReply } from "../src/lib/synopsis/stub";
 
 const STAGING_BRANCH = "br-polished-pond-a6e63y0b";
 const PRODUCTION_BRANCH = "br-noisy-violet-a6vw4ess";
+// Its player writes more than one overview inside one window, and the public default is one run a day (2026-10-30),
+// so this probe pins five for itself: read per call, so setting it here is enough.
+process.env.MODEL_DAILY_ALLOWANCE = "5";
 const USER = `probe-notices-${Date.now()}`;
 
 let failures = 0;

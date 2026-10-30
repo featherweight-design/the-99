@@ -10,7 +10,7 @@ import { modelCallParts } from "../../db/schema";
 import { costMicroUsd } from "./prices";
 import type { ModelFeature } from "./allowance-rule";
 import { FEATURE_CALLS, featureWorstCaseMicroUsd } from "./prices";
-import { ALLOWANCE_WINDOW_MS, MODEL_FRIEND_DAILY_ALLOWANCE, MODEL_OWNER_DAILY_ALLOWANCE, RESERVATION_TTL_MS } from "./allowance-rule";
+import { ALLOWANCE_WINDOW_MS, MODEL_DEFAULT_DAILY_ALLOWANCE, MODEL_OWNER_DAILY_ALLOWANCE, RESERVATION_TTL_MS } from "./allowance-rule";
 
 describe("ownerShareMicro", () => {
   const before = process.env.MODEL_OWNER_MONTHLY_USD;
@@ -43,16 +43,16 @@ describe("dailyLimitFor", () => {
     ({ execute: async () => ({ rows: allowances.map((allowance) => ({ user_id: "user_owner", allowance })).concat(allowances.map((allowance) => ({ user_id: "user_friend", allowance }))) }) }) as never;
   const none = groups();
 
-  it("changes nobody's limit while MODEL_DAILY_ALLOWANCE is unset and no group sets one", async () => {
+  it("gives the default to a player in no group while MODEL_DAILY_ALLOWANCE is unset; the owner keeps their own", async () => {
     delete process.env.MODEL_DAILY_ALLOWANCE;
     process.env.MODEL_OWNER_USER_ID = "user_owner";
     delete process.env.MODEL_OWNER_DAILY_ALLOWANCE;
-    expect([MODEL_OWNER_DAILY_ALLOWANCE, MODEL_FRIEND_DAILY_ALLOWANCE]).toEqual([10, 5]);
+    expect([MODEL_OWNER_DAILY_ALLOWANCE, MODEL_DEFAULT_DAILY_ALLOWANCE]).toEqual([10, 1]);
     expect(await dailyLimitFor(none, "user_owner")).toBe(10);
-    expect(await dailyLimitFor(none, "user_friend")).toBe(5);
+    expect(await dailyLimitFor(none, "user_friend")).toBe(1);
     process.env.MODEL_OWNER_DAILY_ALLOWANCE = "100";
     expect(await dailyLimitFor(none, "user_owner")).toBe(100);
-    expect(await dailyLimitFor(none, "user_friend")).toBe(5);
+    expect(await dailyLimitFor(none, "user_friend")).toBe(1);
   });
 
   it("gives a group's allowance to its member, owner included, over the default", async () => {
@@ -72,13 +72,13 @@ describe("dailyLimitFor", () => {
 
   it("ignores a garbage default or override, and an override with no owner", async () => {
     process.env.MODEL_DAILY_ALLOWANCE = "0";
-    expect(await dailyLimitFor(none, "user_friend")).toBe(5);
+    expect(await dailyLimitFor(none, "user_friend")).toBe(1);
     process.env.MODEL_OWNER_USER_ID = "user_owner";
     process.env.MODEL_OWNER_DAILY_ALLOWANCE = "lots";
     expect(await dailyLimitFor(none, "user_owner")).toBe(10);
     delete process.env.MODEL_OWNER_USER_ID;
     process.env.MODEL_OWNER_DAILY_ALLOWANCE = "100";
-    expect(await dailyLimitFor(none, "user_owner")).toBe(5);
+    expect(await dailyLimitFor(none, "user_owner")).toBe(1);
   });
 
   it("reads only groups that set an allowance, so a group without one names none", () => {
@@ -98,15 +98,15 @@ describe("dailyLimitFor", () => {
     const execute = vi.fn(async () => ({ rows: [{ user_id: "u1", allowance: 3 }] }));
     const limits = await dailyLimitsFor({ execute } as never, ["u1", "u2"]);
     expect(execute).toHaveBeenCalledOnce();
-    expect([limits.get("u1"), limits.get("u2")]).toEqual([3, 5]);
+    expect([limits.get("u1"), limits.get("u2")]).toEqual([3, 1]);
   });
 
   it("fails closed: unset or empty, no account is the owner", async () => {
     delete process.env.MODEL_DAILY_ALLOWANCE;
     delete process.env.MODEL_OWNER_USER_ID;
-    expect(await dailyLimitFor(none, "user_owner")).toBe(5);
+    expect(await dailyLimitFor(none, "user_owner")).toBe(1);
     process.env.MODEL_OWNER_USER_ID = "   ";
-    expect(await dailyLimitFor(none, "   ")).toBe(5);
+    expect(await dailyLimitFor(none, "   ")).toBe(1);
   });
 });
 
@@ -259,7 +259,7 @@ describe("reserveModelCall and paid credits (payments PR L)", () => {
   const spentToday = (n: number) => Array.from({ length: n }, () => ({ status: "spent", createdAt: new Date(now.getTime() - 60_000) }));
 
   it("funds from the free allowance while it has room, reading no lot, and counts only allowance runs in the window", async () => {
-    const f = fakeTx([spentToday(MODEL_FRIEND_DAILY_ALLOWANCE - 1)]);
+    const f = fakeTx([spentToday(MODEL_DEFAULT_DAILY_ALLOWANCE - 1)]);
     expect(await reserveModelCall(f.tx as never, "user_a", "tuning", "claude-sonnet-5", now)).toEqual({ id: "call-1" });
     expect(f.inserted()?.creditGrantId).toBeNull();
     expect(f.wheres).toHaveLength(1);
@@ -268,7 +268,7 @@ describe("reserveModelCall and paid credits (payments PR L)", () => {
   });
 
   it("refuses exactly as today once the allowance is spent and the player holds no lot", async () => {
-    const f = fakeTx([spentToday(MODEL_FRIEND_DAILY_ALLOWANCE), []]);
+    const f = fakeTx([spentToday(MODEL_DEFAULT_DAILY_ALLOWANCE), []]);
     expect(await reserveModelCall(f.tx as never, "user_a", "tuning", "claude-sonnet-5", now)).toEqual({ refused: "allowance" });
     expect(f.inserted()).toBeUndefined();
   });
@@ -279,7 +279,7 @@ describe("reserveModelCall and paid credits (payments PR L)", () => {
       { id: "plan-1", source: "plan", units: 60, revokedUnits: 0, expiresAt: null, createdAt: new Date("2026-10-01T00:00:00Z") },
     ];
     const usage = [{ grantId: "pack-1", spent: "3", reserved: null }];
-    const f = fakeTx([spentToday(MODEL_FRIEND_DAILY_ALLOWANCE), lots, usage]);
+    const f = fakeTx([spentToday(MODEL_DEFAULT_DAILY_ALLOWANCE), lots, usage]);
     expect(await reserveModelCall(f.tx as never, "user_a", "tuning", "claude-sonnet-5", now)).toEqual({ id: "call-1" });
     expect(f.inserted()?.creditGrantId).toBe("plan-1");
   });
@@ -287,14 +287,14 @@ describe("reserveModelCall and paid credits (payments PR L)", () => {
   it("refuses when every lot is spent, counting a reservation still in flight", async () => {
     const lots = [{ id: "pack-1", source: "pack", units: 2, revokedUnits: 0, expiresAt: null, createdAt: new Date("2026-09-01T00:00:00Z") }];
     const usage = [{ grantId: "pack-1", spent: "1", reserved: [now.getTime() - 1000] }];
-    const f = fakeTx([spentToday(MODEL_FRIEND_DAILY_ALLOWANCE), lots, usage]);
+    const f = fakeTx([spentToday(MODEL_DEFAULT_DAILY_ALLOWANCE), lots, usage]);
     expect(await reserveModelCall(f.tx as never, "user_a", "tuning", "claude-sonnet-5", now)).toEqual({ refused: "allowance" });
   });
 
   it("a lot's stranded reservation gives its credit back", async () => {
     const lots = [{ id: "pack-1", source: "pack", units: 2, revokedUnits: 0, expiresAt: null, createdAt: new Date("2026-09-01T00:00:00Z") }];
     const usage = [{ grantId: "pack-1", spent: "1", reserved: [now.getTime() - RESERVATION_TTL_MS - 1] }];
-    const f = fakeTx([spentToday(MODEL_FRIEND_DAILY_ALLOWANCE), lots, usage]);
+    const f = fakeTx([spentToday(MODEL_DEFAULT_DAILY_ALLOWANCE), lots, usage]);
     expect(await reserveModelCall(f.tx as never, "user_a", "tuning", "claude-sonnet-5", now)).toEqual({ id: "call-1" });
     expect(f.inserted()?.creditGrantId).toBe("pack-1");
   });
@@ -304,7 +304,7 @@ describe("reserveModelCall and paid credits (payments PR L)", () => {
     const paidRows = (n: number, status = "spent", ageMs = 60_000) =>
       Array.from({ length: n }, () => ({ status, createdAt: new Date(now.getTime() - ageMs) }));
     const reserve = (answers: unknown[][], groupPaidLimits: number[] = []) => {
-      const f = fakeTx([spentToday(MODEL_FRIEND_DAILY_ALLOWANCE), lots, [], ...answers], groupPaidLimits);
+      const f = fakeTx([spentToday(MODEL_DEFAULT_DAILY_ALLOWANCE), lots, [], ...answers], groupPaidLimits);
       return { f, got: reserveModelCall(f.tx as never, "user_a", "tuning", "claude-sonnet-5", now) };
     };
 
@@ -326,7 +326,7 @@ describe("reserveModelCall and paid credits (payments PR L)", () => {
     });
 
     it("never refuses a run the free allowance can fund", async () => {
-      const f = fakeTx([spentToday(MODEL_FRIEND_DAILY_ALLOWANCE - 1), lots, [], paidRows(25)], [1]);
+      const f = fakeTx([spentToday(MODEL_DEFAULT_DAILY_ALLOWANCE - 1), lots, [], paidRows(25)], [1]);
       expect(await reserveModelCall(f.tx as never, "user_a", "tuning", "claude-sonnet-5", now)).toEqual({ id: "call-1" });
       expect(f.inserted()?.creditGrantId).toBeNull();
       // The paid limit is not even read while the free allowance funds the run.

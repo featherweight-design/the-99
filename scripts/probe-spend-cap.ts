@@ -9,9 +9,9 @@
 // say the SQL around it counts the right rows. The model is never called.
 //
 // Cases:
-//   a  a friend gets 5 a day: five reserves pass, the sixth is refused `allowance`
+//   a  a player on the default gets MODEL_DEFAULT_DAILY_ALLOWANCE a day: that many reserves pass, the next is refused `allowance`
 //   b  the owner (MODEL_OWNER_USER_ID) gets 10: ten pass, the eleventh is refused
-//   c  with the variable unset, the would-be owner gets 5
+//   c  with the variable unset, the would-be owner gets the default
 //   g  a settle writes tokens, model and cost; a refund writes them too, and its cost is counted;
 //      a settle with no usage writes no meters
 //   i  the owner's month one worst case under their share still reserves; that reservation fills
@@ -76,7 +76,7 @@ import {
   usdToMicro,
   type UnpricedCall,
 } from "../src/lib/model/spend-rule";
-import { RESERVATION_TTL_MS } from "../src/lib/model/allowance-rule";
+import { MODEL_DEFAULT_DAILY_ALLOWANCE as D, RESERVATION_TTL_MS } from "../src/lib/model/allowance-rule";
 import { TUNING_MODEL } from "../src/lib/tuning/limits";
 
 const STAGING_BRANCH = "br-polished-pond-a6e63y0b";
@@ -155,13 +155,14 @@ async function run() {
   console.log(`branch ${branch}; one tuning call's worst case is ${W} micro-dollars`);
   delete process.env.MODEL_OWNER_USER_ID;
 
-  // a · A friend gets five.
+  // a · A player on the default gets the default (MODEL_DAILY_ALLOWANCE unset here, as on local-dev).
+  const defaultRun = [...Array.from({ length: D }, () => "reserved"), "allowance"];
   {
     const u = newUser();
     const got = [];
-    for (let i = 0; i < 6; i++) got.push(kindOf(await reserve(u)));
-    check("a · a friend's five reserve, the sixth is refused", got, ["reserved", "reserved", "reserved", "reserved", "reserved", "allowance"]);
-    check("a · and reads a limit of five", (await readAllowance(u)).limit, 5);
+    for (let i = 0; i <= D; i++) got.push(kindOf(await reserve(u)));
+    check("a · the default's reserves pass, the next is refused", got, defaultRun);
+    check("a · and reads the default limit", (await readAllowance(u)).limit, D);
     await refundAll(u);
   }
 
@@ -176,15 +177,15 @@ async function run() {
     check("b · and reads a limit of ten", (await readAllowance(owner)).limit, 10);
     await refundAll(owner);
 
-    // c · The same account, with the variable unset, is a friend.
+    // c · The same account, with the variable unset, is on the default.
     delete process.env.MODEL_OWNER_USER_ID;
     const again = newUser();
     const unset = [];
-    for (let i = 0; i < 6; i++) unset.push(kindOf(await reserve(again)));
-    check("c · unset, the would-be owner's limit is five", [await dailyLimitFor(db, owner), await dailyLimitFor(db, again)], [5, 5]);
-    check("c · five reserve and the sixth is refused", unset, ["reserved", "reserved", "reserved", "reserved", "reserved", "allowance"]);
+    for (let i = 0; i <= D; i++) unset.push(kindOf(await reserve(again)));
+    check("c · unset, the would-be owner's limit is the default", [await dailyLimitFor(db, owner), await dailyLimitFor(db, again)], [D, D]);
+    check("c · the default's reserves pass and the next is refused", unset, defaultRun);
     process.env.MODEL_OWNER_USER_ID = "   ";
-    check("c · a blank variable names no owner either", await dailyLimitFor(db, "   "), 5);
+    check("c · a blank variable names no owner either", await dailyLimitFor(db, "   "), D);
     delete process.env.MODEL_OWNER_USER_ID;
     await refundAll(again);
   }
@@ -206,7 +207,9 @@ async function run() {
       model: TUNING_MODEL, cost: String(costMicroUsd(TUNING_MODEL, usage)),
     });
 
-    const refunded = await reserve(u);
+    // A second player: the default is one run a day, and the spent call above holds this one's.
+    const u2 = newUser();
+    const refunded = await reserve(u2);
     if (!("id" in refunded)) throw new Error(`g · reserve refused: ${refunded.refused}`);
     const before = await billedMonth();
     await settle(refunded.id, "refunded", usage);
@@ -216,7 +219,7 @@ async function run() {
     check("g · and its cost IS counted toward the month's billed spend", await billedMonth() - before,
       costMicroUsd(TUNING_MODEL, usage));
 
-    const bare = await reserve(u);
+    const bare = await reserve(u2);
     if (!("id" in bare)) throw new Error(`g · reserve refused: ${bare.refused}`);
     await settle(bare.id, "refunded");
     const b = await meters(bare.id);
@@ -320,7 +323,8 @@ async function run() {
     const BIG = usdToMicro(25);
     try {
       const m = await monthToDate();
-      await seed(payer, "spent", Math.max(BIG - m, 0) + ownerShareMicro() + W);
+      // Refunded, so the month counts its cost while the day's allowance (one run by default) stays free.
+      await seed(payer, "refunded", Math.max(BIG - m, 0) + ownerShareMicro() + W);
       check("k · the app's month-to-date stands at $25 or more", (await monthToDate()) >= BIG, true);
       check("k · the friend who paid it still reserves", kindOf(await reserve(payer)), "reserved");
       check("k · another friend still reserves", kindOf(await reserve(friend)), "reserved");

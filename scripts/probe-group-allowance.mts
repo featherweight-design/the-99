@@ -33,6 +33,7 @@ async function main() {
   const { rows } = await db.execute<{ b: string | null }>(sql`select current_setting('neon.branch_id', true) as b`);
   if (rows[0]?.b !== named) throw new Error(`probe:group-allowance: database reports ${rows[0]?.b}, not ${named}`);
   const { dailyLimitFor, readAllowance } = await import("../src/lib/model/allowance");
+  const { MODEL_DEFAULT_DAILY_ALLOWANCE } = await import("../src/lib/model/allowance-rule");
 
   process.env.MODEL_OWNER_USER_ID = OWNER;
   delete process.env.MODEL_OWNER_DAILY_ALLOWANCE;
@@ -46,9 +47,9 @@ async function main() {
     await db.execute(sql`insert into flag_group_members (user_id, group_id, added_by) values (${MEMBER}, ${g[0].id}, 'probe'), (${PLAIN}, ${p[0].id}, 'probe')`);
 
     delete process.env.MODEL_DAILY_ALLOWANCE;
-    check("unset: a player in no group keeps five", await dailyLimitFor(db, LONER), 5);
+    check("unset: a player in no group gets the default", await dailyLimitFor(db, LONER), MODEL_DEFAULT_DAILY_ALLOWANCE);
     check("unset: the owner in no group keeps ten", await dailyLimitFor(db, OWNER), 10);
-    check("a group with no allowance changes nothing", await dailyLimitFor(db, PLAIN), 5);
+    check("a group with no allowance changes nothing", await dailyLimitFor(db, PLAIN), MODEL_DEFAULT_DAILY_ALLOWANCE);
     check("a member takes the group's allowance", await dailyLimitFor(db, MEMBER), 3);
     check("the allowance a panel reads is the member's", (await readAllowance(MEMBER)).limit, 3);
 
