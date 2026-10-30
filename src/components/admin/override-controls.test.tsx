@@ -31,12 +31,12 @@ describe("AppWideControl", () => {
   it("holds the pressed option and disables the others while the write is in flight, then refreshes (F10)", async () => {
     const d = deferred();
     set.mockReturnValueOnce(d.promise);
-    render(<AppWideControl name="DECK_NOTES_ENABLED" label="Deck notes" value={null} killed={false} />);
+    render(<AppWideControl name="FEEDBACK_ENABLED" label="Feedback" value={null} killed={false} />);
     fireEvent.click(radio("On"));
     expect(radio("On")).toHaveAttribute("aria-checked", "true");
     expect(radio("Off")).toBeDisabled();
     expect(radio("Not set")).toBeDisabled();
-    expect(set).toHaveBeenCalledWith({ switchName: "DECK_NOTES_ENABLED", scope: "app", value: "on" });
+    expect(set).toHaveBeenCalledWith({ switchName: "FEEDBACK_ENABLED", scope: "app", value: "on" });
     await act(async () => d.resolve({ ok: true }));
     expect(refresh).toHaveBeenCalledOnce();
   });
@@ -57,7 +57,7 @@ describe("AppWideControl", () => {
       return (
         <Suspense fallback={null}>
           <Pending go={go} />
-          <AppWideControl name="DECK_NOTES_ENABLED" label="Deck notes" value={null} killed={false} />
+          <AppWideControl name="FEEDBACK_ENABLED" label="Feedback" value={null} killed={false} />
         </Suspense>
       );
     }
@@ -75,7 +75,7 @@ describe("AppWideControl", () => {
 
   it("says nothing changed, and Try again repeats the write (F11)", async () => {
     clear.mockResolvedValueOnce({ ok: false, error: "failed" }).mockResolvedValueOnce({ ok: true });
-    render(<AppWideControl name="DECK_NOTES_ENABLED" label="Deck notes" value="off" killed={false} />);
+    render(<AppWideControl name="FEEDBACK_ENABLED" label="Feedback" value="off" killed={false} />);
     await act(async () => fireEvent.click(radio("Not set")));
     expect(screen.getByRole("alert").textContent).toContain("Didn’t save. Nothing changed.");
     expect(radio("Off")).toHaveAttribute("aria-checked", "true");
@@ -110,9 +110,9 @@ describe("AppWideControl", () => {
   });
 
   it("is disabled under a kill, except Not set when a row is there to clear (F5)", () => {
-    const { rerender } = render(<AppWideControl name="DECK_NOTES_ENABLED" label="Deck notes" value={null} killed />);
+    const { rerender } = render(<AppWideControl name="FEEDBACK_ENABLED" label="Feedback" value={null} killed />);
     for (const n of ["Not set", "On", "Off"]) expect(radio(n)).toBeDisabled();
-    rerender(<AppWideControl name="DECK_NOTES_ENABLED" label="Deck notes" value="on" killed />);
+    rerender(<AppWideControl name="FEEDBACK_ENABLED" label="Feedback" value="on" killed />);
     expect(radio("Not set")).toBeEnabled();
     expect(radio("Off")).toBeDisabled();
   });
@@ -122,7 +122,7 @@ describe("RowControls", () => {
   const row = (killed: boolean) => (
     <ul>
       <li>
-        <RowControls target={{ switchName: "DECK_NOTES_ENABLED", scope: "user", targetUserId: "u2" }} title="Mara" value="on" killed={killed} context={{ switchLabel: "Deck notes", scope: "user", groupName: null }} />
+        <RowControls target={{ switchName: "FEEDBACK_ENABLED", scope: "user", targetUserId: "u2" }} title="Mara" value="on" killed={killed} context={{ switchLabel: "Feedback", scope: "user", groupName: null }} />
       </li>
     </ul>
   );
@@ -133,7 +133,7 @@ describe("RowControls", () => {
     expect(radio("On")).toBeDisabled();
     expect(radio("Off")).toBeDisabled();
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "Clear" })));
-    expect(clear).toHaveBeenCalledWith({ switchName: "DECK_NOTES_ENABLED", scope: "user", targetUserId: "u2" });
+    expect(clear).toHaveBeenCalledWith({ switchName: "FEEDBACK_ENABLED", scope: "user", targetUserId: "u2" });
   });
 
   it("hands focus to the section's Add button once a Clear saves, since the row leaves the page", async () => {

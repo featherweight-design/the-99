@@ -12,7 +12,7 @@ vi.mock("../../../lib/discovery/payload", () => ({ loadDiscoveryPayload: stub.lo
 // The reader's resolved switches, a stand-in pinned by identity. The environment has the label basis
 // off and this env has it on: the payload is keyed on the basis, so the route reaches the page's entry
 // only by reading it under the reader's env (admin PR 6d-2).
-const RESOLVED = vi.hoisted(() => ({ LABEL_ROLE_COUNTS_ENABLED: "true", DECK_NOTES_ENABLED: "true" }) as unknown as NodeJS.ProcessEnv);
+const RESOLVED = vi.hoisted(() => ({ LABEL_ROLE_COUNTS_ENABLED: "true", FEEDBACK_ENABLED: "true" }) as unknown as NodeJS.ProcessEnv);
 vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: async () => RESOLVED }));
 
 import { GET } from "./route";
@@ -65,7 +65,7 @@ describe("GET /api/discovery-fields", () => {
     const env = stub.load.mock.calls[0][2] as NodeJS.ProcessEnv;
     expect(stub.load.mock.calls[0].slice(0, 2)).toEqual(["user_1", "new"]);
     expect(env.LABEL_ROLE_COUNTS_ENABLED).toBe("false");
-    expect(env.DECK_NOTES_ENABLED).toBe("true");
+    expect(env.FEEDBACK_ENABLED).toBe("true");
   });
 
   it("never raises the environment's kill switch, whatever basis is asked for", async () => {

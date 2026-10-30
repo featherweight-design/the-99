@@ -49,7 +49,7 @@ async function main() {
   const count = async (q: ReturnType<typeof sql>) => Number((await db.execute<{ n: number }>(q)).rows[0].n);
   const rowsFor = (name: string) => count(sql`select count(*)::int as n from flag_overrides where "switch" = ${name}`);
   const events = (kind: string) => count(sql`select count(*)::int as n from admin_events where actor_id = ${ADMIN} and kind = ${kind}`);
-  const S = "DECK_NOTES_ENABLED";
+  const S = "FEEDBACK_ENABLED";
   const before = await rowsFor(S);
   let group: string | null = null;
 

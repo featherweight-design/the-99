@@ -7,7 +7,7 @@ import { matchesFilter, matchesSearch, sections, switchRows, type SwitchRow } fr
 
 type Env = Partial<Record<SwitchName, string>>;
 const envValues = (env: Env) => Object.fromEntries(SWITCH_NAMES.map((n) => [n, env[n] ?? null])) as Record<SwitchName, string | null>;
-const row = (over: Partial<OverrideRow>): OverrideRow => ({ switchName: "DECK_NOTES_ENABLED", scope: "app", groupId: null, userId: null, value: "on", ...over });
+const row = (over: Partial<OverrideRow>): OverrideRow => ({ switchName: "FEEDBACK_ENABLED", scope: "app", groupId: null, userId: null, value: "on", ...over });
 const snap = (overrides: OverrideRow[], groupOf: Record<string, string> = {}): SwitchSnapshot => ({ overrides, groupOf: new Map(Object.entries(groupOf)) });
 
 function rows(env: Env, overrides: OverrideRow[] = [], users = ["u1", "u2", "u3"], groupOf: Record<string, string> = {}) {
@@ -22,8 +22,8 @@ describe("switchRows", () => {
   });
 
   it("counts the accounts a switch is on for, and calls it on, off or mixed", () => {
-    const r = rows({ DECK_NOTES_ENABLED: "true" }, [row({ scope: "user", userId: "u2", value: "off" })]);
-    expect(r.get("DECK_NOTES_ENABLED")).toMatchObject({ env: "true", on: 2, total: 3, state: "mixed", accounts: 1, groups: 0, app: null, reason: null });
+    const r = rows({ FEEDBACK_ENABLED: "true" }, [row({ scope: "user", userId: "u2", value: "off" })]);
+    expect(r.get("FEEDBACK_ENABLED")).toMatchObject({ env: "true", on: 2, total: 3, state: "mixed", accounts: 1, groups: 0, app: null, reason: null });
     expect(r.get("DECK_STATS_ENABLED")).toMatchObject({ env: null, on: 0, state: "off", reason: null });
     expect(rows({ DECK_STATS_ENABLED: "true" }).get("DECK_STATS_ENABLED")).toMatchObject({ on: 3, state: "on" });
   });
@@ -35,7 +35,7 @@ describe("switchRows", () => {
       row({ scope: "user", userId: "u1", value: "on" }),
       row({ scope: "user", userId: "u2", value: "on" }),
     ], ["u1", "u2", "u3"], { u3: "g1" });
-    expect(r.get("DECK_NOTES_ENABLED")).toMatchObject({ app: "off", groups: 1, accounts: 2, on: 3, state: "on", refused: false });
+    expect(r.get("FEEDBACK_ENABLED")).toMatchObject({ app: "off", groups: 1, accounts: 2, on: 3, state: "on", refused: false });
   });
 
   it("names the kill switch, and marks the overrides it refuses (L4)", () => {
@@ -54,7 +54,7 @@ describe("switchRows", () => {
     const r = rows({ NOTICES_ENABLED: "off" }, [row({ switchName: "NOTICES_ENABLED", scope: "app", value: "on" })]);
     expect(r.get("NOTICES_ENABLED")).toMatchObject({ app: "on", refused: true, appRefused: true, groups: 0, accounts: 0 });
     // Not killed: nothing refused.
-    expect(rows({}, [row({ scope: "app", value: "on" })]).get("DECK_NOTES_ENABLED")).toMatchObject({ refused: false, appRefused: false });
+    expect(rows({}, [row({ scope: "app", value: "on" })]).get("FEEDBACK_ENABLED")).toMatchObject({ refused: false, appRefused: false });
     // Killed with only an account row: refused, but the app-wide cell has nothing to refuse.
     const k = rows({ NOTICES_ENABLED: "off" }, [row({ switchName: "NOTICES_ENABLED", scope: "user", userId: "u1", value: "on" })]);
     expect(k.get("NOTICES_ENABLED")).toMatchObject({ refused: true, appRefused: false });
@@ -63,7 +63,7 @@ describe("switchRows", () => {
   it("counts group and account rows on a plumbing switch as ignored", () => {
     const r = rows({}, [row({ switchName: "LIST_CACHE_ENABLED", scope: "user", userId: "u1", value: "on" })]);
     expect(r.get("LIST_CACHE_ENABLED")).toMatchObject({ ignored: 1, on: 0 });
-    expect(r.get("DECK_NOTES_ENABLED")?.ignored).toBe(0);
+    expect(r.get("FEEDBACK_ENABLED")?.ignored).toBe(0);
   });
 
   it("reads off with no accounts at all", () => {
@@ -72,17 +72,17 @@ describe("switchRows", () => {
 });
 
 describe("the chips and the search", () => {
-  const r = rows({ DECK_NOTES_ENABLED: "true", DECK_STATS_ENABLED: "true" }, [row({ switchName: "DECK_STATS_ENABLED", scope: "app", value: "on" })]);
+  const r = rows({ FEEDBACK_ENABLED: "true", DECK_STATS_ENABLED: "true" }, [row({ switchName: "DECK_STATS_ENABLED", scope: "app", value: "on" })]);
   const get = (n: SwitchName) => r.get(n) as SwitchRow;
 
   it("filters by chip", () => {
-    expect(matchesFilter(get("DECK_NOTES_ENABLED"), "all")).toBe(true);
+    expect(matchesFilter(get("FEEDBACK_ENABLED"), "all")).toBe(true);
     expect(matchesFilter(get("DECK_STATS_ENABLED"), "overridden")).toBe(true);
-    expect(matchesFilter(get("DECK_NOTES_ENABLED"), "overridden")).toBe(false);
-    expect(matchesFilter(get("DECK_NOTES_ENABLED"), "offForAnyone")).toBe(false);
+    expect(matchesFilter(get("FEEDBACK_ENABLED"), "overridden")).toBe(false);
+    expect(matchesFilter(get("FEEDBACK_ENABLED"), "offForAnyone")).toBe(false);
     expect(matchesFilter(get("DECK_PRINTINGS_ENABLED"), "offForAnyone")).toBe(true);
     // Mixed is off for someone.
-    const mixed = rows({ DECK_NOTES_ENABLED: "true" }, [row({ scope: "user", userId: "u2", value: "off" })]).get("DECK_NOTES_ENABLED") as SwitchRow;
+    const mixed = rows({ FEEDBACK_ENABLED: "true" }, [row({ scope: "user", userId: "u2", value: "off" })]).get("FEEDBACK_ENABLED") as SwitchRow;
     expect(matchesFilter(mixed, "offForAnyone")).toBe(true);
     expect(matchesFilter(get("TUNING_ENABLED"), "model")).toBe(true);
     expect(matchesFilter(get("DECK_PRINTINGS_ENABLED"), "model")).toBe(false);

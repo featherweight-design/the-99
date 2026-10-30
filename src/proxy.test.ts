@@ -76,12 +76,12 @@ describe("About (the gate and the sheet retired, About visual PR 6b)", () => {
   });
 
   it("forwards the reader's resolved switches for the page to read, and never a client's", async () => {
-    resolveSwitchEnv.mockImplementation(async () => envViewWith({ DECK_NOTES_ENABLED: "true" }));
+    resolveSwitchEnv.mockImplementation(async () => envViewWith({ FEEDBACK_ENABLED: "true" }));
     const forged = "1".repeat(40);
     const res = await proxy(auth, request("/about", { "x-switches": forged }));
     const bits = res?.headers.get("x-middleware-request-x-switches");
     const { switchBits } = await import("./lib/switches/resolve");
-    expect(bits).toBe(switchBits(envViewWith({ DECK_NOTES_ENABLED: "true" })));
+    expect(bits).toBe(switchBits(envViewWith({ FEEDBACK_ENABLED: "true" })));
     session.mockResolvedValue({ userId: null });
     const out = await proxy(auth, request("/", { "x-switches": forged }));
     expect(out?.headers.get("x-middleware-request-x-switches")).toBeNull();

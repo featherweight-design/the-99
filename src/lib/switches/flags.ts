@@ -6,7 +6,6 @@ import { allDecksCartEnabled } from "../decks/all-decks-cart-flag";
 import { analysisTabEnabled } from "../decks/analysis-flag";
 import { labelRoleCountsEnabled } from "../decks/label-counts-flag";
 import { neverCutEnabled } from "../decks/never-cut-flag";
-import { deckNotesEnabled } from "../decks/notes-flag";
 import { deckPrintingsEnabled } from "../decks/printings-flag";
 import { deckStatsEnabled } from "../decks/stats-flag";
 import { pushEnabled } from "../push/flag";
@@ -39,7 +38,6 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   ANNOUNCEMENTS_ENABLED: announcementsEnabled,
   BRACKET_REACH_ENABLED: bracketReachEnabled,
   CHANGE_COMMANDER_ENABLED: changeCommanderEnabled,
-  DECK_NOTES_ENABLED: deckNotesEnabled,
   DECK_PRINTINGS_ENABLED: deckPrintingsEnabled,
   DECK_STATS_ENABLED: deckStatsEnabled,
   FEEDBACK_ENABLED: feedbackEnabled,

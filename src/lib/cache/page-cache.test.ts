@@ -101,7 +101,7 @@ describe("cachePageForUser", () => {
   it("loads again when an override flips one of the reader's switches, with no write and no redeploy", async () => {
     const load = vi.fn(async () => ({ value: { n: 1 }, store: true }));
     await cachePageForUser("u1", "decks", [], load);
-    switchEnv.value = { DECK_NOTES_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+    switchEnv.value = { FEEDBACK_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
     await cachePageForUser("u1", "decks", [], load);
     expect(load).toHaveBeenCalledTimes(2);
     // And back again: the first entry is still true for the switches it was drawn under.

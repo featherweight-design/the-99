@@ -79,7 +79,7 @@ const kinds = () =>
 
 describe("writeOverride", () => {
   it("locks, reads, mutates, then records the event, and clears the memo only after the commit", async () => {
-    const r = await writeOverride("u1", "set", { switchName: "DECK_NOTES_ENABLED", scope: "user", targetUserId: "u2", value: "on", note: "try it" }, deps());
+    const r = await writeOverride("u1", "set", { switchName: "FEEDBACK_ENABLED", scope: "user", targetUserId: "u2", value: "on", note: "try it" }, deps());
     expect(r).toEqual({ ok: true });
     expect(kinds()).toEqual(["lock", "snapshot", "target", "upsert", "event"]);
     expect(log.at(-1)).toContain("insert into admin_events");
@@ -88,7 +88,7 @@ describe("writeOverride", () => {
 
   it("reads a group for share before anything else, and refuses one that does not exist", async () => {
     groupExists = false;
-    expect(await writeOverride("u1", "set", { switchName: "DECK_NOTES_ENABLED", scope: "group", groupId: G, value: "on" }, deps())).toEqual({ ok: false, error: "group" });
+    expect(await writeOverride("u1", "set", { switchName: "FEEDBACK_ENABLED", scope: "group", groupId: G, value: "on" }, deps())).toEqual({ ok: false, error: "group" });
     expect(kinds()).toEqual(["lock", "group"]);
     expect(log[1]).toContain("for share");
     expect(afterCommit).not.toHaveBeenCalled();
@@ -96,21 +96,21 @@ describe("writeOverride", () => {
 
   it("deletes on a clear and records the old value", async () => {
     current = { value: "off", note: null };
-    expect(await writeOverride("u1", "clear", { switchName: "DECK_NOTES_ENABLED", scope: "app" }, deps())).toEqual({ ok: true });
+    expect(await writeOverride("u1", "clear", { switchName: "FEEDBACK_ENABLED", scope: "app" }, deps())).toEqual({ ok: true });
     expect(kinds()).toEqual(["lock", "snapshot", "target", "delete", "event"]);
     expect(afterCommit).toHaveBeenCalledOnce();
   });
 
   it("writes nothing for a no-op and clears no memo", async () => {
     current = { value: "on", note: null };
-    expect(await writeOverride("u1", "set", { switchName: "DECK_NOTES_ENABLED", scope: "app", value: "on" }, deps())).toEqual({ ok: true });
+    expect(await writeOverride("u1", "set", { switchName: "FEEDBACK_ENABLED", scope: "app", value: "on" }, deps())).toEqual({ ok: true });
     expect(kinds()).toEqual(["lock", "snapshot", "target"]);
     expect(afterCommit).not.toHaveBeenCalled();
   });
 
   it("refuses before any transaction, and clears no memo", async () => {
-    env = { DECK_NOTES_ENABLED: "off" };
-    expect(await writeOverride("u1", "set", { switchName: "DECK_NOTES_ENABLED", scope: "app", value: "on" }, deps())).toEqual({ ok: false, error: "killed" });
+    env = { FEEDBACK_ENABLED: "off" };
+    expect(await writeOverride("u1", "set", { switchName: "FEEDBACK_ENABLED", scope: "app", value: "on" }, deps())).toEqual({ ok: false, error: "killed" });
     expect(await writeOverride("u1", "set", { switchName: "LIST_CACHE_ENABLED", scope: "user", targetUserId: "u1", value: "on" }, deps())).toEqual({ ok: false, error: "plumbing" });
     expect(transaction).not.toHaveBeenCalled();
     expect(afterCommit).not.toHaveBeenCalled();
@@ -157,7 +157,7 @@ describe("writeOverride", () => {
 
   it("says nothing changed when the transaction throws, and clears no memo", async () => {
     failOn = /^insert into admin_events/;
-    expect(await writeOverride("u1", "set", { switchName: "DECK_NOTES_ENABLED", scope: "app", value: "on" }, deps())).toEqual({ ok: false, error: "failed" });
+    expect(await writeOverride("u1", "set", { switchName: "FEEDBACK_ENABLED", scope: "app", value: "on" }, deps())).toEqual({ ok: false, error: "failed" });
     expect(afterCommit).not.toHaveBeenCalled();
   });
 });
