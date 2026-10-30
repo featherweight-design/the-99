@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { db } from "../../db";
-import { earlyListsQuery, earlyTileOf, mergeEarlySet, releasedCommandersQuery } from "./early-tiles-read";
+import { earlyListsQuery, earlyTileOf, hasGivenWay, mergeEarlySet, releasedCommandersQuery } from "./early-tiles-read";
 import type { EarlyTile } from "./early-tiles";
 
 describe("earlyListsQuery", () => {
@@ -18,10 +18,41 @@ describe("earlyListsQuery", () => {
 describe("releasedCommandersQuery", () => {
   it("qualifies both tables of its join and keeps plain-edition commanders only", () => {
     const { sql } = releasedCommandersQuery(["c1", "c2"], db).toSQL();
-    expect(sql).toContain('select distinct "precon_cards"."oracle_id", "precons"."set_code"');
+    expect(sql).toContain('select distinct "precon_cards"."oracle_id", "precons"."file_name", "precons"."set_code", "catalog_first_seen"."first_seen_at", "catalog_first_seen"."baseline"');
+    expect(sql).toContain('left join "catalog_first_seen" on ("catalog_first_seen"."kind" = $');
+    expect(sql).toContain('"catalog_first_seen"."key" = "precons"."file_name"');
     expect(sql).toContain('inner join "precons" on "precons"."file_name" = "precon_cards"."file_name"');
     expect(sql).toContain('"precon_cards"."is_commander" = $');
     expect(sql).toContain('"precons"."twin_of" is null');
+  });
+});
+
+describe("hasGivenWay (the early page's pickReleasePrecon)", () => {
+  const posted = new Date("2026-10-29T16:00:00Z");
+  const list = { commanderCardId: "cmd-1", publishedAt: posted };
+  const c = (fileName: string, setCode: string, firstSeenAt: string | null, baseline: boolean | null = firstSeenAt ? false : null) =>
+    ({ fileName, setCode, firstSeenAt: firstSeenAt ? new Date(firstSeenAt) : null, baseline });
+  const by = (...cs: ReturnType<typeof c>[]) => new Map([["cmd-1", cs]]);
+
+  it("gives way to a release stamped after the post in ANOTHER set, as the page redirects to it", () => {
+    expect(hasGivenWay(list, "fdc", by(c("Angels_SLD", "SLD", "2026-11-02T08:00:00Z")))).toBe(true);
+  });
+
+  it("stays early when the only precon was stamped before the first-seen cutoff, in the same set or another", () => {
+    expect(hasGivenWay(list, "fdc", by(c("Angels_FDC_old", "FDC", "2025-03-01T00:00:00Z")))).toBe(false);
+    expect(hasGivenWay(list, "fdc", by(c("Angels_C23", "C23", "2025-03-01T00:00:00Z")))).toBe(false);
+    // Inside the slack (RELEASE_SLACK_DAYS before the post) still counts.
+    expect(hasGivenWay(list, "fdc", by(c("Angels_FDC", "FDC", "2026-10-27T00:00:00Z")))).toBe(true);
+  });
+
+  it("gives way to an unstamped precon only in the post's own set", () => {
+    expect(hasGivenWay(list, "cmm", by(c("A_CMM", "CMM", null)))).toBe(true);
+    expect(hasGivenWay(list, "fdc", by(c("A_CMM", "CMM", null)))).toBe(false);
+  });
+
+  it("stays early with no candidates or no commander", () => {
+    expect(hasGivenWay(list, "fdc", new Map())).toBe(false);
+    expect(hasGivenWay({ commanderCardId: null, publishedAt: posted }, "fdc", by(c("A_FDC", "FDC", null)))).toBe(false);
   });
 });
 

@@ -4,15 +4,16 @@
  * (`resolvePostSet` over `commanderPrintingsQuery`), and each list's figures assembled as the early page assembles them
  * (`assembleEarlyList`), so a tile's "you own N of M" is the page's.
  *
- * A list whose commander already heads a plain-edition precon in the same set is left out: its release list is in, so
- * the early one has given way (STATES 3.4).
+ * A list whose release list is in is left out: the early one has given way (STATES 3.4). Whether it is in is the early
+ * page's own rule (`pickReleasePrecon`, over the same candidates), so a tile is drawn exactly when its link lands on the
+ * early page rather than redirecting to the release list.
  */
 import { and, eq, gte, inArray, isNotNull, isNull } from "drizzle-orm";
 import { db } from "../../db";
-import { cards, collectionItems, preconCards, precons, userPrefs, wizardsAnnouncementDecklists, wizardsAnnouncements } from "../../db/schema";
+import { catalogFirstSeen, cards, collectionItems, preconCards, precons, userPrefs, wizardsAnnouncementDecklists, wizardsAnnouncements } from "../../db/schema";
 import { RELEASED_GRACE_DAYS, utcDay, type UpcomingSet } from "../precons/upcoming";
 import { earlyListHref, resolvePostSet, type EarlyCardFacts } from "./early-list";
-import { assembleEarlyList, commanderPrintingsQuery, SET_WINDOW_AFTER_DAYS } from "./early-list-read";
+import { assembleEarlyList, commanderPrintingsQuery, pickReleasePrecon, SET_WINDOW_AFTER_DAYS, type ReleaseCandidate } from "./early-list-read";
 import type { EarlySet, EarlyTile } from "./early-tiles";
 
 type Reader = Pick<typeof db, "select" | "selectDistinct">;
@@ -50,13 +51,37 @@ export function earlyListsQuery(since: Date, q: Reader = db) {
     .orderBy(wizardsAnnouncements.publishedAt, wizardsAnnouncementDecklists.position);
 }
 
-/** The sets in which each of these commanders heads a plain-edition precon (lowercase codes); apart so a test can render its SQL. */
+/**
+ * Every plain-edition precon that names any of these commanders, in any set, with its first-seen stamp: the candidates
+ * `releaseCandidatesQuery` reads for the early page, for every commander at once; apart so a test can render its SQL.
+ */
 export function releasedCommandersQuery(commanderIds: string[], q: Reader = db) {
   return q
-    .selectDistinct({ oracleId: preconCards.oracleId, setCode: precons.setCode })
+    .selectDistinct({
+      oracleId: preconCards.oracleId,
+      fileName: precons.fileName,
+      setCode: precons.setCode,
+      firstSeenAt: catalogFirstSeen.firstSeenAt,
+      baseline: catalogFirstSeen.baseline,
+    })
     .from(preconCards)
     .innerJoin(precons, eq(precons.fileName, preconCards.fileName))
+    .leftJoin(catalogFirstSeen, and(eq(catalogFirstSeen.kind, "precon"), eq(catalogFirstSeen.key, precons.fileName)))
     .where(and(inArray(preconCards.oracleId, commanderIds), eq(preconCards.isCommander, true), isNull(precons.twinOf)));
+}
+
+/**
+ * Whether an early list has given way to its release list: the early page's rule (`pickReleasePrecon`) over that
+ * commander's candidates, the post's day and the set the post resolves to, so the tile and its link never disagree.
+ * Pure, for a test.
+ */
+export function hasGivenWay(
+  list: { commanderCardId: string | null; publishedAt: Date },
+  setCode: string,
+  candidatesByCommander: ReadonlyMap<string, readonly ReleaseCandidate[]>,
+): boolean {
+  if (!list.commanderCardId) return false;
+  return pickReleasePrecon(candidatesByCommander.get(list.commanderCardId) ?? [], list.publishedAt, setCode) !== null;
 }
 
 /** The early seen keys the reader holds (`early:<code>:<count>`); the other forms in the array are not this read's. */
@@ -102,7 +127,8 @@ export async function loadEarlyListsBySet(userId: string, sets: readonly Upcomin
     cardIds.length === 0 ? [] : db.selectDistinct({ oracleId: collectionItems.oracleId }).from(collectionItems)
       .where(and(eq(collectionItems.userId, userId), inArray(collectionItems.oracleId, cardIds))),
   ]);
-  const releasedIn = new Set(released.map((r) => `${r.setCode.toLowerCase()}:${r.oracleId}`));
+  const candidatesByCommander = new Map<string, ReleaseCandidate[]>();
+  for (const { oracleId, ...c } of released) candidatesByCommander.set(oracleId, [...(candidatesByCommander.get(oracleId) ?? []), c]);
   const facts = new Map<string, EarlyCardFacts>(factRows.map((f) => [f.oracleId, f]));
   const owned = new Set(ownedRows.map((r) => r.oracleId));
   const today = utcDay(now);
@@ -116,7 +142,7 @@ export async function loadEarlyListsBySet(userId: string, sets: readonly Upcomin
     const gaveWay: string[] = [];
     let gaveWayLists = 0;
     for (const l of lists) {
-      if (l.commanderCardId && releasedIn.has(`${code}:${l.commanderCardId}`)) {
+      if (l.commanderCardId && hasGivenWay(l, code, candidatesByCommander)) {
         gaveWay.push(l.commanderCardId, ...(l.partnerCardId ? [l.partnerCardId] : []));
         gaveWayLists++;
         continue;
