@@ -1,10 +1,20 @@
 # The 99 — Flyer trial · R1 · account 2, 2026-10-29
 
-Canvas (account 2): https://claude.ai/artifact/68NYTSE6Uoued9mtkWs29F (12 boards). Status: **R1, awaiting Hugh's review.**
+Canvas (account 2): https://claude.ai/artifact/68NYTSE6Uoued9mtkWs29F (12 boards). Status: **R1b (Hugh's notes, 2026-10-30), awaiting Hugh's review.**
 On approval this folder becomes `design/design_handoff_the99_flyer_trial/` on main, mirroring `design_handoff_the99_invites/`.
 
 A card-store flyer trial before going public: the printed flyer, the `/join` landing for a flyer code, admin controls
 for codes, and two feedback avenues (a problem report and a check-in), plus the admin list that reads both.
+
+## R1b (Hugh's notes, 2026-10-30)
+
+- The flyer names the game: kicker "Magic: The Gathering · Commander", plus the locked Fan Content passage one in small print at the foot.
+- No "invite only": a try-before-launch line under the pitch; foot "Free to try"; /join titled "Try The 99 before it launches".
+- Launch list: used-up and ended flyers take an email ("Tell me at launch" → "You're on the list"); admin shows the count and a CSV.
+- No single word alone on a last line anywhere (headings balanced, copy wraps pretty; render.js reports `lone`).
+- Quieter warnings: error screen drops "Your decks and collection are fine" (changes shipped `shellCopy.errorBoundary.body`); report form drops "Nothing else."
+- Report sent: "We'll be in touch if we need any more insight."
+- Check-in pills one size (3-column grid): Collection, Commanders, Decks, Shopping, Friends, Precons; Yes, Maybe, Already have.
 
 ## Locked (Hugh, 2026-10-29)
 

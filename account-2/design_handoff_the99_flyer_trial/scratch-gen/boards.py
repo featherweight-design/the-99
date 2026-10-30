@@ -1,6 +1,10 @@
 """Flyer trial R1 boards."""
 import kit, fly as F, sr as S
-from kit import board_head as bh, frame, frames, doc
+from kit import frame, frames, doc
+
+
+def bh(k, t, c):
+    return kit.board_head(k.replace("R1 ·", "R1b ·"), t, c, tag="R1b")
 
 W = {}
 
@@ -23,7 +27,7 @@ def lab(n, t):
 # ---------------------------------------------------------------- Main
 @board("Main", "R1 · the trial, calls, questions, gaps", 1612)
 def main():
-    head = bh("Flyer trial · R1 · account 2 · 2026-10-29", "A card-store flyer trial",
+    head = bh("Flyer trial · R1b · account 2 · 2026-10-30", "A card-store flyer trial",
               "A printed flyer whose QR opens a sign-up for that store, codes Hugh makes and revokes in /admin, and two ways "
               "players tell us things: a problem report and a check-in. Drawn over the shipped /join, /admin, error screen, "
               "About index and Home. Hugh’s rulings are locked; Design’s calls are below with the three questions he left open.")
@@ -57,7 +61,15 @@ def main():
                 "<li><b>Feedback store.</b> kind, account, answers, page, device, error digest, read_at. Admin shows names, never emails.</li>"
                 "<li><b>Check-in timing</b> lives in code (e.g. 14 days and 5 visits); Not now snoozes a few days; ✕ closes the round.</li>"
                 "<li><b>Root errors</b> (<code>global-error.tsx</code>) draw no shell: the link opens the same form as a page.</li></ol>")
-    return head + locks + f'<div class="notes">{calls}{qs}{gaps}</div>'
+    r1b = note("R1b · Hugh’s notes, 2026-10-30", "<ol>"
+               "<li><b>Naming Magic.</b> The flyer names it: the kicker reads “Magic: The Gathering · Commander”. In the store “Commander” is enough, but a flyer gets photographed and shared, and outside the store “Commander” alone means nothing. Naming Wizards’ game brings the locked Fan Content line (passage one) to the flyer’s foot in small print.</li>"
+               "<li><b>No “invite only”.</b> The flyer asks people to try it before launch (a sub-line under the pitch; foot “Free to try”). /join’s title is “Try The 99 before it launches”.</li>"
+               "<li><b>Launch list.</b> Used-up and ended flyers take an email and say they’ll tell them at launch (Join 2, E1 to E3). Admin shows the count per flyer and a CSV (board 4).</li>"
+               "<li><b>No lone last words.</b> Every heading balances and every line of copy wraps to avoid one word on its own line; checked on every board.</li>"
+               "<li><b>Quieter warnings.</b> The error screen loses “Your decks and collection are fine” (a change to shipped copy, <code>shellCopy.errorBoundary.body</code>); the report form loses “Nothing else.”</li>"
+               "<li><b>Report sent</b> reads “We’ll be in touch if we need any more insight.”</li>"
+               "<li><b>Check-in pills</b> are one size: a three-column grid; “Building decks” becomes “Decks”, Precons joins as the sixth, and “Not yet” folds into Maybe.</li></ol>")
+    return head + r1b + locks + f'<div class="notes">{calls}{qs}{gaps}</div>'
 
 
 # ---------------------------------------------------------------- 1 Flyer
@@ -66,8 +78,8 @@ def flyer_b():
     head = bh("1 · print · letter 8.5 × 11 in, drawn at 96 px/in", "The flyer",
               "One colour of ink on coloured paper, from the brand handoff: the crowned 99 with THE, Cinzel for the pitch, Plex Mono for the URL. "
               "The card fan (the brand’s secondary mark for marketing) carries the QR on its front card. Every flyer prints from its code’s page in /admin (board 6), so the QR and URL are that store’s.")
-    a = frame(lab("A", "recommended"), F.flyer(), "Wordmark, kicker, pitch, the fan with the QR, <b>or type</b> the URL, three facts. Nothing names the store.")
-    b = frame(lab("B", "with tear-off tabs"), F.flyer(tabs=True), "Eight tabs carry the URL. The fan shrinks to fit; not recommended.")
+    a = frame(lab("A", "recommended"), F.flyer(), "Wordmark, kicker naming the game, pitch, the try-before-launch line, the fan with the QR, <b>or type</b> the URL, three facts, the Fan Content line. Nothing names the store.")
+    b = frame(lab("B", "with tear-off tabs"), F.flyer(tabs=True), "Eight tabs carry the URL. The fan shrinks to fit; the Fan Content line would sit on the tabs’ edge. Not recommended.")
     minis = ('<div class="swl">' + F.mini("#E7B54A", "goldenrod") + F.mini("#9CC3E4", "sky") + F.mini("#EFA6B6", "pink")
              + F.mini("#B9D88F", "lime") + F.mini("#F1ECE0", "white") + '</div>')
     pitch = '<div class="pitch">' + "".join(
@@ -80,7 +92,7 @@ def flyer_b():
 
 
 # ---------------------------------------------------------------- 2 Join phone
-@board("Join-Phone", "2 · /join for a flyer code · 390", 2880)
+@board("Join-Phone", "2 · /join for a flyer code · 390", 3314)
 def join_phone():
     head = bh("2 · /join/[code] · phone 390 · signed out", "The flyer’s landing",
               "The shipped newcomer page (NEWCOMER_MAIN, NewcomerColumn, the compact FriendCard), with no sender. A live code shows the card face up; "
@@ -88,8 +100,9 @@ def join_phone():
     fs = [frame(lab("V1", "valid"), F.join_phone("valid"), "Title and fine print are new; the body, field and Send code are shipped."),
           frame(lab("V2", "the code"), F.join_phone("code"), "Unchanged (shipped N3 to N5)."),
           frame(lab("V3", "proven"), F.join_phone("proven"), "The body loses the sender: it names what they start with."),
-          frame(lab("E1", "used up"), F.join_phone("full"), "50 sign-ups reached, or Hugh is out of invites. No count shown."),
-          frame(lab("E2", "revoked"), F.join_phone("revoked"), "No reason given."),
+          frame(lab("E1", "used up"), F.join_phone("full"), "50 sign-ups reached, or Hugh is out of invites. One field for the launch list."),
+          frame(lab("E1b", "on the list"), F.join_phone("listed"), "Their email, once, the day The 99 opens. A failed save is the shared toast."),
+          frame(lab("E2", "revoked"), F.join_phone("revoked"), "No reason given; the same launch list."),
           frame(lab("E3", "expired · after launch"), F.join_phone("ended"), "Every code retires at public launch. The press goes to sign-up; the back is dimmed as the shipped expired card is.")]
     return head + frames(*fs, gap=44)
 
@@ -99,7 +112,7 @@ def join_phone():
 def join_desk():
     head = bh("3 · /join/[code] · desktop 1300", "The landing on desktop",
               "The join steps are one scale at every width (shipped): the same column, centred under the desktop wash. Drawn for the valid code and one ended state; the others follow the phone.")
-    return head + frame(lab("V1", "valid"), F.join_desk("valid", 720)) + frame(lab("E1", "used up"), F.join_desk("full", 600))
+    return head + frame(lab("V1", "valid"), F.join_desk("valid", 760)) + frame(lab("E1", "used up"), F.join_desk("full", 700))
 
 
 # ---------------------------------------------------------------- 4 Admin desktop
@@ -108,7 +121,7 @@ def admin_desk():
     head = bh("4 · /admin/invites · desktop 1300", "Flyer codes in the Invites tab",
               "A section above the shipped tree, built from the admin pieces (SectionHead, the 12px cards, accent text buttons, the group chip). "
               "Sign-ups read “n of 50” with a bar; full turns --warning; revoked rows stay, dimmed, with their date. The tree gains a flyer node under Hugh, tagged with its code, its sign-ups under it.")
-    body1 = F.codes_head() + F.codes_table() + '<div class="sech2"><div class="t"><h2>Who invited whom</h2><small>founders · accounts from before launch</small></div></div>' + F.tree_rows()
+    body1 = F.codes_head() + F.codes_table() + F.launch_list() + '<div class="sech2"><div class="t"><h2>Who invited whom</h2><small>founders · accounts from before launch</small></div></div>' + F.tree_rows()
     f1 = frame(lab("A1", "the section and the tree"), F.admin_desk(body1))
     body2 = F.codes_head(True) + F.new_form() + F.codes_table()
     f2 = frame(lab("A2", "New flyer code"), F.admin_desk(body2),
@@ -123,7 +136,7 @@ def admin_desk():
 def admin_phone():
     head = bh("5 · /admin/invites · phone 390", "Flyer codes on a phone",
               "Each code is a stacked row: store and code, the bar and group, the date, then Print and Revoke at 44px. The head’s eyebrow and title scroll away; the tab strip stays (shipped).")
-    fs = [frame(lab("P1", "the list"), F.admin_phone(F.codes_head() + F.codes_phone())),
+    fs = [frame(lab("P1", "the list"), F.admin_phone(F.codes_head() + F.codes_phone() + F.launch_list().replace("grid-template-columns:minmax(0,1fr) auto", "grid-template-columns:minmax(0,1fr)"))),
           frame(lab("P2", "New flyer code"), F.admin_phone(F.codes_head(True) + F.new_form(True) + F.codes_phone(F.CODES[:2]))),
           frame(lab("P3", "Revoke"), F.admin_phone(F.codes_head() + F.codes_phone(), over=F.confirm(False)))]
     return head + frames(*fs)

@@ -27,7 +27,7 @@ kit.CSS += r"""
 .fwm .nn{font:900 104px/80px 'Cinzel',serif;letter-spacing:0}
 .fly .kk{font:500 13px 'IBM Plex Mono',monospace;letter-spacing:.3em;text-transform:uppercase;margin-top:36px}
 .fly h1{margin:14px 0 0;font:800 50px/1.08 'Cinzel',serif;letter-spacing:.005em;max-width:660px;text-wrap:balance}
-.fly .mid{flex:1;display:flex;align-items:center;justify-content:center;position:relative}
+.fly .mid{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;position:relative}
 .fan{position:relative;width:520px;height:440px}
 .fan .c{position:absolute;left:50%;top:22px;width:262px;height:366px;margin-left:-131px;border:3px solid var(--ink);border-radius:16px;background:var(--paper,#E7B54A)}
 .fan .c.l{transform:rotate(-13deg) translate(-96px,26px)}
@@ -42,6 +42,8 @@ kit.CSS += r"""
 .fly .url small{font:500 12.5px 'IBM Plex Mono',monospace;letter-spacing:.3em;text-transform:uppercase}
 .fly .url b{font:600 38px 'IBM Plex Mono',monospace;letter-spacing:.01em}
 .fly .url b em{font-style:normal;border-bottom:3px solid var(--ink)}
+.fly .sub{margin-top:14px;font:400 20px/1.4 'IBM Plex Sans',sans-serif;max-width:640px}
+.fly .fcn{margin-top:12px;font:400 8.5px/1.45 'IBM Plex Sans',sans-serif;opacity:.85}
 .fly .ft{display:flex;justify-content:space-between;align-items:flex-end;margin-top:26px;padding-top:14px;border-top:2px solid var(--ink);font:500 12px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase}
 .fly .tabs{position:absolute;left:0;right:0;bottom:0;height:200px;display:flex;border-top:2px dashed var(--ink)}
 .fly .tabs span{flex:none;width:102px;position:relative;overflow:hidden;border-left:2px dashed var(--ink)}
@@ -286,8 +288,8 @@ kit.CSS += r"""
 .dk .scale span,.mdl .scale span{height:40px}
 .scale span.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,var(--surface-raised));color:var(--fg)}
 .ends{display:flex;justify-content:space-between;font:11px 'IBM Plex Mono';color:var(--fg-faint)}
-.chips{display:flex;flex-wrap:wrap;gap:8px}
-.chips span{height:40px;display:inline-flex;align-items:center;gap:7px;padding:0 13px;border-radius:999px;border:1px solid var(--border-strong);font-size:13.5px;color:var(--fg-body)}
+.chips{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.chips span{height:40px;display:flex;align-items:center;justify-content:center;gap:6px;padding:0 6px;white-space:nowrap;border-radius:999px;border:1px solid var(--border-strong);font-size:13.5px;color:var(--fg-body)}
 .mdl .chips span{height:34px}
 .chips span.on{border-color:var(--accent);color:var(--fg);background:color-mix(in srgb,var(--accent) 12%,var(--surface-raised))}
 .chips span.on::before{content:'✓';font:700 12px 'IBM Plex Sans';color:var(--accent-text)}
@@ -324,6 +326,8 @@ kit.CSS += r"""
 .fbr .ctx{display:flex;flex-wrap:wrap;gap:6px}
 .fbr .ctx span{height:22px;display:inline-flex;align-items:center;padding:0 7px;border-radius:5px;background:var(--surface-sunken);border:1px solid var(--border);font:10.5px 'IBM Plex Mono';color:var(--fg-muted)}
 .cls{display:flex;flex-direction:column;gap:6px;font:12.5px/1.5 'IBM Plex Sans';color:var(--fg-muted)}
+.board p,.board li,.board dd,.board td,.board .cap,.board small,.board span,.board b{text-wrap:pretty}
+.board h1,.board h2,.board h4{text-wrap:balance}
 .slab{position:absolute;z-index:60;font:600 9.5px 'IBM Plex Mono';letter-spacing:.06em;color:#0D0B09;background:#8FA6BE;border-radius:4px;padding:2px 6px}
 .pin{position:absolute;z-index:61;width:22px;height:22px;border-radius:50%;background:var(--accent);color:#14110E;font:700 11px/22px 'IBM Plex Mono';text-align:center;box-shadow:0 0 0 3px rgba(13,11,9,.85)}
 """
@@ -356,6 +360,9 @@ def qr(data=f"https://{URL}", px=200, color="var(--ink)", bg=None):
 
 # ---------------------------------------------------------------- the flyer
 PITCH = "Build Commander decks from the cards you already own."
+SUB = "We’re looking for players to try it before it launches. Scan, sign up, tell us what you think."
+FCN = ("The 99 is unofficial Fan Content permitted under the Fan Content Policy. Not approved/endorsed by Wizards. "
+       "Portions of the materials used are property of Wizards of the Coast. ©Wizards of the Coast LLC.")
 PITCHES = [
     (PITCH, "Says what the app does in the words a player at the counter uses. Recommended."),
     ("Your next Commander deck is already in your binder.", "Warmer, a promise; leans on “binder”, which not every player has."),
@@ -366,21 +373,23 @@ PITCHES = [
 def flyer(paper="#E7B54A", tabs=False, pitch=PITCH):
     crown = '<span class="fcr"><i></i><i></i><i></i></span>'
     head = (f'<div class="fwm"><span class="the">THE</span><span class="mk">{crown}<span class="nn">99</span></span></div>'
-            f'<div class="kk">For Commander players · invite only</div><h1>{pitch}</h1>')
+            f'<div class="kk">Magic: The Gathering · Commander</div><h1>{pitch}</h1>'
+            f'<p class="sub">{SUB}</p>')
     cards = (f'<div class="c l"></div><div class="c r"></div>'
              f'<div class="c f"><span class="ql">SCAN TO JOIN</span>{qr(px=212)}<span class="dm"><i></i><i></i><i></i></span></div>')
-    fan = f'<div class="fan">{cards}</div>'
+    fan = f'<div class="fan" style="zoom:.8">{cards}</div>'
     if tabs:
-        head = head.replace("<h1>", '<h1 style="font-size:42px">')
-        mid = (f'<div class="mid" style="flex:none;height:340px;margin-top:44px"><div class="fan" style="transform:scale(.72);transform-origin:center top">'
+        head = head.replace("<h1>", '<h1 style="font-size:40px">')
+        mid = (f'<div class="mid" style="flex:none;margin-top:10px"><div class="fan" style="zoom:.6">'
                f'{cards}</div></div>')
-        url = f'<div class="url" style="margin-top:-6px"><small>or type</small><b>{URL.replace(CODE, f"<em>{CODE}</em>")}</b></div>'
+        url = f'<div class="url" style="margin-top:18px"><small>or type</small><b>{URL.replace(CODE, f"<em>{CODE}</em>")}</b></div>'
         tb = "".join(f'<span><b>{URL}<small>THE 99 · SCAN OR TYPE</small></b></span>' for _ in range(8))
         return (f'<div class="fly" style="--paper:{paper}"><div class="in" style="bottom:216px">{head}{mid}{url}</div>'
                 f'<div class="tabs">{tb}</div></div>')
     url = f'<div class="url"><small>or type</small><b>{URL.replace(CODE, f"<em>{CODE}</em>")}</b></div>'
-    ft = '<div class="ft"><span>Free to join</span><span>3 invites of your own</span><span>the-99.dev</span></div>'
-    return (f'<div class="fly" style="--paper:{paper}"><div class="in">{head}<div class="mid">{fan}</div>{url}{ft}</div></div>')
+    ft = '<div class="ft"><span>Free to try</span><span>3 invites for your pod</span><span>the-99.dev</span></div>'
+    return (f'<div class="fly" style="--paper:{paper}"><div class="in">{head}<div class="mid">{fan}</div>{url}{ft}'
+            f'<p class="fcn">{FCN}</p></div></div>')
 
 
 def mini(paper, label, cap=""):
@@ -388,7 +397,7 @@ def mini(paper, label, cap=""):
 
 
 # ---------------------------------------------------------------- /join
-def card_face(rules="Join The 99 with 3 invites of your own. Your decks and your collection stay yours.", badge=False):
+def card_face(rules="Join before launch, with 3 invites of your own for your pod.", badge=False):
     b = '<span class="bdg2">✓</span>' if badge else ""
     return (f'<div class="cc tilt"><div class="fc"><div class="ii"><div class="nb">The 99</div>'
             f'<div class="ar"><span class="cw">◆ ◆ ◆</span><b>99</b></div>'
@@ -406,9 +415,9 @@ def jcol(title, body="", inner="", fine=""):
             + (f'<p class="jfine">{fine}</p>' if fine else "") + "</div>")
 
 
-FL_TITLE = "You’re invited to The 99"
+FL_TITLE = "Try The 99 before it launches"
 FL_BODY = "Type your own email. We’ll send it a code to check it’s yours, then you’ll make your account."
-FL_FINE = "Your invite came from a flyer. It brings 15 welcome credits and 3 invites of your own."
+FL_FINE = "You start with 15 welcome credits and 3 invites for your friends."
 
 
 def join_state(state, typed=False):
@@ -425,16 +434,18 @@ def join_state(state, typed=False):
         form = '<div class="jform"><span class="jbtn">Continue to sign-up</span></div>'
         return card_face(badge=True) + jcol("That’s your email", "Now make your account. You’ll start with 15 welcome credits and 3 invites.", form)
     signin = '<p class="jquiet">Already on The 99? <a>Sign in</a></p>'
-    if state == "full":
-        return card_back() + jcol("This flyer’s invites are all taken",
-                                  "Each flyer lets a set number of people in. Ask a friend who plays The 99 to invite you.", signin)
-    if state == "revoked":
-        return card_back() + jcol("This flyer no longer works",
-                                  "Ask a friend who plays The 99 to invite you.", signin)
+    if state in ("full", "revoked", "full-typed", "listed"):
+        title = "This flyer has ended" if state == "revoked" else "This flyer’s spots are all taken"
+        if state == "listed":
+            return card_back() + jcol("You’re on the list", "We’ll email <em>sam@example.com</em> the day The 99 opens to everyone.", signin)
+        on = state == "full-typed"
+        fld = '<span class="jfld on">sam@example.com</span>' if on else '<span class="jfld">name@example.com</span>'
+        form = f'<div class="jform"><label>Your email</label>{fld}<span class="jbtn">Tell me at launch</span></div>'
+        return card_back() + jcol(title, "The 99 opens to everyone soon. Leave your email and we’ll tell you when it does.", form + signin)
     if state == "ended":
         form = '<div class="jform"><span class="jbtn">Make your account</span></div>'
         return card_back(dim=True) + jcol("The 99 is open to everyone now",
-                                          "Flyer codes have retired. You don’t need one any more.", form + signin)
+                                          "Flyer codes have retired. Make your account the usual way.", form + signin)
     raise ValueError(state)
 
 
@@ -503,7 +514,7 @@ def codes_phone(rows=CODES):
 
 def codes_head(open_form=False):
     link = "" if open_form else '<a>New flyer code</a>'
-    return (f'<div class="sech2"><div class="t"><h2>Flyer codes</h2><small>3 live · from your invites, 37 left</small></div>{link}</div>')
+    return (f'<div class="sech2"><div class="t"><h2>Flyer codes</h2><small>3 live · from your invites, 37 left · 23 on the launch list</small></div>{link}</div>')
 
 
 def new_form(phone=False, typed=True, group_new=True):
@@ -514,6 +525,13 @@ def new_form(phone=False, typed=True, group_new=True):
             f'<div class="fl"><label>Group</label>{grp}<small>Its sign-ups and the people they invite join it.</small></div></div>'
             '<div class="ffacts"><span>50 sign-ups</span><span>3 free runs a day</span><span>15 welcome credits</span><span>3 invites each</span><span>ends at launch</span></div>'
             f'<div class="bt"><small>Each sign-up spends one of your invites.</small><span class="bg">Cancel</span><span class="bp">Make code</span></div></div>')
+
+
+def launch_list():
+    return ('<div class="acard"><div class="frow" style="grid-template-columns:minmax(0,1fr) auto;min-height:56px">'
+            '<span style="display:flex;flex-direction:column;gap:3px"><b style="font:600 14px IBM Plex Sans;color:var(--fg)">Launch list · 23</b>'
+            '<span class="mt">emails left on used-up and ended flyers · Knight Moves Cafe 19 · Pizza Pod test 4</span></span>'
+            '<span class="acts"><span class="tb">Download CSV</span></span></div></div>')
 
 
 def tree_rows():
@@ -566,7 +584,7 @@ CHAT = '<path d="M3.5 4.5h13v9h-7l-3.6 2.8v-2.8H3.5z"/>'
 
 def error_screen(desk=False, tell=True):
     t = '<span class="tell">Tell us what happened</span>' if tell else ""
-    return (f'<div class="en"><h1>That didn’t load</h1><p>Something broke on our end. Your decks and collection are fine. Try again.</p>'
+    return (f'<div class="en"><h1>That didn’t load</h1><p>Something broke on our end. Try again.</p>'
             f'<div class="bt"><span class="p1">Try again</span><span class="g1">Back home</span></div>{t}</div>')
 
 
@@ -582,7 +600,7 @@ def about_index(desk=False, report=True, n=6):
     lis = "".join(f'<li><span class="pic"><img src="{img(d if desk else p)}" alt=""></span><span class="tx"><b>{nm}</b>'
                   + (f"<span>{ln}</span>" if desk else "") + f'<small>{ct}</small></span></li>'
                   for nm, ln, ct, p, d in TILES[:n])
-    rp = (f'<div class="rpl new"><span class="ic">{ico(WRENCH, 17, 1.5)}</span><span class="tx"><b>Something not working?</b>Tell us what happened and we’ll look.</span>'
+    rp = (f'<div class="rpl new"><span class="ic">{ico(WRENCH, 17, 1.5)}</span><span class="tx"><b>Something wrong?</b>Tell us what happened and we’ll look.</span>'
           '<span class="go">Report a problem</span></div>') if report else ""
     return (f'<div class="aix"><header><span>About The 99</span><h1>About The 99</h1><p>One page for each part of the app, drawn from the app itself. '
             f'The ? opens help for the screen you’re on. <a>Take the tour →</a></p></header><ul>{lis}</ul>{rp}'
@@ -593,7 +611,7 @@ def report_form(state="empty", desk=False):
     """empty | typed | sending | sent"""
     if state == "sent":
         return ('<div class="sent"><span class="ck">✓</span><b>Sent. Thank you.</b>'
-                '<p>We read every one. If we need more, we’ll ask in the app.</p><span class="bg">Close</span></div>')
+                '<p>We’ll be in touch if we need any more insight.</p><span class="bg">Close</span></div>')
     t1 = "The deck page went blank when I pressed Apply 4 changes." if state != "empty" else "What went wrong, in a sentence or two"
     t2 = "Trying Suggested changes on Thopter Works." if state != "empty" else "Which deck or page, and what you pressed"
     on = " on" if state != "empty" else ""
@@ -602,7 +620,7 @@ def report_form(state="empty", desk=False):
     return (f'<div class="rf"><p class="ln">Tell us what you saw. We’ll fix what we can.</p>'
             f'<div class="rta"><label>What happened?</label><span class="rbx{on}">{t1}</span></div>'
             f'<div class="rta"><label>What were you doing?<small>optional</small></label><span class="rbx sm{on}">{t2}</span></div>'
-            '<div class="att"><i>+</i><span>We add the page you were on, your device, and the error code if there was one. Nothing else.</span></div>'
+            '<div class="att"><i>+</i><span>We add the page you were on, your device, and the error code if there was one.</span></div>'
             f'<div class="rft">{"" if not desk else "<span class=\"bg\">Cancel</span>"}{btn}</div></div>')
 
 
@@ -623,9 +641,9 @@ def survey_form(state="empty", desk=False):
                 '<p>We read every answer. You can always tell us more from About › Report a problem.</p><span class="bg">Close</span></div>')
     a = state == "answered"
     sc = "".join(f'<span class="{"on" if a and i == 4 else ""}">{i}</span>' for i in range(1, 6))
-    ch = "".join(f'<span class="{"on" if a and c in ("Building decks", "Shopping") else ""}">{c}</span>'
-                 for c in ["Collection", "Commanders", "Building decks", "Shopping", "Friends"])
-    tl = "".join(f'<span class="{"on" if a and c == "Already have" else ""}">{c}</span>' for c in ["Yes", "Maybe", "Not yet", "Already have"])
+    ch = "".join(f'<span class="{"on" if a and c in ("Decks", "Shopping") else ""}">{c}</span>'
+                 for c in ["Collection", "Commanders", "Decks", "Shopping", "Friends", "Precons"])
+    tl = "".join(f'<span class="{"on" if a and c == "Already have" else ""}">{c}</span>' for c in ["Yes", "Maybe", "Already have"])
     box = '<span class="rbx sm on">Wish I could see which precon a card came from.</span>' if a else '<span class="rbx sm">Anything you’d change, or love</span>'
     send = '<span class="bp">Send</span>' if a else '<span class="bp dis">Send</span>'
     return ('<div class="sv"><p class="ln">You’ve been using The 99 for a couple of weeks. Three quick questions.</p>'
@@ -661,7 +679,7 @@ FB = [
       ("What I was doing", "Trying Suggested changes on Thopter Works.")],
      ["/decks/thopter-works", "error a81f3c2e", "iPhone · Safari", "from the error screen"]),
     ("ci", True, "Check-in", "Jun", "mox-boston", "5h ago",
-     [("Working for you", "<b>4</b> of 5"), ("Uses most", "Building decks, Shopping"), ("Tell the pod", "Already have"),
+     [("Working for you", "<b>4</b> of 5"), ("Uses most", "Decks, Shopping"), ("Tell the pod", "Already have"),
       ("Anything else", "Wish I could see which precon a card came from.")], []),
     ("pb", False, "Problem", "Colin", None, "yesterday",
      [("What happened", "Collection sync says 0 changes but I added 12 cards."),
