@@ -1112,7 +1112,8 @@ export function FilterPanel({
             {selected.length}
           </span>
         )}
-        <Chevron open={open} />
+        {/* The field look's chevron is the board's 12px (the cap field's affix size); the chip keeps the shared size. */}
+        <Chevron open={open} style={triggerLook === "field" ? { fontSize: 12 } : undefined} />
       </button>
 
       {open &&
