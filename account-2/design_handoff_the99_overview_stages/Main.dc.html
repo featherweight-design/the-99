@@ -1151,6 +1151,7 @@ code{font:12px 'IBM Plex Mono',monospace;color:var(--fg-body)}
 /* ---------- item 1: the Overview modal (ModalChrome 700 / phone sheet) ---------- */
 .omo p,.omo span.body,.shx p,.shx span.body,.hand .hl>span,.owhy p,.sline>span{text-wrap:pretty}
 .cn{font-weight:600;color:var(--fg);border-bottom:1px dotted var(--accent)}
+.omo .cn,.shx .cn,.owhy .cn,.sline .cn{white-space:normal}
 .omo{width:700px;flex:none;border:1px solid var(--border-strong);border-radius:14px;background:var(--surface-raised);box-shadow:0 24px 60px rgba(0,0,0,.55);overflow:hidden;display:flex;flex-direction:column}
 .omo .mh{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border)}
 .omo .mh h2,.shx .mh h2{margin:0;font:700 16px 'Cinzel',serif;color:var(--fg)}
@@ -1223,11 +1224,108 @@ code{font:12px 'IBM Plex Mono',monospace;color:var(--fg-body)}
 .sline.cut>span:first-child{color:var(--fg-faint)}
 .sline.wait{color:var(--fg-faint);font-style:italic}
 .sline .cn,.owhy .cn{font-weight:600}
+
+.spec{display:flex;flex-direction:column;gap:14px;width:420px;flex:none}
+.stage{position:relative;width:390px;height:170px;border-radius:14px;border:1px solid var(--border-strong);background:var(--bg);overflow:hidden}
+.stage .tabbar{position:absolute;left:0;right:0;bottom:0;height:64px;border-top:1px solid var(--border);background:var(--surface-rail);display:flex;justify-content:space-around;align-items:center}
+.stage .tabbar span{width:22px;height:4px;border-radius:2px;background:var(--fg-faint);opacity:.45}
+.stage .pghost{position:absolute;left:16px;right:16px;top:16px;display:flex;flex-direction:column;gap:9px;opacity:.35}
+.stage .pghost i{display:block;height:10px;border-radius:3px;background:var(--elevated)}
+.tfS{position:absolute;left:16px;right:16px;bottom:80px;display:flex;align-items:center;gap:14px;border-radius:10px;border:1px solid var(--border-strong);background:var(--elevated);padding:4px 6px 4px 16px;box-shadow:0 12px 40px rgba(0,0,0,.5)}
+.tfS .t{flex:1;min-width:0;padding:8px 0;font-size:13.5px;color:var(--fg)}
+.tfS .tac{min-height:44px;display:flex;align-items:center;padding:0 12px;font:600 13.5px 'IBM Plex Sans';color:var(--accent-text)}
+.tfB{position:absolute;left:16px;right:16px;bottom:80px;display:flex;align-items:center;gap:10px;padding:12px 6px 12px 14px;border-radius:12px;background:var(--elevated);border:1px solid var(--border-strong);box-shadow:0 14px 30px rgba(0,0,0,.55);font-size:13.5px;color:var(--fg)}
+.tfB i{width:8px;height:8px;border-radius:50%;background:var(--danger);flex:none}
+.tfB span{flex:1}
+.tfB b{width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--fg-muted);font-weight:400}
+.diff{font:11px/1.6 'IBM Plex Mono';color:var(--fg-muted)}
+.diff b{color:var(--fg);font-weight:500}
+.ckrow{display:flex;align-items:flex-start;gap:12px;padding:10px 14px;border:1px solid var(--border);border-radius:10px;background:var(--surface-raised);width:390px}
+.ckrow .ct{display:flex;flex-direction:column;gap:2px}
+.ckrow .ct b{font:500 14px 'IBM Plex Sans';color:var(--fg)}
+.ckrow .ct span{font-size:12.5px;line-height:1.45;color:var(--fg-muted)}
+.cb{flex:none;width:18px;height:18px;box-sizing:border-box;border-radius:4px;border:1.5px solid var(--fg-faint);display:flex;align-items:center;justify-content:center;font:700 12px 'IBM Plex Sans';color:var(--bg);margin-top:1px}
+.cb.n{line-height:1}
+.cb.on{background:var(--accent);border-color:var(--accent)}
+.cb.on::after{content:'✓'}
+.cb.dis{opacity:.5}
+.zoom{display:flex;gap:28px;align-items:center;padding:18px 22px;border:1px solid var(--border);border-radius:10px;background:var(--surface-raised)}
+.zoom .z{display:flex;flex-direction:column;align-items:center;gap:10px}
+.zoom .z .cb{transform:scale(4);transform-origin:center;margin:30px}
+.zoom .z span{font:10.5px 'IBM Plex Mono';color:var(--fg-faint);letter-spacing:.08em;text-transform:uppercase}
+
+/* ---------- option B: the visual Overview ---------- */
+.cimg{display:block;border-radius:4.5%/3.2%;box-shadow:0 3px 10px rgba(0,0,0,.5);flex:none;object-fit:cover}
+.vb .ovh{display:grid;grid-template-columns:96px minmax(0,1fr);gap:18px;align-items:start}
+.shx .vb .ovh{grid-template-columns:72px minmax(0,1fr);gap:14px}
+.vb .ovh .cimg{width:96px;height:134px;transform:rotate(-3deg);margin-top:4px}
+.shx .vb .ovh .cimg{width:72px;height:100px}
+/* timeline (desktop) */
+.tl3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;position:relative}
+.tl3::before{content:"";position:absolute;left:4px;right:calc(33.33% - 10px);top:5px;height:1px;background:var(--fg-faint);opacity:.55}
+.tl3 .st{display:flex;flex-direction:column;gap:10px;min-width:0}
+.tl3 .lb{display:flex;align-items:center;gap:9px;font:500 10px 'IBM Plex Mono';letter-spacing:.14em;text-transform:uppercase;color:var(--fg-body)}
+.tl3 .lb i{width:10px;height:10px;transform:rotate(45deg);background:var(--fg-faint);box-shadow:0 0 0 4px var(--surface-raised);display:block;flex:none}
+.tl3 .st.cl .lb i{background:var(--accent)}
+.tl3 .cd{border:1px solid var(--border);background:var(--surface-sunken);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px;flex:1}
+.tl3 .cd .cimg{width:72px;height:100px}
+.tl3 .cd p{font-size:13px;line-height:1.55;color:var(--fg-body);text-wrap:pretty}
+/* rail with thumbs (phone) */
+.rl{position:relative;display:flex;flex-direction:column;gap:12px}
+.rl::before{content:"";position:absolute;left:4.5px;top:8px;bottom:8px;width:1px;background:var(--fg-faint);opacity:.55}
+.rl .st{display:grid;grid-template-columns:22px minmax(0,1fr);gap:0}
+.rl .st>i{width:10px;height:10px;transform:rotate(45deg);background:var(--fg-faint);box-shadow:0 0 0 4px var(--surface-raised);display:block;margin-top:4px}
+.rl .st.cl>i{background:var(--accent)}
+.rl .cd{border:1px solid var(--border);background:var(--surface-sunken);border-radius:10px;padding:11px 12px;display:grid;grid-template-columns:52px minmax(0,1fr);gap:12px}
+.rl .cd .cimg{width:52px;height:72px}
+.rl .cd .lb{font:500 10px 'IBM Plex Mono';letter-spacing:.14em;text-transform:uppercase;color:var(--fg-body);margin-bottom:5px;display:block}
+.rl .cd p{font-size:13px;line-height:1.55;color:var(--fg-body);text-wrap:pretty}
+/* alternate */
+.alt2{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:center;border:1px dashed var(--border-dashed);border-radius:10px;padding:12px 14px}
+.alt2 .ak{display:flex;align-items:center;gap:7px;font:500 9.5px 'IBM Plex Mono';letter-spacing:.14em;text-transform:uppercase;color:var(--fg-body);margin-bottom:5px}
+.alt2 .ak svg{color:var(--accent)}
+.alt2 .cr{width:34px;height:34px;border-radius:50%;border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;color:var(--accent);background:var(--surface-sunken)}
+.alt2 p{font-size:13px;line-height:1.55;color:var(--fg-body);text-wrap:pretty}
+/* land figure */
+.lfig{display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:center;margin-bottom:2px}
+.lfig .n{display:flex;flex-direction:column;align-items:center;justify-content:center;width:64px;height:64px;border-radius:10px;border:1px solid var(--border-strong);background:var(--surface-sunken)}
+.lfig .n b{font:700 26px/1 'Cinzel',serif;color:var(--fg)}
+.lfig .n span{font:500 9px 'IBM Plex Mono';letter-spacing:.14em;text-transform:uppercase;color:var(--fg-faint);margin-top:4px}
+.lfig p{font-size:13px;line-height:1.55;color:var(--fg-body);text-wrap:pretty}
+/* tips with a fanned pair */
+.tp2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.shx .tp2{grid-template-columns:1fr}
+.tp2 .tc{display:grid;grid-template-columns:78px minmax(0,1fr);gap:12px;align-items:center;border:1px solid var(--border);border-radius:10px;padding:12px;background:var(--surface-sunken)}
+.tp2 .fan{position:relative;width:78px;height:86px}
+.tp2 .fan .cimg{position:absolute;width:52px;height:72px;top:6px}
+.tp2 .fan .cimg:first-child{left:0;transform:rotate(-7deg)}
+.tp2 .fan .cimg:last-child{left:24px;transform:rotate(6deg)}
+.tp2 p{font-size:13px;line-height:1.55;color:var(--fg-body);text-wrap:pretty}
+/* key cards grid */
+.kg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.kg .k{display:grid;grid-template-columns:63px minmax(0,1fr);gap:11px;align-items:start;min-width:0}
+.kg .k>div{min-width:0}
+.kg .k b,.kg .k .cn{white-space:normal;overflow-wrap:anywhere}
+.shx .kg .k{min-width:0}
+.kg .k .cimg{width:63px;height:88px}
+.kg .k b{display:block;font-size:13px;margin:2px 0 4px}
+.kg .k span.j{font-size:12.5px;line-height:1.45;color:var(--fg-muted);text-wrap:pretty}
+.shx .kg{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 10px}
+.shx .kg .k{display:flex;flex-direction:column;gap:6px}
+.shx .kg .k .cimg{width:100%;height:auto;aspect-ratio:63/88}
+.shx .kg .k b{margin:0;font-size:12px;line-height:1.35}
+.shx .kg .k span.j{font-size:11.5px}
+/* weaknesses with severity */
+.wk2{display:flex;flex-direction:column;gap:10px}
+.wk2 p{display:grid;grid-template-columns:82px minmax(0,1fr);gap:10px;align-items:baseline;font-size:13px;line-height:1.55;color:var(--fg-body);text-wrap:pretty}
+.shx .wk2 p{grid-template-columns:1fr;gap:5px}
+.sev{justify-self:start;font:500 10px 'IBM Plex Mono';letter-spacing:.1em;text-transform:uppercase;border-radius:999px;padding:2px 8px;border:1px solid var(--border-strong);color:var(--fg-muted)}
+.sev.mod{color:var(--warning);border-color:color-mix(in oklab,var(--warning) 45%,transparent)}
 </style>
 </helmet>
-<div class="board" style="width:1300px"><div class="bh"><div class="kick"><span class="tag">OV</span>overview i3 + suggested changes · account 2 · 2026-10-30</div><h2>Overview stages and why these cards</h2><p>Two small items, each drawn over the shipped surface it changes, at 390 and 1300. Item 1 is the display for the approved iteration-3 Overview text (brief: <code>docs/superpowers/design-briefs/2026-10-29-overview-iteration-3-renderer.md</code>, PR #2397). Item 2 adds a short overview to Suggested changes v2’s results. Dashed orange outlines mark what is new. Strings marked as drafts are for /copy-review.</p></div><div class="sec"><h3>The calls</h3><div class="tbl2"><div class="tr"><div>1</div><div>Overview: stages and the alternate commander</div><div><b>Game plan</b> replaces Core strategy: three rows labeled <b>Early</b>, <b>Mid</b>, <b>Close</b> on a rail of three diamonds. A precon whose box carries another commander gets one <b>Alternate commander</b> box under Close; a player’s deck (and a precon without one) simply ends at Close. The <b>land line</b> sits under Mulligan above the Keep and Send back boxes, replacing the fixed range. Key tips (now 2) and Key cards stay where they are. Board <b>Overview-Stages</b>.</div></div><div class="tr"><div>2</div><div>Suggested changes: why these cards</div><div>From <b>N = 6</b> (12+ changes): a <b>Why these cards</b> box above the lists with one lead sentence, and one line at the top of each list saying what that side’s cards share. The slots are held while the run streams so nothing moves under a pick; they fill when the cuts finish. Stored with the run for History. Board <b>Why-These</b>.</div></div></div></div></div>
+<div class="board" style="width:1300px"><div class="bh"><div class="kick"><span class="tag">OV</span>overview i3 + suggested changes · account 2 · 2026-10-30</div><h2>Overview stages and why these cards</h2><p>Three small items, each drawn over the shipped surface it changes, at 390 and 1300. Item 1 is the display for the approved iteration-3 Overview text (brief: <code>docs/superpowers/design-briefs/2026-10-29-overview-iteration-3-renderer.md</code>, PR #2397). Item 2 adds a short overview to Suggested changes v2’s results. Item 3 settles which toast and checkbox are the app’s. Dashed orange outlines mark what is new. Strings marked as drafts are for /copy-review.</p></div><div class="sec"><h3>The calls</h3><div class="tbl2"><div class="tr"><div>1</div><div>Overview: stages and the alternate commander</div><div><b>Game plan</b> replaces Core strategy: three rows labeled <b>Early</b>, <b>Mid</b>, <b>Close</b> on a rail of three diamonds. A precon whose box carries another commander gets one <b>Alternate commander</b> box under Close; a player’s deck (and a precon without one) simply ends at Close. The <b>land line</b> sits under Mulligan above the Keep and Send back boxes, replacing the fixed range. Key tips (now 2) and Key cards stay where they are. Board <b>Overview-Stages</b>. <b>Option B</b> (your wall-of-text note): the same lines with the cards they name as images, Game plan as a timeline, the land count as a figure, tips with their card pair, Key cards as a card grid and severity chips. Board <b>Overview-Visual</b>.</div></div><div class="tr"><div>2</div><div>Suggested changes: why these cards</div><div>From <b>N = 6</b> (12+ changes): a <b>Why these cards</b> box above the lists with one lead sentence, and one line at the top of each list saying what that side’s cards share. The slots are held while the run streams so nothing moves under a pick; they fill when the cuts finish. Stored with the run for History. Board <b>Why-These</b>.</div></div><div class="tr"><div>3</div><div>Toast and checkbox</div><div><b>Recommended: keep what shipped, app-wide.</b> The Announcements board’s danger dot, ✕, radius, padding and shadow were drawing drift; the shipped toast leaves on its timer and carries Try again where it can. The checkbox’s line-height 1 draws the same pixels as the shipped box. The Announcements handoff gets a one-line erratum pointing at the shipped pieces. Board <b>Toast-Checkbox</b>.</div></div></div></div></div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1300,"height":530}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1300,"height":636}}'>
 class Component extends DCLogic {
 renderVals() { return {}; }
 }

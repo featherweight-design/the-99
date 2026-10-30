@@ -51,6 +51,7 @@ kit.CSS += r"""
 /* ---------- item 1: the Overview modal (ModalChrome 700 / phone sheet) ---------- */
 .omo p,.omo span.body,.shx p,.shx span.body,.hand .hl>span,.owhy p,.sline>span{text-wrap:pretty}
 .cn{font-weight:600;color:var(--fg);border-bottom:1px dotted var(--accent)}
+.omo .cn,.shx .cn,.owhy .cn,.sline .cn{white-space:normal}
 .omo{width:700px;flex:none;border:1px solid var(--border-strong);border-radius:14px;background:var(--surface-raised);box-shadow:0 24px 60px rgba(0,0,0,.55);overflow:hidden;display:flex;flex-direction:column}
 .omo .mh{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border)}
 .omo .mh h2,.shx .mh h2{margin:0;font:700 16px 'Cinzel',serif;color:var(--fg)}
@@ -165,6 +166,25 @@ BR = dict(
           "Minor: Wins lean on flying combat or a few loop pieces, so [[Ghostly Prison]] or a wipe that clears fliers slows it.",
           "Minor: The backup loop hinges on [[Peregrine Drake]], so removal or a counterspell in response breaks it."],
 )
+MM = dict(
+    deck="Mutant Menace", aside="Mutant Menace · written for the precon list",
+    overview="[[The Wise Mothman]] leads a Sultai deck that hands every player rad counters, mills cards, and turns each nonland card milled into +1/+1 counters, then wins by attacking with a bigger team.",
+    stages=["[[Talisman of Resilience]] and [[Cultivate]] set up [[The Wise Mothman]] around turn 4, which gives each player a rad counter and grows creatures off mills.",
+            "[[Branching Evolution]] and [[Winding Constrictor]] multiply every counter that the milled cards put on your creatures.",
+            "[[Glowing One]] and [[Nightkin Ambusher]] pile on rad counters, and [[Mutational Advantage]] shields the countered team from removal."],
+    alternate="[[The Master, Transcendent]] leads instead: it reanimates milled creatures, so the plan shifts from counters to stealing milled threats.",
+    land="4 lands suit a top-heavy curve with 12 spells costing five or more.",
+    keep=["[[Rampant Growth]] gets the commander down on time.", "[[Guardian Project]] with cheap creatures refills the hand."],
+    send=["Top-end spells with no [[Strength Bobblehead]] or other ramp stall."],
+    tips=["[[Raul, Trouble Shooter]] mills each player when it taps, and [[Tato Farmer]] can put a land milled that turn onto the battlefield.",
+          "[[Inexorable Tide]] proliferates on every spell you cast, so [[Agent Frank Horrigan]]’s double proliferate grows counters and rad faster."],
+    keys=[("Mirelurk Queen", "Turns each mill into cards and growth."), ("Screeching Scorchbeast", "Attacks to mill, then makes Zombie Mutant tokens."),
+          ("Vault 12: The Necropolis", "Turns rad counters into a wide, grown team."), ("Marcus, Mutant Mayor", "Rewards countered attackers with extra cards."),
+          ("Vexing Radgull", "Flies in and spreads rad counters."), ("Atomize", "Clears a blocker and adds counters at instant speed.")],
+    weak=["Moderate: Only 2 of 8 interaction pieces are instants, so a fast [[Thassa's Oracle]] combo usually resolves before the deck can answer.",
+          "Moderate: Wins mostly through combat, so [[Propaganda]] or a fog slows every attacker the counters have grown.",
+          "Minor: Repeated [[Swords to Plowshares]] on the commander stops the mill trigger that grows the team, leaving only the other counter pieces."],
+)
 LABELS = ["Early", "Mid", "Close"]
 
 
@@ -220,6 +240,8 @@ def board_overview():
                gap=40)
     b = frames(frame("<b>390</b> · Counter Intelligence, scrolled whole", sheet(CI),
                      "The phone sheet from 52px down, the 43px header, the aside opening the body, as shipped."),
+               frame("<b>390</b> · Mutant Menace, scrolled whole", sheet(MM),
+                     "The second precon: its alternate line is the longest of the three samples (two lines here)."),
                frame("<b>390</b> · HD - Brago, scrolled whole", sheet(BR),
                      "The same sections without the alternate box."),
                gap=40)
@@ -238,7 +260,7 @@ def board_overview():
     ])
     body = (head("overview iteration 3 · item 1", "Overview: the stages and the alternate commander",
                  "The shipped Overview modal (<code>SynopsisSections</code>, 700 wide; the phone sheet) with iteration 3’s Primer. The text is the eval samples’ new side, verbatim: "
-                 "Counter Intelligence (a precon whose box carries Kilo, Apogee Mind) and HD - Brago (a player’s own deck). Dashed orange outlines mark what is new; everything else is shipped.")
+                 "Counter Intelligence (a precon whose box carries Kilo, Apogee Mind), Mutant Menace (a second precon, phone) and HD - Brago (a player’s own deck). Dashed orange outlines mark what is new; everything else is shipped.")
             + sec("A · Desktop", "One modal for both. The precon’s carries one more box under Close; the player’s deck reads complete without it.", a)
             + sec("B · Phone", "The same sections in the shipped sheet. The rail and labels hold at 390; the Keep and Send back boxes stack, as shipped.", b)
             + '<div class="sec"><h3>The calls</h3>' + calls + '</div>')
@@ -366,18 +388,97 @@ def _stream_lines(html):
     return "".join(out)
 
 
+# ============================================================ item 3: toast and checkbox
+kit.CSS += r"""
+.spec{display:flex;flex-direction:column;gap:14px;width:420px;flex:none}
+.stage{position:relative;width:390px;height:170px;border-radius:14px;border:1px solid var(--border-strong);background:var(--bg);overflow:hidden}
+.stage .tabbar{position:absolute;left:0;right:0;bottom:0;height:64px;border-top:1px solid var(--border);background:var(--surface-rail);display:flex;justify-content:space-around;align-items:center}
+.stage .tabbar span{width:22px;height:4px;border-radius:2px;background:var(--fg-faint);opacity:.45}
+.stage .pghost{position:absolute;left:16px;right:16px;top:16px;display:flex;flex-direction:column;gap:9px;opacity:.35}
+.stage .pghost i{display:block;height:10px;border-radius:3px;background:var(--elevated)}
+.tfS{position:absolute;left:16px;right:16px;bottom:80px;display:flex;align-items:center;gap:14px;border-radius:10px;border:1px solid var(--border-strong);background:var(--elevated);padding:4px 6px 4px 16px;box-shadow:0 12px 40px rgba(0,0,0,.5)}
+.tfS .t{flex:1;min-width:0;padding:8px 0;font-size:13.5px;color:var(--fg)}
+.tfS .tac{min-height:44px;display:flex;align-items:center;padding:0 12px;font:600 13.5px 'IBM Plex Sans';color:var(--accent-text)}
+.tfB{position:absolute;left:16px;right:16px;bottom:80px;display:flex;align-items:center;gap:10px;padding:12px 6px 12px 14px;border-radius:12px;background:var(--elevated);border:1px solid var(--border-strong);box-shadow:0 14px 30px rgba(0,0,0,.55);font-size:13.5px;color:var(--fg)}
+.tfB i{width:8px;height:8px;border-radius:50%;background:var(--danger);flex:none}
+.tfB span{flex:1}
+.tfB b{width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:var(--fg-muted);font-weight:400}
+.diff{font:11px/1.6 'IBM Plex Mono';color:var(--fg-muted)}
+.diff b{color:var(--fg);font-weight:500}
+.ckrow{display:flex;align-items:flex-start;gap:12px;padding:10px 14px;border:1px solid var(--border);border-radius:10px;background:var(--surface-raised);width:390px}
+.ckrow .ct{display:flex;flex-direction:column;gap:2px}
+.ckrow .ct b{font:500 14px 'IBM Plex Sans';color:var(--fg)}
+.ckrow .ct span{font-size:12.5px;line-height:1.45;color:var(--fg-muted)}
+.cb{flex:none;width:18px;height:18px;box-sizing:border-box;border-radius:4px;border:1.5px solid var(--fg-faint);display:flex;align-items:center;justify-content:center;font:700 12px 'IBM Plex Sans';color:var(--bg);margin-top:1px}
+.cb.n{line-height:1}
+.cb.on{background:var(--accent);border-color:var(--accent)}
+.cb.on::after{content:'✓'}
+.cb.dis{opacity:.5}
+.zoom{display:flex;gap:28px;align-items:center;padding:18px 22px;border:1px solid var(--border);border-radius:10px;background:var(--surface-raised)}
+.zoom .z{display:flex;flex-direction:column;align-items:center;gap:10px}
+.zoom .z .cb{transform:scale(4);transform-origin:center;margin:30px}
+.zoom .z span{font:10.5px 'IBM Plex Mono';color:var(--fg-faint);letter-spacing:.08em;text-transform:uppercase}
+"""
+
+GHOST = '<div class="pghost">' + "".join(f'<i style="width:{w}%"></i>' for w in (40, 92, 78, 88, 60)) + '</div>'
+TABS = '<div class="tabbar">' + "<span></span>" * 5 + '</div>'
+
+
+def stage(toast):
+    return f'<div class="stage">{GHOST}{toast}{TABS}</div>'
+
+
+def board_toast():
+    shipped = stage('<div class="tfS"><span class="t">We couldn’t save that. Try again.</span></div>')
+    shipped_a = stage('<div class="tfS"><span class="t">We couldn’t send that request.</span><span class="tac">Try again</span></div>')
+    board = stage('<div class="tfB"><i></i><span>We couldn’t save that. Try again.</span><b>✕</b></div>')
+    a = frames(frame("<b>shipped</b> · ToastFrame, as Settings uses it", f'<div class="spec">{shipped}{shipped_a}</div>',
+                     "Every one of the app’s 11 toasts: 10px radius, 4/6/4/16 padding, 14px gap, the shared shadow. No dot and no ✕: it leaves on its timer, holds while hovered or focused, and a failure that can be retried carries its own <b>Try again</b> (lower one)."),
+               frame("<b>the Announcements board</b> · drawn, never built", f'<div class="spec">{board}<p class="diff">differs: <b>danger dot</b> · <b>✕</b> · radius <b>12</b> · padding <b>12/6/12/14</b> · gap <b>10</b> · shadow <b>0 14 30 .55</b></p></div>',
+                     "Drawn from memory on that board instead of from <code>edit-toast.tsx</code>. Engineering built the shared toast, which is right."),
+               gap=48)
+    rows = lambda cls: "".join(  # noqa: E731
+        f'<div class="ckrow"><span class="cb{cls}{s}"></span><span class="ct"><b>{t}</b><span>{d}</span></span></div>'
+        for s, t, d in [(" on", "Secret Lair drops", "New drops and their cards."), ("", "Other Wizards news", "Everything else Wizards posts."), (" on dis", "New sets", "Kept on while push is off.")])
+    zoom = ('<div class="zoom">'
+            '<div class="z"><span class="cb on"></span><span>shipped</span></div>'
+            '<div class="z"><span class="cb on n"></span><span>line-height 1</span></div></div>')
+    b = frames(frame("<b>shipped</b> · ui/checkbox.tsx", f'<div class="spec" style="gap:10px">{rows("")}</div>'),
+               frame("<b>the board</b> · line-height 1", f'<div class="spec" style="gap:10px">{rows(" n")}</div>'),
+               frame("<b>×4</b> · the ✓ in the two", zoom,
+                     "Rendered in Chromium at 4×, the two are the same pixels: the box centres the ✓ with flex, so its line box doesn’t move it."),
+               gap=40)
+    calls = tbl([
+        ("1", "Toast: keep the shipped one", "<b>Recommended: no change app-wide.</b> The shipped <code>ToastFrame</code> is the house style; the Announcements board drew it wrong. "
+              "A ✕ isn’t needed on something that leaves by itself and holds while you’re on it, and the red dot would put an alarm on every failure (your note on Flyer trial: quieter warnings). "
+              "The failure already says itself in words, and offers <b>Try again</b> where a retry exists."),
+        ("2", "Checkbox: keep the shipped one", "<b>No change.</b> The only difference is the ✓’s line-height, and it draws the same: the 18px box centres the glyph either way. Nothing for engineering to update."),
+        ("3", "The Announcements handoff", "Its Settings board and STATES 2.4 should point at the shipped toast and checkbox. I’ll make that a one-line erratum in the handoff PR for this canvas, so nobody rebuilds the drawn versions."),
+        ("4", "If you’d rather have the drawn look", "Say which parts (the dot on failures only, the ✕, or both) and I’ll draw the shared toast once with every kind (receipt, failure, failure with Try again, the deck stack and the credits slot) so engineering updates all 11 in one pass."),
+    ])
+    body = (head("small item 3", "Toast and checkbox: which look is the app’s",
+                 "The Announcements Settings board drew the failed-save toast and the checkbox its own way. Both are drawn here beside what shipped (<code>collection/edit-toast.tsx</code> "
+                 "<code>ToastFrame</code>, <code>ui/checkbox.tsx</code>), at 390 over the foot of a page, above the tab bar, where the toast sits.")
+            + sec("A · The toast", "The shipped frame (left) and the board’s (right), same copy.", a)
+            + sec("B · The checkbox", "Settings rows with the shipped box, then with the board’s line-height, then both ✓s at 4×.", b)
+            + '<div class="sec"><h3>The calls</h3>' + calls + '</div>')
+    return doc("Toast and checkbox", body, 1300)
+
+
 # ============================================================ main
 def board_main():
     rows = tbl([
         ("1", "Overview: stages and the alternate commander", "<b>Game plan</b> replaces Core strategy: three rows labeled <b>Early</b>, <b>Mid</b>, <b>Close</b> on a rail of three diamonds. "
               "A precon whose box carries another commander gets one <b>Alternate commander</b> box under Close; a player’s deck (and a precon without one) simply ends at Close. "
-              "The <b>land line</b> sits under Mulligan above the Keep and Send back boxes, replacing the fixed range. Key tips (now 2) and Key cards stay where they are. Board <b>Overview-Stages</b>."),
+              "The <b>land line</b> sits under Mulligan above the Keep and Send back boxes, replacing the fixed range. Key tips (now 2) and Key cards stay where they are. Board <b>Overview-Stages</b>. <b>Option B</b> (your wall-of-text note): the same lines with the cards they name as images, Game plan as a timeline, the land count as a figure, tips with their card pair, Key cards as a card grid and severity chips. Board <b>Overview-Visual</b>."),
         ("2", "Suggested changes: why these cards", "From <b>N = 6</b> (12+ changes): a <b>Why these cards</b> box above the lists with one lead sentence, and one line at the top of each list saying what that side’s cards share. "
               "The slots are held while the run streams so nothing moves under a pick; they fill when the cuts finish. Stored with the run for History. Board <b>Why-These</b>."),
+        ("3", "Toast and checkbox", "<b>Recommended: keep what shipped, app-wide.</b> The Announcements board’s danger dot, ✕, radius, padding and shadow were drawing drift; the shipped toast leaves on its timer and carries Try again where it can. "
+              "The checkbox’s line-height 1 draws the same pixels as the shipped box. The Announcements handoff gets a one-line erratum pointing at the shipped pieces. Board <b>Toast-Checkbox</b>."),
     ])
     body = (head("overview i3 + suggested changes · account 2 · 2026-10-30", "Overview stages and why these cards",
-                 "Two small items, each drawn over the shipped surface it changes, at 390 and 1300. Item 1 is the display for the approved iteration-3 Overview text (brief: "
-                 "<code>docs/superpowers/design-briefs/2026-10-29-overview-iteration-3-renderer.md</code>, PR #2397). Item 2 adds a short overview to Suggested changes v2’s results. "
+                 "Three small items, each drawn over the shipped surface it changes, at 390 and 1300. Item 1 is the display for the approved iteration-3 Overview text (brief: "
+                 "<code>docs/superpowers/design-briefs/2026-10-29-overview-iteration-3-renderer.md</code>, PR #2397). Item 2 adds a short overview to Suggested changes v2’s results. Item 3 settles which toast and checkbox are the app’s. "
                  "Dashed orange outlines mark what is new. Strings marked as drafts are for /copy-review.")
             + '<div class="sec"><h3>The calls</h3>' + rows + '</div>')
     return doc("Overview stages and why these cards · main", body, 1300)
@@ -387,13 +488,17 @@ BOARDS = [
     ("Main", board_main, "Overview stages and why these cards · the calls"),
     ("Overview-Stages", board_overview, "1 · Overview: stages and the alternate commander"),
     ("Why-These", board_why, "2 · Suggested changes: why these cards"),
+    ("Toast-Checkbox", board_toast, "3 · Toast and checkbox"),
 ]
+
 
 if __name__ == "__main__":
     mode = sys.argv[1] if len(sys.argv) > 1 else "local"
     kit.MODE["blob"] = mode == "blob"
     if mode == "blob":
         kit.BLOB.update(json.load(open("blobs_ov.json")))
+    import vis
+    BOARDS.insert(2, ("Overview-Visual", vis.board_visual, "1 · Option B: Overview, less of a wall of text"))
     out = "out4" if mode == "local" else "canvas"
     os.makedirs(out, exist_ok=True)
     if mode == "local":

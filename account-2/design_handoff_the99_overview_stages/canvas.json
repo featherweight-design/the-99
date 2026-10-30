@@ -14,28 +14,44 @@
    "x": 0,
    "y": 0,
    "w": 1300,
-   "h": 530,
-   "title": "Overview stages and why these cards \u00b7 the calls"
+   "h": 636,
+   "title": "The calls"
   },
   "Overview-Stages.dc.html": {
    "x": 1380,
    "y": 0,
    "w": 1712,
    "h": 4482,
-   "title": "1 \u00b7 Overview: stages and the alternate commander"
+   "title": "1 \u00b7 Overview: stages and the alternate commander (A)"
+  },
+  "Overview-Visual.dc.html": {
+   "x": 3172,
+   "y": 0,
+   "w": 1712,
+   "h": 4590,
+   "title": "1 \u00b7 Option B: Overview, less of a wall of text"
   },
   "Why-These.dc.html": {
-   "x": 3172,
+   "x": 4964,
    "y": 0,
    "w": 1412,
    "h": 6369,
    "title": "2 \u00b7 Suggested changes: why these cards"
+  },
+  "Toast-Checkbox.dc.html": {
+   "x": 6456,
+   "y": 0,
+   "w": 1300,
+   "h": 1546,
+   "title": "3 \u00b7 Toast and checkbox"
   }
  },
  "order": [
   "Main.dc.html",
   "Overview-Stages.dc.html",
-  "Why-These.dc.html"
+  "Overview-Visual.dc.html",
+  "Why-These.dc.html",
+  "Toast-Checkbox.dc.html"
  ],
  "notes": {},
  "designSystems": []
