@@ -169,9 +169,9 @@ async function quickAdd(page: Page, query: string): Promise<string[]> {
   // `force`: the input is the visually hidden peer of the drawn switch, which intercepts a pointer.
   if ((await owned.count()) > 0) await owned.setChecked(false, { force: true });
   await bar.fill(query);
-  await onPage(page, '[role="option"]').first().waitFor({ state: "attached", timeout: 10_000 }).catch(() => {});
+  await onPage(page, '[data-testid="quick-add-dock"] [role="row"]').first().waitFor({ state: "attached", timeout: 10_000 }).catch(() => {});
   await page.waitForTimeout(1_000);
-  return onPage(page, '[role="option"]').allInnerTexts();
+  return onPage(page, '[data-testid="quick-add-dock"] [role="row"]').allInnerTexts();
 }
 
 async function searchInBrowser(sheet: string) {

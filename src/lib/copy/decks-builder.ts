@@ -226,6 +226,14 @@ export const addPanelCopy = {
     placeholder: (identity: string) => `Add a card by name · ${identity} only`,
     fieldAria: (identity: string) => `Add a card to this deck by name, ${identity} only`,
     keyboardHint: "↑↓ to move · ↵ to add · Esc to dismiss",
+    // The hint once a row's name opens its card details (small items 2, item 6b): the part that names the other
+    // cell is the one drawn stronger, and it swaps with the active cell. Drawn `move · cell · enter · dismiss`.
+    keyboardHintMove: "↑↓ to move",
+    keyboardHintDetails: "→ details",
+    keyboardHintBackToAdd: "← back to Add",
+    keyboardHintAdd: "↵ to add",
+    keyboardHintOpensDetails: "↵ opens details",
+    keyboardHintDismiss: "Esc to dismiss",
 
     resultsAria: "Card search results",
     resultCountWithIdentity: (n: number, identity: string) =>

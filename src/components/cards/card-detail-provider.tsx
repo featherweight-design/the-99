@@ -209,6 +209,14 @@ type CardDetailContextValue = {
    */
   openOracleId: string | null;
   /**
+   * True for the whole card detail session: a card shown or loading, a card held under a sheet opened
+   * over it (its combo, Find a deck's picker, a door's sheet), the third-layer card over that, or the Edit
+   * copies sheet the card handed off to. `openOracleId` and `pendingOracleId` are both null while a card
+   * is held, so a surface that must stand still for the whole visit (quick-add's outside-press dismissal)
+   * reads this rather than those two.
+   */
+  sessionActive: boolean;
+  /**
    * True while a card over a sheet drops on the phone (stacked sheets R1, motion). The card is still
    * up and still the dialog, so a sheet under it stays out of the accessibility tree and takes no
    * presses (`openOracleId` is still set); this only says it may be DRAWN again, fading back in.
@@ -1582,12 +1590,15 @@ export function CardDetailProvider({
     [prefetchCard, comboScope, comboCommanders, file],
   );
 
+  const sessionActive =
+    card !== null || shownPending !== null || held !== null || comboSheet !== null || fitsFor !== null || editing !== null;
   const value = useMemo<CardDetailContextValue>(
     () => ({
       open,
       prefetch,
       pendingOracleId: shownPending,
       openOracleId: card?.oracleId ?? null,
+      sessionActive,
       revealing: leaving,
       setSiblings,
       evict,
@@ -1598,7 +1609,7 @@ export function CardDetailProvider({
       registerDoor,
       registerReceiptLink,
     }),
-    [open, prefetch, shownPending, card, leaving, evict, close, deckId, deckOracleIds, registerSheet, registerDoor, registerReceiptLink],
+    [open, prefetch, shownPending, card, sessionActive, leaving, evict, close, deckId, deckOracleIds, registerSheet, registerDoor, registerReceiptLink],
   );
 
   const index = card ? siblingIds.indexOf(card.oracleId) : -1;

@@ -69,7 +69,7 @@ async function signIn(page) {
 // the highlight resolved to and whether it survived the fold's clipping.
 async function options(page) {
   return page.evaluate(() =>
-    [...document.querySelectorAll("[role='option']")].slice(0, 4).map((node) => {
+    [...document.querySelectorAll("[role='option'], [data-testid='quick-add-dock'] [role='row']")].slice(0, 4).map((node) => {
       const visible = [...node.querySelectorAll("*")].filter((n) => {
         const s = getComputedStyle(n);
         return s.display !== "none" && s.visibility !== "hidden";

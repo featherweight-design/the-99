@@ -1,5 +1,5 @@
 // Every deck surface that names a card must open the detail modal (#127, #91),
-// with one stated exception now that quick add is a combobox — see below. One
+// quick add included since its popup became a grid (small items 2, item 6b). One
 // file because the assertion is the same across surfaces; only the component
 // under it changes.
 
@@ -140,11 +140,10 @@ describe("deck card-detail triggers", () => {
     expect(fetchCard).toHaveBeenCalledWith("o-sol", undefined);
   });
 
-  // The one deliberate exception to #127. A quick-add row is a listbox option
-  // under a combobox whose contract is that DOM focus never leaves the input,
-  // and a nested trigger inside an option breaks that. Retrieval by name is the
-  // row's whole job; the Consider tile and the decklist carry detail.
-  it("leaves a quick-add result without a detail trigger, by design", async () => {
+  // Quick add was #127's one exception while its rows were listbox options, which cannot hold a control. Its
+  // popup is a grid now (small items 2, item 6b), and a row's first cell is the name: not a nested button, since
+  // DOM focus stays in the field, but the same open path with the same accessible name.
+  it("opens details from a quick-add result's name cell", async () => {
     searchCards.mockResolvedValue([
       {
         oracleId: "o-sol", name: "Sol Ring", typeLine: "Artifact", owned: true, ownedQty: 1,
@@ -152,7 +151,7 @@ describe("deck card-detail triggers", () => {
         flavorName: null, facts: null,
       },
     ]);
-    renderInProvider(
+    const { fetchCard } = renderInProvider(
       <QuickAddBar
         deckId="d1"
         commanderIdentity={["U"]}
@@ -164,10 +163,16 @@ describe("deck card-detail triggers", () => {
       />,
     );
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "sol" } });
-    await waitFor(() => expect(screen.getAllByRole("option").length).toBeGreaterThan(0));
+    await waitFor(() => expect(screen.getAllByRole("row").length).toBeGreaterThan(0));
+    // Still no nested button: the cell is the trigger, reached through the field's active descendant.
     expect(
       screen.queryByRole("button", { name: cardDetailCopy.triggerAria("Sol Ring") }),
     ).toBeNull();
+    const cell = screen.getByRole("gridcell", { name: cardDetailCopy.triggerAria("Sol Ring") });
+    await act(async () => {
+      fireEvent.click(cell);
+    });
+    expect(fetchCard).toHaveBeenCalledWith("o-sol", undefined);
   });
 
   // The 72×100 thumb is retired with the art wash: the art is the band now, and
