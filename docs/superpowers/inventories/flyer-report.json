@@ -1,0 +1,43 @@
+{
+  "feature": "Flyer trial PR 5: Report a problem. The About index row and the form it opens (boards Report-Phone R2 and R3, Report-Desktop D2 and D3). The error screen's third link is the same form from the shell's error boundary (R1, D1).",
+  "note": "Signed in, FEEDBACK_ENABLED=true for the account (the row and the link draw only then), on local-dev or a scratch branch. Writes nothing: the walk opens the form and never presses Send. The harness reaches page content inside <main> and the dialog by name, but cannot type into a portalled sheet or force a render to throw, so these states are walked by hand and pinned by component tests instead: the error screen with 'Tell us what happened' (R1, D1; a route that throws, e.g. a local-only throw in a page), the form typed (R4, D3 filled), Sending, Sent (R5, D4) and Failed with the shared toast (R6). With FEEDBACK_ENABLED off the row is absent: the Terms and Privacy line sits straight under the tiles.",
+  "out": "contact-sheets/flyer-report",
+  "rows": [
+    {
+      "id": "about-report-row",
+      "label": "/about: the Something wrong? row under the six tiles, above Terms and Privacy",
+      "view": "src/components/feedback/report-row.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-about-report]",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "[data-about-report]",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "report-form-empty",
+      "label": "/about: Report a problem opened (sheet at 390, ModalChrome 520 at 1300), Send dim",
+      "view": "src/components/feedback/report-form.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-about-report]",
+          "settle": 1000
+        },
+        {
+          "click": "[data-about-report] button",
+          "settle": 500
+        },
+        {
+          "waitDialog": "Report a problem",
+          "settle": 500
+        }
+      ]
+    }
+  ]
+}

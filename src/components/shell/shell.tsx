@@ -12,6 +12,8 @@ import { isAdmin } from "../../lib/admin/access";
 import { adminEnvironment } from "../../lib/admin/environment";
 import { navStallLogEnabled } from "../../lib/nav-stall/flag";
 import { requestSwitchEnv } from "../../lib/switches/request";
+import { FeedbackProvider } from "../feedback/feedback-provider";
+import { feedbackEnabled } from "../../lib/feedback/flag";
 import { PlacePathsProvider } from "../commanders/place-paths";
 import { socialFriendsEnabled } from "../../lib/social/flag";
 import { unseenFriendsCount } from "../../lib/feed/read";
@@ -138,6 +140,8 @@ export default async function Shell({
     // global 74px from globals.css.
     <div className="contents" style={locked ? ({ "--tabbar-h": "88px" } as React.CSSProperties) : undefined}>
     <PlacePathsProvider place>
+    {/* Whether Report a problem is on for this reader: the error screen, a client boundary, draws its link from it. */}
+    <FeedbackProvider on={feedbackEnabled(env)}>
     <NavigationPendingProvider stall={stall}>
       {/* The halo targets (discovery R2), on whatever the switches say: every moment's control registers here. */}
       {/* `navLocked`: the shell's own lock, which the tour taken again (R3·2) reads for its captions. */}
@@ -184,6 +188,7 @@ export default async function Shell({
       </MomentsProvider>
       </TargetsProvider>
     </NavigationPendingProvider>
+    </FeedbackProvider>
     </PlacePathsProvider>
     </div>
   );

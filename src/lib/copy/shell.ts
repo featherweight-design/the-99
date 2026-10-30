@@ -92,7 +92,7 @@ export const shellCopy = {
   // A render that threw (`error.tsx`), or the root layout itself (`global-error.tsx`).
   errorBoundary: {
     heading: "That didn’t load",
-    body: "Something broke on our end. Your decks and collection are fine. Try again.",
+    body: "Something broke on our end. Try again.",
     retry: "Try again",
     home: "Back home",
   },

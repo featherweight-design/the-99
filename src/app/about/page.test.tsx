@@ -100,6 +100,14 @@ describe("/about, its captures follow a theme picked on the page (Copilot round 
 });
 
 describe("/about, the index (call 3)", () => {
+  it("hands the index the reader's Report a problem switch", async () => {
+    vi.stubEnv("FEEDBACK_ENABLED", "true");
+    expect(find(await draw(), AboutIndex)!.props.reportable).toBe(true);
+    vi.stubEnv("FEEDBACK_ENABLED", "false");
+    expect(find(await draw(), AboutIndex)!.props.reportable).toBe(false);
+    vi.unstubAllEnvs();
+  });
+
   it("draws the index with no ?tab, at the retired ?tab=tools, and at anything but reference", async () => {
     for (const query of [{}, { tab: "tools" }, { tab: "settings" }, { tab: ["reference", "reference"] }] as Record<string, string | string[]>[]) {
       const page = await draw(query);
