@@ -196,10 +196,25 @@ describe("applyPicks with staged pulls", () => {
   });
 
   it("treats a copy that came free since as done: no pull recorded, the set applies", async () => {
-    pull.pullInTx.mockResolvedValueOnce({ ok: false, message: "That deck already has the copies it needs.", covered: true });
+    pull.pullInTx.mockResolvedValueOnce({ ok: false, message: "That deck already has the copies it needs.", skip: "covered" });
     const r = await apply([{ itemId: "a1", sourceDeckId: SOURCE }]);
     expect(r).toMatchObject({ ok: true, sourceDeckIds: [] });
     expect(fx.updates.some((u) => (u.undoSnapshot as ApplySnapshot | undefined)?.pull)).toBe(false);
+  });
+
+  // The addition restored a card cut from this deck's draft but still in its version: the deck holds its copy through
+  // the version, so the pull has nothing to take. Skipped by the pull's reason code, never by its words.
+  it("treats an addition the deck's version already holds as done: no pull recorded, the set applies", async () => {
+    pull.pullInTx.mockResolvedValueOnce({ ok: false, message: "any words at all", skip: "notWaiting" });
+    const r = await apply([{ itemId: "a1", sourceDeckId: SOURCE }]);
+    expect(r).toMatchObject({ ok: true, sourceDeckIds: [] });
+    expect(fx.updates.some((u) => (u.undoSnapshot as ApplySnapshot | undefined)?.pull)).toBe(false);
+  });
+
+  it("refuses the set on a refusal with the same words but no reason code", async () => {
+    pull.pullInTx.mockResolvedValueOnce({ ok: false, message: "That deck isn’t waiting on that card." });
+    const r = await apply([{ itemId: "a1", sourceDeckId: SOURCE }]);
+    expect(r).toMatchObject({ ok: false, refusal: { kind: "pull", itemId: "a1" } });
   });
 
   it("refuses a pull naming a line that is not one of the set's additions", async () => {

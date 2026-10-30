@@ -217,8 +217,9 @@ export async function applyPicks(args: {
           userId, env, sourceDeckId: p.sourceDeckId, oracleId: line.addOracleId, askingDeckId: run.deckId, lockIds: run.lockIds,
         });
         if (!pulled.ok) {
-          // A copy came free since the confirmation was drawn: the deck needs nothing out of anybody's box.
-          if (pulled.covered) continue;
+          // Nothing to pull, by the pull's own reason code: a copy came free since the confirmation was drawn, or the
+          // addition restored a card the deck's version already holds. Either way the deck needs nothing from anybody.
+          if (pulled.skip !== undefined) continue;
           throw new Refused({ kind: "pull", itemId: p.itemId, message: pulled.message });
         }
         await tx.update(deckSuggestionItems)

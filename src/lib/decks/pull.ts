@@ -38,9 +38,12 @@ export type PullInTxResult =
       /** The source's printing pick for the card when this pull took its last copy (the prune drops it), else null. */
       printing: { setCode: string; collectorNumber: string } | null;
     }
-  /** `covered`: the asking deck already has the copies it needs (a copy came free since the page was drawn), so there is
-   *  nothing to take out of anybody's box. A caller pulling as part of a larger write may treat it as done. */
-  | { ok: false; message: string; covered?: boolean };
+  /** `skip`: why there is nothing to pull, for a caller pulling as part of a larger write, which may treat it as done
+   *  (Suggested changes v2's Apply). Absent on every other refusal.
+   *  - `covered`: the asking deck already has the copies it needs (a copy came free since the page was drawn).
+   *  - `notWaiting`: the asking deck's draft holds no addition of the card over its version: its version already holds
+   *    it (an addition that restored a card the draft had cut), so the deck's copy is the one it has. */
+  | { ok: false; message: string; skip?: "covered" | "notWaiting" };
 
 /**
  * EVERY party's deck row, locked one statement at a time in sorted id order, deduplicated. Sorted order is what keeps two
@@ -134,7 +137,7 @@ export async function pullInTx(tx: Tx, args: {
   }).from(deckCards).where(eq(deckCards.deckId, askingDeckId)).for("update");
   const add = draftDiff(askingDraft, askingBefore).adds
     .find((a) => a.oracleId === oracleId);
-  if (!add) return { ok: false, message: "That deck isn’t waiting on that card." };
+  if (!add) return { ok: false, message: "That deck isn’t waiting on that card.", skip: "notWaiting" };
 
   // And the claim, read under the same locks. An add the reader was offered a
   // pull for is one whose copies are all spoken for; if a copy has come free
@@ -196,7 +199,7 @@ export async function pullInTx(tx: Tx, args: {
     return { ok: false, message: PULL_REFUSED_PROXIED };
   }
   if (bucketed.bucket !== "claimed" || bucketed.shortfall <= 0) {
-    return { ok: false, message: "That deck already has the copies it needs.", covered: true };
+    return { ok: false, message: "That deck already has the copies it needs.", skip: "covered" };
   }
 
   // The bucket above answers for the CARD: some releasable holder exists. It
