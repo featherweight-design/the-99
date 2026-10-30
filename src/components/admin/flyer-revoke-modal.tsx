@@ -17,21 +17,22 @@ export type RevokeTarget = { id: string; store: string; code: string; taken: num
 
 export function FlyerRevokeModal({ target, onClose }: { target: RevokeTarget; onClose: () => void }) {
   const router = useRouter();
-  const [failed, setFailed] = useState(false);
+  // "lost" may have saved (a lost reply); "off" is a refusal that wrote nothing.
+  const [failed, setFailed] = useState<null | "off" | "lost">(null);
   const [pending, start] = useTransition();
 
   function revoke() {
     if (pending) return;
-    setFailed(false);
+    setFailed(null);
     start(async () => {
       try {
         const result = await revokeCode(target.id);
         if (result.ok) {
           onClose();
           router.refresh();
-        } else setFailed(true);
+        } else setFailed("off");
       } catch {
-        setFailed(true);
+        setFailed("lost");
         router.refresh();
       }
     });
@@ -65,7 +66,7 @@ export function FlyerRevokeModal({ target, onClose }: { target: RevokeTarget; on
         </p>
         {failed && (
           <p role="alert" className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--danger)]">
-            {adminCopy.groups.errors.unknown}
+            {failed === "off" ? adminCopy.switch.refusal : adminCopy.groups.errors.unknown}
           </p>
         )}
       </div>
