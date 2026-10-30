@@ -49,6 +49,13 @@ describe("saveLaunchListAction", () => {
     expect(m.save).not.toHaveBeenCalled();
   });
 
+  it("answers launched for an unknown code once the app-wide trial is off", async () => {
+    m.find.mockResolvedValue(null);
+    m.env.mockResolvedValue({ FLYER_TRIAL_ENABLED: "off" });
+    expect(await saveLaunchListAction("NOSUCH", "a@x.dev")).toEqual({ ok: false, reason: "launched" });
+    expect(m.save).not.toHaveBeenCalled();
+  });
+
   it("refuses a non-string argument", async () => {
     expect(await saveLaunchListAction(1, "a@x.dev")).toEqual({ ok: false, reason: "invalid" });
     expect(m.over).not.toHaveBeenCalled();

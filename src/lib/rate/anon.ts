@@ -24,7 +24,7 @@ import { overLimit, RATE_RULES, type RateBucket } from "./rules";
 export const ANON_PREFIX = "anon:";
 export const UNKNOWN_KEY = `${ANON_PREFIX}unknown`;
 
-/** The visitor's network address from the platform's headers, or null. Vercel sets these itself; they are spoofable elsewhere, which an observe-only counter tolerates. */
+/** The visitor's network address from the platform's headers, or null. Vercel sets these itself; they are spoofable elsewhere, which an observe-only counter tolerates and an enforced one (`overAnonymousLimit`) bounds only on Vercel. The key carries the UTC day, so a window that straddles midnight counts twice. */
 export function clientAddress(headers: Pick<Headers, "get">): string | null {
   const direct = headers.get("x-real-ip") ?? headers.get("x-vercel-forwarded-for");
   const first = direct ?? headers.get("x-forwarded-for")?.split(",")[0];
@@ -106,8 +106,11 @@ export async function observeAnonymousHit(headers: Pick<Headers, "get">): Promis
  * write. A counting failure lets the hit through (fail open): a database hiccup must not turn every reader away.
  */
 export async function overAnonymousLimit(headers: Pick<Headers, "get">, bucket: RateBucket): Promise<boolean> {
+  const address = clientAddress(headers);
+  // No address to count under: a shared bucket would throttle every header-less visitor together, so let the hit through.
+  if (address === null) return false;
   try {
-    return overLimit(await recordHit(anonKey(clientAddress(headers)), bucket), RATE_RULES[bucket]);
+    return overLimit(await recordHit(anonKey(address), bucket), RATE_RULES[bucket]);
   } catch {
     return false;
   }

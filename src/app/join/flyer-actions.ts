@@ -73,8 +73,8 @@ export async function saveLaunchListAction(code: unknown, email: unknown): Promi
   // Per visitor, enforced: a stranger's write, with no account to count it under.
   if (await overAnonymousLimit(await headers(), "launch-list")) return { ok: false, reason: "throttled" };
   const row = await findFlyerCode(code);
-  if (row) {
-    if (!flyerTrialEnabled(await resolveSwitchEnv(row.createdBy))) return { ok: false, reason: "launched" };
-  }
+  // A code nobody made has no creator: the app-wide switch decides, so a mistyped one after launch answers as an ended one.
+  const env = await resolveSwitchEnv(row ? row.createdBy : null);
+  if (!flyerTrialEnabled(env)) return { ok: false, reason: "launched" };
   return saveLaunchEmail(code, email);
 }

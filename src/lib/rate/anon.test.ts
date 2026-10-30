@@ -151,8 +151,14 @@ describe("overAnonymousLimit", () => {
     expect(await overAnonymousLimit(hdr({ "x-real-ip": "1.2.3.4" }), "launch-list")).toBe(true);
   });
 
+  it("lets a header-less request through without counting it under the shared key", async () => {
+    h.hits = 99;
+    expect(await overAnonymousLimit(hdr({}), "launch-list")).toBe(false);
+    expect(h.recorded).toHaveLength(0);
+  });
+
   it("fails open when counting fails", async () => {
     h.recordThrows = true;
-    expect(await overAnonymousLimit(hdr({}), "launch-list")).toBe(false);
+    expect(await overAnonymousLimit(hdr({ "x-real-ip": "1.2.3.4" }), "launch-list")).toBe(false);
   });
 });
