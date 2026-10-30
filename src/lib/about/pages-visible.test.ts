@@ -219,6 +219,9 @@ describe("seen translation", () => {
     const floorSeen = new Set([
       "decks/games/log@TUNING_ENABLED", // log-a-game: "reads your games the next time it runs"
       "rule/credits@ANALYSIS_TAB_ENABLED", "rule/credits@TUNING_ENABLED", "rule/credits@PROPOSED_CUTS_ENABLED", // credits
+      // Suggested changes v2's rewrite of a unit the reader already met: no legacy entry carries its switch, so the floor
+      // answers and the rewrite is not told as New (About ruling 6: a label is announced only at Hugh's discretion).
+      "decks/analysis/suggested@SUGGESTED_CHANGES_V2_ENABLED", "rule/credits@SUGGESTED_CHANGES_V2_ENABLED",
     ]);
     const switchOf = new Map(aboutEntries.map((e) => [e.id, e.switch ?? null]));
     const units2 = [

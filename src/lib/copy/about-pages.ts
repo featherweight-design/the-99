@@ -525,8 +525,15 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         id: "suggested",
         region: "decks/analysis/suggested",
         lead: "Suggested changes",
-        rest: " offers up to five cards to add and five to cut, each with its reason.",
+        // Suggested changes v2 (handoff design_handoff_the99_suggested_changes_v2, About board): the v2 words ride v2's
+        // switch, so a reader with it off still reads v1's. The last sentence is Small items 4 item 2's checkbox.
+        rest: " offers up to five cards to add and five to cut, each with its reason. asks how many cards to change and what you’re after, then offers more of each than you asked for. You pick, and apply them as one change. Each run uses a credit. With Only cards I own on, Include my other decks also offers cards your other decks hold, and Apply asks whether to pull each one.",
         switch: "TUNING_ENABLED",
+        sentences: {
+          " offers up to five cards to add and five to cut, each with its reason.": "!SUGGESTED_CHANGES_V2_ENABLED",
+          " asks how many cards to change and what you’re after, then offers more of each than you asked for. You pick, and apply them as one change. Each run uses a credit.": "SUGGESTED_CHANGES_V2_ENABLED",
+          " With Only cards I own on, Include my other decks also offers cards your other decks hold, and Apply asks whether to pull each one.": "SUGGESTED_CHANGES_V2_ENABLED",
+        },
         since: 16,
         legacy: ["suggested-changes"],
       },
@@ -900,11 +907,12 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
     },
   },
   credits: {
-    text: "Reading a bracket is free. Anything written just for you uses a credit, and a run that comes back empty-handed gives it back. An Overview uses one. So does each Suggested changes run. So does each Look deeper. Pack and gift credits never expire. Plan credits end with the period after you cancel.",
+    text: "Reading a bracket is free. Anything written just for you uses a credit, and a run that comes back empty-handed gives it back. An Overview uses one. So does each Suggested changes run. So does each Look deeper. A Suggested changes run that comes back short gives its credit back too, unless your limits, like a price cap, held it short. Pack and gift credits never expire. Plan credits end with the period after you cancel.",
     switch: null,
     sentences: {
       "Reading a bracket is free. ": "ANALYSIS_TAB_ENABLED",
       " An Overview uses one.": "ANALYSIS_TAB_ENABLED",
+      " A Suggested changes run that comes back short gives its credit back too, unless your limits, like a price cap, held it short.": "SUGGESTED_CHANGES_V2_ENABLED",
       " So does each Suggested changes run.": "TUNING_ENABLED",
       " So does each Look deeper.": "PROPOSED_CUTS_ENABLED",
       " Pack and gift credits never expire.": "PAYMENTS_ENABLED",
