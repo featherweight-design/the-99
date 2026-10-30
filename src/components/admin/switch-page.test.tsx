@@ -66,9 +66,9 @@ describe("SwitchPageView", () => {
   });
 
   it("links the compound banner to the parent's page (F4)", () => {
-    draw("SHOPPING_MARK_BOUGHT_ENABLED", { SHOPPING_MARK_BOUGHT_ENABLED: "true", COLLECTION_EDIT_ENABLED: "false" });
+    draw("MANA_BALANCE_ENABLED", { MANA_BALANCE_ENABLED: "true", ANALYSIS_TAB_ENABLED: "false" });
     const banner = screen.getByTestId("switch-banner-compound");
-    expect(within(banner).getByRole("link", { name: "Open Collection edit ›" })).toHaveAttribute("href", "/admin/switches/COLLECTION_EDIT_ENABLED");
+    expect(within(banner).getByRole("link", { name: "Open Analysis tab ›" })).toHaveAttribute("href", "/admin/switches/ANALYSIS_TAB_ENABLED");
   });
 
   it("gives a plumbing switch App-wide and History only (F6)", () => {

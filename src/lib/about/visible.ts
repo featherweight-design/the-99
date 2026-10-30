@@ -14,12 +14,11 @@ import { findADeckReadEnabled, swapToolsEnabled } from "../swaps/flag";
 import { manaBalanceEnabled, proposedCutsEnabled, suggestedChangesV2Enabled, tuningEnabled, tuningHubEnabled } from "../tuning/flag";
 import { deckStatsEnabled } from "../decks/stats-flag";
 import { deckNotesEnabled } from "../decks/notes-flag";
-import { collectionEditEnabled, collectionSyncEnabled } from "../collection/edit-flag";
+import { collectionEditEnabled } from "../collection/edit-flag";
 import {
   socialFriendsEnabled,
 } from "../social/flag";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
-import { shoppingMarkBoughtEnabled } from "../decks/mark-bought-flag";
 import { allDecksCartEnabled } from "../decks/all-decks-cart-flag";
 import { deckPrintingsEnabled } from "../decks/printings-flag";
 import { paymentsEnabled, welcomeCreditsEnabled } from "../payments/flag";
@@ -52,14 +51,16 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   SUGGESTED_CHANGES_V2_ENABLED: suggestedChangesV2Enabled,
   DECK_STATS_ENABLED: deckStatsEnabled,
   COLLECTION_EDIT_ENABLED: collectionEditEnabled,
-  // Already reads COLLECTION_EDIT_ENABLED: Sync is the upload choice's third card.
-  COLLECTION_SYNC_ENABLED: collectionSyncEnabled,
+  // Sync is the upload choice's third card. Its switch is retired: the name stays the variant's and the sentences'
+  // historical identity and follows its parent, collection editing, which a Sync writes through.
+  COLLECTION_SYNC_ENABLED: collectionEditEnabled,
   OVERVIEW_V2_ENABLED: overviewV2Enabled,
   // The block lives on the Analysis tab, so the entry needs the tab, as tuning's does: it
   // would otherwise describe a tab that is off.
   DECK_BENCHMARKS_ENABLED: analysisTabEnabled,
-  // On only with COLLECTION_EDIT_ENABLED as well: the feature's own flag already says so.
-  SHOPPING_MARK_BOUGHT_ENABLED: shoppingMarkBoughtEnabled,
+  // I got it's switch is retired: the name stays the entry's, the key's and the label's historical identity and
+  // follows its parent, collection editing, which the purchase writes through.
+  SHOPPING_MARK_BOUGHT_ENABLED: collectionEditEnabled,
   DECK_PRINTINGS_ENABLED: deckPrintingsEnabled,
   DECK_TOKENS_ENABLED: () => true,
   // Already reads ANALYSIS_TAB_ENABLED: the tool lives in the tab's Tuning hub.

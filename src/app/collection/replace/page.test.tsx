@@ -12,7 +12,8 @@ vi.mock("../../../lib/switches/request", async () => {
 });
 vi.mock("../../../lib/home/summary", () => ({ getCollectionStats: async () => ({ totalCards: 3 }) }));
 const syncOn = vi.hoisted(() => ({ value: false }));
-vi.mock("../../../lib/collection/edit-flag", () => ({ collectionEditEnabled: () => true, collectionSyncEnabled: () => syncOn.value }));
+// Sync follows collection editing now its own switch is retired.
+vi.mock("../../../lib/collection/edit-flag", () => ({ collectionEditEnabled: () => syncOn.value }));
 const hasSyncAnchor = vi.hoisted(() => vi.fn<(userId: string) => Promise<boolean>>(async () => false));
 vi.mock("../../../lib/collection/sync-base", () => ({ hasSyncAnchor: (userId: string) => hasSyncAnchor(userId) }));
 vi.mock("../../../components/collection/replace-flow", () => ({
@@ -34,7 +35,7 @@ describe("/collection/replace", () => {
     expect(section.className.split(/\s+/)).toEqual(expect.arrayContaining(["flex", "flex-1", "flex-col"]));
   });
 
-  it("hands the flow the reader's Sync switch (collection sync PR 2)", async () => {
+  it("hands the flow the reader's Sync switch, which is collection editing (collection sync PR 2)", async () => {
     syncOn.value = false;
     const { unmount } = render(await ReplacePage({ searchParams: Promise.resolve({}) }));
     expect(screen.getByTestId("flow").getAttribute("data-sync")).toBe("false");

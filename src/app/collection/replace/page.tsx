@@ -4,7 +4,7 @@
 
 import { requireUserId } from "../../../lib/auth";
 import { getCollectionStats } from "../../../lib/home/summary";
-import { collectionEditEnabled, collectionSyncEnabled } from "../../../lib/collection/edit-flag";
+import { collectionEditEnabled } from "../../../lib/collection/edit-flag";
 import { requestSwitchEnv } from "../../../lib/switches/request";
 import { ReplaceFlow } from "../../../components/collection/replace-flow";
 import { hasSyncAnchor } from "../../../lib/collection/sync-base";
@@ -21,7 +21,8 @@ export default async function ReplacePage({ searchParams }: { searchParams: Prom
   const userId = await requireUserId();
   const [stats, env] = await Promise.all([getCollectionStats(userId), requestSwitchEnv(userId)]);
   const deckCheck = collectionEditEnabled(env);
-  const sync = collectionSyncEnabled(env);
+  // Sync writes through the ledger, so it is on exactly when collection editing is (its own switch is retired).
+  const sync = deckCheck;
   // Whether Sync has an anchor to merge against. An empty collection skips the choice as a first import only
   // when it has none (`isFirstImport`): a player who emptied it by hand can still Sync. Read only with Sync on.
   const syncAnchored = sync && (await hasSyncAnchor(userId));

@@ -1422,6 +1422,13 @@
       "when": 1793346672427,
       "tag": "0202_retire_social_games_invites_wishlist_switches",
       "breakpoints": true
+    },
+    {
+      "idx": 203,
+      "version": "7",
+      "when": 1793349757647,
+      "tag": "0203_retire_collection_sync_shopping_mark_bought_switches",
+      "breakpoints": true
     }
   ]
 }

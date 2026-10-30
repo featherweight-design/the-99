@@ -25,7 +25,7 @@
 // retention prune removes, which only an entry past the retention window can be.
 //
 // The server: `next start` of a build with the worktree's `.env`, started with
-//   COLLECTION_EDIT_ENABLED=true COLLECTION_SYNC_ENABLED=true
+//   COLLECTION_EDIT_ENABLED=true (Sync follows it; its own switch is retired)
 //
 // Written for PR 3 and run against it: it passes at 390 and 1300. Browser probes are run by hand, not in CI.
 //

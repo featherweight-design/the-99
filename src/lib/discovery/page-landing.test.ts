@@ -48,10 +48,6 @@ describe("pageLanding", () => {
     expect(pageLanding(tool, { ...ALL_ON, [name]: "" }, tool).landing).toBeNull();
   });
 
-  it("follows a compound switch's parent: Collection Sync is off with collection editing off", () => {
-    expect(pageLanding("collection-sync", { ...ALL_ON, COLLECTION_EDIT_ENABLED: "" }, "collection-sync").landing).toBeNull();
-  });
-
   it("reads nothing on a render with no parameter", () => {
     expect(pageLanding(undefined, ALL_ON, "friends")).toEqual({ landing: null, request: null });
   });

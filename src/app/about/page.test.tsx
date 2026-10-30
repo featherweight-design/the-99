@@ -165,12 +165,12 @@ describe("/about, the fits (E10)", () => {
     expect(m.loadToolFits.mock.calls[0]![2]).toEqual(["top-off"]);
   });
 
-  it("reads the sync base only with Collection Sync on", async () => {
-    vi.stubEnv("COLLECTION_SYNC_ENABLED", "");
+  // Collection Sync's own switch is retired: Sync follows collection editing.
+  it("reads the sync base only with collection editing on", async () => {
+    vi.stubEnv("COLLECTION_EDIT_ENABLED", "");
     await tabs();
     expect(m.hasSyncAnchor).not.toHaveBeenCalled();
     vi.stubEnv("COLLECTION_EDIT_ENABLED", "true");
-    vi.stubEnv("COLLECTION_SYNC_ENABLED", "true");
     await tabs();
     expect(m.hasSyncAnchor).toHaveBeenCalledWith("u1");
   });

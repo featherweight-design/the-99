@@ -22,7 +22,7 @@ import { db } from "../../db";
 import { cards, collectionItems, preconCards, precons, printings, sets } from "../../db/schema";
 import { chainArt } from "../cards/chain-art";
 import { manapoolCardUrl } from "../manapool/links";
-import { shoppingMarkBoughtEnabled } from "../decks/mark-bought-flag";
+import { collectionEditEnabled } from "../collection/edit-flag";
 import { type Answer } from "../social/spare-request-rules";
 import { loadIncomingAsks, type IncomingAsk } from "../social/spare-requests";
 import { loadFriendSpares, type FriendSpare } from "../social/spares";
@@ -382,7 +382,7 @@ async function answerDetails(userId: string, feed: HomeFeed, env: NodeJS.Process
   if (!views.some((v) => v.answer)) return feed;
   const noCards = [...new Set(views.flatMap((v) => (v.answer === "no" && v.card ? [v.card.oracleId] : [])))];
   const spares = noCards.length === 0 ? [] : await loadFriendSpares(userId, noCards);
-  return withAnswerDetails(feed, spares, shoppingMarkBoughtEnabled(env));
+  return withAnswerDetails(feed, spares, collectionEditEnabled(env));
 }
 
 /** The answers' lines, given the friends' spares of the declined cards. Pure, for the tests. */

@@ -40,7 +40,8 @@ describe("visibleSections", () => {
     expect(on).toContain("With Sync");
     const editOnly = replace(env({ COLLECTION_EDIT_ENABLED: "true" })).text;
     expect(editOnly).toContain("With Add");
-    expect(editOnly).not.toContain("With Sync");
+    // COLLECTION_SYNC_ENABLED is retired: its sentences follow collection editing.
+    expect(editOnly).toContain("With Sync");
   });
 
   it("announces a kept positive sentence on its own key, and never a negated one", () => {

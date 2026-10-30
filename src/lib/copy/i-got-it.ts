@@ -1,5 +1,5 @@
-// The copy of I got it (collection home sub-project 4), behind SHOPPING_MARK_BOUGHT_ENABLED and
-// COLLECTION_EDIT_ENABLED. From the handoff's `i-got-it · copy strings.ts`, adopted as drawn: the row,
+// The copy of I got it (collection home sub-project 4), behind COLLECTION_EDIT_ENABLED (its own
+// SHOPPING_MARK_BOUGHT_ENABLED is retired). From the handoff's `i-got-it · copy strings.ts`, adopted as drawn: the row,
 // the key, the confirm, the held slot, the receipt, History's deck line and the details link.
 // Counts are pinned to en-US like collection-edit.ts, so a server render and a browser agree.
 

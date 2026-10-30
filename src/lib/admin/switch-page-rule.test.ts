@@ -116,10 +116,10 @@ describe("switchPage", () => {
   });
 
   it("draws the compound banner when the parent is off for everyone (F4)", () => {
-    const p = page("SHOPPING_MARK_BOUGHT_ENABLED", { SHOPPING_MARK_BOUGHT_ENABLED: "true", COLLECTION_EDIT_ENABLED: "false" });
-    expect(p.banner).toMatchObject({ kind: "compound", title: "Off: needs Collection edit, which is off.", link: "Open Collection edit ›", parent: "COLLECTION_EDIT_ENABLED" });
-    expect(rung(p, "needs")).toMatchObject({ value: "Collection edit: off for all 3 accounts", decides: "decides for 3", deciding: true });
-    expect(p.explanations[0].source).toBe("Collection edit is off");
+    const p = page("MANA_BALANCE_ENABLED", { MANA_BALANCE_ENABLED: "true", ANALYSIS_TAB_ENABLED: "false" });
+    expect(p.banner).toMatchObject({ kind: "compound", title: "Off: needs Analysis tab, which is off.", link: "Open Analysis tab ›", parent: "ANALYSIS_TAB_ENABLED" });
+    expect(rung(p, "needs")).toMatchObject({ value: "Analysis tab: off for all 3 accounts", decides: "decides for 3", deciding: true });
+    expect(p.explanations[0].source).toBe("Analysis tab is off");
   });
 
   it("gives a plumbing switch no Account or Group rung, and marks a row it ignores (F6)", () => {

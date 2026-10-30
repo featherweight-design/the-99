@@ -138,7 +138,7 @@ export function CartView(props: CartViewProps) {
 type CartViewProps = {
   cart: CartPayload;
   provenance: ProvenanceForm | null;
-  /** I got it on a cart line (cart PR 6): `SHOPPING_MARK_BOUGHT_ENABLED` and its collection switch. */
+  /** I got it on a cart line (cart PR 6): collection editing, `COLLECTION_EDIT_ENABLED` (its own switch is retired). */
   buyEnabled?: boolean;
   /** `SOCIAL_FRIENDS_ENABLED` for the reader: friends' spares on the cart's lines (Social R2 PR B, S5). */
   socialFriends?: boolean;

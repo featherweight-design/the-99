@@ -8,7 +8,7 @@ import {
   committedShortfalls, countMoves, newlyShort, normalizeItems, placementToUndo, restoreToUndo, planAdd, planEdit, planReplace,
   planDigest, planRevert, staleEdits, unseenHoldings, staleRevert, warningCovers, type ShortDeck,
 } from "./write";
-import { collectionEditEnabled, collectionSyncEnabled } from "./edit-flag";
+import { collectionEditEnabled } from "./edit-flag";
 
 const A = "00000000-0000-0000-0000-00000000000a";
 const B = "00000000-0000-0000-0000-00000000000b";
@@ -356,16 +356,6 @@ describe("the order a precon start's readouts are read in", () => {
     expect(read).toBeLessThan(inside);
     expect(inside).toBeLessThan(placed);
     expect(src).toContain("const reservations = prior ?? await readRaisedReservations(tx, userId, ids);");
-  });
-});
-
-describe("the collection sync switch", () => {
-  const env = (e: Record<string, string>) => e as unknown as NodeJS.ProcessEnv;
-  it("is on only with its own switch and collection editing, both the exact string 'true'", () => {
-    expect(collectionSyncEnabled(env({ COLLECTION_SYNC_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true" }))).toBe(true);
-    expect(collectionSyncEnabled(env({ COLLECTION_SYNC_ENABLED: "true" }))).toBe(false);
-    expect(collectionSyncEnabled(env({ COLLECTION_SYNC_ENABLED: "TRUE", COLLECTION_EDIT_ENABLED: "true" }))).toBe(false);
-    expect(collectionSyncEnabled(env({ COLLECTION_EDIT_ENABLED: "true" }))).toBe(false);
   });
 });
 
