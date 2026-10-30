@@ -55,9 +55,9 @@ describe("useAutoGrow", () => {
   it("re-measures on a resize of the field, and disconnects on unmount", () => {
     const observed: Element[] = [];
     const disconnect = vi.fn();
-    let fire: (() => void) | null = null;
+    const observer: { fire?: () => void } = {};
     globalThis.ResizeObserver = class {
-      constructor(callback: () => void) { fire = callback; }
+      constructor(callback: () => void) { observer.fire = callback; }
       observe(el: Element) { observed.push(el); }
       unobserve() {}
       disconnect = disconnect;
@@ -70,8 +70,8 @@ describe("useAutoGrow", () => {
     expect(box.style.height).toBe("72px");
     // A narrower box (a rotation): the same words wrap onto more lines, and only the observer says so.
     content = 118;
-    expect(fire).not.toBeNull();
-    fire!();
+    expect(observer.fire).toBeDefined();
+    observer.fire?.();
     expect(box.style.height).toBe("118px");
     unmount();
     expect(disconnect).toHaveBeenCalled();

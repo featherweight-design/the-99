@@ -153,9 +153,11 @@ export function useCardTagPicker(o: CardTagPickerOptions) {
   // stopped is never started again behind them. Typing in the box is not that.
   useEffect(() => {
     const el = field.current;
-    if (!open || !el) return;
-    const vv = window.visualViewport;
+    // Starts once, when the list exists: an anchored list (a portal) mounts a render after the picker opens, and a run
+    // before it would start the waiting check only to cancel it and check again at once when the list arrives.
     const list = listEl;
+    if (!open || !el || !list) return;
+    const vv = window.visualViewport;
     let later: ReturnType<typeof setTimeout> | null = null;
     let readerMoved = false;
     const check = () => {
@@ -164,7 +166,7 @@ export function useCardTagPicker(o: CardTagPickerOptions) {
       if (readerMoved) return;
       if (appScrolling()) { later = setTimeout(check, 120); return; }
       const floor = footFloor(vv ? vv.offsetTop + vv.height : window.innerHeight, el);
-      const needed = Math.max(el.getBoundingClientRect().bottom + LIST_ROOM_PX, list?.getBoundingClientRect().bottom ?? 0);
+      const needed = Math.max(el.getBoundingClientRect().bottom + LIST_ROOM_PX, list.getBoundingClientRect().bottom);
       if (needed > floor) reveal(el, "center", undefined, () => centerBand(el, list, vv));
     };
     const moved = (e: Event) => {
@@ -180,7 +182,7 @@ export function useCardTagPicker(o: CardTagPickerOptions) {
     // The list grows as the reader types; the field can grow on its own (an autosized textarea), moving the list down.
     const grows = typeof ResizeObserver !== "undefined" ? new ResizeObserver(check) : null;
     grows?.observe(el);
-    if (list) grows?.observe(list);
+    grows?.observe(list);
     return () => {
       for (const type of READER) window.removeEventListener(type, moved, { capture: true });
       vv?.removeEventListener("resize", check);

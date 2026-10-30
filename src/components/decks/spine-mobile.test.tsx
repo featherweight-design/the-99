@@ -140,6 +140,21 @@ describe("SpineMobile", () => {
     expect(band.contains(screen.getByLabelText(deckDescriptionCopy.description.fieldAria))).toBe(true);
   });
 
+  it("takes the meta row's controls out of the tab order while editing, so Tab goes fields, then Save and Cancel", () => {
+    const { container } = renderSpine(<SpineMobile {...props} deck={pairDeck} />);
+    const under = () => container.querySelector<HTMLElement>("[data-spine-under-band]")!;
+    expect(under().hasAttribute("inert")).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(pairDeck.name) }));
+    expect(under().hasAttribute("inert")).toBe(true);
+    // Every control a Tab can reach, in document order, outside an inert subtree.
+    const reachable = Array.from(container.querySelectorAll<HTMLElement>("a[href], button, input, textarea, select, [tabindex]"))
+      .filter((el) => el.closest("[inert]") === null && el.getAttribute("tabindex") !== "-1");
+    const description = screen.getByLabelText(deckDescriptionCopy.description.fieldAria);
+    const after = reachable.slice(reachable.indexOf(description) + 1);
+    // The tag key (inside the frame), then Save and Cancel: nothing unrelated between them.
+    expect(after.slice(0, 3).map((el) => el.getAttribute("aria-label") ?? el.textContent?.trim())).toEqual(["Insert a card tag", renameCopy.save, renameCopy.cancel]);
+  });
+
   it("keeps the editor open when focus moves between the band's fields and the row under the bar", () => {
     renderSpine(<SpineMobile {...props} />);
     fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));

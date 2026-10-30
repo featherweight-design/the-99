@@ -516,6 +516,11 @@ export function SpineMobile({
       </div>
 
       <div
+        // Inert while editing: the meta row's controls (a partner's card details, the bracket, the notices) sit between
+        // the band's fields and Save/Cancel, so a Tab out of the tag key would land on one and the pair blur would save
+        // and close before a keyboard reader reached Cancel. Fields, then Save and Cancel.
+        inert={renaming || undefined}
+        data-spine-under-band
         className="flex flex-col items-center"
         style={{
           borderTop: "1px solid var(--border)",
@@ -589,7 +594,7 @@ export function SpineMobile({
             ref={actionsRef}
             data-spine-edit-actions
             className="flex"
-            style={{ padding: "12px 16px 14px", gap: 8 }}
+            style={{ padding: "12px 16px 0", gap: 8 }}
             onBlur={(e) => rename.onPairBlur(e, fieldsRef.current)}
           >
             <button
