@@ -288,23 +288,16 @@ describe("every switched line names text its entry carries", () => {
   );
 });
 
-describe("an entry's variant: `upload-choice`'s Sync form (collection sync ruling 5)", () => {
+// COLLECTION_SYNC_ENABLED is retired: the variant keeps the name as its identity and follows COLLECTION_EDIT_ENABLED, so
+// the two-choice form no longer draws.
+describe("an entry's variant: `upload-choice`'s Sync form (collection sync ruling 5, switch retired)", () => {
   const post = aboutEntries.find((e) => e.id === "post-import")!;
-  const EDIT = { COLLECTION_EDIT_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
-  const SYNC = { COLLECTION_EDIT_ENABLED: "true", COLLECTION_SYNC_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+  const SYNC = { COLLECTION_EDIT_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
   const SYNC_KEY = "Sync: takes the file’s changes, removals included, and keeps yours. If you both changed a card, it asks.";
   const HALF = "After a sync it also says how many of your own changes stayed.";
   const drawn = (env: NodeJS.ProcessEnv) => visibleEntries(env).find((e) => e.id === "upload-choice");
 
-  it("reads as today without the Sync switch", () => {
-    const e = drawn(EDIT)!;
-    expect(e.title).toBe("Replacing or adding from a file");
-    expect(e.keys).not.toContain(SYNC_KEY);
-    expect(e.variantOn).toBeUndefined();
-    expect(switchedIds([e])).toEqual(["upload-choice"]);
-  });
-
-  it("reads in its Sync form with the switch, four keys, Sync's in place of the doubling line", () => {
+  it("reads in its Sync form wherever collection editing is on, four keys, Sync's in place of the doubling line", () => {
     const e = drawn(SYNC)!;
     expect(e.title).toBe("Replacing, adding or syncing from a file");
     expect(e.caption).toContain("“Sync” takes what changed in the file and keeps what you changed in the app.");
@@ -313,23 +306,23 @@ describe("an entry's variant: `upload-choice`'s Sync form (collection sync rulin
     expect(e.variantOn).toBe("COLLECTION_SYNC_ENABLED");
   });
 
-  it("draws nothing with the Sync switch alone, since the entry's own switch is off", () => {
-    expect(drawn({ COLLECTION_SYNC_ENABLED: "true" } as unknown as NodeJS.ProcessEnv)).toBeUndefined();
+  it("draws nothing without collection editing", () => {
+    expect(drawn({} as unknown as NodeJS.ProcessEnv)).toBeUndefined();
   });
 
-  it("is announced on the flip, with no version bump, to a reader who met the two-choice form", () => {
-    const met = seen(ABOUT_VERSION, switchedIds(visibleEntries(EDIT)));
-    expect(unseenEntries(visibleEntries(EDIT), met)).toEqual([]);
+  it("is announced, with no version bump, to a reader who met the two-choice form", () => {
+    // Everything the reader sees today, less the Sync form: what a visit recorded while the switch was off.
+    const sync = variantId("upload-choice", "COLLECTION_SYNC_ENABLED");
+    const met = seen(ABOUT_VERSION, switchedIds(visibleEntries(SYNC)).filter((id) => id !== sync));
     expect(unseenEntries(visibleEntries(SYNC), met).map((e) => e.id)).toEqual(["upload-choice"]);
-    // A visit records the form it drew, and the base id with it, so neither form is new after.
+    // A visit records the form it drew, and the base id with it, so it is not new after.
     const after = seen(ABOUT_VERSION, switchedIds(visibleEntries(SYNC)));
-    expect(after.ids).toEqual(expect.arrayContaining(["upload-choice", variantId("upload-choice", "COLLECTION_SYNC_ENABLED")]));
+    expect(after.ids).toEqual(expect.arrayContaining(["upload-choice", sync]));
     expect(unseenEntries(visibleEntries(SYNC), after)).toEqual([]);
-    expect(unseenEntries(visibleEntries(EDIT), after)).toEqual([]);
   });
 
-  it("keeps `post-import`'s half-line only where a sync can happen", () => {
-    expect(resolveEntry(post, EDIT).caption).not.toContain(HALF);
+  it("keeps `post-import`'s half-line wherever collection editing is on", () => {
+    expect(resolveEntry(post, {} as unknown as NodeJS.ProcessEnv).caption).not.toContain(HALF);
     expect(resolveEntry(post, SYNC).caption.endsWith(`what’s in them.\n${HALF}`)).toBe(true);
   });
 });

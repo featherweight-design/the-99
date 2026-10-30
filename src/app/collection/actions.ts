@@ -20,7 +20,7 @@ import {
 } from "../../lib/collection/arrivals-write";
 import type { OwnedCounts } from "../../lib/collection/arrivals";
 import { applyCollectionChange, HISTORY_RETENTION_DAYS, parseShortDecks, type ShortDeck } from "../../lib/collection/write";
-import { collectionEditEnabled, collectionSyncEnabled } from "../../lib/collection/edit-flag";
+import { collectionEditEnabled } from "../../lib/collection/edit-flag";
 import { keptForReview, parseSyncOptions, SYNC_REVIEW_CAP, changedTokenCount, type SyncAnswers, type SyncCounts, type SyncPick, type SyncReviewRow, type Staleness } from "../../lib/collection/sync";
 import { collectionHasHistory, collectionTotals, editedKeysSinceUpload, editsSinceUpload, lastUploadConfirmedAt, readBuiltEntries } from "../../lib/collection/history";
 import { builtLeaving, type BuiltLeaving } from "../../lib/collection/built-leaving";
@@ -191,7 +191,7 @@ export type ConfirmOutcome =
 
 /**
  * How an upload meets the collection: replace it whole, add its counts to it, or sync it (take what the
- * file changed since the last file, keep what the player changed; behind `COLLECTION_SYNC_ENABLED`).
+ * file changed since the last file, keep what the player changed; behind `COLLECTION_EDIT_ENABLED`).
  */
 export type UploadMode = "replace" | "add" | "sync";
 
@@ -272,8 +272,8 @@ function tokensOnlySync(items: readonly PendingItem[], sync: { pick: SyncPick } 
 function parseMode(mode: unknown, env: NodeJS.ProcessEnv): UploadMode {
   if (mode === undefined || mode === "replace") return "replace";
   if (mode === "add") return "add";
-  // Behind its switch: off, a sync is refused as an unknown mode would be.
-  if (mode === "sync" && collectionSyncEnabled(env)) return "sync";
+  // Behind collection editing (a sync writes through the ledger): off, a sync is refused as an unknown mode would be.
+  if (mode === "sync" && collectionEditEnabled(env)) return "sync";
   throw new Error("unknown upload mode");
 }
 

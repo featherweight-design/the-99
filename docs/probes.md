@@ -578,7 +578,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   re-read, presses `Take the file’s for all 3` as a rule, then confirms and checks the collection holds the merge
   the review drew and one `upload_sync` entry. It WRITES the signed-in account's collection and a base upload, so it
   runs on a scratch branch off local-dev only (it refuses production, staging and local-dev by `neon.branch_id`, `assertScratchBranch`; cut one as in the safety rules above), and puts back every table the confirm can write from a
-  snapshot in a `finally`. Run against `next start` with `COLLECTION_EDIT_ENABLED=true COLLECTION_SYNC_ENABLED=true`.
+  snapshot in a `finally`. Run against `next start` with `COLLECTION_EDIT_ENABLED=true` (Sync follows it).
 
 - `pnpm probe:tool-landing` opens each deck tool's Try it address, `/decks/<id>?tool=<tool>`, in a real browser at
   390 and 1300 (discovery R2·2, E11). For each of Top off, Proposed cuts, Suggested changes, Mana Balance, Cheaper

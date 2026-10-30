@@ -32,7 +32,6 @@ export const SWITCHES = [
   { name: "BRACKET_REACH_ENABLED", kind: "feature", needs: "HELP_ME_CHOOSE_ENABLED" },
   { name: "CHANGE_COMMANDER_ENABLED", kind: "feature" },
   { name: "COLLECTION_EDIT_ENABLED", kind: "feature" },
-  { name: "COLLECTION_SYNC_ENABLED", kind: "feature", needs: "COLLECTION_EDIT_ENABLED" },
   { name: "DECK_NOTES_ENABLED", kind: "feature" },
   { name: "DECK_PRINTINGS_ENABLED", kind: "feature" },
   { name: "DECK_STATS_ENABLED", kind: "feature" },

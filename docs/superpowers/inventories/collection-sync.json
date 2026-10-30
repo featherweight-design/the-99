@@ -1,7 +1,7 @@
 {
   "feature": "Collection Sync close-out (plan 2026-10-15-collection-sync.md, PRs 1-4): the choice's third card, the Sync review and its conflicts, the receipt, History's Sync entry, its Revert confirm, and the About entry's Sync form",
   "clearAbout": true,
-  "note": "Needs COLLECTION_EDIT_ENABLED=true and COLLECTION_SYNC_ENABLED=true, and an account whose History holds a confirmed Sync of a file named sync-closeout.csv (SYNC_RECEIPT_ID is its upload id), whose collection has moved since that Sync, and SYNC_PASTE a list that conflicts with it. clearAboutSheet does not mark the switched variant `upload-choice@COLLECTION_SYNC_ENABLED` seen, so mark it first or every row lands on /about. The review rows stop short of the confirm and the revert row never presses Revert; the paste rows leave unconfirmed uploads behind.",
+  "note": "Needs COLLECTION_EDIT_ENABLED=true (Collection Sync follows it), and an account whose History holds a confirmed Sync of a file named sync-closeout.csv (SYNC_RECEIPT_ID is its upload id), whose collection has moved since that Sync, and SYNC_PASTE a list that conflicts with it. clearAboutSheet does not mark the switched variant `upload-choice@COLLECTION_SYNC_ENABLED` seen, so mark it first or every row lands on /about. The review rows stop short of the confirm and the revert row never presses Revert; the paste rows leave unconfirmed uploads behind.",
   "rows": [
     {
       "id": "sync-choice",

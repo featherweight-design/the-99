@@ -37,10 +37,11 @@ describe("the tool registry", () => {
     expect(TOOLS.filter((t) => !isMomentId(t.id)).map((t) => t.id)).toEqual(["friends"]);
   });
 
-  it("names only switches the switch registry has, and gives Collection Sync its own (R2 gap 8)", () => {
+  // Collection Sync's own switch (R2 gap 8) is retired: Sync follows collection editing, which it writes through.
+  it("names only switches the switch registry has, and puts Collection Sync behind collection editing", () => {
     const names = new Set<string>(SWITCHES.map((s) => s.name));
     for (const t of TOOLS) if (t.switch !== null) expect(names.has(t.switch)).toBe(true);
-    expect(TOOLS.find((t) => t.id === "collection-sync")?.switch).toBe("COLLECTION_SYNC_ENABLED");
+    expect(TOOLS.find((t) => t.id === "collection-sync")?.switch).toBe("COLLECTION_EDIT_ENABLED");
     expect(TOOLS.filter((t) => t.switch === null).map((t) => t.id)).toEqual(["precons", "top-off", "wishlist", "lineup"]);
   });
 

@@ -14,7 +14,7 @@ import { findADeckReadEnabled, swapToolsEnabled } from "../swaps/flag";
 import { manaBalanceEnabled, proposedCutsEnabled, tuningEnabled, tuningHubEnabled } from "../tuning/flag";
 import { deckStatsEnabled } from "../decks/stats-flag";
 import { deckNotesEnabled } from "../decks/notes-flag";
-import { collectionEditEnabled, collectionSyncEnabled } from "../collection/edit-flag";
+import { collectionEditEnabled } from "../collection/edit-flag";
 import {
   socialFriendsEnabled,
 } from "../social/flag";
@@ -51,8 +51,9 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   TUNING_ENABLED: tuningEnabled,
   DECK_STATS_ENABLED: deckStatsEnabled,
   COLLECTION_EDIT_ENABLED: collectionEditEnabled,
-  // Already reads COLLECTION_EDIT_ENABLED: Sync is the upload choice's third card.
-  COLLECTION_SYNC_ENABLED: collectionSyncEnabled,
+  // Sync is the upload choice's third card. Its switch is retired: the name stays the variant's and the sentences'
+  // historical identity and follows its parent, collection editing, which a Sync writes through.
+  COLLECTION_SYNC_ENABLED: collectionEditEnabled,
   OVERVIEW_V2_ENABLED: overviewV2Enabled,
   // The block lives on the Analysis tab, so the entry needs the tab, as tuning's does: it
   // would otherwise describe a tab that is off.
