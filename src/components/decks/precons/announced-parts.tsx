@@ -464,7 +464,9 @@ function RevealedTiles({ commanders, early = [], toCome = 0, setName, code, filt
             onToggle={onToggleExpanded}
             label={copy.showAll(tiles)}
             fewer={copy.showFewer}
-            ariaLabel={expanded ? copy.showFewerAria(setName) : copy.showAllAria(tiles, setName)}
+            ariaLabel={early.length > 0
+              ? (expanded ? copy.showFewerEarlyAria(setName) : copy.showAllEarlyAria(tiles, setName))
+              : (expanded ? copy.showFewerAria(setName) : copy.showAllAria(tiles, setName))}
             controls={gridId}
             rule={false}
             className={`pl-0 ${FOCUS_RING}`}

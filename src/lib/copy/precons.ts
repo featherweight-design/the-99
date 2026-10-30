@@ -398,6 +398,9 @@ export const preconsCopy = {
     showAllAria: (n: number, set: string) => `Show all ${n} commanders revealed for ${set}`,
     showFewer: "Show fewer",
     showFewerAria: (set: string) => `Show fewer commanders revealed for ${set}`,
+    /** The same toggle once early lists share the grid: it unfolds lists and waiting commanders together. */
+    showAllEarlyAria: (n: number, set: string) => `Show all ${n} lists and commanders for ${set}`,
+    showFewerEarlyAria: (set: string) => `Show fewer lists and commanders for ${set}`,
   },
   /**
    * Precons I own (`/decks/precons?pick=own`, no-collection entry S2 to S7): a pick of the boxes a player owns, added
