@@ -199,18 +199,20 @@ describe("The first-run checklist's Friends row (Discovery R3·3)", () => {
     stub.uniqueCards = 0;
     stub.env = { SOCIAL_FRIENDS_ENABLED: "true" };
     stub.homeFriends.mockResolvedValue(FRIENDS);
+    stub.inviteCount.mockResolvedValue(null);
     const page = await visit();
     expect(page.type).toBe(FirstRunChecklist);
     expect(stub.homeFriends).toHaveBeenCalledWith("user_1", expect.any(Date));
     expect(page.props.friends).toMatchObject({ friends: FRIENDS.friends, links: FRIENDS.links, invites: null });
     expect(typeof page.props.friends?.now).toBe("string");
-    // Invites off: no count is read, and the row's press makes a link.
-    expect(stub.inviteCount).not.toHaveBeenCalled();
+    // Invites follow friends (their own switch is retired): the count is read beside the friends; none, and the row's
+    // press makes a link.
+    expect(stub.inviteCount).toHaveBeenCalledWith("user_1", expect.any(Date));
   });
 
-  it("hands first run the invite count with SOCIAL_INVITES_ENABLED on (addendum G4), and none when it cannot be read", async () => {
+  it("hands first run the invite count with SOCIAL_FRIENDS_ENABLED on (addendum G4), and none when it cannot be read", async () => {
     stub.uniqueCards = 0;
-    stub.env = { SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_INVITES_ENABLED: "true" };
+    stub.env = { SOCIAL_FRIENDS_ENABLED: "true" };
     stub.homeFriends.mockResolvedValue(FRIENDS);
     const count = { left: 3, waiting: 0, liveQr: false, qrUntil: null, out: false };
     stub.inviteCount.mockResolvedValue(count);

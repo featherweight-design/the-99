@@ -40,11 +40,10 @@ describe("off for the reader", () => {
 });
 
 describe("on", () => {
-  it("reads for the session's reader and says whether the invite row is drawn", async () => {
+  it("reads for the session's reader and draws the invite row, which follows friends", async () => {
     m.tableSetup.mockResolvedValue({ tableId: "t" });
-    expect(await loadTableSetupAction("t")).toEqual({ setup: { tableId: "t" }, invites: false });
+    expect(await loadTableSetupAction("t")).toEqual({ setup: { tableId: "t" }, invites: true });
     expect(m.tableSetup).toHaveBeenCalledWith("user_reader", "t");
-    m.requestSwitchEnv.mockResolvedValue({ ...ON, SOCIAL_INVITES_ENABLED: "true" });
     m.podSetup.mockResolvedValue({ podId: "p" });
     expect(await loadPodSetupAction("p")).toEqual({ setup: { podId: "p" }, invites: true });
     m.podSetup.mockResolvedValue(null);

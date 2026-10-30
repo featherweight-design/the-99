@@ -7,7 +7,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUserId } from "../../../lib/auth";
-import { socialFriendsEnabled, socialInvitesEnabled } from "../../../lib/social/flag";
+import { socialFriendsEnabled } from "../../../lib/social/flag";
 import { podSetup, reseatTable, setTable, tableSetup, type PodSetup, type TableSetup } from "../../../lib/social/rule-zero";
 import { requestSwitchEnv } from "../../../lib/switches/request";
 
@@ -24,7 +24,7 @@ export async function loadPodSetupAction(podId: unknown): Promise<{ setup: PodSe
   const env = await requestSwitchEnv(userId);
   if (!socialFriendsEnabled(env)) return null;
   const setup = await podSetup(userId, podId);
-  return setup ? { setup, invites: socialInvitesEnabled(env) } : null;
+  return setup ? { setup, invites: socialFriendsEnabled(env) } : null;
 }
 
 /** The setter's `Seats`: setup for the table, the seats kept, and whether the invite row is drawn. */
@@ -33,7 +33,7 @@ export async function loadTableSetupAction(tableId: unknown): Promise<{ setup: T
   const env = await requestSwitchEnv(userId);
   if (!socialFriendsEnabled(env)) return null;
   const setup = await tableSetup(userId, tableId);
-  return setup ? { setup, invites: socialInvitesEnabled(env) } : null;
+  return setup ? { setup, invites: socialFriendsEnabled(env) } : null;
 }
 
 /** Set the table. A pod whose table is already open, with the reader seated at it, answers that table. */

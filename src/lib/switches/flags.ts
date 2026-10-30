@@ -22,7 +22,7 @@ import { navStallLogEnabled } from "../nav-stall/flag";
 import { paymentsEnabled, welcomeCreditsEnabled } from "../payments/flag";
 import { rateLimitEnabled } from "../rate/flag";
 import { scanLabEnabled } from "../scan-lab/flag";
-import { socialFriendsEnabled, socialInvitesEnabled } from "../social/flag";
+import { socialFriendsEnabled } from "../social/flag";
 import { findADeckReadEnabled, swapToolsEnabled } from "../swaps/flag";
 import { feedbackEnabled } from "../feedback/flag";
 import { flyerTrialEnabled } from "../flyer/flag";
@@ -67,7 +67,6 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   SCAN_LAB_ENABLED: scanLabEnabled,
   SHOPPING_MARK_BOUGHT_ENABLED: shoppingMarkBoughtEnabled,
   SOCIAL_FRIENDS_ENABLED: socialFriendsEnabled,
-  SOCIAL_INVITES_ENABLED: socialInvitesEnabled,
   SOCIAL_WISHLIST_ENABLED: wishlistEnabled,
   PUSH_ENABLED: pushEnabled,
   STAND_IN_LABELS_ENABLED: standInLabelsEnabled,

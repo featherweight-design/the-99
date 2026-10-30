@@ -23,7 +23,7 @@ vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
 import { sendEmailInviteAction, showInviteQrAction } from "./invite-actions";
 
-const ON = { SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_INVITES_ENABLED: "true" };
+const ON = { SOCIAL_FRIENDS_ENABLED: "true" };
 const SECRET = "ab".repeat(32);
 
 beforeEach(() => {
@@ -38,8 +38,8 @@ beforeEach(() => {
 });
 
 describe("sendEmailInviteAction", () => {
-  it("is off for a reader whose invites switch is off, and touches nothing", async () => {
-    m.requestSwitchEnv.mockResolvedValue({ SOCIAL_FRIENDS_ENABLED: "true" });
+  it("is off for a reader whose friends switch is off, and touches nothing", async () => {
+    m.requestSwitchEnv.mockResolvedValue({});
     expect(await sendEmailInviteAction("a@x.dev")).toEqual({ ok: false, reason: "off" });
     expect(m.sendEmailInvite).not.toHaveBeenCalled();
     expect(m.requestSwitchEnv).toHaveBeenCalledWith("user_a");
@@ -75,7 +75,7 @@ describe("sendEmailInviteAction", () => {
 describe("showInviteQrAction", () => {
   const at = new Date("2026-10-16T12:15:00Z");
 
-  it("is off for a reader whose invites switch is off", async () => {
+  it("is off for a reader whose friends switch is off, whatever the retired invites switch says", async () => {
     m.requestSwitchEnv.mockResolvedValue({ SOCIAL_INVITES_ENABLED: "true" });
     expect(await showInviteQrAction()).toEqual({ ok: false, reason: "off" });
     expect(m.showInviteQr).not.toHaveBeenCalled();

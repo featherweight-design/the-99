@@ -33,7 +33,7 @@ export type FirstRunFriendsProps = {
   links: FriendLink[];
   /** The render's one clock, from the server. */
   now: string;
-  /** SOCIAL_INVITES_ENABLED with the reader's invite count: Add a friend opens /friends' chooser (addendum G4). */
+  /** SOCIAL_FRIENDS_ENABLED (invites follow friends) with the reader's invite count: Add a friend opens /friends' chooser (addendum G4). */
   invites?: InviteCount | null;
 };
 
