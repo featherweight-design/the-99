@@ -113,6 +113,20 @@ describe("runBuild", () => {
     expect(r.failed).toEqual([]);
   });
 
+  it("stores the first answer when its advisory-only repair does not come back", async () => {
+    const j = { ...job("a", 100, "ok"), extra: () => ["keyCards" as const], settle: (c: CheckedSynopsis) => c } as Job<string>;
+    const send: Send<string> = async (batch) => ({
+      batchId: "b",
+      replies: batch.map((b) => (b.customId === "a"
+        ? { customId: b.customId, ok: true as const, value: "ok", micro: 5, usage: { input: 1, output: 1 } }
+        : { customId: b.customId, ok: false as const, reason: "errored", micro: 0, usage: { input: 0, output: 0 } })),
+    });
+    const stored: { file: string; micro: number }[] = [];
+    const r = await runBuild({ jobs: [j], send, capMicro: 1_000, store: async (s) => { stored.push({ file: s.file, micro: s.micro }); }, log: () => {} });
+    expect(stored).toEqual([{ file: "a", micro: 5 }]);
+    expect(r.failed).toEqual([]);
+  });
+
   it("fails a precon whose settled content has a refused section, and stores nothing for it", async () => {
     const j = { ...job("a", 100, "ok"), settle: () => refused() } as Job<string>;
     const { send } = sender([j], 1);

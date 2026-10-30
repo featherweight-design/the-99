@@ -100,10 +100,34 @@ export async function runBuild<V>(input: {
   const result: BuildResult = { stored: [], failed: [], deferred: [], spentMicro: 0, batches: [] };
   type Pending = { job: Job<V>; out: Outgoing; first?: { content: CheckedSynopsis; failing: SectionId[]; micro: number; usage: { input: number; output: number } } };
   let queue: Pending[] = input.jobs.map((job) => ({ job, out: job.first }));
+  // A first answer whose repair was only for advisory targets (no section refused) is publishable as it
+  // stands once settled, so a repair that fails, comes back empty or is held by the cap never discards it.
+  const advisoryOnly = (p: Pending) => !!p.first && refused(p.first.content).length === 0;
+  const storeFirst = async (p: Pending, micro: number, usage: { input: number; output: number }): Promise<void> => {
+    const content = p.job.settle ? p.job.settle(p.first!.content) : p.first!.content;
+    const failing = refused(content);
+    if (failing.length > 0) {
+      result.failed.push({ file: p.job.file, reason: `refused: ${failing.join(", ")}` });
+      return;
+    }
+    const s = { file: p.job.file, content, micro, usage };
+    await input.store(s);
+    result.stored.push(s);
+  };
   while (queue.length > 0) {
     const { take, rest } = takeWithinCap(queue.map((p) => ({ ...p, worstMicro: p.out.worstMicro })), result.spentMicro, input.capMicro);
     if (take.length === 0) {
-      for (const p of rest) result.deferred.push(p.job.file);
+      for (const p of rest) {
+        if (!advisoryOnly(p)) {
+          result.deferred.push(p.job.file);
+          continue;
+        }
+        try {
+          await storeFirst(p, p.first!.micro, p.first!.usage);
+        } catch (e) {
+          result.failed.push({ file: p.job.file, reason: `first answer could not be handled: ${e instanceof Error ? e.message : String(e)}` });
+        }
+      }
       input.log(`cap: $${(input.capMicro / 1e6).toFixed(2)} leaves no room for ${rest.length} more request(s); stopping`);
       break;
     }
@@ -116,6 +140,14 @@ export async function runBuild<V>(input: {
     for (const p of take) {
       const reply = got.get(p.out.customId);
       if (!reply) {
+        if (advisoryOnly(p)) {
+          try {
+            await storeFirst(p, p.first!.micro, p.first!.usage);
+          } catch (e) {
+            result.failed.push({ file: p.job.file, reason: `first answer could not be handled: ${e instanceof Error ? e.message : String(e)}` });
+          }
+          continue;
+        }
         result.failed.push({ file: p.job.file, reason: "no reply in the batch" });
         continue;
       }
@@ -125,7 +157,16 @@ export async function runBuild<V>(input: {
       const micro = reply.micro + (p.first?.micro ?? 0);
       const usage = { input: reply.usage.input + (p.first?.usage.input ?? 0), output: reply.usage.output + (p.first?.usage.output ?? 0) };
       if (!reply.ok) {
-        // A repair that did not come back leaves the first answer as it was, which had a refused section.
+        // A repair that did not come back leaves the first answer as it was: stored when only advisory
+        // targets sent it to repair, failed when it had a refused section.
+        if (advisoryOnly(p)) {
+          try {
+            await storeFirst(p, micro, usage);
+          } catch (e) {
+            result.failed.push({ file: p.job.file, reason: `first answer could not be handled: ${e instanceof Error ? e.message : String(e)}` });
+          }
+          continue;
+        }
         result.failed.push({ file: p.job.file, reason: p.first ? `repair: ${reply.reason}` : reply.reason });
         continue;
       }
