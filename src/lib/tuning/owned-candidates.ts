@@ -2,7 +2,7 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "../../db";
 import { cardLabels, cards, collectionItems, commanderSupportCards } from "../../db/schema";
-import { cardFacet } from "../cards/facet";
+import { cardFacet, castFaceText } from "../cards/facet";
 import { freshJobsOf } from "../labels/read";
 import type { Job } from "../labels/types";
 import { classifyRoles } from "../recs/roles";
@@ -231,7 +231,7 @@ export type OffIndexRow = { oracleId: string; name: string; neighbourInclusion: 
 
 /** The card facts `offIndexWorthOffering` reads: its type line and text, and its FRESH label jobs (null: none usable). */
 export type OffIndexFitCard = {
-  name: string; typeLine: string; oracleText: string | null; keywords: readonly string[]; jobs: readonly Job[] | null;
+  name: string; typeLine: string; oracleText: string | null; layout: string; keywords: readonly string[]; jobs: readonly Job[] | null;
 };
 
 /** The role jobs that make a noncreature, nonland off-index card worth offering whatever the deck. `draw` is not one of
@@ -263,7 +263,8 @@ export function offIndexWorthOffering(card: OffIndexFitCard, colorIdentity: read
     return colorIdentity.filter((c) => colors.has(c as Color)).length >= 2;
   }
   if (card.jobs === null) {
-    return classifyRoles({ typeLine: card.typeLine, oracleText: card.oracleText, keywords: [...card.keywords] }).some((r) => TEXT_ROLES.has(r));
+    // The cast face's text only (`castFaceText`): a modal card's land back would read as ramp for a front that is not.
+    return classifyRoles({ typeLine: card.typeLine, oracleText: castFaceText(card.oracleText, card.layout), keywords: [...card.keywords] }).some((r) => TEXT_ROLES.has(r));
   }
   return card.jobs.some((j) => (j.space === "role" && (WORKING_ROLES.has(j.kind) || (j.kind === "draw" && j.recurrence === "repeatable")))
     || (j.space === "theme" && j.kind === "tribal"));

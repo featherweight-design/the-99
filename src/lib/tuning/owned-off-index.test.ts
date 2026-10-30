@@ -170,7 +170,7 @@ describe("offIndexWorthOffering", () => {
   const job = (space: "role" | "theme", kind: string, recurrence: "oneShot" | "repeatable" = "repeatable"): Job => ({
     space, kind, recurrence, to: null, method: null, modal: false, affects: "self", trigger: "none", threshold: null, restrictedTo: null,
   }) as Job;
-  const card = (name: string, typeLine: string, oracleText: string | null, jobs: Job[] | null): OffIndexFitCard => ({ name, typeLine, oracleText, keywords: [], jobs });
+  const card = (name: string, typeLine: string, oracleText: string | null, jobs: Job[] | null, layout = "normal"): OffIndexFitCard => ({ name, typeLine, oracleText, layout, keywords: [], jobs });
   const green = ["G"];
 
   const filler: OffIndexFitCard[] = [
@@ -216,6 +216,9 @@ describe("offIndexWorthOffering", () => {
     expect(offIndexWorthOffering(card("Lure", "Enchantment — Aura", "Enchant creature\nAll creatures able to block enchanted creature do so.", null), green)).toBe(false);
     // The text cannot tell a cantrip's draw from a repeatable one, so a draw alone does not stand in for a label.
     expect(offIndexWorthOffering(card("Aggressive Urge", "Instant", "Target creature gets +1/+1 until end of turn.\nDraw a card.", null), green)).toBe(false);
+    // A modal card is judged on its cast face: Malakir Rebirth's land back taps for mana, which is not ramp for the front.
+    const rebirth = "Choose target creature. When that creature dies this turn, return it to the battlefield under its owner's control.\n//\nAs Malakir Mire enters, you may pay 3 life. If you don't, it enters tapped.\n{T}: Add {B}.";
+    expect(offIndexWorthOffering(card("Malakir Rebirth // Malakir Mire", "Instant // Land", rebirth, null, "modal_dfc"), ["B", "G"])).toBe(false);
   });
 
   it("offers a land only when it makes two or more of the deck's colors", () => {
