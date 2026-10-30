@@ -113,6 +113,7 @@ function asStages(facts: SynopsisFacts, v8: SynopsisResponseV8, alternates: read
       ],
     },
     keyCards: refused ? [] : [4, 5, 6, 7, 8].map((i) => ({ card: pick(i), claims: [], job: "Plays its part in this deck.", evidence: [ref(pick(i))] })),
+    tipKinds: ["plan", "trick"],
     landKeep: line(`Keep ${landKeepNumber(facts).lands} lands: the curve is middling.`),
     // A precon's box alternates: the schema requires the line exactly when the box has some.
     ...(alternates.length > 0 ? { alternate: line(`Lead with [[${alternates[0]}]] instead and the plan shifts.`, alternates[0]) } : {}),

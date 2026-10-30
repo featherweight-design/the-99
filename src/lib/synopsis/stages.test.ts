@@ -702,7 +702,7 @@ describe("iteration 3: Key cards skip what a stage explained", () => {
 });
 
 describe("iteration 3: the shape", () => {
-  const shape3 = (f: (r: StagesReply) => void = () => {}) => { const r = goodReply(); r.landKeep = { text: "Keep 2 lands: the curve is low.", evidence: [] }; f(r); return r; };
+  const shape3 = (f: (r: StagesReply) => void = () => {}) => { const r = goodReply(); r.landKeep = { text: "Keep 2 lands: the curve is low.", evidence: [] }; r.tipKinds = r.primer.tips.map(() => "plan" as const); f(r); return r; };
   it("drops Wins by from the doc and carries the land line", () => {
     const d = docFromStagesReply(shape3(), 3);
     expect(d.winsBy).toEqual([]);
@@ -1049,7 +1049,7 @@ describe("iteration 3: the explained-once post-pass and the no-card-twice check"
 });
 
 describe("iteration 3: the alternate line is required by the schema when the box carries one", () => {
-  const reply = () => ({ ...goodReply(), landKeep: { text: "Keep 3 lands: the curve is low.", evidence: [] } });
+  const reply = () => { const r = goodReply(); return { ...r, landKeep: { text: "Keep 3 lands: the curve is low.", evidence: [] }, tipKinds: r.primer.tips.map(() => "plan" as const) }; };
   it("rejects a reply with no alternate line for a precon with an alternate, as CounterIntelligence_EOC's was", () => {
     expect(stagesSchemaFor(3, ["Grave Titan"]).safeParse(reply()).success).toBe(false);
     expect(stagesSchemaFor(3, ["Grave Titan"]).safeParse({ ...reply(), alternate: { text: "Lead with [[Grave Titan]].", evidence: ["c4"] } }).success).toBe(true);

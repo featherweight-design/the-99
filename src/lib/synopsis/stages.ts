@@ -63,13 +63,16 @@ export const STAGES_LIMITS = {
   tips: { min: 2, max: 2 },
 } as const;
 
+/** Iteration 3: what each tip is, in the tips' order. A plan-level tip (two cards doing something together) must lead; a trick is a one-card play. */
+export const TIP_KINDS = ["plan", "trick"] as const;
+
 const claimed = z.object({ text: z.string().max(2_000), evidence: z.array(z.string().max(16)).max(12) });
 
 /** The contract-8 wire reply plus the optional alternate-commander line. Shape only, as its parent. */
 export const stagesResponseSchemaWire = synopsisResponseSchemaV8Wire.extend({ alternate: claimed.optional() });
 /** Iteration 3's reply: iteration 2's plus the REQUIRED land line. Iteration 2's schema is left as it was. */
-export const stagesResponseSchemaWireV3 = stagesResponseSchemaWire.extend({ landKeep: claimed });
-export type StagesReply = z.infer<typeof stagesResponseSchemaWire> & { landKeep?: z.infer<typeof claimed> };
+export const stagesResponseSchemaWireV3 = stagesResponseSchemaWire.extend({ landKeep: claimed, tipKinds: z.array(z.enum(TIP_KINDS)).max(8) });
+export type StagesReply = z.infer<typeof stagesResponseSchemaWire> & { landKeep?: z.infer<typeof claimed>; tipKinds?: (typeof TIP_KINDS)[number][] };
 /**
  * Iteration 3's reply for a precon whose box carries an alternate commander: the alternate line is
  * REQUIRED in the schema, not only asked for in the prompt. The reply is constrained server-side to
@@ -112,6 +115,8 @@ export type OverviewDoc = {
   stages: Line[];
   winsBy: Line[];
   alternate: Line[];
+  /** Iteration 3: the Backup line (`plans.backups[0]`), shown under Close. Outside the repetition rule: it may name a card another section names. */
+  backup?: Line[];
   /** Iteration 3: the model's land line, shown first under the Mulligan in place of the fixed range. */
   landKeep: Line[];
   keep: Line[];
@@ -121,7 +126,7 @@ export type OverviewDoc = {
   weaknesses: Line[];
 };
 
-const EMPTY: OverviewDoc = { overview: [], strategy: [], stages: [], winsBy: [], alternate: [], landKeep: [], keep: [], sendBack: [], tips: [], keyCards: [], weaknesses: [] };
+const EMPTY: OverviewDoc = { overview: [], strategy: [], stages: [], winsBy: [], alternate: [], backup: [], landKeep: [], keep: [], sendBack: [], tips: [], keyCards: [], weaknesses: [] };
 
 /** What a stored (old) content shows: only the sections that passed. */
 export function docFromChecked(content: CheckedSynopsis): OverviewDoc {
@@ -150,6 +155,7 @@ export function docFromStagesReply(reply: StagesReply, shape: StagesShape = 2): 
     stages: reply.primer.strategy.map(l),
     winsBy: shape === 3 ? [] : [{ text: reply.plans.primary }],
     alternate: reply.alternate ? [l(reply.alternate)] : [],
+    backup: shape === 3 && reply.plans.backups[0]?.trim() ? [{ text: reply.plans.backups[0], refs: [] }] : [],
     landKeep: shape === 3 && reply.landKeep ? [l(reply.landKeep)] : [],
     keep: reply.primer.mulligan.keep.map(l),
     sendBack: reply.primer.mulligan.sendBack.map(l),
@@ -173,6 +179,7 @@ export function docShownNew(content: CheckedSynopsis, reply: StagesReply, shape:
     stages: old.strategy,
     winsBy: shape === 2 && reply.plans.primary.trim() ? [{ text: reply.plans.primary }] : [],
     alternate: reply.alternate ? [{ text: reply.alternate.text }] : [],
+    backup: shape === 3 && content.backup ? [{ text: content.backup }] : [],
     landKeep: shape === 3 && reply.landKeep ? [{ text: reply.landKeep.text }] : [],
   };
 }
@@ -180,8 +187,8 @@ export function docShownNew(content: CheckedSynopsis, reply: StagesReply, shape:
 /** Every line of a doc with where it is, the Key cards' names included (a row shows the name). */
 function allLines(doc: OverviewDoc): { where: string; text: string; refs?: string[] }[] {
   const out: { where: string; text: string; refs?: string[] }[] = [];
-  const add = (key: Exclude<keyof OverviewDoc, "keyCards">) => doc[key].forEach((l, i) => out.push({ where: `${key}[${i}]`, ...l }));
-  (["overview", "strategy", "stages", "winsBy", "alternate", "landKeep", "keep", "sendBack", "tips"] as const).forEach(add);
+  const add = (key: Exclude<keyof OverviewDoc, "keyCards">) => (doc[key] ?? []).forEach((l, i) => out.push({ where: `${key}[${i}]`, ...l }));
+  (["overview", "strategy", "stages", "winsBy", "alternate", "backup", "landKeep", "keep", "sendBack", "tips"] as const).forEach(add);
   doc.keyCards.forEach((k, i) => out.push({ where: `keyCards[${i}]`, ...k.job }));
   add("weaknesses");
   return out;
@@ -264,7 +271,7 @@ export function turnNumbers(text: string): number[] {
  * turn included; only the commander's "around turn N" in the Early line (or the overview) is allowed.
  */
 export function checkTurnNumbers(doc: OverviewDoc, castTurn: number | null, opts: { strictStages?: boolean } = {}): CheckResult<{ where: string; turn: number; text: string }> {
-  const noTurnAtAll = (where: string) => opts.strictStages === true && (where === "stages[1]" || where === "stages[2]");
+  const noTurnAtAll = (where: string) => opts.strictStages === true && (where === "stages[1]" || where === "stages[2]" || where.startsWith("backup"));
   const offenders = allLines(doc).flatMap((l) => turnNumbers(l.text).filter((n) => noTurnAtAll(l.where) || n !== castTurn).map((turn) => ({ where: l.where, turn, text: l.text })));
   return { pass: offenders.length === 0, offenders };
 }
@@ -432,6 +439,49 @@ export function checkNoCardTwice(doc: OverviewDoc, facts: Pick<SynopsisFacts, "c
  */
 export function earlyMaxManaValue(castTurn: number | null): number {
   return (castTurn ?? 3) + 1;
+}
+
+/**
+ * A STATED TURN IS REACHABLE BY COSTS (iteration 3, Hugh 2026-10-30): a line that gives a turn N and
+ * names a ramp card must name one that costs at most N - 1, since the card is cast on an earlier turn
+ * to pay for anything on turn N ("around turn 3, Palladium Myr helps land Daretti" cannot be: the Myr
+ * costs 3). Only ramp is judged; a card with no known mana value is not.
+ */
+export function checkCastReach(doc: OverviewDoc, facts: Pick<SynopsisFacts, "cards" | "commanders">): CheckResult<{ where: string; card: string; manaValue: number; turn: number }> {
+  const deck = deckOf(facts);
+  const offenders: { where: string; card: string; manaValue: number; turn: number }[] = [];
+  for (const l of allLines(doc)) {
+    const turns = turnNumbers(l.text);
+    if (turns.length === 0) continue;
+    const turn = Math.min(...turns);
+    for (const m of marksIn(l.text)) {
+      const c = deck.names.get(normalizeName(m));
+      const card = c ? deck.byId.get(c.oracleId) : undefined;
+      if (!card || deck.commanders.has(card.oracleId) || !card.categories.includes("ramp") || card.manaValue === undefined) continue;
+      if (card.manaValue > turn - 1) offenders.push({ where: l.where, card: card.name, manaValue: card.manaValue, turn });
+    }
+  }
+  return { pass: offenders.length === 0, offenders };
+}
+
+/** The Backup line from a reply: the first of `plans.backups`, trimmed, with a leading "Backup:" dropped (the label comes from the slot, never the text). Empty when there is none. */
+export function backupText(reply: Pick<StagesReply, "plans">): string {
+  return (reply.plans.backups[0] ?? "").trim().replace(/^backup\s*[:\u2013\u2014-]\s*/i, "").trim();
+}
+
+/** The Backup line is storable: within a stage line's budget as rendered and stating no turn. A mark that names no deck card is left to `withLine`. */
+export function checkBackupLine(text: string): boolean {
+  return rendered(text).trim().length > 0 && rendered(text).trim().length <= STAGES_LIMITS.stage && turnNumbers(text).length === 0;
+}
+
+/** A PLAN-LEVEL TIP LEADS (iteration 3): the model tags each tip plan or trick, in order; a trick may not come before a plan tip. A misaligned tag list fails. */
+export function checkTipLead(reply: Pick<StagesReply, "primer" | "tipKinds">): CheckResult<string> {
+  // The schema requires the tags; a reply that carries none (an old eval run) is not judged.
+  const kinds = reply.tipKinds;
+  if (kinds === undefined) return { pass: true, offenders: [] };
+  if (kinds.length !== reply.primer.tips.length) return { pass: false, offenders: [`${kinds.length} tip tags for ${reply.primer.tips.length} tips`] };
+  const bad = kinds[0] === "trick" && kinds.includes("plan");
+  return { pass: !bad, offenders: bad ? ["the first tip is a trick though a later one is plan-level"] : [] };
 }
 
 /** STAGE CARDS FIT THEIR STAGE: every non-commander card the Early line names or cites costs at most `earlyMaxManaValue`. A card with no known mana value is not judged. */
@@ -834,6 +884,7 @@ export const SECTION_SCOPE: Record<Exclude<keyof OverviewDoc, "strategy">, "ever
   stages: "every deck",
   winsBy: "every deck",
   alternate: "precon only",
+  backup: "every deck",
   landKeep: "every deck",
   keep: "every deck",
   sendBack: "every deck",
@@ -844,7 +895,7 @@ export const SECTION_SCOPE: Record<Exclude<keyof OverviewDoc, "strategy">, "ever
 
 /** The sections a doc shows, in order, each with its scope: what the output records per section. */
 export function sectionsOf(doc: OverviewDoc): { section: keyof typeof SECTION_SCOPE; scope: "every deck" | "precon only"; lines: number }[] {
-  return (Object.keys(SECTION_SCOPE) as (keyof typeof SECTION_SCOPE)[]).map((section) => ({ section, scope: SECTION_SCOPE[section], lines: doc[section].length }));
+  return (Object.keys(SECTION_SCOPE) as (keyof typeof SECTION_SCOPE)[]).map((section) => ({ section, scope: SECTION_SCOPE[section], lines: (doc[section] ?? []).length }));
 }
 
 const PRECON_WORDS = /\b(precon|preconstructed|the box|out of the box|in the box|face commander|alternate commanders?)\b/i;
@@ -871,6 +922,10 @@ export type StagesChecks = {
   shape: ReturnType<typeof checkShape>;
   /** Iteration 3 only: no stated cast turn below the commander's cost. */
   commanderTurn?: ReturnType<typeof checkCommanderTurn>;
+  /** Iteration 3 only: stated turns reachable by ramp costs. */
+  castReach?: ReturnType<typeof checkCastReach>;
+  /** Iteration 3 only: a plan-level tip leads. */
+  tipLead?: ReturnType<typeof checkTipLead>;
   /** Iteration 3 only. */
   landKeep?: ReturnType<typeof checkLandKeep>;
   /** Iteration 3 only: the new side's mulligan lines, and today's for comparison (informational). */
@@ -908,6 +963,8 @@ export function stagesChecks(input: { reply: StagesReply; shownNew: OverviewDoc;
   return {
     ...base,
     commanderTurn: checkCommanderTurn(doc, input.facts),
+    castReach: checkCastReach(doc, input.facts),
+    tipLead: checkTipLead(input.reply),
     landKeep: checkLandKeep(doc, input.facts, land),
     mulliganSpecific: checkMulliganSpecific(doc, input.facts, land),
     mulliganSpecificToday: checkMulliganSpecific(input.oldDoc, input.facts, land),
@@ -933,6 +990,8 @@ export function i3RepairTargets(c: StagesChecks): { sections: SectionId[]; reaso
   const sections = new Set<SectionId>();
   const reasons: string[] = [];
   for (const o of c.shape.offenders) if (/ Key cards, not /.test(o)) { sections.add("keyCards"); reasons.push(`keyCards: ${o.replace(/^shown: /, "")} once a Key card a stage already explains is dropped; name other cards`); }
+  for (const o of c.castReach?.offenders ?? []) { sections.add("primer"); reasons.push(`primer: ${o.where} gives turn ${o.turn} with ${o.card}, which costs ${o.manaValue}; ramp can only pay for turn ${o.turn} if it costs ${o.turn - 1} or less, so drop the turn or name a cheaper card`); }
+  if (c.tipLead && !c.tipLead.pass) { sections.add("primer"); reasons.push(`primer: ${c.tipLead.offenders[0]}; tag every tip plan or trick, in order, and lead with a plan-level tip`); }
   for (const t of c.dedupe?.tipsWithoutSubject ?? []) { sections.add("primer"); reasons.push(`primer: tip ${t.tip + 1} needs ${TIP_MIN_CARDS} cards no earlier section explains (it names ${t.cards.join(", ")})`); }
   for (const o of c.noCardTwice?.offenders ?? []) {
     // In the post-pass's priority (it keeps the earlier section), never the order the check listed them.
@@ -951,7 +1010,7 @@ export function i3RepairTargets(c: StagesChecks): { sections: SectionId[]; reaso
 export function allChecksPass(c: StagesChecks, exceptCommanders: boolean): boolean {
   return c.cardsInList.pass && c.turnNumbers.pass && (exceptCommanders ? c.explainedOnce.passExceptCommanders : c.explainedOnce.pass)
     && c.stageFit.pass && c.stagesNameCards.pass && c.length.pass && c.shape.pass
-    && (c.commanderTurn?.pass ?? true) && (c.landKeep?.pass ?? true) && (c.mulliganSpecific?.pass ?? true) && (c.deckKind?.pass ?? true) && (c.noCardTwice?.pass ?? true);
+    && (c.commanderTurn?.pass ?? true) && (c.castReach?.pass ?? true) && (c.tipLead?.pass ?? true) && (c.landKeep?.pass ?? true) && (c.mulliganSpecific?.pass ?? true) && (c.deckKind?.pass ?? true) && (c.noCardTwice?.pass ?? true);
 }
 
 /**
@@ -966,6 +1025,7 @@ export function mergeStagesReply(first: StagesReply, repair: StagesReply | null,
     ...first,
     overview: take("overview") ? repair.overview : first.overview,
     primer: take("primer") ? repair.primer : first.primer,
+    ...(take("primer") ? (repair.tipKinds ? { tipKinds: repair.tipKinds } : {}) : first.tipKinds ? { tipKinds: first.tipKinds } : {}),
     keyCards: take("keyCards") ? repair.keyCards : first.keyCards,
     assessment: take("weaknesses") ? repair.assessment : first.assessment,
   };

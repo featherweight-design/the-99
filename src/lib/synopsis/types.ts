@@ -138,6 +138,8 @@ export type StoredEvidence = {
   landKeep?: string[];
   /** Contract 13 only, and never written for a player's deck: the alternate line's. */
   alternate?: string[];
+  /** Contract 13 only: the Backup line's (a plain list; the line cites no refs, so it is empty). */
+  backup?: string[];
 };
 
 export type CheckedSynopsis = {
@@ -169,6 +171,8 @@ export type CheckedSynopsis = {
   landKeep?: string;
   /** Contract 13: the alternate-commander line. A precon's alone; absent for a player's deck. */
   alternate?: string;
+  /** Contract 13: the Backup line (`plans.backups[0]`), drawn under Close. Absent when the reply had none or it failed its check, and on every older row. */
+  backup?: string;
   /** Every resolved mark, keyed by `normalizeName` of the name as written (case, curly quotes and
    *  spacing folded), to the card it opens. A renderer looks a mark up through `normalizeName`. */
   cards: Record<string, { oracleId: string; name: string }>;

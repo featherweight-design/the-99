@@ -216,6 +216,8 @@ export function mergeRetry(
   // The alternate line (a precon's) follows the same rule: the stored one stands, a fresh one fills a gap.
   const alternate = stored.alternate ?? fresh.alternate;
   if (alternate !== undefined) content.alternate = alternate;
+  const backup = stored.backup ?? fresh.backup;
+  if (backup !== undefined) content.backup = backup;
   // Contract 8: the evidence follows its section, and the checklist follows the Weaknesses it chose
   // them from. A stored answer with neither (contract 7) stays without.
   if (stored.evidence && fresh.evidence) {
@@ -234,6 +236,7 @@ export function mergeRetry(
     if (landKeep !== undefined && landIds) content.evidence.landKeep = landIds;
     const altIds = stored.alternate !== undefined ? e.alternate : f.alternate;
     if (alternate !== undefined && altIds) content.evidence.alternate = altIds;
+    if (backup !== undefined) content.evidence.backup = [];
   }
   const assessment = take("weaknesses") ? fresh.assessment : stored.assessment;
   if (assessment) content.assessment = assessment;

@@ -2,7 +2,7 @@ import { readEvidence, refIndex } from "./claims";
 import { deckNameIndex, normalizeName, type SynopsisFacts } from "./facts";
 import type { StagesOption } from "./prompt";
 import {
-  checkAlternateLine, checkLandKeep, dedupeSections, docFromChecked, docFromStagesReply, docShownNew, i3RepairTargets, landKeepFallback, landKeepNumber,
+  backupText, checkAlternateLine, checkBackupLine, checkLandKeep, dedupeSections, docFromChecked, docFromStagesReply, docShownNew, i3RepairTargets, landKeepFallback, landKeepNumber,
   STAGES_LIMITS, stagesChecks, type StagesReply,
 } from "./stages";
 import { SECTION_COUNTS } from "./limits";
@@ -81,6 +81,8 @@ export function applyStagesShape(checked: CheckedSynopsis, reply: StagesReply, f
   // The model's line is absent, failed its check, or `withLine` left it out (a mark or ref that
   // resolves to nothing): the app's own sentence stands in, so the figure is always present.
   if (out.landKeep === undefined) out = withLine(out, { text: landKeepFallback(target), evidence: [] }, facts, "landKeep");
+  const backup = backupText(reply);
+  if (backup && checkBackupLine(backup)) out = withLine(out, { text: backup, evidence: [] }, facts, "backup");
   const alt = reply.alternate;
   if (alt && alternates.length > 0 && checkAlternateLine({ alternate: [{ text: alt.text }] }, alternates, facts).pass) {
     out = withLine(out, alt, facts, "alternate");
@@ -93,7 +95,7 @@ export function applyStagesShape(checked: CheckedSynopsis, reply: StagesReply, f
  * and the oracle ids its evidence cites; `content` unchanged when a mark names a card the deck does
  * not hold or a ref resolves to nothing, so the line is left out rather than half stored.
  */
-function withLine(content: CheckedSynopsis, line: { text: string; evidence: string[] }, facts: SynopsisFacts, key: "landKeep" | "alternate"): CheckedSynopsis {
+function withLine(content: CheckedSynopsis, line: { text: string; evidence: string[] }, facts: SynopsisFacts, key: "landKeep" | "alternate" | "backup"): CheckedSynopsis {
   const deck = deckNameIndex(facts.cards);
   const added: CheckedSynopsis["cards"] = {};
   for (const m of marksIn(line.text)) {
