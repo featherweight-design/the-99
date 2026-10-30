@@ -73,7 +73,56 @@ export function thirdPartyNameFindings(root) {
     };
     const typeNames = (node) => !inBrand && !test && namesSomeone(checker, checker.getTypeAtLocation(node));
 
+    // The file's own bindings of the three guarded modules (`import { named }`, `import * as m`, a default import). A
+    // binding may only be CALLED; any other use of it (`export { named }`, `export const mint = named`, `{ named }`,
+    // `export default named`, handing it to a function) passes the function on, and is a re-export by another name.
+    const guardedSymbols = new Map();
+    const namespaces = new Set();
+    for (const st of sf.statements) {
+      if (!ts.isImportDeclaration(st) || !ts.isStringLiteral(st.moduleSpecifier) || !st.importClause || st.importClause.isTypeOnly) continue;
+      const to = target(st.moduleSpecifier.text);
+      if (!to || !GUARDED.includes(to)) continue;
+      const bind = (id, ns) => {
+        const sym = checker.getSymbolAtLocation(id);
+        if (!sym) return;
+        guardedSymbols.set(sym, to);
+        if (ns) namespaces.add(sym);
+      };
+      if (st.importClause.name) bind(st.importClause.name, false);
+      const nb = st.importClause.namedBindings;
+      if (nb && ts.isNamespaceImport(nb)) bind(nb.name, true);
+      else if (nb) for (const el of nb.elements) if (!el.isTypeOnly) bind(el.name, false);
+    }
+    /** The local symbol an identifier refers to, through a shorthand property and an export specifier. */
+    const refSymbol = (id) => {
+      const p = id.parent;
+      if (ts.isShorthandPropertyAssignment(p) && p.name === id) return checker.getShorthandAssignmentValueSymbol(p);
+      if (ts.isExportSpecifier(p)) return checker.getExportSpecifierLocalTargetSymbol(p);
+      return checker.getSymbolAtLocation(id);
+    };
+    const isDeclarationName = (id) => {
+      const p = id.parent;
+      return (ts.isImportSpecifier(p) || ts.isNamespaceImport(p) || ts.isImportClause(p)) && p.name === id;
+    };
+    const passesOn = (id) => {
+      if (test || isDeclarationName(id)) return null;
+      const sym = refSymbol(id);
+      const to = sym && guardedSymbols.get(sym);
+      if (!to) return null;
+      const p = id.parent;
+      if (ts.isCallExpression(p) && p.expression === id) return null;
+      // `m.named(x)` on a namespace import.
+      if (namespaces.has(sym) && ts.isPropertyAccessExpression(p) && p.expression === id && ts.isCallExpression(p.parent) && p.parent.expression === p) return null;
+      // A type position (`typeof named`) passes nothing on.
+      if (ts.isTypeQueryNode(p)) return null;
+      return to;
+    };
+
     const visit = (node) => {
+      if (ts.isIdentifier(node) && guardedSymbols.size > 0) {
+        const to = passesOn(node);
+        if (to) add(node, `passes on ${node.text} from ${to} (only call it)`);
+      }
       if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier)) {
         checkImport(node, node.moduleSpecifier.text, false);
       } else if (ts.isImportEqualsDeclaration(node) && ts.isExternalModuleReference(node.moduleReference) && ts.isStringLiteral(node.moduleReference.expression)) {

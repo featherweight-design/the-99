@@ -26,9 +26,13 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   `pnpm check:third-party-names` (CI) resolves every import of the mint, the reveal and tests' `plain()`
   (`testing.ts`), fails a re-export of any of them, and fails a template (other than `personText`), `String()`,
   `.toString()` or `+` over a name, an `as ThirdPartyName` and a read of `.$tp`; ESLint's `no-restricted-imports` says
-  the same in the editor. Converted so far: the invite and join family (`readInvite`, `inviteOutcomes`,
-  `readInviteSender`, the friend landing, `/join`, the accept receipt and toast). Friends and pods, spares and
-  requests, feed and push, friend decks and the cart, and Rule 0 follow (PRs B to F); autocapture comes back on in G.
+  the same in the editor. Converted so far (PR A, the invite and join family): `readInvite`, `inviteOutcomes` and
+  `readInviteSender`; the friend landing (`/friend/[token]`) and its card; `/join`; and the receipt and toast that
+  the invite WATCH raises when a shown link is redeemed (`friends-view.tsx`, `use-add-friend.tsx`). NOT yet marked,
+  because they read `Friend.displayName` (`access.ts`, PR B): the receipt after Accept on `/friends?accepted=`, and
+  Home's first-run Friends row; both already take `string | ThirdPartyName`, so B's branding marks them. Friends and
+  pods, spares and requests, feed and push, friend decks and the cart, and Rule 0 follow (PRs B to F); autocapture
+  comes back on in G.
 
   **Spares are view-only and shared per pod** (Q3, Q12): `loadFriendSpares(viewer, oracleIds)` reads the grants (the
   friendship, the friend's `pod_spare_shares` grant, the friend's membership of that pod and the viewer's, in one

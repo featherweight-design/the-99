@@ -16,7 +16,7 @@ const BASE: Record<string, string> = {
   "src/lib/person-name/brand.ts": BRAND,
   "src/lib/person-name/mint.ts": `import type { ThirdPartyName } from "./brand";\nexport const named = (v: string) => ({ $tp: v }) as unknown as ThirdPartyName;\n`,
   "src/lib/person-name/reveal.ts": `import type { ThirdPartyName } from "./brand";\nexport const reveal = (n: ThirdPartyName) => (n as unknown as { $tp: string }).$tp;\n`,
-  "src/lib/person-name/testing.ts": `import { reveal } from "./reveal";\nexport const plain = reveal;\n`,
+  "src/lib/person-name/testing.ts": `import type { ThirdPartyName } from "./brand";\nimport { reveal } from "./reveal";\nexport const plain = (n: ThirdPartyName) => reveal(n);\n`,
   "src/lib/social/read.ts": `import { named } from "../person-name/mint";\nexport const who = named("Ana");\n`,
 };
 
@@ -77,6 +77,18 @@ describe("thirdPartyNameFindings", () => {
   it("finds a re-export of any of the three, even from a file allowed to import it", { timeout: 30_000 }, () => {
     expect(whys({ "src/lib/social/leak.ts": `export { named } from "../person-name/mint";\n` })).toEqual([
       "src/lib/social/leak.ts:1 re-exports src/lib/person-name/mint.ts",
+    ]);
+  });
+
+  it("finds a guarded function passed on by a local binding: export { named }, a const alias, a namespace", { timeout: 30_000 }, () => {
+    expect(whys({
+      "src/lib/social/leak-a.ts": `import { named } from "../person-name/mint";\nexport { named };\n`,
+      "src/lib/social/leak-b.ts": `import { named } from "../person-name/mint";\nexport const mint = named;\nexport const ok = named("Ana");\n`,
+      "src/lib/social/leak-c.ts": `import * as m from "../person-name/mint";\nexport const ok = m.named("Ana");\nexport default m;\n`,
+    })).toEqual([
+      "src/lib/social/leak-a.ts:2 passes on named from src/lib/person-name/mint.ts (only call it)",
+      "src/lib/social/leak-b.ts:2 passes on named from src/lib/person-name/mint.ts (only call it)",
+      "src/lib/social/leak-c.ts:3 passes on m from src/lib/person-name/mint.ts (only call it)",
     ]);
   });
 

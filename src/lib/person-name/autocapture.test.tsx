@@ -115,20 +115,27 @@ describe("ph-no-capture with posthog-js autocapture", () => {
     expect(autocaptured()).toHaveLength(0);
   });
 
-  it("keeps a PersonText line out of the event of a press beside it in a portal (a toast with Try again)", () => {
+  // PersonText is held to its OWN class here, inside the clicked button: a sibling of the target never reaches the
+  // event (posthog-js builds `$elements_chain` from the target and its DOM parents, and a button's or link's `$el_text`
+  // from its own text and nested spans), so only a name inside the press can leak. The unmarked twin is the control:
+  // the same span without `ph-no-capture` puts the name in both properties, so the first button passes only because of
+  // the class.
+  it("keeps a PersonText line inside a portalled button out of its event; the same span unmarked would leak", () => {
+    const line = personText`Open ${ANA}’s decks`;
     render(
       <Portal>
-        <div role="alert">
-          <p><PersonText text={personText`We couldn’t remove ${ANA}.`} /></p>
-          <button type="button">Try again</button>
-        </div>
+        <button type="button" data-testid="marked"><PersonText text={line} /></button>
+        <button type="button" data-testid="unmarked"><span>Open Ana Example’s decks</span></button>
       </Portal>,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    fireEvent.click(screen.getByTestId("marked"));
     expect(autocaptured()).toHaveLength(1);
+    expect(String(autocaptured()[0].properties.$el_text ?? "")).not.toContain("Ana");
     expect(chainOf(autocaptured()[0])).not.toContain("Ana");
-    fireEvent.click(screen.getByText("We couldn’t remove Ana Example."));
-    expect(autocaptured()).toHaveLength(1);
+    fireEvent.click(screen.getByTestId("unmarked"));
+    expect(autocaptured()).toHaveLength(2);
+    expect(autocaptured()[1].properties.$el_text).toBe("Open Ana Example’s decks");
+    expect(chainOf(autocaptured()[1])).toContain("Ana Example");
   });
 
   it("drops a click on an element whose attribute names someone (personAttrs marks it)", () => {
