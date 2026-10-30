@@ -7,7 +7,6 @@ import { analysisTabEnabled } from "../decks/analysis-flag";
 import { labelRoleCountsEnabled } from "../decks/label-counts-flag";
 import { neverCutEnabled } from "../decks/never-cut-flag";
 import { deckPrintingsEnabled } from "../decks/printings-flag";
-import { deckStatsEnabled } from "../decks/stats-flag";
 import { pushEnabled } from "../push/flag";
 import { helpMeChooseEnabled } from "../intake/flag";
 import { bracketReachEnabled } from "../intake/bracket-reach-flag";
@@ -39,7 +38,6 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   BRACKET_REACH_ENABLED: bracketReachEnabled,
   CHANGE_COMMANDER_ENABLED: changeCommanderEnabled,
   DECK_PRINTINGS_ENABLED: deckPrintingsEnabled,
-  DECK_STATS_ENABLED: deckStatsEnabled,
   FEEDBACK_ENABLED: feedbackEnabled,
   FIND_A_DECK_READ_ENABLED: findADeckReadEnabled,
   HELP_ME_CHOOSE_ENABLED: helpMeChooseEnabled,

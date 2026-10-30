@@ -767,7 +767,6 @@ export const switchCopy: Readonly<Record<SwitchName, { label: string; descriptio
   BRACKET_REACH_ENABLED: { label: "Bracket reach", description: "Help me choose places owned cards that reach the bracket asked for." },
   CHANGE_COMMANDER_ENABLED: { label: "Change commander", description: "Change a deck’s commander and keep the 99." },
   DECK_PRINTINGS_ENABLED: { label: "Deck printings", description: "Choose the printing of each card in a deck." },
-  DECK_STATS_ENABLED: { label: "Deck stats", description: "The Stats view on a deck." },
   FIND_A_DECK_READ_ENABLED: { label: "Find a deck read", description: "A one-credit run inside Find a deck for it." },
   HELP_ME_CHOOSE_ENABLED: { label: "Help me choose", description: "Find a commander from a few words, and Look deeper." },
   HOW_IT_WORKS_ENABLED: { label: "How it works", description: "The How it works page in About." },

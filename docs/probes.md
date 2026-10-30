@@ -648,7 +648,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   and fails a tool, screen or tour picture missing in any theme). Run `pnpm fixtures:about` first, then against
   `next start` (`PROBE_BASE`, loopback with a port) of a build on the same scratch branch, with EVERY reader-facing
   switch in `src/lib/switches/registry.ts` on (less the plumbing ones and the payments line, but for `PAYMENTS_ENABLED`
-  itself: a deck's Stats and Notes tabs, the all-decks cart and the buy tag each have a switch of their own, and a frame
+  itself: the all-decks cart and the buy tag each have a switch of their own (a deck's Stats and Notes tabs are always on), and a frame
   missing one is not captured),
   `SOCIAL_FRIENDS_ENABLED` (which also draws Rule 0 and invites) and `PAYMENTS_ENABLED` on, so the frames show the ?, the account menu's `Take the tour` row, the pod's
   `Rule 0 check` row, the invite count line and `/credits` (the launch-end About batch), and no sheet. A screen frame missing what it

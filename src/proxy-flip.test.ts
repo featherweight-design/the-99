@@ -46,7 +46,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   delete process.env.NEVER_CUT_ENABLED;
-  delete process.env.DECK_STATS_ENABLED;
+  delete process.env.ANALYSIS_TAB_ENABLED;
 });
 
 describe("a switch flipped on", () => {
@@ -72,8 +72,8 @@ describe("a switch flipped on", () => {
     visit("decks");
     expect(line()).toBeNull();
 
-    // Deck stats switched on LATER. The floor would call this reader current; the unit is still new.
-    process.env.DECK_STATS_ENABLED = "true";
+    // The Analysis tab switched on LATER. The floor would call this reader current; the unit is still new.
+    process.env.ANALYSIS_TAB_ENABLED = "true";
     const second = line();
     expect(second?.ids.length).toBeGreaterThan(0);
     expect(second?.ids.some((k) => k.startsWith("decks/your-deck/lock"))).toBe(false);

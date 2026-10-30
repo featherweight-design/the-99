@@ -25,7 +25,7 @@ describe("resolveEnv", () => {
     expect(resolveEnv(e({}), s, "u2").FEEDBACK_ENABLED).toBe("true");
     expect(resolveEnv(e({ FEEDBACK_ENABLED: "true" }), s, "u3").FEEDBACK_ENABLED).toBe("false");
     expect(resolveEnv(e({ FEEDBACK_ENABLED: "true" }), s, null).FEEDBACK_ENABLED).toBe("false");
-    expect(resolveEnv(e({ DECK_STATS_ENABLED: "true" }), s, "u3").DECK_STATS_ENABLED).toBe("true");
+    expect(resolveEnv(e({ NEVER_CUT_ENABLED: "true" }), s, "u3").NEVER_CUT_ENABLED).toBe("true");
   });
 
   it("lets OFF win when two group rows apply", () => {
@@ -102,15 +102,15 @@ describe("All features", () => {
     const s = snap([
       all(),
       row({ switchName: "CHANGE_COMMANDER_ENABLED", scope: "user", userId: "u1", value: "off" }),
-      row({ switchName: "DECK_STATS_ENABLED", scope: "group", groupId: "g1", value: "off" }),
+      row({ switchName: "DECK_PRINTINGS_ENABLED", scope: "group", groupId: "g1", value: "off" }),
       row({ switchName: "NOTICES_ENABLED", scope: "app", value: "off" }),
     ], { u1: "g1" });
     const env = resolveEnv(e({ NEVER_CUT_ENABLED: "off" }), s, "u1");
     expect(env.NEVER_CUT_ENABLED).toBe("off");
     expect(env.CHANGE_COMMANDER_ENABLED).toBe("false");
-    expect(env.DECK_STATS_ENABLED).toBe("true");
+    expect(env.DECK_PRINTINGS_ENABLED).toBe("true");
     expect(env.NOTICES_ENABLED).toBe("true");
-    expect(decide("DECK_STATS_ENABLED", "feature", e({}), s, "u1").source).toEqual({ kind: "all" });
+    expect(decide("DECK_PRINTINGS_ENABLED", "feature", e({}), s, "u1").source).toEqual({ kind: "all" });
   });
 
   it("leaves plumbing to its app-wide rung", () => {
