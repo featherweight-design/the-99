@@ -67,7 +67,7 @@ export const deckDescriptionCopy = {
     ownAny: "Any card",
     ownOnly: helpMeChooseCopy.intake.poolOwn, // 'Only cards I own'
     // Small items 4, item 2: shown under Only cards I own.
-    otherDecks: "Also cards in my other decks",
+    otherDecks: "Include my other decks",
     otherDecksLine: "Apply asks whether to pull each one from its deck.",
     // Not in the handoff's copy file — this box's own save had no refusal string there.
     refused: "We couldn’t save that. Your limits are unchanged.",

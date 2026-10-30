@@ -154,15 +154,15 @@ describe("TuningLimitsBox (H35 PR 2, \"Kept for this deck\")", () => {
   });
 });
 
-describe("Also cards in my other decks", () => {
+describe("Include my other decks", () => {
   it("is not offered with Any card", () => {
     renderBox({ ownedOnly: false });
-    expect(screen.queryByRole("checkbox", { name: /Also cards in my other decks/ })).toBeNull();
+    expect(screen.queryByRole("checkbox", { name: /Include my other decks/ })).toBeNull();
   });
 
   it("shows under Only cards I own, reads its value, and saves a press", () => {
     const { onOtherDecksChange } = renderBox({ ownedOnly: true, otherDecks: false });
-    const box = screen.getByRole("checkbox", { name: /Also cards in my other decks/ });
+    const box = screen.getByRole("checkbox", { name: /Include my other decks/ });
     expect(box).not.toBeChecked();
     expect(screen.getByText("Apply asks whether to pull each one from its deck.")).toBeInTheDocument();
     fireEvent.click(box);
@@ -171,6 +171,6 @@ describe("Also cards in my other decks", () => {
 
   it("draws a kept choice checked", () => {
     renderBox({ ownedOnly: true, otherDecks: true });
-    expect(screen.getByRole("checkbox", { name: /Also cards in my other decks/ })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: /Include my other decks/ })).toBeChecked();
   });
 });
