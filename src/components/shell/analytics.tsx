@@ -1,7 +1,7 @@
 "use client";
 
 // Starts product analytics (`lib/analytics/posthog.ts`) and keeps its identity in step with Clerk: identify on
-// sign-in with the reader's first name only (none when blank; never the full name or username), reset on sign-out. Dormant without a key or off the production hostname.
+// sign-in by Clerk account id alone (never a name or email), reset on sign-out. Dormant without a key or off the production hostname.
 // Renders nothing.
 import { useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
@@ -11,7 +11,6 @@ import { identifyReader, resetReader, startAnalytics } from "../../lib/analytics
 export function Analytics() {
   const { isLoaded, user } = useUser();
   const userId = user?.id ?? null;
-  const name = user?.firstName?.trim() || null;
 
   // Nothing starts until Clerk knows who is reading. Then PostHog starts and, in the same task, takes this
   // reader's identity or drops a previous one, ahead of its first pageview (which the SDK defers by a timer).
@@ -25,9 +24,9 @@ export function Analytics() {
       commitSha: process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA,
       hostname: window.location.hostname,
     });
-    if (userId) identifyReader(userId, name);
+    if (userId) identifyReader(userId);
     else resetReader();
-  }, [isLoaded, userId, name]);
+  }, [isLoaded, userId]);
 
   return null;
 }

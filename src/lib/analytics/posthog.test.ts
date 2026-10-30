@@ -98,7 +98,7 @@ describe("startAnalytics", () => {
     });
     const m = await load();
     expect(await m.startAnalytics(LIVE)).toBeNull();
-    m.identifyReader("user_1", "Ada");
+    m.identifyReader("user_1");
     await settle();
     expect(posthog.identify).not.toHaveBeenCalled();
   });
@@ -108,21 +108,20 @@ describe("identifyReader and resetReader", () => {
   it("do nothing while dormant", async () => {
     const m = await load();
     await m.startAnalytics({ ...LIVE, key: undefined });
-    m.identifyReader("user_1", "Ada");
+    m.identifyReader("user_1");
     m.resetReader();
     await settle();
     expect(posthog.identify).not.toHaveBeenCalled();
     expect(posthog.reset).not.toHaveBeenCalled();
   });
 
-  it("identify with the display name as `name`, or the id alone", async () => {
+  it("identify with the account id alone, no properties", async () => {
     const m = await load();
     void m.startAnalytics(LIVE);
-    m.identifyReader("user_1", "Ada Lovelace");
-    m.identifyReader("user_2", null);
+    m.identifyReader("user_1");
     await settle();
-    expect(posthog.identify).toHaveBeenCalledWith("user_1", { name: "Ada Lovelace" });
-    expect(posthog.identify).toHaveBeenCalledWith("user_2");
+    expect(posthog.identify).toHaveBeenCalledTimes(1);
+    expect(posthog.identify.mock.calls[0]).toEqual(["user_1"]);
   });
 
   it("reset an identified browser and leave an anonymous one alone", async () => {
@@ -157,7 +156,7 @@ describe("identifyReader and resetReader", () => {
     });
     const m = await load();
     void m.startAnalytics(LIVE);
-    expect(() => m.identifyReader("user_1", "Ada")).not.toThrow();
+    expect(() => m.identifyReader("user_1")).not.toThrow();
     await settle();
   });
 });
