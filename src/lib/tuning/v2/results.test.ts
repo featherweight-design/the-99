@@ -211,3 +211,26 @@ describe("bracketOutcome with a declared bracket", () => {
     expect(bracketOutcome([1, 2], keep, two, [1], 2)).toEqual({ kind: "stays", bracket: 1 });
   });
 });
+
+// Copilot round 1: a stay or a miss reads "bracket stays …", so it names the declaration only while the RESULTING permits
+// hold it; a reach may name it regardless, as where the deck came from.
+describe("bracketOutcome names the declaration only where the picks keep it", () => {
+  const keep = { choice: "keep" as const, target: 5, low: 4 };
+  it("drops a declared 5 from a stay once a picked line leaves only 4", () => {
+    const cut = v2Line("c", "cut", { bracketAfter: [4] });
+    expect(bracketOutcome([4, 5], keep, [cut], null, 5)).toEqual({ kind: "stays", bracket: 4 });
+    expect(bracketOutcome([4, 5], keep, [v2Line("c", "cut", { bracketAfter: [4, 5] })], null, 5)).toEqual({ kind: "stays", bracket: 5 });
+  });
+  it("drops it from a miss the same way, line by line and for a whole set", () => {
+    const up = { choice: "up" as const, target: 3 };
+    expect(bracketOutcome([1, 2], up, [v2Line("c", "cut", { bracketAfter: [1] })], null, 2)).toEqual({ kind: "missed", from: 1, aim: up });
+    const two = [...adds(2), ...cuts(2)];
+    const down = { choice: "down" as const, target: 3 };
+    expect(bracketOutcome([4, 5], down, two, [4], 5)).toEqual({ kind: "missed", from: 4, aim: down });
+    expect(bracketOutcome([4, 5], down, two, [4, 5], 5)).toEqual({ kind: "missed", from: 5, aim: down });
+  });
+  it("keeps it on a reach, as the deck's starting point", () => {
+    const up = { choice: "up" as const, target: 3 };
+    expect(bracketOutcome([1, 2], up, [v2Line("f", "add", { bracketAfter: [3] })], null, 2)).toEqual({ kind: "reached", from: 2, to: 3 });
+  });
+});
