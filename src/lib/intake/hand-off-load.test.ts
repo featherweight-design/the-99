@@ -27,10 +27,8 @@ beforeEach(() => {
 
 describe("loadHandOffAnswers", () => {
   it("hands the card chip the reader's env, by identity (admin PR 6f-2)", async () => {
-    // The chip's claim read decides CHANGE_COMMANDER_ENABLED from it: a dropped
-    // argument reads the environment, which has it the other way.
-    vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
-    const env = envViewWith({ CHANGE_COMMANDER_ENABLED: "true" });
+    // The chip's claim read takes it; checked by identity, so a dropped argument is seen.
+    const env = envViewWith({});
     try {
       await loadHandOffAnswers("u", COMMANDER, ask(), env);
       expect(stub.chip.mock.calls[0].slice(0, 2)).toEqual(["u", CARD]);

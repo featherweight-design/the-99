@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { envViewWith } from "../../test/env-view";
 
 // The receipt's availability and its reservation rows are ONE snapshot (Copilot, #1510): two
@@ -35,11 +35,7 @@ vi.mock("../decks/availability-query", () => ({
 
 import { writeArrivalsReceipt } from "./arrivals-write";
 
-// The reader's resolved switches, opposite to the environment on every switch the receipt reads: a
-// read that fell back to `process.env` would decide the other way, and is caught by identity below.
-const ON = { CHANGE_COMMANDER_ENABLED: "true" };
-const OFF = { CHANGE_COMMANDER_ENABLED: "false" };
-const stubEnvironment = (values: Record<string, string>) => { for (const [k, v] of Object.entries(values)) vi.stubEnv(k, v); };
+// The reader's resolved switches: a read that fell back to `process.env` is caught by identity below.
 const receipt = (env: NodeJS.ProcessEnv) => writeArrivalsReceipt({
   userId: "u1", uploadId: "up1", ownedBefore: { o1: 1 }, ownedAfter: { o1: 2 }, buyBefore: [],
   unmatched: [], parseErrorCount: 0, env,
@@ -54,11 +50,9 @@ describe("writeArrivalsReceipt's claim read", () => {
     stub.loadDeckBuyRows.mockClear();
     stub.loadAvailability.mockResolvedValue(new Map([["o1", { owned: 2, hard: 0, soft: 0, free: 2, claims: [] }]]));
   });
-  afterEach(() => vi.unstubAllEnvs());
 
   it("reads the money rows, the availability and the reservations inside one repeatable-read transaction", async () => {
-    stubEnvironment(OFF);
-    const env = envViewWith(ON);
+    const env = envViewWith({});
     await receipt(env);
     expect(stub.transaction).toHaveBeenCalledTimes(1);
     expect(stub.transaction.mock.calls[0][1]).toEqual({ isolationLevel: "repeatable read" });
@@ -68,17 +62,8 @@ describe("writeArrivalsReceipt's claim read", () => {
     expect(stub.loadDeckBuyRows.mock.calls[0] as unknown[]).toEqual(["u1", undefined, stub.tx]);
   });
 
-  it("hands the claim read the reader's env, switch on, by identity", async () => {
-    stubEnvironment(OFF);
-    const env = envViewWith(ON);
-    await receipt(env);
-    const opts = stub.loadAvailability.mock.calls[0][1] as { env?: unknown };
-    expect(opts.env === env).toBe(true);
-  });
-
-  it("hands the claim read the reader's env, switch off, by identity", async () => {
-    stubEnvironment(ON);
-    const env = envViewWith(OFF);
+  it("hands the claim read the reader's env, by identity", async () => {
+    const env = envViewWith({});
     await receipt(env);
     const opts = stub.loadAvailability.mock.calls[0][1] as { env?: unknown };
     expect(opts.env === env).toBe(true);

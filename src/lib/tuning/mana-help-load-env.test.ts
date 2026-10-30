@@ -1,7 +1,6 @@
 // Admin PR 6f-1: "Help me add <color>" offers the staples the claim model says the player has a free copy
-// of, and that model reads CHANGE_COMMANDER_ENABLED from the env it is handed. The
-// staples read defaults its env to the environment, so a dropped argument compiles: the reader's env and
-// the environment hold opposite values here, and the handed env is checked by identity, as a boolean.
+// of, and that model takes the env it is handed. The staples read defaults its env to the environment, so
+// a dropped argument compiles: the handed env is checked by identity, as a boolean.
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const stub = vi.hoisted(() => ({ staplesEnv: [] as unknown[] }));
@@ -24,14 +23,13 @@ vi.mock("./mana-staples", () => ({
 
 const { loadManaHelp } = await import("./mana-help-load");
 
-const READER = { CHANGE_COMMANDER_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const READER = {} as unknown as NodeJS.ProcessEnv;
 const DECK = { id: "d1", commander: { oracleId: "c1", colorIdentity: ["W"] }, partner: null, cards: [] } as never;
 
 describe("loadManaHelp", () => {
   afterEach(() => vi.unstubAllEnvs());
 
   it("hands the staples' claim read the reader's resolved switches, not the environment", async () => {
-    vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
     expect(await loadManaHelp(DECK, "u1", "W", READER)).not.toBeNull();
     expect(stub.staplesEnv.length).toBe(1);
     expect(stub.staplesEnv[0] === READER).toBe(true);

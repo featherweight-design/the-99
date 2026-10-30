@@ -38,6 +38,10 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
   });
 }
 const OLD = (await import(pathToFileURL(oldPath).href)) as typeof NEW;
+// A DIFF_BASE between admin PR 6e and the Change commander switch's retirement has `loadDeckBuyRows`
+// require a fourth argument, the env. It is passed to both modules: one that takes no env ignores it.
+type BuyRowsAnyRef = (userId: string, deckIds?: string[], tx?: undefined, env?: NodeJS.ProcessEnv) => ReturnType<typeof NEW.loadDeckBuyRows>;
+const buyRows = (mod: typeof NEW, userId: string) => (mod.loadDeckBuyRows as BuyRowsAnyRef)(userId, undefined, undefined, process.env);
 
 const [{ branch }] = (await db.execute<{ branch: string }>(sql`select current_setting('neon.branch_id', true) as branch`)).rows;
 if (!branch || branch === "br-noisy-violet-a6vw4ess" || branch === "br-polished-pond-a6e63y0b") {
@@ -75,7 +79,7 @@ for (const d of decks) {
 }
 const rowsOf = (rows: { deckId: string; oracleId: string; quantity: number }[]) =>
   new Map(rows.map((r) => [`${r.deckId}|${r.oracleId}`, r.quantity]));
-compareMaps("buyRows", "buyRows", rowsOf(await OLD.loadDeckBuyRows(userId)), rowsOf(await NEW.loadDeckBuyRows(userId)));
+compareMaps("buyRows", "buyRows", rowsOf(await buyRows(OLD, userId)), rowsOf(await buyRows(NEW, userId)));
 
 console.log(`loadDeckBuyRows: ${tally.buyRows.compared} rows compared, ${tally.buyRows.differ} differ`);
 console.log(`loadAvailability: ${tally.availability.compared} rows compared, ${tally.availability.differ} differ`);
@@ -87,7 +91,7 @@ const time = async (fn: () => Promise<unknown>) => {
   return Math.round(ms.sort((x, y) => x - y)[2]);
 };
 for (const [name, mod] of [["old", OLD], ["new", NEW]] as const) {
-  console.log(`${name}: loadDeckBuyRows ${await time(() => mod.loadDeckBuyRows(userId))}ms · loadAvailability(user) ${await time(() => mod.loadAvailability(userId, { env: process.env }))}ms`);
+  console.log(`${name}: loadDeckBuyRows ${await time(() => buyRows(mod, userId))}ms · loadAvailability(user) ${await time(() => mod.loadAvailability(userId, { env: process.env }))}ms`);
 }
 
 if (process.env.DIFF_EXPLAIN === "1") {
@@ -99,7 +103,7 @@ if (process.env.DIFF_EXPLAIN === "1") {
       plan = (res.rows as { "QUERY PLAN": string }[]).map((r) => r["QUERY PLAN"]).join("\n");
       return { rows: [] };
     };
-    await mod.loadDeckBuyRows(userId);
+    await buyRows(mod, userId);
     (db as { execute: unknown }).execute = execute;
     console.log(`\n── EXPLAIN ANALYZE loadDeckBuyRows (${name})\n${plan.split("\n").filter((l) => /Execution Time|Planning Time|loops=\d{3,}/.test(l)).join("\n")}`);
   }

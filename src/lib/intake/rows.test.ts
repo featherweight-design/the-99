@@ -54,13 +54,11 @@ describe("loadResultsPage under a read", () => {
   });
 });
 
-// Admin PR 6f-2: every claim read under the results and the card chip takes the reader's env. The env is
-// opposite to the environment on the claim model's switch, so a dropped argument would read the other way;
-// it is checked by identity, never compared.
+// Admin PR 6f-2: every claim read under the results and the card chip takes the reader's env. It is checked
+// by identity, never compared, so a dropped argument is seen.
 describe("the reader's env", () => {
-  const ENV = envViewWith({ CHANGE_COMMANDER_ENABLED: "true" });
+  const ENV = envViewWith({});
   beforeEach(() => {
-    vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
     vi.mocked(loadAvailability).mockClear();
     stub.cardRow.mockReset().mockResolvedValue({ name: "Sol Ring", owned: true, held: null, gameChanger: false, imageUri: null });
     stub.chainArt.mockClear();

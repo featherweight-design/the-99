@@ -1,6 +1,5 @@
-// The deck changes page hands its `still short` count the reader's resolved switches (admin PR 6f-2): the
-// count's claim read decides CHANGE_COMMANDER_ENABLED's pending clause
-// from that env, and a dropped argument would read the environment, which has it the other way here.
+// The deck changes page hands its `still short` count the reader's resolved switches (admin PR 6f-2), which
+// the count's claim read takes. The env is checked by identity, so a dropped argument would be seen.
 import { describe, expect, it, vi } from "vitest";
 import { envViewWith } from "@/test/env-view";
 
@@ -36,8 +35,7 @@ const { default: ChangesPage } = await import("./page");
 
 describe("the deck changes page", () => {
   it("counts contested cards under the reader's resolved env, by identity", async () => {
-    vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
-    stub.env = envViewWith({ CHANGE_COMMANDER_ENABLED: "true" });
+    stub.env = envViewWith({});
     try {
       // Only the count is under test: whatever the rest of the render does with these stubs is not.
       await ChangesPage({ params: Promise.resolve({ id: DECK }), searchParams: Promise.resolve({}) } as never).catch(() => null);

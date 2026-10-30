@@ -43,9 +43,8 @@ export type PageLoad<T> = { value: T; store: boolean };
 
 /**
  * `load` is handed the env the key was built from, and must decide every switch from it: only then
- * is the key the whole story. The claim model in `availability-query` takes `env` (admin adoption 6e),
- * and since 6f-2 every claim read in `src` is handed the reader's env, so its pending clause
- * (`CHANGE_COMMANDER_ENABLED`) is the key's own switch.
+ * is the key the whole story. Every claim read in `src` is handed the reader's env (admin
+ * adoption 6e, 6f-2), though the claim model decides no switch from it today.
  * Every reader that decides a switch requires its `env`, so an env-less call does not compile, and
  * `check:switch-reads` keeps `process.env` itself from being handed in. A page that also decides switches OUTSIDE the cached load
  * resolves once (`requestSwitchEnv`) and passes that env as `env`, so the key, the loader and the

@@ -373,13 +373,14 @@ export async function loadAvailability(
      */
     unownedAsZero?: boolean;
     /**
-     * The reader's resolved switches (`requestSwitchEnv`), which decide nothing here today. Required (admin PR 7b): a script with no signed-in reader passes `process.env` itself.
+     * The reader's resolved switches (`requestSwitchEnv`). Required (admin PR 7b): a script with no
+     * signed-in reader passes `process.env` itself. No switch is decided from it today: the two that
+     * were (the `locked` key, the moved-commander pending clause) retired always-on.
      */
     env: NodeJS.ProcessEnv;
   },
   tx?: Tx,
 ): Promise<Map<string, Availability>> {
-  const env = opts.env;
   // Both narrowings are null-guarded in SQL rather than by string-building the
   // query, so there is one query plan and one place to read.
   //

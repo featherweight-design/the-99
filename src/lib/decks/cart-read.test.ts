@@ -125,11 +125,11 @@ describe("loadCart names the decks holding owned copies (G1)", () => {
 });
 
 // Admin adoption 6e: the cart is a cached page's load, keyed on the reader's resolved switches, and
-// every read that decides a switch takes that env: the claim model's holders. It requires its env, so the
-// one handed in must be the one handed on.
+// the claim model's holders read takes that env. It requires its env, so the one handed in must be the one
+// handed on.
 describe("loadCart threads the env it is handed", () => {
   it("hands the same env to every read it starts", async () => {
-    const ENV = { CHANGE_COMMANDER_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+    const ENV = {} as unknown as NodeJS.ProcessEnv;
     const { loadDeckBuyRows, loadAvailability } = await import("./availability-query");
     vi.mocked(loadDeckBuyRows).mockClear();
     vi.mocked(loadAvailability).mockClear();

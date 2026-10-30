@@ -55,10 +55,9 @@ describe("resolveCommanderSlug", () => {
       collection: [{ oracleId: "owned-committed" }, { oracleId: "owned-free" }],
     });
     loadCandidateSlugRows.mockResolvedValue([{ oracleId: "x", name: "X", ownedSupport: 1 }]);
-    // Under the reader's resolved switches (admin PR 6f-1): the pool's claim read requires its env, and
-    // the environment says the opposite here. Identity, as a boolean.
-    const READER = { CHANGE_COMMANDER_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
-    vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
+    // Under the reader's resolved switches (admin PR 6f-1): the pool's claim read requires its env.
+    // Identity, as a boolean.
+    const READER = {} as unknown as NodeJS.ProcessEnv;
     try {
       await resolveCommanderSlug("user", "x", READER);
     } finally {

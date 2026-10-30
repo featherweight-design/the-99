@@ -1,7 +1,6 @@
 // The new-deck search's claim read takes the reader's env (admin PR 6f-2): `searchCommanders` →
-// `loadSearchFacts` → `loadCardRow` → the claim model, which decides CHANGE_COMMANDER_ENABLED's pending
-// clause from it. The environment has it the other way here, so a
-// dropped argument at any step would read it; the env is checked by identity, never compared.
+// `loadSearchFacts` → `loadCardRow` → the claim model. The env is checked by identity,
+// never compared, so a dropped argument at any step is seen.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { envViewWith } from "@/test/env-view";
 
@@ -15,11 +14,10 @@ vi.mock("../decks/availability-query", () => ({ loadAvailability: stub.loadAvail
 
 const { loadCardRow, searchCommanders } = await import("./search");
 
-const ENV = envViewWith({ CHANGE_COMMANDER_ENABLED: "true" });
+const ENV = envViewWith({});
 const OWNED = { rows: [{ name: "Sol Ring", game_changer: false, type_line: "Artifact", image_uri: null, owned: true }] };
 
 beforeEach(() => {
-  vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
   // The card's own row, then nothing: the search past the card's read is not under test.
   stub.execute.mockReset().mockResolvedValueOnce(OWNED).mockRejectedValue(new Error("not under test"));
   stub.loadAvailability.mockClear();

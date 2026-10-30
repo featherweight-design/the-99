@@ -141,7 +141,7 @@ export async function searchCards(
   // the read is swallowed and every row falls back to no marker.
   const ownedIds = rows.filter((r) => r.ownedQty > 0).map((r) => r.oracleId);
   const [availability, ownedArt] = await Promise.all([
-    // The reader's resolved switches decide the claim model's pending clause.
+    // The claim read requires the reader's resolved switches.
     deckId && ownedIds.length > 0
       ? requestSwitchEnv(userId).then((env) => loadAvailability(userId, { excludeDeckId: deckId, oracleIds: ownedIds, env })).catch(() => null)
       : null,

@@ -1,7 +1,6 @@
 // Fits your decks takes the reader's env down to its claim read (admin PR 6f-2): the read's two actions
-// hand it to `readFitsRead` / `pressFitsRead`, and `loadFitsReadInputs` hands it to `loadFits`. Opposite to
-// the environment on CHANGE_COMMANDER_ENABLED, so a dropped argument would read the
-// other way; checked by identity, never compared.
+// hand it to `readFitsRead` / `pressFitsRead`, and `loadFitsReadInputs` hands it to `loadFits`. Checked by
+// identity, never compared, so a dropped argument is seen.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { envViewWith } from "@/test/env-view";
 
@@ -24,8 +23,7 @@ const { loadFitsReadInputs } = await import("./fits-read-load");
 const CARD = "11111111-1111-4111-8111-111111111111";
 
 beforeEach(() => {
-  vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
-  ENV.value = envViewWith({ CHANGE_COMMANDER_ENABLED: "true" });
+  ENV.value = envViewWith({});
 });
 afterEach(() => vi.unstubAllEnvs());
 

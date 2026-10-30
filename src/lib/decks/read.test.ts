@@ -509,7 +509,7 @@ describe("readNoteFlags", () => {
 // getDeckDetail's own query, so the claim model runs once per render rather than twice.
 describe("deckAvailabilityRead", () => {
   // The reader's resolved env, a SENTINEL: compared by identity, and a failure prints this, never the environment.
-  const ENV = { CHANGE_COMMANDER_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+  const ENV = {} as unknown as NodeJS.ProcessEnv;
   it("uses the shared read and never runs its own query", async () => {
     const shared = Promise.resolve(new Map([["c1", { owned: 1, hard: 0, soft: 0, free: 1, claims: [] }]]));
     const load = vi.fn();
@@ -527,7 +527,7 @@ describe("deckAvailabilityRead", () => {
   });
 
   // Admin PR 6e: its own query runs the claim model under the reader's resolved switches, the env
-  // getDeckDetail is handed (the pending clause), never the environment alone.
+  // getDeckDetail is handed, never the environment alone.
   it("hands the reader's env to its own query", async () => {
     let handed: NodeJS.ProcessEnv | undefined;
     const load = vi.fn(async (_u: string, opts?: { env?: NodeJS.ProcessEnv }) => {

@@ -119,11 +119,9 @@ export { MAX_SPARES_BATCH } from "./client-rules";
  * grants inside it, so the authorization and the friend's rows are one snapshot: a friend whose grant is
  * absent at that instant reads as `null` and nothing of theirs is read.
  *
- * Each model runs under the FRIEND's resolved switches (`resolveSwitchEnv(friend)`), never the viewer's:
- * the claim model's pending clause describes the friend's decks, so it follows the switches
- * the friend's own pages read it under (admin PR 6f). A spare is counted from `owned`, `hard` and `soft`
- * alone, which that switch does not move today, so this keeps the two reads of one friend's model in step rather
- * than changing a figure.
+ * Each model runs under the FRIEND's resolved switches (`resolveSwitchEnv(friend)`), never the viewer's: the
+ * model describes the friend's decks, so it takes the env the friend's own pages read it under (admin PR 6f). The
+ * claim model decides no switch from it today.
  */
 export async function claimModelsFor(viewerId: string, friends: readonly string[], asked: readonly string[]) {
   type Read = { grant: GrantDetails; model: Awaited<ReturnType<typeof loadAvailability>>; settings: SpareSettings };

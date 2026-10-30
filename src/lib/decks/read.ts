@@ -392,8 +392,8 @@ export function deckDetailReads(deckId: string, userId: string) {
  * over the whole collection), else its own read narrowed to `ids`. Null when the deck owns nothing
  * to look up. Apart so a test can pin that a shared read stands in for the query.
  *
- * `env` is the reader's resolved switches (`requestSwitchEnv`), which decide the claim model's pending
- * clause. Required, so no caller of `getDeckDetail` reads them from the environment alone.
+ * `env` is the reader's resolved switches (`requestSwitchEnv`), which the claim read
+ * requires. Required, so no caller of `getDeckDetail` reads them from the environment alone.
  */
 export function deckAvailabilityRead(
   userId: string,
@@ -1182,8 +1182,8 @@ export async function listDecksWithStats(
      * it. Unset, every row's `bracket` is null, which is what a deck nobody has analyzed draws.
      */
     includeBracket?: boolean;
-    /** The reader's resolved switches (`requestSwitchEnv`), for the `inUseElsewhere` claim read's
-     *  `locked` key. Required (admin PR 7b): a script with no signed-in reader passes `process.env`
+    /** The reader's resolved switches (`requestSwitchEnv`), for the `inUseElsewhere` claim read.
+     *  Required (admin PR 7b): a script with no signed-in reader passes `process.env`
      *  itself. */
     env: NodeJS.ProcessEnv;
     /**
