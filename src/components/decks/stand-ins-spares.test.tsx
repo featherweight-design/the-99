@@ -57,19 +57,26 @@ vi.mock("../../lib/swaps/actions", () => ({ loadStandInsAction, takeStandInActio
 const registered = vi.hoisted(() => ({ labels: [] as (string | undefined)[], wrap: new WeakMap<object, unknown>() }));
 vi.mock("../cards/card-detail-provider", async (actual) => {
   const real = await actual<typeof import("../cards/card-detail-provider")>();
-  return {
-  ...real,
-  useCardDetail: () => {
-    const ctx = real.useCardDetail();
-    let reg = registered.wrap.get(ctx.registerSheet) as typeof ctx.registerSheet | undefined;
+  const wrapRegister = (register: ReturnType<typeof real.useCardDetail>["registerSheet"]) => {
+    let reg = registered.wrap.get(register) as typeof register | undefined;
     if (!reg) {
       reg = (label, ...rest) => {
         registered.labels.push(label);
-        return ctx.registerSheet(label, ...rest);
+        return register(label, ...rest);
       };
-      registered.wrap.set(ctx.registerSheet, reg);
+      registered.wrap.set(register, reg);
     }
-    return { ...ctx, registerSheet: reg };
+    return reg;
+  };
+  return {
+  ...real,
+  useCardDetailIfAny: () => {
+    const ctx = real.useCardDetailIfAny();
+    return ctx && { ...ctx, registerSheet: wrapRegister(ctx.registerSheet) };
+  },
+  useCardDetail: () => {
+    const ctx = real.useCardDetail();
+    return { ...ctx, registerSheet: wrapRegister(ctx.registerSheet) };
   },
   CardDetailTrigger: (
     { siblings, children }: { siblings?: readonly (string | { oracleId: string; name?: string; imageUri?: string | null })[]; children: React.ReactNode },

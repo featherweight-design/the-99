@@ -1450,6 +1450,13 @@
       "when": 1793392247363,
       "tag": "0206_retire_deck_notes_switch",
       "breakpoints": true
+    },
+    {
+      "idx": 207,
+      "version": "7",
+      "when": 1793393926546,
+      "tag": "0207_flyer_admin_events",
+      "breakpoints": true
     }
   ]
 }

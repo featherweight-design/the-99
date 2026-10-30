@@ -27,6 +27,10 @@ vi.mock("../../cards/card-detail-provider", async () => {
       if (!React.useContext(Mounted)) throw new Error("useCardDetail must be used inside a CardDetailProvider");
       return { registerSheet: () => () => {}, openOracleId: null, revealing: false, close: () => {} };
     },
+    useCardDetailIfAny: () => {
+      if (!React.useContext(Mounted)) return null;
+      return { registerSheet: () => () => {}, openOracleId: null, revealing: false, close: () => {} };
+    },
   };
 });
 

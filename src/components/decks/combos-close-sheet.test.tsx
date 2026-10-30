@@ -15,6 +15,7 @@ const cardState: { open: string | null; pending: string | null } = { open: null,
 const registerSheet = vi.fn<(label: string, ...rest: unknown[]) => () => void>(() => () => {});
 vi.mock("../cards/card-detail-provider", () => ({
   useCardDetail: () => ({ registerSheet, openOracleId: cardState.open, pendingOracleId: cardState.pending, revealing: false }),
+  useCardDetailIfAny: () => ({ registerSheet, openOracleId: cardState.open, pendingOracleId: cardState.pending, revealing: false }),
   // A plate is a press that opens the card: drawn as a button, as the real trigger is.
   CardDetailTrigger: ({ children, testId, describedBy }: { children?: React.ReactNode; testId?: string; describedBy?: string }) => (
     <button type="button" data-testid={testId} aria-describedby={describedBy}>{children}</button>

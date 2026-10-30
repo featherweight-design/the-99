@@ -62,8 +62,8 @@ export const flyerState = (c: Pick<FlyerCodeRead, "capacity" | "taken" | "revoke
 
 export function flyersView(read: FlyersRead, now: Date): FlyersView {
   const rows = [...read.codes]
-    // Revoked rows stay, below the others; each group keeps the order made.
-    .sort((a, b) => Number(a.revokedAt !== null) - Number(b.revokedAt !== null) || a.createdAt.getTime() - b.createdAt.getTime())
+    // Revoked rows stay, below the others; each group is newest first (a new code lands on top, A2).
+    .sort((a, b) => Number(a.revokedAt !== null) - Number(b.revokedAt !== null) || b.createdAt.getTime() - a.createdAt.getTime())
     .map((c): FlyerRowView => {
       const state = flyerState(c);
       return {

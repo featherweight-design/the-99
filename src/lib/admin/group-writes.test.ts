@@ -240,7 +240,7 @@ describe("who may import the group write", () => {
         // A type-only import carries no code, so a component may take the result's shape.
         .filter((f) => new RegExp(`^\\s*(import|export)(?!\\s+type\\b)[^;]*?from\\s+["'][^"']*/${mod}["']`, "m").test(readFileSync(f, "utf8")))
         .map((f) => relative(SRC, f));
-    expect(importers("group-writes").sort()).toEqual([join("app", "admin", "accounts", "actions.ts"), join("app", "admin", "groups", "actions.ts")]);
+    expect(importers("group-writes").sort()).toEqual([join("app", "admin", "accounts", "actions.ts"), join("app", "admin", "groups", "actions.ts"), join("app", "admin", "invites", "flyer-actions.ts")]);
     expect(importers("rise-confirm").sort()).toEqual([join("lib", "admin", "group-writes.ts"), join("lib", "admin", "switch-writes.ts")]);
   });
 });

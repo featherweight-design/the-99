@@ -727,6 +727,7 @@ export const flyerAdminCopy = {
   full: "full",
   print: "Print",
   revoke: "Revoke",
+  close: "Close",
   revokedOn: (day: string) => `revoked ${day}`,
   store: "Store",
   storeHelp: "Printed on nothing. Only you read it.",

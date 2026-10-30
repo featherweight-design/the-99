@@ -1,7 +1,12 @@
+"use client";
+
+import { useState } from "react";
 import { PendingReporter } from "../shell/pending-reporter";
 import Link from "next/link";
 import { flyerAdminCopy } from "../../lib/copy/admin";
 import type { FlyerRowView, FlyersView } from "../../lib/admin/flyers-rule";
+import { FlyerNewForm, type FlyerGroupChoice } from "./flyer-new-form";
+import { FlyerRevokeModal, type RevokeTarget } from "./flyer-revoke-modal";
 
 // The Flyer codes section on the Invites tab (flyer trial PR 4a; handoff Admin-Desktop A1, Admin-Phone P1): a row per
 // code (Store, Code, Sign-ups with its bar, Group, Made, Print), revoked rows dimmed with their date, and the launch
@@ -11,9 +16,11 @@ import type { FlyerRowView, FlyersView } from "../../lib/admin/flyers-rule";
 const copy = flyerAdminCopy;
 const CARD = "overflow-hidden rounded-[12px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)]";
 const MONO_FAINT = "font-mono text-[11px] text-[color:var(--fg-faint)]";
-const TEXT_BUTTON = "inline-flex min-h-[44px] items-center whitespace-nowrap px-[6px] text-[13px] font-medium text-[color:var(--accent-text)] no-underline md:min-h-[32px]";
+const TEXT_BASE = "inline-flex min-h-[44px] items-center whitespace-nowrap px-[6px] text-[13px] font-medium no-underline md:min-h-[32px]";
+const TEXT_BUTTON = `${TEXT_BASE} text-[color:var(--accent-text)]`;
+const DANGER_BUTTON = `${TEXT_BASE} cursor-pointer border-0 bg-transparent text-[color:var(--danger)]`;
 
-function Row({ row }: { row: FlyerRowView }) {
+function Row({ row, onRevoke }: { row: FlyerRowView; onRevoke: (row: FlyerRowView) => void }) {
   const off = row.state === "revoked";
   const full = row.state === "full";
   return (
@@ -59,20 +66,40 @@ function Row({ row }: { row: FlyerRowView }) {
             {copy.print}
             <PendingReporter href={`/admin/invites/flyers/${row.code}`} />
           </Link>
+          <button
+            type="button"
+            data-testid="flyer-revoke"
+            onClick={() => onRevoke(row)}
+            aria-label={`${copy.revoke} ${row.store}`}
+            className={DANGER_BUTTON}
+          >
+            {copy.revoke}
+          </button>
         </span>
       )}
     </li>
   );
 }
 
-export function FlyerCodes({ view }: { view: FlyersView }) {
+export function FlyerCodes({ view, groups = [] }: { view: FlyersView; groups?: readonly FlyerGroupChoice[] }) {
   const cols = copy.cols;
+  const [making, setMaking] = useState(false);
+  // Only the row's code is kept: the count the modal shows is read from the live row, so a refresh updates it.
+  const [revokingCode, setRevokingCode] = useState<string | null>(null);
+  const live = revokingCode === null ? undefined : view.rows.find((r) => r.code === revokingCode);
+  const revoking: RevokeTarget | null = live ? { id: live.id, store: live.store, code: live.code, taken: live.taken } : null;
   return (
     <section aria-label={copy.section} data-testid="flyer-codes" className="flex flex-col gap-[12px] px-[16px] pt-[16px] md:px-[28px] md:pt-[22px]">
       <div className="flex flex-wrap items-baseline gap-x-[10px] gap-y-[2px] pt-[10px]">
         <h2 className="m-0 text-[15px] font-semibold text-[color:var(--fg)]">{copy.section}</h2>
         <small className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{view.meta}</small>
+        {!making && (
+          <button type="button" data-testid="flyer-new-open" onClick={() => setMaking(true)} className={`${TEXT_BUTTON} ml-auto cursor-pointer border-0 bg-transparent md:px-0 md:font-normal`}>
+            {copy.newCode}
+          </button>
+        )}
       </div>
+      {making && <FlyerNewForm groups={groups} onClose={() => setMaking(false)} />}
       {view.rows.length > 0 && (
         <div className={CARD}>
           <div
@@ -88,7 +115,7 @@ export function FlyerCodes({ view }: { view: FlyersView }) {
           </div>
           <ul role="list" className="m-0 list-none p-0">
             {view.rows.map((r) => (
-              <Row key={r.id} row={r} />
+              <Row key={r.id} row={r} onRevoke={(row) => setRevokingCode(row.code)} />
             ))}
           </ul>
         </div>
@@ -97,6 +124,7 @@ export function FlyerCodes({ view }: { view: FlyersView }) {
         <b className="text-[14px] font-semibold text-[color:var(--fg)]">{view.launch.title}</b>
         <span className={MONO_FAINT}>{view.launch.meta}</span>
       </div>
+      {revoking && <FlyerRevokeModal target={revoking} onClose={() => setRevokingCode(null)} />}
     </section>
   );
 }

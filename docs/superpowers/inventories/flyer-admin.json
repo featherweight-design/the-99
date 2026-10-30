@@ -1,6 +1,6 @@
 {
-  "feature": "Flyer trial PR 4a: the Flyer codes section and the tree's flyer node on /admin/invites (boards Admin-Desktop A1, Admin-Phone P1)",
-  "note": "Signed in as an admin (ADMIN_USER_IDS naming the account, ADMIN_ENV_LABEL set), FLYER_TRIAL_ENABLED=true on the server, on local-dev or a scratch branch. Writes nothing: the walk only loads and scrolls. Seed beforehand, outside this run, the board's own data under the admin: four flyer_codes (one at 50 spent claims, one revoked), spent claims whose user_id names real accounts so the tree has a flyer node with sign-ups under it, and launch_list rows on two of the codes. Print links to /admin/invites/flyers/<CODE>, which ships in PR 4c, so it is photographed but not pressed. New flyer code and Revoke are PR 4b: neither is on the sheet, and the board's phone frame draws no tree, so the node row reads from the shared tree rows at 390 as the tree's own responsive rules give it.",
+  "feature": "Flyer trial PRs 4a and 4b: the Flyer codes section, the New flyer code form and the Revoke confirm, and the tree's flyer node on /admin/invites (boards Admin-Desktop A1 to A3, Admin-Phone P1 to P3)",
+  "note": "Signed in as an admin (ADMIN_USER_IDS naming the account, ADMIN_ENV_LABEL set), FLYER_TRIAL_ENABLED=true on the server, on local-dev or a scratch branch. Writes nothing: the walk loads, scrolls, and opens the New flyer code form and the Revoke confirm, never pressing Make code or Revoke code. Seed beforehand, outside this run, the board's own data under the admin: four flyer_codes (one at 50 spent claims, one revoked), spent claims whose user_id names real accounts so the tree has a flyer node with sign-ups under it, and launch_list rows on two of the codes. Print links to /admin/invites/flyers/<CODE>, which ships in PR 4c, so it is photographed but not pressed. The board's phone frame draws no tree, so the node row reads from the shared tree rows at 390 as the tree's own responsive rules give it.",
   "out": "contact-sheets/flyer-admin",
   "rows": [
     {
@@ -8,7 +8,11 @@
       "label": "/admin/invites: the Flyer codes section (live, full, revoked rows)",
       "view": "src/components/admin/flyer-codes.tsx",
       "steps": [
-        { "goto": "/admin/invites", "wait": "[data-testid='flyer-codes']", "settle": 1500 }
+        {
+          "goto": "/admin/invites",
+          "wait": "[data-testid='flyer-codes']",
+          "settle": 1500
+        }
       ]
     },
     {
@@ -16,8 +20,15 @@
       "label": "/admin/invites: the launch-list card (count only, no CSV)",
       "view": "src/components/admin/flyer-codes.tsx",
       "steps": [
-        { "goto": "/admin/invites", "wait": "[data-testid='launch-list-card']", "settle": 1500 },
-        { "scrollTo": "[data-testid='launch-list-card']", "settle": 500 }
+        {
+          "goto": "/admin/invites",
+          "wait": "[data-testid='launch-list-card']",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "[data-testid='launch-list-card']",
+          "settle": 500
+        }
       ]
     },
     {
@@ -25,8 +36,55 @@
       "label": "/admin/invites: the tree's flyer node, its sign-ups beneath it",
       "view": "src/components/admin/invite-tree.tsx",
       "steps": [
-        { "goto": "/admin/invites", "wait": "[data-mark='flyer']", "settle": 1500 },
-        { "scrollTo": "[data-mark='flyer']", "settle": 500 }
+        {
+          "goto": "/admin/invites",
+          "wait": "[data-mark='flyer']",
+          "settle": 1500
+        },
+        {
+          "scrollTo": "[data-mark='flyer']",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "flyer-new-form",
+      "label": "/admin/invites: New flyer code opened in place (Store, Group, chips, Make code)",
+      "view": "src/components/admin/flyer-new-form.tsx",
+      "steps": [
+        {
+          "goto": "/admin/invites",
+          "wait": "[data-testid='flyer-codes']",
+          "settle": 1000
+        },
+        {
+          "click": "[data-testid='flyer-new-open']",
+          "settle": 500
+        },
+        {
+          "wait": "[data-testid='flyer-new-form']",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "flyer-revoke-modal",
+      "label": "/admin/invites: the Revoke confirm over a live row (modal at 1300, sheet at 390)",
+      "view": "src/components/admin/flyer-revoke-modal.tsx",
+      "steps": [
+        {
+          "goto": "/admin/invites",
+          "wait": "[data-testid='flyer-codes']",
+          "settle": 1000
+        },
+        {
+          "click": "[data-state='live'] [data-testid='flyer-revoke']",
+          "settle": 500
+        },
+        {
+          "wait": "[role='dialog']",
+          "settle": 500
+        }
       ]
     }
   ]

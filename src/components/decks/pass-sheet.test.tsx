@@ -9,7 +9,7 @@ vi.mock("../../app/decks/actions", () => ({ undoFillPass: vi.fn() }));
 vi.mock("./decklist-row", () => ({ DecklistRow: () => null }));
 vi.mock("./decklist-group-header", () => ({ DecklistGroupHeader: ({ label }: { label: string }) => <h3>{label}</h3> }));
 vi.mock("./hover-preview", () => ({ HoverPreviewProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }));
-vi.mock("../cards/card-detail-provider", () => ({ useCardDetail: () => ({ registerSheet: () => () => {}, openOracleId: null, revealing: false }), CardDetailTrigger: ({ children }: { children?: React.ReactNode }) => <>{children}</> }));
+vi.mock("../cards/card-detail-provider", () => ({ useCardDetail: () => ({ registerSheet: () => () => {}, openOracleId: null, revealing: false }), useCardDetailIfAny: () => ({ registerSheet: () => () => {}, openOracleId: null, revealing: false }), CardDetailTrigger: ({ children }: { children?: React.ReactNode }) => <>{children}</> }));
 
 const { PassSheet } = await import("./pass-sheet");
 const ledger = topOffCopy.ledger;
