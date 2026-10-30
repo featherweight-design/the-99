@@ -44,22 +44,15 @@ describe("/commanders", () => {
   });
 });
 
-// Discovery R3 E2: the page hands the view Help me choose's switch as this reader resolves it, for the banner's door.
-describe("/commanders' first-run door", () => {
-  const view = async () => {
+// The page hands the view `firstRun` (no confirmed deck yet). Help me choose's door moved into the Commanders place head, so the page no longer passes the switch.
+describe("/commanders' first-run flag", () => {
+  it("passes firstRun and no Help me choose switch", async () => {
+    seen.candidateCount = 3;
     const section = (await CommandersPage({ searchParams: Promise.resolve({}) })) as ReactElement<{ children: ReactElement }>;
     const el = section.props.children as ReactElement<{ helpMeChoose?: boolean; firstRun?: boolean }>;
     expect(el.type).toBe(CommandersView);
-    return el.props;
-  };
-  it("passes HELP_ME_CHOOSE_ENABLED on, and off for anything else", async () => {
-    seen.candidateCount = 3;
-    seen.env = { HELP_ME_CHOOSE_ENABLED: "true" };
-    expect(await view()).toMatchObject({ helpMeChoose: true, firstRun: true });
-    seen.env = {};
-    expect((await view()).helpMeChoose).toBe(false);
-    seen.env = { HELP_ME_CHOOSE_ENABLED: "off" };
-    expect((await view()).helpMeChoose).toBe(false);
+    expect(el.props.firstRun).toBe(true);
+    expect(el.props.helpMeChoose).toBeUndefined();
     seen.candidateCount = 0;
   });
 });

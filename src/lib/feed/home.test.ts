@@ -227,12 +227,6 @@ describe("homeFeedAfter", () => {
     marks.notice.mockReset();
   });
 
-  it("writes nothing with the feed off", async () => {
-    await homeFeedAfter("u1", {} as NodeJS.ProcessEnv, NOW)();
-    expect(marks.seen).not.toHaveBeenCalled();
-    expect(marks.notice).not.toHaveBeenCalled();
-  });
-
   it("marks the feed seen at the render's clock and notices trade matches, each failing alone", async () => {
     marks.seen.mockRejectedValue(new Error("down"));
     const err = vi.spyOn(console, "error").mockImplementation(() => {});

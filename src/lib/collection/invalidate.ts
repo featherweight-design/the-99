@@ -92,7 +92,6 @@ export const COLLECTION_ROUTES: CollectionRoute[] = [
   // The commander picker lists the legends the player owns.
   { path: "/decks/new", dynamic: false },
   // Help me choose ranks and badges commanders by what the player owns.
-  { path: "/decks/new/choose", dynamic: false },
   // The Commanders place (menu and Home, PR 1): the same lists at their tab addresses.
   { path: "/commanders/choose", dynamic: false },
   { path: "/commanders/discover", dynamic: false },
@@ -101,7 +100,6 @@ export const COLLECTION_ROUTES: CollectionRoute[] = [
   { path: "/decks/precons/[fileName]", dynamic: true },
   // An early decklist (announcements UI 6) counts what the reader owns, as the open precon does.
   { path: "/decks/precons/early/[id]/[position]", dynamic: true },
-  { path: "/discover", dynamic: false },
   // A friend link's landing (Social R1) reads the link, never the collection; it imports `db` for that, and
   // `db` the whole schema. Listed as /about is, for one pointless revalidation.
   { path: "/friend/[token]", dynamic: true },
