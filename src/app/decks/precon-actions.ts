@@ -13,7 +13,6 @@ import { revalidateClaims } from "../../lib/decks/revalidate-claims";
 import { PRECON_ADDED_PARAM, PRECON_ARRIVAL_PARAM, PRECON_ARRIVAL_VALUE } from "../../lib/decks/arrival";
 import { startPreconDeck } from "../../lib/precons/start";
 import { startPreconOwned as startOwned, type PreconStartResult } from "../../lib/precons/start-owned";
-import { collectionEditEnabled } from "../../lib/collection/edit-flag";
 import { invalidateCollectionReaders } from "../../lib/collection/invalidate";
 import { warmCommanderScores } from "../../lib/recs/warm";
 import { isUuid } from "../../lib/uuid";
@@ -45,8 +44,6 @@ export async function createDeckFromPrecon(fileName: string, rawName: string): P
 export async function startPreconOwned(fileName: string, rawName: string, actionId: string): Promise<Extract<PreconStartResult, { ok: false }>> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  // A collection write, so it keeps the collection-edit rollout boundary every other write action keeps.
-  if (!collectionEditEnabled(env)) throw new Error("collection editing is off");
   const name = validateDeckName(rawName);
   if (typeof fileName !== "string" || fileName.length === 0 || fileName.length > 200) return { ok: false, reason: "notFound" };
   if (!isUuid(actionId)) throw new Error("bad action id");
@@ -75,8 +72,6 @@ export async function startPreconOwned(fileName: string, rawName: string, action
 export async function addPrecons(requests: unknown): Promise<PickOutcome[]> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  // The pick is a collection write, so it keeps the collection-edit boundary every other write keeps.
-  if (!collectionEditEnabled(env)) throw new Error("the precon pick is off");
   // A retry is answered from the entries it already wrote BEFORE the catalog is read, so a refresh that landed between
   // the commit and the retry cannot refuse an add that stands. Only the rest are checked and added.
   // The whole request is held to one box and one id each, and the cap, before anything is recovered or added.
@@ -103,8 +98,7 @@ export async function addPrecons(requests: unknown): Promise<PickOutcome[]> {
       if (one === null) refused.push({ rowFile: String((r as Record<string, unknown>).fileName), ok: false });
       else boxes.push(...one);
     }
-    const placements = collectionEditEnabled(env);
-    added = [...refused, ...(boxes.length > 0 ? await runPickAdds(boxes, (fileName, actionId, name) => startOwned(userId, fileName, name, actionId, env, placements)) : [])];
+    added = [...refused, ...(boxes.length > 0 ? await runPickAdds(boxes, (fileName, actionId, name) => startOwned(userId, fileName, name, actionId, env, true)) : [])];
   }
   const outcomes = [...split.recovered, ...added];
   if (outcomes.some((o) => o.ok)) {

@@ -14,7 +14,6 @@ import { findADeckReadEnabled, swapToolsEnabled } from "../swaps/flag";
 import { manaBalanceEnabled, proposedCutsEnabled, suggestedChangesV2Enabled, tuningEnabled, tuningHubEnabled } from "../tuning/flag";
 import { deckStatsEnabled } from "../decks/stats-flag";
 import { deckNotesEnabled } from "../decks/notes-flag";
-import { collectionEditEnabled } from "../collection/edit-flag";
 import {
   socialFriendsEnabled,
 } from "../social/flag";
@@ -37,10 +36,10 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   CARD_SEARCH_ENABLED: () => true,
   FIRST_RUN_TOUR_ENABLED: () => true,
   HELP_PANEL_ENABLED: () => true,
-  // Card scanning ended in the collection's add, so it was on exactly when collection edit is.
-  CARD_SCAN_ENABLED: collectionEditEnabled,
-  // Added copy was on exactly when collection edit is (every surface that reports an add is that line's).
-  ADDED_COPY_ENABLED: collectionEditEnabled,
+  // Card scanning ended in the collection's add, and added copy on every surface that reports an add: both were on
+  // exactly when collection edit was, and it is retired (always on).
+  CARD_SCAN_ENABLED: () => true,
+  ADDED_COPY_ENABLED: () => true,
   NEVER_CUT_ENABLED: neverCutEnabled,
   SWAP_TOOLS_ENABLED: swapToolsEnabled,
   HELP_ME_CHOOSE_ENABLED: helpMeChooseEnabled,
@@ -50,17 +49,18 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   TUNING_ENABLED: tuningEnabled,
   SUGGESTED_CHANGES_V2_ENABLED: suggestedChangesV2Enabled,
   DECK_STATS_ENABLED: deckStatsEnabled,
-  COLLECTION_EDIT_ENABLED: collectionEditEnabled,
-  // Sync is the upload choice's third card. Its switch is retired: the name stays the variant's and the sentences'
-  // historical identity and follows its parent, collection editing, which a Sync writes through.
-  COLLECTION_SYNC_ENABLED: collectionEditEnabled,
+  // Retired (always on): collection editing. The name stays as the entries', variants' and sentences' historical identity.
+  COLLECTION_EDIT_ENABLED: () => true,
+  // Sync is the upload choice's third card. Its switch is retired, and so is its parent's, collection editing: the name
+  // stays the variant's and the sentences' historical identity.
+  COLLECTION_SYNC_ENABLED: () => true,
   OVERVIEW_V2_ENABLED: overviewV2Enabled,
   // The block lives on the Analysis tab, so the entry needs the tab, as tuning's does: it
   // would otherwise describe a tab that is off.
   DECK_BENCHMARKS_ENABLED: analysisTabEnabled,
-  // I got it's switch is retired: the name stays the entry's, the key's and the label's historical identity and
-  // follows its parent, collection editing, which the purchase writes through.
-  SHOPPING_MARK_BOUGHT_ENABLED: collectionEditEnabled,
+  // I got it's switch is retired, and so is its parent's, collection editing: the name stays the entry's, the key's and
+  // the label's historical identity.
+  SHOPPING_MARK_BOUGHT_ENABLED: () => true,
   DECK_PRINTINGS_ENABLED: deckPrintingsEnabled,
   DECK_TOKENS_ENABLED: () => true,
   // Already reads ANALYSIS_TAB_ENABLED: the tool lives in the tab's Tuning hub.
@@ -77,14 +77,14 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   PROPOSED_CUTS_ENABLED: proposedCutsEnabled,
   // Already reads SWAP_TOOLS_ENABLED: the read lives in Find a deck for it.
   FIND_A_DECK_READ_ENABLED: findADeckReadEnabled,
-  // Starting without a collection ended on exactly when collection edit is.
-  NO_COLLECTION_ENTRY_ENABLED: collectionEditEnabled,
+  // Starting without a collection ended on exactly when collection edit was (retired, always on).
+  NO_COLLECTION_ENTRY_ENABLED: () => true,
   // The Social line. Opponents' switch is retired: its name stays the lines' historical identity and follows its
   // parent, `SOCIAL_FRIENDS_ENABLED`, which it needed. The wishlist's is retired too (always on): it stood alone.
   SOCIAL_FRIENDS_ENABLED: socialFriendsEnabled,
   SOCIAL_GAMES_ENABLED: socialFriendsEnabled,
   SOCIAL_WISHLIST_ENABLED: () => true,
-  // The launch-end batch. Scanning already needs COLLECTION_EDIT_ENABLED inside its own function. Rule 0's and invites'
+  // The launch-end batch. Rule 0's and invites'
   // switches are retired: each name stays the entry's historical identity and follows its parent, SOCIAL_FRIENDS_ENABLED.
   RULE_ZERO_ENABLED: socialFriendsEnabled,
   SOCIAL_INVITES_ENABLED: socialFriendsEnabled,

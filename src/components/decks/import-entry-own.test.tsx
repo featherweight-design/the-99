@@ -34,17 +34,8 @@ beforeEach(() => {
 });
 
 describe("S8: the box", () => {
-  it("is absent with the switch off, and the payload is exactly as shipped", async () => {
+  it("is shown under Deck name, unticked by default", () => {
     render(<ImportEntry />);
-    expect(screen.queryByRole("checkbox")).toBeNull();
-    fillPaste();
-    submit();
-    await waitFor(() => expect(push).toHaveBeenCalledWith("/decks/deck-1?imported=1"));
-    expect(importDeck).toHaveBeenCalledWith({ text: "1 Sol Ring\n1 Cultivate", source: "paste", name: "Borrowed deck" });
-  });
-
-  it("is shown with the switch on, under Deck name, unticked by default", () => {
-    render(<ImportEntry canOwn />);
     expect(tick().checked).toBe(false);
     // Under the name field and above the import button, in document order.
     const name = screen.getByLabelText("Deck name");
@@ -54,7 +45,7 @@ describe("S8: the box", () => {
   });
 
   it("left unticked, sends no `own` and no id", async () => {
-    render(<ImportEntry canOwn />);
+    render(<ImportEntry />);
     fillPaste();
     submit();
     await waitFor(() => expect(push).toHaveBeenCalledWith("/decks/deck-1?imported=1"));
@@ -64,7 +55,7 @@ describe("S8: the box", () => {
 
 describe("S10: ticked", () => {
   it("sends `own` and a uuid, and carries the entry to the deck page as its receipt claim", async () => {
-    render(<ImportEntry canOwn />);
+    render(<ImportEntry />);
     fillPaste();
     fireEvent.click(tick());
     submit();
@@ -80,7 +71,7 @@ describe("S10: ticked", () => {
       ok: false, reason: "commanderNeeded", lineCount: 99, notes: [],
       candidates: [{ oracleId: "oracle-4", name: "Atraxa, Praetors' Voice", sourceLine: 4, colorIdentity: ["G"], imageUri: null, owned: true }],
     });
-    render(<ImportEntry canOwn />);
+    render(<ImportEntry />);
     fillPaste();
     fireEvent.click(tick());
     submit();
@@ -97,7 +88,7 @@ describe("S10: ticked", () => {
 describe("S11: the add refused", () => {
   it("shows the precon add's sentence in the page's own banner, keeping the list and the tick", async () => {
     importDeck.mockResolvedValueOnce({ ok: false, reason: "addFailed", notes: [] });
-    render(<ImportEntry canOwn />);
+    render(<ImportEntry />);
     fillPaste();
     fireEvent.click(tick());
     submit();
@@ -111,7 +102,7 @@ describe("S11: the add refused", () => {
 
   it("Try again repeats the press with the same id", async () => {
     importDeck.mockResolvedValueOnce({ ok: false, reason: "addFailed", notes: [] });
-    render(<ImportEntry canOwn />);
+    render(<ImportEntry />);
     fillPaste();
     fireEvent.click(tick());
     submit();
@@ -127,7 +118,7 @@ describe("S11: the add refused", () => {
   it("Try again sends the name as edited since the refusal, with the same id", async () => {
     // Refused twice, so the form is still there to read once the retry has answered.
     importDeck.mockResolvedValue({ ok: false, reason: "addFailed", notes: [] });
-    render(<ImportEntry canOwn />);
+    render(<ImportEntry />);
     fillPaste();
     fireEvent.click(tick());
     submit();
@@ -144,7 +135,7 @@ describe("S11: the add refused", () => {
 
   // The row is centred on the phone as drawn: the caller's alignment beats the box's own.
   it("centres the box's row on the phone", () => {
-    render(<ImportEntry canOwn />);
+    render(<ImportEntry />);
     const row = tick().closest("label")!;
     const classes = row.className.split(" ");
     expect(classes).toContain("items-center");
@@ -154,7 +145,7 @@ describe("S11: the add refused", () => {
 
   it("a press that threw makes no claim of a rollback, and its retry carries the same id", async () => {
     importDeck.mockRejectedValueOnce(new Error("network"));
-    render(<ImportEntry canOwn />);
+    render(<ImportEntry />);
     fillPaste();
     fireEvent.click(tick());
     submit();
@@ -169,7 +160,7 @@ describe("S11: the add refused", () => {
   // lands on the deck it made instead of adding the cards twice.
   it("pressing the Paste tab already chosen keeps a lost press's banner and its id", async () => {
     importDeck.mockRejectedValueOnce(new Error("network"));
-    render(<ImportEntry canOwn />);
+    render(<ImportEntry />);
     fillPaste();
     fireEvent.click(tick());
     submit();
@@ -189,7 +180,7 @@ describe("S11: the add refused", () => {
         candidates: [{ oracleId: "oracle-4", name: "Atraxa, Praetors' Voice", sourceLine: 4, colorIdentity: ["G"], imageUri: null, owned: true }],
       })
       .mockResolvedValueOnce({ ok: false, reason: "addFailed", notes: [] });
-    render(<ImportEntry canOwn />);
+    render(<ImportEntry />);
     fillPaste();
     fireEvent.click(tick());
     submit();
@@ -208,7 +199,7 @@ describe("S11: the add refused", () => {
   // the first; the box holds still until the press is answered.
   it("holds the tick while a lost press is unanswered, so its retry keeps the tick and the id", async () => {
     importDeck.mockRejectedValueOnce(new Error("network"));
-    render(<ImportEntry canOwn />);
+    render(<ImportEntry />);
     fillPaste();
     fireEvent.click(tick());
     submit();
@@ -223,7 +214,7 @@ describe("S11: the add refused", () => {
 
   it("a different list is a different submission, with a new id", async () => {
     importDeck.mockResolvedValueOnce({ ok: false, reason: "addFailed", notes: [] });
-    render(<ImportEntry canOwn />);
+    render(<ImportEntry />);
     fillPaste();
     fireEvent.click(tick());
     submit();

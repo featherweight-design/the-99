@@ -93,7 +93,7 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   // A way in without a collection (plan `2026-10-15-no-collection-entry.md` PR 6, handoff
   // `design_handoff_the99_no_collection_entry/about · start without a collection.ts`, R3). After `import`,
-  // following the line's own switch, which needs COLLECTION_EDIT_ENABLED. A switched entry, so it bumps nothing:
+  // following the line's own switch, now retired and always on. A switched entry, so it bumps nothing:
   // `since: 14`, the version current when it shipped, and it is announced by its id when the switch flips. The precon sentence is a caption line of its own and the precon key a line of its own,
   // so each follows PRECONS_ENABLED without the entry going dark. One caption at both widths.
   {
@@ -1102,8 +1102,8 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   // I got it (plan `2026-10-10-i-got-it.md` PR 5, handoff `design_handoff_the99_i_got_it/about-entry`):
   // after `stand-ins`, the order a card is bought in. `since: 14` is the ONE bump this launch makes,
-  // shared with `deck-printings`. Its switch is retired and the name follows COLLECTION_EDIT_ENABLED
-  // (`visible.ts`), which the purchase writes through, so the entry never describes a tag that does nothing
+  // shared with `deck-printings`. Its switch is retired, as is COLLECTION_EDIT_ENABLED,
+  // which the purchase writes through, so the name is always on (`visible.ts`) and the entry never describes a tag that does nothing
   // (handoff README open 1, answered without an array form). Copy through /prose-pass.
   {
     id: 'shopping-got-it',

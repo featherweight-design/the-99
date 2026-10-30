@@ -166,7 +166,7 @@ function PostPicture({ item, box }: { item: FeedView; box: string }) {
 function answerText(item: FeedView, friend: string, card: string): { title: string; line: ReactNode } {
   const m = spareCopy.request.mine;
   const d = item.answerDetail;
-  if (item.answer === "yes") return { title: m.canSpare(friend, card), line: d ? (d.canBuy ? m.acceptedDetail : m.acceptedDetailNoBuy) : null };
+  if (item.answer === "yes") return { title: m.canSpare(friend, card), line: d ? (d.standalone ? m.acceptedDetailNoBuy : m.acceptedDetail) : null };
   return {
     title: m.keeping(friend, card),
     line: d ? (d.others.length === 0 ? m.nobodyElse : <PersonText text={m.othersHave(d.others[0], d.others.length - 1)} />) : null,

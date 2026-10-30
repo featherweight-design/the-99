@@ -338,14 +338,10 @@ describe("CartView by deck (A5)", () => {
   });
 
   describe("buying from the cart (cart PR 6)", () => {
-    it("draws the buy key beside the switch, and nothing to press with buying off", () => {
-      const { unmount } = render(<CartView cart={cart()} provenance={provenance} buyEnabled />);
+    it("draws the buy key beside the switch", () => {
+      render(<CartView cart={cart()} provenance={provenance} />);
       expect(screen.getByText(gotItCopy.row.keyBuy)).toBeTruthy();
       expect(screen.getAllByRole("button", { name: gotItCopy.row.tagAria("Sol Ring") })).toHaveLength(1);
-      unmount();
-      render(<CartView cart={cart()} provenance={provenance} />);
-      expect(screen.queryByText(gotItCopy.row.keyBuy)).toBeNull();
-      expect(screen.queryByRole("button", { name: gotItCopy.row.tagAria("Sol Ring") })).toBeNull();
     });
 
     it("keeps a bought line the cart no longer lists as a held slot where it was (S3)", async () => {
@@ -355,14 +351,14 @@ describe("CartView by deck (A5)", () => {
         finishes: ["nonfoil"], owned: { nonfoil: 17 },
       }]);
       markBoughtForDecks.mockResolvedValue({ applied: { id: "e1", receipt: { covered: [], still: [] } } });
-      const { rerender } = render(<CartView cart={cart()} provenance={provenance} buyEnabled />);
+      const { rerender } = render(<CartView cart={cart()} provenance={provenance} />);
       fireEvent.click(screen.getByRole("button", { name: gotItCopy.row.tagAria("Sol Ring") }));
       const add = await screen.findByRole("button", { name: gotItCopy.confirm.add(2) });
       await act(async () => { fireEvent.click(add); });
       // The action's revalidation reads the cart again, without the line.
       const after = cart();
       after.lines = after.lines.filter((l) => l.oracleId !== "sol");
-      rerender(<CartView cart={after} provenance={provenance} buyEnabled />);
+      rerender(<CartView cart={after} provenance={provenance} />);
       const slot = list().getAllByRole("listitem").find((li) => li.hasAttribute("data-held-slot"))!;
       expect(slot.textContent).toContain(gotItCopy.slot.held("Sol Ring"));
       expect(slot.textContent).toContain(copy.list.added(2));
@@ -382,17 +378,17 @@ describe("CartView by deck (A5)", () => {
     }
 
     it("keeps the receipt up when the purchase empties the cart", async () => {
-      const view = await buySolRing(render(<CartView cart={cart()} provenance={provenance} buyEnabled />));
-      view.rerender(<CartView cart={cart({ decks: [], lines: [] })} provenance={provenance} buyEnabled />);
+      const view = await buySolRing(render(<CartView cart={cart()} provenance={provenance} />));
+      view.rerender(<CartView cart={cart({ decks: [], lines: [] })} provenance={provenance} />);
       expect(screen.getByText(copy.empty.title)).toBeTruthy();
       expect(screen.getByText(gotItCopy.receipt.added("Sol Ring", 2))).toBeTruthy();
     });
 
     it("holds a search to the held slot too: one matching only the bought card still draws it, another drops it", async () => {
-      const view = await buySolRing(render(<CartView cart={cart()} provenance={provenance} buyEnabled />));
+      const view = await buySolRing(render(<CartView cart={cart()} provenance={provenance} />));
       const after = cart();
       after.lines = after.lines.filter((l) => l.oracleId !== "sol");
-      view.rerender(<CartView cart={after} provenance={provenance} buyEnabled />);
+      view.rerender(<CartView cart={after} provenance={provenance} />);
       const search = screen.getByRole("searchbox", { name: copy.filters.search });
       // Only the bought card matches: its slot is the list, not a no-match block.
       fireEvent.change(search, { target: { value: "sol" } });
@@ -404,7 +400,7 @@ describe("CartView by deck (A5)", () => {
     });
 
     it("draws no held slot for a line that is only unselected, not gone from the cart", async () => {
-      await buySolRing(render(<CartView cart={cart()} provenance={provenance} buyEnabled />));
+      await buySolRing(render(<CartView cart={cart()} provenance={provenance} />));
       for (const name of ["HD - Gishath", "HD - Kratos"]) {
         fireEvent.click(screen.getAllByRole("checkbox", { name: copy.selections.aria(name, true) })[0]);
       }
@@ -426,7 +422,7 @@ describe("CartView by deck (A5)", () => {
         await act(async () => { fireEvent.click(add); });
         await screen.findByRole("button", { name: gotItCopy.receipt.undoAria("Sol Ring") });
       };
-      const { rerender } = render(<CartView cart={cart()} provenance={provenance} buyEnabled />);
+      const { rerender } = render(<CartView cart={cart()} provenance={provenance} />);
       toggle("HD - Gishath", true);
       await buyFor("e1");
       toggle("HD - Gishath", false);
@@ -434,7 +430,7 @@ describe("CartView by deck (A5)", () => {
       await buyFor("e2");
       const after = cart();
       after.lines = after.lines.filter((l) => l.oracleId !== "sol");
-      rerender(<CartView cart={after} provenance={provenance} buyEnabled />);
+      rerender(<CartView cart={after} provenance={provenance} />);
       const slots = () => list().queryAllByRole("listitem").filter((li) => li.hasAttribute("data-held-slot"));
       // Gishath alone, then Kratos alone: each deck was bought for in one press, and each keeps the slot.
       expect(slots()).toHaveLength(1);
@@ -451,25 +447,18 @@ describe("CartView by deck (A5)", () => {
       }]);
       // The read gives Gishath no name (no claim left), and the next cart no longer lists it.
       markBoughtForDecks.mockResolvedValue({ applied: { id: "e1", receipt: { covered: [{ deckId: "gishath", deckName: "" }], still: [] } } });
-      const view = render(<CartView cart={cart()} provenance={provenance} buyEnabled />);
+      const view = render(<CartView cart={cart()} provenance={provenance} />);
       fireEvent.click(screen.getByRole("button", { name: gotItCopy.row.tagAria("Sol Ring") }));
       const add = await screen.findByRole("button", { name: gotItCopy.confirm.add(2) });
       await act(async () => { fireEvent.click(add); });
       const after = cart();
       after.decks = after.decks.filter((d) => d.id !== "gishath");
-      view.rerender(<CartView cart={after} provenance={provenance} buyEnabled />);
+      view.rerender(<CartView cart={after} provenance={provenance} />);
       expect(screen.getByText(copy.receipt.covered(["HD - Gishath"]))).toBeTruthy();
     });
 
-    it("never arms the back band with buying off: it would tell the player to press an inert tag", () => {
-      render(<CartView cart={cart()} provenance={provenance} />);
-      fireEvent.click(screen.getByRole("link", { name: new RegExp(exportLinkOutCopy.shopping) }));
-      act(() => { document.dispatchEvent(new Event("visibilitychange")); });
-      expect(screen.queryByText(copy.back.title)).toBeNull();
-    });
-
     it("says how to record a purchase when the tab comes back from Mana Pool, once (K1)", () => {
-      render(<CartView cart={cart()} provenance={provenance} buyEnabled />);
+      render(<CartView cart={cart()} provenance={provenance} />);
       expect(screen.queryByText(copy.back.title)).toBeNull();
       fireEvent.click(screen.getByRole("link", { name: new RegExp(exportLinkOutCopy.shopping) }));
       act(() => { document.dispatchEvent(new Event("visibilitychange")); });
@@ -481,7 +470,7 @@ describe("CartView by deck (A5)", () => {
     });
 
     it("never shows the back band twice in a visit, even after the list goes and comes back", () => {
-      render(<CartView cart={cart()} provenance={provenance} buyEnabled />);
+      render(<CartView cart={cart()} provenance={provenance} />);
       fireEvent.click(screen.getByRole("link", { name: new RegExp(exportLinkOutCopy.shopping) }));
       act(() => { document.dispatchEvent(new Event("visibilitychange")); });
       fireEvent.click(screen.getByRole("button", { name: copy.back.dismiss }));
@@ -494,7 +483,7 @@ describe("CartView by deck (A5)", () => {
     });
 
     it("draws the buy key by card only: a deck's group has no press", () => {
-      render(<CartView cart={cart()} provenance={provenance} buyEnabled initialView="deck" />);
+      render(<CartView cart={cart()} provenance={provenance} initialView="deck" />);
       expect(screen.queryByText(gotItCopy.row.keyBuy)).toBeNull();
     });
   });
@@ -538,7 +527,7 @@ describe("CartView, friends' spares", () => {
     });
   });
 
-  it("names the glyph in the key, with I got it off and one deck, and opens the spares-only modal", async () => {
+  it("names the glyph in the key, with one deck, and opens the spares-only modal", async () => {
     await withFetch(async () => {
       const one = cart({ decks: [cart().decks[0]], lines: [cart().lines[2]] });
       await act(async () => { render(<CartView cart={one} provenance={provenance} socialFriends />); });

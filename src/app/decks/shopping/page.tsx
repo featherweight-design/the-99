@@ -13,7 +13,6 @@ import { provenanceForm } from "../../../lib/decks/price";
 import { isUuid } from "../../../lib/uuid";
 import { CartView } from "../../../components/decks/cart/cart-view";
 import { parseQuery } from "../../../lib/decks/cart-sort";
-import { collectionEditEnabled } from "../../../lib/collection/edit-flag";
 import { requestSwitchEnv } from "../../../lib/switches/request";
 import { socialFriendsEnabled } from "../../../lib/social/flag";
 import { hasFriend } from "../../../lib/social/has-friend";
@@ -69,8 +68,6 @@ export default async function AllDecksShoppingPage({
       initialSort={typeof params.sort === "string" ? params.sort : null}
       initialFriend={typeof params.friend === "string" ? params.friend : null}
       initialOwned={typeof params.owned === "string" ? params.owned : null}
-      // I got it follows collection editing (its own switch is retired).
-      buyEnabled={collectionEditEnabled(env)}
       // Friends' spares on the lines (Social R2 PR B): read after the page from the uncached route, so no key changes.
       socialFriends={socialFriendsEnabled(env)}
       // Ask in the lines' spares modal (spare requests PR 3b), re-checked by every action on the server.

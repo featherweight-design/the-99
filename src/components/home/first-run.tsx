@@ -1,7 +1,7 @@
 // First run — collection unread, no decks. The three-step checklist is the
 // whole page: step 1 live, steps 2 and 3 stated and locked. The import foot
-// that once sat under them is gone (first-run ruling 1, 2026-09-28); with
-// COLLECTION_EDIT_ENABLED, step 1's ways group is how a player with no file
+// that once sat under them is gone (first-run ruling 1, 2026-09-28); step 1's
+// ways group is how a player with no file
 // reaches Precons I own, Import a deck and Add cards by hand. With
 // SOCIAL_FRIENDS_ENABLED an unnumbered Friends row sits last, under step 3.
 //
@@ -125,11 +125,8 @@ function FirstRunNewsRow() {
 }
 
 export function FirstRunChecklist({
-  addByHand = false,
   about = null,
   welcome = null,
-  ways = null,
-  scan = false,
   friends = null,
   signature = null,
   tables = null,
@@ -141,16 +138,11 @@ export function FirstRunChecklist({
   news?: boolean;
   /** the Commanders place (always on) for the reader: the lock's page line names only the slots the bar locks. */
   commandersPlace?: boolean;
-  addByHand?: boolean;
   /** `tourDue`: the first-run tour runs over this page once (discovery R3·1b). */
   tour?: boolean;
   about?: AboutLine | null;
   /** The welcome-credits strip (welcome credits D2), read per request, or null: drawn under About's line. */
   welcome?: React.ReactNode;
-  /** Collection edit on for the reader (card scanning ends in its add): the Add cards sheet's Scan press. */
-  scan?: boolean;
-  /** The no-collection entry (S1): step 1's ways group, and Collection open in the nav. Null: as shipped. */
-  ways?: { precons: boolean } | null;
   /** SOCIAL_FRIENDS_ENABLED, read: the Friends row after step 3 (Discovery R3·3). Null: no row. */
   friends?: FirstRunFriendsProps | null;
   /** The signature card row (avatar handoff 20, call 4), or null: unnumbered, after step 3 and before Add your friends. */
@@ -194,7 +186,7 @@ export function FirstRunChecklist({
         >
           <Lock size="lg" ink="var(--fg-locked)" className="flex-none" />
           {/* Three names while Collection is open at zero cards (no-collection entry, call 6). */}
-          {lockPageLine(commandersPlace, ways !== null)}
+          {lockPageLine(commandersPlace)}
         </p>
       </div>
 
@@ -207,7 +199,7 @@ export function FirstRunChecklist({
       <div className="flex min-h-0 flex-auto flex-col gap-[11px] p-[16px_16px_20px] sm:gap-[12px] sm:p-[20px_28px_26px] max-md:group-has-[[data-reviewing]]/first-run:pt-[8px]">
         {/* Step 1 — live. A client component, because the card changes while its review is
             open (D11, 5a); the fan is drawn here and handed in. */}
-        <FirstRunStepOne fan={<CardFan />} addByHand={addByHand} ways={ways} scan={scan} />
+        <FirstRunStepOne fan={<CardFan />} />
 
         <LockedStep n={2} title={c.step2Title} reason={c.step2Locked} />
         <LockedStep n={3} title={c.step3Title} reason={c.step3Locked} />
@@ -216,9 +208,9 @@ export function FirstRunChecklist({
         {signature}
         {friends && <FirstRunFriendsRow {...friends} />}
         {news && <FirstRunNewsRow />}
-        {/* The tour's precon line follows the ways group: off with it. */}
+        {/* The tour's precon line follows step 1's ways group, which always offers Precons I own. */}
         {/* Mounted always: `/?tour=1` runs the tour again (discovery R3·2), here the first-run tour itself. */}
-        <HomeTour due={tour} mode="first-run" precons={ways?.precons ?? false} />
+        <HomeTour due={tour} mode="first-run" precons />
         {/* No foot. Step 1 is the collection alone (first-run ruling 1, 2026-09-28): the
             "Already have a deck elsewhere?" row and its `mt-auto` are deleted rather than
             replaced, so the stack closes up and the space below it stays page. Import is

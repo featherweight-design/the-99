@@ -197,19 +197,26 @@ describe("withAnswerDetails", () => {
   const colin = { publicId: "p_colin", displayName: "Colin" };
   const spare = (publicId: string, displayName: string, n: number, oracleId = "jace") => ({ oracleId, spare: n, friend: { publicId, displayName } as never });
   const feed = (...items: FeedView[]): HomeFeed => ({ chosen: true, on: ["spare-request"], lead: null, items, unseen: items.length });
-  it("a Yes carries whether Shopping has the buy press; a No names the OTHER friends offering the card, most spares first", () => {
+  it("a Yes carries no names; a No names the OTHER friends offering the card, most spares first", () => {
     const out = withAnswerDetails(
       feed(view({ key: "y", kind: "spare-request", card, friend: colin, answer: "yes" }), view({ key: "n", kind: "spare-request", card, friend: colin, answer: "no" })),
       [spare("p_colin", "Colin", 9), spare("p_ann", "Ann", 1), spare("p_max", "Max", 3), spare("p_zed", "Zed", 5, "other")],
-      false,
     );
     if (!out.chosen) throw new Error("chosen");
-    expect(out.items[0].answerDetail).toEqual({ canBuy: false, others: [] });
-    expect(out.items[1].answerDetail).toEqual({ canBuy: false, others: ["Max", "Ann"] });
+    expect(out.items[0].answerDetail).toEqual({ others: [], standalone: false });
+    expect(out.items[1].answerDetail).toEqual({ others: ["Max", "Ann"], standalone: false });
+  });
+  it("marks the answer to a standalone ask by its key, and only that one", () => {
+    const out = withAnswerDetails(
+      feed(view({ key: "y", kind: "spare-request", card, friend: colin, answer: "yes" }), view({ key: "y2", kind: "spare-request", card, friend: colin, answer: "yes" })),
+      [], new Set(["y"]),
+    );
+    if (!out.chosen) throw new Error("chosen");
+    expect(out.items.map((i) => i.answerDetail?.standalone)).toEqual([true, false]);
   });
   it("leaves every other item as it was", () => {
     const plain = view({ key: "s", kind: "new-set" });
-    const out = withAnswerDetails(feed(plain), [], true);
+    const out = withAnswerDetails(feed(plain), []);
     expect(out.chosen && out.items[0]).toBe(plain);
   });
 });

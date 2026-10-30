@@ -14,12 +14,10 @@
 import { captureServerError } from "../../../../lib/sentry/capture";
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse, type NextRequest } from "next/server";
-import { collectionEditEnabled } from "../../../../lib/collection/edit-flag";
 import { readCapped } from "../../../../lib/http/read-capped";
 import { lookupGuesses } from "../../../../lib/card-scan/lookup";
 import { decodeEmbedding } from "../../../../lib/card-scan/match";
 import { observeHit } from "../../../../lib/rate/observe";
-import { requestSwitchEnv } from "../../../../lib/switches/request";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -32,7 +30,6 @@ const MAX_BODY = 4096;
 export async function POST(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json(null, { status: 401, headers: HEADERS });
-  if (!collectionEditEnabled(await requestSwitchEnv(userId))) return NextResponse.json(null, { status: 404, headers: HEADERS });
   await observeHit(userId, "card-scan");
   // Read as a stream and abandoned at the cap, so an oversized or chunked body is never buffered whole.
   const text = await readCapped(req, MAX_BODY);

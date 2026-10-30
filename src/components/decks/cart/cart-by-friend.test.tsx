@@ -101,7 +101,7 @@ afterEach(() => {
 
 async function mount(props: Partial<React.ComponentProps<typeof CartView>> = {}, c = cart()) {
   await act(async () => {
-    render(<CartView cart={c} provenance={provenance} socialFriends spareAsks buyEnabled {...props} />);
+    render(<CartView cart={c} provenance={provenance} socialFriends spareAsks {...props} />);
   });
 }
 const list = () => within(screen.getByRole("region", { name: copy.list.regionAria }));
@@ -352,7 +352,7 @@ describe("a line bought in By friend", () => {
     bought.markBoughtForDecks.mockResolvedValue({ applied: { id: "e1", receipt: { covered: [], still: [] } } });
     // Jace is the only line with a spare: once it is bought and gone, nothing else holds the view up.
     served = { spares: [spare(JACE, "Colin"), spare(JACE, "Max", 1, ["Cube night"])], asks: [] };
-    const props = { provenance, socialFriends: true, spareAsks: true, buyEnabled: true, initialView: "friend" as const };
+    const props = { provenance, socialFriends: true, spareAsks: true, initialView: "friend" as const };
     let view!: ReturnType<typeof render>;
     await act(async () => { view = render(<CartView cart={cart()} {...props} />); });
     const tag = within(lineIn("Colin", "Jace")).getByRole("button", { name: gotItCopy.row.tagAria("Jace, Multiverse Architect") });
@@ -648,7 +648,7 @@ describe("the spares read as a whole (B2)", () => {
 
 // Copilot round 1 on #2349: a purchase while the read is out or after it failed, and a failure By friend's panels hide.
 describe("a purchase, a partial failure and a retry (PR 7, round 1)", () => {
-  const props = { provenance, socialFriends: true, spareAsks: true, buyEnabled: true };
+  const props = { provenance, socialFriends: true, spareAsks: true };
   async function buyJace() {
     bought.loadPrintingChoices.mockResolvedValue([{
       scryfallId: "a0000000-0000-4000-8000-000000000000", setCode: "cmm", setName: "Commander Masters",
@@ -732,7 +732,7 @@ describe("a purchase, a partial failure and a retry (PR 7, round 1)", () => {
 
 // Copilot round 2 on #2349: the toast's Try again is the provider's live retry, and the failure waits for the receipt.
 describe("the failure toast beside a purchase (PR 7, round 2)", () => {
-  const props = { provenance, socialFriends: true, spareAsks: true, buyEnabled: true };
+  const props = { provenance, socialFriends: true, spareAsks: true };
   const failure = () => screen.queryAllByRole("alert").find((el) => el.textContent?.includes(copy.failedRead.toast)) ?? null;
   afterEach(() => { vi.useRealTimers(); });
   async function buyJace() {
@@ -945,7 +945,7 @@ describe("the Friend filter (v2 PR 9)", () => {
   });
 
   describe("a purchase under the filter", () => {
-    const buyProps = { provenance, socialFriends: true, spareAsks: true, buyEnabled: true };
+    const buyProps = { provenance, socialFriends: true, spareAsks: true };
     async function buyJaceAndReread(initialFriend: string, wideView = false) {
       if (wideView) wide();
       bought.loadPrintingChoices.mockResolvedValue([{

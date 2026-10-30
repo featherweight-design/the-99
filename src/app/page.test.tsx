@@ -103,12 +103,11 @@ describe("Home's arrivals banner", () => {
 
 describe("Home's precon pick receipt (no-collection entry S5)", () => {
   const RECEIPT = { entryIds: ["e1"], names: ["Abzan Armor"], copies: 100, tokens: 10 };
-  const LINE = { ...ON, COLLECTION_EDIT_ENABLED: "true" };
   const visit = async (query: Record<string, string>) =>
     (await HomePage({ searchParams: Promise.resolve(query) })) as ReactElement<{ children: ReactElement[] }>;
 
-  it("reads the claim from the ledger and draws the strip over the dashboard, with collection editing on", async () => {
-    stub.env = LINE;
+  it("reads the claim from the ledger and draws the strip over the dashboard", async () => {
+    stub.env = ON;
     stub.receipt.mockResolvedValue(RECEIPT);
     const page = await visit({ precons: "e1" });
     expect(stub.receipt).toHaveBeenCalledWith("user_1", "e1");
@@ -116,15 +115,8 @@ describe("Home's precon pick receipt (no-collection entry S5)", () => {
     expect(page.props.children[1].type).toBe(Dashboard);
   });
 
-  it("is exactly the shipped dashboard with the switch off, a claim or not", async () => {
-    stub.receipt.mockResolvedValue(RECEIPT);
-    const page = await visit({ precons: "e1" });
-    expect(page.type).toBe(Dashboard);
-    expect(stub.receipt).not.toHaveBeenCalled();
-  });
-
   it("draws the dashboard alone when the claim reads as nothing or the read fails", async () => {
-    stub.env = LINE;
+    stub.env = ON;
     stub.receipt.mockResolvedValue(null);
     expect((await visit({ precons: "forged" })).type).toBe(Dashboard);
     stub.receipt.mockRejectedValue(new Error("down"));
@@ -135,40 +127,18 @@ describe("Home's precon pick receipt (no-collection entry S5)", () => {
 });
 
 describe("Home's ways in at zero cards (no-collection entry S1, S12)", () => {
-  const LINE = { COLLECTION_EDIT_ENABLED: "true" };
   const visit = async () =>
-    (await HomePage({ searchParams: Promise.resolve({}) })) as ReactElement<{
-      ways?: { precons: boolean } | null;
-      noCards?: boolean;
-    }>;
+    (await HomePage({ searchParams: Promise.resolve({}) })) as ReactElement<{ noCards?: boolean }>;
 
-  it("hands first run the ways group, with Precons I own", async () => {
+  it("hands an account with no cards and no decks first run, whose step 1 draws the ways group", async () => {
     stub.uniqueCards = 0;
-    stub.env = { ...LINE };
-    const page = await visit();
-    expect(page.type).toBe(FirstRunChecklist);
-    expect(page.props.ways).toEqual({ precons: true });
+    expect((await visit()).type).toBe(FirstRunChecklist);
   });
 
-  it("hands first run no group with collection editing off", async () => {
-    stub.uniqueCards = 0;
-    const offs: Record<string, string>[] = [{}];
-    for (const env of offs) {
-      stub.env = env;
-      const page = await visit();
-      expect(page.type).toBe(FirstRunChecklist);
-      expect(page.props.ways).toBeNull();
-    }
-  });
-
-  it("marks the dashboard as having no cards when the account has decks and none, with the switch on", async () => {
+  it("marks the dashboard as having no cards when the account has decks and none", async () => {
     stub.uniqueCards = 0;
     stub.decks = [{ id: "d1" }];
-    stub.env = { ...LINE };
     expect((await visit()).props.noCards).toBe(true);
-    stub.env = {};
-    expect((await visit()).props.noCards).toBe(false);
-    stub.env = { ...LINE };
     stub.uniqueCards = 4;
     expect((await visit()).props.noCards).toBe(false);
   });

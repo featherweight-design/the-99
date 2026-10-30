@@ -2,9 +2,9 @@
 
 /**
  * I got it on a deck page (collection home sub-project 4, plan PR 2): which Shopping row's confirm
- * is open, whether its write is in flight, and the one confirm itself. Mounted by the deck page ONLY
- * when `collectionEditEnabled(env)` (I got it's own switch is retired), so a row reading `null` draws main's inert
- * tag, main's phone stack and no key item (E1). The swap tools reach their rows the same way.
+ * is open, whether its write is in flight, and the one confirm itself. Mounted by the owner's deck page;
+ * a row reading `null` (outside it) draws main's inert tag, main's phone stack and no key item (E1). The
+ * swap tools reach their rows the same way.
  *
  * One confirm across the list (B11): opening one replaces whatever was open, and the confirm is a
  * modal, so no other row's tag can be pressed while it is up.

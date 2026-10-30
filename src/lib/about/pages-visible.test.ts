@@ -32,23 +32,24 @@ describe("visibleSections", () => {
     expect(off.map((s) => s.id)).toEqual(ABOUT_SECTIONS.map((s) => s.id));
   });
 
-  it("cuts a sentence whose switch is off, and keeps a negated one only while its switch is off", () => {
+  // COLLECTION_EDIT_ENABLED and COLLECTION_SYNC_ENABLED are retired (always on): their sentences always draw, and the
+  // negated one never does.
+  it("keeps a retired switch's sentences, and never its negated one, whatever the env", () => {
     const replace = (e: NodeJS.ProcessEnv) => visibleSections(e).flatMap((s) => s.rules).find((r) => r.key === "rule/replace")!;
-    expect(replace(OFF).text).toBe("An upload replaces your whole Collection with the file.");
-    const on = replace(ALL_ON).text;
-    expect(on).not.toContain("An upload replaces your whole Collection");
-    expect(on).toContain("With Sync");
-    const editOnly = replace(env({ COLLECTION_EDIT_ENABLED: "true" })).text;
-    expect(editOnly).toContain("With Add");
-    // COLLECTION_SYNC_ENABLED is retired: its sentences follow collection editing.
-    expect(editOnly).toContain("With Sync");
+    for (const e of [OFF, ALL_ON]) {
+      const text = replace(e).text;
+      expect(text).not.toContain("An upload replaces your whole Collection");
+      expect(text.startsWith("With Replace")).toBe(true);
+      expect(text).toContain("With Add");
+      expect(text).toContain("With Sync");
+    }
   });
 
   it("announces a kept positive sentence on its own key, and never a negated one", () => {
     const replace = visibleSections(ALL_ON).flatMap((s) => s.rules).find((r) => r.key === "rule/replace")!;
     expect(replace.sentenceSwitches).toContain("COLLECTION_SYNC_ENABLED");
     const off = visibleSections(OFF).flatMap((s) => s.rules).find((r) => r.key === "rule/replace")!;
-    expect(off.sentenceSwitches).toEqual([]);
+    expect(off.sentenceSwitches).toEqual(replace.sentenceSwitches);
   });
 });
 
@@ -58,7 +59,7 @@ describe("each sentence follows its own switch", () => {
   it.each([
     ["Ready to build is gone with the feed always on", {}, "home/home/ready", undefined, undefined],
     ["the feed's lead names no kind a switch can hide", {}, "home/whats-new/lead", "You choose what can lead in Settings", "precon"],
-    ["the + with scanning (it follows collection edit)", { COLLECTION_EDIT_ENABLED: "true" }, "collection/cards/add", "scan them", undefined],
+    ["the + with scanning (collection edit is retired)", {}, "collection/cards/add", "scan them", undefined],
     ["the place strip without Help me choose", {}, "commanders/for-you/places", "two ways", "Help me choose"],
     ["a game log without Suggested changes", {}, "decks/games/log", "fifteen seconds", "Suggested changes"],
     ["credits with Suggested changes and not Proposed cuts", { ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true" }, "rule/credits", "Suggested changes run", "Look deeper"],
@@ -227,10 +228,10 @@ describe("seen translation", () => {
   });
 
   it("keeps a label's opening space and drops the one a cut first sentence leaves", () => {
-    const editOnly = visibleSections(env({ COLLECTION_EDIT_ENABLED: "true" }));
-    const replace = editOnly.flatMap((s) => s.rules).find((r) => r.key === "rule/replace")!;
+    const noSwitches = visibleSections(OFF);
+    const replace = noSwitches.flatMap((s) => s.rules).find((r) => r.key === "rule/replace")!;
     expect(replace.text.startsWith("With Replace")).toBe(true);
-    const help = editOnly.flatMap((s) => s.labels).find((l) => l.key === "collection/cards/tabs")!;
+    const help = noSwitches.flatMap((s) => s.labels).find((l) => l.key === "collection/cards/tabs")!;
     expect(help.text).toBe(" are your Collection’s tabs. History lists your changes from the last 90 days. Wishlist holds the cards you’re after.");
   });
 
@@ -349,8 +350,10 @@ describe("a section's sub-line", () => {
     for (const sec of ABOUT_SECTIONS) {
       // With every switch on, every screen is on, and no sub says otherwise.
       expect(sub(ALL_ON, sec.id), sec.id).not.toContain(ABOUT_SCREEN_OFF.trim());
-      // A retired switch is gone from the registry and always on: there is no off state to assert.
-      for (const sw of switchesOfSection(sec).filter((n) => (SWITCH_NAMES as readonly string[]).includes(n))) {
+      // A retired switch is gone from the registry and always on: there is no off state to assert. Collection editing
+      // is retired too (always on in About) though its registry entry stays until it is deleted.
+      const retiredInRegistry = ["COLLECTION_EDIT_ENABLED"];
+      for (const sw of switchesOfSection(sec).filter((n) => (SWITCH_NAMES as readonly string[]).includes(n) && !retiredInRegistry.includes(n))) {
         const e = off(sw);
         const drawn = visibleSections(e).find((s) => s.id === sec.id)!;
         const text = sub(e, sec.id);
@@ -390,8 +393,8 @@ describe("a section's sub-line", () => {
     expect(sub(ALL_ON, "stats")).toContain("curve by card type");
     const noStats = env({ ...(ALL_ON as Record<string, string>), DECK_STATS_ENABLED: "off" });
     expect(sub(noStats, "stats")).toBe(ABOUT_SCREEN_OFF.trim());
-    const noEdit = env({ ...(ALL_ON as Record<string, string>), COLLECTION_EDIT_ENABLED: "off" });
-    expect(sub(noEdit, "cards")).toBe("Everything you own, card by card, and which copies your decks are holding.");
+    // Collection editing is retired: its sentence always draws.
+    expect(sub(OFF, "cards")).toBe("Everything you own, card by card, and which copies your decks are holding. Add cards by name or scan them in.");
     // Ready to build is gone (the feed is always on).
     expect(sub(ALL_ON, "home")).not.toContain("best-fit commanders");
     // Only a spare request ever waits on you, so the sentence saying what comes first hangs on spare requests too, which
@@ -427,13 +430,22 @@ describe("resolveDiagram", () => {
     expect(emptied.columns).toHaveLength(1);
   });
 
-  it("keeps a negated part only while its switch is off", () => {
+  it("keeps a negated part only while its live switch is off", () => {
+    const off = env({ ...(ALL_ON as Record<string, string>), PROPOSED_CUTS_ENABLED: "off" });
+    const negated = (e: NodeJS.ProcessEnv) => resolveDiagram(
+      { kind: "card-row", columns: [{ parts: [{ part: "row", name: "a", switch: "!PROPOSED_CUTS_ENABLED" }, { part: "row", name: "b", switch: "PROPOSED_CUTS_ENABLED" }] }] },
+      e,
+    ).columns.flatMap((c) => c.parts).flatMap((p) => (p.part === "row" ? [p.name] : []));
+    expect(negated(off)).toEqual(["a"]);
+    expect(negated(ALL_ON)).toEqual(["b"]);
+  });
+
+  it("never draws a negated part of a retired switch", () => {
     const captions = (e: NodeJS.ProcessEnv) => parts(rule(e, "replace").diagram!).flatMap((p) => (p.part === "caption" ? [p.text] : []));
-    expect(captions(ALL_ON)).toContain("Your Collection, then Replace");
-    expect(captions(ALL_ON)).not.toContain("Your Collection, then an upload");
-    const noEdit = env({ ...(ALL_ON as Record<string, string>), COLLECTION_EDIT_ENABLED: "off" });
-    expect(captions(noEdit)).toContain("Your Collection, then an upload");
-    expect(captions(noEdit)).not.toContain("Your Collection, then Replace");
+    for (const e of [OFF, ALL_ON]) {
+      expect(captions(e)).toContain("Your Collection, then Replace");
+      expect(captions(e)).not.toContain("Your Collection, then an upload");
+    }
   });
 });
 

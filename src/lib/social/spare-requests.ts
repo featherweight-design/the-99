@@ -273,7 +273,7 @@ export function answerQuery(holderId: string, requestId: string, answer: "yes" |
       and asr.created_at > ${openFloor(now).toISOString()}::timestamptz
       and exists (select 1 from ${friendLinks} afl
         where afl.user_id = asr.holder_user_id and afl.friend_user_id = asr.asker_user_id for share)
-    returning asr.id, asr.asker_user_id, asr.oracle_id`;
+    returning asr.id, asr.asker_user_id, asr.oracle_id, asr.standalone`;
 }
 
 /**
@@ -295,12 +295,12 @@ export async function answerSpareRequest(
     const [who] = (await tx.execute<{ asker_user_id: string }>(answerAskerQuery(holderId, requestId))).rows;
     if (!who) return { ok: false, reason: "gone" } as const;
     await tx.execute(lockFriendshipQuery(holderId, who.asker_user_id));
-    const done = await tx.execute<{ id: string; asker_user_id: string; oracle_id: string }>(answerQuery(holderId, requestId, answer, now));
+    const done = await tx.execute<{ id: string; asker_user_id: string; oracle_id: string; standalone: boolean }>(answerQuery(holderId, requestId, answer, now));
     const row = done.rows[0];
     if (!row) return { ok: false, reason: "gone" } as const;
     await recordFeedItem(tx, {
       userId: row.asker_user_id, kind: "spare-request", dedupeKey: row.id, oracleId: row.oracle_id, friendUserId: holderId,
-      data: answerData(answer), now,
+      data: answerData(answer, row.standalone === true), now,
     });
     return { ok: true } as const;
   });

@@ -83,7 +83,6 @@ export function ReplaceFlow({
   embedded,
   entry,
   onReviewing,
-  onAddByHand,
   ways,
   deckCheck = false,
   history = false,
@@ -101,8 +100,6 @@ export function ReplaceFlow({
   // UploadEntry itself, because steps 2 and 3 are this component's to own and a
   // caller reaching past it for step 1 would have to re-implement them.
   entry?: React.ComponentProps<typeof UploadEntry>["entry"];
-  /** First run's `Add cards by hand`, drawn beside Paste. Absent: no button. */
-  onAddByHand?: React.ComponentProps<typeof UploadEntry>["onAddByHand"];
   /** Buttons entry only: the no-collection entry's ways group, under the upload's buttons (S1). */
   ways?: React.ComponentProps<typeof UploadEntry>["ways"];
   /** Collection editing is on: a confirm checks the decks first, and can answer with §E. */
@@ -549,7 +546,6 @@ export function ReplaceFlow({
             currentCardCount={knownCount}
             choice={deckCheck}
             entry={entry}
-            onAddByHand={onAddByHand}
             ways={ways}
             onPreview={(p) => {
               setConfirmError(null);

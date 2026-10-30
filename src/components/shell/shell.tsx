@@ -3,7 +3,6 @@ import { DeckToastStackHost } from "../decks/deck-toast-stack";
 import { after } from "next/server";
 import { NavRail, TabBar, MobileHeader, type NavBadges } from "./nav";
 import { getCollectionStats, hasAnyDeck } from "../../lib/home/summary";
-import { collectionEditEnabled } from "../../lib/collection/edit-flag";
 import { perfRead } from "../../lib/perf/timing";
 import { readChip } from "../../lib/payments/chip";
 import type { ThemeKey } from "../../lib/theme/themes";
@@ -40,7 +39,7 @@ import { PushHeartbeat } from "../push/push-heartbeat";
  * opening a note that says why, until the collection is read
  * (docs/superpowers/design-tables/first-run-locked-nav.md).
  *
- * With COLLECTION_EDIT_ENABLED (no-collection entry, call 6) Collection opens at zero cards and the other three
+ * Collection opens at zero cards (no-collection entry, call 6) and the other three
  * stay locked: `openLock` carries whether the account has a deck, which decides the note's button (first run's
  * `Go to step 1`, or `Add your cards` outside it) and its `Your decks are on Home until then.`
  */
@@ -70,11 +69,8 @@ export default async function Shell({
   const locked = stats.uniqueCards === 0;
   // The reader's resolved switches, once for the shell: the lock's shape and the stall diagnostic both decide here.
   const env = await requestSwitchEnv(userId);
-  // The deck probe runs only while locked with collection edit on; every other render keeps the shipped reads.
-  const openLock =
-    locked && collectionEditEnabled(env)
-      ? { hasDecks: await perfRead("shell.hasAnyDeck", () => hasAnyDeck(userId)) }
-      : null;
+  // The deck probe runs only while locked; every other render keeps the shipped reads.
+  const openLock = locked ? { hasDecks: await perfRead("shell.hasAnyDeck", () => hasAnyDeck(userId)) } : null;
   // The admin door: only the verdict leaves the server, never the list (admin locked rule 10).
   // The Friends row, from the same resolved switches (Social R1): only the boolean reaches the client.
   const door = {

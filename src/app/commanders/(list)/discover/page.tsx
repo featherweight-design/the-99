@@ -3,7 +3,6 @@ import { perfRoute } from "../../../../lib/perf/timing";
 import { requestSwitchEnv } from "../../../../lib/switches/request";
 import { getCollectionStats } from "../../../../lib/home/summary";
 import { NoCardsEmpty } from "../../../../components/commanders/no-cards-empty";
-import { collectionEditEnabled } from "../../../../lib/collection/edit-flag";
 import { discoveryCopy } from "../../../../lib/copy/commander-discovery";
 import { DiscoveryView } from "../../../../components/commanders/discovery-view";
 import { cutToWindow, decodeDiscovery } from "../../../../lib/discovery/encode";
@@ -36,9 +35,8 @@ export default async function DiscoverPage({
   const stats = await perf.timed("stats", () => getCollectionStats(userId));
 
   if (stats.uniqueCards === 0) {
-    // No cards: nothing here can be ranked without a collection to rank it against. The words follow the
-    // no-collection entry's switch (its copy key's `on` form) and keep the shipped ones without it.
-    return <NoCardsEmpty copy={collectionEditEnabled(env) ? discoveryCopy.noCards.on : discoveryCopy.noCards.off} />;
+    // No cards: nothing here can be ranked without a collection to rank it against.
+    return <NoCardsEmpty copy={discoveryCopy.noCards} />;
   }
 
   // Discovery does NOT call getRankedList, rankFree or receiptCountsByCommander:

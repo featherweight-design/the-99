@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 // Step 1 reaches the upload flow through ReplaceFlow, which calls useRouter at
@@ -29,41 +29,30 @@ vi.mock("../collection/add-cards-sheet", () => ({
 
 const { FirstRunChecklist } = await import("./first-run");
 
-describe("FirstRunChecklist · Add cards by hand (collection edit B0c)", () => {
-  it("draws no button with the switch off", () => {
-    render(<FirstRunChecklist />);
-    expect(screen.queryByRole("button", { name: "Add cards by hand" })).toBeNull();
-    expect(screen.queryByText(/or add cards by hand/)).toBeNull();
-  });
+// Add cards by hand is step 1's ways group's third row (no-collection entry S1), not a button beside Paste.
+const addByHand = () =>
+  within(screen.getByRole("group", { name: "No file? Start another way" })).getByRole("button", { name: /Add cards by hand/ });
 
-  it("draws the ghost button beside Paste with the switch on, and it opens the sheet", () => {
-    render(<FirstRunChecklist addByHand />);
-    const paste = screen.getByRole("button", { name: "Paste a list" });
-    const add = screen.getByRole("button", { name: "Add cards by hand" });
-    expect(add.className).toBe(paste.className);
-    expect(paste.nextElementSibling).toBe(add);
+describe("FirstRunChecklist · Add cards by hand (collection edit B0c)", () => {
+  it("opens the sheet from the ways group", () => {
+    render(<FirstRunChecklist />);
     expect(screen.queryByRole("dialog")).toBeNull();
-    fireEvent.click(add);
+    fireEvent.click(addByHand());
     expect(screen.getByRole("dialog")).toBeTruthy();
   });
 
   it("settles the write (a fresh Home) only when the sheet closes after a save", () => {
     settle.mockReset();
-    render(<FirstRunChecklist addByHand />);
-    fireEvent.click(screen.getByRole("button", { name: "Add cards by hand" }));
+    render(<FirstRunChecklist />);
+    fireEvent.click(addByHand());
     act(() => sheet!.onClose());
     expect(settle).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "Add cards by hand" }));
+    fireEvent.click(addByHand());
     act(() => sheet!.onSaved!(2));
     expect(settle).not.toHaveBeenCalled();
     act(() => sheet!.onClose());
     expect(settle).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole("dialog")).toBeNull();
-  });
-
-  it("the phone body names the new door", () => {
-    render(<FirstRunChecklist addByHand />);
-    expect(screen.getByText(/ManaBox, or add cards by hand\./)).toBeTruthy();
   });
 });
 
@@ -189,9 +178,7 @@ describe("FirstRunChecklist", () => {
   it("draws the lock's page line under the heading, from md only", () => {
     const { container } = render(<FirstRunChecklist />);
     const line = container.querySelector<HTMLElement>("[data-lock-page-line]")!;
-    expect(line).toHaveTextContent(
-      "Collection, Commanders, Discover and Decks open once your cards are in.",
-    );
+    expect(line).toHaveTextContent("Commanders, Discover and Decks open once your cards are in.");
     expect(line.className).toContain("hidden");
     expect(line.className).toContain("md:flex");
     const heading = screen.getByRole("heading", { name: "Welcome to The 99" });
@@ -223,9 +210,9 @@ describe("FirstRunChecklist · the foot of the steps", () => {
     expect(holder?.className).toContain("sm:p-[20px_28px_26px]");
   });
 
-  it("hands the sheet the reader's scan switch, so a first card can be scanned", () => {
-    render(<FirstRunChecklist addByHand scan />);
-    fireEvent.click(screen.getByRole("button", { name: "Add cards by hand" }));
+  it("hands the sheet Scan, so a first card can be scanned", () => {
+    render(<FirstRunChecklist />);
+    fireEvent.click(addByHand());
     expect(sheet?.scan).toBe(true);
   });
 
@@ -233,7 +220,7 @@ describe("FirstRunChecklist · the foot of the steps", () => {
     const { unmount } = render(<FirstRunChecklist />);
     expect(screen.queryByTestId("tour")).toBeNull();
     unmount();
-    render(<FirstRunChecklist tour ways={{ precons: true }} />);
+    render(<FirstRunChecklist tour />);
     expect(screen.getByTestId("tour")).toHaveAttribute("data-precons", "true");
   });
 
@@ -241,7 +228,7 @@ describe("FirstRunChecklist · the foot of the steps", () => {
     nav.query = "tour=1";
     // The tour reads the live address (`useLiveQuery`), not only the router's params.
     window.history.replaceState(null, "", "/?tour=1");
-    render(<FirstRunChecklist ways={{ precons: true }} />);
+    render(<FirstRunChecklist />);
     expect(screen.getByTestId("tour")).toHaveAttribute("data-precons", "true");
     // Asked for: `again`, which is what lets the replay past this tab's spent mark (first-run-tour.test.tsx proves that half).
     expect(screen.getByTestId("tour")).toHaveAttribute("data-again", "true");
@@ -268,9 +255,7 @@ describe("FirstRunChecklist · Choose your news (menu and Home PR 6)", () => {
       unmount();
       return text;
     };
-    expect(line({})).toBe("Collection, Commanders, Discover and Decks open once your cards are in.");
-    expect(line({ commandersPlace: true })).toBe("Collection, Commanders and Decks open once your cards are in.");
-    expect(line({ commandersPlace: true, ways: { precons: false } })).toBe("Commanders and Decks open once your cards are in.");
-    expect(line({ ways: { precons: false } })).toBe("Commanders, Discover and Decks open once your cards are in.");
+    expect(line({})).toBe("Commanders, Discover and Decks open once your cards are in.");
+    expect(line({ commandersPlace: true })).toBe("Commanders and Decks open once your cards are in.");
   });
 });

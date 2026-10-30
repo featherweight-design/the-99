@@ -43,7 +43,13 @@ export const isAnswer = (v: unknown): v is Answer => v === "yes" || v === "no";
  * "Your request" item). It shares the kind, and so the tick, the default and the push rules, and is told apart from an
  * incoming ask by this marker in its `data` alone.
  */
-export const answerData = (answer: Answer): { answer: Answer } => ({ answer });
+export const answerData = (answer: Answer, standalone: boolean): { answer: Answer; standalone?: true } =>
+  standalone ? { answer, standalone: true } : { answer };
+/**
+ * Whether an answer item's ask was standalone (a friend's Spares tab, asked for no list): its Yes line says nothing of
+ * Shopping's buy press, since the card may be on no deck's list. False on an item written before the marker.
+ */
+export const answerStandalone = (data: Record<string, unknown> | null | undefined): boolean => data?.standalone === true;
 /** The answer a `spare-request` item's `data` carries, or null for an incoming ask. */
 export const answerOf = (data: Record<string, unknown> | null | undefined): Answer | null => (isAnswer(data?.answer) ? data.answer : null);
 

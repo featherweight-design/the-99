@@ -9,7 +9,6 @@ import { requireUserId } from "../../lib/auth";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import { isUuid } from "../../lib/uuid";
 import { loadMatchInputs } from "../../lib/collection/import";
-import { collectionEditEnabled } from "../../lib/collection/edit-flag";
 import { invalidateCollectionReaders } from "../../lib/collection/invalidate";
 import { importDeckOwned, readDeckOwnLines } from "../../lib/decks/import-own";
 import { warmCommanderScores } from "../../lib/recs/warm";
@@ -49,8 +48,8 @@ export type ImportDeckInput = {
   partnerOracleId?: string | null;
   /**
    * `I own these cards. Add them to my collection.` (no-collection entry): add every card the list
-   * names, commanders included, to the collection in the same transaction as the deck. Honoured only
-   * with `COLLECTION_EDIT_ENABLED` on; off, or false, the import is exactly as shipped.
+   * names, commanders included, to the collection in the same transaction as the deck. False or
+   * absent, the import is exactly as shipped.
    */
   own?: boolean;
   /** The press's idempotency id, a uuid minted once and reused on a retry. Required with `own`. */
@@ -356,7 +355,7 @@ export async function importDeck(input: ImportDeckInput): Promise<ImportDeckResu
   };
 
   let deckId: string;
-  if (input.own === true && collectionEditEnabled(env)) {
+  if (input.own === true) {
     if (!isUuid(input.actionId)) throw new Error("bad action id");
     // The cards first, then the deck inside the add's own transaction: a refusal leaves neither.
     const items = await readDeckOwnLines({

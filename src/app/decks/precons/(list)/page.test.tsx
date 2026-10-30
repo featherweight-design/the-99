@@ -183,25 +183,16 @@ describe("/decks/precons, upcoming precons", () => {
 });
 
 describe("/decks/precons?pick=own (no-collection entry S2)", () => {
-  const LINE = { COLLECTION_EDIT_ENABLED: "true" };
   beforeEach(() => { h.keys = []; h.listOpts = []; h.listFails = false; h.cookies = {}; h.afters = []; });
 
-  it("is exactly the shipped list with collection editing off: its key, its read, its view", async () => {
+  it("draws the shipped list for any other pick", async () => {
     h.env = {};
-    const el = await visit({ pick: "own" });
-    expect(el.type).toBe(PreconListView);
-    expect(h.keys).toEqual([[DAY]]);
-    expect(h.listOpts).toEqual([undefined]);
-  });
-
-  it("draws the shipped list for any other pick, with collection editing on", async () => {
-    h.env = LINE;
     expect((await visit({ pick: "all" })).type).toBe(PreconListView);
     expect(h.keys).toEqual([[DAY]]);
   });
 
   it("reads the boxes' figures under a key of its own, and takes its way back from a closed set", async () => {
-    h.env = LINE;
+    h.env = {};
     const el = await visit({ pick: "own", from: "collection", q: "abz" });
     expect(el.type).toBe(PreconPickView);
     expect(h.keys).toEqual([["pick"]]);
@@ -212,14 +203,14 @@ describe("/decks/precons?pick=own (no-collection entry S2)", () => {
   });
 
   it("hands the pick the collection's presence and each box's standing add (E2, S17)", async () => {
-    h.env = LINE;
+    h.env = {};
     const el = await visit({ pick: "own", from: "collection" });
     expect(el.props.hasCollection).toBe(true);
     expect(el.props.added).toEqual({ TRC_A: "2026-06-30T12:00:00.000Z" });
   });
 
   it("strips a `?tool=` on every branch that draws no list search: the pick and the list down", async () => {
-    h.env = { ...LINE, HELP_ME_CHOOSE_ENABLED: "true" };
+    h.env = { HELP_ME_CHOOSE_ENABLED: "true" };
     const mountOf = async (query: Record<string, string>) => {
       const el = (await PreconsPage({ searchParams: Promise.resolve(query) })) as ReactElement<Record<string, unknown>>;
       expect(el.type).toBe(Fragment);
@@ -235,7 +226,7 @@ describe("/decks/precons?pick=own (no-collection entry S2)", () => {
   });
 
   it("draws the shipped down state when the pick cannot be read", async () => {
-    h.env = LINE;
+    h.env = {};
     h.listFails = true;
     vi.spyOn(console, "error").mockImplementation(() => {});
     expect((await visit({ pick: "own" })).type).toBe(PreconsDown);

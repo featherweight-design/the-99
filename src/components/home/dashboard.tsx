@@ -91,9 +91,9 @@ export type DashboardProps = {
   /** `HELP_ME_CHOOSE_ENABLED`, resolved for this reader: `No decks yet` carries Help me choose's door (discovery R3 E1). */
   helpMeChoose?: boolean;
   /**
-   * Decks and no cards, with COLLECTION_EDIT_ENABLED (no-collection entry S12): the kicker counts the decks, the
+   * Decks and no cards (no-collection entry S12): the kicker counts the decks, the
    * header's one action is `Add your cards` (Update collection and New deck both need cards), the lock's page line
-   * shows on desktop as it does on first run. Ready to build is absent at zero cards either way. Off: as shipped.
+   * shows on desktop as it does on first run. Ready to build is absent at zero cards.
    */
   noCards?: boolean;
   /**
@@ -222,7 +222,7 @@ export function Dashboard(props: DashboardProps) {
           className="m-0 mt-[12px] hidden items-center gap-[8px] px-[26px] text-[12.5px] text-[color:var(--fg-muted)] md:flex"
         >
           <Lock size="lg" ink="var(--fg-locked)" className="flex-none" />
-          {lockPageLine(props.commandersPlace === true, true)}
+          {lockPageLine(props.commandersPlace === true)}
         </p>
       )}
 

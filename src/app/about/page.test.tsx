@@ -165,12 +165,8 @@ describe("/about, the fits (E10)", () => {
     expect(m.loadToolFits.mock.calls[0]![2]).toEqual(["top-off"]);
   });
 
-  // Collection Sync's own switch is retired: Sync follows collection editing.
-  it("reads the sync base only with collection editing on", async () => {
-    vi.stubEnv("COLLECTION_EDIT_ENABLED", "");
-    await tabs();
-    expect(m.hasSyncAnchor).not.toHaveBeenCalled();
-    vi.stubEnv("COLLECTION_EDIT_ENABLED", "true");
+  // Collection Sync's switch and its parent's, collection editing, are retired: the sync base is always read.
+  it("reads the sync base", async () => {
     await tabs();
     expect(m.hasSyncAnchor).toHaveBeenCalledWith("u1");
   });
@@ -219,9 +215,15 @@ describe("/about, the visit (R2 gap 10)", () => {
     expect(props.answered).toEqual([]);
   });
 
+  // Collection editing is retired (always on), so its entries and those that followed it always draw: a current reader
+  // has met them too.
   it("hands a current reader's visit the unit keys their state covers", async () => {
     vi.stubEnv("NEVER_CUT_ENABLED", "true");
-    m.seen = { version: 16, ids: ["locked-cards", "how-it-works", "card-search", "getting-help", "combos-one-away", "precons", "upcoming-precons", "decks-stats", "deck-tokens", "whats-new", "commander-lane", "wishlist"] };
+    const collectionEdit = [
+      "collection-add", "card-scan", "start-without-a-collection", "upload-choice", "upload-choice@COLLECTION_SYNC_ENABLED",
+      "added-copy", "edit-copies", "remove-card", "collection-history", "shopping-got-it",
+    ];
+    m.seen = { version: 16, ids: ["locked-cards", "how-it-works", "card-search", "getting-help", "combos-one-away", "precons", "upcoming-precons", "decks-stats", "deck-tokens", "whats-new", "commander-lane", "wishlist", ...collectionEdit] };
     const props = find(await draw({ tab: "reference" }), RecordVisit)!.props as { behind: boolean; answered: string[] };
     expect(props.behind).toBe(false);
     expect(props.answered).toContain("decks/your-deck/lock");

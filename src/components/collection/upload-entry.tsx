@@ -32,7 +32,6 @@ export function UploadEntry({
   currentCardCount,
   onPreview,
   entry = "dropzone",
-  onAddByHand,
   ways,
   choice = false,
 }: {
@@ -41,8 +40,6 @@ export function UploadEntry({
   currentCardCount: number;
   onPreview: (preview: UploadPreview) => void;
   entry?: Entry;
-  /** Buttons entry only: a third, ghost button beside Paste that opens Add cards (B0c). */
-  onAddByHand?: (trigger: HTMLElement) => void;
   /**
    * Buttons entry only: what sits under the button row while it shows (the no-collection entry's ways group, S1),
    * handed whether a file is being read. Gone with the row while the paste panel is open.
@@ -201,15 +198,6 @@ export function UploadEntry({
             >
               {refreshCopy.firstRun.pasteList}
             </GhostButton>
-            {onAddByHand ? (
-              <GhostButton
-                disabled={pending}
-                onClick={(e) => onAddByHand(e.currentTarget)}
-                className="flex h-[44px] items-center justify-center rounded-[10px] text-[14px] font-normal disabled:opacity-60 sm:h-[32px] sm:justify-start sm:rounded-[8px] sm:px-[13px] sm:text-[12.5px]"
-              >
-                {collectionEditCopy.firstRun.addByHand}
-              </GhostButton>
-            ) : null}
           </div>
         ) : (
           pastePanel

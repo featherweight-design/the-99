@@ -39,7 +39,6 @@ import { CardDetailProvider } from "../../components/cards/card-detail-provider"
 import { loadTradeAsk } from "../../lib/social/trade-ask";
 import { loadYourRequests } from "../../lib/social/your-requests";
 import { YourRequests } from "../../components/social/your-requests";
-import { collectionEditEnabled } from "../../lib/collection/edit-flag";
 
 export default async function FriendsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const perf = perfRoute("/friends");
@@ -141,7 +140,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
             <WaitingOnYou rows={waiting} now={now} />
           </TradeAskFrame>
         </CardDetailProvider>
-        <YourRequests rows={mine} now={now} canBuy={collectionEditEnabled(env)} />
+        <YourRequests rows={mine} now={now} />
       </>}
       pods={<PodsPane pods={pods} sharedIds={shared.map((s) => s.podId)} friends={friends} ruleZero={tables ? { tables, now } : null} />}
       friends={friends}

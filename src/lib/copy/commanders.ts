@@ -7,20 +7,12 @@
 
 export const commandersCopy = {
   /**
-   * `/commanders` at zero cards. `on` is the no-collection entry's (Open 7, COLLECTION_EDIT_ENABLED): one button
-   * to /collection, where every way in is. `off` is the shipped empty state, word for word, kept for the switch off.
+   * `/commanders` at zero cards, the no-collection entry's (Open 7): one button to /collection, where every way in is.
    */
   noCards: {
-    on: {
-      title: "Nothing to rank yet",
-      body: "We rank commanders from the cards you own. Add some and every one you can build shows up here.",
-      button: "Add your cards",
-    },
-    off: {
-      title: "No collection yet",
-      body: "Upload your cards and we’ll rank every commander you can build.",
-      button: "Upload collection",
-    },
+    title: "Nothing to rank yet",
+    body: "We rank commanders from the cards you own. Add some and every one you can build shows up here.",
+    button: "Add your cards",
   },
   /** The first-run guide's banner on the commanders page. */
   guidedBanner: {

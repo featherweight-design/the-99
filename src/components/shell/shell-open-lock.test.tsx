@@ -27,7 +27,6 @@ vi.mock("./nav", () => ({
 
 const Shell = (await import("./shell")).default;
 const { DEFAULT_THEME } = await import("../../lib/theme/themes");
-const ON = { COLLECTION_EDIT_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 
 async function renderShell() {
   render(await Shell({ children: <p>page</p>, theme: DEFAULT_THEME }));
@@ -39,32 +38,19 @@ afterEach(() => {
 });
 
 describe("Shell and the open lock", () => {
-  it("opens the lock on first run (no cards, no decks) with the switch on", async () => {
-    state.env = ON;
+  it("opens the lock on first run (no cards, no decks)", async () => {
     await renderShell();
     expect(seen.rail).toEqual({ hasDecks: false });
     expect(seen.tab).toEqual({ hasDecks: false });
   });
 
   it("says so when the account has a deck", async () => {
-    state.env = ON;
     state.hasDecks = true;
     await renderShell();
     expect(seen.rail).toEqual({ hasDecks: true });
   });
 
-  it("hands the shipped lock (null) and reads no deck with collection editing off", async () => {
-    for (const env of [{}]) {
-      state.env = env as unknown as NodeJS.ProcessEnv;
-      await renderShell();
-      expect(seen.rail).toBeNull();
-      expect(seen.tab).toBeNull();
-    }
-    expect(hasAnyDeck).not.toHaveBeenCalled();
-  });
-
   it("reads no deck once a card lands", async () => {
-    state.env = ON;
     state.uniqueCards = 3;
     await renderShell();
     expect(seen.rail).toBeNull();

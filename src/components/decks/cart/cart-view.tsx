@@ -121,7 +121,7 @@ function ByCardList({
  * Friend filter narrows its lines by them (PR 9).
  */
 export function CartView(props: CartViewProps) {
-  const { cart, buyEnabled = false, socialFriends = false, spareAsks = false, hasFriends = true } = props;
+  const { cart, socialFriends = false, spareAsks = false, hasFriends = true } = props;
   const newestAsOf = useMemo(() => (cart.newestAsOf ? new Date(cart.newestAsOf) : null), [cart.newestAsOf]);
   const deckNames = useMemo(() => new Map(cart.decks.map((d) => [d.id, d.name])), [cart.decks]);
   const sparesIds = useMemo(() => cart.lines.map((l) => l.oracleId), [cart.lines]);
@@ -131,16 +131,12 @@ export function CartView(props: CartViewProps) {
   const withSpares = socialFriends ? (
     <FriendSparesProvider oracleIds={sparesIds} newestAsOf={newestAsOf} hostSheet={false} requests={spareAsks} deckId={null} noFriends={!hasFriends}>{page}</FriendSparesProvider>
   ) : page;
-  return buyEnabled ? (
-    <CartGotItProvider deckNames={deckNames} newestAsOf={newestAsOf}>{withSpares}</CartGotItProvider>
-  ) : withSpares;
+  return <CartGotItProvider deckNames={deckNames} newestAsOf={newestAsOf}>{withSpares}</CartGotItProvider>;
 }
 
 type CartViewProps = {
   cart: CartPayload;
   provenance: ProvenanceForm | null;
-  /** I got it on a cart line (cart PR 6): collection editing, `COLLECTION_EDIT_ENABLED` (its own switch is retired). */
-  buyEnabled?: boolean;
   /** `SOCIAL_FRIENDS_ENABLED` for the reader: friends' spares on the cart's lines (Social R2 PR B, S5). */
   socialFriends?: boolean;
   /** `SOCIAL_FRIENDS_ENABLED` for the reader: the lines' spares modal offers Ask (from the cart, for no one deck). */
@@ -171,7 +167,6 @@ function CartBody({
   initialSort = null,
   initialFriend = null,
   initialOwned = null,
-  buyEnabled = false,
   socialFriends = false,
   spareAsks = false,
   hasFriends = true,
@@ -358,8 +353,8 @@ function CartBody({
   // and never again once dismissed. Held here, so nothing that remounts the list resets it.
   const [band, setBand] = useState<"off" | "armed" | "shown" | "dismissed">("off");
   const arm = (e: React.MouseEvent) => {
-    // Only with buying on: the band tells the player to press buy, which is inert without it.
-    if (buyEnabled && (e.target as HTMLElement).closest("a[href]")) setBand((b) => (b === "off" ? "armed" : b));
+    // The band tells the player to press buy.
+    if ((e.target as HTMLElement).closest("a[href]")) setBand((b) => (b === "off" ? "armed" : b));
   };
   useEffect(() => {
     if (band !== "armed") return;
@@ -377,7 +372,7 @@ function CartBody({
   // hides there (E1), since both views list the same cards.
   const byDeck = view === "deck";
   // The buy key names the press, which a line has by card (S0) and a deck's group does not.
-  const showKey = buyEnabled && !byDeck && lines.length > 0;
+  const showKey = !byDeck && lines.length > 0;
   // Each deck's lines for its group: its own commander first, then A to Z.
   const groupLines = useMemo(() => {
     const out = new Map<string, typeof cart.lines>();

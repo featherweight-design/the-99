@@ -102,7 +102,7 @@ describe("StartPrecon, a redirecting action", () => {
     const { redirect } = await import("next/navigation");
     addAction.mockImplementationOnce(async () => redirect("/decks/d1?from=precon"));
     const creates = action.mock.calls.length;
-    render(<StartPrecon row={row} cards={100} body={99} illegal={[]} canOwn />);
+    render(<StartPrecon row={row} cards={100} body={99} illegal={[]} />);
     fireEvent.click(screen.getAllByRole("button", { name: "Start with this precon" })[0]);
     fireEvent.click(screen.getByRole("checkbox", { name: /I own this precon/ }));
     fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
