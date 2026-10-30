@@ -57,10 +57,10 @@ export type V2CallRequest = {
   ask: number;
   system: string;
   /** The user message's cached prefix, the deck's evidence: byte for byte the same on every call of a run, so the transport
-   *  sends it as a cached block (\`client.ts\`'s \`cachedUser\`) and calls 2 to 4 read it, and \`system\`, at 0.1x. Absent on
-   *  the why call, which runs on its own model and so could read no other call's cache. */
+   *  sends it as a cached block (`client.ts`'s `cachedUser`) and calls 2 to 4 read it, and `system`, at 0.1x. Absent on
+   *  the why call, whose system message and prefix differ from the list calls', so it could read none of their cache. */
   cachedUser?: string;
-  /** The rest of the user message: this call's own step (\`buildPromptV2\`). */
+  /** The rest of the user message: this call's own step (`buildPromptV2`). */
   user: string;
   schema: z.ZodTypeAny;
   maxTokens: number;

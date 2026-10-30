@@ -75,10 +75,10 @@ export type ModelRequest<T> = {
    *  byte-stable system prompt shared across calls, like the read's commander list: a later call
    *  inside the TTL reads it at 0.1x input. Omitted, the system prompt is the plain string it was. */
   cacheSystem?: boolean;
-  /** A cached prefix of the user message: sent as its own text block, marked \`cache_control\` (the 5-minute TTL), ahead of
-   *  \`user\` as a second block. The mark caches everything before it, the system prompt included, so calls that share the
-   *  system prompt and this block (Suggested changes v2's four calls of one run, \`buildPromptV2\`) read both at 0.1x after
-   *  the first. Omitted, the user message is the plain \`user\` string it was. */
+  /** A cached prefix of the user message: sent as its own text block, marked `cache_control` (the 5-minute TTL), ahead of
+   *  `user` as a second block. The mark caches everything before it, the system prompt included, so calls that share the
+   *  system prompt and this block (Suggested changes v2's four calls of one run, `buildPromptV2`) read both at 0.1x after
+   *  the first. Omitted, the user message is the plain `user` string it was. */
   cachedUser?: string;
   /** Called with every response that came back, before it is parsed: what the eval harness records
    *  per arm (why the model stopped). The outcome itself is unchanged. */
@@ -236,9 +236,7 @@ async function streamOnce<T>(
     const params = {
       model: req.model,
       max_tokens: req.maxTokens,
-      system: req.cacheSystem
-        ? [{ type: "text" as const, text: req.system, cache_control: { type: "ephemeral" as const } }]
-        : req.system,
+      system: systemContent(req),
       messages: [{ role: "user" as const, content: userContent(req) }],
       output_config: req.effort ? { format, effort: req.effort } : { format },
     };
@@ -306,7 +304,12 @@ function deltaBuffer(): { push: (text: string) => void; end: () => void; iterabl
   };
 }
 
-/** The user message's content: the plain string, or the cached prefix block and then \`user\` (\`cachedUser\`). Both request
+/** The system prompt: the plain string, or one block marked for the cache (`cacheSystem`). Both request paths send it through here. */
+function systemContent(req: Pick<ModelRequest<unknown>, "system" | "cacheSystem">): string | Anthropic.TextBlockParam[] {
+  return req.cacheSystem ? [{ type: "text", text: req.system, cache_control: { type: "ephemeral" } }] : req.system;
+}
+
+/** The user message's content: the plain string, or the cached prefix block and then `user` (`cachedUser`). Both request
  *  paths, streamed and not, send it through here. */
 function userContent(req: Pick<ModelRequest<unknown>, "user" | "cachedUser">): string | Anthropic.TextBlockParam[] {
   if (req.cachedUser === undefined) return req.user;
@@ -341,9 +344,7 @@ async function tryOnce<T>(
     const params = {
       model: req.model,
       max_tokens: req.maxTokens,
-      system: req.cacheSystem
-        ? [{ type: "text" as const, text: req.system, cache_control: { type: "ephemeral" as const } }]
-        : req.system,
+      system: systemContent(req),
       messages: [{ role: "user" as const, content: userContent(req) }],
       output_config: req.effort ? { format, effort: req.effort } : { format },
     };

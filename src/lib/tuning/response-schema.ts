@@ -53,7 +53,8 @@ export const lineSchemaV2 = lineSchema.extend({ evidence: z.array(citationSchema
  * never read: the engine parses each streamed line with `lineSchemaV2`, which strips `n`, so a line is never dropped for a
  * missing or wrong number, and positions come from arrival order as before.
  */
-export const replyLineSchemaV2 = lineSchemaV2.extend({ n: z.number().int() });
+// `n` comes FIRST: structured output writes properties in schema order, so the model commits to the number before the line.
+export const replyLineSchemaV2 = z.object({ n: z.number().int() }).extend(lineSchemaV2.shape);
 
 /**
  * One list of a v2 reply, and the SAME schema for every call of a run: additions, cuts and both refills (§5.1). The

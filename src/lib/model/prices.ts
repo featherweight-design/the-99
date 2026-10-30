@@ -20,8 +20,8 @@ import type { ModelUsage } from "./client";
  * token, so a rate here is also the micro-dollar price of one token. Cache reads cost 0.1x input
  * and cache writes 1.25x input (the 5-minute TTL, the only one the app sends). Help me choose's
  * read (`cacheSystem`) and Suggested changes v2's calls (`cachedUser`, prompt v13) send
- * `cache_control`; every other call's cache meters read zero and are priced anyway. A reservation
- * stays the uncached worst case: a cache write's 1.25x on the shared prefix fits inside its ceiling.
+ * `cache_control`; every other call's cache meters read zero and are priced anyway. A step that
+ * sends a cached prefix is reserved at the cache-write rate (`cacheWrite`), since a cold cache writes it.
  *
  * A model with an `above` row has TWO rate cards, chosen by the prompt's length: Claude Haiku 5.5
  * costs $0.10 / $0.50 up to 100K prompt tokens and $0.50 / $2.50 above (claude-api skill's model
