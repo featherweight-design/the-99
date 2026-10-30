@@ -162,8 +162,8 @@ export type ArrivalsInput = {
   cardNames: Record<string, string>;
   deckNames: Record<string, string>;
   /**
-   * Who took each arrived card's copies (`placementsOf`), keyed by oracle id. Passed only while
-   * collection edit is on; absent, the receipt is a version 3, byte for byte.
+   * Who took each arrived card's copies (`placementsOf`), keyed by oracle id. Absent, the receipt
+   * is a version 3, byte for byte.
    */
   placements?: Record<string, Placement>;
 };

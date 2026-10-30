@@ -15,7 +15,6 @@ const A = "11111111-1111-1111-1111-111111111111";
 const stub = vi.hoisted(() => ({
   upload: null as Record<string, unknown> | null,
   apply: vi.fn(),
-  replace: vi.fn(),
   receipt: vi.fn(),
   invalidate: vi.fn(),
   editedKeys: vi.fn(async () => new Set<string>()),
@@ -33,7 +32,7 @@ vi.mock("../../lib/collection/write", async (actual) => ({
   ...(await actual<typeof import("../../lib/collection/write")>()),
   applyCollectionChange: stub.apply,
 }));
-vi.mock("../../lib/collection/import", () => ({ replaceCollection: stub.replace, loadMatchInputs: vi.fn() }));
+vi.mock("../../lib/collection/import", () => ({ loadMatchInputs: vi.fn() }));
 vi.mock("../../lib/collection/history", () => ({
   editsSinceUpload: async () => 4,
   editedKeysSinceUpload: stub.editedKeys,
@@ -63,8 +62,7 @@ const applied = (kind: string) => ({
 
 beforeEach(() => {
   stub.upload = { id: UPLOAD, userId: "user_1", confirmedAt: null, previewPayload: { pendingItems: items } };
-  for (const f of [stub.apply, stub.replace, stub.receipt, stub.invalidate]) f.mockReset();
-  stub.replace.mockResolvedValue({ alreadyConfirmed: false, notEmpty: null });
+  for (const f of [stub.apply, stub.receipt, stub.invalidate]) f.mockReset();
 });
 
 describe("confirmUpload", () => {
@@ -88,7 +86,6 @@ describe("confirmUpload", () => {
     expect(change).toEqual({ kind: "replace", items, uploadId: UPLOAD, tokens: undefined });
     expect(opts.confirmShort).toEqual([deck]);
     expect(opts.ownedCounts).toBe(true);
-    expect(stub.replace).not.toHaveBeenCalled();
     expect(stub.invalidate).toHaveBeenCalledWith("user_1");
     expect(stub.receipt.mock.calls[0][0]).toMatchObject({ ownedBefore: { [A]: 5 }, ownedAfter: { [A]: 6 } });
   });
