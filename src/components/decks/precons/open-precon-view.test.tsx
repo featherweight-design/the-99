@@ -11,6 +11,7 @@ vi.mock("../../cards/card-detail-provider", () => ({
   },
   // `registerSheet` for the Overview modal (`ModalChrome`), which registers itself with the provider.
   useCardDetail: () => ({ open: vi.fn(), registerSheet: () => () => {}, openOracleId: null, revealing: false }),
+  useCardDetailIfAny: () => ({ open: vi.fn(), registerSheet: () => () => {}, openOracleId: null, revealing: false }),
   cardDetailCopy: { triggerAria: (name: string) => `View details for ${name}` },
   useCardTrigger: () => ({ intent: {}, hover: {}, pending: false, openFrom: vi.fn() }),
   CardDetailTrigger: ({ children, name, siblings }: { children: React.ReactNode; name: string; siblings?: readonly string[] }) => (

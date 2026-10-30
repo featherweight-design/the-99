@@ -9,6 +9,7 @@ import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 const registerSheet = vi.fn<(label: string, ...rest: unknown[]) => () => void>(() => () => {});
 vi.mock("./card-detail-provider", () => ({
   useCardDetail: () => ({ registerSheet, openOracleId: null, pendingOracleId: null, revealing: false }),
+  useCardDetailIfAny: () => ({ registerSheet, openOracleId: null, pendingOracleId: null, revealing: false }),
   // A plate is a press that opens the card: drawn as a button, as the real trigger is.
   CardDetailTrigger: ({ children, testId }: { children?: React.ReactNode; testId?: string }) => (
     <button type="button" data-testid={testId}>{children}</button>

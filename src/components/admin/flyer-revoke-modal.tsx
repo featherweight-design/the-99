@@ -52,7 +52,7 @@ export function FlyerRevokeModal({ target, onClose }: { target: RevokeTarget; on
           <button type="button" onClick={onClose} disabled={pending} className={`${BUTTON} border-[color:var(--border-strong)] bg-transparent text-[color:var(--fg)]`}>
             {copy.keep}
           </button>
-          <button type="button" onClick={revoke} disabled={pending} data-testid="flyer-revoke-confirm" className={`${BUTTON} border-[#4A2F28] bg-transparent text-[color:var(--danger)]`}>
+          <button type="button" onClick={revoke} disabled={pending} data-testid="flyer-revoke-confirm" className={`${BUTTON} border-[color-mix(in_srgb,var(--danger)_40%,var(--bg))] bg-transparent text-[color:var(--danger)]`}>
             {copy.revokeConfirm}
           </button>
         </div>
