@@ -13,11 +13,12 @@ import { cards, preconSynopses } from "../../db/schema";
 import { analysisTabEnabled } from "../decks/analysis-flag";
 import { roleBasisFromEnv } from "../decks/label-counts-flag";
 import { allEvidenceIds } from "../synopsis/based-on";
-import { synopsisPreconContractVersion } from "../synopsis/limits";
+import { synopsisPreconContractVersion, synopsisPreconFallbackContract } from "../synopsis/limits";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
 import type { CheckedSynopsis } from "../synopsis/types";
 import { listFingerprint } from "../profile/fingerprint";
 import { preconDeckCards } from "./deck-cards";
+import { pickOverviewRow } from "./overview";
 
 export type PreconOverview = {
   content: CheckedSynopsis;
@@ -77,13 +78,16 @@ async function evidenceNamesOf(content: CheckedSynopsis): Promise<Record<string,
 export async function loadPreconOverview(fileName: string, env: NodeJS.ProcessEnv): Promise<PreconOverview | null> {
   if (!analysisTabEnabled(env)) return null;
   const { contract, basis } = preconOverviewKey(env);
-  const [row] = await db.select({ content: preconSynopses.content, current: preconSynopses.current, listFingerprint: preconSynopses.listFingerprint }).from(preconSynopses).where(and(
+  const rows = await db.select({ content: preconSynopses.content, current: preconSynopses.current, listFingerprint: preconSynopses.listFingerprint, contractVersion: preconSynopses.contractVersion }).from(preconSynopses).where(and(
     eq(preconSynopses.preconFile, fileName),
-    eq(preconSynopses.contractVersion, contract),
+    inArray(preconSynopses.contractVersion, [contract, synopsisPreconFallbackContract(overviewV2Enabled(env)) ?? contract]),
     eq(preconSynopses.roleBasis, basis),
   ));
-  if (!showsPreconOverview(row ?? null)) return null;
-  const content = row.content;
+  // The owner's contract-13 row, else (until the batch) the contract-12 one: it draws through the old shape.
+  const { row } = pickOverviewRow(rows, contract, synopsisPreconFallbackContract(overviewV2Enabled(env)));
+  const shown = row ?? null;
+  if (!showsPreconOverview(shown)) return null;
+  const content = shown.content;
   const v2 = overviewV2Enabled(env);
   const named = [...new Set([...Object.values(content.cards).map((c) => c.oracleId), ...(v2 ? allEvidenceIds(content) : [])])];
   const [art, evidenceNames] = await Promise.all([
@@ -93,5 +97,5 @@ export async function loadPreconOverview(fileName: string, env: NodeJS.ProcessEn
         .then((rows) => Object.fromEntries(rows.map((r) => [r.oracleId, r.imageUri]))),
     v2 ? evidenceNamesOf(content) : Promise.resolve({}),
   ]);
-  return { content, art, evidenceNames, listFingerprint: row.listFingerprint };
+  return { content, art, evidenceNames, listFingerprint: shown.listFingerprint };
 }

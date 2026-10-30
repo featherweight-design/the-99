@@ -51,6 +51,27 @@ export function carryOverDecision(input: {
 }
 
 /**
+ * The stored row a reader or a carry-over works from, among a file's rows at the owner's role basis.
+ * The owner's own contract wins while its row is current. Otherwise the FALLBACK contract's row stands in
+ * (the pre-batch period, `synopsisPreconFallbackContract`), whatever its `current` flag says: that flag
+ * went stale only because the request hash moved with the contract, and the fallback row is checked
+ * against the live list by `carryOverDecision` like any other. `viaFallback` rows are handed on as
+ * current so the decision is made on the list alone. With neither, the owner's own row (or none) is
+ * returned and the decision gives its usual reason.
+ */
+export function pickOverviewRow<R extends PreconOverviewHead>(
+  rows: readonly R[],
+  contract: number,
+  fallback: number | null,
+): { row: R | null; viaFallback: boolean } {
+  const own = rows.find((r) => r.contractVersion === contract) ?? null;
+  if (own?.current) return { row: own, viaFallback: false };
+  const old = fallback === null ? null : rows.find((r) => r.contractVersion === fallback) ?? null;
+  if (old) return { row: { ...old, current: true }, viaFallback: true };
+  return { row: own, viaFallback: false };
+}
+
+/**
  * The hash of one exact model request: what an overview's `input_hash` stores. The request is built
  * from the catalog (card text, combos, labels, the commander index), so two databases whose inputs
  * for a precon agree build the same request and hash it the same, and either moving moves it.
