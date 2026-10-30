@@ -18,15 +18,15 @@
 // minimum cacheable prompt length, so its `cache_control` does nothing there.
 import { batchRates } from "../../src/lib/model/prices.ts";
 
-/** @typedef {"haiku" | "sonnet" | "sonnet5" | "sonnet55"} ModelKey */
+/** @typedef {"haiku" | "sonnet" | "sonnet5"} ModelKey */
 
 /**
  * Card labels' default model, read by the builder (`card-labels-build.ts`) and the copy (`copy-card-labels.ts`) alike,
  * so the two cannot drift; `src/lib/admin/models.ts` mirrors it and `card-labels-pricing.test.mts` pins the mirror.
- * Sonnet 5.5 since 2026-10-30 (Hugh: the 5.5 model wherever one exists); it was Sonnet 4.5, Hugh's pick (2026-09-26)
- * on the restriction family, so that family is what the first 5.5 build is checked on.
+ * Sonnet 4.5, Hugh's pick (2026-09-26), chosen on the restriction family rather than price. Labels are a large spend,
+ * so any change to this model goes to Hugh first (2026-10-30).
  */
-export const DEFAULT_LABEL_MODEL = "claude-sonnet-5-5";
+export const DEFAULT_LABEL_MODEL = "claude-sonnet-4-5";
 
 /** @type {Record<ModelKey, {in:number,out:number,cacheWrite:number,cacheRead:number,caches:boolean}>} */
 export const PRICING = {
@@ -37,8 +37,6 @@ export const PRICING = {
   // $3/$15 here until review caught it, which UNDERSTATED the cap: the reservation is
   // computed from this row, so an opt-in run could be approved below its real ceiling.
   sonnet5: { ...batchRates("claude-sonnet-5"), caches: true },
-  // Sonnet 5.5, the builder's default since 2026-10-30 (Hugh: the 5.5 model wherever one exists).
-  sonnet55: { ...batchRates("claude-sonnet-5-5"), caches: true },
 };
 
 /**
@@ -79,7 +77,6 @@ export const MODELS = {
 export const ALL_MODELS = {
   ...MODELS,
   sonnet5: "claude-sonnet-5",
-  sonnet55: "claude-sonnet-5-5",
 };
 
 /**

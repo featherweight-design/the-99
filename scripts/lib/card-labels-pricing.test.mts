@@ -25,7 +25,6 @@ describe("the label pricing is the canonical table at batch rates", () => {
     haiku: "claude-haiku-4-5",
     sonnet: "claude-sonnet-4-5",
     sonnet5: "claude-sonnet-5",
-    sonnet55: "claude-sonnet-5-5",
   } as const satisfies Record<keyof typeof PRICING, string>;
 
   // COVERAGE first, so a model added to `ALL_MODELS` cannot quietly escape the comparison

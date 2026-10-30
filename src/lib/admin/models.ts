@@ -16,7 +16,7 @@ import type { CostDetail, Origin } from "./costs-detail-rule";
  */
 
 /** Card labels' default model: `MODEL` in `scripts/lib/card-labels-build.ts` (a `LABEL_MODEL` override aside). */
-export const CARD_LABELS_MODEL = "claude-sonnet-5-5";
+export const CARD_LABELS_MODEL = "claude-sonnet-4-5";
 /** Commander prose's model: `MODEL` in `scripts/generate-commander-prose.ts`. */
 export const PROSE_MODEL = "claude-sonnet-5-5";
 
