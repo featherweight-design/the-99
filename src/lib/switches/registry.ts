@@ -54,7 +54,6 @@ export const SWITCHES = [
   { name: "PUBLIC_PAGES_ENABLED", kind: "plumbing" },
   { name: "RATE_LIMIT_ENABLED", kind: "plumbing" },
   { name: "SCAN_LAB_ENABLED", kind: "plumbing" },
-  { name: "SHOPPING_MARK_BOUGHT_ENABLED", kind: "feature", needs: "COLLECTION_EDIT_ENABLED" },
   { name: "SOCIAL_FRIENDS_ENABLED", kind: "feature" },
   { name: "STAND_IN_LABELS_ENABLED", kind: "feature" },
   { name: "SUGGESTED_CHANGES_V2_ENABLED", kind: "model", needs: "TUNING_ENABLED" },

@@ -289,7 +289,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Each deck gets its own copy: three decks, three Sol Rings.',
       'Back from Mana Pool, press “buy” on what came, and it goes into your Collection.',
     ],
-    // The press is I got it's: with its switch off the cart's tags are inert, and the line would
+    // The press is I got it's (its switch retired, the name follows collection editing): off, the cart's tags are inert, and the line would
     // promise a button that does nothing.
     keySwitches: {
       'Back from Mana Pool, press “buy” on what came, and it goes into your Collection.': 'SHOPPING_MARK_BOUGHT_ENABLED',
@@ -1102,8 +1102,8 @@ export const aboutEntries: readonly AboutEntry[] = [
   },
   // I got it (plan `2026-10-10-i-got-it.md` PR 5, handoff `design_handoff_the99_i_got_it/about-entry`):
   // after `stand-ins`, the order a card is bought in. `since: 14` is the ONE bump this launch makes,
-  // shared with `deck-printings`. Its switch reads `shoppingMarkBoughtEnabled`, which is already on
-  // only with COLLECTION_EDIT_ENABLED too, so the entry never describes a tag that does nothing
+  // shared with `deck-printings`. Its switch is retired and the name follows COLLECTION_EDIT_ENABLED
+  // (`visible.ts`), which the purchase writes through, so the entry never describes a tag that does nothing
   // (handoff README open 1, answered without an array form). Copy through /prose-pass.
   {
     id: 'shopping-got-it',

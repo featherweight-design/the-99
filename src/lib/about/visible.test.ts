@@ -5,7 +5,7 @@ import { aboutEntries } from "../copy/about-entries";
 import { creditsEntryOf, drawnEntry, isFirstRun, isSeen, resolveEntry, switchedIds, unseenEntries, variantId, visibleEntries, type SeenState } from "./visible";
 
 // TUNING_ENABLED also requires ANALYSIS_TAB_ENABLED (`tuningEnabled()`), already "true" here.
-const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", DECK_STATS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true", SHOPPING_MARK_BOUGHT_ENABLED: "true", DECK_PRINTINGS_ENABLED: "true", MANA_BALANCE_ENABLED: "true", ALL_DECKS_CART_ENABLED: "true", DECK_NOTES_ENABLED: "true", ADDED_COPY_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true", FIND_A_DECK_READ_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", HELP_PANEL_ENABLED: "true", FIRST_RUN_TOUR_ENABLED: "true", CARD_SCAN_ENABLED: "true", NEAR_COMBOS_ENABLED: "true", PUSH_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", DECK_STATS_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true", DECK_PRINTINGS_ENABLED: "true", MANA_BALANCE_ENABLED: "true", ALL_DECKS_CART_ENABLED: "true", DECK_NOTES_ENABLED: "true", ADDED_COPY_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true", FIND_A_DECK_READ_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", HELP_PANEL_ENABLED: "true", FIRST_RUN_TOUR_ENABLED: "true", CARD_SCAN_ENABLED: "true", NEAR_COMBOS_ENABLED: "true", PUSH_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 const OFF = {} as unknown as NodeJS.ProcessEnv;
 
 /** Two switched entries, a and b, beside one plain one, shaped like the launch entries. */
@@ -24,7 +24,7 @@ const retiredIds = retiredEntries.map((e) => e.id);
 describe("all-decks-cart’s press line", () => {
   it("drops the buy key while I got it is off, so the entry never promises an inert tag", () => {
     const cartOnly = visibleEntries({ ALL_DECKS_CART_ENABLED: "true" } as unknown as NodeJS.ProcessEnv).find((e) => e.id === "all-decks-cart")!;
-    const withBuy = visibleEntries({ ALL_DECKS_CART_ENABLED: "true", SHOPPING_MARK_BOUGHT_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true" } as unknown as NodeJS.ProcessEnv).find((e) => e.id === "all-decks-cart")!;
+    const withBuy = visibleEntries({ ALL_DECKS_CART_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true" } as unknown as NodeJS.ProcessEnv).find((e) => e.id === "all-decks-cart")!;
     expect(cartOnly.keys).toHaveLength(3);
     expect(withBuy.keys).toHaveLength(4);
     expect(withBuy.keys[3]).toMatch(/press “buy”/);
@@ -397,11 +397,10 @@ describe("deck-benchmarks follows the Analysis tab", () => {
 describe("the collection home epic’s two entries (one bump, 14)", () => {
   const ids = (env: Record<string, string>) => visibleEntries(env as unknown as NodeJS.ProcessEnv).map((e) => e.id);
 
-  it("draws I got it only with both of its switches, after stand-ins", () => {
-    // `shoppingMarkBoughtEnabled` is the AND of the two: the tag does nothing without the ledger.
-    expect(ids({ SHOPPING_MARK_BOUGHT_ENABLED: "true" })).not.toContain("shopping-got-it");
-    expect(ids({ COLLECTION_EDIT_ENABLED: "true" })).not.toContain("shopping-got-it");
-    const on = ids({ SHOPPING_MARK_BOUGHT_ENABLED: "true", COLLECTION_EDIT_ENABLED: "true", SWAP_TOOLS_ENABLED: "true" });
+  // SHOPPING_MARK_BOUGHT_ENABLED is retired: the entry follows collection editing, which the purchase writes through.
+  it("draws I got it only with collection editing, after stand-ins", () => {
+    expect(ids({})).not.toContain("shopping-got-it");
+    const on = ids({ COLLECTION_EDIT_ENABLED: "true", SWAP_TOOLS_ENABLED: "true" });
     expect(on[on.indexOf("stand-ins") + 1]).toBe("shopping-got-it");
   });
 

@@ -17,7 +17,6 @@ import { buildContestedCard, loadContestedCard, type ContestedCard } from "../..
 import { collectionEditEnabled } from "../../lib/collection/edit-flag";
 import { placementsOf } from "../../lib/decks/placements";
 import type { AssignRefusal } from "../../lib/decks/assign";
-import { shoppingMarkBoughtEnabled } from "../../lib/decks/mark-bought-flag";
 import {
   CART_DECKS_MAX, MARK_BOUGHT_MAX, cartReceiptFacts, cartSource, receiptFacts, type CartReceiptFacts, type ReceiptFacts,
 } from "../../lib/decks/mark-bought";
@@ -60,7 +59,8 @@ export async function markBought(
 ): Promise<MarkBoughtOutcome> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (!shoppingMarkBoughtEnabled(env)) return { refused: "off" };
+  // A purchase is a ledger write, so it follows collection editing (its own switch is retired).
+  if (!collectionEditEnabled(env)) return { refused: "off" };
   const { scryfallId, finish, quantity, expected, id } = input;
   if (!isUuid(rawDeckId) || !isUuid(rawOracleId) || !isUuid(id) || !isUuid(scryfallId)) throw new Error("bad mark-bought input");
   // Lowercased: Postgres hands uuids back lowercase, every map is keyed on what it returned, and the
@@ -194,7 +194,7 @@ export async function markBoughtForDecks(
 ): Promise<MarkBoughtForDecksOutcome> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (!shoppingMarkBoughtEnabled(env) || !allDecksCartEnabled(env)) return { refused: "off" };
+  if (!collectionEditEnabled(env) || !allDecksCartEnabled(env)) return { refused: "off" };
   const { scryfallId, finish, quantity, expected, id, pickDeckId } = input;
   if (!isUuid(rawOracleId) || !isUuid(id) || !isUuid(scryfallId)) throw new Error("bad mark-bought input");
   if (!Array.isArray(input.deckIds) || input.deckIds.length === 0 || input.deckIds.length > CART_DECKS_MAX
@@ -291,7 +291,7 @@ export async function markBoughtForDecks(
 export async function readCartChooser(rawOracleId: string, rawDeckIds: unknown): Promise<ContestedCard | null> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (!shoppingMarkBoughtEnabled(env) || !allDecksCartEnabled(env)) return null;
+  if (!collectionEditEnabled(env) || !allDecksCartEnabled(env)) return null;
   if (!isUuid(rawOracleId) || !Array.isArray(rawDeckIds) || rawDeckIds.length === 0
     || rawDeckIds.length > CART_DECKS_MAX || !rawDeckIds.every(isUuid)) {
     throw new Error("bad chooser input");

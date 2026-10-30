@@ -6,7 +6,6 @@ import { changeCommanderEnabled } from "../commander-change/flag";
 import { allDecksCartEnabled } from "../decks/all-decks-cart-flag";
 import { analysisTabEnabled } from "../decks/analysis-flag";
 import { labelRoleCountsEnabled } from "../decks/label-counts-flag";
-import { shoppingMarkBoughtEnabled } from "../decks/mark-bought-flag";
 import { neverCutEnabled } from "../decks/never-cut-flag";
 import { deckNotesEnabled } from "../decks/notes-flag";
 import { deckPrintingsEnabled } from "../decks/printings-flag";
@@ -63,7 +62,6 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   PUBLIC_PAGES_ENABLED: publicPagesEnabled,
   RATE_LIMIT_ENABLED: rateLimitEnabled,
   SCAN_LAB_ENABLED: scanLabEnabled,
-  SHOPPING_MARK_BOUGHT_ENABLED: shoppingMarkBoughtEnabled,
   SOCIAL_FRIENDS_ENABLED: socialFriendsEnabled,
   PUSH_ENABLED: pushEnabled,
   STAND_IN_LABELS_ENABLED: standInLabelsEnabled,

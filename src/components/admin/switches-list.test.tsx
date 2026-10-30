@@ -31,7 +31,7 @@ describe("SwitchesList", () => {
     draw({});
     expect(document.querySelectorAll("[data-switch]")).toHaveLength(SWITCH_NAMES.length);
     const [features, plumbing] = screen.getAllByRole("heading", { level: 2 });
-    expect(features.textContent).toBe("Features28");
+    expect(features.textContent).toBe("Features27");
     expect(plumbing).toHaveAttribute("data-testid", "switches-plumbing-head");
     expect(plumbing.textContent).toContain("app-wide only");
     const plumbingNames = [...plumbing.parentElement!.querySelectorAll("[data-switch]")].map((e) => e.getAttribute("data-switch"));
@@ -48,14 +48,14 @@ describe("SwitchesList", () => {
 
   it("counts each chip and filters by it, keeping the heads' counts (L2)", () => {
     draw({ DECK_NOTES_ENABLED: "true" }, [row({ switchName: "DECK_STATS_ENABLED", scope: "user", userId: "u1", value: "on" })]);
-    expect(chip(/^All/).textContent).toBe("All 35");
+    expect(chip(/^All/).textContent).toBe("All 34");
     expect(chip(/^All/)).toHaveAttribute("aria-checked", "true");
     expect(chip(/^Model features/).textContent).toBe("Model features 8");
     expect(chip(/^Overridden/).textContent).toBe("Overridden 1");
     fireEvent.click(chip(/^Overridden/));
     expect(chip(/^Overridden/)).toHaveAttribute("aria-checked", "true");
     expect([...document.querySelectorAll("[data-switch]")].map((e) => e.getAttribute("data-switch"))).toEqual(["DECK_STATS_ENABLED"]);
-    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe("Features28");
+    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe("Features27");
     // The Plumbing head hides when it has no rows (L3).
     expect(screen.queryByTestId("switches-plumbing-head")).toBeNull();
   });
@@ -97,10 +97,10 @@ describe("SwitchesList", () => {
   });
 
   it("draws a compound row whose parent is off (L5), with its needs tag", () => {
-    draw({ SHOPPING_MARK_BOUGHT_ENABLED: "true", COLLECTION_EDIT_ENABLED: "false" });
-    const r = rowOf("SHOPPING_MARK_BOUGHT_ENABLED");
-    expect(within(r).getByText("needs Collection edit")).toBeInTheDocument();
-    expect(within(r).getByText("Collection edit is off", { selector: "span.font-mono" })).toBeInTheDocument();
+    draw({ MANA_BALANCE_ENABLED: "true", ANALYSIS_TAB_ENABLED: "false" });
+    const r = rowOf("MANA_BALANCE_ENABLED");
+    expect(within(r).getByText("needs Analysis tab")).toBeInTheDocument();
+    expect(within(r).getByText("Analysis tab is off", { selector: "span.font-mono" })).toBeInTheDocument();
   });
 
   it("draws a mixed row with its count (L6), and the phone's meta line", () => {

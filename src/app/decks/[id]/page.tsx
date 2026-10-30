@@ -91,7 +91,6 @@ import { loadDeckTokens } from "../../../lib/tokens/read";
 import { DeckTokensProvider } from "../../../components/decks/deck-tokens-context";
 import { DeckPageSwitches } from "../../../components/decks/deck-page-switches";
 import { GotItProvider } from "../../../components/decks/got-it";
-import { shoppingMarkBoughtEnabled } from "../../../lib/decks/mark-bought-flag";
 import { changeCommanderEnabled } from "../../../lib/commander-change/flag";
 import { ChangeCommanderProvider } from "../../../components/decks/change-commander-context";
 import { readShoppingLimit } from "../../../lib/swaps/read";
@@ -812,9 +811,9 @@ export default async function DeckBuilderPage({
       {shell}
     </DeckPageSwitches>
   );
-  // I got it (both switches): the Shopping rows' tags open its confirm. Without it every row is
+  // I got it (collection editing, since its own switch is retired): the Shopping rows' tags open its confirm. Without it every row is
   // main's (E1). Keyed per deck, so an open confirm never carries to another deck's page.
-  const bought = shoppingMarkBoughtEnabled(env) ? <GotItProvider key={id} deckId={id}>{switched}</GotItProvider> : switched;
+  const bought = collectionEditEnabled(env) ? <GotItProvider key={id} deckId={id}>{switched}</GotItProvider> : switched;
   const tooled = swapTools ? (
     <SwapToolsProvider deckId={id} deckName={detail.name} storedLimitCents={shoppingLimit}>{bought}</SwapToolsProvider>
   ) : bought;

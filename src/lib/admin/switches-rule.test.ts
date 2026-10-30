@@ -44,10 +44,10 @@ describe("switchRows", () => {
   });
 
   it("names the parent when it turns a child off for everyone (L5)", () => {
-    const r = rows({ SHOPPING_MARK_BOUGHT_ENABLED: "true", COLLECTION_EDIT_ENABLED: "false" });
-    expect(r.get("SHOPPING_MARK_BOUGHT_ENABLED")).toMatchObject({ parent: "COLLECTION_EDIT_ENABLED", state: "off", reason: { kind: "parent", parent: "COLLECTION_EDIT_ENABLED" } });
+    const r = rows({ MANA_BALANCE_ENABLED: "true", ANALYSIS_TAB_ENABLED: "false" });
+    expect(r.get("MANA_BALANCE_ENABLED")).toMatchObject({ parent: "ANALYSIS_TAB_ENABLED", state: "off", reason: { kind: "parent", parent: "ANALYSIS_TAB_ENABLED" } });
     // Off by its own env var, not the parent: no reason, the count reads.
-    expect(rows({ COLLECTION_EDIT_ENABLED: "false" }).get("SHOPPING_MARK_BOUGHT_ENABLED")?.reason).toBeNull();
+    expect(rows({ ANALYSIS_TAB_ENABLED: "false" }).get("MANA_BALANCE_ENABLED")?.reason).toBeNull();
   });
 
   it("refuses an app-wide override under the kill switch, with no group or account row", () => {

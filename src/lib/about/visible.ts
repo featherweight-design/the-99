@@ -19,7 +19,6 @@ import {
   socialFriendsEnabled,
 } from "../social/flag";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
-import { shoppingMarkBoughtEnabled } from "../decks/mark-bought-flag";
 import { allDecksCartEnabled } from "../decks/all-decks-cart-flag";
 import { deckPrintingsEnabled } from "../decks/printings-flag";
 import { paymentsEnabled, welcomeCreditsEnabled } from "../payments/flag";
@@ -58,8 +57,9 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   // The block lives on the Analysis tab, so the entry needs the tab, as tuning's does: it
   // would otherwise describe a tab that is off.
   DECK_BENCHMARKS_ENABLED: analysisTabEnabled,
-  // On only with COLLECTION_EDIT_ENABLED as well: the feature's own flag already says so.
-  SHOPPING_MARK_BOUGHT_ENABLED: shoppingMarkBoughtEnabled,
+  // I got it's switch is retired: the name stays the entry's, the key's and the label's historical identity and
+  // follows its parent, collection editing, which the purchase writes through.
+  SHOPPING_MARK_BOUGHT_ENABLED: collectionEditEnabled,
   DECK_PRINTINGS_ENABLED: deckPrintingsEnabled,
   DECK_TOKENS_ENABLED: () => true,
   // Already reads ANALYSIS_TAB_ENABLED: the tool lives in the tab's Tuning hub.
