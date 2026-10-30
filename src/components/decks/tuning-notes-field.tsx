@@ -4,7 +4,7 @@
 // caller's own state and never saved anywhere — it rides into the next run's prompt (`tuning-actions.ts`'s
 // `runTuning`) and is gone once that run lands.
 //
-// One frame holds the text, with the `[[ ]]` button, its words and the counter in the frame's foot, the same in both
+// One frame holds the text, with the `[[ ]]` key, its words and the counter in the frame's foot (the shared TaggedBox), the same in both
 // uses. `labelRow` adds the visible label and the "how card tags work" tip above the frame (Additional notes): that box
 // also clears its draft on Escape (nothing server-side to cancel), except while the tip is open or an IME composes. The
 // request box has no label row (the step's own heading names it; `label` is its accessible name) and Escape never
@@ -19,6 +19,7 @@ import { searchTagCards } from "../../app/cards/tag-actions";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { NOTES_TAGS_MAX } from "../../lib/tuning/limits";
 import { CardTagList } from "../cards/card-tag-picker";
+import { TaggedBox } from "../cards/tagged-box";
 import { useTaggedField } from "../cards/use-tagged-field";
 import { InfoTip } from "../ui/info-tip";
 import { useIsDesktop } from "../ui/use-is-desktop";
@@ -41,7 +42,6 @@ export function TuningNotesField({
   id = "tuning-notes-field",
   label = copy.label,
   placeholder,
-  tagHelp,
   labelRow = false,
   fill = false,
   highlightTail = null,
@@ -54,8 +54,6 @@ export function TuningNotesField({
   label?: string;
   /** One placeholder at both widths; absent, the Additional notes pair. */
   placeholder?: string;
-  /** The words beside the `[[ ]]` button inside the box's foot. */
-  tagHelp?: string;
   /** Draw the visible label and the card-tag ⓘ tip above the frame, and let Escape clear the draft (Additional notes). */
   labelRow?: boolean;
   /** The frame fills its container's height (the box grows to the Bracket card's height on desktop). */
@@ -116,11 +114,7 @@ export function TuningNotesField({
           <InfoTip id={infoId} lines={copy.tagHelp.lines} label={copy.tagHelp.infoAria} className="self-center" />
         </div>
       ) : null}
-      {/* The frame's border is a class, never inline, so the focus edge can take it (an inline border outranks it). */}
-      <div
-        data-framed-box=""
-        className={`flex flex-col rounded-[9px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] focus-within:border-[color:var(--accent)] ${fill ? "flex-1" : ""}`}
-      >
+      <TaggedBox onInsert={picker.insertTag} open={picker.open} count={n} max={copy.maxLength} className={fill ? "flex-1" : ""}>
         <textarea
           ref={ref}
           id={id}
@@ -146,21 +140,7 @@ export function TuningNotesField({
           className={`w-full resize-none overflow-hidden bg-transparent font-sans text-[16px] leading-[1.5] outline-none [@media(pointer:fine)]:md:text-[13.5px] ${fill ? "flex-1" : ""}`}
           style={{ padding: "10px 12px 4px", color: "var(--fg)", minHeight: FRAMED_MIN_PX }}
         />
-        <span className="flex items-center gap-[8px] px-[12px] pt-[2px] pb-[8px] font-mono text-[11px]" style={{ color: "var(--fg-faint)" }}>
-          <button
-            type="button"
-            aria-label={copy.tagHelp.insertAria}
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={picker.insertTag}
-            // The key stays drawn 24 high at every pointer; under a coarse pointer only its hit box grows to 44 (the pseudo-element belongs to the button).
-            className="relative h-[24px] cursor-pointer rounded-[6px] border border-solid border-[color:var(--border-strong)] px-[8px] font-mono text-[11px] text-[color:var(--fg-muted)] pointer-coarse:after:absolute pointer-coarse:after:-inset-x-[4px] pointer-coarse:after:-inset-y-[10px] pointer-coarse:after:content-['']"
-          >
-            {copy.tagHelp.insert}
-          </button>
-          {tagHelp ? <span aria-hidden="true">{tagHelp}</span> : null}
-          <span className="ml-auto">{copy.counter(n, copy.maxLength)}</span>
-        </span>
-      </div>
+      </TaggedBox>
       {picker.open && <CardTagList {...picker.list} />}
     </div>
   );

@@ -28,13 +28,22 @@ describe("TuningNotesField", () => {
 
   it("draws the framed foot in both variants: the tag button, its words and the counter", () => {
     for (const labelRow of [true, false]) {
-      const { unmount } = render(<TuningNotesField value="more removal" onChange={vi.fn()} tagHelp="tag a card" labelRow={labelRow} />);
+      const { unmount } = render(<TuningNotesField value="more removal" onChange={vi.fn()} labelRow={labelRow} />);
       expect(screen.getByLabelText("Additional notes").closest("[data-framed-box]")).not.toBeNull();
       expect(screen.getByRole("button", { name: "Insert a card tag" })).toBeInTheDocument();
       expect(screen.getByText("tag a card")).toBeInTheDocument();
       expect(screen.getByText("12 / 500")).toBeInTheDocument();
       unmount();
     }
+  });
+
+  it("lights the key while the tag list is open", async () => {
+    render(<TuningNotesField value="swap out " onChange={vi.fn()} />);
+    const key = screen.getByRole("button", { name: "Insert a card tag" });
+    expect(key.className).not.toContain("bg-[color:var(--elevated)]");
+    fireEvent.change(screen.getByLabelText("Additional notes"), { target: { value: "swap out [[Sol" } });
+    await screen.findByRole("option", { name: /Sol Ring/ });
+    expect(key.className).toContain("bg-[color:var(--elevated)]");
   });
 
   it("draws the label row and the tip only when asked", () => {
