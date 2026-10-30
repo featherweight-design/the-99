@@ -7,7 +7,8 @@ import { useEffect, type RefObject } from "react";
  * `scrollHeight` whenever `text` changes, and again when the field's box changes size (a rotation, a resize, a late
  * font), or the height goes stale and clips. A CSS `min-height` still floors it, and a CSS `max-height` still caps it
  * (the field then scrolls). A field whose layout reports a 0 `scrollHeight` (jsdom, or `display: none`) is left exactly
- * as it was: no inline height is written, not even the `auto` used to measure, so its CSS size stands.
+ * as it was: no inline height is written, not even the `auto` used to measure, so its CSS size stands. A late web font
+ * (`font-display: swap`) can rewrap the words without changing the box, so a finished font load measures again too.
  *
  * `mounted` is for a field drawn only in one state (an editor opened in place): the effect must run again when the
  * field mounts, which the words alone may not mark (an editor that opens on the words it already had).
@@ -22,12 +23,19 @@ export function useAutoGrow(ref: RefObject<HTMLTextAreaElement | null>, text: st
       el.style.height = `${el.scrollHeight}px`;
     };
     grow();
-    if (typeof ResizeObserver === "undefined") {
-      window.addEventListener("resize", grow);
-      return () => window.removeEventListener("resize", grow);
-    }
-    const observer = new ResizeObserver(grow);
-    observer.observe(el);
-    return () => observer.disconnect();
+    const fonts = typeof document !== "undefined" ? document.fonts : undefined;
+    let live = true;
+    const fontGrow = () => { if (live) grow(); };
+    fonts?.addEventListener?.("loadingdone", fontGrow);
+    void fonts?.ready?.then(fontGrow);
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(grow);
+    if (observer) observer.observe(el);
+    else window.addEventListener("resize", grow);
+    return () => {
+      live = false;
+      fonts?.removeEventListener?.("loadingdone", fontGrow);
+      if (observer) observer.disconnect();
+      else window.removeEventListener("resize", grow);
+    };
   }, [ref, text, mounted]);
 }

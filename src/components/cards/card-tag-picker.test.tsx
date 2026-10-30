@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { CardTagList } from "./card-tag-picker";
@@ -49,6 +49,26 @@ describe("CardTagList floating under an anchor", () => {
       />,
     );
     expect(screen.getByRole("listbox").style).toMatchObject({ left: "20px", width: "300px" });
+  });
+
+  it("follows its anchor when the anchor changes size with nothing scrolled (a field growing with its words)", () => {
+    const observer: { fire?: () => void } = {};
+    const disconnect = vi.fn();
+    vi.stubGlobal("ResizeObserver", class {
+      constructor(callback: () => void) { observer.fire = callback; }
+      observe() {}
+      unobserve() {}
+      disconnect = disconnect;
+    });
+    const rect = { top: 100, bottom: 140, left: 20, width: 300 };
+    const ul = place(rect, { innerHeight: 800, innerWidth: 1000 });
+    expect(ul.style.top).toBe("144px");
+    // The field grew by two lines: its foot is 46px lower, and only its own size changed.
+    rect.bottom = 186;
+    act(() => observer.fire?.());
+    expect(screen.getByRole("listbox").style.top).toBe("190px");
+    cleanup();
+    expect(disconnect).toHaveBeenCalled();
   });
 
   it("never wider than 440px or past the window's edges", () => {

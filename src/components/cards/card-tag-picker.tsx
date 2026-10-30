@@ -337,11 +337,16 @@ function useFloatingPlace(anchor: RefObject<HTMLElement | null> | undefined): CS
     window.addEventListener("resize", measure);
     window.visualViewport?.addEventListener("resize", measure);
     window.visualViewport?.addEventListener("scroll", measure);
+    // The anchor can change size with nothing scrolled or resized (a field growing with its words, after this effect
+    // has measured): the list follows its foot.
+    const sized = anchor.current && typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
+    if (sized && anchor.current) sized.observe(anchor.current);
     return () => {
       window.removeEventListener("scroll", measure, true);
       window.removeEventListener("resize", measure);
       window.visualViewport?.removeEventListener("resize", measure);
       window.visualViewport?.removeEventListener("scroll", measure);
+      sized?.disconnect();
     };
   });
   return place;

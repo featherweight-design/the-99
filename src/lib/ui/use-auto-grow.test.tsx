@@ -52,6 +52,39 @@ describe("useAutoGrow", () => {
     expect((getByLabelText("box") as HTMLTextAreaElement).style.height).toBe("80px");
   });
 
+  it("measures again when a late web font finishes loading, and stops listening on unmount", async () => {
+    const listeners = new Set<() => void>();
+    let ready: () => void = () => {};
+    const fonts = {
+      ready: new Promise<void>((resolve) => { ready = resolve; }),
+      addEventListener: (type: string, fn: () => void) => { if (type === "loadingdone") listeners.add(fn); },
+      removeEventListener: (type: string, fn: () => void) => { if (type === "loadingdone") listeners.delete(fn); },
+    };
+    const own = Object.getOwnPropertyDescriptor(document, "fonts");
+    Object.defineProperty(document, "fonts", { configurable: true, value: fonts });
+    try {
+      let content = 72;
+      vi.spyOn(HTMLTextAreaElement.prototype, "scrollHeight", "get").mockImplementation(() => content);
+      const { getByLabelText, unmount } = render(<Box text="words" />);
+      const box = getByLabelText("box") as HTMLTextAreaElement;
+      expect(box.style.height).toBe("72px");
+      // The swapped-in font wraps the same words onto another line: the box is unchanged, so only the font says so.
+      content = 96;
+      for (const fn of listeners) fn();
+      expect(box.style.height).toBe("96px");
+      content = 120;
+      ready();
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(box.style.height).toBe("120px");
+      unmount();
+      expect(listeners.size).toBe(0);
+    } finally {
+      if (own) Object.defineProperty(document, "fonts", own);
+      else delete (document as { fonts?: unknown }).fonts;
+    }
+  });
+
   it("re-measures on a resize of the field, and disconnects on unmount", () => {
     const observed: Element[] = [];
     const disconnect = vi.fn();
