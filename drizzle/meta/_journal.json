@@ -1485,6 +1485,13 @@
       "when": 1793401790582,
       "tag": "0211_retire_never_cut_switch",
       "breakpoints": true
+    },
+    {
+      "idx": 212,
+      "version": "7",
+      "when": 1793404392790,
+      "tag": "0212_retire_change_commander_switch",
+      "breakpoints": true
     }
   ]
 }
