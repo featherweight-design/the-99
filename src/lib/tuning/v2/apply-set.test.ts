@@ -43,6 +43,8 @@ vi.mock("../../../db", () => {
     if (keys.length === 1 && has("undoSnapshot")) return (fx.lines as Line[]).filter((l) => l.applySet === SET);
     if (has("addOracleId") && has("id")) return fx.lines;
     if (keys.length === 1 && has("id")) return fx.owned.map((id) => ({ id }));
+    if (keys.length === 1 && has("spentSets")) return [{ spentSets: fx.run.spentSets }];
+    if (keys.length === 1 && has("applySet")) return (fx.lines as Line[]).filter((l) => l.applySet === SET);
     if (has("name")) return fx.sourceName === null ? [] : [{ name: fx.sourceName, commander: fx.sourceCommander, partner: null }];
     if (has("quantity")) return fx.sourceRow ? [fx.sourceRow] : [];
     if (has("deckId")) return [{ deckId: DECK }];
@@ -232,6 +234,25 @@ describe("applyPicks with staged pulls", () => {
     expect(pull.lockDecksInOrder).not.toHaveBeenCalled();
     expect(fx.events).toEqual([]);
     expect(pull.pullClaimants).not.toHaveBeenCalled();
+  });
+
+  // #2425 round 9: a replay of a set already applied answers with that set, even when its pull's source deck has since
+  // gone (or is not the reader's): the preflight is for a set still to apply.
+  it("answers a replayed applied set with what it applied, before any source check", async () => {
+    fx.lines = [{ ...open("a1", "add"), verdict: "accepted", applySet: SET }, { ...open("c1", "cut"), verdict: "accepted", applySet: SET }];
+    fx.owned = [];
+    const r = await apply([{ itemId: "a1", sourceDeckId: SOURCE }]);
+    expect(r).toEqual({ ok: true, deckId: DECK, applySet: SET, itemIds: ["a1", "c1"] });
+    expect(pull.pullInTx).not.toHaveBeenCalled();
+    expect(pull.pullClaimants).not.toHaveBeenCalled();
+  });
+
+  it("answers a replayed applied-then-undone set as spent, before any source check", async () => {
+    fx.run = { ...fx.run, spentSets: [SET] };
+    fx.owned = [];
+    const r = await apply([{ itemId: "a1", sourceDeckId: SOURCE }]);
+    expect(r).toEqual({ ok: true, deckId: DECK, applySet: SET, itemIds: [] });
+    expect(pull.pullInTx).not.toHaveBeenCalled();
   });
 
   it("refuses a set whose second pull names a foreign deck, naming that pull", async () => {

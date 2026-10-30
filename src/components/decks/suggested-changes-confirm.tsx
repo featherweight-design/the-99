@@ -183,7 +183,7 @@ function HeldRow({ line: l, held }: { line: LineItem; held: HeldProps }) {
         {guard ? <span id={guardId} data-sc-held-guard="" className="sr-only">{guard}</span> : null}
         <span className="min-w-0 truncate"><Name item={l} strike={false} describedBy={guard ? guardId : undefined} /></span>
         {sub ? (
-          <span data-sc-held-sub={chosen ? "staged" : "held"} className="self-start font-mono text-[10.5px]" style={{ color: chosen ? "var(--accent)" : "var(--fg-muted)" }}>
+          <span data-sc-held-sub={chosen ? "staged" : "held"} className="self-start font-mono text-[10.5px]" style={{ color: chosen ? "var(--accent-text)" : "var(--fg-muted)" }}>
             {sub}
           </span>
         ) : null}

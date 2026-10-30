@@ -132,6 +132,18 @@ async function lockedLines(tx: Tx, runId: string) {
     .for("update");
 }
 
+/** Whether this set id was applied (a line carries it) or applied and undone since (the run spent it), for the reader. */
+async function setSettled(runId: string, userId: string, actionId: string): Promise<boolean> {
+  const [run] = await db.select({ spentSets: deckSuggestionRuns.spentSets }).from(deckSuggestionRuns)
+    .where(and(eq(deckSuggestionRuns.id, runId), eq(deckSuggestionRuns.userId, userId)));
+  if (!run) return false;
+  if (run.spentSets.includes(actionId)) return true;
+  const [line] = await db.select({ applySet: deckSuggestionItems.applySet }).from(deckSuggestionItems)
+    .where(and(eq(deckSuggestionItems.runId, runId), eq(deckSuggestionItems.applySet, actionId)))
+    .limit(1);
+  return line !== undefined;
+}
+
 /**
  * The decks a set's staged pulls touch, besides the run's own: each named source, and every deck the claim on the pulled
  * card is made of (`pullClaimants`). Read BEFORE the transaction and used only to choose the locks, as the shipped pull
@@ -186,7 +198,12 @@ export async function applyPicks(args: {
   // and the picked ids are lowered first.
   const actionId = args.actionId.toLowerCase();
   const pulls = (args.pulls ?? []).map((p) => ({ itemId: p.itemId.toLowerCase(), sourceDeckId: p.sourceDeckId.toLowerCase() }));
-  const parties = await pullParties(runId, userId, env, pulls);
+  // A set id already applied, or applied and undone since, is answered by the transaction from what it wrote, before any
+  // pull: the source preflight is skipped for it, or a replay whose source deck was deleted since would be refused
+  // instead of answered with the set it already applied (#2425 round 9). Settled only ever grows, so an unlocked read
+  // that says settled stays true under the lock.
+  const settled = pulls.length > 0 && (await setSettled(runId, userId, actionId));
+  const parties = settled ? { ids: [] } : await pullParties(runId, userId, env, pulls);
   if ("foreign" in parties) {
     return { ok: false, refusal: { kind: "pull", itemId: parties.foreign.itemId, message: "We couldn’t find that deck." } };
   }
