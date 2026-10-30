@@ -161,10 +161,10 @@ describe("loadPostListTargets", () => {
     const out = await loadPostListTargets(["p1", "p2", "p3", "p4"], new Date("2026-10-29T12:00:00Z"), { execute } as never);
     expect(calls).toBe(1);
     expect(out).toEqual(new Map([
-      ["p1", "/decks/precons#announced-fdc"],
-      ["p2", "/decks/precons#announced"],
-      ["p3", "/decks/precons#announced"],
-      ["p4", "/decks/precons#announced"],
+      ["p1", "/decks/precons?sort=newest#announced-fdc"],
+      ["p2", "/decks/precons?sort=newest#announced"],
+      ["p3", "/decks/precons?sort=newest#announced"],
+      ["p4", "/decks/precons?sort=newest#announced"],
     ]));
   });
 });

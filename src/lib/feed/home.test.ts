@@ -388,7 +388,7 @@ describe("a Wizards post", () => {
     const feed = await loadHomeFeed("u1", env, NOW, q);
     const views = feed?.chosen ? feed.items : [];
     expect(views.map((v) => [v.key, v.href, v.outbound])).toEqual([
-      ["post:d1", "/decks/precons#announced-fdc", "/out/wizards/d1"],
+      ["post:d1", "/decks/precons?sort=newest#announced-fdc", "/out/wizards/d1"],
       ["post:d2", null, "/out/wizards/d2"],
       ["post:s1", null, "/out/wizards/s1"],
     ]);

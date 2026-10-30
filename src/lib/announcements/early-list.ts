@@ -108,7 +108,9 @@ export function preconsOfSetHref(code: string): string {
 }
 
 /** The Announced group, when a post's set cannot be told: the banner's own fragment. */
-export const ANNOUNCED_GROUP_HREF = "/decks/precons#announced";
+// `sort=newest` because the list restores a saved Most owned order when the URL names none, and Most owned draws no
+// Announced group (as `src/lib/precons/banner.ts`).
+export const ANNOUNCED_GROUP_HREF = "/decks/precons?sort=newest#announced";
 
 /** A candidate set for a post's lists, as the Home read returns it: a `CommanderPrinting` with whether `precons` holds the set. */
 export type PostSetCandidate = CommanderPrinting & { hasPrecons: boolean };
@@ -136,7 +138,7 @@ export type PostSetFacts = { code: string; setType: string; releasedAt: string; 
 export function seeListsHref(set: PostSetFacts | null, today: string, drawn: (set: PostSetFacts) => boolean): string {
   if (!set) return ANNOUNCED_GROUP_HREF;
   if (set.hasPrecons && set.releasedAt <= today) return preconsOfSetHref(set.code);
-  if (drawn(set)) return `/decks/precons#${announcedSetAnchor(set.code)}`;
+  if (drawn(set)) return `/decks/precons?sort=newest#${announcedSetAnchor(set.code)}`;
   return ANNOUNCED_GROUP_HREF;
 }
 

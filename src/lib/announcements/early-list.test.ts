@@ -117,14 +117,14 @@ describe("seeListsHref (Home's See the lists, Announcements UI 6b)", () => {
   });
 
   it("lands on the set's Announced block while the group draws it", () => {
-    expect(seeListsHref(set(), TODAY, drawn)).toBe("/decks/precons#announced-fdc");
-    expect(seeListsHref(set({ hasPrecons: true }), TODAY, drawn)).toBe("/decks/precons#announced-fdc");
-    expect(seeListsHref(set({ code: "FDC" }), TODAY, drawn)).toBe("/decks/precons#announced-fdc");
+    expect(seeListsHref(set(), TODAY, drawn)).toBe("/decks/precons?sort=newest#announced-fdc");
+    expect(seeListsHref(set({ hasPrecons: true }), TODAY, drawn)).toBe("/decks/precons?sort=newest#announced-fdc");
+    expect(seeListsHref(set({ code: "FDC" }), TODAY, drawn)).toBe("/decks/precons?sort=newest#announced-fdc");
   });
 
   it("lands on the Announced group when the group does not draw the set, or the set cannot be told", () => {
-    expect(seeListsHref(set(), TODAY, hidden)).toBe("/decks/precons#announced");
-    expect(seeListsHref(null, TODAY, drawn)).toBe("/decks/precons#announced");
+    expect(seeListsHref(set(), TODAY, hidden)).toBe("/decks/precons?sort=newest#announced");
+    expect(seeListsHref(null, TODAY, drawn)).toBe("/decks/precons?sort=newest#announced");
   });
 
   it("searches the list by the set's code", () => {
@@ -142,7 +142,7 @@ describe("postListTargets", () => {
   it("gives a post an address only when a list declares a commander", () => {
     const out = postListTargets([list("p1", "a", [fdc], false), list("p2", "b", [fdc])], TODAY, drawn);
     expect(out.has("p1")).toBe(false);
-    expect(out.get("p2")).toBe("/decks/precons#announced-fdc");
+    expect(out.get("p2")).toBe("/decks/precons?sort=newest#announced-fdc");
   });
 
   it("resolves each post's set from all its lists' votes, one post apart from another", () => {
@@ -152,7 +152,7 @@ describe("postListTargets", () => {
     ], TODAY, drawn);
     // p1: CMM has two votes to FDC's one, and is out with its precons in.
     expect(out.get("p1")).toBe("/decks/precons?q=CMM");
-    expect(out.get("p2")).toBe("/decks/precons#announced-fdc");
+    expect(out.get("p2")).toBe("/decks/precons?sort=newest#announced-fdc");
   });
 
   it("asks the group's rule with the resolved set's own facts", () => {
@@ -162,6 +162,6 @@ describe("postListTargets", () => {
   });
 
   it("falls back to the Announced group when no list's commander is printed in a candidate set", () => {
-    expect(postListTargets([list("p1", null, []), list("p1", "a", [])], TODAY, drawn).get("p1")).toBe("/decks/precons#announced");
+    expect(postListTargets([list("p1", null, []), list("p1", "a", [])], TODAY, drawn).get("p1")).toBe("/decks/precons?sort=newest#announced");
   });
 });

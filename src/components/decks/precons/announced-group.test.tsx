@@ -9,6 +9,11 @@ import { AnnouncedSet, TILE_FOCUS_RING } from "./announced-parts";
 import { PRECON_TILES_CLASS } from "./precon-grid";
 import { TILE_SHELL } from "../../ui/card-tile-caption";
 
+// jsdom ships no scrollIntoView; the hash-open tests spy on it, so it must exist first. Only when missing.
+if (!Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = () => {};
+}
+
 // The shared card-details trigger and hover-preview provider, passed through untouched but recorded, so a test can
 // say the revealed commanders are drawn by THOSE components (import identity) and with what.
 const shared = vi.hoisted(() => ({ triggers: [] as Array<Record<string, unknown>>, previewProviders: 0 }));
