@@ -49,7 +49,7 @@ const view = (n: number, o: Partial<FeedView> = {}): FeedView => ({
 });
 const LEAD = view(0, {
   kind: "trade-match", unseen: true, key: "lead", name: null, href: "/friends/p1",
-  card: { oracleId: "g", name: "Ghalta, Primal Hunger", image: "g.jpg", art: "g-art.jpg", colorIdentity: ["G"] }, friend: { publicId: "p1", displayName: "Colin" },
+  card: { oracleId: "g", name: "Ghalta, Primal Hunger", image: "g.jpg", art: "g-art.jpg", colorIdentity: ["G"] }, friend: { publicId: "p1", displayName: named("Colin") },
 });
 const chosen = (items: FeedView[], o: Partial<Extract<HomeFeed, { chosen: true }>> = {}): HomeFeed => ({ chosen: true, on: ["new-set", "trade-match"], items, unseen: 0, lead: null, ...o });
 
@@ -137,7 +137,7 @@ describe("Home holding an answered spare request", () => {
   const ASK = view(0, {
     kind: "spare-request", unseen: true, key: "ask", name: null, href: null,
     card: { oracleId: "l", name: "Lathliss, Dragon Queen", image: null, art: null, colorIdentity: ["R"] },
-    friend: { publicId: "p1", displayName: "Colin" },
+    friend: { publicId: "p1", displayName: named("Colin") },
     ask: { id: "req-1", spare: 2, copies: 1, deckName: null, daysLeft: 13 },
   });
   const OTHER = view(2, { key: "set-2" });

@@ -13,6 +13,7 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import type { SpareRequestRow, TradeMatchRow, WaitingRow } from "../../lib/social/waiting";
 import { feedAge } from "../../lib/feed/age";
+import { feedCopy } from "../../lib/copy/feed";
 import { socialCopy, spareCopy } from "../../lib/copy/social";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { shortName } from "../../lib/cards/short-name";
@@ -157,13 +158,13 @@ function AskRow({ row, now, busy, locked, onAnswer, onDismiss }: {
           <span className={`${KIND} text-[color:var(--accent-text)]`}>{w.kind["spare-request"]}</span>
           <small className={`${KICKER_AGE} text-[color:var(--fg-faint)]`}>{ago(row.createdAt, now)}</small>
         </p>
-        <p className={TITLE}><PersonText text={w.askTitle(friend, ask.card.name)} /></p>
+        <p className={TITLE}><PersonText text={feedCopy.home.title.spareRequest(friend, ask.card.name)} /></p>
         <p className={DETAIL}><PersonText text={r.incomingDetail(ask.spare, friend, ask.copies, ask.deckName)} /></p>
       </div>
       {/* The action line (board `Dismiss-X`, `.d4n .ac`): Yes, No and the days left, then the ✕ at its end. */}
       <div className={ACTIONS}>
         <AnswerPresses friend={friend} card={ask.card.name} daysLeft={ask.daysLeft} busy={busy} locked={locked} onAnswer={onAnswer} size="row" />
-        <DismissButton title={w.askTitle(friend, ask.card.name)} onPress={onDismiss} disabled={locked} />
+        <DismissButton title={feedCopy.home.title.spareRequest(friend, ask.card.name)} onPress={onDismiss} disabled={locked} />
       </div>
     </li>
   );

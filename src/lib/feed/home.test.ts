@@ -175,27 +175,27 @@ describe("toViews", () => {
   });
 
   it("marks a trade match askable only with spare requests on for the reader, and no other kind", () => {
-    const trade = { kind: "trade-match", key: "item:t", createdAt: NOW, unseen: true, oracleId: "g", variantId: null, friend: { publicId: "p", displayName: "Colin" }, data: {} } as FeedItem;
+    const trade = { kind: "trade-match", key: "item:t", createdAt: NOW, unseen: true, oracleId: "g", variantId: null, friend: { publicId: "p", displayName: named("Colin") }, data: {} } as FeedItem;
     const price = { kind: "price-drop", key: "item:p", createdAt: NOW, unseen: true, oracleId: "g", variantId: null, friend: null, data: {} } as FeedItem;
     expect(toViews([trade, price], { ...empty, askable: true }).map((v) => v.askable)).toEqual([true, false]);
     expect(toViews([trade], empty)[0].askable).toBe(false);
   });
 
   it("gives a spare request (a later round) no press", () => {
-    const item = { kind: "spare-request", key: "item:s", createdAt: NOW, unseen: true, oracleId: null, variantId: null, friend: { publicId: "p", displayName: "Peter" }, data: {} } as FeedItem;
-    expect(toViews([item], empty)[0]).toMatchObject({ href: null, opens: null, outbound: null, friend: { displayName: "Peter" }, answer: null });
+    const item = { kind: "spare-request", key: "item:s", createdAt: NOW, unseen: true, oracleId: null, variantId: null, friend: { publicId: "p", displayName: named("Peter") }, data: {} } as FeedItem;
+    expect(toViews([item], empty)[0]).toMatchObject({ href: null, opens: null, outbound: null, friend: { displayName: named("Peter") }, answer: null });
   });
 
   it("gives an answer to the reader's own ask its answer and a press to Your requests", () => {
-    const item = { kind: "spare-request", key: "item:a", createdAt: NOW, unseen: true, oracleId: null, variantId: null, friend: { publicId: "p", displayName: "Colin" }, data: { answer: "yes" }, answer: "yes" } as FeedItem;
-    expect(toViews([item], empty)[0]).toMatchObject({ href: "/friends", answer: "yes", friend: { displayName: "Colin" } });
+    const item = { kind: "spare-request", key: "item:a", createdAt: NOW, unseen: true, oracleId: null, variantId: null, friend: { publicId: "p", displayName: named("Colin") }, data: { answer: "yes" }, answer: "yes" } as FeedItem;
+    expect(toViews([item], empty)[0]).toMatchObject({ href: "/friends", answer: "yes", friend: { displayName: named("Colin") } });
   });
 });
 
 describe("withAnswerDetails", () => {
   const card = { oracleId: "jace", name: "Jace", image: null, art: null, colorIdentity: null };
-  const colin = { publicId: "p_colin", displayName: "Colin" };
-  const spare = (publicId: string, displayName: string, n: number, oracleId = "jace") => ({ oracleId, spare: n, friend: { publicId, displayName } as never });
+  const colin = { publicId: "p_colin", displayName: named("Colin") };
+  const spare = (publicId: string, displayName: string, n: number, oracleId = "jace") => ({ oracleId, spare: n, friend: { publicId, displayName: named(displayName) } as never });
   const feed = (...items: FeedView[]): HomeFeed => ({ chosen: true, on: ["spare-request"], lead: null, items, unseen: items.length });
   it("a Yes carries no names; a No names the OTHER friends offering the card, most spares first", () => {
     const out = withAnswerDetails(
@@ -204,7 +204,7 @@ describe("withAnswerDetails", () => {
     );
     if (!out.chosen) throw new Error("chosen");
     expect(out.items[0].answerDetail).toEqual({ others: [], standalone: false });
-    expect(out.items[1].answerDetail).toEqual({ others: ["Max", "Ann"], standalone: false });
+    expect(out.items[1].answerDetail).toEqual({ others: [named("Max"), named("Ann")], standalone: false });
   });
   it("marks the answer to a standalone ask by its key, and only that one", () => {
     const out = withAnswerDetails(
@@ -272,7 +272,7 @@ describe("a spare request leading Home (spare requests PR 3d)", () => {
     id: "req-1", oracleId: "c1", card: { name: "Lathliss", imageUri: null }, copies: 1, deckName: named("Dragons"), spare: 2,
     asker: { publicId: "p1", displayName: named("Peter"), commander: null }, createdAt: NOW, daysLeft: 13, ...o,
   });
-  const lead = view({ key: "item:s", kind: "spare-request", card: { oracleId: "c1", name: "Lathliss", image: null, art: null, colorIdentity: null }, friend: { publicId: "p1", displayName: "Peter" } });
+  const lead = view({ key: "item:s", kind: "spare-request", card: { oracleId: "c1", name: "Lathliss", image: null, art: null, colorIdentity: null }, friend: { publicId: "p1", displayName: named("Peter") } });
   const feedOf = (l: FeedView | null): HomeFeed => ({ chosen: true, on: ["spare-request"], items: [], unseen: 1, lead: l });
 
   it("attaches the lead's own ask, by card and asker", () => {

@@ -17,7 +17,7 @@ import { useId, useState, type ReactNode } from "react";
 import { twMerge } from "tailwind-merge";
 import { feedCopy } from "../../lib/copy/feed";
 import { spareCopy } from "../../lib/copy/social";
-import { PersonText } from "../../lib/person-name";
+import { PersonText, personAttrs, type PersonParts, type ThirdPartyName } from "../../lib/person-name";
 import { formatCents } from "../../lib/decks/price";
 import type { FeedView } from "../../lib/feed/home";
 import type { ProfileCommander } from "../../lib/social/commander";
@@ -41,7 +41,7 @@ const c = feedCopy.home;
 export type FeedFaces = ReadonlyMap<string, Pick<ProfileCommander, "artCropUri"> | null>;
 
 /** What an item says: its title, its line, and its press label (null: no press yet, the later round's spare request). */
-export function feedText(item: FeedView): { title: string; line: ReactNode; press: string | null } {
+export function feedText(item: FeedView): { title: string | PersonParts; line: ReactNode; press: string | PersonParts | null } {
   const card = item.card?.name ?? "";
   const friend = item.friend?.displayName ?? "";
   switch (item.kind) {
@@ -163,7 +163,7 @@ function PostPicture({ item, box }: { item: FeedView; box: string }) {
 }
 
 /** An answer to the reader's own ask: Your requests' own words for it (`spareCopy.request.mine`). */
-function answerText(item: FeedView, friend: string, card: string): { title: string; line: ReactNode } {
+function answerText(item: FeedView, friend: string | ThirdPartyName, card: string): { title: string | PersonParts; line: ReactNode } {
   const m = spareCopy.request.mine;
   const d = item.answerDetail;
   if (item.answer === "yes") return { title: m.canSpare(friend, card), line: d ? (d.standalone ? m.acceptedDetailNoBuy : m.acceptedDetail) : null };
@@ -180,6 +180,11 @@ function answerText(item: FeedView, friend: string, card: string): { title: stri
  */
 export const pressWraps = (item: FeedView): boolean => item.kind === "trade-match";
 
+/** A press label ending in the in-app `›`, as parts when it names someone so the name stays marked. */
+export function withChevron(press: string | PersonParts): string | PersonParts {
+  return typeof press === "string" ? `${press} ›` : [...press, " ›"];
+}
+
 /** The press: a link to the item's place, or a button opening the shipped card detail. Stretched over the row. */
 export function FeedPress({
   item,
@@ -190,7 +195,7 @@ export function FeedPress({
   filled = false,
 }: {
   item: FeedView;
-  label: string;
+  label: string | PersonParts;
   className: string;
   /** The lead's filled button: a Requested or Accepted label takes the button's ink (`TradeAskLabel`). */
   filled?: boolean;
@@ -214,7 +219,7 @@ export function FeedPress({
         className={twMerge("cursor-pointer border-0 bg-transparent p-0 text-left", className, stretch)}
         aria-describedby={describedBy}
       >
-        {label}
+        <PersonText text={label} />
       </button>
     );
   }
@@ -223,18 +228,18 @@ export function FeedPress({
   const asking = tradeAskOf(item, trade !== null && trade.has(item.card?.oracleId ?? ""));
   if (trade && asking) {
     const state = trade.stateFor(asking.oracleId, asking.friendPublicId);
+    const pressClass = twMerge("cursor-pointer border-0 bg-transparent p-0 text-left", className, stretch);
     return (
       <button
         type="button"
         data-feed-press
         data-trade-ask-press
         aria-haspopup="dialog"
-        aria-label={state ? tradeAskAria(c.press.tradeMatchAsk(asking.friendName), state) : undefined}
+        {...(state ? personAttrs({ "aria-label": tradeAskAria(c.press.tradeMatchAsk(asking.friendName), state) }, pressClass) : { className: pressClass })}
         onClick={(e) => trade.open(asking.oracleId, asking.friendPublicId, e.currentTarget)}
-        className={twMerge("cursor-pointer border-0 bg-transparent p-0 text-left", className, stretch)}
         aria-describedby={describedBy}
       >
-        {state ? <TradeAskLabel state={state} filled={filled} /> : label}
+        {state ? <TradeAskLabel state={state} filled={filled} /> : <PersonText text={label} />}
       </button>
     );
   }
@@ -245,7 +250,8 @@ export function FeedPress({
       <a href={item.outbound} target="_blank" rel="noopener" data-feed-press className={`${className} ${stretch}`} aria-describedby={describedBy}>
         {/* One inline run, so a press that wraps (the lead's button on a phone) keeps the icon on the label's last word,
             bound as `ExternalLink` binds it, rather than standing alone as a flex item. */}
-        <LinkOutLabel>{label}</LinkOutLabel>
+        {/* An outbound press (a card on Mana Pool, a post) names nobody, so its label is a plain string. */}
+        {typeof label === "string" ? <LinkOutLabel>{label}</LinkOutLabel> : <PersonText text={label} />}
         <span className="sr-only">{NEW_TAB_SUFFIX}</span>
       </a>
     );
@@ -253,7 +259,7 @@ export function FeedPress({
   if (item.href) {
     return (
       <Link href={item.href} data-feed-press className={`${className} ${stretch}`} aria-describedby={describedBy}>
-        {label}
+        <PersonText text={label} />
         <PendingReporter href={item.href} />
       </Link>
     );
@@ -268,13 +274,13 @@ export function FeedPress({
       className={twMerge("cursor-pointer border-0 bg-transparent p-0 text-left", className, stretch)}
       aria-describedby={describedBy}
     >
-      {label}
+      <PersonText text={label} />
     </button>
   );
 }
 
 /** A trade match whose Ask opens in place: the card and the friend, else null (the press keeps its link). */
-function tradeAskOf(item: FeedView, held: boolean): { oracleId: string; friendPublicId: string; friendName: string } | null {
+function tradeAskOf(item: FeedView, held: boolean): { oracleId: string; friendPublicId: string; friendName: ThirdPartyName } | null {
   if (item.kind !== "trade-match" || !item.askable || !held || !item.card || !item.friend) return null;
   return { oracleId: item.card.oracleId, friendPublicId: item.friend.publicId, friendName: item.friend.displayName };
 }
@@ -373,7 +379,7 @@ export function FeedItemRow({ item, now, face, onDismiss }: {
           {/* The time follows the kind at both widths (small items R1b: `Trade match · 6h ago`). */}
           <small data-feed-age className={`${KICKER_AGE} text-[color:var(--fg-locked)]`}>{feedAge(item.at, now)}</small>
         </div>
-        <p id={titleId} className="m-0 font-sans [overflow-wrap:anywhere] text-[14px] leading-[1.35] font-semibold text-[color:var(--fg)]">{text.title}</p>
+        <p id={titleId} className="m-0 font-sans [overflow-wrap:anywhere] text-[14px] leading-[1.35] font-semibold text-[color:var(--fg)]"><PersonText text={text.title} /></p>
         {/* A post's summary can run to a paragraph: two lines, then an ellipsis (Row-States §2). The title never clamps. */}
         {text.line && <p data-feed-line className={`m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] ${item.post ? "line-clamp-2" : ""}`}>{text.line}</p>}
         {lists && <p data-feed-lists className="m-0 mt-[1px] font-mono text-[10.5px] text-[color:var(--fg-muted)]">{lists}</p>}
@@ -406,7 +412,7 @@ export function FeedItemRow({ item, now, face, onDismiss }: {
             <FeedPress
               item={item}
               // An outbound press ends in its link-out icon (`FeedPress`), not the in-app ›.
-              label={item.outbound ? text.press : `${text.press} ›`}
+              label={item.outbound ? text.press : withChevron(text.press)}
               describedBy={titleId}
               stretch="after:absolute after:inset-0 after:content-['']"
               className={`flex min-h-[32px] min-w-0 items-center font-sans text-[13px] font-medium text-[color:var(--accent-text)] ${pressWraps(item) ? "[overflow-wrap:anywhere]" : "whitespace-nowrap"}`}

@@ -27,7 +27,7 @@ import { plain } from "../../lib/person-name/testing";
 
 const s = spareCopy.request.mine;
 const NOW = "2026-10-22T12:00:00.000Z";
-const COLIN = { publicId: "pub-colin", displayName: "Colin" };
+const COLIN = { publicId: "pub-colin", displayName: named("Colin") };
 const answer = (key: string, o: Partial<FeedView> = {}): FeedView => ({
   key, kind: "spare-request", at: "2026-10-22T09:00:00.000Z", unseen: true,
   card: { oracleId: "jace", name: "Jace, Multiverse Architect", image: null, art: null, colorIdentity: ["U"] },

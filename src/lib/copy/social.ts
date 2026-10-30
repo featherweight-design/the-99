@@ -17,11 +17,13 @@ const listNames = (names: readonly ThirdPartyName[]): PersonParts =>
  */
 function answerCanSpare(friend: string, card: string): string;
 function answerCanSpare(friend: ThirdPartyName, card: string): PersonParts;
+function answerCanSpare(friend: string | ThirdPartyName, card: string): string | PersonParts;
 function answerCanSpare(friend: string | ThirdPartyName, card: string): string | PersonParts {
   return typeof friend === "string" ? `${friend} can spare ${card}` : personText`${friend} can spare ${card}`;
 }
 function answerKeeping(friend: string, card: string): string;
 function answerKeeping(friend: ThirdPartyName, card: string): PersonParts;
+function answerKeeping(friend: string | ThirdPartyName, card: string): string | PersonParts;
 function answerKeeping(friend: string | ThirdPartyName, card: string): string | PersonParts {
   return typeof friend === "string" ? `${friend} is keeping ${card}` : personText`${friend} is keeping ${card}`;
 }
@@ -204,8 +206,6 @@ export const socialCopy = {
     seeSpares: (friend: string | ThirdPartyName) => personText`See ${friend}’s spares`,
     /** With spare requests on, the link opens that card's spares sheet with Ask (signature card call 9). */
     askFriend: (friend: string | ThirdPartyName) => personText`Ask ${friend}`,
-    /** The row's title: the words of the feed's own `spareRequest` title, which Home's feed draws for the same ask. */
-    askTitle: (friend: string | ThirdPartyName, card: string) => personText`${friend} asks for your spare ${card}`,
   },
 
   invites: {

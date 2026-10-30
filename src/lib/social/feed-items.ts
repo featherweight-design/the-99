@@ -26,6 +26,16 @@ import { feedDismissals, feedItems, friendLinks, podMembers, podSpareShares, soc
 import { openFloor } from "./spare-request-rules";
 import { kindEnabledAt } from "../feed/kind-gate";
 import type { StoredKind } from "../feed/kinds";
+import type { ThirdPartyName } from "../person-name/brand";
+import { named } from "../person-name/mint";
+
+/** The friend a feed row names, as the feed draws it: the public id and the name, the name branded (PersonName PR D). */
+export type FeedFriend = { publicId: string; displayName: ThirdPartyName };
+
+/** A feed row's friend columns as a `FeedFriend`, or null for an item that names nobody. The one place a feed name is minted. */
+export function feedFriend(publicId: string | null, displayName: string | null): FeedFriend | null {
+  return publicId ? { publicId, displayName: named(displayName ?? "") } : null;
+}
 
 /**
  * The conditions that make a stored item STAND, on `fi` (the item), `sp` (the friend's profile) and the grant tables: a
