@@ -305,4 +305,11 @@ export const suggestedChangesV2Copy = {
     between: "; ",
     end: ".",
   },
+  // The Why these cards box and each list's own line (handoff overview_stages §2, Why-These boards A to C). The held
+  // lines stand in from the first row while the run streams, so nothing lands above a list being picked from.
+  whyBox: {
+    title: "Why these cards",
+    heldBox: "Written once both lists are in. Pick while you wait.",
+    heldSide: "Said once both lists are in.",
+  },
 } as const;

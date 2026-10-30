@@ -9,6 +9,8 @@ import { suggestedChangesV2Copy } from "../../lib/copy/suggested-changes-v2";
 import { tuningHubCopy } from "../../lib/copy/tuning-hub";
 import type { LineItem, TuningLive, V2Ask } from "../../lib/tuning/state";
 import type { ValidationReport } from "../../lib/tuning/validate";
+import { WHY_MIN_N } from "../../lib/tuning/v2/results";
+import type { V2Why } from "../../lib/tuning/v2/why";
 import { v2Line } from "../../lib/tuning/v2/results-fixture";
 import { afterStaged, NEW_MARK_MS, SLOW_NOTE_MS, SuggestedChangesRun, type SuggestionSetActions } from "./suggested-changes-run";
 import { historyDay } from "./tuning-history";
@@ -26,6 +28,13 @@ vi.mock("../cards/card-detail-provider", async (importActual) => ({
   ),
 }));
 vi.mock("../../app/decks/actions", () => ({ pullCardFromDeck: vi.fn() }));
+// A why side line's card link (`CardName`) reads the provider through this trigger: a plain button with the card's id
+// stands in, as no provider is mounted here.
+vi.mock("../cards/card-detail-flow-trigger", () => ({
+  CardDetailFlowTrigger: ({ oracleId, name, children }: { oracleId: string; name: string; children?: React.ReactNode }) => (
+    <button type="button" data-flow-oracle={oracleId}>{children ?? name}</button>
+  ),
+}));
 
 const sc = suggestedChangesV2Copy;
 const RUN = "11111111-1111-4111-8111-111111111111";
@@ -895,6 +904,80 @@ describe("the design-review fixes", () => {
     };
     setup({ ask: ask(10), lines: [...adds(8), ...cuts(12)], report, credits: { left: 5, total: 5 } });
     expect(document.querySelector('[data-sc-short="refunded"]')!.textContent).toContain(sc.short.refundCreditLeft(1, 5, 5));
+  });
+});
+
+describe("why these cards", () => {
+  const whyReport = (why?: V2Why): ValidationReport => ({
+    askedCount: 0, survivedCount: 0, keptCount: 0,
+    v2: {
+      requestHash: "h", restrictions: { capCents: null, sets: [], ownedOnly: false }, in: { add: true, cut: true }, refilling: { add: false, cut: false },
+      charge: { outcome: "spent" }, ...(why ? { why } : {}),
+    },
+  });
+  const WHY: V2Why = {
+    lead: "Cheaper threats in, the clunky top end out.",
+    add: [{ text: "Two are cheap threats, like " }, { card: "Card a1", oracleId: "o-a1" }, { text: "." }],
+    cut: [{ text: "Two cost too much for what they do, like " }, { card: "Card c0", oracleId: "o-c0" }, { text: "." }],
+  };
+  const box = () => document.querySelector("[data-sc-why]") as HTMLElement | null;
+  const sideLine = (side: "add" | "cut") => document.querySelector(`[data-sc-why-side="${side}"]`) as HTMLElement | null;
+  const streaming = (n: number) => ({ ask: ask(n), live: liveOf(adds(2), { ask: ask(n) }), lines: adds(2), startedAt: new Date() });
+
+  it("holds the box and both lists' lines while a run of N = WHY_MIN_N streams", () => {
+    setup(streaming(WHY_MIN_N));
+    expect(box()!.getAttribute("data-sc-why")).toBe("held");
+    const region = screen.getByRole("region", { name: sc.whyBox.title });
+    expect(region).toBe(box());
+    expect(region.textContent).toContain(sc.whyBox.heldBox);
+    for (const side of ["add", "cut"] as const) {
+      expect(sideLine(side)!.getAttribute("data-sc-why-held")).toBe("true");
+      expect(sideLine(side)!.textContent).toContain(sc.whyBox.heldSide);
+    }
+  });
+
+  it("draws nothing while a run of N = WHY_MIN_N - 1 streams, and holds it from WHY_MIN_N", () => {
+    const t = setup(streaming(WHY_MIN_N - 1));
+    expect(box()).toBeNull();
+    expect(sideLine("add")).toBeNull();
+    expect(sideLine("cut")).toBeNull();
+    act(() => t.rerender(streaming(WHY_MIN_N)));
+    expect(box()!.getAttribute("data-sc-why")).toBe("held");
+    expect(sideLine("add")).not.toBeNull();
+  });
+
+  it("fills the box and each list's line from the stored report, with the side lines' card links", () => {
+    setup({ ask: ask(WHY_MIN_N), lines: [...adds(6), ...cuts(6)], report: whyReport(WHY) });
+    const region = screen.getByRole("region", { name: sc.whyBox.title });
+    expect(region.getAttribute("data-sc-why")).toBe("");
+    expect(region.textContent).toContain(WHY.lead);
+    expect(region.textContent).not.toContain(sc.whyBox.heldBox);
+    const add = sideLine("add")!;
+    expect(add.hasAttribute("data-sc-why-held")).toBe(false);
+    expect(add.textContent).toContain("Two are cheap threats, like Card a1.");
+    expect(within(add).getByRole("button", { name: "Card a1" }).getAttribute("data-flow-oracle")).toBe("o-a1");
+    const cut = sideLine("cut")!;
+    expect(cut.hasAttribute("data-sc-why-held")).toBe(false);
+    expect(cut.textContent).toContain("Two cost too much for what they do, like Card c0.");
+    expect(within(cut).getByRole("button", { name: "Card c0" }).getAttribute("data-flow-oracle")).toBe("o-c0");
+  });
+
+  it("draws no box and no side line when the finished run's report holds no why", () => {
+    const t = setup({ ask: ask(WHY_MIN_N), lines: [...adds(6), ...cuts(6)], report: whyReport() });
+    expect(box()).toBeNull();
+    expect(sideLine("add")).toBeNull();
+    expect(sideLine("cut")).toBeNull();
+    act(() => t.rerender({ report: whyReport(WHY) }));
+    expect(box()!.textContent).toContain(WHY.lead);
+  });
+
+  it("draws nothing on a run reopened from History that stored no why", () => {
+    const t = setup({ ask: ask(WHY_MIN_N), lines: [...adds(6), ...cuts(6)], report: whyReport(), past: { date: "Oct 26", stale: false } });
+    expect(box()).toBeNull();
+    expect(sideLine("add")).toBeNull();
+    expect(sideLine("cut")).toBeNull();
+    act(() => t.rerender({ report: whyReport(WHY) }));
+    expect(box()!.textContent).toContain(WHY.lead);
   });
 });
 

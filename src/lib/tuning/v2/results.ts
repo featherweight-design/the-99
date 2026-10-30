@@ -14,6 +14,10 @@ import { askFor } from "./count";
 /** From N = 4 a side groups (README item 3); 5 a side or fewer stays flat. */
 export const GROUP_FROM_N = 4;
 export const groupsAt = (n: number) => n >= GROUP_FROM_N;
+/** The smallest count asked for a why these cards (handoff overview_stages §2: 12+ changes, N = 6). The one constant;
+ *  `v2/why.ts` reads it from here so the client can draw the held box without the prompt module. */
+export const WHY_MIN_N = 6;
+export const whyAt = (n: number) => n >= WHY_MIN_N;
 
 /** The size the tool keeps a deck at. */
 export const AT_SIZE = 99;

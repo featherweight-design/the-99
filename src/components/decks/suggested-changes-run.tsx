@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useId, useState, type ReactNode } from "react";
 
 import type { ApplySetActionResult } from "../../app/decks/tuning-v2-actions";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
@@ -19,10 +19,11 @@ import type { Bracket } from "../../lib/profile/types";
 import { heldInOtherDecks } from "../../lib/tuning/limits";
 import type { LineItem, TuningLive, V2Ask } from "../../lib/tuning/state";
 import type { ValidationReport } from "../../lib/tuning/validate";
+import type { V2WhyPart } from "../../lib/tuning/v2/why";
 import { askFor } from "../../lib/tuning/v2/count";
 import { usualFor } from "../../lib/tuning/v2/intake";
 import {
-  bracketOutcome, cutAskOf, groupLines, groupsAt, isOpen, pickCap, shortFacts, shortOfAsk, tally,
+  bracketOutcome, cutAskOf, groupLines, groupsAt, isOpen, pickCap, shortFacts, shortOfAsk, tally, whyAt,
   type BracketOutcome, type Grouping, type ShortFacts,
 } from "../../lib/tuning/v2/results";
 import { SegmentedSwitch } from "../ui/segmented-switch";
@@ -30,6 +31,7 @@ import { useStoredView } from "../ui/use-stored-view";
 import { MutationError } from "./mutation-error";
 import { SuggestedChangesConfirm } from "./suggested-changes-confirm";
 import { DriftLine, leadSentence, LINK, NOTICE_BOX, noticeStyle } from "./suggested-changes-intake";
+import { CardName } from "./synopsis-text";
 import { SuggestedChangesPickLine } from "./suggested-changes-pick-line";
 import { historyDay } from "./tuning-history";
 import { DeckRefusalToast } from "./token-refusal-toast";
@@ -183,6 +185,12 @@ export function SuggestedChangesRun({
   const adds = lines.filter((l) => l.side === "add");
   const cuts = lines.filter((l) => l.side === "cut");
   const cap = pickCap(n, lines, !waiting);
+  // Why these cards (handoff overview_stages §2): from N = 6 the box and each list's line hold their place while the run
+  // streams, then fill from the stored report once both lists are in. A run with none stored (an older run, or one whose
+  // lead failed its checks) draws no box, and a side whose line failed draws no line.
+  const whyHeld = waiting && whyAt(n);
+  const why = waiting ? null : report?.v2?.why ?? null;
+  const whyArt = new Map(lines.map((l) => [l.cardOracleId, l.cardImageUri]));
   const pickedAdds = adds.filter(isPicked);
   // Every choosable source of every held addition coming in, while the confirmation is open: the picker's figures.
   const figurePairs = confirming && ownedFromOtherDecks
@@ -393,6 +401,7 @@ export function SuggestedChangesRun({
             </span>
           )}
         </div>
+        {whyHeld ? <WhySideLine side={side} parts={null} art={whyArt} /> : why?.[side] ? <WhySideLine side={side} parts={why[side]} art={whyArt} /> : null}
         {!started ? null : grouped(side) ? (
           groupLines(rows, grouping, figures, isPicked).map((g, gi) => (
             <div key={g.key} data-sc-group={g.key} className={`flex flex-col gap-[8px] ${gi > 0 ? "mt-[4px]" : ""}`}>
@@ -585,6 +594,7 @@ export function SuggestedChangesRun({
         </p>
       ) : null}
       {past ? null : readFrom}
+      {whyHeld ? <WhyBox lead={null} /> : why?.lead ? <WhyBox lead={why.lead} /> : null}
       {showGroupSwitch ? (
         <div className="flex items-center gap-[10px] md:justify-end">
           <span className="font-mono text-[10px] font-medium uppercase tracking-[0.14em]" style={{ color: "var(--fg-faint)" }}>{sc.results.group}</span>
@@ -817,6 +827,60 @@ function YouAsked({ ask }: { ask: V2Ask }) {
         {parts.map((part, i) => <Fragment key={i}>{i > 0 ? " · " : null}{part}</Fragment>)}
       </p>
     </div>
+  );
+}
+
+/** Why these cards (Why-These A to C, `.owhy`): the You asked box's look, its lead, or the held line while the run
+ *  streams (`lead` null). */
+function WhyBox({ lead }: { lead: string | null }) {
+  const titleId = useId();
+  return (
+    <section
+      aria-labelledby={titleId}
+      data-sc-why={lead === null ? "held" : ""}
+      className="flex flex-col gap-[8px] rounded-[10px] px-[14px] py-[12px]"
+      style={{ background: "var(--surface-rail)", border: "1px solid var(--border)" }}
+    >
+      <p id={titleId} className="m-0 font-mono text-[10px] font-medium uppercase tracking-[0.14em]" style={{ color: "var(--fg-faint)" }}>
+        {sc.whyBox.title}
+      </p>
+      {lead === null ? (
+        <p className="m-0 text-[12.5px] italic leading-[1.55]" style={{ color: "var(--fg-faint)", textWrap: "pretty" }}>{sc.whyBox.heldBox}</p>
+      ) : (
+        <p className="m-0 text-[13.5px] leading-[1.55]" style={{ color: "var(--fg)", textWrap: "pretty" }}>{lead}</p>
+      )}
+    </section>
+  );
+}
+
+/** A list's own line under its count (Why-These `.sline`): the side's glyph, then its line with up to two card links, or
+ *  the held line while the run streams (`parts` null). */
+function WhySideLine({ side, parts, art }: {
+  side: "add" | "cut";
+  parts: readonly V2WhyPart[] | null;
+  art: ReadonlyMap<string, string | null>;
+}) {
+  return (
+    <p
+      data-sc-why-side={side}
+      data-sc-why-held={parts === null || undefined}
+      className={`m-0 grid grid-cols-[14px_minmax(0,1fr)] items-baseline px-[2px] pb-[4px] text-[12.5px] leading-[1.55] ${parts === null ? "italic" : ""}`}
+      style={{ color: parts === null ? "var(--fg-faint)" : "var(--fg-body)", textWrap: "pretty" }}
+    >
+      <span
+        aria-hidden
+        className="font-mono text-[12px] font-semibold not-italic"
+        style={{ color: side === "add" ? "var(--accent-text)" : "var(--fg-faint)" }}
+      >
+        {side === "add" ? "+" : "−"}
+      </span>
+      <span>
+        {parts === null ? sc.whyBox.heldSide : parts.map((part, i) => ("card" in part ? (
+          // The link is 13px against the line's 12.5 (Why-These `.cn`).
+          <span key={i} className="text-[13px]"><CardName oracleId={part.oracleId} name={part.card} imageUri={art.get(part.oracleId) ?? null} /></span>
+        ) : <Fragment key={i}>{part.text}</Fragment>))}
+      </span>
+    </p>
   );
 }
 
