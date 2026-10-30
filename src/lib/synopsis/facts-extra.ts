@@ -57,13 +57,17 @@ export const CHEAP_MANA_VALUE = 2;
  * counting the pieces expected in the cards seen by that turn (seven plus a draw per turn, on the
  * play) out of 99. The first turn whose mana reaches the mana value is the answer, floored at the
  * mana value's own turn when no ramp helps. Capped at 10.
+ *
+ * Ramp counts from turn 2: a ramp piece is itself cast with turn 1's mana, so it cannot add mana to
+ * turn 1. Before this, a two-drop commander on a ramp-heavy deck read "turn 1" (Thorin Oakenshield,
+ * 2026-10-30), a turn earlier than any land drop could pay for it.
  */
 export function expectedCastTurn(manaValue: number, ramp: number): number {
   if (!Number.isFinite(manaValue) || manaValue <= 0) return 1;
   for (let turn = 1; turn < 10; turn++) {
     const seen = 6 + turn;
     const rampMana = Math.min(ramp, ramp * (seen / 99));
-    if (turn + rampMana >= manaValue) return turn;
+    if (turn + (turn >= 2 ? rampMana : 0) >= manaValue) return turn;
   }
   return 10;
 }

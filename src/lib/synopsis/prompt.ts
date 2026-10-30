@@ -1,6 +1,6 @@
 import { refOf } from "./claims";
 import { engineCandidates } from "./engine-candidates";
-import { CHAR_BUDGETS, EVIDENCE_MAX, SECTION_COUNTS, TIP_MIN_CARDS } from "./limits";
+import { alternateBudget, CHAR_BUDGETS, EVIDENCE_MAX, SECTION_COUNTS, STAGES_LENGTH_FACTOR, stagesLengthCeiling, TIP_MIN_CARDS } from "./limits";
 import { colorLabel } from "../decks/format";
 import { isInfiniteOrGameEnding, isMandatoryLoop, DRAW_THE_GAME } from "../spellbook/combo-features";
 import { identityNameOf, ownWinConditions, type SynopsisFacts } from "./facts";
@@ -214,7 +214,7 @@ function stagesFactRules(shape: 2 | 3 = 2): string {
   }
   const rules = V2_FACT_RULES_V8
     .replace(STAGES_COMBO_PLACE, shape === 3
-      ? "A listed combo is the primary win condition only when the deck is built to assemble it; otherwise it is a backup or an alternate win. Either way its cards other than the commander are named in ONE place only: the Close line, never also in the overview, another stage, a tip, a Key card or a Key card's job."
+      ? "A listed combo is the primary win condition only when the deck is built to assemble it; otherwise it is a backup or an alternate win. Either way its cards other than the commander are named in ONE place only: the Close line, never also in another stage, a tip, a Key card or a Key card's job (the overview, which teases the deck, may name them)."
       : "A listed combo is the primary win condition only when the deck is built to assemble it; otherwise it is a backup or an alternate win. Either way its cards other than the commander are named in ONE place only: the Close line (or \"Wins by\", when the combo is the win there), never also in the overview, another stage, a tip or a Key card's job.")
     .replace(STAGES_COMBO_EVERY, "The one line that names a listed combo names every card of the combo.");
   if (shape !== 3) return rules;
@@ -268,38 +268,75 @@ function stagesSectionsV3(facts: SynopsisFacts, stages: StagesOption): string[] 
   const earlyMax = (castTurn ?? 3) + 1;
   const tipsFrom = `${range(SECTION_COUNTS.tips)} tips`;
   if (!tips.includes(tipsFrom)) throw new Error("buildSynopsisPrompt: the contract-8 tips line no longer states its count");
+  const cheapest = facts.commanderManaValues.length > 0 ? Math.min(...facts.commanderManaValues) : null;
   const turn = castTurn === null
     ? "State no turn number in this line."
-    : `If you give a turn, it is only "around turn ${castTurn}", the expected commander cast turn from the facts.`;
+    : `If you give a turn, it is only "around turn ${castTurn}", the expected commander cast turn from the facts${cheapest !== null && cheapest > 1 ? `; the commander costs ${cheapest} mana, so never write an earlier turn` : ""}.`;
+  const alternates = stages.alternates;
   return [
     `${plans} The plans are never shown to the reader: they steer the lines below.`,
-    `- primer.strategy: EXACTLY 3 lines, in this order, as { text, evidence }, each at most ${CHAR_BUDGETS.strategy} characters. The app labels them Early, Mid and Close, so never begin a line with its label or a word like "First". Every line names at least one card of this decklist as [[Name]] and cites the refs of the cards it names in "evidence". A card marked "universal staple" is never a line's subject or evidence. Each line is about THIS deck's cards, never advice true of any deck (such as "ramp early, draw cards, then win").`,
+    `- primer.strategy: EXACTLY 3 lines, in this order, as { text, evidence }, each at most ${CHAR_BUDGETS.strategy} characters. The app labels them Early, Mid and Close, so never begin a line with its label or a word like "First". Every line names at least one card of this decklist as [[Name]] and cites the refs of the cards it names in "evidence". A card marked "universal staple" is never a line's subject or evidence. Each line is a concrete step of THIS deck's plan: it names a card, says what that card does and why it matters to the plan, as helpful as a numbered step of a Core strategy. Never advice true of any deck (such as "ramp early, draw cards, then win"). A stage line carries no turn number, except the Early line's "around turn N" for the commander.`,
     `  1. Early: the setup and the commander: the cheap cards that start the plan, each costing at most ${earlyMax} mana, and what the commander does once it lands. ${turn}`,
-    "  2. Mid: the engine running: the cards that, with the commander, turn the setup into advantage.",
-    "  3. Close: how the game is won and what to protect while it happens: the cards that win, and the pieces an opponent must answer.",
+    "  2. Mid: the engine running: the cards that, with the commander, turn the setup into advantage. No turn number.",
+    "  3. Close: how the game is won and what to protect while it happens: the cards that win, and the pieces an opponent must answer. No turn number.",
     `- landKeep: ONE { text, evidence }, at most ${LAND_KEEP_BUDGET} characters as rendered, shown first under the Mulligan heading. It says a keepable opening seven holds ${land.lands} lands (write the number as the digit ${land.lands}, never a range) and gives this deck's reason, from the figures under "Keep-line land number": for example that many of its spells cost five or more, or that its curve is low. Every number in it is one of those figures. It may name the commander as [[Name]]; it states no turn.`,
-    `- primer.mulligan.keep and primer.mulligan.sendBack: ${range(SECTION_COUNTS.keep)} lines each, as { text, evidence }, each at most ${CHAR_BUDGETS.mulligan} characters. EVERY line names a card of this decklist as [[Name]] and cites its ref: a keep line names the engine piece or early play this hand wants (a card of a listed combo, or one of the Engine candidates), a send-back line names the card or plan piece the hand lacks. A line that names no card of this deck is advice true of any deck ("send back a hand with no plays", "keep a hand with ramp"): never write one. The land line states the land count, so these lines NEVER state a land count, "no lands" or "all spells". Never name a card marked "universal staple" in a mulligan line. Do not begin a line with "Keep", "Send back" or "Mulligan". The commander starts in the command zone, never in the opening hand. Use only the figures given under "Mulligan figures"; state no other number.`,
-    `${tips.replace(tipsFrom, "EXACTLY 2 tips")} A tip names NO card that a stage line, a Key card (the card or its job) or the alternate line names: take its cards from the rest of the deck. Every card a tip names is one no other section names.`,
-    `${keyCards} A Key card is NEVER a card that the overview, a stage line or the alternate line names (the commander included): choose the cards those lines leave out. A job never names another card.`,
-    assessment,
-    stages.alternates.length > 0
-      ? `- alternate: REQUIRED for this deck. The facts list alternate commanders (${stages.alternates.join("; ")}), so the reply MUST include "alternate": ONE { text, evidence } of at most ${CHAR_BUDGETS.strategy} characters on leading this deck with one of them instead: name it as [[Name]], cite its ref, and say in a few words how the plan changes under it. Write it even when the stages and tips feel complete: a reply without "alternate" fails.`
+    `- primer.mulligan.keep and primer.mulligan.sendBack: EXACTLY ${MULLIGAN_LINES_V3} lines each, as { text, evidence }, each at most ${CHAR_BUDGETS.mulligan} characters. EVERY line names a card of this decklist as [[Name]] and cites its ref: a keep line names the engine piece or early play this hand wants (a card of a listed combo, or one of the Engine candidates), a send-back line names the card or plan piece the hand lacks. A mulligan line may name a card a stage line, a tip or a Key card also names. A line that names no card of this deck is advice true of any deck ("send back a hand with no plays", "keep a hand with ramp"): never write one. The land line states the land count, so these lines NEVER state a land count, "no lands" or "all spells". Never name a card marked "universal staple" in a mulligan line. Do not begin a line with "Keep", "Send back" or "Mulligan". The commander starts in the command zone, never in the opening hand. Use only the figures given under "Mulligan figures"; state no other number.`,
+    `${tips.replace(tipsFrom, "EXACTLY 2 tips")} A tip names NO card that a stage line, a Key card (the card or its job) or the alternate line names: take its cards from the rest of the deck. Every card a tip names is one no other section names. ${TIPS_RANK_V3}`,
+    `${keyCards} A Key card is NEVER a card that a stage line or the alternate line names (the commander included): choose the cards those lines leave out. A job never names another card.`,
+    `${assessment} ${WEAKNESS_STYLE_V3}`,
+    alternates.length > 0
+      ? `- alternate: REQUIRED for this deck. The facts list alternate commanders (${alternates.join("; ")}), so the reply MUST include "alternate": ONE { text, evidence } of at most ${alternateBudget(alternates.length)} characters on leading this deck with ${alternates.length === 1 ? "that alternate" : "one of them"} instead. ${alternateNaming(alternates)} Say in a few words how the plan changes under ${alternates.length === 1 ? "it" : "each"}. Write it even when the stages and tips feel complete: a reply without "alternate" fails.`
       : "- alternate: leave it out. This deck has no alternate commander.",
   ];
 }
 
+/** Iteration 3's mulligan lines per side (`stages.ts` `checkShape` reads the same count). */
+const MULLIGAN_LINES_V3 = 2;
+
+/** The tip ranking, iteration 3 only. */
+const TIPS_RANK_V3 = "Rank the tips by plan impact: prefer a tip that changes how the deck plays (a plan-level line where two cards together do something) over a minor trick. If nothing better is left among the cards the other sections skip, a trick is fine.";
+
+/** The weakness line's shape, iteration 3 only (the app writes the tier word and the colon). */
+const WEAKNESS_STYLE_V3 = 'Write each weakness line as: what hurts, so the kind of answer or tax that helps. The app shows the tier first, so a line you write as "Much damage comes through combat, so Propaganda style taxes or fogs slow the deck." is shown as "Moderate: Much damage comes through combat, so Propaganda style taxes or fogs slow the deck." Name a kind of answer or tax in plain words; mark a card as [[Name]] only when you name a card.';
+
+/** How the alternate line names the alternates (iteration 3): every one, marked and cited. */
+function alternateNaming(alternates: readonly string[]): string {
+  return alternates.length === 1
+    ? "Name it as [[Name]] and cite its ref."
+    : `Name EVERY alternate commander (${alternates.map((a) => `[[${a}]]`).join(", ")}) as [[Name]] and cite the ref of each; a line that leaves one out fails.`;
+}
+
+/** Iteration 3's overview: the teaser people read before they open the full Overview. */
+const STAGES_OVERVIEW_V3 = `- overview: one paragraph, at most ${CHAR_BUDGETS.overview} characters, the teaser the player reads before opening the full Overview: what the deck is, the engine it builds and how the game is won.`;
+
+/** Iteration 3's teaser rule, in the rules block. */
+function teaserRule(): string {
+  const aim = Math.floor(CHAR_BUDGETS.overview * 0.75);
+  return `THE OVERVIEW IS THE TEASER. People read it before they open the rest, so make it full and exciting, not a summary: name the commander and two to three cards at the core of the deck's mechanics, each as [[Name]]; tease the engine they build and how the deck wins, in plain words. Aim for about ${aim} characters, well above a short blurb and under its ${CHAR_BUDGETS.overview} limit. The cards it names may be named again in the stage lines, tips and Key cards. Do not over-weight one or two cards in what you say the deck does: before you write that the deck "grows flying creatures" or "makes lots of tokens", count how many cards of the decklist actually do that, and describe the deck by what most of its cards do.`;
+}
+
+/** Iteration 3's language rules (Hugh, 2026-10-30): possibilities, never orders; roles that match the card's text; no advice true of any deck. */
+const STAGES_LANGUAGE_V3 = [
+  "HOW TO SPEAK. Speak in possibilities, not orders or promises: \"look for\", \"this can help you ramp faster\", \"a card like [[Card Name]] can ...\", \"one of your important creatures, like [[Card Name]], can ...\". An example is an example, never the only line the deck has: do not write that a card is THE way to do something.",
+  "Never state advice that is true of any deck, such as \"keep the equipped attackers alive\" or \"hold counterspell up\". Every sentence is about what THESE cards do.",
+  "A card's role must match its rules text. A card that grants haste belongs with the commander, an engine piece or a creature with a tap ability worth using at once, never with a 1/1 token; a card that adds power suits a creature whose damage grows with power. Read the card's text before you say what it is for.",
+  "Facts must match the game: respect every mana cost and the one land drop a turn, and never describe a play the mana cannot pay for.",
+  "An example of a tuning insight, to show the tone (it is not output, and its card names carry no brackets only because it is an example; in your reply every card name is marked): \"Spikeshot Goblin can deal damage equal to its power, so use Crown of Flames to add +1 for {R} each time to increase damage.\"",
+].join("\n");
+
 /** Iteration 3's rules against repetition and stray turn numbers. */
 function stagesRulesV3(facts: SynopsisFacts, stages: StagesOption): string {
   const castTurn = facts.stats?.commanderCastTurn ?? null;
-  const budget = stages.maxChars === undefined ? "" : ` (${stages.maxChars} characters as rendered)`;
+  const ceiling = stages.maxChars === undefined ? "" : ` ${stagesLengthCeiling(stages.maxChars)} characters as rendered (today's Overview of this deck is ${stages.maxChars}; the new one may run up to ${Math.round(STAGES_LENGTH_FACTOR * 100)}% of it)`;
   return [
-    "EACH CARD IS EXPLAINED ONCE. The overview, the three stage lines, the alternate line, the tips and the Key cards (each card AND its job) each have their own job, and a card other than the commander is named in only ONE of them: say what a card does where it matters most and nowhere else. Choose in this order: the stage lines first, then the Key cards from the cards the stages leave out, then the tips from the cards the stages and Key cards leave out. A card a stage line names is never a Key card and never a tip's card; a Key card is never a tip's card. Before you answer, list the cards each section names and change any section whose card is already in an earlier one. The commander is the one card more than one of them may name, and what it does is explained once, in the Early line; it is never a Key card.",
-    "The overview says what the deck is and how it wins in plain words: it names the commander, and leaves the other cards to the stages, tips and Key cards.",
-    `LENGTH: everything the reader is shown (the overview, the stage lines, the alternate line, the land line, the mulligan lines, the tips, the Key cards with their jobs and the weaknesses) together must be NO LONGER than today's Overview of this deck${budget}. Trim the overview paragraph first: aim for about ${Math.floor(CHAR_BUDGETS.overview * 0.55)} characters, well under its ${CHAR_BUDGETS.overview} limit. Then keep every other line short.`,
-    ...(stages.alternates.length > 0 ? ['This deck carries alternate commanders: the reply MUST include the "alternate" line.'] : []),
+    "EACH CARD IS EXPLAINED ONCE. The three stage lines, the alternate line, the tips and the Key cards (each card AND its job) each have their own job, and a card other than the commander is named in only ONE of them: say what a card does where it matters most and nowhere else. Choose in this order: the stage lines first, then the Key cards from the cards the stages leave out, then the tips from the cards the stages and Key cards leave out. A card a stage line names is never a Key card and never a tip's card; a Key card is never a tip's card. Before you answer, list the cards each of those sections names and change any section whose card is already in an earlier one. The commander is the one card more than one of them may name, and what it does is explained once, in the Early line; it is never a Key card. The overview (the teaser) and the mulligan lines are outside this rule: they may name a card another section also names.",
+    teaserRule(),
+    STAGES_LANGUAGE_V3,
+    `LENGTH: everything the reader is shown (the overview, the stage lines, the alternate line, the land line, the mulligan lines, the tips, the Key cards with their jobs and the weaknesses) together must be NO LONGER than${ceiling || " 125% of today's Overview of this deck"}. Give the overview paragraph the room the teaser needs, and keep every other line short.`,
+    ...(stages.alternates.length > 0 ? ['This deck carries alternate commanders: the reply MUST include the "alternate" line, naming every alternate commander.'] : []),
     castTurn === null
       ? "State no turn number anywhere: say \"early\" or \"late\" instead."
-      : `The only turn number you may state anywhere is the expected commander cast turn, as "around turn ${castTurn}". Never write any other turn ("turn 1", "turns two to four", "the third turn"); say "early" or "late" instead.`,
+      : `The only turn number you may state anywhere is the commander's expected cast turn, as "around turn ${castTurn}", and only in the Early line or the overview. The Mid and Close lines, the tips, the Key cards and every other line state no turn at all. Never write any other turn ("turn 1", "turns two to four", "the third turn"); say "early" or "late" instead.`,
   ].join("\n");
 }
 
@@ -513,7 +550,7 @@ export function buildSynopsisPrompt(
   }
 
   if (opts.contract8 && opts.stages?.shape === 3) {
-    const system = [...SYSTEM_HEAD, ...SYSTEM_OVERVIEW, ...stagesSectionsV3(facts, opts.stages)].join("\n");
+    const system = [...SYSTEM_HEAD, STAGES_OVERVIEW_V3, ...stagesSectionsV3(facts, opts.stages)].join("\n");
     return {
       system: `${system}\n${V8_ARGUMENT_RULES}\n${LENGTH_RULES}\n${V8_LENGTH_RULES}\n${plusRules(facts)}\n${MULLIGAN_BUDGET_RULES_V8}\n${stagesFactRules(3)}\n${stagesRulesV3(facts, opts.stages)}`,
       user: lines.join("\n"),

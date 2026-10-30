@@ -375,7 +375,7 @@ if (args.replay) {
         shownNew: shownDoc, shownDedupe: shownPass?.report ?? null,
         checks: {
           ...before!,
-          explainedOnce: stagesMod.checkExplainedOnce(replyDoc, facts!, { keyCardNames: i3 }),
+          explainedOnce: stagesMod.checkExplainedOnce(replyDoc, facts!, { keyCardNames: i3, teaser: i3 }),
           shape: i3 ? stagesMod.checkShapeShown(replyDoc, shownDoc, neu.alternates, shapeR) : stagesMod.checkShape(replyDoc, neu.alternates, shapeR),
           length: stagesMod.checkLength(shownDoc, stagesMod.docFromChecked(old?.content ?? EMPTY_CHECKED)),
           ...(i3 ? { noCardTwice: stagesMod.checkNoCardTwice(replyDoc, facts!), dedupe: replyPass!.report } : {}),

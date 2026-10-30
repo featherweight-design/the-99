@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import type { SynopsisFacts } from "./facts";
 import { SYNOPSIS_CONTRACT_VERSION_STAGES } from "./limits";
-import { stagesSchemaFor, landKeepNumber, type StagesReply } from "./stages";
+import { landKeepFallback, landKeepNumber, stagesSchemaFor, STAGES_LIMITS, type StagesReply } from "./stages";
+import { landFigure } from "./stages-view";
 import { applyStagesShape, repairNote, settleStages, stagesPromptOption, stagesRepairTargets } from "./stages-run";
 import { stubReply } from "./stub";
 import { validateSynopsisV8 } from "./validate-v8";
@@ -91,18 +92,37 @@ describe("the land line", () => {
     expect(c.alternate).toBeUndefined();
   });
 
-  it("is left out, and the row keeps the fixed range, when it states another number", () => {
+  it("is replaced by the app's own sentence when it states another number, and the row still draws the figure", () => {
     const r = reply((x) => { x.landKeep = landLine(`Keep ${LAND + 1} lands: the curve is middling.`); });
     const c = applyStagesShape(checked(r), r, FACTS);
-    expect(c.landKeep).toBeUndefined();
-    expect(c.evidence?.landKeep).toBeUndefined();
+    expect(c.landKeep).toBe(landKeepFallback(landKeepNumber(FACTS)));
+    expect(c.evidence?.landKeep).toEqual([]);
+    // The renderer reads the figure off the stored line, so a failed model line must not cost the row its number.
+    expect(landFigure(c.landKeep!)).toBe(LAND);
+    expect(c.landKeep!.length).toBeLessThanOrEqual(STAGES_LIMITS.landKeep);
   });
 
-  it("is left out when it cites a ref the deck does not have, or marks a card it does not hold", () => {
+  it("is replaced when it cites a ref the deck does not have, or marks a card it does not hold", () => {
     const badRef = reply((x) => { x.landKeep = landLine(`Keep ${LAND} lands: the curve is middling.`, ["c99"]); });
-    expect(applyStagesShape(checked(badRef), badRef, FACTS).landKeep).toBeUndefined();
+    expect(applyStagesShape(checked(badRef), badRef, FACTS).landKeep).toBe(landKeepFallback(landKeepNumber(FACTS)));
     const badMark = reply((x) => { x.landKeep = landLine(`Keep ${LAND} lands, or [[Sol Ring]]: the curve is middling.`); });
-    expect(applyStagesShape(checked(badMark), badMark, FACTS).landKeep).toBeUndefined();
+    expect(applyStagesShape(checked(badMark), badMark, FACTS).landKeep).toBe(landKeepFallback(landKeepNumber(FACTS)));
+  });
+
+  it("is written by the app when the reply has none, and a passing model line is kept over it", () => {
+    const none = reply((x) => { delete x.landKeep; });
+    const c = applyStagesShape(checked(none), none, FACTS);
+    expect(c.landKeep).toBe(landKeepFallback(landKeepNumber(FACTS)));
+    expect(landFigure(c.landKeep!)).toBe(LAND);
+    const kept = reply();
+    expect(applyStagesShape(checked(kept), kept, FACTS).landKeep).toBe(`Keep ${LAND} lands: the curve is middling.`);
+  });
+
+  it("stores a failed or missing line's fallback for every deck the function sees, a stage-less reply included", () => {
+    const wrongRange = reply((x) => { x.landKeep = landLine("Keep 2 to 4 lands: the curve is middling.", ["c7"]); });
+    const c = applyStagesShape(checked(wrongRange), wrongRange, FACTS);
+    expect(c.landKeep).toBeDefined();
+    expect(landFigure(c.landKeep!)).toBe(LAND);
   });
 });
 
@@ -127,6 +147,29 @@ describe("the alternate line (a precon's)", () => {
     expect(applyStagesShape(checked(absent), absent, FACTS, ALTS).alternate).toBeUndefined();
     const badRef = withAlt(alt("Lead with [[Spore Frog]] instead.", ["c99"]));
     expect(applyStagesShape(checked(badRef), badRef, FACTS, ALTS).alternate).toBeUndefined();
+  });
+
+  it("names and cites EVERY alternate when the box carries more than one, and gives the line 50 more characters for each further one", () => {
+    const two = ["Spore Frog", "Viscera Seer"];
+    const both = withAlt(alt("Lead with [[Spore Frog]] or [[Viscera Seer]] and the plan turns to fogging.", ["c6", "c3"]));
+    const c = applyStagesShape(checked(both), both, FACTS, two);
+    expect(c.alternate).toBe("Lead with [[Spore Frog]] or [[Viscera Seer]] and the plan turns to fogging.");
+    expect(c.evidence?.alternate).toEqual(["k", "v"]);
+    expect(c.cards["viscera seer"]).toEqual({ oracleId: "v", name: "Viscera Seer" });
+    const one = withAlt(alt("Lead with [[Spore Frog]] and the plan turns to fogging.", ["c6"]));
+    expect(applyStagesShape(checked(one), one, FACTS, two).alternate).toBeUndefined();
+    const uncited = withAlt(alt("Lead with [[Spore Frog]] or [[Viscera Seer]] and the plan turns to fogging.", ["c6"]));
+    expect(applyStagesShape(checked(uncited), uncited, FACTS, two).alternate).toBeUndefined();
+    // 144 is too long for two names plus a reason; 194 is the budget with two alternates.
+    const filler = (n: number) => `Lead with [[Spore Frog]] or [[Viscera Seer]]${" and fog".repeat(n)}.`;
+    const rendered = (t: string) => t.replace(/\[\[|\]\]/g, "").length;
+    let n = 1;
+    while (rendered(filler(n + 1)) <= 194) n++;
+    expect(rendered(filler(n))).toBeGreaterThan(144);
+    const long = withAlt(alt(filler(n), ["c6", "c3"]));
+    expect(applyStagesShape(checked(long), long, FACTS, two).alternate).toBe(filler(n));
+    const tooLong = withAlt(alt(filler(n + 1), ["c6", "c3"]));
+    expect(applyStagesShape(checked(tooLong), tooLong, FACTS, two).alternate).toBeUndefined();
   });
 
   it("is never stored for a deck whose box has no alternates, whatever the reply carries", () => {

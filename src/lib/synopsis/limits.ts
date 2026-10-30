@@ -202,3 +202,26 @@ export const CHAR_BUDGETS = {
   job: 60,
   weakness: 176,
 } as const;
+
+/**
+ * The stages shape's alternate-commander line (contract 13, precon Overviews): a stage line's budget
+ * for one alternate, plus this much room for every further one it must name.
+ */
+export const ALTERNATE_EXTRA_PER_COMMANDER = 50;
+
+/** The most characters the alternate line may render, for a box that carries `count` alternate commanders (a stage line's budget when it carries none or one). */
+export function alternateBudget(count: number): number {
+  return CHAR_BUDGETS.strategy + ALTERNATE_EXTRA_PER_COMMANDER * Math.max(0, count - 1);
+}
+
+/**
+ * Contract 13's length ceiling: the stages shape may show this much of today's Overview's rendered
+ * length (a fuller teaser, concrete stage lines). A write does not judge it (`stages-run.ts`); the
+ * prompt states it and the eval harness's `checkLength` reads it.
+ */
+export const STAGES_LENGTH_FACTOR = 1.25;
+
+/** The longest the stages shape may render for a deck whose old Overview rendered `oldChars`. */
+export function stagesLengthCeiling(oldChars: number): number {
+  return Math.floor(oldChars * STAGES_LENGTH_FACTOR);
+}
