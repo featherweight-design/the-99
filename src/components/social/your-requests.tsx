@@ -30,9 +30,9 @@ export const daysAgo = (createdAt: Date, now: Date): number => Math.floor((now.g
 
 const isOpen = (a: YourRequest) => a.state === "open" || a.state === "unavailable" || a.state === "unneeded";
 
-/** What one row says: its kicker and ink, its time, its title and its line. Pure, for the tests. */
-/** Shopping rows carry the buy press, so Accepted points at it; never for a standalone ask (a friend's Spares tab),
- *  whose card may be on no deck's list. */
+/** What one row says: its kicker and ink, its time, its title and its line. Pure, for the tests. Shopping rows carry
+ *  the buy press, so Accepted points at it; never for a standalone ask (a friend's Spares tab), whose card may be on
+ *  no deck's list. */
 export function requestText(a: YourRequest, now: Date): { kind: string; ink: string; at: Date; title: string | PersonParts; detail: string | PersonParts } {
   const friend = a.holder.displayName;
   const card = a.card.name;

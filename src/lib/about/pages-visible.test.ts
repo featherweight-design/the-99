@@ -228,10 +228,10 @@ describe("seen translation", () => {
   });
 
   it("keeps a label's opening space and drops the one a cut first sentence leaves", () => {
-    const editOnly = visibleSections(OFF);
-    const replace = editOnly.flatMap((s) => s.rules).find((r) => r.key === "rule/replace")!;
+    const noSwitches = visibleSections(OFF);
+    const replace = noSwitches.flatMap((s) => s.rules).find((r) => r.key === "rule/replace")!;
     expect(replace.text.startsWith("With Replace")).toBe(true);
-    const help = editOnly.flatMap((s) => s.labels).find((l) => l.key === "collection/cards/tabs")!;
+    const help = noSwitches.flatMap((s) => s.labels).find((l) => l.key === "collection/cards/tabs")!;
     expect(help.text).toBe(" are your Collection’s tabs. History lists your changes from the last 90 days. Wishlist holds the cards you’re after.");
   });
 

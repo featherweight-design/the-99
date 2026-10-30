@@ -469,7 +469,7 @@ export const spareCopy = {
     /** The one state sentence under the rows, for the state the rows are in. */
     oneAtATime: (from: string | ThirdPartyName) => personText`One request at a time. Ask instead moves it from ${from}.`,
     whenYours: "When it’s yours, press buy on the row.",
-    /** `whenYours` where the row has no buy press (no I got it on the surface): the collection takes it by hand. */
+    /** `whenYours` where the row has no buy press, because its surface mounts no I got it provider: the player adds the copy to the collection by hand. */
     whenYoursNoBuy: "When it’s yours, add it to your collection.",
     nobodyElse: "Nobody else you know has a spare.",
     /** The shared toast on a failed Ask, Ask instead, Ask again, Yes, No or ✕ (G5); the row is left as it was. */
