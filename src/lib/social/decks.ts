@@ -220,6 +220,8 @@ export async function loadFriendDeck(viewerId: string, publicId: unknown, deckId
     layout: c.layout ?? null,
     commander: true as const,
     owned: owned.has(c.oracleId),
+    // The owner's film, as a body card carries it, so card details draw a foil commander foil.
+    ...(c.foil ? { foil: c.foil } : {}),
     ...printed(c),
   }));
   return {
