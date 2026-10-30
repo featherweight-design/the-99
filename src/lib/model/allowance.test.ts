@@ -286,17 +286,53 @@ describe("reserveModelCall and paid credits (payments PR L)", () => {
 
   it("refuses when every lot is spent, counting a reservation still in flight", async () => {
     const lots = [{ id: "pack-1", source: "pack", units: 2, revokedUnits: 0, expiresAt: null, createdAt: new Date("2026-09-01T00:00:00Z") }];
-    const usage = [{ grantId: "pack-1", spent: "1", reserved: [now.getTime() - 1000] }];
+    const usage = [{ grantId: "pack-1", spent: "1", reserved: [[now.getTime() - 1000, 1]] }];
     const f = fakeTx([spentToday(MODEL_DEFAULT_DAILY_ALLOWANCE), lots, usage]);
     expect(await reserveModelCall(f.tx as never, "user_a", "tuning", "claude-sonnet-5", now)).toEqual({ refused: "allowance" });
   });
 
   it("a lot's stranded reservation gives its credit back", async () => {
     const lots = [{ id: "pack-1", source: "pack", units: 2, revokedUnits: 0, expiresAt: null, createdAt: new Date("2026-09-01T00:00:00Z") }];
-    const usage = [{ grantId: "pack-1", spent: "1", reserved: [now.getTime() - RESERVATION_TTL_MS - 1] }];
+    const usage = [{ grantId: "pack-1", spent: "1", reserved: [[now.getTime() - RESERVATION_TTL_MS - 1, 1]] }];
     const f = fakeTx([spentToday(MODEL_DEFAULT_DAILY_ALLOWANCE), lots, usage]);
     expect(await reserveModelCall(f.tx as never, "user_a", "tuning", "claude-sonnet-5", now)).toEqual({ id: "call-1" });
     expect(f.inserted()?.creditGrantId).toBe("pack-1");
+  });
+
+  // Suggested changes v2 over 10 swaps costs 2 credits, and ONE source funds the whole run (Hugh, 2026-10-30).
+  describe("a 2-unit run", () => {
+    const lot = (id: string, source: string, units: number, created: string) => ({ id, source, units, revokedUnits: 0, expiresAt: source === "welcome" ? new Date(now.getTime() + 86_400_000) : null, createdAt: new Date(created) });
+    const reserve2 = (f: ReturnType<typeof fakeTx>) => reserveModelCall(f.tx as never, "user_a", "suggested_changes_v2", "claude-sonnet-5", now, "player", 2);
+
+    it("refuses on free room of 1 with no lot, as a refusal of its cost", async () => {
+      const f = fakeTx([[], []]);
+      expect(await reserve2(f)).toEqual({ refused: "allowance", costs: 2 });
+      expect(f.inserted()).toBeUndefined();
+    });
+
+    it("is funded by one lot holding 2, and writes its units", async () => {
+      const f = fakeTx([[], [lot("pack-1", "pack", 2, "2026-09-01T00:00:00Z")], [], []]);
+      expect(await reserve2(f)).toEqual({ id: "call-1" });
+      expect(f.inserted()).toMatchObject({ creditGrantId: "pack-1", units: 2 });
+    });
+
+    it("is refused when two lots hold 1 each: a run is never split", async () => {
+      const lots = [lot("welcome-1", "welcome", 1, "2026-10-01T00:00:00Z"), lot("pack-1", "pack", 1, "2026-09-01T00:00:00Z")];
+      const f = fakeTx([spentToday(MODEL_DEFAULT_DAILY_ALLOWANCE), lots, [], []]);
+      expect(await reserve2(f)).toEqual({ refused: "allowance", costs: 2 });
+    });
+
+    it("is refused at 19 of 20 paid credits used, where a 1-credit run would start", async () => {
+      const paid19 = Array.from({ length: 19 }, () => ({ status: "spent", createdAt: new Date(now.getTime() - 60_000) }));
+      const f = fakeTx([spentToday(MODEL_DEFAULT_DAILY_ALLOWANCE), [lot("pack-1", "pack", 40, "2026-09-01T00:00:00Z")], [], paid19]);
+      expect(await reserve2(f)).toEqual({ refused: "allowance", costs: 2 });
+    });
+
+    it("counts a 2-unit row as two credits of the free window", async () => {
+      const f = fakeTx([[{ status: "spent", createdAt: new Date(now.getTime() - 60_000), units: 2 }]]);
+      // Limit 1, already 2 used: a 1-unit run goes to the (absent) lots and is refused as out of credits.
+      expect(await reserveModelCall(f.tx as never, "user_a", "tuning", "claude-sonnet-5", now)).toEqual({ refused: "allowance" });
+    });
   });
 
   describe("the 20-a-day paid limit", () => {

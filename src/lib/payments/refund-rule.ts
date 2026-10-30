@@ -1,5 +1,5 @@
 import { countsAgainstGrant } from "../model/credit-rule";
-import type { LedgerRow } from "../model/allowance-rule";
+import { unitsOf, type LedgerRow } from "../model/allowance-rule";
 
 /**
  * What a refund or a dispute takes back from a paid lot (payments scope §5.5, K2). Pure.
@@ -24,9 +24,9 @@ export function claimCents(stored: number, fetched: number): number {
   return Math.max(0, stored, fetched);
 }
 
-/** Ledger rows of one lot that still hold a credit of it at `now`. */
+/** Credits of one lot its ledger rows still hold at `now`: each counting row's `units`, never a row count. */
 export function heldOnGrant(rows: readonly LedgerRow[], now: Date): number {
-  return rows.filter((r) => countsAgainstGrant(r, now)).length;
+  return rows.filter((r) => countsAgainstGrant(r, now)).reduce((n, r) => n + unitsOf(r), 0);
 }
 
 export type RevokeInput = { units: number; revoked: number; held: number; target: number };

@@ -907,13 +907,15 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
     },
   },
   credits: {
-    text: "Reading a bracket is free. Anything written just for you uses a credit, and a run that comes back empty-handed gives it back. An Overview uses one. So does each Suggested changes run. So does each Look deeper. A Suggested changes run that comes back short gives its credit back too, unless your limits, like a price cap, held it short. Pack and gift credits never expire. Plan credits end with the period after you cancel.",
+    text: "Reading a bracket is free. Anything written just for you uses a credit, and a run that comes back empty-handed gives it back. An Overview uses one. So does each Suggested changes run. So does each Suggested changes run, or two for more than 10 changes. So does each Look deeper. A Suggested changes run that comes back short gives its credit back too, unless your limits, like a price cap, held it short. Pack and gift credits never expire. Plan credits end with the period after you cancel.",
     switch: null,
     sentences: {
       "Reading a bracket is free. ": "ANALYSIS_TAB_ENABLED",
       " An Overview uses one.": "ANALYSIS_TAB_ENABLED",
       " A Suggested changes run that comes back short gives its credit back too, unless your limits, like a price cap, held it short.": "SUGGESTED_CHANGES_V2_ENABLED",
-      " So does each Suggested changes run.": "TUNING_ENABLED",
+      // v1 costs 1 credit; v2 costs 2 over 10 changes. Exactly one of the two sentences (and table rows) draws.
+      " So does each Suggested changes run.": ["TUNING_ENABLED", "!SUGGESTED_CHANGES_V2_ENABLED"],
+      " So does each Suggested changes run, or two for more than 10 changes.": "SUGGESTED_CHANGES_V2_ENABLED",
       " So does each Look deeper.": "PROPOSED_CUTS_ENABLED",
       " Pack and gift credits never expire.": "PAYMENTS_ENABLED",
       " Plan credits end with the period after you cancel.": "PAYMENTS_ENABLED",
@@ -924,7 +926,8 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
       kind: "card-row",
       columns: [{ w: 250, gap: 7, parts: [
         { part: "row", name: "Read the bracket", tag: { text: "free", tone: "success" }, switch: "ANALYSIS_TAB_ENABLED" },
-        { part: "row", name: "Suggested changes run", tag: { text: "1 credit", tone: "accent" }, switch: "TUNING_ENABLED" },
+        { part: "row", name: "Suggested changes run", tag: { text: "1 credit", tone: "accent" }, switch: ["TUNING_ENABLED", "!SUGGESTED_CHANGES_V2_ENABLED"] },
+        { part: "row", name: "Suggested changes run", tag: { text: "1 or 2 credits", tone: "accent" }, switch: "SUGGESTED_CHANGES_V2_ENABLED" },
         { part: "row", name: "Look deeper", tag: { text: "1 credit", tone: "accent" }, switch: "PROPOSED_CUTS_ENABLED" },
         { part: "row", name: "Came back empty-handed", dim: true, tag: { text: "credit back", tone: "success" } },
       ] }],

@@ -242,7 +242,7 @@ function txPort(tx: Tx): ReverseTx {
       return row ?? null;
     },
     async ledgerRows(grantId) {
-      const rows = await tx.select({ status: modelCalls.status, createdAt: modelCalls.createdAt }).from(modelCalls)
+      const rows = await tx.select({ status: modelCalls.status, createdAt: modelCalls.createdAt, units: modelCalls.units }).from(modelCalls)
         .where(and(eq(modelCalls.creditGrantId, grantId), inArray(modelCalls.status, ["reserved", "spent"])));
       return rows as LedgerRow[];
     },

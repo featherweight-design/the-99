@@ -12,6 +12,7 @@ import { intentTooLong, SUGGESTED_CHANGES_TOOL, TUNING_MODEL } from "./limits";
 import { PROMPT_VERSION, PROMPT_VERSION_V2 } from "./prompt-version";
 import type { V2Side } from "./v2/engine";
 import type { BracketAim } from "./v2/bracket-aim";
+import { unitsFor } from "./v2/charge";
 import type { ValidatedSuggestion, ValidationReport } from "./validate";
 
 /**
@@ -111,13 +112,16 @@ export async function startRun(
       readList?: { fingerprint: string; cardIds: readonly string[] };
     };
   },
-): Promise<({ kind: "started" } & RunHandle) | { kind: "allowance" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "allLocked" }> {
+): Promise<({ kind: "started" } & RunHandle) | { kind: "allowance"; costs?: number } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "allLocked" }> {
   const now = opts.now ?? new Date();
   try {
     const handle = await db.transaction(async (tx): Promise<RunHandle> => {
       await assertSomeCardOpen(tx, deckId, opts.env);
-      const unit = await reserveModelCall(tx, userId, opts.v2 ? "suggested_changes_v2" : "tuning", TUNING_MODEL, now);
-      if ("refused" in unit) throw new AllowanceSpentError(unit.refused);
+      // A v2 run costs what its REQUESTED count costs (`unitsFor`): 2 credits over 10 swaps, else 1.
+      const unit = opts.v2
+        ? await reserveModelCall(tx, userId, "suggested_changes_v2", TUNING_MODEL, now, "player", unitsFor(opts.v2.requestedCount))
+        : await reserveModelCall(tx, userId, "tuning", TUNING_MODEL, now);
+      if ("refused" in unit) throw new AllowanceSpentError(unit.refused, unit.costs);
       const [row] = await tx.insert(deckSuggestionRuns).values({
         ...(opts.runId ? { id: opts.runId } : {}),
         deckId, userId, tool: SUGGESTED_CHANGES_TOOL, inputFingerprint: fingerprint, modelCallId: unit.id,
@@ -139,7 +143,8 @@ export async function startRun(
     });
     return { kind: "started", ...handle };
   } catch (err) {
-    if (err instanceof AllowanceSpentError) return { kind: err.refused };
+    // `costs`: refused only because this run costs that many credits (`ReserveRefused`), not out of credits.
+    if (err instanceof AllowanceSpentError) return err.refused === "allowance" && err.costs ? { kind: "allowance", costs: err.costs } : { kind: err.refused };
     if (err instanceof AllLockedError) return { kind: "allLocked" };
     // Only the partial index means "a run is already in flight here". A dropped connection or
     // a missing column must not be reported as that.

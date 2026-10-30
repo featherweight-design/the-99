@@ -2622,7 +2622,12 @@ export const modelCalls = pgTable("model_calls", {
   // which is every row from before it. Set at reserve, never moved: the row's status alone decides
   // whether it still counts against its lot. No `on delete`: the purge deletes calls before lots.
   creditGrantId: uuid("credit_grant_id").references(() => creditGrants.id),
+  // THE CREDITS THE RUN COSTS (migration 0205). 1 for every feature but a Suggested changes v2 run asking
+  // for more than 10 swaps, which costs 2 (`unitsFor`, `tuning/v2/charge.ts`). Written at reserve, never
+  // moved; every counter over this table sums it, never counts rows. One source funds the whole run.
+  units: smallint("units").notNull().default(1),
 }, (t) => [
+  check("model_calls_units_check", sql`${t.units} between 1 and 2`),
   check("model_calls_feature_check", sql`${t.feature} in ('tuning', 'synopsis', 'intake', 'proposed_cuts', 'fits_read', 'labels', 'prose', 'precon_overview', 'suggested_changes_v2')`),
   check("model_calls_origin_check", sql`${t.origin} in ('player', 'system')`),
   check("model_calls_status_check", sql`${t.status} in ('reserved', 'spent', 'refunded')`),

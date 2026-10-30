@@ -43,9 +43,17 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 /** Why a reservation was refused: the player's own allowance, or the owner's testing share. */
 export type ReserveRefusal = "allowance" | SpendRefusal;
 
+/**
+ * A refused reservation. `costs` is present only on an `allowance` refusal of a run costing more than one credit
+ * that a one-credit run would have passed: the player is not out of credits, this
+ * run costs `costs` and no single source holds that many.
+ */
+export type ReserveRefused = { refused: ReserveRefusal; costs?: number };
+
 /** Thrown inside a caller's transaction to roll back a run whose reservation was refused. */
 export class AllowanceSpentError extends Error {
-  constructor(readonly refused: ReserveRefusal = "allowance") {
+  /** `costs`: set when the run was refused ONLY because it costs that many credits (`ReserveRefused`). */
+  constructor(readonly refused: ReserveRefusal = "allowance", readonly costs?: number) {
     super(`model call refused: ${refused}`);
     this.name = "AllowanceSpentError";
   }
@@ -173,7 +181,8 @@ export function callMicroFor(feature?: ModelFeature): number {
 async function ledgerRows(q: Tx | typeof db, userId: string, now: Date, paid = false): Promise<LedgerRow[]> {
   const since = new Date(now.getTime() - ALLOWANCE_WINDOW_MS);
   const rows = await q
-    .select({ status: modelCalls.status, createdAt: modelCalls.createdAt })
+    // `units`: the window counts CREDITS (`allowanceFrom` sums them), never rows.
+    .select({ status: modelCalls.status, createdAt: modelCalls.createdAt, units: modelCalls.units })
     .from(modelCalls)
     .where(and(
       eq(modelCalls.userId, userId),
@@ -212,11 +221,13 @@ async function grantBalances(q: Tx | typeof db, userId: string, now: Date): Prom
   const usage = await q
     .select({
       grantId: modelCalls.creditGrantId,
-      spent: sql<string>`count(*) filter (where ${modelCalls.status} = 'spent')`,
+      // CREDITS, not rows: the spent rows' `units` summed.
+      spent: sql<string>`coalesce(sum(${modelCalls.units}) filter (where ${modelCalls.status} = 'spent'), 0)`,
       // Epoch milliseconds, so no driver ever reads a zone-less timestamp in its own zone. The column
       // holds UTC (Drizzle writes `toISOString()`), and `extract(epoch ...)` of a zone-less
       // timestamp reads it as UTC. As JSON, because the driver hands a Postgres array back as its text.
-      reserved: sql<number[] | null>`json_agg((extract(epoch from ${modelCalls.createdAt}) * 1000)::float8) filter (where ${modelCalls.status} = 'reserved' and ${modelCalls.createdAt} > ${reservedSince.toISOString()}::timestamp)`,
+      // Each reservation as `[ms, units]`, expanded below to one entry per credit (`GrantUsage`).
+      reserved: sql<[number, number][] | null>`json_agg(json_build_array((extract(epoch from ${modelCalls.createdAt}) * 1000)::float8, ${modelCalls.units})) filter (where ${modelCalls.status} = 'reserved' and ${modelCalls.createdAt} > ${reservedSince.toISOString()}::timestamp)`,
     })
     .from(modelCalls)
     .where(and(inArray(modelCalls.creditGrantId, ids), inArray(modelCalls.status, ["reserved", "spent"])))
@@ -225,7 +236,7 @@ async function grantBalances(q: Tx | typeof db, userId: string, now: Date): Prom
   return grants.map((g) => {
     const grant: CreditGrant = { ...g, source: g.source as CreditSource };
     const u = byGrant.get(g.id);
-    const reserved = (u?.reserved ?? []).map((ms) => new Date(Number(ms)));
+    const reserved = (u?.reserved ?? []).flatMap(([ms, units]) => Array.from({ length: Number(units) }, () => new Date(Number(ms))));
     return { grant, remaining: remaining(grant, { spent: Number(u?.spent ?? 0), reserved }, now) };
   });
 }
@@ -286,7 +297,14 @@ export async function reserveModelCall(
    * that bypasses that rule by accident: the default is the player path.
    */
   origin: "player" | "system" = "player",
-): Promise<{ id: string } | { refused: ReserveRefusal }> {
+  /**
+   * THE CREDITS THE RUN COSTS, written to `model_calls.units`: 1 for every feature, 2 for a Suggested changes v2 run
+   * asking for more than 10 swaps (`unitsFor`). ONE SOURCE FUNDS THE WHOLE RUN (Hugh, 2026-10-30): the free allowance
+   * when all of it fits there, else the first lot in spend order holding all of it, never a split. The paid limit
+   * counts it whole. Still one row: settle, refund and the reapers move the row, so a refund returns every unit.
+   */
+  units = 1,
+): Promise<{ id: string } | ReserveRefused> {
   if (origin === "system") {
     const [row] = await tx
       .insert(modelCalls)
@@ -304,19 +322,28 @@ export async function reserveModelCall(
   const allowance = allowanceFrom(await ledgerRows(tx, userId, now), now, await dailyLimitFor(tx, userId));
   // The free allowance first, because it is use-it-or-lose-it; then a paid lot, plan before pack
   // (`pickGrant`). Both read under the lock above, so two presses cannot take one last credit.
+  // Each source must hold the run's WHOLE cost (`units`): never free plus a lot, never two lots.
   let creditGrantId: string | null = null;
-  if (!freeRoom(allowance)) {
-    const grant = pickGrant(await grantBalances(tx, userId, now));
-    if (!grant) return { refused: "allowance" };
+  if (!freeRoom(allowance, units)) {
+    const balances = await grantBalances(tx, userId, now);
+    const grant = pickGrant(balances, units);
     // The paid limit, counted under the lock above like the free window. Only here, so it never
-    // refuses a run the free allowance could fund.
-    const paid = allowanceFrom(await ledgerRows(tx, userId, now, true), now, await paidLimitFor(tx, userId));
-    if (!paidRoom({ paidUsed: paid.used, paidLimit: paid.limit })) return { refused: "allowance" };
+    // refuses a run the free allowance could fund. Read only while some lot holds a credit.
+    const anyLot = pickGrant(balances);
+    const paid = anyLot
+      ? allowanceFrom(await ledgerRows(tx, userId, now, true), now, await paidLimitFor(tx, userId))
+      : null;
+    const paidOk = (n: number) => paid !== null && paidRoom({ paidUsed: paid.used, paidLimit: paid.limit }, n);
+    if (!grant || !paidOk(units)) {
+      // Not out of credits, only short of this run's cost: a one-credit run would have been funded.
+      const oneFits = units > 1 && (freeRoom(allowance) || (anyLot !== null && paidOk(1)));
+      return oneFits ? { refused: "allowance", costs: units } : { refused: "allowance" };
+    }
     creditGrantId = grant.id;
   }
   const [row] = await tx
     .insert(modelCalls)
-    .values({ userId, feature, model, origin: "player", createdAt: now, creditGrantId })
+    .values({ userId, feature, model, origin: "player", createdAt: now, creditGrantId, units })
     .returning({ id: modelCalls.id });
   return row;
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { chargeFor, type ListOutcome } from "./charge";
+import { chargeFor, ONE_CREDIT_MAX_COUNT, unitsFor, type ListOutcome } from "./charge";
 
 const full = (target: number): ListOutcome => ({ kept: target, target, drops: [] });
 const drops = (...rules: string[]) => rules.map((rule) => ({ rule })) as ListOutcome["drops"];
@@ -59,5 +59,16 @@ describe("chargeFor", () => {
   it("refunds a failed cut call and a run with no additions", () => {
     expect(chargeFor({ additions: full(5), cuts: { kept: 0, target: 5, drops: [] }, cutsFailed: true })).toEqual({ outcome: "refunded", why: "cutsFailed" });
     expect(chargeFor({ additions: { kept: 0, target: 5, drops: drops("overCap") }, cuts: { kept: 0, target: 0, drops: [] } })).toEqual({ outcome: "refunded", why: "ungrounded" });
+  });
+});
+
+// Hugh, 2026-10-30: 1 credit for 1 to 10 swaps, 2 above, by the REQUESTED count.
+describe("unitsFor", () => {
+  it("costs 1 credit up to 10 swaps and 2 from 11", () => {
+    expect(ONE_CREDIT_MAX_COUNT).toBe(10);
+    expect(unitsFor(1)).toBe(1);
+    expect(unitsFor(10)).toBe(1);
+    expect(unitsFor(11)).toBe(2);
+    expect(unitsFor(20)).toBe(2);
   });
 });

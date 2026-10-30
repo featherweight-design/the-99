@@ -13,7 +13,10 @@ import {
   heldCredits,
   ownerDailyAllowanceFrom,
   paidAtLimit,
+  freeRoom,
+  paidRoom,
 } from "./allowance-rule";
+import { pickGrant, type CreditGrant } from "./credit-rule";
 
 const now = new Date("2026-09-23T12:00:00Z");
 const hoursAgo = (h: number) => new Date(now.getTime() - h * 3_600_000);
@@ -167,5 +170,45 @@ describe("a welcome lot is a held credit", () => {
     expect(hasCredit(spent)).toBe(true);
     expect(hasCredit({ ...spent, paidUsedToday: 20 })).toBe(false);
     expect(paidAtLimit({ ...spent, paidUsedToday: 20 })).toBe(true);
+  });
+});
+
+// Suggested changes v2 pricing (Hugh, 2026-10-30): a run over 10 swaps costs 2 credits, and ONE source funds a whole run.
+// `reserveModelCall` decides it with these; `allowance.test.ts` covers the decision end to end.
+describe("a run's units", () => {
+  const spent = (createdAt: Date, units?: number) => ({ status: "spent" as const, createdAt, ...(units ? { units } : {}) });
+
+  it("counts credits, not rows: a 2-unit run uses two", () => {
+    expect(allowanceFrom([spent(hoursAgo(1), 2), spent(hoursAgo(2))], now, 10).used).toBe(3);
+  });
+
+  it("frees both credits of a 2-unit run at its one expiry", () => {
+    const a = allowanceFrom([spent(hoursAgo(23), 2)], now, 2);
+    expect(a.used).toBe(2);
+    expect(a.reopensAt).toEqual(new Date(hoursAgo(23).getTime() + ALLOWANCE_WINDOW_MS));
+  });
+
+  it("free room funds a 1-unit run at 1, a 2-unit run only at 2", () => {
+    expect(freeRoom({ used: 0, limit: 1 }, 1)).toBe(true);
+    expect(freeRoom({ used: 0, limit: 1 }, 2)).toBe(false);
+    expect(freeRoom({ used: 8, limit: 10 }, 2)).toBe(true);
+    expect(freeRoom({ used: 9, limit: 10 }, 2)).toBe(false);
+  });
+
+  it("the paid limit counts a 2-unit run whole: 19 of 20 used refuses it", () => {
+    expect(paidRoom({ paidUsed: 19, paidLimit: PAID_DAILY_LIMIT }, 2)).toBe(false);
+    expect(paidRoom({ paidUsed: 19, paidLimit: PAID_DAILY_LIMIT }, 1)).toBe(true);
+    expect(paidRoom({ paidUsed: 18, paidLimit: PAID_DAILY_LIMIT }, 2)).toBe(true);
+  });
+
+  it("picks the first lot in spend order that holds the whole cost, never two lots", () => {
+    const lot = (id: string, source: CreditGrant["source"], createdAt: Date): CreditGrant => ({ id, source, units: 40, revokedUnits: 0, expiresAt: source === "welcome" ? hoursAgo(-100) : null, createdAt });
+    const balances = [
+      { grant: lot("welcome", "welcome", hoursAgo(5)), remaining: 1 },
+      { grant: lot("pack", "pack", hoursAgo(4)), remaining: 3 },
+    ];
+    expect(pickGrant(balances)?.id).toBe("welcome");
+    expect(pickGrant(balances, 2)?.id).toBe("pack");
+    expect(pickGrant([balances[0], { ...balances[1], remaining: 1 }], 2)).toBeNull();
   });
 });

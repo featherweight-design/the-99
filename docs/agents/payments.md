@@ -115,6 +115,20 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   portal WRITE (Sensitive, as the key already is), and `STRIPE_PORTAL_CONFIG` is the `bpc_...` id of a configuration made
   once with the Stripe CLI (`billing_portal configurations create`, metadata `app=the-99`; a plain env var, not a secret),
   set on both Vercel projects. Proof: `pnpm probe:plan-cancel`.
+- **A run's units** (Suggested changes v2 pricing, Hugh 2026-10-30; migration 0205). `model_calls.units` (smallint, 1 or 2,
+  default 1) is what a run costs. Every feature costs 1, except a Suggested changes v2 run whose REQUESTED count is over 10
+  swaps, which costs 2 (`unitsFor` and `ONE_CREDIT_MAX_COUNT` in `src/lib/tuning/v2/charge.ts`). It is still one row:
+  `reserveModelCall` takes `units` (default 1) and writes it, and settle, refund and the reapers move that row, so a
+  refunded run returns all its units. Every counter over the ledger SUMS units and never counts rows: the free window
+  (`allowanceFrom`), a lot's balance (`grantBalances`, `readWelcomeLot`, `heldOnGrant`), the paid limit and the admin's
+  free count. `credit-gates.test.ts` fails on a `count(` over `model_calls` outside its named press and run counters.
+  **One source funds a whole run**: the free allowance when the whole cost fits there, else the first lot in spend order
+  (`pickGrant(balances, units)`) holding all of it, with the paid limit's room for all of it; never free plus a lot,
+  never two lots. `reserveModelCall` alone decides a run of 2, with `freeRoom` and `paidRoom` (`allowance-rule.ts`) taking
+  its units; `hasCredit` stays a one-credit gate. A run refused only because it costs 2 (a 1-credit run would start)
+  carries `costs` on the reservation's refusal, through `startRun`, `startTuningV2` (which answers with
+  `deckTuningCopy.allowance.costsTwo`) and `runTuning`. The panel's cue before the press comes with the Small items 7
+  handoff.
 
 ## The welcome lot (launch epic D1, ruling L5)
 

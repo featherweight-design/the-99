@@ -1,8 +1,9 @@
 import type { Drop } from "../validate";
 
 /**
- * Whether a Suggested changes v2 run is charged its credit or refunded (spec 2026-10-27 §9; 1 credit at any N, Hugh §12
- * Q2). Pure. Credits are whole: a run is charged or refunded, never split.
+ * Whether a Suggested changes v2 run is charged its credits or refunded (spec 2026-10-27 §9). Pure. Credits are whole: a
+ * run is charged or refunded, never split. What it costs is `unitsFor` (1 credit up to 10 swaps, 2 above, Hugh
+ * 2026-10-30; it was 1 at any N, §12 Q2).
  *
  * - Both lists reach their target: charged.
  * - A short list is charged only when the PLAYER's own restrictions cost those cards: no model-caused drop on that list,
@@ -32,6 +33,17 @@ export type ListOutcome = {
    *  still does. */
   poolExhausted?: boolean;
 };
+
+/** The most swaps a one-credit run asks for (Hugh, 2026-10-30): 1 to 10 cost 1 credit, 11 to `MAX_COUNT` cost 2. */
+export const ONE_CREDIT_MAX_COUNT = 10;
+
+/**
+ * The credits a v2 run costs, from the count the player REQUESTED (never what the run kept): 1 for N up to
+ * `ONE_CREDIT_MAX_COUNT`, else 2. Reserved whole as `model_calls.units`; a refund returns all of it. Pure.
+ */
+export function unitsFor(requestedCount: number): 1 | 2 {
+  return requestedCount <= ONE_CREDIT_MAX_COUNT ? 1 : 2;
+}
 
 export type Charge =
   | { outcome: "spent" }

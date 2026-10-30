@@ -277,6 +277,8 @@ export const deckTuningCopy = {
   // owed to /copy-review.
   allowance: {
     spent: "No credits left. The next one comes back within a day.",
+    // A Suggested changes v2 run over 10 swaps costs 2 credits and the player holds 1 (one source funds a run).
+    costsTwo: "This run costs 2 credits. Ask for 10 changes or fewer to use 1.",
   },
 
   // The game note and the Games tab's pointer live in `deck-tuning-games.ts`, which the game log and the
