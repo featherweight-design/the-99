@@ -24,27 +24,29 @@ vi.mock("../../app/friends/actions", () => ({
 
 import { PodsPane } from "./pods-pane";
 import { socialCopy } from "../../lib/copy/social";
+import { named } from "../../lib/person-name/mint";
+import { plain } from "../../lib/person-name/testing";
 import { folderCopy } from "../../lib/copy/folders";
 import type { Friend, Pod, PodMember } from "../../lib/social/access";
 
 const P = socialCopy.pods;
 const ART = "https://cards.scryfall.io/art_crop/x.jpg";
 const cmd = (name: string) => ({ oracleId: `o-${name}`, name, artCropUri: ART });
-const member = (over: Partial<PodMember> & { displayName: string }): PodMember => ({
-  publicId: `p-${over.displayName}`, joinedAt: new Date("2026-10-01"), isOwner: false, isYou: false, isFriend: true, commander: null, ...over,
+const member = (over: Partial<Omit<PodMember, "displayName">> & { displayName: string }): PodMember => ({
+  publicId: `p-${over.displayName}`, joinedAt: new Date("2026-10-01"), isOwner: false, isYou: false, isFriend: true, commander: null, ...over, displayName: named(over.displayName),
 });
 const ME = member({ displayName: "Hugh", isYou: true, isFriend: false, commander: cmd("Atraxa") });
 const DAVE = member({ displayName: "Dave", commander: cmd("Korvold") });
 const PRIYA = member({ displayName: "Priya" });
 const SAM = member({ displayName: "Sam", isFriend: false });
 const friend = (displayName: string, commander: Friend["commander"] = null): Friend => ({
-  publicId: `p-${displayName}`, displayName, since: new Date("2026-10-02"), commander,
+  publicId: `p-${displayName}`, displayName: named(displayName), since: new Date("2026-10-02"), commander,
 });
 const mine = (over: Partial<Pod> = {}): Pod => ({
-  id: "pod-1", name: "Thursday", isOwner: true, members: [{ ...ME, isOwner: true }, DAVE, PRIYA], nextOwner: null, ...over,
+  id: "pod-1", name: named("Thursday"), isOwner: true, members: [{ ...ME, isOwner: true }, DAVE, PRIYA], nextOwner: null, ...over,
 });
 const theirs = (over: Partial<Pod> = {}): Pod => ({
-  id: "pod-2", name: "Adventurers", isOwner: false, members: [{ ...SAM, isOwner: true }, ME, DAVE], nextOwner: null, ...over,
+  id: "pod-2", name: named("Adventurers"), isOwner: false, members: [{ ...SAM, isOwner: true }, ME, DAVE], nextOwner: null, ...over,
 });
 const FRIENDS = [friend("Dave", cmd("Korvold")), friend("Priya"), friend("Zed"), friend("Alex", cmd("Ghalta"))];
 
@@ -52,7 +54,7 @@ const press = async (el: HTMLElement) => {
   await act(async () => { fireEvent.click(el); });
 };
 
-const trigger = (name: string) => screen.getByRole("button", { name: P.menuAria(name) });
+const trigger = (name: string) => screen.getByRole("button", { name: plain(P.menuAria(named(name))) });
 const openMenu = async (name: string) => {
   // A real press starts with a pointerdown, which is what closes a menu open elsewhere.
   fireEvent.pointerDown(trigger(name));
@@ -112,7 +114,7 @@ describe("the menu", () => {
     const row = within(screen.getByRole("menu")).getAllByRole("menuitem")[2];
     fireEvent.blur(row, { relatedTarget: null });
     await press(row);
-    expect(screen.getByRole("dialog").getAttribute("aria-label")).toBe(P.delHeading("Thursday"));
+    expect(screen.getByRole("dialog").getAttribute("aria-label")).toBe(plain(P.delHeading(named("Thursday"))));
   });
 
   it("closes on a press outside", async () => {
@@ -135,7 +137,7 @@ describe("rename", () => {
     const field = await startRename();
     expect(document.activeElement).toBe(field);
     expect(field.value).toBe("Thursday");
-    expect(screen.queryByRole("button", { name: P.menuAria("Thursday") })).toBeNull();
+    expect(screen.queryByRole("button", { name: plain(P.menuAria(named("Thursday"))) })).toBeNull();
     fireEvent.change(field, { target: { value: "  Friday  " } });
     await press(screen.getByRole("button", { name: P.save }));
     expect(m.rename).toHaveBeenCalledTimes(1);
@@ -238,22 +240,22 @@ describe("leave and delete", () => {
   const confirmPane = () => screen.getByRole("dialog");
 
   it("asks with the hand-on sentence when the owner leaves a pod with others in it, Keep focused first", async () => {
-    render(<PodsPane pods={[mine({ nextOwner: { publicId: "p-Dave", displayName: "Dave" } })]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[mine({ nextOwner: { publicId: "p-Dave", displayName: named("Dave") } })]} sharedIds={[]} friends={FRIENDS} />);
     await openMenu("Thursday");
     await press(screen.getByRole("menuitem", { name: P.leave }));
-    expect(confirmPane().getAttribute("aria-label")).toBe(P.leaveHeading("Thursday"));
-    expect(confirmPane().textContent).toContain(P.leaveOwnerBody("Dave"));
+    expect(confirmPane().getAttribute("aria-label")).toBe(plain(P.leaveHeading(named("Thursday"))));
+    expect(confirmPane().textContent).toContain(plain(P.leaveOwnerBody(named("Dave"))));
     expect(document.activeElement).toBe(screen.getByRole("button", { name: folderCopy.del.cancel }));
     expect(screen.getByRole("button", { name: P.leaveConfirm })).toBeTruthy();
   });
 
   it("tells a member who can add them back, and the last member that leaving deletes it", async () => {
-    const alone = mine({ id: "pod-3", name: "Solo", members: [{ ...ME, isOwner: true }] });
+    const alone = mine({ id: "pod-3", name: named("Solo"), members: [{ ...ME, isOwner: true }] });
     render(<PodsPane pods={[theirs(), alone]} sharedIds={[]} friends={FRIENDS} />);
     await openMenu("Adventurers");
     await press(screen.getByRole("menuitem", { name: P.leave }));
     // Sam is not the reader's friend, so the way back runs through a friendship first (C1).
-    expect(confirmPane().textContent).toContain(P.leaveMemberStrangerBody("Sam"));
+    expect(confirmPane().textContent).toContain(plain(P.leaveMemberStrangerBody(named("Sam"))));
     await press(screen.getByRole("button", { name: folderCopy.del.cancel }));
     expect(document.activeElement).toBe(screen.getByRole("menuitem", { name: P.leave }));
     await openMenu("Solo");
@@ -266,33 +268,33 @@ describe("leave and delete", () => {
     render(<PodsPane pods={[theirs({ members: [{ ...DAVE, isOwner: true }, ME] })]} sharedIds={[]} friends={FRIENDS} />);
     await openMenu("Adventurers");
     await press(screen.getByRole("menuitem", { name: P.leave }));
-    expect(confirmPane().textContent).toContain(P.leaveMemberBody("Dave"));
+    expect(confirmPane().textContent).toContain(plain(P.leaveMemberBody(named("Dave"))));
   });
 
   it("holds Leave while the heir's removal waits for the redraw, and lets it go when the redraw lands", async () => {
-    const pod = mine({ nextOwner: { publicId: "p-Dave", displayName: "Dave" } });
+    const pod = mine({ nextOwner: { publicId: "p-Dave", displayName: named("Dave") } });
     m.remove.mockReturnValue(new Promise(() => {}));
     const { rerender } = render(<PodsPane pods={[pod]} sharedIds={[]} friends={FRIENDS} />);
     // Seats carry their ✕ only in the edit state (small items item 7), and Done hands the menu back.
     await press(screen.getByRole("button", { name: P.edit }));
-    await press(screen.getByRole("button", { name: P.removeMemberAria("Dave", "Thursday") }));
+    await press(screen.getByRole("button", { name: plain(P.removeMemberAria(named("Dave"), named("Thursday"))) }));
     await press(screen.getByRole("button", { name: P.done }));
     await openMenu("Thursday");
     const leave = screen.getByRole("menuitem", { name: P.leave });
     expect(leave.getAttribute("aria-disabled")).toBe("true");
     await press(leave);
     expect(screen.queryByRole("dialog")).toBeNull();
-    rerender(<PodsPane pods={[mine({ members: pod.members.filter((x) => x.displayName !== "Dave"), nextOwner: { publicId: "p-Priya", displayName: "Priya" } })]} sharedIds={[]} friends={FRIENDS} />);
+    rerender(<PodsPane pods={[mine({ members: pod.members.filter((x) => plain(x.displayName) !== "Dave"), nextOwner: { publicId: "p-Priya", displayName: named("Priya") } })]} sharedIds={[]} friends={FRIENDS} />);
     await press(screen.getByRole("menuitem", { name: P.leave }));
-    expect(confirmPane().textContent).toContain(P.leaveOwnerBody("Priya"));
+    expect(confirmPane().textContent).toContain(plain(P.leaveOwnerBody(named("Priya"))));
   });
 
   it("does not hold Leave for the removal of a member who is not the heir", async () => {
     m.remove.mockReturnValue(new Promise(() => {}));
-    render(<PodsPane pods={[mine({ nextOwner: { publicId: "p-Dave", displayName: "Dave" } })]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[mine({ nextOwner: { publicId: "p-Dave", displayName: named("Dave") } })]} sharedIds={[]} friends={FRIENDS} />);
     // Seats carry their ✕ only in the edit state (small items item 7), and Done hands the menu back.
     await press(screen.getByRole("button", { name: P.edit }));
-    await press(screen.getByRole("button", { name: P.removeMemberAria("Priya", "Thursday") }));
+    await press(screen.getByRole("button", { name: plain(P.removeMemberAria(named("Priya"), named("Thursday"))) }));
     await press(screen.getByRole("button", { name: P.done }));
     await openMenu("Thursday");
     expect(screen.getByRole("menuitem", { name: P.leave }).getAttribute("aria-disabled")).toBeNull();
@@ -347,7 +349,7 @@ describe("leave and delete", () => {
     render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
     await openMenu("Thursday");
     await press(screen.getByRole("menuitem", { name: P.del }));
-    expect(confirmPane().getAttribute("aria-label")).toBe(P.delHeading("Thursday"));
+    expect(confirmPane().getAttribute("aria-label")).toBe(plain(P.delHeading(named("Thursday"))));
     expect(confirmPane().textContent).toContain(P.delBody);
     await press(screen.getByRole("button", { name: P.delConfirm }));
     expect(m.del).toHaveBeenCalledWith("pod-1");

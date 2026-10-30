@@ -63,7 +63,7 @@ import { plain } from "../../../../lib/person-name/testing";
 const p = socialCopy.friendPage;
 const BOTH = { SOCIAL_FRIENDS_ENABLED: "true" };
 const COLIN = {
-  publicId: "00000000-0000-4000-8000-000000000002", displayName: "Colin", since: new Date("2026-10-02T12:00:00Z"),
+  publicId: "00000000-0000-4000-8000-000000000002", displayName: named("Colin"), since: new Date("2026-10-02T12:00:00Z"),
   commander: { oracleId: "00000000-0000-4000-8000-0000000000aa", name: "Sai, Master Thopterist", artCropUri: null },
 };
 const LINE = {
@@ -284,7 +284,7 @@ describe("a friend's page group", () => {
       expect(within(tile).queryByRole("link")).toBeNull();
       expect(tile.textContent).toContain("To buy");
       expect(screen.queryByText(p.decks.lineOpen)).toBeNull();
-      expect(screen.getByText(p.decks.line("Colin"))).toBeTruthy();
+      expect(screen.getByText(plain(p.decks.line(named("Colin"))))).toBeTruthy();
     });
 
     it("defers the art of every tile after the first four", async () => {
@@ -296,7 +296,7 @@ describe("a friend's page group", () => {
 
     it("rewords the empty tab's body: a deck shared shows with its whole list", async () => {
       m.loadFriendDecks.mockResolvedValue([]);
-      expect(renderToString(await FriendDecksPage({ params: params() }))).toContain(p.decks.emptyBodyOpen("Colin"));
+      expect(renderToString(await FriendDecksPage({ params: params() }))).toContain(plain(p.decks.emptyBodyOpen(named("Colin"))));
     });
   });
 
@@ -320,13 +320,13 @@ describe("FriendHead and the wishlist tab", () => {
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Colin");
     expect(screen.getByText("Friend since Oct 2")).toBeTruthy();
     expect(screen.queryByText(/Sai, Master Thopterist/)).toBeNull();
-    expect(screen.getByRole("button", { name: socialCopy.friends.menuAria("Colin") })).toBeTruthy();
+    expect(screen.getByRole("button", { name: plain(socialCopy.friends.menuAria(named("Colin"))) })).toBeTruthy();
   });
 
   it("heads the wishlist with its count and view only, and captions a tile `wants N`, never an owned count", () => {
     draw();
     const head = screen.getByRole("heading", { level: 2 });
-    expect(head.textContent).toBe(`${p.head("Colin")}1${p.viewOnly}`);
+    expect(head.textContent).toBe(`${plain(p.head(named("Colin")))}1${p.viewOnly}`);
     const tile = screen.getByRole("listitem");
     expect(within(tile).getByText("Rhystic Study")).toBeTruthy();
     expect(within(tile).getByTestId("wishlist-tile-caption").textContent).toBe("wants 2");
@@ -345,8 +345,8 @@ describe("FriendHead and the wishlist tab", () => {
 
   it("draws the empty state with no tiles", () => {
     draw([]);
-    expect(screen.getByText(p.emptyTitle("Colin"))).toBeTruthy();
-    expect(screen.getByText(p.emptyBody("Colin"))).toBeTruthy();
+    expect(screen.getByText(plain(p.emptyTitle(named("Colin"))))).toBeTruthy();
+    expect(screen.getByText(plain(p.emptyBody(named("Colin"))))).toBeTruthy();
     expect(screen.queryByRole("listitem")).toBeNull();
     expect(screen.getByRole("heading", { level: 2 }).textContent).toContain("0");
   });
@@ -354,7 +354,7 @@ describe("FriendHead and the wishlist tab", () => {
   it("leaves for /friends once the removal lands", async () => {
     m.unfriendAction.mockResolvedValue({ ok: true });
     draw();
-    fireEvent.click(screen.getByRole("button", { name: socialCopy.friends.menuAria("Colin") }));
+    fireEvent.click(screen.getByRole("button", { name: plain(socialCopy.friends.menuAria(named("Colin"))) }));
     fireEvent.click(screen.getByRole("button", { name: socialCopy.friends.remove }));
     await act(async () => { fireEvent.click(screen.getAllByRole("button", { name: socialCopy.friends.removeConfirm }).at(-1)!); });
     expect(m.unfriendAction).toHaveBeenCalledWith(COLIN.publicId);
@@ -364,7 +364,7 @@ describe("FriendHead and the wishlist tab", () => {
   it("stays, with the list's toast, when the removal fails", async () => {
     m.unfriendAction.mockResolvedValue({ ok: false, reason: "off" });
     draw();
-    fireEvent.click(screen.getByRole("button", { name: socialCopy.friends.menuAria("Colin") }));
+    fireEvent.click(screen.getByRole("button", { name: plain(socialCopy.friends.menuAria(named("Colin"))) }));
     fireEvent.click(screen.getByRole("button", { name: socialCopy.friends.remove }));
     await act(async () => { fireEvent.click(screen.getAllByRole("button", { name: socialCopy.friends.removeConfirm }).at(-1)!); });
     expect(m.replace).not.toHaveBeenCalled();

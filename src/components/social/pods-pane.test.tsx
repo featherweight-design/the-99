@@ -22,26 +22,28 @@ vi.mock("../../app/friends/actions", () => ({
 import { PodsPane } from "./pods-pane";
 import { FriendInviteContext } from "./invite-context";
 import { socialCopy } from "../../lib/copy/social";
+import { named } from "../../lib/person-name/mint";
+import { plain } from "../../lib/person-name/testing";
 import type { Friend, Pod, PodMember } from "../../lib/social/access";
 
 const P = socialCopy.pods;
 const ART = "https://cards.scryfall.io/art_crop/x.jpg";
 const cmd = (name: string) => ({ oracleId: `o-${name}`, name, artCropUri: ART });
-const member = (over: Partial<PodMember> & { displayName: string }): PodMember => ({
-  publicId: `p-${over.displayName}`, joinedAt: new Date("2026-10-01"), isOwner: false, isYou: false, isFriend: true, commander: null, ...over,
+const member = (over: Partial<Omit<PodMember, "displayName">> & { displayName: string }): PodMember => ({
+  publicId: `p-${over.displayName}`, joinedAt: new Date("2026-10-01"), isOwner: false, isYou: false, isFriend: true, commander: null, ...over, displayName: named(over.displayName),
 });
 const ME = member({ displayName: "Hugh", isYou: true, isFriend: false, commander: cmd("Atraxa") });
 const DAVE = member({ displayName: "Dave", commander: cmd("Korvold") });
 const PRIYA = member({ displayName: "Priya" });
 const SAM = member({ displayName: "Sam", isFriend: false });
 const friend = (displayName: string, commander: Friend["commander"] = null): Friend => ({
-  publicId: `p-${displayName}`, displayName, since: new Date("2026-10-02"), commander,
+  publicId: `p-${displayName}`, displayName: named(displayName), since: new Date("2026-10-02"), commander,
 });
 const mine = (over: Partial<Pod> = {}): Pod => ({
-  id: "pod-1", name: "Thursday", isOwner: true, members: [{ ...ME, isOwner: true }, DAVE, PRIYA], nextOwner: null, ...over,
+  id: "pod-1", name: named("Thursday"), isOwner: true, members: [{ ...ME, isOwner: true }, DAVE, PRIYA], nextOwner: null, ...over,
 });
 const theirs = (over: Partial<Pod> = {}): Pod => ({
-  id: "pod-2", name: "Adventurers", isOwner: false, members: [{ ...SAM, isOwner: true }, ME, DAVE], nextOwner: null, ...over,
+  id: "pod-2", name: named("Adventurers"), isOwner: false, members: [{ ...SAM, isOwner: true }, ME, DAVE], nextOwner: null, ...over,
 });
 const FRIENDS = [friend("Dave", cmd("Korvold")), friend("Priya"), friend("Zed"), friend("Alex", cmd("Ghalta"))];
 
@@ -124,7 +126,7 @@ describe("the table", () => {
     expect(seatNames(own)).toEqual([P.you, "Dave", "Priya"]);
     expect(within(own).getAllByTestId("pod-seat")[0].hasAttribute("data-you")).toBe(true);
     const other = card("Adventurers");
-    expect(other.textContent).toContain(P.metaOther(3, "Sam"));
+    expect(other.textContent).toContain(plain(P.metaOther(3, named("Sam"))));
   });
 
   it("draws art for you and friends with a commander, initials otherwise, and a wash only from art", () => {
@@ -162,7 +164,7 @@ describe("the owner's ✕", () => {
     expect(within(card("Adventurers")).queryByRole("button", { name: P.edit })).toBeNull();
     fireEvent.click(within(card("Thursday")).getByRole("button", { name: P.edit }));
     expect(within(card("Thursday")).getAllByRole("button", { name: /^Remove / }).map((b) => b.getAttribute("aria-label")))
-      .toEqual([P.removeMemberAria("Dave", "Thursday"), P.removeMemberAria("Priya", "Thursday")]);
+      .toEqual([plain(P.removeMemberAria(named("Dave"), named("Thursday"))), plain(P.removeMemberAria(named("Priya"), named("Thursday")))]);
     expect(within(card("Adventurers")).queryAllByRole("button", { name: /^Remove / })).toHaveLength(0);
   });
 
@@ -170,7 +172,7 @@ describe("the owner's ✕", () => {
     m.remove.mockResolvedValue({ ok: true, changed: false });
     render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
     fireEvent.click(within(card("Thursday")).getByRole("button", { name: P.edit }));
-    await press(screen.getByRole("button", { name: P.removeMemberAria("Dave", "Thursday") }));
+    await press(screen.getByRole("button", { name: plain(P.removeMemberAria(named("Dave"), named("Thursday"))) }));
     expect(m.remove).toHaveBeenCalledWith("pod-1", "p-Dave");
     expect(seatNames(card("Thursday"))).toEqual([P.you, "Priya"]);
     expect(screen.queryByRole("alert")).toBeNull();
@@ -180,7 +182,7 @@ describe("the owner's ✕", () => {
     m.remove.mockRejectedValue(new Error("down"));
     render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
     fireEvent.click(within(card("Thursday")).getByRole("button", { name: P.edit }));
-    await press(screen.getByRole("button", { name: P.removeMemberAria("Dave", "Thursday") }));
+    await press(screen.getByRole("button", { name: plain(P.removeMemberAria(named("Dave"), named("Thursday"))) }));
     expect(seatNames(card("Thursday"))).toEqual([P.you, "Dave", "Priya"]);
     expect(screen.getByRole("alert").textContent).toContain(P.failed);
   });
@@ -188,7 +190,7 @@ describe("the owner's ✕", () => {
   it("lets the server's redraw retire a held removal", async () => {
     const { rerender } = render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
     fireEvent.click(within(card("Thursday")).getByRole("button", { name: P.edit }));
-    await press(screen.getByRole("button", { name: P.removeMemberAria("Dave", "Thursday") }));
+    await press(screen.getByRole("button", { name: plain(P.removeMemberAria(named("Dave"), named("Thursday"))) }));
     // The redraw brings Dave back (someone re-added him): the server's truth wins.
     rerender(<PodsPane pods={[mine({ members: [{ ...ME, isOwner: true }, DAVE, PRIYA, SAM] })]} sharedIds={[]} friends={FRIENDS} />);
     expect(seatNames(card("Thursday"))).toContain("Dave");
@@ -207,7 +209,7 @@ describe("+ Add friends", () => {
   it("offers the friends not in the pod, by name, nothing ticked, and adds every ticked friend in one write", async () => {
     render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
     await press(screen.getByRole("button", { name: P.addFriends }));
-    const dialog = screen.getByRole("dialog", { name: P.addTitle("Thursday") });
+    const dialog = screen.getByRole("dialog", { name: plain(P.addTitle(named("Thursday"))) });
     const boxes = within(dialog).getAllByRole("checkbox") as HTMLInputElement[];
     expect(boxes.map((b) => b.closest("label")?.querySelector(".truncate")?.textContent)).toEqual(["Alex", "Zed"]);
     expect(boxes.every((b) => !b.checked)).toBe(true);
@@ -306,7 +308,7 @@ describe("round 1: races and edges", () => {
   it("keeps a member removed and re-added before the redraw, by their new join", async () => {
     const { rerender } = render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
     fireEvent.click(within(card("Thursday")).getByRole("button", { name: P.edit }));
-    await press(screen.getByRole("button", { name: P.removeMemberAria("Dave", "Thursday") }));
+    await press(screen.getByRole("button", { name: plain(P.removeMemberAria(named("Dave"), named("Thursday"))) }));
     // Same ids, same order: only Dave's join moved.
     rerender(<PodsPane pods={[mine({ members: [{ ...ME, isOwner: true }, { ...DAVE, joinedAt: new Date("2026-10-15") }, PRIYA] })]} sharedIds={[]} friends={FRIENDS} />);
     expect(seatNames(card("Thursday"))).toContain("Dave");
@@ -355,7 +357,7 @@ describe("round 1: races and edges", () => {
     fireEvent.click(alex);
     fireEvent.click(zed);
     // The friendship with Alex ended: the redraw drops him from the offer.
-    rerender(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS.filter((f) => f.displayName !== "Alex")} />);
+    rerender(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS.filter((f) => plain(f.displayName) !== "Alex")} />);
     await press(screen.getByRole("button", { name: P.addConfirm(1) }));
     expect(m.add).toHaveBeenCalledWith("pod-1", ["p-Zed"]);
   });
@@ -413,7 +415,7 @@ describe("the switch going off mid-visit", () => {
     m.remove.mockResolvedValue({ ok: false, reason: "off" });
     render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
     fireEvent.click(within(card("Thursday")).getByRole("button", { name: P.edit }));
-    await press(screen.getByRole("button", { name: P.removeMemberAria("Dave", "Thursday") }));
+    await press(screen.getByRole("button", { name: plain(P.removeMemberAria(named("Dave"), named("Thursday"))) }));
     expect(m.refresh).toHaveBeenCalled();
     expect(screen.queryByRole("alert")).toBeNull();
   });

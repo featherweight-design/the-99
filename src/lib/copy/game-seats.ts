@@ -4,6 +4,22 @@
 // hint now opens on the instruction. The friend and pod strings (PR 3) come from the same file; the matchup
 // strings land with the PR that draws them. NO STRING HERE PRINTS A PERCENTAGE: every count carries its denominator.
 // Opponent labels are player-typed (30 max) and reach no model.
+import { personText, type PersonParts, type ThirdPartyName } from "../person-name";
+
+/**
+ * A line that names a friend: a branded name yields parts (drawn by `<PersonText>`, so the name is marked), a plain one
+ * (the reader's own, or a caller not yet converted) still yields the string it always did. One signature per caller.
+ */
+type ByName = {
+  (name: string): string;
+  (name: ThirdPartyName): PersonParts;
+  (name: string | ThirdPartyName): string | PersonParts;
+};
+const byName = (build: (name: string | ThirdPartyName) => PersonParts): ByName =>
+  ((name: string | ThirdPartyName) => {
+    const parts = build(name);
+    return typeof name === "string" ? parts.filter((p): p is string => typeof p === "string").join("") : parts;
+  }) as ByName;
 
 /** A card search that failed, said apart from its retry: the seat picker joins them into one line, and quick-add's
  *  toast puts the second on its press (small items 2, item 8). */
@@ -19,16 +35,16 @@ export const gameSeatsCopy = {
     youTag: "YOU",
     add: "Add opponent",
     /** The seat's art press, reopening the picker. */
-    change: (name: string) => `Change ${name}`,
+    change: byName((name) => personText`Change ${name}`),
     /** The seat's ✕. */
-    clear: (name: string) => `Clear ${name}’s seat`,
+    clear: byName((name) => personText`Clear ${name}’s seat`),
     addName: "Add a name",
     labelAria: "Who played it",
     labelCounter: (n: number) => `${n} / 30`,
     /** On a loss, with at least one seat filled. */
     wonHint: "If one of them won, press their trophy. Optional.",
     wonHintPhone: "If one of them won, press their Won. Optional.",
-    wonAria: (name: string) => `${name} won`,
+    wonAria: byName((name) => personText`${name} won`),
     wonPill: "Won",
     wonLine: "won this game",
     /** Under a friend seated alone, and the press that opens that friend's decks. */
@@ -36,7 +52,10 @@ export const gameSeatsCopy = {
     /** The chips' label, beside one chip per pod. */
     seatPod: "Seat a pod",
     /** A pod larger than the table: who was left out. `names` reads "Sam, Jo and Lee". */
-    podLeftOut: (names: string) => `No room for ${names}. A pod seats up to 8.`,
+    podLeftOut: ((names) => (typeof names === "string" ? `No room for ${names}. A pod seats up to 8.` : personText`No room for ${names}. A pod seats up to 8.`)) as {
+      (names: string): string;
+      (names: PersonParts): PersonParts;
+    },
     /** A pod's seats could not be read. */
     podFailed: "Couldn’t seat that pod. Try again.",
     /** A pod size pressed below the filled seats; `filled` is how many are. The handoff said "All N seats", false while the pod has room left. */
@@ -55,14 +74,14 @@ export const gameSeatsCopy = {
     seated: "seated",
     footFriends: "Type to search every commander too.",
     back: "Back to friends",
-    theirDecks: (name: string) => `${name}’s decks`,
-    footDecks: (name: string) => `Name and commander only: nothing else of ${name}’s is read.`,
-    noDecks: (name: string) => `${name} has no decks in The 99.`,
+    theirDecks: byName((name) => personText`${name}’s decks`),
+    footDecks: byName((name) => personText`Name and commander only: nothing else of ${name}’s is read.`),
+    noDecks: byName((name) => personText`${name} has no decks in The 99.`),
     anotherCommander: "Another commander",
-    anotherCommanderSub: (name: string) => `search the catalog for what ${name} played`,
+    anotherCommanderSub: byName((name) => personText`search the catalog for what ${name} played`),
     /** Replaces Another commander when the friend has no decks. */
     pickCommander: "Pick a commander",
-    justFriend: (name: string) => `Just ${name}`,
+    justFriend: byName((name) => personText`Just ${name}`),
     justFriendSub: "no deck or commander",
     /**
      * Not drawn in the handoff (friend decks PR 5, Hugh's ruling 2026-10-22): offered when the friend's own rules keep
@@ -71,10 +90,10 @@ export const gameSeatsCopy = {
      */
     notListed: "A deck not listed",
     notListedSub: "no deck is named",
-    footNoDecks: (name: string) => `Either way, ${name}’s name is kept with the game.`,
+    footNoDecks: byName((name) => personText`Either way, ${name}’s name is kept with the game.`),
     /** Not drawn in the handoff: a friends or decks read that failed is not an empty list. */
     friendsFailed: "Couldn’t load your friends. Any commander still works.",
-    decksFailed: (name: string) => `Couldn’t load ${name}’s decks.`,
+    decksFailed: byName((name) => personText`Couldn’t load ${name}’s decks.`),
     footAnyone: "Any commander in the catalog. Name who played it on the seat.",
     close: "Close",
     searching: "Searching…",

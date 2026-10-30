@@ -31,14 +31,24 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   (`SpareFriend`, `SharedPod`, `OtherSide`, an ask's `deckName` as the holder sees it, `waiting.ts`, `your-requests.ts`;
   the friend page's Spares tab, the stand-ins and cart spare rows, Waiting on you, Your requests, the answer sheet,
   the lead story's ask and receipt, Settings' pod list, and the cart's Friend filter, By friend panels and fact
-  lists). A copy line that names a friend takes `string | ThirdPartyName` and returns `PersonParts`; `canSpare`,
-  `keeping` and `tradeAskAria` are overloaded so a plain-string caller (Home's feed, push) still gets a string. The
-  shared `FilterPanel` (`filter-panel.tsx`, the one `REVEAL_ALLOW` entry PR C adds) reads a friend's label only to hand
-  its copy functions a string and marks the row, the trigger and the label span. NOT yet marked, because they read
-  `Friend.displayName` or other families (`access.ts`, PR B; feed and push, PR D): the receipt after Accept on
-  `/friends?accepted=`, Home's first-run Friends row, the friend page's own head and tab names, Home's feed rows and
-  push text (they draw a plain string, so their titles stay strings), and `FilterPanel`'s live-region announcement, which reads a friend's option as a string. Friends and pods, feed
-  and push, friend decks, and Rule 0 follow (PRs B, D, E, F); autocapture comes back on in G.
+  lists); and PR B, friends and pods (`access.ts`: `Friend.displayName`, `PodMember.displayName`, `Pod.name`,
+  `Pod.nextOwner`, all branded, a pod's name for its creator too; the Friends list, row link and menu, the friend page's
+  head and Decks and Wishlist tabs, a friend's deck page eyebrow and back link, the pods pane, card, menu, seats and Add
+  friends sheet, the Leave and Delete confirms, the receipt after Accept on `/friends?accepted=`, Home's Friends section
+  and first-run Friends row, and the game log's seat picker, its pod chips and the seats it fills: `PickerFriend`,
+  `PickerPod` and `PodSeat` are branded, and `SeatFriend.name` is `string | ThirdPartyName`). A copy line that names a
+  friend takes `string | ThirdPartyName` and returns `PersonParts`; `canSpare`, `keeping` and `tradeAskAria` are
+  overloaded so a plain-string caller (Home's feed, push) still gets a string, and so are the game log's seat and picker
+  lines (`byName` in `copy/game-seats.ts`: a plain name yields the string it always did, a branded one yields parts). A
+  pod's rename field starts from `draftText(name)` and carries `NO_CAPTURE` itself; a typed filter reads a name through
+  `nameIncludes`, a sort through `compareNames`. The shared `FilterPanel` (`filter-panel.tsx`, the one `REVEAL_ALLOW`
+  entry PR C adds) reads a friend's label only to hand its copy functions a string and marks the row, the trigger and
+  the label span. NOT yet marked, because they read other families (feed and push, PR D; friend decks and the cart's
+  deck names, PR E; Rule 0 and the game log's saved opponents, PR F): Home's feed rows and push text (they draw a plain
+  string, so their titles stay strings), `FilterPanel`'s live-region announcement, which reads a friend's option as a
+  string, a game's saved opponent names (`friendNameThen`), and `redeemInviteAction`'s answer, which still carries the
+  inviter's plain name though nothing draws it. Feed and push, friend decks, and Rule 0 follow (PRs D, E, F); autocapture
+  comes back on in G.
 
   **Spares are view-only and shared per pod** (Q3, Q12): `loadFriendSpares(viewer, oracleIds)` reads the grants (the
   friendship, the friend's `pod_spare_shares` grant, the friend's membership of that pod and the viewer's, in one

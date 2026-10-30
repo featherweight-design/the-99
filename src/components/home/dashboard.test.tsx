@@ -4,6 +4,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn(), push: 
 vi.mock("../../app/friends/actions", () => ({ createInviteAction: vi.fn() }));
 vi.mock("../social/use-invite-watch", () => ({ useInviteWatch: vi.fn() }));
 import { Dashboard } from "./dashboard";
+import { named } from "../../lib/person-name/mint";
 import type { DeckListItem } from "../../lib/decks/read";
 
 // `inUse` is a Map and `ready` a slice rather than a list, because the sections
@@ -244,7 +245,7 @@ describe("Dashboard at zero cards with decks (no-collection entry S12)", () => {
 describe("Friends on Home", () => {
   const FRIENDS = {
     you: { displayName: "Hugh", commander: null },
-    friends: [{ publicId: "p1", displayName: "Colin", commander: null }],
+    friends: [{ publicId: "p1", displayName: named("Colin"), commander: null }],
     links: [],
     games: true,
     friendPages: true,
