@@ -34,7 +34,7 @@ export default async function CollectionListLayout({
   // The reader's resolved switches (`requestSwitchEnv`), not the environment alone.
   const env = await requestSwitchEnv(userId);
   const editEnabled = collectionEditEnabled(env);
-  // The Add cards sheet's way into Precons I own (no-collection entry S18): both switches, or the sheet is as shipped.
+  // The Add cards sheet's way into Precons I own (no-collection entry S18): the line's switch, or the sheet is as shipped.
   const preconPick = collectionEditEnabled(env);
   const [stats, lastUpdated, historyHasEntries] = await Promise.all([
     getCollectionStats(userId),

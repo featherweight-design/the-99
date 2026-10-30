@@ -231,7 +231,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       // failure, which walks the plain shuffle.
       feedOn ? null : perf.timed("unplayedCounts", () => loadUnplayedCounts(userId, env)),
       // The arrivals banner (upcoming precons): read only past the first-run return above, so a first-run
-      // account neither sees it nor reads it. Null when Precons is off, when nothing is new, or when the read
+      // account neither sees it nor reads it. Null when nothing is new or when the read
       // failed, which records a fallback so that render is served and not stored.
       !feedOn ? perf.timed("arrivals", () => loadArrivalsBanner(userId, now)) : null,
     ]);
@@ -407,7 +407,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   }
 
   // A precon pick's receipt (no-collection entry S5): read per request from the ledger, outside the cached payload,
-  // and only when the address claims one, with the pick's switches on (the line's and precons'). A failed read draws
+  // and only when the address claims one, with the pick's switch on (the line's). A failed read draws
   // no strip.
   let receipt: PickReceipt | null = null;
   const claim = noCollectionEntry ? (await searchParams)?.[PICK_RECEIPT_PARAM] : undefined;

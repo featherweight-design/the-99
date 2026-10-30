@@ -23,7 +23,7 @@ import { requestSwitchEnv } from "../lib/switches/request";
  * 0123), which retires Home's cached payload, so the next load draws neither half.
  *
  * No revalidation: the banner collapses in the browser, and re-rendering Home inside this reply would pay for a
- * page the reader is already looking at. The arrivals half writes nothing while Precons is off. Returns, when the
+ * page the reader is already looking at. Returns, when the
  * banner claimed About keys, `heldAnswer` of the state the reader is left at (written or not), which the banner
  * acknowledges in this document (a non-empty set ends the first run there).
  */
