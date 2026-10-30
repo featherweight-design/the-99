@@ -74,7 +74,7 @@ export function TuningLimitsBox({
   onSetsChange: (next: string[]) => void;
   ownedOnly: boolean;
   onOwnedOnlyChange: (next: boolean) => void;
-  /** Also cards in my other decks (Small items 4, item 2): shown only while `ownedOnly` is on. */
+  /** Include my other decks (Small items 4, item 2): shown only while `ownedOnly` is on. */
   otherDecks: boolean;
   onOtherDecksChange: (next: boolean) => void;
 }) {

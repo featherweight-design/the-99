@@ -116,7 +116,7 @@ describe("ownedCopyOffered", () => {
     expect(ownedCopyOffered(undefined, {})).toBe(true);
   });
 
-  it("offers a held copy only with Also cards in my other decks", () => {
+  it("offers a held copy only with Include my other decks", () => {
     expect(ownedCopyOffered(0, {})).toBe(false);
     expect(ownedCopyOffered(-1, { otherDecks: false })).toBe(false);
     expect(ownedCopyOffered(0, { otherDecks: true })).toBe(true);

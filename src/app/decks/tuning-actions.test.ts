@@ -940,7 +940,7 @@ describe("saveDeckLimits (H35 PR 2, \"Kept for this deck\")", () => {
     expect(calls.headerUpdates[0].set).toMatchObject({ tuningCapCents: null, tuningSets: [], tuningOwnedOnly: false });
   });
 
-  it("saves Also cards in my other decks alone (Small items 4, item 2)", async () => {
+  it("saves Include my other decks alone (Small items 4, item 2)", async () => {
     const result = await saveDeckLimits(DECK, { otherDecks: true });
     expect(result.ok).toBe(true);
     expect(calls.headerUpdates[0].set).toMatchObject({ tuningOtherDecks: true });
