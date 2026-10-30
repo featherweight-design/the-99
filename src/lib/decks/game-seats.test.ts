@@ -5,6 +5,8 @@ import {
 } from "./game-seats";
 import { OPPONENT_LABEL_MAX, parseOpponents } from "./game-opponents";
 import { cleanName } from "../social/rules";
+import { named } from "../person-name/mint";
+import { plain } from "../person-name/testing";
 
 const cmd = (id: string, name = `Cmdr ${id}`): SeatCommander => ({ oracleId: id, name, imageUri: null });
 const seat = (key: string, over: Partial<Seat> = {}): Seat => ({ key, commander: cmd(key), friend: null, deck: null, label: "", won: false, table: null, ...over });
@@ -178,14 +180,14 @@ describe("Seat a pod", () => {
 describe("seats from a table", () => {
   const prefill = {
     seats: [
-      { seat: 2, name: "Colin", deckName: "Zimone Combo", commanderName: "Zimone, Quandrix Prodigy", artCropUri: "z.jpg", friend: true },
-      { seat: 4, name: "Max", deckName: null, commanderName: null, artCropUri: null, friend: false },
+      { seat: 2, name: named("Colin"), deckName: named("Zimone Combo"), commanderName: "Zimone, Quandrix Prodigy", artCropUri: "z.jpg", friend: true },
+      { seat: 4, name: named("Max"), deckName: null, commanderName: null, artCropUri: null, friend: false },
     ],
   };
   const seats = prefillSeats(prefill, (n) => `t${n}`);
 
   it("fills every other seat, a waiting one too, marking the one who is not a friend", () => {
-    expect(seats.map((s) => [s.key, seatName(s), s.table?.deckName, s.table?.mark])).toEqual([
+    expect(seats.map((s) => [s.key, plain(seatName(s)), s.table?.deckName ? plain(s.table.deckName) : null, s.table?.mark])).toEqual([
       ["t2", "Colin", "Zimone Combo", false],
       ["t4", "Max", null, true],
     ]);

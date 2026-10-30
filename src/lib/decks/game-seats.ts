@@ -39,7 +39,7 @@ export type Seat = {
   table: SeatFromTable | null;
 };
 
-export type SeatFromTable = { seat: number; name: string; deckName: string | null; artCropUri: string | null; mark: boolean };
+export type SeatFromTable = { seat: number; name: ThirdPartyName; deckName: ThirdPartyName | null; artCropUri: string | null; mark: boolean };
 
 /** Matches `OPPONENT_LABEL_MAX`; restated here because that module imports the database. */
 export const SEAT_LABEL_MAX = 30;

@@ -11,6 +11,7 @@ import { gameLogCopy } from "../../lib/copy/game-log";
 import { gameSeatsCopy } from "../../lib/copy/game-seats";
 import { ruleZeroCopy } from "../../lib/copy/rule-zero";
 import type { TablePrefill } from "../../lib/social/rule-zero-log";
+import { named } from "../../lib/person-name/mint";
 
 const logGame = vi.fn<(deckId: string, input: Record<string, unknown>) => Promise<{ ok: boolean; message?: string }>>(
   async () => ({ ok: true }),
@@ -35,12 +36,12 @@ const seatsCopy = gameSeatsCopy.seats;
 const SEATING = "a".repeat(64);
 const prefill: TablePrefill = {
   table: { id: "7a0e0000-0000-4000-8000-000000000001", seating: SEATING },
-  podName: "Thursday night",
+  podName: named("Thursday night"),
   podSize: 4,
   seats: [
-    { seat: 2, name: "Colin", deckName: "Zimone Combo", commanderName: "Zimone, Quandrix Prodigy", artCropUri: null, friend: true },
-    { seat: 3, name: "Peter", deckName: null, commanderName: null, artCropUri: null, friend: true },
-    { seat: 4, name: "Max", deckName: "Gisa Zombies", commanderName: "Gisa, Glorious Resurrector", artCropUri: null, friend: false },
+    { seat: 2, name: named("Colin"), deckName: named("Zimone Combo"), commanderName: "Zimone, Quandrix Prodigy", artCropUri: null, friend: true },
+    { seat: 3, name: named("Peter"), deckName: null, commanderName: null, artCropUri: null, friend: true },
+    { seat: 4, name: named("Max"), deckName: named("Gisa Zombies"), commanderName: "Gisa, Glorious Resurrector", artCropUri: null, friend: false },
   ],
 };
 
@@ -69,11 +70,15 @@ describe("opened from a table", () => {
     mount();
     const from = screen.getByTestId("log-from");
     expect(from).toHaveTextContent("From Thursday night’s table. Seats filled; change anything.");
-    expect(within(from).getByText("Thursday night’s table").tagName).toBe("B");
+    const pod = within(from).getByText("Thursday night’s table");
+    expect(pod.closest("b")).not.toBeNull();
+    expect(pod).toHaveClass("ph-no-capture");
     expect(screen.getByRole("radio", { name: "4" })).toHaveAttribute("aria-checked", "true");
     expect(screen.getByText(seatsCopy.count(3, 3))).toBeInTheDocument();
-    expect(screen.getByText("Zimone Combo")).toBeInTheDocument();
-    expect(screen.getByText("Gisa Zombies")).toBeInTheDocument();
+    // Another reader's deck name and name are marked on the element drawing them.
+    expect(screen.getByText("Zimone Combo")).toHaveClass("ph-no-capture");
+    expect(screen.getByText("Gisa Zombies")).toHaveClass("ph-no-capture");
+    expect(screen.getByText("Colin")).toHaveClass("ph-no-capture");
     // Result is the player's to pick.
     for (const r of [gameLogCopy.form.won, gameLogCopy.form.lost]) expect(screen.getByRole("radio", { name: r })).toHaveAttribute("aria-checked", "false");
   });

@@ -12,6 +12,8 @@ import type { DeckOpponentsWire } from "../../lib/decks/deck-opponents-read";
 import { vsParts } from "./game-vs-line";
 import { gameMatchupsCopy } from "../../lib/copy/game-matchups";
 import { gameLogCopy } from "../../lib/copy/game-log";
+import { named } from "../../lib/person-name/mint";
+import { plain } from "../../lib/person-name/testing";
 
 vi.mock("../../app/decks/actions", () => ({ logGame: async () => ({ ok: true }), deleteGame: async () => ({ ok: true }) }));
 
@@ -85,7 +87,7 @@ describe("by commander", () => {
 describe("the switch", () => {
   const games = [game("g1", "loss"), game("g2", "win")];
   const by = {
-    g1: [seat({ friend: { key: "f1", name: "Dave" }, deckName: "Avengers Tempo", commander: yuriko, colorIdentity: ["U", "R"], won: true })],
+    g1: [seat({ friend: { key: "f1", name: named("Dave") }, deckName: named("Avengers Tempo"), commander: yuriko, colorIdentity: ["U", "R"], won: true })],
     g2: [seat({ commander: tymna, colorIdentity: ["W", "U", "B", "G"] })],
   };
 
@@ -97,9 +99,19 @@ describe("the switch", () => {
     expect(within(section).getByText(copy.fourColors)).toBeInTheDocument();
     expect(within(section).getByText(copy.fourColorsSub("red"))).toBeInTheDocument();
     fireEvent.click(screen.getByRole("radio", { name: copy.byFriend }));
-    expect(within(section).getByText("Dave")).toBeInTheDocument();
+    expect(within(section).getByText("Dave")).toHaveClass("ph-no-capture");
     // Someone with only a commander and no friend is not a row under Friend.
     expect(within(section).queryByText("Tymna the Weaver")).toBeNull();
+  });
+
+  it("marks a friend's initials, drawn while they were seated with no commander", () => {
+    const g = [game("g1", "win")];
+    const solo = { g1: [seat({ friend: { key: "f2", name: named("Jo Park") } })] };
+    mount(g, wire(g, solo));
+    fireEvent.click(screen.getByRole("radio", { name: copy.byFriend }));
+    const section = screen.getByRole("heading", { name: copy.heading }).closest("section")!;
+    expect(within(section).getByText("JP")).toHaveClass("ph-no-capture");
+    expect(within(section).getByText("Jo Park")).toHaveClass("ph-no-capture");
   });
 
   it("moves with the arrow keys, selection following focus, one tab stop", () => {
@@ -127,8 +139,8 @@ describe("the History vs line", () => {
   const games = [game("g1", "loss"), game("g2")];
   const by = {
     g1: [
-      seat({ friend: { key: "f1", name: "Dave" }, deckName: "Avengers Tempo", commander: yuriko, won: true }),
-      seat({ seat: 2, label: "Lee", commander: tymna }),
+      seat({ friend: { key: "f1", name: named("Dave") }, deckName: named("Avengers Tempo"), commander: yuriko, won: true }),
+      seat({ seat: 2, label: named("Lee"), commander: tymna }),
       seat({ seat: 3, commander: { oracleId: "z", name: "Zed, the Unnamed", imageUri: null } }),
     ],
   };
@@ -138,9 +150,10 @@ describe("the History vs line", () => {
     const rows = screen.getAllByRole("listitem").filter((li) => li.textContent?.includes(gameMatchupsCopy.history.vs));
     expect(rows).toHaveLength(1);
     const row = rows[0];
-    expect(within(row).getByText("Dave")).toBeInTheDocument();
-    expect(within(row).getByText("· Avengers Tempo")).toBeInTheDocument();
-    expect(within(row).getByText("Lee")).toBeInTheDocument();
+    // A saved friend's name, their deck and a saved label are each marked on the element drawing them.
+    expect(within(row).getByText("Dave")).toHaveClass("ph-no-capture");
+    expect(within(row).getByText("· Avengers Tempo")).toHaveClass("ph-no-capture");
+    expect(within(row).getByText("Lee")).toHaveClass("ph-no-capture");
     expect(within(row).getByText("· Tymna the Weaver")).toBeInTheDocument();
     expect(within(row).getByText("Zed")).toBeInTheDocument();
     expect(within(row).getAllByRole("img", { name: gameMatchupsCopy.history.wonAria })).toHaveLength(1);
@@ -148,8 +161,8 @@ describe("the History vs line", () => {
 
   it("draws nothing, and reserves nothing, for a game with no seat", () => {
     mount(games, wire(games, by));
-    const plain = screen.getAllByRole("listitem").filter((li) => li.textContent?.includes(gameLogCopy.history.meta("4", "")) && !li.textContent?.includes(gameMatchupsCopy.history.vs));
-    expect(plain.length).toBeGreaterThan(0);
+    const plainRows = screen.getAllByRole("listitem").filter((li) => li.textContent?.includes(gameLogCopy.history.meta("4", "")) && !li.textContent?.includes(gameMatchupsCopy.history.vs));
+    expect(plainRows.length).toBeGreaterThan(0);
     // One game has seats, the other none: exactly one `vs` line exists on the page.
     expect(screen.getAllByText(gameMatchupsCopy.history.vs)).toHaveLength(1);
   });
@@ -157,7 +170,8 @@ describe("the History vs line", () => {
   it("keeps both commanders of a recorded pair on the vs line", () => {
     const thrasios = { oracleId: "th", name: "Thrasios, Triton Hero", imageUri: null };
     expect(vsParts(seat({ commander: tymna, partner: thrasios }))).toEqual({ name: "Tymna the Weaver + Thrasios", sub: null });
-    expect(vsParts(seat({ commander: tymna, partner: thrasios, label: "Zed" }))).toEqual({ name: "Zed", sub: "Tymna the Weaver + Thrasios" });
+    expect(vsParts(seat({ commander: tymna, partner: thrasios, label: named("Zed") }))).toEqual({ name: named("Zed"), sub: "Tymna the Weaver + Thrasios" });
+    expect(plain(vsParts(seat({ label: named("Zed"), commander: tymna })).name)).toBe("Zed");
     expect(vsParts(seat({ commander: tymna }))).toEqual({ name: "Tymna the Weaver", sub: null });
   });
 });

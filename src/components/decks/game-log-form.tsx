@@ -165,7 +165,7 @@ export function GameLogForm({
   // The seats of "Across the table", and whether a pod size below them was just pressed (the line saying why it held).
   const [seats, setSeats] = useState<Seat[]>(() => (prefill ? prefillSeats(prefill, (n) => `table${n}`) : []));
   // The pod whose table filled the seats: the from line, until the form collapses.
-  const [from, setFrom] = useState<string | null>(prefill?.podName ?? null);
+  const [from, setFrom] = useState<string | ThirdPartyName | null>(prefill?.podName ?? null);
   const [podHeld, setPodHeld] = useState(false);
   const seatKeys = useRef(0);
   const [playedAt, setPlayedAt] = useState(today);

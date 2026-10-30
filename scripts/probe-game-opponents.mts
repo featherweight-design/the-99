@@ -24,6 +24,8 @@ const S = `probe_opp_s_${run}`; // a stranger to V (a friend of F)
 const W = `probe_opp_w_${run}`; // a player whose account is deleted while a log of theirs is open
 
 let failed = 0;
+// A saved name is another reader's (`ThirdPartyName`), which a probe cannot read as a string: compare its shape.
+const isName = (n: unknown, text: string) => JSON.stringify(n) === JSON.stringify({ $tp: text });
 const check = (label: string, ok: boolean, detail = "") => {
   console.log(`${ok ? "ok  " : "FAIL"} ${label}${detail ? ` (${detail})` : ""}`);
   if (!ok) failed++;
@@ -163,12 +165,12 @@ async function main() {
     check("a loss logs with a friend's deck and a stranger by commander", g1 !== null);
     const read = await opp.listGameOpponents(mine, V);
     const seats = read.get(g1!) ?? [];
-    check("seat 1 is Fay's first, snapshot, and she won", seats[0]?.seat === 1 && seats[0].friend?.name === "Fay"
-      && seats[0].deckName === "Fay's first" && seats[0].commander?.oracleId === C2 && seats[0].won, JSON.stringify(seats[0]));
-    check("seat 2 is Sam, by commander", seats[1]?.seat === 2 && seats[1].label === "Sam" && seats[1].commander?.oracleId === C3 && !seats[1].won);
+    check("seat 1 is Fay's first, snapshot, and she won", seats[0]?.seat === 1 && isName(seats[0].friend?.name, "Fay")
+      && isName(seats[0].deckName, "Fay's first") && seats[0].commander?.oracleId === C2 && seats[0].won, JSON.stringify(seats[0]));
+    check("seat 2 is Sam, by commander", seats[1]?.seat === 2 && isName(seats[1].label, "Sam") && seats[1].commander?.oracleId === C3 && !seats[1].won);
     check("the read carries no account id", !JSON.stringify([...read.values()]).includes(F));
     const g2 = await log(V, mine, "win", [{ friend: f.publicId }]);
-    check("a friend seats with no deck known", g2 !== null && (await opp.listGameOpponents(mine, V)).get(g2!)?.[0].friend?.name === "Fay");
+    check("a friend seats with no deck known", g2 !== null && isName((await opp.listGameOpponents(mine, V)).get(g2!)?.[0].friend?.name, "Fay"));
 
     // The deck page's read (R3 PR 1): the seats and the matchups, behind friends (opponents' own switch is retired), never throwing.
     const ON = { SOCIAL_FRIENDS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
@@ -197,7 +199,7 @@ async function main() {
     await db.execute(sql`delete from decks where id = ${fay1}`);
     const after = (await opp.listGameOpponents(mine, V)).get(g1!)?.[0];
     check("a renamed, then deleted, deck and a renamed friend leave the record as it was",
-      after?.friend?.name === "Fay" && after.deckName === "Fay's first" && after.commander?.oracleId === C2, JSON.stringify(after));
+      isName(after?.friend?.name, "Fay") && isName(after?.deckName, "Fay's first") && after?.commander?.oracleId === C2, JSON.stringify(after));
     const { rows: link } = await db.execute<{ d: string | null; f: string | null }>(sql`
       select friend_deck_id as d, friend_user_id as f from deck_game_opponents where game_id = ${g1} and seat = 1`);
     check("the deleted deck's link went null, the friend's stands", link[0]?.d === null && link[0]?.f === F);
@@ -226,7 +228,7 @@ async function main() {
     release();
     await holding;
     check("then goes through", (await leaving) === true);
-    check("and the raced game's seat stands", (await opp.listGameOpponents(mine, V)).get(heldGame)?.[0].deckName === "Fay's second");
+    check("and the raced game's seat stands", isName((await opp.listGameOpponents(mine, V)).get(heldGame)?.[0].deckName, "Fay's second"));
 
     const count = await games(mine);
     check("a former friend cannot be seated", (await log(V, mine, "win", [{ friend: f.publicId }])) === null && (await games(mine)) === count);

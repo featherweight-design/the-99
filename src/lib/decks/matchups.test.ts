@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { DeckGame } from "./games";
 import type { GameOpponent } from "./game-opponents";
 import { summarizeMatchups } from "./matchups";
+import { named } from "../person-name/mint";
 
 const game = (id: string, result: DeckGame["result"], hurt: DeckGame["hurt"] = []): DeckGame => ({
   id, result, podSize: 4, playedAt: new Date("2026-10-01"), versionNumber: null, note: null, worked: [], hurt,
@@ -17,11 +18,11 @@ describe("summarizeMatchups", () => {
   const games = [game("g1", "loss", ["interaction"]), game("g2", "win"), game("g3", "loss", ["interaction"]), game("g4", "draw")];
   const opponents = new Map<string, GameOpponent[]>([
     ["g1", [
-      seat({ friend: { key: "f1", name: "Dave" }, commander: yuriko, colorIdentity: ["U", "B"], won: true }),
+      seat({ friend: { key: "f1", name: named("Dave") }, commander: yuriko, colorIdentity: ["U", "B"], won: true }),
       seat({ seat: 2, commander: tymna, partner: thrasios, colorIdentity: ["W", "U", "B", "G"] }),
     ]],
-    ["g2", [seat({ friend: { key: "f1", name: "Dave" }, commander: yuriko, colorIdentity: ["U", "B"] })]],
-    ["g3", [seat({ label: "Sam", commander: yuriko, colorIdentity: ["U", "B"], won: true })]],
+    ["g2", [seat({ friend: { key: "f1", name: named("Dave") }, commander: yuriko, colorIdentity: ["U", "B"] })]],
+    ["g3", [seat({ label: named("Sam"), commander: yuriko, colorIdentity: ["U", "B"], won: true })]],
   ]);
   const m = summarizeMatchups(games, opponents);
 
@@ -77,7 +78,7 @@ describe("a friend's row face", () => {
   const yuriko = { oracleId: "y", name: "Yuriko" };
   const tymna = { oracleId: "t", name: "Tymna" };
   const seat = (over: Partial<GameOpponent>): GameOpponent => ({
-    seat: 1, friend: { key: "f1", name: "Dave" }, deckName: null, commander: null, partner: null, colorIdentity: [], label: null, won: false, ...over,
+    seat: 1, friend: { key: "f1", name: named("Dave") }, deckName: null, commander: null, partner: null, colorIdentity: [], label: null, won: false, ...over,
   });
   const game = (id: string): DeckGame => ({ id, result: "win", podSize: 4, playedAt: new Date("2026-10-01"), versionNumber: null, note: null, worked: [], hurt: [] });
 

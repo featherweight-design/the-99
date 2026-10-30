@@ -2,6 +2,7 @@
 // the emitted SQL shows that); the prefill carries no other player's deck id, public id or account id (decision 5); and
 // a save resolves a seat number only against the seating the prefill was drawn from.
 import { describe, expect, it } from "vitest";
+import { named } from "../person-name/mint";
 import { prefillFrom, resolveSeatsFrom, seatingHash, tablePrefill, tableSeatsQuery, type TableSeatRow } from "./rule-zero-log";
 
 const VIEWER = "user_viewer";
@@ -77,13 +78,13 @@ describe("prefillFrom", () => {
   const prefill = prefillFrom(ROWS, VIEWER, TABLE, MY_DECK)!;
 
   it("draws every other seat, waiting ones too, and counts the whole table", () => {
-    expect(prefill.podName).toBe("Thursday night");
+    expect(prefill.podName).toEqual(named("Thursday night"));
     expect(prefill.podSize).toBe(4);
     expect(prefill.table).toEqual({ id: TABLE, seating: seatingHash(TABLE, ROWS) });
     expect(prefill.seats).toEqual([
-      { seat: 2, name: "Colin", deckName: "Zimone Combo", commanderName: "Zimone, Quandrix Prodigy", artCropUri: "https://art/zimone.jpg", friend: true },
-      { seat: 3, name: "Peter", deckName: null, commanderName: null, artCropUri: null, friend: true },
-      { seat: 4, name: ROWS[3].displayName, deckName: "Gisa Zombies", commanderName: "Gisa, Glorious Resurrector", artCropUri: "https://art/gisa.jpg", friend: false },
+      { seat: 2, name: named("Colin"), deckName: named("Zimone Combo"), commanderName: "Zimone, Quandrix Prodigy", artCropUri: "https://art/zimone.jpg", friend: true },
+      { seat: 3, name: named("Peter"), deckName: null, commanderName: null, artCropUri: null, friend: true },
+      { seat: 4, name: named(ROWS[3].displayName), deckName: named("Gisa Zombies"), commanderName: "Gisa, Glorious Resurrector", artCropUri: "https://art/gisa.jpg", friend: false },
     ]);
   });
 

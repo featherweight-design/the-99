@@ -11,6 +11,7 @@
  * `beatMe` is how many of the cell's games the player lost to an opponent in that cell (Q15's tap). Cells
  * order by how many games they hold, then by key, never by record, which would rank on a rate.
  */
+import type { ThirdPartyName } from "../person-name/brand";
 import { summarizeGames } from "./games-summary";
 import type { DeckGame, GameSummary } from "./games";
 import type { GameOpponent, OpponentCommander } from "./game-opponents";
@@ -21,7 +22,7 @@ export type CommanderCell = Cell & { commander: OpponentCommander; partner: Oppo
 /** `colorIdentity` in WUBRG order; empty is colorless. */
 export type IdentityCell = Cell & { colorIdentity: string[] };
 /** `commander` is the one the friend played in their latest game that named one: a row's face draws its art (the snapshot, never their live face), and null draws initials. */
-export type FriendCell = Cell & { name: string; commander: OpponentCommander | null };
+export type FriendCell = Cell & { name: ThirdPartyName; commander: OpponentCommander | null };
 
 export type Matchups = {
   /** Every game on the deck. */
@@ -51,7 +52,7 @@ function cells<T>(map: Map<string, Bucket<T>>): (Cell & { meta: T })[] {
 export function summarizeMatchups(games: readonly DeckGame[], opponents: ReadonlyMap<string, readonly GameOpponent[]>): Matchups {
   const byCommander = new Map<string, Bucket<{ commander: OpponentCommander; partner: OpponentCommander | null }>>();
   const byIdentity = new Map<string, Bucket<string[]>>();
-  const byFriend = new Map<string, Bucket<string>>();
+  const byFriend = new Map<string, Bucket<ThirdPartyName>>();
   // Games arrive newest first, so the first commander a friend is seen with is their latest.
   const friendFace = new Map<string, OpponentCommander>();
   let recorded = 0;
@@ -63,7 +64,7 @@ export function summarizeMatchups(games: readonly DeckGame[], opponents: Readonl
     // One game lands in a cell once, and beat the player there if any of that cell's seats won it.
     const commanders = new Map<string, { meta: { commander: OpponentCommander; partner: OpponentCommander | null }; won: boolean }>();
     const identities = new Map<string, { meta: string[]; won: boolean }>();
-    const friends = new Map<string, { meta: string; won: boolean }>();
+    const friends = new Map<string, { meta: ThirdPartyName; won: boolean }>();
     for (const s of seats) {
       if (s.commander !== null) {
         // A pair is one pairing whichever side a deck stored first, so its key is the two ids in order.
