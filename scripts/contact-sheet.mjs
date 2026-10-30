@@ -418,6 +418,11 @@ try {
   // server). The run makes a per-run address into `$NAME` for `fill` to type, refuses production and staging by
   // `neon.branch_id` before the first page loads, and deletes exactly that row in the `finally`.
   if (inventory.launchListEmailVar) {
+    // The branch guard checks DATABASE_URL, but the form writes through whichever server PROBE_BASE names: only a server
+    // on this machine is trusted to be on that database.
+    if (!/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(BASE)) {
+      throw new Error(`refusing: PROBE_BASE must be a server on this machine for a launchListEmailVar inventory, got ${BASE}`);
+    }
     const [row] = await aboutSql()`select current_setting('neon.branch_id', true) as branch`;
     assertNotSharedBranch(row?.branch, `contact sheet ${path.basename(inventoryPath)}`);
     launchEmail = `sheet-${Date.now()}-${process.pid}@scratch-contact-sheet.test`;
