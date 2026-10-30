@@ -135,8 +135,10 @@ newest drawing of the row (Home-Rows, Lead-Story, Row-States). Fixed for every k
 - **Row press:** one line (`whitespace-nowrap`) for every fixed label. A trade match's "See ‹name›’s spares" still
   wraps (`pressWraps`): a name may run 30 characters (`DISPLAY_NAME_MAX`), and on one line that is about 290px against
   the 260px a 390 row leaves beside the ✕. Ruled 2026-10-30 (option b): never hide a friend's name.
-- **Lead button:** a fixed 40px (36 from `md`) on one line for a fixed label; a friend's name keeps the wrapping,
+- **Lead button:** a fixed 40px (36 from `md`) on one line for a fixed label from 390 up (below 390, beside the ✕, it
+  may wrap: at 320 the button has about 96px); a friend's name keeps the wrapping,
   `min-h` button.
 - **The ✕:** radius 8 and a 2px accent ring (`box-shadow`) over a transparent outline, which forced-colors mode repaints in a system color, in place of the global square outline. The ✕ that takes
-  focus after a dismiss is focused with `focusVisible`, so the ring shows after a pointer press too; a fallback
+  focus after a dismiss carries a `data-ring` marker (cleared on blur), so the ring shows after a pointer press too, in
+  every browser (`focus({ focusVisible })` is not supported everywhere); a fallback
   (the section's head) is focused plainly and draws no outline after a pointer press.

@@ -171,7 +171,7 @@ export function LeadStory({
                 label={text.press}
                 stretch=""
                 filled
-                className={`inline-flex max-w-full min-w-0 items-center justify-center rounded-[8px] bg-[color:var(--accent)] px-[16px] text-center font-sans text-[13.5px] font-semibold text-[color:var(--bg)] md:text-[13px] ${pressWraps(item) ? "min-h-[40px] py-[6px] [overflow-wrap:anywhere] md:min-h-[36px]" : "h-[40px] whitespace-nowrap md:h-[36px]"}`}
+                className={`inline-flex max-w-full min-w-0 items-center justify-center rounded-[8px] bg-[color:var(--accent)] px-[16px] text-center font-sans text-[13.5px] font-semibold text-[color:var(--bg)] md:text-[13px] ${pressWraps(item) ? "min-h-[40px] py-[6px] [overflow-wrap:anywhere] md:min-h-[36px]" : "min-h-[40px] py-[6px] [overflow-wrap:anywhere] min-[390px]:h-[40px] min-[390px]:py-0 min-[390px]:whitespace-nowrap md:h-[36px] md:min-h-[36px]"}`}
               />
             )}
             {ask && !receipt && (

@@ -142,12 +142,12 @@ describe("LeadSlot", () => {
     expect(screen.getByRole("alert").textContent).toContain(spareCopy.request.failed);
   });
 
-  it("draws a fixed label's button 40px (36 from md) on one line, and lets a friend's name wrap a taller one", () => {
+  it("draws a fixed label's button 40px (36 from md) on one line from 390, wrapping below it, and lets a friend's name wrap at every width", () => {
     const set: FeedView = { ...LEAD, key: "set:sos", kind: "new-set", card: null, friend: null, ask: undefined, href: "/collection/sets/sos", name: "Secrets of Strixhaven" };
     render(<LeadStory item={set} now={NOW} />);
     const fixed = screen.getByRole("link", { name: /See the set/ }).className.split(/\s+/);
-    expect(fixed).toEqual(expect.arrayContaining(["h-[40px]", "md:h-[36px]", "whitespace-nowrap"]));
-    expect(fixed).not.toContain("min-h-[40px]");
+    expect(fixed).toEqual(expect.arrayContaining(["min-[390px]:h-[40px]", "min-[390px]:whitespace-nowrap", "md:h-[36px]", "min-h-[40px]", "[overflow-wrap:anywhere]"]));
+    expect(fixed).not.toContain("whitespace-nowrap");
     cleanup();
     const trade: FeedView = { ...LEAD, key: "item:2", kind: "trade-match", ask: undefined, href: "/friends/pub-peter", friend: { publicId: "pub-peter", displayName: "W".repeat(30) } };
     render(<LeadStory item={trade} now={NOW} />);
