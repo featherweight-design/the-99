@@ -14,6 +14,26 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   by schema import, through `db.query`, or by name in raw SQL, and runs against the shipped tree inside `pnpm test`; `pnpm probe:social` proves the
   answers on a scratch branch.
 
+  **Another reader's name is a `ThirdPartyName`** (PersonName plan `boards/handoffs/lane02-personname-plan.md`, PR A,
+  2026-10-30), so PostHog autocapture never records it once clicks resume. The type (`src/lib/person-name/brand.ts`) is
+  an opaque object, `{ $tp: string }` at runtime so it survives RSC props, server actions and JSON; JSX and attributes
+  will not take it. It is minted by `named()` (`mint.ts`) only under `src/lib/social/`, read back by `reveal()`
+  (`reveal.ts`) only in `REVEAL_ALLOW` (`scripts/lib/third-party-names-rules.mjs`), and drawn by `<PersonName>`,
+  `<PersonInitials>`, `<PersonText>` (copy built with `` personText`…` ``) and `personAttrs()`, each of which puts
+  `ph-no-capture` on the element holding the name ITSELF: posthog-js walks DOM parents, so a React ancestor's class
+  does not reach a portal child (`src/lib/person-name/autocapture.test.tsx`, real posthog-js). A plain string (the
+  reader's own name) is drawn plainly, so shared components take `string | ThirdPartyName` while the families convert.
+  `pnpm check:third-party-names` (CI) resolves every import of the mint, the reveal and tests' `plain()`
+  (`testing.ts`), fails a re-export of any of them, and fails a template (other than `personText`), `String()`,
+  `.toString()` or `+` over a name, an `as ThirdPartyName` and a read of `.$tp`; ESLint's `no-restricted-imports` says
+  the same in the editor. Converted so far (PR A, the invite and join family): `readInvite`, `inviteOutcomes` and
+  `readInviteSender`; the friend landing (`/friend/[token]`) and its card; `/join`; and the receipt and toast that
+  the invite WATCH raises when a shown link is redeemed (`friends-view.tsx`, `use-add-friend.tsx`). NOT yet marked,
+  because they read `Friend.displayName` (`access.ts`, PR B): the receipt after Accept on `/friends?accepted=`, and
+  Home's first-run Friends row; both already take `string | ThirdPartyName`, so B's branding marks them. Friends and
+  pods, spares and requests, feed and push, friend decks and the cart, and Rule 0 follow (PRs B to F); autocapture
+  comes back on in G.
+
   **Spares are view-only and shared per pod** (Q3, Q12): `loadFriendSpares(viewer, oracleIds)` reads the grants (the
   friendship, the friend's `pod_spare_shares` grant, the friend's membership of that pod and the viewer's, in one
   statement), then runs each granting friend's own claim model, at most four at once, each in a repeatable-read

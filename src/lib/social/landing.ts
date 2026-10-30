@@ -4,13 +4,14 @@
 
 import type { InviteView } from "./friends";
 import type { ProfileCommander } from "./commander";
+import type { ThirdPartyName } from "../person-name/brand";
 
 export type LandingView =
   | { kind: "expired" }
   | { kind: "ended" }
-  | { kind: "open"; name: string; commander: ProfileCommander | null }
-  | { kind: "self"; name: string; commander: ProfileCommander | null }
-  | { kind: "friends"; name: string; commander: ProfileCommander | null; since: Date };
+  | { kind: "open"; name: ThirdPartyName; commander: ProfileCommander | null }
+  | { kind: "self"; name: ThirdPartyName; commander: ProfileCommander | null }
+  | { kind: "friends"; name: ThirdPartyName; commander: ProfileCommander | null; since: Date };
 
 export function landingView(invite: InviteView): LandingView {
   if (invite === null) return { kind: "ended" };

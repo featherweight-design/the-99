@@ -24,6 +24,7 @@ import { SocialToast } from "./social-toast";
 import { socialCopy } from "../../lib/copy/social";
 import { TOAST_MS } from "../collection/edit-toast";
 import type { Friend } from "../../lib/social/access";
+import { plain } from "../../lib/person-name/testing";
 
 const NOW = new Date("2026-10-15T21:41:00Z");
 const SOKKA = { oracleId: "o-sokka", name: "Sokka, Tenacious Tactician", artCropUri: "https://x/sokka.jpg", colorIdentity: ["W", "U"] };
@@ -426,22 +427,22 @@ describe("the receipt after Accept (E10)", () => {
   it("names the friend, marks their since, and closes", () => {
     draw({ accepted: { ...DAVE, since: NOW } , friends: [{ ...DAVE, since: NOW }, JO] });
     const strip = screen.getByRole("status");
-    expect(strip.textContent).toContain(socialCopy.page.accepted("Dave"));
+    expect(strip.textContent).toContain(plain(socialCopy.page.accepted("Dave")));
     expect(screen.getByText(socialCopy.friends.since("today")).className).toContain("--success");
     fireEvent.click(within(strip).getByRole("button", { name: socialCopy.page.close }));
-    expect(screen.queryByText(socialCopy.page.accepted("Dave"))).toBeNull();
+    expect(screen.queryByText(plain(socialCopy.page.accepted("Dave")))).toBeNull();
   });
 
   it("drops the receipt when a redraw no longer resolves that friend, and keeps a closed one closed", () => {
     const dave = { ...DAVE, since: NOW };
     const { rerender } = draw({ accepted: dave, friends: [dave, JO] });
     rerender(view({ accepted: null, friends: [JO] }));
-    expect(screen.queryByText(socialCopy.page.accepted("Dave"))).toBeNull();
+    expect(screen.queryByText(plain(socialCopy.page.accepted("Dave")))).toBeNull();
     rerender(view({ accepted: JO, friends: [JO] }));
-    expect(screen.getByRole("status").textContent).toContain(socialCopy.page.accepted("Jo"));
+    expect(screen.getByRole("status").textContent).toContain(plain(socialCopy.page.accepted("Jo")));
     fireEvent.click(within(screen.getByRole("status")).getByRole("button", { name: socialCopy.page.close }));
     rerender(view({ accepted: JO, friends: [JO, DAVE] }));
-    expect(screen.queryByText(socialCopy.page.accepted("Jo"))).toBeNull();
+    expect(screen.queryByText(plain(socialCopy.page.accepted("Jo")))).toBeNull();
   });
 });
 

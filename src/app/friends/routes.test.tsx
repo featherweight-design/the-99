@@ -82,6 +82,8 @@ import FriendsPage from "./page";
 import FriendLinkPage from "../friend/[token]/page";
 import { socialCopy, spareCopy } from "../../lib/copy/social";
 import { SpendFriendLink } from "../../components/social/spend-friend-link";
+import { named } from "../../lib/person-name/mint";
+import { plain } from "../../lib/person-name/testing";
 
 const ON = { SOCIAL_FRIENDS_ENABLED: "true" };
 const PUB = "00000000-0000-4000-8000-000000000001";
@@ -90,7 +92,7 @@ const query = (q: Record<string, string> = {}) => Promise.resolve(q);
 const TOKEN = "AbCdEfGhIjKlMnOpQrStUv";
 const params = (token = TOKEN) => Promise.resolve({ token });
 const open = (over: Record<string, unknown> = {}) => ({
-  state: "open", inviterName: "Ana", commander: null, self: false, alreadyFriends: false, friendsSince: null, ...over,
+  state: "open", inviterName: named("Ana"), commander: null, self: false, alreadyFriends: false, friendsSince: null, ...over,
 });
 
 beforeEach(() => {
@@ -184,12 +186,12 @@ describe("/friends", () => {
 
   it("draws the receipt after Accept for a friend the reader has, by public id (E10)", async () => {
     render(await FriendsPage({ searchParams: query({ accepted: DAVE.publicId }) }));
-    expect(screen.getByRole("status").textContent).toContain(socialCopy.page.accepted("Dave"));
+    expect(screen.getByRole("status").textContent).toContain(plain(socialCopy.page.accepted("Dave")));
   });
 
   it("draws no receipt for an id that is not the reader's friend", async () => {
     render(await FriendsPage({ searchParams: query({ accepted: "00000000-0000-4000-8000-000000000009" }) }));
-    expect(screen.queryByText(socialCopy.page.accepted("Dave"))).toBeNull();
+    expect(screen.queryByText(plain(socialCopy.page.accepted("Dave")))).toBeNull();
   });
 
   describe("a newcomer's first arrival (invites R8, ruling D)", () => {
@@ -283,7 +285,7 @@ describe("/friends", () => {
       render(await FriendsPage({ searchParams: query() }));
       expect(m.friendPublicId).toHaveBeenCalledWith("user_1", "user_inviter");
       expect(m.takeReceipt).toHaveBeenCalledTimes(1);
-      expect(screen.getByRole("status").textContent).toContain(socialCopy.page.accepted("Dave"));
+      expect(screen.getByRole("status").textContent).toContain(plain(socialCopy.page.accepted("Dave")));
     });
 
     it("does not consume the receipt when a read the page needs throws, so the retry still draws it", async () => {
@@ -378,9 +380,9 @@ describe("/friend/[token]", () => {
 
   const L = socialCopy.landing;
   it.each([
-    ["an open link", open(), L.openTitle("Ana")],
+    ["an open link", open(), plain(L.openTitle(named("Ana")))],
     ["your own link", open({ self: true }), L.selfTitle],
-    ["a friend's link", open({ alreadyFriends: true, friendsSince: new Date("2026-10-02T12:00:00Z") }), L.alreadyTitle("Ana")],
+    ["a friend's link", open({ alreadyFriends: true, friendsSince: new Date("2026-10-02T12:00:00Z") }), plain(L.alreadyTitle(named("Ana")))],
     ["an expired link", { state: "expired" }, L.expiredTitle],
     ["a redeemed link", { state: "redeemed" }, L.endedTitle],
     ["a declined link", { state: "declined" }, L.endedTitle],

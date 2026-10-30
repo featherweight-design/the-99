@@ -94,7 +94,7 @@ export function useAddFriend({ friends, links, now, invites }: AddFriendInput): 
   const [shown, setShown] = useState<Shown | null>(null);
   const [toast, setToast] = useState<SocialToastState | null>(null);
   const toastSeq = useRef(0);
-  const say = (text: string, retry?: SocialToastState["retry"]) => setToast({ id: ++toastSeq.current, text, retry });
+  const say = (text: SocialToastState["text"], retry?: SocialToastState["retry"]) => setToast({ id: ++toastSeq.current, text, retry });
   // Add a friend's chooser (invites on), exactly as /friends draws it: the screen it shows, null while closed. Read
   // by `makeLink` through a ref, since a link made from the chooser opens as its path 1 and one made from a Try
   // again opens the dialog.

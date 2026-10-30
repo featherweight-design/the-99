@@ -1,5 +1,34 @@
 import { defineConfig, globalIgnores } from "eslint/config";
 import next from "@fwd-stack/eslint-config/next";
+import { MINT, REVEAL, REVEAL_ALLOW, TESTING } from "./scripts/lib/third-party-names-rules.mjs";
+
+// Another reader's name (`src/lib/person-name/`): who may import the mint, the reveal and tests' helper. The table is
+// `scripts/lib/third-party-names-rules.mjs`; `pnpm check:third-party-names` is the authority (it resolves every import
+// and re-export, and checks what the type cannot), this is the same rule in the editor. Later blocks override earlier.
+const restrictedName = (...modules) => [
+  "error",
+  {
+    patterns: modules.map((file) => {
+      const stem = file.replace(/^src\/lib\/person-name\//, "").replace(/\.ts$/, "");
+      return {
+        group: [`**/person-name/${stem}`, `**/person-name/${stem}.ts`],
+        message:
+          stem === "mint"
+            ? "Only src/lib/social mints a ThirdPartyName (named)."
+            : stem === "reveal"
+              ? "Draw a name with PersonName, PersonText or personAttrs; reveal() is for the files in REVEAL_ALLOW."
+              : "Tests only.",
+      };
+    }),
+  },
+];
+const nameRules = [
+  { files: ["src/**/*.{ts,tsx,mts}"], rules: { "no-restricted-imports": restrictedName(MINT, REVEAL, TESTING) } },
+  { files: ["src/lib/social/**/*.{ts,tsx}"], rules: { "no-restricted-imports": restrictedName(REVEAL, TESTING) } },
+  { files: REVEAL_ALLOW.filter((f) => f.startsWith("src/lib/social/")), rules: { "no-restricted-imports": restrictedName(TESTING) } },
+  { files: REVEAL_ALLOW.filter((f) => !f.startsWith("src/lib/social/") && !f.startsWith("src/lib/person-name/")), rules: { "no-restricted-imports": restrictedName(MINT, TESTING) } },
+  { files: ["src/lib/person-name/**/*.{ts,tsx}", "src/**/*.test.{ts,tsx,mts}"], rules: { "no-restricted-imports": "off" } },
+];
 
 const eslintConfig = defineConfig([
   // The shared preset: eslint-config-next's core-web-vitals and typescript configs, the rules
@@ -12,6 +41,7 @@ const eslintConfig = defineConfig([
     // Vendored design-handoff assets — not app code.
     "design/**",
   ]),
+  ...nameRules,
   {
     files: ["src/**/*.tsx"],
     rules: {

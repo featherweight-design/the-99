@@ -16,18 +16,19 @@ import type { ProfileCommander } from "../../lib/social/commander";
 import { socialCopy } from "../../lib/copy/social";
 import { FadingImg } from "../ui/hydrated-art";
 import { ArtLayer } from "../ui/art-layer";
-import { faceInitials } from "./face";
+import { PersonInitials, PersonName, PersonText, personAttrs, type PersonParts, type ThirdPartyName } from "../../lib/person-name";
 
 const copy = socialCopy.landing;
 
 /** What the face-up card names. Only an open link, your own and a friend's are ever drawn face up (D1, E6). */
 export type CardFace = {
-  name: string;
+  /** Branded when it is someone else's (the landing, the newcomer's card); the reader's own QR card is a plain string. */
+  name: string | ThirdPartyName;
   commander: Pick<ProfileCommander, "name" | "artCropUri"> | null;
   /** The type line: `typeRequest`, `typeOwn` or `typeFriend(since)`. */
   type: string;
   /** The text box: `openRules(name)`, `ownRules` or `friendRules(name)`. */
-  rules: string;
+  rules: string | PersonParts;
 };
 
 const SHADOW = "shadow-[0_34px_70px_rgba(0,0,0,.6),0_0_0_1px_rgba(0,0,0,.6)]";
@@ -153,18 +154,21 @@ function CardFront({ face, hidden, compact, signature }: { face: CardFace; hidde
     <div
       // One labelled image to assistive tech while it is face up; face down it is not there to read.
       role="img"
-      aria-label={copy.cardAria(face.name, face.commander?.name ?? null, face.type)}
+      // The label names the card's person, so it is spread with its classes: `personAttrs` marks the element.
+      {...personAttrs(
+        { "aria-label": copy.cardAria(face.name, face.commander?.name ?? null, face.type) },
+        `friend-card-face friend-card-front box-border overflow-hidden ${compact ? `rounded-[18px] p-[8px] text-left ${COMPACT_SHADOW}` : `rounded-[17px] p-[3px] ${SHADOW}`} ${art ? "bg-[color:var(--border-strong)]" : "bg-[linear-gradient(160deg,var(--fg-disabled),var(--border-strong))]"}`,
+      )}
       aria-describedby={rulesId}
       aria-hidden={hidden || undefined}
       data-testid="friend-card-front"
       data-frame={art ? "art" : "grey"}
-      className={`friend-card-face friend-card-front box-border overflow-hidden ${compact ? `rounded-[18px] p-[8px] text-left ${COMPACT_SHADOW}` : `rounded-[17px] p-[3px] ${SHADOW}`} ${art ? "bg-[color:var(--border-strong)]" : "bg-[linear-gradient(160deg,var(--fg-disabled),var(--border-strong))]"}`}
     >
       {/* The frame is the commander's art crop, behind the face, fading in as it lands. */}
       {art && <ArtLayer src={art} />}
       <div className={`relative box-border flex h-full w-full flex-col overflow-hidden rounded-[14px] bg-[color:var(--surface-inset)] ${compact ? "gap-[6px] p-[10px]" : "gap-[6px] p-[9px]"}`}>
         <div className={`flex flex-none items-center gap-[8px] bg-[color:var(--elevated)] shadow-[inset_0_0_0_1px_rgba(255,255,255,.05)] ${compact ? "h-[34px] rounded-[8px] px-[12px]" : "h-[32px] rounded-[8px] px-[10px]"}`}>
-          <b className={`flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-[color:var(--fg)] ${compact ? "font-sans text-[18px] font-semibold" : "font-display text-[16px] font-bold"}`}>{face.name}</b>
+          <b className={`flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-[color:var(--fg)] ${compact ? "font-sans text-[18px] font-semibold" : "font-display text-[16px] font-bold"}`}><PersonName n={face.name} /></b>
         </div>
         {art ? (
           <div className={`flex-none overflow-hidden rounded-[6px] bg-[color:var(--elevated)] ${compact ? "h-[176px]" : "h-[178px]"} shadow-[inset_0_0_0_1px_rgba(0,0,0,.6)]`}>
@@ -175,14 +179,14 @@ function CardFront({ face, hidden, compact, signature }: { face: CardFace; hidde
             data-testid="friend-card-initials"
             className="flex h-[178px] flex-none items-center justify-center overflow-hidden rounded-[6px] bg-[radial-gradient(220px_160px_at_50%_40%,var(--elevated),var(--surface))] font-display text-[64px] font-bold tracking-[.04em] text-[color:var(--fg-muted)] shadow-[inset_0_0_0_1px_rgba(0,0,0,.6)]"
           >
-            {faceInitials(face.name)}
+            <PersonInitials n={face.name} />
           </div>
         )}
         <div className={`flex flex-none items-center justify-between bg-[color:var(--elevated)] font-display font-semibold text-[color:var(--fg)] shadow-[inset_0_0_0_1px_rgba(255,255,255,.05)] ${compact ? "h-[28px] rounded-[6px] px-[12px] text-[15px]" : "h-[26px] rounded-[6px] px-[10px] text-[12.5px]"}`}>
           <span>{face.type}</span>
           <i className="text-[11px] not-italic text-[color:var(--accent-text)]">◆</i>
         </div>
-        <p id={rulesId} className={`m-0 min-h-0 flex-1 overflow-hidden [overflow-wrap:anywhere] rounded-[6px] bg-[color:var(--surface-sunken)] font-sans text-[color:var(--fg-body)] ${compact ? "px-[12px] py-[10px] text-[14px] leading-[1.4]" : "px-[11px] py-[9px] text-[12px] leading-[1.45]"}`}>{face.rules}</p>
+        <p id={rulesId} className={`m-0 min-h-0 flex-1 overflow-hidden [overflow-wrap:anywhere] rounded-[6px] bg-[color:var(--surface-sunken)] font-sans text-[color:var(--fg-body)] ${compact ? "px-[12px] py-[10px] text-[14px] leading-[1.4]" : "px-[11px] py-[9px] text-[12px] leading-[1.45]"}`}><PersonText text={face.rules} /></p>
         <div className={`flex flex-none justify-between px-[4px] font-mono uppercase text-[color:var(--fg-faint)] ${compact ? "text-[12px] tracking-[.15em]" : "text-[9.5px] tracking-[.04em]"}`}>
           <span className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">{face.commander ? copy.credit(face.commander.name) : signature ? copy.noSignature : copy.noCommander}</span>
           <span className="flex-none pl-[8px]">{copy.mark}</span>

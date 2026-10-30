@@ -3,6 +3,7 @@
 // say; `probe:social` proves the answers on a database.
 import { describe, expect, it } from "vitest";
 import { inviteOutcomesQuery, inviteQuery, openInvitesQuery, shapeInvite, shapeOutcome } from "./friends";
+import { named } from "../person-name/mint";
 
 const VIEWER = "user_viewer";
 const NOW = new Date("2026-10-15T12:00:00Z");
@@ -39,8 +40,9 @@ describe("inviteQuery", () => {
 
 describe("shapeInvite", () => {
   it("an open link names its inviter and shows the face", () => {
+    // The row is the database's string; the payload carries it branded.
     expect(shapeInvite(row(), VIEWER, NOW)).toEqual({
-      state: "open", inviterName: "Dave", commander: { oracleId: "c1", name: "Atraxa", artCropUri: "art/c1" },
+      state: "open", inviterName: named("Dave"), commander: { oracleId: "c1", name: "Atraxa", artCropUri: "art/c1" },
       self: false, alreadyFriends: false, friendsSince: null,
     });
   });
@@ -100,7 +102,7 @@ describe("shapeOutcome", () => {
   });
 
   it("a link redeemed by someone now a friend names them", () => {
-    expect(out({ redeemedAt: NOW, publicId: "p-mo", displayName: "Mo" })).toEqual({ token: "tok", open: false, friend: { publicId: "p-mo", displayName: "Mo" } });
+    expect(out({ redeemedAt: NOW, publicId: "p-mo", displayName: "Mo" })).toEqual({ token: "tok", open: false, friend: { publicId: "p-mo", displayName: named("Mo") } });
   });
 
   it("a link redeemed by someone no longer a friend is ended and names nobody", () => {

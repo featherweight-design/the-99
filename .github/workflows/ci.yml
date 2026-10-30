@@ -122,6 +122,12 @@ jobs:
       - name: Switch reads
         run: pnpm check:switch-reads
 
+      # Another reader's name is a ThirdPartyName, drawn marked (ph-no-capture) so autocapture never records it. The
+      # type stops JSX and attributes taking one; this holds who mints and reveals it, and the template, String(),
+      # .toString() and + the type still accepts. Type-aware: it builds the program over src/.
+      - name: Third-party names
+        run: pnpm check:third-party-names
+
       # Routes meant to carry the same control have to render the same component, not
       # a lookalike. Every inventory is passed; one with no `shares` block is a no-op.
       - name: Shared components

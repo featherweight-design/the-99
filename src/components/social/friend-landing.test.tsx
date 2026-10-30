@@ -18,12 +18,16 @@ vi.mock("../../lib/ui/motion", () => ({ prefersReducedMotion: () => m.reduced })
 import { FriendLanding } from "./friend-landing";
 import { landingView } from "../../lib/social/landing";
 import { socialCopy } from "../../lib/copy/social";
+import { named } from "../../lib/person-name/mint";
+import { plain } from "../../lib/person-name/testing";
 
 const L = socialCopy.landing;
 const TOKEN = "AbCdEfGhIjKlMnOpQrStUv";
 const NOW = new Date("2026-10-15T21:41:00Z").getTime();
+const ANA = named("Ana");
+const JO_BLOGGS = named("Jo Bloggs");
 const SOL = { oracleId: "o1", name: "Sol Ring Commander", artCropUri: "https://cards.scryfall.io/art_crop/x.jpg" };
-const OPEN = { kind: "open" as const, name: "Ana", commander: SOL };
+const OPEN = { kind: "open" as const, name: ANA, commander: SOL };
 const FRIEND = { publicId: "00000000-0000-4000-8000-000000000002", displayName: "Ana" };
 
 /** Lets the arrival's two animation frames run. */
@@ -52,35 +56,35 @@ describe("the arrival", () => {
     // Arriving moves no focus.
     expect(document.activeElement).toBe(document.body);
     // Face down, the front is not there to read.
-    expect(screen.queryByRole("img", { name: L.cardAria("Ana", SOL.name, L.typeRequest) })).toBeNull();
+    expect(screen.queryByRole("img", { name: plain(L.cardAria(ANA, SOL.name, L.typeRequest)) })).toBeNull();
     arrive();
     expect(turn().dataset.up).toBe("true");
-    expect(screen.getByRole("img", { name: L.cardAria("Ana", SOL.name, L.typeRequest) })).toBeTruthy();
+    expect(screen.getByRole("img", { name: plain(L.cardAria(ANA, SOL.name, L.typeRequest)) })).toBeTruthy();
     expect(screen.getByTestId("friend-card-back").getAttribute("aria-hidden")).toBe("true");
     expect(screen.getByTestId("friend-card-front").dataset.frame).toBe("art");
     expect(screen.getByText(L.credit(SOL.name))).toBeTruthy();
-    expect(screen.getByText(L.openRules("Ana"))).toBeTruthy();
+    expect(screen.getByText(plain(L.openRules(ANA)))).toBeTruthy();
     // What accepting shares is the image's description, read after its label.
-    expect(screen.getByRole("img").getAttribute("aria-describedby")).toBe(screen.getByText(L.openRules("Ana")).id);
+    expect(screen.getByRole("img").getAttribute("aria-describedby")).toBe(screen.getByText(plain(L.openRules(ANA))).closest("p")!.id);
   });
 
   it("draws a sender with no commander by their initials in the grey frame (L2b)", () => {
-    render(<FriendLanding token={TOKEN} nowMs={NOW} view={{ kind: "open", name: "Jo Bloggs", commander: null }} />);
+    render(<FriendLanding token={TOKEN} nowMs={NOW} view={{ kind: "open", name: JO_BLOGGS, commander: null }} />);
     arrive();
     expect(screen.getByTestId("friend-card-front").dataset.frame).toBe("grey");
     expect(screen.getByTestId("friend-card-initials").textContent).toBe("JB");
     expect(screen.getByText(L.noCommander)).toBeTruthy();
-    expect(screen.getByRole("img", { name: L.cardAria("Jo Bloggs", null, L.typeRequest) })).toBeTruthy();
+    expect(screen.getByRole("img", { name: plain(L.cardAria(JO_BLOGGS, null, L.typeRequest)) })).toBeTruthy();
   });
 
   it("names the face a signature card with the switch on: each card's rules and an empty credit", () => {
-    render(<FriendLanding token={TOKEN} nowMs={NOW} signature view={{ kind: "open", name: "Jo Bloggs", commander: null }} />);
+    render(<FriendLanding token={TOKEN} nowMs={NOW} signature view={{ kind: "open", name: JO_BLOGGS, commander: null }} />);
     arrive();
-    expect(screen.getByText(L.openRulesSignature("Jo Bloggs"))).toBeTruthy();
+    expect(screen.getByText(plain(L.openRulesSignature(JO_BLOGGS)))).toBeTruthy();
     expect(screen.getByText(L.noSignature)).toBeTruthy();
     expect(screen.queryByText(L.noCommander)).toBeNull();
     cleanup();
-    render(<FriendLanding token={TOKEN} nowMs={NOW} signature view={{ kind: "self", name: "Jo", commander: SOL }} />);
+    render(<FriendLanding token={TOKEN} nowMs={NOW} signature view={{ kind: "self", name: named("Jo"), commander: SOL }} />);
     arrive();
     expect(screen.getByText(L.ownRulesSignature)).toBeTruthy();
   });
@@ -99,22 +103,22 @@ describe("the arrival", () => {
   });
 
   it("turns a friend's card face up with the day you became friends, as /friends names it", () => {
-    render(<FriendLanding token={TOKEN} nowMs={NOW} view={{ kind: "friends", name: "Ana", commander: SOL, since: new Date("2026-10-02T12:00:00Z") }} />);
+    render(<FriendLanding token={TOKEN} nowMs={NOW} view={{ kind: "friends", name: ANA, commander: SOL, since: new Date("2026-10-02T12:00:00Z") }} />);
     arrive();
-    expect(screen.getByRole("img", { name: L.cardAria("Ana", SOL.name, L.typeFriend("Oct 2")) })).toBeTruthy();
-    expect(title()).toBe(L.alreadyTitle("Ana"));
+    expect(screen.getByRole("img", { name: plain(L.cardAria(ANA, SOL.name, L.typeFriend("Oct 2"))) })).toBeTruthy();
+    expect(title()).toBe(plain(L.alreadyTitle(ANA)));
     expect(screen.getByText(L.alreadyBody)).toBeTruthy();
     expect(screen.queryByRole("button", { name: L.accept })).toBeNull();
   });
 
   it("names a friendship made today or yesterday the way /friends does", () => {
-    const { unmount } = render(<FriendLanding token={TOKEN} nowMs={NOW} view={{ kind: "friends", name: "Ana", commander: SOL, since: new Date(NOW - 3_600_000) }} />);
+    const { unmount } = render(<FriendLanding token={TOKEN} nowMs={NOW} view={{ kind: "friends", name: ANA, commander: SOL, since: new Date(NOW - 3_600_000) }} />);
     arrive();
-    expect(screen.getByRole("img", { name: L.cardAria("Ana", SOL.name, L.typeFriend(socialCopy.friends.today)) })).toBeTruthy();
+    expect(screen.getByRole("img", { name: plain(L.cardAria(ANA, SOL.name, L.typeFriend(socialCopy.friends.today))) })).toBeTruthy();
     unmount();
-    render(<FriendLanding token={TOKEN} nowMs={NOW} view={{ kind: "friends", name: "Ana", commander: SOL, since: new Date(NOW - 86_400_000) }} />);
+    render(<FriendLanding token={TOKEN} nowMs={NOW} view={{ kind: "friends", name: ANA, commander: SOL, since: new Date(NOW - 86_400_000) }} />);
     arrive();
-    expect(screen.getByRole("img", { name: L.cardAria("Ana", SOL.name, L.typeFriend(socialCopy.friends.yesterday)) })).toBeTruthy();
+    expect(screen.getByRole("img", { name: plain(L.cardAria(ANA, SOL.name, L.typeFriend(socialCopy.friends.yesterday))) })).toBeTruthy();
   });
 });
 
@@ -146,7 +150,7 @@ describe("Accept", () => {
     arrive();
     await press(L.accept);
     expect(title()).toBe(L.selfTitle);
-    expect(screen.getByRole("img", { name: L.cardAria("Ana", SOL.name, L.typeOwn) })).toBeTruthy();
+    expect(screen.getByRole("img", { name: plain(L.cardAria(ANA, SOL.name, L.typeOwn)) })).toBeTruthy();
   });
 
   it("refreshes into not found when the switch went off", async () => {
@@ -163,7 +167,7 @@ describe("Accept", () => {
     await press(L.accept);
     expect(screen.getByRole("alert").textContent).toContain(L.acceptFailed);
     expect(turn().dataset.up).toBe("true");
-    expect(title()).toBe(L.openTitle("Ana"));
+    expect(title()).toBe(plain(L.openTitle(ANA)));
     await press(L.retry);
     expect(m.redeem).toHaveBeenCalledTimes(2);
     expect(m.push).toHaveBeenCalled();
@@ -209,10 +213,10 @@ describe("Decline", () => {
     // A decline's turn starts at once, with no arrival beat.
     expect(turn().dataset.arrival).toBe("false");
     act(() => { vi.advanceTimersByTime(519); });
-    expect(title()).toBe(L.openTitle("Ana"));
+    expect(title()).toBe(plain(L.openTitle(ANA)));
     act(() => { vi.advanceTimersByTime(1); });
     expect(title()).toBe(L.declinedTitle);
-    expect(screen.getByText(L.declinedBody("Ana"))).toBeTruthy();
+    expect(screen.getByText(plain(L.declinedBody(ANA)))).toBeTruthy();
     // The Decline the reader was on is gone: focus is on the heading that says what happened.
     expect(document.activeElement).toBe(screen.getByRole("heading", { level: 1 }));
     expect(screen.getByRole("link", { name: L.toHome }).getAttribute("href")).toBe("/");
@@ -225,7 +229,7 @@ describe("Decline", () => {
     arrive();
     await press(L.decline);
     act(() => { vi.advanceTimersByTime(119); });
-    expect(title()).toBe(L.openTitle("Ana"));
+    expect(title()).toBe(plain(L.openTitle(ANA)));
     act(() => { vi.advanceTimersByTime(1); });
     expect(title()).toBe(L.declinedTitle);
   });
@@ -262,7 +266,7 @@ describe("your own link", () => {
   it("copies the link at this page's own origin, and says so", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
-    render(<FriendLanding token={TOKEN} nowMs={NOW} view={{ kind: "self", name: "Hugh", commander: null }} />);
+    render(<FriendLanding token={TOKEN} nowMs={NOW} view={{ kind: "self", name: named("Hugh"), commander: null }} />);
     arrive();
     expect(screen.getByText(L.selfBody)).toBeTruthy();
     await press(L.copyLink);
@@ -274,7 +278,7 @@ describe("your own link", () => {
 
   it("says when the copy failed", async () => {
     Object.defineProperty(navigator, "clipboard", { value: { writeText: vi.fn().mockRejectedValue(new Error("no")) }, configurable: true });
-    render(<FriendLanding token={TOKEN} nowMs={NOW} view={{ kind: "self", name: "Hugh", commander: null }} />);
+    render(<FriendLanding token={TOKEN} nowMs={NOW} view={{ kind: "self", name: named("Hugh"), commander: null }} />);
     await press(L.copyLink);
     expect(screen.getByRole("alert").textContent).toContain(L.copyFailed);
   });
@@ -282,25 +286,25 @@ describe("your own link", () => {
 
 describe("a long name", () => {
   it("breaks anywhere in the column, so 30 characters with no space stay inside it", () => {
-    render(<FriendLanding token={TOKEN} nowMs={NOW} view={{ kind: "open", name: "W".repeat(30), commander: null }} />);
+    render(<FriendLanding token={TOKEN} nowMs={NOW} view={{ kind: "open", name: named("W".repeat(30)), commander: null }} />);
     expect(screen.getByRole("region").className).toContain("[overflow-wrap:anywhere]");
     arrive();
-    expect(screen.getByText(L.openRules("W".repeat(30))).className).toContain("[overflow-wrap:anywhere]");
+    expect(screen.getByText(plain(L.openRules(named("W".repeat(30))))).closest("p")!.className).toContain("[overflow-wrap:anywhere]");
   });
 });
 
 describe("landingView", () => {
   const open = (over = {}) => ({
-    state: "open" as const, inviterName: "Ana", commander: SOL, self: false, alreadyFriends: false, friendsSince: null, ...over,
+    state: "open" as const, inviterName: ANA, commander: SOL, self: false, alreadyFriends: false, friendsSince: null, ...over,
   });
   it("maps every answer readInvite can give", () => {
     expect(landingView(null)).toEqual({ kind: "ended" });
     expect(landingView({ state: "expired" })).toEqual({ kind: "expired" });
     for (const state of ["redeemed", "declined", "revoked"] as const) expect(landingView({ state })).toEqual({ kind: "ended" });
     expect(landingView(open())).toEqual(OPEN);
-    expect(landingView(open({ self: true, alreadyFriends: true }))).toEqual({ kind: "self", name: "Ana", commander: SOL });
+    expect(landingView(open({ self: true, alreadyFriends: true }))).toEqual({ kind: "self", name: ANA, commander: SOL });
     expect(landingView(open({ alreadyFriends: true, friendsSince: new Date("2026-10-02T23:30:00Z") })))
-      .toEqual({ kind: "friends", name: "Ana", commander: SOL, since: new Date("2026-10-02T23:30:00Z") });
+      .toEqual({ kind: "friends", name: ANA, commander: SOL, since: new Date("2026-10-02T23:30:00Z") });
   });
 });
 

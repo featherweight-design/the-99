@@ -5,6 +5,7 @@
 
 import type { ReactNode } from "react";
 import type { Parts } from "../../lib/copy/join";
+import { PersonText, type PersonParts } from "../../lib/person-name";
 import { Emphasis } from "./emphasis";
 
 /** The page frame both pages share: top-aligned, padding 44/24/24/24, the accent wash at 50% 18%. */
@@ -50,10 +51,10 @@ export function NewcomerColumn({
   variant: "join" | "invite";
   /** Shown from `md` up only (the invite-only page); the join steps draw none. */
   kicker?: string;
-  title: string;
+  title: string | PersonParts;
   body?: string | Parts;
   actions: ReactNode;
-  fine?: string;
+  fine?: string | PersonParts;
   landing?: "wait" | "go";
 }) {
   // Everything under the card lands with it: the heading, the body, the actions and the fine print.
@@ -67,7 +68,7 @@ export function NewcomerColumn({
         <p className="m-0 mb-[10px] font-mono text-[11px] font-medium leading-[normal] uppercase tracking-[.2em] text-[color:var(--accent-text)] max-md:hidden">{kicker}</p>
       )}
       <h1 id="friend-landing-title" tabIndex={-1} className={`m-0 font-display font-bold text-[color:var(--fg)] outline-none ${H1[variant]} ${land}`}>
-        {title}
+        <PersonText text={title} />
       </h1>
       {body && (
         <p className={`m-0 font-sans text-[color:var(--fg-body)] ${BODY[variant]} ${land}`}>
@@ -75,7 +76,7 @@ export function NewcomerColumn({
         </p>
       )}
       <div className={`flex w-full flex-col ${land}`}>{actions}</div>
-      {fine && <p className={`m-0 font-mono text-[color:var(--fg-faint)] ${FINE[variant]} ${land}`}>{fine}</p>}
+      {fine && <p className={`m-0 font-mono text-[color:var(--fg-faint)] ${FINE[variant]} ${land}`}><PersonText text={fine} /></p>}
     </section>
   );
 }

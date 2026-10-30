@@ -21,6 +21,9 @@ import { FriendsView } from "./friends-view";
 import { WATCH_MS } from "./use-invite-watch";
 import { socialCopy } from "../../lib/copy/social";
 import type { Friend } from "../../lib/social/access";
+import { named } from "../../lib/person-name/mint";
+import type { InviteOutcome } from "../../lib/social/friends";
+import { plain } from "../../lib/person-name/testing";
 
 const NOW = new Date("2026-10-15T21:41:00Z");
 const TOKEN = "AbCdEfGhIjKlMnOpQrStUv";
@@ -44,7 +47,7 @@ function draw() {
   return render(view());
 }
 const tick = (ms: number) => act(async () => { await vi.advanceTimersByTimeAsync(ms); });
-const answer = (open: boolean, friend: { publicId: string; displayName: string } | null) =>
+const answer = (open: boolean, friend: InviteOutcome["friend"]) =>
   fetchMock.mockResolvedValue({ ok: true, json: async () => ({ links: [{ token: TOKEN, open, friend }] }) });
 
 async function openDialog() {
@@ -83,21 +86,21 @@ describe("/friends watches a shown link", () => {
   it("redraws the page when the link is redeemed, and turns the dialog into the receipt", async () => {
     draw();
     await openDialog();
-    answer(false, { publicId: "p-mo", displayName: "Mo" });
+    answer(false, { publicId: "p-mo", displayName: named("Mo") });
     await tick(WATCH_MS);
     expect(nav.refresh).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole("dialog")).toBeNull();
-    expect(screen.getByRole("status")).toHaveTextContent(socialCopy.page.accepted("Mo"));
+    expect(screen.getByRole("status")).toHaveTextContent(plain(socialCopy.page.accepted("Mo")));
   });
 
   it("only redraws for a link that ended with no new friend, and leaves the dialog alone", async () => {
     draw();
     await openDialog();
-    answer(false, { publicId: "p-dave", displayName: "Dave" });
+    answer(false, { publicId: "p-dave", displayName: named("Dave") });
     await tick(WATCH_MS);
     expect(nav.refresh).toHaveBeenCalledTimes(1);
     expect(screen.getByRole("dialog", { name: socialCopy.dialog.title })).toBeTruthy();
-    expect(screen.queryByText(socialCopy.page.accepted("Dave"))).toBeNull();
+    expect(screen.queryByText(plain(socialCopy.page.accepted("Dave")))).toBeNull();
   });
 
   it("polls nothing while the tab is hidden", async () => {
@@ -125,31 +128,31 @@ describe("/friends watches a shown link", () => {
     const { rerender } = draw();
     await openDialog();
     rerender(view([DAVE, MO]));
-    answer(false, { publicId: "p-mo", displayName: "Mo" });
+    answer(false, { publicId: "p-mo", displayName: named("Mo") });
     await tick(WATCH_MS);
     expect(screen.queryByRole("dialog")).toBeNull();
-    expect(screen.getByRole("status")).toHaveTextContent(socialCopy.page.accepted("Mo"));
+    expect(screen.getByRole("status")).toHaveTextContent(plain(socialCopy.page.accepted("Mo")));
   });
 
   it("keeps the receipt until a redraw lists the friend, and puts it away once a later one no longer does", async () => {
     const { rerender } = draw();
     await openDialog();
-    answer(false, { publicId: "p-mo", displayName: "Mo" });
+    answer(false, { publicId: "p-mo", displayName: named("Mo") });
     await tick(WATCH_MS);
     rerender(view([DAVE]));
-    expect(screen.getByRole("status")).toHaveTextContent(socialCopy.page.accepted("Mo"));
+    expect(screen.getByRole("status")).toHaveTextContent(plain(socialCopy.page.accepted("Mo")));
     rerender(view([DAVE, MO]));
-    expect(screen.getByRole("status")).toHaveTextContent(socialCopy.page.accepted("Mo"));
+    expect(screen.getByRole("status")).toHaveTextContent(plain(socialCopy.page.accepted("Mo")));
     rerender(view([DAVE]));
-    expect(screen.queryByText(socialCopy.page.accepted("Mo"))).toBeNull();
+    expect(screen.queryByText(plain(socialCopy.page.accepted("Mo")))).toBeNull();
   });
   it("redraws for a link redeemed with no dialog open, even once the minute tick has dropped it, and draws no receipt", async () => {
     render(view([DAVE], [{ token: TOKEN, createdAt: NOW, expiresAt: new Date(NOW.getTime() + 30_000) }]));
     await tick(60_000);
-    answer(false, { publicId: "p-mo", displayName: "Mo" });
+    answer(false, { publicId: "p-mo", displayName: named("Mo") });
     await tick(WATCH_MS);
     expect(nav.refresh).toHaveBeenCalled();
-    expect(screen.queryByText(socialCopy.page.accepted("Mo"))).toBeNull();
+    expect(screen.queryByText(plain(socialCopy.page.accepted("Mo")))).toBeNull();
   });
 
   it("still turns the dialog into the receipt when a redraw that dropped the link lands before the answer", async () => {
@@ -157,9 +160,9 @@ describe("/friends watches a shown link", () => {
     const { rerender } = render(view([DAVE], [{ token: TOKEN, createdAt: NOW, expiresAt: later }]));
     fireEvent.click(screen.getByRole("button", { name: /^Show the link made/ }));
     rerender(view([DAVE, MO], []));
-    answer(false, { publicId: "p-mo", displayName: "Mo" });
+    answer(false, { publicId: "p-mo", displayName: named("Mo") });
     await tick(WATCH_MS);
     expect(screen.queryByRole("dialog")).toBeNull();
-    expect(screen.getByRole("status")).toHaveTextContent(socialCopy.page.accepted("Mo"));
+    expect(screen.getByRole("status")).toHaveTextContent(plain(socialCopy.page.accepted("Mo")));
   });
 });

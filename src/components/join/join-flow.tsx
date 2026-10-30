@@ -191,7 +191,6 @@ export function JoinFlow({ token, start }: { token: string; start: JoinStart }) 
   const face: CardFace | null = sender && named
     ? { name: sender.displayName, commander: sender.commander, type: copy.cardType, rules: copy.cardRules(sender.displayName) }
     : null;
-  const name = sender?.displayName ?? "";
   const signIn = (
     <SignInButton mode="redirect">
       <button type="button" className={QUIET_LINK}>{copy.signIn}</button>
@@ -203,9 +202,9 @@ export function JoinFlow({ token, start }: { token: string; start: JoinStart }) 
     column = (
       <NewcomerColumn
         variant="join"
-        title={copy.title(name)}
+        title={copy.title(sender.displayName)}
         body={copy.body}
-        fine={copy.fine(name)}
+        fine={copy.fine(sender.displayName)}
         landing={up ? "go" : "wait"}
         actions={
           <form onSubmit={sendCode} noValidate className={FORM}>
@@ -277,7 +276,7 @@ export function JoinFlow({ token, start }: { token: string; start: JoinStart }) 
       <NewcomerColumn
         variant="join"
         title={copy.okTitle}
-        body={copy.okBody(name)}
+        body={copy.okBody(sender.displayName)}
         landing="go"
         actions={<div className={FORM}><button type="button" disabled={busy || leaving} className={press()} onClick={toSignUp}>{busy || leaving ? copy.continuing : copy.toSignUp}</button></div>}
       />
@@ -287,7 +286,7 @@ export function JoinFlow({ token, start }: { token: string; start: JoinStart }) 
       <NewcomerColumn
         variant="join"
         title={copy.haveAccountTitle}
-        body={copy.haveAccountBody(email, name)}
+        body={copy.haveAccountBody(email, sender.displayName)}
         landing="go"
         actions={
           <div className={FORM}>
