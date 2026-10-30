@@ -98,10 +98,9 @@ export async function searchFaceCommandersAction(query: unknown): Promise<Picker
 // pick is saved by `setCommanderAction` above, with the printing the screen offered.
 
 /** The signed-in reader, when their friends switch is on; null otherwise. */
-async function signatureReader(): Promise<{ userId: string; env: NodeJS.ProcessEnv } | null> {
+async function signatureReader(): Promise<{ userId: string } | null> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
-  return socialFriendsEnabled(env) ? { userId, env } : null;
+  return socialFriendsEnabled(await requestSwitchEnv(userId)) ? { userId } : null;
 }
 
 export type FaceDeckTilesOutcome = { ok: true; tiles: FaceTile[] } | Off;
@@ -110,7 +109,7 @@ export type FaceDeckTilesOutcome = { ok: true; tiles: FaceTile[] } | Off;
 export async function listDeckFacesAction(): Promise<FaceDeckTilesOutcome> {
   const reader = await signatureReader();
   if (!reader) return OFF;
-  return { ok: true, tiles: await listOwnDeckFaces(reader.userId, reader.env) };
+  return { ok: true, tiles: await listOwnDeckFaces(reader.userId) };
 }
 
 export type FaceSearchOutcome = { ok: true; hits: FaceCardHit[] } | Off;

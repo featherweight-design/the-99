@@ -71,12 +71,12 @@ export function sumShopping(values: Iterable<DeckShopping>): DeckShopping {
 export async function loadShoppingRollup(
   userId: string,
   deckIds: string[] | undefined,
-  /** The reader's resolved switches (`requestSwitchEnv`), for the claim model and the printing picks. */
+  /** The reader's resolved switches (`requestSwitchEnv`), for the claim model. */
   env: NodeJS.ProcessEnv,
 ): Promise<ShoppingRollup> {
   const rows = await loadDeckBuyRows(userId, deckIds, undefined, env);
   if (rows.length === 0) return { byDeck: new Map(), total: empty() };
-  return rollupBuyRows(rows, await readBuyRowPrices(userId, rows, env));
+  return rollupBuyRows(rows, await readBuyRowPrices(userId, rows));
 }
 
 /**
@@ -89,9 +89,8 @@ export async function loadShoppingRollup(
 export async function readBuyRowPrices(
   userId: string,
   rows: DeckBuyRow[],
-  env: NodeJS.ProcessEnv,
 ): Promise<PriceRead> {
-  const picks = await readHeldPricePicks(userId, [...new Set(rows.map((r) => r.deckId))], env);
+  const picks = await readHeldPricePicks(userId, [...new Set(rows.map((r) => r.deckId))]);
   return loadPrices([...new Set(rows.map((r) => r.oracleId))], picks);
 }
 

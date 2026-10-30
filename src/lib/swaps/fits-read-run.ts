@@ -46,7 +46,7 @@ export type FitsReadPress =
   | { ok: false; reason: "notFound" | "noCandidates" | "tooBig" | "current" | "allowance" | "ownerShare" };
 
 type Deps = {
-  /** `env`: the reader's resolved switches, for `loadFits`' claim read and art. */
+  /** `env`: the reader's resolved switches, for `loadFits`' claim read. */
   load: (userId: string, oracleId: string, env: NodeJS.ProcessEnv) => Promise<FitsReadLoad | null>;
   model: () => string;
   call: (req: { inputs: FitsReadLoad["inputs"]; prompt: ReturnType<typeof buildFitsReadPrompt>; model: string }) => Promise<ModelOutcome<FitsReadReply>>;
@@ -74,7 +74,7 @@ export const LIVE_DEPS: Deps = {
 
 /**
  * The view for one card: free, never a call. `env` is the reader's resolved switches (`requestSwitchEnv`),
- * for the free list's claim read and every card's art.
+ * for the free list's claim read.
  */
 export async function readFitsRead(
   userId: string, oracleId: string, deps: Deps = LIVE_DEPS, env: NodeJS.ProcessEnv,
@@ -91,13 +91,13 @@ async function panelFor(userId: string, oracleId: string, load: FitsReadLoad, mo
   const planSources = Object.fromEntries(load.inputs.candidates.map((c) => [c.deckId, load.planOf.get(c.deckId)?.source ?? "none"]));
   const holding = new Set(load.fits.holds.map((h) => h.id));
   const view = fitsReadView(rows, candidateHashes(load.inputs, model), holding, (v) => candidateHashes(load.inputs, model, v));
-  const { names, images, commanderIds } = await pickCards(userId, view, load, env);
+  const { names, images, commanderIds } = await pickCards(userId, view, load);
   return { fits: load.fits, view, candidates: load.inputs.candidates.length, planSources, names, images, commanderIds, allowance };
 }
 
 /** Names for the stored picks' cards: from the inputs where the deck still runs the card, else the
  *  catalog (a card a deck has since cut, on an out-of-date read). */
-async function pickCards(userId: string, view: FitsReadView, load: FitsReadLoad, env: NodeJS.ProcessEnv): Promise<
+async function pickCards(userId: string, view: FitsReadView, load: FitsReadLoad): Promise<
   Pick<FitsReadPanel, "names" | "images" | "commanderIds">
 > {
   const ids = new Set<string>();
@@ -134,7 +134,7 @@ async function pickCards(userId: string, view: FitsReadView, load: FitsReadLoad,
   const [rows, owned] = await Promise.all([
     db.select({ oracleId: cards.oracleId, name: cards.name, imageUri: cards.imageUri }).from(cards).where(inArray(cards.oracleId, all))
       .catch(() => [] as { oracleId: string; name: string; imageUri: string | null }[]),
-    chainArt(userId, null, all, env).catch(() => new Map<string, string>()),
+    chainArt(userId, null, all).catch(() => new Map<string, string>()),
   ]);
   const images: Record<string, string | null> = {};
   for (const r of rows) {

@@ -225,7 +225,6 @@ beforeEach(() => {
   stub.state.unresolved.length = 0;
   stub.state.cards.length = 0;
   stub.state.collection.length = 0;
-  delete process.env.DECK_PRINTINGS_ENABLED;
   stub.state.inserts.length = 0;
   stub.state.deletedFrom.length = 0;
   stub.state.revalidated.length = 0;
@@ -252,7 +251,6 @@ describe("importDeck — printings (deck printings)", () => {
   });
 
   it("makes a held printing the pick, commanders included, and counts the body's lines only", async () => {
-    process.env.DECK_PRINTINGS_ENABLED = "true";
     const result = await run();
     if (!result.ok) throw new Error(JSON.stringify(result));
     expect(pickInserts()).toEqual([
@@ -265,7 +263,6 @@ describe("importDeck — printings (deck printings)", () => {
   });
 
   it("writes a commander's held printing without counting it in the strip", async () => {
-    process.env.DECK_PRINTINGS_ENABLED = "true";
     stub.state.collection.push({ oracleId: KRATOS, setCode: "sld", collectorNumber: "2213" });
     const result = await run();
     if (!result.ok) throw new Error(JSON.stringify(result));
@@ -276,21 +273,11 @@ describe("importDeck — printings (deck printings)", () => {
   });
 
   it("counts a body line whose printing is held as kept", async () => {
-    process.env.DECK_PRINTINGS_ENABLED = "true";
     stub.state.collection.push({ oracleId: SOL_RING, setCode: "ltc", collectorNumber: "284" });
     const result = await run();
     if (!result.ok) throw new Error(JSON.stringify(result));
     expect(result.printingsKept).toBe(1);
     expect(result.printingsNotOwned).toBe(0);
-  });
-
-  it("writes no picks and counts nothing with the switch off", async () => {
-    const result = await run();
-    if (!result.ok) throw new Error(JSON.stringify(result));
-    expect(pickInserts()).toEqual([]);
-    expect(result.printingsKept).toBe(0);
-    expect(result.printingsNotOwned).toBe(0);
-    expect(stub.state.wheres.some((w) => w.table === "collection_items")).toBe(false);
   });
 });
 
@@ -649,10 +636,9 @@ describe("importDeck — I own these cards (no-collection entry)", () => {
     expect(stub.state.revalidated).toEqual([]);
   });
 
-  // With deck printings on and nothing held, the named Sol Ring LTC 284 is one the add brings in: it is the
+  // With nothing held, the named Sol Ring LTC 284 is one the add brings in: it is the
   // deck's pick and the strip does not call it missing from the collection.
-  it("with deck printings on, takes a named printing the add brings in as the pick, not as missing", async () => {
-    process.env.DECK_PRINTINGS_ENABLED = "true";
+  it("takes a named printing the add brings in as the pick, not as missing", async () => {
     own.readDeckOwnLines.mockResolvedValue([
       { oracleId: SOL_RING, setCode: "ltc", collectorNumber: "284", scryfallId: "s1", finish: "nonfoil", condition: null, quantity: 1 },
       { oracleId: ATREUS, setCode: "", scryfallId: null, finish: "nonfoil", condition: null, quantity: 1 },

@@ -328,7 +328,7 @@ async function Results({
   // The search still runs, for the pool the read's first step names; its rows wait for the read.
   if (hold !== null) return <HeldResults total={page.total} by={hold} />;
   // The picks that went since the run: a decoration, so a failed read draws the run without the group.
-  const gone = past ? await loadGonePicks(userId, page.gone, new Date(past.at), env).catch(() => []) : [];
+  const gone = past ? await loadGonePicks(userId, page.gone, new Date(past.at)).catch(() => []) : [];
   const results = (
     <ChooseResults
       // A settled read re-orders the list: a fresh list, mounted inside the Suspense that already

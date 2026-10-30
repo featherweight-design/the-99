@@ -138,7 +138,7 @@ async function main() {
       await db.execute(sql`insert into collection_items (user_id, oracle_id, quantity, set_code, collector_number)
         values (${A}, ${L.oracle_id}::uuid, 1, ${L.set_code}, ${L.num})`);
       await db.execute(sql`insert into decks (user_id, name, commander_oracle_id) values (${A}, ${`probe ${run}`}, ${L.oracle_id}::uuid)`);
-      const tiles = await picker.listOwnDeckFaces(A, process.env);
+      const tiles = await picker.listOwnDeckFaces(A);
       const tile = tiles.find((x) => x.oracleId === L.oracle_id);
       // A printing with no full image first: the deck's own art then falls back to another printing's, and the tile
       // must still draw the crop the face will.
@@ -148,7 +148,7 @@ async function main() {
       await db.execute(sql`
         insert into printings (scryfall_id, oracle_id, set_code, collector_number, finishes, art_crop_uri)
         values (${FIXTURE_VARIANT}::uuid, ${L.oracle_id}::uuid, ${L.set_code}, ${L.num}, array['nonfoil']::text[], ${`https://probe.invalid/${run}/variant.jpg`})`);
-      const twin = (await picker.listOwnDeckFaces(A, process.env)).find((x) => x.oracleId === L.oracle_id);
+      const twin = (await picker.listOwnDeckFaces(A)).find((x) => x.oracleId === L.oracle_id);
       check("a holding two variants share saves no printing", twin?.printingId === null, JSON.stringify(twin));
     } else console.log("skip  no legendary creature with a second art in this catalog");
 

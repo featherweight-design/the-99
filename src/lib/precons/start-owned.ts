@@ -92,7 +92,7 @@ export async function startPreconOwned(
         // Every card's claim lock FIRST, sorted, before the deck row the commit locks: the order every
         // reservation write takes them in (`lockCardClaims`).
         for (const r of reserve) await lockCardClaims(tx, userId, r.oracleId);
-        deckId = await writePreconDeckIn(tx, userId, name, deck, env, actionId);
+        deckId = await writePreconDeckIn(tx, userId, name, deck, actionId);
         if (reserve.length > 0) {
           await tx.insert(cardAssignments).values(reserve.map((r) => ({ userId, oracleId: r.oracleId, deckId: deckId!, copies: r.copies })));
         }

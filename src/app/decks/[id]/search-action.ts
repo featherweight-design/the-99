@@ -140,16 +140,15 @@ export async function searchCards(
   // Availability is decoration: a failure here must leave the search working, so
   // the read is swallowed and every row falls back to no marker.
   const ownedIds = rows.filter((r) => r.ownedQty > 0).map((r) => r.oracleId);
-  // The reader's resolved switches, once for both reads: the claim model's lock key and the deck's picks.
-  const envRead = requestSwitchEnv(userId);
   const [availability, ownedArt] = await Promise.all([
+    // The reader's resolved switches decide the claim model's lock key.
     deckId && ownedIds.length > 0
-      ? envRead.then((env) => loadAvailability(userId, { excludeDeckId: deckId, oracleIds: ownedIds, env })).catch(() => null)
+      ? requestSwitchEnv(userId).then((env) => loadAvailability(userId, { excludeDeckId: deckId, oracleIds: ownedIds, env })).catch(() => null)
       : null,
     // The art a row is drawn with: the printing card details opens, rather than the catalog's one arbitrary
     // printing per card (the player's own copy, the deck's pick where it holds the card, else the printing an
-    // unowned card opens on). Fail-soft inside `chainArt`. The deck's picks follow the reader's resolved switches.
-    envRead.then((env) => chainArt(userId, deckId ?? null, rows.map((r) => r.oracleId), env)),
+    // unowned card opens on). Fail-soft inside `chainArt`.
+    chainArt(userId, deckId ?? null, rows.map((r) => r.oracleId)),
   ]);
   return rows.map(({ oracleText, keywords, gameChanger, massLandDenial, extraTurn, ...row }) => ({
     ...row,

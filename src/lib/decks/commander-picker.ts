@@ -95,7 +95,7 @@ export type FaceTile = CommanderTile & { printingId: string | null };
  * each lead drawn and saved in the printing its NEWEST deck shows (`resolveCommanderPrintingsByDeck`: the deck's pick
  * while held, else the Collection's). A partner, or a commander the player does not own, keeps the usual art.
  */
-export async function listOwnDeckFaces(viewerId: string, env: NodeJS.ProcessEnv): Promise<FaceTile[]> {
+export async function listOwnDeckFaces(viewerId: string): Promise<FaceTile[]> {
   const rows = await deckCommandersQuery(viewerId);
   const tiles = deckTiles(rows);
   // The newest deck each lead heads: rows come newest first, so the first one seen.
@@ -103,7 +103,7 @@ export async function listOwnDeckFaces(viewerId: string, env: NodeJS.ProcessEnv)
   for (const r of rows) if (r.leadId !== null && !deckOf.has(r.leadId)) deckOf.set(r.leadId, r.deckId);
   const leads = tiles.filter((t) => deckOf.has(t.oracleId));
   const shown = await resolveCommanderPrintingsByDeck(
-    viewerId, leads.map((t) => ({ deckId: deckOf.get(t.oracleId)!, commanderOracleId: t.oracleId })), env,
+    viewerId, leads.map((t) => ({ deckId: deckOf.get(t.oracleId)!, commanderOracleId: t.oracleId })),
   );
   const wanted = leads.flatMap((t) => {
     const p = shown.get(deckOf.get(t.oracleId)!);

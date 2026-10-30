@@ -151,7 +151,7 @@ type CardRowDb = {
 
 /**
  * The whole read for one card, for the signed-in reader. Null when the card does not exist. `env` is the
- * reader's resolved switches (`requestSwitchEnv`), for the card's claim read and the partners' art.
+ * reader's resolved switches (`requestSwitchEnv`), for the card's claim read.
  */
 export async function loadFits(userId: string, oracleId: string, env: NodeJS.ProcessEnv): Promise<FitsRead | null> {
   const [cardRes, deckRes] = await Promise.all([
@@ -241,7 +241,7 @@ export async function loadFits(userId: string, oracleId: string, env: NodeJS.Pro
     const theme = themeReason(themed, cards, r.commander_types, isType);
     if (theme) reasons.set(r.id, { kind: "theme", ...theme });
   }));
-  await withPartnerArt(userId, reasons, env);
+  await withPartnerArt(userId, reasons);
 
   const a = availability.get(oracleId);
   return shapeFits(card, rows, roleCounts, mixes, { owned: a?.owned ?? 0, free: a ? a.free : null }, staples.has(oracleId), reasons);
@@ -254,12 +254,12 @@ export async function loadFits(userId: string, oracleId: string, env: NodeJS.Pro
  * every piece (`chainArt`), plus one `cards` read for the catalog fallback. Fail-soft: a failed read leaves the
  * piece without a preview.
  */
-async function withPartnerArt(userId: string, reasons: Map<string, FitReason>, env: NodeJS.ProcessEnv): Promise<void> {
+async function withPartnerArt(userId: string, reasons: Map<string, FitReason>): Promise<void> {
   const combos = [...reasons.values()].flatMap((r) => (r.kind === "combo" ? [r] : []));
   if (combos.length === 0) return;
   const ids = [...new Set(combos.map((r) => r.with.oracleId))];
   const [owned, catalog] = await Promise.all([
-    chainArt(userId, null, ids, env),
+    chainArt(userId, null, ids),
     db.select({ oracleId: cardsTable.oracleId, imageUri: cardsTable.imageUri }).from(cardsTable).where(inArray(cardsTable.oracleId, ids))
       .then((rows) => new Map(rows.map((x) => [x.oracleId, x.imageUri] as const)))
       .catch(() => new Map<string, string | null>()),

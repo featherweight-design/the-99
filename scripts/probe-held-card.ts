@@ -106,7 +106,7 @@ async function main() {
       values (${USER}, 'Probe Holder', ${holderCmd}) returning id
     `);
     await fixture.execute(sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${deck.id}, ${card.id}, 1)`);
-    await commitVersion(deck.id, null, undefined, undefined, process.env);
+    await commitVersion(deck.id, null, undefined, undefined);
 
     const held = await loadCardChip(USER, card.id, process.env);
     check("held: chip still reads owned", held?.owned, true);

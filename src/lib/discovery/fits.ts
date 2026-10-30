@@ -144,7 +144,7 @@ async function decksOverLimit(
 ): Promise<Set<string>> {
   if (rows.length === 0) return new Set();
   const [read, locked] = await Promise.all([
-    readBuyRowPrices(userId, rows, env),
+    readBuyRowPrices(userId, rows),
     neverCutEnabled(env) ? liveLockedIdsByDeck(db, [...new Set(rows.map((r) => r.deckId))]) : new Map<string, ReadonlySet<string>>(),
   ]);
   const out = new Set<string>();

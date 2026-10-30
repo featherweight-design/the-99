@@ -1,8 +1,7 @@
 // Deck printings PR 4: the picker in deck scope, through the PROVIDER, which is the production path.
 // A card the deck holds, opened with the deck's picks, picks for that deck: it starts from the
 // deck's pick, writes through `setDeckPrinting` and never the Collection's art preference. Every
-// other case (no picks because the switch is off, or a card the deck does not hold) is today's
-// collection-scoped picker.
+// other case (no picks handed in, or a card the deck does not hold) is the collection-scoped picker.
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import type { BrowseCard, BrowsePrinting, PreferredPrinting } from "../../lib/collection/browse";
@@ -114,7 +113,7 @@ describe("the picker in deck scope", () => {
     expect(screen.getAllByRole("radio", { name: /LEA/ })[0].getAttribute("aria-checked")).toBe("true");
   });
 
-  it("is the Collection's picker with the switch off", async () => {
+  it("is the Collection's picker with no deck picks handed in", async () => {
     mount(null);
     await openPicker("held");
     expect(screen.queryByText(deckPrintingsCopy.picker.pinned)).toBeNull();

@@ -245,7 +245,7 @@ async function main() {
   // 8. Free after a take, against a REAL claim: a committed deck holding the only Command Tower
   //    makes it a buy here, where it was free.
   const holder = await makeDeck("probe swap holder", commander.oracle_id, [tower.oracle_id]);
-  await commitVersion(holder, null, undefined, undefined, process.env);
+  await commitVersion(holder, null, undefined, undefined);
   const claimed = await loadStandIns(deckId, USER, plateau.oracle_id, false, process.env);
   check("free after the take: a copy a committed deck holds is no longer free",
     !names(freeRows(claimed!)).includes("Command Tower") && names(freeRows(lands)).includes("Command Tower"),

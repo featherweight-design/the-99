@@ -319,7 +319,7 @@ export async function lookups(userId: string, items: readonly FeedItem[], q: Exe
     run<CardRow & { file_name: string }>(preconCommandersQuery(files), files.length > 0),
     run<{ file_name: string; total: number; owned: number }>(preconOwnedQuery(userId, files), files.length > 0),
     run<CardRow>(feedCardsQuery(ids), ids.length > 0),
-    chainArt(userId, null, ids, env),
+    chainArt(userId, null, ids),
   ]);
   return {
     sets: new Map(setRows.map((r) => [r.code, { ...toCard(r), size: r.size === null ? null : Number(r.size) }])),

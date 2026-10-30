@@ -81,7 +81,7 @@ export type DeckUpdatePreview = {
    *  drafting against; a brew has nothing to say and renders no notice. */
   version: number | null;
   /** The deck's held printing picks, so a card opened from the diff shows the deck's printing
-   *  (deck printings, E9). Null with the switch off; absent reads the same. */
+   *  (deck printings, E9). Absent keeps the collection-scoped picker. */
   printingPicks?: Record<string, { setCode: string; collectorNumber: string }> | null;
 };
 
@@ -238,7 +238,7 @@ export async function previewDeckUpdate(input: UpdateDeckInput): Promise<DeckUpd
   const locked = neverCutEnabled(env) && (plan.out.length > 0 || recount.some((r) => r.to < r.from))
     ? await lockedOracleIds(input.deckId, userId, "throw")
     : new Set<string>();
-  const printingPicks = await readModalPicks(userId, input.deckId, env);
+  const printingPicks = await readModalPicks(userId, input.deckId);
 
   return {
     ok: true,

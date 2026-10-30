@@ -655,7 +655,7 @@ export function CardDetailProvider({
    * Deck printings: the deck's held picks by oracle id (`DeckDetail.printingPicks`). With a
    * `deckId`, a card the deck holds opens with the picker in deck scope, picking for this deck.
    * Without one (the review screen, the update diff), a picked card opens on the deck's printing
-   * and offers no pick. Null (the switch off) keeps today's collection-scoped picker everywhere.
+   * and offers no pick. Null (no deck in context) keeps the collection-scoped picker everywhere.
    */
   deckPrintingPicks?: Readonly<Record<string, PreferredPrinting>> | null;
   /**

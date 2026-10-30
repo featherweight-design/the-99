@@ -1650,7 +1650,7 @@ describe("commitDeckVersion", () => {
     vi.mocked(cachedDeckProfile).mockResolvedValue({ brackets: {} } as never);
     await commitDeckVersion(DECK_ID, null);
     expect(commitVersion).toHaveBeenCalledWith(
-      DECK_ID, null, expect.anything(), { declared: 2, permits: [1, 2] }, ENV,
+      DECK_ID, null, expect.anything(), { declared: 2, permits: [1, 2] },
     );
   });
 
@@ -1704,7 +1704,7 @@ describe("commitDeckVersion", () => {
     });
     await commitDeckVersion(DECK_ID, null);
     expect(cachedDeckProfile).not.toHaveBeenCalled();
-    expect(commitVersion).toHaveBeenCalledWith(DECK_ID, null, expect.anything(), undefined, ENV);
+    expect(commitVersion).toHaveBeenCalledWith(DECK_ID, null, expect.anything(), undefined);
   });
 
   // A Server Action's arguments are wire input, so the signature is a claim about
@@ -1721,7 +1721,7 @@ describe("commitDeckVersion", () => {
     stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD });
     const result = await commitDeckVersion(DECK_ID, undefined as unknown as string);
     expect(result.ok).toBe(true);
-    expect(commitVersion).toHaveBeenCalledWith(DECK_ID, null, expect.anything(), undefined, ENV);
+    expect(commitVersion).toHaveBeenCalledWith(DECK_ID, null, expect.anything(), undefined);
   });
 
   it("revalidates claim surfaces, because a commit moves every other deck's figures", async () => {
@@ -1885,7 +1885,7 @@ describe("commitDeckVersion", () => {
     await commitDeckVersion(DECK_ID, "   ");
     // The third argument is the caller's transaction: the diff behind the
     // receipt and the snapshot it describes are read under one lock.
-    expect(commitVersion).toHaveBeenCalledWith(DECK_ID, null, expect.anything(), undefined, ENV);
+    expect(commitVersion).toHaveBeenCalledWith(DECK_ID, null, expect.anything(), undefined);
   });
 });
 

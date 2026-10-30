@@ -272,7 +272,7 @@ export async function readCutsState(
   const run: CutsRun | null = newest ? { ...newest, status: newest.status as CutsRun["status"] } : null;
   // A cut is a card in this deck: the hover preview draws the deck's pick, else the owned printing, as
   // card details does (`chainArt`), not the catalog's arbitrary one.
-  const art = await chainArt(userId, deckId, rows.map((r) => r.cutOracleId), env);
+  const art = await chainArt(userId, deckId, rows.map((r) => r.cutOracleId));
   return {
     run,
     items: rows.map((r): CutItem => ({ ...r, cutImageUri: art.get(r.cutOracleId) ?? r.cutImageUri, verdict: r.verdict as CutItem["verdict"] })),

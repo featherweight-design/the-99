@@ -99,7 +99,7 @@ async function main() {
     insert into collection_items (user_id, oracle_id, quantity, set_code)
     values (${USER}, ${x}::uuid, 1, 'probe')
   `);
-  const v1 = (await commitVersion(deckId, null, undefined, undefined, process.env)).version;
+  const v1 = (await commitVersion(deckId, null, undefined, undefined)).version;
 
   const readAll = async () => {
     const state = await loadDraftState(deckId, USER, process.env);
@@ -160,7 +160,7 @@ async function main() {
 
   // ── Commit freezes the move into the version, and resets its tenure ───────
   await fixture.execute(sql`update decks set commander_oracle_id = ${b}::uuid where id = ${deckId}::uuid`);
-  const v2 = (await commitVersion(deckId, null, undefined, undefined, process.env)).version;
+  const v2 = (await commitVersion(deckId, null, undefined, undefined)).version;
   check("commit: the version is led by the new commander", v2.commanderOracleId, b);
   check("commit: the new commander's tenure starts at the commit", v2.commanderSince > v1.commanderSince, true);
   const committed = await readAll();

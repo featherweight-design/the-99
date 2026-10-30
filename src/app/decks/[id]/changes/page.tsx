@@ -167,7 +167,7 @@ export default async function ChangesPage({
     // pulled, or pulled before this read existed) simply has no entry.
     latestReleaseSources(userId, id, inOracleIds).catch(() => new Map<string, ReleaseSource>()),
     // The deck's held picks, so a card opened here shows the deck's printing (deck printings, E9).
-    readModalPicks(userId, id, env),
+    readModalPicks(userId, id),
   ]);
 
   // The same mix the deck page draws, through the one reader that defines it — the

@@ -4,20 +4,17 @@ import { refresh } from "next/cache";
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { requireUserId } from "../../lib/auth";
-import { requestSwitchEnv } from "../../lib/switches/request";
 import { isUuid } from "../../lib/uuid";
 import { requireDeck } from "../../lib/decks/read";
 import { proxiedMembership } from "../../lib/decks/proxies";
-import { deckPrintingsEnabled } from "../../lib/decks/printings-flag";
 
 export type SetDeckPrintingResult =
   | { ok: true }
   /**
-   * `off`: the switch is off. `refused`: the wire input is malformed. `notInDeck`: the card is not
-   * this deck's (a Consider tile or a search result opens under the same provider). `notHeld`: the
+   * `refused`: the wire input is malformed. `notInDeck`: the card is not this deck's (a Consider tile or a search result opens under the same provider). `notHeld`: the
    * player does not hold that printing; a pick is always an owned printing.
    */
-  | { ok: false; reason: "off" | "refused" | "notInDeck" | "notHeld" };
+  | { ok: false; reason: "refused" | "notInDeck" | "notHeld" };
 
 /**
  * A collector number as the catalog stores it ("31", "12a", "★", "a1_2007", ""): bounded, with no
@@ -52,8 +49,6 @@ export async function setDeckPrinting(
   printing: { setCode: string; collectorNumber: string },
 ): Promise<SetDeckPrintingResult> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
-  if (!deckPrintingsEnabled(env)) return { ok: false, reason: "off" };
   if (!isUuid(deckId) || !isUuid(oracleId)) return { ok: false, reason: "refused" };
   if (typeof printing !== "object" || printing === null) return { ok: false, reason: "refused" };
   const { setCode: rawSet, collectorNumber } = printing;

@@ -126,7 +126,7 @@ async function main() {
       [USER, B],
     );
     await pool.query("insert into deck_cards (deck_id, oracle_id, quantity) values ($1, $2, 1)", [deck.id, A]);
-    await commitVersion(deck.id, null, undefined, undefined, process.env);
+    await commitVersion(deck.id, null, undefined, undefined);
     const entriesBefore = await entries();
     const lowerId = randomUUID();
     const lower = { kind: "edit" as const, rows: [{ ...at(A), quantity: 0, expected: 1 }] };

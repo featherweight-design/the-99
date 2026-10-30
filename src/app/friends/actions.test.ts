@@ -329,11 +329,11 @@ describe("the signature card (needs SOCIAL_FRIENDS_ENABLED)", () => {
     for (const fn of [m.listOwnDeckFaces, m.searchFaceCards, m.listFacePrintings, m.skipFacePrompt, m.setCommander, m.ensureProfile]) expect(fn).not.toHaveBeenCalled();
   });
 
-  it("reads the deck row for the session's reader, under the reader's switches", async () => {
+  it("reads the deck row for the session's reader", async () => {
     m.requestSwitchEnv.mockResolvedValue(SIGNATURE);
     m.listOwnDeckFaces.mockResolvedValue([]);
     expect(await actions.listDeckFacesAction()).toEqual({ ok: true, tiles: [] });
-    expect(m.listOwnDeckFaces).toHaveBeenCalledWith("user_1", SIGNATURE);
+    expect(m.listOwnDeckFaces).toHaveBeenCalledWith("user_1");
   });
 
   it("hands the search its query as given", async () => {

@@ -881,7 +881,7 @@ export function CardModal({
   /** Close to the deck and land on its Tokens group (`Tokens ›` in the deck box). Null where the sheet is stacked. */
   onShowTokens?: (() => void) | null;
   /**
-   * Deck printings: opened from a deck that holds this card, with the switch on. The picker then
+   * Deck printings: opened from a deck that holds this card. The picker then
    * picks for THAT deck: it starts from the deck's own pick, writes through `save`, and the art
    * falls back to the Collection's printing when the deck has none. Absent everywhere else, which
    * is today's collection-scoped picker.

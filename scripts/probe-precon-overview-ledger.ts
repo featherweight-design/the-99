@@ -52,7 +52,7 @@ async function main() {
     select file_name from precons where twin_of is null order by release_date desc, file_name limit 1`);
   if (!precon) throw new Error("no precon on this branch");
 
-  const deckId = await startPreconDeck(USER, precon.file_name, "probe:precon-overview-ledger", process.env);
+  const deckId = await startPreconDeck(USER, precon.file_name, "probe:precon-overview-ledger");
   try {
     const prepared = await preparePreconDeck(precon.file_name);
     const monthStart = new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1));

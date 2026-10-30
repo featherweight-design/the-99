@@ -28,7 +28,6 @@ import {
 } from "../collection/browse";
 import { selectCollectionRows } from "../collection/browse-read";
 import { recordSoftFailure } from "../cache/soft-failure";
-import { deckPrintingsEnabled } from "./printings-flag";
 import type { PricePick } from "./price-query";
 
 /** A deck's pick as stored: `set_code` lowercase, `collector_number` text. */
@@ -130,9 +129,6 @@ export function heldPrintingFor(
 /**
  * The printing this deck shows for each card, down the chain above, plus the picks still held.
  *
- * `usePicks: false` skips the deck's step entirely, which is the switch-off path: the answer is
- * then the Collection's and the catalog's alone, exactly what every deck surface drew before.
- *
  * THROWS on a failed read. `resolveDeckPrintings` is the fail-soft form for surfaces that draw art.
  * The commit uses the fail-soft form on purpose: a version's cards are the commit and the printing
  * is a caption, so a failed read records nulls (which read as today's art) rather than refusing the
@@ -146,7 +142,7 @@ export async function readDeckPrintings(
    * `ownedOnly` skips the catalog step, for a caller that drops unowned cards anyway: the owned-only
    * helpers below, which would otherwise pay a catalog read only to throw its answer away.
    */
-  opts: { usePicks: boolean; ownedOnly?: boolean },
+  opts: { ownedOnly?: boolean } = {},
   runner: PrintingsRunner = db,
 ): Promise<DeckPrintings> {
   const printings = new Map<string, DeckPrinting>();
@@ -155,7 +151,7 @@ export async function readDeckPrintings(
   if (ids.length === 0) return { printings, heldPicks };
 
   const [picksByDeck, rows] = await Promise.all([
-    opts.usePicks ? readDeckPicks(userId, [deckId], runner) : Promise.resolve(new Map<string, Map<string, DeckPick>>()),
+    readDeckPicks(userId, [deckId], runner),
     selectCollectionRows(userId, ids, runner),
   ]);
   const picks = picksByDeck.get(deckId) ?? new Map<string, DeckPick>();
@@ -244,7 +240,7 @@ export async function resolveDeckPrintings(
    * `ownedOnly` skips the catalog step, for a caller that drops unowned cards anyway: the owned-only
    * helpers below, which would otherwise pay a catalog read only to throw its answer away.
    */
-  opts: { usePicks: boolean; ownedOnly?: boolean },
+  opts: { ownedOnly?: boolean } = {},
 ): Promise<DeckPrintings> {
   return readDeckPrintings(userId, deckId, oracleIds, opts).catch(() => {
     recordSoftFailure();
@@ -255,16 +251,14 @@ export async function resolveDeckPrintings(
 /**
  * The printing this deck shows for each card the player OWNS, in `resolveOwnedPrintings`' shape:
  * a card they do not own is absent, so every caller's "fall back to the oracle-level art" stays
- * exactly as it was. The deck's step follows `DECK_PRINTINGS_ENABLED`. Fail-soft.
+ * exactly as it was. Fail-soft.
  */
 export async function resolveDeckOwnedPrintings(
   userId: string,
   deckId: string,
   oracleIds: string[],
-  /** The reader's resolved switches (`requestSwitchEnv`). */
-  env: NodeJS.ProcessEnv,
 ): Promise<Map<string, DeckPrinting>> {
-  const { printings } = await resolveDeckPrintings(userId, deckId, oracleIds, { usePicks: deckPrintingsEnabled(env), ownedOnly: true });
+  const { printings } = await resolveDeckPrintings(userId, deckId, oracleIds, { ownedOnly: true });
   return ownedOnly(printings);
 }
 
@@ -273,9 +267,8 @@ export async function readDeckOwnedPrintings(
   userId: string,
   deckId: string,
   oracleIds: string[],
-  env: NodeJS.ProcessEnv,
 ): Promise<Map<string, DeckPrinting>> {
-  const { printings } = await readDeckPrintings(userId, deckId, oracleIds, { usePicks: deckPrintingsEnabled(env), ownedOnly: true });
+  const { printings } = await readDeckPrintings(userId, deckId, oracleIds, { ownedOnly: true });
   return ownedOnly(printings);
 }
 
@@ -292,15 +285,12 @@ function ownedOnly(printings: Map<string, DeckPrinting>): Map<string, DeckPrinti
 export async function resolveCommanderPrintingsByDeck(
   userId: string,
   rows: { deckId: string; commanderOracleId: string }[],
-  env: NodeJS.ProcessEnv,
 ): Promise<Map<string, DeckPrinting>> {
   const out = new Map<string, DeckPrinting>();
   if (rows.length === 0) return out;
   try {
     const [picks, collectionRows] = await Promise.all([
-      deckPrintingsEnabled(env)
-        ? readDeckPicks(userId, rows.map((r) => r.deckId))
-        : Promise.resolve(new Map<string, Map<string, DeckPick>>()),
+      readDeckPicks(userId, rows.map((r) => r.deckId)),
       selectCollectionRows(userId, [...new Set(rows.map((r) => r.commanderOracleId))]),
     ]);
     const owned = new Map(aggregateCollection(collectionRows).map((c) => [c.oracleId, c]));
@@ -405,18 +395,16 @@ export function recordedColumns(
 
 /**
  * Every pick these decks hold that the player still owns, as the price read takes them
- * (`loadPrices(ids, picks)`). Empty with the switch off, so every figure is today's. Membership-
- * scoped like `readDeckPicks`, and HELD: a pick whose printing left the Collection is not passed,
+ * (`loadPrices(ids, picks)`). Membership-scoped like `readDeckPicks`, and HELD: a pick whose printing left the Collection is not passed,
  * so no figure prices a printing the art no longer shows. Fail-soft to no picks, which is
  * today's figure on every row.
  */
 export async function readHeldPricePicks(
   userId: string,
   deckIds: string[],
-  env: NodeJS.ProcessEnv,
 ): Promise<PricePick[]> {
   const ids = [...new Set(deckIds)];
-  if (!deckPrintingsEnabled(env) || ids.length === 0) return [];
+  if (ids.length === 0) return [];
   try {
     const { rows } = await db.execute<{
       deck_id: string; oracle_id: string; set_code: string; collector_number: string;
@@ -454,16 +442,13 @@ export async function readHeldPricePicks(
 
 /**
  * One deck's held picks in the card modal's display form (`DeckDetail.printingPicks`), for a deck
- * surface that does not read `getDeckDetail`: the review screen and the update diff. Null with the
- * switch off.
+ * surface that does not read `getDeckDetail`: the review screen and the update diff.
  */
 export async function readModalPicks(
   userId: string,
   deckId: string,
-  env: NodeJS.ProcessEnv,
-): Promise<Record<string, { setCode: string; collectorNumber: string }> | null> {
-  if (!deckPrintingsEnabled(env)) return null;
-  const picks = await readHeldPricePicks(userId, [deckId], env);
+): Promise<Record<string, { setCode: string; collectorNumber: string }>> {
+  const picks = await readHeldPricePicks(userId, [deckId]);
   return Object.fromEntries(picks.map((p) => [
     p.oracleId,
     // `BrowsePrinting.setCode` is uppercased for display; a pick is stored lowercase.
