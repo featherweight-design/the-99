@@ -117,9 +117,9 @@ export function toMessage(group: readonly PushItem[]): PushMessage {
 /** An image the device may fetch: https only (the worker refuses anything else too). */
 const httpsOnly = (url: string | null): string | null => (url && url.startsWith("https://") ? url : null);
 
-/** A friend's page, on the Spares tab (the route's default); with `spare`, that card's modal opens on landing (call 9). */
+/** A friend's page, on the Spares tab; with `spare`, that card's modal opens on landing (call 9). */
 export const friendRoute = (publicId: string, spare?: string): string =>
-  `/friends/${encodeURIComponent(publicId)}${spare ? `?spare=${encodeURIComponent(spare)}` : ""}`;
+  `/friends/${encodeURIComponent(publicId)}/spares${spare ? `?spare=${encodeURIComponent(spare)}` : ""}`;
 
 /** The messages for items due now, in the order their first item arrived. */
 export function messagesFor(items: readonly PushItem[], mode: CollapseMode): PushMessage[] {

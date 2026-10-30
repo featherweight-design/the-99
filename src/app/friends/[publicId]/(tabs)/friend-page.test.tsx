@@ -23,6 +23,7 @@ const m = vi.hoisted(() => ({
 vi.mock("next/navigation", () => ({
   usePathname: () => m.pathname,
   notFound: () => { throw new Error("NOT_FOUND"); },
+  redirect: (url: string) => { throw new Error(`REDIRECT ${url}`); },
   useRouter: () => ({ replace: m.replace, push: vi.fn(), refresh: vi.fn() }),
 }));
 vi.mock("../../../../lib/auth", () => ({ requireUserId: m.requireUserId }));
@@ -49,9 +50,10 @@ vi.mock("../../../../components/cards/card-detail-provider", () => ({
 }));
 
 import FriendPageLayout from "./layout";
-import FriendSparesPage from "./page";
+import FriendDecksPage from "./page";
 import FriendWishlistPage from "./wishlist/page";
-import FriendDecksPage from "./decks/page";
+import FriendSparesPage from "./spares/page";
+import FriendDecksMoved from "./decks/page";
 import { FriendHead } from "../../../../components/social/friend-head";
 import { FriendWishlist } from "../../../../components/social/friend-wishlist";
 import { socialCopy } from "../../../../lib/copy/social";
@@ -131,7 +133,7 @@ describe("a friend's page group", () => {
     expect(html).toContain("Colin");
     expect(html).toContain(`href="/friends/${COLIN.publicId}"`);
     expect(html).toContain(`href="/friends/${COLIN.publicId}/wishlist"`);
-    expect(html).toContain(`href="/friends/${COLIN.publicId}/decks"`);
+    expect(html).toContain(`href="/friends/${COLIN.publicId}/spares"`);
     expect(html).toMatch(/data-testid="friend-tab-spares-count"[^>]*>2</);
     expect(html).toMatch(/data-testid="friend-tab-wishlist-count"[^>]*>1</);
     expect(html).toMatch(/data-testid="friend-tab-decks-count"[^>]*>1</);
@@ -149,13 +151,38 @@ describe("a friend's page group", () => {
   });
 
   it("marks the tab the path names", async () => {
-    m.pathname = `/friends/${COLIN.publicId}/decks`;
+    m.pathname = `/friends/${COLIN.publicId}/spares`;
     try {
       const html = renderToString(await FriendPageLayout({ children: null, params: params() }));
-      expect(html).toMatch(/aria-current="page"[^>]*data-testid="friend-tab-decks"/);
+      expect(html).toMatch(/aria-current="page"[^>]*data-testid="friend-tab-spares"/);
     } finally {
       m.pathname = `/friends/${COLIN.publicId}`;
     }
+  });
+
+  // Hugh, 2026-10-30: the page opens on Decks, and the strip reads Decks, Wishlist, Spares.
+  it("opens on Decks: the bare page marks Decks and the strip runs Decks, Wishlist, Spares", async () => {
+    const html = renderToString(await FriendPageLayout({ children: null, params: params() }));
+    expect(html).toMatch(/aria-current="page"[^>]*data-testid="friend-tab-decks"/);
+    const order = ["decks", "wishlist", "spares"].map((t) => html.indexOf(`data-testid="friend-tab-${t}"`));
+    expect(order.every((i) => i >= 0)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+    expect(html).toContain(`href="/friends/${COLIN.publicId}"`);
+    expect(html).toContain(`href="/friends/${COLIN.publicId}/spares"`);
+    expect(html).not.toContain(`href="/friends/${COLIN.publicId}/decks"`);
+  });
+
+  it("hands a `?spare=` landing on the bare page to the Spares tab, whole and before any read", async () => {
+    m.requireUserId.mockClear();
+    m.loadFriendDecks.mockClear();
+    await expect(FriendDecksPage({ params: params(), searchParams: Promise.resolve({ spare: SPARE.oracleId }) }))
+      .rejects.toThrow(`REDIRECT /friends/${COLIN.publicId}/spares?spare=${SPARE.oracleId}`);
+    expect(m.requireUserId).not.toHaveBeenCalled();
+    expect(m.loadFriendDecks).not.toHaveBeenCalled();
+  });
+
+  it("sends the old Decks address to the page, which opens on Decks", async () => {
+    await expect(FriendDecksMoved({ params: params() })).rejects.toThrow(new RegExp(`^REDIRECT /friends/${COLIN.publicId}$`));
   });
 
   it("draws the wishlist tab through the friend's wishlist", async () => {

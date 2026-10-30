@@ -83,8 +83,8 @@ describe("FeedItemRow", () => {
   });
 
   it("names a trade match's press Ask {friend} when it opens the card's sheet with Ask", () => {
-    list(<FeedItemRow item={view({ kind: "trade-match", friend: { publicId: "p1", displayName: "Colin" }, href: "/friends/p1?spare=g", askable: true })} now={NOW} />);
-    expect(screen.getByRole("link", { name: "Ask Colin ›" })).toHaveAttribute("href", "/friends/p1?spare=g");
+    list(<FeedItemRow item={view({ kind: "trade-match", friend: { publicId: "p1", displayName: "Colin" }, href: "/friends/p1/spares?spare=g", askable: true })} now={NOW} />);
+    expect(screen.getByRole("link", { name: "Ask Colin ›" })).toHaveAttribute("href", "/friends/p1/spares?spare=g");
     expect(screen.queryByRole("link", { name: "See Colin’s spares ›" })).toBeNull();
   });
 

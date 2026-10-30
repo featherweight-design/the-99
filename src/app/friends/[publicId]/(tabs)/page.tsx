@@ -1,19 +1,15 @@
-// /friends/[publicId]: a friend's Spares tab, the first (menu and Home PR 7). View only. The friend's own threshold and keeps
-// have already filtered it (`loadFriendSpareList`), so it agrees with the stand-ins modal and the feed. Each tab answers the
-// switch and the friendship itself: a tab press reuses the mounted layout, which does not run again.
-import { notFound } from "next/navigation";
+// /friends/[publicId]: a friend's Decks tab, the first and the page's default (Hugh, 2026-10-30; it was Spares), view only
+// (menu and Home PR 7; handoff G4): name, commander, status and count, never the list. The tab answers
+// `SOCIAL_FRIENDS_ENABLED` itself: a tab press reuses the mounted layout, which does not run again.
+import { notFound, redirect } from "next/navigation";
 import { requireUserId } from "../../../../lib/auth";
 import { socialFriendsEnabled } from "../../../../lib/social/flag";
 import { requestSwitchEnv } from "../../../../lib/switches/request";
 import { loadFriend } from "../../../../lib/social/access";
-import { isUuid } from "../../../../lib/social/rules";
-import { catalogCardName, friendSpareList } from "../../../../lib/social/friend-page-data";
-import { loadPrices } from "../../../../lib/decks/price-query";
-import { FriendSparesTab } from "../../../../components/social/friend-spares-tab";
+import { friendDecks } from "../../../../lib/social/friend-page-data";
+import { FriendDecksTab } from "../../../../components/social/friend-decks-tab";
 
-// Spare requests (signature card calls 8 and 9): a tile opens the card's modal with Ask, and `?spare={oracleId}` opens it
-// on landing; a spare gone since draws a toast naming the card, its name read from the catalog.
-export default async function FriendSparesPage({
+export default async function FriendDecksPage({
   params,
   searchParams,
 }: {
@@ -21,34 +17,20 @@ export default async function FriendSparesPage({
   /** Optional: the tab's tests call it with params alone. */
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  // A `?spare=` landing (a push, a feed row or a Waiting on you row from before Spares moved) is the Spares tab's:
+  // hand it on whole, so its modal or toast still draws. Before any read, so it costs none.
+  const spare = (await searchParams)?.spare;
+  if (spare !== undefined) {
+    const { publicId } = await params;
+    const query = new URLSearchParams();
+    for (const value of Array.isArray(spare) ? spare : [spare]) query.append("spare", value);
+    redirect(`/friends/${encodeURIComponent(publicId)}/spares?${query}`);
+  }
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!socialFriendsEnabled(env)) notFound();
   const { publicId } = await params;
-  const [friend, spares] = await Promise.all([loadFriend(userId, publicId), friendSpareList(userId, publicId, true)]);
-  if (!friend) notFound();
-  const raw = (await searchParams)?.spare;
-  // Lowercased: the catalog's ids are, and both lookups below compare as strings.
-  const spare = isUuid(raw) ? raw.toLowerCase() : null;
-  // A card the friend still offers opens its modal; any other names the card for the toast (the catalog's name).
-  const offered = spare !== null && (spares?.lines.some((l) => l.oracleId === spare) ?? false);
-  // The modal's buy tag prices the card as Shopping does (`loadPrices`: one printing per card, cheapest live first).
-  // A failed read degrades to the bare tag, never the page.
-  const [goneName, priced] = await Promise.all([
-    spare !== null && !offered ? catalogCardName(spare) : null,
-    loadPrices(spares?.lines.map((l) => l.oracleId) ?? []).catch(() => ({ prices: new Map(), newestAsOf: null })),
-  ]);
-  return (
-    <FriendSparesTab
-      name={friend.displayName}
-      spares={spares}
-      asks={{
-        friend: { publicId: friend.publicId, displayName: friend.displayName, commander: friend.commander },
-        spare,
-        goneName,
-        prices: Object.fromEntries(priced.prices),
-        newestAsOf: priced.newestAsOf,
-      }}
-    />
-  );
+  const [friend, decks] = await Promise.all([loadFriend(userId, publicId), friendDecks(userId, publicId, socialFriendsEnabled(env))]);
+  if (!friend || decks === null) notFound();
+  return <FriendDecksTab name={friend.displayName} decks={decks} publicId={friend.publicId} open={socialFriendsEnabled(env)} />;
 }

@@ -33,7 +33,7 @@ const READ = [friend("Ana", "p-ana", 3), friend("Colin", COLIN.publicId, 1)];
 const item: FeedView = {
   key: "item:0f4b1c9e-1d2a-4c3b-8e5f-6a7b8c9d0e1f", kind: "trade-match", at: NOW, unseen: true,
   card: { oracleId: GHALTA, name: "Ghalta, Primal Hunger", image: null, art: null, colorIdentity: ["G"] },
-  friend: COLIN, href: `/friends/${COLIN.publicId}?spare=${GHALTA}`, opens: null, outbound: null, name: null, setSize: null,
+  friend: COLIN, href: `/friends/${COLIN.publicId}/spares?spare=${GHALTA}`, opens: null, outbound: null, name: null, setSize: null,
   owned: null, drop: null, combo: null, answer: null, askable: true,
 } as unknown as FeedView;
 const trade: TradeMatchRow = {
@@ -147,7 +147,7 @@ describe("Waiting on you", () => {
 
   it("keeps its link without the provider", () => {
     render(<WaitingOnYou rows={[trade]} now={new Date(NOW)} />);
-    expect(screen.getAllByRole("link", { name: /Ask Colin/ })[0]).toHaveAttribute("href", `/friends/${COLIN.publicId}?spare=${GHALTA}`);
+    expect(screen.getAllByRole("link", { name: /Ask Colin/ })[0]).toHaveAttribute("href", `/friends/${COLIN.publicId}/spares?spare=${GHALTA}`);
   });
 });
 

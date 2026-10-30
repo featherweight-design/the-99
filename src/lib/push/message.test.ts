@@ -30,11 +30,11 @@ describe("one item of each kind (the handoff's table)", () => {
     });
   });
   it("trade match: the friend's page", () => {
-    expect(toMessage([match("m1", "Colin", "p-colin")])).toMatchObject({ title: "Colin has a spare Ghoulcaller Gisa", body: "It’s on your wishlist.", route: "/friends/p-colin?spare=o-m1" });
+    expect(toMessage([match("m1", "Colin", "p-colin")])).toMatchObject({ title: "Colin has a spare Ghoulcaller Gisa", body: "It’s on your wishlist.", route: "/friends/p-colin/spares?spare=o-m1" });
   });
   it("trade match with spare requests on: the body says to ask, and the tap opens the card's sheet", () => {
     expect(toMessage([{ ...match("m1", "Colin", "p-colin"), askable: true } as PushItem])).toMatchObject({
-      body: "It’s on your wishlist. Ask Colin for it.", route: "/friends/p-colin?spare=o-m1",
+      body: "It’s on your wishlist. Ask Colin for it.", route: "/friends/p-colin/spares?spare=o-m1",
     });
   });
   it("spare request: says where to answer, lands on Friends", () => {
@@ -89,7 +89,7 @@ describe("several of one kind, as one", () => {
     });
   });
   it("trade matches from one friend land on that friend; from several, on Friends", () => {
-    expect(toMessage([match("1", "Colin", "p-colin"), match("2", "Colin", "p-colin"), match("3", "Colin", "p-colin")])).toMatchObject({ title: "Colin has 3 spares you want", route: "/friends/p-colin" });
+    expect(toMessage([match("1", "Colin", "p-colin"), match("2", "Colin", "p-colin"), match("3", "Colin", "p-colin")])).toMatchObject({ title: "Colin has 3 spares you want", route: "/friends/p-colin/spares" });
     expect(toMessage([match("1", "Colin", "p-colin"), match("2", "Peter", "p-peter")])).toMatchObject({ title: "2 spares you want", body: "From Colin and Peter.", route: "/friends" });
   });
   it("combos land on Home with nothing open", () => {

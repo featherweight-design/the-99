@@ -50,7 +50,7 @@ export function FriendDeckView({
   const view = storedView ?? "list";
   const card = view === "card";
   const name = friend.displayName;
-  const decksHref = `/friends/${friend.publicId}/decks`;
+  const decksHref = `/friends/${friend.publicId}`;
 
   const basics = deck.cards.filter((c) => isBasicType(c.typeLine));
   const listed = deck.cards.filter((c) => !isBasicType(c.typeLine));

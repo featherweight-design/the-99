@@ -251,7 +251,7 @@ function WaitingLink({ row, className }: { row: TradeMatchRow; className: string
     );
   }
   // The card's modal opens on landing (signature card call 9), or the tab says the spare has gone.
-  const href = `/friends/${encodeURIComponent(row.friend.publicId)}?spare=${encodeURIComponent(row.card.oracleId)}`;
+  const href = `/friends/${encodeURIComponent(row.friend.publicId)}/spares?spare=${encodeURIComponent(row.card.oracleId)}`;
   return (
     <span className={className}>
       <Link
