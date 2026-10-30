@@ -1237,11 +1237,12 @@ code{font:12px 'IBM Plex Mono',monospace;color:var(--fg-body)}
 .fq.off p{color:var(--fg-body)}
 .vlab{font:500 10px 'IBM Plex Mono';letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint);padding:0 0 2px}
 .seq{display:flex;gap:36px;align-items:flex-start}
-.ofr.stk{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;column-gap:6px;padding:10px 4px 6px 14px}
-.ofr.stk p{grid-column:1;grid-row:1;padding-top:2px}
-.ofr.stk .x4{grid-column:2;grid-row:1/3;margin:-10px -6px 0 0;align-self:start}
-.dk .ofr.stk .x4{margin:-6px -2px 0 0}
-.ofr.stk .pk{grid-column:1;grid-row:2;justify-self:start;margin-left:-6px}
+.ofr.stk{display:block;position:relative;min-height:72px;padding:12px 64px 12px 14px}
+.ofr.stk p{padding:0}
+.ofr.stk .x4{position:absolute;top:-4px;right:0;margin:0}
+.dk .ofr.stk{min-height:64px;padding-right:72px}
+.dk .ofr.stk .x4{top:4px;right:4px}
+.ofr.stk .pk{position:absolute;right:12px;bottom:10px;white-space:nowrap;margin:0}
 .arrowc{align-self:center;font:400 22px 'IBM Plex Sans';color:var(--fg-faint)}
 .xl{display:inline-block;width:.72em;height:.72em;vertical-align:-.02em;margin-left:.3em;flex:none}</style>
 </helmet>

@@ -14,11 +14,12 @@ kit.CSS += r"""
 .fq.off p{color:var(--fg-body)}
 .vlab{font:500 10px 'IBM Plex Mono';letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint);padding:0 0 2px}
 .seq{display:flex;gap:36px;align-items:flex-start}
-.ofr.stk{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;column-gap:6px;padding:10px 4px 6px 14px}
-.ofr.stk p{grid-column:1;grid-row:1;padding-top:2px}
-.ofr.stk .x4{grid-column:2;grid-row:1/3;margin:-10px -6px 0 0;align-self:start}
-.dk .ofr.stk .x4{margin:-6px -2px 0 0}
-.ofr.stk .pk{grid-column:1;grid-row:2;justify-self:start;margin-left:-6px}
+.ofr.stk{display:block;position:relative;min-height:72px;padding:12px 64px 12px 14px}
+.ofr.stk p{padding:0}
+.ofr.stk .x4{position:absolute;top:-4px;right:0;margin:0}
+.dk .ofr.stk{min-height:64px;padding-right:72px}
+.dk .ofr.stk .x4{top:4px;right:4px}
+.ofr.stk .pk{position:absolute;right:12px;bottom:10px;white-space:nowrap;margin:0}
 .arrowc{align-self:center;font:400 22px 'IBM Plex Sans';color:var(--fg-faint)}
 """
 
@@ -87,18 +88,18 @@ def board_stack():
     p_alone = ph(A.feed([], foot=offer_stk(alone=True), choose=False))
     d_rows = dk(A.feed(rows, n=2, foot=offer_stk(), choose=False), h=640)
     body = (board_head("item 6b · Home › What’s new · the offer line, stacked · 390 and 1300",
-                       "Pick under the words, ✕ in the corner",
-                       "Your note: Pick ▾ and ✕ side by side read as two buttons for one thing. <b>Drawn: the words, then Pick ▾ on its own line under them; the ✕ moves to the top right corner</b>, "
+                       "✕ in the top corner, Pick ▾ in the bottom corner",
+                       "Your note: Pick ▾ and ✕ side by side read as two buttons for one thing. <b>Drawn (R1d, keeping the line’s narrow height): the ✕ moves to the top right corner and Pick ▾ to the bottom right, level with the words’ last line</b>, "
                        "where the opened offer already puts it (Pick pressed: ✕ top right over the boxes), so the line and its opened form now share one ✕ position. "
                        "Same in every place the offer stands: under rows, under the quiet line, alone. Rows keep their shipped action line (press, then ✕), since there the ✕ belongs to one row. "
-                       "Engineering: <code>Offer</code>’s closed form becomes a two-column grid (words + Pick ▾ left, the shipped <code>DismissButton</code> right, top-aligned, 44 on a phone / 32 from md). "
-                       "Amends the announcements Offer board and small items 5’s Offer-Empty.", tag="R1c")
+                       "Engineering: <code>Offer</code>’s closed form becomes a two-column grid: the words span both rows on the left; the shipped <code>DismissButton</code> top right (44 on a phone / 32 from md) and Pick ▾ bottom right, end-aligned. Pick ▾ sits in the corner below the ✕’s hit box, so the box stays as tall as the words (min 72 on a phone, 64 from md). "
+                       "Amends the announcements Offer board and small items 5’s Offer-Empty.", tag="R1d")
             + '<div class="seq">'
-            + frame("<b>Drawn</b> · 390 · under rows", p_rows, "Pick ▾ starts its own line under the words; ✕ in the corner.")
+            + frame("<b>Drawn</b> · 390 · under rows", p_rows, "✕ top right, Pick ▾ bottom right; the box stays as tall as the words.")
             + frame("<b>Drawn</b> · 390 · under the quiet line", p_quiet)
             + frame("<b>Drawn</b> · 390 · alone (nothing on yet)", p_alone)
             + '</div>'
-            + frames(frame("<b>Drawn</b> · 1300 · under rows", d_rows, "On desktop the same two lines; the ✕ at 32.")))
+            + frames(frame("<b>Drawn</b> · 1300 · under rows", d_rows, "On desktop the words fit one line or two; the ✕ at 32.")))
     return doc("Offer stacked", body, 1412)
 
 
