@@ -244,6 +244,43 @@ describe("the results", () => {
     expect(t.actions.apply).toHaveBeenLastCalledWith(RUN, ["a0"], ["c0"], expect.stringMatching(/^[0-9a-f-]{36}$/));
   });
 
+  // The pressed control unmounts as the row redraws, so focus follows the row to its replacement, never to the page.
+  it("moves focus to the staged row's Undo after Pull it, and back to Pull it after Undo", async () => {
+    const GISHATH = { id: "d-gishath", name: "HD - Gishath", quantity: 1, mature: true, pending: false, commander: false, senior: true };
+    const held = { owned: 1, hard: 1, soft: 0, free: -1, claims: [GISHATH] } as unknown as NonNullable<LineItem["availability"]>;
+    setup({
+      ask: ask(3, { restrictions: { capCents: null, sets: [], ownedOnly: true, otherDecks: true } }),
+      lines: [...adds(5, (i) => ({ picked: i === 0, availability: i === 0 ? held : null })), ...cuts(5, (i) => ({ picked: i === 0 }))],
+    });
+    await press(apply());
+    const pullName = deckVersioningCopy.review.pullA11y("Card a0", GISHATH.name);
+    await press(screen.getByRole("button", { name: pullName }));
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: sc.confirm.unstageA11y("Card a0", GISHATH.name) }));
+    await press(screen.getByRole("button", { name: sc.confirm.unstageA11y("Card a0", GISHATH.name) }));
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: pullName }));
+  });
+
+  it("moves focus to the staged row's Undo after the picker's Pull from {deck}, and back to Pull it ▾ after Undo", async () => {
+    const claim = (id: string, name: string, since: number) =>
+      ({ id, name, quantity: 1, mature: true, pending: false, commander: false, senior: true, since });
+    const KRATOS = claim("d-kratos", "HD - Kratos", 1);
+    const THORIN = claim("d-thorin", "HD - Thorin", 2);
+    const held = { owned: 2, hard: 2, soft: 0, free: -1, claims: [KRATOS, THORIN] } as unknown as NonNullable<LineItem["availability"]>;
+    setup({
+      ask: ask(3, { restrictions: { capCents: null, sets: [], ownedOnly: true, otherDecks: true } }),
+      lines: [...adds(5, (i) => ({ picked: i === 0, availability: i === 0 ? held : null })), ...cuts(5, (i) => ({ picked: i === 0 }))],
+    });
+    await press(apply());
+    const manyName = deckVersioningCopy.review.pullManyA11y("Card a0", 2);
+    await press(screen.getByRole("button", { name: manyName }));
+    await press(screen.getByRole("radio", { name: new RegExp(THORIN.name) }));
+    await press(screen.getByRole("button", { name: deckVersioningCopy.review.source.confirm(THORIN.name) }));
+    const undo = screen.getByRole("button", { name: sc.confirm.unstageA11y("Card a0", THORIN.name) });
+    expect(document.activeElement).toBe(undo);
+    await press(undo);
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: manyName }));
+  });
+
   it("takes a staged pull back with Undo, and then sends none", async () => {
     const GISHATH = { id: "d-gishath", name: "HD - Gishath", quantity: 1, mature: true, pending: false, commander: false, senior: true };
     const held = { owned: 1, hard: 1, soft: 0, free: -1, claims: [GISHATH] } as unknown as NonNullable<LineItem["availability"]>;

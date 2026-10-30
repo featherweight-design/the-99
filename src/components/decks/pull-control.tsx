@@ -235,8 +235,8 @@ function SinglePull({
           onClick={() => {
             setError(null);
             if (onChoose) {
-              // Staged, not pulled: the row redraws as the choice, so focus lands on the row's own card first.
-              rowTrigger(wrapperRef.current, card.name)?.focus();
+              // Staged, not pulled: this control unmounts as the row redraws as the choice, and the caller moves focus
+              // to its replacement (the staged row's Undo).
               onChoose(claim);
               return;
             }
@@ -395,9 +395,9 @@ function SourcePicker({
     if (!chosen || pending) return;
     setError(null);
     if (onChoose) {
-      // Staged, not pulled: the list closes on the choice and the caller sends it with its own write. Focus returns to
-      // the row's card, as after a pull: the trigger is replaced by the staged row's Undo.
-      returnFocusAfterPull.current = rowTrigger(wrapperRef.current, card.name);
+      // Staged, not pulled: the list closes on the choice and the caller sends it with its own write. The trigger
+      // unmounts as the row redraws, so no return target is set here: the caller moves focus to the staged row's Undo.
+      returnFocusAfterPull.current = null;
       setOpen(false);
       onChoose(chosen);
       return;

@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { suggestedChangesV2Copy } from "../../lib/copy/suggested-changes-v2";
 import { availabilityState, type DeckClaim } from "../../lib/decks/availability";
@@ -150,6 +152,18 @@ const UNSTAGE_BUTTON =
 function HeldRow({ line: l, held }: { line: LineItem; held: HeldProps }) {
   const { claim, claims, choosable } = pullOffer(l);
   const chosen = held.staged.get(l.id) ?? null;
+  // The pressed control unmounts as the row redraws (Pull it becomes Undo, and back), so focus follows the row to its
+  // replacement rather than falling to the page. Set only by a press here, never on a first draw.
+  const moveFocus = useRef<"undo" | "pull" | null>(null);
+  const undoRef = useRef<HTMLButtonElement>(null);
+  const pullSlot = useRef<HTMLSpanElement>(null);
+  const chosenId = chosen?.id ?? null;
+  useEffect(() => {
+    const to = moveFocus.current;
+    moveFocus.current = null;
+    if (to === "undo") undoRef.current?.focus();
+    else if (to === "pull") pullSlot.current?.querySelector<HTMLButtonElement>("button")?.focus();
+  }, [chosenId]);
   const holder = claim?.name ?? l.availability?.claims[0]?.name ?? null;
   const sub = chosen
     ? copy.confirm.pullsFrom(chosen.name)
@@ -168,22 +182,29 @@ function HeldRow({ line: l, held }: { line: LineItem; held: HeldProps }) {
       </span>
       {chosen ? (
         <button
+          ref={undoRef}
           type="button"
           className={UNSTAGE_BUTTON}
           aria-label={copy.confirm.unstageA11y(l.cardName, chosen.name)}
-          onClick={() => held.onStage?.(l.id, null)}
+          onClick={() => {
+            moveFocus.current = "pull";
+            held.onStage?.(l.id, null);
+          }}
         >
           {copy.confirm.unstage}
         </button>
       ) : claim && held.onStage ? (
-        <span className="ml-auto flex-none">
+        <span ref={pullSlot} className="ml-auto flex-none">
           <PullControl
             deckId={held.deckId}
             card={{ oracleId: l.cardOracleId, name: l.cardName }}
             claims={claims}
             defaultId={(choosable[0] ?? claim).id}
             onPulled={() => undefined}
-            onChoose={(c) => held.onStage?.(l.id, c)}
+            onChoose={(c) => {
+              moveFocus.current = "undo";
+              held.onStage?.(l.id, c);
+            }}
           />
         </span>
       ) : null}
