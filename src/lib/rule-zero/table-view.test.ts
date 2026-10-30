@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { TABLES, VIEWER_DECK_ID } from "../social/rule-zero-fixtures";
 import { drawTable, logGameHref, logPrefillTable, middleBrackets, type SeatDraw } from "./table-view";
+import { named } from "../person-name/mint";
 import { plain } from "../person-name/testing";
 
 const byName = (seats: SeatDraw[], name: string) => seats.find((s) => plain(s.seat.displayName) === name)!;
@@ -83,7 +84,7 @@ describe("drawTable", () => {
   it("T9: a legal deck with no reading is read on the spot and named in the headline", () => {
     const d = drawTable(TABLES.T9);
     expect(byName(d.seats, "Peter").state).toEqual({ kind: "unread" });
-    expect(d.headline).toMatchObject({ kind: "reading", seat: { seat: { displayName: "Peter" } } });
+    expect(d.headline).toMatchObject({ kind: "reading", seat: { seat: { displayName: named("Peter") } } });
   });
 
   it("T10: fewer than two read seats has nothing to compare", () => {

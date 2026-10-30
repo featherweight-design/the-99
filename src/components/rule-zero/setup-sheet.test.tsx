@@ -39,7 +39,7 @@ describe("who's playing (U1, U2, V1)", () => {
     expect(screen.getByText(plain(c.whoSub(named("Thursday night"))))).toBeTruthy();
     // Another reader's names are drawn marked, on the element holding each; the viewer's own is not.
     expect(screen.getByText(plain(c.whoSub(named("Thursday night")))).className).toContain("ph-no-capture");
-    expect(tile(/^Colin/).querySelector(".ph-no-capture")?.textContent).toBe("Colin");
+    expect(Array.from(tile(/^Colin/).querySelectorAll(".ph-no-capture")).map((e) => e.textContent)).toContain("Colin");
     expect(tile(/^You/).querySelector(".ph-no-capture")).toBeNull();
     const you = tile(/^You/);
     expect(you.getAttribute("aria-checked")).toBe("true");

@@ -38,7 +38,9 @@ describe("the changed dot and Since you looked (S5, W5)", () => {
     expect(within(seatOf("You")).queryByTestId("changed")).toBeNull();
     const deck = plain(view.seats.find((s) => plain(s.displayName) === "Colin")!.deck!.name);
     expect(within(readCard()).getByTestId("since")).toHaveTextContent(`Since you looked Colin swapped to ${deck}.`);
-    expect(within(readCard()).getByText(deck).tagName).toBe("B");
+    const bold = within(readCard()).getByText(deck);
+    expect(bold.closest("b")).not.toBeNull();
+    expect(bold.className).toContain("ph-no-capture");
   });
 
   it("marks nothing on the viewer's first look, and keeps the read's sentence", () => {
