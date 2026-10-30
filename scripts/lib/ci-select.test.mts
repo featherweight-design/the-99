@@ -12,9 +12,19 @@ describe("decide", () => {
     expect(d.mode).toBe("affected");
     expect(d.files).toEqual(["src/lib/b.test.ts", "src/lib/guard.test.ts"]);
   });
-  it("runs everything on main and on any non-PR event", () => {
-    expect(decide({ ...base, event: "push" })).toMatchObject({ mode: "full", files: base.allTests });
+  it("selects on a push to main like a pull request", () => {
+    const d = decide({ ...base, event: "push" });
+    expect(d.mode).toBe("affected");
+    expect(d.files).toEqual(["src/lib/a.test.ts", "src/lib/guard.test.ts"]);
+    expect(decide({ ...base, event: "push", changed: ["pnpm-lock.yaml"] }).mode).toBe("full");
+  });
+  it("runs everything on the nightly schedule, a dispatch and any other event", () => {
+    expect(decide({ ...base, event: "schedule" })).toMatchObject({ mode: "full", files: base.allTests });
+    expect(decide({ ...base, event: "workflow_dispatch" }).mode).toBe("full");
     expect(decide({ ...base, event: "" }).mode).toBe("full");
+  });
+  it("runs everything on a push with no base to diff against", () => {
+    expect(decide({ ...base, event: "push", baseError: "0000 is not a commit" })).toMatchObject({ mode: "full", files: base.allTests });
   });
   it("runs everything when vitest could not read the import graph", () => {
     const d = decide({ ...base, graphError: "vitest list exited 1: Transform failed" });

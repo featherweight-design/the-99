@@ -8,8 +8,9 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   in 23 of the last 25 merged PRs, because those guards read files instead of importing them. The FULL
   suite runs when the lockfile, a vitest/tsconfig/eslint/next config, `.nvmrc`, `vitest.setup.ts`,
   `ci.yml`, the selector or package.json dependency fields (or its `test` script) change, when vitest
-  cannot read the import graph (a syntax error), under the `ci:full` PR label, and ALWAYS on a push to
-  main, which is the net under a selection miss. A test that reads the tree through a helper module,
+  cannot read the import graph (a syntax error), under the `ci:full` PR label, on the nightly `schedule` (09:17 UTC) and on a
+  dispatch, which is the net under a selection miss. A push to main selects like a PR, over the commits it added
+  (`github.event.before` is the base; a new branch or a forced push has none and runs full). A test that reads the tree through a helper module,
   never naming `fs` or a path API itself, is invisible to the always set: have the test file mention it.
   The `select` job feeds `test`, which shards the selected files (`vitest run <files> --shard i/N`, N
   from `SHARD_SIZE` 170 per shard, at most 6), and `checks` is red unless `select` succeeded.
@@ -61,7 +62,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
 
 The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbatim. Where they and the text above differ in wording, both are current.
 
-- **CI test selection** (`scripts/ci-select.mjs`, rules in `scripts/lib/ci-select.mjs`): a PR runs `vitest related` UNION a computed always-set (tests whose source mentions `node:fs`, `child_process`, `process.cwd()`, `import.meta.url` and the like). The FULL suite runs on lockfile/config/`ci.yml`/selector/dependency changes, an unreadable import graph, the `ci:full` label, and always on a push to main. A test that reads the tree through a helper must itself mention it. `CI selector calibration` (dispatch-only) must be run after changing the rules.
+- **CI test selection** (`scripts/ci-select.mjs`, rules in `scripts/lib/ci-select.mjs`): a PR runs `vitest related` UNION a computed always-set (tests whose source mentions `node:fs`, `child_process`, `process.cwd()`, `import.meta.url` and the like). The FULL suite runs on lockfile/config/`ci.yml`/selector/dependency changes, an unreadable import graph, the `ci:full` label, the nightly 09:17 UTC schedule and a dispatch; a push to main selects like a PR. A test that reads the tree through a helper must itself mention it. `CI selector calibration` (dispatch-only) must be run after changing the rules.
 - `pnpm check:scryfall` validates Scryfall's bulk-data contract (index shape + first entry's required fields) without touching a database. It runs daily at 07:00 in `Upstream contract checks`, two hours ahead of the daily catalog refresh.
 - `pnpm check:manapool` validates ManaPool's price-feed contract (payload shape, a real parse, and
   the `scryfall_id` duplication ratio) without touching a database, and runs daily in that same
