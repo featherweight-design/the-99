@@ -1,6 +1,6 @@
 {
   "feature": "Rule 0 PR 6: the way in (plan 2026-10-16-rule-zero.md, PR 6; boards E1 to E3 and F1 to F3): the pod card's last row on /friends and Home's Tonight's table card",
-  "note": "Needs RULE_ZERO_ENABLED=true and SOCIAL_FRIENDS_ENABLED=true for the reader, and the fixture from scripts/seed-rule-zero-fixture.mts run with RZ_FIXTURE_ENTRY=1 (every fixture table but T1 closed, so the reader sits at one open table) on a SCRATCH BRANCH off local-dev only, with RZ_FIXTURE_USER the audit account. Thursday night has the open table (E2, F2: Tonight's table); Sunday league has none (E1, F1: Rule 0 check). E4 (the switch off) draws nothing and is held by the component tests. Reseed without RZ_FIXTURE_ENTRY before photographing rule-zero.json again.",
+  "note": "Needs SOCIAL_FRIENDS_ENABLED=true for the reader, and the fixture from scripts/seed-rule-zero-fixture.mts run with RZ_FIXTURE_ENTRY=1 (every fixture table but T1 closed, so the reader sits at one open table) on a SCRATCH BRANCH off local-dev only, with RZ_FIXTURE_USER the audit account. Thursday night has the open table (E2, F2: Tonight's table); Sunday league has none (E1, F1: Rule 0 check). E4 (the switch off) draws nothing and is held by the component tests. Reseed without RZ_FIXTURE_ENTRY before photographing rule-zero.json again.",
   "clearAbout": true,
   "widths": [
     { "label": "phone", "width": 390, "height": 2300 },

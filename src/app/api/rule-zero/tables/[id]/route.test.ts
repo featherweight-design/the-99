@@ -3,7 +3,7 @@ import { NextRequest } from "next/server";
 
 const stub = vi.hoisted(() => ({
   userId: "user_1" as string | null,
-  env: { RULE_ZERO_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true" } as Record<string, string>,
+  env: { SOCIAL_FRIENDS_ENABLED: "true" } as Record<string, string>,
   load: vi.fn(),
   read: vi.fn(),
   closed: vi.fn(),
@@ -26,7 +26,7 @@ const CLOSED = { podName: "Thursday", setBy: null, faces: [] };
 
 beforeEach(() => {
   stub.userId = "user_1";
-  stub.env = { RULE_ZERO_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true" };
+  stub.env = { SOCIAL_FRIENDS_ENABLED: "true" };
   for (const f of [stub.load, stub.read, stub.closed]) f.mockReset();
   stub.closed.mockResolvedValue(null);
 });
@@ -88,11 +88,9 @@ describe("GET /api/rule-zero/tables/[id]", () => {
     expect(stub.load).not.toHaveBeenCalled();
   });
 
-  it("is not there with Rule 0 off for the reader, or with its parent off", async () => {
-    for (const env of [{ SOCIAL_FRIENDS_ENABLED: "true" }, { RULE_ZERO_ENABLED: "true" }] as Record<string, string>[]) {
-      stub.env = env;
-      expect((await get()).status).toBe(404);
-    }
+  it("is not there with friends off for the reader", async () => {
+    stub.env = {};
+    expect((await get()).status).toBe(404);
     expect(stub.load).not.toHaveBeenCalled();
   });
 });

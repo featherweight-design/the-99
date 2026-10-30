@@ -20,7 +20,7 @@ import { analysisTabEnabled } from "../lib/decks/analysis-flag";
 import { cachePageForUser, type PageLoad } from "../lib/cache/page-cache";
 import { recordSoftFailure } from "../lib/cache/soft-failure";
 import { requestSwitchEnv } from "../lib/switches/request";
-import { ruleZeroEnabled, socialFriendsEnabled, socialGamesEnabled, socialInvitesEnabled } from "../lib/social/flag";
+import { socialFriendsEnabled, socialGamesEnabled, socialInvitesEnabled } from "../lib/social/flag";
 import { faceAskPlaces, facePromptDone } from "../lib/discovery/face-prompt";
 import { SignatureRow, SignatureStrip } from "../components/home/signature-ask";
 import { loadHomeTables } from "../lib/social/rule-zero-home";
@@ -266,7 +266,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   // a rename and an expiry show on the next request. A failed read draws no card. Read
   // before the first-run return: a reader with no cards and no decks can still sit at a table, their seat waiting.
   let homeTables: Awaited<ReturnType<typeof loadHomeTables>> = [];
-  if (ruleZeroEnabled(env)) {
+  if (socialFriendsEnabled(env)) {
     try {
       homeTables = await loadHomeTables(userId);
     } catch (error) {

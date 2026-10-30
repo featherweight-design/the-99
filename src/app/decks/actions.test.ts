@@ -1483,9 +1483,7 @@ describe("logGame", () => {
         table = { id: TABLE_ID, seating: seatingHash(TABLE_ID, tableRows.rows) };
         ENV.SOCIAL_GAMES_ENABLED = "true";
         ENV.SOCIAL_FRIENDS_ENABLED = "true";
-        ENV.RULE_ZERO_ENABLED = "true";
       });
-      afterEach(() => { delete ENV.RULE_ZERO_ENABLED; });
       const log = (opponents: OpponentInput[], over: Partial<LogGameInput> = {}) =>
         logGame("deck_1", { result: "loss", podSize: 4, worked: [], hurt: [], opponents, table, ...over });
       const seatsWritten = () => stub.state.insertCalls.filter((c) => c.table === "deck_game_opponents")[0]?.values as Record<string, unknown>[] | undefined;
@@ -1533,12 +1531,6 @@ describe("logGame", () => {
 
       it("says so, writing nothing, when a friend picked by hand is also seated from the table", async () => {
         expect(await log([{ friend: COLIN }, { tableSeat: 2 }])).toEqual({ ok: false, message: ruleZeroCopy.log.seatedTwice });
-        expect(stub.state.insertCalls).toHaveLength(0);
-      });
-
-      it("refuses a table seat while Rule 0 is off for this reader", async () => {
-        delete ENV.RULE_ZERO_ENABLED;
-        expect((await log([{ tableSeat: 2 }])).ok).toBe(false);
         expect(stub.state.insertCalls).toHaveLength(0);
       });
 

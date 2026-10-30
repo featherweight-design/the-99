@@ -1,4 +1,4 @@
-// Rule 0 setup's actions (plan PR 5): each decides RULE_ZERO_ENABLED for the READER and, off, reads and writes
+// Rule 0 setup's actions (plan PR 5): each decides SOCIAL_FRIENDS_ENABLED for the READER and, off, reads and writes
 // nothing; each maps the library's answer to an outcome the sheet draws, so a refusal never reads as done.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -18,7 +18,7 @@ vi.mock("../../../lib/social/rule-zero", () => ({ podSetup: m.podSetup, tableSet
 
 import { loadPodSetupAction, loadTableSetupAction, reseatTableAction, setTableAction } from "./setup-actions";
 
-const ON = { RULE_ZERO_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true" };
+const ON = { SOCIAL_FRIENDS_ENABLED: "true" };
 const SEATS = [{ member: "a", deck: null }];
 
 beforeEach(() => {
@@ -28,7 +28,7 @@ beforeEach(() => {
 });
 
 describe("off for the reader", () => {
-  beforeEach(() => m.requestSwitchEnv.mockResolvedValue({ SOCIAL_FRIENDS_ENABLED: "true" }));
+  beforeEach(() => m.requestSwitchEnv.mockResolvedValue({}));
 
   it("reads nothing and writes nothing", async () => {
     expect(await loadPodSetupAction("p")).toBeNull();
