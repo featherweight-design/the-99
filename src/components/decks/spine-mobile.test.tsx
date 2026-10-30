@@ -546,3 +546,43 @@ describe("SpineMobile — the commit offer", () => {
     expect(commit.className).toContain("bg-[color:var(--fg)]");
   });
 });
+
+describe("SpineMobile — the description's tag-a-card box", () => {
+  const openEditor = () => {
+    renderSpine(<SpineMobile {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
+    return screen.getByLabelText(deckDescriptionCopy.description.fieldAria) as HTMLTextAreaElement;
+  };
+  const counter = (n: number) => screen.getByText(`${n} / ${deckDescriptionCopy.description.maxLength}`);
+
+  it("draws a dashed sunken frame with the key, its words and the counter in the foot", () => {
+    const description = openEditor();
+    const frame = description.closest("[data-framed-box]") as HTMLElement;
+    expect(frame).toHaveClass("border-dashed", "bg-[color:var(--surface-sunken)]");
+    const key = screen.getByRole("button", { name: deckDescriptionCopy.notes.tagHelp.insertAria });
+    expect(frame).toContainElement(key);
+    expect(frame).toHaveTextContent("tag a card");
+    expect(frame).toContainElement(counter(0));
+  });
+
+  it("counts what is drawn, and turns warning-colored from 220", () => {
+    const description = openEditor();
+    const { warnAt } = deckDescriptionCopy.description;
+    expect(warnAt).toBe(220);
+    fireEvent.change(description, { target: { value: "x".repeat(warnAt - 1) } });
+    expect(counter(warnAt - 1)).toHaveStyle({ color: "var(--fg-faint)" });
+    fireEvent.change(description, { target: { value: "x".repeat(warnAt) } });
+    expect(counter(warnAt)).toHaveStyle({ color: "var(--warning)" });
+  });
+
+  it("the key starts a tag without blurring the pair: mousedown is prevented and the editor stays open", () => {
+    const description = openEditor();
+    const key = screen.getByRole("button", { name: deckDescriptionCopy.notes.tagHelp.insertAria });
+    // fireEvent returns false when a handler called preventDefault.
+    expect(fireEvent.mouseDown(key)).toBe(false);
+    fireEvent.click(key);
+    expect(description.value).toContain("[[");
+    expect(saveDeckHeader).not.toHaveBeenCalled();
+    expect(screen.getByLabelText("Deck name")).toBeTruthy();
+  });
+});
