@@ -22,6 +22,14 @@ describe("expectedCastTurn", () => {
     expect(expectedCastTurn(6, 18)).toBe(5);
     expect(expectedCastTurn(2, 10)).toBe(2);
   });
+  it("never casts a commander before its mana value allows: ramp cannot act on turn 1 (Thorin Oakenshield read 'turn 1')", () => {
+    // 30 ramp pieces expect 2.1 mana by turn 1's seen cards; the old rule counted that on turn 1 and said the two-drop lands then.
+    expect(expectedCastTurn(2, 30)).toBe(2);
+    expect(expectedCastTurn(2, 10)).toBe(2);
+    expect(expectedCastTurn(1, 30)).toBe(1);
+    for (const mv of [2, 3]) for (const ramp of [0, 10, 20, 30]) expect(expectedCastTurn(mv, ramp)).toBeGreaterThanOrEqual(2);
+    expect(deckStatsFact(30, [2], []).commanderCastTurn).toBe(2);
+  });
   it("is capped and tolerates a missing mana value", () => {
     expect(expectedCastTurn(40, 0)).toBe(10);
     expect(expectedCastTurn(0, 5)).toBe(1);

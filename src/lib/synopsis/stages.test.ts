@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
 
 import type { SynopsisFacts } from "./facts";
+import { alternateBudget } from "./limits";
 import { buildSynopsisPrompt } from "./prompt";
 import { synopsisResponseSchemaV8Wire } from "./response-schema";
 import {
@@ -14,12 +15,17 @@ import {
   stagesSchemaFor,
   checkLength,
   checkShape,
+  checkAlternateLine,
   checkShapeShown,
   i3RepairTargets,
   type RepetitionSection,
   checkStageFit,
   checkStagesNameCards,
+  checkCommanderTurn,
   checkTurnNumbers,
+  landKeepFallback,
+  STAGES_LIMITS,
+  type LandKeep,
   checkDeckKind,
   checkLandKeep,
   checkMulliganSpecific,
@@ -86,8 +92,8 @@ function goodReply(): StagesReply {
         { text: "Keep [[Spore Frog]] back to blank an attack while the board grows.", evidence: ["c6"] },
       ],
       mulligan: {
-        keep: [{ text: "A cheap creature that feeds the yard early.", evidence: [] }],
-        sendBack: [{ text: "Hands with no early creature to sacrifice.", evidence: [] }],
+        keep: [{ text: "A cheap creature that feeds the yard early.", evidence: [] }, { text: "Early plays that cast cheaply and keep the yard full.", evidence: [] }],
+        sendBack: [{ text: "Hands with no early creature to sacrifice.", evidence: [] }, { text: "Hands that only hold expensive spells.", evidence: [] }],
       },
       tips: [
         { text: "[[Eternal Witness]] returns [[Forest]] when you are short of lands.", evidence: ["c5", "c7"] },
@@ -191,6 +197,45 @@ describe("zero turn numbers but the cast turn", () => {
     expect(res.offenders.map((o) => [o.where, o.turn])).toEqual([["stages[1]", 6]]);
     expect(checkTurnNumbers(doc(), null).pass).toBe(false);
   });
+  it("iteration 3: the Mid and Close lines carry no turn at all, the cast turn included; Early may carry it", () => {
+    expect(checkTurnNumbers(doc(), 4, { strictStages: true }).pass).toBe(true);
+    const mid = checkTurnNumbers(edit((r) => { r.primer.strategy[1].text = "The engine runs around turn 4."; }), 4, { strictStages: true });
+    expect(mid.offenders.map((o) => [o.where, o.turn])).toEqual([["stages[1]", 4]]);
+    const close = checkTurnNumbers(edit((r) => { r.primer.strategy[2].text = "Win around turn 4."; }), 4, { strictStages: true });
+    expect(close.offenders.map((o) => o.where)).toEqual(["stages[2]"]);
+    // The same line passes the older reading, which allows the cast turn anywhere.
+    expect(checkTurnNumbers(edit((r) => { r.primer.strategy[1].text = "The engine runs around turn 4."; }), 4).pass).toBe(true);
+  });
+});
+
+describe("a stated commander cast turn is not below the commander's cost", () => {
+  const thorin = (castTurn: number | null): Pick<SynopsisFacts, "commanderManaValues" | "stats"> => ({ commanderManaValues: [2], stats: { ...FACTS.stats!, commanderCastTurn: castTurn } });
+  const early = (text: string) => edit((r) => { r.primer.strategy[0].text = text; });
+  it("fails 'around turn 1' for a two-mana commander", () => {
+    const res = checkCommanderTurn(early("[[Meren of Clan Nel Toth]] arrives around turn 1."), thorin(2));
+    expect(res.pass).toBe(false);
+    expect(res.offenders).toEqual([{ where: "stages[0]", turn: 1, floor: 2 }]);
+  });
+  it("passes the commander's cost or later, and a figure the app itself gave", () => {
+    expect(checkCommanderTurn(early("[[Meren of Clan Nel Toth]] arrives around turn 2."), thorin(2)).pass).toBe(true);
+    expect(checkCommanderTurn(early("[[Meren of Clan Nel Toth]] arrives around turn 5."), { commanderManaValues: [6], stats: { ...FACTS.stats!, commanderCastTurn: 5 } }).pass).toBe(true);
+    expect(checkCommanderTurn(early("[[Meren of Clan Nel Toth]] arrives around turn 4."), { commanderManaValues: [], stats: FACTS.stats }).floor).toBeNull();
+  });
+  it("reads the cheapest commander of a pair", () => {
+    const res = checkCommanderTurn(early("It lands around turn 2."), { commanderManaValues: [3, 5], stats: { ...FACTS.stats!, commanderCastTurn: 5 } });
+    expect(res.floor).toBe(3);
+    expect(res.pass).toBe(false);
+  });
+  it("runs through stagesChecks for iteration 3 only, and gates allChecksPass", () => {
+    const facts = { ...FACTS, commanderManaValues: [2], stats: { ...FACTS.stats!, commanderCastTurn: 2 } };
+    const reply = { ...goodReply(), landKeep: { text: "Keep 2 lands: the curve is low.", evidence: [] } };
+    reply.primer.strategy[0].text = "Land [[Meren of Clan Nel Toth]] around turn 1.";
+    const input = { reply, shownNew: docShownNew(OLD, reply, 3), oldDoc: docFromChecked(OLD), facts, alternates: [], kind: "player deck" as const };
+    const c3 = stagesChecks({ ...input, shape: 3 });
+    expect(c3.commanderTurn?.pass).toBe(false);
+    expect(allChecksPass(c3, true)).toBe(false);
+    expect(stagesChecks({ ...input, shape: 2 }).commanderTurn).toBeUndefined();
+  });
 });
 
 describe("zero cards explained twice", () => {
@@ -244,15 +289,26 @@ describe("every stage line names a deck card", () => {
   });
 });
 
-describe("total length no longer than today's", () => {
+describe("total length within 125% of today's", () => {
   it("counts what renders, marks as their names, Key card names included", () => {
     const old = docFromChecked(OLD);
     const res = checkLength(doc(), old);
     expect(res.pass).toBe(true);
-    expect(res.newChars).toBeLessThanOrEqual(res.oldChars);
+    expect(res.newChars).toBeLessThanOrEqual(res.ceiling);
+    expect(res.ceiling).toBe(Math.floor(res.oldChars * 1.25));
   });
-  it("fails a new shape that shows more", () => {
-    const long = edit((r) => { r.overview = `${r.overview} ${"More words here. ".repeat(30)}`; });
+  it("allows up to the ceiling, exactly, and fails one character over", () => {
+    const old = docFromChecked(OLD);
+    const base = checkLength(doc(), old);
+    const padded = (extra: number) => edit((r) => { r.overview = `${r.overview}${"x".repeat(extra)}`; });
+    const room = base.ceiling - base.newChars;
+    expect(room).toBeGreaterThan(0);
+    expect(checkLength(padded(room), old).pass).toBe(true);
+    expect(checkLength(padded(room), old).newChars).toBe(base.ceiling);
+    expect(checkLength(padded(room + 1), old).pass).toBe(false);
+  });
+  it("fails a new shape that shows far more", () => {
+    const long = edit((r) => { r.overview = `${r.overview} ${"More words here. ".repeat(80)}`; });
     expect(checkLength(long, docFromChecked(OLD)).pass).toBe(false);
   });
 });
@@ -265,8 +321,37 @@ describe("the shape's own counts and budgets", () => {
     expect(checkShape(doc(), ["Grave Titan"]).offenders).toEqual(["no alternate line though the facts carry one"]);
     const withAlt = (text: string) => edit((r) => { r.alternate = { text, evidence: ["c4"] }; });
     expect(checkShape(withAlt("Lead with [[Grave Titan]] for a faster board."), ["Grave Titan"]).pass).toBe(true);
-    expect(checkShape(withAlt("Lead with something else."), ["Grave Titan"]).offenders).toEqual(["the alternate line names none of the alternate commanders"]);
+    expect(checkShape(withAlt("Lead with something else."), ["Grave Titan"]).offenders).toEqual(["the alternate line does not name any of the alternate commanders"]);
     expect(checkShape(withAlt("Lead with [[Grave Titan]]."), []).offenders).toEqual(["an alternate line with no alternate commander in the facts"]);
+  });
+  it("wants EVERY alternate named, cites each one's ref, and widens the budget by 50 for each further alternate", () => {
+    const alts = ["Grave Titan", "Eternal Witness"];
+    const line = (text: string, evidence: string[]) => ({ alternate: [{ text, refs: evidence }] });
+    expect(checkAlternateLine(line("Lead with [[Grave Titan]] or [[Eternal Witness]].", ["c4", "c5"]), alts, FACTS)).toEqual({ pass: true, offenders: [] });
+    expect(checkAlternateLine(line("Lead with [[Grave Titan]].", ["c4", "c5"]), alts, FACTS).offenders).toEqual(["the alternate line does not name every alternate commander (missing Eternal Witness)"]);
+    expect(checkAlternateLine(line("Lead with [[Grave Titan]] or [[Eternal Witness]].", ["c4"]), alts, FACTS).offenders).toEqual(["the alternate line cites the ref of 1 of the 2 alternate commanders"]);
+    // Without facts, the refs are not read.
+    expect(checkAlternateLine(line("Lead with [[Grave Titan]] or [[Eternal Witness]].", []), alts).pass).toBe(true);
+    // Shape 2 (every = false) keeps its unchanged rule: one alternate named is enough, within 144.
+    expect(checkAlternateLine(line("Lead with [[Grave Titan]].", ["c4"]), alts, FACTS, false)).toEqual({ pass: true, offenders: [] });
+    const long = (n: number) => `Lead with [[Grave Titan]] or [[Eternal Witness]]${"x".repeat(n)}.`;
+    const len = (t: string) => t.replace(/\[\[|\]\]/g, "").length;
+    const fits = long(194 - len(long(0)));
+    expect(len(fits)).toBe(194);
+    expect(checkAlternateLine(line(fits, ["c4", "c5"]), alts, FACTS).pass).toBe(true);
+    expect(checkAlternateLine(line(long(195 - len(long(0))), ["c4", "c5"]), alts, FACTS).offenders).toEqual(["the alternate line is 195 characters, over its 194"]);
+    // One alternate keeps a stage line's 144.
+    expect(alternateBudget(0)).toBe(144);
+    expect(alternateBudget(1)).toBe(144);
+    expect(alternateBudget(3)).toBe(244);
+    expect(STAGES_LIMITS.alternate).toBe(144);
+  });
+  it("iteration 3 wants exactly 2 keep and 2 send-back lines, and every other shape keeps the old range", () => {
+    const one = (f: (r: StagesReply) => void) => { const r = { ...goodReply(), landKeep: { text: "Keep 2 lands: the curve is low.", evidence: [] } }; f(r); return docFromStagesReply(r, 3); };
+    expect(checkShape(one(() => undefined), [], 3).offenders).toEqual([]);
+    expect(checkShape(one((r) => { r.primer.mulligan.keep.pop(); }), [], 3).offenders).toEqual(["1 keep lines, not 2"]);
+    expect(checkShape(one((r) => { r.primer.mulligan.sendBack.push(r.primer.mulligan.sendBack[0]); }), [], 3).offenders).toEqual(["3 send-back lines, not 2"]);
+    expect(checkShape(edit((r) => { r.primer.mulligan.keep.pop(); r.primer.mulligan.sendBack.pop(); }), []).offenders).toEqual([]);
   });
   it("fails an empty or blank plans.primary: there is no Wins by line", () => {
     expect(checkShape(edit((r) => { r.plans.primary = ""; }), []).offenders).toEqual(["no Wins by line"]);
@@ -682,7 +767,7 @@ describe("iteration 3: the prompt", () => {
     expect(system).toContain("- landKeep: ONE { text, evidence }, at most 120 characters");
     expect(system).toContain("holds 4 lands (write the number as the digit 4, never a range)");
     expect(system).toContain("EVERY line names a card of this decklist as [[Name]]");
-    expect(system).toContain("A Key card is NEVER a card that the overview, a stage line or the alternate line names");
+    expect(system).toContain("A Key card is NEVER a card that a stage line or the alternate line names (the commander included)");
     expect(system).toContain("EXACTLY 2 tips");
     expect(system).toContain("A tip names NO card that a stage line, a Key card (the card or its job) or the alternate line names");
     expect(system).toContain("the stage lines first, then the Key cards from the cards the stages leave out, then the tips");
@@ -695,6 +780,82 @@ describe("iteration 3: the prompt", () => {
   });
   it("asks for the alternate line only when the box carries one", () => {
     expect(buildSynopsisPrompt(FACTS, undefined, opts(["Grave Titan"])).system).toContain("- alternate: REQUIRED for this deck");
+  });
+  it("makes the overview a teaser of about 75% of its budget that names the commander and 2 to 3 core cards", () => {
+    const { system } = buildSynopsisPrompt(FACTS, undefined, opts());
+    expect(system).toContain("THE OVERVIEW IS THE TEASER");
+    expect(system).toContain("name the commander and two to three cards at the core of the deck's mechanics, each as [[Name]]");
+    expect(system).toContain("Aim for about 432 characters");
+    expect(system).toContain("The cards it names may be named again in the stage lines, tips and Key cards.");
+    expect(system).toContain('count how many cards of the decklist actually do that');
+    expect(system).not.toContain("leaves the other cards to the stages");
+    expect(system).not.toContain("about 316 characters");
+    expect(system).not.toContain("names the commander, and leaves");
+    // The explained-once rule no longer lists the overview; the teaser and the mulligan lines are outside it.
+    expect(system).toContain("EACH CARD IS EXPLAINED ONCE. The three stage lines, the alternate line, the tips and the Key cards");
+    expect(system).toContain("The overview (the teaser) and the mulligan lines are outside this rule");
+    // Shape 2 still carries the old overview rule, untouched.
+    const two = buildSynopsisPrompt(FACTS, undefined, { v2: true, contract8: true, stages: { alternates: [] } }).system;
+    expect(two).toContain("it names the commander, and leaves the other cards to the stages, tips and Key cards");
+    expect(two).toContain("aim for about 316 characters");
+  });
+  it("carries the language block, with the tuning example verbatim and inside a stage line's and a tip's budget", () => {
+    const { system } = buildSynopsisPrompt(FACTS, undefined, opts());
+    const example = "Spikeshot Goblin can deal damage equal to its power, so use Crown of Flames to add +1 for {R} each time to increase damage.";
+    expect(system).toContain(example);
+    expect(example.length).toBeLessThanOrEqual(144);
+    expect(example.length).toBeLessThanOrEqual(176);
+    expect(system).toContain("HOW TO SPEAK. Speak in possibilities");
+    expect(system).toContain('"this can help you ramp faster"');
+    expect(system).toContain("An example is an example, never the only line the deck has");
+    expect(system).toContain('such as "keep the equipped attackers alive" or "hold counterspell up"');
+    expect(system).toContain("A card that grants haste belongs with the commander, an engine piece or a creature with a tap ability worth using at once, never with a 1/1 token");
+    expect(system).toContain("respect every mana cost and the one land drop a turn");
+    expect(buildSynopsisPrompt(FACTS, undefined, { v2: true, contract8: true, stages: { alternates: [] } }).system).not.toContain("HOW TO SPEAK");
+  });
+  it("allows the turn only in Early and keeps Mid and Close turn-free", () => {
+    const { system } = buildSynopsisPrompt(FACTS, undefined, opts());
+    expect(system).toContain('"around turn 4", the expected commander cast turn from the facts.');
+    expect(system).toContain("Mid: the engine running: the cards that, with the commander, turn the setup into advantage. No turn number.");
+    expect(system).toContain("The Mid and Close lines, the tips, the Key cards and every other line state no turn at all");
+    expect(system).toContain("A stage line carries no turn number, except the Early line's");
+  });
+  it("asks for exactly two keep and two send-back lines that may repeat the stages' cards", () => {
+    const { system } = buildSynopsisPrompt(FACTS, undefined, opts());
+    expect(system).toContain("primer.mulligan.keep and primer.mulligan.sendBack: EXACTLY 2 lines each");
+    expect(system).not.toContain("1 to 2 lines each");
+    expect(system).toContain("A mulligan line may name a card a stage line, a tip or a Key card also names.");
+    // Every other shape keeps the old range.
+    expect(buildSynopsisPrompt(FACTS, undefined, { v2: true, contract8: true, stages: { alternates: [] } }).system).toContain("1 to 2 lines each");
+  });
+  it("asks for weaknesses in the staging style, concrete stage lines, and tips ranked by plan impact", () => {
+    const { system } = buildSynopsisPrompt(FACTS, undefined, opts());
+    expect(system).toContain("Write each weakness line as: what hurts, so the kind of answer or tax that helps.");
+    expect(system).toContain("Moderate: Much damage comes through combat, so Propaganda style taxes or fogs slow the deck.");
+    expect(system).toContain("Each line is a concrete step of THIS deck's plan: it names a card, says what that card does and why it matters to the plan");
+    expect(system).not.toContain("Backup");
+    expect(system).toContain("Rank the tips by plan impact: prefer a tip that changes how the deck plays (a plan-level line where two cards together do something) over a minor trick.");
+    expect(system).toContain("If nothing better is left among the cards the other sections skip, a trick is fine.");
+  });
+  it("states the length ceiling, 125% of today's Overview, when it is known", () => {
+    const { system } = buildSynopsisPrompt(FACTS, undefined, opts());
+    expect(system).toContain("NO LONGER than 2292 characters as rendered (today's Overview of this deck is 1834; the new one may run up to 125% of it)");
+    expect(system).not.toContain("Trim the overview paragraph first");
+    const unknown = buildSynopsisPrompt(FACTS, undefined, { v2: true, contract8: true, stages: { alternates: [], shape: 3, landKeep: land } }).system;
+    expect(unknown).toContain("NO LONGER than 125% of today's Overview of this deck.");
+  });
+  it("names EVERY alternate commander as [[Name]], with a budget that grows 50 for each further one", () => {
+    const one = buildSynopsisPrompt(FACTS, undefined, opts(["Grave Titan"])).system;
+    expect(one).toContain('"alternate": ONE { text, evidence } of at most 144 characters');
+    expect(one).toContain("Name it as [[Name]] and cite its ref.");
+    const two = buildSynopsisPrompt(FACTS, undefined, opts(["Grave Titan", "Eternal Witness"])).system;
+    expect(two).toContain('"alternate": ONE { text, evidence } of at most 194 characters');
+    expect(two).toContain("Name EVERY alternate commander ([[Grave Titan]], [[Eternal Witness]]) as [[Name]] and cite the ref of each; a line that leaves one out fails.");
+    expect(two).toContain('the reply MUST include the "alternate" line, naming every alternate commander');
+  });
+  it("lets the overview name a combo's cards, while the stages keep them in the Close line alone", () => {
+    const { system } = buildSynopsisPrompt(FACTS, undefined, opts());
+    expect(system).toContain("never also in another stage, a tip, a Key card or a Key card's job (the overview, which teases the deck, may name them).");
   });
   it("refuses iteration 3 without the land number", () => {
     expect(() => buildSynopsisPrompt(FACTS, undefined, { v2: true, contract8: true, stages: { alternates: [], shape: 3 } })).toThrow(/needs landKeep/);
@@ -936,5 +1097,110 @@ describe("iteration 3: the color name the model is handed", () => {
     const sys = (stages: object) => buildSynopsisPrompt(FACTS, undefined, { v2: true, contract8: true, stages: stages as never }).system;
     expect(sys(s3)).toContain('inside a plain phrase such as "a red deck"');
     expect(sys({ alternates: [], maxChars: 1834 })).not.toContain("plain phrase");
+  });
+});
+
+describe("iteration 3: the overview is the teaser and may repeat a card", () => {
+  const teaserReply = () => {
+    const r = goodReply();
+    r.overview = "A Golgari recursion deck led by [[Meren of Clan Nel Toth]] that feeds [[Viscera Seer]] and brings back [[Eternal Witness]] to wear the table down.";
+    return r;
+  };
+  it("reads only the commander in the overview when the teaser option is set, and every card without it", () => {
+    const d = docFromStagesReply(teaserReply(), 3);
+    const plain = checkExplainedOnce(d, FACTS, { keyCardNames: true });
+    expect(plain.offenders.some((o) => o.card === "Viscera Seer" && o.sections.includes("overview"))).toBe(true);
+    const teaser = checkExplainedOnce(d, FACTS, { keyCardNames: true, teaser: true });
+    expect(teaser.offenders.some((o) => o.sections.includes("overview") && !o.commander)).toBe(false);
+    // The commander is still reported apart: the overview and Early both name it.
+    expect(teaser.offenders).toEqual(expect.arrayContaining([{ card: "Meren of Clan Nel Toth", sections: ["overview", "stages"], commander: true }]));
+  });
+  it("lets checkNoCardTwice ignore a card the overview and a stage both name", () => {
+    const r = teaserReply();
+    r.keyCards = r.keyCards.filter((k) => k.card === "Grave Titan");
+    const res = checkNoCardTwice(docFromStagesReply(r, 3), FACTS);
+    expect(res.offenders.some((o) => o.sections.includes("overview"))).toBe(false);
+  });
+  it("lets a mulligan line name a card a stage names", () => {
+    const r = goodReply();
+    r.primer.mulligan.keep = [{ text: "[[Satyr Wayfinder]] to start the yard.", evidence: ["c2"] }, { text: "[[Viscera Seer]] as an outlet.", evidence: ["c3"] }];
+    const d = docFromStagesReply(r, 3);
+    const base = docFromStagesReply(goodReply(), 3);
+    expect(checkExplainedOnce(d, FACTS, { keyCardNames: true, teaser: true })).toEqual(checkExplainedOnce(base, FACTS, { keyCardNames: true, teaser: true }));
+    expect(checkNoCardTwice(d, FACTS)).toEqual(checkNoCardTwice(base, FACTS));
+  });
+  it("runs the teaser reading through stagesChecks for iteration 3 only", () => {
+    const reply = { ...teaserReply(), landKeep: { text: "Keep 2 lands: the curve is low.", evidence: [] } };
+    const input = { reply, shownNew: docShownNew(OLD, reply, 3), oldDoc: docFromChecked(OLD), facts: FACTS, alternates: [], kind: "player deck" as const };
+    expect(stagesChecks({ ...input, shape: 3 }).explainedOnce.offenders.some((o) => !o.commander && o.sections.includes("overview"))).toBe(false);
+    expect(stagesChecks({ ...input, shape: 2 }).explainedOnce.offenders.some((o) => !o.commander && o.sections.includes("overview"))).toBe(true);
+  });
+});
+
+describe("iteration 3: the land line the app writes when the model's is missing or fails", () => {
+  /** A LandKeep built by hand, so every reason combination is run, with the figures the real function would hand the check. */
+  const landFor = (n: number, reasons: LandKeep["reasons"], c: Partial<LandKeep["curve"]> = {}): LandKeep => {
+    const curve: LandKeep["curve"] = { lands: 37, ramp: 10, nonland: 60, averageManaValue: 3, fivePlus: 9, twoOrLess: 20, commanderManaValue: 4, expectedLandsInSeven: 2.6, ...c };
+    const figures = [...new Set([n, 7, curve.lands, curve.ramp, curve.fivePlus, curve.twoOrLess, 5, 2, ...(curve.commanderManaValue === null ? [] : [curve.commanderManaValue])])].sort((a, b) => a - b);
+    return { lands: n, curve, reasons, why: "", figures };
+  };
+  const asDoc = (text: string, facts: Pick<SynopsisFacts, "cards" | "commanders"> = FACTS) => ({ doc: docFromStagesReply({ ...goodReply(), landKeep: { text, evidence: [] } }, 3), facts });
+
+  it("states exactly the number and gives a reason, for every combination of the rule's reasons", () => {
+    const sets: LandKeep["reasons"][] = [];
+    const flags = ["top-heavy", "low curve", "many lands", "few lands", "held to the keepable range"] as const;
+    for (let mask = 0; mask < 1 << flags.length; mask++) {
+      const picked = flags.filter((_, i) => mask & (1 << i));
+      // The rule never gives a deck both a top-heavy and a low curve, nor both land-total reasons.
+      if ((picked.includes("top-heavy") && picked.includes("low curve")) || (picked.includes("many lands") && picked.includes("few lands"))) continue;
+      sets.push([...picked]);
+    }
+    expect(sets.length).toBeGreaterThan(10);
+    const curves: Partial<LandKeep["curve"]>[] = [
+      {}, { fivePlus: 14 }, { fivePlus: 1, commanderManaValue: 7 }, { fivePlus: 2, commanderManaValue: 4 }, { fivePlus: 0, twoOrLess: 3 }, { twoOrLess: 42, fivePlus: 0 },
+      { lands: 41 }, { lands: 28 }, { commanderManaValue: null }, { fivePlus: 5, twoOrLess: 5, lands: 99, ramp: 0 },
+    ];
+    let ran = 0;
+    for (const n of [2, 3, 4]) for (const reasons of sets) for (const c of curves) {
+      const land = landFor(n, reasons, c);
+      const text = landKeepFallback(land);
+      const { doc, facts } = asDoc(text);
+      const res = checkLandKeep(doc, facts, land);
+      expect(res.offenders, `${n} ${reasons.join("+")} ${JSON.stringify(c)}: ${text}`).toEqual([]);
+      expect(res.pass).toBe(true);
+      expect(res.stated).toBe(n);
+      expect(text.length).toBeLessThanOrEqual(STAGES_LIMITS.landKeep);
+      expect(text.length).toBeLessThanOrEqual(120);
+      expect(text).not.toMatch(/\d[.,]\d|\u2014|\[\[/);
+      expect(statedLandNumbers(text)).toEqual([n]);
+      ran++;
+    }
+    expect(ran).toBeGreaterThan(300);
+  });
+
+  it("passes for the app's own number on a real deck, whatever reason moved it", () => {
+    for (const facts of [FACTS, withCurve([2, 3, 4, 3, 3]), withCurve([3, 4, 6, 5, 2]), withCurve([3, 4, 6, 5, 2], { lands: 41 }), withCurve([2, 3, 4, 3, 3], { lands: 30 }), withCurve([3, 4, 6, 5, 2], { lands: 90, keep: { low: 5, high: 5 } })]) {
+      const land = landKeepNumber(facts);
+      const text = landKeepFallback(land);
+      expect(checkLandKeep(docFromStagesReply({ ...goodReply(), landKeep: { text, evidence: [] } }, 3), facts, land).pass, text).toBe(true);
+    }
+  });
+
+  it("words the templates plainly", () => {
+    expect(landKeepFallback(landFor(4, ["top-heavy"]))).toBe("4 lands suit a curve where 9 spells cost five or more.");
+    expect(landKeepFallback(landFor(4, ["top-heavy"], { fivePlus: 1, commanderManaValue: 7 }))).toBe("4 lands suit a top-heavy curve and a commander that costs 7.");
+    expect(landKeepFallback(landFor(4, ["top-heavy"], { fivePlus: 1, commanderManaValue: 4 }))).toBe("4 lands suit a top-heavy curve with many expensive spells.");
+    expect(landKeepFallback(landFor(2, ["low curve"], { twoOrLess: 42 }))).toBe("2 lands suffice since 42 of its spells cost two or less.");
+    expect(landKeepFallback(landFor(2, ["low curve"], { twoOrLess: 3 }))).toBe("2 lands suffice for a low curve of cheap spells.");
+    expect(landKeepFallback(landFor(4, ["many lands"], { lands: 41 }))).toBe("4 lands suit a deck that plays 41 lands.");
+    expect(landKeepFallback(landFor(2, ["few lands"], { lands: 28 }))).toBe("2 lands suit a deck that plays only 28 lands.");
+    expect(landKeepFallback(landFor(3, []))).toBe("3 lands suit a middling curve with 9 spells at five or more.");
+    expect(landKeepFallback(landFor(3, [], { fivePlus: 0 }))).toBe("3 lands suit a middling curve with few expensive spells.");
+    expect(landKeepFallback(landFor(3, ["top-heavy", "few lands"], { lands: 30 }))).toBe("3 lands suit a curve where 9 spells cost five or more. It plays 30 lands.");
+  });
+
+  it("reads 'it plays N lands' as the deck's total, never a hand count", () => {
+    expect(statedLandNumbers("4 lands suit a deck that plays 41 lands.")).toEqual([4]);
+    expect(statedLandNumbers("3 lands suit a curve where 9 spells cost five or more. It plays 30 lands.")).toEqual([3]);
   });
 });

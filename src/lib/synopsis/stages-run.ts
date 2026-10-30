@@ -2,7 +2,7 @@ import { readEvidence, refIndex } from "./claims";
 import { deckNameIndex, normalizeName, type SynopsisFacts } from "./facts";
 import type { StagesOption } from "./prompt";
 import {
-  checkAlternateLine, checkLandKeep, dedupeSections, docFromChecked, docFromStagesReply, docShownNew, i3RepairTargets, landKeepNumber,
+  checkAlternateLine, checkLandKeep, dedupeSections, docFromChecked, docFromStagesReply, docShownNew, i3RepairTargets, landKeepFallback, landKeepNumber,
   STAGES_LIMITS, stagesChecks, type StagesReply,
 } from "./stages";
 import { SECTION_COUNTS } from "./limits";
@@ -22,16 +22,19 @@ import { marksIn } from "./validate";
  *    exactly two tips (the labels come from the position, so a fourth line would carry none); Key
  *    cards left under their minimum once the explained-once pass has dropped the ones a stage
  *    explains. A refused section refunds the unit, and the one repair is sent to fix it.
- *  - HARD (the line is left out, the section stays): the land line (`landKeep`) when it fails
+ *  - HARD (the line is replaced, never left out): the land line (`landKeep`) when the model's fails
  *    `checkLandKeep` (a wrong number, a range, a stray figure, no reason, over budget), cites a ref
- *    that resolves to nothing, or marks a card the deck does not hold. The row then draws the fixed
- *    land range, exactly as a contract-12 row does.
+ *    that resolves to nothing, marks a card the deck does not hold, or is absent. It is replaced by
+ *    the app's own deterministic sentence (`landKeepFallback`: the deck's number and a reason from
+ *    the same figures, no evidence), so the row always draws its "N lands" figure; the fixed land
+ *    range is only for a row written before contract 13. The model's line stands when it passes.
  *  - REPAIR TARGETS (`i3RepairTargets`): a Key cards section short after the pass, a tip left with
  *    no subject, a card still explained in two sections. They add their sections to the ONE repair
  *    (contract B); whatever the repair leaves is shown, as the harness shows it.
  *  - ADVISORY, never gating: cards-in-list, turn numbers, stage fit, stages-name-cards, mulligan
  *    specificity, deck kind and the commander repeating in the overview and Early. Length is not
- *    judged either: it compares against the Overview being replaced, which a write does not hold.
+ *    judged either: it compares against the Overview being replaced (up to 125% of it, `checkLength`),
+ *    which a write does not hold.
  * No new refusal reason: `wrong_count` already has its copy.
  */
 
@@ -70,12 +73,16 @@ export function applyStagesShape(checked: CheckedSynopsis, reply: StagesReply, f
   if (p && (p.strategy.length !== STAGES_LIMITS.stages || p.tips.length < STAGES_LIMITS.tips.min || p.tips.length > STAGES_LIMITS.tips.max)) {
     out = refuse(out, "primer", "wrong_count");
   }
+  const target = landKeepNumber(facts);
   const land = reply.landKeep;
-  if (land && checkLandKeep(docFromStagesReply(reply, 3), facts, landKeepNumber(facts)).pass) {
+  if (land && checkLandKeep(docFromStagesReply(reply, 3), facts, target).pass) {
     out = withLine(out, land, facts, "landKeep");
   }
+  // The model's line is absent, failed its check, or `withLine` left it out (a mark or ref that
+  // resolves to nothing): the app's own sentence stands in, so the figure is always present.
+  if (out.landKeep === undefined) out = withLine(out, { text: landKeepFallback(target), evidence: [] }, facts, "landKeep");
   const alt = reply.alternate;
-  if (alt && alternates.length > 0 && checkAlternateLine({ alternate: [{ text: alt.text }] }, alternates).pass) {
+  if (alt && alternates.length > 0 && checkAlternateLine({ alternate: [{ text: alt.text }] }, alternates, facts).pass) {
     out = withLine(out, alt, facts, "alternate");
   }
   return out;
