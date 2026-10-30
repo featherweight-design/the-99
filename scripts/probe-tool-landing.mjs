@@ -301,6 +301,8 @@ async function pageDrawsWithoutLanding(page, tool) {
 
 async function walkPages(page, w, userId) {
   for (const tool of PAGE_TOOLS) {
+    // Precons has no switch any more: it lands the same in both modes, so the off-mode walk leaves it out.
+    if (SWITCHES_OFF && tool.id === "precons") continue;
     await unspend(userId, tool.id);
     const label = `${w.name} page ${tool.id}`;
     const noteName = tool.name === null ? null : `${tool.name}, a tip`;
