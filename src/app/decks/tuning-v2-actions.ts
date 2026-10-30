@@ -2,10 +2,12 @@
 
 import { requireUserId } from "../../lib/auth";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
+import { loadSourceDeckFigures, type SourceDeckFigure } from "../../lib/decks/read";
 import { revalidateClaims } from "../../lib/decks/revalidate-claims";
 import { requestSwitchEnv } from "../../lib/switches/request";
+import { suggestedChangesV2Copy } from "../../lib/copy/suggested-changes-v2";
 import { suggestedChangesV2Enabled } from "../../lib/tuning/flag";
-import { applyPicks, setPicked, undoSet, type ApplySetRefusal } from "../../lib/tuning/v2/apply-set";
+import { applyPicks, parseSetPulls, setPicked, undoSet, type ApplySetRefusal } from "../../lib/tuning/v2/apply-set";
 import { readSetPermits } from "../../lib/tuning/v2/set-bracket";
 import { isUuid } from "../../lib/uuid";
 
@@ -26,15 +28,25 @@ async function v2Reader() {
   return suggestedChangesV2Enabled(env) ? { userId, env } : null;
 }
 
-export async function applySuggestionSet(runId: string, addIds: unknown, cutIds: unknown, actionId: string): Promise<ApplySetActionResult> {
+/**
+ * `pulls` (Small items 4, item 2): the confirmation's staged pulls, `{ itemId, sourceDeckId }` per held addition, at most
+ * one per picked addition (`parseSetPulls`). Last and optional, so a set with none is the call it always was.
+ */
+export async function applySuggestionSet(
+  runId: string, addIds: unknown, cutIds: unknown, actionId: string, pulls?: unknown,
+): Promise<ApplySetActionResult> {
   const refused = { ok: false as const, message: deckTuningCopy.lists.applyRefused };
   const reader = await v2Reader();
   const adds = ids(addIds);
   const cuts = ids(cutIds);
   if (!reader || !isUuid(runId) || !isUuid(actionId) || !adds || !cuts) return refused;
-  const r = await applyPicks({ runId, addIds: adds, cutIds: cuts, actionId, ...reader });
+  const staged = parseSetPulls(pulls, adds);
+  if (!staged) return refused;
+  const r = await applyPicks({ runId, addIds: adds, cutIds: cuts, actionId, pulls: staged, ...reader });
   if (!r.ok) return { ...refused, refusal: r.refusal };
   revalidateClaims(r.deckId, reader.userId);
+  // A deck a copy came out of: its draft and its claim both moved.
+  for (const id of r.sourceDeckIds ?? []) revalidateClaims(id, reader.userId);
   return { ok: true, itemIds: r.itemIds };
 }
 
@@ -43,9 +55,35 @@ export async function undoSuggestionSet(applySet: string): Promise<ApplySetActio
   const reader = await v2Reader();
   if (!reader || !isUuid(applySet)) return refused;
   const r = await undoSet({ applySet, ...reader });
-  if (!r.ok) return { ...refused, refusal: r.refusal };
+  if (!r.ok) {
+    // A deck a copy was pulled out of has moved on: the refusal names it, in the same place the undo's refusal shows.
+    const message = r.refusal.kind === "pullMoved" ? suggestedChangesV2Copy.undoPullRefused(r.refusal.deckName) : refused.message;
+    return { ok: false, message, refusal: r.refusal };
+  }
   revalidateClaims(r.deckId, reader.userId);
+  for (const id of r.sourceDeckIds ?? []) revalidateClaims(id, reader.userId);
   return { ok: true, itemIds: r.itemIds };
+}
+
+/** At most every held addition's every source: twenty additions a side, a handful of decks each. */
+const MAX_FIGURE_PAIRS = 200;
+
+/**
+ * The source picker's "→ N cards" for Apply's confirmation (Small items 4, item 2): `loadSourceDeckFigures`, as Review
+ * changes reads it, for `{ deckId, oracleId }` pairs the confirmation names. Read-only and scoped to the reader's decks;
+ * entries rather than a Map so the answer crosses the wire as plain data. Empty on any malformed ask.
+ */
+export async function readPullSourceFigures(pairs: unknown): Promise<[string, SourceDeckFigure][]> {
+  const reader = await v2Reader();
+  if (!reader || !Array.isArray(pairs) || pairs.length > MAX_FIGURE_PAIRS) return [];
+  const asked: { deckId: string; oracleId: string }[] = [];
+  for (const p of pairs) {
+    if (typeof p !== "object" || p === null) return [];
+    const { deckId, oracleId } = p as Record<string, unknown>;
+    if (!isUuid(deckId) || !isUuid(oracleId)) return [];
+    asked.push({ deckId: deckId as string, oracleId: oracleId as string });
+  }
+  return [...(await loadSourceDeckFigures(asked, reader.userId).catch(() => new Map<string, SourceDeckFigure>()))];
 }
 
 /** Free, and revalidates nothing: the deck is unchanged, and a pick moves no figure any page draws. */

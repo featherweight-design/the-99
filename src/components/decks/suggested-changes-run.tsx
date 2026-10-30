@@ -9,10 +9,14 @@ import { DECK_GROUPING_ARIA, DECK_GROUPING_KEY, DECK_GROUPING_LABELS, isDeckGrou
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { tuningHubCopy } from "../../lib/copy/tuning-hub";
 import { suggestedChangesV2Copy } from "../../lib/copy/suggested-changes-v2";
+import type { DeckClaim } from "../../lib/decks/availability";
+import { pullSourceChoices } from "../../lib/decks/draft-shape";
 import type { CardTypeGroup } from "../../lib/decks/grouping";
+import type { SourceDeckFigure } from "../../lib/decks/read";
 import { formatCents } from "../../lib/decks/price";
 import type { MixRole } from "../../lib/decks/mix";
 import type { Bracket } from "../../lib/profile/types";
+import { heldInOtherDecks } from "../../lib/tuning/limits";
 import type { LineItem, TuningLive, V2Ask } from "../../lib/tuning/state";
 import type { ValidationReport } from "../../lib/tuning/validate";
 import { askFor } from "../../lib/tuning/v2/count";
@@ -34,11 +38,14 @@ const sc = suggestedChangesV2Copy;
 
 /** Suggested changes v2's apply, undo and pick (`tuning-v2-actions.ts`), injectable for tests. */
 export type SuggestionSetActions = {
-  apply: (runId: string, addIds: string[], cutIds: string[], actionId: string) => Promise<ApplySetActionResult>;
+  /** `pulls`: the confirmation's staged pulls (Small items 4, item 2), passed only when there are any. */
+  apply: (runId: string, addIds: string[], cutIds: string[], actionId: string, pulls?: { itemId: string; sourceDeckId: string }[]) => Promise<ApplySetActionResult>;
   undo: (applySet: string) => Promise<ApplySetActionResult>;
   pick: (itemId: string, picked: boolean) => Promise<{ ok: boolean }>;
   /** The brackets the deck would permit with these picks applied, for a set the lines' own flags cannot settle. */
   setBracket?: (runId: string, addIds: string[], cutIds: string[]) => Promise<{ permits: number[] } | null>;
+  /** The source picker's "→ N cards" per `${deckId}:${oracleId}` (`loadSourceDeckFigures`), for the confirmation's Pull. */
+  sourceFigures?: (pairs: { deckId: string; oracleId: string }[]) => Promise<[string, SourceDeckFigure][]>;
 };
 
 /** How long the picks rest before the bar asks the server for the set's bracket (a profile build per ask). */
@@ -66,9 +73,11 @@ export const SLOWER_NOTE_MS = 120_000;
  */
 export function SuggestedChangesRun({
   runId, ask, lines: readLines, live, startedAt, report, permits, newestPriceAsOf, figures, drift, finishedHere = false,
-  readFrom, actions, onChanged, onAnnounce, onNewRun, readOnly = false, credits = null, past = null,
+  readFrom, actions, onChanged, onAnnounce, onNewRun, readOnly = false, credits = null, past = null, deckId,
 }: {
   runId: string;
+  /** The run's deck, for the confirmation's Pull (Small items 4, item 2). */
+  deckId?: string;
   ask: V2Ask | null;
   lines: readonly LineItem[];
   /** The run is still being made: the wait. */
@@ -112,9 +121,21 @@ export function SuggestedChangesRun({
   const [stored, setGrouping] = useStoredView(DECK_GROUPING_KEY, isDeckGrouping);
   const grouping: Grouping = stored ?? "type";
   const [confirming, setConfirming] = useState(false);
+  // The confirmation's staged pulls, by addition id (Small items 4, item 2): which deck each held copy leaves on Apply.
+  // Held across closing the confirmation, and sent only for an addition still picked.
+  const [staged, setStaged] = useState<ReadonlyMap<string, DeckClaim>>(() => new Map());
+  const ownedFromOtherDecks = ask?.restrictions?.ownedOnly === true && ask.restrictions.otherDecks === true;
+  // The picker's "→ N cards" for the held additions' sources, read once the confirmation opens (as Review changes reads
+  // them with its page); absent until then, and on a failed read, when the picker draws no figure.
+  const [pullFigures, setPullFigures] = useState<{ key: string; map: Map<string, SourceDeckFigure> } | null>(null);
+  // Each opening of the confirmation reads the figures afresh (a source's size moves between openings); the count is
+  // part of the read's key, and an opening clears the last read's figures until its own arrives.
+  const [opened, setOpened] = useState(0);
   const [busy, setBusy] = useState<"apply" | "undo" | null>(null);
   // A key per refused Apply, so a second refusal arrives as a newer alert with its own eight seconds (small items 3, item 8).
   const [failed, setFailed] = useState<number | null>(null);
+  // The toast's detail line: a refused pull's own reason (`pullInTx`'s words), else the shipped retry line.
+  const [failedDetail, setFailedDetail] = useState<string>(sc.applyFailed.detail);
   const [undoError, setUndoError] = useState<string | null>(null);
   const [undone, setUndone] = useState<number | null>(null);
   const [lastSet, setLastSet] = useState<string | null>(null);
@@ -161,6 +182,24 @@ export function SuggestedChangesRun({
   const cuts = lines.filter((l) => l.side === "cut");
   const cap = pickCap(n, lines, !waiting);
   const pickedAdds = adds.filter(isPicked);
+  // Every choosable source of every held addition coming in, while the confirmation is open: the picker's figures.
+  const figurePairs = confirming && ownedFromOtherDecks
+    ? pickedAdds.filter((l) => heldInOtherDecks(l, true)).flatMap((l) => pullSourceChoices(l.availability ?? undefined)
+      .filter((c) => !c.commander && !c.locked)
+      .map((c) => `${c.id}:${l.cardOracleId}`)).join(",")
+    : "";
+  const figureKey = figurePairs === "" ? "" : `${opened}|${figurePairs}`;
+  useEffect(() => {
+    const read = actions.sourceFigures;
+    if (!read || figureKey === "" || pullFigures?.key === figureKey) return;
+    let live = true;
+    const pairs = figurePairs.split(",").map((k) => {
+      const [deckId, oracleId] = k.split(":");
+      return { deckId, oracleId };
+    });
+    read(pairs).then((entries) => { if (live) setPullFigures({ key: figureKey, map: new Map(entries) }); }, () => undefined);
+    return () => { live = false; };
+  }, [figureKey, figurePairs, actions.sourceFigures, pullFigures?.key]);
   const pickedCuts = cuts.filter(isPicked);
   const t = tally([...pickedAdds, ...pickedCuts]);
   // A set past one line a side: the bar's claim waits on the server's read of the whole set (follow-up b).
@@ -215,12 +254,29 @@ export function SuggestedChangesRun({
     setBusy("apply");
     // The set id is the Undo's handle: the bar offers this visit's latest set, not the first one found.
     const setId = crypto.randomUUID();
+    const pulls = pickedAdds.flatMap((l) => {
+      const claim = staged.get(l.id);
+      return claim && heldInOtherDecks(l, ownedFromOtherDecks) ? [{ itemId: l.id, sourceDeckId: claim.id }] : [];
+    });
     const r = await actions
-      .apply(runId, pickedAdds.map((l) => l.id), pickedCuts.map((l) => l.id), setId)
+      .apply(runId, pickedAdds.map((l) => l.id), pickedCuts.map((l) => l.id), setId, ...(pulls.length > 0 ? [pulls] : []))
       .catch((): ApplySetActionResult => ({ ok: false, message: deckTuningCopy.lists.applyRefused }));
     setConfirming(false);
     if (!r.ok) {
       setBusy(null);
+      const refusal = r.refusal;
+      if (refusal?.kind === "pull") {
+        // A refused pull names why (a commander, a lock, another deck's claim), and that pull is unstaged: kept, it would
+        // refuse every retry. Apply again adds the card without pulling it; the player can stage another deck.
+        setFailedDetail(refusal.message || sc.applyFailed.detail);
+        setStaged((m) => {
+          const next = new Map(m);
+          next.delete(refusal.itemId);
+          return next;
+        });
+      } else {
+        setFailedDetail(sc.applyFailed.detail);
+      }
       setFailed((n) => (n ?? 0) + 1);
       onAnnounce(sc.applyFailed.title);
       return;
@@ -232,6 +288,7 @@ export function SuggestedChangesRun({
       setWritten((m) => new Map([...m, ...r.itemIds.map((id) => [id, { verdict: "accepted" as const, applySet: setId, verdictAt }] as const)]));
       setLastSet(setId);
       setUndone(null);
+      setStaged(new Map());
       onAnnounce(sc.run.appliedLead(pickedAdds.length, lines.filter(isOpen).length - r.itemIds.length));
     }
     await onChanged();
@@ -291,7 +348,7 @@ export function SuggestedChangesRun({
           picked={isPicked(l)}
           off={readOnly || !l.applies || (side === "add" ? pickedAdds : pickedCuts).length >= cap}
           onToggle={() => void toggle(l)}
-          ownedFromOtherDecks={ask?.restrictions?.ownedOnly === true && ask.restrictions.otherDecks === true}
+          ownedFromOtherDecks={ownedFromOtherDecks}
           fresh={fresh.has(l.id)}
           aim={ask?.bracket ?? null}
           readOnly={readOnly}
@@ -636,7 +693,12 @@ export function SuggestedChangesRun({
           {appliedBar ? null : (
             <button
               type="button"
-              onClick={() => { if (applyOn) setConfirming(true); }}
+              onClick={() => {
+                if (!applyOn) return;
+                setPullFigures(null);
+                setOpened((n) => n + 1);
+                setConfirming(true);
+              }}
               aria-disabled={!applyOn || undefined}
               data-sc-apply=""
               className={`h-[44px] w-full whitespace-nowrap rounded-[8px] px-[16px] text-[13px] font-semibold md:h-[36px] md:w-auto transition-colors ${applyOn
@@ -657,11 +719,48 @@ export function SuggestedChangesRun({
           busy={busy === "apply"}
           onApply={() => void apply()}
           onClose={() => setConfirming(false)}
+          deckId={deckId}
+          ownedFromOtherDecks={ownedFromOtherDecks}
+          sourceFigures={pullFigures && pullFigures.key === figureKey
+            ? afterStaged(pullFigures.map, pickedAdds.flatMap((l) => {
+              const claim = staged.get(l.id);
+              return claim && heldInOtherDecks(l, ownedFromOtherDecks) ? [{ deckId: claim.id, oracleId: l.cardOracleId }] : [];
+            }))
+            : undefined}
+          staged={staged}
+          onStage={(id, claim) => setStaged((m) => {
+            const next = new Map(m);
+            if (claim) next.set(id, claim);
+            else next.delete(id);
+            return next;
+          })}
         />
       ) : null}
-      {failed !== null ? <DeckRefusalToast key={failed} title={sc.applyFailed.title} detail={sc.applyFailed.detail} onDone={() => setFailed(null)} /> : null}
+      {failed !== null ? <DeckRefusalToast key={failed} title={sc.applyFailed.title} detail={failedDetail} onDone={() => setFailed(null)} /> : null}
     </div>
   );
+}
+
+/**
+ * The picker's "→ N cards" with the confirmation's other staged pulls already taken (#2425 round 6): two additions
+ * staged from one deck leave it two cards smaller, so the second picker's figure counts the first. A pull of the SAME
+ * card is not subtracted from its own figure (that figure is the one the pull describes), and a pull counts only when
+ * its card is still in that deck's draft (`inDraft` on its own figure, read with the rest): a pull of a card the draft
+ * already cut only writes a release and leaves the deck its size (#2425 round 7). Unknown is not counted. Exported for
+ * its test.
+ */
+export function afterStaged(
+  figures: ReadonlyMap<string, SourceDeckFigure>, staged: readonly { deckId: string; oracleId: string }[],
+): Map<string, SourceDeckFigure> {
+  if (staged.length === 0) return new Map(figures);
+  const out = new Map<string, SourceDeckFigure>();
+  for (const [key, figure] of figures) {
+    const [deckId, oracleId] = key.split(":");
+    const taken = staged.filter((p) => p.deckId === deckId && p.oracleId !== oracleId
+      && figures.get(`${p.deckId}:${p.oracleId}`)?.inDraft === true).length;
+    out.set(key, taken === 0 ? figure : { ...figure, built: Math.max(0, figure.built - taken) });
+  }
+  return out;
 }
 
 function Notice({ edge, text, data }: { edge: "var(--warning)" | "var(--accent)"; text: string; data: string }) {

@@ -146,7 +146,17 @@ export const suggestedChangesV2Copy = {
     comingIn: (n: number) => `Coming in · ${n}`,
     goingOut: (n: number) => `Going out · ${n}`,
     apply: (changes: number) => `Apply ${changes} changes`,
+    // Small items 4, item 2 (Other-Decks board, the confirmation): a held addition's staged pull, the Undo that takes the
+    // choice back, and the foot line drawn only while a held card is coming in. `in {deck}`, `in N decks`, `Pull it` and
+    // the picker are Review changes' shipped copy (deckVersioningCopy.review).
+    pullsFrom: (deck: string) => `pulls from ${deck}`,
+    unstage: "Undo",
+    unstageA11y: (card: string, deck: string) => `Undo pulling ${card} from ${deck}`,
+    heldFoot: "A card you don’t pull stays in its deck too.",
   },
+  // Undo all refused because a deck a copy was pulled out of has moved on since (committed, or the card's row edited).
+  // Shown where the undo’s refusal already shows. No board draws it. Passed /copy-review 2026-10-30.
+  undoPullRefused: (deck: string) => `Couldn’t undo: ${deck} has changed since the pull. Nothing changed.`,
   undone: (changes: number) => `Undone. All ${changes} are back as they were, and your picks are still here: apply them again or change them.`,
   applyFailed: { title: "Couldn’t apply. Nothing changed, and your picks are kept.", detail: "Try Apply again in a moment." },
   // PR 6: strings the Wait, Results, Short-Run and Apply boards draw (or a state needs) that the handoff's copy file

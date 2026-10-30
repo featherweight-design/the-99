@@ -2995,6 +2995,19 @@ export type ApplySnapshot = {
   /** The add's row before the apply; quantity 0 when the deck did not hold it. Null for a CUT
    *  line (two lists), which adds nothing. */
   add: { quantity: number; auto: boolean } | null;
+  /** Suggested changes v2 (Small items 4, item 2): the addition's copy was pulled out of another deck in the same apply.
+   *  The source's draft row as the pull found it (null when that draft had already cut the card), so Undo all can put it
+   *  back and give the release up (`apply-set.ts`). Absent on every other apply. */
+  pull?: {
+    sourceDeckId: string; draft: { quantity: number; auto: boolean } | null;
+    /** The source's newest version when the pull was made: a newer one at undo means the source committed since. */
+    versionId?: string;
+    /** The release row's `createdAt` as the pull left it (ISO): a different one at undo is a later pull's release under
+     *  the same key, which this undo must not give back. */
+    release?: string | null;
+    /** The source's printing pick for the card, when the pull took its last copy and the prune dropped the pick. */
+    printing?: { setCode: string; collectorNumber: string } | null;
+  };
 };
 
 export type TuningCitation = {

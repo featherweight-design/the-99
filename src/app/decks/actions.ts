@@ -25,7 +25,7 @@ import { resolveTableSeatsIn } from "../../lib/social/rule-zero-log";
 import { placedCardsOf } from "../../lib/decks/costs-of";
 import { isUuid } from "../../lib/uuid";
 import { loadAvailability } from "../../lib/decks/availability-query";
-import { hardDecks, pullSources } from "../../lib/decks/availability";
+import { pullSources } from "../../lib/decks/availability";
 import {
   type CommitSnapshot, commitVersion, loadVersionDiff, newestVersion, restoreDraftFromVersion, versionCards,
   versionLiveAt, type VersionDiffPayload,
@@ -67,11 +67,11 @@ import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { resolveBoxText } from "../../lib/cards/tagged-text";
 import { NOTES_TAGS_MAX } from "../../lib/tuning/limits";
 import { pruneOrphanProxies } from "../../lib/decks/prune-proxies";
-import { writePullRelease } from "../../lib/decks/pull-release";
-import { PULL_REFUSED_LOCKED, isLiveLocked, notLiveLocked, pruneOrphanLocks } from "../../lib/decks/locks";
+import { lockDecksInOrder, pullClaimants, pullInTx } from "../../lib/decks/pull";
+import { notLiveLocked, pruneOrphanLocks } from "../../lib/decks/locks";
 import { pruneOrphanAssignments } from "../../lib/decks/prune-assignments";
 import {
-  PROXY_READ_FAILED, PULL_REFUSED_PROXIED, proxiedMembership, proxiedOracleIds,
+  proxiedMembership, proxiedOracleIds,
 } from "../../lib/decks/proxies";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
@@ -1781,27 +1781,10 @@ export async function pullCardFromDeck(
     return { ok: false, message: "A deck can’t pull a card from itself." };
   }
 
-  // Which decks the claim on this card is made of, read BEFORE the transaction
-  // and used only to decide what to lock. The authorization below re-reads the
-  // claim under those locks and is the read that decides; this one just names
-  // the parties, because a lock set cannot be chosen from inside a transaction
-  // without either locking every deck the player owns or taking locks in an
-  // order a concurrent pull could deadlock against.
-  //
-  // A read that throws leaves the set at the two decks this pull is between,
-  // which is the shipped behaviour and still safe: the verification inside the
-  // transaction refuses rather than authorizing against an unlocked claimant.
-  let claimants: string[] = [];
-  try {
-    const seen = await loadAvailability(userId, {
-      oracleIds: [oracleId],
-      excludeDeckId: askingDeckId,
-      env,
-    });
-    claimants = hardDecks(seen.get(oracleId) ?? { claims: [] }).map((d) => d.id);
-  } catch {
-    claimants = [];
-  }
+  // Which decks the claim on this card is made of, read BEFORE the transaction and used only to decide what to lock
+  // (`pullClaimants`). The authorization inside `pullInTx` re-reads the claim under those locks and is the read that
+  // decides. A read that throws leaves the set at the two decks this pull is between, which is still safe.
+  const claimants = await pullClaimants(userId, env, oracleId, askingDeckId);
   // Every party, deduplicated and sorted once. Sorting the whole set — not the
   // two decks with claimants appended — is what makes the ordering global: a
   // concurrent pull between any other pair takes the same locks in the same
@@ -1809,11 +1792,10 @@ export async function pullCardFromDeck(
   // needs.
   const lockIds = [...new Set([sourceDeckId, askingDeckId, ...claimants])].sort();
 
-  // One transaction, and every guard runs inside it under every party's row lock.
+  // One transaction, and every guard runs inside it under every party's row lock (`pullInTx`).
   // Each guard is a decision about what a draft holds right now: read outside
   // the lock, an edit landing before the commit is swept into a version its
-  // owner never asked for — the exact case the pending-changes guard exists to
-  // prevent. The write is in here for its own reason: a delete that lands
+  // owner never asked for. The write is in here for its own reason: a delete that lands
   // without its commit leaves the draft short of a card the version claims.
   const outcome = await db.transaction<DeckMutationResult>(async (tx) => {
     // EVERY party's deck row, locked in sorted id order, before anything is read.
@@ -1825,184 +1807,10 @@ export async function pullCardFromDeck(
     // claim is made of decks this transaction does not otherwise touch —
     // `commitDeckVersion` takes its own deck's row lock first, so holding a
     // claimant's row is what stops it committing a release underneath this read.
-    //
-    // Sorted order is what keeps that safe from deadlock. Two pulls with the
-    // roles swapped — A pulling for B while B pulls for A — would otherwise each
-    // hold the lock the other waits on. Sorted, one of them takes both locks and
-    // the other waits at the first, which also serialises every `deck_cards`
-    // lock taken below, so those need no ordering rule of their own.
-    //
-    // A statement each rather than one `where in (...) order by ... for update`:
-    // Postgres does not promise FOR UPDATE takes its locks in ORDER BY order,
-    // so the ordering has to be in the statement sequence to mean anything.
-    for (const id of lockIds) {
-      await tx.select({ id: decks.id }).from(decks).where(eq(decks.id, id)).for("update");
-    }
-    const [deck] = await tx.select().from(decks).where(eq(decks.id, sourceDeckId));
-
-    // Deleted between the ownership check and this lock. Left to fall through,
-    // it reaches commitVersion, which throws rather than refusing.
-    if (!deck) return { ok: false, message: "We couldn’t find that deck." };
-
-    // Neither commander is a `deck_cards` row, but both are claims, so a deck
-    // can be named as a card's holder on the strength of its commander alone.
-    // Without this the pull the reader was offered fails as "doesn't hold it".
-    //
-    // Ahead of the offer check below, because it is the more specific answer: a
-    // commander cannot be pulled by anybody for any reason, and a reader told
-    // instead that their deck isn't waiting on the card would go looking for a
-    // problem with their own draft.
-    if (deck.commanderOracleId === oracleId || deck.partnerOracleId === oracleId) {
-      return { ok: false, message: "That card is that deck’s commander." };
-    }
-
-    // L2: a card the source deck has LOCKED is never pulled out of it. Under that deck's row lock,
-    // taken above, so a lock landing first is honoured and none can land between this and the
-    // delete. Only while `NEVER_CUT_ENABLED` is on (D3).
-    if (neverCutEnabled(env) && (await isLiveLocked(tx, sourceDeckId, oracleId))) {
-      return { ok: false, message: PULL_REFUSED_LOCKED };
-    }
-
-    // Ownership proves the player may act on both decks; it does not prove this
-    // is a pull the app ever offered. Without this any two owned decks can be
-    // named and the source made to lose a card the asking deck never asked for,
-    // so the asking deck's own draft is the authority on which pulls exist.
-    //
-    // Re-derived here rather than read before the transaction, because that read
-    // would be answering for a moment already past by the time the lock is
-    // taken. `draftDiff` off a `for update` read of the asking deck's rows is the
-    // same derivation `loadDraftState` performs, minus the presentation.
-    const askingVersion = await newestVersion(askingDeckId, tx);
-    const askingBefore = askingVersion ? await versionCards(askingVersion.id, tx) : [];
-    const askingDraft = await tx.select({
-      oracleId: deckCards.oracleId, quantity: deckCards.quantity,
-    }).from(deckCards).where(eq(deckCards.deckId, askingDeckId)).for("update");
-    const add = draftDiff(askingDraft, askingBefore).adds
-      .find((a) => a.oracleId === oracleId);
-    if (!add) return { ok: false, message: "That deck isn’t waiting on that card." };
-
-    // And the claim, read under the same locks. An add the reader was offered a
-    // pull for is one whose copies are all spoken for; if a copy has come free
-    // since the page was drawn — because another deck released it, or because an
-    // earlier pull in this same flow already landed — there is nothing to take
-    // out of anybody's box and the draft is already covered.
-    //
-    // `hardDecks`, not the raw claims, for the reason the commit gives: a BREW
-    // "holding" a card holds nothing, and a pull against a list that was never
-    // sleeved moves no physical card.
-    const askingAvailability = await loadAvailability(
-      userId,
-      { oracleIds: [oracleId], excludeDeckId: askingDeckId, env },
-      tx,
-    );
-    const holders = hardDecks(askingAvailability.get(oracleId) ?? { claims: [] });
-
-    // The claim this authorizes against has to be one every party of which is
-    // locked, or the read above answers for a moment that can still move: a deck
-    // outside the lock set can commit a release between this SELECT and the
-    // decrement below, and the source would then give up a copy that was already
-    // free. The lock set was chosen from a read taken before the transaction, so
-    // a claimant that appeared since is possible — and the honest answer to it is
-    // to refuse and let the reader ask again against a page that names it, never
-    // to authorize a destructive write on a claim half of which is unlocked.
-    const unlocked = holders.find((d) => !lockIds.includes(d.id));
-    if (unlocked) {
-      return { ok: false, message: "Another deck claimed that card. Open the changes again." };
-    }
-
-    // `pullSources` here and `hardDecks` above, deliberately. The guard above asks
-    // "is every claimant locked", so it must see every claimant — narrowing it would
-    // let an unlocked junior deck move under the write. This asks "would taking a
-    // copy relieve the shortfall", and a junior claim is already outside this deck's
-    // `free`, so the answer over one is no: the copy would leave that deck's box and
-    // the figure would not move. Refused, and the purchase stands.
-    const sources = pullSources(askingAvailability.get(oracleId) ?? { claims: [] });
-    // FAIL CLOSED here, unlike every rendering caller. This read is part of the
-    // authorization for a destructive act — the pull takes a copy out of another
-    // deck — and a swallowed failure would say "no proxies", authorize a pull for
-    // a card the asking deck is not actually short of, and empty somebody's box.
-    let askingProxies: ReadonlySet<string>;
-    try {
-      askingProxies = await proxiedOracleIds(askingDeckId, userId, "throw");
-    } catch {
-      return { ok: false, message: PROXY_READ_FAILED };
-    }
-    const [bucketed] = bucketAdds([add], new Map(
-      [...askingAvailability].map(([id, a]) => [id, { free: a.free, claims: pullSources(a) }]),
-    ), new Set(), askingProxies);
-    // A printed card asks the collection for nothing, so there is nothing to
-    // pull FOR — the guard below refuses it on `bucket !== "claimed"`, which is
-    // the same refusal a covered add already gets.
-    if (bucketed.bucket === "proxied") {
-      // Its own refusal, before the generic one. "Already has the copies it
-      // needs" would be a claim about the collection, and the whole point of a
-      // proxy is that the deck is covered while owning nothing — the app must
-      // not close that gap with a sentence.
-      return { ok: false, message: PULL_REFUSED_PROXIED };
-    }
-    if (bucketed.bucket !== "claimed" || bucketed.shortfall <= 0) {
-      return { ok: false, message: "That deck already has the copies it needs." };
-    }
-
-    // The bucket above answers for the CARD: some releasable holder exists. It
-    // says nothing about the deck this call named, so on a card with two holders
-    // — one senior, one junior — a request naming the junior one would pass on
-    // the senior one's strength and decrement a deck whose copy was never this
-    // deck's to take. The named source has to be a releasable holder itself.
-    if (!sources.some((d) => d.id === sourceDeckId)) {
-      return { ok: false, message: "That deck’s copy wouldn’t cover the shortfall." };
-    }
-
-    const version = await newestVersion(sourceDeckId, tx);
-    if (!version) return { ok: false, message: "That deck isn’t sleeved yet." };
-    // The VERSION's commander too, not only the live columns checked above: with a commander change
-    // pending, the card can sit in the draft's list while the version still leads with it. A
-    // release subtracts from the version's LIST claim only, so that pull would empty the draft and
-    // leave the asking deck exactly as short as it was.
-    if (version.commanderOracleId === oracleId || version.partnerOracleId === oracleId) {
-      return { ok: false, message: "That card is that deck’s commander." };
-    }
-
-    const before = await versionCards(version.id, tx);
-    // `for update`: the deck row's lock does not stop an edit to `deck_cards`, and the decrement
-    // below is only as good as the draft still being what it read.
-    const draft = await tx.select({
-      oracleId: deckCards.oracleId, quantity: deckCards.quantity,
-    }).from(deckCards).where(eq(deckCards.deckId, sourceDeckId)).for("update");
-    // NO PENDING-CHANGES GUARD (Hugh, 2026-09-27). It existed because the pull committed, and a
-    // commit would have swept the source's own draft into a version nobody asked for. Nothing is
-    // committed now, so the pull simply joins that draft.
-    const inDraft = draft.some((c) => c.oracleId === oracleId);
-    // Nothing to release: the version does not list it and the draft does not hold it.
-    if (!inDraft && !before.some((c) => c.oracleId === oracleId)) {
-      return { ok: false, message: "That deck doesn’t hold that card." };
-    }
-
-    // A pull takes ONE copy, matching removeCardFromDeck: a deck holding four
-    // Relentless Rats keeps three. Delete only when the decrement would hit 0.
-    // Skipped for a card the draft has ALREADY cut: its version is the only thing still claiming
-    // the copy, and the release below is the whole pull.
-    if (inDraft) {
-      const decremented = await tx.update(deckCards)
-        .set({ quantity: sql`${deckCards.quantity} - 1` })
-        .where(and(
-          eq(deckCards.deckId, sourceDeckId),
-          eq(deckCards.oracleId, oracleId),
-          gt(deckCards.quantity, 1),
-        ))
-        .returning({ oracleId: deckCards.oracleId });
-      if (decremented.length === 0) {
-        await tx.delete(deckCards)
-          .where(and(eq(deckCards.deckId, sourceDeckId), eq(deckCards.oracleId, oracleId)));
-        await pruneOrphanProxies(tx, sourceDeckId);
-        await pruneOrphanLocks(tx, sourceDeckId);
-      }
-      // The source's list changed, so it reads as edited, and pending.
-      await touchDeck(tx, sourceDeckId);
-    }
-    // The copy leaves the source's committed claim, which is what frees it for the asking deck.
-    await writePullRelease(tx, { userId, sourceDeckId, oracleId, askingDeckId });
-    return { ok: true };
+    // Sorted order keeps that safe from deadlock (`lockDecksInOrder`).
+    await lockDecksInOrder(tx, lockIds);
+    const pulled = await pullInTx(tx, { userId, env, sourceDeckId, oracleId, askingDeckId, lockIds });
+    return pulled.ok ? { ok: true } : { ok: false, message: pulled.message };
   });
   if (!outcome.ok) return outcome;
   revalidateClaims(sourceDeckId, userId);

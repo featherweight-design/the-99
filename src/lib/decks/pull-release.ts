@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { decks, pullReleases } from "../../db/schema";
 
@@ -47,18 +47,53 @@ export function pullReleaseInsertValues(
   return { ...release, copies: 1, createdAt: sql`clock_timestamp()` };
 }
 
+/** Returns the row's `createdAt` as this write left it: the release's identity for an undo (Suggested changes v2's
+ *  Undo all), which must not give back a release a later pull wrote under the same key. */
 export async function writePullRelease(
   tx: Tx,
   release: { userId: string; sourceDeckId: string; oracleId: string; askingDeckId: string },
-): Promise<void> {
-  await tx
+): Promise<Date | null> {
+  const [row] = await tx
     .insert(pullReleases)
     .values(pullReleaseInsertValues(release))
     .onConflictDoUpdate({
       target: [pullReleases.sourceDeckId, pullReleases.oracleId, pullReleases.askingDeckId],
       // A pull for a DIFFERENT deck is its own row, so every asker is told when this is undone.
       set: PULL_RELEASE_UPSERT_SET,
-    });
+    })
+    .returning({ createdAt: pullReleases.createdAt });
+  return row?.createdAt ?? null;
+}
+
+type ReleaseKey = { sourceDeckId: string; oracleId: string; askingDeckId: string };
+
+const releaseRow = (k: ReleaseKey) => and(
+  eq(pullReleases.sourceDeckId, k.sourceDeckId),
+  eq(pullReleases.oracleId, k.oracleId),
+  eq(pullReleases.askingDeckId, k.askingDeckId),
+);
+
+/** One release row, locked `for update`: its copies and when it was last written; null when there is no row (the
+ *  source's commit or discard cleared it). */
+export async function readPullRelease(tx: Tx, key: ReleaseKey): Promise<{ copies: number; createdAt: Date } | null> {
+  const [row] = await tx.select({ copies: pullReleases.copies, createdAt: pullReleases.createdAt })
+    .from(pullReleases).where(releaseRow(key)).for("update");
+  return row ?? null;
+}
+
+/**
+ * One pulled copy given back to the source's committed claim: the reverse of ONE `writePullRelease`, for an undo that
+ * also puts the card back in the source's draft (Suggested changes v2's Undo all). A row holding more copies loses one;
+ * a row at one goes. Returns whether a copy was there to give back.
+ */
+export async function undoPullRelease(tx: Tx, key: ReleaseKey): Promise<boolean> {
+  const less = await tx.update(pullReleases)
+    .set({ copies: sql`${pullReleases.copies} - 1` })
+    .where(and(releaseRow(key), gt(pullReleases.copies, 1)))
+    .returning({ copies: pullReleases.copies });
+  if (less.length > 0) return true;
+  const gone = await tx.delete(pullReleases).where(releaseRow(key)).returning({ copies: pullReleases.copies });
+  return gone.length > 0;
 }
 
 /**

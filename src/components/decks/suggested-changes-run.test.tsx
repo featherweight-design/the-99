@@ -1,21 +1,31 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { pullCardFromDeck } from "../../app/decks/actions";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
+import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { DECK_GROUPING_ARIA, DECK_GROUPING_KEY } from "../../lib/copy/deck-sort";
 import { suggestedChangesV2Copy } from "../../lib/copy/suggested-changes-v2";
 import { tuningHubCopy } from "../../lib/copy/tuning-hub";
 import type { LineItem, TuningLive, V2Ask } from "../../lib/tuning/state";
 import type { ValidationReport } from "../../lib/tuning/validate";
 import { v2Line } from "../../lib/tuning/v2/results-fixture";
-import { NEW_MARK_MS, SLOW_NOTE_MS, SuggestedChangesRun, type SuggestionSetActions } from "./suggested-changes-run";
+import { afterStaged, NEW_MARK_MS, SLOW_NOTE_MS, SuggestedChangesRun, type SuggestionSetActions } from "./suggested-changes-run";
 import { historyDay } from "./tuning-history";
 
 const openCard = vi.hoisted(() => vi.fn());
-vi.mock("../cards/card-detail-provider", () => ({
+vi.mock("../cards/card-detail-provider", async (importActual) => ({
+  // The rest of the module as shipped: the confirmation's Pull (Small items 4, item 2) names the row's card trigger.
+  ...(await importActual<typeof import("../cards/card-detail-provider")>()),
   useCardDetail: () => ({ open: openCard, registerSheet: () => () => {}, openOracleId: null, revealing: false }),
   useCardIntent: () => ({}),
+  // The source picker's phone sheet names its card with this trigger, which reads the provider itself: a plain button
+  // with the shipped name stands in, as no provider is mounted here.
+  CardDetailTrigger: ({ name, ariaLabel, children }: { name: string; ariaLabel?: string; children?: React.ReactNode }) => (
+    <button type="button" aria-label={ariaLabel ?? `View details for ${name}`}>{children ?? name}</button>
+  ),
 }));
+vi.mock("../../app/decks/actions", () => ({ pullCardFromDeck: vi.fn() }));
 
 const sc = suggestedChangesV2Copy;
 const RUN = "11111111-1111-4111-8111-111111111111";
@@ -188,6 +198,154 @@ describe("the results", () => {
     expect(t.onAnnounce).toHaveBeenCalledWith(sc.run.appliedLead(3, 4));
     expect(t.onChanged).toHaveBeenCalled();
     expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  // Small items 4, item 2: a held addition's pull is staged in the confirmation and sent with the set, never on its own.
+  it("sends a staged pull with the set, and only for a held addition", async () => {
+    const GISHATH = { id: "d-gishath", name: "HD - Gishath", quantity: 1, mature: true, pending: false, commander: false, senior: true };
+    const held = { owned: 1, hard: 1, soft: 0, free: -1, claims: [GISHATH] } as unknown as NonNullable<LineItem["availability"]>;
+    const otherDecks = ask(3, { restrictions: { capCents: null, sets: [], ownedOnly: true, otherDecks: true } });
+    const t = setup({
+      ask: otherDecks,
+      lines: [...adds(5, (i) => ({ picked: i < 2, availability: i === 0 ? held : null })), ...cuts(5, (i) => ({ picked: i < 2 }))],
+    });
+    await press(apply());
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.textContent).toContain(sc.confirm.heldFoot);
+    await press(within(dialog).getByRole("button", { name: deckVersioningCopy.review.pullA11y("Card a0", GISHATH.name) }));
+    expect(dialog.textContent).toContain(sc.confirm.pullsFrom(GISHATH.name));
+    expect(pullCardFromDeck).not.toHaveBeenCalled();
+    await press(within(dialog).getByRole("button", { name: sc.confirm.apply(4) }));
+    expect(t.actions.apply).toHaveBeenCalledWith(
+      RUN, ["a0", "a1"], ["c0", "c1"], expect.stringMatching(/^[0-9a-f-]{36}$/), [{ itemId: "a0", sourceDeckId: GISHATH.id }],
+    );
+  });
+
+  it("says a refused pull's own reason in the toast and unstages it, so Apply again sends the set without it", async () => {
+    const GISHATH = { id: "d-gishath", name: "HD - Gishath", quantity: 1, mature: true, pending: false, commander: false, senior: true };
+    const held = { owned: 1, hard: 1, soft: 0, free: -1, claims: [GISHATH] } as unknown as NonNullable<LineItem["availability"]>;
+    const otherDecks = ask(3, { restrictions: { capCents: null, sets: [], ownedOnly: true, otherDecks: true } });
+    const t = setup({
+      ask: otherDecks,
+      lines: [...adds(5, (i) => ({ picked: i === 0, availability: i === 0 ? held : null })), ...cuts(5, (i) => ({ picked: i === 0 }))],
+    });
+    const reason = "That card is that deck’s commander.";
+    t.actions.apply.mockResolvedValueOnce({
+      ok: false, message: deckTuningCopy.lists.applyRefused, refusal: { kind: "pull", itemId: "a0", message: reason },
+    });
+    await press(apply());
+    await press(within(screen.getByRole("dialog")).getByRole("button", { name: deckVersioningCopy.review.pullA11y("Card a0", GISHATH.name) }));
+    await press(within(screen.getByRole("dialog")).getByRole("button", { name: sc.confirm.apply(2) }));
+    const alert = screen.getByRole("alert");
+    expect(alert.textContent).toContain(sc.applyFailed.title);
+    expect(alert.textContent).toContain(reason);
+    expect(alert.textContent).not.toContain(sc.applyFailed.detail);
+
+    // The retry: the row offers Pull it again, and the set goes without the refused pull.
+    await press(apply());
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.textContent).not.toContain(sc.confirm.pullsFrom(GISHATH.name));
+    await press(within(dialog).getByRole("button", { name: sc.confirm.apply(2) }));
+    expect(t.actions.apply).toHaveBeenLastCalledWith(RUN, ["a0"], ["c0"], expect.stringMatching(/^[0-9a-f-]{36}$/));
+  });
+
+  // The pressed control unmounts as the row redraws, so focus follows the row to its replacement, never to the page.
+  it("moves focus to the staged row's Undo after Pull it, and back to Pull it after Undo", async () => {
+    const GISHATH = { id: "d-gishath", name: "HD - Gishath", quantity: 1, mature: true, pending: false, commander: false, senior: true };
+    const held = { owned: 1, hard: 1, soft: 0, free: -1, claims: [GISHATH] } as unknown as NonNullable<LineItem["availability"]>;
+    setup({
+      ask: ask(3, { restrictions: { capCents: null, sets: [], ownedOnly: true, otherDecks: true } }),
+      lines: [...adds(5, (i) => ({ picked: i === 0, availability: i === 0 ? held : null })), ...cuts(5, (i) => ({ picked: i === 0 }))],
+    });
+    await press(apply());
+    const pullName = deckVersioningCopy.review.pullA11y("Card a0", GISHATH.name);
+    await press(screen.getByRole("button", { name: pullName }));
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: sc.confirm.unstageA11y("Card a0", GISHATH.name) }));
+    await press(screen.getByRole("button", { name: sc.confirm.unstageA11y("Card a0", GISHATH.name) }));
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: pullName }));
+  });
+
+  it("moves focus to the staged row's Undo after the picker's Pull from {deck}, and back to Pull it ▾ after Undo", async () => {
+    const claim = (id: string, name: string, since: number) =>
+      ({ id, name, quantity: 1, mature: true, pending: false, commander: false, senior: true, since });
+    const KRATOS = claim("d-kratos", "HD - Kratos", 1);
+    const THORIN = claim("d-thorin", "HD - Thorin", 2);
+    const held = { owned: 2, hard: 2, soft: 0, free: -1, claims: [KRATOS, THORIN] } as unknown as NonNullable<LineItem["availability"]>;
+    setup({
+      ask: ask(3, { restrictions: { capCents: null, sets: [], ownedOnly: true, otherDecks: true } }),
+      lines: [...adds(5, (i) => ({ picked: i === 0, availability: i === 0 ? held : null })), ...cuts(5, (i) => ({ picked: i === 0 }))],
+    });
+    await press(apply());
+    const manyName = deckVersioningCopy.review.pullManyA11y("Card a0", 2);
+    await press(screen.getByRole("button", { name: manyName }));
+    await press(screen.getByRole("radio", { name: new RegExp(THORIN.name) }));
+    await press(screen.getByRole("button", { name: deckVersioningCopy.review.source.confirm(THORIN.name) }));
+    const undo = screen.getByRole("button", { name: sc.confirm.unstageA11y("Card a0", THORIN.name) });
+    expect(document.activeElement).toBe(undo);
+    await press(undo);
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: manyName }));
+  });
+
+  it("reads the picker's source figures for the held additions once the confirmation opens", async () => {
+    const GISHATH = { id: "d-gishath", name: "HD - Gishath", quantity: 1, mature: true, pending: false, commander: false, senior: true };
+    const held = { owned: 1, hard: 1, soft: 0, free: -1, claims: [GISHATH] } as unknown as NonNullable<LineItem["availability"]>;
+    const sourceFigures = vi.fn(async () => [[`${GISHATH.id}:o-a0`, { built: 99, inDraft: true }]] as [string, { built: number; inDraft: boolean }][]);
+    const t = setup({
+      ask: ask(3, { restrictions: { capCents: null, sets: [], ownedOnly: true, otherDecks: true } }),
+      lines: [...adds(5, (i) => ({ picked: i === 0, availability: i === 0 ? held : null })), ...cuts(5, (i) => ({ picked: i === 0 }))],
+    });
+    t.actions.sourceFigures = sourceFigures;
+    t.rerender({});
+    expect(sourceFigures).not.toHaveBeenCalled();
+    await press(apply());
+    expect(sourceFigures).toHaveBeenCalledWith([{ deckId: GISHATH.id, oracleId: "o-a0" }]);
+    // Closed and opened again: read again, never the first opening's figures.
+    await press(screen.getByRole("button", { name: sc.confirmClose }));
+    await press(apply());
+    expect(sourceFigures).toHaveBeenCalledTimes(2);
+  });
+
+  // #2425 round 6: two additions staged from one deck leave it two cards smaller.
+  it("counts a pull already staged from a source in the next picker's figure for it", async () => {
+    const claim = (id: string, name: string, since: number) =>
+      ({ id, name, quantity: 1, mature: true, pending: false, commander: false, senior: true, since });
+    const GISHATH = claim("d-gishath", "HD - Gishath", 1);
+    const KRATOS = claim("d-kratos", "HD - Kratos", 2);
+    const held = { owned: 2, hard: 2, soft: 0, free: -1, claims: [GISHATH, KRATOS] } as unknown as NonNullable<LineItem["availability"]>;
+    const t = setup({
+      ask: ask(3, { restrictions: { capCents: null, sets: [], ownedOnly: true, otherDecks: true } }),
+      lines: [...adds(5, (i) => ({ picked: i < 2, availability: i < 2 ? held : null })), ...cuts(5, (i) => ({ picked: i < 2 }))],
+    });
+    t.actions.sourceFigures = vi.fn(async (pairs: { deckId: string; oracleId: string }[]) =>
+      pairs.map((p) => [`${p.deckId}:${p.oracleId}`, { built: 99, inDraft: true }] as [string, { built: number; inDraft: boolean }]));
+    t.rerender({});
+    await press(apply());
+    await act(async () => {});
+    const review = deckVersioningCopy.review;
+    await press(screen.getByRole("button", { name: review.pullManyA11y("Card a0", 2) }));
+    await press(screen.getByRole("button", { name: review.source.confirm(GISHATH.name) }));
+    await press(screen.getByRole("button", { name: review.pullManyA11y("Card a1", 2) }));
+    const radio = (name: string) => screen.getByRole("radio", { name: new RegExp(name) });
+    // Gishath gives up a0 already: a1 leaves it at 97, not 98. Kratos gives up nothing yet: 98.
+    expect(radio(GISHATH.name).textContent).toContain(review.source.leaves(97));
+    expect(radio(KRATOS.name).textContent).toContain(review.source.leaves(98));
+  });
+
+  it("takes a staged pull back with Undo, and then sends none", async () => {
+    const GISHATH = { id: "d-gishath", name: "HD - Gishath", quantity: 1, mature: true, pending: false, commander: false, senior: true };
+    const held = { owned: 1, hard: 1, soft: 0, free: -1, claims: [GISHATH] } as unknown as NonNullable<LineItem["availability"]>;
+    const otherDecks = ask(3, { restrictions: { capCents: null, sets: [], ownedOnly: true, otherDecks: true } });
+    const t = setup({
+      ask: otherDecks,
+      lines: [...adds(5, (i) => ({ picked: i === 0, availability: i === 0 ? held : null })), ...cuts(5, (i) => ({ picked: i === 0 }))],
+    });
+    await press(apply());
+    const dialog = screen.getByRole("dialog");
+    await press(within(dialog).getByRole("button", { name: deckVersioningCopy.review.pullA11y("Card a0", GISHATH.name) }));
+    await press(within(dialog).getByRole("button", { name: sc.confirm.unstageA11y("Card a0", GISHATH.name) }));
+    expect(dialog.textContent).not.toContain(sc.confirm.pullsFrom(GISHATH.name));
+    await press(within(dialog).getByRole("button", { name: sc.confirm.apply(2) }));
+    expect(t.actions.apply).toHaveBeenCalledWith(RUN, ["a0"], ["c0"], expect.stringMatching(/^[0-9a-f-]{36}$/));
   });
 
   it("closes the confirmation with nothing changed", async () => {
@@ -694,5 +852,40 @@ describe("the design-review fixes", () => {
     };
     setup({ ask: ask(10), lines: [...adds(8), ...cuts(12)], report, credits: { left: 5, total: 5 } });
     expect(document.querySelector('[data-sc-short="refunded"]')!.textContent).toContain(sc.short.refundCreditLeft(5, 5));
+  });
+});
+
+describe("afterStaged", () => {
+  const figures = new Map([
+    ["d1:o-a", { built: 99, inDraft: true }],
+    ["d1:o-b", { built: 99, inDraft: true }],
+    ["d2:o-b", { built: 60, inDraft: false }],
+  ]);
+  it("takes each other staged pull from a source off that source's figures, never a pull of the same card", () => {
+    const out = afterStaged(figures, [{ deckId: "d1", oracleId: "o-a" }]);
+    expect(out.get("d1:o-a")).toEqual({ built: 99, inDraft: true });
+    expect(out.get("d1:o-b")).toEqual({ built: 98, inDraft: true });
+    expect(out.get("d2:o-b")).toEqual({ built: 60, inDraft: false });
+  });
+  // A pull of a card the source's draft already cut writes only a release: the deck keeps its size.
+  it("does not count a staged pull whose card the source's draft already cut", () => {
+    const cut = new Map([
+      ["d1:o-a", { built: 98, inDraft: false }],
+      ["d1:o-b", { built: 98, inDraft: true }],
+    ]);
+    const out = afterStaged(cut, [{ deckId: "d1", oracleId: "o-a" }]);
+    expect(out.get("d1:o-b")).toEqual({ built: 98, inDraft: true });
+    // The picker's "→ N cards" for B: 98 less B's own copy.
+    const b = out.get("d1:o-b")!;
+    expect(b.inDraft ? b.built - 1 : b.built).toBe(97);
+  });
+
+  it("does not count a staged pull whose figure was never read", () => {
+    const out = afterStaged(new Map([["d1:o-b", { built: 98, inDraft: true }]]), [{ deckId: "d1", oracleId: "o-a" }]);
+    expect(out.get("d1:o-b")!.built).toBe(98);
+  });
+
+  it("leaves the figures as read with nothing staged", () => {
+    expect(afterStaged(figures, [])).toEqual(figures);
   });
 });
