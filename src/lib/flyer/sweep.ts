@@ -46,6 +46,9 @@ export async function sweepFlyerClaims(deps: { now?: Date; clerk?: ClerkInvites 
       .set({ state: "released", email: null, clerkInvitationId: null, codeHmac: null, codeExpiresAt: null, resolvedAt: now })
       .where(and(
         eq(flyerClaims.id, row.id),
+        // Under the invitation id as it was READ: a hand-over that stored a late ticket meanwhile has moved it, and a
+        // changed id survives for the next run to revoke.
+        sql`${flyerClaims.clerkInvitationId} is not distinct from ${row.clerkInvitationId}`,
         or(and(inArray(flyerClaims.state, ["open", "proven"]), lte(flyerClaims.holdsUntil, now)), eq(flyerClaims.state, "released")),
       ))
       .returning({ id: flyerClaims.id });

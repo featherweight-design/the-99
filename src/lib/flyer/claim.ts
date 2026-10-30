@@ -215,46 +215,54 @@ export async function handOverFlyer(codeRaw: string, presented: string | null, d
   const clerk = deps.clerk ?? clerkInvites;
   const code = await findFlyerCode(codeRaw);
   if (!code) return ENDED;
-  const read = await db.transaction(async (tx) => {
+  const first = await db.transaction(async (tx) => {
     const now = await lockSenderIn(tx, code.createdBy, deps.now);
-    const row = await claimOf(tx, code.id, presented, false);
-    return { row, now };
+    return { row: await claimOf(tx, code.id, presented, false), now };
   });
-  const { row, now } = read;
-  if (!row || row.state !== "proven" || row.email === null || !live(row, now) || !cookieMatches(row, presented)) return ENDED;
-  const email = row.email;
-  try {
-    // Whatever ticket this claim made earlier is ended first, so no branch below leaves one behind (the sweep skips a
-    // released claim): a failure keeps the claim as it is.
-    if (row.clerkInvitationId !== null && !(await clerk.revoke(row.clerkInvitationId))) return { ok: false, reason: "failed" };
-    if (!(await clerk.revokeFor(email, row.id))) return { ok: false, reason: "failed" };
-    if (await clerk.hasAccount(email)) {
-      await db.update(flyerClaims).set({ state: "released", email: null, clerkInvitationId: null, resolvedAt: now }).where(and(eq(flyerClaims.id, row.id), eq(flyerClaims.state, "proven")));
-      return { ok: false, reason: "account" };
-    }
-    const made = await clerk.create({ emailAddress: email, reservationId: row.id, notify: false, ignoreExisting: true });
-    if (!made.ok || made.url === null) {
-      if (!made.ok && made.reason === "indeterminate") await clerk.revokeFor(email, row.id);
+  if (!first.row || first.row.state !== "proven" || first.row.email === null || !live(first.row, first.now) || !cookieMatches(first.row, presented)) return ENDED;
+  const claimId = first.row.id;
+
+  // Exclusive ownership of THIS claim's Clerk work: one transaction holds a per-claim lock across cleanup, creation and
+  // storage, so two overlapping hand-overs cannot revoke each other's ticket. The second does not wait on Clerk: it
+  // answers `failed` and the newcomer presses Continue again. Hugh's own lock is not held, so his invites never queue.
+  return db.transaction(async (tx): Promise<HandOverResult> => {
+    const got = await tx.execute(sql`select pg_try_advisory_xact_lock(hashtext(${`flyer-handover:${claimId}`})) as ok`);
+    if (!(got.rows[0] as { ok: boolean }).ok) return { ok: false, reason: "failed" };
+    const now = deps.now ?? new Date();
+    // Read again under the lock: the invitation id and state are now ours to act on.
+    const [row] = await tx.select().from(flyerClaims).where(eq(flyerClaims.id, claimId));
+    if (!row || row.state !== "proven" || row.email === null || !live(row, now) || !cookieMatches(row, presented)) return ENDED;
+    const email = row.email;
+    try {
+      // Whatever ticket this claim made earlier is ended first, so no branch below leaves one behind (the sweep skips a
+      // released claim): a failure keeps the claim as it is.
+      if (row.clerkInvitationId !== null && !(await clerk.revoke(row.clerkInvitationId))) return { ok: false, reason: "failed" };
+      if (!(await clerk.revokeFor(email, row.id))) return { ok: false, reason: "failed" };
+      if (await clerk.hasAccount(email)) {
+        await tx.update(flyerClaims).set({ state: "released", email: null, clerkInvitationId: null, resolvedAt: now })
+          .where(and(eq(flyerClaims.id, row.id), eq(flyerClaims.state, "proven")));
+        return { ok: false, reason: "account" };
+      }
+      const made = await clerk.create({ emailAddress: email, reservationId: row.id, notify: false, ignoreExisting: true });
+      if (!made.ok || made.url === null) {
+        if (!made.ok && made.reason === "indeterminate") await clerk.revokeFor(email, row.id);
+        return { ok: false, reason: "failed" };
+      }
+      // Stored under the claim still standing: the sweep may have released it while Clerk was asked.
+      const stored = await tx.update(flyerClaims).set({ clerkInvitationId: made.id })
+        .where(and(eq(flyerClaims.id, row.id), eq(flyerClaims.state, "proven"), gt(flyerClaims.holdsUntil, new Date())))
+        .returning({ id: flyerClaims.id });
+      if (stored.length === 0) {
+        if (!(await clerk.revoke(made.id))) {
+          // Kept on the claim, whatever its state, so the sweep retries the revoke until it holds.
+          await tx.update(flyerClaims).set({ clerkInvitationId: made.id }).where(eq(flyerClaims.id, row.id));
+          console.warn("[flyer] hand-over: late invitation not revoked; kept for the sweep");
+        }
+        return ENDED;
+      }
+      return { ok: true, url: made.url };
+    } catch {
       return { ok: false, reason: "failed" };
     }
-    const stored = await db.update(flyerClaims).set({ clerkInvitationId: made.id })
-      .where(and(
-        eq(flyerClaims.id, row.id), eq(flyerClaims.state, "proven"), gt(flyerClaims.holdsUntil, new Date()),
-        // …and under the invitation id as it was READ: a second hand-over that finished while Clerk was asked has
-        // moved it, so this one loses and revokes what it made, and only one ticket is ever stored.
-        sql`${flyerClaims.clerkInvitationId} is not distinct from ${row.clerkInvitationId}`,
-      ))
-      .returning({ id: flyerClaims.id });
-    if (stored.length === 0) {
-      if (!(await clerk.revoke(made.id))) {
-        // Kept on the claim, whatever its state, so the sweep retries the revoke until it holds.
-        await db.update(flyerClaims).set({ clerkInvitationId: made.id }).where(eq(flyerClaims.id, row.id));
-        console.warn("[flyer] hand-over: late invitation not revoked; kept for the sweep");
-      }
-      return ENDED;
-    }
-    return { ok: true, url: made.url };
-  } catch {
-    return { ok: false, reason: "failed" };
-  }
+  });
 }
