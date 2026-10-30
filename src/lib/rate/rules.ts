@@ -41,6 +41,10 @@ export const RATE_RULES = {
   "invite-claim": { limit: 30, windowMs: 3_600_000 },
   /** A newcomer's code typed at `/join`, keyed by the token's sender (R11). Five wrong tries end a claim anyway. */
   "invite-code": { limit: 60, windowMs: 3_600_000 },
+  /** A newcomer's Send code at `/join/<CODE>` for a flyer code, keyed by the code's creator (the newcomer has no account). */
+  "flyer-claim": { limit: 60, windowMs: 3_600_000 },
+  /** A newcomer's code typed at `/join/<CODE>`, keyed by the code's creator. Five wrong tries end a claim anyway. */
+  "flyer-code": { limit: 120, windowMs: 3_600_000 },
 } as const satisfies Record<string, RateRule>;
 
 export type RateBucket = keyof typeof RATE_RULES;
