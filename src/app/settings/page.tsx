@@ -1,5 +1,5 @@
 // /settings (menu and Home handoff, `Settings.dc.html`; plan `2026-10-22-menu-home.md` PR 3 and 4): one page under the
-// account menu. What's new on Home comes first (`HOME_FEED_ENABLED`), then Spares (`SOCIAL_FRIENDS_ENABLED`), then Your
+// account menu. Notifications comes first (`HOME_FEED_ENABLED`), then Spares (`SOCIAL_FRIENDS_ENABLED`), then Your
 // decks (`FRIEND_DECKS_ENABLED`, friend decks README 4b). Each
 // section follows its own switch; with both off for this reader the page has nothing to show, so the route does not
 // exist.

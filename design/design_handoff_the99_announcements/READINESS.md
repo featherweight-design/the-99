@@ -50,3 +50,29 @@ option taken. Nothing below blocks the build; each open item has a drawn default
 - Left as they are: `short-deck-warning`, `cost-strip`, `precon-pick-view` and `receipt-link` open new tabs but drew no
   arrow before, so the icon's "replaces every ↗" does not reach them.
 - After the change `grep -rn '↗' src scripts` matches only the three scraped announcement fixtures.
+
+### Engineering audit of item 4, Settings' Notifications (2026-10-30, UI PR 2, against origin/main)
+
+**Verdict: Green.** Item 4's claims hold, with four notes on how it reads against the code:
+
+- Every claim is real and built: the section is "Notifications"; mono heads In app and Push sit over two 52px cells
+  per row, each the shared 18px `Checkbox` in its own press at least 44px tall, named "In app: <kind>" and
+  "Push: <kind>" (`Push:` was already shipped); the name and line sit outside every label, so the row's text
+  toggles nothing; the device row is a sunken band above the heads, its box at the band's right over the Push
+  column. It applies to every kind through one row, so any `FEED_KINDS` entry draws the same way.
+- "Applies to every kind" draws six rows today, not nine: the three announcement kinds join `FEED_KINDS` and
+  `DEFAULT_ON_KINDS` in their own PR, and their names and lines join `feedCopy.news.kinds` then. The boards draw
+  them with the same name-and-line shape as the shipped kinds (no kicker in Settings), so the row needed no new shape.
+- "Push unavailable" is two cases in the code, and the boards draw one. A device that cannot push
+  (`deviceState` "cant") is drawn: the band says so with no box, In app keeps its head, the foot loses its push
+  clause. Push switched off for the reader (`PUSH_ENABLED`, no `push` prop) is not drawn: it takes the same
+  column, head and foot, and no band, since the band is about push on this device.
+- The foot's old split (a Home clause, a push clause, a separate can't-push foot) becomes one foot: bold In app, its
+  clause, then bold Push and its clause while the column stands, then "No email, ever." The retired keys
+  (`feedCopy.news.foot` as a string, `pushSettingsCopy.footCant`) had no other reader.
+- No switch: the rework is layout only and ships unswitched, as item 4 implies (it names none).
+
+Ruled 2026-10-30 (Hugh, through the orchestrator): the rework ships with the app's shared toast and shared `Checkbox`,
+unchanged. The board's failed-save toast (danger dot, close ✕, its own radius, gap, padding and shadow) and its checkbox
+`line-height: 1` differ from those shared components; whether that look should apply app-wide is a Design note, not
+this PR.

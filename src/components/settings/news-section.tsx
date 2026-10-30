@@ -1,17 +1,21 @@
 "use client";
-// Settings' "What's new on Home" section (menu and Home handoff, `Settings.dc.html` `.cks`; plan PR 4): one checkbox
-// per news kind AVAILABLE to this reader, in `FEED_KINDS` order (`loadNewsSettings`). A kind whose switch is off for
-// them is absent, never drawn disabled. Each box saves as it changes (`saveFeedKinds`, the whole checked set); a write
-// that fails puts the set back to what was last saved and says so in the shared social toast, as Spares does. One
-// column at both widths; the row is the press, at least 44px tall at every width.
+// Settings' Notifications section (menu and Home handoff, plan PR 4; reworked by the announcements handoff's R1b-1,
+// `R1b-Settings.dc.html` layout A and `Settings.dc.html`): one row per news kind AVAILABLE to this reader, in
+// `FEED_KINDS` order (`loadNewsSettings`). A kind whose switch is off for them is absent, never drawn disabled. Each
+// kind's name and line run full width on the left; its boxes sit on the right under mono column heads, In app and
+// Push, each box the shared `Checkbox` in its own 52px cell, a press at least 44px tall, named by its `ariaLabel`. The
+// row's text toggles nothing. Each box saves as it changes (`saveFeedKinds`, the whole checked set); a write that fails
+// puts the set back to what was last saved and says so in the shared social toast, as Spares does. One column at both
+// widths.
 //
-// The push column (push handoff R1, calls 1 to 4 and 8; `STATES-push.md`; plan `2026-10-22-push.md` PR 4), only while
-// `push` is given (`PUSH_ENABLED` and the VAPID keys): the head's right slot reads Push over a 44px column, each kind
-// gains its own push box (its own press, `savePushKinds`, the account's ticks), and the device row leads the list
-// (`deviceState`, this device only). The browser's prompt is asked ONLY inside a push tick's press while permission is
-// `default`, never on load; a visit with permission granted and a live subscription re-saves it silently (G1). On a
-// device that cannot push, the device row says so and the column and the foot's push clause leave. Without `push` the
-// section is exactly as shipped.
+// The Push column (push handoff R1, calls 1 to 4 and 8; `STATES-push.md`; plan `2026-10-22-push.md` PR 4), only while
+// `push` is given (`PUSH_ENABLED` and the VAPID keys) and this device can push: its head, each kind's push box (its own
+// press, `savePushKinds`, the account's ticks) and the foot's push clause. The device row (`deviceState`, this device
+// only) sits in its own sunken band above the column heads, its box at the band's right over the Push column. The
+// browser's prompt is asked ONLY inside a push tick's press while permission is `default`, never on load; a visit with
+// permission granted and a live subscription re-saves it silently (G1). On a device that cannot push, the band says so
+// and the column, its head and the foot's push clause leave; In app keeps its head. The band's right padding is 0 at
+// every state, as the board's `.dv` draws it (its can't line included). Without `push` there is no band.
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -42,8 +46,12 @@ const onOf = (kinds: readonly NewsSetting[]): FeedKind[] => kinds.filter((k) => 
 const ROW_SEP = "[&+&]:[border-top:1px_solid_var(--border)]";
 const NAME = "font-sans text-[14px] font-medium text-[color:var(--fg)]";
 const LINE = "text-[12.5px] leading-[1.45] text-[color:var(--fg-muted)]";
-/** The push column's cell: its own 44px press, the box on the row's first line (the Home box's 8px pad plus its 1px nudge). */
-const PUSH_CELL = "ml-[8px] flex min-h-[44px] w-[44px] flex-none cursor-pointer justify-center pt-[9px]";
+/** One box's cell (board `.cc`): 52px wide, its own press at least 44px tall, the box 10px down on the row's first line. */
+const CELL = "flex min-h-[44px] w-[52px] flex-none cursor-pointer justify-center pt-[10px]";
+/** A column head (board `.chd span`): mono caps centred over its 52px column. */
+const HEAD = "w-[52px] flex-none text-center font-mono text-[10px] font-medium uppercase tracking-[0.1em] text-[color:var(--fg-muted)]";
+/** The foot's bold leads (In app, Push). */
+const LEAD = "font-medium text-[color:var(--fg-muted)]";
 
 function Bell() {
   return (
@@ -319,73 +327,78 @@ export function NewsSection({ kinds, push = null }: { kinds: NewsSetting[]; push
 
   return (
     <section aria-labelledby="settings-news" className="mt-[26px] md:mt-[34px]">
-      <h2 id="settings-news" className={column ? `${SECTION_HEAD} justify-between` : SECTION_HEAD}>
-        {c.head}
-        {column && <span aria-hidden className="w-[44px] flex-none text-center">{p.head}</span>}
-      </h2>
-      <ul className="m-0 mt-[4px] list-none p-0">
-        {push && (
-          <li data-push-device={device?.state ?? "reading"} aria-busy={device === null || undefined} className={`flex items-start ${ROW_SEP}`}>
-            <div className={`flex min-h-[44px] min-w-0 flex-1 items-start gap-[12px] py-[8px]${device ? "" : " invisible"}`}>
-              <span className="mt-[1px] flex h-[18px] w-[18px] flex-none items-center justify-center text-[color:var(--fg-muted)]">
-                <Bell />
-              </span>
-              <span className="flex min-w-0 flex-1 flex-col gap-[2px]">
-                <b className={NAME}>{p.device.title(shown.word)}</b>
-                <span className={LINE}>{deviceLine(shown)}</span>
-              </span>
-            </div>
-            {column && (
-              <label className={PUSH_CELL}>
-                <Checkbox
-                  checked={shown.state === "on"}
-                  disabled={device === null || shown.state === "blocked"}
-                  busy={deviceBusy}
-                  ariaLabel={p.device.aria(shown.word)}
-                  onChange={toggleDevice}
-                />
-              </label>
-            )}
-          </li>
-        )}
+      <h2 id="settings-news" className={SECTION_HEAD}>{c.head}</h2>
+      {push && (
+        <div
+          data-push-device={device?.state ?? "reading"}
+          aria-busy={device === null || undefined}
+          className="mt-[10px] flex items-start gap-[12px] rounded-[10px] bg-[color:var(--surface-sunken)] py-[10px] pl-[12px] [border:1px_solid_var(--border)]"
+        >
+          <div className={`flex min-w-0 flex-1 items-start gap-[12px]${device ? "" : " invisible"}`}>
+            <span className="mt-[1px] flex h-[18px] w-[18px] flex-none items-center justify-center text-[color:var(--fg-muted)]">
+              <Bell />
+            </span>
+            <span className="flex min-w-0 flex-1 flex-col gap-[2px]">
+              <b className={NAME}>{p.device.title(shown.word)}</b>
+              <span className={LINE}>{deviceLine(shown)}</span>
+            </span>
+          </div>
+          {column && (
+            <label className={CELL}>
+              <Checkbox
+                checked={shown.state === "on"}
+                disabled={device === null || shown.state === "blocked"}
+                busy={deviceBusy}
+                ariaLabel={p.device.aria(shown.word)}
+                onChange={toggleDevice}
+              />
+            </label>
+          )}
+        </div>
+      )}
+      <div data-column-heads aria-hidden className="flex items-end justify-end pb-[6px] pt-[14px] [border-bottom:1px_solid_var(--border-strong)]">
+        <span className={HEAD}>{c.inApp}</span>
+        {column && <span className={HEAD}>{p.head}</span>}
+      </div>
+      <ul className="m-0 list-none p-0">
         {kinds.map(({ kind }) => {
           const k = c.kinds[kind];
-          const home = (
-            <label className={`flex min-h-[44px] cursor-pointer items-start gap-[12px] py-[8px]${column ? " min-w-0 flex-1" : ""}`}>
-              <Checkbox checked={on.includes(kind)} disabled={saving} onChange={(v) => toggle(kind, v)} className="mt-[1px]" />
-              <span className="flex min-w-0 flex-1 flex-col gap-[2px]">
+          return (
+            <li key={kind} className={`flex items-start ${ROW_SEP}`}>
+              <span className="flex min-h-[44px] min-w-0 flex-1 flex-col gap-[2px] py-[9px]">
                 <b className={NAME}>{k.name}</b>
                 <span className={LINE}>
                   {(DEFAULT_ON_KINDS as readonly FeedKind[]).includes(kind) ? `${k.line} ${c.defaultOn}` : k.line}
                 </span>
               </span>
-            </label>
-          );
-          return column ? (
-            <li key={kind} className={`flex items-start ${ROW_SEP}`}>
-              {home}
-              <label className={PUSH_CELL}>
-                <Checkbox
-                  checked={pushOn.includes(kind)}
-                  disabled={saving || device === null}
-                  ariaLabel={p.kindAria(kind)}
-                  onChange={(v) => togglePush(kind, v)}
-                />
+              <label className={CELL}>
+                <Checkbox checked={on.includes(kind)} disabled={saving} ariaLabel={c.inAppAria(k.name)} onChange={(v) => toggle(kind, v)} />
               </label>
+              {column && (
+                <label className={CELL}>
+                  <Checkbox
+                    checked={pushOn.includes(kind)}
+                    disabled={saving || device === null}
+                    ariaLabel={p.kindAria(kind)}
+                    onChange={(v) => togglePush(kind, v)}
+                  />
+                </label>
+              )}
             </li>
-          ) : (
-            <li key={kind} className={ROW_SEP}>{home}</li>
           );
         })}
       </ul>
       <p className="m-0 mt-[10px] font-mono text-[10.5px] leading-[1.6] text-[color:var(--fg-faint)]">
-        {column ? (
+        <b className={LEAD}>{c.inApp}</b>
+        {c.foot.home}
+        {column && (
           <>
-            {p.foot.home}
-            <b className="font-medium text-[color:var(--fg-muted)]">{p.foot.push}</b>
-            {p.foot.rest}
+            {" "}
+            <b className={LEAD}>{p.head}</b>
+            {p.foot}
           </>
-        ) : push !== null && device?.state === "cant" ? p.footCant : c.foot}
+        )}
+        {c.foot.email}
       </p>
       <SocialToast toast={toast} onDone={() => setToast(null)} />
       {sheet && <PushHowSheet onClose={() => setSheet(false)} />}

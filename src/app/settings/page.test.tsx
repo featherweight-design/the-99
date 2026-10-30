@@ -1,5 +1,5 @@
 // /settings (menu and Home PR 3 and 4): the route does not exist while BOTH SOCIAL_FRIENDS_ENABLED and HOME_FEED_ENABLED
-// are off for the reader; What's new on Home comes first, Spares only with Friends on; the collection list is read only
+// are off for the reader; Notifications comes first, Spares only with Friends on; the collection list is read only
 // when a card is kept back.
 import { describe, expect, it, vi, beforeEach } from "vitest";
 

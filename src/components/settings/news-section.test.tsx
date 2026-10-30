@@ -1,4 +1,5 @@
-// Settings' What's new on Home (menu and Home PR 4): one checkbox per AVAILABLE kind in the board's order, an
+// Settings' Notifications (menu and Home PR 4; announcements R1b-1): one in-app box per AVAILABLE kind in the board's
+// order, under its In app column head, each its own press named by its kind (the row's text toggles nothing); an
 // unavailable kind absent, each box saving the whole checked set as it changes, and a failed save putting the set back
 // to what was last saved with the shared toast.
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
@@ -10,6 +11,7 @@ vi.mock("../../app/settings/feed-actions", () => ({ saveFeedKinds: m.save }));
 
 import { NewsSection } from "./news-section";
 import { feedCopy } from "../../lib/copy/feed";
+import { FEED_KINDS } from "../../lib/feed/kinds";
 import type { NewsSetting } from "../../lib/feed/prefs";
 
 const C = feedCopy.news;
@@ -21,20 +23,49 @@ const ALL_BUT_SPARES: NewsSetting[] = [
   { kind: "combo", on: false },
 ];
 const OFFERED = ["new-set", "new-precon", "price-drop", "trade-match", "combo"];
-const box = (kind: keyof typeof C.kinds) => screen.getByRole("checkbox", { name: new RegExp(C.kinds[kind].name) }) as HTMLInputElement;
+const box = (kind: keyof typeof C.kinds) => screen.getByRole("checkbox", { name: C.inAppAria(C.kinds[kind].name) }) as HTMLInputElement;
+const foot = () => document.querySelector("section > p") as HTMLElement;
 
 beforeEach(() => vi.clearAllMocks());
 afterEach(cleanup);
 
 describe("the news section", () => {
-  it("draws the head, one checkbox per available kind in the board's order, and the foot", () => {
+  it("draws the Notifications head, the In app column head, one box per available kind in the board's order, and the foot", () => {
     render(<NewsSection kinds={ALL_BUT_SPARES} />);
-    expect(screen.getByRole("heading", { name: C.head })).toBeTruthy();
-    const names = screen.getAllByRole("checkbox").map((b) => b.closest("label")?.querySelector("b")?.textContent);
-    expect(names).toEqual(["New sets", "New precons", "Price drops on your wishlist", "Trade matches", "Combos you can make"]);
+    expect(screen.getByRole("heading", { name: C.head }).textContent).toBe("Notifications");
+    const heads = document.querySelector("[data-column-heads]")!;
+    expect([...heads.children].map((h) => h.textContent)).toEqual([C.inApp]);
+    const names = screen.getAllByRole("checkbox").map((b) => b.getAttribute("aria-label"));
+    expect(names).toEqual([
+      "In app: New sets",
+      "In app: New precons",
+      "In app: Price drops on your wishlist",
+      "In app: Trade matches",
+      "In app: Combos you can make",
+    ]);
     expect(box("price-drop").checked).toBe(true);
     expect(box("new-set").checked).toBe(false);
-    expect(screen.getByText(C.foot)).toBeTruthy();
+    expect(foot().textContent).toBe(`${C.inApp}${C.foot.home}${C.foot.email}`);
+    expect(foot().querySelector("b")!.textContent).toBe(C.inApp);
+  });
+
+  // R1b-1: each box is its own 52px cell, a press at least 44px tall; the name and line sit outside every label.
+  it("gives each box its own 52px press and leaves the row's text out of it", () => {
+    render(<NewsSection kinds={ALL_BUT_SPARES} />);
+    const cell = box("combo").closest("label")!;
+    expect(cell.className).toContain("w-[52px]");
+    expect(cell.className).toContain("min-h-[44px]");
+    expect(cell.textContent).toBe("");
+    expect(screen.getByText(C.kinds.combo.name).closest("label")).toBeNull();
+  });
+
+  it("never toggles a box from a press on the row's name or line", async () => {
+    m.save.mockResolvedValue({ ok: true, changed: true });
+    render(<NewsSection kinds={ALL_BUT_SPARES} />);
+    await act(async () => fireEvent.click(screen.getByText(C.kinds.combo.name)));
+    await act(async () => fireEvent.click(screen.getByText(C.kinds.combo.line)));
+    expect(m.save).not.toHaveBeenCalled();
+    expect(box("combo").checked).toBe(false);
   });
 
   // Spare requests PR 3d (board `Friend-Side`, Settings): the default-on kind reads checked as it arrives, and its line
@@ -45,6 +76,16 @@ describe("the news section", () => {
     expect(screen.getByText(`${C.kinds["spare-request"].line} ${C.defaultOn}`)).toBeTruthy();
     expect(screen.getByText("A friend asks for a card you have spare. On from the start.")).toBeTruthy();
     expect(screen.getAllByText(new RegExp(C.defaultOn))).toHaveLength(1);
+  });
+
+  // Every kind, the shipped six and any `FEED_KINDS` gains later, draws the same two-part row from its copy.
+  it("draws every FEED_KINDS entry as a name, a line and its own named box", () => {
+    render(<NewsSection kinds={FEED_KINDS.map((kind) => ({ kind, on: true }))} />);
+    expect(screen.getAllByRole("checkbox")).toHaveLength(FEED_KINDS.length);
+    for (const kind of FEED_KINDS) {
+      expect(box(kind).checked).toBe(true);
+      expect(screen.getByText(C.kinds[kind].name).closest("li")!.contains(box(kind))).toBe(true);
+    }
   });
 
   it("leaves an unavailable kind out rather than drawing it disabled", () => {

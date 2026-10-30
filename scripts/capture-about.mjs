@@ -281,7 +281,7 @@ function screens(f) {
     },
     // The buying-credits entry's frame (launch-end batch): drawn only with the payments line on.
     credits: { path: "/credits" },
-    // The push entry's frame (push close-out, handoff A2): What's new on Home with the push column and its device row. Drawn
+    // The push entry's frame (push close-out, handoff A2; R1b): Notifications with the push column and its device band. Drawn
     // only with PUSH_ENABLED, HOME_FEED_ENABLED and the VAPID keys, and only where the service worker registers
     // (`next start`); the device row reads Not on yet from the staged permission below.
     settings: { path: "/settings", steps: deviceRead },
@@ -290,7 +290,7 @@ function screens(f) {
 
 /**
  * /settings as it opens, once the push device row has read the browser (it holds its space blank while `reading`). At
- * 390x844 What's new on Home sits high enough that the row is on the frame with the header and its ? still drawn.
+ * 390x844 Notifications sits high enough that the row is on the frame with the header and its ? still drawn.
  */
 async function deviceRead(page) {
   await page.waitForSelector(`${PAGE} [data-push-device]:not([data-push-device='reading'])`, { timeout: 15_000 });
