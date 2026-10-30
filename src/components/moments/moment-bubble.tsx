@@ -175,6 +175,8 @@ export function MomentBubble({
   useEffect(() => {
     if (leaving) return;
     const onKey = (e: KeyboardEvent) => {
+      // Under a navigation's screen (`COVERED_WITH_MAIN`) the bubble is out of reach: its keys go to the live shell.
+      if (ref.current?.closest("[inert]")) return;
       if (e.key === "Escape") {
         e.stopPropagation();
         e.preventDefault();
