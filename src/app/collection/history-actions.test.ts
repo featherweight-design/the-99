@@ -16,7 +16,6 @@ const id = { oracleId: "a", setCode: "lea", collectorNumber: "1", finish: "nonfo
 const KEY = "a|lea|1|nonfoil";
 
 const stub = vi.hoisted(() => ({
-  ledger: true,
   apply: vi.fn(),
   entry: vi.fn(),
   list: vi.fn(),
@@ -25,7 +24,6 @@ const stub = vi.hoisted(() => ({
 }));
 
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
-vi.mock("../../lib/collection/edit-flag", () => ({ collectionEditEnabled: () => stub.ledger }));
 vi.mock("../../lib/collection/write", async (actual) => ({
   ...(await actual<typeof import("../../lib/collection/write")>()),
   applyCollectionChange: stub.apply,
@@ -46,19 +44,10 @@ const state = (quantity: number) => ({ quantity, scryfallId: null, condition: nu
 const deck = { deckId: "d", deckName: "Deck", oracleId: "a", cardName: "Card", short: 1 };
 
 beforeEach(() => {
-  stub.ledger = true;
   for (const f of [stub.apply, stub.entry, stub.list, stub.invalidate, stub.warm]) f.mockReset();
 });
 
 describe("the history actions", () => {
-  it("are refused with the switch off, before reading anything", async () => {
-    stub.ledger = false;
-    await expect(loadCollectionHistory()).rejects.toThrow("collection editing is off");
-    await expect(previewRevert(ENTRY)).rejects.toThrow("collection editing is off");
-    expect(stub.list).not.toHaveBeenCalled();
-    expect(stub.apply).not.toHaveBeenCalled();
-  });
-
   it("refuses a page cursor that is not a positive integer", async () => {
     await expect(loadCollectionHistory(-1)).rejects.toThrow("bad page cursor");
     expect(stub.list).not.toHaveBeenCalled();

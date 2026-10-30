@@ -1,13 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ReactElement } from "react";
 
-// The Add cards sheet's way into Precons I own (no-collection entry S18) is decided here, from the reader's switches:
-// collection editing on, or the sheet is as shipped.
+// The head's collection-edit props (editing, the sheet's way into Precons I own, scanning) are always on: the retired
+// COLLECTION_EDIT_ENABLED is never read.
 vi.mock("../../../lib/auth", () => ({ requireUserId: async () => "u1" }));
-vi.mock("../../../lib/switches/request", async () => {
-  const { ENV_VIEW } = await import("@/test/env-view");
-  return { requestSwitchEnv: async () => ENV_VIEW };
-});
 vi.mock("../../../lib/home/summary", () => ({
   getCollectionStats: async () => ({ uniqueCards: 4, totalCards: 4 }),
   getCollectionLastUpdated: async () => null,
@@ -24,21 +20,13 @@ const head = async () => {
   return el.props.children.find((c) => c.type === CollectionPlaceHead)!;
 };
 
-describe("the collection layout: the sheet's precon row (S18)", () => {
+describe("the collection layout: collection editing (S18)", () => {
   afterEach(() => vi.unstubAllEnvs());
-  const on = () => {
-    vi.stubEnv("COLLECTION_EDIT_ENABLED", "true");
-  };
 
-  it("is on with the line's switch", async () => {
-    on();
-    expect((await head()).props.preconPick).toBe(true);
-  });
-
-  it("is off with the line's switch off", async () => {
-    on();
+  it("is always on: the retired COLLECTION_EDIT_ENABLED is never read", async () => {
     vi.stubEnv("COLLECTION_EDIT_ENABLED", "");
-    expect((await head()).props.preconPick).toBe(false);
+    const props = (await head()).props;
+    expect([props.editEnabled, props.preconPick, props.scan]).toEqual([true, true, true]);
   });
 });
 

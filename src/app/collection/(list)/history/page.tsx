@@ -1,13 +1,9 @@
 // /collection/history — every upload and edit of the last 90 days (collection edit §F).
 //
-// The fourth tab of the place strip, behind `COLLECTION_EDIT_ENABLED`: with the switch off the
-// route does not exist, and the tab is never drawn. The list is one page of entries at a time,
-// counts only; a row's own changes are read when it opens.
+// The fourth tab of the place strip. The list is one page of entries at a time, counts only; a
+// row's own changes are read when it opens.
 
-import { notFound } from "next/navigation";
 import { requireUserId } from "../../../../lib/auth";
-import { collectionEditEnabled } from "../../../../lib/collection/edit-flag";
-import { requestSwitchEnv } from "../../../../lib/switches/request";
 import { listHistory } from "../../../../lib/collection/history";
 import { historyShipDate } from "../../../../lib/collection/history-ship";
 import { dayLabel, historyReachesBack } from "../../../../lib/collection/history-view";
@@ -21,9 +17,7 @@ async function readClock() {
 }
 
 export default async function CollectionHistoryPage({ searchParams }: { searchParams: Promise<{ entry?: string | string[] }> }) {
-  // The reader first: the switch is theirs (`requestSwitchEnv`).
   const userId = await requireUserId();
-  if (!collectionEditEnabled(await requestSwitchEnv(userId))) notFound();
   const { entry } = await searchParams;
   const focusId = typeof entry === "string" && isUuid(entry) ? entry : undefined;
   const { entries, nextBefore } = await listHistory(userId);

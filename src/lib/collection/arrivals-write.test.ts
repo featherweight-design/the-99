@@ -37,8 +37,8 @@ import { writeArrivalsReceipt } from "./arrivals-write";
 
 // The reader's resolved switches, opposite to the environment on every switch the receipt reads: a
 // read that fell back to `process.env` would decide the other way, and is caught by identity below.
-const ON = { COLLECTION_EDIT_ENABLED: "true", NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true" };
-const OFF = { COLLECTION_EDIT_ENABLED: "false", NEVER_CUT_ENABLED: "false", CHANGE_COMMANDER_ENABLED: "false" };
+const ON = { NEVER_CUT_ENABLED: "true", CHANGE_COMMANDER_ENABLED: "true" };
+const OFF = { NEVER_CUT_ENABLED: "false", CHANGE_COMMANDER_ENABLED: "false" };
 const stubEnvironment = (values: Record<string, string>) => { for (const [k, v] of Object.entries(values)) vi.stubEnv(k, v); };
 const receipt = (env: NodeJS.ProcessEnv) => writeArrivalsReceipt({
   userId: "u1", uploadId: "up1", ownedBefore: { o1: 1 }, ownedAfter: { o1: 2 }, buyBefore: [],
@@ -60,7 +60,6 @@ describe("writeArrivalsReceipt's claim read", () => {
     stubEnvironment(OFF);
     const env = envViewWith(ON);
     await receipt(env);
-    // The handed env decided COLLECTION_EDIT_ENABLED: the environment has it off, which reads outside a transaction.
     expect(stub.transaction).toHaveBeenCalledTimes(1);
     expect(stub.transaction.mock.calls[0][1]).toEqual({ isolationLevel: "repeatable read" });
     expect(stub.loadAvailability.mock.calls[0][2]).toBe(stub.tx);
@@ -82,8 +81,6 @@ describe("writeArrivalsReceipt's claim read", () => {
     stubEnvironment(ON);
     const env = envViewWith(OFF);
     await receipt(env);
-    // Off in the handed env, though on in the environment: the money rows are read outside a transaction.
-    expect(stub.transaction).not.toHaveBeenCalled();
     const opts = stub.loadAvailability.mock.calls[0][1] as { env?: unknown };
     expect(opts.env === env).toBe(true);
     expect((stub.loadDeckBuyRows.mock.calls[0] as unknown[])[3] === env).toBe(true);

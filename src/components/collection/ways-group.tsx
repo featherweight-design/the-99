@@ -2,7 +2,7 @@
 // The "ways" group (no-collection entry S1, S13, S15; README call 1, design table `no-collection-entry.md`): one
 // quiet group under the upload, `No file? Start another way`, holding Precons I own, Import a deck and Add cards.
 // ONE component for both surfaces that draw it, first run's step 1 and the empty Collection, so the two teach one
-// order. Drawn only with COLLECTION_EDIT_ENABLED; the caller decides that.
+// order.
 //
 // Text presses, never a fill or a border: the upload above stays the only fill (ruling 1, loosened). Desktop (`sm`,
 // where step 1's card goes to its row layout) draws three columns, each a 13/600 label with a faint `›` over one

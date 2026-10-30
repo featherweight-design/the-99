@@ -25,7 +25,6 @@ import type { PendingItem } from "./pending";
 import { loadAvailability, loadDeckBuyRows } from "../decks/availability-query";
 import { holdsCopy } from "../decks/availability";
 import type { Placement } from "../decks/placements";
-import { collectionEditEnabled } from "./edit-flag";
 
 /** Deck names, frozen for the same reason: a deck deleted later still has to render its row. */
 export async function deckNamesFor(userId: string): Promise<Record<string, string>> {
@@ -112,10 +111,9 @@ export async function writeArrivalsReceipt(args: {
   unmatched: { name: string; line: number }[];
   parseErrorCount: number;
   /**
-   * The reader's resolved switches (`requestSwitchEnv`), which the confirm passes: COLLECTION_EDIT_ENABLED decides
-   * write version 4's `went` (where each arrived card's copies went; off, the receipt is the version 3
-   * it always was), and every claim read below takes it for the claim model's `locked` key and pending
-   * clause. Required since admin PR 7a: a probe outside a request passes `process.env` itself.
+   * The reader's resolved switches (`requestSwitchEnv`), which the confirm passes: every claim read below takes
+   * it for the claim model's `locked` key and pending clause. Required since admin PR 7a: a probe outside a
+   * request passes `process.env` itself.
    */
   env: NodeJS.ProcessEnv;
 }): Promise<ArrivalsSummary> {
@@ -128,38 +126,30 @@ export async function writeArrivalsReceipt(args: {
   const arrivedIds = Object.keys(ownedAfter).filter(
     (oracleId) => (ownedAfter[oracleId] ?? 0) > (ownedBefore[oracleId] ?? 0),
   );
-  // ONE SNAPSHOT for the money rows, the availability and the reservation rows, while the switch
-  // is on: separate READ COMMITTED statements would let a pick moved between them credit the
-  // arrived copy to a deck the availability never saw holding it, or keep A's "No longer to buy"
-  // row beside a line saying the copy went to B. Repeatable read fixes all three at the first
-  // statement. Off, the money rows are read as they always were.
-  const addedCopyOn = collectionEditEnabled(env);
+  // ONE SNAPSHOT for the money rows, the availability and the reservation rows: separate READ
+  // COMMITTED statements would let a pick moved between them credit the arrived copy to a deck the
+  // availability never saw holding it, or keep A's "No longer to buy" row beside a line saying the
+  // copy went to B. Repeatable read fixes all three at the first statement.
   type Reservations = Map<string, { deckId: string; copies: number }[]>;
   type Read = { buyAfter: Awaited<ReturnType<typeof loadDeckBuyRows>>; availability: Awaited<ReturnType<typeof loadAvailability>>; reservations: Reservations };
-  const read: Read = !addedCopyOn
-    ? {
-      buyAfter: await loadDeckBuyRows(userId, undefined, undefined, env),
-      availability: arrivedIds.length ? await loadAvailability(userId, { oracleIds: arrivedIds, env }) : new Map(),
-      reservations: new Map(),
+  const read: Read = await db.transaction(async (tx): Promise<Read> => {
+    const buyAfter = await loadDeckBuyRows(userId, undefined, tx, env);
+    if (arrivedIds.length === 0) return { buyAfter, availability: new Map(), reservations: new Map() };
+    const availability = await loadAvailability(userId, { oracleIds: arrivedIds, env }, tx);
+    // The reservations, OLDEST FIRST: the claim model's order (`created_at`, then `deck_id`),
+    // the one `regrant` needs to say which reservation the smaller supply covered.
+    const reservations: Reservations = new Map();
+    if (availability.size > 0) {
+      for (const r of await tx
+        .select({ oracleId: cardAssignments.oracleId, deckId: cardAssignments.deckId, copies: cardAssignments.copies })
+        .from(cardAssignments)
+        .where(and(eq(cardAssignments.userId, userId), inArray(cardAssignments.oracleId, [...availability.keys()])))
+        .orderBy(cardAssignments.createdAt, cardAssignments.deckId)) {
+        reservations.set(r.oracleId, [...(reservations.get(r.oracleId) ?? []), { deckId: r.deckId, copies: r.copies }]);
+      }
     }
-    : await db.transaction(async (tx): Promise<Read> => {
-        const buyAfter = await loadDeckBuyRows(userId, undefined, tx, env);
-        if (arrivedIds.length === 0) return { buyAfter, availability: new Map(), reservations: new Map() };
-        const availability = await loadAvailability(userId, { oracleIds: arrivedIds, env }, tx);
-        // The reservations, OLDEST FIRST: the claim model's order (`created_at`, then `deck_id`),
-        // the one `regrant` needs to say which reservation the smaller supply covered.
-        const reservations: Reservations = new Map();
-        if (addedCopyOn && availability.size > 0) {
-          for (const r of await tx
-            .select({ oracleId: cardAssignments.oracleId, deckId: cardAssignments.deckId, copies: cardAssignments.copies })
-            .from(cardAssignments)
-            .where(and(eq(cardAssignments.userId, userId), inArray(cardAssignments.oracleId, [...availability.keys()])))
-            .orderBy(cardAssignments.createdAt, cardAssignments.deckId)) {
-            reservations.set(r.oracleId, [...(reservations.get(r.oracleId) ?? []), { deckId: r.deckId, copies: r.copies }]);
-          }
-        }
-        return { buyAfter, availability, reservations };
-      }, { isolationLevel: "repeatable read" });
+    return { buyAfter, availability, reservations };
+  }, { isolationLevel: "repeatable read" });
   const { buyAfter, availability, reservations } = read;
   const claims: Record<string, ArrivedClaimState> = {};
   for (const [oracleId, a] of availability) {
@@ -174,17 +164,14 @@ export async function writeArrivalsReceipt(args: {
     };
   }
 
-  // WHERE THE COPIES WENT, from the same read (`arrivalPlacement`). Only while the switch is on.
-  let placements: Record<string, Placement> | undefined;
-  if (addedCopyOn) {
-    placements = {};
-    for (const [oracleId, a] of availability) {
-      placements[oracleId] = arrivalPlacement(
-        a,
-        (ownedAfter[oracleId] ?? 0) - (ownedBefore[oracleId] ?? 0),
-        reservations.get(oracleId) ?? [],
-      );
-    }
+  // WHERE THE COPIES WENT, from the same read (`arrivalPlacement`).
+  const placements: Record<string, Placement> = {};
+  for (const [oracleId, a] of availability) {
+    placements[oracleId] = arrivalPlacement(
+      a,
+      (ownedAfter[oracleId] ?? 0) - (ownedBefore[oracleId] ?? 0),
+      reservations.get(oracleId) ?? [],
+    );
   }
 
   // Names for the rows the diff CAN EMIT, and nothing else: a card on a buy row either
@@ -222,7 +209,7 @@ export async function writeArrivalsReceipt(args: {
   });
   await db.update(csvUploads).set({ summaryPayload: summary })
     .where(and(eq(csvUploads.id, uploadId), eq(csvUploads.userId, userId)));
-  if (placements) await stampUploadWentTo(userId, uploadId, placements, ownedBefore, ownedAfter);
+  await stampUploadWentTo(userId, uploadId, placements, ownedBefore, ownedAfter);
   return summary;
 }
 

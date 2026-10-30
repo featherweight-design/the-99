@@ -30,9 +30,7 @@ import {
   EmptyStateBody,
   EmptyStateTitle,
 } from "../../../components/ui/empty-state";
-import { PrimaryButton } from "../../../components/ui/button";
 import { CollectionEmptyDoors } from "../../../components/collection/collection-empty-doors";
-import { collectionEditEnabled } from "../../../lib/collection/edit-flag";
 import { requestSwitchEnv } from "../../../lib/switches/request";
 import { collectionEditCopy } from "../../../lib/copy/collection-edit";
 import { PICK_RECEIPT_PARAM } from "../../../lib/precons/pick";
@@ -112,10 +110,9 @@ export default async function CollectionPage({
   const toolLanding = <ToolLandingMount landing={landing} request={request} deferred />;
 
   // A precon pick opened from Collection lands here (no-collection entry S19) with the receipt under the tabs: Home's
-  // own strip and dismiss key, read per request from the ledger and only when the address claims one. With the line's
-  // switch off, nothing: the pick itself is off then.
+  // own strip and dismiss key, read per request from the ledger and only when the address claims one.
   let receipt: PickReceipt | null = null;
-  const claim = collectionEditEnabled(env) ? params[PICK_RECEIPT_PARAM] : undefined;
+  const claim = params[PICK_RECEIPT_PARAM];
   if (claim !== undefined) {
     try {
       receipt = await readPickReceipt(userId, claim);
@@ -134,9 +131,7 @@ export default async function CollectionPage({
   // `FilterBar`, so the one entry point built ungated was absent for exactly the player it
   // was built for, whose cards are all printed.
   if (stats.uniqueCards === 0) {
-    const editEnabled = collectionEditEnabled(env);
-    // The no-collection entry (S13): one Upload tile and the ways group, which opens the precon pick. It needs collection editing, so it never draws without it.
-    const ways = editEnabled ? { precons: true } : null;
+    // The no-collection entry (S13): one Upload tile and the ways group, which opens the precon pick.
     return (
       <section className="flex flex-col">
         {toolLanding}
@@ -148,22 +143,9 @@ export default async function CollectionPage({
             Your collection is empty
           </EmptyStateTitle>
           <EmptyStateBody className="mt-3 max-w-[420px] text-[16px]">
-            {ways
-              ? collectionEditCopy.ways.emptyBody
-              : "A pile of possibilities waiting for a commander. Upload a CSV and the table fills. Commanders and decks follow."}
+            {collectionEditCopy.ways.emptyBody}
           </EmptyStateBody>
-          {editEnabled ? (
-            <CollectionEmptyDoors ways={ways} scan={collectionEditEnabled(env)} />
-          ) : (
-            <div className="mt-[26px]">
-              <PrimaryButton
-                href="/collection/replace"
-                className="text-[13px] md:text-[14px] px-[20px] md:px-[22px] py-[11px]"
-              >
-                Upload your CSV
-              </PrimaryButton>
-            </div>
-          )}
+          <CollectionEmptyDoors ways={{ precons: true }} scan />
         </EmptyState>
       </section>
     );
@@ -181,7 +163,7 @@ export default async function CollectionPage({
         availabilityOk={availability !== null}
         pricesFailed={pricesFailed}
         viewHint={viewHint}
-        collectionEdit={collectionEditEnabled(env)}
+        collectionEdit
       />
     </section>
   );

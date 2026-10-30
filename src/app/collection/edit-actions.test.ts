@@ -26,7 +26,6 @@ const optsOf = (call: unknown[]) => {
 };
 
 const stub = vi.hoisted(() => ({
-  ledger: true,
   apply: vi.fn(),
   resolve: vi.fn(),
   search: vi.fn(),
@@ -38,7 +37,6 @@ const stub = vi.hoisted(() => ({
 }));
 
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
-vi.mock("../../lib/collection/edit-flag", () => ({ collectionEditEnabled: () => stub.ledger }));
 vi.mock("../../lib/collection/write", async (actual) => ({
   ...(await actual<typeof import("../../lib/collection/write")>()),
   applyCollectionChange: stub.apply,
@@ -60,24 +58,12 @@ const catalogHolds = (finishes = ["nonfoil", "foil"]) =>
   stub.resolve.mockResolvedValue(new Map([[`${ORACLE}|lea|1`, { scryfallId: PRINTING, finishes }]]));
 
 beforeEach(() => {
-  stub.ledger = true;
   stub.deferred = null;
   for (const f of [stub.apply, stub.resolve, stub.search, stub.choices, stub.invalidate, stub.warm]) f.mockReset();
   stub.resolve.mockResolvedValue(new Map());
 });
 
 describe("the edit actions", () => {
-  it("are refused with the switch off, before reading anything", async () => {
-    stub.ledger = false;
-    await expect(addToCollection(ACTION, [line])).rejects.toThrow("collection editing is off");
-    await expect(editCollection(ACTION, [line])).rejects.toThrow("collection editing is off");
-    await expect(searchCollectionCards("sol")).rejects.toThrow("collection editing is off");
-    await expect(loadPrintingChoices(ORACLE)).rejects.toThrow("collection editing is off");
-    expect(stub.resolve).not.toHaveBeenCalled();
-    expect(stub.search).not.toHaveBeenCalled();
-    expect(stub.apply).not.toHaveBeenCalled();
-  });
-
   it("refuse a malformed action id, an empty request and a malformed line before writing", async () => {
     await expect(addToCollection("nope", [line])).rejects.toThrow();
     await expect(addToCollection(ACTION, [])).rejects.toThrow();
@@ -122,13 +108,9 @@ describe("addToCollection", () => {
     }] } });
   });
 
-  it("settleCollectionWrite invalidates inside the action, and is refused with the switch off", async () => {
+  it("settleCollectionWrite invalidates inside the action", async () => {
     await settleCollectionWrite();
     expect(stub.invalidate).toHaveBeenCalledWith("user_1");
-    stub.invalidate.mockReset();
-    stub.ledger = false;
-    await expect(settleCollectionWrite()).rejects.toThrow("collection editing is off");
-    expect(stub.invalidate).not.toHaveBeenCalled();
   });
 
   it("refuses a printing the catalog does not hold, or a finish it was never printed in", async () => {

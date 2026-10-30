@@ -1,9 +1,8 @@
 "use client";
 // The empty collection's two doors (collection edit B0b): upload a file, or add cards by hand.
-// Equal tiles, neither primary. Rows on the phone, 260px tiles from `md`. Drawn only under
-// COLLECTION_EDIT_ENABLED; with it off the page keeps its single Upload button.
+// Equal tiles, neither primary. Rows on the phone, 260px tiles from `md`.
 //
-// With COLLECTION_EDIT_ENABLED (no-collection entry S13) the two doors become one: the Upload tile, 540 wide
+// With the ways group (no-collection entry S13) the two doors become one: the Upload tile, 540 wide
 // from `md` and the shipped 64px row on the phone, then the ways group step 1 draws, whose third row is this
 // state's own `Add cards`. One order on both surfaces.
 
