@@ -15,7 +15,7 @@ import { CartView } from "../../../components/decks/cart/cart-view";
 import { parseQuery } from "../../../lib/decks/cart-sort";
 import { shoppingMarkBoughtEnabled } from "../../../lib/decks/mark-bought-flag";
 import { requestSwitchEnv } from "../../../lib/switches/request";
-import { socialFriendsEnabled, spareRequestsEnabled } from "../../../lib/social/flag";
+import { socialFriendsEnabled } from "../../../lib/social/flag";
 import { hasFriend } from "../../../lib/social/has-friend";
 
 export const metadata: Metadata = { title: allDecksCartCopy.title };
@@ -40,7 +40,7 @@ export default async function AllDecksShoppingPage({
   const deck = typeof params.deck === "string" && isUuid(params.deck) ? params.deck.toLowerCase() : null;
   // `?view=friend` is By friend (spare requests PR 3c), a view only with spare requests on for the reader (which needs
   // friends on): off, it is By card. Any other value is By card too.
-  const byFriend = socialFriendsEnabled(env) && spareRequestsEnabled(env);
+  const byFriend = socialFriendsEnabled(env);
   const friendView = params.view === "friend" && byFriend;
   const initialView = params.view === "deck" || deck ? "deck" : friendView ? "friend" : "card";
   // Cached per reader on the database's stamp, as `/decks` is, so a write anywhere retires it.
@@ -73,7 +73,7 @@ export default async function AllDecksShoppingPage({
       // Friends' spares on the lines (Social R2 PR B): read after the page from the uncached route, so no key changes.
       socialFriends={socialFriendsEnabled(env)}
       // Ask in the lines' spares modal (spare requests PR 3b), re-checked by every action on the server.
-      spareAsks={spareRequestsEnabled(env)}
+      spareAsks={socialFriendsEnabled(env)}
       hasFriends={friends}
     />
   );

@@ -60,7 +60,6 @@ export const SWITCHES = [
   { name: "SOCIAL_GAMES_ENABLED", kind: "feature", needs: "SOCIAL_FRIENDS_ENABLED" },
   { name: "SOCIAL_INVITES_ENABLED", kind: "feature", needs: "SOCIAL_FRIENDS_ENABLED" },
   { name: "SOCIAL_WISHLIST_ENABLED", kind: "feature" },
-  { name: "SPARE_REQUESTS_ENABLED", kind: "feature", needs: "SOCIAL_FRIENDS_ENABLED" },
   { name: "STAND_IN_LABELS_ENABLED", kind: "feature" },
   { name: "SUGGESTED_CHANGES_V2_ENABLED", kind: "model", needs: "TUNING_ENABLED" },
   { name: "SWAP_TOOLS_ENABLED", kind: "model" },
@@ -103,7 +102,7 @@ export const isOverrideName = (name: string): name is OverrideName => name === A
  *
  * Empty as of 2026-10-15, by an audit of every feature and model switch: none breaks without config. It held
  * `SPARE_REQUESTS_ENABLED` from 2026-10-22 until spare requests'
- * close-out (the asks and answers drawn, its About lines shipped). `NEAR_COMBOS_ENABLED` held it from 2026-10-22 and left it with its
+ * close-out (the asks and answers drawn, its About lines shipped; retired since). `NEAR_COMBOS_ENABLED` held it from 2026-10-22 and left it with its
  * About entry (`combos-one-away`) once the deck page and card details drew it.
  * `STRATEGY_FOCUS_ENABLED` left it on 2026-10-22 with Suggested changes aiming at the focus and its About entry (`deck-focus`).
  * `PUSH_ENABLED` held it from 2026-10-22 and left it on 2026-10-23 with its About entry (`push`), once Settings drew the push

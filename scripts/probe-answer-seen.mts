@@ -25,7 +25,7 @@ const A = `probe-as-a-${run}`; // the asker, the reader
 const H1 = `probe-as-h1-${run}`; // answers Yes
 const H2 = `probe-as-h2-${run}`; // answers No
 const ENV = {
-  ...process.env, SOCIAL_FRIENDS_ENABLED: "true", SPARE_REQUESTS_ENABLED: "true",
+  ...process.env, SOCIAL_FRIENDS_ENABLED: "true",
 } as NodeJS.ProcessEnv;
 
 let failed = 0;
@@ -124,7 +124,7 @@ async function main() {
     check("a holder cannot mark the asker's answer", !(await sr.markAnswerSeen(H1, rX, ENV, now())));
     check("another reader's key names nothing", (await yr.loadAnsweredRequest(H1, keyX, ENV, now())) === null);
     check("a key naming no item names nothing", (await yr.loadAnsweredRequest(A, `item:${randomUUID()}`, ENV, now())) === null);
-    check("switch off: nothing opens", (await yr.loadAnsweredRequest(A, keyX, { ...ENV, SPARE_REQUESTS_ENABLED: "" }, now())) === null);
+    check("switch off: nothing opens", (await yr.loadAnsweredRequest(A, keyX, { ...ENV, SOCIAL_FRIENDS_ENABLED: "" }, now())) === null);
 
     console.log("\n4. purge");
     await purgeAccount(A, { stripe: () => null });

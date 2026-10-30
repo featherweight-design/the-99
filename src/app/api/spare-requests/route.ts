@@ -2,14 +2,14 @@
 // Shopping modal and the row marks draw (requested, accepted, declined, no longer spare). Served here, uncached, the
 // shape of `GET /api/friend-spares`:
 //   - the reader comes from the Clerk session, never from the request;
-//   - `SPARE_REQUESTS_ENABLED` is re-checked for that reader, and off answers 404, as a route that is not there;
+//   - `SOCIAL_FRIENDS_ENABLED` is re-checked for that reader, and off answers 404, as a route that is not there;
 //   - every id is a card oracle id and a batch is at most MAX_SPARES_BATCH, checked before anything is read;
 //   - `loadAskStates` joins the live friendship and names the other side by public id, never a Clerk id;
 //   - `private, no-store`, because the answer is this reader's and their friends' data.
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse, type NextRequest } from "next/server";
 import { MAX_SPARES_BATCH } from "../../../lib/social/client-rules";
-import { spareRequestsEnabled } from "../../../lib/social/flag";
+import { socialFriendsEnabled } from "../../../lib/social/flag";
 import { isUuid } from "../../../lib/social/rules";
 import { loadAskStates } from "../../../lib/social/spare-requests";
 import { requestSwitchEnv } from "../../../lib/switches/request";
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json(null, { status: 401, headers: HEADERS });
   const env = await requestSwitchEnv(userId);
-  if (!spareRequestsEnabled(env)) return NextResponse.json(null, { status: 404, headers: HEADERS });
+  if (!socialFriendsEnabled(env)) return NextResponse.json(null, { status: 404, headers: HEADERS });
   const ids = (req.nextUrl.searchParams.get("ids") ?? "").split(",").filter(Boolean);
   if (ids.length === 0 || ids.length > MAX_SPARES_BATCH || !ids.every(isUuid)) {
     return NextResponse.json(null, { status: 400, headers: HEADERS });

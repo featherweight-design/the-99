@@ -3,7 +3,7 @@
 // stand-ins modal's section, and the read that feeds it. View only (Q3): a row names the friend, the pods their share
 // reaches the reader through and how many they hold spare, and nothing on it is pressable.
 //
-// With spare requests on (`SPARE_REQUESTS_ENABLED`, plan `2026-10-22-spare-requests.md` PR 3b; handoff
+// With spare requests on (`SOCIAL_FRIENDS_ENABLED` since their own switch retired, plan `2026-10-22-spare-requests.md` PR 3b; handoff
 // `design_handoff_the99_spare_requests`, calls 2, 4 and 6), each row is one line of status with ONE thing on the right
 // (Ask, Ask instead, Ask again, or Requested, Accepted, Declined), the foot line moves behind an ⓘ on the head, and one
 // state sentence sits under the rows. Off, the section is as shipped.
@@ -30,7 +30,7 @@ export type AskPress = {
   fromRequestId?: string;
 };
 
-/** Spare requests on this surface (`SPARE_REQUESTS_ENABLED` for the reader), or null with the switch off. */
+/** Spare requests on this surface (`SOCIAL_FRIENDS_ENABLED` for the reader), or null with the switch off. */
 export type RequestsCtx = {
   /** The reader's shown asks for one card, newest first, as the route served them and as the presses since moved them. */
   asksFor: (oracleId: string) => readonly AskStateLine[];

@@ -754,7 +754,6 @@ export const switchCopy: Readonly<Record<SwitchName, { label: string; descriptio
   SOCIAL_INVITES_ENABLED: { label: "Invites", description: "Inviting someone new, and invite counts." },
   SOCIAL_WISHLIST_ENABLED: { label: "Wishlist", description: "Cards wanted outside any deck." },
   PUSH_ENABLED: { label: "Push notifications", description: "Phone and browser push for the news kinds, on top of Home. Sends nothing until the push keys are set." },
-  SPARE_REQUESTS_ENABLED: { label: "Spare requests", description: "Ask a friend for a spare, and their Yes or No. Needs Friends." },
   STAND_IN_LABELS_ENABLED: { label: "Stand-in labels", description: "Stand-in labels where a card has none yet." },
   SUGGESTED_CHANGES_V2_ENABLED: { label: "Suggested changes v2", description: "Pick how many changes, ask for something, and see each one as it arrives. Needs Suggested changes." },
   SWAP_TOOLS_ENABLED: { label: "Swap tools", description: "Swaps, stand-ins and Find a deck for it. Find a deck read needs it." },

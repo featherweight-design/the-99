@@ -20,16 +20,16 @@ import { declineFloor, openFloor, shownFloor } from "./spare-request-rules";
 const NOW = new Date("2026-10-22T12:00:00Z");
 const CARD = "0b6b8d7c-2f4e-4b1a-9a3e-1c2d3e4f5a6b";
 const REQ = "1b6b8d7c-2f4e-4b1a-9a3e-1c2d3e4f5a6b";
-const ON = { SPARE_REQUESTS_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const ON = { SOCIAL_FRIENDS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 const render = (q: SQL) => {
   const { sql, params } = new PgDialect().sqlToQuery(q);
   return { q: sql.replace(/\s+/g, " "), params };
 };
 
 describe("the switch", () => {
-  it("off, or on without friends, nothing is read or written", async () => {
+  it("with friends off, nothing is read or written", async () => {
     const { db } = await import("../../db");
-    for (const env of [{}, { SPARE_REQUESTS_ENABLED: "true" }, { SOCIAL_FRIENDS_ENABLED: "true" }] as unknown as NodeJS.ProcessEnv[]) {
+    for (const env of [{}, { SOCIAL_FRIENDS_ENABLED: "false" }] as unknown as NodeJS.ProcessEnv[]) {
       expect(await askForSpare("a", REQ, CARD, env, NOW)).toEqual({ ok: false, reason: "off" });
       expect(await answerSpareRequest("h", REQ, "yes", env, NOW)).toEqual({ ok: false, reason: "off" });
       expect(await loadIncomingAsks("h", env, NOW)).toEqual([]);

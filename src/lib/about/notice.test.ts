@@ -156,36 +156,38 @@ describe("aboutDismissal (the banner's ✕)", () => {
 
 // Review round 1: the ✕ writes what was RENDERED, intersected with what is announced now, never widened to it.
 describe("aboutDismissal, a switch turned on between the render and the ✕", () => {
-  const SPARE = "shopping/deck-shopping/spare";
-  const SPARE_ON = env({ SOCIAL_FRIENDS_ENABLED: "true", SPARE_REQUESTS_ENABLED: "true" });
+  // A friend's page: a base unit on SOCIAL_FRIENDS_ENABLED with a sentence on SOCIAL_WISHLIST_ENABLED (spare requests'
+  // sentence was this case until their switch retired into its parent).
+  const SPARE = "friends/friends/friend";
+  const SPARE_ON = env({ SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" });
   const SPARE_OFF = env({ SOCIAL_FRIENDS_ENABLED: "true" });
   const reader: SeenState = { version: 16, ids: ["x"] };
 
-  it("a base unit drawn before SPARE_REQUESTS_ENABLED turned on does not take its new sentence's key", () => {
+  it("a base unit drawn before SOCIAL_WISHLIST_ENABLED turned on does not take its new sentence's key", () => {
     const line = aboutLine(reader, visibleSections(SPARE_OFF), THEME);
     const drawn = line?.kind === "launches" ? line.launches.find((l) => l.key === SPARE) : undefined;
     expect(drawn?.ack).toEqual([SPARE]);
     const now = visibleSections(SPARE_ON);
     const write = aboutDismissal(drawn!.ack, reader, now)!;
     expect(write.ids).toContain(SPARE);
-    expect(write.ids).not.toContain(sentenceKey(SPARE, "SPARE_REQUESTS_ENABLED"));
+    expect(write.ids).not.toContain(sentenceKey(SPARE, "SOCIAL_WISHLIST_ENABLED"));
     // The sentence is the next launch: the floor stays under its unit.
     const after: SeenState = { version: write.version, ids: [...reader.ids, ...write.ids] };
-    expect(unseenUnits(now, after).map((u) => u.key)).toContain(sentenceKey(SPARE, "SPARE_REQUESTS_ENABLED"));
+    expect(unseenUnits(now, after).map((u) => u.key)).toContain(sentenceKey(SPARE, "SOCIAL_WISHLIST_ENABLED"));
   });
 
   it("writes the sentence's key when the render drew it", () => {
     const now = visibleSections(SPARE_ON);
     const line = aboutLine(reader, now, THEME);
     const drawn = line?.kind === "launches" ? line.launches.find((l) => l.key === SPARE) : undefined;
-    expect(drawn?.ack).toEqual([SPARE, sentenceKey(SPARE, "SPARE_REQUESTS_ENABLED")]);
-    expect(aboutDismissal(drawn!.ack, reader, now)!.ids).toContain(sentenceKey(SPARE, "SPARE_REQUESTS_ENABLED"));
+    expect(drawn?.ack).toEqual([SPARE, sentenceKey(SPARE, "SOCIAL_WISHLIST_ENABLED")]);
+    expect(aboutDismissal(drawn!.ack, reader, now)!.ids).toContain(sentenceKey(SPARE, "SOCIAL_WISHLIST_ENABLED"));
   });
 
   it("a first-run ✕ takes only the baseline it rendered: a unit and a sentence switched on since stay new", () => {
     const line = aboutLine(NEVER_SEEN, visibleSections(OFF), THEME);
     expect(line?.kind).toBe("firstRun");
-    const now = visibleSections(env({ NEVER_CUT_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SPARE_REQUESTS_ENABLED: "true" }));
+    const now = visibleSections(env({ NEVER_CUT_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" }));
     const write = aboutDismissal(line?.kind === "firstRun" ? line.ack : [], NEVER_SEEN, now)!;
     expect(write.ids).not.toContain("decks/your-deck/lock");
     expect(write.ids).not.toContain(SPARE);

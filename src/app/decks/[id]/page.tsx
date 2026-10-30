@@ -74,7 +74,7 @@ import { loadStatsAverage } from "../../../lib/decks/stats-average-load";
 import { loadLandMana } from "../../../lib/decks/land-mana";
 import { loadSourceMana } from "../../../lib/decks/source-mana";
 import { loadDeckOpponents, opponentsWire } from "../../../lib/decks/deck-opponents-read";
-import { socialFriendsEnabled, socialGamesEnabled, spareRequestsEnabled } from "../../../lib/social/flag";
+import { socialFriendsEnabled, socialGamesEnabled } from "../../../lib/social/flag";
 import { loadFriendDeckPrefs } from "../../../lib/social/deck-visibility";
 import { tablePrefill } from "../../../lib/social/rule-zero-log";
 import { logPrefillTable } from "../../../lib/rule-zero/table-view";
@@ -807,7 +807,7 @@ export default async function DeckBuilderPage({
     <DeckPageSwitches
       howItWorks={howItWorksEnabled(env)}
       socialFriends={socialFriendsEnabled(env)}
-      spareAsks={spareRequestsEnabled(env)}
+      spareAsks={socialFriendsEnabled(env)}
     >
       {shell}
     </DeckPageSwitches>

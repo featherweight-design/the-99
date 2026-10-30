@@ -260,9 +260,6 @@ describe("seen translation", () => {
     expect(spare.ack).toEqual(["shopping/deck-shopping/spare", sentenceKey("shopping/deck-shopping/spare", "SPARE_REQUESTS_ENABLED")]);
     seen = { version: 16, ids: [...seen.ids, ...first.flatMap((u) => u.ack)] };
     expect(unseenUnits(visible, seen)).toEqual([]);
-    const spareOff = visibleSections(env({ ...ALL_ON, SPARE_REQUESTS_ENABLED: "off" } as Record<string, string>));
-    const offAck = unseenUnits(spareOff, { version: 16, ids: ["placeholder"] }).find((u) => u.key === "shopping/deck-shopping/spare")!;
-    expect(offAck.ack).toEqual(["shopping/deck-shopping/spare"]);
   });
 
   it("names every switched legacy entry in some unit, so no announced entry is lost", () => {
@@ -351,9 +348,10 @@ describe("a section's sub-line", () => {
     expect(sub(noEdit, "cards")).toBe("Everything you own, card by card, and which copies your decks are holding.");
     // Ready to build is gone (the feed is always on).
     expect(sub(ALL_ON, "home")).not.toContain("best-fit commanders");
-    // Only a spare request ever waits on you, so the sentence saying what comes first hangs on spare requests too.
+    // Only a spare request ever waits on you, so the sentence saying what comes first hangs on spare requests too, which
+    // follow friends now their own switch is retired.
     expect(sub(ALL_ON, "whats-new")).toContain("Within Today and Earlier, anything waiting on you comes first.");
-    expect(sub(env({ ...(ALL_ON as Record<string, string>), SPARE_REQUESTS_ENABLED: "off" }), "whats-new")).not.toContain("waiting on you");
+    expect(sub(env({ ...(ALL_ON as Record<string, string>), SOCIAL_FRIENDS_ENABLED: "off" }), "whats-new")).not.toContain("waiting on you");
   });
 });
 

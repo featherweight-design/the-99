@@ -16,7 +16,7 @@ import { deckStatsEnabled } from "../decks/stats-flag";
 import { deckNotesEnabled } from "../decks/notes-flag";
 import { collectionEditEnabled, collectionSyncEnabled } from "../collection/edit-flag";
 import {
-  socialFriendsEnabled, socialGamesEnabled, socialInvitesEnabled, spareRequestsEnabled,
+  socialFriendsEnabled, socialGamesEnabled, socialInvitesEnabled,
 } from "../social/flag";
 import { wishlistEnabled } from "../wishlist/flag";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
@@ -96,8 +96,9 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   // Retired (always on where friends are): the name stays as the lines' historical identity. It was on exactly when
   // SOCIAL_FRIENDS_ENABLED is, which it needed.
   FRIEND_DECKS_ENABLED: socialFriendsEnabled,
-  // Spare requests (close-out): `friend-spares`' variant only. Already needs SOCIAL_FRIENDS_ENABLED.
-  SPARE_REQUESTS_ENABLED: spareRequestsEnabled,
+  // Spare requests (close-out): `friend-spares`' variant only. Its switch is retired: the name stays the variant's and
+  // the sentence's historical identity and follows its parent.
+  SPARE_REQUESTS_ENABLED: socialFriendsEnabled,
   // Combos one piece away (close-out): its own entry, and combo-awareness's card-details key.
   NEAR_COMBOS_ENABLED: () => true,
   // The strategy focus ended on exactly when the Analysis tab is, where its ring mounts.

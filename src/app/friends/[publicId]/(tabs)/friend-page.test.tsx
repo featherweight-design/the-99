@@ -86,6 +86,8 @@ describe("a friend's page group", () => {
   beforeEach(() => {
     m.loadFriendSpareList.mockResolvedValue({ pods: ["Thursday pod"], lines: [SPARE, { ...SPARE, oracleId: "00000000-0000-4000-8000-0000000000c2", name: "Sol Ring", spare: 1, onWishlist: false }], wishlist: true });
     m.loadFriendDecks.mockResolvedValue([DECK]);
+    // The Spares tab always offers Ask now (SPARE_REQUESTS_ENABLED is retired), so it prices its cards.
+    m.loadPrices.mockResolvedValue({ prices: new Map(), newestAsOf: null });
   });
 
   it.each([
@@ -344,7 +346,7 @@ describe("FriendHead and the wishlist tab", () => {
   });
 
   it("opens an offered card from a ?spare= written in upper case, never calling it gone", async () => {
-    m.requestSwitchEnv.mockResolvedValue({ SOCIAL_FRIENDS_ENABLED: "true", SPARE_REQUESTS_ENABLED: "true" });
+    m.requestSwitchEnv.mockResolvedValue({ SOCIAL_FRIENDS_ENABLED: "true" });
     m.loadPrices.mockResolvedValue({ prices: new Map(), newestAsOf: null });
     m.catalogCardName.mockReset();
     const page = await FriendSparesPage({ params: params(), searchParams: Promise.resolve({ spare: SPARE.oracleId.toUpperCase() }) });

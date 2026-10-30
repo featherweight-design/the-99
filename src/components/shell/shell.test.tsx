@@ -36,6 +36,8 @@ vi.mock("./nav", () => ({
 const feed = vi.hoisted(() => ({ unseenFriendsCount: vi.fn(async (..._a: unknown[]) => 3), noticeTradeMatches: vi.fn(async (..._a: unknown[]) => 0), after: vi.fn((_fn: () => unknown) => {}) }));
 vi.mock("../../lib/feed/read", () => ({ unseenFriendsCount: feed.unseenFriendsCount, unseenCount: async () => 0 }));
 vi.mock("../../lib/social/trade-match", () => ({ noticeTradeMatches: feed.noticeTradeMatches }));
+// Spare requests follow friends (their own switch is retired), so the waiting-asks half reads with Friends on: none here.
+vi.mock("../../lib/social/spare-requests", () => ({ waitingAsksCount: async () => 0 }));
 vi.mock("next/server", async (importOriginal) => ({ ...(await importOriginal<typeof import("next/server")>()), after: feed.after }));
 
 const Shell = (await import("./shell")).default;

@@ -32,7 +32,7 @@ const A = `probe-sr-a-${run}`; // the asker
 const H1 = `probe-sr-h1-${run}`; // a holder
 const H2 = `probe-sr-h2-${run}`; // another holder
 const H3 = `probe-sr-h3-${run}`; // a holder who never touches Settings (G4)
-const ENV = { ...process.env, SOCIAL_FRIENDS_ENABLED: "true", SPARE_REQUESTS_ENABLED: "true" } as NodeJS.ProcessEnv;
+const ENV = { ...process.env, SOCIAL_FRIENDS_ENABLED: "true" } as NodeJS.ProcessEnv;
 
 let failed = 0;
 const check = (label: string, ok: boolean, detail = "") => {
@@ -110,7 +110,7 @@ async function main() {
     check("Hope turning the default-on kind off writes", await prefs.setFeedKinds(H2, []));
 
     console.log("\n1. who may ask");
-    check("switch off: off", (await sr.askForSpare(A, h1.publicId, X, { ...ENV, SPARE_REQUESTS_ENABLED: "" })).ok === false);
+    check("switch off: off", (await sr.askForSpare(A, h1.publicId, X, { ...ENV, SOCIAL_FRIENDS_ENABLED: "" })).ok === false);
     check("friends off: off", ((r) => !r.ok && r.reason === "off")(await sr.askForSpare(A, h1.publicId, X, { ...ENV, SOCIAL_FRIENDS_ENABLED: "" })));
     check("a stranger's public id: not-friend", ((r) => !r.ok && r.reason === "not-friend")(await sr.askForSpare(A, randomUUID(), X, ENV)));
     check("a card the friend holds no spare of: not-spare", ((r) => !r.ok && r.reason === "not-spare")(await sr.askForSpare(A, h1.publicId, Y, ENV)));

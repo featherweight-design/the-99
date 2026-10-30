@@ -3,7 +3,7 @@
 // switch and the friendship itself: a tab press reuses the mounted layout, which does not run again.
 import { notFound } from "next/navigation";
 import { requireUserId } from "../../../../lib/auth";
-import { socialFriendsEnabled, spareRequestsEnabled } from "../../../../lib/social/flag";
+import { socialFriendsEnabled } from "../../../../lib/social/flag";
 import { requestSwitchEnv } from "../../../../lib/switches/request";
 import { wishlistEnabled } from "../../../../lib/wishlist/flag";
 import { loadFriend } from "../../../../lib/social/access";
@@ -12,9 +12,8 @@ import { catalogCardName, friendSpareList } from "../../../../lib/social/friend-
 import { loadPrices } from "../../../../lib/decks/price-query";
 import { FriendSparesTab } from "../../../../components/social/friend-spares-tab";
 
-// With spare requests on (signature card calls 8 and 9), a tile opens the card's modal with Ask, and `?spare={oracleId}`
-// opens it on landing; a spare gone since draws a toast naming the card, its name read from the catalog. Off, `?spare=`
-// is ignored and the tab is as shipped.
+// Spare requests (signature card calls 8 and 9): a tile opens the card's modal with Ask, and `?spare={oracleId}` opens it
+// on landing; a spare gone since draws a toast naming the card, its name read from the catalog.
 export default async function FriendSparesPage({
   params,
   searchParams,
@@ -29,7 +28,6 @@ export default async function FriendSparesPage({
   const { publicId } = await params;
   const [friend, spares] = await Promise.all([loadFriend(userId, publicId), friendSpareList(userId, publicId, wishlistEnabled(env))]);
   if (!friend) notFound();
-  if (!spareRequestsEnabled(env)) return <FriendSparesTab name={friend.displayName} spares={spares} />;
   const raw = (await searchParams)?.spare;
   // Lowercased: the catalog's ids are, and both lookups below compare as strings.
   const spare = isUuid(raw) ? raw.toLowerCase() : null;

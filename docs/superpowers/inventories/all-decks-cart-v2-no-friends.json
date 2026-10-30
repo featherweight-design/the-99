@@ -1,7 +1,7 @@
 {
   "feature": "Shopping for all decks v2, the no-friends half (companion to all-decks-cart-v2.json)",
   "clearAbout": true,
-  "note": "Empty-One C, By friend for a reader with no friends: the server decides it from the friend count, so it is reachable only on an account with no friends, where every By friend panel row of all-decks-cart-v2.json cannot be. Run the two inventories on the account each one needs (on local-dev, which holds no friend_links, this one). Needs a server with ALL_DECKS_CART_ENABLED=true, SOCIAL_FRIENDS_ENABLED=true and SPARE_REQUESTS_ENABLED=true, and decks missing cards.",
+  "note": "Empty-One C, By friend for a reader with no friends: the server decides it from the friend count, so it is reachable only on an account with no friends, where every By friend panel row of all-decks-cart-v2.json cannot be. Run the two inventories on the account each one needs (on local-dev, which holds no friend_links, this one). Needs a server with ALL_DECKS_CART_ENABLED=true and SOCIAL_FRIENDS_ENABLED=true, and decks missing cards.",
   "shares": {
     "binding": "EmptyState",
     "module": "src/components/ui/empty-state.tsx",

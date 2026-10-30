@@ -142,7 +142,7 @@ type CartViewProps = {
   buyEnabled?: boolean;
   /** `SOCIAL_FRIENDS_ENABLED` for the reader: friends' spares on the cart's lines (Social R2 PR B, S5). */
   socialFriends?: boolean;
-  /** `SPARE_REQUESTS_ENABLED` for the reader: the lines' spares modal offers Ask (from the cart, for no one deck). */
+  /** `SOCIAL_FRIENDS_ENABLED` for the reader: the lines' spares modal offers Ask (from the cart, for no one deck). */
   spareAsks?: boolean;
   /** The reader has a friend (`hasFriend`): By friend with nothing to draw says "No friends yet" without one (Empty-One C). */
   hasFriends?: boolean;
