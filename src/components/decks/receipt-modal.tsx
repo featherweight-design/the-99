@@ -145,7 +145,7 @@ export function ModalChrome({
   aside?: React.ReactNode;
   closeLabel: string;
   onClose: () => void;
-  width: 480 | 560 | 600 | 640 | 700 | 760 | 900;
+  width: 480 | 520 | 560 | 600 | 640 | 700 | 760 | 900;
   /**
    * The phone sheet sizes to its rows, up to the usual 52px from the top, with the 18px top radius
    * (combos close, `The-List.dc.html` `.bs`), rather than standing at that full height. Unset, the
@@ -479,6 +479,7 @@ export type SheetBack = {
 // Literal class strings, so Tailwind sees each one.
 const WIDTH_CLASS = {
   480: "md:w-[480px] ",
+  520: "md:w-[520px] ",
   560: "md:w-[560px] ",
   600: "md:w-[600px] ",
   640: "md:w-[640px] ",

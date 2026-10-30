@@ -4,11 +4,14 @@
 // rather than a layout of its own, sized as the 404 page is.
 
 import * as Sentry from "@sentry/nextjs";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { EmptyState, EmptyStateBody, EmptyStateTitle } from "../ui/empty-state";
 import { GhostButton, PrimaryButton } from "../ui/button";
 import { shellCopy } from "../../lib/copy/shell";
+import { reportCopy } from "../../lib/copy/report";
+import { useReportable } from "../feedback/feedback-provider";
+import { ReportForm } from "../feedback/report-form";
 
 const copy = shellCopy.errorBoundary;
 const BUTTON = "text-[13px] md:text-[14px] px-[22px] py-[12px]";
@@ -31,11 +34,15 @@ export function ErrorNotice({
   error: Error & { digest?: string };
   retry: () => void;
 }) {
+  // The event id of a browser-side throw, kept for "Tell us what happened" (a server error carries a digest instead).
+  const eventId = useRef<string | null>(null);
+  const reportable = useReportable();
+  const [reporting, setReporting] = useState<{ eventId: string | null } | null>(null);
   useEffect(() => {
     logBoundaryError(boundary, error.digest);
     // A server error carries a digest and was reported where it happened (`onRequestError`); only a
     // browser-side throw is new here.
-    if (!error.digest) Sentry.captureException(error);
+    if (!error.digest) eventId.current = Sentry.captureException(error) ?? null;
   }, [boundary, error]);
 
   return (
@@ -52,6 +59,21 @@ export function ErrorNotice({
           {copy.home}
         </GhostButton>
       </div>
+      {/* Flyer trial PR 5: a third, quiet line for a signed-in reader with Report a problem on (the shell's provider). */}
+      {reportable && (
+        <>
+          <button
+            type="button"
+            onClick={() => setReporting({ eventId: eventId.current })}
+            className="mt-[18px] flex min-h-[44px] cursor-pointer items-center border-0 bg-transparent text-[13.5px] font-medium text-[color:var(--accent-text)] hover:underline"
+          >
+            {reportCopy.errorLink}
+          </button>
+          {reporting && (
+            <ReportForm source="error" digest={error.digest ?? null} eventId={reporting.eventId} onClose={() => setReporting(null)} />
+          )}
+        </>
+      )}
     </EmptyState>
   );
 }

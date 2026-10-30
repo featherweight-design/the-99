@@ -6,6 +6,7 @@
 
 import { requireUserId } from "../../lib/auth";
 import { aboutSeen } from "../../lib/about/read";
+import { feedbackEnabled } from "../../lib/feedback/flag";
 import { howItWorksEnabled } from "../../lib/about/how-it-works-flag";
 import { referenceScreens } from "../../lib/about/reference";
 import { displayedId, switchedIds, unseenEntries, visibleEntries } from "../../lib/about/visible";
@@ -75,7 +76,7 @@ export default async function AboutRoute({
       <div className="flex flex-col pb-[30px] md:pb-[64px]">
         {/* The tiles are captures chosen in `theme`: a theme picked from the account menu asks the server again. */}
         <ThemeRefresh drawnIn={theme} />
-        <AboutIndex tiles={indexTiles(env, theme)} />
+        <AboutIndex tiles={indexTiles(env, theme)} reportable={feedbackEnabled(env)} />
         {/* Launch A2: the same quiet line /credits and /sign-up carry. */}
         <LegalLinks className="mt-[32px] px-[16px] md:px-[30px]" />
       </div>

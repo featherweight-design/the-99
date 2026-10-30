@@ -13,6 +13,7 @@ import { aboutMenuCopy } from "../../../lib/copy/about";
 import { TOUR_HREF, tourAgainCopy } from "../../../lib/copy/discovery";
 import { PendingReporter } from "../../shell/pending-reporter";
 import { TOUCH_HIT } from "../../ui/touch-hit";
+import { ReportRow } from "../../feedback/report-row";
 
 /** A tile's picture: a capture and its pixel size. */
 export type IndexShot = { src: string; w: number; h: number };
@@ -49,7 +50,7 @@ function Picture({ shot, top, className }: { shot: IndexShot | null; top: string
   );
 }
 
-export function AboutIndex({ tiles }: { tiles: readonly IndexTile[] }) {
+export function AboutIndex({ tiles, reportable = false }: { tiles: readonly IndexTile[]; reportable?: boolean }) {
   return (
     <div className="flex flex-col md:px-[30px]">
       <div className="w-full max-w-[1180px]">
@@ -96,6 +97,8 @@ export function AboutIndex({ tiles }: { tiles: readonly IndexTile[] }) {
             </li>
           ))}
         </ul>
+        {/* Report a problem (flyer trial PR 5): its own switch, under the six pages and above Terms and Privacy. */}
+        {reportable && <ReportRow />}
       </div>
     </div>
   );
