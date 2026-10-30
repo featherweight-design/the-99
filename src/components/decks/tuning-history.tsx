@@ -70,7 +70,6 @@ export function v2RunningWords(phase: "additions" | "cuts"): string {
   return phase === "cuts" ? v2Copy.choosingCuts : tuningHubCopy.runningWords.suggested;
 }
 
-/** `$2`, or `$2.50`: the cap as History A quotes it ("found under $2"). */
 /** History A: an ok run leads `3 in, 3 out`; a short or refunded one says `N asked`, and names the cap only there, where it
  *  explains the count. */
 function v2Summary(asked: number, s: Extract<HistorySummary, { kind: "suggestedV2" }>, short: boolean): string {
