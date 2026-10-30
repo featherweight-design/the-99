@@ -9,7 +9,7 @@
 import { cookies } from "next/headers";
 import { confirmFlyerCode, findFlyerCode, handOverFlyer, startFlyerClaim, type ConfirmResult, type HandOverResult, type StartResult } from "../../lib/flyer/claim";
 import { flyerTrialEnabled } from "../../lib/flyer/flag";
-import { flyerCookieOptions, FLYER_CLAIM_COOKIE } from "../../lib/flyer/cookie";
+import { flyerCookieName, flyerCookieOptions } from "../../lib/flyer/cookie";
 import { atFloor } from "../../lib/invites/floor";
 import { observeHit } from "../../lib/rate/observe";
 import { resolveSwitchEnv } from "../../lib/switches/snapshot";
@@ -34,9 +34,9 @@ export async function startFlyerClaimAction(code: unknown, email: unknown): Prom
   await observeHit(creator, "flyer-claim");
   const jar = await cookies();
   // The same floor as the invite path, so the answer's speed tells nothing about the address.
-  const result = await atFloor(() => startFlyerClaim(code, email, jar.get(FLYER_CLAIM_COOKIE)?.value ?? null));
+  const result = await atFloor(() => startFlyerClaim(code, email, jar.get(flyerCookieName(code))?.value ?? null));
   if (result.ok) {
-    jar.set(FLYER_CLAIM_COOKIE, result.claimSecret, flyerCookieOptions());
+    jar.set(flyerCookieName(code), result.claimSecret, flyerCookieOptions());
     return { ok: true, mailed: result.mailed };
   }
   return result;
@@ -48,12 +48,12 @@ export async function confirmFlyerCodeAction(code: unknown, typed: unknown): Pro
   if (typeof typed !== "string") return { ok: false, reason: "wrong", triesLeft: 0 };
   await observeHit(creator, "flyer-code");
   const jar = await cookies();
-  return confirmFlyerCode(code, typed, jar.get(FLYER_CLAIM_COOKIE)?.value ?? null);
+  return confirmFlyerCode(code, typed, jar.get(flyerCookieName(code))?.value ?? null);
 }
 
 export async function handOverFlyerAction(code: unknown): Promise<HandOverResult> {
   const creator = await liveCreator(code);
   if (!creator || typeof code !== "string") return ENDED;
   const jar = await cookies();
-  return handOverFlyer(code, jar.get(FLYER_CLAIM_COOKIE)?.value ?? null);
+  return handOverFlyer(code, jar.get(flyerCookieName(code))?.value ?? null);
 }
