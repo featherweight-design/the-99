@@ -162,11 +162,13 @@ describe("aboutDismissal, a switch turned on between the render and the ✕", ()
   const SPARE_ON = env({ SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "true" });
   const SPARE_OFF = env({ SOCIAL_FRIENDS_ENABLED: "true" });
   const reader: SeenState = { version: 16, ids: ["x"] };
+  // Its friend-decks sentence follows SOCIAL_FRIENDS_ENABLED (FRIEND_DECKS_ENABLED retired), so it is drawn in both.
+  const DECKS = sentenceKey(SPARE, "FRIEND_DECKS_ENABLED");
 
   it("a base unit drawn before SOCIAL_WISHLIST_ENABLED turned on does not take its new sentence's key", () => {
     const line = aboutLine(reader, visibleSections(SPARE_OFF), THEME);
     const drawn = line?.kind === "launches" ? line.launches.find((l) => l.key === SPARE) : undefined;
-    expect(drawn?.ack).toEqual([SPARE]);
+    expect(drawn?.ack).toEqual([SPARE, DECKS]);
     const now = visibleSections(SPARE_ON);
     const write = aboutDismissal(drawn!.ack, reader, now)!;
     expect(write.ids).toContain(SPARE);
@@ -180,7 +182,7 @@ describe("aboutDismissal, a switch turned on between the render and the ✕", ()
     const now = visibleSections(SPARE_ON);
     const line = aboutLine(reader, now, THEME);
     const drawn = line?.kind === "launches" ? line.launches.find((l) => l.key === SPARE) : undefined;
-    expect(drawn?.ack).toEqual([SPARE, sentenceKey(SPARE, "SOCIAL_WISHLIST_ENABLED")]);
+    expect([...drawn!.ack].sort()).toEqual([SPARE, sentenceKey(SPARE, "SOCIAL_WISHLIST_ENABLED"), DECKS].sort());
     expect(aboutDismissal(drawn!.ack, reader, now)!.ids).toContain(sentenceKey(SPARE, "SOCIAL_WISHLIST_ENABLED"));
   });
 

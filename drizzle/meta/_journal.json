@@ -1408,6 +1408,13 @@
       "when": 1793340429754,
       "tag": "0200_retire_friend_decks_commanders_place_home_feed_switches",
       "breakpoints": true
+    },
+    {
+      "idx": 201,
+      "version": "7",
+      "when": 1793344279952,
+      "tag": "0201_retire_signature_card_rule_zero_spare_requests_switches",
+      "breakpoints": true
     }
   ]
 }
