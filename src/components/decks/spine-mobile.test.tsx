@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 // The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
 await (await import("../cards/card-detail-provider")).warmCardModal();
-import { SpineMobile } from "./spine-mobile";
+import { PHONE_DESCRIPTION_MAX_HEIGHT, SpineMobile } from "./spine-mobile";
 import { deckHeaderCopy, renameCopy } from "../../lib/copy/decks-builder";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
@@ -162,7 +162,9 @@ describe("SpineMobile", () => {
     const field = screen.getByLabelText(deckDescriptionCopy.description.fieldAria) as HTMLTextAreaElement;
     // Opened on the words it already had: the mount alone must size it.
     expect(field.style.height).toBe("80px");
-    expect(field.className.split(/\s+/)).toContain("overflow-hidden");
+    // Capped so the editor pinned to the 288 band's foot cannot clip the name off its top; past the cap it scrolls.
+    expect(field.style.maxHeight).toBe(`${PHONE_DESCRIPTION_MAX_HEIGHT}px`);
+    expect(field.className.split(/\s+/)).toContain("overflow-y-auto");
     tall.mockRestore();
   });
 

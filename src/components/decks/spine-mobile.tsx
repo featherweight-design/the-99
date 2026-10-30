@@ -56,6 +56,9 @@ const BLOCK_INSET_X = 18;
     keep the glyph inside the block, and the heading reserves the same figure. */
 const GLYPH = 14;
 
+/** The phone header description's grow cap, in px: 3.5 lines at 16px / 1.45 (81) plus its 10px of padding (border-box). */
+export const PHONE_DESCRIPTION_MAX_HEIGHT = 91;
+
 export function SpineMobile({
   deck,
   counts,
@@ -367,9 +370,14 @@ export function SpineMobile({
                   aria-label={deckDescriptionCopy.description.fieldAria}
                   // 16px, not 13.5: iOS Safari zooms the viewport on focusing an input under 16px
                   // (pre-open review) — the retired single-field editor used 16px on a phone too.
-                  className="w-full resize-none overflow-hidden bg-transparent text-left font-sans outline-none"
+                  // Grows with its words up to three and a half lines, then scrolls inside the frame: the band stays
+                  // 288 tall with the editor pinned to its foot (Tag-Places d, 390), so a block taller than the band
+                  // would clip the name field off its top. Name 45 + gaps 16 + frame border and foot 35 + Save/Cancel 44
+                  // + inset 12 + an error line 24 leave room for this cap with the band's top clear.
+                  className="w-full resize-none overflow-y-auto bg-transparent text-left font-sans outline-none"
                   style={{
                     boxSizing: "border-box",
+                    maxHeight: PHONE_DESCRIPTION_MAX_HEIGHT,
                     padding: "8px 12px 2px",
                     fontSize: 16,
                     lineHeight: 1.45,

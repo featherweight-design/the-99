@@ -62,6 +62,7 @@ import { CardTagList } from "../cards/card-tag-picker";
 import { searchDescriptionCards } from "../cards/description-tag-search";
 import { TagHelpRow } from "../cards/tag-help-row";
 import { TaggedBox } from "../cards/tagged-box";
+import { useAutoGrow } from "../../lib/ui/use-auto-grow";
 import { useTaggedField } from "../cards/use-tagged-field";
 import { CreditsText } from "../ui/credits-text";
 import { freeCount, hasCredit } from "../../lib/model/allowance-rule";
@@ -1586,6 +1587,8 @@ function DescribingInPlace({
   const { field, picker } = useTaggedField({ value, onChange, search: searchDescriptionCards, max: descCopy.maxLength, maxTags: NOTES_TAGS_MAX, field: ref, disabled: saving });
   const n = countCharacters(plainText(value));
   const over = n > descCopy.maxLength;
+  // Grows with its words, as the empty state's description field does (Tag-Places a): two rows is a floor.
+  useAutoGrow(ref, field.text);
   return (
     <div className="mt-[14px] flex flex-col gap-[6px]">
       <TagHelpRow htmlFor="tuning-describing-field" label={descCopy.label} infoId="tuning-describing-field-info" help={deckDescriptionCopy.notes.tagHelp} />
@@ -1611,7 +1614,7 @@ function DescribingInPlace({
           readOnly={saving}
           rows={2}
           placeholder={descCopy.placeholder}
-          className="w-full resize-none bg-transparent font-sans text-[16px] leading-[1.5] outline-none [@media(pointer:fine)]:md:text-[13.5px]"
+          className="w-full resize-none overflow-hidden bg-transparent font-sans text-[16px] leading-[1.5] outline-none [@media(pointer:fine)]:md:text-[13.5px]"
           style={{ padding: "10px 12px 4px", color: "var(--fg)", minHeight: 72 }}
         />
         </TaggedBox>
