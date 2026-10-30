@@ -48,13 +48,15 @@ export function rowInvites(input: {
   ids: readonly string[];
   balances: ReadonlyMap<string, number>;
   open: readonly OpenRow[];
+  /** Claims holding on flyer codes: each holds one of its code creator's invites, as a waiting reservation does. */
+  flyer?: readonly OpenRow[];
   edges: readonly Edge[];
   accounts: readonly Account[];
   now: Date;
 }): Map<string, RowInvites> {
   const { userName } = accountNames(input.accounts, "");
   const openOf = new Map<string, OpenRow[]>();
-  for (const r of input.open) openOf.set(r.userId, [...(openOf.get(r.userId) ?? []), r]);
+  for (const r of [...input.open, ...(input.flyer ?? [])]) openOf.set(r.userId, [...(openOf.get(r.userId) ?? []), r]);
   return new Map(
     input.ids.map((id) => {
       const c = countFor(input.balances.get(id), openOf.get(id) ?? [], input.now);
@@ -109,6 +111,8 @@ export function accountInvites(input: {
   userId: string;
   held: number | undefined;
   open: readonly ReservationRow[];
+  /** Claims holding on this account's flyer codes: counted as waiting invites, never listed as revocable rows. */
+  flyer?: readonly OpenRow[];
   edges: readonly Edge[];
   events: readonly InviteEvent[];
   holdsUntil: readonly Date[];
@@ -125,7 +129,7 @@ export function accountInvites(input: {
     return id === input.ownerId || !a ? null : maskInitials(a.name, a.named);
   };
   const name = userName(input.userId);
-  const count = countFor(input.held, input.open, input.now);
+  const count = countFor(input.held, [...input.open, ...(input.flyer ?? [])], input.now);
   const made = input.edges.filter((e) => e.inviter === input.userId).sort((a, b) => a.joinedAt.getTime() - b.joinedAt.getTime());
   const waiting = input.open
     .filter((r) => r.state !== "qr_open" && holdsInvite(r, input.now))

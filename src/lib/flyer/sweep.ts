@@ -29,30 +29,33 @@ export async function sweepFlyerClaims(deps: { now?: Date; clerk?: ClerkInvites 
     .limit(FLYER_SWEEP_BATCH);
   const report: FlyerSweepReport = { released: 0, kept: 0 };
   for (const row of lapsed) {
-    try {
-      const byId = row.clerkInvitationId !== null ? await clerk.revoke(row.clerkInvitationId) : true;
-      // A hand-over whose answer was lost stored no id: end by address and claim id.
-      const byAddress = row.email !== null ? await clerk.revokeFor(row.email, row.id) : true;
-      if (!byId || !byAddress) {
-        report.kept += 1;
-        continue;
+    // The claim's Clerk work is one transaction's at a time (the hand-over holds the same lock across its calls): a claim
+    // being handed over right now is kept for the next run, so a ticket made while the sweep looked is never orphaned.
+    const done = await db.transaction(async (tx) => {
+      const got = await tx.execute(sql`select pg_try_advisory_xact_lock(hashtext(${`flyer-handover:${row.id}`})) as ok`);
+      if (!(got.rows[0] as { ok: boolean }).ok) return null;
+      // Read under the lock: a hand-over that finished first has stored its ticket id, which this run then revokes.
+      const [cur] = await tx.select({ email: flyerClaims.email, clerkInvitationId: flyerClaims.clerkInvitationId, state: flyerClaims.state, holdsUntil: flyerClaims.holdsUntil })
+        .from(flyerClaims).where(eq(flyerClaims.id, row.id));
+      if (!cur) return 0;
+      const lapsedNow = (["open", "proven"].includes(cur.state) && cur.holdsUntil.getTime() <= now.getTime()) || (cur.state === "released" && cur.clerkInvitationId !== null);
+      if (!lapsedNow) return 0;
+      try {
+        const byId = cur.clerkInvitationId !== null ? await clerk.revoke(cur.clerkInvitationId) : true;
+        // A hand-over whose answer was lost stored no id: end by address and claim id.
+        const byAddress = cur.email !== null ? await clerk.revokeFor(cur.email, row.id) : true;
+        if (!byId || !byAddress) return null;
+      } catch {
+        return null;
       }
-    } catch {
-      report.kept += 1;
-      continue;
-    }
-    // Under the same condition it was read by: a claim proven or spent while Clerk was asked is not released.
-    const done = await db.update(flyerClaims)
-      .set({ state: "released", email: null, clerkInvitationId: null, codeHmac: null, codeExpiresAt: null, resolvedAt: now })
-      .where(and(
-        eq(flyerClaims.id, row.id),
-        // Under the invitation id as it was READ: a hand-over that stored a late ticket meanwhile has moved it, and a
-        // changed id survives for the next run to revoke.
-        sql`${flyerClaims.clerkInvitationId} is not distinct from ${row.clerkInvitationId}`,
-        or(and(inArray(flyerClaims.state, ["open", "proven"]), lte(flyerClaims.holdsUntil, now)), eq(flyerClaims.state, "released")),
-      ))
-      .returning({ id: flyerClaims.id });
-    report.released += done.length;
+      const updated = await tx.update(flyerClaims)
+        .set({ state: "released", email: null, clerkInvitationId: null, codeHmac: null, codeExpiresAt: null, resolvedAt: now })
+        .where(eq(flyerClaims.id, row.id))
+        .returning({ id: flyerClaims.id });
+      return updated.length;
+    });
+    if (done === null) report.kept += 1;
+    else report.released += done;
   }
   return report;
 }

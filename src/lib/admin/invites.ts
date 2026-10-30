@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
+import { flyerHoldRow } from "../flyer/rules";
 import type { InviteKind, ReservationState } from "../invites/rules";
 import type { Edge, InviteEvent, OpenRow, ReservationRow } from "./invites-rule";
 
@@ -18,8 +19,11 @@ type RawEdge = { inviter: string | null; invitee: string | null; kind: InviteKin
 
 const toOpen = (r: RawOpen): OpenRow => ({ ...r, qrExpiresAt: utc(r.qrExpiresAt), holdsUntil: utc(r.holdsUntil) });
 const toEdge = (e: RawEdge): Edge => ({ ...e, joinedAt: utc(e.joinedAt)! });
+// A claim holding on a flyer code holds one of the code creator's invites, so the count reads it as waiting (`flyerHoldRow`).
+type RawFlyer = { userId: string; holdsUntil: string };
+const toFlyer = (f: RawFlyer): OpenRow => ({ ...flyerHoldRow(utc(f.holdsUntil)!), userId: f.userId });
 
-export type EveryInvite = { balances: Map<string, number>; open: ReservationRow[]; edges: Edge[] };
+export type EveryInvite = { balances: Map<string, number>; open: ReservationRow[]; flyer: OpenRow[]; edges: Edge[] };
 
 /**
  * M1 and M4: every account's stock, open rows (with the address, which only the admin sees) and every edge, a
@@ -29,6 +33,7 @@ export async function readEveryInvite(): Promise<EveryInvite> {
   const { rows } = await db.execute<{
     balances: { userId: string; held: number }[];
     open: (RawOpen & { id: string; email: string | null })[];
+    flyer: RawFlyer[];
     edges: RawEdge[];
   }>(sql`select
     coalesce((select json_agg(json_build_object('userId', b.user_id, 'held', b.held)) from invite_balances b), '[]'::json) as balances,
@@ -36,6 +41,8 @@ export async function readEveryInvite(): Promise<EveryInvite> {
       'id', r.id, 'userId', r.user_id, 'kind', r.kind, 'state', r.state, 'qrExpiresAt', r.qr_expires_at,
       'holdsUntil', r.holds_until, 'email', r.email
     )) from invite_reservations r where r.state in ('qr_open', 'claimed', 'reserved')), '[]'::json) as open,
+    coalesce((select json_agg(json_build_object('userId', c.created_by, 'holdsUntil', f.holds_until))
+      from flyer_claims f join flyer_codes c on c.id = f.code_id where f.state in ('open', 'proven')), '[]'::json) as flyer,
     coalesce((select json_agg(json_build_object(
       'inviter', e.inviter_user_id, 'invitee', e.invitee_user_id, 'kind', e.kind, 'joinedAt', e.joined_at
     )) from invite_edges e), '[]'::json) as edges`);
@@ -43,6 +50,7 @@ export async function readEveryInvite(): Promise<EveryInvite> {
   return {
     balances: new Map(row.balances.map((b) => [b.userId, b.held])),
     open: row.open.map((r) => ({ ...toOpen(r), id: r.id, email: r.email })),
+    flyer: row.flyer.map(toFlyer),
     edges: row.edges.map(toEdge),
   };
 }
@@ -50,6 +58,7 @@ export async function readEveryInvite(): Promise<EveryInvite> {
 export type OneAccountInvites = {
   held: number | undefined;
   open: ReservationRow[];
+  flyer: OpenRow[];
   edges: Edge[];
   events: InviteEvent[];
   holdsUntil: Date[];
@@ -64,6 +73,7 @@ export async function readAccountInvites(userId: string, limit: number): Promise
   const { rows } = await db.execute<{
     held: number | null;
     open: (RawOpen & { id: string; email: string | null })[];
+    flyer: RawFlyer[];
     edges: RawEdge[];
     events: (Omit<InviteEvent, "at"> & { at: string })[];
     sent: string[];
@@ -74,6 +84,9 @@ export async function readAccountInvites(userId: string, limit: number): Promise
       'holdsUntil', r.holds_until, 'email', r.email
     )) from invite_reservations r
       where r.user_id = ${userId} and r.state in ('qr_open', 'claimed', 'reserved')), '[]'::json) as open,
+    coalesce((select json_agg(json_build_object('userId', c.created_by, 'holdsUntil', f.holds_until))
+      from flyer_claims f join flyer_codes c on c.id = f.code_id
+      where c.created_by = ${userId} and f.state in ('open', 'proven')), '[]'::json) as flyer,
     coalesce((select json_agg(json_build_object(
       'inviter', e.inviter_user_id, 'invitee', e.invitee_user_id, 'kind', e.kind, 'joinedAt', e.joined_at
     ) order by e.joined_at desc) from (
@@ -93,6 +106,7 @@ export async function readAccountInvites(userId: string, limit: number): Promise
   return {
     held: row.held ?? undefined,
     open: row.open.map((r) => ({ ...toOpen(r), id: r.id, email: r.email })),
+    flyer: row.flyer.map(toFlyer),
     edges: row.edges.map(toEdge),
     events: row.events.map((e) => ({ ...e, at: utc(e.at)! })),
     holdsUntil: row.sent.map((t) => utc(t)!),
