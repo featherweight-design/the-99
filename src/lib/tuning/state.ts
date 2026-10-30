@@ -187,6 +187,9 @@ export type V2Ask = {
   /** `low`: Keep on a deck read as a range, the range's bottom. */
   bracket: { choice: "keep" | "down" | "up"; target: number; low?: number } | null;
   restrictions: { capCents: number | null; sets: readonly string[]; ownedOnly: boolean; otherDecks?: boolean } | null;
+  /** What the run's own `model_calls` row holds or charged (`runUnits`): 1, or 2 for a run of more than 10 changes once 2
+   *  credits applied. The receipts and refund lines say this, never the current price of `requestedCount`. */
+  units: number;
 };
 
 export type TuningLive = {

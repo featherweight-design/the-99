@@ -7,7 +7,7 @@ import type { CutCite } from "./cuts-schema";
 import type { ManaHelp } from "./mana-help";
 import { isManaCountSummary, type ManaCountSummary } from "./mana-view";
 import { reapCutoff } from "./reaper";
-import { unitsFor } from "./v2/charge";
+import type { RunCharge } from "./run-charge";
 import type { ValidationReport } from "./validate";
 
 /** A FREE tool pass, recorded once per tool per version of the list (`deck_tool_counts`).
@@ -30,15 +30,15 @@ export type ToolCountSummary = CutsCountSummary | ManaCountSummary | ManaHelpSum
 
 /** The filter chips' tools, and a row's tool. */
 export type HistoryTool = "suggested" | "mana" | "cuts";
-/** `refunded`: a Suggested changes v2 run that came back short on its own and gave its credit back (History A, struck).
- *  `credit2`: a v2 run of more than 10 changes, which cost 2 credits (`unitsFor`). */
+/** `refunded`: a Suggested changes run whose credits came back, whatever its outcome (History A, struck).
+ *  `credit2`: a run charged 2 credits (a v2 run of more than 10 changes, once 2 credits applied). */
 export type HistoryTier = "free" | "credit" | "credit2" | "deeper" | "refunded";
 
-/** A paid Suggested changes run's tier: refunded, else what it cost. `count` is a v2 run's REQUESTED count (null for v10,
- *  which always cost 1). */
-export function suggestedTier(count: number | null, refunded: boolean): HistoryTier {
-  if (refunded) return "refunded";
-  return count !== null && unitsFor(count) === 2 ? "credit2" : "credit";
+/** A paid Suggested changes run's tier, from what its own `model_calls` row CHARGED (`run-charge.ts`), never the current
+ *  price applied to its count: refunded, else its units. A run still reserved reads what it holds. */
+export function suggestedTier(charge: RunCharge): HistoryTier {
+  if (charge.status === "refunded") return "refunded";
+  return charge.units === 2 ? "credit2" : "credit";
 }
 /** `short`: a Suggested changes v2 run that finished with a list under the count it was asked for (Short-Run). */
 export type HistoryOutcome = "ok" | "short" | "refused" | "failed" | "stopped" | "running";
@@ -112,6 +112,8 @@ export type RunRecord = {
   askedOver: number | null;
   /** A Suggested changes v2 run (`requested_count` set): its own reaper window. Absent reads as v10's. */
   v2?: boolean;
+  /** What the run's own `model_calls` row charged (`runUnits`, `runChargeStatus`). */
+  charge: RunCharge;
   /** A v2 run's ask and what its report says (`v2RunFacts`). Absent on a v10 run. */
   ask?: { request: string | null; count: number } & V2RunFacts;
   items: { total: number; adds: number; cuts: number; acceptedAdds: number; acceptedCuts: number; accepted: number; dismissed: number };
@@ -174,9 +176,8 @@ export function shapeRun(r: RunRecord, now: Date): HistoryRow {
   return {
     id: `run:${r.id}`,
     tool: suggested ? "suggested" : "cuts",
-    // A finished v2 run that gave its credit back says so in its tier (History A); a failed one says it in its summary.
-    // A v2 run's cost follows the count it asked for (2 credits over 10 changes).
-    tier: !suggested ? "deeper" : suggestedTier(ask?.count ?? null, !!ask?.refunded && (outcome === "ok" || outcome === "short")),
+    // What the run's unit charged: refunded (any outcome), else 1 or 2 credits (History A).
+    tier: !suggested ? "deeper" : suggestedTier(r.charge),
     outcome,
     at: r.createdAt.toISOString(),
     summary,

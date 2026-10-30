@@ -61,7 +61,7 @@ export function summaryText(row: Pick<HistoryRow, "tool" | "tier" | "outcome" | 
   if (row.outcome === "running") return s.running[row.tool];
   if (row.outcome === "failed") return s.failed;
   if (row.outcome === "refused") return s.refused;
-  if (row.outcome === "stopped") return row.tier === "credit" || row.tier === "credit2" ? s.stopped.suggested : s.stopped.deeper;
+  if (row.outcome === "stopped") return row.tool === "suggested" ? s.stopped.suggested : s.stopped.deeper;
   return summaryOf(row.summary);
 }
 
@@ -361,7 +361,8 @@ const OUTCOME_CLASS: Record<HistoryOutcome, string> = {
 const OUTCOME_REFUNDED = "text-[color:var(--fg-muted)] border-[color:var(--border-strong)]";
 
 export function outcomeClass(outcome: HistoryOutcome, tier: HistoryTier): string {
-  return tier === "refunded" ? OUTCOME_REFUNDED : OUTCOME_CLASS[outcome];
+  // Only a finished run's pill goes quiet: a failed or stopped run that gave its credit back keeps its outcome's ink.
+  return tier === "refunded" && (outcome === "ok" || outcome === "short") ? OUTCOME_REFUNDED : OUTCOME_CLASS[outcome];
 }
 
 const TIER_CLASS: Record<HistoryTier, string> = {

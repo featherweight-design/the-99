@@ -2,6 +2,7 @@ import { and, desc, eq, isNotNull, sql } from "drizzle-orm";
 
 import { db } from "../../../db";
 import { deckSuggestionRuns } from "../../../db/schema";
+import { runUnits } from "../run-charge";
 import { creditsCopy } from "../../copy/credits";
 import { deckTuningCopy } from "../../copy/deck-tuning";
 import { lockedCardsCopy } from "../../copy/locked-cards";
@@ -88,6 +89,8 @@ export async function readLastV2Run(deckId: string, userId: string) {
     // Its credit came back (as `v2RunFacts` reads it): the confirm's reopen then says `refunded`, as its History row does.
     refunded: sql<boolean>`coalesce(${deckSuggestionRuns.validationReport} -> 'v2' -> 'charge' ->> 'outcome' = 'refunded'
       or ${deckSuggestionRuns.validationReport} ->> 'refunded' = 'true', false)`,
+    // What its own unit charged (`run-charge.ts`): the confirm's reopen says it, as its History row does.
+    units: runUnits,
   }).from(deckSuggestionRuns)
     .where(and(suggestedRunsOfDeck(deckId), eq(deckSuggestionRuns.userId, userId), eq(deckSuggestionRuns.status, "ok"), isNotNull(deckSuggestionRuns.requestedCount)))
     .orderBy(desc(deckSuggestionRuns.createdAt)).limit(1);
@@ -98,7 +101,7 @@ export type V2Start =
   /** `costs`: refused only because this run costs that many credits (over 10 swaps, `unitsFor`) and no single source
    *  holds them; a one-credit run would start. Absent on every other refusal. */
   | { kind: "refused"; message: string; costs?: number }
-  | { kind: "confirm"; runId: string; at: string; refunded: boolean }
+  | { kind: "confirm"; runId: string; at: string; refunded: boolean; units: number }
   | { kind: "started"; runId: string; work: (revalidate: () => void) => Promise<void> };
 
 export async function startTuningV2(args: {
@@ -120,7 +123,7 @@ export async function startTuningV2(args: {
   if (!wire.confirmed) {
     const last = await readLastV2Run(deckId, userId);
     if (last && last.fingerprint === inputs.fingerprint && last.requestHash === hash) {
-      return { kind: "confirm", runId: last.id, at: last.at.toISOString(), refunded: last.refunded === true };
+      return { kind: "confirm", runId: last.id, at: last.at.toISOString(), refunded: last.refunded === true, units: last.units };
     }
   }
 

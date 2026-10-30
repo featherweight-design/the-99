@@ -13,7 +13,8 @@ const items = (over: Partial<RunRecord["items"]> = {}): RunRecord["items"] => ({
   total: 0, adds: 0, cuts: 0, acceptedAdds: 0, acceptedCuts: 0, accepted: 0, dismissed: 0, ...over,
 });
 const run = (over: Partial<RunRecord> = {}): RunRecord => ({
-  id: U(1), tool: "suggested_changes", status: "ok", errorClass: null, createdAt: ago(60_000), askedOver: null, items: items(), ...over,
+  id: U(1), tool: "suggested_changes", status: "ok", errorClass: null, createdAt: ago(60_000), askedOver: null, items: items(),
+  charge: { units: 1, status: "spent" }, ...over,
 });
 
 describe("runOutcome", () => {
@@ -74,20 +75,26 @@ describe("a Suggested changes v2 run (History A)", () => {
     expect(shapeRun(run({ v2: true, ask: ask({ count: 3 }), items: items({ adds: 3, cuts: 3 }) }), now).outcome).toBe("ok");
   });
 
-  it("says 2 credits for a v2 run of more than 10 changes, 1 for 10 or fewer and for v10, refunded either way", () => {
+  it("says what the run's unit CHARGED, never the current price of its count", () => {
     expect(shapeRun(run({ v2: true, ask: ask({ count: 10 }) }), now).tier).toBe("credit");
-    expect(shapeRun(run({ v2: true, ask: ask({ count: 11 }) }), now).tier).toBe("credit2");
-    expect(shapeRun(run({ v2: true, ask: ask({ count: 20 }), status: "pending", createdAt: ago(5000) }), now).tier).toBe("credit2");
-    expect(shapeRun(run({ v2: true, ask: ask({ count: 20, refunded: true }), items: items({ adds: 8, cuts: 15 }) }), now).tier).toBe("refunded");
+    expect(shapeRun(run({ v2: true, ask: ask({ count: 11 }), charge: { units: 2, status: "spent" } }), now).tier).toBe("credit2");
+    // A run of 11 made before 2 credits applied was charged 1, and says 1.
+    expect(shapeRun(run({ v2: true, ask: ask({ count: 11 }), charge: { units: 1, status: "spent" } }), now).tier).toBe("credit");
+    // In flight: what it holds.
+    expect(shapeRun(run({ v2: true, ask: ask({ count: 20 }), status: "pending", createdAt: ago(5000), charge: { units: 2, status: "reserved" } }), now))
+      .toMatchObject({ outcome: "running", tier: "credit2" });
     expect(shapeRun(run(), now).tier).toBe("credit");
-    expect(suggestedTier(null, false)).toBe("credit");
-    expect(suggestedTier(12, true)).toBe("refunded");
+    expect(suggestedTier({ units: 2, status: "refunded" })).toBe("refunded");
   });
 
-  it("strikes the tier of a finished run that gave its credit back, never of one still running or failed", () => {
-    expect(shapeRun(run({ v2: true, ask: ask({ count: 10, refunded: true }), items: items({ adds: 8, cuts: 15 }) }), now).tier).toBe("refunded");
-    expect(shapeRun(run({ v2: true, ask: ask({ refunded: true }), status: "failed", errorClass: "ungrounded" }), now).tier).toBe("credit");
-    expect(shapeRun(run({ v2: true, ask: ask(), status: "pending", createdAt: ago(5000) }), now)).toMatchObject({ outcome: "running", tier: "credit" });
+  it("strikes the tier of any run whose credits came back, whatever its outcome", () => {
+    const refunded = (units: number) => ({ units, status: "refunded" as const });
+    expect(shapeRun(run({ v2: true, ask: ask({ count: 10, refunded: true }), items: items({ adds: 8, cuts: 15 }), charge: refunded(1) }), now).tier).toBe("refunded");
+    expect(shapeRun(run({ v2: true, ask: ask({ refunded: true }), status: "failed", errorClass: "ungrounded", charge: refunded(1) }), now).tier).toBe("refunded");
+    expect(shapeRun(run({ v2: true, ask: ask({ count: 12 }), status: "cancelled", charge: refunded(2) }), now).tier).toBe("refunded");
+    expect(shapeRun(run({ status: "failed", errorClass: "timeout", charge: refunded(1) }), now).tier).toBe("refunded");
+    expect(shapeRun(run({ v2: true, ask: ask(), status: "pending", createdAt: ago(5000), charge: { units: 1, status: "reserved" } }), now))
+      .toMatchObject({ outcome: "running", tier: "credit" });
   });
 
   it("leaves a v10 run as stored: no ask, its own summary", () => {

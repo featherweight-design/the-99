@@ -32,6 +32,7 @@ import { pastReapCutoff, reapIn } from "../tuning/reap-runs";
 import type { TuningItem, TuningLive, TuningRun, TuningState, V2Ask } from "../tuning/state";
 import { lineFacts } from "../tuning/v2/line-facts";
 import { pastRunMoved } from "../tuning/v2/read-list";
+import { runUnits } from "../tuning/run-charge";
 import type { ValidatedSuggestion, ValidationReport } from "../tuning/validate";
 import { loadJobRows } from "./job-rows";
 import { listDeckGames, type DeckGame } from "./games";
@@ -349,6 +350,8 @@ export function promptVersionFor(requestedCount: number | null): number {
 
 /** A run's own ask columns (spec §8), read beside each run row so You asked needs no second read. */
 const askColumns = {
+  // What the run's own unit holds or charged (`run-charge.ts`): the receipts say it.
+  units: runUnits,
   requestText: deckSuggestionRuns.requestText,
   bracketChoice: deckSuggestionRuns.bracketChoice,
   bracketTarget: deckSuggestionRuns.bracketTarget,
@@ -358,7 +361,7 @@ const askColumns = {
 /** A v2 run's ask as the results' You asked draws it; undefined for a v10 run (no count). */
 export function askOf(row: {
   id: string; requestedCount: number | null; requestText: string | null; bracketChoice: string | null;
-  bracketTarget: number | null; bracketLow?: number | null; validationReport: ValidationReport | null;
+  bracketTarget: number | null; bracketLow?: number | null; validationReport: ValidationReport | null; units: number;
 }): V2Ask | undefined {
   if (row.requestedCount === null) return undefined;
   const choice = row.bracketChoice;
@@ -366,6 +369,7 @@ export function askOf(row: {
   return {
     runId: row.id,
     requestedCount: row.requestedCount,
+    units: row.units,
     request: row.requestText && row.requestText.trim() !== "" ? row.requestText : null,
     bracket: (choice === "keep" || choice === "down" || choice === "up") && row.bracketTarget !== null
       ? { choice, target: row.bracketTarget, ...(row.bracketLow != null ? { low: row.bracketLow } : {}) } : null,

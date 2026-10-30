@@ -355,7 +355,7 @@ describe("TuningPanel with Suggested changes v2 on", () => {
 
 describe("TuningPanel with Suggested changes v2 on: the wait and the results (UI PR 6)", () => {
   const RUN = "33333333-3333-4333-8333-333333333333";
-  const ask = { runId: RUN, requestedCount: 3, request: "More removal.", bracket: { choice: "keep" as const, target: 2 }, restrictions: null };
+  const ask = { runId: RUN, requestedCount: 3, units: 1, request: "More removal.", bracket: { choice: "keep" as const, target: 2 }, restrictions: null };
   const lines = [...[0, 1, 2, 3, 4].map((i) => v2Line(`a${i}`, "add", { position: i })), ...[0, 1, 2, 3, 4].map((i) => v2Line(`c${i}`, "cut", { position: 10 + i }))];
   const pending = (items = lines.slice(0, 2)): TuningState => ({
     ...fresh,

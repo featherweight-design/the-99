@@ -1530,11 +1530,15 @@ export const aboutEntries: readonly AboutEntry[] = [
     keys: [
       'Limits set the most a card can cost, which sets adds come from, and whether they come only from your Collection.',
       'Each run uses a credit.',
+      'Each run uses a credit, or two for more than 10 changes.',
       'Every run is kept in History, under Tuning. Open one and its changes come back, each checked against the deck as it is now.',
       'It aims at the deck’s focus when one is picked.',
     ],
     // History lives in the Tuning hub, which draws only with a second tool on.
     keySwitches: {
+      // A Suggested changes v2 run of more than 10 changes costs 2 (Hugh 2026-10-30): exactly one credit key draws.
+      'Each run uses a credit.': '!SUGGESTED_CHANGES_V2_ENABLED',
+      'Each run uses a credit, or two for more than 10 changes.': 'SUGGESTED_CHANGES_V2_ENABLED',
       'Every run is kept in History, under Tuning. Open one and its changes come back, each checked against the deck as it is now.': 'TUNING_HUB_ENABLED',
       // The focus line follows the strategy ring's switch (strategy focus close-out).
       'It aims at the deck’s focus when one is picked.': 'STRATEGY_FOCUS_ENABLED',
@@ -1625,7 +1629,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     // A Suggested changes v2 run of more than 10 changes costs 2 (Hugh 2026-10-30): exactly one of the two credit keys draws.
     keySwitches: {
       '“Suggested changes” uses a credit, as it always has.': ['TUNING_ENABLED', '!SUGGESTED_CHANGES_V2_ENABLED'],
-      '“Suggested changes” uses a credit, or two for more than 10 changes.': 'SUGGESTED_CHANGES_V2_ENABLED',
+      '“Suggested changes” uses a credit, or two for more than 10 changes.': ['TUNING_ENABLED', 'SUGGESTED_CHANGES_V2_ENABLED'],
     },
     keys: [
       'The ring and the focus are free.',
@@ -1739,7 +1743,7 @@ export const aboutEntries: readonly AboutEntry[] = [
     // `fillAllowance` (admin PR 9c, 2026-10-13, a copy edit, no bump); it was the friend's fixed five.
     // The owner's monthly testing share is left out on purpose: Hugh, 2026-10-06, "friends only".
     caption:
-      'Some features write something just for you, and those use credits. You get {allowance}, and each one comes back 24 hours after you use it.\n\nThe following use a credit:\n\n- Writing a deck’s Overview\n- Each “Suggested changes” run\n- Each “Look deeper” in Proposed cuts\n- Each new “Help me choose” search where you fill in “Anything else?”\n- Each “Which deck needs it most?” read\n\nDetermining your deck’s bracket is free.\nOpening a past “Help me choose” run from History is free.',
+      'Some features write something just for you, and those use credits. You get {allowance}, and each one comes back 24 hours after you use it.\n\nThe following use a credit:\n\n- Writing a deck’s Overview\n- Each “Suggested changes” run\n- Each “Suggested changes” run, or two for more than 10 changes\n- Each “Look deeper” in Proposed cuts\n- Each new “Help me choose” search where you fill in “Anything else?”\n- Each “Which deck needs it most?” read\n\nDetermining your deck’s bracket is free.\nOpening a past “Help me choose” run from History is free.',
     // 2026-10-08: the second bullet names Suggested changes, which Tuning can now withhold while
     // the Overview and Help me choose still spend credits — so, unlike the rest of this entry
     // (which carries no switch), that one line does.
@@ -1747,7 +1751,10 @@ export const aboutEntries: readonly AboutEntry[] = [
       // 2026-10-17 (discovery R2·5, plan decision 3): the Overview is written only with the Analysis tab on
       // (`synopsis-actions.ts` refuses otherwise), so its line follows that switch. An ordinary edit, no bump.
       '- Writing a deck’s Overview': 'ANALYSIS_TAB_ENABLED',
-      '- Each “Suggested changes” run': 'TUNING_ENABLED',
+      // A v2 run of more than 10 changes costs 2 (Hugh 2026-10-30): exactly one bullet draws. The v2 bullet sits AFTER the
+      // shipped one, which is its prefix: `resolveLine` drops the first match, so this order keeps each removal exact.
+      '- Each “Suggested changes” run': ['TUNING_ENABLED', '!SUGGESTED_CHANGES_V2_ENABLED'],
+      '- Each “Suggested changes” run, or two for more than 10 changes': 'SUGGESTED_CHANGES_V2_ENABLED',
       // The read spends only with Help me choose on; the bullet names it, so it follows that switch.
       '- Each new “Help me choose” search where you fill in “Anything else?”': 'HELP_ME_CHOOSE_ENABLED',
       // 2026-10-12 (Find a deck read, UI-3): the credit lines link here rather than list (Hugh), so the
@@ -1786,11 +1793,14 @@ export const aboutEntries: readonly AboutEntry[] = [
     title: 'How credits work',
     route: '/credits',
     caption:
-      'Browsing is always free. Anything we write just for you uses a credit.\n\nThe following use a credit:\n\n- Writing a deck’s Overview\n- Each “Suggested changes” run\n- Each new “Help me choose” search where you fill in “Anything else?”\n- Each “Which deck needs it most?” read\n- Each “Look deeper” in Proposed cuts\n\nEvery card, deck and collection view is free, and so is reading a deck’s bracket.\nOpening a past “Help me choose” run from History is free.\n\nCredits come from these, and are spent in this order:\n\n- Your free credits: {allowance}, each back 24 hours after you use it\n- 15 welcome credits when you join\n- A monthly plan: 60 credits a month\n- A gift from us, now and then\n- Packs: 40 credits for $5',
+      'Browsing is always free. Anything we write just for you uses a credit.\n\nThe following use a credit:\n\n- Writing a deck’s Overview\n- Each “Suggested changes” run\n- Each “Suggested changes” run, or two for more than 10 changes\n- Each new “Help me choose” search where you fill in “Anything else?”\n- Each “Which deck needs it most?” read\n- Each “Look deeper” in Proposed cuts\n\nEvery card, deck and collection view is free, and so is reading a deck’s bracket.\nOpening a past “Help me choose” run from History is free.\n\nCredits come from these, and are spent in this order:\n\n- Your free credits: {allowance}, each back 24 hours after you use it\n- 15 welcome credits when you join\n- A monthly plan: 60 credits a month\n- A gift from us, now and then\n- Packs: 40 credits for $5',
     // Each spender follows its own feature, as `credits` does; the welcome lot follows its own switch.
     captionLineSwitches: {
       '- Writing a deck’s Overview': 'ANALYSIS_TAB_ENABLED',
-      '- Each “Suggested changes” run': 'TUNING_ENABLED',
+      // A v2 run of more than 10 changes costs 2 (Hugh 2026-10-30): exactly one bullet draws. The v2 bullet sits AFTER the
+      // shipped one, which is its prefix: `resolveLine` drops the first match, so this order keeps each removal exact.
+      '- Each “Suggested changes” run': ['TUNING_ENABLED', '!SUGGESTED_CHANGES_V2_ENABLED'],
+      '- Each “Suggested changes” run, or two for more than 10 changes': 'SUGGESTED_CHANGES_V2_ENABLED',
       '- Each new “Help me choose” search where you fill in “Anything else?”': 'HELP_ME_CHOOSE_ENABLED',
       '- Each “Look deeper” in Proposed cuts': 'PROPOSED_CUTS_ENABLED',
       '- Each “Which deck needs it most?” read': 'FIND_A_DECK_READ_ENABLED',

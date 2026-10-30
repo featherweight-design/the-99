@@ -131,8 +131,10 @@ export type WrittenRow = { [K in keyof (typeof writtenForYouCopy.rows)[number]]:
 export function writtenForYou(resolvedCreditsCaption: string | null, suggestedV2: boolean): { rows: WrittenRow[]; free: string } | null {
   if (resolvedCreditsCaption === null) return null;
   const lines = new Set(resolvedCreditsCaption.split("\n"));
+  // A v2 reader's caption carries the Suggested changes bullet in its v2 form (`captionLineSwitches`), so the row
+  // survives on either.
   const rows: WrittenRow[] = writtenForYouCopy.rows
-    .filter((r) => lines.has(r.line))
+    .filter((r) => lines.has(r.line) || (r.id === "suggested" && lines.has(writtenForYouCopy.suggestedV2.line)))
     .map((r) => (r.id === "suggested" && suggestedV2 ? { ...r, ...writtenForYouCopy.suggestedV2 } : r));
   if (rows.length === 0) return null;
   const free = lines.has(writtenForYouCopy.historyLine) ? writtenForYouCopy.free : writtenForYouCopy.freeBracket;

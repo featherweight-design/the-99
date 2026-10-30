@@ -32,7 +32,6 @@ import { SuggestedChangesConfirm } from "./suggested-changes-confirm";
 import { DriftLine, leadSentence, LINK, NOTICE_BOX, noticeStyle } from "./suggested-changes-intake";
 import { SuggestedChangesPickLine } from "./suggested-changes-pick-line";
 import { historyDay } from "./tuning-history";
-import { unitsFor } from "../../lib/tuning/v2/charge";
 import { DeckRefusalToast } from "./token-refusal-toast";
 
 const sc = suggestedChangesV2Copy;
@@ -645,7 +644,7 @@ export function SuggestedChangesRun({
       <div className="grid grid-cols-1 gap-[16px] md:grid-cols-2 md:gap-[18px]">
         {column("add")}
         {short?.kind === "noCuts" ? (
-          <p data-sc-no-cuts="" className={`${half === "cut" ? "block" : "hidden"} m-0 text-[12.5px] md:block`} style={{ color: "var(--fg-body)" }}>{sc.short.noCuts}</p>
+          <p data-sc-no-cuts="" className={`${half === "cut" ? "block" : "hidden"} m-0 text-[12.5px] md:block`} style={{ color: "var(--fg-body)" }}>{sc.short.noCuts(ask?.units ?? 1)}</p>
         ) : column("cut")}
       </div>
       {pickError ? <MutationError message={pickError} /> : null}
@@ -935,8 +934,10 @@ function ShortHead({ facts, n, ask, credits, onNewRun }: {
   facts: ShortFacts; n: number; ask: V2Ask | null; credits: { left: number; total: number } | null; onNewRun: () => void;
 }) {
   const s = sc.short;
+  // What the run's own unit charged (or gave back): never the current price of its count.
+  const units = ask?.units ?? 1;
   if (facts.kind === "noCuts") {
-    return <Notice edge="var(--warning)" data="no-cuts" text={s.noCuts} />;
+    return <Notice edge="var(--warning)" data="no-cuts" text={s.noCuts(units)} />;
   }
   const word = (facts.side === "add" ? s.additions : s.cuts)(facts.found);
   let head: string;
@@ -945,22 +946,21 @@ function ShortHead({ facts, n, ask, credits, onNewRun }: {
   let link: string | null = null;
   if (facts.kind === "refunded") {
     head = s.refundHead(facts.found, word);
-    body = s.refundBody(n);
-    credit = credits ? s.refundCreditLeft(credits.left, credits.total) : s.refundCredit;
+    body = s.refundBody(n, units);
+    credit = credits ? s.refundCreditLeft(units, credits.left, credits.total) : s.refundCredit(units);
   } else {
     const capCents = ask?.restrictions?.capCents ?? null;
     if (facts.reason === "overCap" && capCents !== null) {
       head = `${sc.results.shortCap(facts.found, formatCents(capCents))}.`;
       body = s.capBody(n, facts.dropped, formatCents(capCents), facts.found);
-      // A run of more than 10 changes cost 2 credits (`unitsFor`, from the count asked for).
-      credit = unitsFor(n) === 2 ? s.capCredits2 : s.capCredit;
+      credit = s.capCredit(units);
       link = s.capLink;
     } else {
       head = facts.reason === "offSet" ? s.setHead(facts.found, word)
         : facts.reason === "notOwned" ? s.ownedHead(facts.found, word)
           : s.aimHead(facts.found, word);
       body = facts.exhausted ? s.ownedExhaustedBody(n, facts.found) : s.bodyBound(n, facts.found);
-      credit = unitsFor(n) === 2 ? s.boundCredits2 : s.boundCredit;
+      credit = s.boundCredit(units);
       link = s.boundLink;
     }
   }

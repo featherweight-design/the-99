@@ -4,6 +4,7 @@
 
 import type { AboutScreen, DeckView } from './about';
 import type { SwitchName } from '../switches/registry';
+import { tuningHubCopy } from './tuning-hub';
 
 /** Each screen's name as the Reference and the "?" print it (README-r2, "Screens: every entry's `screen`"). */
 export const SCREEN_NAMES: Record<AboutScreen, string> = {
@@ -122,7 +123,14 @@ export const writtenForYouCopy = {
   /** The `suggested` row's words while the reader's SUGGESTED_CHANGES_V2_ENABLED is on (Hugh 2026-10-30): v2 asks how many
    *  cards to change, up to 20 (`MAX_COUNT`), and costs 1 credit for 1 to 10 changes and 2 for more than 10.
    *  `writtenForYou` swaps them in. */
-  suggestedV2: { what: SUGGESTED_V2_LINE, cost: '1 credit, 2 over 10 changes', short: '1 or 2 per run' },
+  suggestedV2: {
+    // The credits entry's v2 bullet (`captionLineSwitches`), which takes the shipped one's place for a v2 reader.
+    line: '- Each “Suggested changes” run, or two for more than 10 changes',
+    what: SUGGESTED_V2_LINE,
+    // Written once, in the hub's copy (`tuningHubCopy.tools.suggested.costV2`).
+    cost: tuningHubCopy.tools.suggested.costV2,
+    short: '1 or 2 per run',
+  },
   /** The free line, whole while the credits entry still carries its History line, else its bracket half alone. */
   historyLine: 'Opening a past “Help me choose” run from History is free.',
   free: 'Finding a deck’s bracket is free, and so is reopening a past Help me choose.',
