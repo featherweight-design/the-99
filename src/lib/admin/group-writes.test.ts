@@ -105,6 +105,19 @@ describe("writeGroup", () => {
     expect(afterCommit).not.toHaveBeenCalled();
   });
 
+  it("keeps a member that joined after the editor loaded: a save with a baseline is a diff, not a replace", async () => {
+    members = [
+      { userId: "u_hugh", groupId: T },
+      { userId: "u_flyer", groupId: T },
+    ];
+    // The editor loaded [u_hugh] and saves it unchanged; u_flyer joined since and must stay.
+    expect(await writeGroup("u_hugh", T, input({ members: ["u_hugh"], loadedMembers: ["u_hugh"] }), deps())).toEqual({ ok: true, id: T });
+    expect(kinds()).toEqual(["lock", "group", "snapshot"]);
+    // An explicit removal against the baseline still removes.
+    expect(await writeGroup("u_hugh", T, input({ members: [], loadedMembers: ["u_hugh"] }), deps())).toEqual({ ok: true, id: T });
+    expect(log.filter((l) => l.text.startsWith("delete from flag_group_members")).map((l) => l.params[0])).toEqual(["u_hugh"]);
+  });
+
   it("creates a group with a fresh id, records group_created first, and clears the memo only after the commit", async () => {
     group = null;
     const r = await writeGroup("u_hugh", null, input({ name: "beta", description: "Hugh plus one", members: ["u_jun"] }), deps());

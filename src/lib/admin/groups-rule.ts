@@ -30,6 +30,8 @@ export type GroupInput = {
   dailyAllowance?: unknown;
   paidDailyLimit?: unknown;
   members?: unknown;
+  /** The members the editor loaded (a save only). With it the save is a diff against the editor's own baseline, so a member added since (a flyer sign-up) survives a stale editor. */
+  loadedMembers?: unknown;
   /** The account count the admin confirmed in the model confirm, or absent before one opens. */
   confirmed?: unknown;
 };
@@ -40,6 +42,8 @@ export type Desired = {
   dailyAllowance: number | null;
   paidDailyLimit: number | null;
   members: string[];
+  /** The editor's loaded members, or null when none were sent (the save then replaces the list, as it always did). */
+  loadedMembers?: string[] | null;
   confirmed: number | null;
 };
 export type SavedGroup = { id: string; name: string; description: string | null; dailyAllowance: number | null; paidDailyLimit: number | null };
@@ -60,6 +64,8 @@ export function validateGroup(input: GroupInput): { ok: true; desired: Desired }
   if (!inRange(p)) return { ok: false, error: "paidLimit" };
   const raw = input.members ?? [];
   if (!Array.isArray(raw) || raw.some((m) => typeof m !== "string" || m === "")) return { ok: false, error: "members" };
+  const loaded = input.loadedMembers;
+  if (loaded != null && (!Array.isArray(loaded) || loaded.some((m) => typeof m !== "string" || m === ""))) return { ok: false, error: "members" };
   const confirmed = typeof input.confirmed === "number" && Number.isInteger(input.confirmed) ? input.confirmed : null;
   return {
     ok: true,
@@ -69,6 +75,7 @@ export function validateGroup(input: GroupInput): { ok: true; desired: Desired }
       dailyAllowance: (a as number | null | undefined) ?? null,
       paidDailyLimit: (p as number | null | undefined) ?? null,
       members: [...new Set(raw as string[])],
+      loadedMembers: loaded == null ? null : [...new Set(loaded as string[])],
       confirmed,
     },
   };
@@ -82,6 +89,20 @@ export function memberDiff(groupId: string, desired: readonly string[], groupOf:
   const adds = desired.filter((id) => groupOf.get(id) !== groupId).map((userId) => ({ userId, from: groupOf.get(userId) ?? null }));
   const removes = [...groupOf].filter(([id, g]) => g === groupId && !want.has(id)).map(([id]) => id).sort();
   return { adds, removes };
+}
+
+/**
+ * The list a save writes. With the editor's loaded baseline it is a diff: the group's CURRENT members, less those the
+ * editor removed, plus those it added, so a member that joined after the editor opened is kept. Without one it is the
+ * submitted list as is.
+ */
+export function effectiveMembers(groupId: string, desired: Desired, groupOf: ReadonlyMap<string, string>): string[] {
+  if (desired.loadedMembers == null) return desired.members;
+  const loaded = new Set(desired.loadedMembers);
+  const want = new Set(desired.members);
+  const removed = new Set([...loaded].filter((id) => !want.has(id)));
+  const current = [...groupOf].filter(([, g]) => g === groupId).map(([id]) => id);
+  return [...new Set([...current.filter((id) => !removed.has(id)), ...desired.members.filter((id) => !loaded.has(id))])];
 }
 
 /** The snapshot as it would read with the diff applied: one group per account, as the key holds it. */

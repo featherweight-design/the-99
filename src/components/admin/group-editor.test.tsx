@@ -88,7 +88,7 @@ describe("GroupEditor", () => {
     fireEvent.change(screen.getByRole("textbox", { name: /Daily credits/ }), { target: { value: "8" } });
     fireEvent.click(member("Jun"));
     await act(async () => fireEvent.click(within(pending()!).getByRole("button", { name: "Save" })));
-    expect(save).toHaveBeenCalledWith(T, { name: "testers", description: "Hugh plus one", dailyAllowance: 8, paidDailyLimit: null, members: ["u_hugh", "u_jun"] });
+    expect(save).toHaveBeenCalledWith(T, { name: "testers", description: "Hugh plus one", dailyAllowance: 8, paidDailyLimit: null, members: ["u_hugh", "u_jun"], loadedMembers: ["u_hugh"] });
     expect(refresh).not.toHaveBeenCalled();
     expect(push).not.toHaveBeenCalled();
   });
@@ -103,7 +103,7 @@ describe("GroupEditor", () => {
     expect(field).toHaveAttribute("aria-invalid", "true");
     fireEvent.change(field, { target: { value: "3" } });
     await act(async () => fireEvent.click(within(pending()!).getByRole("button", { name: "Save" })));
-    expect(save).toHaveBeenCalledWith(T, { name: "testers", description: "Hugh plus one", dailyAllowance: null, paidDailyLimit: 3, members: ["u_hugh"] });
+    expect(save).toHaveBeenCalledWith(T, { name: "testers", description: "Hugh plus one", dailyAllowance: null, paidDailyLimit: 3, members: ["u_hugh"], loadedMembers: ["u_hugh"] });
   });
 
   it("refuses a bad name on the page, and shows the server's name refusal under the field", async () => {

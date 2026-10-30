@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { explainAccount } from "../switches/explain";
 import type { SwitchSnapshot } from "../switches/resolve";
 import {
+  effectiveMembers,
   effectBetween,
   groupEvents,
   groupHistory,
@@ -31,7 +32,7 @@ describe("validateGroup", () => {
   it("takes a lowercase name, trims, and drops an empty description to null", () => {
     expect(validateGroup({ name: " testers ", description: "  ", dailyAllowance: null, members: ["a", "a", "b"] })).toEqual({
       ok: true,
-      desired: { name: "testers", description: null, dailyAllowance: null, paidDailyLimit: null, members: ["a", "b"], confirmed: null },
+      desired: { name: "testers", description: null, dailyAllowance: null, paidDailyLimit: null, members: ["a", "b"], loadedMembers: null, confirmed: null },
     });
     expect(validateGroup({ name: "beta-1_x", dailyAllowance: 8, confirmed: 2 })).toMatchObject({ ok: true, desired: { dailyAllowance: 8, members: [], confirmed: 2 } });
   });
@@ -340,5 +341,17 @@ describe("groupHistory", () => {
   it("words an invite top-up with the group's name and the raised count, and draws its note as no note", () => {
     const [item] = groupHistory([{ ...ev("invites_topped_up", { newValue: "3", actorId: "u_mara" }), note: "2" }], accounts, "u_hugh", "testers");
     expect(item).toEqual({ when: "3 Oct · 11:02", what: "Mara topped up testers to 3: 2 raised", note: null });
+  });
+});
+
+describe("effectiveMembers", () => {
+  const G = "g1";
+  const base = { name: "t", description: null, dailyAllowance: null, paidDailyLimit: null, confirmed: null };
+  it("replaces with the submitted list when no baseline was sent", () => {
+    expect(effectiveMembers(G, { ...base, members: ["a"] }, new Map([["a", G], ["b", G]]))).toEqual(["a"]);
+  });
+  it("keeps a member added since the baseline, drops one the editor removed, adds one it added", () => {
+    const groupOf = new Map([["a", G], ["b", G], ["new", G]]);
+    expect(effectiveMembers(G, { ...base, members: ["a", "c"], loadedMembers: ["a", "b"] }, groupOf).sort()).toEqual(["a", "c", "new"]);
   });
 });

@@ -1,12 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const m = vi.hoisted(() => ({ currentUser: vi.fn(), ensureProfile: vi.fn(), profileAgeMs: vi.fn(), spend: vi.fn(), order: [] as string[] }));
+const m = vi.hoisted(() => ({ currentUser: vi.fn(), ensureProfile: vi.fn(), profileAgeMs: vi.fn(), spend: vi.fn(), flyer: vi.fn(), order: [] as string[] }));
 vi.mock("@clerk/nextjs/server", () => ({ currentUser: m.currentUser }));
 vi.mock("../../lib/social/friends", () => ({ ensureProfile: m.ensureProfile, profileAgeMs: m.profileAgeMs }));
 vi.mock("../../lib/invites/spend", async (orig) => ({
   ...(await orig<typeof import("../../lib/invites/spend")>()),
   spendInviteOnSignUp: m.spend,
 }));
+
+vi.mock("../../lib/flyer/spend", () => ({ spendFlyerOnSignUp: m.flyer }));
 
 import { ensureSenderProfile } from "./sender-profile";
 
@@ -17,6 +19,7 @@ beforeEach(() => {
   m.profileAgeMs.mockReset().mockResolvedValue(null);
   m.currentUser.mockReset().mockResolvedValue({ firstName: "Ana", publicMetadata: { inviteReservation: RES } });
   m.ensureProfile.mockReset().mockImplementation(async () => { m.order.push("profile"); });
+  m.flyer.mockReset().mockImplementation(async () => { m.order.push("flyer"); return { spent: true }; });
   m.spend.mockReset().mockImplementation(async () => { m.order.push("spend"); return { spent: true }; });
 });
 
@@ -26,6 +29,18 @@ describe("ensureSenderProfile", () => {
     expect(m.spend).toHaveBeenCalledWith("user_1", RES, "Ana");
     expect(m.ensureProfile).toHaveBeenCalledWith("user_1", "Ana");
     expect(m.order).toEqual(["spend", "profile"]);
+  });
+
+  it("falls back to the flyer spend when no reservation has that id, still BEFORE the profile", async () => {
+    m.spend.mockImplementation(async () => { m.order.push("spend"); return { spent: false, reason: "unknown" }; });
+    await ensureSenderProfile("user_1");
+    expect(m.flyer).toHaveBeenCalledWith("user_1", RES, "Ana");
+    expect(m.order).toEqual(["spend", "flyer", "profile"]);
+  });
+
+  it("does not try the flyer spend when the personal spend knew the id", async () => {
+    await ensureSenderProfile("user_1");
+    expect(m.flyer).not.toHaveBeenCalled();
   });
 
   it("a YOUNG profile still asks Clerk and still spends; an OLD one does neither and writes nothing", async () => {

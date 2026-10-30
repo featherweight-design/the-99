@@ -2,6 +2,7 @@ import { verifyWebhook } from "@clerk/nextjs/webhooks";
 import type { NextRequest } from "next/server";
 import { purgeAccount, recordDeletion } from "../../../lib/account/purge";
 import { reservationIdFrom, spendInviteOnSignUp } from "../../../lib/invites/spend";
+import { spendFlyerOnSignUp } from "../../../lib/flyer/spend";
 import { grantWelcome } from "../../../lib/payments/welcome";
 import { resolveSwitchEnvStrict } from "../../../lib/switches/snapshot";
 import { captureServerError } from "../../../lib/sentry/capture";
@@ -17,11 +18,12 @@ export const dynamic = "force-dynamic";
  * an unsigned or forged request is refused with 400 before anything runs.
  *
  * Two events do something. `user.deleted` purges every row the app holds for that account (`purgeAccount`).
- * `user.created` does two independent things: it gives the account its one welcome lot (`grantWelcome`, launch epic D1;
- * gated by `WELCOME_CREDITS_ENABLED`, which only decides whether to write) and it spends the invite reservation the
- * account's invitation named, when it names one (`spendInviteOnSignUp`, invites plan R8), which reads no feature
- * switch, since an invitation already accepted is honored whatever the switches say, as a taken payment is. Either
- * failing answers 500 for a retry, and neither skips the other. Any other event is acknowledged and ignored, so
+ * `user.created` does two things, in this order: it spends the invite reservation (or flyer claim) the account's
+ * invitation named, when it names one (`spendInviteOnSignUp`, invites plan R8), which reads no feature switch, since
+ * an invitation already accepted is honored whatever the switches say, as a taken payment is; then it gives the
+ * account its one welcome lot (`grantWelcome`, launch epic D1; gated by `WELCOME_CREDITS_ENABLED`, which only decides
+ * whether to write), resolved AFTER the spend because the spend can put the account in a group that overrides it.
+ * Either failing answers 500 for a retry (a failed spend skips the grant until the retry). Any other event is acknowledged and ignored, so
  * subscribing to more events in the dashboard cannot break this. A purge that fails answers 500, and Clerk retries; the purge is one
  * transaction and idempotent, so a retry either finishes the job or finds nothing left.
  */
@@ -60,10 +62,16 @@ export async function POST(req: NextRequest) {
   }
 }
 
-/** A new account: its welcome lot, then its invite. Both are idempotent, so a retry repeats whichever failed. */
+/**
+ * A new account: its invite, THEN its welcome lot. The spend runs first because it can put the account in a flag group
+ * (a flyer's), and a group's override can change the welcome switches the grant reads. Both are idempotent, so a retry
+ * repeats whichever failed. A spend that throws answers 500 BEFORE the grant is attempted: a grant decided on switches
+ * that predate the group could skip (or give) a lot nothing would correct, whereas the retry runs both in order.
+ */
 async function handleCreated(data: { id?: unknown; created_at?: unknown; first_name?: unknown; public_metadata?: unknown }): Promise<Response> {
   if (typeof data.id !== "string" || data.id.length === 0) return new Response("No user id", { status: 400 });
-  let welcomeFailed = false;
+  const invite = await spendOnCreated(data);
+  if (invite.status >= 500) return invite;
   try {
     // The account's own creation time, so a redelivery cannot extend the lot; the event's clock only when it is absent.
     // A failed read of the overrides throws (a retryable 500) rather than reading as "switch off": nothing else would grant it later.
@@ -71,12 +79,11 @@ async function handleCreated(data: { id?: unknown; created_at?: unknown; first_n
     const result = await grantWelcome(data.id, created, await resolveSwitchEnvStrict(data.id));
     console.info(`[clerk-webhook] user.created: welcome ${result.granted ? "granted" : result.reason}`);
   } catch (error) {
-    welcomeFailed = true;
     console.error("[clerk-webhook] user.created: welcome grant failed");
     captureServerError("clerk-webhook:welcome", error);
+    return new Response("Grant failed", { status: 500 });
   }
-  const invite = await spendOnCreated(data);
-  return welcomeFailed && invite.ok ? new Response("Grant failed", { status: 500 }) : invite;
+  return invite;
 }
 
 /**
@@ -91,6 +98,11 @@ async function spendOnCreated(data: { id?: unknown; first_name?: unknown; public
   try {
     const result = await spendInviteOnSignUp(data.id, reservationId, data.first_name);
     console.info(`[clerk-webhook] user.created: invite ${result.spent ? "spent" : result.reason}`);
+    // A flyer hand-over names its CLAIM in the same metadata: no reservation by that id means it may be one.
+    if (!result.spent && result.reason === "unknown") {
+      const flyer = await spendFlyerOnSignUp(data.id, reservationId, data.first_name);
+      console.info(`[clerk-webhook] user.created: flyer ${flyer.spent ? "spent" : flyer.reason}`);
+    }
     return new Response("Handled", { status: 200 });
   } catch (error) {
     console.error("[clerk-webhook] user.created: invite spend failed");

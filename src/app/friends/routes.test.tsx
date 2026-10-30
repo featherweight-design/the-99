@@ -24,6 +24,8 @@ const m = vi.hoisted(() => ({
   takeReceipt: vi.fn(),
   pendingReceipt: vi.fn(),
   spendInviteOnSignUp: vi.fn(),
+  spendFlyerOnSignUp: vi.fn(),
+  resolveSwitchEnv: vi.fn(),
   friendPublicId: vi.fn(),
   after: vi.fn((_fn: () => unknown) => {}),
   loadWaitingOnYou: vi.fn(async (..._args: unknown[]): Promise<unknown[]> => []),
@@ -33,6 +35,7 @@ const m = vi.hoisted(() => ({
 }));
 vi.mock("next/navigation", () => ({
   notFound: () => { throw new Error("NOT_FOUND"); },
+  redirect: (to: string) => { throw new Error(`REDIRECT:${to}`); },
   useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
 }));
 vi.mock("@clerk/nextjs/server", () => ({ auth: m.auth, currentUser: m.currentUser }));
@@ -54,6 +57,8 @@ vi.mock("../../lib/invites/spend", async (orig) => ({
   pendingReceipt: m.pendingReceipt,
   spendInviteOnSignUp: m.spendInviteOnSignUp,
 }));
+vi.mock("../../lib/flyer/spend", () => ({ spendFlyerOnSignUp: m.spendFlyerOnSignUp }));
+vi.mock("../../lib/switches/snapshot", () => ({ clearSwitchSnapshot: () => {}, resolveSwitchEnv: m.resolveSwitchEnv }));
 vi.mock("../../lib/social/deck-visibility", () => ({ loadFriendDeckPrefs: async () => ({ seeDecks: true, seeUnfinished: false }) }));
 vi.mock("../../lib/social/access", () => ({ listFriends: m.listFriends, listPods: m.listPods }));
 vi.mock("../../lib/social/spares", () => ({ listSharedPods: m.listSharedPods }));
@@ -105,6 +110,8 @@ beforeEach(() => {
   m.takeReceipt.mockResolvedValue(null);
   m.pendingReceipt.mockResolvedValue(null);
   m.spendInviteOnSignUp.mockResolvedValue({ spent: false, reason: "unknown" });
+  m.spendFlyerOnSignUp.mockResolvedValue({ spent: false, reason: "unknown" });
+  m.resolveSwitchEnv.mockResolvedValue(ON);
   m.friendPublicId.mockResolvedValue(null);
 });
 afterEach(cleanup);
@@ -194,6 +201,40 @@ describe("/friends", () => {
       expect(m.spendInviteOnSignUp).toHaveBeenCalledWith("user_1", RES, "Ana");
     });
 
+    it("falls back to the flyer spend for an id the personal spend does not know, and not for one it does", async () => {
+      m.currentUser.mockResolvedValue({ firstName: "Ana", publicMetadata: { inviteReservation: RES } });
+      await FriendsPage({ searchParams: query() });
+      expect(m.spendFlyerOnSignUp).toHaveBeenCalledWith("user_1", RES, "Ana");
+      m.spendFlyerOnSignUp.mockClear();
+      m.spendInviteOnSignUp.mockResolvedValue({ spent: true });
+      await expect(FriendsPage({ searchParams: query() })).rejects.toThrow("REDIRECT:/friends");
+      expect(m.spendFlyerOnSignUp).not.toHaveBeenCalled();
+    });
+
+    it("recovers a flyer sign-up BEFORE the switch gate, reads the switches again, and redirects so the shell re-snapshots", async () => {
+      m.requestSwitchEnv.mockResolvedValue({});
+      m.currentUser.mockResolvedValue({ firstName: "Ana", publicMetadata: { inviteReservation: RES } });
+      m.spendFlyerOnSignUp.mockResolvedValue({ spent: true });
+      await expect(FriendsPage({ searchParams: query() })).rejects.toThrow("REDIRECT:/friends");
+      expect(m.resolveSwitchEnv).toHaveBeenCalledWith("user_1");
+    });
+
+    it("reads the switches again when the recovery reports already (a webhook committed the group), without a redirect", async () => {
+      m.requestSwitchEnv.mockResolvedValue({});
+      m.currentUser.mockResolvedValue({ firstName: "Ana", publicMetadata: { inviteReservation: RES } });
+      m.spendFlyerOnSignUp.mockResolvedValue({ spent: false, reason: "already" });
+      render(await FriendsPage({ searchParams: query() }));
+      expect(m.resolveSwitchEnv).toHaveBeenCalledWith("user_1");
+      expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(socialCopy.page.title);
+    });
+
+    it("stays not found when the recovery spent nothing and Friends is off", async () => {
+      m.requestSwitchEnv.mockResolvedValue({});
+      m.currentUser.mockResolvedValue({ firstName: "Ana", publicMetadata: { inviteReservation: RES } });
+      await expect(FriendsPage({ searchParams: query() })).rejects.toThrow("NOT_FOUND");
+      expect(m.resolveSwitchEnv).not.toHaveBeenCalled();
+    });
+
     it("a MISSING or YOUNG profile still asks Clerk and still runs the invite spend", async () => {
       for (const age of [null, 0, 5 * 60_000, 14 * 60_000]) {
         m.currentUser.mockClear();
@@ -213,6 +254,7 @@ describe("/friends", () => {
       render(await FriendsPage({ searchParams: query() }));
       expect(m.currentUser).not.toHaveBeenCalled();
       expect(m.spendInviteOnSignUp).not.toHaveBeenCalled();
+      expect(m.spendFlyerOnSignUp).not.toHaveBeenCalled();
       // The stored profile is read as always; no name is offered because none is needed.
       expect(m.ensureProfile).toHaveBeenCalledWith("user_1", undefined);
       expect(screen.getByText(DAVE.displayName)).toBeTruthy();

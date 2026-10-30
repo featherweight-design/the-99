@@ -43,6 +43,7 @@ type Sent = {
   dailyAllowance: number | null;
   paidDailyLimit: number | null;
   members: string[];
+  loadedMembers?: string[];
   confirmed?: number;
 };
 
@@ -199,6 +200,8 @@ export function GroupEditor({ saved, rows }: { saved: SavedGroup | null; rows: M
       dailyAllowance: parseCredits(draft.credits),
       paidDailyLimit: parseCredits(draft.paidLimit),
       members: rows.filter((r) => selected.has(r.id)).map((r) => r.id),
+      // The baseline this editor drew (a save only): the server applies the difference, not the whole list.
+      ...(groupId ? { loadedMembers: [...savedMembers(rows, saved)] } : {}),
     });
   }
 

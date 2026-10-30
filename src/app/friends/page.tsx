@@ -6,7 +6,7 @@
 // `?accepted=<publicId>` is the receipt after Accept (E10), resolved through the reader's own friends, so a
 // forged or stale id draws nothing.
 
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { after } from "next/server";
 import { headers } from "next/headers";
 import { currentUser } from "@clerk/nextjs/server";
@@ -15,8 +15,10 @@ import { socialFriendsEnabled } from "../../lib/social/flag";
 import { loadFriendDeckPrefs } from "../../lib/social/deck-visibility";
 import { loadInviteCount } from "../../lib/invites/read";
 import { requestSwitchEnv } from "../../lib/switches/request";
+import { clearSwitchSnapshot, resolveSwitchEnv } from "../../lib/switches/snapshot";
 import { perfRoute } from "../../lib/perf/timing";
 import { ensureProfile, friendPublicId, loadFriendsAndLinks, profileAgeMs } from "../../lib/social/friends";
+import { spendFlyerOnSignUp } from "../../lib/flyer/spend";
 import { pendingReceipt, reservationIdFrom, spendInviteOnSignUp, takeReceipt } from "../../lib/invites/spend";
 import { listPods } from "../../lib/social/access";
 import { listSharedPods } from "../../lib/social/spares";
@@ -44,24 +46,44 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
   // The three awaits ahead of the reads are timed too: `total` has always run from the top of this function, and the reads
   // account for ~35 ms of the ~190 it measured warm on staging (2026-10-18), so the rest sits in one of these.
   const userId = await perf.timed("requireUserId", () => requireUserId());
-  const env = await perf.timed("switchEnv", () => requestSwitchEnv(userId));
-  if (!socialFriendsEnabled(env)) notFound();
+  let env = await perf.timed("switchEnv", () => requestSwitchEnv(userId));
   const query = await searchParams;
   const accepted = query[ACCEPTED_PARAM];
-  // Try it's landing (discovery R2·3): `?tool=friends` haloes Add a friend; anything else is stripped.
-  const { landing, request } = pageLanding(query[TOOL_PARAM], env, "friends");
   const now = new Date();
   // The name a first visit starts with is the Clerk first name (decision 10); `ensureProfile` keeps a stored one.
   // Asked of Clerk only for a profile that is missing or new (`profileNeedsClerk`): the Backend call was 124 of the page's 180 ms
   // on staging (2026-10-18), and a returning reader's name is stored. Every path that writes a profile has attempted the invite spend by then (the spend itself,
   // this page, and `ensureSenderProfile`), so an old profile has nothing left for this page to recover.
   const needsClerk = profileNeedsClerk(await perf.timed("profileAge", () => profileAgeMs(userId)));
+  // A reader who is past the newcomer window has nothing to recover, so the switch decides at once, as it always did.
+  if (!needsClerk && !socialFriendsEnabled(env)) notFound();
   const user = needsClerk ? await perf.timed("currentUser", () => currentUser()) : null;
   // A newcomer's first arrival (invites plan R8, ruling D). The webhook may have spent their invitation already or
   // not yet; the spend is idempotent, so this runs it when the account's own invitation names a reservation, and the
-  // receipt is then drawn once from the edge, whichever of the two ran first.
+  // receipt is then drawn once from the edge, whichever of the two ran first. It runs BEFORE the switch gate: a flyer
+  // sign-up's group is what turns Friends on for them, and the group is written by this spend, so the switches are
+  // read again once it has spent (the proxy's snapshot, and `env` above, predate it).
   const reservationId = reservationIdFrom(user?.publicMetadata);
-  if (reservationId !== null) await spendInviteOnSignUp(userId, reservationId, user?.firstName);
+  if (reservationId !== null) {
+    const personal = await spendInviteOnSignUp(userId, reservationId, user?.firstName);
+    let recovery: { spent: boolean; reason?: string } = personal;
+    // A flyer sign-up's metadata names its claim, which the personal spend does not know: the same recovery for it.
+    if (!personal.spent && personal.reason === "unknown") recovery = await spendFlyerOnSignUp(userId, reservationId, user?.firstName);
+    // `already` re-reads too: a webhook or a concurrent request may have committed the group between the proxy's snapshot and now.
+    if (recovery.spent || recovery.reason === "already") {
+      clearSwitchSnapshot();
+      env = await resolveSwitchEnv(userId);
+    }
+    // The root shell reads the proxy's header snapshot, which predates this spend: one redirect to the same URL lets the
+    // next request's proxy re-snapshot. It cannot loop, since that request finds the spend `already` done.
+    if (recovery.spent) {
+      const qs = new URLSearchParams(Object.entries(query).flatMap(([k, v]) => (v === undefined ? [] : Array.isArray(v) ? v.map((x) => [k, x] as [string, string]) : [[k, v] as [string, string]]))).toString();
+      redirect(qs ? `/friends?${qs}` : "/friends");
+    }
+  }
+  if (!socialFriendsEnabled(env)) notFound();
+  // Try it's landing (discovery R2·3): `?tool=friends` haloes Add a friend; anything else is stripped.
+  const { landing, request } = pageLanding(query[TOOL_PARAM], env, "friends");
   // The invite count (invites PR 4), read beside the rest; null with friends off (invites follow friends), so the head draws as shipped.
   // A count that cannot be read (a database the invites migration has not reached) draws the page as shipped,
   // never an error: the count is an extra, and Add a friend's link path works without it.
