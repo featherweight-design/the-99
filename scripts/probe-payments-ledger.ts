@@ -6,9 +6,9 @@
 // can say the per-player lock covers the paid lots. The model is never called.
 //
 // Cases:
-//   a  with no lot, the free allowance's five reserve and the sixth is refused, as before payments;
+//   a  with no lot, the free allowance's reserves (MODEL_DEFAULT_DAILY_ALLOWANCE) pass and the next is refused, as before payments;
 //      readAllowance carries no plan or pack figure
-//   b  the allowance goes first: with a pack of two, five allowance runs name no lot, the next two
+//   b  the allowance goes first: with a pack of two, the allowance runs name no lot, the next two
 //      name the pack, the eighth is refused
 //   c  plan before pack: an older pack and a newer plan lot, the plan lot is spent first
 //   d  a refunded run returns its credit to the lot that funded it
@@ -153,8 +153,8 @@ async function run() {
   {
     const u = newUser();
     const got = [];
-    for (let i = 0; i < 6; i++) got.push(kindOf(await reserve(u)));
-    check("a · five reserve and the sixth is refused", got, ["reserved", "reserved", "reserved", "reserved", "reserved", "allowance"]);
+    for (let i = 0; i <= MODEL_DEFAULT_DAILY_ALLOWANCE; i++) got.push(kindOf(await reserve(u)));
+    check("a · the default's reserves pass and the next is refused", got, [...Array.from({ length: MODEL_DEFAULT_DAILY_ALLOWANCE }, () => "reserved"), "allowance"]);
     const a = await readAllowance(u);
     check("a · readAllowance carries no paid figure", ["plan" in a, "pack" in a], [false, false]);
   }
@@ -164,10 +164,11 @@ async function run() {
     const u = newUser();
     const pack = await grant(u, "pack", 2);
     const funded = [];
-    for (let i = 0; i < 8; i++) funded.push(await fundedBy(await reserve(u)));
-    check("b · five allowance runs name no lot", funded.slice(0, 5), [null, null, null, null, null]);
-    check("b · the next two name the pack", funded.slice(5, 7), [pack, pack]);
-    check("b · the eighth is refused", funded[7], "refused");
+    const free = MODEL_DEFAULT_DAILY_ALLOWANCE;
+    for (let i = 0; i < free + 3; i++) funded.push(await fundedBy(await reserve(u)));
+    check("b · the allowance's runs name no lot", funded.slice(0, free), Array.from({ length: free }, () => null));
+    check("b · the next two name the pack", funded.slice(free, free + 2), [pack, pack]);
+    check("b · the one after is refused", funded[free + 2], "refused");
   }
 
   // c · Plan before pack, even an older pack.
@@ -236,7 +237,7 @@ async function run() {
     check("h · plan and pack left, after one plan-funded press", [a.plan, a.pack], [59, 40]);
   }
 
-  // j · A paid run never fills the free window: with five lot-funded runs today, the allowance still
+  // j · A paid run never fills the free window: with as many lot-funded runs today as the default allows, the allowance still
   //     funds the next press.
   {
     const u = newUser();
@@ -245,7 +246,7 @@ async function run() {
       await fixture.execute(sql`insert into model_calls (user_id, feature, status, model, credit_grant_id)
         values (${u}, 'tuning', 'spent', ${TUNING_MODEL}, ${pack}::uuid)`);
     }
-    check("j · five paid runs today leave the free allowance whole", await fundedBy(await reserve(u)), null);
+    check("j · a default's worth of paid runs today leave the free allowance whole", await fundedBy(await reserve(u)), null);
   }
 
   // k · The gates read the lot through the real `readAllowance` (payments L2): with the free

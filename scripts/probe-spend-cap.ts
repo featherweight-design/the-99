@@ -207,7 +207,9 @@ async function run() {
       model: TUNING_MODEL, cost: String(costMicroUsd(TUNING_MODEL, usage)),
     });
 
-    const refunded = await reserve(u);
+    // A second player: the default is one run a day, and the spent call above holds this one's.
+    const u2 = newUser();
+    const refunded = await reserve(u2);
     if (!("id" in refunded)) throw new Error(`g · reserve refused: ${refunded.refused}`);
     const before = await billedMonth();
     await settle(refunded.id, "refunded", usage);
@@ -217,7 +219,7 @@ async function run() {
     check("g · and its cost IS counted toward the month's billed spend", await billedMonth() - before,
       costMicroUsd(TUNING_MODEL, usage));
 
-    const bare = await reserve(u);
+    const bare = await reserve(u2);
     if (!("id" in bare)) throw new Error(`g · reserve refused: ${bare.refused}`);
     await settle(bare.id, "refunded");
     const b = await meters(bare.id);
@@ -321,7 +323,8 @@ async function run() {
     const BIG = usdToMicro(25);
     try {
       const m = await monthToDate();
-      await seed(payer, "spent", Math.max(BIG - m, 0) + ownerShareMicro() + W);
+      // Refunded, so the month counts its cost while the day's allowance (one run by default) stays free.
+      await seed(payer, "refunded", Math.max(BIG - m, 0) + ownerShareMicro() + W);
       check("k · the app's month-to-date stands at $25 or more", (await monthToDate()) >= BIG, true);
       check("k · the friend who paid it still reserves", kindOf(await reserve(payer)), "reserved");
       check("k · another friend still reserves", kindOf(await reserve(friend)), "reserved");

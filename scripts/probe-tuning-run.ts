@@ -72,6 +72,9 @@ const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);
 
 const pool = new Pool({ connectionString: DATABASE_URL });
 const fixture = drizzle(pool);
+// Cases 1b and 9 run twice for one player. The public default is one run a day (2026-10-30), so give this
+// probe's players room unless the target already sets a default: read per call, so setting it here is enough.
+process.env.MODEL_DAILY_ALLOWANCE ??= "5";
 const PREFIX = `probe-tuning-run-${Date.now()}`;
 let users = 0;
 const newUser = () => `${PREFIX}-${++users}`;
