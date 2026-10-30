@@ -8,7 +8,7 @@
       "label": "/admin/switches/[name]: the Seg, unchanged markup",
       "steps": [
         {
-          "goto": "/admin/switches/DECK_NOTES_ENABLED",
+          "goto": "/admin/switches/FEEDBACK_ENABLED",
           "wait": "h1",
           "settle": 1500
         }

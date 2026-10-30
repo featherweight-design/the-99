@@ -56,7 +56,7 @@ describe("switchPage", () => {
       groupOf: new Map(),
     };
     const p = switchPage({
-      name: "DECK_NOTES_ENABLED",
+      name: "DECK_STATS_ENABLED",
       env: envValues({}),
       overrides: [],
       verdicts: explainAccounts({} as NodeJS.ProcessEnv, snapshot, ACCOUNTS.map((a) => a.id)),
@@ -85,9 +85,9 @@ describe("switchPage", () => {
   });
 
   it("names the account and its source for Check an account, an account with no name as Account ·<tail>", () => {
-    const p = page("DECK_NOTES_ENABLED", { DECK_NOTES_ENABLED: "true" }, [
-      ov({ name: "DECK_NOTES_ENABLED", scope: "group", groupId: "g1", value: "off" }),
-      ov({ name: "DECK_NOTES_ENABLED", scope: "user", userId: "u3", value: "off" }),
+    const p = page("FEEDBACK_ENABLED", { FEEDBACK_ENABLED: "true" }, [
+      ov({ name: "FEEDBACK_ENABLED", scope: "group", groupId: "g1", value: "off" }),
+      ov({ name: "FEEDBACK_ENABLED", scope: "user", userId: "u3", value: "off" }),
     ], [], { u2: "g1" });
     expect(p.explanations).toEqual([
       { id: "u1", label: "Hugh", on: true, source: "from the env var", kill: false },
@@ -132,15 +132,15 @@ describe("switchPage", () => {
   });
 
   it("writes the app-wide meta and note, and the unset env value", () => {
-    expect(page("DECK_NOTES_ENABLED", {}).app).toEqual({ value: "Not set", current: null, set: false, meta: "not set: the env var decides", note: "Not set falls back to the env var.", refused: false });
-    expect(rung(page("DECK_NOTES_ENABLED", {}), "env")?.value).toBe("unset");
-    const set = page("DECK_NOTES_ENABLED", {}, [ov({ name: "DECK_NOTES_ENABLED", value: "off", note: "Held back", updatedBy: "u2" })]);
+    expect(page("FEEDBACK_ENABLED", {}).app).toEqual({ value: "Not set", current: null, set: false, meta: "not set: the env var decides", note: "Not set falls back to the env var.", refused: false });
+    expect(rung(page("FEEDBACK_ENABLED", {}), "env")?.value).toBe("unset");
+    const set = page("FEEDBACK_ENABLED", {}, [ov({ name: "FEEDBACK_ENABLED", value: "off", note: "Held back", updatedBy: "u2" })]);
     expect(set.app).toMatchObject({ value: "Off", set: true, meta: "set by Mara, 11 Oct · 14:02", note: "Note: “Held back” Not set falls back to the env var." });
   });
 
   it("writes history in the copy file's shapes, naming the viewer as You and a gone group by its id", () => {
     const ev = (e: Partial<SwitchEvent>): SwitchEvent => ({ at: AT, actorId: "u1", kind: "override_set", scope: "app", groupId: null, userId: null, oldValue: null, newValue: "off", note: null, ...e });
-    const p = page("DECK_NOTES_ENABLED", {}, [], [
+    const p = page("FEEDBACK_ENABLED", {}, [], [
       ev({ note: "Held back" }),
       ev({ actorId: "u2", scope: "user", userId: "u1", oldValue: "off", newValue: "on" }),
       ev({ kind: "override_cleared", scope: "group", groupId: "0123456789abcdef", oldValue: "on", newValue: null }),
@@ -156,7 +156,7 @@ describe("switchPage", () => {
 
   it("lists at most the history limit, and says when older events were cut", () => {
     const ev = (n: number): SwitchEvent => ({ at: AT, actorId: "u1", kind: "override_set", scope: "app", groupId: null, userId: null, oldValue: null, newValue: String(n), note: null });
-    const base = { name: "DECK_NOTES_ENABLED" as const, env: envValues({}), overrides: [], verdicts: new Map(), accounts: [], groups: [], viewerId: "u1", historyLimit: 2 };
+    const base = { name: "FEEDBACK_ENABLED" as const, env: envValues({}), overrides: [], verdicts: new Map(), accounts: [], groups: [], viewerId: "u1", historyLimit: 2 };
     expect(switchPage({ ...base, events: [ev(1), ev(2)] })).toMatchObject({ historyCut: false, history: { length: 2 } });
     const cut = switchPage({ ...base, events: [ev(1), ev(2), ev(3)] });
     expect(cut.historyCut).toBe(true);

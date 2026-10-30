@@ -117,12 +117,12 @@ describe("groupEvents", () => {
 });
 
 describe("what an account gains or loses", () => {
-  const env = { OVERVIEW_V2_ENABLED: "false", SWAP_TOOLS_ENABLED: "false", DECK_NOTES_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+  const env = { OVERVIEW_V2_ENABLED: "false", SWAP_TOOLS_ENABLED: "false", FEEDBACK_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
   const snapshot: SwitchSnapshot = {
     overrides: [
       { switchName: "OVERVIEW_V2_ENABLED", scope: "group", groupId: T, userId: null, value: "on" },
       { switchName: "SWAP_TOOLS_ENABLED", scope: "group", groupId: T, userId: null, value: "on" },
-      { switchName: "DECK_NOTES_ENABLED", scope: "group", groupId: F, userId: null, value: "off" },
+      { switchName: "FEEDBACK_ENABLED", scope: "group", groupId: F, userId: null, value: "off" },
     ],
     groupOf: new Map([
       ["u_hugh", T],
@@ -133,7 +133,7 @@ describe("what an account gains or loses", () => {
 
   it("names the switches a move turns on and off, and a removal's losses", () => {
     const fx = memberEffects(snapshot, T, ["u_hugh", "u_theo", "u_jun"], explain);
-    expect(fx.get("u_theo")!.toThis.gains).toEqual(expect.arrayContaining(["Overview v2", "Swap tools", "Deck notes"]));
+    expect(fx.get("u_theo")!.toThis.gains).toEqual(expect.arrayContaining(["Overview v2", "Swap tools", "Feedback"]));
     expect(fx.get("u_theo")!.toThis.losses).toEqual([]);
     expect(fx.get("u_hugh")!.toThis).toEqual({ gains: [], losses: [] });
     expect(fx.get("u_hugh")!.toNone.losses).toEqual(expect.arrayContaining(["Overview v2", "Swap tools"]));
@@ -143,7 +143,7 @@ describe("what an account gains or loses", () => {
   it("treats a new group as no group", () => {
     const fx = memberEffects(snapshot, null, ["u_theo"], explain);
     expect(fx.get("u_theo")!.toThis).toEqual(fx.get("u_theo")!.toNone);
-    expect(fx.get("u_theo")!.toNone.gains).toEqual(["Deck notes"]);
+    expect(fx.get("u_theo")!.toNone.gains).toEqual(["Feedback"]);
   });
 
   it("compares two resolutions switch by switch", () => {

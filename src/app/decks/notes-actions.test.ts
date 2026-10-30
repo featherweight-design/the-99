@@ -1,9 +1,10 @@
 // The notes actions' wire contract. `probe:deck-notes-actions` proves the QUERIES against a real Postgres;
-// this proves what the action layer owns: the flag, the runtime shape checks (an action is a public
+// this proves what the action layer owns: the runtime shape checks (an action is a public
 // endpoint), honest tags, the refusals, and that a write revalidates the deck's surfaces.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { NoteCardHit } from "../../lib/decks/notes-store";
 
 // The proxy resolves each reader's switches onto a request header; with no request here, the
 // action reads the environment alone, as it did before overrides.
@@ -25,6 +26,8 @@ const stub = vi.hoisted(() => ({
   readThrows: false,
   view: { open: [], done: [], readAt: 42 },
   found: true,
+  hits: [] as NoteCardHit[],
+  searchThrows: false,
 }));
 
 vi.mock("next/cache", () => ({ revalidatePath: (p: string) => void stub.paths.push(p) }));
@@ -45,12 +48,15 @@ vi.mock("../../lib/decks/notes-store", () => ({
   updateNoteBody: async (...args: unknown[]) => (stub.calls.push({ fn: "updateNoteBody", args }), stub.found),
   setNoteDone: async (...args: unknown[]) => (stub.calls.push({ fn: "setNoteDone", args }), stub.found),
   removeNote: async (...args: unknown[]) => (stub.calls.push({ fn: "removeNote", args }), stub.found),
-  searchNoteCards: async () => [],
+  searchNoteCards: async (...args: unknown[]) => {
+    stub.calls.push({ fn: "searchNoteCards", args });
+    if (stub.searchThrows) throw new Error("db down");
+    return stub.hits;
+  },
 }));
 
 const { addNote, editNote, setNoteDone, deleteNote, searchNoteCards } = await import("./notes-actions");
 
-const on = () => vi.stubEnv("DECK_NOTES_ENABLED", "true");
 beforeEach(() => {
   vi.unstubAllEnvs();
   stub.paths = [];
@@ -60,23 +66,11 @@ beforeEach(() => {
   stub.found = true;
   stub.namesThrow = false;
   stub.readThrows = false;
-});
-
-describe("with the switch off", () => {
-  it("answers every action with a refusal and touches nothing", async () => {
-    expect((await addNote(DECK, "a")).ok).toBe(false);
-    expect((await editNote(DECK, NOTE, "a")).ok).toBe(false);
-    expect((await setNoteDone(DECK, NOTE, true)).ok).toBe(false);
-    expect((await deleteNote(DECK, NOTE)).ok).toBe(false);
-    expect(await searchNoteCards("sol")).toBeNull();
-    expect(stub.calls).toEqual([]);
-    expect(stub.paths).toEqual([]);
-  });
+  stub.hits = [];
+  stub.searchThrows = false;
 });
 
 describe("addNote", () => {
-  beforeEach(on);
-
   it("stores one folded line and revalidates the deck's surfaces", async () => {
     expect(await addNote(DECK, "  try\n a second   sweeper ")).toMatchObject({ ok: true });
     expect(stub.calls[0]).toEqual({ fn: "insertNote", args: [DECK, "user-1", "try a second sweeper"] });
@@ -129,8 +123,6 @@ describe("addNote", () => {
 });
 
 describe("the other writes", () => {
-  beforeEach(on);
-
   it("edit, done and delete write through the store and revalidate", async () => {
     expect(await editNote(DECK, NOTE, "changed")).toMatchObject({ ok: true });
     expect(await setNoteDone(DECK, NOTE, true)).toMatchObject({ ok: true });
@@ -162,6 +154,25 @@ describe("the other writes", () => {
     expect((await deleteNote(DECK, ["x"] as unknown as string)).ok).toBe(false);
     expect((await setNoteDone(DECK, NOTE, "true" as unknown as boolean)).ok).toBe(false);
     expect(stub.calls).toEqual([]);
+  });
+});
+
+describe("searchNoteCards", () => {
+  it("answers the store's hits for a string query", async () => {
+    stub.hits = [{ oracleId: ID, name: "Thassa's Oracle", typeLine: "Creature", commanderLegal: true, imageUri: null, flavorName: null }];
+    expect(await searchNoteCards("thassa")).toEqual(stub.hits);
+    expect(stub.calls).toEqual([{ fn: "searchNoteCards", args: ["thassa"] }]);
+  });
+
+  it("answers null for a query that is not a string, before the store", async () => {
+    expect(await searchNoteCards(7 as unknown as string)).toBeNull();
+    expect(stub.calls).toEqual([]);
+  });
+
+  it("answers null when the search throws, never a rejected action", async () => {
+    stub.searchThrows = true;
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(await searchNoteCards("thassa")).toBeNull();
   });
 });
 

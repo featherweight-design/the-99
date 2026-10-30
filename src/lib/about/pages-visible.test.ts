@@ -28,7 +28,9 @@ describe("visibleSections", () => {
     const off = visibleSections(OFF);
     const lock = off.find((s) => s.id === "your-deck")!;
     expect(lock.labels.map((l) => l.key)).not.toContain("decks/your-deck/lock");
-    expect(off.find((s) => s.id === "notes")!.labels).toEqual([]);
+    expect(off.find((s) => s.id === "stats")!.labels).toEqual([]);
+    // DECK_NOTES_ENABLED is retired (always on): its label draws whatever the env.
+    expect(off.find((s) => s.id === "notes")!.labels.map((l) => l.key)).toEqual(["decks/notes/note"]);
     expect(off.map((s) => s.id)).toEqual(ABOUT_SECTIONS.map((s) => s.id));
   });
 
@@ -374,7 +376,6 @@ describe("a section's sub-line", () => {
     const cases: [string, string, string][] = [
       ["analysis", "ANALYSIS_TAB_ENABLED", "bracket"],
       ["stats", "DECK_STATS_ENABLED", "charts"],
-      ["notes", "DECK_NOTES_ENABLED", "remember"],
       ["all-decks", "ALL_DECKS_CART_ENABLED", "one cart"],
       ["friends", "SOCIAL_FRIENDS_ENABLED", "pods"],
     ];

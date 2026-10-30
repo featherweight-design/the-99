@@ -5,12 +5,12 @@ import { decide, resolveEnv, switchBits, type OverrideRow, type SwitchSnapshot }
 import { ALL_FEATURES, ALL_FEATURES_EXCLUDED, ALL_FEATURES_RAISES, SWITCHES, SWITCH_NAMES } from "./registry";
 
 const e = (o: Record<string, string>) => o as unknown as NodeJS.ProcessEnv;
-const row = (over: Partial<OverrideRow>): OverrideRow => ({ switchName: "DECK_NOTES_ENABLED", scope: "app", groupId: null, userId: null, value: "on", ...over });
+const row = (over: Partial<OverrideRow>): OverrideRow => ({ switchName: "FEEDBACK_ENABLED", scope: "app", groupId: null, userId: null, value: "on", ...over });
 const snap = (overrides: OverrideRow[], groupOf: Record<string, string> = {}): SwitchSnapshot => ({ overrides, groupOf: new Map(Object.entries(groupOf)) });
 
 describe("resolveEnv", () => {
   it("passes the environment through untouched with no overrides, or none read", () => {
-    const env = e({ DECK_NOTES_ENABLED: "true", OTHER: "x" });
+    const env = e({ FEEDBACK_ENABLED: "true", OTHER: "x" });
     expect(resolveEnv(env, null, "u1")).toBe(env);
     expect(resolveEnv(env, snap([]), "u1")).toBe(env);
   });
@@ -21,21 +21,21 @@ describe("resolveEnv", () => {
       row({ scope: "group", groupId: "g1", value: "on" }),
       row({ scope: "user", userId: "u1", value: "off" }),
     ], { u1: "g1", u2: "g1" });
-    expect(resolveEnv(e({}), s, "u1").DECK_NOTES_ENABLED).toBe("false");
-    expect(resolveEnv(e({}), s, "u2").DECK_NOTES_ENABLED).toBe("true");
-    expect(resolveEnv(e({ DECK_NOTES_ENABLED: "true" }), s, "u3").DECK_NOTES_ENABLED).toBe("false");
-    expect(resolveEnv(e({ DECK_NOTES_ENABLED: "true" }), s, null).DECK_NOTES_ENABLED).toBe("false");
+    expect(resolveEnv(e({}), s, "u1").FEEDBACK_ENABLED).toBe("false");
+    expect(resolveEnv(e({}), s, "u2").FEEDBACK_ENABLED).toBe("true");
+    expect(resolveEnv(e({ FEEDBACK_ENABLED: "true" }), s, "u3").FEEDBACK_ENABLED).toBe("false");
+    expect(resolveEnv(e({ FEEDBACK_ENABLED: "true" }), s, null).FEEDBACK_ENABLED).toBe("false");
     expect(resolveEnv(e({ DECK_STATS_ENABLED: "true" }), s, "u3").DECK_STATS_ENABLED).toBe("true");
   });
 
   it("lets OFF win when two group rows apply", () => {
     const s = snap([row({ scope: "group", groupId: "g1", value: "on" }), row({ scope: "group", groupId: "g1", value: "off" })], { u1: "g1" });
-    expect(resolveEnv(e({}), s, "u1").DECK_NOTES_ENABLED).toBe("false");
+    expect(resolveEnv(e({}), s, "u1").FEEDBACK_ENABLED).toBe("false");
   });
 
   it("refuses every override when the environment says off: the kill switch", () => {
     const s = snap([row({ scope: "user", userId: "u1", value: "on" }), row({ scope: "app", value: "on" })]);
-    expect(resolveEnv(e({ DECK_NOTES_ENABLED: "off" }), s, "u1").DECK_NOTES_ENABLED).toBe("off");
+    expect(resolveEnv(e({ FEEDBACK_ENABLED: "off" }), s, "u1").FEEDBACK_ENABLED).toBe("off");
   });
 
   it("takes only the app-wide override of a plumbing switch", () => {
@@ -61,9 +61,9 @@ describe("resolveEnv", () => {
   });
 
   it("does not change the environment it was given", () => {
-    const env = e({ DECK_NOTES_ENABLED: "false" });
+    const env = e({ FEEDBACK_ENABLED: "false" });
     resolveEnv(env, snap([row({})]), "u1");
-    expect(env.DECK_NOTES_ENABLED).toBe("false");
+    expect(env.FEEDBACK_ENABLED).toBe("false");
   });
 });
 
@@ -101,13 +101,13 @@ describe("All features", () => {
   it("loses to the env kill and to the account's own Off, and beats group and app-wide", () => {
     const s = snap([
       all(),
-      row({ switchName: "DECK_NOTES_ENABLED", scope: "user", userId: "u1", value: "off" }),
+      row({ switchName: "CHANGE_COMMANDER_ENABLED", scope: "user", userId: "u1", value: "off" }),
       row({ switchName: "DECK_STATS_ENABLED", scope: "group", groupId: "g1", value: "off" }),
       row({ switchName: "NOTICES_ENABLED", scope: "app", value: "off" }),
     ], { u1: "g1" });
     const env = resolveEnv(e({ NEVER_CUT_ENABLED: "off" }), s, "u1");
     expect(env.NEVER_CUT_ENABLED).toBe("off");
-    expect(env.DECK_NOTES_ENABLED).toBe("false");
+    expect(env.CHANGE_COMMANDER_ENABLED).toBe("false");
     expect(env.DECK_STATS_ENABLED).toBe("true");
     expect(env.NOTICES_ENABLED).toBe("true");
     expect(decide("DECK_STATS_ENABLED", "feature", e({}), s, "u1").source).toEqual({ kind: "all" });
@@ -119,7 +119,7 @@ describe("All features", () => {
   });
 
   it("does nothing as an Off row, or at a scope other than an account", () => {
-    expect(resolveEnv(e({}), snap([all("u1"), row({ switchName: ALL_FEATURES, scope: "user", userId: "u2", value: "off" })]), "u2").DECK_NOTES_ENABLED).toBeUndefined();
-    expect(resolveEnv(e({}), snap([row({ switchName: ALL_FEATURES, scope: "app", value: "on" })]), "u1").DECK_NOTES_ENABLED).toBeUndefined();
+    expect(resolveEnv(e({}), snap([all("u1"), row({ switchName: ALL_FEATURES, scope: "user", userId: "u2", value: "off" })]), "u2").CHANGE_COMMANDER_ENABLED).toBeUndefined();
+    expect(resolveEnv(e({}), snap([row({ switchName: ALL_FEATURES, scope: "app", value: "on" })]), "u1").CHANGE_COMMANDER_ENABLED).toBeUndefined();
   });
 });

@@ -765,7 +765,6 @@ export const switchCopy: Readonly<Record<SwitchName, { label: string; descriptio
   ANNOUNCEMENTS_ENABLED: { label: "Announcements", description: "Wizards announcements on Home, in Settings and as pushes. No surface yet." },
   BRACKET_REACH_ENABLED: { label: "Bracket reach", description: "Help me choose places owned cards that reach the bracket asked for." },
   CHANGE_COMMANDER_ENABLED: { label: "Change commander", description: "Change a deck’s commander and keep the 99." },
-  DECK_NOTES_ENABLED: { label: "Deck notes", description: "Notes on a deck, in Your deck." },
   DECK_PRINTINGS_ENABLED: { label: "Deck printings", description: "Choose the printing of each card in a deck." },
   DECK_STATS_ENABLED: { label: "Deck stats", description: "The Stats view on a deck." },
   FIND_A_DECK_READ_ENABLED: { label: "Find a deck read", description: "A one-credit run inside Find a deck for it." },

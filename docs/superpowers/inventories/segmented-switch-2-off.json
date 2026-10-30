@@ -1,6 +1,6 @@
 {
-  "feature": "Segmented switch, PR 2: the deck toolbar with Stats and Notes off",
-  "note": "The PR 1 carry (#1803 scope note): the deck bar with DECK_STATS_ENABLED and DECK_NOTES_ENABLED OFF on the server, so the bar holds All and Shopping only and there are no phone rows. At 390 the arrangement cluster (grouping, sort, the List/Card well) wraps rather than overflowing. SWITCH_DECK a deck the signed-in account owns (local-dev: d0000000-0000-4000-8000-00000000cafe).",
+  "feature": "Segmented switch, PR 2: the deck toolbar with Stats off",
+  "note": "The PR 1 carry (#1803 scope note): the deck bar with DECK_STATS_ENABLED OFF on the server, so the bar holds All, Shopping and Notes (Notes is always on) and there are no phone rows. At 390 the arrangement cluster (grouping, sort, the List/Card well) wraps rather than overflowing. SWITCH_DECK a deck the signed-in account owns (local-dev: d0000000-0000-4000-8000-00000000cafe).",
   "clearAbout": true,
   "shares": {
     "module": "src/components/ui/segmented-switch.tsx",

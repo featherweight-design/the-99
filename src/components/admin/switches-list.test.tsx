@@ -14,7 +14,7 @@ const { SwitchesList } = await import("./switches-list");
 const { AdminHead } = await import("./admin-head");
 
 type Env = Partial<Record<SwitchName, string>>;
-const row = (over: Partial<OverrideRow>): OverrideRow => ({ switchName: "DECK_NOTES_ENABLED", scope: "app", groupId: null, userId: null, value: "on", ...over });
+const row = (over: Partial<OverrideRow>): OverrideRow => ({ switchName: "FEEDBACK_ENABLED", scope: "app", groupId: null, userId: null, value: "on", ...over });
 
 function draw(env: Env, overrides: OverrideRow[] = [], users = ["u1", "u2"], opts: { overridesRead?: boolean; clerk?: "ok" | "down" } = {}) {
   const verdicts = explainAccounts(env as NodeJS.ProcessEnv, { overrides, groupOf: new Map() }, users);
@@ -31,7 +31,7 @@ describe("SwitchesList", () => {
     draw({});
     expect(document.querySelectorAll("[data-switch]")).toHaveLength(SWITCH_NAMES.length);
     const [features, plumbing] = screen.getAllByRole("heading", { level: 2 });
-    expect(features.textContent).toBe("Features26");
+    expect(features.textContent).toBe("Features25");
     expect(plumbing).toHaveAttribute("data-testid", "switches-plumbing-head");
     expect(plumbing.textContent).toContain("app-wide only");
     const plumbingNames = [...plumbing.parentElement!.querySelectorAll("[data-switch]")].map((e) => e.getAttribute("data-switch"));
@@ -47,22 +47,22 @@ describe("SwitchesList", () => {
   });
 
   it("counts each chip and filters by it, keeping the heads' counts (L2)", () => {
-    draw({ DECK_NOTES_ENABLED: "true" }, [row({ switchName: "DECK_STATS_ENABLED", scope: "user", userId: "u1", value: "on" })]);
-    expect(chip(/^All/).textContent).toBe("All 33");
+    draw({ FEEDBACK_ENABLED: "true" }, [row({ switchName: "DECK_STATS_ENABLED", scope: "user", userId: "u1", value: "on" })]);
+    expect(chip(/^All/).textContent).toBe("All 32");
     expect(chip(/^All/)).toHaveAttribute("aria-checked", "true");
     expect(chip(/^Model features/).textContent).toBe("Model features 8");
     expect(chip(/^Overridden/).textContent).toBe("Overridden 1");
     fireEvent.click(chip(/^Overridden/));
     expect(chip(/^Overridden/)).toHaveAttribute("aria-checked", "true");
     expect([...document.querySelectorAll("[data-switch]")].map((e) => e.getAttribute("data-switch"))).toEqual(["DECK_STATS_ENABLED"]);
-    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe("Features26");
+    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe("Features25");
     // The Plumbing head hides when it has no rows (L3).
     expect(screen.queryByTestId("switches-plumbing-head")).toBeNull();
   });
 
   // Segmented switch 3b: Show is the shared switch, a radiogroup, so the arrows move the filter with the focus.
   it("moves the Show filter with the arrow keys, never as pressed buttons", () => {
-    draw({ DECK_NOTES_ENABLED: "true" }, [row({ switchName: "DECK_STATS_ENABLED", scope: "user", userId: "u1", value: "on" })]);
+    draw({ FEEDBACK_ENABLED: "true" }, [row({ switchName: "DECK_STATS_ENABLED", scope: "user", userId: "u1", value: "on" })]);
     expect(screen.getByRole("radiogroup", { name: "Show" }).querySelector("[aria-pressed]")).toBeNull();
     chip(/^All/).focus();
     fireEvent.keyDown(chip(/^All/), { key: "ArrowRight" });
@@ -104,8 +104,8 @@ describe("SwitchesList", () => {
   });
 
   it("draws a mixed row with its count (L6), and the phone's meta line", () => {
-    draw({ DECK_NOTES_ENABLED: "true" }, [row({ scope: "user", userId: "u2", value: "off" })]);
-    const r = rowOf("DECK_NOTES_ENABLED");
+    draw({ FEEDBACK_ENABLED: "true" }, [row({ scope: "user", userId: "u2", value: "off" })]);
+    const r = rowOf("FEEDBACK_ENABLED");
     expect(within(r).getAllByText("Mixed").length).toBe(2);
     expect(within(r).getByText("1 of 2 on", { selector: "span.font-mono" })).toBeInTheDocument();
     expect(within(r).getByTestId("switch-meta").textContent).toBe("env true · app-wide not set · 1 account · 1 of 2 on");
@@ -114,7 +114,7 @@ describe("SwitchesList", () => {
 
   it("names an unset env var, and an app-wide override", () => {
     draw({}, [row({ scope: "app", value: "on" })]);
-    const r = rowOf("DECK_NOTES_ENABLED");
+    const r = rowOf("FEEDBACK_ENABLED");
     // The overrides slot is always drawn (design table: `env · app-wide · overrides · N of 7 on`).
     expect(within(r).getByTestId("switch-meta").textContent).toBe("env unset · app-wide on · no overrides · 2 of 2 on");
   });
@@ -152,8 +152,8 @@ describe("SwitchesList", () => {
   });
 
   it("keeps the resolved count in one unbreakable piece, on the phone and on desktop", () => {
-    draw({ DECK_NOTES_ENABLED: "true" }, [row({ scope: "user", userId: "u2", value: "off" })]);
-    const counts = within(rowOf("DECK_NOTES_ENABLED")).getAllByText("1 of 2 on");
+    draw({ FEEDBACK_ENABLED: "true" }, [row({ scope: "user", userId: "u2", value: "off" })]);
+    const counts = within(rowOf("FEEDBACK_ENABLED")).getAllByText("1 of 2 on");
     expect(counts).toHaveLength(2);
     for (const c of counts) expect(c.className).toContain("whitespace-nowrap");
   });

@@ -237,7 +237,6 @@ describe("BuilderShell — the body Your deck opens on (?panel=)", () => {
             initialView={initialView}
             initialBody={initialBody}
             statsEnabled={on}
-            notesEnabled={on}
             statsData={on ? { commanders: [] } : null}
             newestAsOf={null}/>
         </BuilderScreenContext.Provider>,
@@ -259,8 +258,6 @@ describe("BuilderShell — the body Your deck opens on (?panel=)", () => {
 
   it("opens on the list when the panel it names is switched off (Copilot round 2)", async () => {
     expect(last(await opened("deck", "stats", false))).toBe("your-deck");
-    cleanup();
-    expect(last(await opened("deck", "notes", false))).toBe("your-deck");
     cleanup();
     expect(last(await opened("deck", "shopping", false))).toBe("shopping");
   });

@@ -15,8 +15,8 @@ const kept: DeckNotesView = {
   open: [{ id: "n1", body: "swap the mana rock", drawn: [{ kind: "text", text: "swap the mana rock" }], createdAt: "2026-10-02T12:00:00.000Z", doneAt: null }],
   done: [], readAt: 1,
 };
-const mount = (notes: DeckNotesView | null, enabled = true) =>
-  render(<EmptyDeckNotes enabled={enabled} deckId={DECK} notes={notes} deckCards={cmdr}><p>the empty state</p></EmptyDeckNotes>);
+const mount = (notes: DeckNotesView | null) =>
+  render(<EmptyDeckNotes deckId={DECK} notes={notes} deckCards={cmdr}><p>the empty state</p></EmptyDeckNotes>);
 
 afterEach(cleanup);
 
@@ -48,11 +48,5 @@ describe("notes on an empty deck", () => {
     expect(panelOf(screen.getByRole("tab", { name: /^All/ })).textContent).toContain("the empty state");
     fireEvent.click(screen.getByRole("tab", { name: "Notes, 1 open" }));
     expect(panelOf(screen.getByRole("tab", { name: "Notes, 1 open" })).textContent).toContain("swap the mana rock");
-  });
-
-  it("draws the empty state alone when notes are switched off", () => {
-    mount(kept, false);
-    expect(screen.getByText("the empty state")).toBeTruthy();
-    expect(screen.queryByRole("tab", { name: /^Notes/ })).toBeNull();
   });
 });

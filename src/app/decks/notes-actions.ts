@@ -7,7 +7,6 @@ import { isUuid } from "../../lib/uuid";
 import { requireDeck } from "../../lib/decks/read";
 import { deckSurfaces } from "../../lib/decks/revalidate";
 import { readDeckNotes, type NotesResult } from "../../lib/decks/notes-read";
-import { deckNotesEnabled } from "../../lib/decks/notes-flag";
 import { checkBody, tagIds, withCurrentNames } from "../../lib/decks/notes-body";
 import {
   currentNames, insertNote, removeNote, searchNoteCards as searchNoteCardsIn, setNoteDone as setDone, updateNoteBody,
@@ -16,9 +15,8 @@ import {
 import { deckNotesCopy } from "../../lib/copy/deck-notes";
 
 // The four acts on a deck's notes, and the picker's lookup. Each is a public endpoint, so every argument is
-// checked at runtime (the declared types are claims about the caller), the flag is checked first (a
-// deployment without `DECK_NOTES_ENABLED` answers nothing), the session decides the reader, and the deck is
-// loaded through `requireDeck` before anything is written.
+// checked at runtime (the declared types are claims about the caller), the session decides the reader, and
+// the deck is loaded through `requireDeck` before anything is written.
 //
 // A write revalidates `deckSurfaces`. Notes sit in neither of the deck page's two cached reads
 // (`loadDeckSuggestions`, `readSynergyCards`) and in no list-stamp table, so nothing cached needs retiring.
@@ -67,7 +65,6 @@ export async function addNote(deckId: string, rawBody: string): Promise<NotesRes
   const refuse = { ok: false as const, message: deckNotesCopy.add.refused };
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (!deckNotesEnabled(env)) return refuse;
   if (!isUuid(deckId)) return refuse;
   const deck = await requireDeck(deckId, userId);
   try {
@@ -87,7 +84,6 @@ export async function editNote(deckId: string, noteId: string, rawBody: string):
   const refuse = { ok: false as const, message: deckNotesCopy.edit.refused };
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (!deckNotesEnabled(env)) return refuse;
   if (!isUuid(deckId) || !isUuid(noteId)) return refuse;
   const deck = await requireDeck(deckId, userId);
   try {
@@ -106,7 +102,6 @@ export async function setNoteDone(deckId: string, noteId: string, done: boolean)
   const refuse = { ok: false as const, message: done === true ? deckNotesCopy.row.doneRefused : deckNotesCopy.row.reopenRefused };
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (!deckNotesEnabled(env)) return refuse;
   if (!isUuid(deckId) || !isUuid(noteId) || typeof done !== "boolean") return refuse;
   const deck = await requireDeck(deckId, userId);
   try {
@@ -122,7 +117,6 @@ export async function deleteNote(deckId: string, noteId: string): Promise<NotesR
   const refuse = { ok: false as const, message: deckNotesCopy.confirm.refused };
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (!deckNotesEnabled(env)) return refuse;
   if (!isUuid(deckId) || !isUuid(noteId)) return refuse;
   const deck = await requireDeck(deckId, userId);
   try {
@@ -134,11 +128,9 @@ export async function deleteNote(deckId: string, noteId: string): Promise<NotesR
   return fresh(deckId, userId, deck, env);
 }
 
-/** The `[[` picker's "any card" lookup. Null when the switch is off or the search fails. */
+/** The `[[` picker's "any card" lookup. Null when the search fails. */
 export async function searchNoteCards(query: string): Promise<NoteCardHit[] | null> {
-  const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
-  if (!deckNotesEnabled(env)) return null;
+  await requireUserId();
   if (typeof query !== "string") return null;
   try {
     return await searchNoteCardsIn(query);

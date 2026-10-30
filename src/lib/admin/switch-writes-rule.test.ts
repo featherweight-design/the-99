@@ -15,11 +15,11 @@ const write = (w: Partial<Write>): Write => ({ op: "set", name: "TUNING_ENABLED"
 
 describe("validate", () => {
   it("normalizes a good set and a good clear", () => {
-    expect(check("set", { switchName: "DECK_NOTES_ENABLED", scope: "user", targetUserId: "u1", value: "off", note: "  why  " })).toEqual({
+    expect(check("set", { switchName: "FEEDBACK_ENABLED", scope: "user", targetUserId: "u1", value: "off", note: "  why  " })).toEqual({
       ok: true,
-      write: { op: "set", name: "DECK_NOTES_ENABLED", scope: "user", groupId: null, userId: "u1", value: "off", note: "why", confirmed: null },
+      write: { op: "set", name: "FEEDBACK_ENABLED", scope: "user", groupId: null, userId: "u1", value: "off", note: "why", confirmed: null },
     });
-    expect(check("clear", { switchName: "DECK_NOTES_ENABLED", scope: "group", groupId: G, confirmed: 3, note: "ignored" })).toMatchObject({
+    expect(check("clear", { switchName: "FEEDBACK_ENABLED", scope: "group", groupId: G, confirmed: 3, note: "ignored" })).toMatchObject({
       ok: true,
       write: { op: "clear", groupId: G, value: null, note: "ignored", confirmed: 3 },
     });
@@ -27,23 +27,23 @@ describe("validate", () => {
 
   it.each([
     ["switch", "set", { switchName: "NOPE_ENABLED", scope: "app", value: "on" }, {}],
-    ["scope", "set", { switchName: "DECK_NOTES_ENABLED", scope: "team", value: "on" }, {}],
+    ["scope", "set", { switchName: "FEEDBACK_ENABLED", scope: "team", value: "on" }, {}],
     ["plumbing", "set", { switchName: "LIST_CACHE_ENABLED", scope: "user", targetUserId: "u1", value: "on" }, {}],
     ["plumbing", "clear", { switchName: "LIST_CACHE_ENABLED", scope: "group", groupId: G }, {}],
-    ["killed", "set", { switchName: "DECK_NOTES_ENABLED", scope: "app", value: "on" }, { DECK_NOTES_ENABLED: "off" }],
-    ["target", "set", { switchName: "DECK_NOTES_ENABLED", scope: "app", targetUserId: "u1", value: "on" }, {}],
-    ["target", "set", { switchName: "DECK_NOTES_ENABLED", scope: "group", groupId: "not-a-uuid", value: "on" }, {}],
-    ["target", "set", { switchName: "DECK_NOTES_ENABLED", scope: "user", value: "on" }, {}],
-    ["target", "set", { switchName: "DECK_NOTES_ENABLED", scope: "user", targetUserId: "u1", groupId: G, value: "on" }, {}],
-    ["account", "set", { switchName: "DECK_NOTES_ENABLED", scope: "user", targetUserId: "stranger", value: "on" }, {}],
-    ["value", "set", { switchName: "DECK_NOTES_ENABLED", scope: "app", value: "true" }, {}],
-    ["note", "set", { switchName: "DECK_NOTES_ENABLED", scope: "app", value: "on", note: "x".repeat(501) }, {}],
+    ["killed", "set", { switchName: "FEEDBACK_ENABLED", scope: "app", value: "on" }, { FEEDBACK_ENABLED: "off" }],
+    ["target", "set", { switchName: "FEEDBACK_ENABLED", scope: "app", targetUserId: "u1", value: "on" }, {}],
+    ["target", "set", { switchName: "FEEDBACK_ENABLED", scope: "group", groupId: "not-a-uuid", value: "on" }, {}],
+    ["target", "set", { switchName: "FEEDBACK_ENABLED", scope: "user", value: "on" }, {}],
+    ["target", "set", { switchName: "FEEDBACK_ENABLED", scope: "user", targetUserId: "u1", groupId: G, value: "on" }, {}],
+    ["account", "set", { switchName: "FEEDBACK_ENABLED", scope: "user", targetUserId: "stranger", value: "on" }, {}],
+    ["value", "set", { switchName: "FEEDBACK_ENABLED", scope: "app", value: "true" }, {}],
+    ["note", "set", { switchName: "FEEDBACK_ENABLED", scope: "app", value: "on", note: "x".repeat(501) }, {}],
   ] as const)("refuses %s", (error, op, input, env) => {
     expect(check(op, input, env)).toEqual({ ok: false, error });
   });
 
   it("lets a clear through under a kill, since Clear still works (F5)", () => {
-    expect(check("clear", { switchName: "DECK_NOTES_ENABLED", scope: "user", targetUserId: "u1" }, { DECK_NOTES_ENABLED: "off" }).ok).toBe(true);
+    expect(check("clear", { switchName: "FEEDBACK_ENABLED", scope: "user", targetUserId: "u1" }, { FEEDBACK_ENABLED: "off" }).ok).toBe(true);
   });
 });
 

@@ -243,7 +243,7 @@ describe("the list caches' payload versions", () => {
     vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "false");
     try {
       const on = { LABEL_ROLE_COUNTS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
-      const onToo = { LABEL_ROLE_COUNTS_ENABLED: "true", DECK_NOTES_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+      const onToo = { LABEL_ROLE_COUNTS_ENABLED: "true", FEEDBACK_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
       const off = { LABEL_ROLE_COUNTS_ENABLED: "false" } as unknown as NodeJS.ProcessEnv;
       expect(commanderRankingsKey(on)).not.toEqual(commanderRankingsKey(off));
       expect(commanderRankingsKey(on)).toEqual(commanderRankingsKey(onToo));

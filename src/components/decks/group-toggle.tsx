@@ -132,7 +132,7 @@ type GroupToggleProps = {
    */
   stats?: { open: boolean; onChange: (open: boolean) => void };
   /**
-   * `DECK_NOTES_ENABLED`: present adds a Notes segment after Stats (or after Shopping with Stats off:
+   * Present adds a Notes segment after Stats (or after Shopping with Stats off:
    * `All · Shopping | Notes`). `count` is the open notes, drawn in neutral mono and absent at zero.
    * While `open`, every list tool steps aside, as for Stats.
    */
@@ -234,8 +234,8 @@ export function GroupToggle({
           whole rather than splitting the pair across two lines. */}
       <div className="flex flex-wrap items-center gap-[7px] md:gap-[10px]">
         {/* One segmented well (handoff 2a), a tablist since it swaps what the panel shows: All and Shopping,
-            then, behind a hairline, Stats and Notes when their switches are on (DECK_STATS_ENABLED /
-            DECK_NOTES_ENABLED). Shopping keeps its warm ink selected or not (the accent tone). Full width at
+            then, behind a hairline, Stats when its switch is on (DECK_STATS_ENABLED) and Notes when the
+            caller passes them. Shopping keeps its warm ink selected or not (the accent tone). Full width at
             phone with the segments sharing it when the toolbar takes its explicit phone rows; content width
             otherwise, and from `md:` either way. */}
           <SegmentedSwitch

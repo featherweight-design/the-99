@@ -64,10 +64,10 @@ describe("switchSnapshot", () => {
   });
 
   it("hands the resolver what the statement returns", async () => {
-    reads.rows = [{ switchName: "DECK_NOTES_ENABLED", scope: "group", groupId: "g1", userId: null, value: "on" }];
+    reads.rows = [{ switchName: "FEEDBACK_ENABLED", scope: "group", groupId: "g1", userId: null, value: "on" }];
     reads.members = [{ userId: "u1", groupId: "g1" }];
     const env = await resolveSwitchEnv("u1", {} as unknown as NodeJS.ProcessEnv);
-    expect(env.DECK_NOTES_ENABLED).toBe("true");
+    expect(env.FEEDBACK_ENABLED).toBe("true");
   });
 
   it("reads again at once after an admin write clears it", async () => {
@@ -90,10 +90,10 @@ describe("switchSnapshot", () => {
   it("drops a row naming a switch this build does not know", async () => {
     reads.rows = [
       { switchName: "RETIRED_ENABLED", scope: "app", groupId: null, userId: null, value: "on" },
-      { switchName: "DECK_NOTES_ENABLED", scope: "user", groupId: null, userId: "u1", value: "on" },
+      { switchName: "FEEDBACK_ENABLED", scope: "user", groupId: null, userId: "u1", value: "on" },
     ];
-    expect((await switchSnapshot(1_000))?.overrides.map((o) => o.switchName)).toEqual(["DECK_NOTES_ENABLED"]);
+    expect((await switchSnapshot(1_000))?.overrides.map((o) => o.switchName)).toEqual(["FEEDBACK_ENABLED"]);
     const env = await resolveSwitchEnv("u1", {} as unknown as NodeJS.ProcessEnv);
-    expect(env.DECK_NOTES_ENABLED).toBe("true");
+    expect(env.FEEDBACK_ENABLED).toBe("true");
   });
 });
