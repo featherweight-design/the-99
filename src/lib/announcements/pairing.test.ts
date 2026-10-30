@@ -16,6 +16,7 @@ describe("canPair", () => {
     ["Partner—different groups", legend("A", "Partner—Survivors"), legend("B", "Partner—Father & son"), false],
     ["Partner—group with plain Partner", legend("A", "Partner—Survivors"), legend("B", "Partner"), false],
     ["Partner with, named", legend("Pir, Imaginative Rascal", "Partner with Toothy, Imaginary Friend (When this…)"), legend("Toothy, Imaginary Friend", "Partner with Pir, Imaginative Rascal"), true],
+    ["Partner with, one-sided", legend("Pir, Imaginative Rascal", "Partner with Toothy, Imaginary Friend"), legend("Toothy, Imaginary Friend", "Flying"), false],
     ["Partner with, someone else", legend("Pir, Imaginative Rascal", "Partner with Toothy, Imaginary Friend"), janeway, false],
     ["Friends forever, both", legend("A", "Flying\nFriends forever (You can have…)"), legend("B", "Friends forever"), true],
     ["Choose a Background + Background", legend("Wilson", "Choose a Background (You can have…)"), card("Raised by Giants", "Legendary Enchantment — Background"), true],

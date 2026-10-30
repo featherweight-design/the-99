@@ -63,7 +63,8 @@ export function canPair(a: CommanderFacts, b: CommanderFacts): boolean {
   const ga = partnerGroup(a);
   const gb = partnerGroup(b);
   if (ga !== null && ga === gb) return true;
-  if (partnersWith(a, b) || partnersWith(b, a)) return true;
+  // Each must name the other (as decks/partner.ts requires): a one-sided line is not a pair.
+  if (partnersWith(a, b) && partnersWith(b, a)) return true;
   if (lineStarts(a, /^friends forever\b/i) && lineStarts(b, /^friends forever\b/i)) return true;
   if ((hasBackgroundChoice(a) && isBackground(b)) || (hasBackgroundChoice(b) && isBackground(a))) return true;
   if ((isCompanionOfDoctor(a) && isDoctor(b)) || (isCompanionOfDoctor(b) && isDoctor(a))) return true;
