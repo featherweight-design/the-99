@@ -21,6 +21,8 @@ export function DismissButton({ title, onPress, disabled = false, className = ""
   /** The lead's phone nudge (`.d4n.ph .ld .la .x4`, margin-top −2px). */
   className?: string;
 }) {
+  // The ring is a box-shadow over a TRANSPARENT outline, never `outline-none`: forced-colors mode drops shadows and
+  // repaints the outline in a system color, so a keyboard reader in High Contrast still finds the focused ✕.
   return (
     <button
       type="button"
@@ -28,7 +30,7 @@ export function DismissButton({ title, onPress, disabled = false, className = ""
       aria-label={d.aria(title)}
       disabled={disabled}
       onClick={(e) => onPress(e.currentTarget)}
-      className={`z-[1] ml-auto mr-[-10px] flex h-[44px] w-[44px] flex-none cursor-pointer md:mr-[-6px] md:h-[32px] md:w-[32px] items-center justify-center rounded-[8px] border-0 bg-transparent p-0 text-[13px] focus-visible:outline-none focus-visible:shadow-[0_0_0_2px_var(--accent)] text-[color:var(--fg-muted)] hover:text-[color:var(--fg)] disabled:cursor-default ${HIT} ${className}`}
+      className={`z-[1] ml-auto mr-[-10px] flex h-[44px] w-[44px] flex-none cursor-pointer md:mr-[-6px] md:h-[32px] md:w-[32px] items-center justify-center rounded-[8px] border-0 bg-transparent p-0 text-[13px] focus-visible:outline-transparent focus-visible:shadow-[0_0_0_2px_var(--accent)] text-[color:var(--fg-muted)] hover:text-[color:var(--fg)] disabled:cursor-default ${HIT} ${className}`}
     >
       <span aria-hidden>✕</span>
     </button>

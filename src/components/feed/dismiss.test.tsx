@@ -91,7 +91,9 @@ describe("What's new on Home", () => {
     const focus = vi.spyOn(HTMLElement.prototype, "focus");
     render(<WhatsNew feed={feed([view(1), view(2)])} now={NOW} />);
     const second = screen.getByRole("button", { name: d.aria(titleOf(2)) });
-    expect(second.className.split(/\s+/)).toEqual(expect.arrayContaining(["rounded-[8px]", "focus-visible:outline-none", "focus-visible:shadow-[0_0_0_2px_var(--accent)]"]));
+    expect(second.className.split(/\s+/)).toEqual(expect.arrayContaining(["rounded-[8px]", "focus-visible:outline-transparent", "focus-visible:shadow-[0_0_0_2px_var(--accent)]"]));
+    // A transparent outline, never none: forced-colors mode drops the shadow and paints the outline in a system color.
+    expect(second.className).not.toContain("focus-visible:outline-none");
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: d.aria(titleOf(1)) })); });
     expect(document.activeElement).toBe(second);
     expect(focus).toHaveBeenCalledWith({ focusVisible: true });
