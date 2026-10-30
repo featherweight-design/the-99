@@ -166,6 +166,13 @@ describe("FeedItemRow", () => {
     expect(picture.getAttribute("aria-hidden")).toBe("true");
   });
 
+  it("draws a fixed press label on one line, as the announcements boards do", () => {
+    list(<FeedItemRow item={view({ href: "/collection/sets/sos", name: "Secrets of Strixhaven", setSize: 288 })} now={NOW} />);
+    const press = screen.getByRole("link", { name: /See the set/ });
+    expect(press.className.split(/\s+/)).toContain("whitespace-nowrap");
+    expect(press.className).not.toContain("[overflow-wrap:anywhere]");
+  });
+
   it("lets a long friend name wrap inside the press instead of overflowing the row", () => {
     list(<FeedItemRow item={view({ kind: "trade-match", friend: { publicId: "p1", displayName: "W".repeat(30) }, href: "/friends/p1" })} now={NOW} />);
     const press = screen.getByRole("link", { name: /spares/ });

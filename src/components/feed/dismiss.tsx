@@ -28,7 +28,7 @@ export function DismissButton({ title, onPress, disabled = false, className = ""
       aria-label={d.aria(title)}
       disabled={disabled}
       onClick={(e) => onPress(e.currentTarget)}
-      className={`z-[1] ml-auto mr-[-10px] flex h-[44px] w-[44px] flex-none cursor-pointer md:mr-[-6px] md:h-[32px] md:w-[32px] items-center justify-center border-0 bg-transparent p-0 text-[13px] text-[color:var(--fg-muted)] hover:text-[color:var(--fg)] disabled:cursor-default ${HIT} ${className}`}
+      className={`z-[1] ml-auto mr-[-10px] flex h-[44px] w-[44px] flex-none cursor-pointer md:mr-[-6px] md:h-[32px] md:w-[32px] items-center justify-center rounded-[8px] border-0 bg-transparent p-0 text-[13px] focus-visible:outline-none focus-visible:shadow-[0_0_0_2px_var(--accent)] text-[color:var(--fg-muted)] hover:text-[color:var(--fg)] disabled:cursor-default ${HIT} ${className}`}
     >
       <span aria-hidden>✕</span>
     </button>
@@ -76,7 +76,8 @@ export function useFeedDismiss(fallback?: () => HTMLElement | null, onChange?: (
   function dismiss(key: string, from: HTMLElement, move = true) {
     const next = nextDismiss(from);
     put(key, true);
-    if (move) requestAnimationFrame(() => (next ?? fallback?.())?.focus());
+    // `focusVisible`: the ring shows on the next ✕ after a pointer press too, as the boards draw it (Row-States).
+    if (move) requestAnimationFrame(() => (next ?? fallback?.())?.focus({ focusVisible: true } as FocusOptions));
     void dismissFeedItemAction(key)
       .then((r) => {
         if (!r.ok) throw new Error(r.reason);
