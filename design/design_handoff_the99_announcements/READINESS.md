@@ -244,6 +244,10 @@ the early page's own set rule (`resolvePostSet`, same window and set types):
 that set's block once open (the server draws the group closed, so the browser's own jump found no height). The rows
 view's set row carries the same id as the tiles view's block.
 
+**Off-host post (ruling).** See the lists is in-app, so it draws whenever a list qualifies; only Read the post depends
+on the stored address being https on magic.wizards.com. Off-host, See the lists is the one press (the row's stretched
+link, the lead's filled button).
+
 **Deviation.** The row's picture links where the stretched press goes (See the lists), not out to the post.
 
 **Copy review.** "See the lists" ships as drawn.

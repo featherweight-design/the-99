@@ -84,8 +84,12 @@ export function feedText(item: FeedView): { title: string; line: ReactNode; pres
       return {
         title: item.post?.title ?? c.kicker[item.kind],
         line: item.post?.summary ?? null,
-        // Only with somewhere to go: a stored address that is not a magic.wizards.com page draws no press (`wizardsPostUrl`).
-        press: item.outbound ? (item.kind === "commander-decklists" ? c.press.readPost : c.press.readOnWizards) : null,
+        // Only with somewhere to go: a stored address that is not a magic.wizards.com page draws no press out
+        // (`wizardsPostUrl`). A decklists post with its lists in still has See the lists, in the app (`href`): beside
+        // Read the post it is drawn by `seesLists`; alone, it is the one press.
+        press: item.outbound
+          ? (item.kind === "commander-decklists" ? c.press.readPost : c.press.readOnWizards)
+          : item.kind === "commander-decklists" && item.href ? c.press.seeLists : null,
       };
   }
 }
@@ -139,7 +143,7 @@ function PostPicture({ item, box }: { item: FeedView; box: string }) {
   );
   const shape = `${box} overflow-hidden rounded-[4px] ${hero ? "bg-[color:var(--surface-sunken)]" : ""}`;
   // A decklists post with its lists in goes where the row's stretched press goes: See the lists, in the app.
-  if (seesLists(item) && item.href) {
+  if (item.kind === "commander-decklists" && item.href) {
     return (
       <Link href={item.href} aria-hidden tabIndex={-1} data-feed-picture className={`${shape} block`}>
         {inner}

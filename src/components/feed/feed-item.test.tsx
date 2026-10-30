@@ -324,6 +324,20 @@ describe("a decklists post's two presses (Announcements UI 6b, board Home-Rows `
     expect(two.className).toMatch(/md:flex-col .*md:items-end/);
   });
 
+  it("draws See the lists alone, primary and stretched, when the post's address is off magic.wizards.com", () => {
+    const { container } = list(<FeedItemRow item={item({ outbound: null })} now={NOW} />);
+    expect(container.querySelector("[data-feed-two]")).toBeNull();
+    const presses = container.querySelectorAll("[data-feed-press]");
+    expect(presses).toHaveLength(1);
+    expect(presses[0].textContent).toBe("See the lists ›");
+    expect(presses[0]).toHaveAttribute("href", "/decks/precons#announced-fdc");
+    expect(presses[0]).not.toHaveAttribute("target");
+    expect(presses[0].className).toContain("after:inset-0");
+    expect(presses[0].className).toContain("text-[color:var(--accent-text)]");
+    expect(container.querySelector("[data-feed-picture]")).toHaveAttribute("href", "/decks/precons#announced-fdc");
+    expect(container.textContent).not.toContain("Read the post");
+  });
+
   it("keeps the one Read the post on a decklists post with no list in, and on every other post", () => {
     const none = list(<FeedItemRow item={item({ href: null })} now={NOW} />);
     expect(none.container.querySelector("[data-feed-two]")).toBeNull();

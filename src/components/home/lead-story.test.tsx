@@ -244,6 +244,18 @@ describe("LeadStory, a Wizards post (announcements board Lead-Story)", () => {
     expect(screen.getByRole("button", { name: /Hide/ })).toBeInTheDocument();
   });
 
+  it("leads with See the lists alone, filled, when the post's address is off magic.wizards.com", () => {
+    const item: FeedView = { ...POST, kind: "commander-decklists", href: "/decks/precons#announced-fdc", outbound: null, post: { ...POST.post!, lists: { n: 3, of: 5 } } };
+    const { container } = render(<LeadStory item={item} now={NOW} />);
+    expect(container.querySelector("[data-lead-two]")).toBeNull();
+    const links = screen.getAllByRole("link");
+    expect(links).toHaveLength(1);
+    expect(links[0]).toHaveAttribute("href", "/decks/precons#announced-fdc");
+    expect(links[0]).not.toHaveAttribute("target");
+    expect(links[0].textContent).toBe(feedCopy.home.press.seeLists);
+    expect(links[0].className).toContain("bg-[color:var(--accent)]");
+  });
+
   it("keeps a Secret Lair lead's one filled press, href or not", () => {
     const { container } = render(<LeadStory item={{ ...POST, href: "/decks/precons" }} now={NOW} />);
     expect(container.querySelector("[data-lead-two]")).toBeNull();
