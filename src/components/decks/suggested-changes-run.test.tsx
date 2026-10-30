@@ -862,6 +862,24 @@ describe("afterStaged", () => {
     expect(out.get("d1:o-b")).toEqual({ built: 98, inDraft: true });
     expect(out.get("d2:o-b")).toEqual({ built: 60, inDraft: false });
   });
+  // A pull of a card the source's draft already cut writes only a release: the deck keeps its size.
+  it("does not count a staged pull whose card the source's draft already cut", () => {
+    const cut = new Map([
+      ["d1:o-a", { built: 98, inDraft: false }],
+      ["d1:o-b", { built: 98, inDraft: true }],
+    ]);
+    const out = afterStaged(cut, [{ deckId: "d1", oracleId: "o-a" }]);
+    expect(out.get("d1:o-b")).toEqual({ built: 98, inDraft: true });
+    // The picker's "→ N cards" for B: 98 less B's own copy.
+    const b = out.get("d1:o-b")!;
+    expect(b.inDraft ? b.built - 1 : b.built).toBe(97);
+  });
+
+  it("does not count a staged pull whose figure was never read", () => {
+    const out = afterStaged(new Map([["d1:o-b", { built: 98, inDraft: true }]]), [{ deckId: "d1", oracleId: "o-a" }]);
+    expect(out.get("d1:o-b")!.built).toBe(98);
+  });
+
   it("leaves the figures as read with nothing staged", () => {
     expect(afterStaged(figures, [])).toEqual(figures);
   });
