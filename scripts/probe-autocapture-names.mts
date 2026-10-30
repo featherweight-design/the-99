@@ -23,10 +23,11 @@
 //   PROBE_BASE=http://localhost:3312 pnpm probe:autocapture-names
 import { neon } from "@neondatabase/serverless";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import ts from "typescript";
 import { chromium, type Page } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
-import { posthogOptions } from "../src/lib/analytics/posthog";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, CLERK_SECRET_KEY, DATABASE_URL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "DATABASE_URL"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
@@ -41,6 +42,19 @@ if (!EMAIL.includes("+clerk_test") && !PASSWORD) throw new Error("Set E2E_AUDIT_
 if (!CLERK_SECRET_KEY.startsWith("sk_test_")) throw new Error("refusing: CLERK_SECRET_KEY is not a development instance's");
 const sql = neon(DATABASE_URL);
 const POSTHOG_BUNDLE = join(process.cwd(), "node_modules/posthog-js/dist/array.full.js");
+
+/** A source file as plain script text a page can evaluate (CommonJS, types erased). */
+const transpiled = (path: string) =>
+  ts.transpileModule(readFileSync(join(process.cwd(), path), "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+/**
+ * The SHIPPED analytics module (`posthogOptions` and its `before_send`, `redactCapture`), built from the source files
+ * themselves, so the page runs the options and the redaction the app ships. `scrub.ts` has no runtime imports.
+ */
+const SHIPPED = `(() => {
+  const load = (code, require) => { const module = { exports: {} }; const exports = module.exports; new Function("module", "exports", "require", code)(module, exports, require); return module.exports; };
+  const scrub = load(${JSON.stringify(transpiled("src/lib/sentry/scrub.ts"))}, () => ({}));
+  window.__shipped = load(${JSON.stringify(transpiled("src/lib/analytics/posthog.ts"))}, () => scrub);
+})();`;
 
 type W = {
   posthog: { init: (key: string, config: Record<string, unknown>) => void; autocapture?: { onRemoteConfig: (c: unknown) => void } };
@@ -92,11 +106,11 @@ async function signIn(page: Page, email: string, password: string) {
 /** posthog-js on the shipped options in this page; every event is recorded in `window.__events` and none is sent. */
 async function armPostHog(page: Page) {
   await page.addScriptTag({ path: POSTHOG_BUNDLE });
-  const { before_send: _shipped, ...options } = posthogOptions("https://ph.invalid");
-  void _shipped;
-  await page.evaluate((shipped) => {
-    const w = window as unknown as W;
+  await page.addScriptTag({ content: SHIPPED });
+  await page.evaluate(() => {
+    const w = window as unknown as W & { __shipped: { posthogOptions: (host: string) => Record<string, unknown> & { before_send: (e: unknown) => unknown } } };
     w.__events = [];
+    const shipped = w.__shipped.posthogOptions("https://ph.invalid");
     w.posthog.init("phc_probe", {
       ...shipped,
       capture_pageview: false,
@@ -107,13 +121,15 @@ async function armPostHog(page: Page) {
       persistence: "memory",
       disable_external_dependency_loading: true,
       opt_out_useragent_filter: true,
+      // The shipped `before_send` runs first (so an event is recorded as it would leave the browser); nothing is sent.
       before_send: (event: unknown) => {
-        if (event) w.__events.push(JSON.stringify(event));
+        const out = shipped.before_send(event);
+        if (out) w.__events.push(JSON.stringify(out));
         return null;
       },
     });
     w.posthog.autocapture?.onRemoteConfig({ ok: true, config: { autocapture_opt_out: false } });
-  }, options as Record<string, unknown>);
+  });
 }
 
 /** Presses the nearest clickable ancestor of the first visible text node holding `name`; false when none is drawn. */
@@ -137,6 +153,19 @@ async function pressName(page: Page, name: string): Promise<boolean> {
 async function events(page: Page): Promise<string[]> {
   return page.evaluate(() => (window as unknown as W).__events.slice());
 }
+
+/** Loads a page and fails the probe when it did not load as the signed-in account (an error status, a redirect to sign-in). */
+async function open(page: Page, route: string) {
+  const response = await page.goto(`${BASE}${route}`, { waitUntil: "load", timeout: 45_000 });
+  if (!response || !response.ok()) throw new Error(`${route} did not load (${response?.status() ?? "no response"}); is PROBE_BASE serving this worktree?`);
+  if (new URL(page.url()).pathname.startsWith("/sign-")) throw new Error(`${route} redirected to sign-in: the session did not hold`);
+  await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => undefined);
+}
+
+/** The text as JSON writes it inside a string (quotes and backslashes escaped), for a substring test on a serialized event. */
+const inJson = (text: string) => JSON.stringify(text).slice(1, -1);
+/** A `$autocapture` event that carries `text` anywhere (its text, attributes or elements chain). */
+const carries = (event: string, text: string) => event.includes('"$autocapture"') && event.includes(inJson(text));
 
 type Family = { family: string; routes: string[]; names: string[] };
 
@@ -171,30 +200,38 @@ async function main() {
       let leaked: string[] = [];
       for (const route of routes) {
         for (const name of names) {
-          await page.goto(`${BASE}${route}`, { waitUntil: "networkidle" }).catch(() => undefined);
+          await open(page, route);
           await armPostHog(page);
           if (!(await pressName(page, name))) continue;
           pressed += 1;
           await page.waitForTimeout(250);
-          leaked = leaked.concat((await events(page)).filter((e) => e.includes('"$autocapture"') && e.includes(name.replace(/"/g, '\\"'))).map(() => `${route}: ${name}`));
+          leaked = leaked.concat((await events(page)).filter((e) => carries(e, name)).map(() => `${route}: ${name}`));
         }
       }
       if (pressed === 0) skip(`${family}: a press on a name`, "no route drew one of this account's names");
       else check(leaked.length === 0, `${family}: no $autocapture event carries a name, over ${pressed} press(es)`, leaked);
     }
 
-    // The control: an unmarked button on a page is recorded, so a harness that records nothing cannot pass the above.
-    await page.goto(`${BASE}/friends`, { waitUntil: "networkidle" }).catch(() => undefined);
+    // The controls, on the same harness: a name on an UNMARKED button is recorded (so a harness that records nothing
+    // cannot pass the checks above), and the same name on a MARKED button is not.
+    await open(page, "/friends");
     await armPostHog(page);
-    await page.evaluate(() => {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.textContent = "probe control";
-      document.body.append(b);
-      b.click();
-    });
+    const CONTROL = "Controlname Probeson";
+    await page.evaluate((text) => {
+      for (const cls of ["", "ph-no-capture"]) {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = cls;
+        b.dataset.control = cls || "unmarked";
+        b.textContent = `${text} ${cls || "unmarked"}`;
+        document.body.append(b);
+        b.click();
+      }
+    }, CONTROL);
     await page.waitForTimeout(250);
-    check((await events(page)).some((e) => e.includes('"$autocapture"') && e.includes("probe control")), "control: an unmarked button press is recorded", await events(page).then((e) => e.length));
+    const seen = await events(page);
+    check(seen.some((e) => carries(e, `${CONTROL} unmarked`)), "control: an unmarked press carrying a name is recorded", seen.length);
+    check(!seen.some((e) => carries(e, `${CONTROL} ph-no-capture`)), "control: a marked press carrying the same kind of name records nothing", seen.length);
   } finally {
     await browser.close();
   }

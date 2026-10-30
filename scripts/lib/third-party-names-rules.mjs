@@ -52,6 +52,8 @@ export const RAW_ROW_READS = [
   "src/lib/social/home-friends.ts#loadHomeFriends",
   // A game's save resolves a friend seat and writes the name into the game's snapshot columns; the name is branded
   // on the way out (`savedName`, opponent-names.ts), never on the way in.
+  // `friendDecksIn` has two callers: the game save (above) and Rule 0's seat check (rule-zero.ts), which reads only
+  // each row's `id` and `userId` to learn who owns a deck and never reads `name`, so nothing there needs minting.
   "src/lib/social/games.ts#friendshipsIn",
   "src/lib/social/games.ts#friendDecksIn",
 ];

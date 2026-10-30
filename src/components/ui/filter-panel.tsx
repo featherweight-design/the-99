@@ -73,7 +73,13 @@ export type FilterPanelOption = {
  * An option whose name may be another reader's (the cart's Friend filter): every element holding the name is marked,
  * and the panel reads it only to hand the copy functions a string.
  */
-export type FilterPanelPersonOption = Omit<FilterPanelOption, "label"> & { label: string | ThirdPartyName };
+/**
+ * An option is EITHER plain (a set, a color, "Anyone") OR a person's: a person's label is a `ThirdPartyName` and nothing
+ * else, so a friend's name is never a bare string here. A person's option is drawn marked and announced marked.
+ */
+export type FilterPanelPersonOption =
+  | (Omit<FilterPanelOption, "label"> & { label: string })
+  | (Omit<FilterPanelOption, "label"> & { label: ThirdPartyName });
 
 /** Desktop option-row minimum height, when the caller does not ask for a taller one. */
 const DESKTOP_ROW_MIN = 40;
@@ -276,6 +282,10 @@ export function FilterPanel({
   const [activeCode, setActiveCode] = useState<string | null>(null);
   // A friend's option is announced here, drawn marked, and never handed to `onAnnounce`, whose callers keep a string.
   const [personAnnouncement, setPersonAnnouncement] = useState<PersonParts | null>(null);
+  const personTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (personTimer.current) clearTimeout(personTimer.current);
+  }, []);
   // Selection as it stood when the panel opened. Grouping is computed once, on
   // open, and NOT recomputed while it is open — re-sorting on every toggle would
   // move rows under the pointer mid-interaction.
@@ -619,7 +629,11 @@ export function FilterPanel({
       ? copy.optionAriaUnavailable(option.hint ? `${mark} (${option.hint})` : mark)
       : copy.optionAria(option.hint ? `${mark} (${option.hint})` : mark, option.count, isSelected);
     const [before, after = ""] = sentence.split(mark);
-    setPersonAnnouncement([before, option.label, after]);
+    // Emptied first, so the same words twice in a row (Home, End, the same row) are a change a screen reader announces.
+    setPersonAnnouncement(null);
+    if (personTimer.current) clearTimeout(personTimer.current);
+    const parts: PersonParts = [before, option.label, after];
+    personTimer.current = setTimeout(() => setPersonAnnouncement(parts), 60);
   }
 
   function optionAria(option: FilterPanelPersonOption, isSelected: boolean): string {
@@ -1047,13 +1061,18 @@ export function FilterPanel({
             ? `${copy.panelAriaLabel}, ${oneName}, collapsed`
             : copy.triggerAriaWithSelection(selected.length);
 
+  // A friend's option is announced here, drawn marked.
+  const liveRegion = (
+    <span className="sr-only" role="status" aria-live="polite">
+      {personAnnouncement && <PersonText text={personAnnouncement} />}
+    </span>
+  );
+
   return (
     <div className={triggerLook === "field" ? "relative w-full" : "relative"}>
-      {personAnnouncement && (
-        <span className="sr-only" role="status" aria-live="polite">
-          <PersonText text={personAnnouncement} />
-        </span>
-      )}
+      {/* Always mounted (a region added with its text is not announced). On the phone the open sheet is aria-modal and
+          holds its own copy, since everything outside it is inert. */}
+      {!(open && !isDesktop) && liveRegion}
       <button
         ref={triggerRef}
         type="button"
@@ -1234,6 +1253,7 @@ export function FilterPanel({
                   ✕
                 </button>
               </div>
+              {liveRegion}
               {renderBody()}
             </div>
           </>)

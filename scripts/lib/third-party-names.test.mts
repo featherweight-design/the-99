@@ -199,6 +199,17 @@ describe("thirdPartyNameFindings", () => {
       })).toEqual([]);
     });
 
+    it("finds a projection when the file's only mint is of something else", { timeout: 30_000 }, () => {
+      expect(whys({
+        "src/lib/social/elsewhere.ts": TABLES + [
+          `import { named } from "../person-name/mint";`,
+          "export const loadFriends = () => ({ displayName: socialProfiles.displayName });",
+          `export const unrelated = () => named("fixed");`,
+          "export const other = (r: { title: string }) => named(r.title);",
+        ].join("\n"),
+      })).toEqual([expect.stringContaining("src/lib/social/elsewhere.ts:6 projects socialProfiles.displayName in loadFriends")]);
+    });
+
     it("lets an ordering or a filter read the column, and ignores the same read outside src/lib/social", { timeout: 30_000 }, () => {
       expect(whys({
         "src/lib/social/ordered.ts": TABLES + "export const order = () => [asc(socialProfiles.displayName), asc(pods.name)];\n",

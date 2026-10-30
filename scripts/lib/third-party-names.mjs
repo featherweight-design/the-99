@@ -12,9 +12,14 @@
 //    name (or a list holding one) is a finding outside `src/lib/person-name/`, as are `as ThirdPartyName` (forging one)
 //    and reading `.$tp` by access or destructuring, or naming it in an object (revealing or forging without the module). `personText` is the one template a name may enter.
 //
-// 3. THE READ LAYER. Under `src/lib/social/`, a select that projects `socialProfiles.displayName`, `pods.name` or a
-//    friend's `decks.name` must sit in a top-level function that also calls `named(`, `savedName(` or `feedFriend(`
-//    (or be listed in `RAW_ROW_READS`): a projected name that nothing mints is a plain string leaving the layer.
+// 3. THE READ LAYER (a heuristic, not a proof; the types are the proof). It sees ONLY a direct `table.column` reference
+//    (`socialProfiles.displayName`, `pods.name`, `decks.name`) that is the value of a property in an object literal under
+//    `src/lib/social/`; a column reached through an alias, a join helper or a `sql` template is invisible to it. For each
+//    such projection under property `key`, some statement of the same file that is the projecting function, or reaches it
+//    by mentioning it (a loader awaiting a query, a type alias over its result), must call `named(`, `savedName(` or
+//    `feedFriend(` with an argument that mentions `key` (or `key` without a trailing "s": `pods` is minted as `pod`);
+//    else the function is listed in `RAW_ROW_READS` with its reason. It catches a new loader that mints nothing; it does
+//    not prove every row is minted, and "reaches" is by name, so a mint of the same key elsewhere in the file can cover it.
 //
 // Type-aware, so it builds the TypeScript program over `src/` (about as long as `pnpm typecheck`). Tests are exempt.
 import { join, relative, sep } from "node:path";
@@ -88,12 +93,23 @@ function topLevel(sf, node) {
   return { statement: cur, name };
 }
 
-/** True when `statement` calls a mint helper anywhere in its body. */
-function callsMint(statement) {
+/** True when `statement` calls a mint helper with an argument that mentions `key` (or `key` without a trailing "s"). */
+function callsMint(statement, key) {
+  const wanted = new Set([key, key.replace(/s$/, "")]);
+  const mentionsKey = (n) => {
+    let hit = false;
+    const walk = (m) => {
+      if (hit) return;
+      if (ts.isIdentifier(m) && wanted.has(m.text)) hit = true;
+      else ts.forEachChild(m, walk);
+    };
+    walk(n);
+    return hit;
+  };
   let found = false;
   const walk = (n) => {
     if (found) return;
-    if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && MINT_HELPERS.includes(n.expression.text)) found = true;
+    if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && MINT_HELPERS.includes(n.expression.text) && n.arguments.some(mentionsKey)) found = true;
     else ts.forEachChild(n, walk);
   };
   walk(statement);
@@ -113,14 +129,22 @@ function mentions(statement, name) {
   return found;
 }
 
+/** The property the column is projected under (`displayName` in `{ displayName: socialProfiles.displayName }`). */
+function projectionKey(node) {
+  for (let cur = node.parent; cur; cur = cur.parent) {
+    if (ts.isPropertyAssignment(cur) && ts.isObjectLiteralExpression(cur.parent)) return keyText(cur.name) ?? "";
+  }
+  return "";
+}
+
 /**
  * True when `statement` is reached from a statement of its file that mints: one that calls a mint helper, or that
  * mentions (a call, a `typeof` or a type alias) something that in turn reaches it. A loader whose raw rows are shaped
  * by a function that calls `named(` is reached; a new loader nothing mints from is not.
  */
-function mintsWithin(sf, statement) {
+function mintsWithin(sf, statement, key) {
   const stmts = sf.statements.map((st) => ({ st, names: topLevelNames(st) }));
-  const reached = new Set(stmts.filter((x) => callsMint(x.st)).map((x) => x.st));
+  const reached = new Set(stmts.filter((x) => callsMint(x.st, key)).map((x) => x.st));
   for (let changed = true; changed; ) {
     changed = false;
     for (const from of [...reached]) {
@@ -232,7 +256,7 @@ export function thirdPartyNameFindings(root) {
         const { statement, name } = topLevel(sf, node);
         // The projection is minted by its own function, or by a function of the same file that calls it (a `...Query`
         // returns raw rows and its caller mints them).
-        const mintedHere = mintsWithin(sf, statement);
+        const mintedHere = mintsWithin(sf, statement, projectionKey(node));
         if (!mintedHere && !RAW_ROW_READS.includes(`${path}#${name}`)) {
           add(node, `projects ${columnRef(node)} in ${name || "a top-level statement"} with no named(, savedName( or feedFriend( call (mint it, or list ${path}#${name} in RAW_ROW_READS)`);
         }

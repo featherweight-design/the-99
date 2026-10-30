@@ -1,4 +1,4 @@
-import { cleanup, render, screen, fireEvent, within } from "@testing-library/react";
+import { cleanup, render, screen, fireEvent, within, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { collectionFilterCopy } from "../../lib/copy/collection";
 import type { BrowseFilters } from "../../lib/collection/browse";
@@ -1258,28 +1258,52 @@ describe("FilterPanel third-party names", () => {
     unmount();
   });
 
-  it("announces a friend's option in its own marked live region and never hands the name to onAnnounce", () => {
+  const friendOptions = [
+    { code: "f1", label: named("Ada Lovelace"), count: 3, disabled: false },
+    { code: "f2", label: named("Grace Hopper"), count: 2, disabled: false },
+  ];
+  const renderFriends = (onAnnounce = vi.fn()) =>
+    render(<FilterPanel copy={collectionFilterCopy.set} options={friendOptions} selected={[]} onToggle={vi.fn()} onClear={vi.fn()} onAnnounce={onAnnounce} />);
+
+  it("announces a friend's option in an always-present, marked live region and never hands the name to onAnnounce", async () => {
     setViewport(true);
     const onAnnounce = vi.fn();
-    const { unmount } = render(
-      <FilterPanel
-        copy={collectionFilterCopy.set}
-        options={[
-          { code: "f1", label: named("Ada Lovelace"), count: 3, disabled: false },
-          { code: "f2", label: named("Grace Hopper"), count: 2, disabled: false },
-        ]}
-        selected={[]}
-        onToggle={vi.fn()}
-        onClear={vi.fn()}
-        onAnnounce={onAnnounce}
-      />,
-    );
+    const { unmount } = renderFriends(onAnnounce);
+    // Mounted before anything is announced, and empty: a region added together with its text is not read out.
+    expect(screen.getByRole("status").textContent).toBe("");
     fireEvent.click(screen.getByRole("button", { name: /Filter by set/ }));
     fireEvent.keyDown(screen.getByRole("dialog"), { key: "ArrowDown" });
-    const live = screen.getByRole("status");
-    expect(live.textContent).toContain("Ada Lovelace");
-    expect(live.firstElementChild?.classList.contains("ph-no-capture")).toBe(true);
+    await waitFor(() => expect(screen.getByRole("status").textContent).toContain("Ada Lovelace"));
+    expect(screen.getByRole("status").firstElementChild?.classList.contains("ph-no-capture")).toBe(true);
     expect(onAnnounce).not.toHaveBeenCalled();
+    // The row itself is marked, so a press on its padding drops the event too.
+    expect(screen.getByRole("option", { name: /Ada Lovelace/ }).classList.contains("ph-no-capture")).toBe(true);
+    unmount();
+  });
+
+  it("puts the live region inside the phone sheet, which is aria-modal and makes the rest inert", async () => {
+    setViewport(false);
+    const { unmount } = renderFriends();
+    fireEvent.click(screen.getByRole("button", { name: /Filter by set/ }));
+    const dialog = screen.getByRole("dialog");
+    expect(screen.getAllByRole("status")).toHaveLength(1);
+    expect(dialog.contains(screen.getByRole("status"))).toBe(true);
+    fireEvent.keyDown(dialog, { key: "ArrowDown" });
+    await waitFor(() => expect(screen.getByRole("status").textContent).toContain("Ada Lovelace"));
+    expect(screen.getByRole("status").firstElementChild?.classList.contains("ph-no-capture")).toBe(true);
+    unmount();
+  });
+
+  it("announces the same words twice in a row: the region is emptied between them", async () => {
+    setViewport(true);
+    const { unmount } = renderFriends();
+    fireEvent.click(screen.getByRole("button", { name: /Filter by set/ }));
+    const dialog = screen.getByRole("dialog");
+    fireEvent.keyDown(dialog, { key: "ArrowDown" });
+    await waitFor(() => expect(screen.getByRole("status").textContent).toContain("Ada Lovelace"));
+    fireEvent.keyDown(dialog, { key: "ArrowUp" });
+    expect(screen.getByRole("status").textContent).toBe("");
+    await waitFor(() => expect(screen.getByRole("status").textContent).toContain("Ada Lovelace"));
     unmount();
   });
 });
