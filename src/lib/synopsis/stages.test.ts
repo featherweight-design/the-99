@@ -841,6 +841,9 @@ describe("iteration 3: the explained-once post-pass and the no-card-twice check"
     // The check lists a tip before a Key card; the post-pass keeps the Key card, so only the tip's primer is rewritten.
     const tipFirst = { ...twice, noCardTwice: { pass: false, offenders: [{ card: "Spore Frog", sections: ["tips", "keyCardJobs"] as RepetitionSection[] }] } };
     expect(i3RepairTargets(tipFirst).sections).toEqual(["primer"]);
+    // In the alternate line, a Key card and a tip: the alternate keeps it, so both editable sections are rewritten.
+    const withAlt = { ...twice, noCardTwice: { pass: false, offenders: [{ card: "Spore Frog", sections: ["alternate", "keyCardJobs", "tips"] as RepetitionSection[] }] } };
+    expect(i3RepairTargets(withAlt).sections.sort()).toEqual(["keyCards", "primer"]);
     expect(i3RepairTargets({ ...twice, noCardTwice: { pass: true, offenders: [] } })).toEqual({ sections: [], reasons: [] });
   });
   it("runs through stagesChecks only when the caller ran the post-pass on what it shows", () => {

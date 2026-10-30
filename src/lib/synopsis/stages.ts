@@ -868,7 +868,9 @@ export function i3RepairTargets(c: StagesChecks): { sections: SectionId[]; reaso
   for (const o of c.noCardTwice?.offenders ?? []) {
     // In the post-pass's priority (it keeps the earlier section), never the order the check listed them.
     const ordered = [...o.sections].sort((a, b) => PASS_ORDER[a] - PASS_ORDER[b]);
-    const later = ordered.slice(1).flatMap((s) => REPAIR_SECTION_OF[s] ?? []);
+    // A line no repair rewrites (the alternate) keeps the card, so every editable section naming it is rewritten.
+    const fixed = ordered.some((s) => REPAIR_SECTION_OF[s] === null);
+    const later = (fixed ? ordered : ordered.slice(1)).flatMap((s) => REPAIR_SECTION_OF[s] ?? []);
     const targets = later.length > 0 ? later : ordered.flatMap((s) => REPAIR_SECTION_OF[s] ?? []);
     for (const s of targets) sections.add(s);
     if (targets.length > 0) reasons.push(`${[...new Set(targets)].join(", ")}: ${o.card} is explained in ${o.sections.join(" and ")}; explain each card in one section only`);
