@@ -160,11 +160,13 @@ async function spendRun() {
       record(LEDGER, { at: new Date().toISOString(), runId: id, source: "pending", usd: worst, requests: 1, pending: id, note: `${label} ${req.stage}` });
       const t = Date.now();
       let failedAttempts = 0;
-      const settled = callModel({ model: TUNING_MODEL, system: req.system, user: req.user, maxTokens: req.maxTokens, schema: req.schema, deadlineMs: req.deadlineMs, effort: TUNING_EFFORT, stream: true },
+      // Each call's own model and effort, with run.ts's defaults: the why stage runs at low effort in production.
+      const model = req.model ?? TUNING_MODEL;
+      const settled = callModel({ model, system: req.system, user: req.user, maxTokens: req.maxTokens, schema: req.schema, deadlineMs: req.deadlineMs, effort: req.effort ?? TUNING_EFFORT, stream: true },
         { log: (line) => { if (/^\[model\] (malformed|upstream)/.test(line)) failedAttempts++; console.error(line); } })
         .then((o) => {
           // A call with a failed attempt settles at its worst case: its meter may not cover every attempt (`count-mechanism.mts`).
-          const usd = o.ok && failedAttempts === 0 ? (o.usage ? costMicroUsd(TUNING_MODEL, o.usage) / 1e6 : 0) : worst;
+          const usd = o.ok && failedAttempts === 0 ? (o.usage ? costMicroUsd(model, o.usage) / 1e6 : 0) : worst;
           record(LEDGER, { at: new Date().toISOString(), runId: `tuning-v2-${label}`, source: "realtime:1", usd, requests: 1, settles: id, note: `${label} ${req.stage}` });
           stored.push({ stage: req.stage, ok: o.ok, ...(o.ok ? {} : { errorClass: o.errorClass }), ms: Date.now() - t, usd, raw: o.ok ? o.value : null });
           return o;

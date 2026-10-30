@@ -124,11 +124,22 @@ export function britishSpelling(text: string): boolean {
 }
 
 const COUNT = `\\d+|${words.counts.join("|")}`;
-/** A count the model wrote: one that opens the phrase, where the app's word goes, or one counting cards. */
-const WROTE_COUNT = new RegExp(`^(?:${COUNT})\\b|\\b(?:${COUNT})\\s+(?:of|cards?|more|others?|are|is)\\b`, "i");
-/** A count of cards in the lead ("Seven additions fix the mana"), which nothing checks against the kept rows. A number
- *  in what the cards do ("at one or two mana", "three colors") is not one. */
-const LEAD_COUNT = new RegExp(`\\b(?:${COUNT})\\s+(?:of|cards?|additions?|adds|cuts?|swaps?|changes?|more|others?)\\b`, "i");
+/** A phrase that opens on a count, where the app's word goes. */
+const OPENS_ON_COUNT = new RegExp(`^(?:${COUNT})\\b`, "i");
+/** Every number in the text, with the word after it. */
+const ANY_COUNT = new RegExp(`\\b(?:${COUNT})\\b(?:[\\s-]+([a-z]+))?`, "gi");
+/** What a number may measure: what the cards DO ("at one or two mana", "three colors", "two turns"), never how many
+ *  cards there are. An allowlist, because the ways to count cards are open ("Seven fix the mana", "six lands",
+ *  "three additions"), and a count the app did not write is checked against nothing. */
+const MEASURES = new Set([
+  "mana", "color", "colors", "life", "damage", "turn", "turns", "player", "players", "opponent", "opponents",
+  "counter", "counters", "power", "toughness", "or", "to", "and",
+]);
+/** Whether the text writes a number that counts something other than what the cards do. */
+function writesCount(text: string): boolean {
+  for (const m of text.matchAll(ANY_COUNT)) if (!MEASURES.has((m[1] ?? "").toLowerCase())) return true;
+  return false;
+}
 
 /** Text the player will read, or null when it fails: empty, British spelling, an em-dash (the copy rule), or a
  *  rationale's checks. */
@@ -142,7 +153,7 @@ function checkText(raw: unknown, quotable: readonly Quotable[], claims: { allowS
 /** A phrase as the player will read it, or null: also fails a count of its own. */
 export function checkPhrase(raw: unknown, quotable: readonly Quotable[], claims: { allowStronger?: boolean } = {}): string | null {
   const phrase = clean(raw).replace(/[.;,:]+$/, "");
-  if (WROTE_COUNT.test(phrase)) return null;
+  if (OPENS_ON_COUNT.test(phrase) || writesCount(phrase)) return null;
   return checkText(phrase, quotable, claims);
 }
 
@@ -213,7 +224,7 @@ export function checkWhy(
   const parsed = whySchema.safeParse(raw);
   if (!parsed.success) return null;
   const lead = checkText(parsed.data.lead, quotable, {});
-  if (lead === null || lead.length > WHY_LEAD_MAX || LEAD_COUNT.test(lead)) return null;
+  if (lead === null || lead.length > WHY_LEAD_MAX || writesCount(lead)) return null;
   return {
     lead,
     add: sideLine(parsed.data.add, keptAdds, (l) => l.addOracleId, quotable, {}),

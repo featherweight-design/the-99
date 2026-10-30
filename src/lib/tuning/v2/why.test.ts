@@ -113,6 +113,14 @@ describe("checkWhy's counts (PR #2452 round 1)", () => {
       .toBe("Answers at one or two mana, in three colors.");
   });
 
+  it("drops any count that is not what the cards do, in the lead and in a phrase (round 3)", () => {
+    expect(checkWhy(reply({ lead: "Seven fix the mana." }), adds, cuts)).toBeNull();
+    expect(checkWhy(reply({ lead: "Six lands improve the mana." }), adds, cuts)).toBeNull();
+    expect(checkPhrase("are three additions for mana fixing", [])).toBeNull();
+    expect(checkPhrase("are two-mana answers", [])).toBe("are two-mana answers");
+    expect(checkPhrase("come down two turns earlier", [])).toBe("come down two turns earlier");
+  });
+
   it("writes a group of up to thirty kept rows, the most a side keeps at N = 20", () => {
     const many = Array.from({ length: 30 }, (_, i) => row(`Card ${i + 1}`));
     const r = checkWhy(reply({ add: [{ phrase: "are answers", cards: many.map((l) => l.card) }] }), many, cuts);
