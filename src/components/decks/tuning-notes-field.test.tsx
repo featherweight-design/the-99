@@ -141,4 +141,17 @@ describe("TuningNotesField", () => {
       expect(seen).toHaveBeenCalledWith("");
     });
   });
+
+  it("keeps the tag key drawn 24 high and grows only its hit box on touch", () => {
+    // jsdom cannot evaluate the pointer media query, so assert the classes.
+    render(<TuningNotesField value="" onChange={vi.fn()} />);
+    const key = screen.getByRole("button", { name: /tag/i });
+    const cls = key.className;
+    expect(cls).not.toContain("pointer-coarse:h-[44px]");
+    expect(cls).not.toContain("pointer-coarse:h-auto");
+    expect(cls).toContain("h-[24px]");
+    expect(cls).toContain("pointer-coarse:after:absolute");
+    expect(cls).toContain("pointer-coarse:after:-inset-y-[10px]");
+    expect(cls).toContain("pointer-coarse:after:-inset-x-[4px]");
+  });
 });

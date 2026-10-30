@@ -1286,7 +1286,14 @@ describe("TuningPanel: Additional notes (H35, PR 3)", () => {
     await draw(deps([fresh]));
     const box = screen.getByLabelText("Additional notes");
     expect(document.querySelector(`label[for="${box.id}"]`)).toHaveTextContent("Additional notes");
-    expect(document.querySelector(`button[aria-describedby="${box.id}-info"]`)).not.toBeNull();
+    const tip = document.querySelector(`button[aria-describedby="${box.id}-info"]`);
+    expect(tip).not.toBeNull();
+    expect(box).toHaveAttribute("aria-describedby", `${box.id}-info`);
+    const frame = document.querySelector("[data-framed-box]");
+    const label = document.querySelector(`label[for="${box.id}"]`);
+    expect(frame).not.toBeNull();
+    expect(label!.compareDocumentPosition(frame!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(tip!.compareDocumentPosition(frame!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   // "Additional notes" (H35, PR 4b): the typed text rides into the run it starts.

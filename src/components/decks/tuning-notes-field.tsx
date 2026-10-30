@@ -152,7 +152,8 @@ export function TuningNotesField({
             aria-label={copy.tagHelp.insertAria}
             onMouseDown={(e) => e.preventDefault()}
             onClick={picker.insertTag}
-            className="h-[24px] cursor-pointer rounded-[6px] border border-solid border-[color:var(--border-strong)] px-[8px] font-mono text-[11px] text-[color:var(--fg-muted)] pointer-coarse:h-auto pointer-coarse:px-[12px] pointer-coarse:py-[13px]"
+            // The key stays drawn 24 high at every pointer; under a coarse pointer only its hit box grows to 44 (the pseudo-element belongs to the button).
+            className="relative h-[24px] cursor-pointer rounded-[6px] border border-solid border-[color:var(--border-strong)] px-[8px] font-mono text-[11px] text-[color:var(--fg-muted)] pointer-coarse:after:absolute pointer-coarse:after:-inset-x-[4px] pointer-coarse:after:-inset-y-[10px] pointer-coarse:after:content-['']"
           >
             {copy.tagHelp.insert}
           </button>
