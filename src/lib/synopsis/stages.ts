@@ -469,9 +469,9 @@ export function backupText(reply: Pick<StagesReply, "plans">): string {
   return (reply.plans.backups[0] ?? "").trim().replace(/^backup\s*[:\u2013\u2014-]\s*/i, "").trim();
 }
 
-/** The Backup line is storable: within a stage line's budget as rendered and stating no turn. A mark that names no deck card is left to `withLine`. */
+/** The Backup line is storable: within a stage line's budget as rendered, stating no turn, and marking at least one card (the card draws the lead card's image). A mark that names no deck card is left to `withLine`. */
 export function checkBackupLine(text: string): boolean {
-  return rendered(text).trim().length > 0 && rendered(text).trim().length <= STAGES_LIMITS.stage && turnNumbers(text).length === 0;
+  return marksIn(text).length > 0 && rendered(text).trim().length > 0 && rendered(text).trim().length <= STAGES_LIMITS.stage && turnNumbers(text).length === 0;
 }
 
 /** A PLAN-LEVEL TIP LEADS (iteration 3): the model tags each tip plan or trick, in order; a trick may not come before a plan tip. A misaligned tag list fails. */

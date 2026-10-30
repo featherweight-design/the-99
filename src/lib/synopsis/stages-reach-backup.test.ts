@@ -44,6 +44,7 @@ describe("the Backup line", () => {
   it("is storable only within a stage line's budget and with no turn", () => {
     expect(checkBackupLine("[[Shock]] wins instead.")).toBe(true);
     expect(checkBackupLine("[[Shock]] wins by turn 5.")).toBe(false);
+    expect(checkBackupLine("Shock wins instead.")).toBe(false);
     expect(checkBackupLine("x".repeat(400))).toBe(false);
     expect(checkBackupLine("")).toBe(false);
   });

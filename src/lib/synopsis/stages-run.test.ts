@@ -190,6 +190,14 @@ describe("the alternate line (a precon's)", () => {
     expect(forPrecon.reasons.join(" ")).toMatch(/alternate/);
   });
 
+  it("sends a precon whose written backup was dropped (no mark) to the one repair, not a player's deck", () => {
+    const r = reply((x) => { x.plans.backups = ["Fog every turn instead."]; });
+    const c = applyStagesShape(checked(r), r, FACTS, []);
+    expect(c.backup).toBeUndefined();
+    expect(stagesRepairTargets(c, r, FACTS, { alternates: [] }).reasons.join(" ")).toMatch(/backup line was dropped/);
+    expect(stagesRepairTargets(c, r, FACTS).reasons.join(" ")).not.toMatch(/backup line was dropped/);
+  });
+
   it("sends a precon whose alternate line was dropped to the one repair; a player\'s deck and a stored line are left alone", () => {
     const r = withAlt(alt("Lead with [[Viscera Seer]] instead."));
     const dropped = applyStagesShape(checked(r), r, FACTS, ALTS);
