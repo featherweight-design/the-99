@@ -23,7 +23,7 @@ export const privacyDoc: LegalDoc = {
         { kind: "p", lead: "Credits and purchases.", text: "Your credit balance and where each credit came from. For a purchase we keep Stripe’s ids, the amount, the tax, the currency, the billing country and the status. Your card number never reaches The 99: you type it into Stripe’s checkout." },
         { kind: "p", lead: "Invites.", text: `When you invite someone by email, we hold their address only while the invite is waiting. An invite is valid for up to 7 days, and we erase the address once the invite is resolved or has expired. If that cleanup is delayed, the next sweep does it.` },
         { kind: "p", lead: "Card scanning.", text: "The scanner turns what your camera sees into a short list of numbers on your phone, and only those numbers are sent to match the card. No photo leaves your device." },
-        { kind: "p", lead: "Small things.", text: "Your theme and a few view choices (grid or list, a sort) are kept in cookies and your browser’s storage. Which About entries you’ve seen is kept with your account, so clearing your browser doesn’t reset it. Recent card searches are kept on your device and cleared when you sign out. The 99 has no analytics or advertising trackers." },
+        { kind: "p", lead: "Small things.", text: "Your theme and a few view choices (grid or list, a sort) are kept in cookies and your browser’s storage. Which About entries you’ve seen is kept with your account, so clearing your browser doesn’t reset it. Recent card searches are kept on your device and cleared when you sign out. The 99 has no advertising trackers." },
       ],
     },
     {
@@ -39,6 +39,8 @@ export const privacyDoc: LegalDoc = {
             { lead: "Vercel:", text: "hosting, and the server logs." },
             { lead: "Stripe:", text: "checkout, tax and receipts. Stripe gets your email and your account id when you buy, plus the billing address you enter at checkout." },
             { lead: "Resend:", text: "sends the six-digit code when someone joins by QR code." },
+            { lead: "PostHog (US Cloud):", text: "usage analytics. It records the pages you open and when you leave them, tagged with your first name, your account id and the version of the app. It records no clicks, no session replays and no email. It stays silent if your browser sends Do Not Track. Like any site, it sees your IP address when your browser sends these." },
+            { lead: "Sentry:", text: "error reports. When something breaks, Sentry gets the kind of error and where in the code it happened, the page address without its query, and a short trail of your page changes and clicks without their text. It gets no names, emails, deck or card text, and none of the error messages." },
             { lead: "Anthropic:", text: "the AI model behind the smart tools. A run sends the deck or the cards it is about, your game records where the tool reads them, and the words you typed for it (a deck’s intent, a run’s notes). It sends no account id, email or name." },
             { lead: "Scryfall:", text: "card images load straight from Scryfall into your browser, so Scryfall sees your IP address, like any site serving an image." },
             { lead: "jsDelivr and Hugging Face:", text: "the card scanner downloads its software and models from these when you start the camera." },
