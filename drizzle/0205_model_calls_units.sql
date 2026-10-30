@@ -1,0 +1,2 @@
+ALTER TABLE "model_calls" ADD COLUMN "units" smallint DEFAULT 1 NOT NULL;--> statement-breakpoint
+ALTER TABLE "model_calls" ADD CONSTRAINT "model_calls_units_check" CHECK ("model_calls"."units" between 1 and 2);

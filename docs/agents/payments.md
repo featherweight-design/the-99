@@ -115,7 +115,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   portal WRITE (Sensitive, as the key already is), and `STRIPE_PORTAL_CONFIG` is the `bpc_...` id of a configuration made
   once with the Stripe CLI (`billing_portal configurations create`, metadata `app=the-99`; a plain env var, not a secret),
   set on both Vercel projects. Proof: `pnpm probe:plan-cancel`.
-- **A run's units** (Suggested changes v2 pricing, Hugh 2026-10-30; migration 0204). `model_calls.units` (smallint, 1 or 2,
+- **A run's units** (Suggested changes v2 pricing, Hugh 2026-10-30; migration 0205). `model_calls.units` (smallint, 1 or 2,
   default 1) is what a run costs. Every feature costs 1, except a Suggested changes v2 run whose REQUESTED count is over 10
   swaps, which costs 2 (`unitsFor` and `ONE_CREDIT_MAX_COUNT` in `src/lib/tuning/v2/charge.ts`). It is still one row:
   `reserveModelCall` takes `units` (default 1) and writes it, and settle, refund and the reapers move that row, so a
