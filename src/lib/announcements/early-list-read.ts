@@ -13,6 +13,7 @@ import { db } from "../../db";
 import { cards, collectionItems, preconCards, precons, printings, sets, wizardsAnnouncementDecklists, wizardsAnnouncements } from "../../db/schema";
 import { isBasicType } from "../decks/basic-type";
 import { summarisePrecons } from "../precons/list";
+import { BASIC_TYPES } from "../swaps/land";
 import type { OpenPrecon, OpenPreconCard } from "../precons/open-read";
 import { utcDay } from "../precons/upcoming";
 import { resolvePostSet, splitEarlyLines, type EarlyCardFacts, type UnmatchedLine } from "./early-list";
@@ -150,6 +151,12 @@ export async function loadEarlyList(userId: string, contentfulId: string, positi
   };
 }
 
+/** A basic land by its name alone (an unmatched line has no type line): the five, their Snow-Covered printings, Wastes and Snow-Covered Wastes. */
+export function isBasicName(name: string): boolean {
+  const n = name.trim().toLowerCase();
+  return n === "wastes" || n === "snow-covered wastes" || BASIC_TYPES.some((t) => n === t || n === `snow-covered ${t}`);
+}
+
 /** The page's payload from what the reads returned. Pure, for a test. */
 export function assembleEarlyList(input: {
   contentfulId: string;
@@ -208,8 +215,11 @@ export function assembleEarlyList(input: {
     owned,
     [],
   );
-  // An unmatched line counts toward M and never toward what the reader owns (G3).
-  const row = { ...summary, of: summary.of + new Set(unmatched.map((u) => u.name)).size };
+  // An unmatched line counts toward M and never toward what the reader owns (G3), in the precon page's units: M is
+  // distinct cards with the basics left out (`summarisePrecons`), so one per distinct non-basic name; `unmapped` is
+  // copies, every line's count (`planPrecons`' `unmappedCount`), basics included. An unmatched basic is still listed in
+  // the unmatched group, by the post's words, as every unmatched line is.
+  const row = { ...summary, of: summary.of + new Set(unmatched.filter((u) => !isBasicName(u.name)).map((u) => u.name)).size };
 
   const releasedOn = set?.releaseDate && set.releaseDate <= input.today ? set.releaseDate : null;
   return {

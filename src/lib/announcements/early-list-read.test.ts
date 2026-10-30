@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { db } from "../../db";
-import { assembleEarlyList, commanderPrintingsQuery, earlyListRowQuery, releasePreconQuery } from "./early-list-read";
+import { assembleEarlyList, commanderPrintingsQuery, earlyListRowQuery, isBasicName, releasePreconQuery } from "./early-list-read";
 import type { EarlyCardFacts } from "./early-list";
 
 describe("releasePreconQuery", () => {
@@ -29,6 +29,11 @@ describe("commanderPrintingsQuery", () => {
     expect(sql).toContain('"sets"."digital" = $');
     expect(params).toEqual(expect.arrayContaining(["commander", false, "2026-08-30", "2027-04-27"]));
   });
+});
+
+describe("isBasicName", () => {
+  it.each(["Plains", "island", "Snow-Covered Forest", "Wastes", "Snow-Covered Wastes"])("knows %j", (name) => expect(isBasicName(name)).toBe(true));
+  it.each(["Plains Walker", "Sol Ring", "Snow-Covered Sol Ring"])("refuses %j", (name) => expect(isBasicName(name)).toBe(false));
 });
 
 describe("assembleEarlyList", () => {
@@ -83,6 +88,30 @@ describe("assembleEarlyList", () => {
     expect(page.precon.setName).toBe("Foundations Commander");
     expect(page.precon.cards.every((c) => c.printing === null)).toBe(true);
     expect(page.precon.cards.find((c) => c.oracleId === "sol")?.owned).toBe(true);
+  });
+
+  it("counts M in distinct non-basic names and unmapped in copies, as the precon page does", () => {
+    const page = assembleEarlyList({
+      ...base,
+      list: {
+        ...base.list,
+        cards: [
+          ...base.list.cards,
+          // An "any number" card the catalog cannot match: one card toward M, 7 copies toward unmapped.
+          { name: "Seraph Swarm", count: 7, cardId: null },
+          // An unmatched basic: listed, never counted toward M (as a matched basic is not), its copies still unmapped.
+          { name: "Snow-Covered Plains", count: 3, cardId: null },
+        ],
+      },
+    });
+    // Giada and Sol Ring, plus Seraph of the Dawnfire, Choir of the First Light and Seraph Swarm.
+    expect(page.precon.row.of).toBe(5);
+    expect(page.precon.row.owned).toBe(1);
+    // 1 + 1 + 7 + 3 copies.
+    expect(page.precon.row.unmapped).toBe(12);
+    expect(page.unmatched.map((u) => u.name)).toEqual([
+      "Seraph of the Dawnfire", "Choir of the First Light", "Seraph Swarm", "Snow-Covered Plains",
+    ]);
   });
 
   it("makes a co-commander a commander, and leaves an alternate in the list", () => {
