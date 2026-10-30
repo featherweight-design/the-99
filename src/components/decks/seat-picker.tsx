@@ -16,7 +16,7 @@ import { gameSeatsCopy } from "../../lib/copy/game-seats";
 import { shortName, type SeatFriend, type SeatPick } from "../../lib/decks/game-seats";
 import type { OpponentCommanderHit } from "../../lib/decks/opponent-commanders";
 import type { FriendDeck, PickerFriend } from "../../lib/social/games";
-import { faceInitials } from "../../lib/social/initials";
+import { faceInitials } from "../../lib/names/initials";
 import { IdentityPips } from "../commanders/commander-art";
 import { Face } from "../social/face";
 import { ANCHORED_PANEL_CLASS, useAnchoredPanel } from "../ui/anchored-panel";

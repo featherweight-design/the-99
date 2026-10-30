@@ -9,7 +9,7 @@ import { useEffect, useRef, useState, type Ref } from "react";
 import { loadDeckChoicesAction } from "../../app/friends/table/actions";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { ruleZeroCopy } from "../../lib/copy/rule-zero";
-import { faceInitials } from "../../lib/social/initials";
+import { faceInitials } from "../../lib/names/initials";
 import type { DeckChoice } from "../../lib/social/rule-zero-table";
 import { ANCHORED_PANEL_CLASS, useAnchoredPanel } from "../ui/anchored-panel";
 import { FadingImg } from "../ui/hydrated-art";

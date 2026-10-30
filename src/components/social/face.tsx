@@ -5,7 +5,7 @@
 // pencil badge or a ring belongs to whoever wraps it.
 
 import type { ProfileCommander } from "../../lib/social/commander";
-import { faceInitials } from "../../lib/social/initials";
+import { faceInitials } from "../../lib/names/initials";
 import { PersonInitials, type ThirdPartyName } from "../../lib/person-name";
 import { FadingImg } from "../ui/hydrated-art";
 

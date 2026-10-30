@@ -20,7 +20,7 @@ import { ChangeDeck } from "./change-deck";
 import { SeatOffer } from "./swap";
 import type { Drivers } from "../../lib/rule-zero/rules";
 import type { RangeLine, SeatDraw } from "../../lib/rule-zero/table-view";
-import { faceInitials } from "../../lib/social/initials";
+import { faceInitials } from "../../lib/names/initials";
 import { BracketChip } from "../decks/bracket-chip";
 import { FindingMark } from "../decks/finding-mark";
 import { FadingImg } from "../ui/hydrated-art";

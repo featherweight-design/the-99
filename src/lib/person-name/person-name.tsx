@@ -6,7 +6,7 @@
 //
 // A plain string (the reader's own name, a deck, a pod that is the reader's) is drawn plainly, so a shared component
 // takes `string | ThirdPartyName` and is marked only where it names someone else.
-import { faceInitials } from "../social/initials";
+import { faceInitials } from "../names/initials";
 import { isThirdPartyName, namesSomeone, type PersonParts, type ThirdPartyName } from "./brand";
 import { named } from "./mint";
 import { reveal } from "./reveal";
