@@ -50,7 +50,8 @@ function memoryStore(initial: CatalogCard[] = starTrekCatalog()) {
       rows.set(post.contentfulId, {
         post: before ? { ...post, baseline: before.post.baseline } : post,
         decklists,
-        firstSeenAt: before?.firstSeenAt ?? clock,
+        // As the database does: the record's own first sighting, kept on a re-read (`clock` only fills a record without one).
+        firstSeenAt: before?.firstSeenAt ?? post.firstSeenAt ?? clock,
       });
     },
     async readUnmatched() {
@@ -171,9 +172,16 @@ describe("runAnnouncementsIngest", () => {
     // the same pages, but the first run happened before every one was published
     const fresh = memoryStore();
     fresh.setClock("2026-10-01T00:00:00.000Z");
-    await fresh.store.save({ ...mem.rows.get("6dZrjdI37YVqKX2qzO0fbg")!.post, url: "https://magic.wizards.com/en/news/announcements/older", contentfulId: "older" }, []);
+    await fresh.store.save({ ...mem.rows.get("6dZrjdI37YVqKX2qzO0fbg")!.post, url: "https://magic.wizards.com/en/news/announcements/older", contentfulId: "older", firstSeenAt: "2026-10-01T00:00:00.000Z" }, []);
     await run({ store: fresh.store, site: web(pages()) });
     expect(fresh.rows.get("5RqOLH8YdyaXh57b91tXw2")!.post.baseline).toBe(false); // published 2026-10-27, after 2026-10-01
+  });
+
+  it("stamps first_seen_at with the run's start, not the save's clock, so the baseline cutoff never moves past it", async () => {
+    const mem = memoryStore();
+    mem.setClock("2026-10-29T12:05:00.000Z"); // a database default would read the insert's time, later than the run's start
+    await run({ store: mem.store, site: web(pages()), now: "2026-10-29T12:00:00.000Z" });
+    expect(new Set([...mem.rows.values()].map((r) => r.firstSeenAt))).toEqual(new Set(["2026-10-29T12:00:00.000Z"]));
   });
 
   it("a page that fails to fetch is not stored, alerts (but not when it is gone or redirected), and is tried again next run", async () => {

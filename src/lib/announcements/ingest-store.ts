@@ -44,6 +44,7 @@ export const announcementsStore: IngestStore = {
       ...post,
       publishedAt: new Date(post.publishedAt),
       lastFetchedAt: new Date(post.lastFetchedAt),
+      firstSeenAt: new Date(post.firstSeenAt),
     };
     await db.transaction(async (tx) => {
       const [{ id }] = await tx

@@ -23,6 +23,8 @@ describe("canPair", () => {
     ["Choose a Background + a non-Background", legend("Wilson", "Choose a Background"), janeway, false],
     ["Doctor's companion + Doctor", legend("Sarah Jane Smith", "Doctor's companion (You can have…)"), card("The Fourth Doctor", "Legendary Creature — Time Lord Doctor"), true],
     ["Doctor's companion + non-Doctor", legend("Sarah Jane Smith", "Doctor's companion"), janeway, false],
+    ["Doctor's companion + a Doctor with another subtype", legend("Sarah Jane Smith", "Doctor's companion"), card("The Rogue Doctor", "Legendary Creature — Time Lord Doctor Rogue"), false],
+    ["Doctor's companion + a nonlegendary Doctor", legend("Sarah Jane Smith", "Doctor's companion"), card("A Doctor", "Creature — Time Lord Doctor"), false],
     ["two ordinary legends", picard, janeway, false],
   ])("%s", (_n, a, b, v) => {
     expect(canPair(a, b)).toBe(v);

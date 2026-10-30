@@ -14,6 +14,8 @@
  * other second line (Foundations' `Always Watching`) is just a card.
  */
 
+import { isTheDoctor } from "../decks/partner";
+
 export type CommanderFacts = { name: string; typeLine: string; oracleText: string | null };
 
 export type SecondLine = "co-commander" | "alternate" | null;
@@ -54,7 +56,8 @@ function partnersWith(a: CommanderFacts, b: CommanderFacts): boolean {
 const hasBackgroundChoice = (c: CommanderFacts) => lineStarts(c, /^choose a background\b/i);
 const isBackground = (c: CommanderFacts) => /\bbackground\b/i.test(front(c.typeLine)) && /\benchantment\b/i.test(front(c.typeLine));
 const isCompanionOfDoctor = (c: CommanderFacts) => lineStarts(c, /^doctor['’]s companion\b/i);
-const isDoctor = (c: CommanderFacts) => /\btime lord doctor\b/i.test(front(c.typeLine));
+// Doctor's companion pairs only with a legendary creature whose subtypes are exactly Time Lord Doctor.
+const isDoctor = (c: CommanderFacts) => isTheDoctor(c.typeLine);
 
 export function canPair(a: CommanderFacts, b: CommanderFacts): boolean {
   const ga = partnerGroup(a);

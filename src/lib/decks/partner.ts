@@ -36,7 +36,7 @@ const DOCTORS_COMPANION = /^Doctor['’]s companion\b/m;
  * The front face only: no double-faced Doctor exists, and the type line of a back face is not
  * what the commander is.
  */
-function isTheDoctor(typeLine: string | null): boolean {
+export function isTheDoctor(typeLine: string | null): boolean {
   if (!typeLine) return false;
   const [types, subtypes] = typeLine.split(" // ")[0].split(/\s+[—-]\s+/);
   if (subtypes === undefined) return false;

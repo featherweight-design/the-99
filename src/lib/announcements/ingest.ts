@@ -66,6 +66,8 @@ export type AnnouncementRecord = {
   promisedDecks: number | null;
   parseStatus: ParseStatus;
   baseline: boolean;
+  /** The run that first saved it started then (never the insert's own clock), so the first run's start is the baseline cutoff. Kept on a re-read. */
+  firstSeenAt: string;
 };
 
 export type DecklistRecord = {
@@ -257,7 +259,7 @@ export function announcementRecord(
   entry: SitemapEntry,
   kind: AnnouncementFeedKind,
   decks: readonly ParsedDeck[],
-  at: { now: Date; firstRunAt: string },
+  at: { now: Date; firstRunAt: string; startedAt: string },
 ): AnnouncementRecord {
   const promised = promisedDeckCount([post.excerpt]);
   return {
@@ -274,6 +276,7 @@ export function announcementRecord(
     promisedDecks: promised,
     parseStatus: parseStatusOf(kind, decks, promised),
     baseline: post.publishedDate < at.firstRunAt,
+    firstSeenAt: at.startedAt,
   };
 }
 
@@ -334,10 +337,10 @@ export async function runAnnouncementsIngest(deps: IngestDeps): Promise<IngestRe
       alert({ kind: "unknown-sections", url: entry.url, sections: unknownSections });
     }
     if (decks.length > 0 && !lookup) lookup = catalogLookup(await store.readCatalog());
-    const record = announcementRecord(parsed.post, entry, kind, decks, { now: now(), firstRunAt });
+    const record = announcementRecord(parsed.post, entry, kind, decks, { now: now(), firstRunAt, startedAt: started.toISOString() });
     await store.save(record, lookup ? decks.map((d, i) => decklistRecord(d, i, lookup!)) : []);
     saved++;
-    latest.set(entry.url, { ...record, firstSeenAt: latest.get(entry.url)?.firstSeenAt ?? started.toISOString() });
+    latest.set(entry.url, { ...record, firstSeenAt: latest.get(entry.url)?.firstSeenAt ?? record.firstSeenAt });
   }
 
   // DB only, after the fetches: the lists just saved were matched against this same catalog, so they come back unchanged.
