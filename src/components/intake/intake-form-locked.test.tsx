@@ -1,7 +1,7 @@
 // Help me choose locks while it reads (small items 3, item 5). Its own file: an earlier suite leaves a submit
 // pending on purpose, and React entangles async transitions, so a later release would never land after it.
 
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, within, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 const push = vi.hoisted(() => vi.fn(async (query: string) => { void query; return { kind: "refused" as const }; }));
@@ -92,10 +92,14 @@ describe("the form locks while it reads (small items 3, item 5)", () => {
     mount();
     const hideable = () => Array.from(form().querySelectorAll("[data-lock-hide]"));
     const before = hideable().length;
-    // Chip ✕ (theme and set), the Add another… input, the Sets trigger and the [[ ]] button.
-    expect(before).toBeGreaterThanOrEqual(5);
+    // Chip ✕ (theme and set), the Add another… input and the Sets trigger. The [[ ]] key stays drawn, disabled (Small items 6, e).
+    expect(before).toBeGreaterThanOrEqual(4);
+    const key = within(form()).getByRole("button", { name: "Insert a card tag" });
+    expect(key).not.toHaveAttribute("data-lock-hide");
+    expect(key).not.toBeDisabled();
     await act(async () => { fireEvent.click(press()); });
     expect(hideable()).toHaveLength(before);
+    expect(key).toBeDisabled();
     for (const el of hideable()) {
       expect((el as HTMLElement).hidden).toBe(false);
       expect((el as HTMLElement).style.display).not.toBe("none");

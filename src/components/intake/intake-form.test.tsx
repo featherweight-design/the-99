@@ -38,15 +38,15 @@ describe("the intake form", () => {
 });
 
 describe("Anything else? box, board fixes", () => {
-  it("draws the key, the words and a 0 counter in the foot, hides only the key on lock, and takes the accent edge when read", () => {
+  it("draws the key, the words and a 0 counter in the foot, hides none of it on lock, and takes the accent edge when read", () => {
     const standing = { used: 1, limit: 10, nextAt: "2026-10-12T02:01:00.000Z", reopensAt: null, ownerShare: false, now: "2026-10-11T12:00:00.000Z" };
     const { unmount } = render(<IntakeForm themes={[]} initial={emptyParams()} standing={standing} />);
     const box = screen.getByLabelText(/Anything else\?/);
     const frame = box.closest("[data-framed-box]")!;
     const foot = screen.getByText("0 / 800").parentElement!;
-    // Locked, only the [[ ]] key hides; the counter (and the words) stay drawn (small items 3, item 5).
+    // Locked, the whole foot stays drawn and the key draws disabled (Small items 6, e).
     expect(foot).not.toHaveAttribute("data-lock-hide");
-    expect(foot.querySelector("button")).toHaveAttribute("data-lock-hide");
+    expect(foot.querySelector("button")).not.toHaveAttribute("data-lock-hide");
     expect(screen.getByText("0 / 800").closest("[data-lock-hide]")).toBeNull();
     expect(within(foot).getByRole("button", { name: "Insert a card tag" })).toBeTruthy();
     expect(within(foot).getByText("tag a card")).toBeTruthy();

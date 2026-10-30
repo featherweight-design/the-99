@@ -1687,8 +1687,9 @@ html {
    (intake-form.tsx) and this block is the drawn look, keyed on the one attribute the form carries. Colour and edge only:
    nothing here changes a size, so nothing jumps when a refusal unlocks it, and nothing moves. Selected pips, segments and
    brackets keep their shape and drop to a --border-strong ring with no fill; unselected go to --fg-locked on a --border
-   edge. The chips' remove buttons, the Add another… input, the Sets trigger and the [[ ]] button are `visibility:hidden`
-   (data-lock-hide), so their boxes keep their space. Labels and captions are untouched. */
+   edge. The chips' remove buttons, the Add another… input, and the Sets trigger are `visibility:hidden`
+   (data-lock-hide), so their boxes keep their space; the [[ ]] key stays drawn, disabled (Small items 6, e). Labels and
+   captions are untouched. */
 [data-intake-locked] :is(input, textarea, [data-testid="theme-chip"], [data-testid="set-chip"], [data-testid="set-chip"] span) {
   color: var(--fg-muted);
 }

@@ -25,7 +25,7 @@ export function TaggedBox({
   dashed = false,
   error,
   accent = "focus",
-  keyProps,
+  keyDisabled = false,
   footPad = "default",
   disabled = false,
   frameRef,
@@ -52,8 +52,8 @@ export function TaggedBox({
   error?: boolean;
   /** `focus`: the accent edge on focus-within; `always`: the accent edge at rest too (an editor opened in place). */
   accent?: "focus" | "always";
-  /** Spread on the key (e.g. `data-lock-hide`: Help me choose hides only the key while it reads; the counter stays). */
-  keyProps?: Record<string, string>;
+  /** The key alone is out of play (Help me choose while it reads): it draws disabled and the rest of the foot stays. */
+  keyDisabled?: boolean;
   /** `compact`: the dashed header description's 2 10 7 foot. */
   footPad?: "default" | "compact";
   /** The field is out of play (a save in flight): the frame dims and the key is disabled. */
@@ -66,15 +66,17 @@ export function TaggedBox({
   const isOver = over ?? count > max;
   const color = isOver ? "var(--danger)" : warnAt !== undefined && count >= warnAt ? "var(--warning)" : "var(--fg-faint)";
   // The border is a class, never inline, so the focus edge can take it (an inline border outranks it).
+  // Focused, a dashed edge goes solid (Small items 6, b): dashed says "you can write here" at rest; once in, it is a box.
   const edge = (error ?? isOver)
-    ? "border-[color:var(--danger)]"
+    // Over the cap and focused, the red edge thickens to 2px (a 1px inset ring of the same red): one edge, one color (a).
+    ? "border-[color:var(--danger)] focus-within:shadow-[inset_0_0_0_1px_var(--danger)]"
     : accent === "always"
       ? "border-[color:var(--accent)]"
-      : "border-[color:var(--border-strong)] focus-within:border-[color:var(--accent)]";
-  // The textarea is outline-none and a frame already accent or danger looks the same focused, so keyboard focus
-  // would be invisible (WCAG 2.4.7): those frames take the app's standard focus ring (globals.css `:focus-visible`).
+      : `border-[color:var(--border-strong)] focus-within:border-[color:var(--accent)]${dashed ? " focus-within:border-solid" : ""}`;
+  // The textarea is outline-none and an always-accent frame looks the same focused, so keyboard focus would be
+  // invisible there (WCAG 2.4.7): it takes the app's standard focus ring (globals.css `:focus-visible`).
   const ring =
-    (error ?? isOver) || accent === "always"
+    accent === "always" && !(error ?? isOver)
       ? "has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[color:var(--accent)]"
       : "";
   return (
@@ -98,10 +100,9 @@ export function TaggedBox({
           // The key must not take the field's focus: a press must not blur a box that saves on blur.
           onMouseDown={(e) => e.preventDefault()}
           onClick={onInsert}
-          disabled={disabled}
-          {...keyProps}
+          disabled={disabled || keyDisabled}
           // Drawn 24 high at every pointer; under a coarse pointer only its hit box grows (the pseudo-element belongs to the button).
-          className={`relative h-[24px] shrink-0 cursor-pointer disabled:cursor-not-allowed rounded-[6px] border border-solid border-[color:var(--border-strong)] px-[8px] font-mono text-[11px] pointer-coarse:after:absolute pointer-coarse:after:-inset-x-[8px] pointer-coarse:after:-inset-y-[10px] pointer-coarse:after:content-[''] ${open ? "bg-[color:var(--elevated)] text-[color:var(--fg)]" : "text-[color:var(--fg-muted)]"}`}
+          className={`relative h-[24px] shrink-0 cursor-pointer disabled:cursor-not-allowed rounded-[6px] border border-solid border-[color:var(--border-strong)] disabled:border-[color:var(--border)] disabled:text-[color:var(--fg-locked)] px-[8px] font-mono text-[11px] pointer-coarse:after:absolute pointer-coarse:after:-inset-x-[8px] pointer-coarse:after:-inset-y-[10px] pointer-coarse:after:content-[''] ${open ? "bg-[color:var(--elevated)] text-[color:var(--fg)]" : "text-[color:var(--fg-muted)]"}`}
         >
           {copy.tagHelp.insert}
         </button>

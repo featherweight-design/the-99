@@ -1596,7 +1596,7 @@ function DescribingInPlace({
     <div className="mt-[14px] flex flex-col gap-[6px]">
       <TagHelpRow htmlFor="tuning-describing-field" label={descCopy.label} infoId="tuning-describing-field-info" help={deckDescriptionCopy.notes.tagHelp} />
       <div className="relative">
-        <TaggedBox onInsert={picker.insertTag} open={picker.open} count={n} max={descCopy.maxLength} warnAt={descCopy.warnAt} accent="always">
+        <TaggedBox onInsert={picker.insertTag} open={picker.open} count={n} max={descCopy.maxLength} warnAt={descCopy.warnAt}>
         <textarea
           ref={ref}
           id="tuning-describing-field"

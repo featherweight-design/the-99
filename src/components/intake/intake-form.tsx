@@ -390,8 +390,8 @@ export function IntakeForm({
               max={READ_WORDS_MAX_CHARS}
               fill="sunken"
               accent={written && closed === null ? "always" : "focus"}
-              // Locked while it reads, only the key hides (small items 3, item 5); the words and the counter stay.
-              keyProps={{ "data-lock-hide": "" }}
+              // Locked while it reads, the key draws disabled and the whole foot stays (Small items 6, e): nothing moves when the read lands.
+              keyDisabled={submitting}
               frameRef={frameRef}
             >
               <textarea
