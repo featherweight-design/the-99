@@ -165,6 +165,15 @@ describe("SpineDesktop", () => {
   // Both Save and Cancel refuse the mousedown, for opposite reasons: Cancel so
   // the blur does not save the edit it is refusing, Save so the blur does not
   // send the same rename the click is about to send.
+  it("the description's tag frame takes no accent on focus and the textarea keeps its focus ring", () => {
+    renderSpine(<SpineDesktop {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
+    const field = screen.getByLabelText(deckDescriptionCopy.description.fieldAria);
+    const frame = field.closest("[data-framed-box]")!;
+    expect(frame.className).not.toContain("focus-within");
+    expect(field.className).not.toContain("outline-none");
+  });
+
   it("neither action lets the field's blur fire first", () => {
     renderSpine(<SpineDesktop {...props} />);
     fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));

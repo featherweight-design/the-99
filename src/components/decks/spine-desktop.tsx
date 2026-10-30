@@ -339,6 +339,7 @@ export function SpineDesktop({
                     fill="sunken"
                     dashed
                     footPad="compact"
+                    accent="none"
                     frameRef={descriptionFrameRef}
                   >
                   <textarea

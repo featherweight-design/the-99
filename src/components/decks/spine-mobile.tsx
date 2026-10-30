@@ -343,6 +343,7 @@ export function SpineMobile({
                   fill="sunken"
                   dashed
                   footPad="compact"
+                  accent="none"
                   frameRef={descriptionFrameRef}
                   // Inside `press-through` (pointer-events: none): the frame and its foot take presses back, so the
                   // foot's preventDefault holds the field's focus instead of letting the press blur it.

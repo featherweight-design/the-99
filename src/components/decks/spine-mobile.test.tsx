@@ -145,6 +145,14 @@ describe("SpineMobile", () => {
     const frame = description.closest(".pointer-events-auto");
     expect(frame).not.toBeNull();
     expect(frame!.closest(".press-through")).not.toBeNull();
+    const foot = screen.getByText(/ \/ \d+$/).parentElement!;
+    expect(foot.className).toContain("pointer-events-auto");
+    expect(frame!.className).toContain("pointer-events-auto");
+    // The frame is the nearest ancestor of the foot, so nothing between them resets the inheritance.
+    expect(foot.parentElement).toBe(frame);
+    // And the header description takes no frame accent on focus.
+    expect(frame!.className).not.toContain("focus-within");
+    expect(description.className).not.toContain("outline-none");
   });
 
   it("announces a successful description save through a status region that outlives the editor", async () => {

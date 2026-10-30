@@ -51,8 +51,8 @@ export function TaggedBox({
   dashed?: boolean;
   /** The danger frame; absent, drawn exactly while the count is past the cap (`over`). It outranks the accent edge. */
   error?: boolean;
-  /** `focus`: the accent edge on focus-within; `always`: the accent edge at rest too (an editor opened in place). */
-  accent?: "focus" | "always";
+  /** `focus`: the accent edge on focus-within; `always`: the accent edge at rest too (an editor opened in place); `none`: no focus treatment on the frame (the field's own focus ring is the signal). */
+  accent?: "focus" | "always" | "none";
   /** Spread on the key (e.g. `data-lock-hide`). */
   keyProps?: Record<string, string>;
   /** Spread on the whole foot (e.g. `data-lock-hide`, to hide the key, words and counter together). */
@@ -73,7 +73,9 @@ export function TaggedBox({
     ? "border-[color:var(--danger)]"
     : accent === "always"
       ? "border-[color:var(--accent)]"
-      : "border-[color:var(--border-strong)] focus-within:border-[color:var(--accent)]";
+      : accent === "none"
+        ? "border-[color:var(--border-strong)]"
+        : "border-[color:var(--border-strong)] focus-within:border-[color:var(--accent)]";
   // The textarea is outline-none and a frame already accent or danger looks the same focused, so keyboard focus
   // would be invisible (WCAG 2.4.7): those frames take the app's standard focus ring (globals.css `:focus-visible`).
   const ring =
@@ -90,7 +92,7 @@ export function TaggedBox({
     >
       {children}
       <span
-        className={`flex items-center gap-[8px] font-mono text-[11px] ${footPad === "compact" ? "px-[10px] pt-[2px] pb-[7px]" : "px-[12px] pt-[2px] pb-[8px]"}`}
+        className={`pointer-events-auto flex items-center gap-[8px] font-mono text-[11px] ${footPad === "compact" ? "px-[10px] pt-[2px] pb-[7px]" : "px-[12px] pt-[2px] pb-[8px]"}`}
         style={{ color: "var(--fg-faint)" }}
         // A press on the foot's padding or the counter must not blur the field (a box that saves on blur).
         onMouseDown={(e) => e.preventDefault()}
