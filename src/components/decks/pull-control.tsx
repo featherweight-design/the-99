@@ -96,9 +96,13 @@ export type PullControlProps = {
   /** The row's parent, so it can react to the copy having moved. The figures in
    *  the announcement are the server's; this is not where they arrive. */
   onPulled: () => void;
+  /** STAGE the choice instead of pulling (Suggested changes v2's Apply confirmation, Small items 4 item 2): the chosen
+   *  source is handed back and no server action runs; the caller sends it with its own write. The guards and the picker
+   *  are unchanged. Absent, a press pulls at once, as on Review changes. */
+  onChoose?: (claim: DeckClaim) => void;
 };
 
-export function PullControl({ deckId, card, claims, defaultId, sourceFigures, onPulled }: PullControlProps) {
+export function PullControl({ deckId, card, claims, defaultId, sourceFigures, onPulled, onChoose }: PullControlProps) {
   // "Only sources that can be chosen count" (design call 5): a locked or
   // commander row is drawn for display, but it is never one more tap, so it
   // does not turn a single-source row into a two-or-more one.
@@ -135,7 +139,7 @@ export function PullControl({ deckId, card, claims, defaultId, sourceFigures, on
     // precedence over locked, `pullCandidate`'s own order) this row has instead.
     const claim = choosable[0] ?? claims.find((c) => c.commander) ?? claims.find((c) => c.locked) ?? null;
     if (!claim) return null;
-    return <SinglePull deckId={deckId} card={card} claim={claim} onPulled={onPulled} />;
+    return <SinglePull deckId={deckId} card={card} claim={claim} onPulled={onPulled} onChoose={onChoose} />;
   }
 
   return (
@@ -147,6 +151,7 @@ export function PullControl({ deckId, card, claims, defaultId, sourceFigures, on
       defaultId={defaultId}
       sourceFigures={sourceFigures}
       onPulled={onPulled}
+      onChoose={onChoose}
     />
   );
 }
@@ -157,11 +162,13 @@ function SinglePull({
   card,
   claim,
   onPulled,
+  onChoose,
 }: {
   deckId: string;
   card: { oracleId: string; name: string };
   claim: DeckClaim;
   onPulled: () => void;
+  onChoose?: (claim: DeckClaim) => void;
 }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -227,6 +234,12 @@ function SinglePull({
           disabled={pending}
           onClick={() => {
             setError(null);
+            if (onChoose) {
+              // Staged, not pulled: the row redraws as the choice, so focus lands on the row's own card first.
+              rowTrigger(wrapperRef.current, card.name)?.focus();
+              onChoose(claim);
+              return;
+            }
             startTransition(async () => {
               let result: PullResult;
               try {
@@ -293,6 +306,7 @@ function SourcePicker({
   sourceFigures,
   onPulled,
   onResolved,
+  onChoose,
 }: {
   deckId: string;
   card: { oracleId: string; name: string };
@@ -300,6 +314,7 @@ function SourcePicker({
   defaultId: string;
   sourceFigures?: Map<string, SourceDeckFigure>;
   onPulled: () => void;
+  onChoose?: (claim: DeckClaim) => void;
   /** A successful pull, never a refusal — lets the parent's sticky list gate (round-4 finding)
    *  re-evaluate from the current claims rather than staying open forever. */
   onResolved: () => void;
@@ -379,6 +394,14 @@ function SourcePicker({
   function confirm() {
     if (!chosen || pending) return;
     setError(null);
+    if (onChoose) {
+      // Staged, not pulled: the list closes on the choice and the caller sends it with its own write. Focus returns to
+      // the row's card, as after a pull: the trigger is replaced by the staged row's Undo.
+      returnFocusAfterPull.current = rowTrigger(wrapperRef.current, card.name);
+      setOpen(false);
+      onChoose(chosen);
+      return;
+    }
     startTransition(async () => {
       let result: PullResult;
       try {

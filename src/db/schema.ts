@@ -2995,6 +2995,10 @@ export type ApplySnapshot = {
   /** The add's row before the apply; quantity 0 when the deck did not hold it. Null for a CUT
    *  line (two lists), which adds nothing. */
   add: { quantity: number; auto: boolean } | null;
+  /** Suggested changes v2 (Small items 4, item 2): the addition's copy was pulled out of another deck in the same apply.
+   *  The source's draft row as the pull found it (null when that draft had already cut the card), so Undo all can put it
+   *  back and give the release up (`apply-set.ts`). Absent on every other apply. */
+  pull?: { sourceDeckId: string; draft: { quantity: number; auto: boolean } | null };
 };
 
 export type TuningCitation = {

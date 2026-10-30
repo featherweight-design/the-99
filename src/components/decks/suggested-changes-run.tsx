@@ -9,6 +9,7 @@ import { DECK_GROUPING_ARIA, DECK_GROUPING_KEY, DECK_GROUPING_LABELS, isDeckGrou
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { tuningHubCopy } from "../../lib/copy/tuning-hub";
 import { suggestedChangesV2Copy } from "../../lib/copy/suggested-changes-v2";
+import type { DeckClaim } from "../../lib/decks/availability";
 import type { CardTypeGroup } from "../../lib/decks/grouping";
 import { formatCents } from "../../lib/decks/price";
 import type { MixRole } from "../../lib/decks/mix";
@@ -24,7 +25,7 @@ import {
 import { SegmentedSwitch } from "../ui/segmented-switch";
 import { useStoredView } from "../ui/use-stored-view";
 import { MutationError } from "./mutation-error";
-import { SuggestedChangesConfirm } from "./suggested-changes-confirm";
+import { heldElsewhere, SuggestedChangesConfirm } from "./suggested-changes-confirm";
 import { DriftLine, leadSentence, LINK, NOTICE_BOX, noticeStyle } from "./suggested-changes-intake";
 import { SuggestedChangesPickLine } from "./suggested-changes-pick-line";
 import { historyDay } from "./tuning-history";
@@ -34,7 +35,8 @@ const sc = suggestedChangesV2Copy;
 
 /** Suggested changes v2's apply, undo and pick (`tuning-v2-actions.ts`), injectable for tests. */
 export type SuggestionSetActions = {
-  apply: (runId: string, addIds: string[], cutIds: string[], actionId: string) => Promise<ApplySetActionResult>;
+  /** `pulls`: the confirmation's staged pulls (Small items 4, item 2), passed only when there are any. */
+  apply: (runId: string, addIds: string[], cutIds: string[], actionId: string, pulls?: { itemId: string; sourceDeckId: string }[]) => Promise<ApplySetActionResult>;
   undo: (applySet: string) => Promise<ApplySetActionResult>;
   pick: (itemId: string, picked: boolean) => Promise<{ ok: boolean }>;
   /** The brackets the deck would permit with these picks applied, for a set the lines' own flags cannot settle. */
@@ -66,9 +68,11 @@ export const SLOWER_NOTE_MS = 120_000;
  */
 export function SuggestedChangesRun({
   runId, ask, lines: readLines, live, startedAt, report, permits, newestPriceAsOf, figures, drift, finishedHere = false,
-  readFrom, actions, onChanged, onAnnounce, onNewRun, readOnly = false, credits = null, past = null,
+  readFrom, actions, onChanged, onAnnounce, onNewRun, readOnly = false, credits = null, past = null, deckId,
 }: {
   runId: string;
+  /** The run's deck, for the confirmation's Pull (Small items 4, item 2). */
+  deckId?: string;
   ask: V2Ask | null;
   lines: readonly LineItem[];
   /** The run is still being made: the wait. */
@@ -112,6 +116,10 @@ export function SuggestedChangesRun({
   const [stored, setGrouping] = useStoredView(DECK_GROUPING_KEY, isDeckGrouping);
   const grouping: Grouping = stored ?? "type";
   const [confirming, setConfirming] = useState(false);
+  // The confirmation's staged pulls, by addition id (Small items 4, item 2): which deck each held copy leaves on Apply.
+  // Held across closing the confirmation, and sent only for an addition still picked.
+  const [staged, setStaged] = useState<ReadonlyMap<string, DeckClaim>>(() => new Map());
+  const ownedFromOtherDecks = ask?.restrictions?.ownedOnly === true && ask.restrictions.otherDecks === true;
   const [busy, setBusy] = useState<"apply" | "undo" | null>(null);
   // A key per refused Apply, so a second refusal arrives as a newer alert with its own eight seconds (small items 3, item 8).
   const [failed, setFailed] = useState<number | null>(null);
@@ -215,8 +223,12 @@ export function SuggestedChangesRun({
     setBusy("apply");
     // The set id is the Undo's handle: the bar offers this visit's latest set, not the first one found.
     const setId = crypto.randomUUID();
+    const pulls = pickedAdds.flatMap((l) => {
+      const claim = staged.get(l.id);
+      return claim && heldElsewhere(l, ownedFromOtherDecks) ? [{ itemId: l.id, sourceDeckId: claim.id }] : [];
+    });
     const r = await actions
-      .apply(runId, pickedAdds.map((l) => l.id), pickedCuts.map((l) => l.id), setId)
+      .apply(runId, pickedAdds.map((l) => l.id), pickedCuts.map((l) => l.id), setId, ...(pulls.length > 0 ? [pulls] : []))
       .catch((): ApplySetActionResult => ({ ok: false, message: deckTuningCopy.lists.applyRefused }));
     setConfirming(false);
     if (!r.ok) {
@@ -232,6 +244,7 @@ export function SuggestedChangesRun({
       setWritten((m) => new Map([...m, ...r.itemIds.map((id) => [id, { verdict: "accepted" as const, applySet: setId, verdictAt }] as const)]));
       setLastSet(setId);
       setUndone(null);
+      setStaged(new Map());
       onAnnounce(sc.run.appliedLead(pickedAdds.length, lines.filter(isOpen).length - r.itemIds.length));
     }
     await onChanged();
@@ -291,7 +304,7 @@ export function SuggestedChangesRun({
           picked={isPicked(l)}
           off={readOnly || !l.applies || (side === "add" ? pickedAdds : pickedCuts).length >= cap}
           onToggle={() => void toggle(l)}
-          ownedFromOtherDecks={ask?.restrictions?.ownedOnly === true && ask.restrictions.otherDecks === true}
+          ownedFromOtherDecks={ownedFromOtherDecks}
           fresh={fresh.has(l.id)}
           aim={ask?.bracket ?? null}
           readOnly={readOnly}
@@ -657,6 +670,15 @@ export function SuggestedChangesRun({
           busy={busy === "apply"}
           onApply={() => void apply()}
           onClose={() => setConfirming(false)}
+          deckId={deckId}
+          ownedFromOtherDecks={ownedFromOtherDecks}
+          staged={staged}
+          onStage={(id, claim) => setStaged((m) => {
+            const next = new Map(m);
+            if (claim) next.set(id, claim);
+            else next.delete(id);
+            return next;
+          })}
         />
       ) : null}
       {failed !== null ? <DeckRefusalToast key={failed} title={sc.applyFailed.title} detail={sc.applyFailed.detail} onDone={() => setFailed(null)} /> : null}

@@ -1,8 +1,11 @@
 import { and, eq, inArray, isNotNull, isNull, max, ne, sql } from "drizzle-orm";
 
 import { db } from "../../../db";
-import { deckSuggestionItems, deckSuggestionRuns, decks, deckVersions } from "../../../db/schema";
+import { deckCards, deckSuggestionItems, deckSuggestionRuns, decks, deckVersions, type ApplySnapshot } from "../../../db/schema";
+import { lockDecksInOrder, pullClaimants, pullInTx, type PulledDraftRow } from "../../decks/pull";
+import { readPullReleaseCopies, undoPullRelease } from "../../decks/pull-release";
 import { touchDeck } from "../../decks/touch";
+import { isUuid } from "../../uuid";
 import { readProfileHead } from "../../profile/load";
 import { applySwap, planSwap, restoreSwap } from "../../swaps/draft-swap";
 import { planPicks, type PickRefusal } from "./picks";
@@ -24,9 +27,49 @@ export type ApplySetRefusal =
   /** A version was committed since the run read the deck: its lines were made for a list that is no longer the base. */
   | { kind: "stale" }
   /** A line no longer applies to the deck as it is (`planSwap`: the cut is gone, the add is already in, it is locked). */
-  | { kind: "swap"; itemId: string };
+  | { kind: "swap"; itemId: string }
+  /** A staged pull the shipped pull refuses under the locks (`pullInTx`'s own words), or one naming no picked addition. */
+  | { kind: "pull"; itemId: string; message: string }
+  /** Undo all: a deck a copy was pulled out of has moved on since (its draft committed, or the pulled card's row edited),
+   *  so the pull cannot be put back as it was, and nothing of the set is undone. Names that deck. */
+  | { kind: "pullMoved"; itemId: string; deckName: string };
 
-export type ApplySetResult = { ok: true; deckId: string; applySet: string; itemIds: string[] } | { ok: false; refusal: ApplySetRefusal };
+export type ApplySetResult =
+  | {
+      ok: true; deckId: string; applySet: string; itemIds: string[];
+      /** The decks a copy was pulled out of (or put back into), whose claims moved with the set. */
+      sourceDeckIds?: string[];
+    }
+  | { ok: false; refusal: ApplySetRefusal };
+
+/** One staged pull (Small items 4, item 2): the picked addition's copy comes out of this deck when the set applies. */
+export type SetPull = { itemId: string; sourceDeckId: string };
+
+/** At most one pull per addition, and no more additions than a side holds. */
+export const MAX_SET_PULLS = 20;
+
+/**
+ * A request's staged pulls, or null when they are not a list of at most `MAX_SET_PULLS` `{ itemId, sourceDeckId }` uuid
+ * pairs, one per item, each naming one of the set's picked additions (`addIds`). Absent is none. Lowered, as every id
+ * the apply compares is.
+ */
+export function parseSetPulls(value: unknown, addIds: readonly string[]): SetPull[] | null {
+  if (value === undefined) return [];
+  if (!Array.isArray(value) || value.length > MAX_SET_PULLS) return null;
+  const adds = new Set(addIds.map((id) => id.toLowerCase()));
+  const seen = new Set<string>();
+  const out: SetPull[] = [];
+  for (const entry of value) {
+    if (typeof entry !== "object" || entry === null) return null;
+    const { itemId, sourceDeckId } = entry as Record<string, unknown>;
+    if (!isUuid(itemId) || !isUuid(sourceDeckId)) return null;
+    const id = (itemId as string).toLowerCase();
+    if (seen.has(id) || !adds.has(id)) return null;
+    seen.add(id);
+    out.push({ itemId: id, sourceDeckId: (sourceDeckId as string).toLowerCase() });
+  }
+  return out;
+}
 
 class Refused extends Error {
   constructor(readonly refusal: ApplySetRefusal) {
@@ -40,13 +83,18 @@ async function lockDeck(tx: Tx, deckId: string): Promise<void> {
 
 /**
  * The run's deck, by an unlocked read scoped to the reader (a run's deck never changes), then the deck locked before any
- * item: the order every deck write and a deck delete take (`verdicts.ts`'s `lockedItem`).
+ * item: the order every deck write and a deck delete take (`verdicts.ts`'s `lockedItem`). With staged pulls, `also`
+ * names the source decks and their claimants, and every one of them is locked with the run's deck in ONE sorted order
+ * (`lockDecksInOrder`), the order the shipped pull takes: the run's deck first and the rest after would deadlock against a
+ * concurrent pull holding a lower id. `lockIds` is the whole set locked.
  */
-async function lockRunDeck(tx: Tx, runId: string, userId: string) {
+async function lockRunDeck(tx: Tx, runId: string, userId: string, also: readonly string[] = []) {
   const [owner] = await tx.select({ deckId: deckSuggestionRuns.deckId }).from(deckSuggestionRuns)
     .where(and(eq(deckSuggestionRuns.id, runId), eq(deckSuggestionRuns.userId, userId)));
   if (!owner) return null;
-  await lockDeck(tx, owner.deckId);
+  let lockIds = [owner.deckId];
+  if (also.length === 0) await lockDeck(tx, owner.deckId);
+  else lockIds = await lockDecksInOrder(tx, [owner.deckId, ...also]);
   // Read under the lock, never before it: an apply and an Undo that commit while this waits must be seen (a set id they
   // spent, a status that settled), or a delayed press would act on the run as it was.
   const [run] = await tx.select({
@@ -56,7 +104,7 @@ async function lockRunDeck(tx: Tx, runId: string, userId: string) {
     readVersion: deckSuggestionRuns.readVersion,
     spentSets: deckSuggestionRuns.spentSets,
   }).from(deckSuggestionRuns).where(eq(deckSuggestionRuns.id, runId));
-  return run ?? null;
+  return run ? { ...run, lockIds } : null;
 }
 
 /**
@@ -84,22 +132,50 @@ async function lockedLines(tx: Tx, runId: string) {
 }
 
 /**
+ * The decks a set's staged pulls touch, besides the run's own: each named source, and every deck the claim on the pulled
+ * card is made of (`pullClaimants`). Read BEFORE the transaction and used only to choose the locks, as the shipped pull
+ * does: the pull itself re-reads the claim under them and refuses a claimant this did not name.
+ */
+async function pullParties(runId: string, userId: string, env: NodeJS.ProcessEnv, pulls: readonly SetPull[]): Promise<string[]> {
+  if (pulls.length === 0) return [];
+  const [owner] = await db.select({ deckId: deckSuggestionRuns.deckId }).from(deckSuggestionRuns)
+    .where(and(eq(deckSuggestionRuns.id, runId), eq(deckSuggestionRuns.userId, userId)));
+  if (!owner) return [];
+  const items = await db.select({ id: deckSuggestionItems.id, addOracleId: deckSuggestionItems.addOracleId })
+    .from(deckSuggestionItems)
+    .where(and(eq(deckSuggestionItems.runId, runId), inArray(deckSuggestionItems.id, pulls.map((p) => p.itemId))));
+  const claimants = await Promise.all(pulls.map((p) => {
+    const add = items.find((i) => i.id === p.itemId)?.addOracleId ?? null;
+    return add === null ? [] : pullClaimants(userId, env, add, owner.deckId);
+  }));
+  return [...pulls.map((p) => p.sourceDeckId), ...claimants.flat()];
+}
+
+/**
  * Apply M picked additions and M picked cuts of one v2 run as ONE set, in one transaction (spec §7, plan PR 4). The set's
  * id is the caller's `actionId`, so a repeat of the same press (a double tap, a retried request) finds its set already
  * applied and answers with it rather than applying twice. Each line is planned and applied against the deck as the lines
  * before it left it, cuts first, with its own snapshot, so `undoSet` can put each back in reverse. Any line that no longer
  * applies refuses the whole set: nothing is written. Unpicked lines stay open for a later set.
+ *
+ * Staged pulls (Small items 4, item 2) run in the same transaction AFTER every swap, through the shipped pull
+ * (`pullInTx`), because a pull is authorized by the asking deck's draft holding the addition. A pull whose copy has come
+ * free since is done already and writes nothing; any other refusal refuses the whole set. Each pull is recorded on its
+ * addition's snapshot, so the set's one Undo takes it back too.
  */
 export async function applyPicks(args: {
   runId: string; addIds: readonly string[]; cutIds: readonly string[]; actionId: string; userId: string; env: NodeJS.ProcessEnv;
+  pulls?: readonly SetPull[];
 }): Promise<ApplySetResult> {
   const { runId, userId, env } = args;
   // Postgres returns a uuid in lower case, and every id here is compared as a string against what it read, so the set id
   // and the picked ids are lowered first.
   const actionId = args.actionId.toLowerCase();
+  const pulls = (args.pulls ?? []).map((p) => ({ itemId: p.itemId.toLowerCase(), sourceDeckId: p.sourceDeckId.toLowerCase() }));
+  const parties = await pullParties(runId, userId, env, pulls);
   try {
     return await db.transaction(async (tx) => {
-      const run = await lockRunDeck(tx, runId, userId);
+      const run = await lockRunDeck(tx, runId, userId, parties);
       if (!run) throw new Refused({ kind: "notFound" });
       const lines = await lockedLines(tx, runId);
       const done = lines.filter((l) => l.applySet === actionId);
@@ -119,6 +195,7 @@ export async function applyPicks(args: {
       if (deckTotal(head) !== V2_DECK_TOTAL) throw new Refused({ kind: "notAtSize" });
 
       const now = new Date();
+      const snapshots = new Map<string, ApplySnapshot>();
       for (const line of [...plan.cuts, ...plan.adds]) {
         const swap = await planSwap(tx, run.deckId, line.cutOracleId, line.addOracleId, env);
         if (!swap.ok) throw new Refused({ kind: "swap", itemId: line.id });
@@ -127,12 +204,35 @@ export async function applyPicks(args: {
           .set({ verdict: "accepted", verdictAt: now, undoSnapshot: swap.snapshot, applySet: actionId, picked: true })
           .where(eq(deckSuggestionItems.id, line.id));
         await applySwap(tx, run.deckId, line.cutOracleId, line.addOracleId, swap.snapshot);
+        snapshots.set(line.id, swap.snapshot);
+      }
+      // The pulls, after every swap: each is authorized by this deck's draft now holding its addition.
+      const pulledFrom: string[] = [];
+      for (const p of pulls) {
+        const line = plan.adds.find((l) => l.id === p.itemId);
+        const snapshot = snapshots.get(p.itemId);
+        if (!line || line.addOracleId === null || !snapshot) throw new Refused({ kind: "pull", itemId: p.itemId, message: "" });
+        const pulled = await pullInTx(tx, {
+          userId, env, sourceDeckId: p.sourceDeckId, oracleId: line.addOracleId, askingDeckId: run.deckId, lockIds: run.lockIds,
+        });
+        if (!pulled.ok) {
+          // A copy came free since the confirmation was drawn: the deck needs nothing out of anybody's box.
+          if (pulled.covered) continue;
+          throw new Refused({ kind: "pull", itemId: p.itemId, message: pulled.message });
+        }
+        await tx.update(deckSuggestionItems)
+          .set({ undoSnapshot: { ...snapshot, pull: { sourceDeckId: p.sourceDeckId, draft: pulled.draft } } })
+          .where(eq(deckSuggestionItems.id, line.id));
+        pulledFrom.push(p.sourceDeckId);
       }
       await tx.update(deckSuggestionRuns)
         .set({ spentSets: sql`array_append(${deckSuggestionRuns.spentSets}, ${actionId}::uuid)` })
         .where(eq(deckSuggestionRuns.id, runId));
       await touchDeck(tx, run.deckId);
-      return { ok: true as const, deckId: run.deckId, applySet: actionId, itemIds: [...plan.cuts, ...plan.adds].map((l) => l.id) };
+      return {
+        ok: true as const, deckId: run.deckId, applySet: actionId, itemIds: [...plan.cuts, ...plan.adds].map((l) => l.id),
+        sourceDeckIds: [...new Set(pulledFrom)],
+      };
     });
   } catch (error) {
     if (error instanceof Refused) return { ok: false, refusal: error.refusal };
@@ -156,11 +256,28 @@ export async function undoSet(args: { applySet: string; userId: string; env: Nod
         .where(and(eq(deckSuggestionItems.applySet, applySet), eq(deckSuggestionRuns.userId, userId), isNotNull(deckSuggestionRuns.requestedCount)))
         .limit(1);
       if (!owner) throw new Refused({ kind: "notFound" });
-      const run = await lockRunDeck(tx, owner.runId, userId);
+      // The decks the set pulled copies out of, read before the locks only to choose them (a set's snapshots are written
+      // by its apply and cleared by its undo, both under the run deck's lock, so the read under the locks agrees).
+      const pre = await tx.select({ undoSnapshot: deckSuggestionItems.undoSnapshot }).from(deckSuggestionItems)
+        .where(and(eq(deckSuggestionItems.runId, owner.runId), eq(deckSuggestionItems.applySet, applySet)));
+      const sources = pre.flatMap((l) => (l.undoSnapshot?.pull ? [l.undoSnapshot.pull.sourceDeckId] : []));
+      const run = await lockRunDeck(tx, owner.runId, userId, sources);
       if (!run) throw new Refused({ kind: "notFound" });
       await refuseIfRetired(tx, run);
       const set = (await lockedLines(tx, owner.runId)).filter((l) => l.applySet === applySet && l.verdict === "accepted");
       if (set.length === 0) throw new Refused({ kind: "notFound" });
+
+      // The pulls first: the apply made them after every swap. Any one that cannot be put back as it was refuses the whole
+      // undo, so a set is never half undone and no other deck is left short.
+      const putBack: string[] = [];
+      for (const line of [...set].reverse()) {
+        const pull = line.undoSnapshot?.pull;
+        if (!pull || line.addOracleId === null) continue;
+        if (!run.lockIds.includes(pull.sourceDeckId)) throw new Refused({ kind: "notFound" });
+        const back = await undoPull(tx, { userId, askingDeckId: run.deckId, oracleId: line.addOracleId, ...pull });
+        if (!back.ok) throw new Refused({ kind: "pullMoved", itemId: line.id, deckName: back.deckName });
+        putBack.push(pull.sourceDeckId);
+      }
 
       // The apply wrote cuts, then additions; undo walks that back, additions first. No two lines of a run name the same
       // card (the engine keeps one line per card), so within a side the order cannot change what a restore finds.
@@ -174,12 +291,51 @@ export async function undoSet(args: { applySet: string; userId: string; env: Nod
           .where(eq(deckSuggestionItems.id, line.id));
       }
       await touchDeck(tx, run.deckId);
-      return { ok: true as const, deckId: run.deckId, applySet, itemIds: set.map((l) => l.id) };
+      return { ok: true as const, deckId: run.deckId, applySet, itemIds: set.map((l) => l.id), sourceDeckIds: [...new Set(putBack)] };
     });
   } catch (error) {
     if (error instanceof Refused) return { ok: false, refusal: error.refusal };
     throw error;
   }
+}
+
+/**
+ * One staged pull taken back (Undo all): the source's draft row as the pull found it, and the release given up. Under the
+ * source's row lock, which the caller holds.
+ *
+ * - The source deck is gone: the copy went with it, so there is nothing to give back.
+ * - Its release is gone (the source's commit or discard cleared it): a discard put the card back in that draft, so the
+ *   pull is undone already; a commit made the removal that deck's version, and putting the card back would edit a list
+ *   the player committed, so it refuses. A pull that only wrote a release (the draft had cut the card already) has
+ *   nothing left to give back either way.
+ * - Otherwise the draft row must be as the pull left it (one copy fewer, or gone at one); an edit since refuses, as
+ *   `restoreSwap` does.
+ */
+async function undoPull(tx: Tx, p: {
+  userId: string; askingDeckId: string; oracleId: string; sourceDeckId: string; draft: PulledDraftRow;
+}): Promise<{ ok: true } | { ok: false; deckName: string }> {
+  const [source] = await tx.select({ name: decks.name }).from(decks)
+    .where(and(eq(decks.id, p.sourceDeckId), eq(decks.userId, p.userId)));
+  if (!source) return { ok: true };
+  const key = { sourceDeckId: p.sourceDeckId, oracleId: p.oracleId, askingDeckId: p.askingDeckId };
+  const copies = await readPullReleaseCopies(tx, key);
+  const rowOf = and(eq(deckCards.deckId, p.sourceDeckId), eq(deckCards.oracleId, p.oracleId));
+  const [row] = await tx.select({ quantity: deckCards.quantity, auto: deckCards.auto }).from(deckCards).where(rowOf).for("update");
+  if (copies === 0) return p.draft === null || row ? { ok: true } : { ok: false, deckName: source.name };
+  if (p.draft === null) {
+    await undoPullRelease(tx, key);
+    return { ok: true };
+  }
+  const left = p.draft.quantity - 1;
+  const asLeft = left === 0 ? !row : row?.quantity === left && row.auto === p.draft.auto;
+  if (!asLeft) return { ok: false, deckName: source.name };
+  await tx.insert(deckCards)
+    .values({ deckId: p.sourceDeckId, oracleId: p.oracleId, quantity: p.draft.quantity, auto: p.draft.auto })
+    .onConflictDoUpdate({ target: [deckCards.deckId, deckCards.oracleId], set: { quantity: p.draft.quantity, auto: p.draft.auto } });
+  await undoPullRelease(tx, key);
+  // The source's list changed back, so it reads as edited.
+  await touchDeck(tx, p.sourceDeckId);
+  return { ok: true };
 }
 
 /**

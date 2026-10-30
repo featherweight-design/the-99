@@ -1,7 +1,9 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { pullCardFromDeck } from "../../app/decks/actions";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
+import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { DECK_GROUPING_ARIA, DECK_GROUPING_KEY } from "../../lib/copy/deck-sort";
 import { suggestedChangesV2Copy } from "../../lib/copy/suggested-changes-v2";
 import { tuningHubCopy } from "../../lib/copy/tuning-hub";
@@ -12,10 +14,13 @@ import { NEW_MARK_MS, SLOW_NOTE_MS, SuggestedChangesRun, type SuggestionSetActio
 import { historyDay } from "./tuning-history";
 
 const openCard = vi.hoisted(() => vi.fn());
-vi.mock("../cards/card-detail-provider", () => ({
+vi.mock("../cards/card-detail-provider", async (importActual) => ({
+  // The rest of the module as shipped: the confirmation's Pull (Small items 4, item 2) names the row's card trigger.
+  ...(await importActual<typeof import("../cards/card-detail-provider")>()),
   useCardDetail: () => ({ open: openCard, registerSheet: () => () => {}, openOracleId: null, revealing: false }),
   useCardIntent: () => ({}),
 }));
+vi.mock("../../app/decks/actions", () => ({ pullCardFromDeck: vi.fn() }));
 
 const sc = suggestedChangesV2Copy;
 const RUN = "11111111-1111-4111-8111-111111111111";
@@ -188,6 +193,44 @@ describe("the results", () => {
     expect(t.onAnnounce).toHaveBeenCalledWith(sc.run.appliedLead(3, 4));
     expect(t.onChanged).toHaveBeenCalled();
     expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  // Small items 4, item 2: a held addition's pull is staged in the confirmation and sent with the set, never on its own.
+  it("sends a staged pull with the set, and only for a held addition", async () => {
+    const GISHATH = { id: "d-gishath", name: "HD - Gishath", quantity: 1, mature: true, pending: false, commander: false, senior: true };
+    const held = { owned: 1, hard: 1, soft: 0, free: -1, claims: [GISHATH] } as unknown as NonNullable<LineItem["availability"]>;
+    const otherDecks = ask(3, { restrictions: { capCents: null, sets: [], ownedOnly: true, otherDecks: true } });
+    const t = setup({
+      ask: otherDecks,
+      lines: [...adds(5, (i) => ({ picked: i < 2, availability: i === 0 ? held : null })), ...cuts(5, (i) => ({ picked: i < 2 }))],
+    });
+    await press(apply());
+    const dialog = screen.getByRole("dialog");
+    expect(dialog.textContent).toContain(sc.confirm.heldFoot);
+    await press(within(dialog).getByRole("button", { name: deckVersioningCopy.review.pullA11y("Card a0", GISHATH.name) }));
+    expect(dialog.textContent).toContain(sc.confirm.pullsFrom(GISHATH.name));
+    expect(pullCardFromDeck).not.toHaveBeenCalled();
+    await press(within(dialog).getByRole("button", { name: sc.confirm.apply(4) }));
+    expect(t.actions.apply).toHaveBeenCalledWith(
+      RUN, ["a0", "a1"], ["c0", "c1"], expect.stringMatching(/^[0-9a-f-]{36}$/), [{ itemId: "a0", sourceDeckId: GISHATH.id }],
+    );
+  });
+
+  it("takes a staged pull back with Undo, and then sends none", async () => {
+    const GISHATH = { id: "d-gishath", name: "HD - Gishath", quantity: 1, mature: true, pending: false, commander: false, senior: true };
+    const held = { owned: 1, hard: 1, soft: 0, free: -1, claims: [GISHATH] } as unknown as NonNullable<LineItem["availability"]>;
+    const otherDecks = ask(3, { restrictions: { capCents: null, sets: [], ownedOnly: true, otherDecks: true } });
+    const t = setup({
+      ask: otherDecks,
+      lines: [...adds(5, (i) => ({ picked: i === 0, availability: i === 0 ? held : null })), ...cuts(5, (i) => ({ picked: i === 0 }))],
+    });
+    await press(apply());
+    const dialog = screen.getByRole("dialog");
+    await press(within(dialog).getByRole("button", { name: deckVersioningCopy.review.pullA11y("Card a0", GISHATH.name) }));
+    await press(within(dialog).getByRole("button", { name: sc.confirm.unstageA11y("Card a0", GISHATH.name) }));
+    expect(dialog.textContent).not.toContain(sc.confirm.pullsFrom(GISHATH.name));
+    await press(within(dialog).getByRole("button", { name: sc.confirm.apply(2) }));
+    expect(t.actions.apply).toHaveBeenCalledWith(RUN, ["a0"], ["c0"], expect.stringMatching(/^[0-9a-f-]{36}$/));
   });
 
   it("closes the confirmation with nothing changed", async () => {

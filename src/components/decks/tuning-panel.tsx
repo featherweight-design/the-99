@@ -1182,6 +1182,7 @@ export function TuningPanel({
       <SuggestedChangesRun
         key={runId}
         runId={runId}
+        deckId={deckId}
         ask={live ? live.ask ?? null : v2Ask}
         lines={live ? live.items.filter(isLine) : v2Lines}
         live={live}

@@ -951,3 +951,56 @@ describe("PullControl — 2+ choosable sources", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 });
+
+// Suggested changes v2's Apply confirmation (Small items 4, item 2): the same control STAGES the choice. Nothing moves
+// until Apply, so a press hands the claim back and never calls the server.
+describe("PullControl — onChoose stages instead of pulling", () => {
+  const MANY_NAME = copy.pullManyA11y(CARD.name, 2);
+
+  it("hands back the single source without calling the server action", async () => {
+    const onChoose = vi.fn();
+    const onPulled = vi.fn();
+    render(<PullControl deckId="d" card={CARD} claims={[FREE_TO_PULL]} defaultId={FREE_TO_PULL.id} onPulled={onPulled} onChoose={onChoose} />);
+    await act(async () => {
+      screen.getByRole("button", { name: PULL_NAME }).click();
+    });
+    expect(onChoose).toHaveBeenCalledWith(FREE_TO_PULL);
+    expect(pullCardFromDeck).not.toHaveBeenCalled();
+    expect(onPulled).not.toHaveBeenCalled();
+    expect(document.getElementById(DRAFT_ANNOUNCER_ID)?.textContent ?? "").toBe("");
+  });
+
+  it("hands back the picker's CHOSEN source and closes the list, without calling the server action", async () => {
+    setViewport(true);
+    const onChoose = vi.fn();
+    render(
+      <PullControl
+        deckId="d"
+        card={CARD}
+        claims={[FREE_TO_PULL, OTHER_SOURCE]}
+        defaultId={FREE_TO_PULL.id}
+        onPulled={noop}
+        onChoose={onChoose}
+      />,
+    );
+    act(() => {
+      screen.getByRole("button", { name: MANY_NAME }).click();
+    });
+    act(() => {
+      screen.getByRole("radio", { name: new RegExp(OTHER_SOURCE.name) }).click();
+    });
+    await act(async () => {
+      screen.getByRole("button", { name: sourceCopy.confirm(OTHER_SOURCE.name) }).click();
+    });
+    expect(onChoose).toHaveBeenCalledWith(OTHER_SOURCE);
+    expect(pullCardFromDeck).not.toHaveBeenCalled();
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("keeps the guards: a locked holder draws its tag and offers nothing to stage", () => {
+    const onChoose = vi.fn();
+    render(<PullControl deckId="d" card={CARD} claims={[LOCKED_SOURCE]} defaultId={LOCKED_SOURCE.id} onPulled={noop} onChoose={onChoose} />);
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(screen.getByText(lockedCardsCopy.pull.tag)).toBeTruthy();
+  });
+});
