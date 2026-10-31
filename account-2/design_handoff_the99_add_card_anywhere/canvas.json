@@ -1,0 +1,66 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-10-31T20:11:47Z"
+ },
+ "title": "The 99 \u00b7 Add a card from anywhere",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1900,
+   "h": 1903,
+   "title": "Add a card from anywhere \u00b7 the four directions"
+  },
+  "A-Nav.dc.html": {
+   "x": 1980,
+   "y": 0,
+   "w": 2240,
+   "h": 3419,
+   "title": "A \u00b7 Nav slot"
+  },
+  "B-Header.dc.html": {
+   "x": 4300,
+   "y": 0,
+   "w": 2240,
+   "h": 3410,
+   "title": "B \u00b7 Header +"
+  },
+  "C-Search.dc.html": {
+   "x": 0,
+   "y": 3539,
+   "w": 2240,
+   "h": 5407,
+   "title": "C \u00b7 Search adds (recommended)"
+  },
+  "D-Card.dc.html": {
+   "x": 2320,
+   "y": 3539,
+   "w": 2240,
+   "h": 5386,
+   "title": "D \u00b7 The card is the entry"
+  },
+  "Shared.dc.html": {
+   "x": 4640,
+   "y": 3539,
+   "w": 2240,
+   "h": 3722,
+   "title": "Shared \u00b7 the pack, the save, the way back"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "A-Nav.dc.html",
+  "B-Header.dc.html",
+  "C-Search.dc.html",
+  "D-Card.dc.html",
+  "Shared.dc.html"
+ ],
+ "notes": {},
+ "designSystems": []
+}
