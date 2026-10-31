@@ -178,10 +178,10 @@ describe("overAnonymousLimit", () => {
   });
 
   it("counts a header-less request under the shared key with a low cap", async () => {
-    h.hits = 3;
+    h.hits = UNKNOWN_CAP;
     expect(await overAnonymousLimit(hdr({}), "launch-list")).toBe(false);
     expect(h.recorded).toEqual([[UNKNOWN_KEY, "launch-list"]]);
-    h.hits = 4;
+    h.hits = UNKNOWN_CAP + 1;
     expect(await overAnonymousLimit(hdr({}), "launch-list")).toBe(true);
   });
 
