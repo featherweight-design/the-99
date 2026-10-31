@@ -126,14 +126,18 @@ describe("the plan in the prompt (v2)", () => {
     expect(near.system).not.toContain("run this again");
   });
 
-  it("tells the model a capped combo list names only the leading combos, and says nothing of it under the cap", () => {
+  it("points the model at each card's own line for its combo state, and never forbids 'none' for a long list", () => {
     const capped = buildCutsPrompt(buildCutsPack({
       facts: cutFacts({ profile: profile(), locked: new Set(), support: null, declaredBracket: null }),
       commanderName: "Gishath", keyCards: [], intent: null, plan: { ...plan, combos: Array.from({ length: 6 }, () => plan.combos[0]) },
     }));
-    expect(capped.user).toContain("These combo lists are capped and name only the leading combos.");
-    expect(capped.user).not.toContain("never cite combo state none");
-    expect(withPlan().user).not.toContain("These combo lists are capped");
+    expect(capped.user).toContain("Each card's own line says whether it is a piece of a combo, listed here or not.");
+    expect(capped.user).not.toContain("never cite combo");
+    const empty = buildCutsPrompt(buildCutsPack({
+      facts: cutFacts({ profile: profile(), locked: new Set(), support: null, declaredBracket: null }),
+      commanderName: "Gishath", keyCards: [], intent: null, plan: { ...plan, combos: [], nearCombos: [] },
+    }));
+    expect(empty.user).not.toContain("may name only the leading combos");
   });
 
   it("drops the combo and colour cites and the plan wording when no plan was read", () => {
@@ -173,6 +177,8 @@ describe("the plan in the prompt (v2)", () => {
       commanderName: "Gishath", keyCards: [], intent: null, plan: { ...plan, combos: null, nearCombos: null, comboPieces: null },
     }));
     expect(failed.user).toContain("The combo read failed");
+    expect(failed.user).toContain("never cite combo.");
+    expect(failed.user).not.toContain("Each card's own line says");
     expect(build().user).not.toContain("The deck's plan.");
   });
 });

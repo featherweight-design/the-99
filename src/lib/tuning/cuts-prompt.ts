@@ -1,7 +1,6 @@
 import { CURVE_MAX } from "../decks/stats";
 import { deckCutsCopy } from "../copy/deck-cuts";
 import { PLAYER_TEXT_SYSTEM_RULE } from "../model/player-text";
-import { MAX_COMBO_FACTS, MAX_NEAR_COMBO_FACTS } from "../synopsis/facts-extra";
 import type { CutsPack, CutsPackCard } from "./cuts-evidence";
 
 /**
@@ -53,14 +52,12 @@ export function buildCutsPrompt(pack: CutsPack): { system: string; user: string 
   if (plan) {
     lines.push("", "The deck's plan.");
     if (plan.commanderText.length > 0) lines.push("Commander text:", ...plan.commanderText.map((t) => `- ${t}`));
-    if (plan.combos === null) lines.push("The combo read failed, so no combos are listed.");
+    if (plan.combos === null || plan.comboPieces === null) lines.push("The combo read failed, so no combos are listed and no combo cite can be checked: never cite combo.");
     else {
       lines.push(plan.combos.length > 0 ? "Combos the deck assembles:" : "The deck assembles no infinite or game-ending combo that the read found. It checks only indexed Spellbook combos of 2 to 6 cards without template-gated steps, so it does not show the deck has none (combos one card short are listed separately), and it says nothing about the deck's other synergies.");
       lines.push(...plan.combos.map((c) => `- ${c.pieces.join(" + ")} -> ${c.produces.join(", ")}${c.manaNeeded === null ? "" : `, mana needed ${c.manaNeeded}`}${c.usesCommander ? ", uses the commander" : ""}`));
     }
-    if ((plan.combos?.length ?? 0) >= MAX_COMBO_FACTS || (plan.nearCombos?.length ?? 0) >= MAX_NEAR_COMBO_FACTS) {
-      lines.push("These combo lists are capped and name only the leading combos. Each card's own line says whether it is a piece of a combo, listed here or not.");
-    }
+    if (plan.combos !== null && plan.comboPieces !== null && (plan.combos.length > 0 || (plan.nearCombos?.length ?? 0) > 0)) lines.push("These combo lists may name only the leading combos. Each card's own line says whether it is a piece of a combo, listed here or not.");
     if (plan.nearCombos !== null && plan.nearCombos.length > 0) {
       lines.push("Combos one card short:", ...plan.nearCombos.map((n) => `- has ${n.have}, lacks ${n.missing} -> ${n.produces.join(", ")}`));
     }

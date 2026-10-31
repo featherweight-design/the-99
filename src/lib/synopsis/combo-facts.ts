@@ -160,8 +160,12 @@ export function shapeComboFacts(
   const byVariant = byVariantId(rows);
   const assembled: (ComboFact & { pieceCount: number; id: string })[] = [];
   const near: (NearComboFact & { pieceCount: number; mana: number | null; usesCommander: boolean; id: string })[] = [];
-  /** The state each counted variant gives its held pieces, before either list is capped. */
-  const kept = new Map<string, ComboPieceState>();
+  /** Each held piece's state, read before either list is capped. A mandatory loop marks none. */
+  const held = new Map<string, ComboPieceState>();
+  const mark = (pieces: readonly ComboPieceRow[], state: ComboPieceState) => {
+    if (isMandatoryLoop(pieces[0].produces)) return;
+    for (const p of pieces) if (p.held && held.get(p.oracle_id) !== "assembled") held.set(p.oracle_id, state);
+  };
   for (const [id, pieces] of byVariant) {
     const first = pieces[0];
     // A loop whose only feature is "Draw the game" (Pariah + Stuffy Doll) counts here: the verdict
@@ -170,7 +174,7 @@ export function shapeComboFacts(
     const names = [...pieces].sort((a, b) => a.name.localeCompare(b.name));
     const missing = names.filter((p) => !p.held);
     if (missing.length === 0) {
-      if (!isMandatoryLoop(first.produces)) kept.set(id, "assembled");
+      mark(pieces, "assembled");
       assembled.push({
         id,
         pieceCount: pieces.length,
@@ -182,7 +186,7 @@ export function shapeComboFacts(
     } else {
       const m = addableMissingPiece(pieces, identity);
       if (!m) continue;
-      kept.set(id, "oneShort");
+      mark(pieces, "oneShort");
       near.push({
         id,
         pieceCount: pieces.length,
@@ -193,10 +197,6 @@ export function shapeComboFacts(
         produces: first.produces,
       });
     }
-  }
-  const held = new Map<string, ComboPieceState>();
-  for (const [id, state] of kept) {
-    for (const p of byVariant.get(id)!) if (p.held && held.get(p.oracle_id) !== "assembled") held.set(p.oracle_id, state);
   }
   const sig = (produces: readonly string[]) => [...produces].sort().join("|");
   return {
