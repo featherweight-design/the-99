@@ -3,7 +3,8 @@ import type { Banner, HistoryItem, OverrideItem, Rung, SwitchPage } from "../../
 import { adminCopy, switchCopy } from "../../lib/copy/admin";
 import { KILL } from "../../lib/switches/resolve";
 import { AppWideControl, RowControls } from "./override-controls";
-import { OverridePicker, ROW } from "./override-picker";
+import { OverridePicker } from "./override-picker";
+import { ROW } from "./override-row";
 import { PendingReporter } from "../shell/pending-reporter";
 import { CheckAccount } from "./check-account";
 import { SectionHead } from "./costs-detail";

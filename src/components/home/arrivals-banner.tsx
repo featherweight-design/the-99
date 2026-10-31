@@ -28,9 +28,8 @@ import { AboutText } from "../about/pages/about-text";
 import { PendingReporter } from "../shell/pending-reporter";
 import { useTarget } from "../discovery/targets-provider";
 import { Mark } from "./banner-mark";
+import { HOME_HEADING_ID } from "./home-heading";
 
-/** Home's `<h1>`, where focus goes once ✕ has closed the banner (H8). */
-export const HOME_HEADING_ID = "home-heading";
 /** Where a first-run reader's Show me goes, and a launch line's "and N more": the `/about` index (call 3). */
 export const ABOUT_INDEX_HREF = "/about";
 /** The close: a height collapse this long, instant under reduced motion. */
