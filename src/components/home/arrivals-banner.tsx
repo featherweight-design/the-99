@@ -90,8 +90,8 @@ function LaunchSentence({ launch }: { launch: AboutLaunch }) {
   );
 }
 
-/** Each size's plate: a launch alone (36px, 19px glyph) or a line in the band (28px, 16px glyph). The tint and edge are
- *  the diamond `Mark` plate's (`banner-mark.tsx`), the glyph is `--accent`. */
+/** Each size's plate: a launch alone (36px, 19px glyph) or a line in the band (28px, 16px glyph). The tint (12%) and edge (40%)
+ *  are the board's, paler than the diamond `Mark` plate's (`banner-mark.tsx`); the glyph is `--accent`. */
 const PLATE_SIZES = {
   line: "h-[36px] w-[36px] rounded-[8px]",
   list: "h-[28px] w-[28px] rounded-[7px] [&>svg]:h-[16px] [&>svg]:w-[16px]",
