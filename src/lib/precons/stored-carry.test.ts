@@ -20,7 +20,7 @@ describe("arrivalDeckQuery", () => {
 
 describe("sourceRowQuery", () => {
   it("re-reads the precon's row FOR SHARE, with the change log head as of that row's own last check", () => {
-    const sql = render(sourceRowQuery(db, "f", 12, "labels"));
+    const sql = render(sourceRowQuery(db, "f", 13, "labels"));
     expect(sql).toMatch(/ for share$/);
     expect(sql).toContain(`from "deck_data_changes" dc where dc.published_at <= "precon_synopses".checked_at`);
     expect(sql).toMatch(/where \("precon_synopses"\."precon_file" = \$1 and "precon_synopses"\."contract_version" = \$2 and "precon_synopses"\."role_basis" = \$3\)/);
@@ -30,13 +30,13 @@ describe("sourceRowQuery", () => {
 describe("lockedCarry", () => {
   const readAt = new Date("2026-10-27T10:00:00Z");
   const src = {
-    listFingerprint: "list", contractVersion: 12, current: true, model: "m", content: { overview: "x" } as never,
+    listFingerprint: "list", contractVersion: 13, current: true, model: "m", content: { overview: "x" } as never,
     createdAt: new Date("2026-10-26T09:00:00Z"), readingAt: readAt, logAtCheck: "40",
   };
   const base = { wantsOverview: true, readAt, readingSeenSeq: 42, list: "list", src };
 
   it("copies the Overview of the locked revision: its content, its date and its log mark, never past the reading's", () => {
-    expect(lockedCarry(base)).toEqual({ kind: "copy", overview: { contractVersion: 12, model: "m", content: src.content, createdAt: src.createdAt, seenSeq: 40 } });
+    expect(lockedCarry(base)).toEqual({ kind: "copy", overview: { contractVersion: 13, model: "m", content: src.content, createdAt: src.createdAt, seenSeq: 40 } });
     expect(lockedCarry({ ...base, src: { ...src, logAtCheck: 99 } })).toMatchObject({ overview: { seenSeq: 42 } });
   });
   it("copies the reading alone when the locked revision is no longer current, or is of another list", () => {
