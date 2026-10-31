@@ -2,7 +2,7 @@
  "v": 3,
  "createdOnFiles": {
   "v": 1,
-  "at": "2026-10-31T20:23:11Z"
+  "at": "2026-10-31T20:29:35Z"
  },
  "title": "The 99 \u00b7 Hide a commander",
  "launch": {
@@ -10,50 +10,58 @@
  },
  "pages": [],
  "boards": {
-  "Main.dc.html": {
+  "Placement.dc.html": {
    "x": 0,
    "y": 0,
+   "w": 2900,
+   "h": 2217,
+   "title": "R1c \u00b7 Hide on the row: three placements"
+  },
+  "Main.dc.html": {
+   "x": 0,
+   "y": 2337,
    "w": 1612,
    "h": 1190,
    "title": "Hide a commander \u00b7 the calls"
   },
   "Rows.dc.html": {
    "x": 1692,
-   "y": 0,
+   "y": 2337,
    "w": 2900,
    "h": 2596,
    "title": "1\u20132 \u00b7 The Hide control on a row"
   },
   "Undo.dc.html": {
    "x": 4672,
-   "y": 0,
+   "y": 2337,
    "w": 2900,
    "h": 2240,
    "title": "3 \u00b7 Undo in place \u00b7 12 \u00b7 failures"
   },
   "Hidden.dc.html": {
    "x": 0,
-   "y": 2716,
+   "y": 5053,
    "w": 2900,
    "h": 3258,
    "title": "4\u20136 \u00b7 The Hidden list"
   },
   "Page.dc.html": {
    "x": 2980,
-   "y": 2716,
+   "y": 5053,
    "w": 2900,
    "h": 3280,
    "title": "7\u20138 \u00b7 The commander\u2019s page"
   },
   "Edges.dc.html": {
    "x": 5960,
-   "y": 2716,
+   "y": 5053,
    "w": 2900,
    "h": 3258,
    "title": "9\u201311 \u00b7 Help me choose, pairs, short lists"
   }
  },
  "order": [
+  "Placement.dc.html",
   "Main.dc.html",
   "Rows.dc.html",
   "Undo.dc.html",

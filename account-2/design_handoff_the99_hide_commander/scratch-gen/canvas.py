@@ -3,8 +3,8 @@ H = sys.argv[1]
 B = json.load(open('blobs.json'))
 os.makedirs(f'{H}/canvas/project', exist_ok=True)
 L = [('Main', 'Hide a commander · the calls'), ('Rows', '1–2 · The Hide control on a row'), ('Undo', '3 · Undo in place · 12 · failures'),
-     ('Hidden', '4–6 · The Hidden list'), ('Page', '7–8 · The commander’s page'), ('Edges', '9–11 · Help me choose, pairs, short lists')]
-rows = [L[:3], L[3:]]
+     ('Hidden', '4–6 · The Hidden list'), ('Page', '7–8 · The commander’s page'), ('Edges', '9–11 · Help me choose, pairs, short lists'), ('Placement', 'R1c · Hide on the row: three placements')]
+rows = [[L[6]], L[:3], L[3:6]]
 boards = {}; order = []; y = 0
 for row in rows:
     x = 0; hmax = 0

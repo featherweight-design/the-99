@@ -119,6 +119,12 @@ code{font:12px 'IBM Plex Mono',monospace;color:var(--fg-body)}
 .hb.foc svg{outline:2px solid var(--accent);outline-offset:4px}
 .hb.new{outline:1.5px dashed rgba(207,135,69,.9);outline-offset:-4px;border-radius:8px}
 .crow .figs .src+.hb{margin-left:-4px}
+.fbrow{display:flex;align-items:flex-start;gap:6px}.fbrow .fb{flex:1;max-width:none}.dk .fbrow .fb{flex:0 1 520px}
+.hb.bb{margin:-19px -14px -19px 0}.dk .hb.bb{margin:-18px -14px -18px auto}
+.hfoot{display:flex;justify-content:flex-end;margin-top:-2px}
+.hl{position:relative;z-index:2;display:flex;align-items:center;gap:6px;height:44px;margin:-12px -10px -14px 0;padding:0 10px;background:transparent;border:0;color:var(--fg-faint);font:11.5px 'IBM Plex Mono',monospace;cursor:pointer}
+.hl svg{width:14px;height:14px}
+.hl.new{outline:1.5px dashed rgba(207,135,69,.9);outline-offset:-6px;border-radius:8px}
 /* THE PLATE (full-card-trigger.tsx): 26px drawn in a 44px target, opaque --bg, one --border-strong hairline, radius 7 */
 .hit{position:absolute;z-index:2;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:transparent;border:0;padding:0;cursor:pointer}
 .plate{width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:7px;border:1px solid var(--border-strong);background:var(--bg);color:var(--fg-muted)}
@@ -329,7 +335,7 @@ def styles_line(st):
     return f'This commander’s top three play styles are <b>{a}</b>, <b>{b}</b> and <b>{c}</b>.'
 
 
-def crow(key, rank, ctrl='', art=None, lane='own', extra_cls='', ctrl_new=False):
+def crow(key, rank, ctrl='', art=None, lane='own', extra_cls='', ctrl_new=False, place='figs'):
     """One CommanderRow. `ctrl`: '' none (as shipped), or a plate state: 'rest', 'hov', 'prs', 'foc'."""
     c = C[key]
     src = art or f'art/crop-{key}.jpg'
@@ -342,14 +348,23 @@ def crow(key, rank, ctrl='', art=None, lane='own', extra_cls='', ctrl_new=False)
         st = '' if ctrl == 'rest' else ctrl
         cls = ' new' if ctrl_new else ''
         auto = '' if (lane == 'disc' and c.get('price')) else ';margin-left:auto'
-        figs += (f'<button type="button" class="hb {st}{cls}" style="{auto[1:]}" aria-label="Hide {c["n"]}" title="Hide {c["n"]}">{EYE_OFF}</button>')
+        btn = f'<button type="button" class="hb {st}{cls}" style="{auto[1:]}" aria-label="Hide {c["n"]}" title="Hide {c["n"]}">{EYE_OFF}</button>'
+        if place == 'figs':
+            figs += btn
+        elif place == 'inline':
+            figs = figs.replace('decks tracked</span>', 'decks tracked</span>' + btn.replace(f'style="{auto[1:]}"', 'style="margin:-15px 0 -15px -10px"'), 1)
+    bar = fitbar(c["seg"])
+    if ctrl and place == 'bar':
+        bar = f'<div class="fbrow">{bar}<button type="button" class="hb bb {st}{cls}" aria-label="Hide {c["n"]}" title="Hide {c["n"]}">{EYE_OFF}</button></div>'
+    elif ctrl and place == 'foot':
+        bar += f'<div class="hfoot"><button type="button" class="hl {st}{cls}" aria-label="Hide {c["n"]}">{EYE_OFF}<span>Hide</span></button></div>'
     return f'''<div class="crow {extra_cls}">
 <div class="band"><img class="art" src="{src}" alt=""><div class="scrim"></div>{plate_html}
 <div class="lbl"><span class="rk{' one' if rank == 1 else ''}">{rank}</span>
 <div class="nm"><span class="n">{c["n"]}</span>{pips(c["id"])}</div>
 <div class="fit"><b>{c["fit"]}</b><span>/100 FIT</span></div></div></div>
 <div class="body"><p class="pr">{c["pr"]}</p><p class="gp">{styles_line(c["st"])}</p>
-<div class="figs">{figs}</div>{fitbar(c["seg"])}</div></div>'''
+<div class="figs">{figs}</div>{bar}</div></div>'''
 
 
 def undo_row(name, verb='hidden', err=None, pending=False):
