@@ -28,6 +28,8 @@ export function Bead({ result, className }: { result: GameResult; className: str
   );
 }
 
+/** The fewest beads whose row has room for its first and last date underneath (Small items 8, item 4). */
+const MIN_BEADS_FOR_ENDS = 5;
 const LINK = "border-b border-b-[color:color-mix(in_oklab,var(--accent)_45%,transparent)] font-mono text-[11px] text-[color:var(--accent-text)]";
 
 export function ResultsCard({ results, onLogGame }: { results: ResultsStats; onLogGame?: () => void }) {
@@ -66,9 +68,9 @@ export function ResultsCard({ results, onLogGame }: { results: ResultsStats; onL
           </div>
           <div className="flex flex-col gap-[8px]">
             <span className="font-mono text-[9.5px] tracking-[0.12em] text-[color:var(--fg-faint)]">{copy.every}</span>
-            {/* Small items 7, addendum 6 (`Dates.dc.html`): no date under a bead. The row is dated once, under its
-                first and last beads, on a line as wide as the beads (`w-fit`; a wrapped row fills the card, so its
-                dates sit at the card's edges). On a fine pointer a bead's date shows on hover or focus in the card
+            {/* Small items 7, addendum 6 (`Dates.dc.html`): no date under a bead. From five beads the row is dated once, under its
+                first and last beads (under five the span line beside the record names them), on a line as wide as the
+                beads (`w-fit`; a wrapped row fills the card, so its dates sit at the card's edges). On a fine pointer a bead's date shows on hover or focus in the card
                 mark's bubble, result first; each bead keeps its spoken label: the focusable wrapper's name on a fine pointer, the sr-only line under touch. */}
             <div className="flex w-fit max-w-full flex-col gap-[8px]">
               <ol aria-label={copy.every} className="flex flex-wrap gap-[6px]" data-results-beads>
@@ -85,10 +87,11 @@ export function ResultsCard({ results, onLogGame }: { results: ResultsStats; onL
                   </li>
                 ))}
               </ol>
-              {beads.length > 0 ? (
+              {/* Under five beads the span line beside the record already names the first and last game (Small items 8, item 4). */}
+              {beads.length >= MIN_BEADS_FOR_ENDS ? (
                 <div aria-hidden="true" data-results-ends className="flex justify-between gap-[8px] whitespace-nowrap font-mono text-[10.5px] text-[color:var(--fg-muted)]">
                   <span>{formatPlayed(beads[0].playedAt)}</span>
-                  {beads.length > 1 ? <span>{formatPlayed(beads[beads.length - 1].playedAt)}</span> : null}
+                  <span>{formatPlayed(beads[beads.length - 1].playedAt)}</span>
                 </div>
               ) : null}
             </div>

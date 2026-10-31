@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { manaCurve, typeCurve } from "../../lib/decks/stats";
@@ -75,9 +75,18 @@ describe("DeckStatsView results card", () => {
     }
   });
 
-  it("dates a one-game row once", () => {
+  // Small items 8, item 4: the ends line is drawn from five beads; under five the span line beside the record names them.
+  it("draws no ends line under five beads, and one at five", () => {
     draw([g("win", 28, 1)], []);
-    expect([...card().querySelector("[data-results-ends]")!.children].map((c) => c.textContent)).toEqual(["Aug 28"]);
+    expect(card().querySelector("[data-results-ends]")).toBeNull();
+    cleanup();
+    draw(six.slice(2), []);
+    expect(card().querySelectorAll("[data-results-beads] li")).toHaveLength(4);
+    expect(card().querySelector("[data-results-ends]")).toBeNull();
+    cleanup();
+    draw(six.slice(1), []);
+    expect(card().querySelectorAll("[data-results-beads] li")).toHaveLength(5);
+    expect(card().querySelector("[data-results-ends]")).not.toBeNull();
   });
 
   it("says the last-five line starts at the sixth game under six games", () => {
