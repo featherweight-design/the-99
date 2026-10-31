@@ -144,7 +144,7 @@ export async function tablePrefill(viewerId: string, tableId: unknown, deckId: s
   if (!prefill) return null;
   // Each seat's art from the copy its deck's owner holds, as the table draws it (`ownedDeckArt`), else the oracle art.
   const deckOf = new Map(rows.flatMap((r) => (r.deckId !== null ? [[r.seat, r.deckId] as const] : [])));
-  const art = await ownedDeckArt([...deckOf.values()]);
+  const art = await ownedDeckArt(viewerId, [...deckOf.values()]);
   return {
     ...prefill,
     seats: prefill.seats.map((s) => ({ ...s, artCropUri: art.get(deckOf.get(s.seat) ?? "")?.commander ?? s.artCropUri })),

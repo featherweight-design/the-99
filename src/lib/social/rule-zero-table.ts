@@ -280,7 +280,7 @@ export function orderChoices<T extends { seated: boolean; distance: number | nul
  * Each is graded the way a seat is, and a deck short of 100 is listed (it seats as not ready, S3).
  */
 export async function loadDeckChoices(viewerId: string, tableId: unknown): Promise<DeckChoice[] | null> {
-  const view = await loadTable(viewerId, tableId);
+  const view = (await readTable(viewerId, tableId))?.view;
   if (!view) return null;
   const middle = view.read.kind === "read" ? view.read.middle : null;
   return db.transaction(async (tx) => {
@@ -310,12 +310,18 @@ export async function loadDeckChoices(viewerId: string, tableId: unknown): Promi
     }
     return orderChoices(graded).map(({ distance: _d, lastPlayed: _p, lastEdited: _e, ...c }) => c);
   }, { isolationLevel: "repeatable read" }).then(async (choices) => {
-    const art = await ownedDeckArt(choices.map((c) => c.deckId));
+    const art = await ownedDeckArt(viewerId, choices.map((c) => c.deckId));
     return choices.map((c) => ({ ...c, artCropUri: art.get(c.deckId)?.commander ?? c.artCropUri }));
   });
 }
 
 export async function loadTable(viewerId: string, tableId: unknown): Promise<TableView | null> {
+  const read = await readTable(viewerId, tableId);
+  return read && withOwnedArt(viewerId, read.view, read.seatDecks);
+}
+
+/** The table without its owned art: `loadTable`'s read, and `loadDeckChoices`', which draws no seat. */
+async function readTable(viewerId: string, tableId: unknown): Promise<{ view: TableView; seatDecks: Map<number, string> } | null> {
   if (!isUuid(tableId)) return null;
   // Each drawn seat's deck, by seat number, for its owner's art once the snapshot is done (other players' deck ids
   // never leave this function).
@@ -391,12 +397,12 @@ export async function loadTable(viewerId: string, tableId: unknown): Promise<Tab
     };
   // Repeatable read, never read-only: a read-only transaction poisons the pooled connection (cuts-read.ts).
   }, { isolationLevel: "repeatable read" });
-  return view && withOwnedArt(view, seatDecks);
+  return view && { view, seatDecks };
 }
 
 /** The seats' and the offer's art, from the copy each deck's owner holds (`ownedDeckArt`), else the oracle art read. */
-async function withOwnedArt(view: TableView, seatDecks: ReadonlyMap<number, string>): Promise<TableView> {
-  const art = await ownedDeckArt([...seatDecks.values(), ...view.offer.map((o) => o.deckId)]);
+async function withOwnedArt(viewerId: string, view: TableView, seatDecks: ReadonlyMap<number, string>): Promise<TableView> {
+  const art = await ownedDeckArt(viewerId, [...seatDecks.values(), ...view.offer.map((o) => o.deckId)]);
   if (art.size === 0) return view;
   return {
     ...view,
@@ -509,7 +515,7 @@ export async function loadClosedTable(viewerId: string, tableId: unknown): Promi
   }, { isolationLevel: "repeatable read" });
   if (!read) return null;
   const { table, rows } = read;
-  const art = await ownedDeckArt(rows.flatMap((r) => (r.deckId ? [r.deckId] : [])));
+  const art = await ownedDeckArt(viewerId, rows.flatMap((r) => (r.deckId ? [r.deckId] : [])));
   return {
     podName: named(table.podName),
     setBy: table.setBy === viewerId || table.setByName === null ? null : named(table.setByName),

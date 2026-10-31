@@ -551,7 +551,7 @@ export async function podSetup(viewerId: string, podId: unknown): Promise<PodSet
   if (!isUuid(podId)) return null;
   const setup = await db.transaction((tx) => podSetupIn(tx, viewerId, podId), { isolationLevel: "repeatable read" });
   if (!setup) return null;
-  return withSetupArt(setup, await ownedDeckArt(setupDeckIds(setup)));
+  return withSetupArt(setup, await ownedDeckArt(viewerId, setupDeckIds(setup)));
 }
 
 const setupDeckIds = (setup: PodSetup) => setup.members.flatMap((m) => m.decks.map((d) => d.deckId));
@@ -613,7 +613,7 @@ export async function tableSetup(viewerId: string, tableId: unknown): Promise<Ta
     };
   }, { isolationLevel: "repeatable read" });
   if (!read) return null;
-  const art = await ownedDeckArt([...setupDeckIds(read), ...seatDecks.values()]);
+  const art = await ownedDeckArt(viewerId, [...setupDeckIds(read), ...seatDecks.values()]);
   const withArt = withSetupArt(read, art);
   return {
     ...withArt,
