@@ -1,5 +1,5 @@
 "use client";
-// The all-decks cart's phone toast stack (small items 7, item 3, `Cart-Toasts`). Below md the cart's receipt (I got it,
+// The all-decks cart's toast stack (small items 7, item 3, `Cart-Toasts`; widened to 1223px by small items 8, item 3). Below 1224px the cart's receipt (I got it,
 // with its Undo) and a failed ask (By friend's `spareCopy.request.failed`) can be up at once: they stand in one fixed
 // column on the shipped floor, 10px above the tab bar, the receipt on the floor because it holds Undo and the one alert
 // 10px above it. Each keeps its own clock; when the receipt goes the alert drops to the floor in the same layout, and
@@ -24,14 +24,14 @@ export const CART_STACK_CLASS =
   "pointer-events-none fixed bottom-[calc(var(--tabbar-h,0px)+10px)] left-[16px] right-[16px] z-[60] flex flex-col gap-[10px] " +
   "md:bottom-[22px] md:left-auto md:right-[22px] md:w-[380px] min-[76.5rem]:hidden";
 
-/** The host the shell draws once, empty: cart toasts portal into it on the phone. */
+/** The host the shell draws once, empty: cart toasts portal into it below 1224px. */
 export function CartToastStackHost() {
   // Part of the page under <main>, though drawn outside it: a navigation's screen makes it inert with <main>, so a
   // receipt cannot start an old page's mutation over the loading screen, and its clock stops (`covered-layer.ts`).
   return <div {...{ [HOST]: "", [COVERED_WITH_MAIN]: "" }} className={CART_STACK_CLASS} />;
 }
 
-/** The stack to portal a phone cart toast into (only ever asked for in the browser: a cart toast mounts from a press). */
+/** The stack to portal a cart toast into below 1224px (only ever asked for in the browser: a cart toast mounts from a press). */
 export function cartToastStack(): HTMLElement {
   const found = document.querySelector<HTMLElement>(`[${HOST}]`);
   if (found) return found;

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-// Small items 7, item 3 (`Cart-Toasts`): on the phone a failed ask joins the cart's receipt in one stack, the receipt on
-// the floor and the alert 10px above it; from md, and with no receipt open, the toasts keep their shipped slots.
+// Small items 7, item 3 (`Cart-Toasts`): below 1224px (small items 8, item 3) a failed ask joins the cart's receipt in one stack, the receipt on
+// the floor and the alert 10px above it; from 1224px, and with no receipt open, the toasts keep their shipped slots.
 import { act, cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ToastFrame, TOAST_MS } from "../../collection/edit-toast";
