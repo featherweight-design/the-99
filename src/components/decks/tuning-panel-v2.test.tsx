@@ -522,6 +522,72 @@ describe("TuningPanel with Suggested changes v2 on: the wait and the results (UI
     expect(document.body.textContent).not.toContain(sc.pastRun);
   });
 
+  it("with the switch off, a stored v2 run still draws the v2 results: its Apply bar, never v10's Add, Reject or the deck going off 99", async () => {
+    // History is what happened: the RUN's own ask decides the renderer, never the reader's switch. Two in and five out
+    // would read "the deck goes to 96" under v10's Apply all.
+    const uneven = [...lines.slice(0, 2), ...lines.slice(5)];
+    const reopened: TuningState = { ...finished, items: uneven, review: { runId: RUN, at, readVersion: 4 } };
+    const d = { ...deps(), v2: v2Actions() };
+    d.read = vi.fn(async () => reopened);
+    await draw(d, null, [2], (node) => (
+      <ReviewRunProvider value={{ tool: "suggested", runId: RUN, past: { at: at.toISOString(), tier: "credit", back: vi.fn() } }}>{node}</ReviewRunProvider>
+    ));
+    expect(document.querySelector("[data-sc-run]")!.getAttribute("data-sc-run")).toBe("results");
+    // Read-only with the switch off (ruling F2(a)): its rows drawn, no Apply, Undo or pick control.
+    expect(screen.getAllByRole("article", { name: "Card a0" }).length).toBeGreaterThan(0);
+    expect(document.querySelector("[data-sc-bar]")).toBeNull();
+    expect(document.querySelector("[data-sc-apply]")).toBeNull();
+    expect(document.querySelector("[data-sc-pick]")).toBeNull();
+    expect(screen.queryByRole("button", { name: sc.bar.undo(2) })).toBeNull();
+    for (const name of [deckTuningCopy.lists.add, deckTuningCopy.lists.reject, deckTuningCopy.lists.applyAll]) {
+      expect(screen.queryByRole("button", { name })).toBeNull();
+    }
+    expect(document.body.textContent).not.toContain("goes to 96");
+    expect(document.body.textContent).not.toContain(sc.pastRun);
+    // Nor v10's intake under it: no Additional notes, no Kept for this deck, no v10 press.
+    expect(screen.queryByRole("button", { name: deckTuningCopy.panel.again })).toBeNull();
+    expect(screen.queryByLabelText(deckDescriptionCopy.notes.label)).toBeNull();
+    expect(screen.queryByRole("button", { name: deckTuningCopy.panel.suggest })).toBeNull();
+  });
+
+  it("with the switch off, the read-only v2 run view calls no write action (apply, undo, pick) on mount or render", async () => {
+    const reopened: TuningState = { ...finished, review: { runId: RUN, at, readVersion: 4 } };
+    const actions = v2Actions();
+    const d = { ...deps(), v2: actions };
+    d.read = vi.fn(async () => reopened);
+    await draw(d, null, [2], (node) => (
+      <ReviewRunProvider value={{ tool: "suggested", runId: RUN, past: { at: at.toISOString(), tier: "credit", back: vi.fn() } }}>{node}</ReviewRunProvider>
+    ));
+    await act(async () => {});
+    expect(document.querySelector("[data-sc-run]")!.getAttribute("data-sc-run")).toBe("results");
+    expect(actions.apply).not.toHaveBeenCalled();
+    expect(actions.undo).not.toHaveBeenCalled();
+    expect(actions.pick).not.toHaveBeenCalled();
+  });
+
+  it("with the switch off, a stored v1 run (no stored ask) stays on the v1 view: no v2 bar, its own Add, Reject and Apply all", async () => {
+    const v10 = lines.map((l) => ({ ...l, typeGroup: undefined, role: undefined, picked: undefined, applySet: undefined }));
+    const d = { ...deps(), v2: v2Actions() };
+    d.read = vi.fn(async () => ({ ...okRun(RUN), items: v10, itemsAsk: null }));
+    await draw(d, null);
+    expect(document.querySelector("[data-sc-run]")).toBeNull();
+    expect(document.querySelector("[data-sc-bar]")).toBeNull();
+    expect(screen.getByRole("button", { name: deckTuningCopy.lists.applyAll })).toBeTruthy();
+    expect(screen.getAllByRole("button", { name: deckTuningCopy.lists.add }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("button", { name: deckTuningCopy.lists.reject }).length).toBeGreaterThan(0);
+  });
+
+  it("the same stored v2 run with the switch on keeps its Apply bar and pick controls", async () => {
+    const d = { ...deps(), v2: v2Actions() };
+    d.read = vi.fn(async () => ({ ...finished, review: { runId: RUN, at, readVersion: 4 } }));
+    await draw(d, v2At(), [2], (node) => (
+      <ReviewRunProvider value={{ tool: "suggested", runId: RUN, past: { at: at.toISOString(), tier: "credit", back: vi.fn() } }}>{node}</ReviewRunProvider>
+    ));
+    expect(document.querySelector("[data-sc-bar]")).not.toBeNull();
+    expect(document.querySelector("[data-sc-apply]")).not.toBeNull();
+    expect(document.querySelector("[data-sc-pick]")).not.toBeNull();
+  });
+
   it("a run History reopened (History B): its way back and meta above the heading, its note and live picks; gone with New run", async () => {
     const reopened: TuningState = { ...finished, review: { runId: RUN, at, readVersion: 4 } };
     const d = { ...deps(), v2: v2Actions() };
