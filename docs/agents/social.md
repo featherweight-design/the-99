@@ -58,11 +58,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   **A friend's write never moves the viewer's stamp**, so friend data stays out of cached payloads by default; a cached
   page that must draw it puts `await friendGeneration(viewer)` as a bare element of EVERY `cachePageForUser` key on that
   page, for that call's own reader, and `check:list-cache` fails a cached page whose loaders reach `src/lib/social/`
-  (the switch module aside) without it. A cached page that draws spares must ALSO carry each friend's resolved
-  switches in its key, because `loadFriendSpares` runs each friend's claim model under `resolveSwitchEnv(friend)` and a
-  friend's override flip moves no key the viewer's page has; `check:list-cache` refuses `spares.ts`'s import of the
-  switch snapshot on a cached page's path until that key exists. `pnpm measure:friend-spares`
-  times the per-friend cost (read-only).
+  (the switch module aside) without it. `pnpm measure:friend-spares` times the per-friend cost (read-only).
 
 - **Opponents in the game log** (scope §4, Feature C; Hugh's ruling Q15), behind `SOCIAL_FRIENDS_ENABLED` (its own
   switch, `SOCIAL_GAMES_ENABLED`, retired 2026-10-30; opponents follow friends). `deck_game_opponents`
