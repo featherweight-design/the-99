@@ -7,7 +7,7 @@
 // every tab switch (`builder-shell.tsx`), on leaving the page and on a reload (A6). Runs are read
 // from the ledger on mount, so a run still in flight reappears on its tile.
 
-import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from "react";
+import { Fragment, useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from "react";
 
 import { readTuningHub } from "../../app/decks/tuning-hub-actions";
 import { tuningHubCopy as copy } from "../../lib/copy/tuning-hub";
@@ -385,21 +385,42 @@ export function TuningHub({
   const [holding, setHolding] = useState(false);
   const [short, setShort] = useState(false);
   const openedTool = openTool;
+  const otherToolsRef = useRef<HTMLDivElement>(null);
+  const otherToolsLabelId = useId();
   useLayoutEffect(() => {
     const panel = toolRef.current;
     const section = sectionRef.current;
-    if (!holding || openedTool !== "cuts" || !panel || !section || typeof ResizeObserver === "undefined") {
+    // The row going away while focus is inside it would drop focus to the body: it goes to the open tool instead.
+    const hide = () => {
+      const row = otherToolsRef.current;
+      if (row && document.activeElement && row.contains(document.activeElement)) {
+        const target = panel?.querySelector<HTMLElement>("h1, h2, h3") ?? panel;
+        if (target) {
+          if (!target.hasAttribute("tabindex")) target.tabIndex = -1;
+          target.focus({ preventScroll: true });
+        }
+      }
       setShort(false);
+    };
+    if (!holding || openedTool !== "cuts" || !panel || !section || typeof ResizeObserver === "undefined") {
+      hide();
       return;
     }
     // The panel's bottom against the held height: the row sits below the panel, so it never moves the figure it is judged by.
-    const measure = () => setShort(panel.getBoundingClientRect().bottom - section.getBoundingClientRect().top < window.innerHeight);
+    // Not before the tool has drawn: a loading panel is short, and the row would pop in and out as the content lands.
+    const measure = () => {
+      if (!toolDrew(panel)) { hide(); return; }
+      setShort(panel.getBoundingClientRect().bottom - section.getBoundingClientRect().top < window.innerHeight);
+    };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(panel);
+    const mo = new MutationObserver(measure);
+    mo.observe(panel, { childList: true, subtree: true, attributes: true, attributeFilter: ["aria-busy", "data-hub-pending"] });
     window.addEventListener("resize", measure);
     return () => {
       ro.disconnect();
+      mo.disconnect();
       window.removeEventListener("resize", measure);
     };
   }, [holding, openedTool]);
@@ -576,8 +597,8 @@ export function TuningHub({
             ) : null}
           </div>
           {holding && short && opened.tool === "cuts" ? (
-            <div data-other-tools="" className="flex flex-col gap-[10px] pt-[16px]" style={{ borderTop: "1px solid var(--border)" }}>
-              <span className="font-mono text-[10.5px] font-medium uppercase tracking-[0.14em]" style={{ color: "var(--fg-faint)" }}>{copy.otherTools}</span>
+            <div ref={otherToolsRef} data-other-tools="" role="group" aria-labelledby={otherToolsLabelId} className="flex flex-col gap-[10px] pt-[16px]" style={{ borderTop: "1px solid var(--border)" }}>
+              <span id={otherToolsLabelId} className="font-mono text-[10.5px] font-medium uppercase tracking-[0.14em]" style={{ color: "var(--fg-faint)" }}>{copy.otherTools}</span>
               <div className="grid grid-cols-1 gap-[8px] md:grid-cols-3 md:gap-[10px] md:[&>*]:min-h-[96px]">
                 {views.filter((v) => v.tool !== "cuts").map((v) => <ToolTile key={v.tool} view={v} onOpen={() => open(v.tool, { focus: true, scroll: true })} onLink={followLink} />)}
               </div>

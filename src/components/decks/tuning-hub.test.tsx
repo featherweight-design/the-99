@@ -414,10 +414,43 @@ describe("TuningHub opening a tool", () => {
       expect(row.querySelector('[data-tool-tile="suggested"]')).not.toBeNull();
       // A tile opens its tool in place, and the row goes with the hold.
       const press = row.querySelector('button[data-tool-tile="suggested"]') ?? row.querySelector('[data-tool-tile="suggested"] button');
-      if (press) {
-        fireEvent.click(press);
-        await waitFor(() => expect(document.querySelector("[data-other-tools]")).toBeNull());
-      }
+      expect(press).not.toBeNull();
+      expect(row.getAttribute("role")).toBe("group");
+      expect(document.getElementById(row.getAttribute("aria-labelledby") ?? "")?.textContent).toBe(copy.otherTools);
+      fireEvent.click(press as Element);
+      await waitFor(() => expect(document.querySelector("[data-other-tools]")).toBeNull());
+    } finally {
+      rect.mockRestore();
+      globalThis.ResizeObserver = RO;
+    }
+  });
+
+  it("shows no Other tools row at or below the held height, nor over a panel that has not drawn (Small items 7, item 4)", async () => {
+    const RO = globalThis.ResizeObserver;
+    globalThis.ResizeObserver = class { observe() {} disconnect() {} unobserve() {} } as unknown as typeof ResizeObserver;
+    let bottom = window.innerHeight;
+    const rect = vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (this: Element) {
+      const b = this.id === "tuning-tool-panel" ? bottom : 0;
+      return { top: 0, bottom: b, left: 0, right: 0, width: 0, height: b, x: 0, y: 0, toJSON: () => ({}) } as DOMRect;
+    });
+    try {
+      // Exactly at the held height: the blank space is gone, so is the row.
+      const drawn: HubToolSpec = { tool: "cuts", panel: <section><h2 id="cuts-heading">Proposed cuts</h2>Six over</section>, over: 6, total: 106 };
+      const first = render(<TuningHub deckId="d" drawn tools={[suggested(), drawn]} request={{ tool: "cuts", nonce: 1 }} />);
+      await screen.findByRole("heading", { name: "Proposed cuts" });
+      expect(document.querySelector("[data-other-tools]")).toBeNull();
+      first.unmount();
+      // One pixel above it: the row shows.
+      bottom = window.innerHeight - 1;
+      const second = render(<TuningHub deckId="d" drawn tools={[suggested(), drawn]} request={{ tool: "cuts", nonce: 1 }} />);
+      await waitFor(() => expect(document.querySelector("[data-other-tools]")).not.toBeNull());
+      second.unmount();
+      // Short but not drawn (empty, counting): no row.
+      bottom = 100;
+      const empty: HubToolSpec = { tool: "cuts", panel: <section aria-busy /> , over: 6, total: 106 };
+      render(<TuningHub deckId="d" drawn tools={[suggested(), empty]} request={{ tool: "cuts", nonce: 1 }} />);
+      await new Promise((r) => setTimeout(r, 50));
+      expect(document.querySelector("[data-other-tools]")).toBeNull();
     } finally {
       rect.mockRestore();
       globalThis.ResizeObserver = RO;
