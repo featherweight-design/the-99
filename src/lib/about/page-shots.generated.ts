@@ -34,6 +34,45 @@ export const PAGE_MANIFEST: PageManifest = {
           },
           "tools": {}
         },
+        "p-cart": {
+          "w": 780,
+          "h": 1688,
+          "bytes": 32764,
+          "quality": 60,
+          "regions": {
+            "shopping/all-decks/total": [
+              0.041,
+              0.1611,
+              0.9179,
+              0.2189
+            ],
+            "shopping/all-decks/decks": [
+              0.041,
+              0.3943,
+              0.9179,
+              0.0616
+            ],
+            "shopping/all-decks/views": [
+              0.041,
+              0.4819,
+              0.5948,
+              0.0545
+            ],
+            "shopping/all-decks/ask": [
+              0.7359,
+              0.8214,
+              0.1846,
+              0.0427
+            ],
+            "shopping/all-decks/buy": [
+              0.7061,
+              0.8797,
+              0.2144,
+              0.0184
+            ]
+          },
+          "tools": {}
+        },
         "p-collection": {
           "w": 780,
           "h": 1688,
@@ -533,6 +572,45 @@ export const PAGE_MANIFEST: PageManifest = {
             ]
           }
         },
+        "d-cart": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 58824,
+          "quality": 60,
+          "regions": {
+            "shopping/all-decks/total": [
+              0.0646,
+              0.7119,
+              0.2154,
+              0.2053
+            ],
+            "shopping/all-decks/decks": [
+              0.0646,
+              0.1433,
+              0.2154,
+              0.5531
+            ],
+            "shopping/all-decks/views": [
+              0.2985,
+              0.1433,
+              0.1784,
+              0.04
+            ],
+            "shopping/all-decks/ask": [
+              0.9223,
+              0.4603,
+              0.0492,
+              0.0311
+            ],
+            "shopping/all-decks/buy": [
+              0.9063,
+              0.5013,
+              0.0652,
+              0.0181
+            ]
+          },
+          "tools": {}
+        },
         "d-collection2": {
           "w": 1950,
           "h": 1350,
@@ -1003,6 +1081,45 @@ export const PAGE_MANIFEST: PageManifest = {
               0.2318,
               0.9179,
               0.1448
+            ]
+          },
+          "tools": {}
+        },
+        "p-cart": {
+          "w": 780,
+          "h": 1688,
+          "bytes": 31668,
+          "quality": 60,
+          "regions": {
+            "shopping/all-decks/total": [
+              0.041,
+              0.1611,
+              0.9179,
+              0.2189
+            ],
+            "shopping/all-decks/decks": [
+              0.041,
+              0.3943,
+              0.9179,
+              0.0616
+            ],
+            "shopping/all-decks/views": [
+              0.041,
+              0.4819,
+              0.5948,
+              0.0545
+            ],
+            "shopping/all-decks/ask": [
+              0.7359,
+              0.8214,
+              0.1846,
+              0.0427
+            ],
+            "shopping/all-decks/buy": [
+              0.7061,
+              0.8797,
+              0.2144,
+              0.0184
             ]
           },
           "tools": {}
@@ -1506,6 +1623,45 @@ export const PAGE_MANIFEST: PageManifest = {
             ]
           }
         },
+        "d-cart": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 58208,
+          "quality": 60,
+          "regions": {
+            "shopping/all-decks/total": [
+              0.0646,
+              0.7119,
+              0.2154,
+              0.2053
+            ],
+            "shopping/all-decks/decks": [
+              0.0646,
+              0.1433,
+              0.2154,
+              0.5531
+            ],
+            "shopping/all-decks/views": [
+              0.2985,
+              0.1433,
+              0.1784,
+              0.04
+            ],
+            "shopping/all-decks/ask": [
+              0.9223,
+              0.4603,
+              0.0492,
+              0.0311
+            ],
+            "shopping/all-decks/buy": [
+              0.9063,
+              0.5013,
+              0.0652,
+              0.0181
+            ]
+          },
+          "tools": {}
+        },
         "d-collection2": {
           "w": 1950,
           "h": 1350,
@@ -1976,6 +2132,45 @@ export const PAGE_MANIFEST: PageManifest = {
               0.2318,
               0.9179,
               0.1448
+            ]
+          },
+          "tools": {}
+        },
+        "p-cart": {
+          "w": 780,
+          "h": 1688,
+          "bytes": 33012,
+          "quality": 60,
+          "regions": {
+            "shopping/all-decks/total": [
+              0.041,
+              0.1611,
+              0.9179,
+              0.2189
+            ],
+            "shopping/all-decks/decks": [
+              0.041,
+              0.3943,
+              0.9179,
+              0.0616
+            ],
+            "shopping/all-decks/views": [
+              0.041,
+              0.4819,
+              0.5948,
+              0.0545
+            ],
+            "shopping/all-decks/ask": [
+              0.7359,
+              0.8214,
+              0.1846,
+              0.0427
+            ],
+            "shopping/all-decks/buy": [
+              0.7061,
+              0.8797,
+              0.2144,
+              0.0184
             ]
           },
           "tools": {}
@@ -2479,6 +2674,45 @@ export const PAGE_MANIFEST: PageManifest = {
             ]
           }
         },
+        "d-cart": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 59020,
+          "quality": 60,
+          "regions": {
+            "shopping/all-decks/total": [
+              0.0646,
+              0.7119,
+              0.2154,
+              0.2053
+            ],
+            "shopping/all-decks/decks": [
+              0.0646,
+              0.1433,
+              0.2154,
+              0.5531
+            ],
+            "shopping/all-decks/views": [
+              0.2985,
+              0.1433,
+              0.1784,
+              0.04
+            ],
+            "shopping/all-decks/ask": [
+              0.9223,
+              0.4603,
+              0.0492,
+              0.0311
+            ],
+            "shopping/all-decks/buy": [
+              0.9063,
+              0.5013,
+              0.0652,
+              0.0181
+            ]
+          },
+          "tools": {}
+        },
         "d-collection2": {
           "w": 1950,
           "h": 1350,
@@ -2949,6 +3183,45 @@ export const PAGE_MANIFEST: PageManifest = {
               0.2316,
               0.9179,
               0.1448
+            ]
+          },
+          "tools": {}
+        },
+        "p-cart": {
+          "w": 780,
+          "h": 1688,
+          "bytes": 31242,
+          "quality": 60,
+          "regions": {
+            "shopping/all-decks/total": [
+              0.041,
+              0.1611,
+              0.9179,
+              0.2189
+            ],
+            "shopping/all-decks/decks": [
+              0.041,
+              0.3943,
+              0.9179,
+              0.0616
+            ],
+            "shopping/all-decks/views": [
+              0.041,
+              0.4819,
+              0.5948,
+              0.0545
+            ],
+            "shopping/all-decks/ask": [
+              0.7359,
+              0.8214,
+              0.1846,
+              0.0427
+            ],
+            "shopping/all-decks/buy": [
+              0.7061,
+              0.8797,
+              0.2144,
+              0.0184
             ]
           },
           "tools": {}
@@ -3452,6 +3725,45 @@ export const PAGE_MANIFEST: PageManifest = {
             ]
           }
         },
+        "d-cart": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 56660,
+          "quality": 60,
+          "regions": {
+            "shopping/all-decks/total": [
+              0.0646,
+              0.7119,
+              0.2154,
+              0.2053
+            ],
+            "shopping/all-decks/decks": [
+              0.0646,
+              0.1433,
+              0.2154,
+              0.5531
+            ],
+            "shopping/all-decks/views": [
+              0.2985,
+              0.1433,
+              0.1784,
+              0.04
+            ],
+            "shopping/all-decks/ask": [
+              0.9223,
+              0.4603,
+              0.0492,
+              0.0311
+            ],
+            "shopping/all-decks/buy": [
+              0.9063,
+              0.5013,
+              0.0652,
+              0.0181
+            ]
+          },
+          "tools": {}
+        },
         "d-collection2": {
           "w": 1950,
           "h": 1350,
@@ -3922,6 +4234,45 @@ export const PAGE_MANIFEST: PageManifest = {
               0.2318,
               0.9179,
               0.1448
+            ]
+          },
+          "tools": {}
+        },
+        "p-cart": {
+          "w": 780,
+          "h": 1688,
+          "bytes": 31762,
+          "quality": 60,
+          "regions": {
+            "shopping/all-decks/total": [
+              0.041,
+              0.1611,
+              0.9179,
+              0.2189
+            ],
+            "shopping/all-decks/decks": [
+              0.041,
+              0.3943,
+              0.9179,
+              0.0616
+            ],
+            "shopping/all-decks/views": [
+              0.041,
+              0.4819,
+              0.5948,
+              0.0545
+            ],
+            "shopping/all-decks/ask": [
+              0.7359,
+              0.8214,
+              0.1846,
+              0.0427
+            ],
+            "shopping/all-decks/buy": [
+              0.7061,
+              0.8797,
+              0.2144,
+              0.0184
             ]
           },
           "tools": {}
@@ -4425,6 +4776,45 @@ export const PAGE_MANIFEST: PageManifest = {
             ]
           }
         },
+        "d-cart": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 57358,
+          "quality": 60,
+          "regions": {
+            "shopping/all-decks/total": [
+              0.0646,
+              0.7119,
+              0.2154,
+              0.2053
+            ],
+            "shopping/all-decks/decks": [
+              0.0646,
+              0.1433,
+              0.2154,
+              0.5531
+            ],
+            "shopping/all-decks/views": [
+              0.2985,
+              0.1433,
+              0.1784,
+              0.04
+            ],
+            "shopping/all-decks/ask": [
+              0.9223,
+              0.4603,
+              0.0492,
+              0.0311
+            ],
+            "shopping/all-decks/buy": [
+              0.9063,
+              0.5013,
+              0.0652,
+              0.0181
+            ]
+          },
+          "tools": {}
+        },
         "d-collection2": {
           "w": 1950,
           "h": 1350,
@@ -4895,6 +5285,45 @@ export const PAGE_MANIFEST: PageManifest = {
               0.2318,
               0.9179,
               0.1448
+            ]
+          },
+          "tools": {}
+        },
+        "p-cart": {
+          "w": 780,
+          "h": 1688,
+          "bytes": 32686,
+          "quality": 60,
+          "regions": {
+            "shopping/all-decks/total": [
+              0.041,
+              0.1611,
+              0.9179,
+              0.2189
+            ],
+            "shopping/all-decks/decks": [
+              0.041,
+              0.3943,
+              0.9179,
+              0.0616
+            ],
+            "shopping/all-decks/views": [
+              0.041,
+              0.4819,
+              0.5948,
+              0.0545
+            ],
+            "shopping/all-decks/ask": [
+              0.7359,
+              0.8214,
+              0.1846,
+              0.0427
+            ],
+            "shopping/all-decks/buy": [
+              0.7061,
+              0.8797,
+              0.2144,
+              0.0184
             ]
           },
           "tools": {}
@@ -5397,6 +5826,45 @@ export const PAGE_MANIFEST: PageManifest = {
               0.1244
             ]
           }
+        },
+        "d-cart": {
+          "w": 1950,
+          "h": 1350,
+          "bytes": 57832,
+          "quality": 60,
+          "regions": {
+            "shopping/all-decks/total": [
+              0.0646,
+              0.7119,
+              0.2154,
+              0.2053
+            ],
+            "shopping/all-decks/decks": [
+              0.0646,
+              0.1433,
+              0.2154,
+              0.5531
+            ],
+            "shopping/all-decks/views": [
+              0.2985,
+              0.1433,
+              0.1784,
+              0.04
+            ],
+            "shopping/all-decks/ask": [
+              0.9223,
+              0.4603,
+              0.0492,
+              0.0311
+            ],
+            "shopping/all-decks/buy": [
+              0.9063,
+              0.5013,
+              0.0652,
+              0.0181
+            ]
+          },
+          "tools": {}
         },
         "d-collection2": {
           "w": 1950,
