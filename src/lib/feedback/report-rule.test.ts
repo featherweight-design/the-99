@@ -17,7 +17,8 @@ describe("parseReport", () => {
     expect(parseReport({ ...ok, what: "x".repeat(WHAT_MAX), doing: "y".repeat(DOING_MAX) })).not.toBeNull();
   });
 
-  it("knows only the two doors", () => {
+  it("knows only the three doors", () => {
+    expect(parseReport({ ...ok, source: "report" })?.source).toBe("report");
     expect(parseReport({ ...ok, source: "about" })?.source).toBe("about");
     expect(parseReport({ ...ok, source: "elsewhere" })).toBeNull();
     expect(parseReport({ ...ok, source: undefined })).toBeNull();

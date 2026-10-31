@@ -10,7 +10,7 @@ const PAGE_MAX = 200;
 const ID_MAX = 64;
 
 /** Which door the form was opened from. */
-export const REPORT_SOURCES = ["error", "about"] as const;
+export const REPORT_SOURCES = ["error", "about", "report"] as const;
 export type ReportSource = (typeof REPORT_SOURCES)[number];
 
 export type ReportInput = {

@@ -20,6 +20,8 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
 
   `check_in_state` (the Home check-in's one row per account: first Home load, visit days, snoozes, ended, flyer trial PR 6) and `feedback` are in `PURGE_ORDER`: a player's answers and where they stand with the check-in leave with the account.
 
+  **Unowned feedback rows.** A problem report filed signed out (the public `/report` page, `source` `report`) has `feedback.user_id` null: the column is nullable since migration 0217. `purgeAccount` deletes `where user_id = <id>`, which never matches a null, so no account purge touches these rows and no account owns them. A later PR deletes them after 90 days (not built yet). Signed-out filing is counted per network in the enforced `report-anon` (10 an hour) and `report-anon-day` (30 a day) buckets.
+
   **Coverage is computed, not listed**: `src/lib/account/purge.test.ts` reads `schema.ts` and fails when a table
   holding an account column is neither purged nor kept with a reason, and when a child of a purged table has no
   `on delete` the order does not cover. A new per-user table therefore fails CI until the purge handles it.
