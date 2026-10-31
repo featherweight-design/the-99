@@ -4,8 +4,8 @@ B = {k: '/_blob/' + v for k, v in B.items()}
 json.dump(B, open('out/blobs.json', 'w'), indent=0)
 os.makedirs('canvas/project', exist_ok=True)
 L = [('Main', 'Add a card from anywhere · the four directions'), ('A-Nav', 'A · Nav slot'), ('B-Header', 'B · Header +'),
-     ('C-Search', 'C · Search adds (recommended)'), ('D-Card', 'D · The card is the entry'), ('Shared', 'Shared · the pack, the save, the way back')]
-rows = [L[:3], L[3:]]
+     ('C-Search', 'C · Search adds (recommended)'), ('D-Card', 'D · The card is the entry'), ('Shared', 'Shared · the pack, the save, the way back'), ('Dock', 'R2 · the deck’s own search (dock bridge)')]
+rows = [L[:3], L[3:6], L[6:]]
 boards = {}; order = []; y = 0
 for row in rows:
     x = 0; hmax = 0
@@ -18,7 +18,8 @@ for row in rows:
         boards[f'{n}.dc.html'] = {'x': x, 'y': y, 'w': w, 'h': h, 'title': t}; order.append(f'{n}.dc.html')
         x += w + 80; hmax = max(hmax, h)
     y += hmax + 120
-idx = {'v': 3, 'createdOnFiles': {'v': 1, 'at': datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')}, 'title': 'The 99 · Add a card from anywhere',
+prev = json.load(open('canvas/project/canvas.json')) if os.path.exists('canvas/project/canvas.json') else None
+idx = {'v': 3, 'createdOnFiles': prev['createdOnFiles'] if prev else {'v': 1, 'at': datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')}, 'title': 'The 99 · Add a card from anywhere',
        'launch': {'view': 'canvas'}, 'pages': [], 'boards': boards, 'order': order, 'notes': {}, 'designSystems': []}
 json.dump(idx, open('canvas/project/canvas.json', 'w'), indent=1)
 print(json.dumps(boards))

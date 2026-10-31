@@ -51,6 +51,13 @@
    "w": 2240,
    "h": 3722,
    "title": "Shared \u00b7 the pack, the save, the way back"
+  },
+  "Dock.dc.html": {
+   "x": 0,
+   "y": 9066,
+   "w": 2240,
+   "h": 4717,
+   "title": "R2 \u00b7 the deck\u2019s own search (dock bridge)"
   }
  },
  "order": [
@@ -59,7 +66,8 @@
   "B-Header.dc.html",
   "C-Search.dc.html",
   "D-Card.dc.html",
-  "Shared.dc.html"
+  "Shared.dc.html",
+  "Dock.dc.html"
  ],
  "notes": {},
  "designSystems": []
