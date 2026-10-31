@@ -38,8 +38,7 @@ import { AWAIT_RUN_POLL_MS, awaitRunSettled } from "./await-run";
 import {
   applySuggestionSet, pickSuggestion, readPullSourceFigures, readSuggestionSetBracket, undoSuggestionSet,
 } from "../../app/decks/tuning-v2-actions";
-import type { CardTypeGroup } from "../../lib/decks/grouping";
-import { SuggestedChangesRun, type SuggestionSetActions } from "./suggested-changes-run";
+import { SuggestedChangesRun, type RunFigures, type SuggestionSetActions } from "./suggested-changes-run";
 import { AnalysisBanner } from "./analysis-banner";
 import { FanShuffle } from "./fan-shuffle";
 import { ManifestRows, type ManifestRow } from "./manifest-rows";
@@ -123,8 +122,6 @@ export type TuningV2 = {
   onTopOff?: () => void;
   /** The drift line's link over 99: Proposed cuts. */
   onProposedCuts?: () => void;
-  /** The deck's count per type group, for the results' By type heads (`n in the deck`, UI PR 6). Absent: 0. */
-  typeCounts?: Partial<Record<CardTypeGroup, number>>;
 };
 
 /** The count a fresh intake opens on (Intake board A). */
@@ -209,6 +206,7 @@ export function TuningPanel({
   onSaveDescription,
   freshEachVisit = false,
   v2 = null,
+  runFigures,
 }: {
   /** With the Tuning hub off: this panel, once drawn, is Suggested changes' landing target. */
   landingTarget?: boolean;
@@ -233,6 +231,10 @@ export function TuningPanel({
   freshEachVisit?: boolean;
   /** Suggested changes v2's intake in place of Additional notes, and its press (`TuningV2`). Null: v10 as shipped. */
   v2?: TuningV2 | null;
+  /** What a v2 run's group heads read off the deck: its count per type group (`n in the deck`) and each role's have and
+   *  target. A read, passed whatever the reader's switch says: a stored v2 run drawn read-only with the switch off
+   *  carries the same heads as with it on. Absent: the run view falls back to `v2.noticed.roles` and no type counts. */
+  runFigures?: RunFigures;
 }) {
   const [state, setState] = useState<TuningState | null>(null);
   // The rows' flips, so the tally and the answered layout read each answer the moment its row does.
@@ -1206,7 +1208,7 @@ export function TuningPanel({
         permits={permits}
         declared={facts.declared ?? null}
         newestPriceAsOf={live ? live.newestPriceAsOf : state.newestPriceAsOf}
-        figures={{ typeCounts: v2?.typeCounts ?? {}, roles: v2?.noticed.roles ?? [] }}
+        figures={runFigures ?? { typeCounts: {}, roles: v2?.noticed.roles ?? [] }}
         drift={v2 && v2.over !== 0 ? { at: v2.at, over: v2.over, onTopOff: v2.onTopOff, onProposedCuts: v2.onProposedCuts } : null}
         finishedHere={!live && watchedLive === runId}
         readFrom={live ? null : <ReadFrom state={state} facts={facts} />}

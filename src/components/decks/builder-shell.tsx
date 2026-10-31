@@ -26,6 +26,7 @@ import { CutsPanelView } from "./cuts-panel";
 import { ManaBalancePanel } from "./mana-balance-panel";
 import { hasColoredPip } from "../../lib/tuning/mana-view";
 import { TuningPanel, type TuningV2 } from "./tuning-panel";
+import type { RunFigures } from "./suggested-changes-run";
 import { strategyName } from "../../lib/copy/strategy-focus";
 import { localDay } from "../../lib/copy/credits";
 import { plainText } from "../../lib/decks/notes-body";
@@ -1570,18 +1571,29 @@ export function BuilderShell({
     setDeckPanel("list");
     setTopOffRequest((topOffNonce.current += 1));
   };
+  // What a v2 run's group heads read off the deck (`n in the deck`, a role's have and target): a READ, so it is built
+  // whatever this reader's switch says. A stored v2 run is drawn read-only with the switch off (#2497), and its heads must
+  // carry the same counts as with it on.
+  const haveByRole = roleCounterFor(labelRows)(cards);
+  const roleFigures = ROLE_ORDER.map((role) => ({
+    role, label: mix.cells[role].label, have: haveByRole[role], target: mix.cells[role].target, advisory: mix.cells[role].advisory,
+  }));
+  const runFigures: RunFigures = {
+    typeCounts: cards.reduce<Partial<Record<CardTypeGroup, number>>>((acc, c) => {
+      acc[c.cardTypeGroup] = (acc[c.cardTypeGroup] ?? 0) + c.quantity;
+      return acc;
+    }, {}),
+    roles: roleFigures,
+  };
   let suggestedV2: TuningV2 | null = null;
   if (suggestedChangesV2) {
-    const have = roleCounterFor(labelRows)(cards);
     // Newest first (the page's order): the first game whose note says anything.
     const noted = games.find((g) => g.note !== null && plainText(g.note).trim() !== "");
     suggestedV2 = {
       at: built + (deckBodySize(false) - bodySize),
       over: built - bodySize,
       noticed: {
-        roles: ROLE_ORDER.map((role) => ({
-          role, label: mix.cells[role].label, have: have[role], target: mix.cells[role].target, advisory: mix.cells[role].advisory,
-        })),
+        roles: roleFigures,
         focus: strategyFocus.settled ? strategyName(strategyFocus.settled) : null,
         game: noted ? { note: plainText(noted.note!), date: localDay(noted.playedAt) } : null,
       },
@@ -1591,16 +1603,12 @@ export function BuilderShell({
       // fill has no row to open, so the count is named with no link rather than promising one.
       onTopOff: bodySize - counts.total > 0 ? topOffPress : undefined,
       onProposedCuts: proposedCutsPress,
-      // The deck page's own type groups, for the results' By type heads (`n in the deck`).
-      typeCounts: cards.reduce<Partial<Record<CardTypeGroup, number>>>((acc, c) => {
-        acc[c.cardTypeGroup] = (acc[c.cardTypeGroup] ?? 0) + c.quantity;
-        return acc;
-      }, {}),
     };
   }
   const suggestedPanel = (permits: readonly Bracket[], freshEachVisit = false) => (
     <TuningPanel
       v2={suggestedV2}
+      runFigures={runFigures}
       landingTarget={!tuningHubEnabled}
       freshEachVisit={freshEachVisit}
       deckId={deck.id}
