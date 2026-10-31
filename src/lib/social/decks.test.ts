@@ -63,10 +63,10 @@ describe("loadFriendDecks", () => {
     expect(m.listDecksWithStats).not.toHaveBeenCalled();
   });
 
-  it("reads the FRIEND's decks under the friend's own switches, newest first", async () => {
+  it("reads the FRIEND's decks, newest first", async () => {
     await loadFriendDecks("user_viewer", "00000000-0000-4000-8000-000000000002");
     expect(m.resolveFriend).toHaveBeenCalledWith("user_viewer", "00000000-0000-4000-8000-000000000002");
-    expect(m.listDecksWithStats).toHaveBeenCalledWith("user_friend", "newest", expect.objectContaining({ env: { FRIEND: "env" }, includeProxyStats: true }));
+    expect(m.listDecksWithStats).toHaveBeenCalledWith("user_friend", "newest", expect.objectContaining({ includeProxyStats: true }));
   });
 
   it("returns name, commander, status and count, and nothing else of a deck", async () => {
@@ -262,10 +262,10 @@ describe("loadFriendDeck", () => {
     expect(m.getDeckDetail).not.toHaveBeenCalled();
   });
 
-  it("reads the deck as its owner with no availability read, under the owner's switches", async () => {
+  it("reads the deck as its owner with no availability read", async () => {
     await loadFriendDeck("user_viewer", "x", DECK);
-    const [deckId, owner, shared, env] = m.getDeckDetail.mock.calls[0];
-    expect([deckId, owner, env]).toEqual([DECK, "user_friend", ON]);
+    const [deckId, owner, shared] = m.getDeckDetail.mock.calls[0];
+    expect([deckId, owner]).toEqual([DECK, "user_friend"]);
     expect(await shared).toBeNull();
   });
 

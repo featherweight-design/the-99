@@ -297,7 +297,7 @@ export async function runTuning(
       const ownedCandidates = limits.ownedOnly
         ? await loadOwnedCandidates({
           userId, deckId, commanderOracleIds: profile.commanderOracleIds, colorIdentity: [...profile.colours.identity],
-          inDeck: new Set(profile.cards.map((c) => c.oracleId)), limits, env,
+          inDeck: new Set(profile.cards.map((c) => c.oracleId)), limits,
         })
         : undefined;
       // The cards the run could add toward the focus (plan 4c). On an owned-only run they are read under its limits
@@ -305,7 +305,7 @@ export async function runTuning(
       const focusPlan = focusRun
         ? await planFocusCandidates(limits, ownedCandidates, (l) => loadFocusCandidates({
           userId, deckId, commanderOracleIds: profile.commanderOracleIds, colorIdentity: [...profile.colours.identity],
-          inDeck: new Set(profile.cards.map((c) => c.oracleId)), limits: l, focus: focusRun.key, env,
+          inDeck: new Set(profile.cards.map((c) => c.oracleId)), limits: l, focus: focusRun.key,
           stapleCondition: profile.skeleton.condition, roleBasis: profile.skeleton.roleBasis ?? "classifier",
         }))
         : null;
@@ -340,7 +340,7 @@ export async function runTuning(
         // A rejection is stored as busy here: the distinction is kept for the overview only, for now.
         if (!outcome.ok) return await fail(outcome.errorClass === "upstream_rejected" ? "upstream_busy" : outcome.errorClass);
 
-        resolved = await resolveAnswer({ userId, deckId, pack, response: outcome.value, env });
+        resolved = await resolveAnswer({ userId, deckId, pack, response: outcome.value });
         // 6-asked/5-kept in each list (H35, PR 4a; sub-project 8): the first survivors of each list in
         // whatever order the validator already gives — no new ranking pass. Fewer than 5 is shown as-is.
         sized = sizeLists(resolved.kept, MAX_SUGGESTIONS);

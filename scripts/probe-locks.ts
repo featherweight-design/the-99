@@ -26,7 +26,6 @@ import { applySwap, planSwap, restoreSwap } from "../src/lib/swaps/draft-swap";
 import { loadAvailability } from "../src/lib/decks/availability-query";
 import { deckCards } from "../src/db/schema";
 import { and, eq } from "drizzle-orm";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
 
@@ -232,12 +231,12 @@ async function main() {
         values (${USER}, ${X}, 2, 'probe')`);
       const d = await freshDeck("pull");
       await lock(d.id, X);
-      const claims = (await loadAvailability(USER, { oracleIds: [X], env: process.env })).get(X)?.claims ?? [];
+      const claims = (await loadAvailability(USER, { oracleIds: [X] })).get(X)?.claims ?? [];
       const mine = claims.find((c) => c.id === d.id);
       check("12 · the claim read marks the locked holder", mine?.locked, true);
       check("12 · the server's own check refuses it", await isLiveLocked(fixture, d.id, X), true);
       const other = await freshDeck("pull-other");
-      const otherClaim = ((await loadAvailability(USER, { oracleIds: [X], env: process.env })).get(X)?.claims ?? [])
+      const otherClaim = ((await loadAvailability(USER, { oracleIds: [X] })).get(X)?.claims ?? [])
         .find((c) => c.id === other.id);
       check("12 · a deck that did not lock it is not marked", otherClaim?.locked, false);
     }

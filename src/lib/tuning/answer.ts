@@ -41,14 +41,11 @@ export async function resolveAnswer(args: {
   deckId: string;
   pack: EvidencePack;
   response: TuningResponse;
-  /** The reader's resolved switches (`requestSwitchEnv`), for the claim read; a probe,
-   *  with no signed-in reader, passes `process.env`. */
-  env: NodeJS.ProcessEnv;
 }) {
   const { userId, deckId, pack, response } = args;
   const { additions, cuts } = response;
   const names = [...new Set([...additions, ...cuts].map((l) => l.card))];
-  const rows = await readResolvedRows({ userId, deckId, limits: pack.limits, names, env: args.env });
+  const rows = await readResolvedRows({ userId, deckId, limits: pack.limits, names });
   const resolveName = nameResolver(rows, new Set(pack.cards.map((c) => c.oracleId)));
   return { ...validateSuggestions({ response, pack, resolveName }), askedCount: additions.length + cuts.length };
 }
@@ -63,9 +60,8 @@ export async function readResolvedRows(args: {
   deckId: string;
   limits: EvidencePack["limits"];
   names: readonly string[];
-  env: NodeJS.ProcessEnv;
 }): Promise<(ResolvedCard & { name: string })[]> {
-  const { userId, deckId, limits, names, env } = args;
+  const { userId, deckId, limits, names } = args;
   const nameRows = names.length === 0 ? [] : await db
     .select({
       oracleId: cards.oracleId,
@@ -82,7 +78,7 @@ export async function readResolvedRows(args: {
   const [{ prices, newestAsOf }, suggestedOwned, availability] = await Promise.all([
     limits.capCents === null ? { prices: new Map(), newestAsOf: null } : loadPrices(suggestedIds),
     nameRows.length === 0 || !limits.ownedOnly ? new Set<string>() : readOwnedOracleIds(userId, suggestedIds),
-    nameRows.length === 0 || !limits.ownedOnly ? new Map() : loadAvailability(userId, { oracleIds: suggestedIds, excludeDeckId: deckId, env }),
+    nameRows.length === 0 || !limits.ownedOnly ? new Map() : loadAvailability(userId, { oracleIds: suggestedIds, excludeDeckId: deckId }),
   ]);
   const rows = nameRows.map((r) => {
     const fact = prices.get(r.oracleId) ?? null;

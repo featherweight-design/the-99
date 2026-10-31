@@ -377,7 +377,7 @@ export async function loadIncomingAsks(holderId: string, env: NodeJS.ProcessEnv,
   if (!socialFriendsEnabled(env)) return [];
   const rows = (await q.execute<IncomingRow>(incomingAsksQuery(holderId, now))).rows as IncomingRow[];
   if (rows.length === 0) return [];
-  const offered = await loadOwnOffered(holderId, rows.map((r) => r.oracle_id), env);
+  const offered = await loadOwnOffered(holderId, rows.map((r) => r.oracle_id));
   return rows.flatMap((r) => {
     const spare = offered.get(r.oracle_id);
     if (spare === undefined) return [];

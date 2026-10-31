@@ -99,7 +99,6 @@ export async function markBought(
       id: id as string,
       source: `shopping:${deckId}`,
       receipt: { oracleId, deckIds: [deckId] },
-      env,
       // Body or commander, checked inside the write under the deck row's lock, so no deck edit can
       // remove the card between the check and the commit.
       requireMember: { deckIds: [deckId], oracleId },
@@ -246,7 +245,6 @@ export async function markBoughtForDecks(
       // Ownership and membership per deck, under each deck's row lock (see `markBought`).
       requireMember: { deckIds, oracleId },
       ...(pick ? { assign: { oracleId, deckId: pick } } : {}),
-      env,
     },
   );
   switch (result.status) {
@@ -295,7 +293,7 @@ export async function readCartChooser(rawOracleId: string, rawDeckIds: unknown):
   }
   const deckIds = new Set((rawDeckIds as string[]).map((d) => d.toLowerCase()));
   // Unowned as zero: the commonest cart line is a card no copy of which is on the shelf yet.
-  const card = await loadContestedCard(rawOracleId.toLowerCase(), userId, { unownedAsZero: true, env });
+  const card = await loadContestedCard(rawOracleId.toLowerCase(), userId, { unownedAsZero: true });
   if (!card) return null;
   const claimants = card.claimants.filter((c) => deckIds.has(c.deckId.toLowerCase()));
   // Every deck on the line or none: a deck billed for the card that the claim model does not list

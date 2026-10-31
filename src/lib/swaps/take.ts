@@ -43,7 +43,7 @@ export type TakeResult =
  * the deck has moved since the list was read (`SwapRefusal`), or when the deck is not the reader's.
  */
 export async function takeStandIn(
-  deckId: string, userId: string, cutOracleId: string, addOracleId: string, env: NodeJS.ProcessEnv,
+  deckId: string, userId: string, cutOracleId: string, addOracleId: string,
 ): Promise<TakeResult> {
   return db.transaction(async (tx) => {
     if (!(await lockOwnDeck(tx, deckId, userId))) return { ok: false, reason: "notFound" };
@@ -53,7 +53,7 @@ export async function takeStandIn(
     // Before the swap moves anything: from this deck's vantage, is there a spare copy of the add?
     // Read inside the take's own transaction, so the receipt describes the copy this take used.
     const [card] = await tx.select({ typeLine: cards.typeLine }).from(cards).where(eq(cards.oracleId, addOracleId));
-    const availability = (await loadAvailability(userId, { oracleIds: [addOracleId], excludeDeckId: deckId, env }, tx))
+    const availability = (await loadAvailability(userId, { oracleIds: [addOracleId], excludeDeckId: deckId }, tx))
       .get(addOracleId);
     const addWasFree = freeAfterTake(card, availability?.owned ?? 0, availability?.free ?? null);
 

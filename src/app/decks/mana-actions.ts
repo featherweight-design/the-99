@@ -42,7 +42,7 @@ export async function readManaBalance(deckId: string): Promise<ManaPanelData | n
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!manaBalanceEnabled(env) || !isUuid(deckId)) return null;
-  const deck = await getDeckDetail(deckId, userId, undefined, env);
+  const deck = await getDeckDetail(deckId, userId, undefined);
   if (!deck) return null;
   const balance = await loadManaBalance(deck);
   if (!balance) return null;
@@ -116,7 +116,7 @@ export async function readManaHelpReview(deckId: string, countId: string): Promi
   // Today's help for that color. A color the commander's identity no longer holds offers nothing,
   // so every stored trade is truly stale; a read that FAILED is not a re-check, so it returns null
   // and the door draws its own failure state rather than calling every trade gone.
-  const deck = await getDeckDetail(deckId, userId, undefined, env);
+  const deck = await getDeckDetail(deckId, userId, undefined);
   if (!deck) return null;
   const identity = [deck.commander, ...(deck.partner ? [deck.partner] : [])].flatMap((c) => c.colorIdentity);
   if (!identity.includes(row.summary.color)) return reviewHelp(row.summary.help, null);
@@ -129,7 +129,7 @@ export async function readManaHelpReview(deckId: string, countId: string): Promi
  *  null on any refusal or failed read. */
 async function helpFor(deckId: string, color: string, userId: string, env: NodeJS.ProcessEnv): Promise<(ManaHelp & { deckId: string; listKey: string }) | null> {
   if (!manaBalanceEnabled(env) || !isUuid(deckId) || !(BALANCE_COLORS as readonly string[]).includes(color)) return null;
-  const deck = await getDeckDetail(deckId, userId, undefined, env);
+  const deck = await getDeckDetail(deckId, userId, undefined);
   if (!deck) return null;
   const identity = [deck.commander, ...(deck.partner ? [deck.partner] : [])].flatMap((c) => c.colorIdentity);
   if (!identity.includes(color)) return null;

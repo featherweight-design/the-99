@@ -68,8 +68,6 @@ export function rankStaples(candidates: readonly StapleCandidate[], helps: reado
 export async function loadManaStaples(
   deck: DeckDetail,
   userId: string,
-  /** The reader's resolved switches (`requestSwitchEnv`), for the claim model. */
-  env: NodeJS.ProcessEnv,
 ): Promise<StapleCandidate[] | null> {
   const commanders = [deck.commander, ...(deck.partner ? [deck.partner] : [])];
   const identity = [...new Set(commanders.flatMap((c) => c.colorIdentity))];
@@ -116,7 +114,7 @@ export async function loadManaStaples(
   ]);
   if (!lands || !sources) return null;
   const [availability, prices] = await Promise.all([
-    loadAvailability(userId, { oracleIds: pool.map((r) => r.oracleId), excludeDeckId: deck.id, env }),
+    loadAvailability(userId, { oracleIds: pool.map((r) => r.oracleId), excludeDeckId: deck.id }),
     loadPrices(pool.map((r) => r.oracleId)),
   ]);
   return pool.flatMap((r): StapleCandidate[] => {

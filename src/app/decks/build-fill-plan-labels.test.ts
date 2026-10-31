@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // buildFillPlan's WIRING of the label basis (labels-everywhere PR 4): which skeleton basis it asks
 // for, which label map reaches the plan, and the one invariant that matters, that a plan never
@@ -93,21 +93,5 @@ describe("buildFillPlan by label", () => {
     expect(m.readLabels).not.toHaveBeenCalled();
     expect(planArgs().skeleton).toBeNull();
     expect(planArgs().labelRoles).toBeUndefined();
-  });
-});
-
-// Admin PR 6f-1: the fill's budget gate asks the claim model which owned cards are free, and that model
-// takes the env it is handed. `loadFillGate` requires that env (admin PR 7b), and the plan's must be the one
-// that reaches it: the handed env is checked by identity, as a boolean.
-describe("buildFillPlan's budget gate", () => {
-  afterEach(() => vi.unstubAllEnvs());
-
-  it("is handed the reader's resolved switches, not the environment", async () => {
-    const READER = {} as unknown as NodeJS.ProcessEnv;
-    await buildFillPlan("u", commanders, new Set(), {
-      selected: [], env: READER, answers: { budgetCents: 5_000, bracket: null, cardOracleId: null },
-    });
-    expect(m.loadFillGate).toHaveBeenCalledTimes(1);
-    expect(m.loadFillGate.mock.calls[0][0].env === READER).toBe(true);
   });
 });

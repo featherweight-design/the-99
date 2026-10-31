@@ -182,7 +182,7 @@ async function main() {
   const before = await deckList(deckId);
   const pick = { addIds: adds.slice(0, 3).map((l) => l.id), cutIds: cuts.slice(0, 3).map((l) => l.id) };
   const actionId = randomUUID();
-  const applied = await applyPicks({ runId, ...pick, actionId, userId: u, env });
+  const applied = await applyPicks({ runId, ...pick, actionId, userId: u });
   check("4 · apply 3 + 3", applied.ok, true);
   check("4 · the deck stays at 100", await deckSize(deckId), 100);
   const after = await deckList(deckId);
@@ -190,7 +190,7 @@ async function main() {
   check("4 · the three cuts are out", cuts.slice(0, 3).every((l) => !after.some((r) => r.startsWith(l.cut!))), true);
   check("4 · the six lines carry the set", (await linesOf(runId)).filter((l) => l.apply_set === actionId).map((l) => l.verdict),
     Array(6).fill("accepted"));
-  const repeat = await applyPicks({ runId, ...pick, actionId, userId: u, env });
+  const repeat = await applyPicks({ runId, ...pick, actionId, userId: u });
   check("4 · a repeat of the same press answers with the set", repeat.ok && repeat.itemIds.length, 6);
   check("4 · and writes nothing", await deckList(deckId), after);
   check("4 · per-card undo refuses one line of the set", await undoItem(adds[0].id, u), null);
@@ -199,7 +199,7 @@ async function main() {
   check("4 · undo the set", undone.ok && undone.itemIds.length, 6);
   check("4 · undo returns the exact list", await deckList(deckId), before);
   // In upper case, as a client might send it: the set id is matched however it is written.
-  const retried = await applyPicks({ runId, ...pick, actionId: actionId.toUpperCase(), userId: u, env });
+  const retried = await applyPicks({ runId, ...pick, actionId: actionId.toUpperCase(), userId: u });
   check("4 · a delayed repeat of the undone press names no line", retried.ok && retried.itemIds.length, 0);
   check("4 · and does not reverse the undo", await deckList(deckId), before);
   check("4 · the lines are open again and still picked",
@@ -207,16 +207,16 @@ async function main() {
     Array(6).fill(["pending", null, true]));
 
   // 5 — unequal counts.
-  const unequal = await applyPicks({ runId, addIds: pick.addIds.slice(0, 2), cutIds: pick.cutIds.slice(0, 1), actionId: randomUUID(), userId: u, env });
+  const unequal = await applyPicks({ runId, addIds: pick.addIds.slice(0, 2), cutIds: pick.cutIds.slice(0, 1), actionId: randomUUID(), userId: u });
   check("5 · unequal counts are refused", unequal.ok ? "applied" : unequal.refusal, { kind: "picks", reason: "unequal" });
   check("5 · and change nothing", await deckList(deckId), before);
 
   // 6 — two sets from one pool.
   const setA = randomUUID();
   const setB = randomUUID();
-  const a = await applyPicks({ runId, addIds: pick.addIds.slice(0, 2), cutIds: pick.cutIds.slice(0, 2), actionId: setA, userId: u, env });
+  const a = await applyPicks({ runId, addIds: pick.addIds.slice(0, 2), cutIds: pick.cutIds.slice(0, 2), actionId: setA, userId: u });
   const withA = await deckList(deckId);
-  const b = await applyPicks({ runId, addIds: [adds[3].id], cutIds: [cuts[3].id], actionId: setB, userId: u, env });
+  const b = await applyPicks({ runId, addIds: [adds[3].id], cutIds: [cuts[3].id], actionId: setB, userId: u });
   check("6 · a second set from the same pool", [a.ok, b.ok], [true, true]);
   await undoSet({ applySet: setB, userId: u });
   const afterB = await linesOf(runId);
@@ -240,7 +240,7 @@ async function main() {
 
   // 7b — a commit retires the run (spec §8): an applied set is no longer undone by the run, and nothing more applies.
   const setC = randomUUID();
-  const c1 = await applyPicks({ runId, addIds: [adds[0].id], cutIds: [cuts[0].id], actionId: setC, userId: u, env });
+  const c1 = await applyPicks({ runId, addIds: [adds[0].id], cutIds: [cuts[0].id], actionId: setC, userId: u });
   check("7b · a set applies before the commit", c1.ok, true);
   const withC = await deckList(deckId);
   await db.execute(sql`
@@ -250,7 +250,7 @@ async function main() {
   const lateUndo = await undoSet({ applySet: setC, userId: u });
   check("7b · undo after a commit is refused as stale", lateUndo.ok ? "undone" : lateUndo.refusal, { kind: "stale" });
   check("7b · and the deck keeps the set", await deckList(deckId), withC);
-  const lateApply = await applyPicks({ runId, addIds: [adds[1].id], cutIds: [cuts[1].id], actionId: randomUUID(), userId: u, env });
+  const lateApply = await applyPicks({ runId, addIds: [adds[1].id], cutIds: [cuts[1].id], actionId: randomUUID(), userId: u });
   check("7b · apply after a commit is refused as stale", lateApply.ok ? "applied" : lateApply.refusal, { kind: "stale" });
   // adds[2] is still picked from step 4 (an Undo keeps the picks): an unpick after the commit must not land.
   check("7b · an unpick after a commit is refused", await setPicked(adds[2].id, u, false), null);

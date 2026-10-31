@@ -28,7 +28,6 @@ import ws from "ws";
 import { applyCollectionChange } from "../src/lib/collection/write";
 import { replaceCollection } from "../src/lib/collection/import";
 import { backfillAddedAt } from "../src/lib/collection/added-at-backfill";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
 
@@ -69,7 +68,7 @@ async function main() {
 
   try {
     // ---- 1. The file that fills an empty collection ----------------------------------------
-    await applyCollectionChange(USER, { kind: "replace", items: [item(A), item(B)] }, { id: randomUUID(), env: process.env });
+    await applyCollectionChange(USER, { kind: "replace", items: [item(A), item(B)] }, { id: randomUUID() });
     const a1 = await rowOf(USER, A);
     const b1 = await rowOf(USER, B);
     check("the first file's holdings are dated, inexact, and share one date",
@@ -79,7 +78,7 @@ async function main() {
 
     await sleep(30);
     // ---- 2. A hand add ---------------------------------------------------------------------
-    await applyCollectionChange(USER, { kind: "add", items: [item(C)] }, { id: randomUUID(), env: process.env });
+    await applyCollectionChange(USER, { kind: "add", items: [item(C)] }, { id: randomUUID() });
     const c1 = await rowOf(USER, C);
     const a2 = await rowOf(USER, A);
     check("a hand add is exact and later than the first file",
@@ -88,7 +87,7 @@ async function main() {
     check("a hand add leaves the first file's date alone", a2?.added_at?.getTime() === a1?.added_at?.getTime(), `${a2?.added_at?.toISOString()}`);
 
     // ---- 3. A quantity edit ----------------------------------------------------------------
-    await applyCollectionChange(USER, { kind: "edit", rows: [{ ...at(C), quantity: 3, expected: 1 }] }, { id: randomUUID(), env: process.env });
+    await applyCollectionChange(USER, { kind: "edit", rows: [{ ...at(C), quantity: 3, expected: 1 }] }, { id: randomUUID() });
     const c2 = await rowOf(USER, C);
     check("a quantity edit keeps the date and the exactness",
       c2?.quantity === 3 && c2.added_at?.getTime() === c1?.added_at?.getTime() && c2.added_exact === true,
@@ -96,7 +95,7 @@ async function main() {
 
     await sleep(30);
     // ---- 4. A second file ------------------------------------------------------------------
-    await applyCollectionChange(USER, { kind: "replace", items: [item(A), item(B), item(C, 3), item(D)] }, { id: randomUUID(), env: process.env });
+    await applyCollectionChange(USER, { kind: "replace", items: [item(A), item(B), item(C, 3), item(D)] }, { id: randomUUID() });
     const a3 = await rowOf(USER, A);
     const c3 = await rowOf(USER, C);
     const d3 = await rowOf(USER, D);
@@ -110,16 +109,16 @@ async function main() {
 
     // ---- 5. Remove, re-add, revert ---------------------------------------------------------
     const removeId = randomUUID();
-    await applyCollectionChange(USER, { kind: "edit", rows: [{ ...at(D), quantity: 0, expected: 1 }] }, { id: removeId, env: process.env });
+    await applyCollectionChange(USER, { kind: "edit", rows: [{ ...at(D), quantity: 0, expected: 1 }] }, { id: removeId });
     check("a removal deletes the row", (await rowOf(USER, D)) === undefined, "row gone");
     await sleep(30);
-    await applyCollectionChange(USER, { kind: "add", items: [item(D)] }, { id: randomUUID(), env: process.env });
+    await applyCollectionChange(USER, { kind: "add", items: [item(D)] }, { id: randomUUID() });
     const d4 = await rowOf(USER, D);
     check("a re-add is a new date", !!d4?.added_at && !!d3?.added_at && d4.added_at > d3.added_at && d4.added_exact === true,
       `${d3?.added_at?.toISOString()} then ${d4?.added_at?.toISOString()}`);
     // The revert of the REMOVAL: the re-add is in the way (the row exists), so remove it again first.
-    await applyCollectionChange(USER, { kind: "edit", rows: [{ ...at(D), quantity: 0, expected: 1 }] }, { id: randomUUID(), env: process.env });
-    const reverted = await applyCollectionChange(USER, { kind: "revert", entryId: removeId }, { id: randomUUID(), env: process.env });
+    await applyCollectionChange(USER, { kind: "edit", rows: [{ ...at(D), quantity: 0, expected: 1 }] }, { id: randomUUID() });
+    const reverted = await applyCollectionChange(USER, { kind: "revert", entryId: removeId }, { id: randomUUID() });
     const d5 = await rowOf(USER, D);
     check("the revert of a removal puts the old date and exactness back",
       reverted.status === "applied" && d5?.added_at?.getTime() === d3?.added_at?.getTime() && d5?.added_exact === true,

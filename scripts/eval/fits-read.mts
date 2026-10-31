@@ -33,7 +33,6 @@ import { countTokens } from "./lib/batch.mjs";
 import { LEDGER_LIMITS } from "../../src/lib/eval/ledger-limits";
 import { acquireRunLock, readLedger, record, spent } from "./lib/ledger.mjs";
 import { buildParams } from "./lib/request.mjs";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 const LEDGER = "docs/superpowers/eval/ledger-find-a-deck.jsonl";
 const CAP_USD = LEDGER_LIMITS["ledger-find-a-deck.jsonl"].hardCapUsd;
@@ -116,7 +115,7 @@ for (const n of wanted) if (!idOf.has(n)) throw new Error(`card not found on sta
 type Loaded = NonNullable<Awaited<ReturnType<typeof loadFitsReadInputs>>>;
 const loads = new Map<string, Loaded>();
 for (const name of wanted) {
-  const l = await loadFitsReadInputs(HUGH, idOf.get(name)!, { allDecks: true }, process.env);
+  const l = await loadFitsReadInputs(HUGH, idOf.get(name)!, { allDecks: true });
   if (!l) throw new Error(`loadFits found no card for ${name}`);
   loads.set(name, l);
 }

@@ -372,13 +372,7 @@ export async function loadAvailability(
      * (the cart's S1b chooser). Off, the query is the one every other reader runs.
      */
     unownedAsZero?: boolean;
-    /**
-     * The reader's resolved switches (`requestSwitchEnv`). Required (admin PR 7b): a script with no
-     * signed-in reader passes `process.env` itself. No switch is decided from it today: the two that
-     * were (the `locked` key, the moved-commander pending clause) retired always-on.
-     */
-    env: NodeJS.ProcessEnv;
-  },
+  } = {},
   tx?: Tx,
 ): Promise<Map<string, Availability>> {
   // Both narrowings are null-guarded in SQL rather than by string-building the

@@ -52,7 +52,6 @@ export async function startPreconOwned(
   fileName: string,
   name: string,
   actionId: string,
-  env: NodeJS.ProcessEnv,
   placements: boolean,
 ): Promise<PreconStartResult> {
   // A retry: the deck this action made, found through its link. Read before the catalog, so an ingest
@@ -83,7 +82,6 @@ export async function startPreconOwned(
     { kind: "add", items: lines.items, preconTokens: lines.tokens },
     {
       id: actionId,
-      env,
       source: preconSource(fileName),
       ...(placements ? { placements } : {}),
       inside: async (tx) => {

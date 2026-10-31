@@ -27,7 +27,6 @@ import { assignCopyFor } from "../src/lib/decks/assign";
 import { pruneOrphanProxies } from "../src/lib/decks/prune-proxies";
 import { pruneOrphanAssignments } from "../src/lib/decks/prune-assignments";
 import { loadContestedCards, countContestedCards } from "../src/lib/collection/summary-read";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
 
@@ -121,11 +120,11 @@ async function reservationSection() {
     `);
   };
   const free = async (deckId: string) => {
-    const a = await loadAvailability(USER_R, { oracleIds: [card], excludeDeckId: deckId, env: process.env });
+    const a = await loadAvailability(USER_R, { oracleIds: [card], excludeDeckId: deckId });
     return a.get(card)?.free ?? null;
   };
   const claimOn = async (vantage: string, holder: string) => {
-    const a = await loadAvailability(USER_R, { oracleIds: [card], excludeDeckId: vantage, env: process.env });
+    const a = await loadAvailability(USER_R, { oracleIds: [card], excludeDeckId: vantage });
     return a.get(card)?.claims.find((c) => c.id === holder) ?? null;
   };
   const makeDeck = async (name: string, cmd: string) => {
@@ -215,7 +214,7 @@ async function reservationSection() {
     //     copy from a deck asking for two leaves its reservation granting one and
     //     moves no figure at all. See the note on DeckClaim.senior.
     const seniorFlag = async (vantage: string, holder: string) => {
-      const av = await loadAvailability(USER_R, { oracleIds: [card], excludeDeckId: vantage, env: process.env });
+      const av = await loadAvailability(USER_R, { oracleIds: [card], excludeDeckId: vantage });
       return av.get(card)?.claims.find((c) => c.id === holder)?.senior ?? null;
     };
     check("a reservation does not make its holder a pull source",
@@ -230,7 +229,7 @@ async function reservationSection() {
     //     branch is unproven without it. (With the split reverted this is the only
     //     check that fails.)
     const offDecklist = async () => {
-      const av = await loadAvailability(USER_R, { oracleIds: [card], env: process.env });
+      const av = await loadAvailability(USER_R, { oracleIds: [card] });
       return av.get(card)?.free ?? null;
     };
     // Two committed decks each claim the one copy, so this reads -1 with or without
@@ -331,7 +330,7 @@ async function reservationSection() {
       insert into deck_cards (deck_id, oracle_id, quantity) values (${brew}, ${card}, 1)
     `);
     check("unreserved, a brew is behind every committed deck", await free(brew), -1);
-    const hardBefore = (await loadAvailability(USER_R, { oracleIds: [card], env: process.env })).get(card)?.hard ?? 0;
+    const hardBefore = (await loadAvailability(USER_R, { oracleIds: [card] })).get(card)?.hard ?? 0;
     await assign(brew);
     const brewClaim = await claimOn(a, brew);
     check("a reservation naming a brew is granted", brewClaim?.granted, 1);
@@ -339,7 +338,7 @@ async function reservationSection() {
     check("and the brew is billed for none",
       (await loadDeckBuyRows(USER_R, [brew])).find((r) => r.oracleId === card)?.quantity ?? 0, 0);
     check("the senior committed deck it displaced buys instead", await free(a), -1);
-    const offList = (await loadAvailability(USER_R, { oracleIds: [card], env: process.env })).get(card);
+    const offList = (await loadAvailability(USER_R, { oracleIds: [card] })).get(card);
     check("off any decklist the brew's granted copy is hard", offList?.hard, hardBefore + 1);
     check("and none of its ask is soft", offList?.soft, 0);
     check("and a brew's claim carries no version", brewClaim?.versionNumber, null);
@@ -379,7 +378,7 @@ async function reservationSection() {
       const brew = await makeDeck("A brew", cmdA);
       await fixture.execute(sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${brew}, ${card}, 1)`);
       check("a brew is short by what it asks, not by the seniors' shortfall", await free(brew), -1);
-      const whole = (await loadAvailability(USER_R, { oracleIds: [card], env: process.env })).get(card)?.free ?? null;
+      const whole = (await loadAvailability(USER_R, { oracleIds: [card] })).get(card)?.free ?? null;
       check("off every deck the collection still reads the over-commitment", whole, -1);
       const bill = (await loadDeckBuyRows(USER_R, [brew])).find((r) => r.oracleId === card)?.quantity ?? 0;
       check("and the brew's bill is the one copy its marker says", bill, 1);
@@ -430,7 +429,7 @@ async function commanderCeilingSection() {
     `);
   };
   const free = async (deckId: string) => {
-    const a = await loadAvailability(USER_C, { oracleIds: [card], excludeDeckId: deckId, env: process.env });
+    const a = await loadAvailability(USER_C, { oracleIds: [card], excludeDeckId: deckId });
     return a.get(card)?.free ?? null;
   };
 
@@ -496,7 +495,7 @@ async function commanderCeilingSection() {
     await fixture.execute(sql`
       insert into deck_cards (deck_id, oracle_id, quantity) values (${cmdDeck.id}, ${card}, 1)
     `);
-    const a = await loadAvailability(USER_C, { oracleIds: [card], excludeDeckId: lister.id, env: process.env });
+    const a = await loadAvailability(USER_C, { oracleIds: [card], excludeDeckId: lister.id });
     const folded = a.get(card)?.claims.find((c) => c.id === cmdDeck.id);
     check("a folded claim asks for two", folded?.quantity, 2);
     check("of which one is a commander copy", folded?.commanderCopies, 1);
@@ -853,7 +852,7 @@ async function changesDoorSection() {
     const senior = await mk("Door senior", 60, 1);
     const junior = await mk("Door junior", 30, 1);
 
-    const [contested] = await loadContestedCards([card], USER_D, process.env);
+    const [contested] = await loadContestedCards([card], USER_D);
     check("the door finds the contested card", contested?.oracleId, card);
     // BOTH decks, including the one whose page this would be. An excluded read returns one.
     check("and both committed claimants", contested?.claimants.length, 2);
@@ -861,7 +860,7 @@ async function changesDoorSection() {
     check("with the junior deck buying", contested?.claimants[1]?.allocated, 0);
     // The route's own read agrees with the records read above, on the SAME scenario — the two
     // share one predicate, so a future change to either cannot drift without this failing.
-    check("countContestedCards agrees", await countContestedCards([card], USER_D, process.env), 1);
+    check("countContestedCards agrees", await countContestedCards([card], USER_D), 1);
 
     // A SHORTAGE WITH ONE CLAIMANT IS NOT A CHOICE. The junior deck goes; the senior one asks for
     // two copies against the one owned, which is short by one and has nobody to be short against.
@@ -870,17 +869,17 @@ async function changesDoorSection() {
       update deck_version_cards vc set quantity = 2
       from deck_versions v where v.id = vc.version_id and v.deck_id = ${senior}
     `);
-    const alone = await loadContestedCards([card], USER_D, process.env);
+    const alone = await loadContestedCards([card], USER_D);
     check("one claimant short of two copies is not contested", alone.length, 0);
-    check("and countContestedCards agrees", await countContestedCards([card], USER_D, process.env), 0);
+    check("and countContestedCards agrees", await countContestedCards([card], USER_D), 0);
 
     // AND NEITHER IS A CARD WITH ENOUGH COPIES FOR EVERYONE.
     await fixture.execute(sql`
       update collection_items set quantity = 4 where user_id = ${USER_D} and oracle_id = ${card}
     `);
-    const covered = await loadContestedCards([card], USER_D, process.env);
+    const covered = await loadContestedCards([card], USER_D);
     check("nor a card the collection covers", covered.length, 0);
-    check("and countContestedCards agrees", await countContestedCards([card], USER_D, process.env), 0);
+    check("and countContestedCards agrees", await countContestedCards([card], USER_D), 0);
   } finally {
     await fixture.execute(sql`delete from decks where user_id = ${USER_D}`);
     await fixture.execute(sql`delete from collection_items where user_id = ${USER_D}`);
@@ -998,7 +997,7 @@ async function emptyBodyClaimSection() {
     await fixture.execute(sql`
       insert into deck_cards (deck_id, oracle_id, quantity) values (${later.id}, ${filler.oracle_id}, 1)
     `);
-    const av = await loadAvailability(USER_E, { oracleIds: [cmd], excludeDeckId: later.id, env: process.env });
+    const av = await loadAvailability(USER_E, { oracleIds: [cmd], excludeDeckId: later.id });
     check("an empty-body deck still claims its owned commander (loadAvailability)", av.get(cmd)?.free, -1);
     const owes = (await loadDeckBuyRows(USER_E, [later.id])).find((r) => r.oracleId === cmd)?.quantity ?? 0;
     check("an empty-body deck still claims its owned commander (loadDeckBuyRows)", owes, 1);
@@ -1066,7 +1065,7 @@ async function pullReleaseSection() {
     return d.id;
   };
   const free = async (deckId: string) => {
-    const a = await loadAvailability(USER_P, { oracleIds: [card], excludeDeckId: deckId, env: process.env });
+    const a = await loadAvailability(USER_P, { oracleIds: [card], excludeDeckId: deckId });
     return a.get(card)?.free ?? null;
   };
   const owes = async (deckId: string) => {
@@ -1219,7 +1218,6 @@ const free = async (deckId: string) => {
   const availability = await loadAvailability(USER, {
     oracleIds: [card],
     excludeDeckId: deckId,
-    env: process.env,
   });
   return availability.get(card)?.free ?? null;
 };
@@ -1230,7 +1228,6 @@ const claim = async (oracleId: string, vantage: string, holder: string) => {
   const availability = await loadAvailability(USER, {
     oracleIds: [oracleId],
     excludeDeckId: vantage,
-    env: process.env,
   });
   return availability.get(oracleId)?.claims.find((c) => c.id === holder) ?? null;
 };

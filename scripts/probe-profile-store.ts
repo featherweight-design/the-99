@@ -165,12 +165,12 @@ async function run() {
 
   // 4 · The chip readers, and what they draw with no bracket asked for.
   const tile = async () =>
-    (await listDecksWithStats(USER, "name", { includeBracket: true, env: process.env })).find((d) => d.id === deck.id)
+    (await listDecksWithStats(USER, "name", { includeBracket: true })).find((d) => d.id === deck.id)
       ?.bracket?.permits ?? null;
   check("the header reads the stored permits", await readStoredPermits(deck.id, USER), first?.permits);
   check("the deck list reads the same permits", await tile(), first?.permits);
   check("a list read with no bracket asked for reads none",
-    (await listDecksWithStats(USER, "name", { env: process.env })).find((d) => d.id === deck.id)?.bracket ?? null, null);
+    (await listDecksWithStats(USER, "name")).find((d) => d.id === deck.id)?.bracket ?? null, null);
 
   // 5 · Another reader cannot read it.
   check("another reader reads it as absent", await readStoredReading(deck.id, `${USER}-other`, deps), null);

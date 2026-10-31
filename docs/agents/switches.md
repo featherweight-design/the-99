@@ -27,11 +27,10 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   `requestSwitchEnv(userId)` (a page that decides switches outside its load resolves once and passes the env in), and
   `cachePageForUser` puts every resolved switch in its key and hands the load that same env.
   **Every flag function, and every reader under `src/` that decides a switch, REQUIRES its `env`**, so leaving it out
-  does not compile: the claim model (`loadAvailability`'s `opts.env`, `loadDeckBuyRows`) and every wrapper that
-  starts it, the profile store (`StoredProfileDeps.env`, built by
-  `requestProfileDeps(env)`), and the role basis, synopsis, discovery and About readers. A script, a probe or
-  an eval has no signed-in reader and passes `process.env` itself, saying so. `loadFriendSpares` runs each friend's
-  claim model under that FRIEND's switches (`resolveSwitchEnv(friend)`), and the proxy keys About's cookie on the
+  does not compile: the profile store (`StoredProfileDeps.env`, built by
+  `requestProfileDeps(env)`), and the role basis, synopsis, discovery and About readers. The claim model
+  (`loadAvailability`, `loadDeckBuyRows`) decides no switch and takes no env. A script, a probe or
+  an eval has no signed-in reader and passes `process.env` itself, saying so. The proxy keys About's cookie on the
   reader's resolved entries, so a flip retires exactly the readers it changes. `check:list-cache` knows the two
   override tables reach a cached page through its key alone, and fails if any loader but `page-cache.ts` and the
   resolver it goes through (`src/lib/switches/request.ts`) reads them.

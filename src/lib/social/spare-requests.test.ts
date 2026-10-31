@@ -169,7 +169,7 @@ describe("loadIncomingAsks (G3: a card the holder no longer offers leaves Waitin
     vi.mocked(db.execute).mockResolvedValueOnce({ rows: [row("r1", CARD), row("r2", REQ)] } as never);
     vi.mocked(loadOwnOffered).mockResolvedValueOnce(new Map([[CARD, 3]]));
     const asks = await loadIncomingAsks("h", ON, NOW);
-    expect(vi.mocked(loadOwnOffered).mock.calls.at(-1)).toEqual(["h", [CARD, REQ], ON]);
+    expect(vi.mocked(loadOwnOffered).mock.calls.at(-1)).toEqual(["h", [CARD, REQ]]);
     expect(asks.map((a) => [a.id, a.spare, a.copies, a.deckName, a.daysLeft])).toEqual([["r1", 3, 2, named("Dragons"), 12]]);
     expect(asks[0].asker).toEqual({ publicId: "p1", displayName: named("Ann"), commander: null });
   });

@@ -1,6 +1,6 @@
 // A spare row's friend (face and pods) is read in the SAME snapshot as that friend's claim model: the grant
 // read outside it only names who to ask. Here the two reads disagree, as they would when a share to one pod
-// ends between them, and the row must carry the snapshot's pods. Every env is built over an empty base.
+// ends between them, and the row must carry the snapshot's pods.
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../../db", () => {
@@ -21,7 +21,6 @@ vi.mock("../decks/availability-query", () => ({
   loadAvailability: async (_userId: string, opts?: { oracleIds?: string[] }) =>
     new Map((opts?.oracleIds ?? []).map((id) => [id, { owned: 2, hard: 0, soft: 0 }])),
 }));
-vi.mock("../switches/snapshot", () => ({ resolveSwitchEnv: async () => ({}) }));
 
 import { named } from "../person-name/mint";
 const { loadFriendSpares } = await import("./spares");

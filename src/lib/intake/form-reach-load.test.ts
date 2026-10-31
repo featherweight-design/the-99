@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from "vitest";
-import { ENV_VIEW } from "@/test/env-view";
 
 // Only the payload's BOUNDS are under test: the builder's own (Commander-legal, front face not a
 // land), so the form never counts a raiser the fill could not place. Facts, claims and prices are flat.
@@ -36,7 +35,7 @@ import { loadOwnedMovers } from "./form-reach-load";
 describe("the form's payload keeps to the builder's bounds", () => {
   it("reads only Commander-legal owned cards, and drops a land, keeping a spell with a land back", async () => {
     queries.length = 0;
-    const cards = await loadOwnedMovers("u", ENV_VIEW);
+    const cards = await loadOwnedMovers("u");
     expect(queries[0]).toContain("commander_legal");
     expect(vi.mocked(loadBracketGateFacts).mock.calls[0][0]).toEqual(["rift", "mdfc"]);
     expect(cards.map((c) => c.id)).toEqual(["rift", "mdfc"]);

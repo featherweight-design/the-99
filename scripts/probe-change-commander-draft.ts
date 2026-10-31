@@ -26,7 +26,6 @@ import { loadAvailability } from "../src/lib/decks/availability-query";
 import { changeCount, loadDraftState, releasedCopies } from "../src/lib/decks/draft-state";
 import { listDecksWithStats } from "../src/lib/decks/read";
 import { commitVersion, newestVersion, restoreDraftFromVersion } from "../src/lib/decks/versions";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
 
@@ -96,9 +95,9 @@ async function main() {
   const v1 = (await commitVersion(deckId, null, undefined, undefined)).version;
 
   const readAll = async () => {
-    const state = await loadDraftState(deckId, USER, process.env);
-    const list = await listDecksWithStats(USER, "name", { includeDeckState: true, env: process.env });
-    const claims = await loadAvailability(USER, { oracleIds: [x], env: process.env });
+    const state = await loadDraftState(deckId, USER);
+    const list = await listDecksWithStats(USER, "name", { includeDeckState: true });
+    const claims = await loadAvailability(USER, { oracleIds: [x] });
     const claim = claims.get(x)?.claims.find((c) => c.id === deckId);
     return {
       moved: state.commander ?? null,

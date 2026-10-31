@@ -494,7 +494,7 @@ async function readItems(
       return { prices: new Map(), newestAsOf: null };
     }),
     addIds.length > 0
-      ? loadAvailability(userId, { oracleIds: addIds, excludeDeckId: deckId, env }).catch((e) => {
+      ? loadAvailability(userId, { oracleIds: addIds, excludeDeckId: deckId }).catch((e) => {
           console.error("tuning items: claim read failed", e);
           return new Map<string, Availability>();
         })

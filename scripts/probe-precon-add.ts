@@ -49,8 +49,6 @@ const { DATABASE_URL, PROBE_DB_BRANCH } = requireEnv(["DATABASE_URL", "PROBE_DB_
 const pool = new Pool({ connectionString: DATABASE_URL });
 const fixture = drizzle(pool);
 const USER = `probe-precon-add-${Date.now()}`;
-// A script has no signed-in reader: it decides switches from the environment, saying so.
-const ENV = process.env;
 let failures = 0;
 // Set once the branch guard passes: cleanup writes, so it runs only against the branch the guard proved.
 let guarded = false;
@@ -78,7 +76,7 @@ const owned = async () => rows<{ token: string; source: string; entry: string | 
 
 async function revert(entryId: string): Promise<string> {
   const id = randomUUID();
-  const r = await applyCollectionChange(USER, { kind: "revert", entryId }, { id, env: ENV });
+  const r = await applyCollectionChange(USER, { kind: "revert", entryId }, { id });
   if (r.status !== "applied") throw new Error(`revert refused: ${r.status}`);
   return id;
 }
@@ -99,7 +97,7 @@ async function run() {
   await markTokenOwned(USER, soldier.id);
 
   const first = randomUUID();
-  const a = await addPreconForUser(USER, FILE, first, ENV, true);
+  const a = await addPreconForUser(USER, FILE, first, true);
   if (!a.ok) throw new Error(`add refused: ${a.reason}`);
   check("a · 100 copies, 2 of them foil", await copies(), { total: 100, foil: 2 });
   check("a · the add reports them", { copies: a.copies, foil: a.foil }, { copies: 100, foil: 2 });
@@ -124,7 +122,7 @@ async function run() {
   check("d · the hand-marked Soldier stays a hand mark", tokensA.find((t) => t.token === "Soldier")?.source, "manual");
   check("d · and is not named as marked", a.tokens.names.includes("Soldier"), false);
 
-  const retry = await addPreconForUser(USER, FILE, first, ENV, true);
+  const retry = await addPreconForUser(USER, FILE, first, true);
   check("b · a retry answers the same entry", retry.ok && retry.entryId, first);
   check("b · and names the tokens the entry marked", retry.ok && [...retry.tokens.names].sort(), [...a.tokens.names].sort());
   check("b · eight of them", retry.ok && retry.tokens.marked, 8);
@@ -132,8 +130,8 @@ async function run() {
     { cards: a.cards, copies: 100, foil: 2 });
   const otherId = randomUUID();
   await applyCollectionChange(USER, { kind: "add", items: [{ oracleId: (await rows<{ id: string }>(sql`
-    select oracle_id::text as id from precon_cards where file_name = ${FILE} limit 1`))[0].id, setCode: "", condition: null, quantity: 1 }] }, { id: otherId, env: ENV });
-  const reused = await addPreconForUser(USER, FILE, otherId, ENV, false);
+    select oracle_id::text as id from precon_cards where file_name = ${FILE} limit 1`))[0].id, setCode: "", condition: null, quantity: 1 }] }, { id: otherId });
+  const reused = await addPreconForUser(USER, FILE, otherId, false);
   check("b · an id another add already used is refused, not taken as this precon's", reused.ok, false);
   await revert(otherId);
   check("b · and writes nothing more", await copies(), { total: 100, foil: 2 });
@@ -141,7 +139,7 @@ async function run() {
   check("c · the add is read as added", (await preconAddedOn(USER, FILE)) !== null, true);
 
   const second = randomUUID();
-  const e = await addPreconForUser(USER, FILE, second, ENV, false);
+  const e = await addPreconForUser(USER, FILE, second, false);
   check("e · a second add adds a second box", await copies(), { total: 200, foil: 4 });
   check("e · and marks no token", e.ok && e.tokens.marked, 0);
 

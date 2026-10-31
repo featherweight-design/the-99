@@ -110,14 +110,8 @@ export async function writeArrivalsReceipt(args: {
   nowShort?: (NowShortRow & { deckName?: string; cardName?: string })[];
   unmatched: { name: string; line: number }[];
   parseErrorCount: number;
-  /**
-   * The reader's resolved switches (`requestSwitchEnv`), which the confirm passes: every claim read below takes
-   * it. Required since admin PR 7a: a probe outside a
-   * request passes `process.env` itself.
-   */
-  env: NodeJS.ProcessEnv;
 }): Promise<ArrivalsSummary> {
-  const { userId, uploadId, ownedAfter, ownedBefore, buyBefore, env } = args;
+  const { userId, uploadId, ownedAfter, ownedBefore, buyBefore } = args;
 
   // Only the cards that GAINED copies. Contention is a question about arrivals, so the
   // claim read is narrowed to them — passing every oracle in the old and new collection
@@ -135,7 +129,7 @@ export async function writeArrivalsReceipt(args: {
   const read: Read = await db.transaction(async (tx): Promise<Read> => {
     const buyAfter = await loadDeckBuyRows(userId, undefined, tx);
     if (arrivedIds.length === 0) return { buyAfter, availability: new Map(), reservations: new Map() };
-    const availability = await loadAvailability(userId, { oracleIds: arrivedIds, env }, tx);
+    const availability = await loadAvailability(userId, { oracleIds: arrivedIds }, tx);
     // The reservations, OLDEST FIRST: the claim model's order (`created_at`, then `deck_id`),
     // the one `regrant` needs to say which reservation the smaller supply covered.
     const reservations: Reservations = new Map();

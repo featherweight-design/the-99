@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ENV_VIEW } from "@/test/env-view";
-import { envViewWith } from "@/test/env-view";
 
 import type { FitsReadReply } from "./fits-read";
 import { inputs } from "./fits-read.fixture";
@@ -229,29 +228,10 @@ describe("pressFitsRead: outcomes and the unit (lock 4)", () => {
   });
 });
 
-// Admin PR 6f-2: the free list's claim read takes the reader's env, checked by identity, never
-// compared.
-describe("the reader's env", () => {
-  const ENV = envViewWith({});
-  beforeEach(() => {
-    return () => vi.unstubAllEnvs();
-  });
-
-  it("reaches every load a read and a press make", async () => {
-    const { d } = deps({ picks: [{ ...good("D1"), deck: "D1" }] });
-    const load = vi.fn(d.load);
-    await readFitsRead("u", "card", { ...d, load }, ENV);
-    await pressFitsRead("u", "card", { ...d, load }, ENV);
-    // The read's one load, then the press's load before the call and its re-read after it.
-    expect(load.mock.calls.length).toBeGreaterThanOrEqual(3);
-    for (const call of load.mock.calls) expect((call as unknown[])[2] === ENV).toBe(true);
-  });
-
-  it("is handed on by the live loader to loadFitsReadInputs", async () => {
-    await LIVE_DEPS.load("u", "card", ENV);
-    const call = live.inputs.mock.calls[0] as unknown[];
-    expect(call.slice(0, 2)).toEqual(["u", "card"]);
-    expect(call[3] === ENV).toBe(true);
+describe("the live loader", () => {
+  it("reads the card's inputs through loadFitsReadInputs", async () => {
+    await LIVE_DEPS.load("u", "card");
+    expect(live.inputs.mock.calls[0] as unknown[]).toEqual(["u", "card", {}]);
   });
 });
 

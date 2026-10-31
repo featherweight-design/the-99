@@ -19,7 +19,6 @@ import ws from "ws";
 import { applyCollectionChange } from "../src/lib/collection/write";
 import { commitVersion } from "../src/lib/decks/versions";
 import { writeArrivalsReceipt } from "../src/lib/collection/arrivals-write";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
 
@@ -44,7 +43,7 @@ const add = (oracleIds: string[], placements: boolean, id = randomUUID()) =>
   applyCollectionChange(
     USER,
     { kind: "add", items: oracleIds.map((oracleId, i) => ({ oracleId, setCode: "prb", collectorNumber: String(i + 1), finish: "nonfoil", quantity: 1, scryfallId: null, condition: null })) },
-    { id, ...(placements ? { placements: true } : {}), env: process.env },
+    { id, ...(placements ? { placements: true } : {}) },
   ).then((r) => ({ id, r }));
 
 async function main() {
@@ -105,11 +104,10 @@ async function main() {
     const up = await applyCollectionChange(
       USER,
       { kind: "add", uploadId: upload, items: [{ oracleId: wanted, setCode: "prb", collectorNumber: "77", finish: "nonfoil", quantity: 1, scryfallId: null, condition: null }] },
-      { id: entryId, env: process.env },
+      { id: entryId },
     );
     await writeArrivalsReceipt({
       userId: USER, uploadId: upload, ownedBefore: {}, ownedAfter: { [wanted]: 1 }, buyBefore: [], unmatched: [], parseErrorCount: 0,
-      env: process.env,
     });
     const upRow = (await rowsOf(entryId)).find((x) => x.oracleId === wanted);
     check("6. an upload's entry keeps the deck its copy went to",

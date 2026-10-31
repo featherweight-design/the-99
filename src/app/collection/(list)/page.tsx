@@ -90,7 +90,7 @@ export default async function CollectionPage({
     // One aggregate for the whole page — never per row (Addendum 2).
     // Quiet failure: /collection shows no banner, the markers simply do not
     // appear and the Availability ▾ trigger disables (Task 10).
-    perf.timed("availability", () => loadAvailability(userId, { env })).catch(() => null),
+    perf.timed("availability", () => loadAvailability(userId)).catch(() => null),
   ]);
 
   // Flattened onto the cards here: a Map cannot cross the server/client

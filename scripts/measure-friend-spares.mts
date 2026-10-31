@@ -18,7 +18,6 @@ import "./lib/env.mjs";
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import ws from "ws";
 import { isReadStatement } from "./lib/read-statement";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 async function fits() {
   const url = process.env.MEASURE_TARGET_URL;
@@ -62,7 +61,6 @@ async function fits() {
   const { loadDeckBuyRows } = await import("../src/lib/decks/availability-query");
   const { loadFriendSpares } = await import("../src/lib/social/spares");
   const { DECK_TOOLS, loadToolFits } = await import("../src/lib/discovery/fits");
-  const env = process.env;
   const rows = await loadDeckBuyRows(viewer.id);
   const union = [...new Set(rows.map((r) => r.oracleId))];
   const time = async (fn: () => Promise<unknown>, runs = 9) => {
@@ -79,8 +77,8 @@ async function fits() {
   const spares = await loadFriendSpares(viewer.id, union);
   console.log(`spared cards among them: ${spares.filter((x) => x.spare > 0).length}`);
   console.log(`loadFriendSpares over the union, no cap: ${await time(() => loadFriendSpares(viewer.id, union))}`);
-  console.log(`loadToolFits, Friends' spares alone: ${await time(() => loadToolFits(viewer.id, env, ["friend-spares"]))}`);
-  console.log(`loadToolFits, every deck tool: ${await time(() => loadToolFits(viewer.id, env, DECK_TOOLS))}`);
+  console.log(`loadToolFits, Friends' spares alone: ${await time(() => loadToolFits(viewer.id, ["friend-spares"]))}`);
+  console.log(`loadToolFits, every deck tool: ${await time(() => loadToolFits(viewer.id, DECK_TOOLS))}`);
   await pool.end();
 }
 
@@ -106,7 +104,7 @@ async function main() {
     ms.sort((a, b) => a - b);
     return { median: Math.round(ms[Math.floor(runs / 2)]), min: Math.round(ms[0]), max: Math.round(ms[runs - 1]) };
   };
-  const model = await time(() => loadAvailability(friend, { oracleIds: asked, env: process.env }));
+  const model = await time(() => loadAvailability(friend, { oracleIds: asked }));
   const grants = await time(() => spareGrantorsQuery(friend));
   console.log(`asked cards: ${asked.length}`);
   console.log(`claim model per friend: median ${model.median}ms (min ${model.min}, max ${model.max})`);
@@ -122,7 +120,7 @@ async function main() {
         for (let i = w; i < n; i += CLAIM_MODELS_AT_ONCE) {
           await db.transaction(async (tx) => {
             await spareGrantorsQuery(friend, tx);
-            await loadAvailability(friend, { oracleIds: asked, env: process.env }, tx);
+            await loadAvailability(friend, { oracleIds: asked }, tx);
           }, { isolationLevel: "repeatable read" });
         }
       }));

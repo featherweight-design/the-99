@@ -73,9 +73,9 @@ const compareMaps = (group: keyof typeof tally, label: string, a: Map<string, un
   }
 };
 
-compareMaps("availability", "availability(user)", await OLD.loadAvailability(userId, { env: process.env }), await NEW.loadAvailability(userId, { env: process.env }));
+compareMaps("availability", "availability(user)", await OLD.loadAvailability(userId), await NEW.loadAvailability(userId));
 for (const d of decks) {
-  compareMaps("availability", `availability(${d.id})`, await OLD.loadAvailability(userId, { excludeDeckId: d.id, env: process.env }), await NEW.loadAvailability(userId, { excludeDeckId: d.id, env: process.env }));
+  compareMaps("availability", `availability(${d.id})`, await OLD.loadAvailability(userId, { excludeDeckId: d.id }), await NEW.loadAvailability(userId, { excludeDeckId: d.id }));
 }
 const rowsOf = (rows: { deckId: string; oracleId: string; quantity: number }[]) =>
   new Map(rows.map((r) => [`${r.deckId}|${r.oracleId}`, r.quantity]));
@@ -91,7 +91,7 @@ const time = async (fn: () => Promise<unknown>) => {
   return Math.round(ms.sort((x, y) => x - y)[2]);
 };
 for (const [name, mod] of [["old", OLD], ["new", NEW]] as const) {
-  console.log(`${name}: loadDeckBuyRows ${await time(() => buyRows(mod, userId))}ms · loadAvailability(user) ${await time(() => mod.loadAvailability(userId, { env: process.env }))}ms`);
+  console.log(`${name}: loadDeckBuyRows ${await time(() => buyRows(mod, userId))}ms · loadAvailability(user) ${await time(() => mod.loadAvailability(userId))}ms`);
 }
 
 if (process.env.DIFF_EXPLAIN === "1") {

@@ -115,11 +115,9 @@ function isContested(a: Availability): boolean {
 export async function loadContestedCards(
   oracleIds: string[],
   userId: string,
-  /** The reader's resolved switches (`requestSwitchEnv`), for the claim read. */
-  env: NodeJS.ProcessEnv,
 ): Promise<ContestedCard[]> {
   if (oracleIds.length === 0) return [];
-  const availability = await loadAvailability(userId, { oracleIds, env });
+  const availability = await loadAvailability(userId, { oracleIds });
   const contested: ContestedCard[] = [];
   const names = new Map<string, string>();
   const ids = [...availability.keys()].filter((oracleId) => {
@@ -161,11 +159,9 @@ export async function loadContestedCards(
 export async function countContestedCards(
   oracleIds: string[],
   userId: string,
-  /** The reader's resolved switches (`requestSwitchEnv`), for the claim read. */
-  env: NodeJS.ProcessEnv,
 ): Promise<number> {
   if (oracleIds.length === 0) return 0;
-  const availability = await loadAvailability(userId, { oracleIds, env });
+  const availability = await loadAvailability(userId, { oracleIds });
   let n = 0;
   for (const a of availability.values()) if (isContested(a)) n++;
   return n;
@@ -178,13 +174,10 @@ export async function countContestedCards(
 export async function loadContestedCard(
   oracleId: string,
   userId: string,
-  /**
-   * `unownedAsZero`: read a card the collection holds no copy of as owning 0 (the cart's chooser).
-   * `env`: the reader's resolved switches (`requestSwitchEnv`), for the claim read.
-   */
-  opts: { unownedAsZero?: boolean; env: NodeJS.ProcessEnv },
+  /** `unownedAsZero`: read a card the collection holds no copy of as owning 0 (the cart's chooser). */
+  opts: { unownedAsZero?: boolean } = {},
 ): Promise<ContestedCard | null> {
-  const availability = await loadAvailability(userId, { oracleIds: [oracleId], unownedAsZero: opts.unownedAsZero, env: opts.env });
+  const availability = await loadAvailability(userId, { oracleIds: [oracleId], unownedAsZero: opts.unownedAsZero });
   const a = availability.get(oracleId);
   if (!a) return null;
   const [name] = await db.select({ name: cards.name }).from(cards)
@@ -210,11 +203,9 @@ export async function loadChooserCards(
   oracleIds: string[],
   userId: string,
   frozen: Record<string, { arrived: number; ownedBefore: number }> = {},
-  /** The reader's resolved switches (`requestSwitchEnv`), for the claim read. */
-  env: NodeJS.ProcessEnv,
 ): Promise<ContestedCard[]> {
   if (oracleIds.length === 0) return [];
-  const availability = await loadAvailability(userId, { oracleIds, env });
+  const availability = await loadAvailability(userId, { oracleIds });
   const ids = [...availability.keys()].filter((id) => (availability.get(id)?.claims.length ?? 0) > 0);
   if (ids.length === 0) return [];
   const names = new Map<string, string>();
@@ -239,11 +230,8 @@ export { buildContestedCard };
 export async function loadSummaryView(
   uploadId: string,
   userId: string,
-  /**
-   * `addedCopy`: read the chooser behind each version-4 row's Change (the switch, from the page).
-   * `env`: the reader's resolved switches (`requestSwitchEnv`), which every claim read below takes.
-   */
-  opts: { addedCopy?: boolean; env: NodeJS.ProcessEnv },
+  /** `addedCopy`: read the chooser behind each version-4 row's Change (the switch, from the page). */
+  opts: { addedCopy?: boolean } = {},
 ): Promise<SummaryView | null> {
   // Projected, not `select()`. `preview_payload` carries every aggregated row of the import —
   // thousands of them on a real collection — and this route reads none of it. The issues line's
@@ -272,7 +260,7 @@ export async function loadSummaryView(
   const contestedIds = summary?.contested.map((c) => c.oracleId) ?? [];
 
   const availability: Awaited<ReturnType<typeof loadAvailability>> = contestedIds.length
-    ? await loadAvailability(userId, { oracleIds: contestedIds, env: opts.env })
+    ? await loadAvailability(userId, { oracleIds: contestedIds })
     : new Map();
 
   const contested: ContestedCard[] = (summary?.contested ?? []).flatMap((row) => {
@@ -310,7 +298,7 @@ export async function loadSummaryView(
     confirmedAt: upload.confirmedAt,
     summary: shown,
     contested,
-    chooser: opts.addedCopy && shown?.went ? await chooserFor(shown, contested, userId, opts.env) : {},
+    chooser: opts.addedCopy && shown?.went ? await chooserFor(shown, contested, userId) : {},
     sync: readSyncSummary(upload.syncSummary),
     mode: upload.isAdd ? "add" : "replace",
   };
@@ -327,7 +315,6 @@ async function chooserFor(
   summary: ArrivalsSummary,
   contested: ContestedCard[],
   userId: string,
-  env: NodeJS.ProcessEnv,
 ): Promise<Record<string, ContestedCard>> {
   const drawn = new Set(contested.map((c) => c.oracleId));
   const frozen: Record<string, { arrived: number; ownedBefore: number }> = {};
@@ -338,7 +325,7 @@ async function chooserFor(
     }
   }
   const out: Record<string, ContestedCard> = {};
-  for (const card of await loadChooserCards(Object.keys(frozen), userId, frozen, env)) {
+  for (const card of await loadChooserCards(Object.keys(frozen), userId, frozen)) {
     out[card.oracleId] = { ...card, cardName: summary.names.cards[card.oracleId] ?? card.cardName };
   }
   return out;

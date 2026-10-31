@@ -171,7 +171,7 @@ describe("importDeckOwned", () => {
 
   it("writes the deck inside the add, under the id its source names", async () => {
     const { committed, deps } = store(() => applied);
-    const result = await importDeckOwned("user_1", deck, items, ACTION, process.env, deps);
+    const result = await importDeckOwned("user_1", deck, items, ACTION, deps);
     expect(result).toEqual({ ok: true, deckId: MINTED, entryId: ACTION });
     expect(committed).toEqual({ decks: [MINTED], cards: items, sources: [deckSource(MINTED)] });
     expect(deps.apply).toHaveBeenCalledWith("user_1", { kind: "add", items }, expect.objectContaining({ id: ACTION, source: deckSource(MINTED) }));
@@ -179,20 +179,20 @@ describe("importDeckOwned", () => {
 
   it("a refusal leaves neither the deck nor the cards", async () => {
     const { committed, deps } = store(() => ({ status: "missingCard", names: ["Gone"] }));
-    expect(await importDeckOwned("user_1", deck, items, ACTION, process.env, deps)).toEqual({ ok: false });
+    expect(await importDeckOwned("user_1", deck, items, ACTION, deps)).toEqual({ ok: false });
     expect(committed).toEqual({ decks: [], cards: [], sources: [] });
   });
 
   it("a failed deck write fails the add, and leaves neither", async () => {
     const { committed, deps } = store(() => applied, { throwInside: true });
-    await expect(importDeckOwned("user_1", deck, items, ACTION, process.env, deps)).rejects.toThrow(/deck write failed/);
+    await expect(importDeckOwned("user_1", deck, items, ACTION, deps)).rejects.toThrow(/deck write failed/);
     expect(committed).toEqual({ decks: [], cards: [], sources: [] });
   });
 
   it("a retry lands on the deck the action made, and writes nothing", async () => {
     const { committed, deps } = store(() => applied);
     deps.madeBy = vi.fn(async () => "33333333-3333-4333-8333-333333333333");
-    expect(await importDeckOwned("user_1", deck, items, ACTION, process.env, deps))
+    expect(await importDeckOwned("user_1", deck, items, ACTION, deps))
       .toEqual({ ok: true, deckId: "33333333-3333-4333-8333-333333333333", entryId: ACTION });
     expect(deps.apply).not.toHaveBeenCalled();
     expect(committed.decks).toEqual([]);
@@ -201,7 +201,7 @@ describe("importDeckOwned", () => {
   it("an id another write used is refused, and writes nothing", async () => {
     const { deps } = store(() => applied);
     deps.madeBy = vi.fn(async () => "other" as const);
-    expect(await importDeckOwned("user_1", deck, items, ACTION, process.env, deps)).toEqual({ ok: false });
+    expect(await importDeckOwned("user_1", deck, items, ACTION, deps)).toEqual({ ok: false });
     expect(deps.apply).not.toHaveBeenCalled();
   });
 
@@ -209,6 +209,6 @@ describe("importDeckOwned", () => {
     const { deps } = store(() => ({ status: "alreadyApplied", entry: { id: ACTION, seq: 1, kind: "add", rows: [], raised: 1, lowered: 0 } }));
     const twin = "44444444-4444-4444-8444-444444444444";
     deps.madeBy = vi.fn().mockResolvedValueOnce(null).mockResolvedValueOnce(twin);
-    expect(await importDeckOwned("user_1", deck, items, ACTION, process.env, deps)).toEqual({ ok: true, deckId: twin, entryId: ACTION });
+    expect(await importDeckOwned("user_1", deck, items, ACTION, deps)).toEqual({ ok: true, deckId: twin, entryId: ACTION });
   });
 });

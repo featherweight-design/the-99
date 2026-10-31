@@ -20,7 +20,6 @@ import { getDeckDetail, listDecksWithStats } from "../src/lib/decks/read";
 import { commitVersion, loadVersionDiff } from "../src/lib/decks/versions";
 import { loadPrices, priceFor } from "../src/lib/decks/price-query";
 import { readHeldPricePicks } from "../src/lib/decks/printings";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
 
@@ -88,7 +87,7 @@ async function main() {
   await fixture.execute(sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${deckId}, ${card.oracle_id}, 1)`);
 
   // The Collection's printing, before any pick, is whichever one the deck page draws now.
-  const shownBefore = (await getDeckDetail(deckId, USER, undefined, process.env))!.cards.find((c) => c.oracleId === card.oracle_id)!;
+  const shownBefore = (await getDeckDetail(deckId, USER, undefined))!.cards.find((c) => c.oracleId === card.oracle_id)!;
   const collection = [a, b].find((p) => p.set_code.toUpperCase() === shownBefore.printedSetCode && p.collector_number === shownBefore.printedCollectorNumber)!;
   const other = collection === a ? b : a;
   check("before a pick, the deck page draws the Collection's printing", shownBefore.imageUri, collection.image_uri);
@@ -97,7 +96,7 @@ async function main() {
     insert into deck_printings (deck_id, oracle_id, set_code, collector_number)
     values (${deckId}, ${card.oracle_id}, ${other.set_code}, ${other.collector_number})
   `);
-  const picked = (await getDeckDetail(deckId, USER, undefined, process.env))!.cards.find((c) => c.oracleId === card.oracle_id)!;
+  const picked = (await getDeckDetail(deckId, USER, undefined))!.cards.find((c) => c.oracleId === card.oracle_id)!;
   check("a pick moves the deck page's art", picked.imageUri, other.image_uri);
   check("a pick moves the printing export names", `${picked.printedSetCode} ${picked.printedCollectorNumber}`, `${other.set_code.toUpperCase()} ${other.collector_number}`);
 
@@ -115,13 +114,13 @@ async function main() {
 
   // Move the pick back to the Collection's printing: the version must still draw what it recorded.
   await fixture.execute(sql`delete from deck_printings where deck_id = ${deckId}`);
-  const inDiff = await loadVersionDiff(v2.id, v1.id, USER, deckId, undefined, process.env);
+  const inDiff = await loadVersionDiff(v2.id, v1.id, USER, deckId, undefined);
   check("the diff's In row draws the printing the newer version recorded", inDiff.in.find((c) => c.oracleId === card.oracle_id)?.imageUri, other.image_uri);
 
   // v3: the card removed. Its Out row is the OLDER version's record.
   await fixture.execute(sql`delete from deck_cards where deck_id = ${deckId}`);
   const { version: v3 } = await commitVersion(deckId, "probe v3", undefined, undefined);
-  const outDiff = await loadVersionDiff(v3.id, v2.id, USER, deckId, undefined, process.env);
+  const outDiff = await loadVersionDiff(v3.id, v2.id, USER, deckId, undefined);
   check("the diff's Out row draws the printing the older version recorded", outDiff.out.find((c) => c.oracleId === card.oracle_id)?.imageUri, other.image_uri);
 
   // DECK TILES (`/decks`, Home): two decks led by one OWNED commander, one with a pick. Each tile
@@ -149,7 +148,7 @@ async function main() {
   const picks = await deckOf("Probe tile with a pick");
   const plain = await deckOf("Probe tile without one");
   const tileArt = async (id: string) =>
-    (await listDecksWithStats(USER, "name", { includeCommanderArt: true, env: process.env })).find((d) => d.id === id)?.commanderImageUri;
+    (await listDecksWithStats(USER, "name", { includeCommanderArt: true })).find((d) => d.id === id)?.commanderImageUri;
   const shownTile = await tileArt(plain);
   const tileOther = legendPrintings.find((p) => p.image_uri !== shownTile)!;
   await fixture.execute(sql`

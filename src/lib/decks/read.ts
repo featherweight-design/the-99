@@ -391,21 +391,17 @@ export function deckDetailReads(deckId: string, userId: string) {
  * `getDeckDetail`'s availability: the caller's shared read when it passed one (the deck page's,
  * over the whole collection), else its own read narrowed to `ids`. Null when the deck owns nothing
  * to look up. Apart so a test can pin that a shared read stands in for the query.
- *
- * `env` is the reader's resolved switches (`requestSwitchEnv`), which the claim read
- * requires. Required, so no caller of `getDeckDetail` reads them from the environment alone.
  */
 export function deckAvailabilityRead(
   userId: string,
   deckId: string,
   ids: readonly string[],
   shared: Promise<Map<string, Availability> | null> | undefined,
-  env: NodeJS.ProcessEnv,
   load: typeof loadAvailability = loadAvailability,
 ): Promise<Map<string, Availability> | null> | null {
   if (ids.length === 0) return null;
   if (shared) return shared;
-  return load(userId, { excludeDeckId: deckId, oracleIds: [...ids], env }).catch(() => {
+  return load(userId, { excludeDeckId: deckId, oracleIds: [...ids] }).catch(() => {
     recordSoftFailure();
     return null;
   });
@@ -421,8 +417,6 @@ export async function getDeckDetail(
    * Only `.get` is used on it, so the cards it holds beyond this deck's change nothing.
    */
   sharedAvailability: Promise<Map<string, Availability> | null> | undefined,
-  /** The reader's resolved switches (`requestSwitchEnv`). */
-  env: NodeJS.ProcessEnv,
 ): Promise<DeckDetail | null> {
   // TWO WAVES, not seven reads in a row. Each read below used to wait for the one before it, and
   // on a `pull:staging` copy that chain was ~410-440ms for a 96-card deck, most of it round trips.
@@ -520,7 +514,7 @@ export async function getDeckDetail(
     .map((r) => r.oracleId);
   const availabilityIds = [...new Set([...ownedIds, ...ownedCommanderIds])];
   const [availability, resolved, bracketFlags] = await Promise.all([
-    deckAvailabilityRead(userId, deckId, availabilityIds, sharedAvailability, env),
+    deckAvailabilityRead(userId, deckId, availabilityIds, sharedAvailability),
     // The deck's own printing picks first (deck printings), then the Collection's: one chain for
     // every surface, so the rows, the card details they open and the export name one printing.
     resolveDeckOwnedPrintings(userId, deckId, [...ownedIds, ...commanderIds]),
@@ -1182,17 +1176,13 @@ export async function listDecksWithStats(
      * it. Unset, every row's `bracket` is null, which is what a deck nobody has analyzed draws.
      */
     includeBracket?: boolean;
-    /** The reader's resolved switches (`requestSwitchEnv`), for the `inUseElsewhere` claim read.
-     *  Required (admin PR 7b): a script with no signed-in reader passes `process.env`
-     *  itself. */
-    env: NodeJS.ProcessEnv;
     /**
      * Read each deck's notice (`noticeSummarySql`). Its own option rather than riding on
      * `includeBracket`: Home asks for the bracket on its resume rows and draws no notice, and this is
      * a correlated subquery per deck on the list's hot path.
      */
     includeNotice?: boolean;
-  },
+  } = {},
 ): Promise<DeckListItem[]> {
   const ownedCountSql = sql<number>`coalesce(
     (
@@ -1343,7 +1333,7 @@ export async function listDecksWithStats(
   // clause is not worth a 500 on the deck list.
   const availability =
     opts.includeInUseElsewhere && rows.length > 0
-      ? await loadAvailability(userId, { env: opts.env }).catch(() => {
+      ? await loadAvailability(userId).catch(() => {
           recordSoftFailure();
           return null;
         })

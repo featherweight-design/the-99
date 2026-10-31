@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { envViewWith, ENV_VIEW, ENV_VIEW as RESOLVED } from "@/test/env-view";
+import { ENV_VIEW as RESOLVED } from "@/test/env-view";
 
 // The proxy resolves each reader's switches onto a request header; with no request here, the
 // action reads the environment alone, as it did before overrides. Through a stand-in object that
@@ -18,12 +18,8 @@ const line = { oracleId: ORACLE, setCode: "LEA", collectorNumber: "1", finish: "
 const edited = { ...line, expected: 2 };
 const deck = { deckId: "d", deckName: "Deck", oracleId: ORACLE, cardName: "Card", short: 1 };
 
-/** A write's options with the env taken off, which is checked by identity instead (never compared). */
-const optsOf = (call: unknown[]) => {
-  const { env, ...rest } = call[2] as { env?: unknown };
-  expect(env === RESOLVED).toBe(true);
-  return rest;
-};
+/** A write's options. */
+const optsOf = (call: unknown[]) => call[2];
 
 const stub = vi.hoisted(() => ({
   apply: vi.fn(),
@@ -259,26 +255,5 @@ describe("ids in any case", () => {
     stub.apply.mockResolvedValue({ status: "applied", entry: { id: ACTION } });
     expect(await addToCollection(ACTION, [{ ...line, oracleId: lettered.toUpperCase() }])).toEqual({ applied: { id: ACTION } });
     expect(stub.apply.mock.calls[0][1].items[0].oracleId).toBe(lettered);
-  });
-});
-
-// Admin PR 6f-2: the write's claim reads (the deck check, the placements) take the reader's env, checked by
-// identity.
-describe("the reader's env", () => {
-  it("reaches the write from an add and from an edit, by identity", async () => {
-    const { requestSwitchEnv } = await import("../../lib/switches/request");
-    const env = envViewWith({});
-    vi.mocked(requestSwitchEnv).mockResolvedValue(env);
-    try {
-      catalogHolds();
-      stub.apply.mockResolvedValue({ status: "applied", entry: { id: ACTION } });
-      await addToCollection(ACTION, [line]);
-      await editCollection(ACTION, [{ ...line, quantity: 3, expected: 1 }]);
-      expect(stub.apply).toHaveBeenCalledTimes(2);
-      for (const call of stub.apply.mock.calls) expect(call[2].env === env).toBe(true);
-    } finally {
-      vi.mocked(requestSwitchEnv).mockResolvedValue(ENV_VIEW);
-      vi.unstubAllEnvs();
-    }
   });
 });

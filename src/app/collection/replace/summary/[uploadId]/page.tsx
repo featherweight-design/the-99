@@ -13,7 +13,6 @@ import { requireUserId } from "../../../../../lib/auth";
 import { loadSummaryView } from "../../../../../lib/collection/summary-read";
 import { ArrivalsSummary } from "../../../../../components/collection/arrivals-summary";
 import { isUuid } from "../../../../../lib/uuid";
-import { requestSwitchEnv } from "../../../../../lib/switches/request";
 import { formatDeckDate } from "../../../../../lib/decks/format";
 import type { UploadPreview } from "../../../actions";
 
@@ -28,10 +27,8 @@ export default async function ImportSummaryPage({
   if (!isUuid(uploadId)) notFound();
   const userId = await requireUserId();
 
-  // The read loads each line's chooser and the receipt draws the line. The read's claim model takes the
-  // reader's resolved switches.
-  const env = await requestSwitchEnv(userId);
-  const view = await loadSummaryView(uploadId, userId, { addedCopy: true, env });
+  // The read loads each line's chooser and the receipt draws the line.
+  const view = await loadSummaryView(uploadId, userId, { addedCopy: true });
   if (!view) notFound();
   // An unconfirmed upload has no receipt to show and is not a page: the player is still in the
   // flow, or abandoned it.

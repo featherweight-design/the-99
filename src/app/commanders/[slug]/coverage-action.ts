@@ -89,7 +89,7 @@ export async function retryCoverageFigures(
   // reason, as the availability re-stamp below.
   let pool: NonNullable<Awaited<ReturnType<typeof loadFreePool>>> | undefined;
   if (avail === "free") {
-    const free = await loadFreePool(userId, env);
+    const free = await loadFreePool(userId);
     if (!free) return null;
     pool = free;
   }
@@ -136,7 +136,7 @@ export async function retryCoverageFigures(
   // picture is what the plates drew before, and no reason to throw recovered figures away.
   const ids = [...new Set(roleCardIds)];
   const [availability, ownedArt] = await Promise.all([
-    loadAvailability(userId, { oracleIds: ids, env }),
+    loadAvailability(userId, { oracleIds: ids }),
     resolveOwnedPrintings(userId, ids),
   ]);
 

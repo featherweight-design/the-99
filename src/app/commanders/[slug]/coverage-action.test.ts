@@ -81,10 +81,7 @@ describe("retryCoverageFigures", () => {
     const out = await retryCoverageFigures("korvold", "all", "labels");
     expect(out!.ramp[0].availability).toEqual(CLAIMED);
     // Narrowed to the cards this payload actually carries, not the whole shelf.
-    expect(loadAvailability).toHaveBeenCalledWith("user_1", { oracleIds: ["sol"], env: RESOLVED });
-    // The claim read runs under the reader's resolved switches (admin PR 6e), the very env the retry
-    // resolved and scored under (the page's basis laid over the reader's): identity, not a deep match.
-    expect(loadAvailability.mock.calls[0][1].env === resolveCommanderSlug.mock.calls[0][2]).toBe(true);
+    expect(loadAvailability).toHaveBeenCalledWith("user_1", { oracleIds: ["sol"] });
   });
 
   // The page gives every role card the owned copy's art, which is what Role Coverage hands its
@@ -193,11 +190,8 @@ describe("retryCoverageFigures", () => {
     scoreOneCommander.mockResolvedValue({ synergyState: "ok", roleBasis: "labels", roleCards });
     await retryCoverageFigures("korvold", "free", "labels");
     expect(loadFreePool).toHaveBeenCalledTimes(1);
-    expect(loadFreePool.mock.calls[0][0]).toBe("user_1");
-    // The page-basis env the action derives from RESOLVED (a copy carrying the page's basis), the same
-    // object the score is handed.
-    const handed = loadFreePool.mock.calls[0][1] as NodeJS.ProcessEnv | undefined;
-    expect(handed !== undefined && handed === scoreOneCommander.mock.calls[0][4]).toBe(true);
+    // The free pool is read with no env (its claim read decides no switch).
+    expect(loadFreePool).toHaveBeenCalledWith("user_1");
     expect(scoreOneCommander).toHaveBeenCalledWith("user_1", "korvold", "korvold", [
       { oracleId: "free-1" },
     ], RESOLVED);

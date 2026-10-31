@@ -39,7 +39,7 @@ export default async function NewDeckPage({
       // A Help me choose result's press carries the results' own params beside `commander`. With
       // the feature off there is no results screen to go back to, so the page is today's.
       const asked = helpMeChoose ? handOffFrom(searchParamsOf(raw)) : null;
-      const answers = asked ? await loadHandOffAnswers(userId, commander.oracleId, asked, env) : null;
+      const answers = asked ? await loadHandOffAnswers(userId, commander.oracleId, asked) : null;
       // The sets the create (and the Bracket row's trial) fill toward: the picked ones plus any
       // the typed words name. A failed catalog read is the picked sets alone.
       const fillSets = asked && answers

@@ -35,7 +35,7 @@ export async function takeStandInAction(deckId: string, cutOracleId: string, add
   if (!swapToolsEnabled(env) || ![deckId, cutOracleId, addOracleId].every(isUuid)) {
     return { ok: false, reason: "notFound" };
   }
-  const result = await takeStandIn(deckId, userId, cutOracleId, addOracleId, env);
+  const result = await takeStandIn(deckId, userId, cutOracleId, addOracleId);
   if (result.ok) revalidateClaims(deckId, userId);
   return result;
 }
@@ -69,7 +69,7 @@ export async function loadStandInsAction(deckId: string, cutOracleId: string, fu
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!swapToolsEnabled(env) || !isUuid(deckId) || !isUuid(cutOracleId)) return null;
-  return loadStandIns(deckId, userId, cutOracleId, full === true, env);
+  return loadStandIns(deckId, userId, cutOracleId, full === true);
 }
 
 /**
@@ -80,7 +80,7 @@ export async function loadFitsAction(oracleId: string): Promise<FitsRead | null>
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!swapToolsEnabled(env) || !isUuid(oracleId)) return null;
-  return loadFits(userId, oracleId, env);
+  return loadFits(userId, oracleId);
 }
 
 /**
@@ -114,7 +114,7 @@ export async function swapFromReadAction(deckId: string, cutOracleId: string, ad
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   if (!findADeckReadEnabled(env) || ![deckId, cutOracleId, addOracleId].every(isUuid)) return { ok: false, reason: "notFound" };
-  const result = await takeStandIn(deckId, userId, cutOracleId, addOracleId, env);
+  const result = await takeStandIn(deckId, userId, cutOracleId, addOracleId);
   if (result.ok) after(() => revalidateClaims(deckId, userId));
   return result;
 }

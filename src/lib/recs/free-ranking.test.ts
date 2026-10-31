@@ -198,7 +198,7 @@ describe("loadFreePool", () => {
   it("returns the free slice of the collection", async () => {
     loadCollectionPool.mockResolvedValue({ collection: [card("a"), card("b")] });
     loadAvailability.mockResolvedValue(new Map([["a", avail(1, 1)]]));
-    const pool = await loadFreePool("user-free-pool", ENV_VIEW);
+    const pool = await loadFreePool("user-free-pool");
     expect(pool!.map((c) => c.oracleId)).toEqual(["b"]);
   });
 
@@ -208,22 +208,7 @@ describe("loadFreePool", () => {
   it("returns null when the availability rollup will not read", async () => {
     loadCollectionPool.mockResolvedValue({ collection: [card("a")] });
     loadAvailability.mockRejectedValue(new Error("rollup down"));
-    expect(await loadFreePool("user-rollup-down", ENV_VIEW)).toBeNull();
-  });
-  // Admin PR 6f-1: the claim model takes the env it is handed, and both this pool and the free ranking that
-  // loads it require that env (admin PR 7c-2). Identity is checked as a boolean.
-  it("runs the claim model under the reader's switches, when loaded by the free ranking too", async () => {
-    const READER = {} as unknown as NodeJS.ProcessEnv;
-    try {
-      loadCollectionPool.mockResolvedValue({ collection: [card("a")] });
-      loadAvailability.mockReset().mockResolvedValue(new Map());
-      await loadFreePool("user-free-pool-env", READER);
-      await rankFree("user-rank-free-env", [{ oracleId: "a", slug: "a" } as unknown as CommanderListItem], undefined, READER);
-      expect(loadAvailability).toHaveBeenCalledTimes(2);
-      expect(loadAvailability.mock.calls.every((c) => c[1]?.env === READER)).toBe(true);
-    } finally {
-      vi.unstubAllEnvs();
-    }
+    expect(await loadFreePool("user-rollup-down")).toBeNull();
   });
 });
 

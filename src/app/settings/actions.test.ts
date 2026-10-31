@@ -78,10 +78,10 @@ describe("on", () => {
     expect(m.revalidatePath).not.toHaveBeenCalled();
   });
 
-  it("searches the reader's own spares under the reader's switches", async () => {
+  it("searches the reader's own spares", async () => {
     m.searchSpareCards.mockResolvedValue([{ oracleId: CARD, name: "Sol Ring", spare: 2 }]);
     expect(await searchSpareCardsAction("sol")).toEqual({ ok: true, hits: [{ oracleId: CARD, name: "Sol Ring", spare: 2 }] });
-    expect(m.searchSpareCards).toHaveBeenCalledWith("user_me", "sol", ON);
+    expect(m.searchSpareCards).toHaveBeenCalledWith("user_me", "sol");
     expect(m.revalidatePath).not.toHaveBeenCalled();
   });
 });

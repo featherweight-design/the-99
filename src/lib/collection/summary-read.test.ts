@@ -1,8 +1,6 @@
-// The contested-card reads hand the claim model the env they are given (admin PR 6f-2), including the one
-// handoff inside the module that is not a claim read's own call site: the receipt's chooser
-// (`loadSummaryView` → `chooserFor` → `loadChooserCards`). Checked by identity, so a dropped argument is seen.
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { envViewWith } from "@/test/env-view";
+// The receipt's reads: its contested read and the chooser it reaches through `chooserFor` (`loadChooserCards`),
+// and the mode it reads from the ledger.
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const stub = vi.hoisted(() => ({
   upload: null as unknown,
@@ -14,27 +12,14 @@ vi.mock("../../db", () => ({
 }));
 vi.mock("../decks/availability-query", () => ({ loadAvailability: stub.loadAvailability }));
 
-const { countContestedCards, loadChooserCards, loadContestedCard, loadContestedCards, loadSummaryView, uploadIsAdd } = await import("./summary-read");
-
-const ENV = envViewWith({});
-const envOf = (i: number) => (stub.loadAvailability.mock.calls[i] as unknown as [string, { env?: unknown }])[1].env;
+const { loadSummaryView, uploadIsAdd } = await import("./summary-read");
 
 beforeEach(() => {
   stub.loadAvailability.mockClear();
 });
-afterEach(() => vi.unstubAllEnvs());
 
 describe("summary-read's claim reads", () => {
-  it("hands each reader's env to the claim model, by identity", async () => {
-    await loadContestedCards(["o1"], "u1", ENV);
-    await countContestedCards(["o1"], "u1", ENV);
-    await loadContestedCard("o1", "u1", { unownedAsZero: true, env: ENV });
-    await loadChooserCards(["o1"], "u1", {}, ENV);
-    expect(stub.loadAvailability).toHaveBeenCalledTimes(4);
-    for (let i = 0; i < 4; i++) expect(envOf(i) === ENV).toBe(true);
-  });
-
-  it("hands the receipt's contested read and its chooser the page's env, by identity", async () => {
+  it("reads the receipt's contested cards, then its chooser", async () => {
     stub.upload = {
       id: "up1", filename: "f.csv", createdAt: new Date(0), confirmedAt: new Date(0),
       summaryPayload: {
@@ -45,12 +30,10 @@ describe("summary-read's claim reads", () => {
         names: { cards: {}, decks: {} },
       },
     };
-    await loadSummaryView("up1", "u1", { addedCopy: true, env: ENV });
+    await loadSummaryView("up1", "u1", { addedCopy: true });
     // The contested cards' read, then the chooser's (`loadChooserCards`, reached through `chooserFor`).
     expect(stub.loadAvailability).toHaveBeenCalledTimes(2);
     expect((stub.loadAvailability.mock.calls[1] as unknown as [string, { oracleIds: string[] }])[1].oracleIds).toEqual(["g1"]);
-    expect(envOf(0) === ENV).toBe(true);
-    expect(envOf(1) === ENV).toBe(true);
   });
 });
 
@@ -62,9 +45,9 @@ describe("loadSummaryView's mode", () => {
 
   it("is add for an upload whose ledger entry is an upload_add, replace otherwise", async () => {
     stub.upload = upload(true);
-    expect((await loadSummaryView("up1", "u1", { env: ENV }))?.mode).toBe("add");
+    expect((await loadSummaryView("up1", "u1"))?.mode).toBe("add");
     stub.upload = upload(false);
-    expect((await loadSummaryView("up1", "u1", { env: ENV }))?.mode).toBe("replace");
+    expect((await loadSummaryView("up1", "u1"))?.mode).toBe("replace");
   });
 
   // Drizzle leaves a column in a single-table projection unqualified, and `user_id` and `id` exist on both

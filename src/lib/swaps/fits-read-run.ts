@@ -46,8 +46,7 @@ export type FitsReadPress =
   | { ok: false; reason: "notFound" | "noCandidates" | "tooBig" | "current" | "allowance" | "ownerShare" };
 
 type Deps = {
-  /** `env`: the reader's resolved switches, for `loadFits`' claim read. */
-  load: (userId: string, oracleId: string, env: NodeJS.ProcessEnv) => Promise<FitsReadLoad | null>;
+  load: (userId: string, oracleId: string) => Promise<FitsReadLoad | null>;
   model: () => string;
   call: (req: { inputs: FitsReadLoad["inputs"]; prompt: ReturnType<typeof buildFitsReadPrompt>; model: string }) => Promise<ModelOutcome<FitsReadReply>>;
   now: () => Date;
@@ -56,7 +55,7 @@ type Deps = {
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export const LIVE_DEPS: Deps = {
-  load: (u, o, env) => loadFitsReadInputs(u, o, {}, env),
+  load: (u, o) => loadFitsReadInputs(u, o, {}),
   model: () => (fitsReadLive() ? FITS_READ_MODEL : STUB_MODEL),
   call: async ({ inputs, prompt, model }) => {
     if (model === STUB_MODEL) {
@@ -74,14 +73,14 @@ export const LIVE_DEPS: Deps = {
 
 /**
  * The view for one card: free, never a call. `env` is the reader's resolved switches (`requestSwitchEnv`),
- * for the free list's claim read.
+ * for the allowance (`withPayments`).
  */
 export async function readFitsRead(
   userId: string, oracleId: string, deps: Deps = LIVE_DEPS, env: NodeJS.ProcessEnv,
 ): Promise<FitsReadPanel | null> {
   const now = deps.now();
   await reapFitsReads(userId, oracleId, now);
-  const load = await deps.load(userId, oracleId, env);
+  const load = await deps.load(userId, oracleId);
   if (!load) return null;
   return panelFor(userId, oracleId, load, deps.model(), now, env);
 }
@@ -156,7 +155,7 @@ export async function pressFitsRead(
 ): Promise<FitsReadPress> {
   const now = deps.now();
   await reapFitsReads(userId, oracleId, now);
-  const load = await deps.load(userId, oracleId, env);
+  const load = await deps.load(userId, oracleId);
   if (!load) return { ok: false, reason: "notFound" };
   const { inputs } = load;
   if (inputs.candidates.length === 0) return { ok: false, reason: "noCandidates" };
@@ -202,6 +201,6 @@ export async function pressFitsRead(
   }
   // Re-read: a call can run for most of two minutes, and a deck edited meanwhile must show the
   // stored read out of date, against today's free list, never as current.
-  const after = (await deps.load(userId, oracleId, env)) ?? load;
+  const after = (await deps.load(userId, oracleId)) ?? load;
   return { ok: true, panel: await panelFor(userId, oracleId, after, model, deps.now(), env) };
 }

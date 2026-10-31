@@ -6,7 +6,6 @@ import { cardBracketFlags, cards, collectionItems } from "../../../db/schema";
 import { chainArt } from "../../../lib/cards/chain-art";
 import { nameSearch } from "../../../lib/cards/name-search";
 import { requireUserId } from "../../../lib/auth";
-import { requestSwitchEnv } from "../../../lib/switches/request";
 import type { CardNoteFacts } from "../../../lib/bracket/card-note";
 import { isTutor } from "../../../lib/bracket/tutor-targets";
 import { isGameCardWhere } from "../../../lib/cards/game-card-where";
@@ -141,9 +140,8 @@ export async function searchCards(
   // the read is swallowed and every row falls back to no marker.
   const ownedIds = rows.filter((r) => r.ownedQty > 0).map((r) => r.oracleId);
   const [availability, ownedArt] = await Promise.all([
-    // The claim read requires the reader's resolved switches.
     deckId && ownedIds.length > 0
-      ? requestSwitchEnv(userId).then((env) => loadAvailability(userId, { excludeDeckId: deckId, oracleIds: ownedIds, env })).catch(() => null)
+      ? loadAvailability(userId, { excludeDeckId: deckId, oracleIds: ownedIds }).catch(() => null)
       : null,
     // The art a row is drawn with: the printing card details opens, rather than the catalog's one arbitrary
     // printing per card (the player's own copy, the deck's pick where it holds the card, else the printing an

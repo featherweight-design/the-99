@@ -57,7 +57,7 @@ async function main() {
       return { oracleId: c, setCode: rows[0].set_code, collectorNumber: rows[0].collector_number, scryfallId: rows[0].scryfall_id,
         finish: "nonfoil" as const, condition: null, quantity: 1 };
     }));
-    const result = await applyCollectionChange(u, { kind: "add", items }, { id: randomUUID(), env: ENV });
+    const result = await applyCollectionChange(u, { kind: "add", items }, { id: randomUUID() });
     if (result.status !== "applied") throw new Error(`add refused: ${result.status}`);
   };
   const itemKeyOf = async (requestId: string) => {

@@ -36,7 +36,6 @@ import { parseArgs } from "node:util";
 
 import { LEDGER_LIMITS } from "../../src/lib/eval/ledger-limits";
 import { acquireRunLock, readLedger, record, spent } from "./lib/ledger.mjs";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 const LEDGER = "docs/superpowers/eval/ledger-help-me-choose.jsonl";
 const CAP_USD = LEDGER_LIMITS["ledger-help-me-choose.jsonl"].hardCapUsd;
@@ -110,7 +109,7 @@ for (const arm of arms) {
   for (const f of FIXTURES) {
     if (only && !only.includes(f.id)) continue;
     if (arm.id === "sonnet" && !f.unfiltered) continue;
-    const inputs = await run.loadTheReadInputs(HUGH, f.words, f.filters, undefined, process.env);
+    const inputs = await run.loadTheReadInputs(HUGH, f.words, f.filters, undefined);
     if (f.noDecks) inputs.decks = [];
     const system = run.shortlistPrefix(inputs);
     const user = read.shortlistRequest({ words: f.words, filters: f.filters, cards: inputs.cards });

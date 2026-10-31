@@ -11,10 +11,8 @@ vi.mock("../../lib/commanders/avail-pref", async (importOriginal) => ({
   writeCommandersAvail: (...a: unknown[]) => writeCommandersAvail(...(a as [])),
 }));
 vi.mock("../../lib/cache/user-lists", () => ({ revalidateUserLists: vi.fn() }));
-// The excluded-matches lookup re-derives the discover pool, whose claim read takes the reader's env.
-const READER = vi.hoisted(() => ({}) as unknown as NodeJS.ProcessEnv);
+// The excluded-matches lookup re-derives the discover pool.
 const loadDiscoveryPool = vi.hoisted(() => vi.fn<(...a: unknown[]) => Promise<unknown>>(async () => ({ collection: [{ oracleId: "c1" }] })));
-vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: async () => READER }));
 vi.mock("../../lib/discovery/candidates", () => ({ loadNameMatches: async () => [] }));
 vi.mock("../../lib/decks/built", () => ({ loadBuiltCommanderIds: async () => new Set() }));
 vi.mock("../../lib/discovery/excluded-match", () => ({ classifyMatches: () => [] }));
@@ -23,16 +21,11 @@ vi.mock("../../lib/recs/store", () => ({}));
 
 const { findExcludedMatches, rememberCommandersAvail } = await import("./actions");
 
-// Admin PR 6f-1: `loadDiscoveryPool` requires its env: the reader's, by identity, as a boolean.
 describe("findExcludedMatches", () => {
-  it("reads the pool under the reader's resolved switches, not the environment", async () => {
-    try {
-      expect(await findExcludedMatches("korvold", { sort: "fit" })).toEqual([]);
-    } finally {
-      vi.unstubAllEnvs();
-    }
+  it("reads the reader's pool once", async () => {
+    expect(await findExcludedMatches("korvold", { sort: "fit" })).toEqual([]);
     expect(loadDiscoveryPool).toHaveBeenCalledTimes(1);
-    expect(loadDiscoveryPool.mock.calls[0][1] === READER).toBe(true);
+    expect(loadDiscoveryPool.mock.calls[0]).toEqual(["user_1"]);
   });
 });
 

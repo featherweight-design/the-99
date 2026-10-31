@@ -125,16 +125,16 @@ async function main() {
 
     // 7. Keep a card back's search: the lib call behind `searchSpareCardsAction` (the action itself needs a Clerk
     // session, so it is not called here; its auth and switch gate are unit-tested in actions.test.ts).
-    const fHits = await settings.searchSpareCards(F, xName, process.env);
+    const fHits = await settings.searchSpareCards(F, xName);
     check("7a. F's search for X's name finds F's own X with 3 spare", fHits.some((h) => h.oracleId === X && h.spare === 3), JSON.stringify(fHits));
     const zName = picks[2].name;
-    const fZ = await settings.searchSpareCards(F, zName, process.env);
+    const fZ = await settings.searchSpareCards(F, zName);
     check("7b. F's search for a card only V owns finds nothing of V's", fZ.every((h) => h.oracleId !== Z), JSON.stringify(fZ));
-    const vX = await settings.searchSpareCards(V, xName, process.env);
+    const vX = await settings.searchSpareCards(V, xName);
     check("7c. V's search for X answers V's own count (2), not a friend's (3)", vX.filter((h) => h.oracleId === X).every((h) => h.spare === 2)
       && vX.some((h) => h.oracleId === X), JSON.stringify(vX));
     await settings.keepCardBack(F, X);
-    check("7d. a kept card leaves the reader's search", (await settings.searchSpareCards(F, xName, process.env)).every((h) => h.oracleId !== X));
+    check("7d. a kept card leaves the reader's search", (await settings.searchSpareCards(F, xName)).every((h) => h.oracleId !== X));
   } finally {
     // Stamps last: every delete above fires the deferred stamp trigger, which writes them back.
     const who = sql`(${V}, ${F}, ${G})`;

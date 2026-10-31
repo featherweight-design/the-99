@@ -131,7 +131,7 @@ export async function addToCollection(actionId: string, lines: unknown): Promise
     if (!printing || !printing.finishes.includes(l.finish)) throw new Error("not a catalog printing");
     return { ...l, scryfallId: printing.scryfallId, condition: null };
   });
-  const result = await applyCollectionChange(userId, { kind: "add", items }, { id: actionId, env, placements: true });
+  const result = await applyCollectionChange(userId, { kind: "add", items }, { id: actionId, placements: true });
   const done = settled(userId, env, result);
   // Where each copy went, read inside the write. A retry that found the save applied has no read of
   // its own (the first request's snapshot is gone), so it says nothing rather than guess.
@@ -215,7 +215,7 @@ export async function editCollection(
     return { ...r, scryfallId: printing?.scryfallId ?? null, condition: r.condition ?? null };
   });
   const result = await applyCollectionChange(
-    userId, { kind: "edit", rows: editRows, seen: seenIdentities }, { id: actionId, confirmShort: parseShortDecks(confirmShort), env },
+    userId, { kind: "edit", rows: editRows, seen: seenIdentities }, { id: actionId, confirmShort: parseShortDecks(confirmShort) },
   );
   const done = settled(userId, env, result);
   if (done) return done;

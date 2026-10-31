@@ -7,12 +7,11 @@ import { db } from "../../db";
 import { decks } from "../../db/schema";
 import { loadAvailability } from "../decks/availability-query";
 import { deckPendingSql, pendingChangesSql } from "../decks/read";
-import { ENV_VIEW } from "@/test/env-view";
 
 async function claimRead(): Promise<string> {
   let captured: SQL | null = null;
   const tx = { execute: async (q: SQL) => { captured = q; return { rows: [] }; } };
-  await loadAvailability("user_1", { oracleIds: ["o1"], env: ENV_VIEW }, tx as never);
+  await loadAvailability("user_1", { oracleIds: ["o1"] }, tx as never);
   return new PgDialect().sqlToQuery(captured!).sql;
 }
 

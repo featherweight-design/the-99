@@ -81,16 +81,14 @@ export async function loadResultsPage(
   answers: Answers,
   offset = 0,
   picks: ReadPicks | null = null,
-  /** The reader's resolved switches (`requestSwitchEnv`), for every claim read below. */
-  env: NodeJS.ProcessEnv,
 ): Promise<ResultsPage> {
-  const outcome = await searchCommanders(userId, answers, env);
+  const outcome = await searchCommanders(userId, answers);
   const ordered = picks ? reorder(outcome.rows, (r) => r.candidate.oracleId, picks) : outcome.rows;
   const slice = ordered.slice(offset, offset + RESULT_PAGE);
   const reasons = new Map((picks?.picks ?? []).map((p) => [p.oracleId, p.reason]));
   const listed = new Set(outcome.rows.map((r) => r.candidate.oracleId));
   const gone = (picks?.picks ?? []).filter((p) => !listed.has(p.oracleId)).map((p) => p.oracleId);
-  const rows = await decorate(userId, slice, answers.sets ?? [], env);
+  const rows = await decorate(userId, slice, answers.sets ?? []);
   return {
     order: outcome.order,
     tooNarrow: outcome.tooNarrow,
@@ -102,7 +100,7 @@ export async function loadResultsPage(
   };
 }
 
-async function decorate(userId: string, slice: readonly Ranked[], sets: readonly string[], env: NodeJS.ProcessEnv): Promise<ResultRow[]> {
+async function decorate(userId: string, slice: readonly Ranked[], sets: readonly string[]): Promise<ResultRow[]> {
   if (slice.length === 0) return [];
   // A decoration: a failed read draws rows with no tag rather than no rows.
   const index = sets.length === 0 ? null : await loadCommanderPrintings().catch(() => null);
@@ -119,7 +117,7 @@ async function decorate(userId: string, slice: readonly Ranked[], sets: readonly
     db.execute(sql`select c.oracle_id, c.image_uri, c.art_crop_uri from cards c where c.oracle_id = any(${sql.param(ids)}::uuid[])`)
       .then((r) => new Map((r.rows as { oracle_id: string; image_uri: string | null; art_crop_uri: string | null }[]).map((x) => [x.oracle_id, x]))),
     owned.length === 0 ? Promise.resolve(new Map()) : resolveOwnedPrintings(userId, owned),
-    owned.length === 0 ? Promise.resolve(new Map()) : loadAvailability(userId, { oracleIds: owned, env }),
+    owned.length === 0 ? Promise.resolve(new Map()) : loadAvailability(userId, { oracleIds: owned }),
     loadPrices(ids),
     // A commander the reader does not own previews the printing card details open it on, not the catalog's arbitrary one.
     loadOpeningArt(unowned),
@@ -169,12 +167,10 @@ export type CardChip = {
 export async function loadCardChip(
   userId: string,
   oracleId: string,
-  /** The reader's resolved switches (`requestSwitchEnv`), for the card's claim read. */
-  env: NodeJS.ProcessEnv,
 ): Promise<CardChip | null> {
   // The search's own card read, so the chip names exactly the card the search applied: a card it
   // drops (a basic, one not commander-legal, one that no longer exists) draws no chip either.
-  const [row, prices, art] = await Promise.all([loadCardRow(userId, oracleId, env), loadPrices([oracleId]), chainArt(userId, null, [oracleId])]);
+  const [row, prices, art] = await Promise.all([loadCardRow(userId, oracleId), loadPrices([oracleId]), chainArt(userId, null, [oracleId])]);
   if (!row) return null;
   return { oracleId, name: row.name, imageUri: art.get(oracleId) ?? row.imageUri, owned: row.owned, held: row.held, price: slotFor(prices.get(oracleId)) };
 }

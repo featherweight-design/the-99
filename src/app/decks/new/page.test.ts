@@ -3,15 +3,14 @@
 // URL draws today's page and the picker draws no door.
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { envViewWith } from "@/test/env-view";
 
 const COMMANDER = "0000aaaa-0000-4000-8000-00000000000c";
-const stub = vi.hoisted(() => ({ on: true, answers: vi.fn(), listable: vi.fn(), env: null as NodeJS.ProcessEnv | null }));
+const stub = vi.hoisted(() => ({ on: true, answers: vi.fn(), listable: vi.fn() }));
 vi.mock("../../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 // The reader's resolved switches: the environment, so `vi.stubEnv` still sets them.
 vi.mock("../../../lib/switches/request", async () => {
   const { ENV_VIEW } = await import("@/test/env-view");
-  return { requestSwitchEnv: async () => stub.env ?? ENV_VIEW };
+  return { requestSwitchEnv: async () => ENV_VIEW };
 });
 vi.mock("../../../lib/intake/flag", () => ({ helpMeChooseEnabled: () => stub.on }));
 vi.mock("../../../lib/decks/pre-filled-commander", () => ({
@@ -31,7 +30,6 @@ const props = async (sp: Record<string, string>) => ((await NewDeckPage({ search
 
 beforeEach(() => {
   stub.on = true;
-  stub.env = null;
   stub.listable.mockReset().mockResolvedValue(true);
   stub.answers.mockReset().mockResolvedValue({ themes: [{ slug: "dinosaurs", label: "Dinosaurs", pct: 14 }], themeJoin: "all", sets: [], pool: "any", card: null, budgetDollars: 150, bracket: null });
 });
@@ -53,17 +51,6 @@ describe("/decks/new", () => {
     stub.answers.mockResolvedValue({ themes: [{ slug: "dinosaurs", label: "Dinosaurs", pct: 14 }], themeJoin: "all", sets: [], pool: "any", card: null, budgetDollars: 150, bracket: 2 });
     const low = await props({ commander: COMMANDER, t: "dinosaurs", k: "2", v: "results" });
     expect((low.handOff as { readReach?: boolean }).readReach).toBe(false);
-  });
-
-  it("hands the hand-off read the reader's resolved env, not the environment", async () => {
-    // The card chip's claim read takes it; checked by identity, so a dropped argument is seen.
-    stub.env = envViewWith({});
-    try {
-      await props({ commander: COMMANDER, t: "dinosaurs", v: "results" });
-      expect(stub.answers.mock.calls[0][3] === stub.env).toBe(true);
-    } finally {
-      vi.unstubAllEnvs();
-    }
   });
 
   it("hands the create no more themes than it takes, so a wide ask still makes its deck", async () => {

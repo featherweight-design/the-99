@@ -57,8 +57,6 @@ const { DATABASE_URL, PROBE_DB_BRANCH } = requireEnv(["DATABASE_URL", "PROBE_DB_
 const pool = new Pool({ connectionString: DATABASE_URL });
 const fixture = drizzle(pool);
 const USER = `probe-deck-own-${Date.now()}`;
-// A script has no signed-in reader: it decides switches from the environment, saying so.
-const ENV = process.env;
 let failures = 0;
 let guarded = false;
 
@@ -89,7 +87,7 @@ async function run() {
     where name in ('Atraxa, Praetors'' Voice', 'Sol Ring', 'Arcane Signet', 'Forest')`)).map((r) => [r.name, r.id]));
   const SOL = ids.get("Sol Ring")!;
   // The player already holds one Sol Ring, at no printing: the add gives a second copy, at the list's.
-  await applyCollectionChange(USER, { kind: "add", items: [{ oracleId: SOL, setCode: "", condition: null, quantity: 1 }] }, { id: randomUUID(), env: ENV });
+  await applyCollectionChange(USER, { kind: "add", items: [{ oracleId: SOL, setCode: "", condition: null, quantity: 1 }] }, { id: randomUUID() });
 
   const { catalog, indexes } = await loadMatchInputs([], { detailed: true });
   const imported = buildDeckImport({ text: LIST, catalog, indexes });
@@ -106,7 +104,7 @@ async function run() {
   const items = await readDeckOwnLines({ cards: deck.cards, commanderOracleIds: [commander], picks: [], named: imported.printings });
 
   const actionId = randomUUID();
-  const owned = await importDeckOwned(USER, deck, items, actionId, ENV);
+  const owned = await importDeckOwned(USER, deck, items, actionId);
   if (!owned.ok) throw new Error("the add was refused");
   const deckId = owned.deckId;
   const [made] = await rows<{ cards: number; unresolved: number }>(sql`
@@ -136,25 +134,25 @@ async function run() {
   await rows(sql`update decks set name = 'Renamed deck' where id = ${deckId}::uuid`);
   check("c · and by the deck's current name after a rename", (await titleOf())[1], "Added from Renamed deck");
 
-  const retry = await importDeckOwned(USER, deck, items, actionId, ENV);
+  const retry = await importDeckOwned(USER, deck, items, actionId);
   check("d · a retry lands on the same deck", retry.ok && retry.deckId, deckId);
   check("d · and writes nothing more", await counts(), { decks: 1, copies: 14, entries: 2 });
   const otherId = randomUUID();
-  await applyCollectionChange(USER, { kind: "add", items: [{ oracleId: SOL, setCode: "", condition: null, quantity: 1 }] }, { id: otherId, env: ENV });
-  check("d · an id another add already used is refused", (await importDeckOwned(USER, deck, items, otherId, ENV)).ok, false);
+  await applyCollectionChange(USER, { kind: "add", items: [{ oracleId: SOL, setCode: "", condition: null, quantity: 1 }] }, { id: otherId });
+  check("d · an id another add already used is refused", (await importDeckOwned(USER, deck, items, otherId)).ok, false);
 
   // A deck the catalog cannot hold (its commander names no card): the deck write fails inside the add.
   const before = await counts();
   const failId = randomUUID();
-  const failed = await importDeckOwned(USER, { ...deck, commanderOracleId: randomUUID() }, items, failId, ENV)
+  const failed = await importDeckOwned(USER, { ...deck, commanderOracleId: randomUUID() }, items, failId)
     .then(() => "applied", () => "threw");
   check("e · a deck write that fails inside the add fails it", failed, "threw");
   check("e · and leaves neither the deck nor the cards, nor an entry", await counts(), before);
 
   const revertId = randomUUID();
-  const warned = await applyCollectionChange(USER, { kind: "revert", entryId: actionId }, { id: revertId, env: ENV });
+  const warned = await applyCollectionChange(USER, { kind: "revert", entryId: actionId }, { id: revertId });
   const revert = warned.status === "wouldShort"
-    ? await applyCollectionChange(USER, { kind: "revert", entryId: actionId }, { id: revertId, env: ENV, confirmShort: warned.decks })
+    ? await applyCollectionChange(USER, { kind: "revert", entryId: actionId }, { id: revertId, confirmShort: warned.decks })
     : warned;
   check("f · reverting the add applies", revert.status, "applied");
   const left = await rows<{ name: string; quantity: number }>(sql`

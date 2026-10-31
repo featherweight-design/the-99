@@ -150,10 +150,9 @@ type CardRowDb = {
 };
 
 /**
- * The whole read for one card, for the signed-in reader. Null when the card does not exist. `env` is the
- * reader's resolved switches (`requestSwitchEnv`), for the card's claim read.
+ * The whole read for one card, for the signed-in reader. Null when the card does not exist.
  */
-export async function loadFits(userId: string, oracleId: string, env: NodeJS.ProcessEnv): Promise<FitsRead | null> {
+export async function loadFits(userId: string, oracleId: string): Promise<FitsRead | null> {
   const [cardRes, deckRes] = await Promise.all([
     db.execute<CardRowDb>(sql`
       select oracle_id, name, color_identity, commander_legal, type_line, oracle_text, keywords
@@ -207,7 +206,7 @@ export async function loadFits(userId: string, oracleId: string, env: NodeJS.Pro
     card.role === "other" || open.length === 0
       ? new Map<string, RecommendedMix>()
       : loadMixesForCommanders(open.map((r) => ({ commanderOracleId: r.commander_oracle_id, partnerOracleId: r.partner_oracle_id }))),
-    loadAvailability(userId, { oracleIds: [oracleId], env }),
+    loadAvailability(userId, { oracleIds: [oracleId] }),
     // The one staple definition, never a second lookup of our own (F18). NOT fail-soft: a staple
     // the read could not classify would draw a percentage as this commander's, which is false, so a
     // failure fails the read and the picker shows its failed state.

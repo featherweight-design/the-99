@@ -67,9 +67,9 @@ export async function lockDecksInOrder(tx: Tx, ids: readonly string[]): Promise<
  * A read that throws answers no claimants, which is still safe: the verification inside the transaction refuses rather
  * than authorizing against an unlocked claimant.
  */
-export async function pullClaimants(userId: string, env: NodeJS.ProcessEnv, oracleId: string, askingDeckId: string): Promise<string[]> {
+export async function pullClaimants(userId: string, oracleId: string, askingDeckId: string): Promise<string[]> {
   try {
-    const seen = await loadAvailability(userId, { oracleIds: [oracleId], excludeDeckId: askingDeckId, env });
+    const seen = await loadAvailability(userId, { oracleIds: [oracleId], excludeDeckId: askingDeckId });
     return hardDecks(seen.get(oracleId) ?? { claims: [] }).map((d) => d.id);
   } catch {
     return [];
@@ -83,14 +83,13 @@ export async function pullClaimants(userId: string, env: NodeJS.ProcessEnv, orac
  */
 export async function pullInTx(tx: Tx, args: {
   userId: string;
-  env: NodeJS.ProcessEnv;
   sourceDeckId: string;
   oracleId: string;
   askingDeckId: string;
   /** Every deck the caller locked, sorted: a claimant outside it refuses the pull. */
   lockIds: readonly string[];
 }): Promise<PullInTxResult> {
-  const { userId, env, sourceDeckId, oracleId, askingDeckId, lockIds } = args;
+  const { userId, sourceDeckId, oracleId, askingDeckId, lockIds } = args;
   // A deck cannot pull from itself: the source would lose a copy to satisfy a want the same list already holds.
   if (sourceDeckId === askingDeckId) return { ok: false, message: "A deck can’t pull a card from itself." };
   // Scoped to the reader: a caller that has not checked the source's owner (Apply names it from the client) is refused
@@ -149,7 +148,7 @@ export async function pullInTx(tx: Tx, args: {
   // sleeved moves no physical card.
   const askingAvailability = await loadAvailability(
     userId,
-    { oracleIds: [oracleId], excludeDeckId: askingDeckId, env },
+    { oracleIds: [oracleId], excludeDeckId: askingDeckId },
     tx,
   );
   const holders = hardDecks(askingAvailability.get(oracleId) ?? { claims: [] });

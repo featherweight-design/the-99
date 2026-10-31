@@ -99,7 +99,7 @@ type ListRow = { deckId: string; oracleId: string; typeLine: string };
 
 type Built = { builds: Map<string, LineupBuild> | null; asOf: Date | null; shared: LineupShared[] | null; lists: ListRow[] | null; collection: LineupCollection | null };
 
-async function readBuilds(userId: string, ids: string[], brews: ReadonlySet<string>, env: NodeJS.ProcessEnv): Promise<Built> {
+async function readBuilds(userId: string, ids: string[], brews: ReadonlySet<string>): Promise<Built> {
   if (ids.length === 0) {
     try {
       const { collection, asOf } = await readCollection(userId, [], [], brews);
@@ -124,7 +124,7 @@ async function readBuilds(userId: string, ids: string[], brews: ReadonlySet<stri
       readLabels([...new Set(lists.list.filter((c) => !isLandFace(c.typeLine)).map((c) => c.oracleId))]),
       readHeldPricePicks(userId, ids).then((picks) => loadPrices(priced, picks)),
       // The whole collection's claim model, once (lock 3, lock 4).
-      loadAvailability(userId, { env }),
+      loadAvailability(userId),
       // Shopping's own buy rows, so a row's to-buy count is the cart's.
       loadDeckBuyRows(userId, ids),
     ]);
@@ -176,7 +176,7 @@ async function readBuilds(userId: string, ids: string[], brews: ReadonlySet<stri
 export async function loadLineup(userId: string, env: NodeJS.ProcessEnv): Promise<LineupData> {
   // The bracket follows the tile's own switch: a bracket only the Analysis tab can explain is drawn
   // only while that tab exists.
-  const decks = await listDecksWithStats(userId, DEFAULT_DECK_SORT, { includeBracket: analysisTabEnabled(env), env });
+  const decks = await listDecksWithStats(userId, DEFAULT_DECK_SORT, { includeBracket: analysisTabEnabled(env) });
   const ids = decks.map((d) => d.id);
   const brews = new Set(decks.filter((d) => d.lastCommittedAt === null).map((d) => d.id));
   const [rows, built] = await Promise.all([ids.length === 0
@@ -187,7 +187,7 @@ export async function loadLineup(userId: string, env: NodeJS.ProcessEnv): Promis
       .where(and(eq(deckGames.userId, userId), inArray(deckGames.deckId, ids)))
       // `listDeckGames`' order, so a deck's games read newest first here as on its Games tab.
       .orderBy(desc(deckGames.playedAt), desc(deckGames.createdAt)),
-  readBuilds(userId, ids, brews, env)]);
+  readBuilds(userId, ids, brews)]);
   const games = new Map<string, LineupGame[]>();
   for (const r of rows) {
     const list = games.get(r.deckId) ?? [];

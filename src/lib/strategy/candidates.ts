@@ -162,14 +162,13 @@ export async function planFocusCandidates(
 }
 
 /**
- * The focus candidates for one run, at most `max`, or none for a deck with no commander. `env` is the reader's resolved
- * switches, for the claim model's free-copy read on an owned-only run.
+ * The focus candidates for one run, at most `max`, or none for a deck with no commander.
  */
 export async function loadFocusCandidates(args: FocusCandidateArgs, read: Reader = db): Promise<FocusCandidate[]> {
   return (await readFocusCandidates(args, read)).cards;
 }
 
-type FocusCandidateArgs = CandidateArgs & { deckId: string; focus: StrategyKey; roleBasis: RoleBasis; env: NodeJS.ProcessEnv; max?: number };
+type FocusCandidateArgs = CandidateArgs & { deckId: string; focus: StrategyKey; roleBasis: RoleBasis; max?: number };
 
 /**
  * The focus candidates and whether they are COMPLETE: every card that qualifies is listed. A list that reached `max` is
@@ -197,7 +196,7 @@ export async function readFocusCandidates(args: FocusCandidateArgs, read: Reader
     const slice = onFocus.slice(at, at + SLICE);
     const ids = slice.map((r) => r.oracleId);
     const [availability, priced] = await Promise.all([
-      args.limits.ownedOnly ? loadAvailability(args.userId, { oracleIds: ids, excludeDeckId: args.deckId, env: args.env }) : null,
+      args.limits.ownedOnly ? loadAvailability(args.userId, { oracleIds: ids, excludeDeckId: args.deckId }) : null,
       capCents === null ? null : loadPrices(ids),
     ]);
     const passing = slice.filter((r) => {

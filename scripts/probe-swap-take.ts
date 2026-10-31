@@ -17,7 +17,6 @@ import ws from "ws";
 
 import { commitVersion } from "../src/lib/decks/versions";
 import { setShoppingLimit, takeStandIn, undoSwap } from "../src/lib/swaps/take";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
 
@@ -82,7 +81,7 @@ async function main() {
   const deck = await makeDeck("probe swap take", commander.oracle_id, [[plateau, 1], [cradle, 1], [forest, 5], [vault, 1], [sol, 1]]);
   await fixture.execute(sql`insert into deck_proxies (deck_id, oracle_id) values (${deck}::uuid, ${plateau}::uuid)`);
   const before = await state(deck, plateau, foundry);
-  const bought = await takeStandIn(deck, USER, plateau, foundry, process.env);
+  const bought = await takeStandIn(deck, USER, plateau, foundry);
   check("take: bought, one copy out and one in", { ok: bought.ok, free: bought.ok && bought.addWasFree, left: bought.ok && bought.cutLeft },
     { ok: true, free: false, left: 0 });
   check("take: the deck after", await state(deck, plateau, foundry), { cut: null, add: [1, false], proxied: false });
@@ -103,14 +102,14 @@ async function main() {
   // 2b. An undone swap's id stays spent, even when the same take is made again: without that, the
   //     OLD id would undo the NEW take and leave the new swap row claiming it still stands.
   if (bought.ok) {
-    const again = await takeStandIn(deck, USER, plateau, foundry, process.env);
+    const again = await takeStandIn(deck, USER, plateau, foundry);
     check("undo: an old swap id cannot undo a new take of the same pair", await undoSwap(bought.swapId, USER), null);
     if (again.ok) check("undo: the new take's own id still can", await undoSwap(again.swapId, USER), deck);
   }
 
   // 3. A free take: the only Command Tower is owned and spoken for by no one.
   await fixture.execute(sql`insert into collection_items (user_id, oracle_id, quantity, set_code) values (${USER}, ${tower}::uuid, 1, 'probe')`);
-  const free = await takeStandIn(deck, USER, plateau, tower, process.env);
+  const free = await takeStandIn(deck, USER, plateau, tower);
   check("take: a spare copy is free, by the take's own read", free.ok && free.addWasFree, true);
   if (free.ok) await undoSwap(free.swapId, USER);
 
@@ -118,12 +117,12 @@ async function main() {
   //    the same take a buy.
   const holder = await makeDeck("probe swap holder", commander.oracle_id, [[tower, 1]]);
   await commitVersion(holder, null, undefined, undefined);
-  const claimed = await takeStandIn(deck, USER, plateau, tower, process.env);
+  const claimed = await takeStandIn(deck, USER, plateau, tower);
   check("take: a copy a committed deck holds is not free", claimed.ok && claimed.addWasFree, false);
   if (claimed.ok) await undoSwap(claimed.swapId, USER);
 
   // 5. A basic already in the draft gains a copy, and undo takes it back off.
-  const forestIn = await takeStandIn(deck, USER, cradle, forest, process.env);
+  const forestIn = await takeStandIn(deck, USER, cradle, forest);
   check("take: a basic the deck holds gains a copy", await state(deck, cradle, forest), { cut: null, add: [6, false], proxied: false });
   check("take: a basic is free", forestIn.ok && forestIn.addWasFree, true);
   if (forestIn.ok) await undoSwap(forestIn.swapId, USER);
@@ -131,16 +130,16 @@ async function main() {
 
   // 6. Refusals write nothing, and say why.
   const swapsBefore = await swapCount(deck);
-  check("refused: a non-basic the deck already holds", await takeStandIn(deck, USER, vault, sol, process.env), { ok: false, reason: "addHeld" });
-  check("refused: a basic in place of itself", await takeStandIn(deck, USER, forest, forest, process.env), { ok: false, reason: "addHeld" });
+  check("refused: a non-basic the deck already holds", await takeStandIn(deck, USER, vault, sol), { ok: false, reason: "addHeld" });
+  check("refused: a basic in place of itself", await takeStandIn(deck, USER, forest, forest), { ok: false, reason: "addHeld" });
   check("refused: that basic untouched", await state(deck, forest, forest), { cut: [5, false], add: [5, false], proxied: false });
   await fixture.execute(sql`delete from deck_cards where deck_id = ${deck}::uuid and oracle_id = ${vault}::uuid`);
-  check("refused: the cut left in another tab", await takeStandIn(deck, USER, vault, tower, process.env), { ok: false, reason: "cutGone" });
-  check("refused: another reader's deck", await takeStandIn(deck, "someone-else", plateau, foundry, process.env), { ok: false, reason: "notFound" });
+  check("refused: the cut left in another tab", await takeStandIn(deck, USER, vault, tower), { ok: false, reason: "cutGone" });
+  check("refused: another reader's deck", await takeStandIn(deck, "someone-else", plateau, foundry), { ok: false, reason: "notFound" });
   check("refused: no swap row written by any of them", await swapCount(deck), swapsBefore);
 
   // 7. Undo over a deck that moved since writes nothing.
-  const moved = await takeStandIn(deck, USER, plateau, foundry, process.env);
+  const moved = await takeStandIn(deck, USER, plateau, foundry);
   await fixture.execute(sql`delete from deck_cards where deck_id = ${deck}::uuid and oracle_id = ${foundry}::uuid`);
   check("undo: refused once the player edited the add", moved.ok ? await undoSwap(moved.swapId, USER) : "no take", null);
   check("undo: that refusal left the deck as the player made it", await state(deck, plateau, foundry), { cut: null, add: null, proxied: false });

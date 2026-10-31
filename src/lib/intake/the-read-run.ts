@@ -123,12 +123,10 @@ export async function loadTheReadInputs(
   words: string,
   filters: ReadFilters,
   tagged: readonly TaggedCard[] = [],
-  /** The reader's resolved switches (`requestSwitchEnv`), for the search's claim read. The card is always null here, so no claim read runs today. */
-  env: NodeJS.ProcessEnv,
 ): Promise<TheReadInputs> {
   const [list, facts, decks, collection, catalog] = await Promise.all([
     loadPoolList(),
-    loadSearchFacts(userId, { ...filters, card: null }, env),
+    loadSearchFacts(userId, { ...filters, card: null }),
     loadReadDecks(userId),
     collectionDigest(userId),
     loadIntakeCatalog(),
@@ -167,7 +165,7 @@ export function shortlistPrefix(inputs: Pick<TheReadInputs, "list" | "pool" | "n
 /** One press, end to end: what a probe, the eval and a test call. */
 export async function runTheRead(
   userId: string,
-  input: { readId: string; words: string; filters: ReadFilters; tagged?: readonly TaggedCard[]; env: NodeJS.ProcessEnv; ask?: string },
+  input: { readId: string; words: string; filters: ReadFilters; tagged?: readonly TaggedCard[]; ask?: string },
   deps: TheReadDeps = defaultTheReadDeps(),
   inputs?: TheReadInputs,
 ): Promise<TheReadOutcome> {
@@ -183,8 +181,7 @@ export async function runTheRead(
  */
 export async function beginTheRead(
   userId: string,
-  /** `env`: the reader's resolved switches, handed to the pool read (`loadTheReadInputs`). */
-  input: { readId: string; words: string; filters: ReadFilters; tagged?: readonly TaggedCard[]; env: NodeJS.ProcessEnv; ask?: string },
+  input: { readId: string; words: string; filters: ReadFilters; tagged?: readonly TaggedCard[]; ask?: string },
   deps: TheReadDeps = defaultTheReadDeps(),
   /** The inputs, or a loader for them (a test counts its calls); omitted, they are read here. */
   inputs?: TheReadInputs | (() => Promise<TheReadInputs>),
@@ -203,7 +200,7 @@ export async function beginTheRead(
   if (await hasRunningRead(userId, new Date(started0))) return { kind: "in_flight" };
   // And one press per player at a time through the pool read and the reservation, so a burst reads
   // the pool once, not once per press.
-  const load = typeof inputs === "function" ? inputs : inputs ? async () => inputs : () => loadTheReadInputs(userId, input.words, input.filters, input.tagged ?? [], input.env);
+  const load = typeof inputs === "function" ? inputs : inputs ? async () => inputs : () => loadTheReadInputs(userId, input.words, input.filters, input.tagged ?? []);
   const admitted = await withReadAdmission(userId, async () => {
     // A press that arrives after another has reserved and let go finds the admission free, so the
     // running read is looked for again here, before anything is loaded.

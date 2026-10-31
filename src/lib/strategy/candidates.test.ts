@@ -59,7 +59,7 @@ describe("loadFocusCandidates", () => {
   });
   const reader = (rows: ReturnType<typeof row>[]) =>
     ({ select: () => ({ from: () => ({ leftJoin: () => ({ where: async () => rows }) }) }) }) as unknown as Parameters<typeof loadFocusCandidates>[1];
-  const base = { ...args, deckId: "deck", focus: "artifacts" as const, roleBasis: "classifier" as const, env: {} as NodeJS.ProcessEnv };
+  const base = { ...args, deckId: "deck", focus: "artifacts" as const, roleBasis: "classifier" as const };
 
   beforeEach(() => {
     availability.map = new Map();

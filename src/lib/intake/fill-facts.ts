@@ -50,8 +50,6 @@ export async function loadFillGate(args: {
    */
   placedIds?: readonly string[];
   excludeDeckId?: string;
-  /** The reader's resolved switches (`requestSwitchEnv`), for the claim read. */
-  env: NodeJS.ProcessEnv;
   /** The bracket facts, when the caller already read them (`buildFillPlan`, which reads them once
    *  for the gate and the reach, so the two cannot see different cards). They must cover every id
    *  this gate is handed: the fixed cards and every candidate. */
@@ -76,7 +74,7 @@ export async function loadFillGate(args: {
   if (answers.budgetCents !== null) {
     const [prices, availability] = await Promise.all([
       loadPrices(ids),
-      loadAvailability(args.userId, { oracleIds: ids, excludeDeckId: args.excludeDeckId, env: args.env }),
+      loadAvailability(args.userId, { oracleIds: ids, excludeDeckId: args.excludeDeckId }),
     ]);
     const owned = new Set(args.candidates.filter((c) => c.owned).map((c) => c.oracleId));
     const basics = new Set(args.candidates.filter((c) => isBasicLand(c.typeLine)).map((c) => c.oracleId));
@@ -147,7 +145,6 @@ export async function loadBudgetLeftCents(args: {
   answers: DeckAnswers;
   placedIds?: readonly string[];
   excludeDeckId?: string;
-  env: NodeJS.ProcessEnv;
 }): Promise<number | null> {
   const { budgetCents } = args.answers;
   if (budgetCents === null) return null;
@@ -155,7 +152,7 @@ export async function loadBudgetLeftCents(args: {
   if (placed.length === 0) return budgetCents;
   const [prices, availability] = await Promise.all([
     loadPrices(placed),
-    loadAvailability(args.userId, { oracleIds: placed, excludeDeckId: args.excludeDeckId, env: args.env }),
+    loadAvailability(args.userId, { oracleIds: placed, excludeDeckId: args.excludeDeckId }),
   ]);
   return budgetCents - await chargePlaced(placed, (id) => prices.get(id)?.liveCents ?? null, availability);
 }

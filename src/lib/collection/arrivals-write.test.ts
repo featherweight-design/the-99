@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { envViewWith } from "../../test/env-view";
 
 // The receipt's availability and its reservation rows are ONE snapshot (Copilot, #1510): two
 // read-committed statements let a pick moved between them credit an arrived copy to the wrong deck.
@@ -35,10 +34,9 @@ vi.mock("../decks/availability-query", () => ({
 
 import { writeArrivalsReceipt } from "./arrivals-write";
 
-// The reader's resolved switches: a read that fell back to `process.env` is caught by identity below.
-const receipt = (env: NodeJS.ProcessEnv) => writeArrivalsReceipt({
+const receipt = () => writeArrivalsReceipt({
   userId: "u1", uploadId: "up1", ownedBefore: { o1: 1 }, ownedAfter: { o1: 2 }, buyBefore: [],
-  unmatched: [], parseErrorCount: 0, env,
+  unmatched: [], parseErrorCount: 0,
 });
 
 describe("writeArrivalsReceipt's claim read", () => {
@@ -52,20 +50,12 @@ describe("writeArrivalsReceipt's claim read", () => {
   });
 
   it("reads the money rows, the availability and the reservations inside one repeatable-read transaction", async () => {
-    const env = envViewWith({});
-    await receipt(env);
+    await receipt();
     expect(stub.transaction).toHaveBeenCalledTimes(1);
     expect(stub.transaction.mock.calls[0][1]).toEqual({ isolationLevel: "repeatable read" });
     expect(stub.loadAvailability.mock.calls[0][2]).toBe(stub.tx);
     expect(stub.tx.select).toHaveBeenCalledTimes(1);
     // The money rows too, or a pick between them keeps A's row beside a line saying B.
     expect(stub.loadDeckBuyRows.mock.calls[0] as unknown[]).toEqual(["u1", undefined, stub.tx]);
-  });
-
-  it("hands the claim read the reader's env, by identity", async () => {
-    const env = envViewWith({});
-    await receipt(env);
-    const opts = stub.loadAvailability.mock.calls[0][1] as { env?: unknown };
-    expect(opts.env === env).toBe(true);
   });
 });

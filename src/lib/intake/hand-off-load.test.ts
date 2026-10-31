@@ -2,8 +2,6 @@
 // beside that commander, read the same way. Its reads are stubbed; what is tested is how it turns
 // them into figures and which answers survive.
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ENV_VIEW } from "@/test/env-view";
-import { envViewWith } from "@/test/env-view";
 
 const stub = vi.hoisted(() => ({ rows: [] as unknown[], themes: vi.fn(), chip: vi.fn() }));
 vi.mock("../../db", () => ({ db: { execute: vi.fn(async () => ({ rows: stub.rows })) } }));
@@ -26,20 +24,13 @@ beforeEach(() => {
 });
 
 describe("loadHandOffAnswers", () => {
-  it("hands the card chip the reader's env, by identity (admin PR 6f-2)", async () => {
-    // The chip's claim read takes it; checked by identity, so a dropped argument is seen.
-    const env = envViewWith({});
-    try {
-      await loadHandOffAnswers("u", COMMANDER, ask(), env);
-      expect(stub.chip.mock.calls[0].slice(0, 2)).toEqual(["u", CARD]);
-      expect(stub.chip.mock.calls[0][2] === env).toBe(true);
-    } finally {
-      vi.unstubAllEnvs();
-    }
+  it("reads the card chip for the asked card", async () => {
+    await loadHandOffAnswers("u", COMMANDER, ask());
+    expect(stub.chip.mock.calls[0]).toEqual(["u", CARD]);
   });
 
   it("prints the results' own figures: a theme's share and the card's inclusion, as whole percents", async () => {
-    const a = await loadHandOffAnswers("u", COMMANDER, ask(), ENV_VIEW);
+    const a = await loadHandOffAnswers("u", COMMANDER, ask());
     expect(a.themes).toEqual([{ slug: "dinosaurs", label: "Dinosaurs", pct: 14 }]);
     expect(a.card).toEqual({ ...chip, pct: 64 });
     expect([a.budgetDollars, a.bracket]).toEqual([150, 2]);
@@ -47,32 +38,32 @@ describe("loadHandOffAnswers", () => {
 
   it("prints no figure where the results would not: a theme the commander cannot back, or no inclusion on record", async () => {
     stub.rows = [{ deck_count: 1000, tags: [], card_inclusion: null }];
-    const a = await loadHandOffAnswers("u", COMMANDER, ask({ themes: ["dinosaurs", "tokens"] }), ENV_VIEW);
+    const a = await loadHandOffAnswers("u", COMMANDER, ask({ themes: ["dinosaurs", "tokens"] }));
     expect(a.themes).toEqual([{ slug: "dinosaurs", label: "Dinosaurs", pct: null }, { slug: "tokens", label: "Tokens", pct: null }]);
     expect(a.card?.pct).toBeNull();
     // A thin commander backs no theme, whatever its tags say.
     stub.rows = [{ deck_count: 5, tags: [{ slug: "dinosaurs", label: "Dinosaurs", count: 5 }], card_inclusion: 10 }];
-    expect((await loadHandOffAnswers("u", COMMANDER, ask(), ENV_VIEW)).themes[0].pct).toBeNull();
+    expect((await loadHandOffAnswers("u", COMMANDER, ask())).themes[0].pct).toBeNull();
   });
 
   it("prints a tribal theme's figure for a commander the results admitted by its type line", async () => {
     stub.themes.mockResolvedValue([{ slug: "dwarves", label: "Dwarves", commanders: 22 }]);
     stub.rows = [{ deck_count: 10, tags: [{ slug: "dwarves", label: "Dwarves", count: 8 }], type_line: "Legendary Creature \u2014 Dwarf Noble", card_inclusion: null }];
-    expect((await loadHandOffAnswers("u", COMMANDER, ask({ themes: ["dwarves"], card: null }), ENV_VIEW)).themes[0].pct).toBe(80);
+    expect((await loadHandOffAnswers("u", COMMANDER, ask({ themes: ["dwarves"], card: null }))).themes[0].pct).toBe(80);
     // The same thin commander without the type prints nothing, as the results would not list it.
     stub.rows = [{ deck_count: 10, tags: [{ slug: "dwarves", label: "Dwarves", count: 8 }], type_line: "Legendary Creature \u2014 Human", card_inclusion: null }];
-    expect((await loadHandOffAnswers("u", COMMANDER, ask({ themes: ["dwarves"], card: null }), ENV_VIEW)).themes[0].pct).toBeNull();
+    expect((await loadHandOffAnswers("u", COMMANDER, ask({ themes: ["dwarves"], card: null }))).themes[0].pct).toBeNull();
   });
 
   it("keeps what the results keep: a slug no longer offered, labeled by its slug; and drops a card that is no card", async () => {
     stub.chip.mockResolvedValue(null);
-    const a = await loadHandOffAnswers("u", COMMANDER, ask({ themes: ["retired-theme", "dinosaurs"] }), ENV_VIEW);
+    const a = await loadHandOffAnswers("u", COMMANDER, ask({ themes: ["retired-theme", "dinosaurs"] }));
     expect(a.themes.map((t) => [t.slug, t.label])).toEqual([["retired-theme", "retired-theme"], ["dinosaurs", "Dinosaurs"]]);
     expect(a.card).toBeNull();
   });
 
   it("reads nothing it was not asked for", async () => {
-    const a = await loadHandOffAnswers("u", COMMANDER, ask({ themes: [], card: null }), ENV_VIEW);
+    const a = await loadHandOffAnswers("u", COMMANDER, ask({ themes: [], card: null }));
     expect(stub.themes).not.toHaveBeenCalled();
     expect(stub.chip).not.toHaveBeenCalled();
     expect([a.themes, a.card]).toEqual([[], null]);
@@ -85,7 +76,7 @@ describe("loadHandOffAnswers when a read fails", () => {
     stub.chip.mockRejectedValue(new Error("prices down"));
     const { db } = await import("../../db");
     vi.mocked(db.execute).mockRejectedValueOnce(new Error("index down"));
-    const a = await loadHandOffAnswers("u", COMMANDER, ask(), ENV_VIEW);
+    const a = await loadHandOffAnswers("u", COMMANDER, ask());
     expect(a.themes).toEqual([{ slug: "dinosaurs", label: "dinosaurs", pct: null }]);
     // A card whose read failed is unread, never "no card": the create still carries it.
     expect([a.card, a.cardUnread]).toEqual([null, true]);

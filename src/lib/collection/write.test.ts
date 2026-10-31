@@ -342,7 +342,7 @@ describe("the order a precon start's readouts are read in", () => {
   it("grants Went to's before with the reservations read before the inside work", () => {
     const read = at("const insideBefore = opts.placements && opts.inside");
     const inside = at("if (opts.inside && change.kind === \"add\") await opts.inside(tx);");
-    const placed = at("raisedCards(tx, userId, plan, opts.env, insideBefore)");
+    const placed = at("raisedCards(tx, userId, plan, insideBefore)");
     expect(read).toBeLessThan(inside);
     expect(inside).toBeLessThan(placed);
     expect(src).toContain("const reservations = prior ?? await readRaisedReservations(tx, userId, ids);");

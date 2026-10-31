@@ -210,7 +210,6 @@ export async function buildFillPlan(
     const read = loadAvailability(userId, {
       oracleIds: pool.map((c) => c.oracleId),
       excludeDeckId: options.excludeDeckId,
-      env: options.env,
     });
     const seen = options.failClosed ? await read : await read.catch(() => null);
     if (seen) {
@@ -369,7 +368,7 @@ export async function buildFillPlan(
       // budget against that, never against the whole budget.
       loadBudgetLeftCents({
         userId, commanderIds, answers, placedIds: [...excludeOracleIds],
-        excludeDeckId: fillOptions.excludeDeckId, env: fillOptions.env,
+        excludeDeckId: fillOptions.excludeDeckId,
       }),
     ]);
     bracketFacts = facts;
@@ -382,7 +381,7 @@ export async function buildFillPlan(
       || facts.combosOf(c.oracleId).length > 0 || facts.searches(c.oracleId));
     const raisingIds = raising.map((c) => c.oracleId);
     const [availability, prices] = raising.length === 0 ? [new Map(), new Map()] : await Promise.all([
-      loadAvailability(userId, { oracleIds: raisingIds, excludeDeckId: fillOptions.excludeDeckId, env: fillOptions.env }),
+      loadAvailability(userId, { oracleIds: raisingIds, excludeDeckId: fillOptions.excludeDeckId }),
       loadPrices(raisingIds),
     ]);
     const free = new Set(raising.filter((c) => !buysCopy(c.owned, availability.get(c.oracleId))).map((c) => c.oracleId));
@@ -437,7 +436,7 @@ export async function buildFillPlan(
       userId, commanderIds, answers,
       // A bought raiser the pool does not carry is priced and counted like any candidate.
       candidates: [...gateCandidates, ...boughtRaisers.filter((c) => !gateCandidates.includes(c))],
-      placedIds: [...excludeOracleIds], excludeDeckId: fillOptions.excludeDeckId, env: fillOptions.env,
+      placedIds: [...excludeOracleIds], excludeDeckId: fillOptions.excludeDeckId,
       bracketFacts,
       // Raised for Hit: the cap is the set alone, so the raised budget's whole-dollar remainder is
       // never spent, on the create or its retry.

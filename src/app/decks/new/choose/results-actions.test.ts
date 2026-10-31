@@ -110,25 +110,13 @@ describe("trialFillRows", () => {
   });
 });
 
-// The page loader's arguments before its env, which is checked by identity on its own (never compared).
-const pageArgs = (call: unknown[] | undefined) => (call ?? []).slice(0, 4);
+// The page loader's arguments.
+const pageArgs = (call: unknown[] | undefined) => call ?? [];
 
 describe("moreRows", () => {
   it("hands the parsed answers and the offset to the page loader", async () => {
     await moreRows("?t=dinosaurs&b=150", 12);
     expect(pageArgs(stub.page.mock.calls[0])).toEqual(["user_1", expect.objectContaining({ themes: ["dinosaurs"], budgetDollars: 150 }), 12, null]);
-  });
-
-  it("hands the page loader the reader's resolved env, not the environment", async () => {
-    // The search's claim reads take it; checked by identity, so a dropped argument is seen.
-    const env = envViewWith({});
-    vi.mocked(requestSwitchEnv).mockResolvedValueOnce(env);
-    try {
-      await moreRows("?t=dinosaurs", 12);
-      expect(stub.page.mock.calls[0][4] === env).toBe(true);
-    } finally {
-      vi.unstubAllEnvs();
-    }
   });
 
   it("orders a slice by the reader's own done read, and by nothing for any other state", async () => {

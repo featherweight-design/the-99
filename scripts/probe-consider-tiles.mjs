@@ -693,7 +693,7 @@ async function run() {
     // assuming it: this check FAILS honestly instead of asserting a state the
     // Consider tile's own data path cannot produce.
     if (fixtures.over) {
-      const map = await loadAvailability(setup.userId, { excludeDeckId: setup.deckId, oracleIds: [fixtures.over], env: process.env });
+      const map = await loadAvailability(setup.userId, { excludeDeckId: setup.deckId, oracleIds: [fixtures.over] });
       const a = map.get(fixtures.over);
       const state = a ? availabilityState(a, { selfExcluded: false }) : null;
       if (state !== "over") {

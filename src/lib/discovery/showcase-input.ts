@@ -41,7 +41,7 @@ export async function loadCardInput(
   const isOn = switchesOn(env);
   const asked = deckToolsFor(isOn, only);
   const [fits, decksHeld, syncAnchored] = await Promise.all([
-    perf ? perf.timed("toolFits", () => loadToolFits(userId, env, asked)) : loadToolFits(userId, env, asked),
+    perf ? perf.timed("toolFits", () => loadToolFits(userId, asked)) : loadToolFits(userId, asked),
     deckCount(userId),
     hasSyncAnchor(userId),
   ]);
