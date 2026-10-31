@@ -12,7 +12,7 @@ import { DECK_ADD_FALLBACK_MESSAGE, type DeckMutationResult } from "../decks/mut
 import { deckSurfaces } from "../decks/revalidate";
 import { revalidateClaims } from "../decks/revalidate-claims";
 import { isUuid } from "../uuid";
-import { findADeckReadEnabled, swapToolsEnabled } from "./flag";
+import { swapToolsEnabled } from "./flag";
 import { loadFits, type FitsRead } from "./fits";
 import { loadStandIns, type StandInsRead } from "./gather";
 import { setShoppingLimit, takeStandIn, undoSwap, type TakeResult } from "./take";
@@ -113,7 +113,7 @@ export async function addFromFits(
 export async function swapFromReadAction(deckId: string, cutOracleId: string, addOracleId: string): Promise<TakeResult> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (!findADeckReadEnabled(env) || ![deckId, cutOracleId, addOracleId].every(isUuid)) return { ok: false, reason: "notFound" };
+  if (!swapToolsEnabled(env) || ![deckId, cutOracleId, addOracleId].every(isUuid)) return { ok: false, reason: "notFound" };
   const result = await takeStandIn(deckId, userId, cutOracleId, addOracleId);
   if (result.ok) after(() => revalidateClaims(deckId, userId));
   return result;
@@ -122,7 +122,7 @@ export async function swapFromReadAction(deckId: string, cutOracleId: string, ad
 export async function undoReadSwapAction(swapId: string): Promise<{ ok: boolean }> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (!findADeckReadEnabled(env) || !isUuid(swapId)) return { ok: false };
+  if (!swapToolsEnabled(env) || !isUuid(swapId)) return { ok: false };
   const deckId = await undoSwap(swapId, userId);
   if (deckId) after(() => revalidateClaims(deckId, userId));
   return { ok: deckId !== null };
@@ -132,7 +132,7 @@ export async function undoReadSwapAction(swapId: string): Promise<{ ok: boolean 
 export async function undoReadAddAction(deckId: string, oracleId: string): Promise<{ ok: boolean }> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (!findADeckReadEnabled(env) || !isUuid(deckId) || !isUuid(oracleId)) return { ok: false };
+  if (!swapToolsEnabled(env) || !isUuid(deckId) || !isUuid(oracleId)) return { ok: false };
   try {
     await requireDeck(deckId, userId);
   } catch {

@@ -151,7 +151,7 @@ describe("writtenForYou", () => {
     const on = {} as NodeJS.ProcessEnv;
     for (const name of [
       "ANALYSIS_TAB_ENABLED", "TUNING_ENABLED", "HELP_ME_CHOOSE_ENABLED", "PROPOSED_CUTS_ENABLED",
-      "FIND_A_DECK_READ_ENABLED", "SWAP_TOOLS_ENABLED",
+      "SWAP_TOOLS_ENABLED",
     ]) on[name] = off.includes(name) ? "off" : "true";
     return on;
   };

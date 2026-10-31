@@ -1245,7 +1245,7 @@ export function CardDetailProvider({
   // is evicted so its block reads again (the partner now in the deck).
   const [comboSheet, setComboSheet] = useState<{ card: BrowseCard; combo: CardCombo } | null>(null);
   const comboReread = useRef<string | null>(null);
-  // FIND A DECK'S VIEW (handoff R2, `FIND_A_DECK_READ_ENABLED`, on the card as `fitsRead`): the door
+  // FIND A DECK'S VIEW (handoff R2, following swap tools, on the card as `fitsRead`): the door
   // opens the view inside this card's own dialog rather than stacking the picker. Keyed on the card,
   // so a card opened from the view (a partner, with the way back) leaves it standing for the return.
   // What the reader did on the read's rows, and whether a read is running, are kept per card for the
