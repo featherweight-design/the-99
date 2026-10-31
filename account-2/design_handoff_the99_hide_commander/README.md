@@ -1,7 +1,7 @@
 # The 99 · Hide a commander (account 2, 2026-10-31)
 
 Canvas: https://claude.ai/artifact/RZp8zfcHeG3GYcEr8Bs1ps
-Status: **R1b, awaiting Hugh's audit.** R1b (Hugh, 2026-10-31): the top-right plate drew the eye from the commander, so Hide moves to the foot of the row as a quiet glyph, and the page offers Hide as a text line at both widths.
+Status: **Approved by Hugh, 2026-10-31 (R1c, option A).** R1b moved Hide off the art (the top-right plate drew the eye from the commander); R1c seated it beside the fit bar (above the bar it read as stray on a phone). The page offers Hide as a text line at both widths.
 
 Brief: `docs/superpowers/design-briefs/2026-10-31-hide-a-commander.md`. Hugh's rulings hold throughout: a hidden commander stays hidden until the player undoes it, with a Hidden list to restore from; it drops out of For you, Discover and Help me choose (Help me choose says nothing); its own page still opens, says it is hidden and offers Unhide.
 
@@ -19,11 +19,12 @@ Sources read: main @7bf3c89 and the files each section names.
 | `Hidden.dc.html` | 4 · the Hidden list · 5 · empty · 6 · unhiding and the row's return · 12 · unhide failed |
 | `Page.dc.html` | 7 · reached from the lists' search, the page when hidden · 8 · the page when not hidden, with Hide |
 | `Edges.dc.html` | 9 · Help me choose, unchanged · 10 · a pair · 11 · a list left short or empty |
+| `Placement.dc.html` | R1c record: three placements for the row's glyph (A chosen) |
 
 ## 1 · The control (`Rows`)
 
-- **At the foot of the row** (R1b), at both widths: the last item on the row's figures line (*8,902 decks tracked*), pushed to the line's right end; in Discover it follows the price link. The band stays the commander's: nothing is drawn over the art. Not a menu (the row has none, and one action needs no menu), not a swipe (undiscoverable, and nothing else swipes), not page-only.
-- Drawn as **a bare glyph**, no plate: eye with a slash, 16px, `--fg-faint`, in a 44px target whose negative margin keeps the line's height. Always drawn, not hover-only, but the quietest thing on the row.
+- **At the foot of the row, beside the fit bar** (R1c option A), at both widths. Phone: the bar's wrapper (`commander-row.tsx`, the `maxWidth: 520` div around `FitBar`) shares its line with the glyph, the bar takes what is left (about 50px shorter at 390). Desktop: the bar keeps its 520px and legend; the glyph sits level with the bar at the row's right edge, under the Fit chip. The figures line (*8,902 decks tracked*, Discover's price and source) stays exactly as shipped. Nothing is drawn over the art. Not a menu (the row has none, and one action needs no menu), not a swipe (undiscoverable, and nothing else swipes), not page-only.
+- Drawn as **a bare glyph**, no plate: eye with a slash, 16px, `--fg-faint`, in a 44px target, centred on the bar, whose negative margin keeps the row's height. Always drawn, not hover-only, but the quietest thing on the row.
 - States: hover (fine pointer) glyph `--fg`; pressed glyph `--fg` on an `--elevated` disc; focus the app's 2px accent ring.
 - It sits above the row's stretched link (`z-[2]`), so a press never opens the page. `aria-label` and `title`: *Hide {name}*.
 - Same control in For you and Discover. Nothing else on the row changes.
@@ -66,9 +67,10 @@ Sources read: main @7bf3c89 and the files each section names.
 
 **Hide**, **Hidden**, **Unhide**: one family for the control, the tab and the way back. "Not interested" reads as a verdict on the commander, which the ruling says it is not.
 
-## Open for Hugh
+## Settled on approval (2026-10-31)
 
-1. **Where Hidden lives:** the fourth tab (drawn), or no tab and a *3 hidden* link at the end of the count line (not drawn; its empty state would have no way in).
-2. **The tab's count:** drawn with the strip's shipped count. Drop it if it reads as a nag.
-3. **A Help me choose run in History** from before a hide: recommended, drop the hidden row silently there too, rather than keep it as a record.
-4. **Hide on the page:** the quiet text line at both widths (drawn), matching the row's foot placement.
+1. **Where Hidden lives:** the fourth tab.
+2. **The tab's count:** the strip's shipped count.
+3. **A Help me choose run in History** from before a hide drops the hidden row silently too.
+4. **Hide on the page:** the quiet text line at both widths.
+5. **The row's glyph:** option A, beside the fit bar (`Placement`).

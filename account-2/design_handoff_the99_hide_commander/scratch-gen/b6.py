@@ -5,8 +5,8 @@ def lst(place, st='rest'):
     return '<div class="list">' + L.crow('ghalta', 1, st, ctrl_new=True, place=place) + L.crow('zimone', 2, 'rest', place=place) + '</div>'
 
 def build():
-    body = L.head('Hide a commander · R1c · account 2 · 2026-10-31', 'The row’s Hide control · three placements',
-        '<b>R1c (Hugh):</b> at the end of the figures line the glyph floats just above the fit bar and reads as stray on a phone. Three ways to seat it, all at the foot of the row, none on the art. '
+    body = L.head('Hide a commander · R1c · account 2 · 2026-10-31', 'The row’s Hide control · three placements (A chosen)',
+        '<b>Hugh chose A, 2026-10-31.</b> Kept as the record. <b>R1c (Hugh):</b> at the end of the figures line the glyph floats just above the fit bar and reads as stray on a phone. Three ways to seat it, all at the foot of the row, none on the art. '
         '<b>Recommended: A</b>, the glyph closes the fit bar’s line: the bar gives up 50px, the glyph centres on it, and the row stays the same height. Same states, target and behaviour as R1b in every option.', tag='R1c')
     body += '<div class="frames">'
     body += L.fr('<b>A · beside the fit bar</b> · 390 · recommended', L.phone(lst('bar'), count=2),

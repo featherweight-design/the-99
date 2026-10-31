@@ -1,13 +1,13 @@
 import lib as L
 CSS = '<style>.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;max-width:1500px}</style>'
 def build():
-    body = L.head('Hide a commander · R1 · account 2 · 2026-10-31', 'Hide a commander: the calls (R1b)',
+    body = L.head('Hide a commander · R1 · account 2 · 2026-10-31', 'Hide a commander: the calls (approved, R1c A)',
         'Brief <code>docs/superpowers/design-briefs/2026-10-31-hide-a-commander.md</code> and Hugh’s rulings (hidden until undone, a Hidden list, out of For you, Discover and Help me choose, '
         'the page still opens with Unhide). Every state at 390 and 1300, drawn over the shipped captures (<code>public/about/pages/amonkhet</code>) and the shipped components each board names. '
         'Strings marked DRAFT go to <code>/copy-review</code>. Sources: main @7bf3c89.')
     body += CSS + '<div class="grid">'
     body += L.rule('1 · The control (<code>Rows</code>)', [
-        '<b>R1b: at the foot of the row</b>, the right end of the figures line, at both widths. Hugh: the top-right plate drew the eye from the commander. Not a menu (the row has none), not a swipe (can’t be found), not page-only.',
+        '<b>At the foot of the row, beside the fit bar</b> (R1c option A, Hugh 2026-10-31), at both widths. Not on the art: a plate there drew the eye from the commander. Not a menu (the row has none), not a swipe (can’t be found), not page-only.',
         'A bare eye-slash glyph, 16px, <code>--fg-faint</code>, no plate, in a 44px target that adds no height. After the <i>manapool</i> stamp in Discover. Always drawn, not hover-only.',
         'It sits above the row’s stretched link, so pressing it never opens the page. <code>aria-label</code> and <code>title</code>: <i>Hide {name}</i>.'])
     body += L.rule('2 · Confirmation and undo (<code>Undo</code>)', [
@@ -29,10 +29,10 @@ def build():
     body += L.rule('6 · Name and words', [
         '<b>Hide</b>, <b>Hidden</b>, <b>Unhide</b>: the words of the control, the tab and the way back are the same family, and “Not interested” reads as a verdict on the commander, which Hugh’s ruling says it is not.',
         'DRAFT strings: the held heading and body, the page note, Hide from my lists, the empty state, all-hidden state and the three failure lines. The Undo row reuses <code>undo.action</code>.'])
-    body += L.rule('Open for Hugh', [
-        '<b>Where Hidden lives:</b> the fourth tab (drawn) or, quieter, no tab and a <i>3 hidden</i> link at the end of For you’s and Discover’s count line (not drawn; the empty state would then have no way in).',
-        '<b>The tab’s count</b>: drawn, using the strip’s shipped count. Drop it if it reads as a nag.',
-        '<b>A Help me choose run in History</b> from before a hide: recommended, drop the hidden row silently there too (a past run re-reads its rows), rather than keep it as a record.',
-        '<b>Hide on the page</b>: the quiet text line at both widths (drawn, R1b).'], style='grid-column:1 / -1')
+    body += L.rule('Settled on approval (2026-10-31, as drawn and recommended)', [
+        '<b>Where Hidden lives:</b> the fourth tab.',
+        '<b>The tab’s count</b>: the strip’s shipped count.',
+        '<b>A Help me choose run in History</b> from before a hide drops the hidden row silently too (a past run re-reads its rows).',
+        '<b>Hide on the page</b>: the quiet text line at both widths (R1b).'], style='grid-column:1 / -1')
     body += '</div>'
     return L.doc('Hide a commander · Calls', body, 1612)

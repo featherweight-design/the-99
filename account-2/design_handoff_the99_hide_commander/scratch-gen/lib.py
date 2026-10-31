@@ -335,7 +335,7 @@ def styles_line(st):
     return f'This commander’s top three play styles are <b>{a}</b>, <b>{b}</b> and <b>{c}</b>.'
 
 
-def crow(key, rank, ctrl='', art=None, lane='own', extra_cls='', ctrl_new=False, place='figs'):
+def crow(key, rank, ctrl='', art=None, lane='own', extra_cls='', ctrl_new=False, place='bar'):
     """One CommanderRow. `ctrl`: '' none (as shipped), or a plate state: 'rest', 'hov', 'prs', 'foc'."""
     c = C[key]
     src = art or f'art/crop-{key}.jpg'
