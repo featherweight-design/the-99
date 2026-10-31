@@ -68,7 +68,7 @@ export function vercelRequestId(header) {
 }
 
 /**
- * Every `[perf]` line in `vercel logs --json` output, keyed by the id of the request that logged
+ * Every `[perf]` line in `vercel logs --json` output (JSON Lines), keyed by the id of the request that logged
  * it. A line can sit in the entry's `message` or in its `logs` array, as a string or as
  * `{ message }`, depending on how the runtime batched it; all four shapes are read, and anything
  * else is skipped rather than thrown on, because the stream holds every request the deployment
@@ -84,7 +84,9 @@ export function perfLinesFromVercel(jsonl) {
     } catch {
       continue;
     }
-    if (typeof entry.id !== "string") continue;
+    // CLI 65 prints `{ type: "log", data: { requestId, message, … } }`; older CLIs printed the entry bare, keyed `id`.
+    if (entry?.type === "log" && entry.data) entry = { ...entry.data, id: entry.data.requestId };
+    if (typeof entry?.id !== "string") continue;
     const texts = [entry.message, ...(Array.isArray(entry.logs) ? entry.logs : [])]
       .map((l) => (typeof l === "string" ? l : l?.message))
       .filter((t) => typeof t === "string");

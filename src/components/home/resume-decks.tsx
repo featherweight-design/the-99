@@ -25,7 +25,7 @@ import type { DeckListItem } from "../../lib/decks/read";
 import type { ShoppingRollup } from "../../lib/decks/shopping-rollup";
 import { byTouched, elapsed, touchedBy } from "../../lib/decks/touched";
 import { statusBarStyle } from "../../lib/decks/status-style";
-import { TRUNCATES } from "../decks/spine-desktop";
+import { TRUNCATES } from "../decks/truncates";
 import { BracketChip } from "../decks/bracket-chip";
 import { StatusPillBadge } from "../decks/status-pill";
 import { ArtWash } from "../ui/art-wash";

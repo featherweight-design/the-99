@@ -34,7 +34,7 @@ import { ArtLayer } from "../ui/art-layer";
 import { CommanderThumb } from "../ui/commander-thumb";
 import { AnswerPresses, receiptText, useLandFocus, useSpareAnswer, useSpareToast, type Answer, type SpareToast } from "../social/spare-answer";
 import { useHeldLead } from "./held-lead";
-import { HOME_HEADING_ID } from "./arrivals-banner";
+import { HOME_HEADING_ID } from "./home-heading";
 import { DismissButton, useFeedDismiss } from "../feed/dismiss";
 
 type Face = Pick<ProfileCommander, "artCropUri"> | null;

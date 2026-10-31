@@ -50,10 +50,13 @@ function resolveImport(fromFile, spec) {
 /**
  * Every module this source takes a VALUE from: a value import, or a value re-export
  * (`export { x } from`, `export * from`), since a barrel re-exporting a reader is as much a path to
- * it as importing it directly. Type-only forms carry no runtime edge and are left out.
+ * it as importing it directly, or a bare side-effect `import "x"`. Type-only forms carry no runtime edge and are left out.
  */
 export function importsOf(source) {
-  return [...source.matchAll(/^[ \t]*(?:import|export)\s+(?!type\s)[^;]*?from\s+["']([^"']+)["']/gms)].map((m) => m[1]);
+  const named = [...source.matchAll(/^[ \t]*(?:import|export)\s+(?!type\s)[^;]*?from\s+["']([^"']+)["']/gms)].map((m) => m[1]);
+  // A bare side-effect import (`import "../social/access"`) runs the module's top level, so it is an edge too.
+  const bare = [...source.matchAll(/^[ \t]*import\s+["']([^"']+)["']/gm)].map((m) => m[1]);
+  return [...named, ...bare];
 }
 
 /**

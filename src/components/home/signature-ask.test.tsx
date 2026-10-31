@@ -14,7 +14,7 @@ vi.mock("../../app/friends/actions", () => a);
 
 import { SignatureRow, SignatureStrip } from "./signature-ask";
 import { socialCopy } from "../../lib/copy/social";
-import { HOME_HEADING_ID } from "./arrivals-banner";
+import { HOME_HEADING_ID } from "./home-heading";
 
 /** Home's heading, as the page draws it: where focus goes when the ask leaves. */
 function withHeading(ui: React.ReactElement) {

@@ -10,7 +10,8 @@
 // wins, which is why the locked cards are --surface-rail on --border and the
 // step-1 card is --surface-inset.
 
-import { ArrivalsBanner, HOME_HEADING_ID } from "./arrivals-banner";
+import { ArrivalsBanner } from "./arrivals-banner";
+import { HOME_HEADING_ID } from "./home-heading";
 import type { AboutLine } from "../../lib/about/notice";
 import { FirstRunStepOne } from "./first-run-step-one";
 import { HomeTour } from "../discovery/home-tour";

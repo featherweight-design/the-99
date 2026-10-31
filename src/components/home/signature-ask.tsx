@@ -18,7 +18,7 @@ import { setSignatureCardAction, skipFacePromptAction } from "../../app/friends/
 import { socialCopy } from "../../lib/copy/social";
 import type { OwnCommander } from "../../lib/social/friends";
 import { Face, faceInitials } from "../social/face";
-import { HOME_HEADING_ID } from "./arrivals-banner";
+import { HOME_HEADING_ID } from "./home-heading";
 import { SignaturePicker, type SignaturePick } from "../social/signature-picker";
 import { SocialToast, type SocialToastState } from "../social/social-toast";
 

@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
-  KEYED_BY_SWITCHES, listCacheProblems, loaderFiles, perRequestProblems, schemaTables, socialKeyProblems, switchReaders, tablesRead, triggeredTables, unrecordedCatches,
+  KEYED_BY_SWITCHES, importsOf, listCacheProblems, loaderFiles, perRequestProblems, schemaTables, socialKeyProblems, switchReaders, tablesRead, triggeredTables, unrecordedCatches,
 } from "./list-cache-tables.mjs";
 
 const create = (table: string, column: string, deferred = true) =>
@@ -63,6 +63,13 @@ describe("listCacheProblems", () => {
   it("does not ask the stamp to cover the switch overrides, which reach a page through its key", () => {
     const keyed = [...KEYED_BY_SWITCHES].map((name) => ({ name, owner: "user_id" }));
     expect(listCacheProblems([...read, ...keyed], new Map([["decks", "user_id"], ["deck_cards", "deck_id"]]))).toEqual([]);
+  });
+});
+
+describe("importsOf", () => {
+  it("follows a bare side-effect import, which runs the module's top level", () => {
+    const source = `import "../social/access";\nimport type { T } from "./types";\nimport { a } from "./a";\nexport * from "./b";\n`;
+    expect(importsOf(source)).toEqual(["./a", "./b", "../social/access"]);
   });
 });
 

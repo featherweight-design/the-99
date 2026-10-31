@@ -13,7 +13,7 @@ import { useRef, useState } from "react";
 import { dismissWelcomeStripAction } from "../../app/welcome-actions";
 import { stripDay, welcomeCreditsCopy, type LeadLine } from "../../lib/copy/welcome-credits";
 import type { WelcomeFacts, WelcomeSheet } from "../../lib/payments/welcome-sheet";
-import { HOME_HEADING_ID } from "../home/arrivals-banner";
+import { HOME_HEADING_ID } from "../home/home-heading";
 import { PendingReporter } from "../shell/pending-reporter";
 import { useLocalDay, WhereCreditsWork } from "./where-credits-work";
 
