@@ -95,7 +95,7 @@ describe("loadYourRequests", () => {
     const rows = await loadYourRequests("u1", ON, NOW);
     expect(m.spares).toHaveBeenCalledTimes(1);
     expect(new Set(m.spares.mock.calls[0][1])).toEqual(new Set(["sol", "bolt", "jace", "ring"]));
-    expect(m.buyRows).toHaveBeenCalledWith("u1", undefined, undefined, ON);
+    expect(m.buyRows).toHaveBeenCalledWith("u1");
     // Colin still offers Sol but no deck buys it: unneeded. Max no longer offers Bolt: unavailable (before unneeded).
     expect(rows.map((r) => [r.id, r.state])).toEqual([["open", "unneeded"], ["gone", "unavailable"], ["no", "no"], ["old", "expired"]]);
   });

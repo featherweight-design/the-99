@@ -84,7 +84,7 @@ async function run() {
 
   const four = new Map((await rows<{ id: string; name: string }>(sql`
     select oracle_id::text id, name from cards where name in (${sql.join(FOUR.map((n) => sql`${n}`), sql`, `)})`)).map((r) => [r.id, r.name]));
-  const owes = async (deckId: string) => (await loadDeckBuyRows(USER, [deckId], undefined, ENV))
+  const owes = async (deckId: string) => (await loadDeckBuyRows(USER, [deckId]))
     .filter((r) => r.deckId === deckId && four.has(r.oracleId)).map((r) => four.get(r.oracleId)).sort();
 
   // The older decks: committed first, so seniority favors them, and holding none of the four.
@@ -124,7 +124,7 @@ async function run() {
   const [plain] = await rows<{ n: number }>(sql`select count(*)::int n from deck_token_printings where deck_id in (${thorin}::uuid, ${gishath}::uuid)`);
   check("i · a plain start, whose box's tokens the player does not hold, pins none", plain.n, 0);
 
-  const allOwed = (await loadDeckBuyRows(USER, [deckId], undefined, ENV)).filter((r) => r.deckId === deckId);
+  const allOwed = (await loadDeckBuyRows(USER, [deckId])).filter((r) => r.deckId === deckId);
   check("b · the new deck owes nothing", allOwed.length, 0);
   check("c · the older decks are still short of all four", [await owes(thorin), await owes(gishath)], [FOUR, FOUR]);
 
@@ -188,7 +188,7 @@ async function run() {
  * holds, so the junior one is short. The box's copies are the new deck's, and neither readout may say otherwise.
  */
 async function heldOverlap(four: Map<string, string>) {
-  const owesOf = async (deckId: string) => (await loadDeckBuyRows(HELD_USER, [deckId], undefined, ENV))
+  const owesOf = async (deckId: string) => (await loadDeckBuyRows(HELD_USER, [deckId]))
     .filter((r) => r.deckId === deckId && four.has(r.oracleId)).map((r) => four.get(r.oracleId)).sort();
   const senior = await startPreconDeck(HELD_USER, "AbzanArmor_TDC", "Older A");
   const junior = await startPreconDeck(HELD_USER, "AvengersAssemble_MSC", "Older B");

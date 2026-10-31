@@ -432,13 +432,10 @@ describe("runTuning's 6-asked/5-kept slice, per list", () => {
   });
 
   // Admin adoption 6f-1: an owned-only run reads the claim model twice, for the shortlist and for the
-  // answer's free copies, and each takes the env the action resolved. The environment says the opposite
-  // of the reader's switches, so a handoff that passed the environment instead of the reader's env would
-  // read CHANGE_COMMANDER_ENABLED wrong.
+  // answer's free copies, and each takes the env the action resolved, checked by identity.
   it("hands an owned-only run's two claim reads the reader's resolved switches, not the environment", async () => {
     const { requestSwitchEnv } = await import("../../lib/switches/request");
-    const READER = { CHANGE_COMMANDER_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
-    vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
+    const READER = {} as unknown as NodeJS.ProcessEnv;
     vi.mocked(requestSwitchEnv).mockResolvedValue(READER);
     try {
       calls.limits = { capCents: null, sets: [], ownedOnly: true };

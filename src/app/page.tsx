@@ -215,7 +215,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
     // the payload as null/empty for the dashboard's props.
     const [lastUpdated, shopping] = await Promise.all([
       perf.timed("lastUpdated", () => getCollectionLastUpdated(userId)),
-      perf.timed("shoppingRollup", () => loadShoppingRollup(userId, undefined, env)),
+      perf.timed("shoppingRollup", () => loadShoppingRollup(userId)),
     ]);
     const ready = null;
     const arrivals = null;

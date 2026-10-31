@@ -1262,7 +1262,8 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Changed your mind? “Discard” puts the old commander back.',
     ],
     // The version current when it was written: an entry tied to a switch is announced by the
-    // switch, and nothing bumps the version for it.
+    // switch, and nothing bumps the version for it. The switch is retired (always on); the name
+    // stays the entry's identity, so no reader's New mark moves.
     marksPending: true,
     since: 9,
   },

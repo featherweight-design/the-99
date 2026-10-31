@@ -217,12 +217,10 @@ describe("loadDiscovery — wiring", () => {
     expect(got.cardsRead).toBe(2);
   });
 
-  // Admin PR 6f-1: the claim model decides CHANGE_COMMANDER_ENABLED from the env it
-  // is handed, and the pool requires its env: the list must hand it the reader's.
-  // The environment says the opposite; identity is checked as a boolean.
+  // Admin PR 6f-1: the claim model takes the env it is handed, and the pool requires its env: the list must
+  // hand it the reader's. Identity is checked as a boolean.
   it("runs the availability read under the reader's resolved switches, not the environment", async () => {
-    vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
-    const READER = { CHANGE_COMMANDER_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+    const READER = {} as unknown as NodeJS.ProcessEnv;
     try {
       loadAvailability.mockClear();
       await loadDiscoveryWithIds("user-1", { sort: "fit" }, READER);

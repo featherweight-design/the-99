@@ -5,7 +5,6 @@
 // page's NEW marks all ask `unseenEntries`. Four readers each with their own copy of "is this
 // new" is how the sheet announces an entry the page does not mark.
 
-import { changeCommanderEnabled } from "../commander-change/flag";
 import { analysisTabEnabled } from "../decks/analysis-flag";
 import { howItWorksEnabled } from "./how-it-works-flag";
 import { helpMeChooseEnabled } from "../intake/flag";
@@ -40,7 +39,8 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   NEVER_CUT_ENABLED: () => true,
   SWAP_TOOLS_ENABLED: swapToolsEnabled,
   HELP_ME_CHOOSE_ENABLED: helpMeChooseEnabled,
-  CHANGE_COMMANDER_ENABLED: changeCommanderEnabled,
+  // Retired (always on): Change commander. The name stays as the entry's historical identity.
+  CHANGE_COMMANDER_ENABLED: () => true,
   ANALYSIS_TAB_ENABLED: analysisTabEnabled,
   HOW_IT_WORKS_ENABLED: howItWorksEnabled,
   TUNING_ENABLED: tuningEnabled,

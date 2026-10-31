@@ -47,8 +47,7 @@ export type DeckStats = {
   cost: DeckShopping | null;
 };
 
-/** `env` is the reader's resolved switches, handed to the shopping roll-up's claim model. */
-type DeckIds = { userId: string; deckIds?: string[]; env: NodeJS.ProcessEnv };
+type DeckIds = { userId: string; deckIds?: string[] };
 
 /** `cards` a second time, for the partner — a table joined twice needs a name
  *  for each side or the columns are ambiguous. */
@@ -130,7 +129,7 @@ export async function loadDeckStats(input: DeckIds): Promise<Map<string, DeckSta
     // Narrowed to the decks being answered for: a deck page asking for one deck
     // should not pay to price the rest of the player's shopping list. The
     // seniority model behind it stays user-wide — see loadShoppingRollup.
-    loadShoppingRollup(input.userId, ids, input.env),
+    loadShoppingRollup(input.userId, ids),
   ]);
 
   type StatCard = { quantity: number; cmc: number; typeLine: string; colorIdentity: string[] };
@@ -188,8 +187,7 @@ export async function loadDeckStats(input: DeckIds): Promise<Map<string, DeckSta
 export async function loadOneDeckStats(
   deckId: string,
   userId: string,
-  env: NodeJS.ProcessEnv,
 ): Promise<DeckStats | null> {
-  const stats = await loadDeckStats({ userId, deckIds: [deckId], env });
+  const stats = await loadDeckStats({ userId, deckIds: [deckId] });
   return stats.get(deckId) ?? null;
 }

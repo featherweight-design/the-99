@@ -1,5 +1,5 @@
 // The claim read's SQL, captured from a fake transaction and rendered with the real dialect.
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
 import { loadAvailability, loadDeckBuyRows } from "./availability-query";
@@ -39,51 +39,31 @@ describe("loadAvailability with unownedAsZero (the cart's chooser)", () => {
     expect(q).toContain("from (");
     expect(q).toMatch(/select x\.oracle_id, 0 from unnest\(\$\d+::uuid\[\]\) as x\(oracle_id\)/);
     expect(q).toContain("where not exists (select 1 from owned w where w.oracle_id = x.oracle_id)");
-    expect(await render({ oracleIds: ["o1"] })).not.toContain("unnest(");
+    // Without the flag no unowned card joins the select (the moved-commander clause has its own unnest).
+    expect(await render({ oracleIds: ["o1"] })).not.toMatch(/from unnest\(\$\d+::uuid\[\]\) as x\(oracle_id\)/);
   });
 });
 
-// Admin adoption 6e: both claim readers decide CHANGE_COMMANDER_ENABLED (the moved-commander pending
-// clause) from the env they are HANDED, the
-// reader's resolved switches, and never from the environment alone. The environment and the handed env
-// are given opposite values, so a reader that dropped its env would follow the environment and fail.
-describe("the claim readers decide their switches from the env they are handed", () => {
-  const ON = { CHANGE_COMMANDER_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
-  const OFF = { CHANGE_COMMANDER_ENABLED: "false" } as unknown as NodeJS.ProcessEnv;
+// Change commander (plan decision 2): a deck whose live commander moved since its newest version is
+// pending, in both claim readers.
+describe("the claim readers count a moved commander as pending", () => {
   const MOVED = "select 1 from decks lvd where lvd.id = nv.deck_id";
   const capture = () => {
     const seen: SQL[] = [];
     const tx = { execute: async (q: SQL) => { seen.push(q); return { rows: [] }; } };
     return { tx: tx as never, text: () => new PgDialect().sqlToQuery(seen[0]).sql };
   };
-  const environment = (value: string) => {
-    vi.stubEnv("CHANGE_COMMANDER_ENABLED", value);
-  };
-  afterEach(() => vi.unstubAllEnvs());
 
-  it("loadAvailability: the reader's ON wins over an environment that has it off", async () => {
-    environment("false");
+  it("loadAvailability", async () => {
     const { tx, text } = capture();
-    await loadAvailability("user_1", { oracleIds: ["o1"], env: ON }, tx);
+    await loadAvailability("user_1", { oracleIds: ["o1"], env: ENV_VIEW }, tx);
     expect(text()).toContain(MOVED);
   });
 
-  it("loadAvailability: the reader's OFF wins over an environment that has it on", async () => {
-    environment("true");
+  it("loadDeckBuyRows", async () => {
     const { tx, text } = capture();
-    await loadAvailability("user_1", { oracleIds: ["o1"], env: OFF }, tx);
-    expect(text()).not.toContain(MOVED);
-  });
-
-  it("loadDeckBuyRows: the pending clause follows the handed env, both ways", async () => {
-    environment("false");
-    const on = capture();
-    await loadDeckBuyRows("user_1", undefined, on.tx, ON);
-    expect(on.text()).toContain(MOVED);
-    environment("true");
-    const off = capture();
-    await loadDeckBuyRows("user_1", undefined, off.tx, OFF);
-    expect(off.text()).not.toContain(MOVED);
+    await loadDeckBuyRows("user_1", undefined, tx);
+    expect(text()).toContain(MOVED);
   });
 });
 

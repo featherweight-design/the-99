@@ -112,7 +112,7 @@ export async function writeArrivalsReceipt(args: {
   parseErrorCount: number;
   /**
    * The reader's resolved switches (`requestSwitchEnv`), which the confirm passes: every claim read below takes
-   * it for the claim model's pending clause. Required since admin PR 7a: a probe outside a
+   * it. Required since admin PR 7a: a probe outside a
    * request passes `process.env` itself.
    */
   env: NodeJS.ProcessEnv;
@@ -133,7 +133,7 @@ export async function writeArrivalsReceipt(args: {
   type Reservations = Map<string, { deckId: string; copies: number }[]>;
   type Read = { buyAfter: Awaited<ReturnType<typeof loadDeckBuyRows>>; availability: Awaited<ReturnType<typeof loadAvailability>>; reservations: Reservations };
   const read: Read = await db.transaction(async (tx): Promise<Read> => {
-    const buyAfter = await loadDeckBuyRows(userId, undefined, tx, env);
+    const buyAfter = await loadDeckBuyRows(userId, undefined, tx);
     if (arrivedIds.length === 0) return { buyAfter, availability: new Map(), reservations: new Map() };
     const availability = await loadAvailability(userId, { oracleIds: arrivedIds, env }, tx);
     // The reservations, OLDEST FIRST: the claim model's order (`created_at`, then `deck_id`),

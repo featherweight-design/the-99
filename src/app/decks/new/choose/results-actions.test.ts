@@ -120,10 +120,8 @@ describe("moreRows", () => {
   });
 
   it("hands the page loader the reader's resolved env, not the environment", async () => {
-    // The search's claim reads decide CHANGE_COMMANDER_ENABLED from it: a dropped
-    // argument would read the environment, which has it the other way.
-    vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
-    const env = envViewWith({ CHANGE_COMMANDER_ENABLED: "true" });
+    // The search's claim reads take it; checked by identity, so a dropped argument is seen.
+    const env = envViewWith({});
     vi.mocked(requestSwitchEnv).mockResolvedValueOnce(env);
     try {
       await moreRows("?t=dinosaurs", 12);

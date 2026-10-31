@@ -26,8 +26,7 @@ import { formatCents, formatPriceFigure, priceState, summarisePrices } from "./p
 import { newestVersion, versionCards } from "./versions";
 import { isBasicLand, type DeckDetailCard } from "./grouping";
 import { cardTypeGroup, primaryRole } from "./read";
-import { changeCommanderEnabled } from "../commander-change/flag";
-import { commanderMoved, type CommanderPair } from "../commander-change/pending";
+import { commanderMoved } from "../commander-change/pending";
 import { loadCommanderRows } from "../commander-change/draft-rows";
 
 // `DraftState`, `DraftAdd`, the two counts and the two claim selectors live in
@@ -157,11 +156,9 @@ export const READ_SNAPSHOT = { isolationLevel: "repeatable read" } as const;
  * is nothing to compare, so the further reads are never issued.
  *
  * The deck's live commander columns ARE the draft's commander, so they are read
- * in the same snapshot as the draft's cards — but only with
- * `CHANGE_COMMANDER_ENABLED` on. Off, nothing writes those columns after
- * creation, and the deck page pays for no fifth query.
+ * in the same snapshot as the draft's cards.
  */
-async function readSnapshot(deckId: string, userId: string, env: NodeJS.ProcessEnv) {
+async function readSnapshot(deckId: string, userId: string) {
   return db.transaction(async (tx) => {
     // OWNER FIRST, in the same snapshot: a deck the reader does not own reads as a deck with no
     // version, and none of its rows are asked for. The deck page starts this read beside its own
@@ -177,12 +174,9 @@ async function readSnapshot(deckId: string, userId: string, env: NodeJS.ProcessE
     const draft = await tx.select({
       oracleId: deckCards.oracleId, quantity: deckCards.quantity,
     }).from(deckCards).where(eq(deckCards.deckId, deckId));
-    let live: CommanderPair | null = null;
-    if (changeCommanderEnabled(env)) {
-      [live = null] = await tx.select({
-        commanderOracleId: decks.commanderOracleId, partnerOracleId: decks.partnerOracleId,
-      }).from(decks).where(eq(decks.id, deckId));
-    }
+    const [live = null] = await tx.select({
+      commanderOracleId: decks.commanderOracleId, partnerOracleId: decks.partnerOracleId,
+    }).from(decks).where(eq(decks.id, deckId));
     return { version, before, draft, live };
   }, READ_SNAPSHOT);
 }
@@ -262,7 +256,7 @@ async function readDraft(
   detailed: boolean,
   env: NodeJS.ProcessEnv,
 ): Promise<DraftRead> {
-  const { version, before, draft, live } = await readSnapshot(deckId, userId, env);
+  const { version, before, draft, live } = await readSnapshot(deckId, userId);
 
   const empty: DraftState = {
     version, adds: [], addChanges: [], removes: [],

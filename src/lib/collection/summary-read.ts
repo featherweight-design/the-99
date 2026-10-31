@@ -115,7 +115,7 @@ function isContested(a: Availability): boolean {
 export async function loadContestedCards(
   oracleIds: string[],
   userId: string,
-  /** The reader's resolved switches (`requestSwitchEnv`), for the claim model's pending clause. */
+  /** The reader's resolved switches (`requestSwitchEnv`), for the claim read. */
   env: NodeJS.ProcessEnv,
 ): Promise<ContestedCard[]> {
   if (oracleIds.length === 0) return [];
@@ -161,7 +161,7 @@ export async function loadContestedCards(
 export async function countContestedCards(
   oracleIds: string[],
   userId: string,
-  /** The reader's resolved switches (`requestSwitchEnv`), for the claim model's pending clause. */
+  /** The reader's resolved switches (`requestSwitchEnv`), for the claim read. */
   env: NodeJS.ProcessEnv,
 ): Promise<number> {
   if (oracleIds.length === 0) return 0;
@@ -180,7 +180,7 @@ export async function loadContestedCard(
   userId: string,
   /**
    * `unownedAsZero`: read a card the collection holds no copy of as owning 0 (the cart's chooser).
-   * `env`: the reader's resolved switches (`requestSwitchEnv`), for the claim model's pending clause.
+   * `env`: the reader's resolved switches (`requestSwitchEnv`), for the claim read.
    */
   opts: { unownedAsZero?: boolean; env: NodeJS.ProcessEnv },
 ): Promise<ContestedCard | null> {
@@ -210,7 +210,7 @@ export async function loadChooserCards(
   oracleIds: string[],
   userId: string,
   frozen: Record<string, { arrived: number; ownedBefore: number }> = {},
-  /** The reader's resolved switches (`requestSwitchEnv`), for the claim model's pending clause. */
+  /** The reader's resolved switches (`requestSwitchEnv`), for the claim read. */
   env: NodeJS.ProcessEnv,
 ): Promise<ContestedCard[]> {
   if (oracleIds.length === 0) return [];
@@ -241,8 +241,7 @@ export async function loadSummaryView(
   userId: string,
   /**
    * `addedCopy`: read the chooser behind each version-4 row's Change (the switch, from the page).
-   * `env`: the reader's resolved switches (`requestSwitchEnv`), which every claim read below takes for
-   * the claim model's pending clause.
+   * `env`: the reader's resolved switches (`requestSwitchEnv`), which every claim read below takes.
    */
   opts: { addedCopy?: boolean; env: NodeJS.ProcessEnv },
 ): Promise<SummaryView | null> {

@@ -118,8 +118,7 @@ export type DraftState = {
    * `changeCount`, so a swap alone raises the banner and admits the review page.
    *
    * Optional only so a fixture built before commanders could change still types;
-   * the reader always sets it, and absent reads as null. Always null while
-   * `CHANGE_COMMANDER_ENABLED` is off, because no read compares the columns then.
+   * the reader always sets it, and absent reads as null.
    */
   commander?: { from: CommanderPair; to: CommanderPair } | null;
   /** The moved commanders as the banner and the review page draw them; set with `commander`. */

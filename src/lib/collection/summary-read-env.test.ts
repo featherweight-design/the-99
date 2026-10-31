@@ -1,7 +1,6 @@
 // The contested-card reads hand the claim model the env they are given (admin PR 6f-2), including the one
 // handoff inside the module that is not a claim read's own call site: the receipt's chooser
-// (`loadSummaryView` → `chooserFor` → `loadChooserCards`). A dropped argument would read the environment,
-// which has CHANGE_COMMANDER_ENABLED the other way here.
+// (`loadSummaryView` → `chooserFor` → `loadChooserCards`). Checked by identity, so a dropped argument is seen.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { envViewWith } from "@/test/env-view";
 
@@ -17,11 +16,10 @@ vi.mock("../decks/availability-query", () => ({ loadAvailability: stub.loadAvail
 
 const { countContestedCards, loadChooserCards, loadContestedCard, loadContestedCards, loadSummaryView, uploadIsAdd } = await import("./summary-read");
 
-const ENV = envViewWith({ CHANGE_COMMANDER_ENABLED: "true" });
+const ENV = envViewWith({});
 const envOf = (i: number) => (stub.loadAvailability.mock.calls[i] as unknown as [string, { env?: unknown }])[1].env;
 
 beforeEach(() => {
-  vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
   stub.loadAvailability.mockClear();
 });
 afterEach(() => vi.unstubAllEnvs());

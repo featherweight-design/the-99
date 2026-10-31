@@ -114,10 +114,8 @@ describe("the choose page", () => {
   });
 
   it("hands the results' search the reader's resolved env, not the environment", async () => {
-    // The search's claim reads decide CHANGE_COMMANDER_ENABLED from it: a dropped
-    // argument reads the environment, which has it the other way.
-    vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
-    stub.env = envViewWith({ CHANGE_COMMANDER_ENABLED: "true" });
+    // The search's claim reads take it; checked by identity, so a dropped argument is seen.
+    stub.env = envViewWith({});
     try {
       stub.themes.mockResolvedValue([]);
       stub.page.mockReset().mockResolvedValue({ order: "fit", tooNarrow: false, card: null, rows: [], hasMore: false, total: 0 });

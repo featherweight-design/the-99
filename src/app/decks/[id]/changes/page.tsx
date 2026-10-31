@@ -183,9 +183,9 @@ export default async function ChangesPage({
   // staples join for the same five integers, measured at 632-831ms steady state.
   const mix = await cacheForUser(
     userId,
-    // Change commander: the live commander joins the key, switch on only (audit F5). The reader's
+    // Change commander: the live commander joins the key (audit F5). The reader's
     // switches join it too: the mix's basis follows LABEL_ROLE_COUNTS_ENABLED, resolved per reader.
-    [...DECK_MIX_KEY, id, await indexGeneration(), switchBits(env), ...(await commanderKeyParts(id, env))],
+    [...DECK_MIX_KEY, id, await indexGeneration(), switchBits(env), ...(await commanderKeyParts(id))],
     () => loadDeckMix(id, userId, roleBasisFromEnv(env)),
   );
 

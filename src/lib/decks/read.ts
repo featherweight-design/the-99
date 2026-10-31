@@ -32,7 +32,6 @@ import { classifyRoles } from "../recs/roles";
 import { isCommanderCandidate } from "../recs/score";
 import { loadAvailability, loadDeckBuyRows } from "./availability-query";
 import { deckBodySize } from "./deck-size";
-import { changeCommanderEnabled } from "../commander-change/flag";
 import { deckCommanderMovedSql } from "../commander-change/pending-sql";
 import { inUseElsewhereByDeck } from "./in-use-elsewhere";
 import { toUtcInstant, type PriceFact } from "./price";
@@ -393,8 +392,8 @@ export function deckDetailReads(deckId: string, userId: string) {
  * over the whole collection), else its own read narrowed to `ids`. Null when the deck owns nothing
  * to look up. Apart so a test can pin that a shared read stands in for the query.
  *
- * `env` is the reader's resolved switches (`requestSwitchEnv`), which decide the claim model's pending
- * clause. Required, so no caller of `getDeckDetail` reads them from the environment alone.
+ * `env` is the reader's resolved switches (`requestSwitchEnv`), which the claim read
+ * requires. Required, so no caller of `getDeckDetail` reads them from the environment alone.
  */
 export function deckAvailabilityRead(
   userId: string,
@@ -1047,8 +1046,7 @@ export const lastCommittedSql = sql<Date | string | null>`(
  * of the draft (change commander): `changeCount` in `draft-shape.ts` adds one
  * for a moved commander, and `deckPendingSql` below adds the same one here, so
  * the tile and the deck page count the same draft. The deck list reads
- * `deckPendingSql`, never this fragment on its own; with
- * CHANGE_COMMANDER_ENABLED off the two are the same object.
+ * `deckPendingSql`, never this fragment on its own.
  *
  * The symmetric difference is two `except`s rather than a join: a full outer
  * join over two child tables inside a grouped select is a second way to write
@@ -1095,14 +1093,10 @@ export const pendingChangesSql = sql<number>`(
 
 /**
  * `pendingChangesSql`, plus one when the deck's commander moved since its newest version (change
- * commander, plan decision 3: a new commander or pair is one change). With
- * CHANGE_COMMANDER_ENABLED off this IS `pendingChangesSql`, the same object, so the deck list's
- * SQL is byte-identical to the one before commanders could move.
+ * commander, plan decision 3: a new commander or pair is one change).
  */
-export function deckPendingSql(env: NodeJS.ProcessEnv): SQL<number> {
-  if (!changeCommanderEnabled(env)) return pendingChangesSql;
-  return sql<number>`(${pendingChangesSql} + (case when ${deckCommanderMovedSql("decks")} then 1 else 0 end))::int`;
-}
+export const deckPendingSql: SQL<number> =
+  sql<number>`(${pendingChangesSql} + (case when ${deckCommanderMovedSql("decks")} then 1 else 0 end))::int`;
 
 /**
  * The newest version's number, for the figure the mark explains: `36 changes
@@ -1188,10 +1182,9 @@ export async function listDecksWithStats(
      * it. Unset, every row's `bracket` is null, which is what a deck nobody has analyzed draws.
      */
     includeBracket?: boolean;
-    /** The reader's resolved switches (`requestSwitchEnv`), for the deck-state marks, the commander
-     *  art and the claim model's seniority read. Required (admin PR 7b): a names-only caller still
-     *  reaches the claim read through `canFlip`, and a script with no signed-in reader passes
-     *  `process.env` itself. */
+    /** The reader's resolved switches (`requestSwitchEnv`), for the `inUseElsewhere` claim read.
+     *  Required (admin PR 7b): a script with no signed-in reader passes `process.env`
+     *  itself. */
     env: NodeJS.ProcessEnv;
     /**
      * Read each deck's notice (`noticeSummarySql`). Its own option rather than riding on
@@ -1287,7 +1280,7 @@ export async function listDecksWithStats(
       // `sql` either way, so the projection's SHAPE does not change with the
       // option: a conditional column would make the row type depend on a
       // runtime value, and every reader would have to narrow it.
-      pendingChanges: opts.includeDeckState ? deckPendingSql(opts.env) : sql<number>`0::int`,
+      pendingChanges: opts.includeDeckState ? deckPendingSql : sql<number>`0::int`,
       versionNumber: opts.includeDeckState
         ? newestVersionNumberSql
         : sql<number | null>`null::int`,
@@ -1397,7 +1390,7 @@ export async function listDecksWithStats(
   // Tolerated the same way as `inUseElsewhere`: a failed read falls back to the
   // ownership answer, which is the pre-seniority behaviour and not a 500.
   const buyRows = canFlip
-    ? await loadDeckBuyRows(userId, undefined, undefined, opts.env).catch(() => {
+    ? await loadDeckBuyRows(userId).catch(() => {
         recordSoftFailure();
         return [];
       })

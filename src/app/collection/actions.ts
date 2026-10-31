@@ -437,7 +437,7 @@ export async function confirmUpload(
   // is a mis-stated line on a receipt — never a wrong claim figure, since every claim
   // figure in the app is recomputed live and the chooser's write re-validates in its own
   // transaction.
-  const buyBefore = await loadDeckBuyRows(userId, undefined, undefined, env);
+  const buyBefore = await loadDeckBuyRows(userId);
 
   // A preview written before migration 0008 carries no collectorNumber/finish;
   // the write coerces both rather than spreading undefined into the insert.

@@ -322,13 +322,12 @@ describe("readCartChooser", () => {
   });
 });
 
-// Admin PR 6f-2: the purchase's claim reads and the cart chooser's read take the reader's env. Opposite to
-// the environment on the claim model's switch, so a dropped argument would read the other way.
+// Admin PR 6f-2: the purchase's claim reads and the cart chooser's read take the reader's env, checked by
+// identity.
 describe("the reader's env", () => {
   it("reaches both writes and the chooser's read, by identity", async () => {
     const { requestSwitchEnv } = await import("../../lib/switches/request");
-    vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
-    const env = envViewWith({ CHANGE_COMMANDER_ENABLED: "true" });
+    const env = envViewWith({});
     vi.mocked(requestSwitchEnv).mockResolvedValue(env);
     try {
       await press();

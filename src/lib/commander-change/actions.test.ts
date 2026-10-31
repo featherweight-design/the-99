@@ -24,7 +24,6 @@ const DECK = "00000000-0000-4000-8000-000000000001";
 const CARD = "00000000-0000-4000-8000-000000000002";
 
 beforeEach(() => {
-  process.env.CHANGE_COMMANDER_ENABLED = "true";
   transaction.mockReset();
   loadChangeCandidates.mockReset();
   revalidateClaims.mockReset();
@@ -68,13 +67,6 @@ describe("changeCommander at the request boundary", () => {
     transaction.mockImplementationOnce(async (fn: (tx: unknown) => unknown) => fn("tx"));
     await changeCommander(DECK, { commanderOracleId: CARD, partnerOracleId: null }, CARD);
     expect(writeCommanderChange).toHaveBeenCalledWith("tx", DECK, "user_1", { commanderOracleId: CARD, partnerOracleId: null }, CARD);
-  });
-
-  it("refuses everything with the switch off", async () => {
-    delete process.env.CHANGE_COMMANDER_ENABLED;
-    expect(await changeCommander(DECK, { commanderOracleId: CARD, partnerOracleId: null }))
-      .toEqual({ ok: false, reason: "unavailable" });
-    expect(transaction).not.toHaveBeenCalled();
   });
 });
 

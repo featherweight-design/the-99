@@ -56,7 +56,7 @@ describe("switchPage", () => {
       groupOf: new Map(),
     };
     const p = switchPage({
-      name: "CHANGE_COMMANDER_ENABLED",
+      name: "ALL_DECKS_CART_ENABLED",
       env: envValues({}),
       overrides: [],
       verdicts: explainAccounts({} as NodeJS.ProcessEnv, snapshot, ACCOUNTS.map((a) => a.id)),

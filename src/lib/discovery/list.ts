@@ -407,8 +407,7 @@ export function discoveryKey(sort: string, env: NodeJS.ProcessEnv): string[] {
  */
 export async function loadDiscoveryPool(
   userId: string,
-  /** The reader's resolved switches (`requestSwitchEnv`), which the claim model reads its pending clause
-   *  from. */
+  /** The reader's resolved switches (`requestSwitchEnv`), handed to the claim read. */
   env: NodeJS.ProcessEnv,
   /** Called the moment the collection resolves, before the availability read: lets a caller start a
    *  read that needs only the collection (the label read) beside it. */

@@ -8,7 +8,6 @@ import { requireUserId } from "../auth";
 import { requestSwitchEnv } from "../switches/request";
 import { revalidateClaims } from "../decks/revalidate-claims";
 import { isUuid } from "../uuid";
-import { changeCommanderEnabled } from "./flag";
 import { loadChangeCandidates, type ChangeCandidates } from "./candidates";
 import type { CommanderPair } from "./pending";
 import { writeCommanderChange, type ChangeCommanderResult } from "./write";
@@ -17,8 +16,6 @@ export async function changeCommander(
   deckId: string, to: CommanderPair, staysOracleId: string | null = null,
 ): Promise<ChangeCommanderResult> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
-  if (!changeCommanderEnabled(env)) return { ok: false, reason: "unavailable" };
   // Request data: an id that is not a uuid would reach Postgres's cast and throw, where the caller
   // is owed the typed refusal.
   if (!isUuid(deckId)) return { ok: false, reason: "unavailable" };
@@ -46,12 +43,11 @@ export async function changeCommander(
 /**
  * The candidates for the sheet, read when it opens rather than shipped with the deck page: most
  * visits never open it, and the read costs a support join over every candidate. Null when the
- * switch is off or the deck is not the reader's.
+ * deck is not the reader's.
  */
 export async function readChangeCandidates(deckId: string): Promise<ChangeCandidates | null> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (!changeCommanderEnabled(env)) return null;
   if (!isUuid(deckId)) return null;
   return loadChangeCandidates(deckId, userId, env);
 }

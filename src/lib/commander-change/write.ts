@@ -20,7 +20,7 @@ import { commanderMoved, tradeShape, type CommanderPair } from "./pending";
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 export type ChangeCommanderRefusal =
-  /** The switch is off, the deck is not the reader's, or the deck is gone. */
+  /** The deck is not the reader's, or the deck is gone. */
   | "unavailable"
   /** Not a legal commander, not a legal pair, or two of the same card. */
   | "illegal"

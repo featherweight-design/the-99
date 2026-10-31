@@ -1,7 +1,6 @@
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import type { Availability, DeckClaim } from "./availability";
-import { changeCommanderEnabled } from "../commander-change/flag";
 import { deckCommanderMovedSql } from "../commander-change/pending-sql";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -45,16 +44,12 @@ type Row = {
  * to be able to see the excluded deck's own place in the queue.
  */
 // A deck whose live commander differs from its newest version's is pending too (change commander,
-// plan decision 2). With CHANGE_COMMANDER_ENABLED off the clause is ABSENT and the CTE is
-// byte-identical to the one before commanders could move (src/lib/commander-change/queries.test.ts
-// pins that). Decided from the READER's resolved switches (`requestSwitchEnv`), never the environment alone.
-const commanderPending = (env: NodeJS.ProcessEnv) => changeCommanderEnabled(env)
-  ? sql` or exists (
+// plan decision 2; src/lib/commander-change/queries.test.ts pins the clause).
+const commanderPending = sql` or exists (
       select 1 from decks lvd where lvd.id = nv.deck_id and ${deckCommanderMovedSql("lvd")}
-    )`
-  : sql``;
+    )`;
 
-const claimModel = (userId: string, env: NodeJS.ProcessEnv) => sql`
+const claimModel = (userId: string) => sql`
   -- The version each deck is currently sleeved as. number orders it, not
   -- committed_at: the unique key makes number strictly increasing per deck,
   -- and two versions committed in the same millisecond would tie on time.
@@ -181,7 +176,7 @@ const claimModel = (userId: string, env: NodeJS.ProcessEnv) => sql`
       except
       select vc.oracle_id, vc.quantity
       from deck_version_cards vc where vc.version_id = nv.version_id
-    )${commanderPending(env)}
+    )${commanderPending}
   ),
   -- One row per (oracle, claiming deck), carrying that deck's whole ask.
   -- Grouping rather than select distinct is what folds a deck whose commander is
@@ -378,14 +373,14 @@ export async function loadAvailability(
      */
     unownedAsZero?: boolean;
     /**
-     * The reader's resolved switches (`requestSwitchEnv`), which decide the moved-commander pending
-     * clause. Required (admin PR 7b): a script with no signed-in reader passes `process.env` itself.
+     * The reader's resolved switches (`requestSwitchEnv`). Required (admin PR 7b): a script with no
+     * signed-in reader passes `process.env` itself. No switch is decided from it today: the two that
+     * were (the `locked` key, the moved-commander pending clause) retired always-on.
      */
     env: NodeJS.ProcessEnv;
   },
   tx?: Tx,
 ): Promise<Map<string, Availability>> {
-  const env = opts.env;
   // Both narrowings are null-guarded in SQL rather than by string-building the
   // query, so there is one query plan and one place to read.
   //
@@ -405,7 +400,7 @@ export async function loadAvailability(
 `;
   const skip = sql.param(opts?.excludeDeckId ?? null);
   const rows = await (tx ?? db).execute<Row>(sql`
-    with ${claimModel(userId, env)},
+    with ${claimModel(userId)},
     -- Self-exclusion (Addendum 2 §6): the current deck never claims against
     -- itself. Applied once here, and hard, soft and claims inherit it.
     claim_decks as (
@@ -746,11 +741,9 @@ export async function loadDeckBuyRows(
    * user-wide however few decks the caller wants an answer for. Passing a deck
    * here saves pricing rows the caller will not read, not a scan.
    */
-  deckIds: string[] | undefined,
+  deckIds?: string[],
   /** Read inside a write's transaction, so what it bills is the write's own instant. */
-  tx: Tx | undefined,
-  /** The reader's resolved switches (`requestSwitchEnv`), for the claim model's pending clause. */
-  env: NodeJS.ProcessEnv,
+  tx?: Tx,
 ): Promise<DeckBuyRow[]> {
   if (deckIds && deckIds.length === 0) return [];
   // sql.param for the same reason it is used elsewhere in this file: a bare
@@ -761,7 +754,7 @@ export async function loadDeckBuyRows(
     oracle_id: string;
     quantity: number;
   }>(sql`
-    with ${claimModel(userId, env)},
+    with ${claimModel(userId)},
     -- The DRAFT decklist and both commanders. This is what a deck
     -- can be told to go and buy — the preview the player acts on — while
     -- seniority below is measured against what is sleeved. The two diverging

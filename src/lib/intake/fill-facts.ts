@@ -50,7 +50,7 @@ export async function loadFillGate(args: {
    */
   placedIds?: readonly string[];
   excludeDeckId?: string;
-  /** The reader's resolved switches (`requestSwitchEnv`), for the claim model's pending clause. */
+  /** The reader's resolved switches (`requestSwitchEnv`), for the claim read. */
   env: NodeJS.ProcessEnv;
   /** The bracket facts, when the caller already read them (`buildFillPlan`, which reads them once
    *  for the gate and the reach, so the two cannot see different cards). They must cover every id

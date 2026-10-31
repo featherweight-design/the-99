@@ -238,7 +238,7 @@ export type CardRow = {
  * `cache`d per request: the results page reads the card twice in one render, for the chip
  * (`loadCardChip`) and for the search (`loadSearchFacts`), and the claim read below is the
  * expensive half. `claims: false` skips it for a caller that only needs to know the card counts.
- * `env` is the reader's resolved switches (`requestSwitchEnv`), for the claim model's pending clause. It is
+ * `env` is the reader's resolved switches (`requestSwitchEnv`), for the claim read. It is
  * part of the `cache` key by identity, so the two reads share one only when the page hands both the same env.
  */
 export const loadCardRow = cache(async (

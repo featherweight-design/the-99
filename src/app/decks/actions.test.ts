@@ -2364,8 +2364,8 @@ describe("pullCardFromDeck", () => {
   });
 
   // Admin adoption 6e: both claim reads, the one that names the parties and the one that decides
-  // under the locks, run the claim model under the reader's resolved switches (its pending clause is
-  // CHANGE_COMMANDER_ENABLED's), never the environment alone. Identity, not equality: the sentinel is `{}`.
+  // under the locks, run the claim model under the reader's resolved switches, never the environment
+  // alone. Identity, not equality: the sentinel is `{}`.
   it("hands the reader's resolved env to both of its claim reads", async () => {
     stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
     vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);

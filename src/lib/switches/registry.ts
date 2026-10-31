@@ -29,7 +29,6 @@ export const SWITCHES = [
   { name: "ALL_DECKS_CART_ENABLED", kind: "feature" },
   { name: "ANALYSIS_TAB_ENABLED", kind: "model" },
   { name: "ANNOUNCEMENTS_ENABLED", kind: "feature" },
-  { name: "CHANGE_COMMANDER_ENABLED", kind: "feature" },
   { name: "FEEDBACK_ENABLED", kind: "feature" },
   { name: "FIND_A_DECK_READ_ENABLED", kind: "model", needs: "SWAP_TOOLS_ENABLED" },
   { name: "HELP_ME_CHOOSE_ENABLED", kind: "model" },

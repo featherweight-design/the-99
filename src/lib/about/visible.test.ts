@@ -5,13 +5,13 @@ import { aboutEntries } from "../copy/about-entries";
 import { creditsEntryOf, drawnEntry, isFirstRun, isSeen, resolveEntry, switchedIds, unseenEntries, variantId, visibleEntries, type SeenState } from "./visible";
 
 // TUNING_ENABLED also requires ANALYSIS_TAB_ENABLED (`tuningEnabled()`), already "true" here.
-const ON = { CHANGE_COMMANDER_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", MANA_BALANCE_ENABLED: "true", ALL_DECKS_CART_ENABLED: "true", ADDED_COPY_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true", FIND_A_DECK_READ_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", HELP_PANEL_ENABLED: "true", FIRST_RUN_TOUR_ENABLED: "true", CARD_SCAN_ENABLED: "true", NEAR_COMBOS_ENABLED: "true", PUSH_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const ON = { HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", MANA_BALANCE_ENABLED: "true", ALL_DECKS_CART_ENABLED: "true", ADDED_COPY_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true", FIND_A_DECK_READ_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", HELP_PANEL_ENABLED: "true", FIRST_RUN_TOUR_ENABLED: "true", CARD_SCAN_ENABLED: "true", NEAR_COMBOS_ENABLED: "true", PUSH_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 const OFF = {} as unknown as NodeJS.ProcessEnv;
 
 /** Two switched entries, a and b, beside one plain one, shaped like the launch entries. */
 const plain: AboutEntry = { ...aboutEntries[0], id: "plain", since: 3 };
 const a: AboutEntry = { ...aboutEntries[0], id: "a", since: 10, switch: "ALL_DECKS_CART_ENABLED" };
-const b: AboutEntry = { ...aboutEntries[0], id: "b", since: 10, switch: "CHANGE_COMMANDER_ENABLED" };
+const b: AboutEntry = { ...aboutEntries[0], id: "b", since: 10, switch: "HELP_ME_CHOOSE_ENABLED" };
 const catalog = [plain, a, b];
 const seen = (version: number, ids: string[] = []): SeenState => ({ version, ids });
 
@@ -19,7 +19,7 @@ const seen = (version: number, ids: string[] = []): SeenState => ({ version, ids
 // are drawn like an unswitched entry, and a reader who "met every launch" has met them too.
 // Collection editing's entries, and the names that followed it (scanning, added copy, the way in without a collection, I got
 // it), are among them. `upload-choice` draws in its Sync variant, so its variant id is met too.
-const RETIRED = ["CARD_SEARCH_ENABLED", "FIRST_RUN_TOUR_ENABLED", "HELP_PANEL_ENABLED", "NEAR_COMBOS_ENABLED", "PRECONS_ENABLED", "UPCOMING_PRECONS_ENABLED", "DECK_TOKENS_ENABLED", "LINEUP_ENABLED", "COMMANDERS_PLACE_ENABLED", "HOME_FEED_ENABLED", "SOCIAL_WISHLIST_ENABLED", "COLLECTION_EDIT_ENABLED", "CARD_SCAN_ENABLED", "ADDED_COPY_ENABLED", "NO_COLLECTION_ENTRY_ENABLED", "SHOPPING_MARK_BOUGHT_ENABLED", "DECK_NOTES_ENABLED", "DECK_STATS_ENABLED", "DECK_PRINTINGS_ENABLED", "NEVER_CUT_ENABLED"];
+const RETIRED = ["CARD_SEARCH_ENABLED", "FIRST_RUN_TOUR_ENABLED", "HELP_PANEL_ENABLED", "NEAR_COMBOS_ENABLED", "PRECONS_ENABLED", "UPCOMING_PRECONS_ENABLED", "DECK_TOKENS_ENABLED", "LINEUP_ENABLED", "COMMANDERS_PLACE_ENABLED", "HOME_FEED_ENABLED", "SOCIAL_WISHLIST_ENABLED", "COLLECTION_EDIT_ENABLED", "CARD_SCAN_ENABLED", "ADDED_COPY_ENABLED", "NO_COLLECTION_ENTRY_ENABLED", "SHOPPING_MARK_BOUGHT_ENABLED", "DECK_NOTES_ENABLED", "DECK_STATS_ENABLED", "DECK_PRINTINGS_ENABLED", "NEVER_CUT_ENABLED", "CHANGE_COMMANDER_ENABLED"];
 const retiredEntries = aboutEntries.filter((e) => e.switch && RETIRED.includes(e.switch));
 const retiredIds = switchedIds(retiredEntries.map((e) => resolveEntry(e, OFF)));
 
@@ -205,7 +205,7 @@ describe("an entry tied to a switch", () => {
 
   it("reads unseen when switched on after another was switched on and read (out of order)", () => {
     // Switch B on, and the reader visits: the visit records the switched ids it drew.
-    const bOn = visibleEntries({ CHANGE_COMMANDER_ENABLED: "true" } as unknown as NodeJS.ProcessEnv, catalog);
+    const bOn = visibleEntries({ HELP_ME_CHOOSE_ENABLED: "true" } as unknown as NodeJS.ProcessEnv, catalog);
     const afterVisit = seen(9, switchedIds(bOn));
     expect(unseenEntries(bOn, afterVisit)).toEqual([]);
     // Now switch A on. A version number would say the reader is current; A is still new.
@@ -326,7 +326,7 @@ describe("a negated line switch, and `import`'s two warnings (collection edit, r
   const imp = aboutEntries.find((e) => e.id === "import")!;
   const REPLACES = "Heads up: an import replaces your whole Collection, it doesn’t add to it.";
   const ASKS = "Already have a Collection here? The 99 asks whether the file replaces it or adds to it.";
-  const env = (v?: string) => (v === undefined ? {} : { CHANGE_COMMANDER_ENABLED: v }) as unknown as NodeJS.ProcessEnv;
+  const env = (v?: string) => (v === undefined ? {} : { HELP_ME_CHOOSE_ENABLED: v }) as unknown as NodeJS.ProcessEnv;
 
   it("always draws the question, never the replace warning, leaving no blank line behind", () => {
     const resolved = resolveEntry(imp, env());
@@ -335,7 +335,7 @@ describe("a negated line switch, and `import`'s two warnings (collection edit, r
   });
 
   it("keeps a `!` key while its switch is off and drops it while on, reading anything but 'true' as off", () => {
-    const e: AboutEntry = { ...aboutEntries[0], id: "neg", since: 3, keys: ["Old", "New"], keySwitches: { Old: "!CHANGE_COMMANDER_ENABLED", New: "CHANGE_COMMANDER_ENABLED" } };
+    const e: AboutEntry = { ...aboutEntries[0], id: "neg", since: 3, keys: ["Old", "New"], keySwitches: { Old: "!HELP_ME_CHOOSE_ENABLED", New: "HELP_ME_CHOOSE_ENABLED" } };
     expect(resolveEntry(e, env()).keys).toEqual(["Old"]);
     expect(resolveEntry(e, env("1")).keys).toEqual(["Old"]);
     expect(resolveEntry(e, env("true")).keys).toEqual(["New"]);

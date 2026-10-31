@@ -63,7 +63,7 @@ async function fits() {
   const { loadFriendSpares } = await import("../src/lib/social/spares");
   const { DECK_TOOLS, loadToolFits } = await import("../src/lib/discovery/fits");
   const env = process.env;
-  const rows = await loadDeckBuyRows(viewer.id, undefined, undefined, env);
+  const rows = await loadDeckBuyRows(viewer.id);
   const union = [...new Set(rows.map((r) => r.oracleId))];
   const time = async (fn: () => Promise<unknown>, runs = 9) => {
     const ms: number[] = [];

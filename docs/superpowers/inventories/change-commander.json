@@ -1,6 +1,6 @@
 {
   "feature": "Change commander (sub-project 7): the door, the sheet (PR 3), and the pending banner, the review page and Discard after a swap (PR 4)",
-  "note": "Needs a server with CHANGE_COMMANDER_ENABLED=true. CC_DECK is a single-commander deck the signed-in account owns, with a commander crop (on local-dev, any of the account's decks). CC_SWAPPED is a deck of the same account whose draft has changed its commander and nothing else (PR 4's rows).",
+  "note": "CC_DECK is a single-commander deck the signed-in account owns, with a commander crop (on local-dev, any of the account's decks). CC_SWAPPED is a deck of the same account whose draft has changed its commander and nothing else (PR 4's rows).",
   "rows": [
     {
       "id": "door",

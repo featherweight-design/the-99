@@ -7,8 +7,7 @@
 //
 // It builds its own fixture: a committed deck, under the account it signs in as, led by a mono-green
 // legend and holding three cards that another mono-green commander's decks run, so the figure has
-// something to count. It deletes the deck in a finally. Point it at `local-dev` with a server started
-// with CHANGE_COMMANDER_ENABLED=true, **never production**.
+// something to count. It deletes the deck in a finally. Point it at `local-dev`, **never production**.
 //
 // Run: `node scripts/probe-change-commander.mjs` (no package.json entry: that file is outside this
 // lane's fence). PROBE_BASE picks the server (default http://localhost:3000).

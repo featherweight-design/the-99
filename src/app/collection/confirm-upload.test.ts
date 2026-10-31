@@ -97,11 +97,8 @@ describe("confirmUpload", () => {
   });
 
   it("hands the write and the receipt the reader's resolved env, not the environment", async () => {
-    // The environment has every switch the two read off and the reader's env turns them on: the
-    // claim reads' CHANGE_COMMANDER_ENABLED.
-    // Left to default (`process.env`), either would decide the other way, so the env is checked by identity.
-    vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
-    const env = envViewWith({ CHANGE_COMMANDER_ENABLED: "true" });
+    // The claim reads under both take it; checked by identity, so a dropped argument is seen.
+    const env = envViewWith({});
     vi.mocked(requestSwitchEnv).mockResolvedValueOnce(env);
     stub.apply.mockResolvedValue(applied("upload_replace"));
     try {
@@ -155,8 +152,7 @@ describe("previewUploadChange", () => {
   });
 
   it("hands the dry run the reader's resolved env, not the environment", async () => {
-    vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
-    const env = envViewWith({ CHANGE_COMMANDER_ENABLED: "true" });
+    const env = envViewWith({});
     vi.mocked(requestSwitchEnv).mockResolvedValueOnce(env);
     stub.apply.mockResolvedValue({ status: "preview", raised: 0, lowered: 0, rows: [], decks: [] });
     try {

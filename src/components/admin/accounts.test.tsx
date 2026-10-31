@@ -58,7 +58,7 @@ const PAGE: AccountPage = {
       { name: "SOCIAL_FRIENDS_ENABLED", label: "Friends", on: false, source: "env var is off", kill: true },
       { name: "TUNING_ENABLED", label: "Suggested changes", on: false, source: "Analysis tab is off", kill: false },
     ],
-    envOn: ["Change commander", "Friends"],
+    envOn: ["Announcements", "Friends"],
     envOff: ["Shopping for all decks"],
     total: 6,
   },
@@ -475,7 +475,7 @@ describe("AccountPageView (A4 to A7)", () => {
     // Off reads muted, as the Switches list's pill does.
     const off = box.querySelector('[data-switch="TUNING_ENABLED"]')!;
     expect(within(off as HTMLElement).getByText("Off").className).toContain("var(--fg-muted)");
-    expect(box.querySelector('[data-env-list="on"]')).toHaveTextContent("On · 2Change commander, Friends");
+    expect(box.querySelector('[data-env-list="on"]')).toHaveTextContent("On · 2Announcements, Friends");
     expect(box.querySelector('[data-env-list="off"]')).toHaveTextContent("Off · 1Shopping for all decks");
     expect(screen.queryByText(/disagree/i)).toBeNull();
   });

@@ -1,7 +1,6 @@
-// The import receipt's page hands its read the reader's resolved switches (admin PR 6f-2): the read's
-// claim model decides CHANGE_COMMANDER_ENABLED's pending clause from
-// that env, and each line's chooser is always read. Every one is the other way in the environment here, so a
-// dropped argument would be seen.
+// The import receipt's page hands its read the reader's resolved switches (admin PR 6f-2), which the read's
+// claim model takes, and each line's chooser is always read. The env is checked by identity, so a dropped
+// argument would be seen.
 import { describe, expect, it, vi } from "vitest";
 import { envViewWith } from "@/test/env-view";
 
@@ -20,8 +19,7 @@ const { default: ImportSummaryPage } = await import("./page");
 
 describe("the import receipt page", () => {
   it("reads the receipt under the reader's resolved env, by identity, with the choosers", async () => {
-    vi.stubEnv("CHANGE_COMMANDER_ENABLED", "false");
-    stub.env = envViewWith({ CHANGE_COMMANDER_ENABLED: "true" });
+    stub.env = envViewWith({});
     try {
       // A null view is a not-found; the read's arguments are what is under test.
       await expect(ImportSummaryPage({ params: Promise.resolve({ uploadId: UPLOAD }) })).rejects.toThrow("notFound");
