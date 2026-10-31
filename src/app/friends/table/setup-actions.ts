@@ -6,7 +6,9 @@
 // and the table are ids the client sent, never trusted. Nothing here names a social table.
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { requireUserId } from "../../../lib/auth";
+import { setterZone } from "../../../lib/rule-zero/rules";
 import { socialFriendsEnabled } from "../../../lib/social/flag";
 import { podSetup, reseatTable, setTable, tableSetup, type PodSetup, type TableSetup } from "../../../lib/social/rule-zero";
 import { requestSwitchEnv } from "../../../lib/switches/request";
@@ -36,11 +38,14 @@ export async function loadTableSetupAction(tableId: unknown): Promise<{ setup: T
   return setup ? { setup, invites: socialFriendsEnabled(env) } : null;
 }
 
-/** Set the table. A pod whose table is already open, with the reader seated at it, answers that table. */
-export async function setTableAction(podId: unknown, seats: unknown): Promise<SetupOutcome> {
+/**
+ * Set the table. A pod whose table is already open, with the reader seated at it, answers that table. `timeZone` is the
+ * setter's browser zone, which decides the morning it closes; a missing or unknown one falls to Vercel's IP zone, then UTC.
+ */
+export async function setTableAction(podId: unknown, seats: unknown, timeZone?: unknown): Promise<SetupOutcome> {
   const userId = await reader();
   if (userId === null) return { ok: false, reason: "off" };
-  const result = await setTable(userId, podId, seats);
+  const result = await setTable(userId, podId, seats, setterZone(timeZone, (await headers()).get("x-vercel-ip-timezone")));
   if (result.kind === "set" || result.kind === "open") {
     revalidatePath("/friends");
     return { ok: true, tableId: result.tableId };

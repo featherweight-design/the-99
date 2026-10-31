@@ -125,13 +125,13 @@ async function main() {
     await vis.writeFriendDeckPrefs(F, { seeDecks: true, seeUnfinished: true });
     check("rule 0 setup: a hidden deck is not listed, a shown one is", JSON.stringify(await listed()) === JSON.stringify(["Probe Shown"]), JSON.stringify(await listed()));
     check("rule 0 setup: the viewer's own deck is listed", JSON.stringify(await mine()) === JSON.stringify(["Probe Mine"]));
-    check("rule 0 setTable refuses a hidden deck id", JSON.stringify(await rz.setTable(V, pod.id, seat(hidden))) === JSON.stringify({ kind: "refused", reason: "deck" }));
+    check("rule 0 setTable refuses a hidden deck id", JSON.stringify(await rz.setTable(V, pod.id, seat(hidden), "UTC")) === JSON.stringify({ kind: "refused", reason: "deck" }));
     await vis.writeFriendDeckPrefs(F, { seeDecks: false, seeUnfinished: true });
     check("rule 0 setup: friends_see_decks off lists none", JSON.stringify(await listed()) === "[]", JSON.stringify(await listed()));
     check("rule 0 setup: the owner's own decks stay listed with it off", JSON.stringify(await mine()) === JSON.stringify(["Probe Mine"]));
-    check("rule 0 setTable refuses a shown deck while sharing is off", JSON.stringify(await rz.setTable(V, pod.id, seat(shown))) === JSON.stringify({ kind: "refused", reason: "deck" }));
+    check("rule 0 setTable refuses a shown deck while sharing is off", JSON.stringify(await rz.setTable(V, pod.id, seat(shown), "UTC")) === JSON.stringify({ kind: "refused", reason: "deck" }));
     await vis.writeFriendDeckPrefs(F, { seeDecks: true, seeUnfinished: true });
-    const okSeat = await rz.setTable(V, pod.id, seat(shown));
+    const okSeat = await rz.setTable(V, pod.id, seat(shown), "UTC");
     check("rule 0 setTable seats a deck the friend lets friends see", okSeat.kind !== "refused", JSON.stringify(okSeat));
 
     // The table page and the reopened setup: a deck seated while shown, hidden since, reads as no deck.

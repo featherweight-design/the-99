@@ -12,8 +12,10 @@
 //   pnpm probe:rule-zero
 import "./lib/env.mjs";
 import { assertScratchBranch } from "./lib/scratch-branch.mjs";
+import { tableClosesAt } from "../src/lib/rule-zero/rules";
 
 const run = Date.now().toString(36);
+const ZONE = "America/Los_Angeles";
 const id = (k: string) => `probe_rz_${k}_${run}`;
 const [A, B, C, D, E, X] = ["a", "b", "c", "d", "e", "x"].map(id);
 
@@ -108,25 +110,29 @@ async function main() {
     check("setup is null for a non-member", (await rz.podSetup(E, P1)) === null);
 
     // The refusals, before any table exists.
-    check("refuses a viewer not in the pod", (await rz.setTable(E, P1, [seat(pub[E]), seat(pub[A])])).kind === "refused");
-    check("refuses a seat who is not a member", JSON.stringify(await rz.setTable(A, P1, [seat(pub[A]), seat(pub[E])])) === JSON.stringify({ kind: "refused", reason: "notMember" }));
-    check("refuses a setup the viewer does not sit in", JSON.stringify(await rz.setTable(A, P1, [seat(pub[B]), seat(pub[C])])) === JSON.stringify({ kind: "refused", reason: "notSeated" }));
-    check("refuses a non-friend's deck picked for them", JSON.stringify(await rz.setTable(B, P1, [seat(pub[B]), seat(pub[C], deckC)])) === JSON.stringify({ kind: "refused", reason: "deck" }));
-    check("refuses another player's deck for the viewer's own seat", JSON.stringify(await rz.setTable(A, P1, [seat(pub[A], deckB), seat(pub[B])])) === JSON.stringify({ kind: "refused", reason: "deck" }));
-    check("refuses a friend's deck for a different seat", JSON.stringify(await rz.setTable(A, P1, [seat(pub[A]), seat(pub[B]), seat(pub[C], deckB)])) === JSON.stringify({ kind: "refused", reason: "deck" }));
+    check("refuses a viewer not in the pod", (await rz.setTable(E, P1, [seat(pub[E]), seat(pub[A])], ZONE)).kind === "refused");
+    check("refuses a seat who is not a member", JSON.stringify(await rz.setTable(A, P1, [seat(pub[A]), seat(pub[E])], ZONE)) === JSON.stringify({ kind: "refused", reason: "notMember" }));
+    check("refuses a setup the viewer does not sit in", JSON.stringify(await rz.setTable(A, P1, [seat(pub[B]), seat(pub[C])], ZONE)) === JSON.stringify({ kind: "refused", reason: "notSeated" }));
+    check("refuses a non-friend's deck picked for them", JSON.stringify(await rz.setTable(B, P1, [seat(pub[B]), seat(pub[C], deckC)], ZONE)) === JSON.stringify({ kind: "refused", reason: "deck" }));
+    check("refuses another player's deck for the viewer's own seat", JSON.stringify(await rz.setTable(A, P1, [seat(pub[A], deckB), seat(pub[B])], ZONE)) === JSON.stringify({ kind: "refused", reason: "deck" }));
+    check("refuses a friend's deck for a different seat", JSON.stringify(await rz.setTable(A, P1, [seat(pub[A]), seat(pub[B]), seat(pub[C], deckB)], ZONE)) === JSON.stringify({ kind: "refused", reason: "deck" }));
     check("nothing written by a refusal", (await count(sql`select count(*)::int as n from rule_zero_tables where pod_id = ${P1}`)) === 0);
 
     // The table: A seats A (own deck), B (friend's deck), C (friend's deck). D is in the pod and not seated.
-    const set = await rz.setTable(A, P1, [seat(pub[A], deckA), seat(pub[B], deckB), seat(pub[C], deckC)]);
+    const set = await rz.setTable(A, P1, [seat(pub[A], deckA), seat(pub[B], deckB), seat(pub[C], deckC)], ZONE);
     check("A sets the table", set.kind === "set");
     const T1 = set.kind === "set" ? set.tableId : "";
     const s1 = await seatsOf(T1);
     check("seats written in order with the picked decks", s1.map((s) => `${s.seat}:${s.deck_id}`).join() === `1:${deckA},2:${deckB},3:${deckC}`);
-    const { rows: life } = await db.execute<{ h: number }>(sql`select extract(epoch from expires_at - created_at)::int / 3600 as h from rule_zero_tables where id = ${T1}`);
-    check("the table closes 24 hours after it is set", life[0].h === 24);
-    const againB = await rz.setTable(B, P1, [seat(pub[B]), seat(pub[A])]);
+    const { rows: life } = await db.execute<{ created: Date; closes: Date }>(sql`select created_at as created, expires_at as closes from rule_zero_tables where id = ${T1}`);
+    const closes = new Date(life[0].closes);
+    // The close is computed on the app's clock and created_at on the database's, a moment apart: either side of it agrees.
+    const created = new Date(life[0].created).getTime();
+    const expected = [created - 1000, created + 1000].map((t) => tableClosesAt(new Date(t), ZONE).getTime());
+    check("the table closes the next 6:00 am in the setter's zone", expected.includes(closes.getTime()), closes.toISOString());
+    const againB = await rz.setTable(B, P1, [seat(pub[B]), seat(pub[A])], ZONE);
     check("a seated player's setup opens the existing table", againB.kind === "open" && againB.tableId === T1);
-    const againD = await rz.setTable(D, P1, [seat(pub[D]), seat(pub[A])]);
+    const againD = await rz.setTable(D, P1, [seat(pub[D]), seat(pub[A])], ZONE);
     check("an unseated member's setup is occupied, by Ava", againD.kind === "occupied" && JSON.stringify(againD.setBy) === JSON.stringify({ $tp: "Ava" }), JSON.stringify(againD));
     check("still one table on the pod", (await count(sql`select count(*)::int as n from rule_zero_tables where pod_id = ${P1}`)) === 1);
 
@@ -216,7 +222,7 @@ async function main() {
       [B, [seat(pub[B]), seat(pub[A])]],
       [D, [seat(pub[D]), seat(pub[A])]],
     ];
-    const raced = await Promise.all(asks.map(([u, s]) => rz.setTable(u, P2, s)));
+    const raced = await Promise.all(asks.map(([u, s]) => rz.setTable(u, P2, s, ZONE)));
     const winners = raced.filter((r) => r.kind === "set");
     check("concurrent setups write one table", winners.length === 1 && (await count(sql`select count(*)::int as n from rule_zero_tables where pod_id = ${P2}`)) === 1, raced.map((r) => r.kind).join());
     const T2 = winners[0]?.kind === "set" ? winners[0].tableId : "";
@@ -233,7 +239,7 @@ async function main() {
     check("a table expiring in 2s is listed before", (await loadHomeTables(A)).some((t) => t.tableId === T3));
     await sleep(2500);
     check("and gone after, with no write between", !(await loadHomeTables(A)).some((t) => t.tableId === T3));
-    const P3b = await rz.setTable(A, P3, [seat(pub[A]), seat(pub[B])]);
+    const P3b = await rz.setTable(A, P3, [seat(pub[A]), seat(pub[B])], ZONE);
     check("the pod's next setup deletes its expired table", P3b.kind === "set" && (await count(sql`select count(*)::int as n from rule_zero_tables where id = ${T3}`)) === 0);
 
     // The table read (PR 2b). A legal deck is 99 Plains under a commander; A is everyone's friend, B and C are not friends.
@@ -250,7 +256,7 @@ async function main() {
     const legalB = await legal(B, "Bo's legal deck");
     const legalC = await legal(C, "Cy's legal deck");
     const P7 = await pod(A, "Reading", [B, C, D]);
-    const t7 = await rz.setTable(A, P7, [seat(pub[A], legalA), seat(pub[B], legalB), seat(pub[C], legalC)]);
+    const t7 = await rz.setTable(A, P7, [seat(pub[A], legalA), seat(pub[B], legalB), seat(pub[C], legalC)], ZONE);
     if (t7.kind !== "set") throw new Error("table fixture refused");
     const T7 = t7.tableId;
     const viewC = await loadTable(C, T7);
@@ -340,9 +346,9 @@ async function main() {
     const P4 = await pod(A, "Two", [X]);
     const P5 = await pod(A, "X sets", [B, X]);
     const P6 = await pod(A, "Three", [B, X]);
-    const t4 = await rz.setTable(A, P4, [seat(pub[A]), seat(pub[X])]);
-    const t5 = await rz.setTable(X, P5, [seat(pub[X]), seat(pub[A]), seat(pub[B])]);
-    const t6 = await rz.setTable(A, P6, [seat(pub[A]), seat(pub[B]), seat(pub[X])]);
+    const t4 = await rz.setTable(A, P4, [seat(pub[A]), seat(pub[X])], ZONE);
+    const t5 = await rz.setTable(X, P5, [seat(pub[X]), seat(pub[A]), seat(pub[B])], ZONE);
+    const t6 = await rz.setTable(A, P6, [seat(pub[A]), seat(pub[B]), seat(pub[X])], ZONE);
     if (t4.kind !== "set" || t5.kind !== "set" || t6.kind !== "set") throw new Error("purge fixtures refused");
     // The account's own swap and acknowledgement racing its purge: no deadlock, and nothing of it survives.
     const deckX = await deck(X, "Xi's deck");

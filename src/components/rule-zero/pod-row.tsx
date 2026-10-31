@@ -81,7 +81,7 @@ export function PodRuleZeroRow({ podId, table, now }: { podId: string; table: Op
         <SetupSheet
           setup={open.setup}
           onClose={() => setOpen(null)}
-          onSave={(seats) => setTableAction(podId, seats)}
+          onSave={(seats) => setTableAction(podId, seats, browserZone())}
           onDone={(tableId) => {
             // The sheet's history entry stays under the new route: released by a close, its Back would cancel the push.
             leaveDialogsForNavigation();
@@ -121,4 +121,13 @@ function Chevron() {
       </svg>
     </span>
   );
+}
+
+/** The setter's IANA zone, which decides the morning their table closes; undefined lets the server fall back. */
+function browserZone(): string | undefined {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || undefined;
+  } catch {
+    return undefined;
+  }
 }
