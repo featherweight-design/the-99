@@ -279,6 +279,11 @@ export const deckTuningCopy = {
     spent: "No credits left. The next one comes back within a day.",
     // A Suggested changes v2 run over 10 swaps costs 2 credits and the player holds 1 (one source funds a run).
     costsTwo: "This run costs 2 credits. Ask for 10 changes or fewer to use 1.",
+    // Small items 7, SC-Cost C (copy-reviewed 2026-10-30): above 10 with only the free run to spend, the press is off
+    // and this says why before it is pressed. With no free run left (one lot credit, or the paid limit), `costsTwo`.
+    costsTwoFree: (count: number) => `A run of ${count} uses 2 credits. A free credit covers up to 10.`,
+    /** C's way back: sets the stepper to 10 (`ONE_CREDIT_MAX_COUNT`), and the press comes back with the 1-credit line. */
+    changeTo: (count: number) => `Change to ${count}`,
   },
 
   // The game note and the Games tab's pointer live in `deck-tuning-games.ts`, which the game log and the

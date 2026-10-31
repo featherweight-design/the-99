@@ -77,6 +77,14 @@ const welcome = (n: number) => `${n} welcome`;
 const lots = (paidTotal: number, welcomeLeft: number) =>
   welcomeLeft > 0 ? (paidTotal > 0 ? `${welcome(welcomeLeft)} · ${paid(paidTotal)}` : welcome(welcomeLeft)) : paid(paidTotal);
 
+/** `1 of 5 free · reset at 2:01 AM`, or `1 of 1 free` while nothing counts (no reset to name). */
+const freeHead = (left: number, total: number, next: Date | null) =>
+  next ? `${left} of ${total} free · reset at ${clockTime(next)}` : `${left} of ${total} free`;
+
+/** L2's count: the free head, then the lots in spend order. */
+const withPaid = (left: number, total: number, next: Date | null, paidTotal: number, welcomeLeft = 0) =>
+  `${freeHead(left, total, next)} · ${lots(paidTotal, welcomeLeft)}`;
+
 export const creditsCopy = {
   /**
    * The count and, when one is out, when the next comes back: `4 of 5 left · reset at 2:01 AM`.
@@ -96,8 +104,11 @@ export const creditsCopy = {
    * PLACEHOLDER wording, owed to /copy-review (buying credits R1, `buying-credits · copy strings.ts`).
    * L2: free credits remain and paid ones are held. `left` becomes `free` once paid credits are held.
    */
-  withPaid: (left: number, total: number, next: Date | null, paidTotal: number, welcomeLeft = 0) =>
-    `${next ? `${left} of ${total} free · reset at ${clockTime(next)}` : `${left} of ${total} free`} · ${lots(paidTotal, welcomeLeft)}`,
+  withPaid,
+  /** The free count in the `N of M free` form, with the lots' segment only while one is held (SC-Cost C's last line):
+   *  `1 of 1 free`, `1 of 5 free · reset at 2:01 AM`, `1 of 1 free · 15 welcome`. "reset at" only when a credit counts. */
+  freeStanding: (left: number, total: number, next: Date | null, paidTotal = 0, welcomeLeft = 0) =>
+    paidTotal > 0 || welcomeLeft > 0 ? withPaid(left, total, next, paidTotal, welcomeLeft) : freeHead(left, total, next),
   /** L3: the free allowance is spent and the next run takes a lot's credit: the welcome lot's while it holds one (it is
    *  spent first, `SOURCE_RANK`), `this run uses 1 of 15 welcome`, with the paid total after it; a paid one otherwise. */
   paidNext: (total: number, next: Date | null, paidTotal: number, welcomeLeft = 0) =>
@@ -117,7 +128,7 @@ export const creditsCopy = {
       : `Today’s ${paidLimit} paid credits are used. ${banked} more are banked${back ? ` · back at ${clockTime(back)}` : ""}`,
   /** L6: the paid limit is reached but a free credit is ready. */
   limitFree: (left: number, total: number, next: Date | null, paidBack: Date) =>
-    `${next ? `${left} of ${total} free · reset at ${clockTime(next)}` : `${left} of ${total} free`} · paid back at ${clockTime(paidBack)} (daily limit)`,
+    `${freeHead(left, total, next)} · paid back at ${clockTime(paidBack)} (daily limit)`,
   /** L7 and the menu chip's expiring line: a cancelled plan's credits, within three days of lapsing. */
   expiring: (n: number, on: Date) => `${n} plan credit${n === 1 ? "" : "s"} ${n === 1 ? "expires" : "expire"} ${shortDay(on)}`,
   /** Finds `expiring`'s phrase at the end of a line, so `CreditsText` can draw it in `--warning`. */
@@ -139,6 +150,32 @@ export const creditsCopy = {
   afterLine: (line: string, tail: string) => {
     const more = `\n${getMore}`;
     return line.endsWith(more) ? `${line.slice(0, -more.length)}${tail}${more}` : `${line}${tail}`;
+  },
+
+  /**
+   * A run costing 2 credits (Suggested changes v2 above 10 swaps; Small items 7, SC-Cost B, D and E). Copy-reviewed
+   * 2026-10-30. The line beside the press reads `lead`, then `why` (drawn in `--fg-body`), then the count: `Uses 2
+   * welcome credits. A free credit covers up to 10. 1 of 1 free · 15 welcome.`
+   */
+  two: {
+    /** `Uses 2 welcome credits.`: the source that funds the whole run (`runFunding`). A gift is shown as paid. */
+    lead: (source: "free" | "welcome" | "paid") => `Uses 2 ${source} credits.`,
+    /** `lead` beside a press that replaces what is on screen: the shipped `again` wording, at 2 credits. */
+    leadAgain: (source: "free" | "welcome" | "paid") => `Replaces these suggestions and uses 2 ${source} credits.`,
+    /** B and D: a lot funds it, because a free credit covers 1 to 10. "Free credit", never "free run": the lines count
+     *  credits, and the sentence must hold whether the free allowance holds 1 or none. */
+    whyLot: "A free credit covers up to 10.",
+    /** E (addendum 1): the free allowance funds it, counting 2. */
+    whyFree: "A run above 10 counts 2.",
+    /** E's count: credits, never runs, and what this run leaves. It extends the shipped forms: `standing`'s `N of M left`
+     *  with nothing bought, `withPaid`'s `N of M free` with lots held, whose segment then follows. */
+    freeAfter: (left: number, total: number, after: number, next: Date | null, paidTotal = 0, welcomeLeft = 0) => {
+      const held = paidTotal > 0 || welcomeLeft > 0;
+      return `${left} of ${total} ${held ? "free" : "left"}, ${after} after this run${next ? ` · reset at ${clockTime(next)}` : ""}${
+        held ? ` · ${lots(paidTotal, welcomeLeft)}` : ""}`;
+    },
+    /** B and D's count: the shipped count (`creditCount`) ending the line. */
+    count: (line: string) => `${line}.`,
   },
 
   /** The account menu's chip (M1b), by state. The count and the date are the server's read. */

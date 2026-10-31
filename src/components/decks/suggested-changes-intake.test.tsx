@@ -78,6 +78,15 @@ describe("SuggestedChangesIntake", () => {
     expect((field as HTMLInputElement).value).toBe("20");
   });
 
+  it("tags the line 2 credits above 10 only (Small items 7, SC-Cost A)", () => {
+    const { container } = render(<Harness start={10} />);
+    expect(container.querySelector("[data-sc-two-credits]")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: copy.count.more }));
+    expect(container.querySelector("[data-sc-two-credits]")?.textContent).toBe(copy.count.twoCredits);
+    fireEvent.click(screen.getByRole("button", { name: copy.count.fewer }));
+    expect(container.querySelector("[data-sc-two-credits]")).toBeNull();
+  });
+
   it("clamps any count into 1 to 20", () => {
     expect([0, 1, 7, 20, 21, Number.NaN].map(clampCount)).toEqual([1, 1, 7, 20, 20, 1]);
   });

@@ -1,5 +1,5 @@
 import { creditsCopy } from "../copy/credits";
-import { freeCount, freeRoom, hasCredit, heldCredits, paidAtLimit, type Allowance } from "./allowance-rule";
+import { freeCount, freeRoom, hasCredit, heldCredits, paidAtLimit, type Allowance, type RunFunding } from "./allowance-rule";
 
 /**
  * THE CREDIT LINE, as every spend surface draws it (buying credits U2b, frames L1 to L8). Pure.
@@ -131,4 +131,38 @@ export function creditStanding(a: LineAllowance, now: Date = new Date()): string
   if (kind === "spent" || kind === "limit") return creditSpent(a);
   if (kind === "paidNext") return `${creditsCopy.paidNext(a.limit, freeNext(a), paidShown(a), welcomeLeft(a))}${expiringTail(a, now)}`;
   return creditCount(a, now);
+}
+
+/**
+ * The line beside a press whose run costs 2 credits and can start (Small items 7, SC-Cost B, D and E): the source and the
+ * count in `lead`, why it is 2 in `why` (drawn in `--fg-body`), then the count that source is spent from. Null for a
+ * 1-credit run, which keeps the shipped line, and for a run that cannot start (`short`/`spent`: the surface draws those).
+ */
+export function creditTwo(a: LineAllowance, f: RunFunding, now: Date = new Date(), again = false): { lead: string; why: string; count: string } | null {
+  if (f.units < 2) return null;
+  const lead = again ? creditsCopy.two.leadAgain : creditsCopy.two.lead;
+  if (f.source === "free") {
+    // Today's paid limit is shut with lots held (L6): the shipped `limitFree` count, never the lots as spendable.
+    if (creditLineKind(a) === "limitFree") return { lead: lead("free"), why: creditsCopy.two.whyFree, count: creditsCopy.two.count(creditCount(a, now)) };
+    return {
+      lead: lead("free"),
+      why: creditsCopy.two.whyFree,
+      // The lots' expiry tails ride here as they do on the shipped `withPaid` line.
+      count: creditsCopy.two.count(
+        `${creditsCopy.two.freeAfter(f.freeLeft, a.limit, f.freeAfter, a.nextAt, paidShown(a), welcomeLeft(a))}${paidShown(a) > 0 || welcomeLeft(a) > 0 ? expiringTail(a, now) : ""}`,
+      ),
+    };
+  }
+  if (f.source === "welcome" || f.source === "paid") {
+    return { lead: lead(f.source), why: creditsCopy.two.whyLot, count: creditsCopy.two.count(creditCount(a, now)) };
+  }
+  return null;
+}
+
+/** SC-Cost C's last line, under a run that costs 2 and cannot start: the free count in its `N of M free` form, the real
+ *  "reset at" only while a credit counts, the lots after it while one is held, and their expiry tails. */
+export function creditShortStanding(a: LineAllowance, now: Date = new Date()): string {
+  // Today's paid limit is shut with lots held (L6): say the limit, as the shipped line does.
+  if (creditLineKind(a) === "limitFree") return creditCount(a, now);
+  return `${creditsCopy.freeStanding(freeCount(a), a.limit, freeNext(a), paidShown(a), welcomeLeft(a))}${expiringTail(a, now)}`;
 }

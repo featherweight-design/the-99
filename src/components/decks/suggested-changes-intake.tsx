@@ -105,6 +105,16 @@ export function SuggestedChangesIntake({
             <p className="text-[12.5px] leading-[1.5] md:text-[13px]" style={{ color: "var(--fg-body)" }}>
               <span className="font-semibold" style={{ color: "var(--fg)" }}>{split > 0 ? line.slice(0, split + 1) : line}</span>
               {split > 0 ? line.slice(split + 1) : null}
+              {/* SC-Cost A: above 10 the run costs 2 credits (`unitsFor`); at 10 and under the line is the shipped one. */}
+              {unitsFor(count) > 1 ? (
+                <span
+                  data-sc-two-credits=""
+                  className="ml-[6px] inline-flex h-[20px] items-center whitespace-nowrap rounded-full px-[8px] align-[1px] font-mono text-[10.5px] font-medium"
+                  style={{ color: "var(--accent-text)", border: "1px solid var(--accent-shadow)" }}
+                >
+                  {copy.count.twoCredits}
+                </span>
+              ) : null}
               <span className="font-mono text-[10.5px]" style={{ color: "var(--fg-faint)" }}>
                 {" · "}{atMax ? copy.count.atMax : copy.count.range}
               </span>

@@ -5,7 +5,7 @@ import { parseStrategyKey } from "@/lib/strategy/focus";
 import type { StrategyKey } from "@/lib/strategy/score";
 import { useTarget } from "../discovery/targets-provider";
 import { useMergedRef } from "../ui/use-merged-ref";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { useAiSweepRef } from "../ui/use-ai-sweep";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 
@@ -51,7 +51,7 @@ import { useVerdictOverrides, VerdictOverridesProvider } from "./use-optimistic-
 import { tuningHubCopy } from "../../lib/copy/tuning-hub";
 import { historyDay } from "./tuning-history";
 import { suggestedTier } from "../../lib/tuning/history";
-import { unitsFor } from "../../lib/tuning/v2/charge";
+import { ONE_CREDIT_MAX_COUNT, unitsFor } from "../../lib/tuning/v2/charge";
 import { MutationError } from "./mutation-error";
 import { SuggestionCard, type CardActions } from "./suggestion-card";
 import { SuggestionLists } from "./suggestion-lists";
@@ -65,9 +65,11 @@ import { TagHelpRow } from "../cards/tag-help-row";
 import { TaggedBox } from "../cards/tagged-box";
 import { useAutoGrow } from "../../lib/ui/use-auto-grow";
 import { useTaggedField } from "../cards/use-tagged-field";
-import { CreditsText } from "../ui/credits-text";
-import { freeCount, hasCredit } from "../../lib/model/allowance-rule";
-import { creditAgain, creditFirst, creditSpent } from "../../lib/model/credit-line";
+import Link from "next/link";
+import { BUY_HREF, CreditsText } from "../ui/credits-text";
+import { PendingReporter } from "../shell/pending-reporter";
+import { freeCount, runFunding } from "../../lib/model/allowance-rule";
+import { creditAgain, creditFirst, creditShortStanding, creditSpent, creditTwo } from "../../lib/model/credit-line";
 import { ArrivalOrder } from "../ui/arrival-queue";
 
 /**
@@ -343,6 +345,19 @@ export function TuningPanel({
   const [unchangedShown, setUnchangedShown] = useState(false);
   const [refused, setRefused] = useState<string | null>(null);
   const [announced, setAnnounced] = useState("");
+  // SC-Cost C: the send button, so `Change to 10` (which unmounts C's block) hands focus to it once the count lands, and
+  // the id of C's sentence, which describes the press while it is off. `stopSaid`: the C sentence drawn last time the
+  // row was read (undefined before the first read), so a reason is announced when it appears or changes while drawn,
+  // never on the first draw (a restored count above 10) and never while the row is not drawn.
+  const sendRef = useRef<HTMLButtonElement>(null);
+  const focusSendOnCount = useRef(false);
+  const stopId = useId();
+  const [stopSaid, setStopSaid] = useState<string | null | undefined>(undefined);
+  useEffect(() => {
+    if (!focusSendOnCount.current) return;
+    focusSendOnCount.current = false;
+    sendRef.current?.focus();
+  }, [count]);
   const [intent, setIntent] = useState(facts.intent);
   // The header's `edit` is the line's other door, and its save revalidates the page: a new line
   // from the page replaces the one held here, adjusted during render so the old one never paints.
@@ -843,13 +858,18 @@ export function TuningPanel({
   }
   // Spent is read off the allowance itself, never off `gateReason`: that answers "unchanged" first,
   // and a player with no credits left on an unchanged deck must still see the press disabled.
-  const spent = !hasCredit(state.allowance);
+  // Small items 7 (SC-Cost): a v2 run above 10 costs 2 credits, so the press asks whether THIS run can be funded, not
+  // whether one credit is left. `short`: a 1-credit run would start, this one cannot (C); the press is off and the row
+  // says why before it is pressed. Every other press costs 1, and `spent` is exactly the shipped `!hasCredit`.
+  const funding = runFunding(state.allowance, v2 ? unitsFor(count) : 1);
+  const spent = funding.source === "spent";
+  const short = funding.source === "short" ? funding : null;
   // The owner's share disables the press exactly as a spent allowance does, and only the note
   // under it changes: the share first, then spent.
   // Every card but the commander locked (Locked, never cut): nothing to cut, so the press is
   // disabled and the server refuses it before a credit is reserved (the gate's `allLocked`).
   const allLocked = !reading && state.allLocked ? state.allLocked : null;
-  const blocked = spent || state.allowance.ownerShare === true || allLocked !== null;
+  const blocked = spent || short !== null || state.allowance.ownerShare === true || allLocked !== null;
 
   async function press(anyway = false) {
     if (!state) return;
@@ -1382,6 +1402,20 @@ export function TuningPanel({
       ? lockedCardsCopy.tuning.allLockedNote
       : `${lockedCardsCopy.tuning.allLocked(allLocked)} ${lockedCardsCopy.tuning.allLockedNote}`;
   const tail = lockedNote ?? credit;
+  // SC-Cost B, D and E: a 2-credit run that can start names its source and why it is 2. Only where the credit line is
+  // what the row says (never under the owner's share or every card locked); a state's own note still leads it.
+  const two = lockedNote === null && !state.allowance.ownerShare ? creditTwo(state.allowance, funding, new Date(), primary.again === true) : null;
+  // SC-Cost C: the owner's share and every card locked keep their own lines first.
+  const stop = short !== null && lockedNote === null && !state.allowance.ownerShare ? short : null;
+  const stopLine = stop ? (stop.freeHoldsOne ? deckTuningCopy.allowance.costsTwoFree(count) : deckTuningCopy.allowance.costsTwo) : null;
+  // C is DRAWN only in the action row: not under the v2 results, a reading run or the same-request confirm.
+  const stopDrawn = stopLine !== null && !v2RunView && !reading && !(v2 && same) ? stopLine : null;
+  // Say why the press turned off, keyed on the sentence's text (pattern of `finishSaid` above): on the way into C and
+  // whenever its words change while drawn, never on the first read of the row.
+  if (stopDrawn !== stopSaid) {
+    setStopSaid(stopDrawn);
+    if (stopSaid !== undefined && stopDrawn !== null) setAnnounced(stopDrawn);
+  }
   // Suggested changes v2: the wait hint by N follows the credit line while the press is live (Intake board A).
   const v2Drift = v2 !== null && v2.over !== 0;
   // Its own span after the line, never part of it: `CreditsText` reads an expiry and `Get more credits` off the line's end.
@@ -1543,18 +1577,49 @@ export function TuningPanel({
             <button
               type="button"
               onClick={() => (sendOff ? undefined : v2 ? void pressV2() : void press(unchangedShown || failure !== null || priorResult || reviewing))}
+              ref={sendRef}
               aria-disabled={sendOff || undefined}
+              aria-describedby={stopDrawn !== null ? stopId : undefined}
               className={`h-[44px] w-full rounded-[8px] text-[13.5px] font-semibold md:h-auto md:w-auto md:px-[20px] md:py-[11px] md:text-[14px] ${sendOff ? "cursor-default text-[color:var(--fg-disabled)] [border:1px_solid_var(--border-strong)]" : "text-[color:var(--accent-text)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)] transition-colors"}`}
             >
               {primaryLabel}
             </button>
+            {stop ? (
+              <TwoCreditStop
+                line={stopLine ?? ""}
+                lineId={stopId}
+                standing={note ? `${note} · ${creditShortStanding(state.allowance)}` : creditShortStanding(state.allowance)}
+                payments={state.allowance.payments === true}
+                onChangeTo={() => {
+                  focusSendOnCount.current = true;
+                  changeIntake({ count: ONE_CREDIT_MAX_COUNT });
+                }}
+              />
+            ) : (
             <span
+              data-sc-credit-line=""
               className={`text-center font-mono text-[9.5px] leading-[1.55] md:text-left md:text-[11px] md:leading-[1.5] ${blocked ? "md:max-w-[380px]" : ""}`}
               style={{ color: "var(--fg-faint)" }}
             >
-              <CreditsText text={noteLine} />
-              {usual ? <span data-sc-usual="">{" · "}{usual}</span> : null}
+              {two ? (
+                <>
+                  {note ? `${note} · ` : null}
+                  {two.lead}{" "}
+                  <span style={{ color: "var(--fg-body)" }}>{two.why}</span>{" "}
+                  <CreditsText text={two.count} />
+                </>
+              ) : (
+                <CreditsText text={noteLine} />
+              )}
+              {/* The 2-credit line is longer: its wait hint takes its own line on the phone (SC-Cost B, E). */}
+              {usual ? (
+                <span data-sc-usual="">
+                  {two ? <><br className="md:hidden" /><span className="hidden md:inline">{" · "}</span></> : " · "}
+                  {usual}
+                </span>
+              ) : null}
             </span>
+            )}
           </>
         )}
       </div>
@@ -1579,6 +1644,33 @@ export function TuningPanel({
 }
 
 // ── The pieces ──────────────────────────────────────────────────────────
+
+/**
+ * Small items 7, SC-Cost C: a v2 run above 10 that nothing can fund at 2 credits, though a 1-credit run would start. The
+ * press beside it is off; this says the cost and the way back BEFORE it is pressed: `Change to 10` sets the stepper to 10
+ * (the press comes back with the 1-credit line), `Get more credits` only while payments are on (L8). The standing count
+ * follows. Left-aligned on the phone too (the board's `.s7stop`).
+ */
+function TwoCreditStop({ line, lineId, standing, payments, onChangeTo }: { line: string; lineId: string; standing: string; payments: boolean; onChangeTo: () => void }) {
+  const link = "inline-flex min-h-[44px] items-center font-sans text-[12.5px] font-semibold text-[color:var(--accent-text)] md:min-h-[32px]";
+  return (
+    <div data-sc-two-stop="" className="flex flex-col gap-[6px] text-left font-mono text-[10.5px] leading-[1.6]" style={{ color: "var(--fg-faint)" }}>
+      <span id={lineId} className="font-sans text-[12.5px] font-medium leading-[1.5]" style={{ color: "var(--fg)" }}>{line}</span>
+      <span className="flex flex-wrap items-center gap-x-[14px] gap-y-[4px]">
+        <button type="button" className={link} onClick={onChangeTo}>
+          {deckTuningCopy.allowance.changeTo(ONE_CREDIT_MAX_COUNT)}
+        </button>
+        {payments ? (
+          <Link href={BUY_HREF} className={link}>
+            {creditsCopy.getMore}
+            <PendingReporter href={BUY_HREF} />
+          </Link>
+        ) : null}
+      </span>
+      <span data-sc-two-standing=""><CreditsText text={standing} /></span>
+    </div>
+  );
+}
 
 /** "Describing in place" (STATES §3 state 2): the absent description row's own editor, with
  *  explicit Save/Cancel rather than the empty-state field's blur-to-save. */

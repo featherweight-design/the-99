@@ -46,8 +46,8 @@ export function GetMoreLink({ className = "" }: { className?: string }) {
   );
 }
 
-/** Where `Get more credits` leads. */
-const BUY_HREF = "/credits";
+/** Where `Get more credits` leads. Exported for a surface that draws the link in its own row (SC-Cost C). */
+export const BUY_HREF = "/credits";
 
 /**
  * L7: an expiry at the end of the line, in `--warning` (the words carry it; the colour only agrees). Two can stand on
