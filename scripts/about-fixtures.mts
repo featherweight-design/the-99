@@ -19,10 +19,10 @@
 // The reader's own social name is `Sam` (its face the Played deck's commander, three invites in hand); the capture puts a neutral name and email over Clerk's in the page.
 //   - a friend, `Alex`, in a pod with the account (one friend keeps the pod's Rule 0 check row on the phone's Friends
 //     frame; the row draws for any pod, at both widths);
-//   - the all-decks cart's By friend (Small items 7, item 6, `About-Cart`): four more friends, Chris, Colin, Peter and
-//     Max, in two pods (`The Bros`: Chris, Colin, Peter; `Thursday pod`: Peter, Max), each sharing spares of cards the
-//     account's decks are missing, Chris the most (Played's friend spare among them), and three asks to Chris through
-//     the app's own writes: one he said yes to (Accepted), one open (Requested, so Colin's and Max's copy of that card
+//   - the all-decks cart's By friend (Small items 7, item 6, `About-Cart`): four more friends, Torin, Merek, Varic and
+//     Zev, in two pods (`The Bros`: Torin, Merek, Varic; `Thursday pod`: Varic, Zev), each sharing spares of cards the
+//     account's decks are missing, Torin the most (Played's friend spare among them), and three asks to Torin through
+//     the app's own writes: one he said yes to (Accepted), one open (Requested, so Merek's and Zev's copy of that card
 //     read Ask instead) and one he said no to (Declined);
 //   - a wishlist want, so Wishlist draws a row.
 // An earlier upload is the snapshot's own: the script refuses an account with none rather than writing a fake one.
@@ -363,8 +363,8 @@ if (!pod) throw new Error("createPod refused");
 if (!(await pods.addMember(viewer, pod.id, colin.publicId))) throw new Error("addMember refused");
 if (!(await spares.shareSparesWith(colinId, pod.id, true))) throw new Error("shareSparesWith refused");
 
-// The cart's By friend (Small items 7, item 6). The board's panels, top of the page, most spares first: Chris
-// (41 cards, 130 spare), Colin (17, 38), Peter (9, 14), Max (4, 6). A panel lists the cart's lines in By card's default
+// The cart's By friend (Small items 7, item 6). The board's panels, top of the page, most spares first: Torin
+// (41 cards, 130 spare), Merek (17, 38), Varic (9, 14), Zev (4, 6). A panel lists the cart's lines in By card's default
 // order (`byCardOrder`: commanders first, then the most decks needing the card, then A to Z), so the lines are read the
 // same way through the cart's own rows (`loadDeckBuyRows`, one row per deck), commanders left out, and each friend is
 // handed copies of the lines the board draws in his first rows. A friend with no deck spares every copy he owns
@@ -406,12 +406,12 @@ const handOut = (head: [number, number][], cards: number, copies: number, from: 
 };
 const CART_FRIENDS: { name: string; pods: string[]; spares: Map<string, number> }[] = [
   // Lightning Greaves, Swiftfoot Boots, Arcane Signet (Accepted), Beast Within, Sol Ring (Requested), Cultivate (Declined).
-  { name: "Chris", pods: ["The Bros"], spares: handOut([[0, 7], [1, 2], [2, 9], [3, 4], [4, 12], [5, 6]], 41, 130, 0, [spare]) },
-  // Lightning Greaves, Beast Within, Chaos Warp, Sol Ring (Ask instead: Chris holds the open ask).
-  { name: "Colin", pods: ["The Bros"], spares: handOut([[0, 1], [3, 1], [6, 2], [4, 3]], 17, 38, 8) },
-  { name: "Peter", pods: ["The Bros", "Thursday pod"], spares: handOut([[7, 1], [1, 1], [8, 2]], 9, 14, 16) },
+  { name: "Torin", pods: ["The Bros"], spares: handOut([[0, 7], [1, 2], [2, 9], [3, 4], [4, 12], [5, 6]], 41, 130, 0, [spare]) },
+  // Lightning Greaves, Beast Within, Chaos Warp, Sol Ring (Ask instead: Torin holds the open ask).
+  { name: "Merek", pods: ["The Bros"], spares: handOut([[0, 1], [3, 1], [6, 2], [4, 3]], 17, 38, 8) },
+  { name: "Varic", pods: ["The Bros", "Thursday pod"], spares: handOut([[7, 1], [1, 1], [8, 2]], 9, 14, 16) },
   // Sol Ring (Ask instead), Goblin Matron.
-  { name: "Max", pods: ["Thursday pod"], spares: handOut([[4, 2], [9, 1]], 4, 6, 20) },
+  { name: "Zev", pods: ["Thursday pod"], spares: handOut([[4, 2], [9, 1]], 4, 6, 20) },
 ];
 const cartPods = new Map<string, string>();
 for (const podName of ["The Bros", "Thursday pod"]) {
@@ -438,14 +438,14 @@ for (const [i, f] of CART_FRIENDS.entries()) {
   }
   cartFriendIds.set(f.name, { id, publicId: profile.publicId });
 }
-// Three asks to Chris, the app's own writes: Arcane Signet's answered yes, Sol Ring's left open, Cultivate's answered no.
+// Three asks to Torin, the app's own writes: Arcane Signet's answered yes, Sol Ring's left open, Cultivate's answered no.
 const askEnv = { ...process.env, SOCIAL_FRIENDS_ENABLED: "true" };
-const chris = cartFriendIds.get("Chris")!;
+const torin = cartFriendIds.get("Torin")!;
 for (const [i, answer] of [[2, "yes"], [4, null], [5, "no"]] as const) {
-  const asked = await requests.askForSpare(viewer, chris.publicId, lines[i], askEnv);
+  const asked = await requests.askForSpare(viewer, torin.publicId, lines[i], askEnv);
   if (!asked.ok) throw new Error(`askForSpare refused line ${i}: ${asked.reason}`);
   if (answer === null) continue;
-  const answered = await requests.answerSpareRequest(chris.id, asked.id, answer, askEnv);
+  const answered = await requests.answerSpareRequest(torin.id, asked.id, answer, askEnv);
   if (!answered.ok) throw new Error(`answerSpareRequest refused line ${i}: ${answered.reason}`);
 }
 console.log(`cart: ${lines.length} lines; By friend: ${CART_FRIENDS.map((f) => `${f.name} ${f.spares.size} cards · ${[...f.spares.values()].reduce((a, b) => a + b, 0)} spare`).join(", ")}`);
@@ -496,5 +496,5 @@ console.log(`ABOUT_DECK_UNDER=${under}`);
 console.log(`ABOUT_DECK_OVER=${over}`);
 console.log(`ABOUT_DECK_PLAYED=${played}`);
 console.log(`ABOUT_DECK_FRESH=${fresh}`);
-console.log(`seeded: Alex (in About pod), Chris, Colin, Peter and Max (spares on the cart, three asks to Chris), five games with opponents, two notes, one want, a locked card, a pending change and a stored analysis on Played · ${uploads} earlier uploads`);
+console.log(`seeded: Alex (in About pod), Torin, Merek, Varic and Zev (spares on the cart, three asks to Torin), five games with opponents, two notes, one want, a locked card, a pending change and a stored analysis on Played · ${uploads} earlier uploads`);
 process.exit(0);
