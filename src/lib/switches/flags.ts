@@ -6,7 +6,6 @@ import { analysisTabEnabled } from "../decks/analysis-flag";
 import { labelRoleCountsEnabled } from "../decks/label-counts-flag";
 import { pushEnabled } from "../push/flag";
 import { helpMeChooseEnabled } from "../intake/flag";
-import { labelSurfacesEnabled, standInLabelsEnabled } from "../labels/read";
 import type { ModelFeature } from "../model/allowance-rule";
 import { publicPagesEnabled } from "../public/flag";
 import { navStallLogEnabled } from "../nav-stall/flag";
@@ -36,7 +35,6 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   FLYER_TRIAL_ENABLED: flyerTrialEnabled,
   HOW_IT_WORKS_ENABLED: howItWorksEnabled,
   LABEL_ROLE_COUNTS_ENABLED: labelRoleCountsEnabled,
-  LABEL_SURFACES_ENABLED: labelSurfacesEnabled,
   LIST_CACHE_ENABLED: listCacheEnabled,
   MANA_BALANCE_ENABLED: manaBalanceEnabled,
   NAV_STALL_LOG_ENABLED: navStallLogEnabled,
@@ -48,7 +46,6 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   SCAN_LAB_ENABLED: scanLabEnabled,
   SOCIAL_FRIENDS_ENABLED: socialFriendsEnabled,
   PUSH_ENABLED: pushEnabled,
-  STAND_IN_LABELS_ENABLED: standInLabelsEnabled,
   SUGGESTED_CHANGES_V2_ENABLED: suggestedChangesV2Enabled,
   SWAP_TOOLS_ENABLED: swapToolsEnabled,
   TUNING_ENABLED: tuningEnabled,

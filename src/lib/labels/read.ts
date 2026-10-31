@@ -7,31 +7,6 @@ import { isJob } from "./schema";
 import { labelRoleSet, type LabelTargetRole } from "./role-sets";
 import type { Job } from "./types";
 
-/**
- * Whether the stand-ins sheet reads card labels (the run plan's Task 5). OFF for anything but the
- * exact string `'true'`, server-side and read per request, like `swapToolsEnabled`.
- *
- * Its own switch rather than `CARD_LABELS_ENABLED`, which is the labelling workflow's cron kill
- * switch (a repository variable): gating the app on it would tie what players see to whether the
- * cron runs. Released after `SWAP_TOOLS_ENABLED` and after the backfill is published (d9,
- * 2026-10-02). Off, nothing here is called and every comparison takes the text path.
- */
-export function standInLabelsEnabled(env: NodeJS.ProcessEnv): boolean {
-  return env.STAND_IN_LABELS_ENABLED === "true";
-}
-
-/**
- * Whether the deck page reads card labels for its Consider panel (card labels item 7). OFF for anything
- * but the exact string `'true'`, server-side and read per request.
- *
- * Its own switch rather than `STAND_IN_LABELS_ENABLED`, so these surfaces release on their own walk,
- * not the stand-ins sheet's (every feature behind its own switch, the 2026-09-24 release ruling). Off,
- * no label and no lens is read, and the page is exactly as it was before labels reached it.
- */
-export function labelSurfacesEnabled(env: NodeJS.ProcessEnv): boolean {
-  return env.LABEL_SURFACES_ENABLED === "true";
-}
-
 /** A `card_labels` row with the card inputs its freshness is judged against. */
 export type LabelRow = Row;
 type Row = {
@@ -53,8 +28,7 @@ type Row = {
  *   vanilla body) and some not (Lightning Bolt, a plain removal spell), and 4% had every job fail
  *   `validateJob` (Rampant Growth, Sakura-Tribe Elder: a `to` on a ramp job), which the collector
  *   stored as `[]` too until v8, when `normalizeJob` began stripping that field instead. Read as labelled, `[]` matches nothing and refuses every pair, so those
- *   cards got no stand-ins; absent, the text path reads the card, exactly as with the switch off,
- *   and a body with no job reads as none there too.
+ *   cards got no stand-ins; absent, the text path reads the card, and a body with no job reads as none there too.
  *
  * A `tutor` job on a card whose every library search finds only lands is dropped from an
  * otherwise fresh row (`searchesOnlyLands`): that card is ramp, and the prompt says so. A row the
