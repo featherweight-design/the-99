@@ -27,6 +27,8 @@ export function FlyerLaunchDate({ saved: initial }: { saved: string | null }) {
   const dirty = typed !== (saved ?? "");
 
   function save(next: string) {
+    // What the field held when the button was pressed: a Clear is pressed over the saved date, a Save over the typed one.
+    const held = typed;
     setFailed(false);
     start(async () => {
       try {
@@ -36,8 +38,8 @@ export function FlyerLaunchDate({ saved: initial }: { saved: string | null }) {
           return;
         }
         setSaved(result.value);
-        // Only when the field still holds what was sent: an edit made while the request was out stays.
-        setTyped((now) => (now === next ? (result.value ?? "") : now));
+        // Only when the field still holds what it held at the press: an edit made while the request was out stays.
+        setTyped((now) => (now === held ? (result.value ?? "") : now));
         setDone(result.state);
       } catch {
         setFailed(true);
