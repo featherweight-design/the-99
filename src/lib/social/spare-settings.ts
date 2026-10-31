@@ -163,7 +163,7 @@ export function ownedMatchesQuery(userId: string, match: NonNullable<ReturnType<
  * the friend read's own figure), not kept back already. A card is searchable at ANY count, under the threshold
  * included: keeping it back holds when the count later rises.
  */
-export async function searchSpareCards(userId: string, query: unknown, env: NodeJS.ProcessEnv): Promise<SpareSearchHit[]> {
+export async function searchSpareCards(userId: string, query: unknown): Promise<SpareSearchHit[]> {
   if (typeof query !== "string") return [];
   const match = nameSearch(query);
   if (!match) return [];
@@ -172,7 +172,7 @@ export async function searchSpareCards(userId: string, query: unknown, env: Node
   for (let page = 0; page < SPARE_SEARCH_MAX_PAGES; page++) {
     const rows = await ownedMatchesQuery(userId, match, page);
     if (rows.length === 0) break;
-    const model = await loadAvailability(userId, { oracleIds: rows.map((r) => r.oracleId), env });
+    const model = await loadAvailability(userId, { oracleIds: rows.map((r) => r.oracleId) });
     for (const r of rows) {
       const a = model.get(r.oracleId);
       const spare = a ? spareCount(a) : 0;

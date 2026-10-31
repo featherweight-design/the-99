@@ -71,15 +71,13 @@ export function fitsOf(decks: readonly DeckFacts[], tools: readonly DeckToolId[]
 
 export async function loadToolFits(
   userId: string,
-  /** The reader's resolved switches (`requestSwitchEnv`), for the deck list. */
-  env: NodeJS.ProcessEnv,
   tools: readonly DeckToolId[],
 ): Promise<Partial<Record<DeckToolId, ToolFit>>> {
   if (tools.length === 0) return {};
   const asked = new Set(tools);
   const shops = asked.has("stand-ins") || asked.has("friend-spares");
   const [list, rows, decks, played] = await Promise.all([
-    listDecksWithStats(userId, "name", { env }),
+    listDecksWithStats(userId, "name"),
     shops ? loadDeckBuyRows(userId) : [],
     shops ? deckLimits(userId) : [],
     asked.has("matchups") ? decksWithOpponents(userId) : new Set<string>(),

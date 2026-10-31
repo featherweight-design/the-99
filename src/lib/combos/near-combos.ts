@@ -138,9 +138,9 @@ export function whereIs(
 export async function loadPieceAvailability(
   userId: string,
   oracleIds: string[],
-  opts: { excludeDeckId?: string; env: NodeJS.ProcessEnv },
+  opts: { excludeDeckId?: string } = {},
 ): Promise<Map<string, Availability>> {
-  const availability = await loadAvailability(userId, { oracleIds, excludeDeckId: opts.excludeDeckId, env: opts.env });
+  const availability = await loadAvailability(userId, { oracleIds, excludeDeckId: opts.excludeDeckId });
   const untracked = oracleIds.filter((id) => !availability.has(id));
   if (untracked.length === 0) return availability;
   const held = (await db.execute(sql`
@@ -188,7 +188,6 @@ export function rankNearCombos(list: readonly NearCombo[], cap: number): NearCom
 export async function loadNearCombos(args: {
   userId: string;
   deckId: string;
-  env: NodeJS.ProcessEnv;
   cap?: number;
   /** The largest combo to list, in pieces. The deck page's list asks for 2 (combos-close G2). */
   maxPieces?: number;
@@ -213,7 +212,7 @@ export async function loadNearCombos(args: {
 
   const missingIds = [...new Set(candidates.map((c) => c.missing.oracleId))];
   const [availability, prices, catalog] = await Promise.all([
-    loadPieceAvailability(args.userId, missingIds, { excludeDeckId: args.deckId, env: args.env }),
+    loadPieceAvailability(args.userId, missingIds, { excludeDeckId: args.deckId }),
     loadPrices(missingIds),
     db
       .select({
@@ -545,7 +544,6 @@ export async function loadCardCombos(args: {
   oracleId: string;
   /** The deck the card was opened from, if any: its list, and its commanders apart. */
   deck?: { oracleIds: readonly string[]; commanderOracleIds: readonly string[] };
-  env: NodeJS.ProcessEnv;
   cap?: number;
   /** The largest combo to list, in pieces. The card details block asks for 2 (combos-close G2). */
   maxPieces?: number;
@@ -575,7 +573,7 @@ export async function loadCardCombos(args: {
   if (rows.length === 0) return { ...NO_CARD_COMBOS, inScope };
   const ids = [...new Set(rows.map((r) => r.oracle_id).filter((id) => id !== args.oracleId))];
   // Prices beside availability, as read A prices its missing pieces: a piece not owned draws its buy tag.
-  const [availability, prices] = await Promise.all([loadPieceAvailability(args.userId, ids, { env: args.env }), loadPrices(ids)]);
+  const [availability, prices] = await Promise.all([loadPieceAvailability(args.userId, ids), loadPrices(ids)]);
   const shaped = shapeCardCombos(
     rows,
     args.oracleId,

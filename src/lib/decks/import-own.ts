@@ -113,7 +113,6 @@ export async function importDeckOwned(
   deck: ImportedDeck,
   items: PendingItem[],
   actionId: string,
-  env: NodeJS.ProcessEnv,
   deps: DeckOwnDeps = defaultDeps,
 ): Promise<DeckOwnResult> {
   const made = await deps.madeBy(userId, actionId);
@@ -124,7 +123,6 @@ export async function importDeckOwned(
   let wrote = false;
   const result = await deps.apply(userId, { kind: "add", items }, {
     id: actionId,
-    env,
     source: deckSource(deckId),
     inside: async (tx) => {
       await deps.writeDeck(tx, { ...deck, id: deckId });

@@ -275,8 +275,6 @@ async function supportHits(
 export async function loadChangeCandidates(
   deckId: string,
   userId: string,
-  /** The reader's resolved switches (`requestSwitchEnv`). */
-  env: NodeJS.ProcessEnv,
 ): Promise<ChangeCandidates | null> {
   const [deck] = await db.select({
     commander: decks.commanderOracleId, partner: decks.partnerOracleId,
@@ -341,7 +339,7 @@ export async function loadChangeCandidates(
   // oracle-level art.
   const [availability, ownedArt] = await Promise.all([
     asked.length > 0
-      ? loadAvailability(userId, { oracleIds: asked, excludeDeckId: deckId, env }).catch(() => null)
+      ? loadAvailability(userId, { oracleIds: asked, excludeDeckId: deckId }).catch(() => null)
       : Promise.resolve(new Map<string, Availability>()),
     // The matched cards are the deck's own, so they take the deck's printing the way the details do.
     resolveDeckOwnedPrintings(userId, deckId, [...new Set([...halfIds.filter((id) => owned.has(id)), ...currentIds, ...[...hits.values()].flat()])]),

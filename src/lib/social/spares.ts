@@ -21,9 +21,6 @@ import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
 import { cards, collectionItems, friendLinks, podMembers, podSpareShares, pods, socialProfiles, userDataStamps, wishlistItems } from "../../db/schema";
 import { loadAvailability } from "../decks/availability-query";
-// Each FRIEND's switches, not the viewer's. `check:list-cache` refuses this import on a cached page's path: a
-// friend's override flip moves no key there, so such a page must first key on the friends' resolved switches.
-import { resolveSwitchEnv } from "../switches/snapshot";
 import { resolveFriend, type Reader } from "./access";
 import { commanderCard, commanderColumns, facePrinting, faceJoin, toCommander, type ProfileCommander } from "./commander";
 import { named } from "../person-name/mint";
@@ -118,10 +115,6 @@ export { MAX_SPARES_BATCH } from "./client-rules";
  * pooled connection: `draft-state-snapshot.test.ts`) that FIRST re-reads the viewer's
  * grants inside it, so the authorization and the friend's rows are one snapshot: a friend whose grant is
  * absent at that instant reads as `null` and nothing of theirs is read.
- *
- * Each model runs under the FRIEND's resolved switches (`resolveSwitchEnv(friend)`), never the viewer's: the
- * model describes the friend's decks, so it takes the env the friend's own pages read it under (admin PR 6f). The
- * claim model decides no switch from it today.
  */
 export async function claimModelsFor(viewerId: string, friends: readonly string[], asked: readonly string[]) {
   type Read = { grant: GrantDetails; model: Awaited<ReturnType<typeof loadAvailability>>; settings: SpareSettings };
@@ -130,7 +123,6 @@ export async function claimModelsFor(viewerId: string, friends: readonly string[
   await Promise.all(Array.from({ length: Math.min(CLAIM_MODELS_AT_ONCE, friends.length) }, async () => {
     for (let i = next++; i < friends.length; i = next++) {
       const friend = friends[i];
-      const env = await resolveSwitchEnv(friend);
       models[i] = await db.transaction(async (tx) => {
         // The grant with its pods and face, read in the same snapshot as the model, so a row never names a
         // pod the share stopped reaching the viewer through before the friend's rows were read.
@@ -138,7 +130,7 @@ export async function claimModelsFor(viewerId: string, friends: readonly string[
         if (!grant) return null;
         // The friend's own threshold and keeps (Settings' Spares, G3), in the same snapshot and only past its grant
         // check: they are the GRANTOR's settings, so a friend's choice never reaches another friend's rows.
-        const model = await loadAvailability(friend, { oracleIds: [...asked], env }, tx);
+        const model = await loadAvailability(friend, { oracleIds: [...asked] }, tx);
         return { grant, model, settings: await spareSettingsIn(tx, friend, asked) };
       }, { isolationLevel: "repeatable read" });
     }
@@ -188,15 +180,15 @@ export async function loadFriendSpares(viewerId: string, oracleIds: readonly str
  * Which of `oracleIds` the reader THEMSELVES offers to friends, with each one's spare count: the rule
  * `loadFriendSpares` applies to a friend (`spareCount`, then `isOffered` with their own `spare_min` and keeps), on
  * the reader's own collection and claims, in one repeatable-read snapshot. Spare requests read it on the holder's
- * side (G3): an ask for a card the holder no longer offers leaves Waiting on you and the badge. `env` is the reader's
- * own resolved switches. Reads only the reader's rows, so it needs no grant.
+ * side (G3): an ask for a card the holder no longer offers leaves Waiting on you and the badge. Reads only the reader's
+ * rows, so it needs no grant.
  */
-export async function loadOwnOffered(userId: string, oracleIds: readonly string[], env: NodeJS.ProcessEnv): Promise<Map<string, number>> {
+export async function loadOwnOffered(userId: string, oracleIds: readonly string[]): Promise<Map<string, number>> {
   const asked = [...new Set(oracleIds.filter(isUuid))];
   const out = new Map<string, number>();
   if (asked.length === 0) return out;
   const read = await db.transaction(async (tx) => ({
-    model: await loadAvailability(userId, { oracleIds: asked, env }, tx),
+    model: await loadAvailability(userId, { oracleIds: asked }, tx),
     settings: await spareSettingsIn(tx, userId, asked),
   }), { isolationLevel: "repeatable read" });
   for (const [oracleId, a] of read.model) {
@@ -315,13 +307,11 @@ export type FriendSpareList = {
  *
  * The grant is read INSIDE the repeatable-read transaction that reads the friend's claim model, as `claimModelsFor`
  * does, so the authorization and the rows are one snapshot, and the friend's own threshold and keeps filter the
- * result through `isOffered`, the one place a spare is decided offered (Settings' Spares, G3). Run under the
- * FRIEND's resolved switches; `wishlist` says whether the VIEWER's wishlist is read (always, from the friend page, since its switch retired).
+ * result through `isOffered`, the one place a spare is decided offered (Settings' Spares, G3). `wishlist` says whether the VIEWER's wishlist is read (always, from the friend page, since its switch retired).
  */
 export async function loadFriendSpareList(viewerId: string, publicId: unknown, wishlist: boolean): Promise<FriendSpareList | null> {
   const friend = await resolveFriend(viewerId, publicId);
   if (friend === null) return null;
-  const env = await resolveSwitchEnv(friend);
   const read = await db.transaction(async (tx) => {
     const grant = (await spareGrantDetailsQuery(viewerId, tx)).find((g) => g.userId === friend);
     if (!grant) return null;
@@ -329,7 +319,7 @@ export async function loadFriendSpareList(viewerId: string, publicId: unknown, w
       .selectDistinct({ oracleId: collectionItems.oracleId })
       .from(collectionItems)
       .where(eq(collectionItems.userId, friend))).map((r) => r.oracleId);
-    const model = await loadAvailability(friend, { oracleIds: owned, env }, tx);
+    const model = await loadAvailability(friend, { oracleIds: owned }, tx);
     const settings = await spareSettingsIn(tx, friend, owned);
     const offered: { oracleId: string; spare: number }[] = [];
     for (const [oracleId, a] of model) {

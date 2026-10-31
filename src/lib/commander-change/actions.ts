@@ -5,7 +5,6 @@
 
 import { db } from "../../db";
 import { requireUserId } from "../auth";
-import { requestSwitchEnv } from "../switches/request";
 import { revalidateClaims } from "../decks/revalidate-claims";
 import { isUuid } from "../uuid";
 import { loadChangeCandidates, type ChangeCandidates } from "./candidates";
@@ -47,7 +46,6 @@ export async function changeCommander(
  */
 export async function readChangeCandidates(deckId: string): Promise<ChangeCandidates | null> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
   if (!isUuid(deckId)) return null;
-  return loadChangeCandidates(deckId, userId, env);
+  return loadChangeCandidates(deckId, userId);
 }

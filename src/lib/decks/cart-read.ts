@@ -25,8 +25,6 @@ import { chainArt } from "../cards/chain-art";
  */
 export async function loadCart(
   userId: string,
-  /** The reader's resolved switches (the cached page's `env`): the claim model. */
-  env: NodeJS.ProcessEnv,
 ): Promise<CartPayload> {
   const [rows, [{ total }]] = await Promise.all([
     loadDeckBuyRows(userId),
@@ -50,7 +48,7 @@ export async function loadCart(
       .from(cards)
       .where(inArray(cards.oracleId, oracleIds)),
     // Off any decklist: who holds each owned copy, user-wide. A card owned in no copies has no row.
-    loadAvailability(userId, { oracleIds, env }),
+    loadAvailability(userId, { oracleIds }),
     // The printing card details opens for a line's card, so the preview shows it; the catalog's art otherwise.
     chainArt(userId, null, oracleIds),
   ]);

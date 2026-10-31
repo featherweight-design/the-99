@@ -251,12 +251,6 @@ export type ChangeOptions = {
    * failure anywhere rolls the whole start back. Takes the transaction; never called on a retry.
    */
   inside?: (tx: Tx) => Promise<void>;
-  /**
-   * The reader's resolved switches (`requestSwitchEnv`), which every claim read inside the write
-   * takes. Required (admin PR 7b): a probe or a
-   * script, outside a request, passes `process.env` itself.
-   */
-  env: NodeJS.ProcessEnv;
 };
 
 /** One raised card as the write saw it: the claims after, the copies it added, and its reservations. */
@@ -952,7 +946,7 @@ export async function applyCollectionChange(
       // ---- 5. The deck check brackets the write: claims before, the rows, claims after.
       const lowered = [...new Set(plan.filter((p) => qty(p.after) < qty(p.before)).map((p) => p.oracleId))];
       const ownedBefore = opts.ownedCounts && !opts.dryRun ? await readOwnedCounts(tx, userId) : null;
-      const claimsBefore = lowered.length > 0 ? await loadAvailability(userId, { oracleIds: lowered, env: opts.env }, tx) : null;
+      const claimsBefore = lowered.length > 0 ? await loadAvailability(userId, { oracleIds: lowered }, tx) : null;
       if (startRelease) await dropPreconReservations(tx, userId, startRelease);
       // ONE claims snapshot for the receipt's before and after. Claim writers (a commit, a deck
       // edit) take no collection lock, so two reads either side of the write could straddle another
@@ -988,7 +982,7 @@ export async function applyCollectionChange(
         };
       };
       const receiptOf = async (excludeDeckId?: string) => opts.receipt
-        ? (await loadAvailability(userId, { oracleIds: [opts.receipt.oracleId], excludeDeckId, env: opts.env }, tx))
+        ? (await loadAvailability(userId, { oracleIds: [opts.receipt.oracleId], excludeDeckId }, tx))
           .get(opts.receipt.oracleId) ?? null
         : null;
 
@@ -1058,7 +1052,7 @@ export async function applyCollectionChange(
       const moves = countMoves(rows);
       let short: ShortDeck[] = [];
       if (claimsBefore) {
-        const claimsAfter = await loadAvailability(userId, { oracleIds: lowered, env: opts.env }, tx);
+        const claimsAfter = await loadAvailability(userId, { oracleIds: lowered }, tx);
         const names = new Map(rows.map((r) => [r.oracleId, r.name]));
         const decks = newlyShort(claimsBefore, claimsAfter, lowered, names)
           .filter((d) => !ignoredDecks.has(d.deckId));
@@ -1082,7 +1076,7 @@ export async function applyCollectionChange(
       }
 
       // Where the arriving copies went, read before the entry is written so the entry keeps it (wentTo).
-      const raised = opts.placements ? await raisedCards(tx, userId, plan, opts.env, insideBefore) : undefined;
+      const raised = opts.placements ? await raisedCards(tx, userId, plan, insideBefore) : undefined;
       if (raised) annotateWentTo(rows, wentByOracle(raised));
       await tx.update(collectionHistory)
         .set({ rows, ...moves })
@@ -1211,7 +1205,6 @@ async function raisedCards(
   tx: Tx,
   userId: string,
   plan: Planned[],
-  env: NodeJS.ProcessEnv,
   prior?: Reservations,
 ): Promise<Record<string, RaisedCard>> {
   const brought = broughtBy(plan);
@@ -1219,7 +1212,7 @@ async function raisedCards(
   const ids = [...brought.keys()].sort();
   // `prior` was read under these same cards' claim locks, which this transaction still holds.
   const reservations = prior ?? await readRaisedReservations(tx, userId, ids);
-  const availability = await loadAvailability(userId, { oracleIds: ids, env }, tx);
+  const availability = await loadAvailability(userId, { oracleIds: ids }, tx);
   const out: Record<string, RaisedCard> = {};
   for (const [oracleId, after] of availability) {
     if (after.claims.length === 0) continue;

@@ -51,9 +51,6 @@ type OwnedCandidateArgs = {
   inDeck: ReadonlySet<string>;
   limits: { capCents: number | null; sets: readonly string[]; otherDecks?: boolean };
   max?: number;
-  /** The reader's resolved switches (`requestSwitchEnv`), for the claim read; a probe,
-   *  with no signed-in reader, passes `process.env`. */
-  env: NodeJS.ProcessEnv;
 };
 
 /** The shortlist alone, for a run that never asks whether it is the whole pool (v10). */
@@ -112,7 +109,7 @@ export async function readOwnedCandidates(args: OwnedCandidateArgs): Promise<{ c
 
     const ids = rows.map((r) => r.oracleId);
     const [availability, priced] = await Promise.all([
-      loadAvailability(userId, { oracleIds: ids, excludeDeckId: deckId, env: args.env }),
+      loadAvailability(userId, { oracleIds: ids, excludeDeckId: deckId }),
       capCents === null ? null : loadPrices(ids),
     ]);
     const passing = rows.filter((r) => {
@@ -164,7 +161,6 @@ export type OffIndexArgs = {
   exclude?: ReadonlySet<string>;
   /** The room this tier fills: at most `OWNED_OFF_INDEX_MAX`, and what is left under `OWNED_SHORTLIST_MAX`. */
   max?: number;
-  env: NodeJS.ProcessEnv;
 };
 
 /** How many neighbour commanders rank the second tier. */
@@ -332,7 +328,7 @@ export async function readOwnedOffIndex(args: OffIndexArgs, read: Reader = db): 
     const slice = ranked.slice(at, at + SLICE);
     const ids = slice.map((r) => r.oracleId);
     const [availability, priced] = await Promise.all([
-      loadAvailability(args.userId, { oracleIds: ids, excludeDeckId: args.deckId, env: args.env }),
+      loadAvailability(args.userId, { oracleIds: ids, excludeDeckId: args.deckId }),
       capCents === null ? null : loadPrices(ids),
     ]);
     const passing = slice.filter((r) => {

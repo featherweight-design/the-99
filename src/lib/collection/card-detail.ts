@@ -395,7 +395,6 @@ export const loadCardDetail = cache(async function loadCardDetail(
     return loadCardCombos({
       userId,
       oracleId,
-      env,
       maxPieces: 2,
       // Uncapped in practice (the SQL shortlist): the closed row counts this same list (OPEN-1).
       cap: CARD_COMBOS_SHORTLIST,
@@ -418,7 +417,7 @@ export const loadCardDetail = cache(async function loadCardDetail(
     // run — either way the modal omits the block rather than losing the card.
     const availability = (async () => {
       const { loadAvailability } = await import("../decks/availability-query");
-      return (await loadAvailability(userId, { oracleIds: [oracleId], env })).get(oracleId) ?? null;
+      return (await loadAvailability(userId, { oracleIds: [oracleId] })).get(oracleId) ?? null;
     })().catch(() => null);
     // The decks wanting it only in a draft, which the claims above cannot name: its own read, beside
     // the availability one and never folded into it (`loadDraftWants`). The unowned branch reads it too.
@@ -457,7 +456,7 @@ export const loadCardDetail = cache(async function loadCardDetail(
   // thirty Forests would read `30 wanted · you own 0`. Undefined, not null: not read, not failed.
   const wanted = isBasicLand(found.typeLine) ? Promise.resolve(undefined) : (async () => {
     const { loadAvailability } = await import("../decks/availability-query");
-    return (await loadAvailability(userId, { oracleIds: [oracleId], unownedAsZero: true, env })).get(oracleId) ?? null;
+    return (await loadAvailability(userId, { oracleIds: [oracleId], unownedAsZero: true })).get(oracleId) ?? null;
   })().catch(() => null);
   const draftWants = import("../decks/draft-wants")
     .then(({ loadDraftWants }) => loadDraftWants(userId, oracleId))

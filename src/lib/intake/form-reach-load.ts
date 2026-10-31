@@ -24,7 +24,7 @@ async function movable(query: ReturnType<typeof sql>): Promise<string[]> {
     .filter((r) => !isLandFace(r.type_line)).map((r) => r.oracle_id);
 }
 
-export async function loadOwnedMovers(userId: string, env: NodeJS.ProcessEnv): Promise<FormCard[]> {
+export async function loadOwnedMovers(userId: string): Promise<FormCard[]> {
   // THE BUILDER'S OWN BOUNDS: a Commander-legal card (`ownedColorLegalPool`) whose front face is
   // not a land (`reachCandidates`), so the form never counts a raiser the fill could not place.
   const ownedIds = await movable(sql`
@@ -43,7 +43,7 @@ export async function loadOwnedMovers(userId: string, env: NodeJS.ProcessEnv): P
       select c.oracle_id, c.name, c.color_identity from cards c
       where c.oracle_id = any(${sql.param(movers)}::uuid[])
     `).then((r) => r.rows as CardRow[]),
-    loadAvailability(userId, { oracleIds: movers, env }),
+    loadAvailability(userId, { oracleIds: movers }),
   ]);
   const pieces = movers.filter((id) => facts.combosOf(id).length > 0);
   return rows.map((r) => {
@@ -61,6 +61,6 @@ export async function loadOwnedMovers(userId: string, env: NodeJS.ProcessEnv): P
 }
 
 export async function loadFormReach(userId: string, env: NodeJS.ProcessEnv): Promise<FormReachData> {
-  const cards = await cachePageForUser(userId, "form-reach", [], async (resolved) => ({ value: await loadOwnedMovers(userId, resolved), store: true }), env);
+  const cards = await cachePageForUser(userId, "form-reach", [], async () => ({ value: await loadOwnedMovers(userId), store: true }), env);
   return { cards };
 }

@@ -119,7 +119,6 @@ export async function addPreconForUser(
   userId: string,
   fileName: string,
   actionId: string,
-  env: NodeJS.ProcessEnv,
   placements: boolean,
 ): Promise<PreconAddResult> {
   const committed = await committedAnswer(userId, fileName, actionId);
@@ -130,7 +129,7 @@ export async function addPreconForUser(
   const result: ChangeResult = await applyCollectionChange(
     userId,
     { kind: "add", items: lines.items, preconTokens: lines.tokens },
-    { id: actionId, env, source: preconSource(fileName), ...(placements ? { placements } : {}) },
+    { id: actionId, source: preconSource(fileName), ...(placements ? { placements } : {}) },
   );
   if (result.status === "applied") {
     const names = Object.fromEntries(result.entry.rows.map((r) => [r.oracleId, r.name]));

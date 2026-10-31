@@ -254,7 +254,6 @@ async function readDraft(
   deckId: string,
   userId: string,
   detailed: boolean,
-  env: NodeJS.ProcessEnv,
 ): Promise<DraftRead> {
   const { version, before, draft, live } = await readSnapshot(deckId, userId);
 
@@ -336,7 +335,7 @@ async function readDraft(
   const notBasic = (id: string) => !basics.has(id);
   const asked = (detailed ? changed : adds.map((a) => a.oracleId)).filter(notBasic);
   const availability = asked.length > 0
-    ? await loadAvailability(userId, { oracleIds: asked, excludeDeckId: deckId, env })
+    ? await loadAvailability(userId, { oracleIds: asked, excludeDeckId: deckId })
         .catch(() => null)
     : new Map<string, Availability>();
 
@@ -435,9 +434,8 @@ async function readDraft(
   };
 }
 
-/** `env` is the reader's resolved switches (`requestSwitchEnv`). */
-export async function loadDraftState(deckId: string, userId: string, env: NodeJS.ProcessEnv): Promise<DraftState> {
-  return (await readDraft(deckId, userId, false, env)).state;
+export async function loadDraftState(deckId: string, userId: string): Promise<DraftState> {
+  return (await readDraft(deckId, userId, false)).state;
 }
 
 /** The committed list reduced to what the mix strip and the type distribution
@@ -552,8 +550,8 @@ function returnsFromCommand(state: DraftState, oracleId: string, added: boolean)
  * it. `quantity` on each row is the DELTA, which is what the row's figure means
  * — `3 → 1` is one row that lost two copies, never a row for two copies.
  */
-export async function loadDraftRows(deckId: string, userId: string, env: NodeJS.ProcessEnv): Promise<DraftRows> {
-  const read = await readDraft(deckId, userId, true, env);
+export async function loadDraftRows(deckId: string, userId: string): Promise<DraftRows> {
+  const read = await readDraft(deckId, userId, true);
   const { state } = read;
 
   const built: DraftRow[] = [];

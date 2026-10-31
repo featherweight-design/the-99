@@ -228,7 +228,7 @@ async function workV2(args: {
       const unique = [...new Set(names)];
       const fresh = unique.filter((n) => !reads.has(n));
       if (fresh.length > 0) {
-        const read = readResolvedRows({ userId, deckId, limits, names: fresh, env }).then((found) => {
+        const read = readResolvedRows({ userId, deckId, limits, names: fresh }).then((found) => {
           rows.push(...found);
           resolve = nameResolver(rows, inDeckIds);
         });

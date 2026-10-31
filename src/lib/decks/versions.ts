@@ -582,8 +582,6 @@ export async function loadVersionDiff(
   deckId: string,
   /** A linked deck's v1 diffs against v0, which is read from the precon and is never a version. */
   origin: OriginPredecessor | null = null,
-  /** The reader's resolved switches (`requestSwitchEnv`). */
-  env: NodeJS.ProcessEnv,
 ): Promise<VersionDiffPayload> {
   if (previousVersionId === null && origin === null) return { in: [], out: [], newestAsOf: null };
 
@@ -654,7 +652,7 @@ export async function loadVersionDiff(
     // and a card the draft has cut (ask 0) counts the copy this deck's committed version still
     // sleeves, which an off-decklist read would hold against it (Copilot round 3).
     ids.length > 0
-      ? loadAvailability(userId, { oracleIds: ids, excludeDeckId: deckId, env })
+      ? loadAvailability(userId, { oracleIds: ids, excludeDeckId: deckId })
       : new Map<string, Availability>(),
   ]);
   const vantage = new Map([...fromDeck].map(([id, a]) => [id, a.free]));

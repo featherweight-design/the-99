@@ -7,7 +7,7 @@
  *
  * The grant is the viewer's own friendship row, read in `resolveFriend`'s statement: a public id that is not
  * the viewer's current friend resolves to nothing, whoever it names, and nothing is read for it. The decks are
- * then read under the FRIEND's resolved switches (as `loadFriendSpares` reads a claim model), by the same
+ * then read (the visibility rule decided under the FRIEND's resolved switches) by the same
  * `listDecksWithStats` the friend's own `/decks` draws its pills from, so the status a friend sees on their
  * own tile is the status the viewer sees here. It derives from the friend's collection, which a count of
  * spares already shows more of (product call 1 of the plan).
@@ -115,9 +115,9 @@ export async function loadFriendDecks(viewerId: string, publicId: unknown, viewe
  * see or change them would take decks off a friend's tab unannounced.
  */
 async function visibleDecks(ownerId: string, env: NodeJS.ProcessEnv): Promise<DeckListItem[]> {
-  if (!socialFriendsEnabled(env)) return listDecksWithStats(ownerId, "newest", { env, includeProxyStats: true });
+  if (!socialFriendsEnabled(env)) return listDecksWithStats(ownerId, "newest", { includeProxyStats: true });
   const [rows, prefs] = await Promise.all([
-    listDecksWithStats(ownerId, "newest", { env, includeProxyStats: true }),
+    listDecksWithStats(ownerId, "newest", { includeProxyStats: true }),
     loadFriendDeckPrefs(ownerId),
   ]);
   return rows.filter((d) => friendCanSeeDeck(d, prefs));
@@ -176,7 +176,7 @@ export async function loadFriendDeck(viewerId: string, publicId: unknown, deckId
   if (!socialFriendsEnabled(env)) return null;
   const row = (await visibleDecks(friendId, env)).find((d) => d.id === deckId);
   if (!row) return null;
-  const detail = await getDeckDetail(deckId, friendId, Promise.resolve(null), env);
+  const detail = await getDeckDetail(deckId, friendId, Promise.resolve(null));
   if (!detail) return null;
   const ids = [...new Set([detail.commander.oracleId, ...(detail.partner ? [detail.partner.oracleId] : []), ...detail.cards.map((c) => c.oracleId)])];
   const [ownedRows, viewerDecks, printed] = await Promise.all([

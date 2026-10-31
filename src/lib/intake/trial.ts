@@ -75,7 +75,7 @@ export async function trialFill(
 
   const [prices, availability, facts, bracket] = await Promise.all([
     loadPrices(ids),
-    loadAvailability(userId, { oracleIds: ids, env }),
+    loadAvailability(userId, { oracleIds: ids }),
     db.execute(sql`
       select c.oracle_id, c.type_line,
         exists (select 1 from collection_items ci where ci.user_id = ${userId} and ci.oracle_id = c.oracle_id) as owned

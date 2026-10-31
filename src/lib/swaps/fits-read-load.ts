@@ -90,10 +90,8 @@ export async function loadFitsReadInputs(
   userId: string,
   oracleId: string,
   opts: { allDecks?: boolean } = {},
-  /** The reader's resolved switches (`requestSwitchEnv`), for `loadFits`' claim read. */
-  env: NodeJS.ProcessEnv,
 ): Promise<FitsReadLoad | null> {
-  const fits = await loadFits(userId, oracleId, env);
+  const fits = await loadFits(userId, oracleId);
   if (!fits) return null;
   const listed = fitsReadCandidates(fits);
 

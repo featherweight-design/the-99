@@ -137,7 +137,7 @@ async function readNoncreatureSubtypes(): Promise<Set<string>> {
 /** Null when the deck is not this reader's, or the card is not in the catalog. */
 /** `full` reads every stand-in of every group, for `Show all` on a group the first read capped. */
 export async function loadStandIns(
-  deckId: string, userId: string, cutOracleId: string, full: boolean, env: NodeJS.ProcessEnv,
+  deckId: string, userId: string, cutOracleId: string, full: boolean,
 ): Promise<StandInsRead | null> {
   const deckRows = await db.execute<{ commander: string; partner: string | null }>(sql`
     select commander_oracle_id as commander, partner_oracle_id as partner
@@ -209,7 +209,7 @@ export async function loadStandIns(
 
   const ownedIds = candidates.filter((r) => (r.owned ?? 0) > 0).map((r) => r.oracle_id);
   const [availability, priced, labels] = await Promise.all([
-    ownedIds.length > 0 ? loadAvailability(userId, { oracleIds: ownedIds, excludeDeckId: deckId, env }) : new Map(),
+    ownedIds.length > 0 ? loadAvailability(userId, { oracleIds: ownedIds, excludeDeckId: deckId }) : new Map(),
     loadPrices([cutOracleId, ...candidates.map((r) => r.oracle_id)]),
     // The candidates' labels, beside the original's: a pair is compared by its labels only when both carry one.
     originalLabels

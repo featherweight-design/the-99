@@ -156,7 +156,7 @@ async function setSettled(runId: string, userId: string, actionId: string): Prom
  * claimants are read through the reader's own claim model, so every one is the reader's deck.)
  */
 async function pullParties(
-  runId: string, userId: string, env: NodeJS.ProcessEnv, pulls: readonly SetPull[],
+  runId: string, userId: string, pulls: readonly SetPull[],
 ): Promise<{ ids: string[] } | { foreign: SetPull }> {
   if (pulls.length === 0) return { ids: [] };
   const named = [...new Set(pulls.map((p) => p.sourceDeckId))];
@@ -172,7 +172,7 @@ async function pullParties(
     .where(and(eq(deckSuggestionItems.runId, runId), inArray(deckSuggestionItems.id, pulls.map((p) => p.itemId))));
   const claimants = await Promise.all(pulls.map((p) => {
     const add = items.find((i) => i.id === p.itemId)?.addOracleId ?? null;
-    return add === null ? [] : pullClaimants(userId, env, add, owner.deckId);
+    return add === null ? [] : pullClaimants(userId, add, owner.deckId);
   }));
   return { ids: [...pulls.map((p) => p.sourceDeckId), ...claimants.flat()] };
 }
@@ -190,10 +190,10 @@ async function pullParties(
  * addition's snapshot, so the set's one Undo takes it back too.
  */
 export async function applyPicks(args: {
-  runId: string; addIds: readonly string[]; cutIds: readonly string[]; actionId: string; userId: string; env: NodeJS.ProcessEnv;
+  runId: string; addIds: readonly string[]; cutIds: readonly string[]; actionId: string; userId: string;
   pulls?: readonly SetPull[];
 }): Promise<ApplySetResult> {
-  const { runId, userId, env } = args;
+  const { runId, userId } = args;
   // Postgres returns a uuid in lower case, and every id here is compared as a string against what it read, so the set id
   // and the picked ids are lowered first.
   const actionId = args.actionId.toLowerCase();
@@ -203,7 +203,7 @@ export async function applyPicks(args: {
   // instead of answered with the set it already applied (#2425 round 9). Settled only ever grows, so an unlocked read
   // that says settled stays true under the lock.
   const settled = pulls.length > 0 && (await setSettled(runId, userId, actionId));
-  const parties = settled ? { ids: [] } : await pullParties(runId, userId, env, pulls);
+  const parties = settled ? { ids: [] } : await pullParties(runId, userId, pulls);
   if ("foreign" in parties) {
     return { ok: false, refusal: { kind: "pull", itemId: parties.foreign.itemId, message: "We couldn’t find that deck." } };
   }
@@ -247,7 +247,7 @@ export async function applyPicks(args: {
         const snapshot = snapshots.get(p.itemId);
         if (!line || line.addOracleId === null || !snapshot) throw new Refused({ kind: "pull", itemId: p.itemId, message: "" });
         const pulled = await pullInTx(tx, {
-          userId, env, sourceDeckId: p.sourceDeckId, oracleId: line.addOracleId, askingDeckId: run.deckId, lockIds: run.lockIds,
+          userId, sourceDeckId: p.sourceDeckId, oracleId: line.addOracleId, askingDeckId: run.deckId, lockIds: run.lockIds,
         });
         if (!pulled.ok) {
           // Nothing to pull, by the pull's own reason code: a copy came free since the confirmation was drawn, or the
