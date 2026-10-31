@@ -54,16 +54,18 @@ describe("recordAboutPageVisit (About visual PR 6b)", () => {
   });
 
   it("decides the keys from the reader's own resolved switches", async () => {
-    resolved.env = { SOCIAL_FRIENDS_ENABLED: "true" };
-    await recordAboutPageVisit("friends", rendered("friends", resolved.env));
+    // Shopping's stand-ins label follows SWAP_TOOLS_ENABLED; the page's other units draw for every reader, so a visit
+    // with the switch off still writes.
+    resolved.env = { SWAP_TOOLS_ENABLED: "true" };
+    await recordAboutPageVisit("shopping", rendered("shopping", resolved.env));
     expect(requestSwitchEnv).toHaveBeenCalledWith("user_1");
-    expect((markAboutVisited.mock.calls[0] as unknown as [string, number, string[]])[2]).toContain("friends/friends/rule0");
+    expect((markAboutVisited.mock.calls[0] as unknown as [string, number, string[]])[2]).toContain("shopping/deck-shopping/standins");
     markAboutVisited.mockClear();
     // Rendered with it on, switched off for the reader before the visit: the key is not written.
-    const withRule0 = rendered("friends", { SOCIAL_FRIENDS_ENABLED: "true" });
+    const withStandIns = rendered("shopping", { SWAP_TOOLS_ENABLED: "true" });
     resolved.env = {};
-    await recordAboutPageVisit("friends", withRule0);
-    expect((markAboutVisited.mock.calls[0] as unknown as [string, number, string[]])[2]).not.toContain("friends/friends/rule0");
+    await recordAboutPageVisit("shopping", withStandIns);
+    expect((markAboutVisited.mock.calls[0] as unknown as [string, number, string[]])[2]).not.toContain("shopping/deck-shopping/standins");
   });
 
   it("takes a first-run reader's first visit as their whole baseline: the floor and every page's keys", async () => {
@@ -76,13 +78,13 @@ describe("recordAboutPageVisit (About visual PR 6b)", () => {
 
   // Review round 1: a switch turned on between the render (or a prefetch) and the visit names keys the reader never saw.
   it("writes only what the page rendered: a unit switched on after the render stays new (returning reader)", async () => {
-    const claim = rendered("friends", {});
-    resolved.env = { SOCIAL_FRIENDS_ENABLED: "true" };
-    await recordAboutPageVisit("friends", claim);
+    const claim = rendered("shopping", {});
+    resolved.env = { SWAP_TOOLS_ENABLED: "true" };
+    await recordAboutPageVisit("shopping", claim);
     const [, version, ids] = markAboutVisited.mock.calls[0] as unknown as [string, number, string[]];
     expect(version).toBe(9);
-    expect(ids).not.toContain("friends/friends/rule0");
-    expect(unseenUnits(visibleSections(envViewWith(resolved.env)), { version, ids }).map((u) => u.key)).toContain("friends/friends/rule0");
+    expect(ids).not.toContain("shopping/deck-shopping/standins");
+    expect(unseenUnits(visibleSections(envViewWith(resolved.env)), { version, ids }).map((u) => u.key)).toContain("shopping/deck-shopping/standins");
   });
 
   it("writes only what the page rendered: a first-run baseline does not take a unit switched on after the render", async () => {
