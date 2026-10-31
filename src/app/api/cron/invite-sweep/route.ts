@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
  * token on every cron call, the account sweep's rule. Until that secret is set it answers 503 and does nothing; a
  * call without it is refused with 401 before anything runs. It reads no feature switch: a lapsed reservation is
  * returned whatever the switches say. It also purges the launch list once the launch date plus 30 days has passed
- * (`FLYER_LAUNCH_DATE`; unset, nothing is deleted).
+ * (the date set on the admin launch list card, else `FLYER_LAUNCH_DATE`; neither set, nothing is deleted).
  */
 export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET;

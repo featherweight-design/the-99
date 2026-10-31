@@ -7,6 +7,7 @@ import { writeGroup } from "../../../lib/admin/group-writes";
 import { discardEmptyGroup, makeFlyerCode, revokeFlyerCode, type MakeFlyerCodeResult } from "../../../lib/flyer/admin";
 import { FLYER_GROUP_ALLOWANCE, flyerGroupName, parseStore } from "../../../lib/flyer/admin-rule";
 import { flyerTrialEnabled } from "../../../lib/flyer/flag";
+import { setLaunchDate as writeLaunchDate } from "../../../lib/flyer/launch-date";
 import { requestSwitchEnv } from "../../../lib/switches/request";
 
 // The admin's flyer-code writes (flyer trial PR 4b; handoff Admin-Desktop A2 and A3). Every export calls `requireAdmin()`
@@ -83,4 +84,29 @@ export async function revokeCode(codeId: string): Promise<RevokeCodeResult> {
   const result = await revokeFlyerCode(userId, codeId);
   if (result.changed) revalidatePath("/admin", "layout");
   return result;
+}
+
+export type SetLaunchDateActionResult =
+  | { ok: true; state: "saved"; value: string }
+  | { ok: true; state: "cleared"; value: null }
+  | { ok: false; error: "off" | "invalid" | "past" | "failed" };
+
+/**
+ * Saves the launch date (`YYYY-MM-DD`), or clears it when `day` is blank. A day before today (UTC) is refused: the launch
+ * list is purged 30 days after the date, so a past date would delete addresses before any launch email exists. The value
+ * and its `launch_date_set` audit row commit together; a save that changes nothing writes nothing and reads as done.
+ */
+export async function setLaunchDate(day: string): Promise<SetLaunchDateActionResult> {
+  const { userId } = await requireAdmin();
+  if (!flyerTrialEnabled(await requestSwitchEnv(userId))) return { ok: false, error: "off" };
+  let result;
+  try {
+    result = await writeLaunchDate(userId, day);
+  } catch (error) {
+    console.error("admin: the launch date could not be saved", error);
+    return { ok: false, error: "failed" };
+  }
+  if (!result.ok) return result;
+  if (result.changed) revalidatePath("/admin", "layout");
+  return result.state === "saved" ? { ok: true, state: "saved", value: result.value } : { ok: true, state: "cleared", value: null };
 }

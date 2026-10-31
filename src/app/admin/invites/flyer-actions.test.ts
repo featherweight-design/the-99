@@ -14,7 +14,10 @@ const makeFlyerCode = vi.fn();
 const revokeFlyerCode = vi.fn();
 vi.mock("../../../lib/flyer/admin", () => ({ makeFlyerCode: (...a: unknown[]) => makeFlyerCode(...a), revokeFlyerCode: (...a: unknown[]) => revokeFlyerCode(...a) }));
 
-const { makeCode, revokeCode } = await import("./flyer-actions");
+const writeLaunchDate = vi.fn();
+vi.mock("../../../lib/flyer/launch-date", () => ({ setLaunchDate: (...a: unknown[]) => writeLaunchDate(...a) }));
+
+const { makeCode, revokeCode, setLaunchDate } = await import("./flyer-actions");
 const G = "11111111-1111-4111-8111-111111111111";
 const C = "22222222-2222-4222-8222-222222222222";
 
@@ -25,6 +28,7 @@ beforeEach(() => {
   writeGroup.mockReset().mockResolvedValue({ ok: true, id: G });
   makeFlyerCode.mockReset().mockResolvedValue({ ok: true, id: "x", code: "MOX4QK" });
   revokeFlyerCode.mockReset().mockResolvedValue({ ok: true, changed: true });
+  writeLaunchDate.mockReset().mockResolvedValue({ ok: true, state: "saved", value: "2026-12-01", changed: true });
 });
 
 describe("makeCode", () => {
@@ -79,5 +83,47 @@ describe("revokeCode", () => {
     expect(revokeFlyerCode).not.toHaveBeenCalled();
     on = false;
     expect(await revokeCode(C)).toEqual({ ok: false, error: "off" });
+  });
+});
+
+describe("setLaunchDate", () => {
+  it("calls the gate first, saves under the actor and revalidates when it changed", async () => {
+    expect(await setLaunchDate("2026-12-01")).toEqual({ ok: true, state: "saved", value: "2026-12-01" });
+    expect(gate).toHaveBeenCalledTimes(1);
+    expect(writeLaunchDate).toHaveBeenCalledWith("u_hugh", "2026-12-01");
+    expect(revalidatePath).toHaveBeenCalledWith("/admin", "layout");
+  });
+
+  it("clears on a blank", async () => {
+    writeLaunchDate.mockResolvedValue({ ok: true, state: "cleared", value: null, changed: true });
+    expect(await setLaunchDate("")).toEqual({ ok: true, state: "cleared", value: null });
+    expect(writeLaunchDate).toHaveBeenCalledWith("u_hugh", "");
+  });
+
+  it("does not revalidate a save that changed nothing", async () => {
+    writeLaunchDate.mockResolvedValue({ ok: true, state: "saved", value: "2026-12-01", changed: false });
+    expect(await setLaunchDate("2026-12-01")).toEqual({ ok: true, state: "saved", value: "2026-12-01" });
+    expect(revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("passes a refusal (malformed, past) through and writes nothing more", async () => {
+    writeLaunchDate.mockResolvedValue({ ok: false, error: "past" });
+    expect(await setLaunchDate("2020-01-01")).toEqual({ ok: false, error: "past" });
+    writeLaunchDate.mockResolvedValue({ ok: false, error: "invalid" });
+    expect(await setLaunchDate("soon")).toEqual({ ok: false, error: "invalid" });
+    expect(revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("refuses while the trial's switch is off, without reaching the write", async () => {
+    on = false;
+    expect(await setLaunchDate("2026-12-01")).toEqual({ ok: false, error: "off" });
+    expect(writeLaunchDate).not.toHaveBeenCalled();
+  });
+
+  it("reports a thrown write as failed", async () => {
+    writeLaunchDate.mockRejectedValue(new Error("deadlock"));
+    const spy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    expect(await setLaunchDate("2026-12-01")).toEqual({ ok: false, error: "failed" });
+    spy.mockRestore();
   });
 });

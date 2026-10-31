@@ -52,13 +52,37 @@ describe("purgeLaunchList", () => {
     expect(text).not.toMatch(/flyer_codes|flyer_claims/);
   });
 
+  it("reads the admin's saved date FIRST and the env value only when none is saved", async () => {
+    const saved = process.env.FLYER_LAUNCH_DATE;
+    try {
+      const now = new Date("2026-12-31T00:00:00Z");
+      // Saved 2026-12-01 is due at 12-31; the env value (far future) is ignored.
+      process.env.FLYER_LAUNCH_DATE = "2099-01-01";
+      expect((await purgeLaunchList({ now, readStored: async () => "2026-12-01" })).due).toBe(true);
+      // Nothing saved: the env value stands.
+      expect((await purgeLaunchList({ now, readStored: async () => null })).due).toBe(false);
+      process.env.FLYER_LAUNCH_DATE = "2026-12-01";
+      expect((await purgeLaunchList({ now, readStored: async () => null })).due).toBe(true);
+      // A saved date later than the env one wins too: not due.
+      expect((await purgeLaunchList({ now, readStored: async () => "2099-01-01" })).due).toBe(false);
+      // The admin cleared it (an empty saved value): no purge, and the env value that is still set does not come back.
+      expect((await purgeLaunchList({ now, readStored: async () => "" })).due).toBe(false);
+      // Neither set: no purge.
+      delete process.env.FLYER_LAUNCH_DATE;
+      expect((await purgeLaunchList({ now, readStored: async () => null })).due).toBe(false);
+    } finally {
+      if (saved === undefined) delete process.env.FLYER_LAUNCH_DATE;
+      else process.env.FLYER_LAUNCH_DATE = saved;
+    }
+  });
+
   it("reads FLYER_LAUNCH_DATE when no value is handed in, and an unset variable means no purge", async () => {
     const saved = process.env.FLYER_LAUNCH_DATE;
     try {
       delete process.env.FLYER_LAUNCH_DATE;
-      expect((await purgeLaunchList({ now: new Date("2099-01-01T00:00:00Z") })).due).toBe(false);
+      expect((await purgeLaunchList({ now: new Date("2099-01-01T00:00:00Z"), readStored: async () => null })).due).toBe(false);
       process.env.FLYER_LAUNCH_DATE = "2026-01-01";
-      expect((await purgeLaunchList({ now: new Date("2026-06-01T00:00:00Z") })).due).toBe(true);
+      expect((await purgeLaunchList({ now: new Date("2026-06-01T00:00:00Z"), readStored: async () => null })).due).toBe(true);
     } finally {
       if (saved === undefined) delete process.env.FLYER_LAUNCH_DATE;
       else process.env.FLYER_LAUNCH_DATE = saved;

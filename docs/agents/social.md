@@ -96,7 +96,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   (the token's SENDER's switch decides, off reads as N12; the claim secret travels only in an httpOnly cookie on the
   token's own path); `spendInviteOnSignUp` (`spend.ts`, from `user.created` in the Clerk webhook and from the
   newcomer's first `/friends`, idempotent in either order, with `takeReceipt` drawing the band once from the edge);
-  `sweepInvites` behind the hourly `GET /api/cron/invite-sweep` (which also releases lapsed flyer claims and, 30 days after `FLYER_LAUNCH_DATE`, purges `launch_list`; unset means never: `src/lib/flyer/launch-purge.ts`); and the purge revoking the sender's pending Clerk
+  `sweepInvites` behind the hourly `GET /api/cron/invite-sweep` (which also releases lapsed flyer claims and, 30 days after the launch date (the admin-set `flyer_settings` value, else `FLYER_LAUNCH_DATE`), purges `launch_list`; neither set means never: `src/lib/flyer/launch-purge.ts`); and the purge revoking the sender's pending Clerk
   invitations after it commits. Proof: `pnpm probe:invites`.
   PR 5 draws the newcomer's side. `/join/[token]` and `/sign-up` are public in `src/proxy.ts`; a signed-in reader goes Home
   from either. `readJoin` (`join-read.ts`, the step itself pure as `joinStep`) reads the token's row against the claim cookie

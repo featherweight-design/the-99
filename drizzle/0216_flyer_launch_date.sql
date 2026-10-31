@@ -1,0 +1,31 @@
+CREATE TABLE "flyer_settings" (
+	"key" text PRIMARY KEY NOT NULL,
+	"value" text NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+ALTER TABLE "admin_events" DROP CONSTRAINT "admin_events_kind_check";--> statement-breakpoint
+ALTER TABLE "admin_events" DROP CONSTRAINT "admin_events_fields_check";--> statement-breakpoint
+ALTER TABLE "admin_events" ADD CONSTRAINT "admin_events_kind_check" CHECK ("admin_events"."kind" in ('override_set', 'override_cleared', 'group_created', 'group_renamed', 'group_described', 'member_added', 'member_removed', 'setting_set', 'group_allowance_set', 'invites_set', 'invites_topped_up', 'invite_revoked', 'account_revealed', 'group_paid_limit_set', 'credits_granted', 'purchase_block_cleared', 'flyer_code_made', 'flyer_code_revoked', 'launch_date_set', 'launch_list_exported'));--> statement-breakpoint
+ALTER TABLE "admin_events" ADD CONSTRAINT "admin_events_fields_check" CHECK (case "admin_events"."kind"
+    when 'override_set' then "admin_events"."switch" is not null and "admin_events"."scope" is not null and "admin_events"."new_value" is not null
+    when 'override_cleared' then "admin_events"."switch" is not null and "admin_events"."scope" is not null and "admin_events"."old_value" is not null
+    when 'group_created' then "admin_events"."group_id" is not null and "admin_events"."new_value" is not null
+    when 'group_renamed' then "admin_events"."group_id" is not null and "admin_events"."old_value" is not null and "admin_events"."new_value" is not null
+    when 'group_described' then "admin_events"."group_id" is not null and ("admin_events"."old_value" is not null or "admin_events"."new_value" is not null)
+    when 'member_added' then "admin_events"."group_id" is not null and "admin_events"."user_id" is not null
+    when 'member_removed' then "admin_events"."group_id" is not null and "admin_events"."user_id" is not null
+    when 'setting_set' then "admin_events"."setting_key" is not null and "admin_events"."setting_month" is not null and "admin_events"."new_value" is not null
+    when 'group_allowance_set' then "admin_events"."group_id" is not null and ("admin_events"."old_value" is not null or "admin_events"."new_value" is not null)
+    when 'invites_set' then "admin_events"."user_id" is not null and "admin_events"."old_value" is not null and "admin_events"."new_value" is not null
+    when 'invites_topped_up' then "admin_events"."group_id" is not null and "admin_events"."new_value" is not null and "admin_events"."note" is not null
+    when 'invite_revoked' then "admin_events"."user_id" is not null
+    when 'account_revealed' then "admin_events"."user_id" is not null
+    when 'group_paid_limit_set' then "admin_events"."group_id" is not null and ("admin_events"."old_value" is not null or "admin_events"."new_value" is not null)
+    when 'credits_granted' then "admin_events"."user_id" is not null and "admin_events"."new_value" is not null and "admin_events"."note" is not null
+    when 'purchase_block_cleared' then "admin_events"."user_id" is not null and "admin_events"."old_value" is not null
+    when 'flyer_code_made' then "admin_events"."user_id" is not null and "admin_events"."new_value" is not null
+    when 'flyer_code_revoked' then "admin_events"."user_id" is not null and "admin_events"."old_value" is not null
+    when 'launch_date_set' then "admin_events"."old_value" is not null or "admin_events"."new_value" is not null
+    when 'launch_list_exported' then true
+  end);

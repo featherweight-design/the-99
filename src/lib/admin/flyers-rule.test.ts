@@ -20,6 +20,7 @@ const read: FlyersRead = {
   open: [],
   // Three claims holding on his codes: his 40 stock reads 37 left.
   holds: [day(31), day(31), day(31)],
+  launchDate: null,
 };
 
 describe("flyersView", () => {
@@ -46,8 +47,14 @@ describe("flyersView", () => {
     expect(flyersView(read, now).launch).toEqual({
       title: "Launch list · 23",
       meta: "emails left on used-up and ended flyers · Knight Moves Cafe 19 · Pizza Pod test 4",
+      date: null,
     });
-    expect(flyersView({ ...read, codes: [], listed: 0 }, now).launch).toEqual({ title: "Launch list · 0", meta: "no emails yet · a used-up or ended flyer asks for one" });
+    expect(flyersView({ ...read, codes: [], listed: 0 }, now).launch).toEqual({ title: "Launch list · 0", meta: "no emails yet · a used-up or ended flyer asks for one", date: null });
+  });
+
+  it("carries the saved launch date to the card, and null when none is set", () => {
+    expect(flyersView({ ...read, launchDate: "2026-11-20" }, now).launch.date).toBe("2026-11-20");
+    expect(flyersView(read, now).launch.date).toBeNull();
   });
 
   it("writes the zero-code meta: none yet, the invites left, nothing about the launch list", () => {
