@@ -1,0 +1,567 @@
+{
+  "feature": "Suggested changes v2 close-out, part 1: every surface that names a run's credit price (Hugh 2026-10-30, 1 credit up to 10 changes, 2 above), at 390 and 1300, with SUGGESTED_CHANGES_V2_ENABLED on and again unset",
+  "note": "Run twice against `next dev` with ANALYSIS_TAB_ENABLED, TUNING_ENABLED, PROPOSED_CUTS_ENABLED, MANA_BALANCE_ENABLED, PAYMENTS_ENABLED, WELCOME_CREDITS_ENABLED and ABOUT_SHEET_ENABLED 'true', TUNING_V2_STUB_DELAY_MS and TUNING_STUB_DELAY_MS set, a dummy ANTHROPIC_API_KEY and ANTHROPIC_BASE_URL empty (nothing reaches a model): once with SUGGESTED_CHANGES_V2_ENABLED=true, once with it unset, copying `contact-sheets/sc-v2-closeout-part1` aside between runs. A v2-off pass is expected to fail the three intake rows (no v2 intake); it presses nothing. Seeded on a scratch branch of local-dev (the audit account, user_3HdjdocERCjunk0zJQFDWyHkTd4): SCV2_HIST_DECK (HD - Elves d9345373…) holds, newest first, an N=3 spent run (last, so Intake D at N=3 fires), an N=11 run set to charged by a $2.00 cap (units 2, three overCap drops), an N=3 spent run, an N=10 run set to charged by sets (offSet) and an N=10 run refunded short; SCV2_REFUND_DECK (HD - Brago d3f9ccb4…) one N=11 staged-stub run refunded short (units 2, last, so Intake D at N=11 fires); SCV2_FRESH_DECK (HD Tune - Blood Rites cb877695…) no runs. Credits: the free allowance (1) spent in the window, and a welcome lot of 15 with 14 spent, so 1 credit is left and an N=11 press is refused with the 2-credit line. The runs came from the staged stub (TUNING_V2_STUB_DELAY_MS), never a model. About's credits entry (payments off) is `sc-v2-closeout-part1-nopay.json`.",
+  "rows": [
+    {
+      "id": "about-credits-rule",
+      "label": "About › Decks › Analysis, the credits card: the rule sentence (v2: `So does each Suggested changes run, or two for more than 10 changes.`) and the table row (`1 or 2 credits`; v1 `1 credit`)",
+      "view": "src/lib/copy/about-pages.ts",
+      "steps": [
+        {
+          "goto": "/about/decks#analysis",
+          "wait": "[data-about-shot][data-loaded]",
+          "settle": 800
+        },
+        {
+          "scrollTo": "[data-rule='rule/credits']"
+        },
+        {
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "about-entry-suggested",
+      "label": "About Reference, Tuning a deck with Suggested changes opened: the entry's credit key (v2 `Each run uses a credit, or two for more than 10 changes.`)",
+      "view": "src/lib/copy/about-entries.ts",
+      "steps": [
+        {
+          "goto": "/about?tab=reference#suggested-changes",
+          "wait": "[data-entry-open='suggested-changes']",
+          "settle": 900
+        },
+        {
+          "scrollTo": "[data-entry-open='suggested-changes']",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "about-entry-focus",
+      "label": "About Reference, Giving a deck a focus opened: the focus key (v2 `“Suggested changes” uses a credit, or two for more than 10 changes.`)",
+      "view": "src/lib/copy/about-entries.ts",
+      "steps": [
+        {
+          "goto": "/about?tab=reference#deck-focus",
+          "wait": "[data-entry-open='deck-focus']",
+          "settle": 900
+        },
+        {
+          "scrollTo": "[data-entry-open='deck-focus']",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "about-entry-buying-credits",
+      "label": "About Reference, buying credits opened (payments on): the caption's Suggested changes bullet (v2 `…run, or two for more than 10 changes`)",
+      "view": "src/lib/copy/about-entries.ts",
+      "steps": [
+        {
+          "goto": "/about?tab=reference#buying-credits",
+          "wait": "[data-entry-open='buying-credits']",
+          "settle": 900
+        },
+        {
+          "scrollTo": "[data-entry-open='buying-credits']",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "about-tools-card",
+      "label": "About › Decks, the Suggested changes Tools card: its line (v2 lineWhen) and cost chip (v2 `1 credit, 2 over 10 changes`)",
+      "view": "src/components/about/tools/tool-card.tsx",
+      "steps": [
+        {
+          "goto": "/about/decks#analysis",
+          "wait": "[data-about-shot][data-loaded]",
+          "settle": 800
+        },
+        {
+          "scrollTo": "[data-tool-card='suggested-changes']"
+        },
+        {
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "credits-sub",
+      "label": "/credits head: the sub line (v2 `Most runs use 1 credit · …`; v1 the shipped sub)",
+      "view": "src/components/credits/credits-head.tsx",
+      "steps": [
+        {
+          "goto": "/credits",
+          "wait": "[data-testid=\"credits-total\"]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "where-credits-work",
+      "label": "/credits Welcome cell › Where they work: the sheet's Suggested changes row (v2 what + `1 credit, 2 over 10 changes`)",
+      "view": "src/components/welcome/where-credits-work.tsx",
+      "steps": [
+        {
+          "goto": "/credits",
+          "wait": "[data-cell=welcome] [data-welcome-where]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Where they work$"
+        },
+        {
+          "wait": "[data-where-credits-work]",
+          "settle": 900
+        }
+      ]
+    },
+    {
+      "id": "hub-tile-cost",
+      "label": "Analysis hub, a read deck at 99 with no runs: the Suggested changes tile's cost (v2 `1 credit, 2 over 10 changes`; v1 `1 credit per run`)",
+      "view": "src/components/decks/tuning-hub.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SCV2_FRESH_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "scrollTo": "[data-tuning-hub]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "history-tiers",
+      "label": "History A: tiers `1 credit` (N=3), `2 credits` (N=11 charged, cap), `1 credit` (N=10 bound), `refunded` (N=10)",
+      "view": "src/components/decks/tuning-history.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SCV2_HIST_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='history']",
+          "settle": 900
+        },
+        {
+          "wait": "[data-history-row]",
+          "settle": 900
+        },
+        {
+          "scrollTo": "[data-history]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "history-refunded-2",
+      "label": "History A on a deck whose N=11 run fell short on its own: the tier `refunded` (2 units back)",
+      "view": "src/components/decks/tuning-history.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SCV2_REFUND_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='history']",
+          "settle": 900
+        },
+        {
+          "wait": "[data-history-row]",
+          "settle": 900
+        },
+        {
+          "scrollTo": "[data-history]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "receipt-cap-2",
+      "label": "Short-Run A, an N=11 run charged 2 (cap $2.00): `2 credits used: your cap set the count`",
+      "view": "src/components/decks/suggested-changes-run.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SCV2_HIST_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='history']",
+          "settle": 900
+        },
+        {
+          "wait": "[data-history-row]",
+          "settle": 900
+        },
+        {
+          "click": "[data-history-row] >> nth=1",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-sc-short]",
+          "settle": 900
+        },
+        {
+          "scrollTo": "[data-sc-short]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "receipt-bound-1",
+      "label": "Short-Run A, an N=10 run bound by sets, charged 1: `1 credit used: your limits set the count`",
+      "view": "src/components/decks/suggested-changes-run.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SCV2_HIST_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='history']",
+          "settle": 900
+        },
+        {
+          "wait": "[data-history-row]",
+          "settle": 900
+        },
+        {
+          "click": "[data-history-row] >> nth=3",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-sc-short]",
+          "settle": 900
+        },
+        {
+          "scrollTo": "[data-sc-short]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "receipt-refund-1",
+      "label": "Short-Run B, an N=10 run refunded: `the credit is back` and `Credit returned · n of m left`",
+      "view": "src/components/decks/suggested-changes-run.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SCV2_HIST_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='history']",
+          "settle": 900
+        },
+        {
+          "wait": "[data-history-row]",
+          "settle": 900
+        },
+        {
+          "click": "[data-history-row] >> nth=4",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-sc-short]",
+          "settle": 900
+        },
+        {
+          "scrollTo": "[data-sc-short]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "receipt-refund-2",
+      "label": "Short-Run B, an N=11 run refunded: `both credits are back` and `2 credits returned · n of m left`",
+      "view": "src/components/decks/suggested-changes-run.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SCV2_REFUND_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='history']",
+          "settle": 900
+        },
+        {
+          "wait": "[data-history-row]",
+          "settle": 900
+        },
+        {
+          "click": "[data-history-row] >> nth=0",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-sc-short]",
+          "settle": 900
+        },
+        {
+          "scrollTo": "[data-sc-short]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "same-request-2",
+      "label": "Intake D, same request at N=11 on an unchanged list: `A new run uses 2 credits…` (nothing reserved)",
+      "view": "src/components/decks/suggested-changes-intake.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SCV2_REFUND_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='suggested']",
+          "settle": 900
+        },
+        {
+          "wait": "[data-sc-intake]",
+          "settle": 900
+        },
+        {
+          "click": "[data-sc-stepper] button:last-of-type",
+          "settle": 150
+        },
+        {
+          "click": "[data-sc-stepper] button:last-of-type",
+          "settle": 150
+        },
+        {
+          "click": "[data-sc-stepper] button:last-of-type",
+          "settle": 150
+        },
+        {
+          "click": "[data-sc-stepper] button:last-of-type",
+          "settle": 150
+        },
+        {
+          "click": "[data-sc-stepper] button:last-of-type",
+          "settle": 150
+        },
+        {
+          "click": "[data-sc-stepper] button:last-of-type",
+          "settle": 150
+        },
+        {
+          "click": "[data-sc-stepper] button:last-of-type",
+          "settle": 150
+        },
+        {
+          "click": "[data-sc-stepper] button:last-of-type",
+          "settle": 150
+        },
+        {
+          "clickRole": "button",
+          "name": "^Suggest changes$",
+          "settle": 2500
+        },
+        {
+          "wait": "[data-sc-same]",
+          "settle": 600
+        },
+        {
+          "scrollTo": "[data-sc-same]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "same-request-1",
+      "label": "Intake D, same request at N=3: `A new run uses a credit…`",
+      "view": "src/components/decks/suggested-changes-intake.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SCV2_HIST_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='suggested']",
+          "settle": 900
+        },
+        {
+          "wait": "[data-sc-intake]",
+          "settle": 900
+        },
+        {
+          "clickRole": "button",
+          "name": "^Suggest changes$",
+          "settle": 2500
+        },
+        {
+          "wait": "[data-sc-same]",
+          "settle": 600
+        },
+        {
+          "scrollTo": "[data-sc-same]",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "refusal-costs-two",
+      "label": "The refusal at N=11 with 1 credit left (welcome lot 1, free 0): `This run costs 2 credits. Ask for 10 changes or fewer to use 1.`",
+      "view": "src/components/decks/tuning-panel.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SCV2_FRESH_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='suggested']",
+          "settle": 900
+        },
+        {
+          "wait": "[data-sc-intake]",
+          "settle": 900
+        },
+        {
+          "click": "[data-sc-stepper] button:last-of-type",
+          "settle": 150
+        },
+        {
+          "click": "[data-sc-stepper] button:last-of-type",
+          "settle": 150
+        },
+        {
+          "click": "[data-sc-stepper] button:last-of-type",
+          "settle": 150
+        },
+        {
+          "click": "[data-sc-stepper] button:last-of-type",
+          "settle": 150
+        },
+        {
+          "click": "[data-sc-stepper] button:last-of-type",
+          "settle": 150
+        },
+        {
+          "click": "[data-sc-stepper] button:last-of-type",
+          "settle": 150
+        },
+        {
+          "click": "[data-sc-stepper] button:last-of-type",
+          "settle": 150
+        },
+        {
+          "click": "[data-sc-stepper] button:last-of-type",
+          "settle": 150
+        },
+        {
+          "clickRole": "button",
+          "name": "^Suggest changes$",
+          "settle": 2500
+        },
+        {
+          "wait": "text=This run costs 2 credits",
+          "settle": 600
+        },
+        {
+          "scrollTo": "text=This run costs 2 credits",
+          "settle": 400
+        }
+      ]
+    }
+  ]
+}
