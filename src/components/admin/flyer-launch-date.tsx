@@ -36,7 +36,8 @@ export function FlyerLaunchDate({ saved: initial }: { saved: string | null }) {
           return;
         }
         setSaved(result.value);
-        setTyped(result.value ?? "");
+        // Only when the field still holds what was sent: an edit made while the request was out stays.
+        setTyped((now) => (now === next ? (result.value ?? "") : now));
         setDone(result.state);
       } catch {
         setFailed(true);
@@ -64,7 +65,12 @@ export function FlyerLaunchDate({ saved: initial }: { saved: string | null }) {
       />
       <small className="text-[12px] leading-[1.5] text-[color:var(--fg-muted)] [text-wrap:pretty]">{copy.launchDateHelp}</small>
       <span className="-mb-[8px] -ml-[6px] flex items-center justify-start gap-[10px] md:m-0 md:justify-end">
-        {dirty ? (
+        {dirty && typed === "" ? (
+          // An emptied field is a clear, and Clear is the only way to say so: a date input also reads "" mid-edit.
+          <button type="button" data-testid="launch-date-clear" disabled={pending} onClick={() => save("")} className={TEXT_BUTTON}>
+            {copy.launchDateClear}
+          </button>
+        ) : dirty ? (
           <button type="button" data-testid="launch-date-save" disabled={pending} onClick={() => save(typed)} className={TEXT_BUTTON}>
             {copy.launchDateSave}
           </button>

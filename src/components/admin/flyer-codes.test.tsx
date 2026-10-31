@@ -237,11 +237,12 @@ describe("the launch date row", () => {
     expect(screen.queryByTestId("launch-date-clear")).toBeNull();
   });
 
-  it("saves an emptied field as a blank (blank is a valid saved value)", async () => {
+  it("offers Clear, never Save, for an emptied field (a date input also reads blank mid-edit)", async () => {
     setLaunchDate.mockResolvedValue({ ok: true, state: "cleared", value: null });
     render(<FlyerCodes view={withDate("2026-11-20")} />);
     fireEvent.change(dateInput(), { target: { value: "" } });
-    fireEvent.click(screen.getByTestId("launch-date-save"));
+    expect(screen.queryByTestId("launch-date-save")).toBeNull();
+    fireEvent.click(screen.getByTestId("launch-date-clear"));
     await waitFor(() => expect(setLaunchDate).toHaveBeenCalledWith(""));
   });
 

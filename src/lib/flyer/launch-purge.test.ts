@@ -65,6 +65,8 @@ describe("purgeLaunchList", () => {
       expect((await purgeLaunchList({ now, readStored: async () => null })).due).toBe(true);
       // A saved date later than the env one wins too: not due.
       expect((await purgeLaunchList({ now, readStored: async () => "2099-01-01" })).due).toBe(false);
+      // The admin cleared it (an empty saved value): no purge, and the env value that is still set does not come back.
+      expect((await purgeLaunchList({ now, readStored: async () => "" })).due).toBe(false);
       // Neither set: no purge.
       delete process.env.FLYER_LAUNCH_DATE;
       expect((await purgeLaunchList({ now, readStored: async () => null })).due).toBe(false);

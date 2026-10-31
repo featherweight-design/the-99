@@ -53,10 +53,11 @@ describe("setLaunchDate", () => {
     expect(events).toEqual([expect.objectContaining({ kind: "launch_date_set", oldValue: "2026-11-20", newValue: "2026-12-01" })]);
   });
 
-  it("clears on a blank by deleting the row and recording the old date", async () => {
+  it("clears on a blank by keeping the row empty (the env fallback stays off) and recording the old date", async () => {
     stored = "2026-11-20";
     expect(await setLaunchDate("u_admin", "", { now })).toEqual({ ok: true, state: "cleared", value: null, changed: true });
-    expect(log).toEqual(["switch-lock", "delete:flyer_settings"]);
+    expect(log).toEqual(["switch-lock", "upsert:flyer_settings"]);
+    expect(upserts[0]).toMatchObject({ key: "launch_date", value: "" });
     expect(events).toEqual([expect.objectContaining({ kind: "launch_date_set", oldValue: "2026-11-20", newValue: null })]);
   });
 

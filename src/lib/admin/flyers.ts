@@ -43,7 +43,7 @@ export async function readFlyerCodes(viewerId: string): Promise<FlyersRead> {
     coalesce((select json_agg(h.holds_until) from flyer_claims h join flyer_codes hc on hc.id = h.code_id
       where hc.created_by = ${viewerId} and h.state in ('open', 'proven')), '[]'::json) as holds`);
   const [row] = rows;
-  const launchDate = await readStoredLaunchDate();
+  const launchDate = (await readStoredLaunchDate()) || null;
   return {
     codes: row.codes.map((c) => ({ ...c, createdAt: utc(c.createdAt)!, revokedAt: utc(c.revokedAt) })),
     listed: row.listed,
