@@ -116,8 +116,8 @@ export type ValidationReport = {
   /** The strategy focus THIS run aimed at (`StrategyKey`), which the panel's `ReadFrom` names (strategy focus PR 4b).
    *  Absent with no focus. */
   focus?: string;
-  /** Ungroundable citations removed (`stripUngroundable`): an `intent` on a deck with no intent, a `focus` on a deck with
-   *  no focus or on a cut. Each from a line that kept others. Absent when none were. */
+  /** Citations removed from lines that were kept: ungroundable ones (`stripUngroundable`: an `intent` on a deck with no
+   *  intent, a `focus` on a deck with no focus or on a cut), and on v2 failed ones (`salvage`). Absent when none were. */
   strippedCites?: number;
   /** Every drop `validateSuggestions` produced, per candidate — the same list `chooseRefusal`
    *  reads to pick the one-line `refusal`, kept here in full rather than discarded once that
@@ -296,28 +296,34 @@ export function validateSuggestions(args: {
   // (HD - Goblins, 2026-10-27: all five additions dropped as `citation`, 20 of 21 dropped additions across production's focus
   // runs), and one bad citation dropped a line whose other citations held. The citation goes, never the line, and a line left
   // with no citation still drops.
-  let strippedCites = 0;
+  // Counted per prepared line, and only into `strippedCites` when that line is kept.
+  const stripped = new Map<TuningLine, number>();
+  const strip = (from: TuningLine, to: TuningLine) => {
+    stripped.set(to, (stripped.get(from) ?? 0) + from.evidence.length - to.evidence.length);
+    return to;
+  };
   const ungroundable = (kind: string, side: "add" | "cut") =>
     (kind === "intent" && pack.intent === null) || (kind === "focus" && (pack.focus == null || side === "cut"));
   const stripUngroundable = (line: TuningLine, side: "add" | "cut"): TuningLine => {
     const evidence = line.evidence.filter((c) => !ungroundable(c.kind, side));
     if (evidence.length === line.evidence.length || evidence.length === 0) return line;
-    strippedCites += line.evidence.length - evidence.length;
-    return { ...line, evidence };
+    return strip(line, { ...line, evidence });
   };
   // Suggested changes v2 (C1, Hugh 2026-10-31): a citation that fails its check goes, and the line stays, when another
   // citation on the line holds and neither rationale restates the failed one. On Aang one false `games` figure dropped
   // ~30% of the cut lines and refunded half the small runs, though each line had a citation that held. A line whose
-  // every citation fails, or whose words repeat the failed claim, still drops as `citation`.
+  // every citation fails, or whose words repeat the failed claim, still drops as `citation`. A `decklist` citation with no
+  // staple figure is unchecked (`citationHolds` passes it), so it never alone carries a line past a failed one.
   const salvage = (line: TuningLine, side: "add" | "cut"): TuningLine => {
     if (!args.v2) return line;
     const holding = line.evidence.filter((c) => !ungroundable(c.kind, side) && citationHolds(c, line));
     const failed = line.evidence.filter((c) => !holding.includes(c));
-    if (failed.length === 0 || holding.length === 0 || failed.some((c) => restates(c, line))) return line;
-    strippedCites += failed.length;
-    return { ...line, evidence: holding };
+    const checked = holding.some((c) => c.kind !== "decklist" || STAPLE_FIGURE.test(c.value.toLowerCase()));
+    if (failed.length === 0 || !checked || failed.some((c) => restates(c, line))) return line;
+    return strip(line, { ...line, evidence: holding });
   };
   const prepare = (l: TuningLine, side: "add" | "cut") => salvage(stripUngroundable(relabel(l), side), side);
+  let strippedCites = 0;
   const sides = [
     ["add", response.additions.map((l) => prepare(l, "add"))],
     ["cut", response.cuts.map((l) => prepare(l, "cut"))],
@@ -331,6 +337,7 @@ export function validateSuggestions(args: {
       }
       const card = resolveName(line.card)!;
       used.add(`${side}:${card.oracleId}`);
+      strippedCites += stripped.get(line) ?? 0;
       const fixed = repairs.get(line);
       kept.push({
         addOracleId: side === "add" ? card.oracleId : null,
@@ -509,7 +516,7 @@ export function validateSuggestions(args: {
         // A decklist citation is otherwise unchecked, but the prompt sends a staple's figure
         // through it ("Sol Ring: in 415 of 431 commanders' decks"), so that one form is held to
         // the staples list: the card named must be one the pack lists, with exactly that figure.
-        const staple = /\bin (\d+) of (\d+) commanders/.exec(text);
+        const staple = STAPLE_FIGURE.exec(text);
         if (!staple) return true;
         return pack.staples.some((st) => text.includes(st.name.toLowerCase())
           && st.commanders === Number(staple[1]) && st.commanderTotal === Number(staple[2]));
@@ -518,16 +525,27 @@ export function validateSuggestions(args: {
   }
 }
 
+/** The staple figure a `decklist` citation may carry ("Sol Ring: in 415 of 431 commanders' decks"), the one form checked. */
+const STAPLE_FIGURE = /\bin (\d+) of (\d+) commanders/;
+
+/** Every `N of M` figure in a text, as numbers: a word ("four of five") read as its number, "the" and "your" allowed. */
+function figuresIn(text: string): string[] {
+  const word = `\\d+|${NUMBER_WORDS}`;
+  const n = (t: string) => (/^\d+$/.test(t) ? Number(t) : NUMBER_WORDS.split("|").indexOf(t));
+  return [...text.matchAll(new RegExp(`\\b(${word})\\s+of\\s+(?:the\\s+|your\\s+)?(${word})\\b`, "g"))].map(([, a, b]) => `${n(a)}/${n(b)}`);
+}
+
 /**
- * Whether a line's rationale repeats a citation: its whole text, or any `N of M` figure it states. Such words
- * lean on the citation, so a line whose citation failed cannot keep them by dropping the citation alone.
+ * Whether a line's rationale repeats a citation: its whole text (three words or more, so a bare role name such as "ramp"
+ * is not read as a repeat), or any `N of M` figure it states, however worded. Such words lean on the citation, so a line
+ * whose citation failed cannot keep them by dropping the citation alone.
  */
 function restates(c: TuningCitation, line: TuningLine): boolean {
   const words = `${line.rationale}\n${line.rationaleShort}`.toLowerCase();
   const value = c.value.toLowerCase().trim();
-  if (value.length > 0 && words.includes(value)) return true;
-  return [...value.matchAll(new RegExp(`\\b(?:\\d+|${NUMBER_WORDS})\\s+of\\s+(?:the\\s+|your\\s+)?\\d+\\b`, "g"))]
-    .some(([figure]) => words.includes(figure));
+  if (value.split(/\s+/).length >= 3 && words.includes(value)) return true;
+  const said = new Set(figuresIn(words));
+  return figuresIn(value).some((f) => said.has(f));
 }
 
 /** A citation's direction: the axis worked against the player, or for them. */
