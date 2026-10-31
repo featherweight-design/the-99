@@ -48,11 +48,12 @@ def why(key):
 def page_p(key, hidden):
     c = L.C[key]
     kick = 'Hidden' if hidden else 'Rank 1 · your best fit'
-    hide = '' if hidden else f'<div class="new" style="position:absolute;top:6px;right:7px;z-index:2;border-radius:10px">{L.plate("", style="position:relative")}</div>'
+    hide = ''
     band = (f'<div class="cp-band"><img class="a" src="art/crop-{key}.jpg" alt=""><div class="scrim"></div>{hide}'
             f'<div style="position:absolute;right:7px;bottom:6px;z-index:2">{L.plate("", L.EXPAND, style="position:relative", label="View card details")}</div>'
             f'<div class="blk"><p class="k">{kick}</p><div class="nl"><h1>{c["n"]}</h1>{L.pips(c["id"], 10, 3)}</div><p class="tl">{c["ty"]}</p></div></div>')
-    body = '<div class="cp-body">' + (note() if hidden else '') + hero(key, 'Not ranked while hidden' if hidden else BEST, True, hidden) + why(key) + '</div>'
+    hb = '' if hidden else f'<button type="button" class="hidebtn new" style="justify-content:flex-start;margin:-8px 0 -8px 2px">{L.EYE_OFF}Hide from my lists<span class="draft">DRAFT</span></button>'
+    body = '<div class="cp-body">' + (note() if hidden else '') + hero(key, 'Not ranked while hidden' if hidden else BEST, True, hidden) + hb + why(key) + '</div>'
     return (f'<div class="ph"><img class="cap-img" src="art/ph-header.png" width="390" alt=""><div class="scroll">{band}{body}</div>'
             f'<img class="bar" src="art/ph-bar.png" width="390" alt=""></div>')
 
@@ -79,14 +80,14 @@ def build():
         '<b>How a reader reaches a hidden commander.</b> Card search opens a card’s details, not this page, so “from search” is the lists’ own search. A hidden commander is out of the list, '
         'so typing its name lands on Discover’s shipped <b>held</b> state (<code>excluded-report.ts</code>, the same one that says a filter is holding a match back), '
         'with one new cause: <i>you hid it</i>, and the button opens its page. Above a live list the same cause is one sentence in the shipped aside. '
-        '<b>On the page</b>, hidden reads as the hero’s shipped note (the synergy note’s shape) at the top, with <b>Unhide</b>. The page does offer Hide when not hidden: on the phone, the plate in the band’s empty top corner; on desktop, a quiet line under the build note.')
+        '<b>On the page</b>, hidden reads as the hero’s shipped note (the synergy note’s shape) at the top, with <b>Unhide</b>. The page does offer Hide when not hidden: a quiet <i>Hide from my lists</i> line, under the hero on the phone and under the build note on desktop (R1b: nothing over the art).')
     body += '<div class="frames">'
     body += L.fr('<b>7 · For you search</b> · 390 · “ghal”', L.phone(held(), head=typed('p'), count=3),
                  'The only match is hidden: the shared zero state names it, says why, and offers its page. The figures beside the button stay inert, as shipped.')
     body += L.fr('<b>7 · Its page, hidden</b> · 390', page_p('ghalta', True),
-                 'The kicker reads <i>Hidden</i> in place of the rank, and the hero says <i>Not ranked while hidden</i>: the lists it ranks in leave it out. Fit is still its fit. Build stays: hiding is about suggestions, not a lock. No plate in the corner: Unhide is the one control.')
+                 'The kicker reads <i>Hidden</i> in place of the rank, and the hero says <i>Not ranked while hidden</i>: the lists it ranks in leave it out. Fit is still its fit. Build stays: hiding is about suggestions, not a lock. Unhide is the one control.')
     body += L.fr('<b>8 · A page, not hidden</b> · 390', page_p('zimone', False),
-                 'The plate sits in the band’s top right, the corner the round that moved the pips left empty (Card details holds the bottom right). Press: the page turns into state 7 at once; Unhide in the note takes it back.')
+                 'R1b: the band stays as shipped. Hide is a quiet text line under the hero, muted until pressed. Press: the page turns into state 7 at once; Unhide in the note takes it back.')
     body += '</div><div class="frames">'
     body += L.fr('<b>7 · Its page, hidden</b> · desktop 1300', page_d('ghalta', True),
                  'Desktop: the note leads the right column, above the hero. The left column is as shipped.')

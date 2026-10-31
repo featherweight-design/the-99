@@ -1,7 +1,7 @@
 # The 99 · Hide a commander (account 2, 2026-10-31)
 
 Canvas: https://claude.ai/artifact/RZp8zfcHeG3GYcEr8Bs1ps
-Status: **R1, awaiting Hugh's audit.**
+Status: **R1b, awaiting Hugh's audit.** R1b (Hugh, 2026-10-31): the top-right plate drew the eye from the commander, so Hide moves to the foot of the row as a quiet glyph, and the page offers Hide as a text line at both widths.
 
 Brief: `docs/superpowers/design-briefs/2026-10-31-hide-a-commander.md`. Hugh's rulings hold throughout: a hidden commander stays hidden until the player undoes it, with a Hidden list to restore from; it drops out of For you, Discover and Help me choose (Help me choose says nothing); its own page still opens, says it is hidden and offers Unhide.
 
@@ -14,7 +14,7 @@ Sources read: main @7bf3c89 and the files each section names.
 | Board | States |
 |---|---|
 | `Main.dc.html` | Every call and the open questions |
-| `Rows.dc.html` | 1 · the control on a For you row (rest, pressed, hover) · 2 · on a Discover row · the plate's four states |
+| `Rows.dc.html` | 1 · the control on a For you row (rest, pressed, hover) · 2 · on a Discover row · the glyph's four states |
 | `Undo.dc.html` | 3 · undo in place (one, two, Discover, desktop) · 12 · hide failed, undo failed |
 | `Hidden.dc.html` | 4 · the Hidden list · 5 · empty · 6 · unhiding and the row's return · 12 · unhide failed |
 | `Page.dc.html` | 7 · reached from the lists' search, the page when hidden · 8 · the page when not hidden, with Hide |
@@ -22,9 +22,9 @@ Sources read: main @7bf3c89 and the files each section names.
 
 ## 1 · The control (`Rows`)
 
-- **On the row, top right of the band**, at both widths: the band's one empty corner. Not a menu (the row has none, and one action needs no menu), not a swipe (undiscoverable, and nothing else swipes), not page-only.
-- Drawn as **the plate** every control over art draws (`full-card-trigger.tsx` `PLATE`): 26px, opaque `--bg`, one `--border-strong` hairline, radius 7, centred in a 44px target, inset so the band never clips it. Glyph: eye with a slash, `--fg-muted`. Always drawn, not hover-only.
-- States: hover (fine pointer) `--elevated-hover`, glyph `--fg`; pressed `--elevated` with an accent edge; focus the app's 2px accent ring.
+- **At the foot of the row** (R1b), at both widths: the last item on the row's figures line (*8,902 decks tracked*), pushed to the line's right end; in Discover it follows the price link. The band stays the commander's: nothing is drawn over the art. Not a menu (the row has none, and one action needs no menu), not a swipe (undiscoverable, and nothing else swipes), not page-only.
+- Drawn as **a bare glyph**, no plate: eye with a slash, 16px, `--fg-faint`, in a 44px target whose negative margin keeps the line's height. Always drawn, not hover-only, but the quietest thing on the row.
+- States: hover (fine pointer) glyph `--fg`; pressed glyph `--fg` on an `--elevated` disc; focus the app's 2px accent ring.
 - It sits above the row's stretched link (`z-[2]`), so a press never opens the page. `aria-label` and `title`: *Hide {name}*.
 - Same control in For you and Discover. Nothing else on the row changes.
 
@@ -43,7 +43,7 @@ Sources read: main @7bf3c89 and the files each section names.
 - Not Settings and not the user menu.
 - Page: the shipped `PageHeader` (*Hidden* / *commanders you hid*), a count line (*3 hidden · newest first*), no rack.
 - **The row** is Help me choose's result row (`choose-row.tsx`: 40px card face, name, pips, `--surface-rail`) with *Hidden Oct 31* under the name and **Unhide** (the builder's accent text button, 44px) where the figures were. Newest first. The row opens the commander's page; Unhide is its only other control. Desktop: Help me choose's 720 column.
-- **Empty:** the shared zero state, *Nothing hidden*, one sentence that draws the plate it names (DRAFT). No button. No count on the tab.
+- **Empty:** the shared zero state, *Nothing hidden*, one sentence that draws the glyph it names (DRAFT). No button. No count on the tab.
 - **Unhide:** the row turns into the same Undo row, saying where it went, *back in For you* or *back in Discover*; Undo hides it again. The commander returns to its list at whatever rank it scores now, with no mark.
 - **Unhide refused:** the row stays; shared toast, *We couldn't unhide {name}. Try again.* (DRAFT).
 
@@ -51,7 +51,7 @@ Sources read: main @7bf3c89 and the files each section names.
 
 - **"From search" is the lists' own search.** Card search opens card details, not `/commanders/[slug]`. A hidden commander is out of the list, so typing its name lands on Discover's shipped **held** state (`excluded-report.ts`, the zero state that says a filter is holding a match back), with a new cause: heading *{name} is here. You hid it*, body *It matches, but you hid it, so it stays out of your lists. Its page still opens.* (both DRAFT), primary **Open its page**, aside *1 match, 0 shown*. Above a live list the same cause is one sentence in the shipped aside (`excluded-match.tsx`). For you's search gains the held state too.
 - **Hidden:** the hero's shipped note shape (the synergy note: `--elevated-hover`, `--border-strong`, 2px `--fg-faint` left edge) leads the body (phone) or the right column (desktop): eye glyph, *Hidden. It stays out of For you, Discover and Help me choose until you bring it back.* (DRAFT), **Unhide**. The phone band's kicker reads *Hidden* in place of the rank; the hero's rank clause reads *Not ranked while hidden*. Fit, Build and everything else stay.
-- **Not hidden, the page offers Hide:** phone, the plate in the band's top-right corner (Card details keeps the bottom right); desktop, a muted *Hide from my lists* line (DRAFT) under the build note. Pressing it turns the page into the hidden state at once.
+- **Not hidden, the page offers Hide** (R1b): a muted *Hide from my lists* line (DRAFT) with the glyph, at both widths: phone under the hero, desktop under the build note. Nothing over the band or the card face. Pressing it turns the page into the hidden state at once.
 - Never on the public `/commander/[slug]` page.
 
 ## 5 · Help me choose, pairs, short lists (`Edges`)
@@ -71,4 +71,4 @@ Sources read: main @7bf3c89 and the files each section names.
 1. **Where Hidden lives:** the fourth tab (drawn), or no tab and a *3 hidden* link at the end of the count line (not drawn; its empty state would have no way in).
 2. **The tab's count:** drawn with the strip's shipped count. Drop it if it reads as a nag.
 3. **A Help me choose run in History** from before a hide: recommended, drop the hidden row silently there too, rather than keep it as a record.
-4. **Desktop Hide on the page:** the text line (drawn), or the plate on the card face's top right, over the mana cost.
+4. **Hide on the page:** the quiet text line at both widths (drawn), matching the row's foot placement.

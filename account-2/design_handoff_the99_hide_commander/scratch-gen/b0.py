@@ -1,14 +1,14 @@
 import lib as L
 CSS = '<style>.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;max-width:1500px}</style>'
 def build():
-    body = L.head('Hide a commander · R1 · account 2 · 2026-10-31', 'Hide a commander: the calls',
+    body = L.head('Hide a commander · R1 · account 2 · 2026-10-31', 'Hide a commander: the calls (R1b)',
         'Brief <code>docs/superpowers/design-briefs/2026-10-31-hide-a-commander.md</code> and Hugh’s rulings (hidden until undone, a Hidden list, out of For you, Discover and Help me choose, '
         'the page still opens with Unhide). Every state at 390 and 1300, drawn over the shipped captures (<code>public/about/pages/amonkhet</code>) and the shipped components each board names. '
         'Strings marked DRAFT go to <code>/copy-review</code>. Sources: main @7bf3c89.')
     body += CSS + '<div class="grid">'
     body += L.rule('1 · The control (<code>Rows</code>)', [
-        '<b>On the row, top right of the band</b>, at both widths: the band’s one empty corner. Not a menu (the row has none, and one action needs no menu), not a swipe (nothing else in the app swipes and it can’t be found), not page-only (the brief’s situation 1 is “gone now, in place”).',
-        'Drawn as <b>the plate</b> every control over art already uses: 26px, opaque <code>--bg</code>, <code>--border-strong</code> hairline, radius 7, in a 44px target. Glyph: an eye with a slash. Always drawn, not hover-only.',
+        '<b>R1b: at the foot of the row</b>, the right end of the figures line, at both widths. Hugh: the top-right plate drew the eye from the commander. Not a menu (the row has none), not a swipe (can’t be found), not page-only.',
+        'A bare eye-slash glyph, 16px, <code>--fg-faint</code>, no plate, in a 44px target that adds no height. After the <i>manapool</i> stamp in Discover. Always drawn, not hover-only.',
         'It sits above the row’s stretched link, so pressing it never opens the page. <code>aria-label</code> and <code>title</code>: <i>Hide {name}</i>.'])
     body += L.rule('2 · Confirmation and undo (<code>Undo</code>)', [
         '<b>No confirm.</b> “Hidden until undone” is safe because undoing is one press, twice over: right there, and in Hidden any time later.',
@@ -21,7 +21,7 @@ def build():
     body += L.rule('4 · The commander’s page (<code>Page</code>)', [
         '“From search” is the lists’ own search: card search opens card details, not this page. A hidden match lands on Discover’s shipped <b>held</b> state (or its aside above a live list) with a new cause, <i>you hid it</i>, and <b>Open its page</b>.',
         'Hidden: the hero’s shipped note shape leads the body with <b>Unhide</b>; the kicker reads <i>Hidden</i> and the hero <i>Not ranked while hidden</i>. Fit and Build stay.',
-        '<b>The page offers Hide too</b>: the plate in the phone band’s empty top corner, and a quiet <i>Hide from my lists</i> line under the build note on desktop.'])
+        '<b>The page offers Hide too</b>: a quiet <i>Hide from my lists</i> line, under the hero on the phone and under the build note on desktop. Nothing over the art.'])
     body += L.rule('5 · Help me choose, pairs, short lists (<code>Edges</code>)', [
         'Help me choose: filtered in the candidates’ own statement, before the read picks. Nothing drawn, no count, never named.',
         '<b>Pairs:</b> Hide acts on the card. A two-faced commander is one card (named by both faces, as the row does). Partners are two cards and two rows: hiding one leaves the other. Decks are never touched.',
@@ -33,6 +33,6 @@ def build():
         '<b>Where Hidden lives:</b> the fourth tab (drawn) or, quieter, no tab and a <i>3 hidden</i> link at the end of For you’s and Discover’s count line (not drawn; the empty state would then have no way in).',
         '<b>The tab’s count</b>: drawn, using the strip’s shipped count. Drop it if it reads as a nag.',
         '<b>A Help me choose run in History</b> from before a hide: recommended, drop the hidden row silently there too (a past run re-reads its rows), rather than keep it as a record.',
-        '<b>Desktop Hide on the page</b>: the text line (drawn) or the plate on the card face’s top right, over the mana cost.'], style='grid-column:1 / -1')
+        '<b>Hide on the page</b>: the quiet text line at both widths (drawn, R1b).'], style='grid-column:1 / -1')
     body += '</div>'
     return L.doc('Hide a commander · Calls', body, 1612)

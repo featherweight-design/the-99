@@ -15,7 +15,7 @@ def empty(w='p'):
     if w == 'p':
         hd += '<div style="height:12px;border-bottom:1px solid var(--border)"></div>'
     z = ('<div class="zs"><div class="dr"><i></i><i></i><i></i></div><h3>Nothing hidden</h3>'
-         f'<p>Press <span class="inl">{L.plate("", style="position:static;width:auto;height:auto")}</span> on a commander in For you or Discover, or on its page, and it waits here until you bring it back.<span class="draft">DRAFT</span></p></div>')
+         f'<p>Press <span class="inl" style="color:var(--fg-faint)"><span style="display:inline-block;width:15px;height:15px">{L.EYE_OFF}</span></span> on a commander in For you or Discover, or on its page, and it waits here until you bring it back.<span class="draft">DRAFT</span></p></div>')
     return hd + z
 
 THREE = (L.hrow('ghalta', 'Hidden Oct 31') + L.hrow('ashling', 'Hidden Oct 29') + L.hrow('zada', 'Hidden Oct 29'))

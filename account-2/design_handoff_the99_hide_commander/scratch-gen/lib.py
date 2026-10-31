@@ -110,6 +110,15 @@ code{font:12px 'IBM Plex Mono',monospace;color:var(--fg-body)}
 .fb .lg i{display:block;width:7px;height:7px;border-radius:2px}
 
 .hctl .hit{position:relative}
+/* R1b: the Hide glyph at the end of the row's figures line: bare, --fg-faint, 16px, 44px target that adds no height */
+.hb{flex:none;position:relative;z-index:2;width:44px;height:44px;margin:-15px -14px -15px 0;display:flex;align-items:center;justify-content:center;background:transparent;border:0;padding:0;color:var(--fg-faint);cursor:pointer}
+.hb svg{width:16px;height:16px;padding:0;box-sizing:content-box;border-radius:6px}
+.hb.hov{color:var(--fg)}
+.hb.prs{color:var(--fg)}
+.hb.prs svg{background:var(--elevated);padding:5px;margin:-5px}
+.hb.foc svg{outline:2px solid var(--accent);outline-offset:4px}
+.hb.new{outline:1.5px dashed rgba(207,135,69,.9);outline-offset:-4px;border-radius:8px}
+.crow .figs .src+.hb{margin-left:-4px}
 /* THE PLATE (full-card-trigger.tsx): 26px drawn in a 44px target, opaque --bg, one --border-strong hairline, radius 7 */
 .hit{position:absolute;z-index:2;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:transparent;border:0;padding:0;cursor:pointer}
 .plate{width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:7px;border:1px solid var(--border-strong);background:var(--bg);color:var(--fg-muted)}
@@ -332,8 +341,8 @@ def crow(key, rank, ctrl='', art=None, lane='own', extra_cls='', ctrl_new=False)
     if ctrl:
         st = '' if ctrl == 'rest' else ctrl
         cls = ' new' if ctrl_new else ''
-        plate_html = (f'<div class="hctl{cls}" style="position:absolute;top:3px;right:4px;z-index:2">'
-                      f'{plate(st, label="Hide " + c["n"])}</div>')
+        auto = '' if (lane == 'disc' and c.get('price')) else ';margin-left:auto'
+        figs += (f'<button type="button" class="hb {st}{cls}" style="{auto[1:]}" aria-label="Hide {c["n"]}" title="Hide {c["n"]}">{EYE_OFF}</button>')
     return f'''<div class="crow {extra_cls}">
 <div class="band"><img class="art" src="{src}" alt=""><div class="scrim"></div>{plate_html}
 <div class="lbl"><span class="rk{' one' if rank == 1 else ''}">{rank}</span>
