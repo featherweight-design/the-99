@@ -38,6 +38,8 @@ function draw(foot: TodoFootFacts, facts: TodoFacts = QUIET) {
   );
 }
 
+// Each segment carries its own leading `·`, joined by a no-break space (Small items 7, addendum 7).
+const JOIN = `${copy.footSeparator}\u00a0`;
 const foot = () => document.querySelector("[data-todo-foot]") as HTMLElement;
 const provenance = () => screen.getByRole("button", { name: topOffCopy.ledger.header("31") });
 const drafts = () => screen.getByRole("button", { name: availabilityCopy.deckRollup.softFoot(4) });
@@ -46,8 +48,24 @@ describe("the to-do card's foot", () => {
   it("states version · proxies · provenance · other drafts, in that order, one separator between each", () => {
     draw(FULL, { ...QUIET, unresolved: 2 });
     expect(foot().textContent).toBe(
-      [VERSION, proxyCopy.deckHeader.line(1), `${topOffCopy.ledger.header("31")}${copy.disclosureClosed}`, `${availabilityCopy.deckRollup.softFoot(4)}${copy.disclosureClosed}`].join(copy.footSeparator),
+      [VERSION, proxyCopy.deckHeader.line(1), `${topOffCopy.ledger.header("31")}${copy.disclosureClosed}`, `${availabilityCopy.deckRollup.softFoot(4)}${copy.disclosureClosed}`].join(JOIN),
     );
+  });
+
+  // Small items 7, addendum 7: a wrap never leaves a dot dangling at a line end.
+  it("puts each separator inside the segment it leads, which never breaks inside", () => {
+    draw(FULL, { ...QUIET, unresolved: 2 });
+    const segs = [...foot().querySelectorAll(":scope > [data-foot-segment]")];
+    expect(segs).toHaveLength(4);
+    expect(segs[0].querySelector("[data-foot-separator]")).toBeNull();
+    for (const seg of segs.slice(1)) {
+      expect(seg).toHaveClass("whitespace-nowrap");
+      const dot = seg.firstElementChild!;
+      expect(dot).toHaveAttribute("data-foot-separator");
+      expect(dot).toHaveAttribute("aria-hidden");
+      expect(dot.textContent).toBe(JOIN);
+    }
+    expect(foot().querySelectorAll(":scope > [data-foot-separator]")).toHaveLength(0);
   });
 
   // A brew has no version to state (deck messages, A9 and A17: the board's foot reads `No version yet`).
@@ -69,7 +87,7 @@ describe("the to-do card's foot", () => {
 
   it("leaves an absent segment out with no stray separator, and plain facts are not presses", () => {
     draw({ ...NONE, proxies: 2, otherDrafts: { count: 1, onOpen: vi.fn() } }, { ...QUIET, unresolved: 2 });
-    expect(foot().textContent).toBe(`${proxyCopy.deckHeader.line(2)}${copy.footSeparator}${availabilityCopy.deckRollup.softFoot(1)}${copy.disclosureClosed}`);
+    expect(foot().textContent).toBe(`${proxyCopy.deckHeader.line(2)}${JOIN}${availabilityCopy.deckRollup.softFoot(1)}${copy.disclosureClosed}`);
     expect(screen.queryByRole("button", { name: proxyCopy.deckHeader.line(2) })).toBeNull();
   });
 
@@ -217,7 +235,7 @@ describe("the combos-one-piece-away segment", () => {
     const one = draw({ ...FULL, nearCombos: { count: 1, onOpen: vi.fn() } }, { ...QUIET, unresolved: 2 });
     expect(segment()).toHaveTextContent(`${combosCloseCopy.segment(1)}${combosCloseCopy.caret}`);
     expect(combosCloseCopy.segment(1)).toBe("1 combo one piece away");
-    expect(foot().textContent!.startsWith([VERSION, `${combosCloseCopy.segment(1)}${combosCloseCopy.caret}`, proxyCopy.deckHeader.line(1)].join(copy.footSeparator))).toBe(true);
+    expect(foot().textContent!.startsWith([VERSION, `${combosCloseCopy.segment(1)}${combosCloseCopy.caret}`, proxyCopy.deckHeader.line(1)].join(JOIN))).toBe(true);
     one.unmount();
     draw({ ...FULL, nearCombos: { count: 5, onOpen: vi.fn() } }, { ...QUIET, unresolved: 2 });
     expect(screen.getByRole("button", { name: "5 combos one piece away" })).toBe(segment());
