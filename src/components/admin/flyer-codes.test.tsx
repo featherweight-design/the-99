@@ -259,10 +259,8 @@ describe("the launch date row", () => {
     expect(screen.queryByRole("alert")).toBeNull();
   });
 
-  it("alerts the same way when the reply is lost", async () => {
-    setLaunchDate.mockImplementation(async () => {
-      throw new Error("network");
-    });
+  it("alerts the same way when the save fails on the server (the action answers failed for a thrown write)", async () => {
+    setLaunchDate.mockResolvedValue({ ok: false, error: "failed" });
     render(<FlyerCodes view={withDate(null)} />);
     fireEvent.change(dateInput(), { target: { value: "2026-11-20" } });
     fireEvent.click(screen.getByTestId("launch-date-save"));
