@@ -78,7 +78,7 @@ export const creditsPageCopy = {
     after: " within 14 days. Unused packs and a plan’s first month come back in full; used credits don’t. A run that fails refunds itself.",
   },
   bal: {
-    total: "credits to spend",
+    total: (n: number) => (n === 1 ? "credit to spend" : "credits to spend"),
     order: "Spent in this order",
     free: "Free",
     welcome: "Welcome",

@@ -1214,7 +1214,7 @@ describe("ReviewChanges", () => {
 
     // A throw is an UNKNOWN outcome, not a failed one: a response lost after
     // the transaction committed looks identical from here. Without the re-read
-    // the row would sit saying "still going out" over a card already back in
+    // the row would sit saying "couldn’t put that card back" over a card already back in
     // the deck.
     it("re-reads the route when the outcome is unknown", async () => {
       addCardToDeck.mockImplementation(async () => {

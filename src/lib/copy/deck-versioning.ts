@@ -289,7 +289,7 @@ export const deckVersioningCopy = {
 
     // Not `DECK_REMOVE_FALLBACK_MESSAGE`, which says the card is still in the
     // deck: here the card is OUT, and the restore is what did not happen.
-    failed: "We couldn’t put that card back. It’s still going out.",
+    failed: "We couldn’t put that card back. Try again.",
   },
 
   /* ---- §Surfaces 3 · commit ---- */

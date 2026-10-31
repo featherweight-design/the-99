@@ -764,7 +764,7 @@ export function ReviewChanges({
           setRestoreErrors((current) => ({ ...current, [card.oracleId]: restoreCopy.failed }));
           // The outcome is UNKNOWN, not failed: a lost response after the
           // transaction committed looks identical here, and without this the
-          // row would sit saying "still going out" over a card already back in
+          // row would sit saying "couldn’t put that card back" over a card already back in
           // `deck_cards` until something else navigated. Re-reading the route
           // is what the commit and discard paths do with the same ambiguity.
           router.refresh();
