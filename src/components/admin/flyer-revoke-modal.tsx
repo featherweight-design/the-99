@@ -9,7 +9,7 @@ import { ModalChrome } from "../decks/receipt-modal";
 // The Revoke confirm (flyer trial PR 4b; handoff Admin-Desktop A3, Admin-Phone P3): `ModalChrome` at 480 on desktop, its
 // sheet on the phone, a bare close. Revoking ends new sign-ups only; the people who joined keep everything. The boards
 // draw no failed state: a refusal or a lost reply shows an inline alert under the lead and keeps the modal (small items
-// 7, Revoke-Failed.dc.html: the alert is 13px with a 12px top margin, so the body has no gap of its own).
+// 7, Revoke-Failed.dc.html: the alert is 13px with a 12px top margin on top of the body gap).
 
 const copy = flyerAdminCopy;
 const BUTTON = "flex h-[44px] flex-1 items-center justify-center whitespace-nowrap rounded-[10px] border border-solid px-[14px] text-[14px] disabled:opacity-60 md:h-[32px] md:flex-none md:rounded-[8px] md:text-[12.5px]";
@@ -59,7 +59,7 @@ export function FlyerRevokeModal({ target, onClose }: { target: RevokeTarget; on
         </div>
       }
     >
-      <div className="flex flex-col px-[16px] pb-[24px] pt-[14px] md:px-[18px] md:pb-[18px] md:pt-[16px]">
+      <div className="flex flex-col gap-[12px] px-[16px] pb-[24px] pt-[14px] md:px-[18px] md:gap-[14px] md:pb-[18px] md:pt-[16px]">
         <p className="m-0 text-[14px] leading-[1.55] text-[color:var(--fg-body)]">
           {lead}
           <b className="font-semibold text-[color:var(--fg)]">{target.code}</b>
