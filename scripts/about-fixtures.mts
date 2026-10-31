@@ -17,12 +17,13 @@
 // Each is built from cards the account owns that no other deck claims, under its own commander (three of disjoint
 // colors), so no row is contested and no list matches a precon: the frames look like an ordinary player's decks.
 // The reader's own social name is `Sam` (its face the Played deck's commander, three invites in hand); the capture puts a neutral name and email over Clerk's in the page.
-//   - a friend, `Alex`, in a pod with the account (one friend keeps the pod's Rule 0 check row on the phone's Friends
+//   - a friend, `Alex`, in a pod with the account, sharing a spare of a card Played buys (one friend keeps the pod's Rule 0 check row on the phone's Friends
 //     frame; the row draws for any pod, at both widths);
-//   - the all-decks cart's By friend (Small items 7, item 6, `About-Cart`): four more friends, Torin, Merek, Varic and
-//     Zev, in two pods (`The Bros`: Torin, Merek, Varic; `Thursday pod`: Varic, Zev), each sharing spares of cards the
-//     account's decks are missing, Torin the most (Played's friend spare among them), and three asks to Torin through
-//     the app's own writes: one he said yes to (Accepted), one open (Requested, so Merek's and Zev's copy of that card
+//   - IN A SECOND STEP (`ABOUT_FIXTURE_STAGE=cart`, run after the Friends frames are shot, so Friends keeps its one
+//     friend and one pod), the all-decks cart's By friend (Small items 7, item 6, `About-Cart`): four more friends,
+//     Torin, Merek, Varic and Zev, in two pods (`The Bros`: Torin, Merek, Varic; `Thursday pod`: Varic, Zev), each
+//     sharing spares of cards the account's decks are missing, Torin the most (Played's friend spare, moved from Alex,
+//     among them), and three asks to Torin through the app's own writes: one he said yes to (Accepted), one open (Requested, so Merek's and Zev's copy of that card
 //     read Ask instead) and one he said no to (Declined);
 //   - a wishlist want, so Wishlist draws a row.
 // An earlier upload is the snapshot's own: the script refuses an account with none rather than writing a fake one.
@@ -34,8 +35,10 @@
 // run for one account never purges another's; an older run's friend, whose id names no account, is left and reported.
 // It prints the three decks' ids.
 //
-//   pnpm tsx scripts/about-fixtures.mts            (the account is E2E_AUDIT_USER_EMAIL, read through Clerk)
-//   ABOUT_FIXTURE_USER=user_... pnpm tsx scripts/about-fixtures.mts
+//   pnpm fixtures:about            (the base stage, the default; the account is E2E_AUDIT_USER_EMAIL, read through Clerk)
+//   ABOUT_FIXTURE_USER=user_... pnpm fixtures:about
+//   pnpm fixtures:about:cart       (ABOUT_FIXTURE_STAGE=cart: the cart's friends, pods and asks, once, after the
+//                                   Friends frames are shot; a rerun starts from the base stage again)
 import { randomUUID } from "node:crypto";
 import { requireEnv } from "./lib/env.mjs";
 import { assertScratchBranch } from "./lib/scratch-branch.mjs";
@@ -50,6 +53,8 @@ import {
 } from "./lib/about-fixture-ids.mjs";
 
 const { DATABASE_URL, CLERK_SECRET_KEY } = requireEnv(["DATABASE_URL", "CLERK_SECRET_KEY"]);
+const STAGE = process.env.ABOUT_FIXTURE_STAGE ?? "base";
+if (STAGE !== "base" && STAGE !== "cart") throw new Error(`ABOUT_FIXTURE_STAGE=${STAGE}: base or cart`);
 void DATABASE_URL;
 const { neon } = await import("@neondatabase/serverless");
 const sql = neon(process.env.DATABASE_URL!);
@@ -75,6 +80,130 @@ console.log(`branch ${branch} · account ${viewer.slice(0, 10)}…`);
 
 const [{ n: uploads }] = (await sql`select count(*)::int n from csv_uploads where user_id = ${viewer}`) as { n: number }[];
 if (uploads === 0) throw new Error("the account holds no earlier upload: pull a snapshot with one (pnpm pull:staging)");
+
+// THE CART STAGE (`ABOUT_FIXTURE_STAGE=cart`, `pnpm fixtures:about:cart`): the all-decks cart's By friend, written in a
+// SECOND step, after the Friends frames are shot, so Friends stays as its board draws it (one friend, Alex, in one pod)
+// and the cart gets its four friends, two pods and three asks. It runs once on a base stage's account and refuses
+// anything else: no base (no fixture friend, or not exactly Alex), or a cart already written (its pods exist). A rerun
+// is the base stage again, which purges every fixture friend and pod this stage made.
+const CART_PODS = ["The Bros", "Thursday pod"];
+if (STAGE === "cart") {
+  const base = (await sql`select user_id from social_profiles where user_id like ${ownedFixturePattern(viewer)}`) as {
+    user_id: string;
+  }[];
+  const baseFriends = sortFixtures(viewer, base.map((o) => o.user_id)).purge;
+  if (baseFriends.length !== 1) {
+    throw new Error(`the account holds ${baseFriends.length} fixture friends: run the base stage (pnpm fixtures:about) first, and the cart stage once after it`);
+  }
+  const [{ n: cartPodsHeld }] = (await sql`select count(*)::int n from pods where owner_user_id = ${viewer} and name = any(${CART_PODS})`) as {
+    n: number;
+  }[];
+  if (cartPodsHeld) throw new Error("the cart stage already ran: rerun the base stage (pnpm fixtures:about) first");
+  const [colinId] = baseFriends;
+  // Played's friend spare is the one card the base stage gave Alex: it moves to Torin, so Alex draws no cart panel.
+  const held = (await sql`select oracle_id::text from collection_items where user_id = ${colinId}`) as { oracle_id: string }[];
+  if (held.length !== 1) throw new Error(`Alex holds ${held.length} cards, not Played's one spare: run the base stage first`);
+  const [{ oracle_id: spare }] = held;
+  await sql`delete from collection_items where user_id = ${colinId}`;
+  const friends = await import("../src/lib/social/friends");
+  const pods = await import("../src/lib/social/pods");
+  const spares = await import("../src/lib/social/spares");
+  const { setCommander } = await import("../src/lib/social/commander");
+
+  // The cart's By friend (Small items 7, item 6). The board's panels, top of the page, most spares first: Torin
+  // (41 cards, 130 spare), Merek (17, 38), Varic (9, 14), Zev (4, 6). A panel lists the cart's lines in By card's default
+  // order (`byCardOrder`: commanders first, then the most decks needing the card, then A to Z), so the lines are read the
+  // same way through the cart's own rows (`loadDeckBuyRows`, one row per deck), commanders left out, and each friend is
+  // handed copies of the lines the board draws in his first rows. A friend with no deck spares every copy he owns
+  // (`spareCount`), so his copies ARE his spares.
+  const { loadDeckBuyRows } = await import("../src/lib/decks/availability-query");
+  const requests = await import("../src/lib/social/spare-requests");
+  const need = new Map<string, number>();
+  for (const r of await loadDeckBuyRows(viewer)) need.set(r.oracleId, (need.get(r.oracleId) ?? 0) + 1);
+  const commanders = new Set(((await sql`select x::text from decks d cross join lateral
+    unnest(array[d.commander_oracle_id, d.partner_oracle_id]) x where d.user_id = ${viewer} and x is not null`) as {
+    x: string;
+  }[]).map((r) => r.x));
+  const named = (await sql`select oracle_id::text, name from cards where oracle_id::text = any(${[...need.keys()]})`) as {
+    oracle_id: string;
+    name: string;
+  }[];
+  const lines = named
+    .filter((r) => !commanders.has(r.oracle_id))
+    .sort((a, b) => need.get(b.oracle_id)! - need.get(a.oracle_id)! || a.name.localeCompare(b.name))
+    .map((r) => r.oracle_id);
+  if (lines.length < 10 || !lines.includes(spare)) {
+    throw new Error(`the cart holds ${lines.length} lines${lines.includes(spare) ? "" : ", without Played's spare"}: By friend needs ten`);
+  }
+  /** `total` copies over `n` lines, every line at least one, the remainder on the first lines. */
+  const spread = (total: number, n: number): number[] =>
+    Array.from({ length: n }, (_, i) => Math.max(1, Math.floor(total / n) + (i < total % n ? 1 : 0)));
+  /** A friend's spares: the board's first rows (line index, copies) at the head, the rest of his cards from the lines no
+   *  first row uses, at least one copy each, up to the panel's figures where the cart holds enough lines. */
+  const FIRST = new Set([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+  const handOut = (head: [number, number][], cards: number, copies: number, from: number, extra: string[] = []): Map<string, number> => {
+    const out = new Map<string, number>(head.map(([i, n]) => [lines[i], n]));
+    for (const id of extra) out.set(id, out.get(id) ?? 1);
+    const rest = lines.filter((id, i) => !FIRST.has(i) && !out.has(id)).slice(from);
+    const room = Math.max(0, cards - out.size);
+    const left = Math.max(0, copies - [...out.values()].reduce((a, b) => a + b, 0));
+    const tail = rest.slice(0, room);
+    spread(left, tail.length).forEach((n, i) => out.set(tail[i], n));
+    return out;
+  };
+  const CART_FRIENDS: { name: string; pods: string[]; spares: Map<string, number> }[] = [
+    // Lightning Greaves, Swiftfoot Boots, Arcane Signet (Accepted), Beast Within, Sol Ring (Requested), Cultivate (Declined).
+    { name: "Torin", pods: ["The Bros"], spares: handOut([[0, 7], [1, 2], [2, 9], [3, 4], [4, 12], [5, 6]], 41, 130, 0, [spare]) },
+    // Lightning Greaves, Beast Within, Chaos Warp, Sol Ring (Ask instead: Torin holds the open ask).
+    { name: "Merek", pods: ["The Bros"], spares: handOut([[0, 1], [3, 1], [6, 2], [4, 3]], 17, 38, 8) },
+    { name: "Varic", pods: ["The Bros", "Thursday pod"], spares: handOut([[7, 1], [1, 1], [8, 2]], 9, 14, 16) },
+    // Sol Ring (Ask instead), Goblin Matron.
+    { name: "Zev", pods: ["Thursday pod"], spares: handOut([[4, 2], [9, 1]], 4, 6, 20) },
+  ];
+  const cartPods = new Map<string, string>();
+  for (const podName of CART_PODS) {
+    const made = await pods.createPod(viewer, podName);
+    if (!made) throw new Error(`createPod refused ${podName}`);
+    cartPods.set(podName, made.id);
+  }
+  // Faces of their own, apart from Alex's and his opponents' (the three above).
+  const cartFaces = (await sql`select oracle_id from cards where commander_legal and layout = 'normal'
+    and type_line like 'Legendary Creature%' and art_crop_uri is not null order by oracle_id offset 10 limit 4`) as { oracle_id: string }[];
+  const cartFriendIds = new Map<string, { id: string; publicId: string }>();
+  for (const [i, f] of CART_FRIENDS.entries()) {
+    // Namespaced like Alex, so the next run's cleanup purges each with all he holds.
+    const id = fixtureFriendId(viewer, Date.now() + i + 1);
+    const profile = await friends.ensureProfile(id, f.name);
+    const link = await friends.createInvite(viewer);
+    if (!link.ok) throw new Error("createInvite refused: the account holds too many open invites");
+    await friends.redeemInvite(id, link.token);
+    await setCommander(id, cartFaces[i].oracle_id);
+    for (const [oracle, n] of f.spares) {
+      await sql`insert into collection_items (user_id, oracle_id, quantity, set_code) values (${id}, ${oracle}, ${n}, 'fx')`;
+    }
+    for (const podName of f.pods) {
+      const podId = cartPods.get(podName)!;
+      if (!(await pods.addMember(viewer, podId, profile.publicId))) throw new Error(`addMember refused ${f.name}`);
+      if (!(await spares.shareSparesWith(id, podId, true))) throw new Error(`shareSparesWith refused ${f.name}`);
+    }
+    cartFriendIds.set(f.name, { id, publicId: profile.publicId });
+  }
+  // Each redeemed invite spent one of the account's (`spend.ts`): back to three in hand, so Friends still draws its count line.
+  await sql`update invite_balances set held = greatest(held, 3), updated_at = now() where user_id = ${viewer}`;
+  // Three asks to Torin, the app's own writes: Arcane Signet's answered yes, Sol Ring's left open, Cultivate's answered no.
+  const askEnv = { ...process.env, SOCIAL_FRIENDS_ENABLED: "true" };
+  const torin = cartFriendIds.get("Torin")!;
+  for (const [i, answer] of [[2, "yes"], [4, null], [5, "no"]] as const) {
+    const asked = await requests.askForSpare(viewer, torin.publicId, lines[i], askEnv);
+    if (!asked.ok) throw new Error(`askForSpare refused line ${i}: ${asked.reason}`);
+    if (answer === null) continue;
+    const answered = await requests.answerSpareRequest(torin.id, asked.id, answer, askEnv);
+    if (!answered.ok) throw new Error(`answerSpareRequest refused line ${i}: ${answered.reason}`);
+  }
+  console.log(`cart: ${lines.length} lines; By friend: ${CART_FRIENDS.map((f) => `${f.name} ${f.spares.size} cards · ${[...f.spares.values()].reduce((a, b) => a + b, 0)} spare`).join(", ")}`);
+  console.log("seeded the cart: Torin, Merek, Varic and Zev (spares on the cart, three asks to Torin); Alex's spare moved to Torin");
+  process.exit(0);
+}
 
 // Clean slate.
 const { purgeAccount } = await import("../src/lib/account/purge");
@@ -102,7 +231,7 @@ const { unowned } = sortFixtures(viewer, seen.map((o) => o.user_id));
 if (unowned.length) {
   console.log(`left ${unowned.length} older fixture friend${unowned.length > 1 ? "s" : ""} whose account cannot be established (not purged; it may still show on Friends)`);
 }
-await sql`delete from pods where owner_user_id = ${viewer} and name = any(${["About pod", "The Bros", "Thursday pod"]})`;
+await sql`delete from pods where owner_user_id = ${viewer} and name = any(${["About pod", ...CART_PODS]})`;
 
 // The friend first, so each deck is recorded on its row the moment it exists: a run that dies part way still leaves
 // every deck it made where the next run's cleanup reads.
@@ -358,102 +487,12 @@ const faces = (await sql`select oracle_id from cards where commander_legal and l
 await setCommander(colinId, faces[0].oracle_id);
 const [{ id: colinDeck }] = (await sql`insert into decks (user_id, name, commander_oracle_id)
   values (${colinId}, 'Alex’s brew', ${faces[1].oracle_id}) returning id`) as { id: string }[];
+// Played's friend spare. The cart stage moves it to Torin, so By friend draws the board's four friends.
+await sql`insert into collection_items (user_id, oracle_id, quantity, set_code) values (${colinId}, ${spare}, 1, 'fx')`;
 const pod = await pods.createPod(viewer, "About pod");
 if (!pod) throw new Error("createPod refused");
 if (!(await pods.addMember(viewer, pod.id, colin.publicId))) throw new Error("addMember refused");
 if (!(await spares.shareSparesWith(colinId, pod.id, true))) throw new Error("shareSparesWith refused");
-
-// The cart's By friend (Small items 7, item 6). The board's panels, top of the page, most spares first: Torin
-// (41 cards, 130 spare), Merek (17, 38), Varic (9, 14), Zev (4, 6). A panel lists the cart's lines in By card's default
-// order (`byCardOrder`: commanders first, then the most decks needing the card, then A to Z), so the lines are read the
-// same way through the cart's own rows (`loadDeckBuyRows`, one row per deck), commanders left out, and each friend is
-// handed copies of the lines the board draws in his first rows. A friend with no deck spares every copy he owns
-// (`spareCount`), so his copies ARE his spares.
-const { loadDeckBuyRows } = await import("../src/lib/decks/availability-query");
-const requests = await import("../src/lib/social/spare-requests");
-const need = new Map<string, number>();
-for (const r of await loadDeckBuyRows(viewer)) need.set(r.oracleId, (need.get(r.oracleId) ?? 0) + 1);
-const commanders = new Set(((await sql`select x::text from decks d cross join lateral
-  unnest(array[d.commander_oracle_id, d.partner_oracle_id]) x where d.user_id = ${viewer} and x is not null`) as {
-  x: string;
-}[]).map((r) => r.x));
-const named = (await sql`select oracle_id::text, name from cards where oracle_id::text = any(${[...need.keys()]})`) as {
-  oracle_id: string;
-  name: string;
-}[];
-const lines = named
-  .filter((r) => !commanders.has(r.oracle_id))
-  .sort((a, b) => need.get(b.oracle_id)! - need.get(a.oracle_id)! || a.name.localeCompare(b.name))
-  .map((r) => r.oracle_id);
-if (lines.length < 10 || !lines.includes(spare)) {
-  throw new Error(`the cart holds ${lines.length} lines${lines.includes(spare) ? "" : ", without Played's spare"}: By friend needs ten`);
-}
-/** `total` copies over `n` lines, every line at least one, the remainder on the first lines. */
-const spread = (total: number, n: number): number[] =>
-  Array.from({ length: n }, (_, i) => Math.max(1, Math.floor(total / n) + (i < total % n ? 1 : 0)));
-/** A friend's spares: the board's first rows (line index, copies) at the head, the rest of his cards from the lines no
- *  first row uses, at least one copy each, up to the panel's figures where the cart holds enough lines. */
-const FIRST = new Set([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
-const handOut = (head: [number, number][], cards: number, copies: number, from: number, extra: string[] = []): Map<string, number> => {
-  const out = new Map<string, number>(head.map(([i, n]) => [lines[i], n]));
-  for (const id of extra) out.set(id, out.get(id) ?? 1);
-  const rest = lines.filter((id, i) => !FIRST.has(i) && !out.has(id)).slice(from);
-  const room = Math.max(0, cards - out.size);
-  const left = Math.max(0, copies - [...out.values()].reduce((a, b) => a + b, 0));
-  const tail = rest.slice(0, room);
-  spread(left, tail.length).forEach((n, i) => out.set(tail[i], n));
-  return out;
-};
-const CART_FRIENDS: { name: string; pods: string[]; spares: Map<string, number> }[] = [
-  // Lightning Greaves, Swiftfoot Boots, Arcane Signet (Accepted), Beast Within, Sol Ring (Requested), Cultivate (Declined).
-  { name: "Torin", pods: ["The Bros"], spares: handOut([[0, 7], [1, 2], [2, 9], [3, 4], [4, 12], [5, 6]], 41, 130, 0, [spare]) },
-  // Lightning Greaves, Beast Within, Chaos Warp, Sol Ring (Ask instead: Torin holds the open ask).
-  { name: "Merek", pods: ["The Bros"], spares: handOut([[0, 1], [3, 1], [6, 2], [4, 3]], 17, 38, 8) },
-  { name: "Varic", pods: ["The Bros", "Thursday pod"], spares: handOut([[7, 1], [1, 1], [8, 2]], 9, 14, 16) },
-  // Sol Ring (Ask instead), Goblin Matron.
-  { name: "Zev", pods: ["Thursday pod"], spares: handOut([[4, 2], [9, 1]], 4, 6, 20) },
-];
-const cartPods = new Map<string, string>();
-for (const podName of ["The Bros", "Thursday pod"]) {
-  const made = await pods.createPod(viewer, podName);
-  if (!made) throw new Error(`createPod refused ${podName}`);
-  cartPods.set(podName, made.id);
-}
-// Faces of their own, apart from Alex's and his opponents' (the three above).
-const cartFaces = (await sql`select oracle_id from cards where commander_legal and layout = 'normal'
-  and type_line like 'Legendary Creature%' and art_crop_uri is not null order by oracle_id offset 10 limit 4`) as { oracle_id: string }[];
-const cartFriendIds = new Map<string, { id: string; publicId: string }>();
-for (const [i, f] of CART_FRIENDS.entries()) {
-  // Namespaced like Alex, so the next run's cleanup purges each with all he holds.
-  const id = fixtureFriendId(viewer, Date.now() + i + 1);
-  const profile = await friends.ensureProfile(id, f.name);
-  const link = await friends.createInvite(viewer);
-  if (!link.ok) throw new Error("createInvite refused: the account holds too many open invites");
-  await friends.redeemInvite(id, link.token);
-  await setCommander(id, cartFaces[i].oracle_id);
-  for (const [oracle, n] of f.spares) {
-    await sql`insert into collection_items (user_id, oracle_id, quantity, set_code) values (${id}, ${oracle}, ${n}, 'fx')`;
-  }
-  for (const podName of f.pods) {
-    const podId = cartPods.get(podName)!;
-    if (!(await pods.addMember(viewer, podId, profile.publicId))) throw new Error(`addMember refused ${f.name}`);
-    if (!(await spares.shareSparesWith(id, podId, true))) throw new Error(`shareSparesWith refused ${f.name}`);
-  }
-  cartFriendIds.set(f.name, { id, publicId: profile.publicId });
-}
-// Each redeemed invite spent one of the account's (`spend.ts`): back to three in hand, so Friends still draws its count line.
-await sql`update invite_balances set held = greatest(held, 3), updated_at = now() where user_id = ${viewer}`;
-// Three asks to Torin, the app's own writes: Arcane Signet's answered yes, Sol Ring's left open, Cultivate's answered no.
-const askEnv = { ...process.env, SOCIAL_FRIENDS_ENABLED: "true" };
-const torin = cartFriendIds.get("Torin")!;
-for (const [i, answer] of [[2, "yes"], [4, null], [5, "no"]] as const) {
-  const asked = await requests.askForSpare(viewer, torin.publicId, lines[i], askEnv);
-  if (!asked.ok) throw new Error(`askForSpare refused line ${i}: ${asked.reason}`);
-  if (answer === null) continue;
-  const answered = await requests.answerSpareRequest(torin.id, asked.id, answer, askEnv);
-  if (!answered.ok) throw new Error(`answerSpareRequest refused line ${i}: ${answered.reason}`);
-}
-console.log(`cart: ${lines.length} lines; By friend: ${CART_FRIENDS.map((f) => `${f.name} ${f.spares.size} cards · ${[...f.spares.values()].reduce((a, b) => a + b, 0)} spare`).join(", ")}`);
 
 // Five games with opponents, oldest first: enough for Matchups' finding (three or more).
 const results = ["win", "loss", "win", "loss", "win"] as const;
@@ -501,5 +540,6 @@ console.log(`ABOUT_DECK_UNDER=${under}`);
 console.log(`ABOUT_DECK_OVER=${over}`);
 console.log(`ABOUT_DECK_PLAYED=${played}`);
 console.log(`ABOUT_DECK_FRESH=${fresh}`);
-console.log(`seeded: Alex (in About pod), Torin, Merek, Varic and Zev (spares on the cart, three asks to Torin), five games with opponents, two notes, one want, a locked card, a pending change and a stored analysis on Played · ${uploads} earlier uploads`);
+console.log(`seeded: Alex (a spare, in About pod), five games with opponents, two notes, one want, a locked card, a pending change and a stored analysis on Played · ${uploads} earlier uploads`);
+console.log("next: capture Friends (and every frame but p-cart and d-cart), then ABOUT_FIXTURE_STAGE=cart");
 process.exit(0);
