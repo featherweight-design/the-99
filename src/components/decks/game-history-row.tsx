@@ -107,7 +107,9 @@ export function GameHistoryRow({ deckId, game, isLast, onDeleted, opponents }: G
         {RESULT_GLYPH[game.result]}
       </span>
 
-      <span className="flex-none md:w-[132px] font-mono text-[11px] tabular-nums text-fg-faint">
+      {/* 156 on desktop (Small items 7, addendum 5): the slot holds the longest month-first meta,
+          `4-player · Dec 31, 2025`, on one line at 11px mono. The phone sizes to its text, unchanged. */}
+      <span className="flex-none md:w-[156px] font-mono text-[11px] tabular-nums text-fg-faint">
         {gameLogCopy.history.meta(String(game.podSize), formatPlayed(game.playedAt))}
       </span>
 
