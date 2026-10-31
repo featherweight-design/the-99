@@ -855,11 +855,11 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         id: "friend",
         region: "friends/friends/friend",
         lead: "A friend’s page",
-        rest: " lists the decks they let you open. It shows their wishlist too. It also shows their spares.",
+        rest: " shows their spares. It shows their wishlist too. It also lists the decks they let you open.",
         switch: "SOCIAL_FRIENDS_ENABLED",
         sentences: {
-          " lists the decks they let you open.": "FRIEND_DECKS_ENABLED",
           " It shows their wishlist too.": "SOCIAL_WISHLIST_ENABLED",
+          " It also lists the decks they let you open.": "FRIEND_DECKS_ENABLED",
         },
         since: 16,
         legacy: ["friends", "friend-decks", "wishlist"],
