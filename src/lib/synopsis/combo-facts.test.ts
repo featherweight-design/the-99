@@ -38,6 +38,28 @@ describe("shapeComboFacts", () => {
     expect(shapeComboFacts(rows, ["G"], []).nearCombos).toEqual([]);
   });
 
+  it("marks every held piece before the lists are capped: a combo the cap leaves out still names its pieces", () => {
+    const near = (v: string, held: string) => [piece(v, held), piece(v, `miss-${v}`, { held: false })];
+    const rows = [
+      ...["a", "b", "c", "d", "e"].flatMap((v) => near(`n-${v}`, `h-${v}`)),
+      ...Array.from({ length: 8 }, (_, i) => [piece(`x${i}`, `x${i}a`), piece(`x${i}`, `x${i}b`)]).flat(),
+      // In an assembled combo and a near one: assembled wins.
+      piece("both", "h-a"), piece("both", "y"),
+    ];
+    const out = shapeComboFacts(rows, ["U"], []);
+    expect(out.nearCombos).toHaveLength(3);
+    expect(out.combos).toHaveLength(6);
+    expect(["a", "b", "c", "d", "e"].filter((v) => v !== "a").map((v) => out.pieces.get(`id-h-${v}`))).toEqual(Array(4).fill("oneShort"));
+    expect(out.pieces.get("id-h-a")).toBe("assembled");
+    expect(out.pieces.get("id-x7b")).toBe("assembled");
+    expect(out.pieces.has("id-miss-n-a")).toBe(false);
+  });
+
+  it("marks no piece of a mandatory loop: it is a risk, never the plan", () => {
+    const rows = ["Pariah", "Stuffy Doll"].map((n) => piece("3799-4090", n, { produces: ["Draw the game"] }));
+    expect(shapeComboFacts(rows, ["W"], []).pieces.size).toBe(0);
+  });
+
   it("ranks fewest pieces first, then free, and caps at six", () => {
     const rows = [
       ...["a", "b", "c"].map((n) => piece("big", n, { card_count: 3 })),
@@ -98,7 +120,7 @@ describe("shapeComboFacts", () => {
       piece("short", "c", { card_count: 3 }), piece("short", "d", { card_count: 3 }),
       piece("meh", "e", { produces: ["Gain 2 life"] }), piece("meh", "f", { produces: ["Gain 2 life"] }),
     ];
-    expect(shapeComboFacts(rows, ["U"], [])).toEqual({ combos: [], nearCombos: [] });
+    expect(shapeComboFacts(rows, ["U"], [])).toEqual({ combos: [], nearCombos: [], pieces: new Map() });
   });
 });
 

@@ -3,7 +3,6 @@ import type { ChipContext } from "./cuts-count";
 import { playerTextBody } from "../model/player-text";
 import type { CutsPack, CutsPackCard } from "./cuts-evidence";
 import type { CutCite, CutProposal, CutsResponse } from "./cuts-schema";
-import { MAX_COMBO_FACTS, MAX_NEAR_COMBO_FACTS } from "../synopsis/facts-extra";
 import { presentationFailures, type RuleKey } from "./presentation";
 
 /**
@@ -21,8 +20,11 @@ export type CutDropRule =
 
 export type CutDrop = { position: number; rule: CutDropRule; name?: string; cite?: CutCite["kind"] };
 
-/** A cut kept without something the model said of it: `cite` names the cite that failed, `rule` the text rule that did. */
-export type CutSoftened = { position: number; name: string; rule: "citeMismatch" | Extract<CutDropRule, "noBracketClaim" | "noResultClaim" | "quotedNote">; cite?: CutCite["kind"] };
+/**
+ * A cut kept without something the model said of it: `cite` names the kind of cite that failed and
+ * `failed` the cite itself, as the model wrote it; `rule` the text rule that did.
+ */
+export type CutSoftened = { position: number; name: string; rule: "citeMismatch" | Extract<CutDropRule, "noBracketClaim" | "noResultClaim" | "quotedNote">; cite?: CutCite["kind"]; failed?: CutCite };
 
 export type ValidatedCut = { oracleId: string; name: string; reason: string; cites: CutCite[]; position: number };
 
@@ -42,12 +44,6 @@ export type CutsReport = {
 
 const TEXT_RULES: ReadonlySet<string> = new Set(["noBracketClaim", "noResultClaim", "quotedNote"]);
 
-/** The Overview's combo read keeps the top 6 assembled and top 3 one-short; a list at its cap may omit pieces, so "in no combo" cannot be vouched for. */
-function cleanlyListed(pack: CutsPack): boolean {
-  const p = pack.plan;
-  return !!p?.combos && !!p.nearCombos && p.combos.length < MAX_COMBO_FACTS && p.nearCombos.length < MAX_NEAR_COMBO_FACTS;
-}
-
 /** Whether a cite states a figure that is true for THIS card and this deck. */
 export function citeHolds(cite: CutCite, card: CutsPackCard, pack: CutsPack): boolean {
   switch (cite.kind) {
@@ -60,10 +56,11 @@ export function citeHolds(cite: CutCite, card: CutsPackCard, pack: CutsPack): bo
     case "curve": return !!card.curve && card.curve.cmc === cite.cmc && card.curve.have === cite.have;
     case "flag": return (card.flags ?? []).includes(cite.flag);
     case "intent": return pack.intent !== null;
-    // "none" is a claim about the deck's combos, so it needs the combo read to have succeeded.
+    // "none" is a claim about the deck's combos, so it needs the combo read to have succeeded. The
+    // membership is read before the prompt's lists are capped, so it holds for a deck at the cap too.
     case "combo":
       return cite.state === "none"
-        ? cleanlyListed(pack) && card.comboState === undefined
+        ? !!pack.plan?.comboPieces && card.comboState === undefined
         : card.comboState === cite.state;
     case "cost": return card.mv === cite.mv;
     case "tapped": return card.entersTapped !== undefined;
@@ -133,7 +130,7 @@ export function validateCuts(args: {
     return {
       oracleId: card.oracleId, name: card.name, reason: deckCutsCopy.unchecked,
       cites: holding.length > 0 ? holding : ownCounts(card, pack),
-      soft: failedCite ? { rule: "citeMismatch", cite: failedCite.kind } : { rule: textFail! },
+      soft: failedCite ? { rule: "citeMismatch", cite: failedCite.kind, failed: failedCite } : { rule: textFail! },
     };
   }
 }

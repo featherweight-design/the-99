@@ -4,7 +4,7 @@ import { spellbookVariantCards, spellbookVariants } from "../../db/schema";
 import { GAME_ENDING_FEATURES } from "../spellbook/produces-kinds.generated";
 import { DRAW_THE_GAME, isInfiniteOrGameEnding, isMandatoryLoop } from "../spellbook/combo-features";
 import type { DeckProfile } from "../profile/types";
-import { fitsIdentity, MAX_COMBO_FACTS, MAX_NEAR_COMBO_FACTS, type ComboFact, type NearComboFact } from "./facts-extra";
+import { fitsIdentity, MAX_COMBO_FACTS, MAX_NEAR_COMBO_FACTS, type ComboFact, type ComboPieceState, type NearComboFact } from "./facts-extra";
 
 /** Largest variant the facts consider. Spellbook stores 6 to 10 pieces for only 37 variants in all; seven or more are left out. */
 export const MAX_COMBO_PIECES = 6;
@@ -27,7 +27,16 @@ export type ComboPieceRow = {
   color_identity: string[];
 };
 
-export type ComboFacts = { combos: ComboFact[]; nearCombos: NearComboFact[] };
+export type ComboFacts = {
+  combos: ComboFact[];
+  nearCombos: NearComboFact[];
+  /**
+   * Every held piece of every counted combo, by oracle id, read BEFORE the two lists are capped:
+   * a card in a combo the cap left out is still a piece. Assembled wins over one short, and a
+   * mandatory loop is a risk, never the plan, so its pieces are absent.
+   */
+  pieces: Map<string, ComboPieceState>;
+};
 
 /**
  * The SQL test for "produces a counted outcome" on a variant aliased `v`: an infinite, a game-ending
@@ -151,6 +160,12 @@ export function shapeComboFacts(
   const byVariant = byVariantId(rows);
   const assembled: (ComboFact & { pieceCount: number; id: string })[] = [];
   const near: (NearComboFact & { pieceCount: number; mana: number | null; usesCommander: boolean; id: string })[] = [];
+  /** Each held piece's state, read before either list is capped. A mandatory loop marks none. */
+  const held = new Map<string, ComboPieceState>();
+  const mark = (pieces: readonly ComboPieceRow[], state: ComboPieceState) => {
+    if (isMandatoryLoop(pieces[0].produces)) return;
+    for (const p of pieces) if (p.held && held.get(p.oracle_id) !== "assembled") held.set(p.oracle_id, state);
+  };
   for (const [id, pieces] of byVariant) {
     const first = pieces[0];
     // A loop whose only feature is "Draw the game" (Pariah + Stuffy Doll) counts here: the verdict
@@ -159,6 +174,7 @@ export function shapeComboFacts(
     const names = [...pieces].sort((a, b) => a.name.localeCompare(b.name));
     const missing = names.filter((p) => !p.held);
     if (missing.length === 0) {
+      mark(pieces, "assembled");
       assembled.push({
         id,
         pieceCount: pieces.length,
@@ -170,6 +186,7 @@ export function shapeComboFacts(
     } else {
       const m = addableMissingPiece(pieces, identity);
       if (!m) continue;
+      mark(pieces, "oneShort");
       near.push({
         id,
         pieceCount: pieces.length,
@@ -183,6 +200,7 @@ export function shapeComboFacts(
   }
   const sig = (produces: readonly string[]) => [...produces].sort().join("|");
   return {
+    pieces: held,
     combos: pickTop(assembled, (c) => ({ pieces: c.pieceCount, mana: c.manaNeeded, commander: c.usesCommander, id: c.id, sig: sig(c.produces), mandatory: isMandatoryLoop(c.produces) }), MAX_COMBO_FACTS)
       .map(({ pieceCount: _p, id: _i, ...c }) => c),
     nearCombos: pickTop(near, (n) => ({ pieces: n.pieceCount, mana: n.mana, commander: n.usesCommander, id: n.id, sig: sig(n.produces) }), MAX_NEAR_COMBO_FACTS)
@@ -198,7 +216,7 @@ export async function loadComboFacts(
   profile: Pick<DeckProfile, "cards" | "commanderOracleIds" | "colours">,
 ): Promise<ComboFacts | null> {
   const present = [...new Set([...profile.cards.map((c) => c.oracleId), ...profile.commanderOracleIds])];
-  if (present.length === 0) return { combos: [], nearCombos: [] };
+  if (present.length === 0) return { combos: [], nearCombos: [], pieces: new Map() };
   try {
     const rows = (await db.execute(anySizeComboQuery(present, profile.commanderOracleIds))).rows as ComboPieceRow[];
     return shapeComboFacts(rows, profile.colours.identity, profile.commanderOracleIds);

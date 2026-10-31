@@ -25,8 +25,9 @@ export function costColours(manaCost: string | null): string[] {
 /**
  * What Proposed cuts needs to know about the deck's PLAN (prompt v2): the combos it assembles or is
  * one card short of, the commander's text, and the colours the deck's spells actually ask for. The
- * combo read is the Overview's own (`loadComboFacts`); a failed read leaves both lists null and the
- * rest stands. Catalog data only: nothing a player typed.
+ * combo read is the Overview's own (`loadComboFacts`); a failed read leaves both lists and
+ * `comboPieces` null, and the rest stands. A null `comboPieces` is what refuses a `combo: none` cite,
+ * so it never falls back to an empty map. Catalog data only: nothing a player typed.
  */
 export async function readCutsPlan(
   profile: Pick<DeckProfile, "cards" | "commanderOracleIds" | "colours">,
@@ -64,6 +65,7 @@ export async function readCutsPlan(
     // A mandatory loop is a risk, never the plan: its pieces are not protected from the cuts.
     combos: combos?.combos.filter((c) => !isMandatoryLoop(c.produces)) ?? null,
     nearCombos: combos?.nearCombos ?? null,
+    comboPieces: combos?.pieces ?? null,
     commanderText,
     colourNeeds: COLOURS.flatMap((colour) => (counts.has(colour) ? [{ colour, cards: counts.get(colour)! }] : [])).sort((a, b) => b.cards - a.cards),
     basics: BASIC_TYPES.flatMap((type) => (basics.has(type) ? [{ type, count: basics.get(type)! }] : [])),

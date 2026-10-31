@@ -81,7 +81,7 @@ vi.mock("../../lib/decks/tuning-read", () => ({
 vi.mock("../../lib/decks/cuts-plan-read", () => ({
   readCutsPlan: async () => {
     if (calls.planThrows) throw new Error("plan read down");
-    return { combos: [], nearCombos: [], commanderText: ["Gishath: Vigilance"], colourNeeds: [], basics: [], needs: new Map() };
+    return { combos: [], nearCombos: [], comboPieces: new Map(), commanderText: ["Gishath: Vigilance"], colourNeeds: [], basics: [], needs: new Map() };
   },
 }));
 vi.mock("../../lib/tuning/run-store", async (importOriginal) => ({
