@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hide · Hidden list</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet"><style>
+body{margin:0;background:#0D0B09}
+*{box-sizing:border-box}
+p{margin:0}
+.board{--bg:#14110E;--surface:#1E1A15;--surface-raised:#211D18;--surface-rail:#1A1611;--surface-sunken:#18140F;--elevated:#29241F;--elevated-hover:#201C17;--border:#2B241B;--border-strong:#3A3229;--border-dashed:#494037;--fg:#EDE6D8;--fg-body:#C0B8A6;--fg-muted:#A59C89;--fg-faint:#948B78;--fg-locked:#6E6654;--accent:#CF8745;--accent-text:#CF8745;--accent-hover:#DE9757;--accent-shadow:#6B482A;--accent-dim:#6B482A;--accent-mid:#AB6E37;--success:#6FA368;--warning:#DEAA29;--danger:#C6533F;--w:#F4E9C4;--u:#3A6AA5;--b:#98748F;--r:#C05A3E;--g:#4B7A46;
+ padding:48px 56px 64px;background:#0D0B09;font-family:'IBM Plex Sans',sans-serif;color:var(--fg);display:flex;flex-direction:column;gap:40px}
+.m{font-family:'IBM Plex Mono',monospace}
+.cz{font-family:'Cinzel',serif}
+.bh{display:flex;flex-direction:column;gap:9px;max-width:1500px}
+.kick{display:flex;align-items:center;gap:10px;font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-faint)}
+.kick .tag{background:var(--accent);color:#14110E;border-radius:5px;padding:4px 8px;font-weight:600}
+.bh h2{margin:0;font:700 30px 'Cinzel',serif}
+.bh p{font-size:14px;line-height:1.6;color:var(--fg-body);max-width:1240px;text-wrap:pretty}
+.bh p b{color:var(--fg)}
+code{font:12px 'IBM Plex Mono',monospace;color:var(--fg-body)}
+.frames{display:flex;flex-wrap:nowrap;gap:44px;align-items:flex-start}
+.fr{display:flex;flex-direction:column;gap:12px;flex:none}
+.fr>.lab{width:0;min-width:100%;font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-faint)}
+.fr>.lab b{color:var(--accent);font-weight:600}
+.fr>.cap{width:0;min-width:100%;font-size:13px;line-height:1.55;color:var(--fg-muted);text-wrap:pretty}
+.fr>.cap b{color:var(--fg-body)}
+.rule{border:1px solid var(--border-strong);border-radius:12px;background:var(--surface);padding:20px 24px;max-width:1240px}
+.rule h4{margin:0 0 10px;font:600 15px 'IBM Plex Sans';color:var(--fg)}
+.rule ol,.rule ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:13.5px;line-height:1.55;color:var(--fg-body)}
+.rule b{color:var(--fg)}
+.rule i{color:var(--fg)}
+.draft{font:600 9px 'IBM Plex Mono';letter-spacing:.06em;color:#0D0B09;background:#8FA6BE;border-radius:3px;padding:1px 5px;margin-left:6px;vertical-align:2px}
+.new{outline:1.5px dashed rgba(207,135,69,.9);outline-offset:3px;border-radius:6px}
+
+/* device frames */
+.ph{position:relative;width:390px;height:844px;border-radius:24px;border:1px solid var(--border-strong);background:var(--bg);overflow:hidden;display:flex;flex-direction:column;flex:none}
+.ph>.cap-img{display:block;width:390px;flex:none}
+.ph .scroll{flex:1;min-height:0;overflow:hidden;position:relative}
+.ph .bar{position:absolute;left:0;right:0;bottom:0;width:390px;display:block;z-index:4}
+.dk{position:relative;width:1300px;height:900px;border-radius:12px;border:1px solid var(--border-strong);background:var(--bg);overflow:hidden;display:flex;flex:none}
+.dk>.rail{display:block;width:62px;height:900px;flex:none}
+.dk>.main{flex:1;min-width:0;display:flex;flex-direction:column;border-left:0}
+.dk .scroll{flex:1;min-height:0;overflow:hidden;position:relative}
+.cap-img{display:block}
+
+/* place head + strip (commanders-place-head.tsx, place-strip.tsx) */
+.phd{padding:28px 34px 0}
+.phd .t{font:700 30px/45px 'Cinzel',serif;color:var(--fg)}
+.phd .c{font:12px/18px 'IBM Plex Mono',monospace;color:var(--fg-faint);margin-top:4px}
+.strip{display:flex;align-items:stretch;border-bottom:1px solid var(--border);flex:none}
+.strip.p{height:48px;gap:2px;padding:0 8px}
+.strip.d{height:40px;gap:4px;padding:0 24px;margin-top:13px}
+.strip a{display:flex;align-items:center;justify-content:center;min-width:44px;font-size:14px;font-weight:500;color:var(--fg-muted);text-decoration:none;white-space:nowrap}
+.strip.p a{padding:0 11px}
+.strip.d a{padding:0 10px}
+.strip a.on{font-weight:600;color:var(--fg);box-shadow:inset 0 -2px 0 var(--accent)}
+.strip a em{margin-left:6px;font:400 11px 'IBM Plex Mono',monospace;font-style:normal;color:var(--fg-faint)}
+.strip a.on em{color:var(--accent-text)}
+
+/* page header (page-header.tsx) */
+.pgh{display:flex;flex-direction:column;padding:12px 16px 0}
+.pgh .t{font:700 22px 'Cinzel',serif;color:var(--fg)}
+.pgh .s{font:10.5px 'IBM Plex Mono',monospace;color:var(--fg-faint);margin-top:4px}
+.dk .pgh{flex-direction:row;align-items:center;gap:12px;padding:16px 22px;border-bottom:1px solid var(--border)}
+.dk .pgh .t{font-size:20px}
+.dk .pgh .s{font-size:11px;margin-top:0}
+.cnt{font:12px 'IBM Plex Mono',monospace;color:var(--fg-muted);padding:14px 16px 13px;border-bottom:1px solid var(--border)}
+.dk .cnt{padding:14px 34px 13px}
+
+/* the commander row (commander-row.tsx) */
+.list{display:flex;flex-direction:column;gap:10px;padding:12px 14px}
+.dk .list{gap:12px;padding:14px 34px 34px}
+.crow{position:relative;border-bottom:1px solid var(--border)}
+.crow .band{position:relative;height:208px;overflow:hidden}
+.crow .art{position:absolute;left:0;top:0;width:285px;height:208px;object-fit:cover;opacity:.92;
+ -webkit-mask-image:linear-gradient(90deg,#000 62%,transparent 100%);mask-image:linear-gradient(90deg,#000 62%,transparent 100%)}
+.crow .scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,17,14,0) 0%,rgba(20,17,14,0) 60%,rgba(20,17,14,.73) 73%,rgba(20,17,14,.73) 100%)}
+.crow .lbl{position:relative;display:flex;align-items:flex-end;gap:10px;height:100%;padding:12px 13px}
+.dk .crow .lbl{padding:20px 24px}
+.crow .rk{font:600 17px/1.2 'IBM Plex Mono',monospace;color:var(--fg-faint);min-width:16px;text-align:center;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.crow .rk.one{color:var(--accent-text)}
+.crow .nm{flex:1;min-width:0;display:flex;align-items:center;gap:6px}
+.crow .nm span.n{font:600 14.5px/1.2 'Cinzel',serif;color:var(--fg);text-shadow:0 1px 3px rgba(0,0,0,.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pips{display:inline-flex;gap:3px;flex:none}
+.pips i{display:block;width:8px;height:8px;border-radius:1.5px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.4)}
+.fit{display:flex;flex-direction:column;align-items:center;flex:none;background:var(--bg);border:1px solid var(--border-strong);border-radius:9px;padding:6px 9px}
+.dk .fit{padding:7px 11px}
+.fit b{font:600 22px/1 'IBM Plex Mono',monospace;color:var(--fg)}
+.fit span{font:10px 'IBM Plex Mono',monospace;letter-spacing:.1em;color:var(--fg-faint);margin-top:2px}
+.crow .body{display:flex;flex-direction:column;gap:8px;padding:13px}
+.dk .crow .body{padding:16px 24px 18px}
+.crow .pr{font-size:13.5px;line-height:1.5;color:var(--fg-body)}
+.crow .gp{font-size:12.5px;line-height:1.45;color:var(--fg-muted)}
+.crow .gp b{color:var(--fg);font-weight:600}
+.crow .figs{display:flex;align-items:center;gap:10px;margin-top:2px;font:11.5px 'IBM Plex Mono',monospace;color:var(--fg-faint)}
+.crow .figs .sep{color:var(--fg-locked);font-size:11px}
+.crow .figs .pd{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--success);margin-right:6px;vertical-align:1px}
+.crow .figs .pv{font-size:12.5px;color:var(--fg-body)}
+.crow .figs .src{margin-left:auto;font-size:10px;color:var(--fg-locked)}
+.fb{margin-top:2px;max-width:520px}
+.fb .tr{height:6px;border-radius:99px;background:var(--elevated);overflow:hidden;display:flex}
+.dk .fb .tr{height:8px}
+.fb .fill{display:flex;height:100%}
+.fb .lg{display:none;gap:12px;margin-top:6px}
+.dk .fb .lg{display:flex}
+.fb .lg span{display:flex;align-items:center;gap:5px;font:9.5px 'IBM Plex Mono',monospace;color:var(--fg-faint)}
+.fb .lg i{display:block;width:7px;height:7px;border-radius:2px}
+
+.hctl .hit{position:relative}
+/* THE PLATE (full-card-trigger.tsx): 26px drawn in a 44px target, opaque --bg, one --border-strong hairline, radius 7 */
+.hit{position:absolute;z-index:2;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:transparent;border:0;padding:0;cursor:pointer}
+.plate{width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:7px;border:1px solid var(--border-strong);background:var(--bg);color:var(--fg-muted)}
+.plate svg{width:15px;height:15px}
+.hit.hov .plate{background:var(--elevated-hover);color:var(--fg)}
+.hit.prs .plate{background:var(--elevated);color:var(--fg);border-color:color-mix(in srgb,var(--accent) 60%,transparent)}
+.hit.foc .plate{outline:2px solid var(--accent);outline-offset:2px}
+.tgt{outline:1px dashed rgba(143,166,190,.8);outline-offset:-1px;border-radius:4px}
+
+/* the undo row (decklist-row.tsx UndoRow) */
+.urow{display:flex;align-items:center;gap:12px;min-height:48px;padding:0 14px;border-radius:8px;background:var(--surface-sunken);border:1px dashed var(--border-strong)}
+.dk .urow{min-height:44px;padding:0 16px}
+.urow .t{flex:1;min-width:0;font:12px 'IBM Plex Mono',monospace;color:var(--fg-locked);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb{flex:none;display:inline-flex;align-items:center;min-height:44px;background:transparent;border:0;padding:0;cursor:pointer;font:600 12.5px/1.4 'IBM Plex Sans',sans-serif;color:var(--accent-text)}
+.tb span{border-bottom:1px solid var(--accent-shadow)}
+.tb.dis{opacity:.5}
+.merr{font-size:12px;line-height:1.5;color:var(--danger);padding:6px 2px 0}
+
+/* the hidden row: Help me choose's result row (choose-row.tsx) with Unhide in place of the figures */
+.hlist{display:flex;flex-direction:column;gap:8px;padding:12px 14px}
+.dk .hlist{padding:16px 34px 34px;max-width:788px}
+.hrow{position:relative;display:grid;grid-template-columns:40px minmax(0,1fr) auto;column-gap:11px;align-items:center;padding:10px 6px 10px 12px;min-height:44px;border-radius:10px;border:1px solid var(--border);background:var(--surface-rail)}
+.dk .hrow{column-gap:16px;padding:12px 10px 12px 15px;border-radius:11px}
+.thumb{width:40px;height:56px;border-radius:5px;overflow:hidden;background:var(--elevated);box-shadow:inset 0 0 0 1px rgba(0,0,0,.4)}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.hrow .nm{display:flex;align-items:center;gap:8px;min-width:0}
+.hrow .nm span.n{font:600 14px 'Cinzel',serif;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.dk .hrow .nm span.n{font-size:16px}
+.hrow .mt{font:11px 'IBM Plex Mono',monospace;color:var(--fg-faint);margin-top:5px}
+.hrow .tb{padding:0 8px}
+.hrow.gone{background:var(--surface-sunken);border:1px dashed var(--border-strong)}
+
+/* zero state (zero-state.tsx) */
+.zs{display:flex;flex-direction:column;align-items:center;gap:12px;padding:40px 22px;text-align:center}
+.dk .zs{padding:34px 22px 38px}
+.zs .dr{display:flex;gap:7px}
+.zs .dr i{display:block;width:10px;height:10px;transform:rotate(45deg);border:1px solid var(--border-strong)}
+.zs h3{margin:0;font:600 19px 'Cinzel',serif;color:var(--fg)}
+.zs p{font-size:13.5px;line-height:1.6;color:var(--fg-muted);max-width:520px}
+.zs p b{color:var(--fg);font-weight:600}
+.zs .acts{margin-top:6px;display:flex;flex-direction:column;gap:9px;align-self:stretch}
+.dk .zs .acts{flex-direction:row;align-self:auto;margin-top:4px}
+.btnp{display:inline-flex;align-items:center;justify-content:center;height:48px;border-radius:10px;font:600 14px 'IBM Plex Sans';background:var(--fg);color:var(--bg);border:0;padding:0 16px;text-decoration:none}
+.dk .btnp{height:32px;border-radius:8px;font-size:12.5px;padding:0 14px}
+.zs .aside{align-self:center;font:11.5px 'IBM Plex Mono',monospace;color:var(--fg-faint)}
+.inl{display:inline-flex;vertical-align:-3px;margin:0 2px}
+.inl .plate{width:20px;height:20px;border-radius:5px}
+.inl .plate svg{width:12px;height:12px}
+
+/* the shared toast (edit-toast.tsx ToastFrame, center) */
+.toast{position:absolute;left:50%;transform:translateX(-50%);z-index:5;display:flex;align-items:center;gap:14px;width:calc(100% - 32px);max-width:420px;padding:4px 6px 4px 16px;border-radius:10px;border:1px solid var(--border-strong);background:var(--elevated);box-shadow:0 12px 40px rgba(0,0,0,.5)}
+.ph .toast{bottom:90px}
+.dk .toast{bottom:24px;margin-left:31px}
+.toast .tt{flex:1;min-width:0;padding:8px 0;font-size:13.5px;color:var(--fg)}
+.toast .ta{flex:none;height:36px;padding:0 12px;border-radius:8px;border:1px solid var(--border-strong);background:transparent;color:var(--fg);font:600 13px 'IBM Plex Sans'}
+
+/* commander page (detail.tsx) */
+.cp-band{position:relative;height:288px;overflow:hidden;flex:none}
+.cp-band img.a{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.cp-band .scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(20,17,14,0) 0%,rgba(20,17,14,0) 50.7%,rgba(20,17,14,.73) 66.7%,rgba(20,17,14,.73) 100%)}
+.cp-band .blk{position:absolute;left:16px;right:16px;bottom:15px;padding-right:40px}
+.cp-band .k{font:11px/1.2 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-body);text-shadow:0 1px 3px rgba(0,0,0,.8)}
+.cp-band .nl{display:flex;align-items:flex-end;gap:8px;margin-top:4px}
+.cp-band h1{margin:0;font:700 19px/1.15 'Cinzel',serif;color:var(--fg);text-shadow:0 1px 4px rgba(0,0,0,.85)}
+.cp-band .tl{font-size:12.5px;line-height:1.2;color:var(--fg-body);margin-top:4px;text-shadow:0 1px 4px rgba(0,0,0,.85)}
+.cp-body{display:flex;flex-direction:column;gap:16px;padding:16px 14px}
+.hero{border-radius:14px;background:var(--surface-rail);border:1px solid var(--border);padding:22px 24px}
+.hero .l{font:11px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-faint)}
+.hero .sc{display:flex;align-items:baseline;gap:8px;margin-top:8px}
+.hero .sc b{font:600 52px/.9 'IBM Plex Mono',monospace;color:var(--fg)}
+.hero .sc span{font:16px 'IBM Plex Mono',monospace;color:var(--fg-faint)}
+.hero .rc{font:13px 'IBM Plex Mono',monospace;color:var(--fg-faint)}
+.hero .hbar{height:12px;border-radius:99px;background:var(--elevated);overflow:hidden;display:flex;margin-top:18px}
+.hero .lg{display:flex;flex-wrap:wrap;gap:24px;margin-top:12px}
+.hero .lg span{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--fg-body)}
+.hero .lg i{display:block;width:9px;height:9px;border-radius:2px}
+.hero .lg em{font:12px 'IBM Plex Mono',monospace;font-style:normal;color:var(--fg)}
+.hero .lg em s{text-decoration:none;color:var(--fg-faint)}
+.why h2{margin:0;font:600 20px 'Cinzel',serif;color:var(--fg)}
+.why p{font-size:13.5px;line-height:1.6;margin-top:8px;max-width:640px;color:var(--fg-body)}
+.cp-d{display:grid;grid-template-columns:344px 1fr;gap:36px;align-items:start;padding:26px 36px 40px;margin-top:20px}
+.cp-d .left{display:flex;flex-direction:column;gap:16px}
+.cface{position:relative;aspect-ratio:63/88;border-radius:14px;overflow:hidden;background:var(--elevated);box-shadow:inset 0 0 0 1px rgba(0,0,0,.4),0 20px 50px rgba(0,0,0,.5)}
+.cface img{width:100%;height:100%;object-fit:cover;display:block}
+.cp-d h1{margin:0;font:700 21px/1.15 'Cinzel',serif;color:var(--fg)}
+.cp-d .ty{font-size:12.5px;color:var(--fg-body);margin-top:2px}
+.idrow{display:flex;align-items:center;gap:5px}
+.idrow i{display:block;width:16px;height:16px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.4)}
+.idrow span{font:12px 'IBM Plex Mono',monospace;color:var(--fg-faint);margin-left:4px}
+.build{display:block;width:100%;text-align:center;padding:14px 0;border-radius:8px;background:var(--fg);color:var(--bg);font:600 15px 'IBM Plex Sans';border:0}
+.seed{font:10.5px/1.5 'IBM Plex Mono',monospace;color:var(--fg-locked);text-align:center}
+.cp-d .right{display:flex;flex-direction:column;gap:32px}
+.hidebtn{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;background:transparent;border:0;font:500 13px 'IBM Plex Sans';color:var(--fg-muted);cursor:pointer;padding:0}
+.hidebtn svg{width:15px;height:15px}
+/* the hidden note on the page: the shipped hero note's shape (detail.tsx, synergyState note) */
+.hnote{display:flex;align-items:flex-start;gap:10px;border-radius:8px;background:var(--elevated-hover);border:1px solid var(--border-strong);border-left:2px solid var(--fg-faint);padding:9px 8px 9px 13px}
+.hnote svg{flex:none;width:15px;height:15px;color:var(--fg-faint);margin-top:2px}
+.hnote .tx{flex:1;min-width:0;font-size:12.5px;line-height:1.45;color:var(--fg-muted);padding-top:1px}
+.hnote .tx strong{color:var(--fg-body);font-weight:600}
+.hnote .tb{margin-top:-12px;margin-bottom:-12px;padding:0 6px}
+/* the excluded-match aside / held zero state already ship (excluded-match.tsx, zero-state.tsx) */
+
+/* Help me choose result rows (choose-row.tsx) */
+.hmc{padding:18px 16px}
+.dk .hmc{padding:26px 34px;max-width:1120px}
+.hmc h2{margin:0;font:600 20px 'IBM Plex Sans';color:var(--fg)}
+.hmc .ld{font-size:13px;line-height:1.5;color:var(--fg-muted);margin-top:6px}
+.hmc .sec{font:500 10.5px 'IBM Plex Mono';letter-spacing:.14em;text-transform:uppercase;color:var(--accent-text);margin:16px 0 8px}
+.bf{display:flex;flex-direction:column;gap:10px}
+.dk .bf{flex-direction:row;gap:14px}
+.bfc{position:relative;display:flex;flex-direction:row;overflow:hidden;border-radius:12px;border:1px solid color-mix(in srgb,var(--accent) 30%,var(--border));background:var(--surface-rail)}
+.dk .bfc{flex-direction:column;flex:1;min-width:0}
+.bfc .im{position:relative;flex:none;width:88px;background:var(--elevated);border-right:1px solid var(--border);overflow:hidden}
+.dk .bfc .im{width:100%;aspect-ratio:626/457;border-right:0;border-bottom:1px solid var(--border)}
+.bfc .im img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.bfc .im .rkb{display:none;position:absolute;left:10px;top:10px;width:26px;height:26px;border-radius:50%;align-items:center;justify-content:center;font:600 12px 'IBM Plex Mono';color:var(--accent-text);background:var(--bg);border:1px solid color-mix(in srgb,var(--accent) 50%,transparent)}
+.dk .bfc .im .rkb{display:flex}
+.bfc .tx{display:flex;flex-direction:column;gap:9px;min-width:0;flex:1;padding:11px 12px}
+.dk .bfc .tx{padding:14px 15px 15px}
+.bfc .nl{display:flex;align-items:center;gap:8px;min-width:0}
+.bfc .rkp{flex:none;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:600 10.5px 'IBM Plex Mono';color:var(--accent-text);border:1px solid color-mix(in srgb,var(--accent) 50%,transparent)}
+.dk .bfc .rkp{display:none}
+.bfc .nl span.n{font:600 14.5px 'Cinzel',serif;color:var(--fg);text-decoration:underline dotted var(--accent);text-underline-offset:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.dk .bfc .nl span.n{font-size:17px}
+.bfc .rs{font-size:12.5px;line-height:1.5;color:var(--fg-body)}
+.bfc .fg{font:12px 'IBM Plex Mono';color:var(--fg-muted)}
+.bfc .fg b{color:var(--fg);font-weight:600}
+.bfc hr{margin:0;border:0;border-top:1px solid var(--border)}
+.bfc .ow{font:11px 'IBM Plex Mono';color:var(--fg-faint);line-height:1.5}
+.bfc .ow .d{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--success);margin-right:5px;vertical-align:1px}
+</style></helmet>
+<div class="board" style="width:2900px"><div class="bh"><div class="kick"><span class="tag">R1</span>Hide a commander · R1 · account 2 · 2026-10-31</div><h2>States 4–6 · The Hidden list</h2><p><b>Where it lives:</b> a fourth tab on the Commanders strip, <b>Hidden</b> (<code>/commanders/hidden</code>), beside the three lists it takes from. The tab is always there, so a reader finds it before hiding anything, and it carries the strip’s shipped count once something is hidden. <b>The row</b> is Help me choose’s result row (<code>choose-row.tsx</code>: 40px card face, name and pips, <code>--surface-rail</code>), with one line under the name and <b>Unhide</b> where the figures were. Newest first. The row opens the commander’s page; Unhide is the only other control.</p></div><div class="frames"><div class="fr"><div class="lab"><b>4 · Hidden</b> · 390 · three hidden</div><div class="ph"><img class="cap-img" src="art/ph-header.png" width="390" alt=""><nav class="strip p" aria-label="Commanders"><a href="#">For you</a><a href="#">Discover</a><a href="#">Help me choose</a><a class="on" href="#">Hidden<em>3</em></a></nav><div class="scroll"><div class="pgh"><p class="t">Hidden</p><p class="s">commanders you hid</p></div><p class="cnt" style="margin-top:12px">3 hidden · newest first</p><div class="hlist"><div class="hrow"><div class="thumb"><img src="art/c-ghalta.jpg" alt=""></div>
+<div style="min-width:0"><div class="nm"><span class="n">Ghalta, Primal Hunger</span><span class="pips" style="gap:4px"><i style="width:9px;height:9px;border-radius:1.5px;background:var(--g)"></i></span></div><p class="mt">Hidden Oct 31</p></div><button type="button" class="tb" aria-label="Unhide Ghalta, Primal Hunger" style="position:relative;z-index:2"><span>Unhide</span></button></div><div class="hrow"><div class="thumb"><img src="art/c-ashling.jpg" alt=""></div>
+<div style="min-width:0"><div class="nm"><span class="n">Ashling, the Limitless</span><span class="pips" style="gap:4px"><i style="width:9px;height:9px;border-radius:1.5px;background:var(--r)"></i></span></div><p class="mt">Hidden Oct 29</p></div><button type="button" class="tb" aria-label="Unhide Ashling, the Limitless" style="position:relative;z-index:2"><span>Unhide</span></button></div><div class="hrow"><div class="thumb"><img src="art/c-zada.jpg" alt=""></div>
+<div style="min-width:0"><div class="nm"><span class="n">Zada, Hedron Grinder</span><span class="pips" style="gap:4px"><i style="width:9px;height:9px;border-radius:1.5px;background:var(--r)"></i></span></div><p class="mt">Hidden Oct 29</p></div><button type="button" class="tb" aria-label="Unhide Zada, Hedron Grinder" style="position:relative;z-index:2"><span>Unhide</span></button></div></div></div><img class="bar" src="art/ph-bar.png" width="390" alt=""></div><p class="cap">No rack: the list is short and the reader is looking for one name. <b>Unhide</b> is the builder’s text button in the accent, 44px tall.</p></div><div class="fr"><div class="lab"><b>5 · Hidden</b> · 390 · empty</div><div class="ph"><img class="cap-img" src="art/ph-header.png" width="390" alt=""><nav class="strip p" aria-label="Commanders"><a href="#">For you</a><a href="#">Discover</a><a href="#">Help me choose</a><a class="on" href="#">Hidden</a></nav><div class="scroll"><div class="pgh"><p class="t">Hidden</p><p class="s">commanders you hid</p></div><div style="height:12px;border-bottom:1px solid var(--border)"></div><div class="zs"><div class="dr"><i></i><i></i><i></i></div><h3>Nothing hidden</h3><p>Press <span class="inl"><button type="button" class="hit " style="position:static;width:auto;height:auto" aria-label="Hide" title="Hide"><span class="plate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.7 5.1A10.7 10.7 0 0 1 21.9 11.7a1 1 0 0 1 0 .7 10.7 10.7 0 0 1-1.4 2.5"/><path d="M14.1 14.2a3 3 0 0 1-4.2-4.2"/><path d="M17.5 17.5A10.8 10.8 0 0 1 2.1 12.3a1 1 0 0 1 0-.7 10.8 10.8 0 0 1 4.4-5.1"/><path d="m2 2 20 20"/></svg></span></button></span> on a commander in For you or Discover, or on its page, and it waits here until you bring it back.<span class="draft">DRAFT</span></p></div></div><img class="bar" src="art/ph-bar.png" width="390" alt=""></div><p class="cap">The shared zero state (<code>zero-state.tsx</code>): diamond rule, heading, one sentence that draws the plate it names. No button: the tabs beside it are the way out. The tab has no count.</p></div><div class="fr"><div class="lab"><b>6 · Hidden</b> · 390 · just unhidden</div><div class="ph"><img class="cap-img" src="art/ph-header.png" width="390" alt=""><nav class="strip p" aria-label="Commanders"><a href="#">For you</a><a href="#">Discover</a><a href="#">Help me choose</a><a class="on" href="#">Hidden<em>2</em></a></nav><div class="scroll"><div class="pgh"><p class="t">Hidden</p><p class="s">commanders you hid</p></div><p class="cnt" style="margin-top:12px">2 hidden · newest first</p><div class="hlist"><div class="urow"><span class="t">Ghalta, Primal Hunger back in For you</span><button type="button" class="tb" aria-label="Hide Ghalta, Primal Hunger again"><span>Undo</span></button></div><div class="hrow"><div class="thumb"><img src="art/c-ashling.jpg" alt=""></div>
+<div style="min-width:0"><div class="nm"><span class="n">Ashling, the Limitless</span><span class="pips" style="gap:4px"><i style="width:9px;height:9px;border-radius:1.5px;background:var(--r)"></i></span></div><p class="mt">Hidden Oct 29</p></div><button type="button" class="tb" aria-label="Unhide Ashling, the Limitless" style="position:relative;z-index:2"><span>Unhide</span></button></div><div class="hrow"><div class="thumb"><img src="art/c-zada.jpg" alt=""></div>
+<div style="min-width:0"><div class="nm"><span class="n">Zada, Hedron Grinder</span><span class="pips" style="gap:4px"><i style="width:9px;height:9px;border-radius:1.5px;background:var(--r)"></i></span></div><p class="mt">Hidden Oct 29</p></div><button type="button" class="tb" aria-label="Unhide Zada, Hedron Grinder" style="position:relative;z-index:2"><span>Unhide</span></button></div></div></div><img class="bar" src="art/ph-bar.png" width="390" alt=""></div><p class="cap">Unhide turns the row into the same Undo row, saying where it went: <i>back in For you</i> (or <i>back in Discover</i> for one the reader doesn’t own). Undo hides it again. Gone when the reader leaves the tab.</p></div><div class="fr"><div class="lab"><b>6 · For you</b> · 390 · its return</div><div class="ph"><img class="cap-img" src="art/ph-header.png" width="390" alt=""><nav class="strip p" aria-label="Commanders"><a class="on" href="#">For you</a><a href="#">Discover</a><a href="#">Help me choose</a><a style="outline:1.5px dashed rgba(207,135,69,.9);outline-offset:-4px;border-radius:6px" href="#">Hidden<em>2</em></a></nav><div class="scroll"><img class="cap-img" src="art/ph-head-foryou.png" width="390" alt=""><div class="list"><div class="crow ">
+<div class="band"><img class="art" src="art/crop-zimone.jpg" alt=""><div class="scrim"></div><div class="hctl" style="position:absolute;top:3px;right:4px;z-index:2"><button type="button" class="hit " style="" aria-label="Hide Zimone, Infinite Analyst" title="Hide Zimone, Infinite Analyst"><span class="plate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.7 5.1A10.7 10.7 0 0 1 21.9 11.7a1 1 0 0 1 0 .7 10.7 10.7 0 0 1-1.4 2.5"/><path d="M14.1 14.2a3 3 0 0 1-4.2-4.2"/><path d="M17.5 17.5A10.8 10.8 0 0 1 2.1 12.3a1 1 0 0 1 0-.7 10.8 10.8 0 0 1 4.4-5.1"/><path d="m2 2 20 20"/></svg></span></button></div>
+<div class="lbl"><span class="rk one">1</span>
+<div class="nm"><span class="n">Zimone, Infinite Analyst</span><span class="pips" style="gap:3px"><i style="width:8px;height:8px;border-radius:1.5px;background:var(--g)"></i><i style="width:8px;height:8px;border-radius:1.5px;background:var(--u)"></i></span></div>
+<div class="fit"><b>71</b><span>/100 FIT</span></div></div></div>
+<div class="body"><p class="pr">Zimone decks cast one cheap spell a turn and pile +1/+1 counters onto a single growing threat.</p><p class="gp">This commander’s top three play styles are <b>+1/+1 Counters</b>, <b>Spellslinger</b> and <b>Ramp</b>.</p>
+<div class="figs"><span>1,214 decks tracked</span></div><div class="fb" aria-hidden="true"><div class="tr"><div class="fill" style="width:71%"><div style="flex-grow:29;background:var(--accent-dim)"></div><div style="flex-grow:23;background:var(--accent-mid)"></div><div style="flex-grow:19;background:var(--accent)"></div></div></div><div class="lg"><span><i style="background:var(--accent-dim)"></i>Pool</span><span><i style="background:var(--accent-mid)"></i>Roles</span><span><i style="background:var(--accent)"></i>Synergy</span></div></div></div></div><div class="crow ">
+<div class="band"><img class="art" src="art/crop-ghalta.jpg" alt=""><div class="scrim"></div><div class="hctl" style="position:absolute;top:3px;right:4px;z-index:2"><button type="button" class="hit " style="" aria-label="Hide Ghalta, Primal Hunger" title="Hide Ghalta, Primal Hunger"><span class="plate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.7 5.1A10.7 10.7 0 0 1 21.9 11.7a1 1 0 0 1 0 .7 10.7 10.7 0 0 1-1.4 2.5"/><path d="M14.1 14.2a3 3 0 0 1-4.2-4.2"/><path d="M17.5 17.5A10.8 10.8 0 0 1 2.1 12.3a1 1 0 0 1 0-.7 10.8 10.8 0 0 1 4.4-5.1"/><path d="m2 2 20 20"/></svg></span></button></div>
+<div class="lbl"><span class="rk">2</span>
+<div class="nm"><span class="n">Ghalta, Primal Hunger</span><span class="pips" style="gap:3px"><i style="width:8px;height:8px;border-radius:1.5px;background:var(--g)"></i></span></div>
+<div class="fit"><b>74</b><span>/100 FIT</span></div></div></div>
+<div class="body"><p class="pr">Ghalta decks ramp into the biggest creatures they can find and win in combat with trample.</p><p class="gp">This commander’s top three play styles are <b>Big Mana</b>, <b>Stompy</b> and <b>Ramp</b>.</p>
+<div class="figs"><span>8,902 decks tracked</span></div><div class="fb" aria-hidden="true"><div class="tr"><div class="fill" style="width:74%"><div style="flex-grow:31;background:var(--accent-dim)"></div><div style="flex-grow:24;background:var(--accent-mid)"></div><div style="flex-grow:19;background:var(--accent)"></div></div></div><div class="lg"><span><i style="background:var(--accent-dim)"></i>Pool</span><span><i style="background:var(--accent-mid)"></i>Roles</span><span><i style="background:var(--accent)"></i>Synergy</span></div></div></div></div></div></div><img class="bar" src="art/ph-bar.png" width="390" alt=""></div><p class="cap">Back in the list at whatever rank it scores now, here 2 (it was 1 before it was hidden: a deck built since moved Zimone up). No mark, no “new”: it is just a row again.</p></div><div class="fr"><div class="lab"><b>12 · Unhide failed</b> · 390</div><div class="ph"><img class="cap-img" src="art/ph-header.png" width="390" alt=""><nav class="strip p" aria-label="Commanders"><a href="#">For you</a><a href="#">Discover</a><a href="#">Help me choose</a><a class="on" href="#">Hidden<em>3</em></a></nav><div class="scroll"><div class="pgh"><p class="t">Hidden</p><p class="s">commanders you hid</p></div><p class="cnt" style="margin-top:12px">3 hidden · newest first</p><div class="hlist"><div class="hrow"><div class="thumb"><img src="art/c-ghalta.jpg" alt=""></div>
+<div style="min-width:0"><div class="nm"><span class="n">Ghalta, Primal Hunger</span><span class="pips" style="gap:4px"><i style="width:9px;height:9px;border-radius:1.5px;background:var(--g)"></i></span></div><p class="mt">Hidden Oct 31</p></div><button type="button" class="tb" aria-label="Unhide Ghalta, Primal Hunger" style="position:relative;z-index:2"><span>Unhide</span></button></div><div class="hrow"><div class="thumb"><img src="art/c-ashling.jpg" alt=""></div>
+<div style="min-width:0"><div class="nm"><span class="n">Ashling, the Limitless</span><span class="pips" style="gap:4px"><i style="width:9px;height:9px;border-radius:1.5px;background:var(--r)"></i></span></div><p class="mt">Hidden Oct 29</p></div><button type="button" class="tb" aria-label="Unhide Ashling, the Limitless" style="position:relative;z-index:2"><span>Unhide</span></button></div><div class="hrow"><div class="thumb"><img src="art/c-zada.jpg" alt=""></div>
+<div style="min-width:0"><div class="nm"><span class="n">Zada, Hedron Grinder</span><span class="pips" style="gap:4px"><i style="width:9px;height:9px;border-radius:1.5px;background:var(--r)"></i></span></div><p class="mt">Hidden Oct 29</p></div><button type="button" class="tb" aria-label="Unhide Zada, Hedron Grinder" style="position:relative;z-index:2"><span>Unhide</span></button></div></div></div><div class="toast" role="alert"><span class="tt">We couldn’t unhide Ghalta, Primal Hunger. Try again.<span class="draft">DRAFT</span></span><button type="button" class="ta">Try again</button></div><img class="bar" src="art/ph-bar.png" width="390" alt=""></div><p class="cap">The row stays in Hidden as it was, with the shared toast and Try again.</p></div></div><div class="frames"><div class="fr"><div class="lab"><b>4 · Hidden</b> · desktop 1300 · three hidden</div><div class="dk"><img class="rail" src="art/dk-rail.png" alt=""><div class="main"><div class="phd"><p class="t">Commanders</p><p class="c">227 yours, not yet built · 3,068 to discover</p></div><nav class="strip d" aria-label="Commanders"><a href="#">For you</a><a href="#">Discover</a><a href="#">Help me choose</a><a class="on" href="#">Hidden<em>3</em></a></nav><div class="scroll"><div class="pgh"><p class="t">Hidden</p><p class="s">commanders you hid</p></div><p class="cnt">3 hidden · newest first</p><div class="hlist"><div class="hrow"><div class="thumb"><img src="art/c-ghalta.jpg" alt=""></div>
+<div style="min-width:0"><div class="nm"><span class="n">Ghalta, Primal Hunger</span><span class="pips" style="gap:4px"><i style="width:9px;height:9px;border-radius:1.5px;background:var(--g)"></i></span></div><p class="mt">Hidden Oct 31</p></div><button type="button" class="tb" aria-label="Unhide Ghalta, Primal Hunger" style="position:relative;z-index:2"><span>Unhide</span></button></div><div class="hrow"><div class="thumb"><img src="art/c-ashling.jpg" alt=""></div>
+<div style="min-width:0"><div class="nm"><span class="n">Ashling, the Limitless</span><span class="pips" style="gap:4px"><i style="width:9px;height:9px;border-radius:1.5px;background:var(--r)"></i></span></div><p class="mt">Hidden Oct 29</p></div><button type="button" class="tb" aria-label="Unhide Ashling, the Limitless" style="position:relative;z-index:2"><span>Unhide</span></button></div><div class="hrow"><div class="thumb"><img src="art/c-zada.jpg" alt=""></div>
+<div style="min-width:0"><div class="nm"><span class="n">Zada, Hedron Grinder</span><span class="pips" style="gap:4px"><i style="width:9px;height:9px;border-radius:1.5px;background:var(--r)"></i></span></div><p class="mt">Hidden Oct 29</p></div><button type="button" class="tb" aria-label="Unhide Zada, Hedron Grinder" style="position:relative;z-index:2"><span>Unhide</span></button></div></div></div></div></div><p class="cap">Desktop: the place head and strip as shipped, then the page header in its desktop row. Rows in Help me choose’s 720 column, so Unhide stays near the name.</p></div><div class="fr"><div class="lab"><b>6 · Hidden</b> · desktop 1300 · just unhidden</div><div class="dk"><img class="rail" src="art/dk-rail.png" alt=""><div class="main"><div class="phd"><p class="t">Commanders</p><p class="c">227 yours, not yet built · 3,068 to discover</p></div><nav class="strip d" aria-label="Commanders"><a href="#">For you</a><a href="#">Discover</a><a href="#">Help me choose</a><a class="on" href="#">Hidden<em>2</em></a></nav><div class="scroll"><div class="pgh"><p class="t">Hidden</p><p class="s">commanders you hid</p></div><p class="cnt">2 hidden · newest first</p><div class="hlist"><div class="urow"><span class="t">Ghalta, Primal Hunger back in For you</span><button type="button" class="tb" aria-label="Hide Ghalta, Primal Hunger again"><span>Undo</span></button></div><div class="hrow"><div class="thumb"><img src="art/c-ashling.jpg" alt=""></div>
+<div style="min-width:0"><div class="nm"><span class="n">Ashling, the Limitless</span><span class="pips" style="gap:4px"><i style="width:9px;height:9px;border-radius:1.5px;background:var(--r)"></i></span></div><p class="mt">Hidden Oct 29</p></div><button type="button" class="tb" aria-label="Unhide Ashling, the Limitless" style="position:relative;z-index:2"><span>Unhide</span></button></div><div class="hrow"><div class="thumb"><img src="art/c-zada.jpg" alt=""></div>
+<div style="min-width:0"><div class="nm"><span class="n">Zada, Hedron Grinder</span><span class="pips" style="gap:4px"><i style="width:9px;height:9px;border-radius:1.5px;background:var(--r)"></i></span></div><p class="mt">Hidden Oct 29</p></div><button type="button" class="tb" aria-label="Unhide Zada, Hedron Grinder" style="position:relative;z-index:2"><span>Unhide</span></button></div></div></div></div></div><p class="cap">The Undo row in the same column.</p></div></div><div class="frames"><div class="fr"><div class="lab"><b>5 · Hidden</b> · desktop 1300 · empty</div><div class="dk"><img class="rail" src="art/dk-rail.png" alt=""><div class="main"><div class="phd"><p class="t">Commanders</p><p class="c">227 yours, not yet built · 3,068 to discover</p></div><nav class="strip d" aria-label="Commanders"><a href="#">For you</a><a href="#">Discover</a><a href="#">Help me choose</a><a class="on" href="#">Hidden</a></nav><div class="scroll"><div class="pgh"><p class="t">Hidden</p><p class="s">commanders you hid</p></div><div class="zs"><div class="dr"><i></i><i></i><i></i></div><h3>Nothing hidden</h3><p>Press <span class="inl"><button type="button" class="hit " style="position:static;width:auto;height:auto" aria-label="Hide" title="Hide"><span class="plate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.7 5.1A10.7 10.7 0 0 1 21.9 11.7a1 1 0 0 1 0 .7 10.7 10.7 0 0 1-1.4 2.5"/><path d="M14.1 14.2a3 3 0 0 1-4.2-4.2"/><path d="M17.5 17.5A10.8 10.8 0 0 1 2.1 12.3a1 1 0 0 1 0-.7 10.8 10.8 0 0 1 4.4-5.1"/><path d="m2 2 20 20"/></svg></span></button></span> on a commander in For you or Discover, or on its page, and it waits here until you bring it back.<span class="draft">DRAFT</span></p></div></div></div></div><p class="cap">The zero state centred under the header.</p></div></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2900,"height":3258}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
