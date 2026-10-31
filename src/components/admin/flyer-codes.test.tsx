@@ -7,7 +7,12 @@ const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh, push: vi.fn() }) }));
 const makeCode = vi.fn();
 const revokeCode = vi.fn();
-vi.mock("../../app/admin/invites/flyer-actions", () => ({ makeCode: (...a: unknown[]) => makeCode(...a), revokeCode: (...a: unknown[]) => revokeCode(...a) }));
+const setLaunchDate = vi.fn();
+vi.mock("../../app/admin/invites/flyer-actions", () => ({
+  makeCode: (...a: unknown[]) => makeCode(...a),
+  revokeCode: (...a: unknown[]) => revokeCode(...a),
+  setLaunchDate: (...a: unknown[]) => setLaunchDate(...a),
+}));
 
 import { flyersView, type FlyerCodeRead } from "../../lib/admin/flyers-rule";
 import { FlyerCodes } from "./flyer-codes";
@@ -19,7 +24,7 @@ const code = (over: Partial<FlyerCodeRead>): FlyerCodeRead => ({
 const view = flyersView(
   {
     codes: [code({}), code({ id: "k", code: "KNT3HZ", label: "Knight Moves Cafe", taken: 50, listed: 19 }), code({ id: "p", code: "PZA9TC", label: "Pizza Pod test", taken: 2, listed: 4, revokedAt: day(2, 11) })],
-    listed: 23, held: 40, open: [], holds: [],
+    listed: 23, held: 40, open: [], holds: [], launchDate: null,
   },
   new Date("2026-10-30T12:00:00Z"),
 );
@@ -57,7 +62,7 @@ describe("FlyerCodes", () => {
 });
 
 describe("FlyerCodes with no codes", () => {
-  const empty = flyersView({ codes: [], listed: 0, held: 37, open: [], holds: [] }, new Date("2026-10-30T12:00:00Z"));
+  const empty = flyersView({ codes: [], listed: 0, held: 37, open: [], holds: [], launchDate: null }, new Date("2026-10-30T12:00:00Z"));
 
   it("keeps New flyer code, writes the zero meta and holds the muted line in a card (No-Codes.dc.html)", () => {
     render(<FlyerCodes view={empty} />);
@@ -179,5 +184,86 @@ describe("Revoke", () => {
     const alert = await within(screen.getByRole("dialog")).findByRole("alert");
     expect(alert.textContent).toBe("Lost the connection, so the code may be revoked. Check the list before trying again.");
     expect(refresh).toHaveBeenCalled();
+  });
+});
+
+// The launch card's second row (flyer admin PR B; Launch-Date.dc.html D1 to D5, P1 to P4).
+describe("the launch date row", () => {
+  const withDate = (launchDate: string | null) =>
+    flyersView({ codes: [], listed: 23, held: 40, open: [], holds: [], launchDate }, new Date("2026-10-30T12:00:00Z"));
+  const dateInput = () => screen.getByLabelText("Launch date") as HTMLInputElement;
+
+  beforeEach(() => setLaunchDate.mockReset());
+
+  it("starts empty with the label, a date field, the help line and no button (D1/P1)", () => {
+    render(<FlyerCodes view={withDate(null)} />);
+    const row = screen.getByTestId("launch-date-row");
+    expect(within(row).getByText("Optional. Leave it blank until the date is firm.")).toBeTruthy();
+    expect(dateInput().type).toBe("date");
+    expect(dateInput().value).toBe("");
+    expect(screen.queryByTestId("launch-date-save")).toBeNull();
+    expect(screen.queryByTestId("launch-date-clear")).toBeNull();
+    expect(within(row).queryByRole("alert")).toBeNull();
+  });
+
+  it("shows Save only while the field differs from what is saved (D2/P2)", () => {
+    render(<FlyerCodes view={withDate(null)} />);
+    fireEvent.change(dateInput(), { target: { value: "2026-11-20" } });
+    expect(screen.getByTestId("launch-date-save").textContent).toBe("Save");
+    fireEvent.change(dateInput(), { target: { value: "" } });
+    expect(screen.queryByTestId("launch-date-save")).toBeNull();
+  });
+
+  it("saves, then says Saved and offers Clear (D3/P3)", async () => {
+    setLaunchDate.mockResolvedValue({ ok: true, state: "saved", value: "2026-11-20" });
+    render(<FlyerCodes view={withDate(null)} />);
+    fireEvent.change(dateInput(), { target: { value: "2026-11-20" } });
+    fireEvent.click(screen.getByTestId("launch-date-save"));
+    await waitFor(() => expect(screen.getByTestId("launch-date-status").textContent).toBe("Saved"));
+    expect(setLaunchDate).toHaveBeenCalledWith("2026-11-20");
+    expect(screen.getByTestId("launch-date-clear").textContent).toBe("Clear");
+    expect(screen.queryByTestId("launch-date-save")).toBeNull();
+    expect(dateInput().value).toBe("2026-11-20");
+  });
+
+  it("clears by saving a blank, then says Cleared with an empty field (D4/P4)", async () => {
+    setLaunchDate.mockResolvedValue({ ok: true, state: "cleared", value: null });
+    render(<FlyerCodes view={withDate("2026-11-20")} />);
+    expect(dateInput().value).toBe("2026-11-20");
+    fireEvent.click(screen.getByTestId("launch-date-clear"));
+    await waitFor(() => expect(screen.getByTestId("launch-date-status").textContent).toBe("Cleared"));
+    expect(setLaunchDate).toHaveBeenCalledWith("");
+    expect(dateInput().value).toBe("");
+    expect(screen.queryByTestId("launch-date-clear")).toBeNull();
+  });
+
+  it("saves an emptied field as a blank (blank is a valid saved value)", async () => {
+    setLaunchDate.mockResolvedValue({ ok: true, state: "cleared", value: null });
+    render(<FlyerCodes view={withDate("2026-11-20")} />);
+    fireEvent.change(dateInput(), { target: { value: "" } });
+    fireEvent.click(screen.getByTestId("launch-date-save"));
+    await waitFor(() => expect(setLaunchDate).toHaveBeenCalledWith(""));
+  });
+
+  it("keeps what was typed and alerts with the setting dialog's line when a save is refused (D5)", async () => {
+    setLaunchDate.mockResolvedValue({ ok: false, error: "past" });
+    render(<FlyerCodes view={withDate(null)} />);
+    fireEvent.change(dateInput(), { target: { value: "2020-01-01" } });
+    fireEvent.click(screen.getByTestId("launch-date-save"));
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toBe("Didn’t save. Nothing changed.");
+    expect(dateInput().value).toBe("2020-01-01");
+    expect(screen.getByTestId("launch-date-save")).toBeTruthy();
+    fireEvent.change(dateInput(), { target: { value: "2026-12-01" } });
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("alerts the same way when the reply is lost", async () => {
+    setLaunchDate.mockRejectedValue(new Error("network"));
+    render(<FlyerCodes view={withDate(null)} />);
+    fireEvent.change(dateInput(), { target: { value: "2026-11-20" } });
+    fireEvent.click(screen.getByTestId("launch-date-save"));
+    expect((await screen.findByRole("alert")).textContent).toBe("Didn’t save. Nothing changed.");
+    expect(dateInput().value).toBe("2026-11-20");
   });
 });

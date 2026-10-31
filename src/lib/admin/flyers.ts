@@ -2,10 +2,11 @@ import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import type { InviteKind, ReservationState } from "../invites/rules";
 import type { FlyersRead } from "./flyers-rule";
+import { readStoredLaunchDate } from "../flyer/launch-date";
 import { utc } from "./invites";
 
 /**
- * The Flyer codes section's read (flyer trial PR 4a). SERVER-ONLY, ONE statement: every code with the sign-ups it
+ * The Flyer codes section's read (flyer trial PR 4a). SERVER-ONLY, ONE statement (plus the saved launch date, a second read of one row): every code with the sign-ups it
  * took, its group's name and the launch-list addresses it brought, the launch list's total, and the viewer's invite
  * stock with what holds one of his invites (his reservations and the claims holding on his codes), so the meta line's
  * "left" is the count every other surface reads. Each correlated count aliases its table and qualifies both sides.
@@ -42,11 +43,13 @@ export async function readFlyerCodes(viewerId: string): Promise<FlyersRead> {
     coalesce((select json_agg(h.holds_until) from flyer_claims h join flyer_codes hc on hc.id = h.code_id
       where hc.created_by = ${viewerId} and h.state in ('open', 'proven')), '[]'::json) as holds`);
   const [row] = rows;
+  const launchDate = await readStoredLaunchDate();
   return {
     codes: row.codes.map((c) => ({ ...c, createdAt: utc(c.createdAt)!, revokedAt: utc(c.revokedAt) })),
     listed: row.listed,
     held: row.held ?? undefined,
     open: row.open.map((r) => ({ ...r, qrExpiresAt: utc(r.qrExpiresAt), holdsUntil: utc(r.holdsUntil) })),
     holds: row.holds.map((t) => utc(t)!),
+    launchDate,
   };
 }

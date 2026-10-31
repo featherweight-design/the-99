@@ -2,12 +2,15 @@
  * The launch list's purge (flyer trial PR 4c): the addresses left on used-up and ended flyers are emailed once at launch
  * (the launch epic's, not this file) and then deleted. They go 30 days after the launch date.
  *
- * The launch date is `FLYER_LAUNCH_DATE`, a nullable env value (`YYYY-MM-DD`, read as UTC midnight, or a full ISO
- * instant). There is no migration and no admin control yet, so an unset or unreadable value MEANS NO PURGE: the list is
- * kept, never deleted on a guess. SERVER-ONLY (the purge reads the database).
+ * The launch date is the admin's value in `flyer_settings` (set on /admin/invites, `launch-date.ts`) FIRST, and only when
+ * none is saved the `FLYER_LAUNCH_DATE` env value (the fallback from before the admin control): `YYYY-MM-DD` read as UTC
+ * midnight, or a full ISO instant. An unset or unreadable value MEANS NO PURGE: the list is kept, never deleted on a
+ * guess. A saved value that is unreadable does NOT fall through to the env value; it is a purge off. SERVER-ONLY (the
+ * purge reads the database).
  */
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
+import { readStoredLaunchDate } from "./launch-date";
 
 /** Days after launch the list is kept (the READINESS "emailed once at launch, then purged"). */
 export const LAUNCH_LIST_RETENTION_DAYS = 30;
@@ -38,8 +41,12 @@ export function launchPurgeDue(launch: Date | null, now: Date): boolean {
 export type LaunchPurgeReport = { due: boolean; deleted: number };
 
 /** Deletes up to one batch of `launch_list` rows when the purge is due; touches nothing else. Idempotent. */
-export async function purgeLaunchList(deps: { now?: Date; launchRaw?: string | undefined } = {}): Promise<LaunchPurgeReport> {
-  const launch = readLaunchDate("launchRaw" in deps ? deps.launchRaw : process.env.FLYER_LAUNCH_DATE);
+export async function purgeLaunchList(
+  deps: { now?: Date; launchRaw?: string | undefined; readStored?: () => Promise<string | null> } = {},
+): Promise<LaunchPurgeReport> {
+  // `launchRaw` (a test's) wins outright; otherwise the table value first, then the env fallback.
+  const raw = "launchRaw" in deps ? deps.launchRaw : ((await (deps.readStored ?? readStoredLaunchDate)()) ?? process.env.FLYER_LAUNCH_DATE);
+  const launch = readLaunchDate(raw);
   if (!launchPurgeDue(launch, deps.now ?? new Date())) return { due: false, deleted: 0 };
   const { rows } = await db.execute<{ n: number }>(sql`with gone as (
     delete from launch_list where email in (select email from launch_list limit ${LAUNCH_PURGE_BATCH}) returning 1

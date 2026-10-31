@@ -5,6 +5,7 @@ import { PendingReporter } from "../shell/pending-reporter";
 import Link from "next/link";
 import { flyerAdminCopy } from "../../lib/copy/admin";
 import type { FlyerRowView, FlyersView } from "../../lib/admin/flyers-rule";
+import { FlyerLaunchDate } from "./flyer-launch-date";
 import { FlyerNewForm, type FlyerGroupChoice } from "./flyer-new-form";
 import { FlyerRevokeModal, type RevokeTarget } from "./flyer-revoke-modal";
 
@@ -127,9 +128,12 @@ export function FlyerCodes({ view, groups = [] }: { view: FlyersView; groups?: r
           </ul>
         </div>
       )}
-      <div className={`${CARD} flex min-h-[56px] flex-col justify-center gap-[3px] px-[14px] py-[10px] md:px-[16px]`} data-testid="launch-list-card">
-        <b className="text-[14px] font-semibold text-[color:var(--fg)]">{view.launch.title}</b>
-        <span className={MONO_FAINT}>{view.launch.meta}</span>
+      <div className={CARD} data-testid="launch-list-card">
+        <div className="flex min-h-[56px] flex-col justify-center gap-[4px] px-[14px] pb-[4px] pt-[12px] md:gap-[3px] md:py-[10px] md:pl-[16px] md:pr-[10px]">
+          <b className="text-[14px] font-semibold text-[color:var(--fg)]">{view.launch.title}</b>
+          <span className={MONO_FAINT}>{view.launch.meta}</span>
+        </div>
+        <FlyerLaunchDate saved={view.launch.date} />
       </div>
       {revoking && <FlyerRevokeModal target={revoking} onClose={() => setRevokingCode(null)} />}
     </section>

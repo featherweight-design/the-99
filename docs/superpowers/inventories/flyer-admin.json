@@ -17,7 +17,7 @@
     },
     {
       "id": "flyer-launch-list",
-      "label": "/admin/invites: the launch-list card (count only, no CSV)",
+      "label": "/admin/invites: the launch-list card (count and the Launch date row, no CSV)",
       "view": "src/components/admin/flyer-codes.tsx",
       "steps": [
         {

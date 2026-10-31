@@ -762,6 +762,13 @@ export const flyerAdminCopy = {
   /** The print page's bar for a revoked code (Print-Revoked.dc.html V1/V2): no Print, no Download QR. */
   printRevoked: (day: string) => `Revoked ${day}. This code no longer signs anyone up, so there’s nothing to print.`,
   csv: "Download CSV",
+  /** The launch card's second row (Launch-Date.dc.html; draft help line from the handoff). */
+  launchDate: "Launch date",
+  launchDateHelp: "Optional. Leave it blank until the date is firm.",
+  launchDateSave: "Save",
+  launchDateSaved: "Saved",
+  launchDateClear: "Clear",
+  launchDateCleared: "Cleared",
   printBar: "Letter · black ink on coloured paper · the toolbar doesn’t print",
   downloadQr: "Download QR",
 } as const;

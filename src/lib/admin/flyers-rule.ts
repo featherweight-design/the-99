@@ -31,6 +31,8 @@ export type FlyersRead = {
   held: number | undefined;
   open: readonly HoldingRow[];
   holds: readonly Date[];
+  /** The saved launch date (`YYYY-MM-DD`), or null when none is set. */
+  launchDate: string | null;
 };
 
 export type FlyerState = "live" | "full" | "revoked";
@@ -54,7 +56,7 @@ export type FlyerRowView = {
 export type FlyersView = {
   meta: string;
   rows: FlyerRowView[];
-  launch: { title: string; meta: string };
+  launch: { title: string; meta: string; date: string | null };
 };
 
 export const flyerState = (c: Pick<FlyerCodeRead, "capacity" | "taken" | "revokedAt">): FlyerState =>
@@ -92,6 +94,7 @@ export function flyersView(read: FlyersRead, now: Date): FlyersView {
     launch: {
       title: copy.launchList(read.listed),
       meta: read.listed === 0 ? copy.launchListNone : [copy.launchListMeta, ...perCode].join(" · "),
+      date: read.launchDate,
     },
   };
 }
