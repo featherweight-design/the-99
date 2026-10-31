@@ -5,6 +5,7 @@ import { PendingReporter } from "../shell/pending-reporter";
 import Link from "next/link";
 import { flyerAdminCopy } from "../../lib/copy/admin";
 import type { FlyerRowView, FlyersView } from "../../lib/admin/flyers-rule";
+import { FlyerLaunchCsv } from "./flyer-launch-csv";
 import { FlyerLaunchDate } from "./flyer-launch-date";
 import { FlyerNewForm, type FlyerGroupChoice } from "./flyer-new-form";
 import { FlyerRevokeModal, type RevokeTarget } from "./flyer-revoke-modal";
@@ -129,9 +130,16 @@ export function FlyerCodes({ view, groups = [] }: { view: FlyersView; groups?: r
         </div>
       )}
       <div className={CARD} data-testid="launch-list-card">
-        <div className="flex min-h-[56px] flex-col justify-center gap-[4px] px-[14px] pb-[4px] pt-[12px] md:gap-[3px] md:py-[10px] md:pl-[16px] md:pr-[10px]">
-          <b className="text-[14px] font-semibold text-[color:var(--fg)]">{view.launch.title}</b>
-          <span className={MONO_FAINT}>{view.launch.meta}</span>
+        <div className="grid min-h-[56px] grid-cols-[minmax(0,1fr)] items-center gap-[4px] px-[14px] pb-[4px] pt-[12px] md:grid-cols-[minmax(0,1fr)_auto] md:gap-[14px] md:py-[10px] md:pl-[16px] md:pr-[10px]">
+          <span className="flex flex-col gap-[4px] md:gap-[3px]">
+            <b className="text-[14px] font-semibold text-[color:var(--fg)]">{view.launch.title}</b>
+            <span className={MONO_FAINT}>{view.launch.meta}</span>
+          </span>
+          {view.launch.count > 0 && (
+            <span className="-ml-[6px] flex justify-start md:m-0 md:justify-end">
+              <FlyerLaunchCsv />
+            </span>
+          )}
         </div>
         <FlyerLaunchDate saved={view.launch.date} />
       </div>

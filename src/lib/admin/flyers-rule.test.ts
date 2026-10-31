@@ -48,8 +48,9 @@ describe("flyersView", () => {
       title: "Launch list · 23",
       meta: "emails left on used-up and ended flyers · Knight Moves Cafe 19 · Pizza Pod test 4",
       date: null,
+      count: 23,
     });
-    expect(flyersView({ ...read, codes: [], listed: 0 }, now).launch).toEqual({ title: "Launch list · 0", meta: "no emails yet · a used-up or ended flyer asks for one", date: null });
+    expect(flyersView({ ...read, codes: [], listed: 0 }, now).launch).toEqual({ title: "Launch list · 0", meta: "no emails yet · a used-up or ended flyer asks for one", date: null, count: 0 });
   });
 
   it("carries the saved launch date to the card, and null when none is set", () => {

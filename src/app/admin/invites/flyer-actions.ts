@@ -7,6 +7,7 @@ import { writeGroup } from "../../../lib/admin/group-writes";
 import { discardEmptyGroup, makeFlyerCode, revokeFlyerCode, type MakeFlyerCodeResult } from "../../../lib/flyer/admin";
 import { FLYER_GROUP_ALLOWANCE, flyerGroupName, parseStore } from "../../../lib/flyer/admin-rule";
 import { flyerTrialEnabled } from "../../../lib/flyer/flag";
+import { exportLaunchListFile } from "../../../lib/flyer/launch-export";
 import { setLaunchDate as writeLaunchDate } from "../../../lib/flyer/launch-date";
 import { requestSwitchEnv } from "../../../lib/switches/request";
 
@@ -109,4 +110,24 @@ export async function setLaunchDate(day: string): Promise<SetLaunchDateActionRes
   if (!result.ok) return result;
   if (result.changed) revalidatePath("/admin", "layout");
   return result.state === "saved" ? { ok: true, state: "saved", value: result.value } : { ok: true, state: "cleared", value: null };
+}
+
+export type ExportLaunchListResult = { ok: true; filename: string; csv: string } | { ok: false; error: "off" | "failed" };
+
+/**
+ * The launch list as a CSV file's name and text, for the launch card's Download CSV. The read and its
+ * `launch_list_exported` audit row commit together, so a refusal (switch off) or a failure writes no event and returns
+ * no addresses. The content goes back to the caller only; it is never logged and no route serves it.
+ */
+export async function exportLaunchList(): Promise<ExportLaunchListResult> {
+  const { userId } = await requireAdmin();
+  if (!flyerTrialEnabled(await requestSwitchEnv(userId))) return { ok: false, error: "off" };
+  try {
+    const { filename, csv } = await exportLaunchListFile(userId);
+    return { ok: true, filename, csv };
+  } catch (error) {
+    // The message only: an error object from the driver can carry the failing statement's parameters.
+    console.error("admin: the launch list could not be exported", error instanceof Error ? error.name : "unknown");
+    return { ok: false, error: "failed" };
+  }
 }
