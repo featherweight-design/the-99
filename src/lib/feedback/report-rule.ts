@@ -50,8 +50,9 @@ export function pageOf(value: unknown): string | null {
 /** The report as stored, or null when the first box is empty, a field is not a string over its cap, or the door is unknown. */
 export function parseReport(input: ReportInput): ParsedReport | null {
   if (typeof input.what !== "string" || typeof input.doing !== "string") return null;
-  const what = input.what.trim();
-  const doing = input.doing.trim();
+  // A NUL cannot be stored in the jsonb answers (the insert would fail after the visit was counted).
+  const what = input.what.replace(/\u0000/g, "").trim();
+  const doing = input.doing.replace(/\u0000/g, "").trim();
   if (what.length === 0 || what.length > WHAT_MAX || doing.length > DOING_MAX) return null;
   if (!REPORT_SOURCES.includes(input.source as ReportSource)) return null;
   return {

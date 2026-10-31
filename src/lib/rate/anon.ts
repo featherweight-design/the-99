@@ -26,8 +26,9 @@ export const UNKNOWN_KEY = `${ANON_PREFIX}unknown`;
 
 /** The visitor's network address from the platform's headers, or null. Vercel sets these itself; they are spoofable elsewhere, which an observe-only counter tolerates and an enforced one (`overAnonymousLimit`) bounds only on Vercel. The key carries the UTC day, so a window that straddles midnight counts twice. */
 export function clientAddress(headers: Pick<Headers, "get">): string | null {
-  const direct = headers.get("x-real-ip") ?? headers.get("x-vercel-forwarded-for");
-  const first = direct ?? headers.get("x-forwarded-for")?.split(",")[0];
+  // `||`, not `??`: an empty header is absent, or it would shadow the real ones and read as no address (unlimited).
+  const direct = headers.get("x-real-ip") || headers.get("x-vercel-forwarded-for");
+  const first = direct || headers.get("x-forwarded-for")?.split(",")[0];
   const address = first?.trim();
   return address ? address : null;
 }

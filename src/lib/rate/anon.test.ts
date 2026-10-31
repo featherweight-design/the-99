@@ -26,6 +26,11 @@ beforeEach(() => {
 });
 
 describe("clientAddress", () => {
+  it("reads an empty header as absent, so it cannot shadow the real address", () => {
+    expect(clientAddress(hdr({ "x-real-ip": "", "x-forwarded-for": "9.9.9.9" }))).toBe("9.9.9.9");
+    expect(clientAddress(hdr({ "x-real-ip": "", "x-vercel-forwarded-for": "5.6.7.8" }))).toBe("5.6.7.8");
+  });
+
   it("prefers x-real-ip, then x-vercel-forwarded-for, then the first hop of x-forwarded-for", () => {
     expect(clientAddress(hdr({ "x-real-ip": "1.2.3.4", "x-forwarded-for": "9.9.9.9" }))).toBe("1.2.3.4");
     expect(clientAddress(hdr({ "x-vercel-forwarded-for": "5.6.7.8", "x-forwarded-for": "9.9.9.9" }))).toBe("5.6.7.8");

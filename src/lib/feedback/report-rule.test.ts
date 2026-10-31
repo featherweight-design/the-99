@@ -8,6 +8,11 @@ describe("parseReport", () => {
     expect(parseReport({ ...ok, what: "  blank page  ", doing: "   " })).toMatchObject({ what: "blank page", doing: null, source: "error" });
   });
 
+  it("drops NUL characters, which the jsonb answers cannot hold, and refuses a box that was only NULs", () => {
+    expect(parseReport({ ...ok, what: "blank\u0000 page", doing: "\u0000" })).toMatchObject({ what: "blank page", doing: null });
+    expect(parseReport({ ...ok, what: "\u0000\u0000" })).toBeNull();
+  });
+
   it("refuses an empty first box, a non-string, and anything over its cap", () => {
     expect(parseReport({ ...ok, what: "   " })).toBeNull();
     expect(parseReport({ ...ok, what: 7 })).toBeNull();
