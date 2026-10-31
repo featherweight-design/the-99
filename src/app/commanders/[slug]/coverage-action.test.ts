@@ -190,11 +190,8 @@ describe("retryCoverageFigures", () => {
     scoreOneCommander.mockResolvedValue({ synergyState: "ok", roleBasis: "labels", roleCards });
     await retryCoverageFigures("korvold", "free", "labels");
     expect(loadFreePool).toHaveBeenCalledTimes(1);
-    expect(loadFreePool.mock.calls[0][0]).toBe("user_1");
-    // The page-basis env the action derives from RESOLVED (a copy carrying the page's basis), the same
-    // object the score is handed.
-    const handed = loadFreePool.mock.calls[0][1] as NodeJS.ProcessEnv | undefined;
-    expect(handed !== undefined && handed === scoreOneCommander.mock.calls[0][4]).toBe(true);
+    // The free pool is read with no env (its claim read decides no switch).
+    expect(loadFreePool).toHaveBeenCalledWith("user_1");
     expect(scoreOneCommander).toHaveBeenCalledWith("user_1", "korvold", "korvold", [
       { oracleId: "free-1" },
     ], RESOLVED);
