@@ -192,7 +192,10 @@ describe("seen translation", () => {
           const e = aboutEntries.find((x) => x.id === id);
           return e && !e.switch ? [e.since] : [];
         });
+      const drawn = new Set(keys(visible));
       const expected = units(visible).filter((u) => {
+        // A unit riding a drawn label is told with it, never on its own.
+        if (u.announcedWith && drawn.has(u.announcedWith)) return false;
         if (u.legacy.some((id) => metIds.has(id))) return false;
         const own = typeof u.switch === "string" ? u.switch : null;
         const isAnnouncement = own !== null && u.legacy.some((id) => id.endsWith(`@${own}`) || aboutEntries.find((x) => x.id === id)?.switch === own);
@@ -233,6 +236,21 @@ describe("seen translation", () => {
     // Reading it once settles it.
     const read: SeenState = { ...met, ids: [...met.ids, ...seenKeysOf(visibleSections(ALL_ON), "decks")] };
     expect(unseenUnits(visibleSections(ALL_ON), read).map((u) => u.key)).not.toContain(v2);
+  });
+
+  it("tells a reader who only visited /about/decks the v2 label alone, never the pick card it rides", () => {
+    const v2 = sentenceKey("decks/analysis/suggested", "SUGGESTED_CHANGES_V2_ENABLED");
+    const v1On = env({ ...(ALL_ON as Record<string, string>), SUGGESTED_CHANGES_V2_ENABLED: "off" });
+    // Unit keys only: no Reference visit, so no "suggested-changes" id.
+    const visited: SeenState = { version: 16, ids: seenKeysOf(visibleSections(v1On), "decks") };
+    expect(visited.ids).not.toContain("suggested-changes");
+    const told = unseenUnits(visibleSections(ALL_ON), visited).map((u) => u.key);
+    expect(told.filter((k) => k.startsWith("decks/") || k === "rule/pick" || k.includes("SUGGESTED_CHANGES_V2_ENABLED"))).toEqual([v2]);
+  });
+
+  it("rides only a label that exists", () => {
+    const labelKeys = new Set(ABOUT_SECTIONS.flatMap((s) => s.labels.map((l) => labelKey(s, l))));
+    for (const [id, r] of Object.entries(ABOUT_RULES)) if (r.announcedWith) expect(labelKeys, id).toContain(r.announcedWith);
   });
 
   it("treats a switch on only through an app-wide override as heard, as production resolves it", () => {

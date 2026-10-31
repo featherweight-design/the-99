@@ -114,7 +114,10 @@ describe("about pages copy model", () => {
       // A variant id, which a Reference visit writes; or a switch the entry's own caption lines draw under, which only
       // carries that switch to the unit (`suggested-changes@SUGGESTED_CHANGES_V2_ENABLED`, Small items 7 addendum 4).
       const e = ENTRY.get(base)!;
-      const lineSwitches = Object.values(e.captionLineSwitches ?? {}).flatMap((one) => (Array.isArray(one) ? one : [one]));
+      expect(sw.startsWith("!"), id).toBe(false);
+      const lineSwitches = Object.values(e.captionLineSwitches ?? {})
+        .flatMap((one) => (Array.isArray(one) ? one : [one]))
+        .filter((one) => one !== undefined && !one.startsWith("!"));
       expect(e.variant?.switch === sw || lineSwitches.includes(sw), id).toBe(true);
     }
   });

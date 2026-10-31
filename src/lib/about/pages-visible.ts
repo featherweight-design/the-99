@@ -48,6 +48,8 @@ export interface VisibleUnit {
   legacy: readonly string[];
   /** The switches of the kept sentences that announce on their own (a negated switch never announces). */
   sentenceSwitches: readonly AboutSwitch[];
+  /** A drawn label this unit rides: it is never announced on its own while that label is drawn. */
+  announcedWith?: string;
   /** A rule's diagram, with every part (and chip) whose switch is off removed, as its sentences are. */
   diagram?: AboutRuleDiagram;
 }
@@ -87,6 +89,7 @@ function unit(
     key, area: section.area, section: section.id, kind, text,
     ...("lead" in u ? { lead: u.lead } : {}),
     switch: u.switch, since: u.since, legacy: u.legacy, sentenceSwitches,
+    ...("announcedWith" in u && u.announcedWith ? { announcedWith: u.announcedWith } : {}),
     ...("diagram" in u ? { diagram: resolveDiagram(u.diagram, env) } : {}),
   };
 }
@@ -174,7 +177,10 @@ const unitsOf = (visible: readonly VisibleSection[]) => visible.flatMap((s) => [
  *  introduced to the pages rather than told about each part of them, so nothing is new to them. */
 export function unseenUnits(visible: readonly VisibleSection[], seen: SeenState): UnseenUnit[] {
   if (isFirstRun(seen)) return [];
+  const drawn = new Set(unitsOf(visible).map((u) => u.key));
   return unitsOf(visible).flatMap((u) => {
+    // A unit riding a drawn label is told with that label, never on its own (Small items 7 addendum 4).
+    if (u.announcedWith && drawn.has(u.announcedWith)) return [];
     // A unit told as a whole carries its sentences with it; a sentence is told on its own only inside a seen unit.
     if (!unitSeen(u, seen)) return [{ key: u.key, area: u.area, section: u.section, ack: unitKeys(u) }];
     return u.sentenceSwitches.filter((sw) => !sentenceSeen(u, sw, seen)).map((sw) => {

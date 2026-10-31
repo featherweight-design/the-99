@@ -41,6 +41,9 @@ export interface AboutRule {
   sentences?: Partial<Record<string, AboutLineSwitch>>;
   since: number;
   legacy: readonly string[];
+  /** A label's key (`<area>/<section>/<label>`) this rule rides: while that label is drawn, the rule is never announced
+   *  on its own, so turning its switch on tells the label alone (Small items 7 addendum 4). */
+  announcedWith?: string;
   /** The rule card's small diagram (handoff call 2), drawn from the app's own shapes with these fixtures. */
   diagram: AboutRuleDiagram;
 }
@@ -895,14 +898,15 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
   },
   // Small items 6, item 3 (About-Errata board, call a): Suggested changes v2's pick card, first in Analysis's Good to
   // know. One 250 column of compact rows, built only from the shipped parts: Ghalta asks for two, so three are offered a
-  // side, two picked (the changed-row edge) and one left (its edge dashed). Its legacy is the Suggested changes entry
-  // alone, without the v2 label's `@` id, so v2 turning on does not tell it as New: the label's rewrite is v2's one
-  // announcement (Small items 7 addendum 4; About ruling 6: announcing is Hugh's call).
+  // side, two picked (the changed-row edge) and one left (its edge dashed). It rides the `suggested` label
+  // (`announcedWith`), so while that label is drawn v2 turning on never tells this card as New: the label's rewrite is
+  // v2's one announcement (Small items 7 addendum 4; About ruling 6: announcing is Hugh's call).
   pick: {
     text: "Suggested changes keeps the deck at 99. Ask for two and you get three to add and three to cut; pick two of each. The counts have to match before Apply, and one Undo takes the whole set back.",
     switch: "SUGGESTED_CHANGES_V2_ENABLED",
     since: 16,
     legacy: ["suggested-changes"],
+    announcedWith: "decks/analysis/suggested",
     diagram: {
       kind: "card-row",
       columns: [{ w: 250, gap: 5, parts: [
