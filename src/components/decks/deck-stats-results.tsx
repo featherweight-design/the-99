@@ -85,7 +85,8 @@ export function ResultsCard({ results, onLogGame }: { results: ResultsStats; onL
                   </li>
                 ))}
               </ol>
-              {beads.length > 0 ? (
+              {/* Under five beads the span line beside the record already names the first and last game (Small items 8, item 4). */}
+              {beads.length >= 5 ? (
                 <div aria-hidden="true" data-results-ends className="flex justify-between gap-[8px] whitespace-nowrap font-mono text-[10.5px] text-[color:var(--fg-muted)]">
                   <span>{formatPlayed(beads[0].playedAt)}</span>
                   {beads.length > 1 ? <span>{formatPlayed(beads[beads.length - 1].playedAt)}</span> : null}
