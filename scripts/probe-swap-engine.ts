@@ -280,11 +280,12 @@ async function main() {
   //     first read below is the text path's. Seeded labels for Mana Vault and two of its stand-ins must
   //     change the read: one stand-in labelled as burst mana fails the ramp-kind gate and
   //     leaves, one labelled with an extra theme gains it, and every unlabelled row is the text path's.
+  // Debris from a run that died before its cleanup carries this model, which no real label does, so
+  // sweeping it can never remove anyone's label. It goes before the baseline read, which would read it.
+  await fixture.execute(sql`delete from card_labels where model = ${LABEL_MODEL}`);
   const beforeRead = await loadStandIns(deckId, USER, vault.oracle_id, true, process.env);
   const beforeRows = all(beforeRead!).filter((s) => !s.isUniversal);
-  // Seeds go only where no label row exists. Debris from a run that died before its cleanup carries this
-  // model, which no real label does, so sweeping it can never remove anyone's label.
-  await fixture.execute(sql`delete from card_labels where model = ${LABEL_MODEL}`);
+  // Seeds go only where no label row exists.
   const labelled = new Set((await rows<{ oracle_id: string }>(sql`
     select oracle_id from card_labels where oracle_id = any(${sql.param([vault.oracle_id, ...beforeRows.map((s) => s.card.oracleId)])}::uuid[])`))
     .map((r) => r.oracle_id));
