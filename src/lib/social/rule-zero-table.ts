@@ -28,6 +28,7 @@ import {
   type Drivers, type ReadSeat, type SeatState, type SeatValue, type TableRead,
 } from "../rule-zero/rules";
 import { resolveSwitchEnv } from "../switches/snapshot";
+import { ownedDeckArt } from "./rule-zero-art";
 import { ruledSeatOwnersOf, SEATS_MAX, seatDeckVisible } from "./rule-zero";
 import { isUuid } from "./rules";
 
@@ -308,12 +309,18 @@ export async function loadDeckChoices(viewerId: string, tableId: unknown): Promi
       });
     }
     return orderChoices(graded).map(({ distance: _d, lastPlayed: _p, lastEdited: _e, ...c }) => c);
-  }, { isolationLevel: "repeatable read" });
+  }, { isolationLevel: "repeatable read" }).then(async (choices) => {
+    const art = await ownedDeckArt(choices.map((c) => c.deckId));
+    return choices.map((c) => ({ ...c, artCropUri: art.get(c.deckId)?.commander ?? c.artCropUri }));
+  });
 }
 
 export async function loadTable(viewerId: string, tableId: unknown): Promise<TableView | null> {
   if (!isUuid(tableId)) return null;
-  return db.transaction(async (tx) => {
+  // Each drawn seat's deck, by seat number, for its owner's art once the snapshot is done (other players' deck ids
+  // never leave this function).
+  const seatDecks = new Map<number, string>();
+  const view = await db.transaction(async (tx): Promise<TableView | null> => {
     const [table] = await tableGrantQuery(viewerId, tableId, tx);
     if (!table) return null;
     const rows = await readSeats(viewerId, tableId, tx);
@@ -337,6 +344,7 @@ export async function loadTable(viewerId: string, tableId: unknown): Promise<Tab
         continue;
       }
       const { legality, declared, state, verdict, profile } = graded;
+      seatDecks.set(r.seat, r.deckId);
       built.push({
         ...base,
         deck: {
@@ -383,6 +391,29 @@ export async function loadTable(viewerId: string, tableId: unknown): Promise<Tab
     };
   // Repeatable read, never read-only: a read-only transaction poisons the pooled connection (cuts-read.ts).
   }, { isolationLevel: "repeatable read" });
+  return view && withOwnedArt(view, seatDecks);
+}
+
+/** The seats' and the offer's art, from the copy each deck's owner holds (`ownedDeckArt`), else the oracle art read. */
+async function withOwnedArt(view: TableView, seatDecks: ReadonlyMap<number, string>): Promise<TableView> {
+  const art = await ownedDeckArt([...seatDecks.values(), ...view.offer.map((o) => o.deckId)]);
+  if (art.size === 0) return view;
+  return {
+    ...view,
+    seats: view.seats.map((s) => {
+      const own = s.deck && art.get(seatDecks.get(s.seat) ?? "");
+      if (!s.deck || !own) return s;
+      return {
+        ...s,
+        deck: {
+          ...s.deck,
+          commander: { ...s.deck.commander, artCropUri: own.commander ?? s.deck.commander.artCropUri },
+          partner: s.deck.partner && { ...s.deck.partner, artCropUri: own.partner ?? s.deck.partner.artCropUri },
+        },
+      };
+    }),
+    offer: view.offer.map((o) => ({ ...o, artCropUri: art.get(o.deckId)?.commander ?? o.artCropUri })),
+  };
 }
 
 export type ReadOnTheSpot = "read" | "busy" | "skipped" | "refused";
@@ -471,14 +502,20 @@ export type ClosedTable = { podName: ThirdPartyName; setBy: ThirdPartyName | nul
  */
 export async function loadClosedTable(viewerId: string, tableId: unknown): Promise<ClosedTable | null> {
   if (!isUuid(tableId)) return null;
-  return db.transaction(async (tx) => {
+  const read = await db.transaction(async (tx) => {
     const [table] = await tableGrantQuery(viewerId, tableId, tx, true);
     if (!table) return null;
-    const rows = await readSeats(viewerId, tableId, tx);
-    return {
-      podName: named(table.podName),
-      setBy: table.setBy === viewerId || table.setByName === null ? null : named(table.setByName),
-      faces: rows.map((r) => ({ name: r.userId === viewerId ? r.displayName : named(r.displayName), artCropUri: r.commanderArt })),
-    };
+    return { table, rows: await readSeats(viewerId, tableId, tx) };
   }, { isolationLevel: "repeatable read" });
+  if (!read) return null;
+  const { table, rows } = read;
+  const art = await ownedDeckArt(rows.flatMap((r) => (r.deckId ? [r.deckId] : [])));
+  return {
+    podName: named(table.podName),
+    setBy: table.setBy === viewerId || table.setByName === null ? null : named(table.setByName),
+    faces: rows.map((r) => ({
+      name: r.userId === viewerId ? r.displayName : named(r.displayName),
+      artCropUri: (r.deckId ? art.get(r.deckId)?.commander : null) ?? r.commanderArt,
+    })),
+  };
 }

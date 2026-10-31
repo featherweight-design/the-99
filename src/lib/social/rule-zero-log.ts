@@ -21,6 +21,7 @@ import { named } from "../person-name/mint";
 import { SEAT_LABEL_MAX } from "../decks/game-seats";
 import { ruledSeatOwnersOf, seatDeckVisible } from "./rule-zero";
 import { cleanName, isUuid } from "./rules";
+import { ownedDeckArt } from "./rule-zero-art";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -139,7 +140,15 @@ export async function tablePrefill(viewerId: string, tableId: unknown, deckId: s
     async (tx) => tableSeatsQuery(viewerId, tableId, tx, await ruledSeatOwnersOf(viewerId, tableId, tx)),
     { isolationLevel: "repeatable read" },
   );
-  return prefillFrom(rows, viewerId, tableId, deckId);
+  const prefill = prefillFrom(rows, viewerId, tableId, deckId);
+  if (!prefill) return null;
+  // Each seat's art from the copy its deck's owner holds, as the table draws it (`ownedDeckArt`), else the oracle art.
+  const deckOf = new Map(rows.flatMap((r) => (r.deckId !== null ? [[r.seat, r.deckId] as const] : [])));
+  const art = await ownedDeckArt([...deckOf.values()]);
+  return {
+    ...prefill,
+    seats: prefill.seats.map((s) => ({ ...s, artCropUri: art.get(deckOf.get(s.seat) ?? "")?.commander ?? s.artCropUri })),
+  };
 }
 
 /** What a table seat becomes: a friend ask `resolveFriendSeatsIn` resolves, or anyone by the deck's commanders. */
