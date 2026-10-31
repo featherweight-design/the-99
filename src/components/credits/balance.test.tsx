@@ -55,6 +55,9 @@ describe("the Welcome cell's line", () => {
     expect(screen.getByText("credit to spend")).toBeTruthy();
     rerender(<Balance total={2} cells={cells(AT)} freeLimit={1} nextAtMs={null} welcome={null} />);
     expect(screen.getByText("credits to spend")).toBeTruthy();
+    expect(screen.getByRole("region", { name: "credits to spend" })).toBeTruthy();
+    rerender(<Balance total={0} cells={cells(AT)} freeLimit={1} nextAtMs={null} welcome={null} />);
+    expect(screen.getByText("credits to spend")).toBeTruthy();
   });
 
   it("with every row off the date stands alone", () => {
