@@ -8,10 +8,12 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh, push: vi.fn() }
 const makeCode = vi.fn();
 const revokeCode = vi.fn();
 const setLaunchDate = vi.fn();
+const exportLaunchList = vi.fn();
 vi.mock("../../app/admin/invites/flyer-actions", () => ({
   makeCode: (...a: unknown[]) => makeCode(...a),
   revokeCode: (...a: unknown[]) => revokeCode(...a),
   setLaunchDate: (...a: unknown[]) => setLaunchDate(...a),
+  exportLaunchList: (...a: unknown[]) => exportLaunchList(...a),
 }));
 
 import { flyersView, type FlyerCodeRead } from "../../lib/admin/flyers-rule";
@@ -48,10 +50,9 @@ describe("FlyerCodes", () => {
     expect(within(off as HTMLElement).queryByRole("link", { name: "Print" })).toBeNull();
   });
 
-  it("links Print to the code's print page and draws no CSV", () => {
+  it("links Print to the code's print page", () => {
     render(<FlyerCodes view={view} />);
     expect(screen.getAllByRole("link", { name: "Print" }).map((a) => a.getAttribute("href"))).toEqual(["/admin/invites/flyers/MOX4QK", "/admin/invites/flyers/KNT3HZ"]);
-    expect(screen.queryByText("Download CSV")).toBeNull();
   });
 
   it("draws Revoke on every live and full row and none on a revoked one", () => {
@@ -266,5 +267,61 @@ describe("the launch date row", () => {
     fireEvent.click(screen.getByTestId("launch-date-save"));
     expect((await screen.findByRole("alert")).textContent).toBe("Didn’t save. Nothing changed.");
     expect(dateInput().value).toBe("2026-11-20");
+  });
+});
+
+// The launch card's top row (flyer admin PR C; CSV.dc.html C3/C4): Download CSV only when the list holds an address.
+describe("Download CSV", () => {
+  const withListed = (listed: number) => flyersView({ codes: [], listed, held: 40, open: [], holds: [], launchDate: null }, new Date("2026-10-30T12:00:00Z"));
+  let saved: { filename: string; type: string; text: string }[];
+
+  beforeEach(() => {
+    exportLaunchList.mockReset();
+    saved = [];
+    const blobs = new Map<string, Blob>();
+    let n = 0;
+    URL.createObjectURL = vi.fn((b: Blob) => {
+      const u = `blob:x${n++}`;
+      blobs.set(u, b);
+      return u;
+    }) as typeof URL.createObjectURL;
+    URL.revokeObjectURL = vi.fn();
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
+      const blob = blobs.get(this.href)!;
+      void blob.text().then((text) => saved.push({ filename: this.download, type: blob.type, text }));
+    });
+  });
+
+  it("is hidden at zero addresses and shown with some", () => {
+    const { unmount } = render(<FlyerCodes view={withListed(0)} />);
+    expect(screen.queryByText("Download CSV")).toBeNull();
+    unmount();
+    render(<FlyerCodes view={withListed(23)} />);
+    expect(within(screen.getByTestId("launch-list-card")).getByRole("button", { name: "Download CSV" })).toBeTruthy();
+  });
+
+  it("saves what the server returns under its filename as text/csv", async () => {
+    exportLaunchList.mockResolvedValue({ ok: true, filename: "the-99-launch-list-2026-11-02.csv", csv: "email,store,code,added_at\r\n" });
+    render(<FlyerCodes view={withListed(2)} />);
+    fireEvent.click(screen.getByTestId("launch-csv"));
+    await waitFor(() => expect(saved).toHaveLength(1));
+    expect(saved[0]).toEqual({ filename: "the-99-launch-list-2026-11-02.csv", type: "text/csv;charset=utf-8", text: "email,store,code,added_at\r\n" });
+  });
+
+  it("saves nothing for a refusal and lets the button be pressed again", async () => {
+    exportLaunchList.mockResolvedValue({ ok: false, error: "off" });
+    render(<FlyerCodes view={withListed(2)} />);
+    fireEvent.click(screen.getByTestId("launch-csv"));
+    await waitFor(() => expect((screen.getByTestId("launch-csv") as HTMLButtonElement).disabled).toBe(false));
+    expect(saved).toHaveLength(0);
+    expect(exportLaunchList).toHaveBeenCalledTimes(1);
+  });
+
+  it("saves nothing when the reply is lost", async () => {
+    exportLaunchList.mockRejectedValue(new Error("offline"));
+    render(<FlyerCodes view={withListed(2)} />);
+    fireEvent.click(screen.getByTestId("launch-csv"));
+    await waitFor(() => expect((screen.getByTestId("launch-csv") as HTMLButtonElement).disabled).toBe(false));
+    expect(saved).toHaveLength(0);
   });
 });

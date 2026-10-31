@@ -17,7 +17,10 @@ vi.mock("../../../lib/flyer/admin", () => ({ makeFlyerCode: (...a: unknown[]) =>
 const writeLaunchDate = vi.fn();
 vi.mock("../../../lib/flyer/launch-date", () => ({ setLaunchDate: (...a: unknown[]) => writeLaunchDate(...a) }));
 
-const { makeCode, revokeCode, setLaunchDate } = await import("./flyer-actions");
+const exportFile = vi.fn();
+vi.mock("../../../lib/flyer/launch-export", () => ({ exportLaunchListFile: (...a: unknown[]) => exportFile(...a) }));
+
+const { makeCode, revokeCode, setLaunchDate, exportLaunchList } = await import("./flyer-actions");
 const G = "11111111-1111-4111-8111-111111111111";
 const C = "22222222-2222-4222-8222-222222222222";
 
@@ -29,6 +32,7 @@ beforeEach(() => {
   makeFlyerCode.mockReset().mockResolvedValue({ ok: true, id: "x", code: "MOX4QK" });
   revokeFlyerCode.mockReset().mockResolvedValue({ ok: true, changed: true });
   writeLaunchDate.mockReset().mockResolvedValue({ ok: true, state: "saved", value: "2026-12-01", changed: true });
+  exportFile.mockReset().mockResolvedValue({ filename: "the-99-launch-list-2026-11-02.csv", csv: "email,store,code,added_at\r\n", rows: 0 });
 });
 
 describe("makeCode", () => {
@@ -125,5 +129,38 @@ describe("setLaunchDate", () => {
     const spy = vi.spyOn(console, "error").mockImplementation(() => undefined);
     expect(await setLaunchDate("2026-12-01")).toEqual({ ok: false, error: "failed" });
     spy.mockRestore();
+  });
+});
+
+describe("exportLaunchList", () => {
+  it("asks the gate first, then exports as the gate's admin and returns the file", async () => {
+    expect(await exportLaunchList()).toEqual({ ok: true, filename: "the-99-launch-list-2026-11-02.csv", csv: "email,store,code,added_at\r\n" });
+    expect(gate).toHaveBeenCalledTimes(1);
+    expect(exportFile).toHaveBeenCalledWith("u_hugh");
+  });
+
+  it("does not run when the gate refuses", async () => {
+    gate.mockRejectedValueOnce(new Error("not an admin"));
+    await expect(exportLaunchList()).rejects.toThrow("not an admin");
+    expect(exportFile).not.toHaveBeenCalled();
+  });
+
+  it("refuses with the switch off and reads and audits nothing", async () => {
+    on = false;
+    expect(await exportLaunchList()).toEqual({ ok: false, error: "off" });
+    expect(exportFile).not.toHaveBeenCalled();
+  });
+
+  it("reports a failed export without the error's content, and returns no file", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    exportFile.mockRejectedValueOnce(new Error("select email from launch_list ... ana.r@example.com"));
+    expect(await exportLaunchList()).toEqual({ ok: false, error: "failed" });
+    expect(JSON.stringify(spy.mock.calls)).not.toContain("example.com");
+    spy.mockRestore();
+  });
+
+  it("does not revalidate: an export changes nothing the page draws", async () => {
+    await exportLaunchList();
+    expect(revalidatePath).not.toHaveBeenCalled();
   });
 });

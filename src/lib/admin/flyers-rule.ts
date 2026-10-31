@@ -56,7 +56,7 @@ export type FlyerRowView = {
 export type FlyersView = {
   meta: string;
   rows: FlyerRowView[];
-  launch: { title: string; meta: string; date: string | null };
+  launch: { title: string; meta: string; date: string | null; /** Addresses on the list: Download CSV shows only above zero. */ count: number };
 };
 
 export const flyerState = (c: Pick<FlyerCodeRead, "capacity" | "taken" | "revokedAt">): FlyerState =>
@@ -95,6 +95,7 @@ export function flyersView(read: FlyersRead, now: Date): FlyersView {
       title: copy.launchList(read.listed),
       meta: read.listed === 0 ? copy.launchListNone : [copy.launchListMeta, ...perCode].join(" · "),
       date: read.launchDate,
+      count: read.listed,
     },
   };
 }
