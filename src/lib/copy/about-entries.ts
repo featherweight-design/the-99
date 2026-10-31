@@ -1484,7 +1484,7 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Start one from a pod’s “Rule 0 check”, for 2 to 8 players.',
       'When you set the table, friends’ decks are listed. Anyone else picks their own.',
       '“Swap in” or “Change deck” changes yours. “Undo” changes it back.',
-      'A table closes 24 hours after it’s set. Its logged games stay.',
+      'A table closes the morning after it’s set. Its logged games stay.',
     ],
     since: 16,
   },

@@ -25,6 +25,7 @@ import type { Reader } from "./access";
 import { commanderCard, commanderColumns, facePrinting, faceJoin, toCommander, type ProfileCommander } from "./commander";
 import { socialFriendsEnabled } from "./flag";
 import { friendDecksIn, pickerSeesDeck } from "./games";
+import { tableClosesAt } from "../rule-zero/rules";
 import { isUuid } from "./rules";
 import { ownedDeckArt, type DeckArt } from "./rule-zero-art";
 
@@ -32,8 +33,6 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 import { SEATS_MAX, SEATS_MIN } from "./client-rules";
 export { SEATS_MAX, SEATS_MIN };
-/** How long a table stays open after it is set. */
-export const TABLE_HOURS = 24;
 
 /** A seat as setup asks for it: a pod member by `publicId`, and the deck the setter picked for them, if any. */
 export type SeatAsk = { member: string; deck: string | null };
@@ -157,9 +156,10 @@ async function resolveSeatsIn(tx: Tx, viewerId: string, podId: string, asks: rea
  * Set a table for the pod's night: 2 to 8 of its members, the viewer among them, seated in the order given. Under
  * the pod row's lock it applies the one rule (G7): an open table already there is answered `open` to a player seated
  * at it and `occupied` to anyone else, with nothing written. Two setups at once queue on the pod row, so the second
- * always finds the first's table. A setup that writes deletes the pod's expired tables first.
+ * always finds the first's table. A setup that writes deletes the pod's expired tables first. The table closes the next
+ * morning in the setter's `timeZone` (`tableClosesAt`).
  */
-export async function setTable(viewerId: string, podId: unknown, rawSeats: unknown): Promise<SetTableResult> {
+export async function setTable(viewerId: string, podId: unknown, rawSeats: unknown, timeZone: string): Promise<SetTableResult> {
   if (!isUuid(podId) || !validAsks(rawSeats)) return { kind: "refused", reason: "invalid" };
   const asks = rawSeats;
   return db.transaction(async (tx) => {
@@ -184,7 +184,7 @@ export async function setTable(viewerId: string, podId: unknown, rawSeats: unkno
     await tx.delete(ruleZeroTables).where(and(eq(ruleZeroTables.podId, podId), sql`${ruleZeroTables.expiresAt} <= now()`));
     const [table] = await tx
       .insert(ruleZeroTables)
-      .values({ podId, setBy: viewerId, expiresAt: sql`now() + make_interval(hours => ${TABLE_HOURS})` })
+      .values({ podId, setBy: viewerId, expiresAt: tableClosesAt(new Date(), timeZone) })
       .returning({ id: ruleZeroTables.id });
     await tx.insert(ruleZeroSeats).values(seats.map((s, i) => ({ tableId: table.id, userId: s.userId, seat: i + 1, deckId: s.deckId })));
     return { kind: "set", tableId: table.id } as const;

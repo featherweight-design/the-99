@@ -27,7 +27,7 @@ describe("ruleZeroCopy", () => {
     expect(copy.setup.friendDecksFoot).toBe("Name and commander only. Brackets appear once the table is set.");
     expect(copy.read.nothingBody).toBe("A read needs two seats with decks we’ve read.");
     expect(plain(copy.expired.body(named("Thursday night"), named("Colin")))).toBe(
-      "Thursday night’s table closed 24 hours after Colin set it. Games logged from it stay on each deck’s Games tab.",
+      "Thursday night’s table closed the morning after Colin set it. Games logged from it stay on each deck’s Games tab.",
     );
   });
 

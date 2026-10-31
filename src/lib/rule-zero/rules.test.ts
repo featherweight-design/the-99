@@ -11,6 +11,8 @@ import {
   tableRead,
   type SeatValue,
   type TableRead,
+  setterZone,
+  tableClosesAt,
 } from "./rules";
 
 const one = (bracket: Bracket): SeatValue => ({ kind: "one", bracket });
@@ -241,5 +243,43 @@ describe("startingDeck", () => {
 
   it("has nothing to start on with no decks", () => {
     expect(startingDeck([])).toBeNull();
+  });
+});
+
+describe("tableClosesAt", () => {
+  const LA = "America/Los_Angeles";
+  const at = (iso: string) => new Date(iso);
+
+  it("closes at the next 6:00 am in the setter's zone", () => {
+    // Fri 9:17 pm PDT closes Sat 6:00 am PDT.
+    expect(tableClosesAt(at("2026-10-31T04:17:00Z"), LA).toISOString()).toBe("2026-10-31T13:00:00.000Z");
+    // A table set in the afternoon runs to the next morning.
+    expect(tableClosesAt(at("2026-10-30T21:00:00Z"), LA).toISOString()).toBe("2026-10-31T13:00:00.000Z");
+  });
+
+  it("runs at least four hours: 1:30 am closes that 6:00 am, 2:00:01 am and 5:50 am the next", () => {
+    expect(tableClosesAt(at("2026-10-31T08:30:00Z"), LA).toISOString()).toBe("2026-10-31T13:00:00.000Z");
+    // The boundary is 2:00 am PDT (09:00Z): 6:00 am is exactly four hours on.
+    expect(tableClosesAt(at("2026-10-31T09:00:00Z"), LA).toISOString()).toBe("2026-10-31T13:00:00.000Z");
+    expect(tableClosesAt(at("2026-10-31T09:00:01Z"), LA).toISOString()).toBe("2026-11-01T14:00:00.000Z");
+    // 5:50 am PDT Sat closes 6:00 am Sun, which is PST after the clocks fall back.
+    expect(tableClosesAt(at("2026-10-31T12:50:00Z"), LA).toISOString()).toBe("2026-11-01T14:00:00.000Z");
+  });
+
+  it("refuses an invalid date rather than looping", () => {
+    expect(() => tableClosesAt(new Date(Number.NaN), LA)).toThrow(RangeError);
+  });
+
+  it("judges an unknown zone as UTC", () => {
+    expect(tableClosesAt(at("2026-10-31T00:00:00Z"), "Not/AZone").toISOString()).toBe("2026-10-31T06:00:00.000Z");
+  });
+});
+
+describe("setterZone", () => {
+  it("takes the browser's zone, else the IP's, else UTC", () => {
+    expect(setterZone("Europe/London", "America/New_York")).toBe("Europe/London");
+    expect(setterZone("bogus", "America/New_York")).toBe("America/New_York");
+    expect(setterZone(42, null)).toBe("UTC");
+    expect(setterZone(undefined, "nope")).toBe("UTC");
   });
 });

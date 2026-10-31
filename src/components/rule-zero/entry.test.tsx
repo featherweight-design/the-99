@@ -75,7 +75,7 @@ describe("the pod row (E1, E2, F1, F2)", () => {
     fireEvent.click(screen.getByRole("button", { name: ruleZeroCopy.setup.next }));
     fireEvent.click(screen.getByRole("button", { name: ruleZeroCopy.setup.set }));
     await waitFor(() => expect(m.push).toHaveBeenCalledWith("/friends/table/t9"));
-    expect(m.setTableAction).toHaveBeenCalledWith("p1", [{ member: "a", deck: null }, { member: "b", deck: null }]);
+    expect(m.setTableAction).toHaveBeenCalledWith("p1", [{ member: "a", deck: null }, { member: "b", deck: null }], Intl.DateTimeFormat().resolvedOptions().timeZone);
   });
 
   it("refreshes rather than opening anything when setup cannot be read", async () => {

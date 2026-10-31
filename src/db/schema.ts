@@ -3746,8 +3746,8 @@ export const spareKeep = pgTable("spare_keep", {
 
 /**
  * Rule 0 table check (plan `docs/superpowers/plans/2026-10-16-rule-zero.md`): one player sets a table for a pod's
- * night and every seated member sees the others' chosen decks for its 24 hours. Keyed by its own id, never by pod
- * (G7): "one open table per pod" is one check in `setTable`, under the pod row's lock, because "open" is
+ * night and every seated member sees the others' chosen decks until it closes the next morning (`tableClosesAt`).
+ * Keyed by its own id, never by pod (G7): "one open table per pod" is one check in `setTable`, under the pod row's lock, because "open" is
  * `expires_at > now()` and no index predicate can read the clock. Expired rows are not swept by a job: every read
  * filters `expires_at > now()`, the pod's next setup deletes its expired tables, and the account purge takes the rest.
  * No owner column and no `user_data_touch` trigger: Home reads its card per request (`PER_REQUEST_READS`).

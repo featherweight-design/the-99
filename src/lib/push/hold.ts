@@ -5,37 +5,12 @@
  * Time zones are IANA names the browser reported. An unknown name is judged as UTC rather than refused, so a bad row
  * still holds the night somewhere instead of waking a phone.
  */
+import { validTimeZone, wall, zonedToInstant } from "../time/zoned";
+
 export const HOLD_FROM = 21;
 export const RELEASE_AT = 9;
 
-export function validTimeZone(timeZone: string): boolean {
-  if (typeof timeZone !== "string" || timeZone.length === 0 || timeZone.length > 64) return false;
-  try {
-    new Intl.DateTimeFormat("en-US", { timeZone });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-type Wall = { y: number; mo: number; d: number; h: number; mi: number; s: number };
-
-function wall(at: Date, timeZone: string): Wall {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone, hourCycle: "h23", year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric",
-  }).formatToParts(at);
-  const n = (type: string) => Number(parts.find((p) => p.type === type)?.value);
-  return { y: n("year"), mo: n("month"), d: n("day"), h: n("hour"), mi: n("minute"), s: n("second") };
-}
-
-const asUtc = (w: Wall): number => Date.UTC(w.y, w.mo - 1, w.d, w.h, w.mi, w.s);
-
-/** The instant a wall-clock time falls on in a zone. Two passes, so a time after a DST change lands on the right side of it. */
-function zonedToInstant(w: Wall, timeZone: string): Date {
-  let guess = asUtc(w);
-  for (let i = 0; i < 2; i++) guess = asUtc(w) - (asUtc(wall(new Date(guess), timeZone)) - guess);
-  return new Date(guess);
-}
+export { validTimeZone };
 
 /** The zone a row is judged in: its own when valid, else UTC. */
 export const judgedZone = (timeZone: string): string => (validTimeZone(timeZone) ? timeZone : "UTC");

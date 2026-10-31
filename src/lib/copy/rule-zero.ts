@@ -2,7 +2,8 @@
 // Set by /copy-review on 2026-10-17 from the handoff's `design/design_handoff_the99_rule_zero/rule-zero · copy
 // strings.ts`, readiness gap 14 included: eight edits (the three "his" strings go pronoun-free, `swap.sub` names no
 // gesture, `setup.tooFew`, `setup.friendDecksFoot` and `read.nothingBody` tightened, `expired.body` drops "Tables last
-// the night", which contradicted the 24 hours). The honesty line was checked against the shipped detection strings
+// the night", which contradicted the 24 hours then; on 2026-10-31 a table began closing the next morning and
+// `expired.body` says "the morning after"). The honesty line was checked against the shipped detection strings
 // and kept. Reused shipped strings are named, not copied: BRACKET_NAMES, `bracketPhrase` and the findings labels
 // (deckAnalysisCopy), the provenance opener ("How we make these decisions"), the pod card's tags (socialCopy.pods),
 // the game log's "You" (gameSeatsCopy). Board references are to the handoff's boards (E, U, T, S, L phone; F, V, D,
@@ -217,7 +218,7 @@ export const ruleZeroCopy = {
   },
   expired: {
     title: "This table has closed",
-    body: (pod: Said, setter: Said) => personText`${pod}’s table closed 24 hours after ${setter} set it. Games logged from it stay on each deck’s Games tab.`,
+    body: (pod: Said, setter: Said) => personText`${pod}’s table closed the morning after ${setter} set it. Games logged from it stay on each deck’s Games tab.`,
     back: "Back to Friends",
   },
 } as const;

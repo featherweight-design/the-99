@@ -11,6 +11,7 @@
 import { declarationAsk } from "../bracket/declaration-ask";
 import type { Bracket, BracketLean, ComboRef, RuleId } from "../bracket/types";
 import { verdictSubLine, type RuledOutReason } from "../bracket/verdict-head";
+import { validTimeZone, wall, zonedToInstant } from "../time/zoned";
 
 /** What one seat contributes to the comparison: a bracket, or a range nobody answered. */
 export type SeatValue = { kind: "one"; bracket: Bracket } | { kind: "range"; lo: Bracket; hi: Bracket };
@@ -246,4 +247,33 @@ export function startingDeck<Id extends string>(
   const pool = played.length > 0 ? played : decks;
   const at = (d: (typeof decks)[number]) => (played.length > 0 ? d.lastPlayedAt!.getTime() : d.lastEditedAt.getTime());
   return pool.reduce((best, d) => (at(d) > at(best) ? d : best)).deckId;
+}
+
+/** A table closes at this hour in the setter's zone (Hugh, 2026-10-31: it ends the next morning). */
+export const CLOSE_HOUR = 6;
+/** ...at the first such morning at least this many hours after it was set, so a table set at 5:50 am runs a day. */
+export const MIN_OPEN_HOURS = 4;
+
+/**
+ * When a table set at `setAt` closes: the first `CLOSE_HOUR`:00 in `timeZone` at least `MIN_OPEN_HOURS` after it. An
+ * instant, so every viewer reads it in their own zone (`closesWhen`) and "open until" stays true wherever they are.
+ * An unknown zone is judged as UTC.
+ */
+export function tableClosesAt(setAt: Date, timeZone: string): Date {
+  if (Number.isNaN(setAt.getTime())) throw new RangeError("tableClosesAt: invalid date");
+  const zone = validTimeZone(timeZone) ? timeZone : "UTC";
+  const earliest = new Date(setAt.getTime() + MIN_OPEN_HOURS * 3_600_000);
+  const w = wall(earliest, zone);
+  for (let days = 0; ; days++) {
+    const day = new Date(Date.UTC(w.y, w.mo - 1, w.d + days));
+    const close = zonedToInstant({ y: day.getUTCFullYear(), mo: day.getUTCMonth() + 1, d: day.getUTCDate(), h: CLOSE_HOUR, mi: 0, s: 0 }, zone);
+    if (close.getTime() >= earliest.getTime()) return close;
+  }
+}
+
+/** The zone a table's close is judged in: the setter's browser, else the request's IP zone, else UTC. */
+export function setterZone(browser: unknown, fromIp: string | null): string {
+  if (typeof browser === "string" && validTimeZone(browser)) return browser;
+  if (fromIp !== null && validTimeZone(fromIp)) return fromIp;
+  return "UTC";
 }

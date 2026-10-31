@@ -14,6 +14,8 @@ const m = vi.hoisted(() => ({
 vi.mock("../../../lib/auth", () => ({ requireUserId: m.requireUserId }));
 vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitchEnv }));
 vi.mock("next/cache", () => ({ revalidatePath: m.revalidatePath }));
+const ip = vi.hoisted(() => ({ zone: null as string | null }));
+vi.mock("next/headers", () => ({ headers: async () => new Headers(ip.zone ? { "x-vercel-ip-timezone": ip.zone } : {}) }));
 vi.mock("../../../lib/social/rule-zero", () => ({ podSetup: m.podSetup, tableSetup: m.tableSetup, setTable: m.setTable, reseatTable: m.reseatTable }));
 
 import { loadPodSetupAction, loadTableSetupAction, reseatTableAction, setTableAction } from "./setup-actions";
@@ -51,6 +53,18 @@ describe("on", () => {
     expect(await loadPodSetupAction("p")).toBeNull();
   });
 
+  it("closes the table in the setter's browser zone, else the IP's, else UTC", async () => {
+    m.setTable.mockResolvedValue({ kind: "set", tableId: "t1" });
+    ip.zone = "America/New_York";
+    await setTableAction("p", SEATS, "America/Los_Angeles");
+    expect(m.setTable).toHaveBeenLastCalledWith("user_reader", "p", SEATS, "America/Los_Angeles");
+    await setTableAction("p", SEATS, "not a zone");
+    expect(m.setTable).toHaveBeenLastCalledWith("user_reader", "p", SEATS, "America/New_York");
+    ip.zone = null;
+    await setTableAction("p", SEATS);
+    expect(m.setTable).toHaveBeenLastCalledWith("user_reader", "p", SEATS, "UTC");
+  });
+
   it("maps setTable: set and open open a table, occupied and a refusal do not", async () => {
     m.setTable.mockResolvedValueOnce({ kind: "set", tableId: "t1" });
     expect(await setTableAction("p", SEATS)).toEqual({ ok: true, tableId: "t1" });
@@ -60,7 +74,7 @@ describe("on", () => {
     expect(await setTableAction("p", SEATS)).toEqual({ ok: false, reason: "occupied" });
     m.setTable.mockResolvedValueOnce({ kind: "refused", reason: "deck" });
     expect(await setTableAction("p", SEATS)).toEqual({ ok: false, reason: "refused" });
-    expect(m.setTable).toHaveBeenCalledWith("user_reader", "p", SEATS);
+    expect(m.setTable).toHaveBeenCalledWith("user_reader", "p", SEATS, "UTC");
   });
 
   it("maps reseatTable, and revalidates only a reseat that landed", async () => {
