@@ -632,8 +632,10 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   the database `DATABASE_URL` names, ON that account's own `pull:staging` snapshot: three decks, each named after its
   commander, one twelve short, one six over and one whole and COMMITTED through `commitVersion` (an unowned card over
   the stand-in limit, five games with opponents played on its version 1, two notes), each built from cards the account owns and no other deck claims, under three free
-  commanders of disjoint colors, so no row is contested and no list matches a precon; a friend, Alex, in `About pod`
-  sharing a spare of a card Played buys; one wishlist want; the reader's social name `Sam`. The earlier upload is the snapshot's own, and an account with none is
+  commanders of disjoint colors, so no row is contested and no list matches a precon; a friend, Alex, in `About pod`;
+  for the all-decks cart's By friend (`p-cart`, `d-cart`), four more (Torin, Merek, Varic, Zev) in `The Bros` and
+  `Thursday pod`, sparing cards the cart needs (Played's spare among Torin's), with three asks to Torin through the app's
+  own writes (answered yes, open, answered no), and the invites they spent put back to three; one wishlist want; the reader's social name `Sam`. The earlier upload is the snapshot's own, and an account with none is
   refused. It records its decks as marks on its own fixture friend's `user_prefs` row (`deckMark`, a row no surface draws, since every `user_prefs` read is the signed-in reader's own), and the capture finds them there. A rerun deletes the recorded decks (and any deck still named `About · …` from an earlier run) and purges the viewer's `about-fixture-%` friends first. The account is
   `ABOUT_FIXTURE_USER`, else `E2E_AUDIT_USER_EMAIL` read through Clerk's development instance. It calls
   `assertScratchBranch` before its first write.

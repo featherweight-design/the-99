@@ -419,6 +419,9 @@ for (const podName of ["The Bros", "Thursday pod"]) {
   if (!made) throw new Error(`createPod refused ${podName}`);
   cartPods.set(podName, made.id);
 }
+// Faces of their own, apart from Alex's and his opponents' (the three above).
+const cartFaces = (await sql`select oracle_id from cards where commander_legal and layout = 'normal'
+  and type_line like 'Legendary Creature%' and art_crop_uri is not null order by oracle_id offset 10 limit 4`) as { oracle_id: string }[];
 const cartFriendIds = new Map<string, { id: string; publicId: string }>();
 for (const [i, f] of CART_FRIENDS.entries()) {
   // Namespaced like Alex, so the next run's cleanup purges each with all he holds.
@@ -427,7 +430,7 @@ for (const [i, f] of CART_FRIENDS.entries()) {
   const link = await friends.createInvite(viewer);
   if (!link.ok) throw new Error("createInvite refused: the account holds too many open invites");
   await friends.redeemInvite(id, link.token);
-  await setCommander(id, faces[i % faces.length].oracle_id);
+  await setCommander(id, cartFaces[i].oracle_id);
   for (const [oracle, n] of f.spares) {
     await sql`insert into collection_items (user_id, oracle_id, quantity, set_code) values (${id}, ${oracle}, ${n}, 'fx')`;
   }
@@ -438,6 +441,8 @@ for (const [i, f] of CART_FRIENDS.entries()) {
   }
   cartFriendIds.set(f.name, { id, publicId: profile.publicId });
 }
+// Each redeemed invite spent one of the account's (`spend.ts`): back to three in hand, so Friends still draws its count line.
+await sql`update invite_balances set held = greatest(held, 3), updated_at = now() where user_id = ${viewer}`;
 // Three asks to Torin, the app's own writes: Arcane Signet's answered yes, Sol Ring's left open, Cultivate's answered no.
 const askEnv = { ...process.env, SOCIAL_FRIENDS_ENABLED: "true" };
 const torin = cartFriendIds.get("Torin")!;
