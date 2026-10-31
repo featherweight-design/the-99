@@ -7,7 +7,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ToastFrame, useToastClock } from "../collection/edit-toast";
-import { useCartPhone } from "../decks/cart/cart-toast-stack";
+import { useCartStacked } from "../decks/cart/cart-toast-stack";
 import { PersonText, type PersonParts } from "../../lib/person-name";
 
 /** `text` that names someone is `PersonParts` (`personText`): `PersonText` marks the span holding it. */
@@ -23,15 +23,14 @@ export function SocialToast({
   onDone: () => void;
   /** `status` for a receipt with an action (Rule 0's `Swapped to …` with Undo); a refusal stays `alert`. */
   role?: "alert" | "status";
-  /** `cart` is the cart's failed ask while a cart receipt is open (small items 7, item 3): on a phone it joins the cart
-   *  toast stack, 10px above the receipt, which keeps the floor for its Undo. From md, and for `center`, the toast
-   *  stays in its shipped centre slot, 16px above the tab bar (unchanged by the stack; it can overlap the receipt
-   *  between md and about 1224px, a pre-existing edge that is not drawn). The caller passes `cart` only while the receipt is open, so
+  /** `cart` is the cart's failed ask while a cart receipt is open (small items 7, item 3): below 1224px it joins the cart
+   *  toast stack, 10px above the receipt, which keeps the floor for its Undo (Small items 8, item 3). From 1224px, and
+   *  for `center`, the toast stays in its shipped centre slot, 16px above the tab bar. The caller passes `cart` only while the receipt is open, so
    *  when the receipt closes the toast drops at once to its shipped place. */
   placement?: "center" | "cart";
 }) {
-  const phone = useCartPhone();
-  const stacked = placement === "cart" && phone;
+  const cartStacked = useCartStacked();
+  const stacked = placement === "cart" && cartStacked;
   const ref = useRef<HTMLDivElement>(null);
   // Hover and focus hold the window separately, and it runs again only once both have let go.
   const [hover, setHover] = useState(false);

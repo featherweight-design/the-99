@@ -13,7 +13,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { deckToastStack } from "../decks/deck-toast-stack";
-import { cartToastStack, useCartPhone } from "../decks/cart/cart-toast-stack";
+import { cartToastStack, useCartStacked } from "../decks/cart/cart-toast-stack";
 import { useMomentHold } from "../../lib/moments/hold";
 import { settleCollectionWrite } from "../../app/collection/edit-actions";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
@@ -122,8 +122,8 @@ export function ToastFrame({
 }) {
   // A toast up over the page keeps every moment off it until it closes (moments plan, E6); the specimen does not.
   useMomentHold(placement !== "inline");
-  // The cart's toasts stand in the phone stack (`cart-toast-stack.tsx`); from md each keeps its fixed slot.
-  const cartPhone = useCartPhone();
+  // The cart's toasts stand in the phone stack (`cart-toast-stack.tsx`) below 1224px; from there each keeps its fixed slot.
+  const cartStacked = useCartStacked();
   const holds = onHold
     ? {
         onPointerEnter: () => onHold("hover", true),
@@ -151,7 +151,7 @@ export function ToastFrame({
   const slot =
     placement === "inline" ? "w-full max-w-[440px]"
       : placement === "cart"
-        ? (cartPhone ? `pointer-events-auto ${kind === "receipt" ? "order-2" : "order-1"}` : `fixed bottom-[22px] right-[22px] z-[60] w-[380px]`)
+        ? (cartStacked ? `pointer-events-auto ${kind === "receipt" ? "order-2" : "order-1"}` : `fixed bottom-[22px] right-[22px] z-[60] w-[380px]`)
         : placement === "credits" ? CREDITS_SLOT
           // In the stack: the receipt last (the floor), an alert first (above it); a press takes the toast, never the gap.
           : `pointer-events-auto ${kind === "receipt" ? "order-2" : "order-1"}`;
@@ -174,7 +174,7 @@ export function ToastFrame({
     </div>
   );
   // A deck toast only ever mounts from a press, in the browser.
-  if (placement === "cart" && cartPhone) return createPortal(frame, cartToastStack());
+  if (placement === "cart" && cartStacked) return createPortal(frame, cartToastStack());
   return placement === "deck" ? createPortal(frame, deckToastStack()) : frame;
 }
 

@@ -143,7 +143,7 @@ export function ByFriendList({
 }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [toast, setToast] = useState<SocialToastState | null>(null);
-  // While a receipt is open the failed ask joins its stack on the phone, 10px above it (small items 7, item 3).
+  // While a receipt is open the failed ask joins its stack below 1224px, 10px above it (small items 7, item 3).
   const receiptOpen = useCartGotIt()?.receiptOpen ?? false;
   const seq = useRef(0);
   // FOCUS AFTER AN ASK, as the modal does: the pressed Ask gives way to the line's Requested, so the focused control
