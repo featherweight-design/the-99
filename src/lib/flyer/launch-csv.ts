@@ -22,7 +22,7 @@ export type LaunchCsvRow = {
 
 export const LAUNCH_CSV_HEADER = ["email", "store", "code", "added_at"] as const;
 
-const FORMULA_START = /^[=+\-@]/;
+const FORMULA_START = /^[=+\-@\t\r]/;
 const NEEDS_QUOTES = /[",\r\n]/;
 
 export function csvCell(value: string | null): string {

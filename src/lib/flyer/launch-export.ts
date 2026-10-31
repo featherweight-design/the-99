@@ -3,14 +3,14 @@
  * already decided the actor is an admin and the trial's switch is on.
  *
  * The read of every address and the `launch_list_exported` `admin_events` row (the row count in `new_value`) commit in
- * ONE transaction, under the switch writes' advisory lock like the launch date's save, so an export is never
- * un-audited and a file that could not be built leaves no event. Addresses are strangers' personal data: the CSV goes
+ * ONE transaction, so an export is never un-audited and a file that could not be built leaves no event. (No
+ * switch-writes lock: the read and the audit row are atomic already, and that lock also gates automatic group joins, so
+ * a long export would stall sign-ups for nothing.) Addresses are strangers' personal data: the CSV goes
  * back to the caller in memory and is never logged.
  */
 import { asc, eq } from "drizzle-orm";
 import { db } from "../../db";
 import { adminEvents, flyerCodes, launchList } from "../../db/schema";
-import { lockSwitchWrites } from "../switches/write-lock";
 import { launchListCsv, launchListFilename } from "./launch-csv";
 
 export type LaunchListExport = { filename: string; csv: string; rows: number };
@@ -18,7 +18,6 @@ export type LaunchListExport = { filename: string; csv: string; rows: number };
 export async function exportLaunchListFile(actorId: string, deps: { now?: Date } = {}): Promise<LaunchListExport> {
   const now = deps.now ?? new Date();
   return db.transaction(async (tx) => {
-    await lockSwitchWrites(tx);
     const rows = await tx
       .select({ email: launchList.email, store: flyerCodes.label, code: flyerCodes.code, addedAt: launchList.createdAt })
       .from(launchList)
