@@ -1,6 +1,12 @@
 # Feature flags live only in the database (plan, lane 9b, 2026-10-31)
 
-Approved by Hugh, routed by the-99-orchestrator. **Risky** (flag resolution). Every code PR gets one Copilot round, once the budget resets on 11-01, or a Claude review under the budget-stop rule.
+Approved by Hugh, routed by the-99-orchestrator. **Risky** (flag resolution).
+
+**Rulings (the orchestrator as Hugh's proxy, 2026-10-31):**
+
+- `killed` as a third, app-only value that beats every row: approved.
+- The rename as a shim plus batched PRs: approved.
+- The admin kill control: a Design item, yes. PR 3 waits for its handoff. Every other PR proceeds. Every code PR gets one Copilot round, once the budget resets on 11-01, or a Claude review under the budget-stop rule.
 
 ## Goal
 
