@@ -50,7 +50,7 @@ export const TOOLS = [
   { id: "top-off", group: "tune", switch: null, entry: "auto-fill", labels: ["decks/your-deck/mix"], target: "top-off", lands: { kind: "deck", tab: "deck" }, credit: null, needsDeck: true },
   { id: "proposed-cuts", group: "tune", switch: "PROPOSED_CUTS_ENABLED", entry: "proposed-cuts", labels: ["decks/analysis/cuts"], target: "proposed-cuts", lands: { kind: "deck", tab: "analysis" }, credit: hub.cuts.cost, needsDeck: true },
   { id: "suggested-changes", group: "tune", switch: "TUNING_ENABLED", entry: "suggested-changes", labels: ["decks/analysis/suggested"], target: "suggested-changes", lands: { kind: "deck", tab: "analysis" }, credit: hub.suggested.cost, needsDeck: true },
-  { id: "mana-balance", group: "tune", switch: "MANA_BALANCE_ENABLED", entry: "mana-balance", labels: ["decks/analysis/mana"], target: "mana-balance", lands: { kind: "deck", tab: "analysis" }, credit: hub.mana.cost, needsDeck: true },
+  { id: "mana-balance", group: "tune", switch: "ANALYSIS_TAB_ENABLED", entry: "mana-balance", labels: ["decks/analysis/mana"], target: "mana-balance", lands: { kind: "deck", tab: "analysis" }, credit: hub.mana.cost, needsDeck: true },
   // Buy smarter
   { id: "stand-ins", group: "buy", switch: "SWAP_TOOLS_ENABLED", entry: "stand-ins", labels: ["shopping/deck-shopping/standins"], target: "stand-ins", lands: { kind: "deck", tab: "deck", view: "shopping" }, credit: null, needsDeck: true },
   { id: "friend-spares", group: "buy", switch: "SOCIAL_FRIENDS_ENABLED", entry: "friend-spares", labels: ["shopping/deck-shopping/spare"], target: "friend-spares", lands: { kind: "deck", tab: "deck", view: "shopping" }, credit: null, needsDeck: true },

@@ -65,7 +65,7 @@ const tabs = async (query: Record<string, string | string[]> = { tab: "reference
 const tiles = async (query: Record<string, string | string[]> = {}) => find(await draw(query), AboutIndex)!.props.tiles as IndexTile[];
 
 const DECK_SWITCHES = [
-  "PROPOSED_CUTS_ENABLED", "TUNING_ENABLED", "MANA_BALANCE_ENABLED", "SWAP_TOOLS_ENABLED", "SOCIAL_FRIENDS_ENABLED",
+  "PROPOSED_CUTS_ENABLED", "TUNING_ENABLED", "SWAP_TOOLS_ENABLED", "SOCIAL_FRIENDS_ENABLED",
   "ANALYSIS_TAB_ENABLED",
 ];
 

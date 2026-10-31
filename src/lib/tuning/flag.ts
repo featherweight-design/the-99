@@ -1,3 +1,5 @@
+import { analysisTabEnabled } from "../decks/analysis-flag";
+
 /**
  * Whether this deployment draws "Suggested changes" (deck tuning): the empty state's Analyze-time
  * description field, the limits box, Additional notes, and the server actions that run and act
@@ -54,12 +56,13 @@ export type HubTool = "suggested" | "mana" | "cuts";
 
 /**
  * The tools the Tuning hub would draw, read from each tool's own switch: no switch of its own
- * (orchestrator, 2026-10-11). Each of these already needs the Analysis tab.
+ * (orchestrator, 2026-10-11). Each of these already needs the Analysis tab. Mana Balance is retired
+ * as a switch (always on), so it is a tool whenever the Analysis tab is on.
  */
 export function hubTools(env: NodeJS.ProcessEnv): HubTool[] {
   return [
     ...(tuningEnabled(env) ? ["suggested" as const] : []),
-    ...(manaBalanceEnabled(env) ? ["mana" as const] : []),
+    ...(analysisTabEnabled(env) ? ["mana" as const] : []),
     ...(proposedCutsEnabled(env) ? ["cuts" as const] : []),
   ];
 }

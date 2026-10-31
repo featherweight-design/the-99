@@ -305,9 +305,6 @@ interface BuilderShellProps {
   gamePrefill?: TablePrefill | null;
   /** `proposedCutsEnabled(env)`: whether the Analysis tab draws Proposed cuts after Suggested changes. */
   proposedCutsEnabled?: boolean;
-  /** `manaBalanceEnabled(env)`: whether the Analysis tab offers Mana Balance (a hub tile, or mounted
-   *  directly when it is the only tool on). */
-  manaBalanceEnabled?: boolean;
   /** `tuningHubEnabled(env)`: whether the Analysis tab draws the Tuning hub, mounting Suggested changes
    *  and Proposed cuts inside its tiles, and the trim line offers `Proposed cuts →`. Off, both
    *  tools mount directly, exactly as before the hub. */
@@ -384,7 +381,6 @@ export function BuilderShell({
   socialGames = false,
   gamePrefill = null,
   proposedCutsEnabled = false,
-  manaBalanceEnabled = false,
   tuningHubEnabled = false,
   suggestedChangesV2 = false,
   landing = null,
@@ -701,7 +697,7 @@ export function BuilderShell({
     // The tools mounted directly (hub off): Proposed cuts and, alone, Mana Balance.
     cutsSettled: tuningHubEnabled
       ? hubSettledKey === visitKey
-      : (!proposedCutsEnabled || cutsSettledKey === visitKey) && (!manaBalanceEnabled || manaSettledKey === visitKey),
+      : (!proposedCutsEnabled || cutsSettledKey === visitKey) && (!analysisEnabled || manaSettledKey === visitKey),
   });
   const opening = useOpeningGate(useOpenOnce(holding, visitKey, view === "analysis"), deck.id);
   // The credit note beside each press that also writes, and whether it does (`synopsis-note.ts`).
@@ -1549,9 +1545,9 @@ export function BuilderShell({
   // own shortcut only while that shortcut is not drawn (audit resolution 2), which the provider decides.
   // Not while Analysis is the open tab: the tab is then where the reader already is.
   const atSize = built === bodySize;
-  // Whether the Tuning hub draws for these permits. Mana Balance needs no reading, so with it on the hub draws for any
-  // deck. One rule for the hub and for the panel deciding where Suggested changes' landing target is.
-  const hubDraws = (permits: readonly Bracket[] | null) => permits !== null || built > bodySize || manaBalanceEnabled;
+  // Whether the Tuning hub draws for these permits. Mana Balance needs no reading and is always on with the Analysis
+  // tab, so the hub draws for any deck. One rule for the hub and for the panel deciding where Suggested changes' landing target is.
+  const hubDraws = (permits: readonly Bracket[] | null) => permits !== null || built > bodySize || analysisEnabled;
   const offAnalysis = view !== "analysis";
   // The tab is the moment's control but never the tool's target: a landing reaches the tool itself (its tile).
   const suggestedMoment = useMomentAnchor("suggested-changes", {
@@ -1942,8 +1938,8 @@ export function BuilderShell({
               justFilled={deck.filled && autoCount > 0}
               wasCounts={wasCounts}
               labelRows={labelRows}
-              // N2 (discovery R3): on Mana Balance's own switch, as gap 7 has it for `Proposed cuts →`.
-              onBalanceMana={!(manaBalanceEnabled && coloredPip)
+              // N2 (discovery R3): wherever Mana Balance is, which is wherever the Analysis tab is.
+              onBalanceMana={!(analysisEnabled && coloredPip)
                 ? undefined
                 : tuningHubEnabled
                   ? () => { setView("analysis"); setHubRequest({ tool: "mana", nonce: (hubNonce.current += 1) }); }
@@ -2067,7 +2063,7 @@ export function BuilderShell({
                     ) : null
                   }
                   cuts={proposedCutsEnabled ? cutsPanel(false) : undefined}
-                  mana={manaBalanceEnabled ? manaPanel : undefined}
+                  mana={analysisEnabled ? manaPanel : undefined}
                   hubDraws={hubDraws}
                   hub={!tuningHubEnabled ? undefined : (permits, drawn) => (
                     <TuningHub
@@ -2087,7 +2083,7 @@ export function BuilderShell({
                             v2: suggestedV2 ? { at: suggestedV2.at, over: suggestedV2.over, onTopOff: suggestedV2.onTopOff } : null,
                           }]
                           : []),
-                        ...(manaBalanceEnabled ? [{ tool: "mana" as const, panel: manaPanel }] : []),
+                        ...(analysisEnabled ? [{ tool: "mana" as const, panel: manaPanel }] : []),
                         ...(proposedCutsEnabled
                           ? [{ tool: "cuts" as const, panel: cutsPanel(true), over: Math.max(0, built - bodySize), total: built + (deck.partner !== null ? 2 : 1) }]
                           : []),

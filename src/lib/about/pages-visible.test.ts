@@ -490,11 +490,14 @@ describe("a section's sub-line", () => {
     expect(sub(off("ALL_DECKS_CART_ENABLED"), "all-decks")).not.toContain(ABOUT_SCREEN_OFF.trim());
   });
 
-  it("names Analysis's tuning tools only while all three are on, and keeps the bracket while they are off", () => {
-    expect(sub(ALL_ON, "analysis")).toBe("Which bracket your deck sits in, and why. Suggested changes, Proposed cuts and Mana Balance help you tune it.");
-    for (const sw of ["TUNING_ENABLED", "PROPOSED_CUTS_ENABLED", "MANA_BALANCE_ENABLED"]) {
+  it("names Analysis's tuning tools only while both paid tools are on, and keeps the bracket while they are off", () => {
+    const named = "Which bracket your deck sits in, and why. Suggested changes, Proposed cuts and Mana Balance help you tune it.";
+    expect(sub(ALL_ON, "analysis")).toBe(named);
+    for (const sw of ["TUNING_ENABLED", "PROPOSED_CUTS_ENABLED"]) {
       expect(sub(off(sw), "analysis"), sw).toBe("Which bracket your deck sits in, and why.");
     }
+    // Mana Balance's switch is retired (always on with the tab): set to off, it cuts nothing.
+    expect(sub(off("MANA_BALANCE_ENABLED"), "analysis")).toBe(named);
   });
 
   it("cuts a sentence naming a switched feature while that switch is off, and keeps the rest (Small items 3, item 4)", () => {
