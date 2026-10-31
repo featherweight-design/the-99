@@ -768,7 +768,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         id: "total",
         region: "shopping/all-decks/total",
         lead: "The total",
-        rest: " is the selected decks’ missing cards at single-copy prices. “Buy these at Mana Pool” sends them there.",
+        rest: " is the selected decks’ missing cards at single-copy prices. **Buy these at Mana Pool** sends them there.",
         switch: "ALL_DECKS_CART_ENABLED",
         since: 16,
         legacy: ["all-decks-cart"],
@@ -785,10 +785,16 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
       {
         id: "views",
         region: "shopping/all-decks/views",
-        lead: "By card, By deck, By friend",
-        rest: " read the same cart three ways. By friend lists each friend’s spares.",
+        // By friend is a view only with spare requests on: off, the lead names the two views there are (F2).
+        lead: "By card, By deck",
+        rest: "**, By friend** read the same cart three ways two ways. By friend lists each friend’s spares.",
         switch: "ALL_DECKS_CART_ENABLED",
-        sentences: { " By friend lists each friend’s spares.": "SPARE_REQUESTS_ENABLED" },
+        sentences: {
+          "**, By friend**": "SPARE_REQUESTS_ENABLED",
+          " three ways": "SPARE_REQUESTS_ENABLED",
+          " two ways": "!SPARE_REQUESTS_ENABLED",
+          " By friend lists each friend’s spares.": "SPARE_REQUESTS_ENABLED",
+        },
         since: 16,
         legacy: [],
       },

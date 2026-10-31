@@ -23,6 +23,7 @@ import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import type { PageWidth } from "../../../lib/about/page-shots";
 import { PIN_GUTTER, haloAt, pinsAt, type ScreenLabel, type ScreenModel, type ScreenShot } from "../../../lib/about/pins";
 import { PinDock, useDockSlot } from "./pin-dock";
+import { AboutText } from "./about-text";
 import { LandingCard, LandingShowMe, NewTag, useLabelLanding, useLandingRequest } from "../../discovery/label-landing";
 
 // The Ways-In board dims the screen around a lit region at 0.34; the Tools tab card keeps its own halo.
@@ -234,7 +235,7 @@ function LabelList({
                 </span>
                 <span className="text-[14px] leading-[1.5] text-[color:var(--fg-body)] [text-wrap:pretty]">
                   <b className="font-semibold text-[color:var(--fg)]">{l.lead}</b>
-                  {l.text}
+                  <AboutText text={l.text} />
                   {landed && <NewTag landing={landed} />}
                 </span>
               </button>

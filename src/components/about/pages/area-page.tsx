@@ -24,6 +24,7 @@ import { TryIt } from "./try-it";
 import { LabelLanding, type Landable, type PageCard } from "../../discovery/label-landing";
 import { ThemeRefresh } from "./theme-refresh";
 import { BackBar } from "./back-bar";
+import { AboutText } from "./about-text";
 import { PinDockProvider } from "./pin-dock";
 
 export type AreaSection = {
@@ -120,7 +121,7 @@ export function AreaPage({
                     </h2>
                     {/* One or two sentences on what the screen offers; on desktop it wraps under the name at 68ch at most (Small
                         items 3, item 4). */}
-                    <p className="m-0 max-w-[68ch] text-[13.5px] text-pretty text-[color:var(--fg-muted)]">{s.sub}</p>
+                    <p className="m-0 max-w-[68ch] text-[13.5px] text-pretty text-[color:var(--fg-muted)]"><AboutText text={s.sub} /></p>
                   </div>
                   <LabelledScreen phone={s.phone} desktop={s.desktop} />
                   <GoodToKnow sectionId={s.id} rules={s.rules} />

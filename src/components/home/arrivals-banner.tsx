@@ -24,6 +24,7 @@ import { arrivalsCopy as copy } from "../../lib/copy/arrivals";
 import type { ArrivalsBannerData, BannerLine } from "../../lib/precons/banner";
 import { aboutAcknowledged, aboutFirstRunOver, acknowledgeHeld, arrivalsAcknowledged, launchAcknowledged } from "./arrivals-seen";
 import { ThemeRefresh } from "../about/pages/theme-refresh";
+import { AboutText } from "../about/pages/about-text";
 import { PendingReporter } from "../shell/pending-reporter";
 import { useTarget } from "../discovery/targets-provider";
 import { Mark } from "./banner-mark";
@@ -85,7 +86,7 @@ function FirstRunSentence() {
 function LaunchSentence({ launch }: { launch: AboutLaunch }) {
   return (
     <>
-      <span className="text-[color:var(--fg)]">{launch.lead}</span> {launch.text}
+      <span className="text-[color:var(--fg)]">{launch.lead}</span> <AboutText text={launch.text} bold="font-normal text-[color:var(--fg)]" />
     </>
   );
 }
