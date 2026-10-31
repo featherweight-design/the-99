@@ -148,7 +148,7 @@ if (owned.length === 0) {
 
 // ---- /discover: the shipped assembly, twice -------------------------------------------------
 const { collection } = await loadCollectionPool(userId);
-const availability = await loadAvailability(userId, { oracleIds: collection.map((c) => c.oracleId), env: process.env });
+const availability = await loadAvailability(userId, { oracleIds: collection.map((c) => c.oracleId) });
 const candidates = await loadCandidates(userId, collection.map((c) => c.oracleId));
 const [priceRead, playedTags, targets] = await Promise.all([
   readPrices(candidates.map((c) => c.oracleId)),

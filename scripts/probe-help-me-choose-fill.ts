@@ -65,7 +65,7 @@ async function main() {
   console.log("\n1. The budget, priced independently");
   const ids = (p: typeof plain) => p.rows.map((r) => r.oracleId);
   const all = [...new Set([...ids(plain), ...ids(budgeted)])];
-  const [prices, availability] = await Promise.all([loadPrices(all), loadAvailability(USER, { oracleIds: all, env: process.env })]);
+  const [prices, availability] = await Promise.all([loadPrices(all), loadAvailability(USER, { oracleIds: all })]);
   const owned = new Set((await rows<{ oracle_id: string }>(sql`
     select distinct oracle_id from collection_items where user_id = ${USER}`)).map((r) => r.oracle_id));
   // The Shopping list's rule, read here rather than through the gate: a basic is never bought; a
@@ -157,7 +157,7 @@ async function main() {
   check("off, the fill places nothing toward the answer and carries no reach",
     ceilingOnly.bracketReach === undefined && !ceilingOnly.rows.some((r) => r.source === "bracket"), "ceiling only");
   const raised = reached.rows.filter((r) => r.source === "bracket").map((r) => r.oracleId);
-  const raisedAvailability = await loadAvailability(USER, { oracleIds: raised, env: process.env });
+  const raisedAvailability = await loadAvailability(USER, { oracleIds: raised });
   check("every card placed toward the answer is owned with a free copy, never a buy",
     raised.every((id) => owned.has(id) && (raisedAvailability.get(id)?.free ?? 1) > 0), `${raised.length} placed`);
   const [reachedFacts, ceilingFacts] = await Promise.all([facts(reached), facts(ceilingOnly)]);
@@ -184,7 +184,7 @@ async function main() {
   if (reach?.kind === "short" && reach.buy) {
     const ids = reach.buy.raisers;
     const [buyPrices, buyAvailability] = await Promise.all([
-      loadPrices(ids), loadAvailability(USER, { oracleIds: ids, env: process.env }),
+      loadPrices(ids), loadAvailability(USER, { oracleIds: ids }),
     ]);
     const toBuy = ids.filter((id) => !owned.has(id) || (buyAvailability.get(id)?.free ?? 1) <= 0);
     check("the buying half prices every card it would buy, and its total is their sum",

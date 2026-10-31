@@ -33,7 +33,7 @@ const { listFingerprint } = await import("../../src/lib/profile/fingerprint");
 const [owner] = await db.select({ userId: schema.decks.userId }).from(schema.decks).where(eq(schema.decks.id, golden.deck.deckId));
 if (!owner) throw new Error(`eval:mana: golden deck ${golden.deck.deckId} is not on staging`);
 
-const detail = await getDeckDetail(golden.deck.deckId, owner.userId, undefined, process.env);
+const detail = await getDeckDetail(golden.deck.deckId, owner.userId, undefined);
 if (!detail) throw new Error("eval:mana: the golden deck could not be read");
 const balance = await loadManaBalance(detail);
 if (!balance) throw new Error("eval:mana: the golden deck's text reads failed");
@@ -89,7 +89,7 @@ if (diffs.length > 0) {
 console.log("\n## 2. Every deck of the same owner (evidence, no verdict)\n");
 const decks = await db.select({ id: schema.decks.id, name: schema.decks.name }).from(schema.decks).where(eq(schema.decks.userId, owner.userId));
 for (const d of decks) {
-  const detailN = await getDeckDetail(d.id, owner.userId, undefined, process.env);
+  const detailN = await getDeckDetail(d.id, owner.userId, undefined);
   const b = detailN ? await loadManaBalance(detailN) : null;
   console.log(`- ${d.name}${!b ? ": read failed" : b.state === "ok" ? "" : ` [${b.state}]`}`);
   // A colorless or no-source deck still has lands, tapped counts, an average and Karsten's figure.
@@ -104,7 +104,7 @@ const ASKS: [string, string, "W" | "U" | "B" | "R" | "G"][] = [
 const price = (cents: number | null) => (cents === null ? "no price" : `$${(cents / 100).toFixed(2)}`);
 const changeText = (cs: { color: string; before: number; after: number }[]) => cs.map((c) => `${c.color} ${c.before} to ${c.after}`).join(", ");
 for (const [label, id, color] of ASKS) {
-  const d = await getDeckDetail(id, owner.userId, undefined, process.env);
+  const d = await getDeckDetail(id, owner.userId, undefined);
   const h = d ? await loadManaHelp(d, owner.userId, color, process.env) : null;
   console.log(`- ${label}, add ${color} (${h?.sourcesNow ?? "?"} sources now)${h ? "" : ": read failed"}`);
   if (!h) continue;

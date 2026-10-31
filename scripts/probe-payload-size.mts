@@ -266,7 +266,7 @@ async function main() {
     let worstWire = { bytes: 0, gzip: 0, cards: 0 };
     for (const account of accounts) {
       const { cards: list } = await loadBrowseCards(account.user_id);
-      const availability = await loadAvailability(account.user_id, { env: process.env });
+      const availability = await loadAvailability(account.user_id);
       const entry = Buffer.byteLength(JSON.stringify(list));
       // The page's own cut, for a URL with no filter.
       const keep = firstWindowIds(list, parseBrowseParams(() => null, availability !== null));

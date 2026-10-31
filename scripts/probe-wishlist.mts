@@ -99,9 +99,9 @@ async function main() {
 
     // A ledger write that reaches the want: previewed (rolled back), then for real.
     const add = (oracleId: string, set: string) => ({ kind: "add" as const, items: [{ oracleId, setCode: set, condition: null, quantity: 1 }] });
-    await applyCollectionChange(B, add(X, "pr2"), { id: randomUUID(), env: process.env, dryRun: true });
+    await applyCollectionChange(B, add(X, "pr2"), { id: randomUUID(), dryRun: true });
     check("a previewed add that would reach X's want leaves both lines", (await lineCount()) === 2);
-    await applyCollectionChange(B, add(X, "pr2"), { id: randomUUID(), env: process.env });
+    await applyCollectionChange(B, add(X, "pr2"), { id: randomUUID() });
     check("the add that reaches X's want deletes the line, and the sweep takes Y with it", (await lineCount()) === 0);
     const notices = await collected.loadCollectedNotices(B);
     check("both are kept for the strip, by name, with the want they reached",

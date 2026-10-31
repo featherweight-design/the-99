@@ -79,7 +79,6 @@ const claimants = async (oracleId: string, vantage: string) => {
   const availability = await loadAvailability(USER, {
     oracleIds: [oracleId],
     excludeDeckId: vantage,
-    env: process.env,
   });
   return availability.get(oracleId)?.claims.length ?? null;
 };
@@ -88,7 +87,6 @@ const free = async (oracleId: string, deckId: string) => {
   const availability = await loadAvailability(USER, {
     oracleIds: [oracleId],
     excludeDeckId: deckId,
-    env: process.env,
   });
   return availability.get(oracleId)?.free ?? null;
 };
@@ -280,7 +278,7 @@ try {
   `);
 
   const tile = async (deckId: string, withStats: boolean) => {
-    const decks = await listDecksWithStats(USER, "name", { includeProxyStats: withStats, env: process.env });
+    const decks = await listDecksWithStats(USER, "name", { includeProxyStats: withStats });
     return decks.find((d) => d.id === deckId);
   };
 

@@ -176,7 +176,7 @@ async function main() {
   if (hits.length < 3) throw new Error("the target's support list holds fewer than 3 usable cards");
   for (const h of hits) await addCard(deck, h.id);
 
-  const loaded = await loadChangeCandidates(deck, USER, process.env);
+  const loaded = await loadChangeCandidates(deck, USER);
   check("loader: reads the reader's deck", loaded !== null, true);
   const all = [...(loaded?.yours ?? []), ...(loaded?.toBuy ?? [])];
   const { rows: identities } = await fixture.execute<{ id: string; ci: string[]; n: number | null }>(sql`
@@ -229,7 +229,7 @@ async function main() {
   } else {
     await fixture.execute(sql`insert into collection_items (user_id, oracle_id, quantity, set_code, scryfall_id, collector_number)
       values (${USER}, ${ownedHit.id}::uuid, 1, ${ownedHit.set_code}, ${ownedHit.scryfall_id}::uuid, ${ownedHit.collector_number})`);
-    const owned = matchedArt(await loadChangeCandidates(deck, USER, process.env));
+    const owned = matchedArt(await loadChangeCandidates(deck, USER));
     check("loader: a matched card the reader owns previews the printing they own", owned.get(ownedHit.id), ownedHit.image_uri);
   }
   // A sub-floor legend of the same identity, if the index holds one, must not appear.

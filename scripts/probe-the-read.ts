@@ -105,7 +105,7 @@ async function main() {
     let current = "";
     const press = (fingerprint: string, d: ReturnType<typeof deps>) => {
       current = randomUUID();
-      return runTheRead(USER, { readId: current, words: "scary horrors", filters, env: process.env, ask: "w=scary+horrors&v=results" }, d, inputs(fingerprint));
+      return runTheRead(USER, { readId: current, words: "scary horrors", filters, ask: "w=scary+horrors&v=results" }, d, inputs(fingerprint));
     };
     const pick = async (): Promise<ModelOutcome<JudgeReply>> => ({ ok: true, value: { picks: [{ key: 2, reason: "Its horrors drain every opponent." }] }, usage: judgeUsage });
 
@@ -146,7 +146,7 @@ async function main() {
       return loader;
     };
     const begin = (user: string, loader: ReturnType<typeof counted>, d = deps(pick)) =>
-      beginTheRead(user, { readId: randomUUID(), words: "scary horrors", filters, env: process.env }, d, loader);
+      beginTheRead(user, { readId: randomUUID(), words: "scary horrors", filters }, d, loader);
 
     console.log("\n4. A burst of presses by one player reads the pool once");
     const burstLoader = counted("fp-burst", 500);

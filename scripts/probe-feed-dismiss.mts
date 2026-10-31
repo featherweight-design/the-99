@@ -61,7 +61,7 @@ async function main() {
     if (!rows[0]) throw new Error(`no printing of ${card}`);
     const items = [{ oracleId: card, setCode: rows[0].set_code, collectorNumber: rows[0].collector_number, scryfallId: rows[0].scryfall_id,
       finish: "nonfoil" as const, condition: null, quantity }];
-    const result = await applyCollectionChange(u, { kind: "add", items }, { id: randomUUID(), env: ENV });
+    const result = await applyCollectionChange(u, { kind: "add", items }, { id: randomUUID() });
     if (result.status !== "applied") throw new Error(`add refused: ${result.status}`);
   };
   const dismiss = async (u: string, key: string) => {

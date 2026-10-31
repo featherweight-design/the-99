@@ -59,8 +59,6 @@ const pool = new Pool({ connectionString: DATABASE_URL });
 const fixture = drizzle(pool);
 const USER = `probe-precon-start-owned-${Date.now()}`;
 const HELD_USER = `${USER}-held`;
-// A script has no signed-in reader: it decides switches from the environment, saying so.
-const ENV = process.env;
 let failures = 0;
 let guarded = false;
 
@@ -93,7 +91,7 @@ async function run() {
   check("setup · the older decks are short of all four", [await owes(thorin), await owes(gishath)], [FOUR, FOUR]);
 
   const actionId = randomUUID();
-  const started = await startPreconOwned(USER, FILE, "Multiverse Reforged", actionId, ENV, true);
+  const started = await startPreconOwned(USER, FILE, "Multiverse Reforged", actionId, true);
   if (!started.ok) throw new Error(`start refused: ${started.reason}`);
   const deckId = started.deckId;
   const [linked] = await rows<{ entry: string | null; versions: number; first: number }>(sql`
@@ -140,22 +138,22 @@ async function run() {
     where ca.user_id = ${USER} and ca.deck_id = ${deckId}::uuid and c.name in (${sql.join(FOUR.map((n) => sql`${n}`), sql`, `)}) order by c.name`);
   check("e · the four are reserved to the new deck, a copy each", reserved, FOUR.map((name) => ({ name, copies: 1 })));
 
-  const retry = await startPreconOwned(USER, FILE, "Multiverse Reforged", actionId, ENV, true);
+  const retry = await startPreconOwned(USER, FILE, "Multiverse Reforged", actionId, true);
   check("f · a retry lands on the same deck", retry.ok && retry.deckId, deckId);
   const [after] = await rows<{ decks: number; copies: number }>(sql`
     select (select count(*)::int from decks where user_id = ${USER}) decks,
            (select coalesce(sum(quantity), 0)::int from collection_items where user_id = ${USER}) copies`);
   check("f · and writes nothing more", after, { decks: 3, copies: 100 });
   // The same id sent for ANOTHER precon is not a retry of this start: it never lands on this deck.
-  const cross = await startPreconOwned(USER, "AbzanArmor_TDC", "Abzan", actionId, ENV, true);
+  const cross = await startPreconOwned(USER, "AbzanArmor_TDC", "Abzan", actionId, true);
   check("f · the same id for another precon is refused, not landed on this deck", cross.ok, false);
 
   const otherId = randomUUID();
   // A card none of the decks lists, so this add moves nobody's shortfall.
   const [stranger] = await rows<{ id: string }>(sql`
     select c.oracle_id::text id from cards c where c.name = 'Storm Crow'`);
-  await applyCollectionChange(USER, { kind: "add", items: [{ oracleId: stranger.id, setCode: "", condition: null, quantity: 1 }] }, { id: otherId, env: ENV });
-  const reused = await startPreconOwned(USER, FILE, "Again", otherId, ENV, true);
+  await applyCollectionChange(USER, { kind: "add", items: [{ oracleId: stranger.id, setCode: "", condition: null, quantity: 1 }] }, { id: otherId });
+  const reused = await startPreconOwned(USER, FILE, "Again", otherId, true);
   check("g · an id another add already used is refused", reused.ok, false);
 
   // A plain start of the same box, now that its tokens are held: pinned as well, through the same writer.
@@ -171,9 +169,9 @@ async function run() {
 
   // The revert takes copies a deck holds, so it warns first, and the reader confirms, as History's Undo does.
   const revertId = randomUUID();
-  const warned = await applyCollectionChange(USER, { kind: "revert", entryId: actionId }, { id: revertId, env: ENV });
+  const warned = await applyCollectionChange(USER, { kind: "revert", entryId: actionId }, { id: revertId });
   const revert = warned.status === "wouldShort"
-    ? await applyCollectionChange(USER, { kind: "revert", entryId: actionId }, { id: revertId, env: ENV, confirmShort: warned.decks })
+    ? await applyCollectionChange(USER, { kind: "revert", entryId: actionId }, { id: revertId, confirmShort: warned.decks })
     : warned;
   check("h · reverting the add applies, once its short warning is confirmed", revert.status, "applied");
   const left = await rows<{ id: string }>(sql`select oracle_id::text id from card_assignments where user_id = ${USER} and deck_id = ${deckId}::uuid`);
@@ -194,12 +192,12 @@ async function heldOverlap(four: Map<string, string>) {
   const junior = await startPreconDeck(HELD_USER, "AvengersAssemble_MSC", "Older B");
   await applyCollectionChange(HELD_USER, {
     kind: "add", items: [...four.keys()].map((oracleId) => ({ oracleId, setCode: "", condition: null, quantity: 1 })),
-  }, { id: randomUUID(), env: ENV });
+  }, { id: randomUUID() });
   check("l · setup: the senior deck holds the four and the junior one is short of them",
     [await owesOf(senior), await owesOf(junior)], [[], FOUR]);
 
   const actionId = randomUUID();
-  const started = await startPreconOwned(HELD_USER, FILE, "Multiverse Reforged", actionId, ENV, true);
+  const started = await startPreconOwned(HELD_USER, FILE, "Multiverse Reforged", actionId, true);
   if (!started.ok) throw new Error(`held start refused: ${started.reason}`);
   const deckId = started.deckId;
   check("l · after the start, the senior deck still holds them and the junior one is still short",
@@ -211,11 +209,11 @@ async function heldOverlap(four: Map<string, string>) {
   check("l · History's Went to names the new deck alone, never the junior deck", went, FOUR.map((n) => [n, [deckId]]));
 
   const revertId = randomUUID();
-  const warned = await applyCollectionChange(HELD_USER, { kind: "revert", entryId: actionId }, { id: revertId, env: ENV });
+  const warned = await applyCollectionChange(HELD_USER, { kind: "revert", entryId: actionId }, { id: revertId });
   const named = warned.status === "wouldShort" ? [...new Set(warned.decks.map((d) => d.deckId))] : [];
   check("m · the revert's short warning names the new deck alone", named, [deckId]);
   if (warned.status === "wouldShort") {
-    const revert = await applyCollectionChange(HELD_USER, { kind: "revert", entryId: actionId }, { id: revertId, env: ENV, confirmShort: warned.decks });
+    const revert = await applyCollectionChange(HELD_USER, { kind: "revert", entryId: actionId }, { id: revertId, confirmShort: warned.decks });
     check("m · the revert applies once confirmed", revert.status, "applied");
   }
   check("m · and the junior deck is exactly as short as before the start",

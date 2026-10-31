@@ -81,7 +81,6 @@ async function main() {
       commanderIds: [newCmd],
       answers: { budgetCents: card.cents, bracket: null, cardOracleId: card.id },
       candidates: [{ oracleId: cheaper.id, owned: false, typeLine: "Artifact" } as never],
-      env: process.env,
     });
     if (!gate) throw new Error("no gate for a budget");
     return !gate.admits({ oracleId: cheaper.id, owned: false, typeLine: "Artifact" } as never);
@@ -94,7 +93,7 @@ async function main() {
     `);
 
     // 1 · One copy, nothing claims it: free on the chip, and the fill charges nothing.
-    const free = await loadCardChip(USER, card.id, process.env);
+    const free = await loadCardChip(USER, card.id);
     check("free: chip reads owned", free?.owned, true);
     check("free: chip reads not held", free?.held, null);
     check("free: buysCard", free ? buysCard(free) : null, false);
@@ -108,7 +107,7 @@ async function main() {
     await fixture.execute(sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${deck.id}, ${card.id}, 1)`);
     await commitVersion(deck.id, null, undefined, undefined);
 
-    const held = await loadCardChip(USER, card.id, process.env);
+    const held = await loadCardChip(USER, card.id);
     check("held: chip still reads owned", held?.owned, true);
     check("held: chip names the holding deck", held?.held?.deck, "Probe Holder");
     check("held: buysCard", held ? buysCard(held) : null, true);

@@ -65,8 +65,6 @@ const PRODUCTION_BRANCH = "br-noisy-violet-a6vw4ess";
 const { DATABASE_URL, PROBE_DB_BRANCH } = requireEnv(["DATABASE_URL", "PROBE_DB_BRANCH"]);
 const pool = new Pool({ connectionString: DATABASE_URL, max: 4 });
 const USER = `probe-collection-sync-${Date.now()}`;
-// A script has no signed-in reader: it decides switches from the environment, saying so.
-const ENV = process.env;
 const T: string[] = [randomUUID(), randomUUID(), randomUUID()];
 const P: string[] = [randomUUID(), randomUUID(), randomUUID()];
 let failures = 0;
@@ -132,22 +130,22 @@ async function run() {
   };
   const replace = async (items: PendingItem[], tokens?: TokenHolding[]) => {
     const uploadId = await newUpload(items, tokens);
-    const r = await applyCollectionChange(USER, { kind: "replace", items, uploadId, tokens }, { id: randomUUID(), env: ENV });
+    const r = await applyCollectionChange(USER, { kind: "replace", items, uploadId, tokens }, { id: randomUUID() });
     if (r.status !== "applied") throw new Error(`replace refused: ${r.status}`);
     return { uploadId, entryId: r.entry.id };
   };
   const edit = (rowsToSet: { oracleId: string; quantity: number; cn?: string }[]) =>
-    applyCollectionChange(USER, { kind: "edit", rows: rowsToSet.map((r) => ({ ...id(r.oracleId, r.cn), quantity: r.quantity })) }, { id: randomUUID(), env: ENV });
+    applyCollectionChange(USER, { kind: "edit", rows: rowsToSet.map((r) => ({ ...id(r.oracleId, r.cn), quantity: r.quantity })) }, { id: randomUUID() });
   type SyncChange = Extract<CollectionChange, { kind: "sync" }>;
   const syncChange = (uploadId: string, items: PendingItem[], o: { tokens?: TokenHolding[]; pick?: SyncPick; answers?: SyncAnswers } = {}): SyncChange =>
     ({ kind: "sync", items, uploadId, tokens: o.tokens, pick: o.pick ?? "everything", answers: o.answers });
   const preview = async (change: SyncChange) => {
-    const r = await applyCollectionChange(USER, change, { id: randomUUID(), dryRun: true, env: ENV });
+    const r = await applyCollectionChange(USER, change, { id: randomUUID(), dryRun: true });
     if (r.status !== "preview" || !r.sync) throw new Error(`preview refused: ${r.status}`);
     return r;
   };
   const confirm = async (change: SyncChange, digest: string | undefined, confirmShort?: Extract<ChangeResult, { status: "wouldShort" }>["decks"]) =>
-    applyCollectionChange(USER, { ...change, expectedPlan: digest }, { id: randomUUID(), env: ENV, confirmShort });
+    applyCollectionChange(USER, { ...change, expectedPlan: digest }, { id: randomUUID(), confirmShort });
   const sync = async (items: PendingItem[], o: { tokens?: TokenHolding[]; pick?: SyncPick; answers?: SyncAnswers } = {}) => {
     const uploadId = await newUpload(items, o.tokens);
     const change = syncChange(uploadId, items, o);
@@ -160,7 +158,7 @@ async function run() {
   // The write stamps the upload confirmed before it reads the base, in its own transaction: a first-ever
   // upload must still read as never uploaded, not as an upload with no record (round 1, finding 3).
   const firstUpload = await newUpload([at(A, 1)]);
-  const first = await applyCollectionChange(USER, syncChange(firstUpload, [at(A, 1)]), { id: randomUUID(), dryRun: true, env: ENV });
+  const first = await applyCollectionChange(USER, syncChange(firstUpload, [at(A, 1)]), { id: randomUUID(), dryRun: true });
   check("setup · a sync preview of a first-ever upload is neverUploaded", first.status === "noBase" ? first.reason : first.status, "neverUploaded");
   check("setup · and leaves it unconfirmed", await confirmed(firstUpload), false);
   const F = [at(A, 1), at(B, 2), at(C, 1)];
@@ -259,7 +257,7 @@ async function run() {
     [[A, 1, 3], [D, 1, 2], [G, 0, 1]].sort((x, y) => String(x[0]).localeCompare(String(y[0]))));
   check("d · and records the second token", await tokenRows(), ["0:upload=2", "1:upload=1"].sort());
   if (d.result.status !== "applied") throw new Error("d did not apply");
-  const reverted = await applyCollectionChange(USER, { kind: "revert", entryId: d.result.entry.id }, { id: randomUUID(), env: ENV });
+  const reverted = await applyCollectionChange(USER, { kind: "revert", entryId: d.result.entry.id }, { id: randomUUID() });
   check("d · Revert restores the taken and answered rows",
     [reverted.status, await count(A), await count(D), await count(G)], ["applied", 1, 1, 0]);
   check("d · and leaves the kept rows alone", [await count(B), await count(E)], [3, 2]);
@@ -268,7 +266,7 @@ async function run() {
   // ---- e. Anchors -----------------------------------------------------------------------------------
   check("e · after reverting the last sync, the base is the one before it", await anchorId(), cAnchor);
   const addUpload = await newUpload([at(H, 1)]);
-  const added = await applyCollectionChange(USER, { kind: "add", items: [at(H, 1)], uploadId: addUpload }, { id: randomUUID(), env: ENV });
+  const added = await applyCollectionChange(USER, { kind: "add", items: [at(H, 1)], uploadId: addUpload }, { id: randomUUID() });
   check("e · after an Add, the base does not move", [added.status, await anchorId()], ["applied", cAnchor]);
 
   // ---- f. Only what it adds -------------------------------------------------------------------------
@@ -294,10 +292,10 @@ async function run() {
   // H stays: it is the probe deck's commander, and a Replace dropping it would ask about the deck first.
   const h1 = await replace([at(D, 1), at(E, 1), at(H, 1)]);
   const h2 = await replace([at(D, 2), at(E, 1), at(G, 1), at(H, 1)]);
-  const r1 = await applyCollectionChange(USER, { kind: "revert", entryId: h2.entryId }, { id: randomUUID(), env: ENV });
+  const r1 = await applyCollectionChange(USER, { kind: "revert", entryId: h2.entryId }, { id: randomUUID() });
   check("h · reverting the upload moves the base back to the one before it", [r1.status, await count(G), await anchorId()], ["applied", 0, h1.uploadId]);
   if (r1.status !== "applied") throw new Error("h's revert did not apply");
-  const r2 = await applyCollectionChange(USER, { kind: "revert", entryId: r1.entry.id }, { id: randomUUID(), env: ENV });
+  const r2 = await applyCollectionChange(USER, { kind: "revert", entryId: r1.entry.id }, { id: randomUUID() });
   const [stamp] = await rows<{ by: string | null }>("select reverted_by::text by from collection_history where id = $1", [h2.entryId]);
   check("h · reverting the revert restores the upload, whose entry still carries reverted_by",
     [r2.status, await count(G), stamp.by !== null], ["applied", 1, true]);

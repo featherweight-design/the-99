@@ -74,7 +74,6 @@ const ownedCandidates = limits.ownedOnly
   ? await loadOwnedCandidates({
     userId, deckId, commanderOracleIds: profile.commanderOracleIds, colorIdentity: [...profile.colours.identity],
     inDeck: new Set(profile.cards.map((c) => c.oracleId)), limits,
-    env: process.env,
   })
   : undefined;
 const ownedNone = ownedCandidates !== undefined && ownedCandidates.length === 0;
@@ -128,7 +127,7 @@ async function ask() {
 if (!outcome.ok) { console.log(outcome.errorClass); process.exit(0); }
 if (values.save) writeFileSync(values.save, JSON.stringify(outcome.value, null, 1));
 
-const { kept, drops, askedCount } = await resolveAnswer({ userId, deckId, pack, response: outcome.value, env: process.env });
+const { kept, drops, askedCount } = await resolveAnswer({ userId, deckId, pack, response: outcome.value });
 const sized = sizeLists(kept, L.MAX_SUGGESTIONS);
 console.log(`asked ${askedCount}, survived ${kept.length}, kept ${sized.length}`);
 for (const [side, lines] of [["add", outcome.value.additions], ["cut", outcome.value.cuts]] as const) {

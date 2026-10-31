@@ -74,7 +74,7 @@ async function main() {
   };
   const add = async (u: string, cards: string[], quantity = 1) => {
     const items = await Promise.all(cards.map((c) => printingOf(c, quantity)));
-    const result = await applyCollectionChange(u, { kind: "add", items }, { id: randomUUID(), env: ENV });
+    const result = await applyCollectionChange(u, { kind: "add", items }, { id: randomUUID() });
     if (result.status !== "applied") throw new Error(`add refused: ${result.status}`);
   };
 

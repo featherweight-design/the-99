@@ -146,7 +146,7 @@ async function main() {
   // The deck list's own projection, which the read tests cannot cover: they
   // mock the database, so a wrong alias on either folder column — or a join
   // that hides unfiled decks — would pass them.
-  const gridFiled = await listDecksWithStats(USER, "name", { env: process.env });
+  const gridFiled = await listDecksWithStats(USER, "name");
   check("the deck list carries every deck", gridFiled.length, 2);
   check("a filed deck names its folder", gridFiled[0]?.folderName, "Commander night");
   check("and carries its id", gridFiled[0]?.folderId, shelf.id);
@@ -191,7 +191,7 @@ async function main() {
   check("the filed deck is unfiled", await folderOf(deckA), null);
   check("the other filed deck is unfiled", await folderOf(deckB), null);
 
-  const gridUnfiled = await listDecksWithStats(USER, "name", { env: process.env });
+  const gridUnfiled = await listDecksWithStats(USER, "name");
   check("an unfiled deck is still listed", gridUnfiled.length, 2);
   check("and names no folder", gridUnfiled[0]?.folderName, null);
   check("and carries no folder id", gridUnfiled[0]?.folderId, null);

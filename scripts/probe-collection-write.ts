@@ -78,12 +78,12 @@ async function main() {
     const addId = randomUUID();
     const add = { kind: "add" as const, items: [{ ...at(A), condition: "NM", quantity: 2 }] };
     const both = await Promise.all([
-      applyCollectionChange(USER, add, { id: addId, env: process.env }),
-      applyCollectionChange(USER, add, { id: addId, env: process.env }),
+      applyCollectionChange(USER, add, { id: addId }),
+      applyCollectionChange(USER, add, { id: addId }),
     ]);
     check("a double-submitted add applies once", statuses(both) === "alreadyApplied,applied" && await count(A) === 2,
       `${statuses(both)}; count ${await count(A)}`);
-    const again = await applyCollectionChange(USER, add, { id: addId, env: process.env });
+    const again = await applyCollectionChange(USER, add, { id: addId });
     const first = both.find((r) => r.status === "applied");
     check("a late retry of the same id is still alreadyApplied, carrying the committed entry",
       again.status === "alreadyApplied" && first?.status === "applied"
@@ -92,8 +92,8 @@ async function main() {
 
     // ---- 2. Two tabs, one row ------------------------------------------------------------
     const tabs = await Promise.all([
-      applyCollectionChange(USER, { kind: "edit", rows: [{ ...at(A), quantity: 1, expected: 2 }] }, { id: randomUUID(), env: process.env }),
-      applyCollectionChange(USER, { kind: "edit", rows: [{ ...at(A), quantity: 3, expected: 2 }] }, { id: randomUUID(), env: process.env }),
+      applyCollectionChange(USER, { kind: "edit", rows: [{ ...at(A), quantity: 1, expected: 2 }] }, { id: randomUUID() }),
+      applyCollectionChange(USER, { kind: "edit", rows: [{ ...at(A), quantity: 3, expected: 2 }] }, { id: randomUUID() }),
     ]);
     const stale = tabs.find((t) => t.status === "stale");
     check("two tabs editing one row: one applies, one is stale", statuses(tabs) === "applied,stale",
@@ -104,10 +104,10 @@ async function main() {
 
     // ---- 3. Two concurrent reverts -------------------------------------------------------
     const target = randomUUID();
-    await applyCollectionChange(USER, { kind: "add", items: [{ ...at(B), condition: null, quantity: 3 }] }, { id: target, env: process.env });
+    await applyCollectionChange(USER, { kind: "add", items: [{ ...at(B), condition: null, quantity: 3 }] }, { id: target });
     const reverts = await Promise.all([
-      applyCollectionChange(USER, { kind: "revert", entryId: target }, { id: randomUUID(), env: process.env }),
-      applyCollectionChange(USER, { kind: "revert", entryId: target }, { id: randomUUID(), env: process.env }),
+      applyCollectionChange(USER, { kind: "revert", entryId: target }, { id: randomUUID() }),
+      applyCollectionChange(USER, { kind: "revert", entryId: target }, { id: randomUUID() }),
     ]);
     const revertRows = Number((await one<{ n: string }>(
       "select count(*) as n from collection_history where user_id = $1 and reverts_id = $2", [USER, target],
@@ -120,7 +120,7 @@ async function main() {
     )), "no row");
 
     // ---- 4. A lowering that shorts a committed deck ---------------------------------------
-    await applyCollectionChange(USER, { kind: "edit", rows: [{ ...at(A), quantity: 1 }] }, { id: randomUUID(), env: process.env });
+    await applyCollectionChange(USER, { kind: "edit", rows: [{ ...at(A), quantity: 1 }] }, { id: randomUUID() });
     const deck = await one<{ id: string }>(
       `insert into decks (user_id, name, commander_oracle_id) values ($1, 'probe collection write', $2) returning id`,
       [USER, B],
@@ -130,7 +130,7 @@ async function main() {
     const entriesBefore = await entries();
     const lowerId = randomUUID();
     const lower = { kind: "edit" as const, rows: [{ ...at(A), quantity: 0, expected: 1 }] };
-    const warned = await applyCollectionChange(USER, lower, { id: lowerId, env: process.env });
+    const warned = await applyCollectionChange(USER, lower, { id: lowerId });
     check("a lowering that shorts a committed deck warns and names it",
       warned.status === "wouldShort" && warned.decks.some((d) => d.deckId === deck.id && d.short === 1),
       JSON.stringify(warned));
@@ -139,11 +139,10 @@ async function main() {
     const shown = warned.status === "wouldShort" ? warned.decks : [];
     const understated = await applyCollectionChange(USER, lower, {
       id: lowerId, confirmShort: shown.map((d) => ({ ...d, short: d.short - 1 })),
-      env: process.env,
     });
     check("a confirm whose warning no longer covers the change comes back redrawn",
       understated.status === "wouldShort" && await count(A) === 1, `${understated.status}; count ${await count(A)}`);
-    const confirmed = await applyCollectionChange(USER, lower, { id: lowerId, confirmShort: shown, env: process.env });
+    const confirmed = await applyCollectionChange(USER, lower, { id: lowerId, confirmShort: shown });
     check("the same action confirmed applies", confirmed.status === "applied" && await count(A) === 0,
       `${confirmed.status}; count ${await count(A)}`);
     check("the applied result carries the decks the warning named, for the receipt",
@@ -154,9 +153,9 @@ async function main() {
     // card, take it off again by hand, then revert the add, which has nothing left to take.
     const noop = randomUUID();
     // C, because B is the probe deck's commander and lowering it would warn.
-    await applyCollectionChange(USER, { kind: "add", items: [{ ...at(C), condition: null, quantity: 1 }] }, { id: noop, env: process.env });
-    await applyCollectionChange(USER, { kind: "edit", rows: [{ ...at(C), quantity: 0 }] }, { id: randomUUID(), env: process.env });
-    const noopRevert = await applyCollectionChange(USER, { kind: "revert", entryId: noop }, { id: randomUUID(), env: process.env });
+    await applyCollectionChange(USER, { kind: "add", items: [{ ...at(C), condition: null, quantity: 1 }] }, { id: noop });
+    await applyCollectionChange(USER, { kind: "edit", rows: [{ ...at(C), quantity: 0 }] }, { id: randomUUID() });
+    const noopRevert = await applyCollectionChange(USER, { kind: "revert", entryId: noop }, { id: randomUUID() });
     const marked = await one<{ reverted_by: string | null }>(
       "select reverted_by from collection_history where id = $1", [noop],
     );
@@ -175,7 +174,7 @@ async function main() {
     await pool.query(
       "update collection_history set created_at = now() - interval '91 days' where id = $1", [addId],
     );
-    await applyCollectionChange(USER, { kind: "add", items: [{ ...at(A), condition: null, quantity: 1 }] }, { id: randomUUID(), env: process.env });
+    await applyCollectionChange(USER, { kind: "add", items: [{ ...at(A), condition: null, quantity: 1 }] }, { id: randomUUID() });
     const scores = Number((await one<{ n: string }>(
       "select count(*) as n from commander_scores where user_id = $1", [USER],
     )).n);
@@ -190,7 +189,7 @@ async function main() {
     const missing = await applyCollectionChange(USER, {
       kind: "add",
       items: [{ ...at(randomUUID()), condition: null, quantity: 1, name: "Nonexistent Probe Card" }],
-    }, { id: randomUUID(), env: process.env });
+    }, { id: randomUUID() });
     check("an oracle id the catalog lacks is refused by name",
       missing.status === "missingCard" && missing.names[0] === "Nonexistent Probe Card", JSON.stringify(missing));
     const lastAdd = await one<{ rows: { oracleId: string; name: string }[] }>(
@@ -208,7 +207,7 @@ async function main() {
     const editsBefore = await editsSinceUpload(USER);
     check("with no upload yet, every hand change counts", editsBefore > 0, `${editsBefore}`);
     const previewed = await applyCollectionChange(USER, { kind: "replace", items: replaceItems, uploadId: u1 },
-      { id: randomUUID(), dryRun: true, env: process.env });
+      { id: randomUUID(), dryRun: true });
     const stillOpen = await one<{ confirmed_at: Date | null }>("select confirmed_at from csv_uploads where id = $1", [u1]);
     check("a Replace preview names the committed deck it would short, and writes nothing",
       previewed.status === "preview" && previewed.decks.some((d) => d.deckId === deck.id)
@@ -216,7 +215,7 @@ async function main() {
       `${previewed.status === "preview" ? JSON.stringify(previewed.decks) : previewed.status}; count ${await count(A)}`);
     const shownDecks = previewed.status === "preview" ? previewed.decks : [];
     const confirms = await Promise.all([1, 2].map(() => applyCollectionChange(
-      USER, { kind: "replace", items: replaceItems, uploadId: u1 }, { id: randomUUID(), confirmShort: shownDecks, env: process.env },
+      USER, { kind: "replace", items: replaceItems, uploadId: u1 }, { id: randomUUID(), confirmShort: shownDecks },
     )));
     const replaceEntry = await one<{ kind: string; source: string }>(
       "select kind, source from collection_history where user_id = $1 order by seq desc limit 1", [USER],
@@ -226,7 +225,7 @@ async function main() {
         && replaceEntry.kind === "upload_replace" && replaceEntry.source === `csv_uploads:${u1}`,
       `${statuses(confirms)}; A ${await count(A)} C ${await count(C)}; ${JSON.stringify(replaceEntry)}`);
     const editsAfter = await editsSinceUpload(USER);
-    await applyCollectionChange(USER, { kind: "edit", rows: [{ ...at(C), quantity: 2 }] }, { id: randomUUID(), env: process.env });
+    await applyCollectionChange(USER, { kind: "edit", rows: [{ ...at(C), quantity: 2 }] }, { id: randomUUID() });
     const editsLater = await editsSinceUpload(USER);
     check("edits since the upload count from the upload's own entry", editsAfter === 0 && editsLater === 1,
       `${editsAfter} then ${editsLater}`);
@@ -253,7 +252,7 @@ async function main() {
       agedKeys.size === 0 && agedCount === 1, `${agedKeys.size} keys; count ${agedCount}`);
     const u2 = await upload(replaceItems);
     const added = await applyCollectionChange(USER, { kind: "add", items: replaceItems, uploadId: u2 },
-      { id: randomUUID(), ownedCounts: true, env: process.env });
+      { id: randomUUID(), ownedCounts: true });
     check("an Add upload adds to what is held", added.status === "applied" && added.entry.kind === "upload_add"
       && await count(C) === 3, `${added.status}; C ${await count(C)}`);
     check("its owned counts, read under the lock, differ by exactly the Add",
@@ -263,10 +262,10 @@ async function main() {
     // A switch-off upload writes no entry, so "since" falls back to its confirm time against the
     // entries' times: both read off the database clock after the lock.
     const u3 = await upload(replaceItems);
-    await applyCollectionChange(USER, { kind: "edit", rows: [{ ...at(C), quantity: 5 }] }, { id: randomUUID(), env: process.env });
+    await applyCollectionChange(USER, { kind: "edit", rows: [{ ...at(C), quantity: 5 }] }, { id: randomUUID() });
     await replaceCollection(USER, replaceItems, { confirmUploadId: u3 });
     const legacyAfter = await editsSinceUpload(USER);
-    await applyCollectionChange(USER, { kind: "edit", rows: [{ ...at(C), quantity: 4 }] }, { id: randomUUID(), env: process.env });
+    await applyCollectionChange(USER, { kind: "edit", rows: [{ ...at(C), quantity: 4 }] }, { id: randomUUID() });
     const legacyLater = await editsSinceUpload(USER);
     check("after a switch-off upload, edits count from its confirm time, on one clock",
       legacyAfter === 0 && legacyLater === 1, `${legacyAfter} then ${legacyLater}`);
@@ -294,8 +293,8 @@ async function main() {
     // A pruned entry is never listed or linked, even inside the window: null one directly, since
     // the prune itself only ever reaches entries the window already hides.
     const target2 = randomUUID();
-    await applyCollectionChange(USER, { kind: "add", items: [{ ...at(C), condition: null, quantity: 1 }] }, { id: target2, env: process.env });
-    await applyCollectionChange(USER, { kind: "revert", entryId: target2 }, { id: randomUUID(), env: process.env });
+    await applyCollectionChange(USER, { kind: "add", items: [{ ...at(C), condition: null, quantity: 1 }] }, { id: target2 });
+    await applyCollectionChange(USER, { kind: "revert", entryId: target2 }, { id: randomUUID() });
     await pool.query("update collection_history set rows = null, pruned_at = now() where id = $1", [target2]);
     const afterPrune = await listHistory(USER);
     const linkToPruned = afterPrune.entries.find((e) => e.revertsId === target2);
@@ -306,7 +305,7 @@ async function main() {
     check("an edit that ends every row at nothing reads as a removal in the list",
       removal?.removesOnly === true && page.entries.filter((e) => e.kind === "add").every((e) => !e.removesOnly),
       JSON.stringify({ removesOnly: removal?.removesOnly }));
-    const reusedId = await applyCollectionChange(USER, { kind: "revert", entryId: target2 }, { id: target2, env: process.env })
+    const reusedId = await applyCollectionChange(USER, { kind: "revert", entryId: target2 }, { id: target2 })
       .then((r) => r.status, (e: Error) => e.message);
     check("a revert sent under its own target's id is refused, never answered as already applied",
       reusedId === "collection change id is already in use", reusedId);
@@ -337,7 +336,7 @@ async function main() {
       wrong.length === 0 ? `${figured.length} entries` : JSON.stringify(wrong.slice(0, 3)));
     const printing = randomUUID();
     const fixed = { ...at(C), collectorNumber: "2" };
-    await applyCollectionChange(USER, { kind: "edit", rows: [{ ...fixed, quantity: 2, scryfallId: printing, condition: "LP" }] }, { id: randomUUID(), env: process.env });
+    await applyCollectionChange(USER, { kind: "edit", rows: [{ ...fixed, quantity: 2, scryfallId: printing, condition: "LP" }] }, { id: randomUUID() });
     const created = await one<{ scryfall_id: string | null; condition: string | null } | undefined>(
       "select scryfall_id, condition from collection_items where user_id = $1 and oracle_id = $2 and collector_number = '2'",
       [USER, C],
@@ -361,11 +360,11 @@ async function main() {
     const netBefore = await editsSinceUpload(USER);
     const keysBefore = await editedKeysSinceUpload(USER);
     const cancelId = randomUUID();
-    await applyCollectionChange(USER, { kind: "add", items: [{ ...at(B), collectorNumber: "9", condition: null, quantity: 3 }] }, { id: cancelId, env: process.env });
+    await applyCollectionChange(USER, { kind: "add", items: [{ ...at(B), collectorNumber: "9", condition: null, quantity: 3 }] }, { id: cancelId });
     const netAdded = await editsSinceUpload(USER);
     // The probe's committed deck holds a copy of B by now: the revert says so first, and is confirmed with what it showed.
     const revertOf = (confirmShort?: ShortDeck[]) =>
-      applyCollectionChange(USER, { kind: "revert", entryId: cancelId }, { id: randomUUID(), confirmShort, env: process.env });
+      applyCollectionChange(USER, { kind: "revert", entryId: cancelId }, { id: randomUUID(), confirmShort });
     let cancelled = await revertOf();
     if (cancelled.status === "wouldShort") cancelled = await revertOf(cancelled.decks);
     const netAfter = await editsSinceUpload(USER);
