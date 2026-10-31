@@ -60,7 +60,7 @@ function sourceFiles(dir) {
 }
 
 /** Next's server entry points under `src/app`, plus the request proxy: where a server module graph starts. */
-const ENTRY = /(^|\/)(src\/app\/.*(page|layout|route|loading|error|not-found|template|default|global-error)\.tsx?|src\/(proxy|middleware|instrumentation)\.ts)$/;
+const ENTRY = /(^|\/)(src\/app\/.*(page|layout|route|loading|error|not-found|template|default|global-error|robots|manifest|sitemap|icon|apple-icon|opengraph-image|twitter-image)\.tsx?|src\/(proxy|middleware|instrumentation)\.ts)$/;
 const isEntry = (root, file, source) => ENTRY.test(file.slice(root.length + 1)) || /^\s*["']use server["']/m.test(source);
 
 /**
