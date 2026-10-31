@@ -123,6 +123,8 @@ const DEPLOYED_ENV = DEPLOYED
   : null;
 // Where the deployed function's `[perf]` lines are read back from (PERF_TIMING=1 on that project).
 const VERCEL_PROJECT = process.env.MEASURE_VERCEL_PROJECT ?? "the-99-staging";
+// `vercel logs` runs from the temp dir (no linked project), so the team is named, not read from a link.
+const VERCEL_SCOPE = process.env.MEASURE_VERCEL_SCOPE ?? "featherweight-design";
 // Read-only `pg_stat_statements` deltas on staging, taken around each warm load. No reset.
 const PGSTAT_URL = process.env.MEASURE_PGSTAT_URL ?? null;
 const RUNS = Math.max(1, Number(process.env.MEASURE_RUNS ?? 7));
@@ -372,8 +374,8 @@ async function resolveDeployedSpans(node, since) {
     try {
       const out = execFileSync(
         "vercel",
-        ["logs", "-p", VERCEL_PROJECT, "--environment", "production", "--no-branch",
-          "--since", new Date(since - 60_000).toISOString(), "--request-id", id, "-j"],
+        ["logs", "-p", VERCEL_PROJECT, "--scope", VERCEL_SCOPE, "--environment", "production",
+          "--since", new Date(since - 60_000).toISOString(), "-q", `requestId:"${id}"`, "--json"],
         { encoding: "utf8", maxBuffer: 16 * 1024 * 1024, cwd: os.tmpdir(), stdio: ["ignore", "pipe", "ignore"] },
       );
       for (const [k, lines] of perfLinesFromVercel(out)) byId.set(k, lines);

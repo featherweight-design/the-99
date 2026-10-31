@@ -230,6 +230,7 @@
     "probe:deck-locks": "node scripts/probe-deck-locks.mjs",
     "probe:deck-sort": "node scripts/probe-deck-sort.mjs",
     "probe:undo-stack": "node scripts/probe-undo-stack.mjs",
+    "check:client-values": "node scripts/check-client-values.mjs",
     "check:collection-routes": "node scripts/check-collection-routes.mjs",
     "check:list-cache": "node scripts/check-list-cache.mjs",
     "check:payments-reads": "node scripts/check-payments-reads.mjs",

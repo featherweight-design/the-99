@@ -58,6 +58,14 @@ describe("perfLinesFromVercel", () => {
     ]);
   });
 
+  it("reads CLI 65's typed lines and skips its summary line", () => {
+    const typed = [
+      JSON.stringify({ type: "log", data: { requestId: "e-5-v", message: "[perf] / total=77" } }),
+      JSON.stringify({ type: "summary", data: { count: 1 } }),
+    ].join("\n");
+    expect([...perfLinesFromVercel(typed).entries()]).toEqual([["e-5-v", ["/ total=77"]]]);
+  });
+
   it("finds a request's line by its id and pattern, and nothing for another request", () => {
     const byId = perfLinesFromVercel(jsonl);
     expect(spansForRequest(byId, "a-1-x", "/")).toBe("/ total=310 home=200");

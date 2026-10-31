@@ -24,6 +24,7 @@ import { useHydrated } from "../ui/hydrated-art";
 import { declineInviteAction, redeemInviteAction } from "../../app/friends/actions";
 import { FriendCard, type CardFace } from "./friend-card";
 import { SocialToast, type SocialToastState } from "./social-toast";
+import { PRIMARY_BUTTON, SECONDARY_BUTTON } from "./friend-landing-buttons";
 
 const copy = socialCopy.landing;
 
@@ -48,10 +49,6 @@ function faceOf(v: LandingView, since: (d: Date) => string, signature: boolean):
   }
 }
 
-// The board's two buttons (R2 Landing): 48px stacked full width at phone, 44px in a row from md.
-const BUTTON = "box-border inline-flex h-[48px] w-full cursor-pointer items-center justify-center rounded-[8px] font-sans text-[15px] no-underline transition-colors disabled:cursor-default disabled:opacity-60 md:h-[44px] md:w-auto md:text-[14px]";
-export const PRIMARY_BUTTON = `${BUTTON} border-0 bg-[color:var(--accent)] px-[26px] font-semibold text-[color:var(--bg)] hover:bg-[color:var(--accent-hover)] disabled:hover:bg-[color:var(--accent)]`;
-const SECONDARY_BUTTON = `${BUTTON} bg-transparent px-[20px] font-medium text-[color:var(--fg)] [border:1px_solid_var(--border-strong)] hover:[border-color:var(--accent)] hover:text-[color:var(--accent-hover)] disabled:hover:[border-color:var(--border-strong)] disabled:hover:text-[color:var(--fg)]`;
 
 /**
  * The column beside the card: a kicker (desktop only; the phone board draws none), the heading that carries the

@@ -17,7 +17,8 @@ import { invitePath, isInviteToken } from "../../../lib/social/client-rules";
 import { socialCopy } from "../../../lib/copy/social";
 import { SpendFriendLink } from "../../../components/social/spend-friend-link";
 import { FriendCard } from "../../../components/social/friend-card";
-import { FriendLanding, LandingColumn, PRIMARY_BUTTON } from "../../../components/social/friend-landing";
+import { FriendLanding, LandingColumn } from "../../../components/social/friend-landing";
+import { PRIMARY_BUTTON } from "../../../components/social/friend-landing-buttons";
 
 const copy = socialCopy.landing;
 

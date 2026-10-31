@@ -9,7 +9,7 @@ import { auth } from "@clerk/nextjs/server";
 import { SignInButton } from "@clerk/nextjs";
 import { redirect } from "next/navigation";
 import { inviteOnlyCopy as copy } from "../../lib/copy/join";
-import { PRIMARY_BUTTON } from "../../components/social/friend-landing";
+import { PRIMARY_BUTTON } from "../../components/social/friend-landing-buttons";
 import { INVITE_MAIN, NewcomerColumn } from "../../components/join/newcomer-column";
 import { LegalLinks } from "../../components/legal/legal-links";
 import { InviteFan } from "../../components/social/friend-card";

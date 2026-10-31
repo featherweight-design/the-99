@@ -5,6 +5,7 @@ import { adminCopy } from "../../lib/copy/admin";
 import { SearchField } from "../ui/text-field";
 import type { ConfirmContext } from "./model-confirm";
 import { RowControls } from "./override-controls";
+import { ROW } from "./override-row";
 
 // Add a group or an account override (admin STATES F7, F8). The button opens an inline lookup; a
 // pick adds a pending row with On and Off unset and a note field, and nothing is written until On or
@@ -12,8 +13,6 @@ import { RowControls } from "./override-controls";
 
 const copy = adminCopy.switch;
 const MAX_RESULTS = 7;
-export const ROW =
-  "relative flex flex-col gap-[10px] rounded-[12px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] px-[14px] py-[12px] md:flex-row md:items-center md:gap-[16px] md:px-[16px]";
 
 type Choice = { id: string; label: string; sub: string; search: string };
 
