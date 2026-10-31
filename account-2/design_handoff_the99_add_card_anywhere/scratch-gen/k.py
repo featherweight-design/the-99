@@ -30,10 +30,10 @@ CSS_K = """<style>
 .qh{font:10px 'IBM Plex Mono';color:var(--fg-faint);padding:2px 2px 4px}
 </style>"""
 
-PH_NEW = 'Add to this deck by name · Naya only'
+PH_NEW = 'Add a card by name · Naya only'
 PH_OLD = 'Add a card by name · Naya only'
 
-def dock(top, q='', owned=True, new_ph=True, w=None, left=0):
+def dock(top, q='', owned=True, new_ph=False, w=None, left=0):
     if q:
         f = f'<span class="f on">{SEARCH}<span>{q}</span><span class="caret"></span></span>'
     else:
@@ -112,14 +112,14 @@ def build():
     b = head('R2 · Search adds, card details underneath, and the deck’s own search',
              'Two searches on a deck page, one job each',
              'Hugh picked <b>C with D under it</b> (2026-10-31) and asked how this reads beside the deck page’s own search, the dock at the foot of Your deck, which adds to the <i>deck</i>. '
-             'Call: each search keeps one job, the dock’s words say which, and the dock sends the reader to the collection at the one moment it fails them: '
+             'Call: each search keeps one job, and the dock sends the reader to the collection at the one moment it fails them: '
              'a card they hold but haven’t logged, hidden by <i>Owned only</i>. No collection + on a dock row: two pluses on one row that add to different places is worse than two searches. '
              'Drawn over the shipped dock (<code>quick-add-bar.tsx</code>, <code>quickAddEmpty</code>).', tag='R2')
     b += '<h3 class="sec">Phone · 390 · the friend who just pulled Ghalta</h3>'
     b += frames(
-        fr('<b>K1</b> · 390 · the dock says it is the deck’s', k_rest(),
-           'Placeholder <b>Add to this deck by name · Naya only</b> <span class="draft">DRAFT</span> in place of <i>Add a card by name</i>, which reads as “add to my cards” now that search adds to the collection. '
-           '<code>fieldAria</code> already says “to this deck”. The search glyph in the header stays the collection’s way in.'),
+        fr('<b>K1</b> · 390 · the dock, as shipped', k_rest(),
+           'The placeholder stays as shipped (Hugh, R2 review): <i>Add a card by name · {identity} only</i> already names the deck’s colors, and the field’s name says “to this deck”. '
+           'The search glyph in the header stays the collection’s way in.'),
         fr('<b>K2</b> · 390 · typed, Owned only on, nothing found', k_empty(),
            'He owns Ghalta in his hand, not in the app, so the shipped empty state shows. It gains one press, <b>Add a card to your collection</b> <span class="draft">DRAFT</span>, above the shipped <i>Search all cards instead</i>. Only with Owned only on: that is when the filter, not the catalog, is in the way.'),
         fr('<b>K3</b> · 390 · Add cards, the query carried', k_sheet(),
@@ -137,7 +137,7 @@ def build():
         fr('<b>K8</b> · 390 · Owned only off', k_all(),
            'Unowned cards show, as shipped, with the deck’s Add (it goes on the deck as to buy). No collection press on the row. Its name still opens card details (small items 2, 6b), where D’s <i>Add to collection</i> is.'),
         fr('<b>K9</b> · 390 · collection edit switch off', k_off(),
-           'The shipped dock: old placeholder, the empty state with only <i>Search all cards instead</i>. Nothing moves.'),
+           'The shipped dock: the empty state with only <i>Search all cards instead</i>. Nothing moves.'),
     )
     b += '<h3 class="sec">Desktop · 1300</h3>'
     b += frames(
@@ -149,7 +149,7 @@ def build():
     b += rule('R2 calls', [
         '<b>C, as drawn in R1:</b> a + on every search row, <i>Add several cards</i> above Recent cards, Done returns to the search as it was with the row reading ×1 owned.',
         '<b>D under it:</b> card details’ <i>Add to collection</i> on every surface with the shell, a friend’s deck included; not the public card page.',
-        '<b>The dock is the deck’s.</b> New placeholder (DRAFT); no collection control on its rows; one bridge press in its Owned-only empty state that opens Add cards with the query carried and returns to the dock as it was.',
+        '<b>The dock is the deck’s.</b> Placeholder as shipped (Hugh, R2 review); no collection control on its rows; one bridge press in its Owned-only empty state that opens Add cards with the query carried and returns to the dock as it was.',
         '<b>Changed from my reply in the thread:</b> I said the bridge line would sit under not-owned rows when Owned only is off. Drawn, that put a collection press under every unowned row, a second control on a dense list. Off, the row’s name opens card details and D covers it (K8).',
         '<b>Still open:</b> C’s ⌘↵ shortcut in search (keep or drop).',
     ])
