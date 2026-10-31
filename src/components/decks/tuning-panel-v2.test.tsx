@@ -582,21 +582,29 @@ describe("TuningPanel with Suggested changes v2 on: the wait and the results (UI
 
   it("a stored v2 run's group heads read the same deck count with the switch off as with it on", async () => {
     const figures: RunFigures = { typeCounts: { Instants: 12 }, roles: [{ role: "removal", have: 6, target: 10 }] };
+    // N = 5: the results group their lines only from GROUP_FROM_N (4) up, so the fixture's N = 3 draws no heads at all.
+    const grouped: TuningState = {
+      ...finished,
+      run: { ...finished.run!, requestedCount: 5 },
+      itemsAsk: { ...ask, requestedCount: 5 },
+      review: { runId: RUN, at, readVersion: 4 },
+    };
     const heads = async (v2: TuningV2 | null) => {
       const d = { ...deps(), v2: v2Actions() };
-      d.read = vi.fn(async () => ({ ...finished, review: { runId: RUN, at, readVersion: 4 } }));
+      d.read = vi.fn(async () => grouped);
       const view = await draw(d, v2, [2], (node) => (
         <ReviewRunProvider value={{ tool: "suggested", runId: RUN, past: { at: at.toISOString(), tier: "credit", back: vi.fn() } }}>{node}</ReviewRunProvider>
       ), figures);
-      const text = document.body.textContent ?? "";
+      // Each list's Instants head, as drawn (both lists' lines are Instants).
+      const text = [...document.querySelectorAll("[data-sc-group='Instants'] h4")].map((h) => h.textContent ?? "");
       view.unmount();
       return text;
     };
     const on = await heads(v2At());
     const off = await heads(null);
-    expect(on).toContain(sc.results.typeHead(12));
-    expect(off).toContain(sc.results.typeHead(12));
-    expect(off).not.toContain(sc.results.typeHead(0));
+    expect(on).toHaveLength(2);
+    for (const head of on) expect(head).toContain(sc.results.typeHead(12));
+    expect(off).toEqual(on);
   });
 
   it("the same stored v2 run with the switch on keeps its Apply bar and pick controls", async () => {

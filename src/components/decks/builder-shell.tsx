@@ -1574,17 +1574,21 @@ export function BuilderShell({
   // What a v2 run's group heads read off the deck (`n in the deck`, a role's have and target): a READ, so it is built
   // whatever this reader's switch says. A stored v2 run is drawn read-only with the switch off (#2497), and its heads must
   // carry the same counts as with it on.
-  const haveByRole = roleCounterFor(labelRows)(cards);
-  const roleFigures = ROLE_ORDER.map((role) => ({
-    role, label: mix.cells[role].label, have: haveByRole[role], target: mix.cells[role].target, advisory: mix.cells[role].advisory,
-  }));
-  const runFigures: RunFigures = {
-    typeCounts: cards.reduce<Partial<Record<CardTypeGroup, number>>>((acc, c) => {
-      acc[c.cardTypeGroup] = (acc[c.cardTypeGroup] ?? 0) + c.quantity;
-      return acc;
-    }, {}),
-    roles: roleFigures,
-  };
+  // Memoized on its inputs so the panel gets one identity per deck state, not one per render.
+  const { roleFigures, runFigures } = useMemo(() => {
+    const haveByRole = roleCounterFor(labelRows)(cards);
+    const roles = ROLE_ORDER.map((role) => ({
+      role, label: mix.cells[role].label, have: haveByRole[role], target: mix.cells[role].target, advisory: mix.cells[role].advisory,
+    }));
+    const figures: RunFigures = {
+      typeCounts: cards.reduce<Partial<Record<CardTypeGroup, number>>>((acc, c) => {
+        acc[c.cardTypeGroup] = (acc[c.cardTypeGroup] ?? 0) + c.quantity;
+        return acc;
+      }, {}),
+      roles,
+    };
+    return { roleFigures: roles, runFigures: figures };
+  }, [labelRows, cards, mix]);
   let suggestedV2: TuningV2 | null = null;
   if (suggestedChangesV2) {
     // Newest first (the page's order): the first game whose note says anything.
