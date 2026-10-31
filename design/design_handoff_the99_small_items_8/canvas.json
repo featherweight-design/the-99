@@ -1,0 +1,81 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-10-31T18:30:47Z"
+ },
+ "title": "The 99 \u00b7 Small items 8",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1612,
+   "h": 977,
+   "title": "Small items 8 \u00b7 the calls"
+  },
+  "Banner.dc.html": {
+   "x": 1692,
+   "y": 0,
+   "w": 2000,
+   "h": 4540,
+   "title": "1 \u00b7 Home banner, glyph not screenshot"
+  },
+  "Ticket.dc.html": {
+   "x": 3772,
+   "y": 0,
+   "w": 2000,
+   "h": 3258,
+   "title": "2 \u00b7 Sign-up with a ticket"
+  },
+  "Cart-Tablet.dc.html": {
+   "x": 5852,
+   "y": 0,
+   "w": 2000,
+   "h": 4214,
+   "title": "3 \u00b7 Cart toasts at 768\u20131223"
+  },
+  "Beads.dc.html": {
+   "x": 0,
+   "y": 4599,
+   "w": 2000,
+   "h": 2274,
+   "title": "4 \u00b7 Results beads, 1\u20134 games"
+  },
+  "SC-Off.dc.html": {
+   "x": 2080,
+   "y": 4599,
+   "w": 2000,
+   "h": 3814,
+   "title": "5 \u00b7 v2 run with v2 off"
+  },
+  "Report.dc.html": {
+   "x": 4160,
+   "y": 4599,
+   "w": 2000,
+   "h": 4243,
+   "title": "6 \u00b7 Report a problem after a crash"
+  },
+  "Errata.dc.html": {
+   "x": 6240,
+   "y": 4599,
+   "w": 1500,
+   "h": 1752,
+   "title": "Errata i\u2013iv"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Banner.dc.html",
+  "Ticket.dc.html",
+  "Cart-Tablet.dc.html",
+  "Beads.dc.html",
+  "SC-Off.dc.html",
+  "Report.dc.html",
+  "Errata.dc.html"
+ ],
+ "notes": {}
+}
