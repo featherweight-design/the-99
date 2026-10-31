@@ -31,7 +31,7 @@ const view = (s: Summary | null, contested: ContestedCard[] = []) => (
     contested={contested}
     preview={null}
     filename="collection.csv"
-    stampDate="14 Sep 2026"
+    stampDate="Sep 14, 2026"
   />
 );
 
@@ -68,7 +68,7 @@ describe("ArrivalsSummary", () => {
     // …and still says what the FILE did, so "nothing moved" reads as a fact about decks rather
     // than as an import that did nothing at all. Four copies moved here: 3 in, 1 out.
     const stamp = screen.getByText(new RegExp(copy.summary.fileDelta(4)));
-    expect(stamp.textContent).toContain(copy.summary.fileStamp("14 Sep 2026", "collection.csv"));
+    expect(stamp.textContent).toContain(copy.summary.fileStamp("Sep 14, 2026", "collection.csv"));
     expect(screen.getByText(copy.summary.done)).toBeTruthy();
   });
 
@@ -381,7 +381,7 @@ describe("ArrivalsSummary — where an added copy goes", () => {
       contested={[]}
       preview={null}
       filename="collection.csv"
-      stampDate="14 Sep 2026"
+      stampDate="Sep 14, 2026"
       addedCopy={addedCopy}
       chooser={chooser}
     />,
@@ -419,7 +419,7 @@ describe("ArrivalsSummary — where an added copy goes", () => {
         contested={[]}
         preview={null}
         filename="collection.csv"
-        stampDate="14 Sep 2026"
+        stampDate="Sep 14, 2026"
         addedCopy
         chooser={{}}
       />,
@@ -455,7 +455,7 @@ describe("ArrivalsSummary — where an added copy goes", () => {
         contested={[{ ...contestedCard(), oracleId: SOL, cardName: "Sol Ring" }]}
         preview={null}
         filename="collection.csv"
-        stampDate="14 Sep 2026"
+        stampDate="Sep 14, 2026"
         addedCopy
         chooser={chooser}
       />,

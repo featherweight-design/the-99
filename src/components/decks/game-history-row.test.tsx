@@ -56,7 +56,15 @@ describe("GameHistoryRow", () => {
   // Pod size first, then the date — the pod is what changes how a game read.
   it("puts the pod size before the date in the meta slot", () => {
     mount();
-    expect(screen.getByText(gameLogCopy.history.meta("4", "1 Sep"))).toBeInTheDocument();
+    expect(screen.getByText(gameLogCopy.history.meta("4", "Sep 1"))).toBeInTheDocument();
+  });
+
+  // Small items 7, addendum 5: 156 on desktop holds `4-player · Dec 31, 2025` on one line. The phone sizes to its text.
+  it("gives the meta a 156px slot on desktop and none on the phone", () => {
+    mount({ ...GAME, playedAt: new Date("2025-12-31T12:00:00") });
+    const meta = screen.getByText(gameLogCopy.history.meta("4", "Dec 31, 2025"));
+    expect(meta).toHaveClass("md:w-[156px]");
+    expect(meta.className).not.toMatch(/(^|\s)w-\[/);
   });
 
   // §Surfaces 5 — the stamp answers "which list was on the table", which is the

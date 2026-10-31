@@ -140,6 +140,7 @@ export function FactTooltip({
   lines,
   tapOnTouch = false,
   holdMoments = false,
+  focusLabel,
   children,
 }: {
   fact?: CardFact;
@@ -162,6 +163,14 @@ export function FactTooltip({
    * marker's tooltip, which would otherwise draw over its own moment's bubble (M7, plan `2026-10-16-moments.md`).
    */
   holdMoments?: boolean;
+  /**
+   * Given, the wrapper takes a tab stop named by this label (`role="img"`, so a focused wrapper is never announced
+   * nameless and what it wraps is not read twice), keyboard focus opens the bubble as hover does, on the same delay,
+   * and Escape closes it (WCAG 1.4.13): the Stats results beads (Small items 7, addendum 6), whose date shows "on
+   * hover or focus". Pointer-fine only, like the bubble itself, so a phone gains no tab stop that shows nothing;
+   * there the caller's own spoken label inside the children carries it.
+   */
+  focusLabel?: string;
   children: React.ReactNode;
 }) {
   // THE REPO'S ONE MEDIA-QUERY SUBSCRIBER, not a second copy. This was a state-plus-effect
@@ -195,12 +204,13 @@ export function FactTooltip({
   if (!fine && !tapOnTouch) return <>{children}</>;
   const tap = !fine;
   const text = sentence ?? (fact ? cardMarkCopy.tooltip[fact] : "");
-  if (lines && lines.length > 0) return <FinePointerTooltip key={String(tap)} tap={tap} holdMoments={holdMoments} text="" lines={lines}>{children}</FinePointerTooltip>;
+  const focus = tap ? undefined : focusLabel;
+  if (lines && lines.length > 0) return <FinePointerTooltip key={String(tap)} tap={tap} holdMoments={holdMoments} focusLabel={focus} text="" lines={lines}>{children}</FinePointerTooltip>;
   if (!text) return <>{children}</>;
-  return <FinePointerTooltip key={String(tap)} tap={tap} holdMoments={holdMoments} text={text}>{children}</FinePointerTooltip>;
+  return <FinePointerTooltip key={String(tap)} tap={tap} holdMoments={holdMoments} focusLabel={focus} text={text}>{children}</FinePointerTooltip>;
 }
 
-function FinePointerTooltip({ text, lines, tap = false, holdMoments = false, children }: { text: string; lines?: readonly React.ReactNode[]; tap?: boolean; holdMoments?: boolean; children: React.ReactNode }) {
+function FinePointerTooltip({ text, lines, tap = false, holdMoments = false, focusLabel, children }: { text: string; lines?: readonly React.ReactNode[]; tap?: boolean; holdMoments?: boolean; focusLabel?: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   useMomentHold(holdMoments && open);
   // Decided when the bubble OPENS, from the laid-out geometry at that moment: the row may have
@@ -295,6 +305,24 @@ function FinePointerTooltip({ text, lines, tap = false, holdMoments = false, chi
               timer.current = setTimeout(openNow, OPEN_DELAY_MS);
             },
             onPointerLeave: () => { cancel(); setOpen(false); },
+            ...(focusLabel
+              ? {
+                  tabIndex: 0,
+                  role: "img",
+                  "aria-label": focusLabel,
+                  onKeyDown: (e: React.KeyboardEvent) => {
+                    if (e.key === "Escape" && (open || timer.current)) {
+                      cancel();
+                      setOpen(false);
+                    }
+                  },
+                  onFocus: () => {
+                    cancel();
+                    timer.current = setTimeout(openNow, OPEN_DELAY_MS);
+                  },
+                  onBlur: () => { cancel(); setOpen(false); },
+                }
+              : {}),
           })}
     >
       {children}

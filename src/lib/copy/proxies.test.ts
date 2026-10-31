@@ -48,7 +48,7 @@ const everyString = (): string => [
   proxyCopy.cost.unpriced(2),
   proxyCopy.cost.soldOut(1),
   proxyCopy.cost.soldOut(2),
-  proxyCopy.cost.stale("14 September"),
+  proxyCopy.cost.stale("September 14"),
   proxyCopy.row.cardAria("The Ozolith"),
   proxyCopy.row.deckAria("HD Gods"),
   proxyCopy.row.deckCount(1),

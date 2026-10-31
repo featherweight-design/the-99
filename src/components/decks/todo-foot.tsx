@@ -5,12 +5,12 @@
 // fixed order, version · proxies · provenance ▾ · other drafts ▾. Plain facts are text. Provenance
 // is a disclosure that opens INSIDE the card, under the line, for the visit only (state, never
 // stored); other drafts opens the pass sheet's other-drafts form (deck messages PR 3). With nothing to do the foot stands alone as the quiet strip
-// (R1's "v3 · committed 2 Oct 2026"), drawn by `TodoCard` around it.
+// (R1's "v3 · committed Oct 2, 2026"), drawn by `TodoCard` around it.
 //
 // The version segment is where a commit or a discard lands focus, which `PendingBanner` did before
 // the foot replaced it.
 
-import { Fragment, type ReactNode, useEffect, useId, useRef, useState } from "react";
+import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { combosCloseCopy } from "../../lib/copy/combos-close";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
@@ -129,19 +129,23 @@ export function TodoFoot({ facts, quiet }: { facts: TodoFootFacts; quiet: boolea
     <>
       <div
         data-todo-foot
-        className={`flex flex-wrap items-start ${ground} ${pad} ${
+        className={`flex flex-wrap items-start gap-x-[5px] ${ground} ${pad} ${
           quiet ? "" : "[border-top:1px_solid_var(--border)]"
         } font-mono text-[11px] leading-[1.7] text-[color:var(--fg-faint)]`}
       >
+        {/* Each segment after the first carries its own leading `·`, joined to it by a no-break space, and never
+            breaks inside (Small items 7, addendum 7, `Dates.dc.html`): a wrap starts the next line with `· 2 proxies`
+            rather than leaving the dot dangling at the end of the line before. The 5px before the dot is the row's
+            column gap, which a wrapped line does not draw at its start. */}
         {segments.map((s, i) => (
-          <Fragment key={s.key}>
+          <span key={s.key} data-foot-segment className="flex items-start whitespace-nowrap">
             {i > 0 && (
-              <span aria-hidden data-foot-separator className={`${cell} mx-[5px] text-[color:var(--fg-locked)]`}>
-                {copy.footSeparator}
+              <span aria-hidden data-foot-separator className={`${cell} text-[color:var(--fg-locked)]`}>
+                {`${copy.footSeparator}\u00a0`}
               </span>
             )}
             {s.node}
-          </Fragment>
+          </span>
         ))}
       </div>
       {/* The ledger panel stays MOUNTED while closed, `hidden` (out of the accessibility tree and the tab

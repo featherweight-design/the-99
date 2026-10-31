@@ -45,8 +45,8 @@ describe("the import receipt page", () => {
       const el = await ImportSummaryPage({ params: Promise.resolve({ uploadId: UPLOAD }) }) as unknown as { props: { children: { props: { stampDate: string } } } };
       return el.props.children.props.stampDate;
     };
-    expect(await stampOf({ kept: 0, decided: 0, tokens: 0, cards: 1 })).toBe("9 Oct 2026");
-    expect(await stampOf(null)).toBe("8 Oct 2026");
+    expect(await stampOf({ kept: 0, decided: 0, tokens: 0, cards: 1 })).toBe("Oct 9, 2026");
+    expect(await stampOf(null)).toBe("Oct 8, 2026");
   });
 
   // The receipt's words follow what the upload did, so the page hands the component the view's mode.

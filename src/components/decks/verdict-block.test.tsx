@@ -129,7 +129,7 @@ describe("analyzedWhen", () => {
     expect(analyzedWhen(at, after(30_000))).toBe("a moment ago");
     expect(analyzedWhen(at, after(60_000))).toBe("1 minute ago");
     expect(analyzedWhen(at, after(59 * 60_000))).toBe("59 minutes ago");
-    expect(analyzedWhen(at, after(60 * 60_000))).toBe("18 Sep");
+    expect(analyzedWhen(at, after(60 * 60_000))).toBe("Sep 18");
   });
 });
 
@@ -298,18 +298,18 @@ describe("the date line over a precon start's reading", () => {
   const at = new Date("2026-10-27T15:00:00Z");
   const now = new Date("2026-10-28T09:00:00Z");
   it("reads Analysis from the precon list, with the reading's date, while it is fresh", () => {
-    expect(analyzedLine(at, now, true, 0)).toBe("Analysis from the precon list · 27 Oct");
+    expect(analyzedLine(at, now, true, 0)).toBe("Analysis from the precon list · Oct 27");
   });
   it("gains before your changes once an edit stales it", () => {
-    expect(analyzedLine(at, now, false, 0)).toBe("Analysis from the precon list · 27 Oct, before your changes");
+    expect(analyzedLine(at, now, false, 0)).toBe("Analysis from the precon list · Oct 27, before your changes");
   });
   it("leaves every other reading as shipped: pinned, stale and asked", () => {
-    expect(analyzedLine(at, now, true, 1)).toBe("analyzed with version 1 · 27 Oct");
-    expect(analyzedLine(at, now, false, 1)).toBe("analyzed 27 Oct, before your changes");
-    expect(analyzedLine(at, now, true, null)).toBe("analyzed 27 Oct");
+    expect(analyzedLine(at, now, true, 1)).toBe("analyzed with version 1 · Oct 27");
+    expect(analyzedLine(at, now, false, 1)).toBe("analyzed Oct 27, before your changes");
+    expect(analyzedLine(at, now, true, null)).toBe("analyzed Oct 27");
   });
   it("draws it in the verdict's head", () => {
     render(<VerdictBlock analyzedAt={at.toISOString()} versionNumber={0} {...drawn("2")} />);
-    expect(screen.getByTestId("verdict-analyzed").textContent).toMatch(/^Analysis from the precon list · \d{1,2} [A-Z][a-z]{2}$/);
+    expect(screen.getByTestId("verdict-analyzed").textContent).toMatch(/^Analysis from the precon list · [A-Z][a-z]{2} \d{1,2}(, \d{4})?$/);
   });
 });

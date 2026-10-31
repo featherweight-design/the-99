@@ -220,8 +220,8 @@ describe("SetGridView — price staleness", () => {
   });
 
   it("says so once when the server reports the feed behind", () => {
-    withPrices("2026-01-01 09:00:00", "1 January");
-    expect(screen.getByText(/prices as of 1 January/)).toBeInTheDocument();
+    withPrices("2026-01-01 09:00:00", "January 1");
+    expect(screen.getByText(/prices as of January 1/)).toBeInTheDocument();
   });
 });
 

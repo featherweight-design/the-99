@@ -23,7 +23,7 @@ const ETCHED_ONLY = fact({ etchedCents: 1250 });
 const SOLD_OUT = fact({ cents: 210, asOf: OLDER });
 
 const provenance: ProvenanceForm = { behind: false, when: "Monday" };
-const behind: ProvenanceForm = { behind: true, when: "12 August" };
+const behind: ProvenanceForm = { behind: true, when: "August 12" };
 
 const VARIANTS = ["row", "tile"] as const;
 
@@ -147,7 +147,7 @@ describe("BuyTag accessible name", () => {
       />,
     );
     expect(container.querySelector(".sr-only")).toHaveTextContent(
-      `Sol Ring, not owned. ${priceCopy.aria.pricedBehind("$2.10", "12 August")}`,
+      `Sol Ring, not owned. ${priceCopy.aria.pricedBehind("$2.10", "August 12")}`,
     );
   });
 

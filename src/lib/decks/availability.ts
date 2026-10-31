@@ -68,7 +68,7 @@ export type DeckClaim = {
    */
   since?: number | null;
   /**
-   * The number of the version this claim comes from — the `v7` of a `v7 · 2 Aug`
+   * The number of the version this claim comes from — the `v7` of a `v7 · Aug 2`
    * stamp. Null for a brew, and optional for the same reason as `since`.
    */
   versionNumber?: number | null;

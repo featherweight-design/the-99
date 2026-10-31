@@ -10,8 +10,8 @@ import type { HistoryListEntry } from "./history";
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const DAY_MS = 86_400_000;
 
-/** "9 Oct", UTC. */
-export const dayLabel = (d: Date) => `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
+/** "Oct 9", UTC: month first, US order. */
+export const dayLabel = (d: Date) => `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}`;
 
 /** "14:02", UTC. */
 export const timeLabel = (d: Date) =>

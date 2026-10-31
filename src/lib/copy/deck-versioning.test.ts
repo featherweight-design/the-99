@@ -92,13 +92,13 @@ describe("deckVersioningCopy", () => {
   // The discard consequence names only the halves that moved: a cuts-only draft
   // saying "the 0 you added" states a change nobody made.
   it("names only the halves a discard actually loses", () => {
-    const both = copy.discard.consequence(1, "12 Sep", 99, 2, 3);
+    const both = copy.discard.consequence(1, "Sep 12", 99, 2, 3);
     expect(both).toContain("The 2 you added and the 3 you cut are not stored anywhere");
 
-    expect(copy.discard.consequence(1, "12 Sep", 99, 0, 3)).toContain(
+    expect(copy.discard.consequence(1, "Sep 12", 99, 0, 3)).toContain(
       "The 3 you cut are not stored anywhere",
     );
-    expect(copy.discard.consequence(1, "12 Sep", 99, 1, 0)).toContain(
+    expect(copy.discard.consequence(1, "Sep 12", 99, 1, 0)).toContain(
       "The 1 you added is not stored anywhere",
     );
   });

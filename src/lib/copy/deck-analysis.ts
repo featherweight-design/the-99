@@ -137,7 +137,7 @@ export const deckAnalysisCopy = {
       body: "The mix below is counted from your list and is true now. Nothing about your deck changed.",
       cta: "Try again",
     },
-    /** `analyzed {when}`: relative under an hour, then the deck page's short date (`18 Sep`). */
+    /** `analyzed {when}`: relative under an hour, then the deck page's short date (`Sep 18`). */
     analyzed: (when: string) => `analyzed ${when}`,
     justNow: "a moment ago",
     minutesAgo: (n: number) => `${n} ${n === 1 ? "minute" : "minutes"} ago`,

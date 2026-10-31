@@ -27,7 +27,7 @@ describe("DeckStatsView results card", () => {
     draw(six, [v(3, 30), v(2, 1), v(1, 10)]);
     expect(screen.getByRole("figure", { name: "Results, 6 games" })).toBeInTheDocument();
     expect(card().querySelector("[data-results-record]")).toHaveTextContent("4–1–1");
-    expect(card()).toHaveTextContent("6 games, 1 Aug to 28 Aug");
+    expect(card()).toHaveTextContent("6 games, Aug 1 to Aug 28");
   });
 
   it("draws every game oldest first, underlines the last five and states them", () => {
@@ -41,8 +41,43 @@ describe("DeckStatsView results card", () => {
   it("gives each bead a spoken result and date, and keeps the letter out of the reading order", () => {
     draw(six, []);
     const first = card().querySelector("[data-results-beads] li")!;
-    expect(first.querySelector(".sr-only")).toHaveTextContent("win, 1 Aug");
+    expect(first.querySelector(".sr-only")).toHaveTextContent("win, Aug 1");
     expect(first.querySelector("[data-result-bead]")).toHaveAttribute("aria-hidden", "true");
+  });
+
+  // Small items 7, addendum 6: no date under a bead; the row is dated once, under its first and last beads.
+  it("dates the row once, under its first and last beads, and draws no date under a bead", () => {
+    draw(six, []);
+    const beads = [...card().querySelectorAll("[data-results-beads] li")];
+    for (const b of beads) {
+      const visible = [...b.querySelectorAll("span")].filter((s) => !s.classList.contains("sr-only") && !s.querySelector(".sr-only"));
+      expect(visible.map((s) => s.textContent).join("")).not.toMatch(/Aug/);
+    }
+    const ends = card().querySelector("[data-results-ends]")!;
+    expect([...ends.children].map((c) => c.textContent)).toEqual(["Aug 1", "Aug 28"]);
+    expect(ends).toHaveAttribute("aria-hidden", "true");
+  });
+
+  // A focusable bead is never announced nameless: on a fine pointer its tab stop carries the result and date.
+  it("names each bead's tab stop by its result and date on a fine pointer", () => {
+    vi.stubGlobal("matchMedia", (q: string) => ({
+      matches: q.includes("pointer: fine"), media: q, onchange: null, addListener: vi.fn(), removeListener: vi.fn(),
+      addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn(),
+    }));
+    try {
+      draw(six, []);
+      const first = within(card()).getByRole("img", { name: "win, Aug 1" });
+      expect(first).toHaveAttribute("tabindex", "0");
+      expect(first.querySelector("[data-result-bead]")).not.toBeNull();
+      expect(within(card()).getAllByRole("img", { name: /^(win|loss|draw), / })).toHaveLength(6);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("dates a one-game row once", () => {
+    draw([g("win", 28, 1)], []);
+    expect([...card().querySelector("[data-results-ends]")!.children].map((c) => c.textContent)).toEqual(["Aug 28"]);
   });
 
   it("says the last-five line starts at the sixth game under six games", () => {
@@ -53,7 +88,7 @@ describe("DeckStatsView results card", () => {
 
   it("states one game's span as a single date", () => {
     draw([g("win", 28, 1)], [v(1, 10)]);
-    expect(screen.getByRole("figure", { name: "Results, 1 game" })).toHaveTextContent("1 game, 28 Aug");
+    expect(screen.getByRole("figure", { name: "Results, 1 game" })).toHaveTextContent("1 game, Aug 28");
   });
 
   it("lists versions current first, no games yet without a record, Version not recorded last", () => {
@@ -61,7 +96,7 @@ describe("DeckStatsView results card", () => {
     const rows = [...card().querySelectorAll("[data-result-version]")];
     expect(rows.map((r) => r.getAttribute("data-result-version"))).toEqual(["3", "2", "1", "unrecorded"]);
     expect(rows[0]).toHaveTextContent("v3");
-    expect(rows[0]).toHaveTextContent("current · 30 Aug");
+    expect(rows[0]).toHaveTextContent("current · Aug 30");
     expect(rows[0]).toHaveTextContent("no games yet");
     expect(rows[0]).not.toHaveTextContent("0–0–0");
     expect(rows[1]).toHaveTextContent("2–0–1");

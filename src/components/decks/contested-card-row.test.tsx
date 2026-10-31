@@ -99,8 +99,8 @@ describe("ContestedCardRow", () => {
 
   it("stamps each option with the version the order derives from", () => {
     render(<ContestedCardRow card={card()} />);
-    expect(screen.getByText(copy.contested.stamp(7, "2 Aug"))).toBeTruthy();
-    expect(screen.getByText(copy.contested.stamp(2, "9 Sep"))).toBeTruthy();
+    expect(screen.getByText(copy.contested.stamp(7, "Aug 2"))).toBeTruthy();
+    expect(screen.getByText(copy.contested.stamp(2, "Sep 9"))).toBeTruthy();
   });
 
   it("tags this deck without promoting it", () => {
@@ -399,7 +399,7 @@ describe("ContestedCardRow", () => {
     const radios = screen.getAllByRole("radio");
     expect(radios).toHaveLength(3);
     expect(radios[2].textContent).toContain("Muldrotha Lands");
-    // No `v7 · 2 Aug` stamp: a brew has no version to stamp.
+    // No `v7 · Aug 2` stamp: a brew has no version to stamp.
     expect(radios[2].textContent).not.toMatch(/\bv\d+\b/);
     // The supply line counts every deck that can be given a copy, the brew included.
     expect(screen.getByText(copy.contested.supply(1, 3))).toBeTruthy();

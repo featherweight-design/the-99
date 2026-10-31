@@ -84,7 +84,7 @@ export function colorLabel(identity: string[]): string {
 }
 
 /**
- * A committed date, as a version line and the history list print it: `1 Sep 2026`.
+ * A committed date, as a version line and the history list print it: `Sep 1, 2026`.
  *
  * The year is always carried, unlike the game log's own `formatPlayed`, which
  * drops it inside the current year to fit a fixed meta slot. A version is a
@@ -98,32 +98,33 @@ export function colorLabel(identity: string[]): string {
  */
 export function formatDeckDate(date: Date): string {
   const month = date.toLocaleDateString("en-US", { month: "short", timeZone: "UTC" });
-  return `${date.getUTCDate()} ${month} ${date.getUTCFullYear()}`;
+  // US order, month first (Hugh, 2026-10-30): `Sep 1, 2026`.
+  return `${month} ${date.getUTCDate()}, ${date.getUTCFullYear()}`;
 }
 
 /**
  * The same date without its year, for a stamp that sits beside a version number in a fixed
- * slot — `v7 · 2 Aug`.
+ * slot — `v7 · Aug 2`.
  *
  * Shares the rules above rather than restating them, and both of them matter here too: en-US
  * months because en-GB writes `Sept`, and UTC because `deck_version_cards.since` is a
  * `timestamp` WITHOUT time zone written by the database's clock. That second one is not a
  * nicety on this stamp — it is the evidence behind `first committed wins`, so a reader west of
- * UTC seeing `1 Aug` for a card committed on the 2nd is a wrong answer to the only question
+ * UTC seeing `Aug 1` for a card committed on the 2nd is a wrong answer to the only question
  * the stamp exists to answer.
  */
 export function formatShortDeckDate(date: Date): string {
   const month = date.toLocaleDateString("en-US", { month: "short", timeZone: "UTC" });
-  return `${date.getUTCDate()} ${month}`;
+  return `${month} ${date.getUTCDate()}`;
 }
 
-// "12 Aug" — the design's locator. The year appears only when it is not the
+// "Aug 12" — the design's locator, month first (US order, 2026-10-30). The year appears only when it is not the
 // current one, so a log read in the same season stays short.
 // Composed rather than handed whole to Intl: en-GB abbreviates September as
 // "Sept", which is correct but a character wider than the fixed meta slot was
 // drawn for.
 export function formatPlayed(date: Date, now: Date = new Date()): string {
   const month = date.toLocaleDateString("en-US", { month: "short" });
-  const stem = `${date.getDate()} ${month}`;
-  return date.getFullYear() === now.getFullYear() ? stem : `${stem} ${date.getFullYear()}`;
+  const stem = `${month} ${date.getDate()}`;
+  return date.getFullYear() === now.getFullYear() ? stem : `${stem}, ${date.getFullYear()}`;
 }
