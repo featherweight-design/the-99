@@ -5,7 +5,7 @@ import { parseStrategyKey } from "@/lib/strategy/focus";
 import type { StrategyKey } from "@/lib/strategy/score";
 import { useTarget } from "../discovery/targets-provider";
 import { useMergedRef } from "../ui/use-merged-ref";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { useAiSweepRef } from "../ui/use-ai-sweep";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 
@@ -343,6 +343,18 @@ export function TuningPanel({
   const [unchangedShown, setUnchangedShown] = useState(false);
   const [refused, setRefused] = useState<string | null>(null);
   const [announced, setAnnounced] = useState("");
+  // SC-Cost C: the send button, so `Change to 10` (which unmounts C's block) hands focus to it once the count lands, and
+  // the id of C's sentence, which describes the press while it is off. `stopShown`: C was drawn last render, so its
+  // reason is announced once, on the way in.
+  const sendRef = useRef<HTMLButtonElement>(null);
+  const focusSendOnCount = useRef(false);
+  const stopId = useId();
+  const [stopShown, setStopShown] = useState(false);
+  useEffect(() => {
+    if (!focusSendOnCount.current) return;
+    focusSendOnCount.current = false;
+    sendRef.current?.focus();
+  }, [count]);
   const [intent, setIntent] = useState(facts.intent);
   // The header's `edit` is the line's other door, and its save revalidates the page: a new line
   // from the page replaces the one held here, adjusted during render so the old one never paints.
@@ -1392,6 +1404,12 @@ export function TuningPanel({
   const two = lockedNote === null && !state.allowance.ownerShare ? creditTwo(state.allowance, funding) : null;
   // SC-Cost C: the owner's share and every card locked keep their own lines first.
   const stop = short !== null && lockedNote === null && !state.allowance.ownerShare ? short : null;
+  const stopLine = stop ? (stop.freeHoldsOne ? deckTuningCopy.allowance.costsTwoFree(count) : deckTuningCopy.allowance.costsTwo) : null;
+  // The press turned off for C: say why once, on the transition in (the pattern `finishSaid` uses above).
+  if ((stopLine !== null) !== stopShown) {
+    setStopShown(stopLine !== null);
+    if (stopLine !== null) setAnnounced(stopLine);
+  }
   // Suggested changes v2: the wait hint by N follows the credit line while the press is live (Intake board A).
   const v2Drift = v2 !== null && v2.over !== 0;
   // Its own span after the line, never part of it: `CreditsText` reads an expiry and `Get more credits` off the line's end.
@@ -1553,17 +1571,23 @@ export function TuningPanel({
             <button
               type="button"
               onClick={() => (sendOff ? undefined : v2 ? void pressV2() : void press(unchangedShown || failure !== null || priorResult || reviewing))}
+              ref={sendRef}
               aria-disabled={sendOff || undefined}
+              aria-describedby={stopLine !== null ? stopId : undefined}
               className={`h-[44px] w-full rounded-[8px] text-[13.5px] font-semibold md:h-auto md:w-auto md:px-[20px] md:py-[11px] md:text-[14px] ${sendOff ? "cursor-default text-[color:var(--fg-disabled)] [border:1px_solid_var(--border-strong)]" : "text-[color:var(--accent-text)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)] transition-colors"}`}
             >
               {primaryLabel}
             </button>
             {stop ? (
               <TwoCreditStop
-                line={stop.freeHoldsOne ? deckTuningCopy.allowance.costsTwoFree(count) : deckTuningCopy.allowance.costsTwo}
+                line={stopLine ?? ""}
+                lineId={stopId}
                 standing={note ? `${note} · ${creditShortStanding(state.allowance)}` : creditShortStanding(state.allowance)}
                 payments={state.allowance.payments === true}
-                onChangeTo={() => changeIntake({ count: ONE_CREDIT_MAX_COUNT })}
+                onChangeTo={() => {
+                  focusSendOnCount.current = true;
+                  changeIntake({ count: ONE_CREDIT_MAX_COUNT });
+                }}
               />
             ) : (
             <span
@@ -1621,11 +1645,11 @@ export function TuningPanel({
  * (the press comes back with the 1-credit line), `Get more credits` only while payments are on (L8). The standing count
  * follows. Left-aligned on the phone too (the board's `.s7stop`).
  */
-function TwoCreditStop({ line, standing, payments, onChangeTo }: { line: string; standing: string; payments: boolean; onChangeTo: () => void }) {
+function TwoCreditStop({ line, lineId, standing, payments, onChangeTo }: { line: string; lineId: string; standing: string; payments: boolean; onChangeTo: () => void }) {
   const link = "inline-flex min-h-[44px] items-center font-sans text-[12.5px] font-semibold text-[color:var(--accent-text)] md:min-h-[32px]";
   return (
     <div data-sc-two-stop="" className="flex flex-col gap-[6px] text-left font-mono text-[10.5px] leading-[1.6]" style={{ color: "var(--fg-faint)" }}>
-      <span className="font-sans text-[12.5px] font-medium leading-[1.5]" style={{ color: "var(--fg)" }}>{line}</span>
+      <span id={lineId} className="font-sans text-[12.5px] font-medium leading-[1.5]" style={{ color: "var(--fg)" }}>{line}</span>
       <span className="flex flex-wrap items-center gap-x-[14px] gap-y-[4px]">
         <button type="button" className={link} onClick={onChangeTo}>
           {deckTuningCopy.allowance.changeTo(ONE_CREDIT_MAX_COUNT)}

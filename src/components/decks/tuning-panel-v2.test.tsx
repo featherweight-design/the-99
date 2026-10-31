@@ -115,10 +115,18 @@ describe("Suggested changes v2's 2-credit cue (Small items 7, SC-Cost)", () => {
     // The drawn state: nothing counts yet, so there is no reset to name.
     expect(standing()!.textContent).toBe("1 of 1 free");
     expect(screen.getByRole("link", { name: "Get more credits" }).getAttribute("href")).toBe("/credits");
+    // The off press is described by C's sentence, and the reason was announced on the way in.
+    const describedBy = send().getAttribute("aria-describedby");
+    expect(describedBy).toBeTruthy();
+    expect(document.getElementById(describedBy!)!.textContent).toBe(deckTuningCopy.allowance.costsTwoFree(12));
+    expect([...document.querySelectorAll('[role="status"]')].some((n) => n.textContent === deckTuningCopy.allowance.costsTwoFree(12))).toBe(true);
     fireEvent.click(screen.getByRole("button", { name: deckTuningCopy.allowance.changeTo(10) }));
     expect((screen.getByRole("textbox", { name: sc.intake.count.countLabel }) as HTMLInputElement).value).toBe("10");
     expect(stop()).toBeNull();
     expect(send().getAttribute("aria-disabled")).toBeNull();
+    // C's block left with the focus in it: focus lands on the press it turned back on.
+    expect(document.activeElement).toBe(send());
+    expect(send().getAttribute("aria-describedby")).toBeNull();
   });
 
   it("C: with credits used, the last line names the real reset from the allowance window", async () => {
