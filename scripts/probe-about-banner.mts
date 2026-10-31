@@ -3,14 +3,14 @@
 // "Banner"). The one-time sheet and the gate's redirect retired in that PR; the banner is the only announcement.
 //
 // What jsdom cannot see, and the unit tests therefore do not prove:
-//   - One launch on the Dashboard: "New on Decks: Lock cards …", the crop in the mark's place at the reader's width
-//     (64x48 from the phone capture at 390, 56x38 from the desktop capture at 1300), Show me, ✕ (44 / 32).
+//   - One launch on the Dashboard: "New on Decks: Lock cards …", a 36px glyph plate in the mark's place
+//     (the nav glyph of the page Show me opens), Show me, ✕ (44 / 32).
 //   - Every page but Home draws no line, and nothing redirects to /about.
 //   - ✕ writes the launch's ack and the floor (read back from `user_prefs`), a reload draws no line, and Back after ✕
 //     draws none.
 //   - Show me lands on /about/decks with the label marked New, the visit writes the label's key, and Back to Home
 //     draws no line (the client acknowledgement).
-//   - Two launches: the `New in the app` band, a crop and a Show me per line, one ✕ writing both acks.
+//   - Two launches: the `New in the app` band, a 28px glyph plate and a Show me per line, one ✕ writing both acks.
 //   - A2: a launch and an arrival under `New in the app`, About first, one ✕ writing both halves.
 //   - The first-run line on the Dashboard (an account that imported before opening About), to the /about index, with
 //     ✕ writing the baseline; and on the first-run checklist with no ✕.
@@ -42,7 +42,6 @@ import { aboutLine } from "../src/lib/about/notice";
 import { afterVisit, visibleSections } from "../src/lib/about/pages-visible";
 import { NEVER_SEEN } from "../src/lib/about/visible";
 import { SWITCH_NAMES } from "../src/lib/switches/registry";
-import { DEFAULT_THEME } from "../src/lib/theme/themes";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, CLERK_SECRET_KEY, DATABASE_URL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "DATABASE_URL"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
@@ -77,7 +76,7 @@ const norm = (s: string | null | undefined) => (s ?? "").replace(/\s+/g, " ").tr
 // The lines as the server words them. The lock label and rule always draw, so no switch is needed.
 const NO_SWITCHES = {} as unknown as NodeJS.ProcessEnv;
 const wordsOf = (ids: string[]) => {
-  const line = aboutLine({ version: ABOUT_VERSION, ids }, visibleSections(NO_SWITCHES), DEFAULT_THEME);
+  const line = aboutLine({ version: ABOUT_VERSION, ids }, visibleSections(NO_SWITCHES));
   if (line?.kind !== "launches") throw new Error("the fixture state announces nothing: is the lock label still drawn?");
   return line.launches.map((l) => ({ key: l.key, text: norm(`${l.lead} ${l.text}`), href: l.href }));
 };
@@ -212,17 +211,12 @@ async function nothingDrawn(page: Page) {
   return { regions: await onPage(page, REGION).count(), url: new URL(page.url()).pathname };
 }
 
-/** The crops a line draws at this width: the visible one's box and its capture's width. */
-async function visibleCrops(scope: Locator) {
-  return scope.locator("[data-about-crop]").evaluateAll((els: Element[]) =>
+/** The glyph plates a line draws: each visible one's box. */
+async function visibleGlyphs(scope: Locator) {
+  return scope.locator("[data-about-glyph]").evaluateAll((els: Element[]) =>
     els.filter((e) => (e as HTMLElement).offsetParent !== null).map((e) => {
       const r = e.getBoundingClientRect();
-      const cs = getComputedStyle(e);
-      return {
-        w: Math.round(r.width - parseFloat(cs.borderLeftWidth) - parseFloat(cs.borderRightWidth)),
-        h: Math.round(r.height - parseFloat(cs.borderTopWidth) - parseFloat(cs.borderBottomWidth)),
-        src: e.querySelector("img")?.getAttribute("src") ?? "",
-      };
+      return { w: Math.round(r.width), h: Math.round(r.height), hasSvg: e.querySelector("svg") !== null };
     }));
 }
 
@@ -242,10 +236,9 @@ async function dashboard(browser: Browser, w: Width, userId: string) {
   const text = norm(await onPage(page, `${REGION} p`).first().textContent().catch(() => null));
   check(text === ONE_LINE[0]!.text, `${w.name} one launch: "New on {page}:" and the unit's words`, text);
   check(await onPage(page, `${REGION} h2`).count() === 0, `${w.name} one launch: one line, no heading`, `${await onPage(page, `${REGION} h2`).count()} h2`);
-  const crops = await visibleCrops(region);
-  const size = w.phone ? [64, 48] : [56, 38];
-  check(crops.length === 1 && crops[0]!.w === size[0] && crops[0]!.h === size[1] && crops[0]!.src.includes(`/${width}/`),
-    `${w.name} one launch: a ${size.join("x")} crop from the ${width} capture in the mark's place`, crops);
+  const glyphs = await visibleGlyphs(region);
+  check(glyphs.length === 1 && glyphs[0]!.w === 36 && glyphs[0]!.h === 36 && glyphs[0]!.hasSvg,
+    `${w.name} one launch: a 36x36 glyph plate in the mark's place`, glyphs);
   const show = onPage(page, `${REGION} a`).first();
   check(norm(await show.textContent()) === "Show me" && (await show.getAttribute("href")) === ONE_LINE[0]!.href,
     `${w.name} one launch: Show me goes to the label lit`, `${await show.textContent()} -> ${await show.getAttribute("href")}`);
@@ -314,9 +307,9 @@ async function dashboard(browser: Browser, w: Width, userId: string) {
   check(h2 === "New in the app", `${w.name} two launches: the heading`, h2);
   const lines = (await onPage(page, `${REGION} li`).allTextContents()).map(norm);
   check(JSON.stringify(lines) === JSON.stringify(TWO_LINES.map((l) => `${l.text} Show me`)), `${w.name} two launches: a line each, in page order`, lines);
-  const perLine = await visibleCrops(region);
-  check(perLine.length === 1 && perLine.every((c) => c.w === 44 && c.h === 32 && c.src.includes(`/${width}/`)),
-    `${w.name} two launches: a 44x32 crop for the label's line, the diamond for the rule's`, perLine);
+  const perLine = await visibleGlyphs(region);
+  check(perLine.length === 1 && perLine.every((c) => c.w === 28 && c.h === 28 && c.hasSvg),
+    `${w.name} two launches: a 28x28 glyph plate for the label's line, the diamond for the rule's`, perLine);
   const hrefs2 = await onPage(page, `${REGION} a`).evaluateAll((els: Element[]) => els.map((a) => a.getAttribute("href")));
   check(JSON.stringify(hrefs2) === JSON.stringify(TWO_LINES.map((l) => l.href)), `${w.name} two launches: a Show me each`, hrefs2);
   await onPage(page, `${REGION} button[aria-label="Dismiss"]`).first().click();

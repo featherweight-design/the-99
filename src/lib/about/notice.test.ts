@@ -1,19 +1,16 @@
-// About's lines on Home's banner (About visual PR 6b): the pages' own announcement rule, worded per launch with its
-// crop; and the ✕'s re-validation, which writes only what the page drew and is still announced, by each unit's `ack`.
+// About's lines on Home's banner (About visual PR 6b): the pages' own announcement rule, worded per launch, one sentence a line, with the glyph of the page it opens; and the ✕'s re-validation, which writes only what the page drew and is still announced, by each unit's `ack`.
 import { describe, expect, it } from "vitest";
 import { ABOUT_VERSION } from "../copy/about";
 import { aboutEntries } from "../copy/about-entries";
 import { SWITCH_NAMES } from "../switches/registry";
-import { bannerCap, cropStyle } from "./banner-line";
+import { bannerCap } from "./banner-line";
 import { aboutDismissal, aboutLine, launchHref } from "./notice";
 import { afterVisit, everyAnnouncement, sentenceKey, unseenUnits, visibleSections, type VisibleSection } from "./pages-visible";
-import { DEFAULT_THEME } from "../theme/themes";
 import { NEVER_SEEN, switchedIds, visibleEntries, type SeenState } from "./visible";
 
 const env = (o: Record<string, string>) => o as unknown as NodeJS.ProcessEnv;
 const ALL_ON = env(Object.fromEntries(SWITCH_NAMES.map((n) => [n, "true"])));
 const OFF = env({});
-const THEME = DEFAULT_THEME;
 const units = (v: readonly VisibleSection[]) => v.flatMap((s) => [...s.labels, ...s.rules]);
 
 /** A reader at `floor` who visited About with these switches: the floor, and every switched entry drawn by then. */
@@ -41,16 +38,16 @@ describe("aboutLine", () => {
     // The Reference never wrote a v2 id (the entry has no variant), so v2 turning on is told to every reader, this one
     // too, as the one sentence (Small items 7 addendum 4). The cart's decks, views, ask and buy have no source, so their
     // switches announce them (Small items 7, item 6).
-    expect(aboutLine(readerAt(16), visibleSections(ALL_ON), THEME)?.ids).toEqual([
+    expect(aboutLine(readerAt(16), visibleSections(ALL_ON))?.ids).toEqual([
       sentenceKey("decks/analysis/suggested", "SUGGESTED_CHANGES_V2_ENABLED"),
       "shopping/all-decks/decks", "shopping/all-decks/views", "shopping/all-decks/ask", "shopping/all-decks/buy",
     ]);
-    expect(aboutLine(readerAt(16, OFF), visibleSections(OFF), THEME)).toBeNull();
+    expect(aboutLine(readerAt(16, OFF), visibleSections(OFF))).toBeNull();
   });
 
   it("names exactly the units Task 1.2's sweep names for a reader at floor 9, in page order", () => {
     const visible = visibleSections(ALL_ON);
-    const line = aboutLine(readerAt(9), visible, THEME);
+    const line = aboutLine(readerAt(9), visible);
     expect(line?.kind).toBe("launches");
     if (line?.kind !== "launches") return;
     expect(line.ids).toEqual(unseenUnits(visible, readerAt(9)).map((u) => u.key));
@@ -61,35 +58,31 @@ describe("aboutLine", () => {
   it("never names a unit switched off for the reader (Review Focus 2)", () => {
     // The cart's total follows ALL_DECKS_CART_ENABLED and is announced by its id alone.
     const reader: SeenState = { version: 16, ids: ["something-else"] };
-    const on = aboutLine(reader, visibleSections(env({ ALL_DECKS_CART_ENABLED: "true" })), THEME);
+    const on = aboutLine(reader, visibleSections(env({ ALL_DECKS_CART_ENABLED: "true" })));
     expect(on?.ids).toContain("shopping/all-decks/total");
-    const off = aboutLine(reader, visibleSections(OFF), THEME);
+    const off = aboutLine(reader, visibleSections(OFF));
     expect(off?.ids ?? []).not.toContain("shopping/all-decks/total");
     for (const k of off?.ids ?? []) expect(units(visibleSections(OFF)).map((u) => u.key)).toContain(k.split("@")[0]);
   });
 
-  it("words one launch: its page, its lead and rest, Show me to the label lit, and a crop at each width", () => {
-    const line = aboutLine({ version: 16, ids: ["x"] }, visibleSections(OFF), THEME);
+  it("words one launch: its page, its lead and rest, Show me to the label lit, and the glyph of its page", () => {
+    const line = aboutLine({ version: 16, ids: ["x"] }, visibleSections(OFF));
     const lock = line?.kind === "launches" ? line.launches.find((l) => l.key === "decks/your-deck/lock") : undefined;
     expect(lock).toMatchObject({
       lead: "New on Decks:",
-      text: "Lock cards protects the cards you pick. No tool will cut a locked card unless you say so.",
+      text: "Lock cards protects the cards you pick.",
+      icon: "/decks",
       href: "/about/decks?lit=decks%2Fyour-deck%2Flock#your-deck",
     });
-    // The picture matches the device (call 0): each crop from its own width's capture, centred on the label's region.
-    expect(lock!.phone?.src).toMatch(new RegExp(`^/about/pages/${THEME}/phone/`));
-    expect(lock!.desktop?.src).toMatch(new RegExp(`^/about/pages/${THEME}/desktop/`));
-    expect(lock!.phone?.box).toHaveLength(4);
   });
 
-  it("draws a rule with no crop, so the banner keeps the diamond mark for it", () => {
+  it("draws a rule with no glyph, so the banner keeps the diamond mark for it", () => {
     const visible = visibleSections(ALL_ON);
     const rule = units(visible).find((u) => u.kind === "rule")!;
-    const line = aboutLine({ version: 0, ids: ["x"] }, visible, THEME);
+    const line = aboutLine({ version: 0, ids: ["x"] }, visible);
     const told = line?.kind === "launches" ? line.launches.find((l) => l.key === rule.key) : undefined;
     expect(told).toBeDefined();
-    expect(told!.phone).toBeNull();
-    expect(told!.desktop).toBeNull();
+    expect(told!.icon).toBeNull();
     expect(told!.href).toBe(`/about/${rule.area}?lit=${encodeURIComponent(rule.key)}#${rule.section}`);
   });
 
@@ -97,7 +90,7 @@ describe("aboutLine", () => {
     const visible = visibleSections(ALL_ON);
     const reader: SeenState = { version: 16, ids: ["upload-choice"] };
     const sync = sentenceKey("rule/replace", "COLLECTION_SYNC_ENABLED");
-    const line = aboutLine(reader, visible, THEME);
+    const line = aboutLine(reader, visible);
     const told = line?.kind === "launches" ? line.launches.find((l) => l.key === sync) : undefined;
     expect(told?.text).toMatch(/^With Sync/);
     expect(told?.href).toContain(`lit=${encodeURIComponent("rule/replace")}`);
@@ -105,7 +98,7 @@ describe("aboutLine", () => {
 
   it("points a first-run reader at the index, standing for every unit they are drawn", () => {
     const visible = visibleSections(ALL_ON);
-    expect(aboutLine(NEVER_SEEN, visible, THEME)).toEqual({
+    expect(aboutLine(NEVER_SEEN, visible)).toEqual({
       kind: "firstRun", ids: units(visible).map((u) => u.key), ack: everyAnnouncement(visible).flatMap((u) => u.ack),
     });
   });
@@ -178,7 +171,7 @@ describe("aboutDismissal, a switch turned on between the render and the ✕", ()
   const FRIEND = "friends/friends/friend";
 
   it("a base unit drawn before HELP_ME_CHOOSE_ENABLED turned on does not take its new sentence's key", () => {
-    const line = aboutLine(reader, visibleSections(HMC_OFF), THEME);
+    const line = aboutLine(reader, visibleSections(HMC_OFF));
     const drawn = line?.kind === "launches" ? line.launches.find((l) => l.key === UNIT) : undefined;
     expect(drawn?.ack).toEqual([UNIT]);
     const now = visibleSections(HMC_ON);
@@ -192,14 +185,14 @@ describe("aboutDismissal, a switch turned on between the render and the ✕", ()
 
   it("writes the sentence's key when the render drew it", () => {
     const now = visibleSections(HMC_ON);
-    const line = aboutLine(reader, now, THEME);
+    const line = aboutLine(reader, now);
     const drawn = line?.kind === "launches" ? line.launches.find((l) => l.key === UNIT) : undefined;
     expect([...drawn!.ack].sort()).toEqual([UNIT, SENTENCE].sort());
     expect(aboutDismissal(drawn!.ack, reader, now)!.ids).toContain(SENTENCE);
   });
 
   it("a first-run ✕ takes only the baseline it rendered: a unit and a sentence switched on since stay new", () => {
-    const line = aboutLine(NEVER_SEEN, visibleSections(OFF), THEME);
+    const line = aboutLine(NEVER_SEEN, visibleSections(OFF));
     expect(line?.kind).toBe("firstRun");
     const now = visibleSections(env({ ALL_DECKS_CART_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true" }));
     const write = aboutDismissal(line?.kind === "firstRun" ? line.ack : [], NEVER_SEEN, now)!;
@@ -223,35 +216,5 @@ describe("bannerCap", () => {
     expect(bannerCap(4)).toEqual({ shown: 4, more: 0 });
     expect(bannerCap(5)).toEqual({ shown: 3, more: 2 });
     for (let n = 0; n < 60; n++) expect(bannerCap(n).more).not.toBe(1);
-  });
-});
-
-describe("cropStyle", () => {
-  const crop = (box: readonly [number, number, number, number]) => ({ src: "x", w: 1000, h: 2000, box });
-
-  it("fits the region in the box with the board's margin and centres it there", () => {
-    // A 100x100 region in the middle of a tall capture, in a 64x48 box: scaled to 80% of 48 tall, centred.
-    const at = cropStyle(crop([0.45, 0.475, 0.1, 0.05]), 64, 48);
-    expect(at.width).toBeCloseTo(384);
-    expect(at.height).toBeCloseTo(768);
-    expect(at.left + (0.5 * at.width)).toBeCloseTo(32, 0);
-    expect(at.top + (0.5 * at.height)).toBeCloseTo(24, 0);
-  });
-
-  it("matches the board's Matchups crop on the phone capture: 55.8 wide, flush left", () => {
-    // Ways-In "Banner · one launch · phone": the Matchups region (0.9179 of the 780px capture wide) at 64x48.
-    const at = cropStyle({ src: "x", w: 780, h: 1688, box: [0.041, 0.2563, 0.9179, 0.3045] }, 64, 48);
-    expect(at.width).toBeCloseTo(55.8, 0);
-    expect(at.height).toBeCloseTo(120.7, 0);
-    expect(at.left).toBe(0);
-  });
-
-  it("holds the image at the box's edge rather than leave a gap at a capture's corner", () => {
-    const at = cropStyle(crop([0, 0, 0.1, 0.05]), 64, 48);
-    expect(at.left).toBe(0);
-    expect(at.top).toBe(0);
-    const far = cropStyle(crop([0.9, 0.95, 0.1, 0.05]), 64, 48);
-    expect(far.left + far.width).toBeCloseTo(64, 0);
-    expect(far.top + far.height).toBeCloseTo(48, 0);
   });
 });
