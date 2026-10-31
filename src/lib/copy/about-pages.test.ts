@@ -110,7 +110,12 @@ describe("about pages copy model", () => {
     for (const id of sources) {
       const [base, sw] = id.split("@");
       expect(ENTRY.has(base), id).toBe(true);
-      if (sw) expect(ENTRY.get(base)!.variant?.switch, id).toBe(sw);
+      if (!sw) continue;
+      // A variant id, which a Reference visit writes; or a switch the entry's own caption lines draw under, which only
+      // carries that switch to the unit (`suggested-changes@SUGGESTED_CHANGES_V2_ENABLED`, Small items 7 addendum 4).
+      const e = ENTRY.get(base)!;
+      const lineSwitches = Object.values(e.captionLineSwitches ?? {}).flatMap((one) => (Array.isArray(one) ? one : [one]));
+      expect(e.variant?.switch === sw || lineSwitches.includes(sw), id).toBe(true);
     }
   });
 

@@ -6,7 +6,8 @@
 //
 //   - a unit is seen when the reader holds its own key;
 //   - else when they hold a SWITCHED legacy entry's id, or a legacy variant id (the only legacy ids ever written:
-//     `switchedIds` in `visible.ts`);
+//     `switchedIds` in `visible.ts`). An `@` id naming a switch of the entry's caption lines, not a variant, is never
+//     written: it only carries that switch, so its sentences are announced rather than seen by the floor;
 //   - a unit that is a switched entry's own announcement (a legacy entry carries the unit's switch) is seen by id
 //     alone, as that entry was;
 //   - a unit every one of whose legacy entries was switched is seen by those ids alone, never by the floor;

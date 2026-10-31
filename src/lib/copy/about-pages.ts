@@ -536,7 +536,9 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
           " With Only cards I own on, Include my other decks also offers cards your other decks hold, and Apply asks whether to pull each one.": "SUGGESTED_CHANGES_V2_ENABLED",
         },
         since: 16,
-        legacy: ["suggested-changes"],
+        // Small items 7 addendum 4: v2 turning on tells this label's rewrite as New to every reader. The `@` id carries
+        // the switch (as `friend-spares@SPARE_REQUESTS_ENABLED` does), so the floor no longer answers for v2's sentences.
+        legacy: ["suggested-changes", "suggested-changes@SUGGESTED_CHANGES_V2_ENABLED"],
       },
       {
         id: "cuts",
@@ -893,8 +895,9 @@ export const ABOUT_RULES: Readonly<Record<AboutRuleId, AboutRule>> = {
   },
   // Small items 6, item 3 (About-Errata board, call a): Suggested changes v2's pick card, first in Analysis's Good to
   // know. One 250 column of compact rows, built only from the shipped parts: Ghalta asks for two, so three are offered a
-  // side, two picked (the changed-row edge) and one left (its edge dashed). Its legacy is the Suggested changes entry,
-  // as the v2 label's is, so v2 turning on does not tell it as New (About ruling 6: announcing is Hugh's call).
+  // side, two picked (the changed-row edge) and one left (its edge dashed). Its legacy is the Suggested changes entry
+  // alone, without the v2 label's `@` id, so v2 turning on does not tell it as New: the label's rewrite is v2's one
+  // announcement (Small items 7 addendum 4; About ruling 6: announcing is Hugh's call).
   pick: {
     text: "Suggested changes keeps the deck at 99. Ask for two and you get three to add and three to cut; pick two of each. The counts have to match before Apply, and one Undo takes the whole set back.",
     switch: "SUGGESTED_CHANGES_V2_ENABLED",
