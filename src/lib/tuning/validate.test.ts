@@ -282,6 +282,62 @@ describe("validateSuggestions", () => {
     expect(v2("request", "grind it out").kept[0]?.evidence.map((c) => c.kind)).toEqual(["intent"]);
   });
 
+  // C1 (Hugh 2026-10-31): on Aang one false games figure dropped ~30% of the v2 cut lines, each beside a citation that held.
+  describe("v2 citation salvage", () => {
+    const withRequest = { ...pack, notes: "swap out Sol Ring" };
+    const v2 = (line: TuningLine, v2On = true) => validateSuggestions({
+      response: { additions: [], cuts: [line] }, pack: withRequest, resolveName, ...(v2On ? { v2: true } : {}),
+    });
+    const falseGames = { kind: "games" as const, value: "Speed hurt in 4 of 5 games" };
+    const request = { kind: "request" as const, value: '"swap out Sol Ring"' };
+
+    it("removes a failed citation and keeps the line when another holds, counting what it removed", () => {
+      const out = v2({ ...goodCut, rationale: "You asked for this swap.", rationaleShort: "Asked for.", evidence: [falseGames, request] });
+      expect(out.drops).toEqual([]);
+      expect(out.kept[0].evidence).toEqual([request]);
+      expect(out.strippedCites).toBe(1);
+    });
+
+    it("still drops the line when its words restate the failed citation, whole or by its figure", () => {
+      const whole = v2({ ...goodCut, rationale: "Speed hurt in 4 of 5 games, and you asked.", rationaleShort: "Too slow.", evidence: [falseGames, request] });
+      expect(whole.drops[0]).toMatchObject({ rule: "citation", cite: { kind: "games" } });
+      const figure = v2({ ...goodCut, rationale: "You asked, and it was slow in 4 of 5 games.", rationaleShort: "Too slow.", evidence: [falseGames, request] });
+      expect(figure.drops[0]).toMatchObject({ rule: "citation", cite: { kind: "games" } });
+    });
+
+    it("reads a reworded figure as a restatement: words for numbers, 'your' between them", () => {
+      for (const rationale of ["You asked, and it was slow in four of five games.", "You asked; slow in 4 of your 5 games."]) {
+        expect(v2({ ...goodCut, rationale, rationaleShort: "Too slow.", evidence: [falseGames, request] }).drops[0]).toMatchObject({ rule: "citation" });
+      }
+    });
+
+    it("never reads a one- or two-word citation as restated just because the rationale uses the word", () => {
+      const out = v2({ ...goodCut, rationale: "You asked, and the deck has ramp enough.", rationaleShort: "Asked for.", evidence: [{ kind: "mix", value: "ramp" }, request] });
+      expect(out.drops).toEqual([]);
+      expect(out.kept[0].evidence).toEqual([request]);
+    });
+
+    it("lets no unchecked decklist citation alone carry a line past a failed one", () => {
+      const out = v2({ ...goodCut, rationale: "Too slow for this deck.", rationaleShort: "Slow.", evidence: [falseGames, { kind: "decklist", value: "already in the deck" }] });
+      expect(out.drops[0]).toMatchObject({ rule: "citation", cite: { kind: "games" } });
+    });
+
+    it("counts a removed citation only on a line that is kept", () => {
+      const out = v2({ ...goodCut, card: "Nope", rationale: "You asked for this swap.", rationaleShort: "Asked for.", evidence: [falseGames, request] });
+      expect(out.drops[0].rule).toBe("cardExists");
+      expect(out.strippedCites).toBe(0);
+    });
+
+    it("still drops a line whose every citation fails", () => {
+      expect(v2({ ...goodCut, rationale: "Too slow.", rationaleShort: "Slow.", evidence: [falseGames] }).drops[0]).toMatchObject({ rule: "citation" });
+    });
+
+    it("leaves v10 unchanged: one failed citation drops the line", () => {
+      const out = v2({ ...goodCut, rationale: "You asked for this swap.", rationaleShort: "Asked for.", evidence: [falseGames, { kind: "notes", value: '"swap out Sol Ring"' }] }, false);
+      expect(out.drops[0]).toMatchObject({ rule: "citation", cite: { kind: "games" } });
+    });
+  });
+
   it("drops a notes citation when this run carried no notes", () => {
     expect(run({ ...good, evidence: [{ kind: "notes", value: "more removal" }] }).drops[0].rule).toBe("citation");
   });
