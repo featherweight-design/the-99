@@ -337,7 +337,11 @@ export function TuningHub({
       if (opening.early && opening.scroll && !movedEarly) {
         movedEarly = true;
         held = sectionRef.current;
-        if (held) held.style.minHeight = `${window.innerHeight}px`;
+        if (held) {
+          held.style.minHeight = `${window.innerHeight}px`;
+          // Lifted out of the effect so the hub can fill the held space (Cuts short, Small items 7).
+          setHolding(true);
+        }
         reveal(held);
       }
       // The tool's own heading keeps its landmark (README, other decisions 2); focus moves to it.
@@ -369,9 +373,36 @@ export function TuningHub({
     }
     return () => {
       cancelAnimationFrame(frame);
-      if (held) held.style.minHeight = "";
+      if (held) {
+        held.style.minHeight = "";
+        setHolding(false);
+      }
     };
   }, [opening]);
+
+  // Whether the section is holding a screen's height for a shortcut's opening, and whether the open
+  // tool ends above that height, which is what leaves the blank space the Other tools row fills.
+  const [holding, setHolding] = useState(false);
+  const [short, setShort] = useState(false);
+  const openedTool = openTool;
+  useLayoutEffect(() => {
+    const panel = toolRef.current;
+    const section = sectionRef.current;
+    if (!holding || openedTool !== "cuts" || !panel || !section || typeof ResizeObserver === "undefined") {
+      setShort(false);
+      return;
+    }
+    // The panel's bottom against the held height: the row sits below the panel, so it never moves the figure it is judged by.
+    const measure = () => setShort(panel.getBoundingClientRect().bottom - section.getBoundingClientRect().top < window.innerHeight);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(panel);
+    window.addEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [holding, openedTool]);
 
   // A History row's press: its tool with that run loaded, its tool on the deck as it is now (a free
   // count, a run in flight), or the read-only past view for a run with nothing to load.
@@ -544,6 +575,14 @@ export function TuningHub({
               </>
             ) : null}
           </div>
+          {holding && short && opened.tool === "cuts" ? (
+            <div data-other-tools="" className="flex flex-col gap-[10px] pt-[16px]" style={{ borderTop: "1px solid var(--border)" }}>
+              <span className="font-mono text-[10.5px] font-medium uppercase tracking-[0.14em]" style={{ color: "var(--fg-faint)" }}>{copy.otherTools}</span>
+              <div className="grid grid-cols-1 gap-[8px] md:grid-cols-3 md:gap-[10px] md:[&>*]:min-h-[96px]">
+                {views.filter((v) => v.tool !== "cuts").map((v) => <ToolTile key={v.tool} view={v} onOpen={() => open(v.tool, { focus: true, scroll: true })} onLink={followLink} />)}
+              </div>
+            </div>
+          ) : null}
         </>
       ) : (
         <div className="anim-gentle-in grid grid-cols-1 gap-[8px] md:grid-cols-2 md:gap-[10px]">

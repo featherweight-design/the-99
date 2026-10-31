@@ -385,6 +385,45 @@ describe("TuningHub opening a tool", () => {
     expect(hub.style.minHeight).toBe("");
   });
 
+  it("fills the held space with the other tools only while a shortcut holds and Proposed cuts ends above the held height (Small items 7, item 4)", async () => {
+    const RO = globalThis.ResizeObserver;
+    globalThis.ResizeObserver = class { observe() {} disconnect() {} unobserve() {} } as unknown as typeof ResizeObserver;
+    // The panel ends 300px down the section, well above the screen the section holds.
+    const rect = vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (this: Element) {
+      const bottom = this.id === "tuning-tool-panel" ? 300 : 0;
+      return { top: 0, bottom, left: 0, right: 0, width: 0, height: bottom, x: 0, y: 0, toJSON: () => ({}) } as DOMRect;
+    });
+    try {
+      const panel = <section><h2 id="cuts-heading">Proposed cuts</h2>Six over</section>;
+      const spec: HubToolSpec = { tool: "cuts", panel, over: 6, total: 106 };
+      // Opened from its tile, no hold: nothing changes.
+      const first = render(<TuningHub deckId="d" drawn tools={[suggested(), spec]} />);
+      fireEvent.click(tile("cuts"));
+      await screen.findByRole("heading", { name: "Proposed cuts" });
+      expect(document.querySelector("[data-other-tools]")).toBeNull();
+      first.unmount();
+      // A shortcut holds the screen, and the short tool leaves the row under the notice, minus Proposed cuts.
+      render(<TuningHub deckId="d" drawn tools={[suggested(), spec]} request={{ tool: "cuts", nonce: 1 }} />);
+      const row = await waitFor(() => {
+        const el = document.querySelector("[data-other-tools]");
+        expect(el).not.toBeNull();
+        return el as HTMLElement;
+      });
+      expect(row.textContent).toContain(copy.otherTools);
+      expect(row.querySelector('[data-tool-tile="cuts"]')).toBeNull();
+      expect(row.querySelector('[data-tool-tile="suggested"]')).not.toBeNull();
+      // A tile opens its tool in place, and the row goes with the hold.
+      const press = row.querySelector('button[data-tool-tile="suggested"]') ?? row.querySelector('[data-tool-tile="suggested"] button');
+      if (press) {
+        fireEvent.click(press);
+        await waitFor(() => expect(document.querySelector("[data-other-tools]")).toBeNull());
+      }
+    } finally {
+      rect.mockRestore();
+      globalThis.ResizeObserver = RO;
+    }
+  });
+
   it("scrolls once for a shortcut, not again when the tool's content lands, and shows its counting state meanwhile", async () => {
     const scroll = vi.mocked(reveal);
     scroll.mockClear();
