@@ -31,16 +31,20 @@ function sweepAt(floor: number, visible: readonly VisibleSection[]): string[] {
     if (u.legacy.some((id) => met.has(id))) return false;
     const own = typeof u.switch === "string" ? u.switch : null;
     const announces = own !== null && u.legacy.some((id) => id.endsWith(`@${own}`) || aboutEntries.find((x) => x.id === id)?.switch === own);
-    return announces || u.since > floor;
+    // A switched unit with no source is new whatever the floor (the cart's labels, Small items 7, item 6).
+    return announces || (u.switch !== null && u.legacy.length === 0) || u.since > floor;
   }).map((u) => u.key);
 }
 
 describe("aboutLine", () => {
-  it("tells a reader at floor 16 holding every switched id nothing but Suggested changes v2's rewrite", () => {
+  it("tells a reader at floor 16 holding every switched id nothing but Suggested changes v2's rewrite and the cart's new labels", () => {
     // The Reference never wrote a v2 id (the entry has no variant), so v2 turning on is told to every reader, this one
-    // too, as the one sentence (Small items 7 addendum 4).
-    expect(aboutLine(readerAt(16), visibleSections(ALL_ON), THEME)?.ids)
-      .toEqual([sentenceKey("decks/analysis/suggested", "SUGGESTED_CHANGES_V2_ENABLED")]);
+    // too, as the one sentence (Small items 7 addendum 4). The cart's decks, views, ask and buy have no source, so their
+    // switches announce them (Small items 7, item 6).
+    expect(aboutLine(readerAt(16), visibleSections(ALL_ON), THEME)?.ids).toEqual([
+      sentenceKey("decks/analysis/suggested", "SUGGESTED_CHANGES_V2_ENABLED"),
+      "shopping/all-decks/decks", "shopping/all-decks/views", "shopping/all-decks/ask", "shopping/all-decks/buy",
+    ]);
     expect(aboutLine(readerAt(16, OFF), visibleSections(OFF), THEME)).toBeNull();
   });
 
