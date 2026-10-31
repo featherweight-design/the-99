@@ -57,7 +57,7 @@ describe("spellPool's label slice (the run plan's Task 5)", () => {
   };
   const compile = (roles: SpellRole[] | "any", labels: string[]) => dialect.sqlToQuery(spellPool({ ...args, roles, labels }));
 
-  it("reads no label when it is given none, so the switch off leaves the text pool alone", () => {
+  it("reads no label when it is given none, so an unlabelled original leaves the text pool alone", () => {
     expect(compile(["removal"], []).sql).not.toMatch(/card_labels|labelled/);
   });
 

@@ -32,7 +32,7 @@ const ODD = card("Odd Hex", "Instant", "Target creature's owner shuffles it into
 const DRAW = card("Divination", "Sorcery", "Draw two cards.", 3);
 
 describe("stand-ins read labels only where both cards carry one (Q1)", () => {
-  it("an empty label map ranks exactly as the text comparison does (inert while the switch is off)", () => {
+  it("an empty label map ranks exactly as the text comparison does", () => {
     const pool = [PATH, UNSUMMON, ODD, DRAW];
     expect(rank(MURDER, pool, new Map())).toEqual(rank(MURDER, pool));
   });

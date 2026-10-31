@@ -1,15 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type { Job } from "../labels/types";
-import { applyConsiderLabels, considerLabelDeps, considerLabels, type ConsiderLabelDeps } from "./consider-labels";
+import { applyConsiderLabels, considerLabels, type ConsiderLabelDeps } from "./consider-labels";
 
 const GRAVEYARD_HATE: Job = {
   space: "theme", kind: "graveyardHate", restrictedTo: null, affects: "opponents", to: null, method: null,
   trigger: "activated", recurrence: "repeatable", threshold: null, modal: false,
 } as Job;
 
-const deps = (enabled: boolean): ConsiderLabelDeps => ({
-  enabled: vi.fn(() => enabled),
+const deps = (): ConsiderLabelDeps => ({
   readLabels: vi.fn(async () => new Map([["lantern", [GRAVEYARD_HATE]]])),
 });
 
@@ -20,49 +19,32 @@ const SUGGESTIONS = [
 const ARGS = { suggestionIds: SUGGESTIONS.map((s) => s.oracleId) };
 
 describe("considerLabels", () => {
-  it("off: reads nothing and answers null, so the suggestions pass through as the same list", async () => {
-    const d = deps(false);
-    const read = await considerLabels(ARGS, d);
-    expect(read).toBeNull();
-    expect(d.readLabels).not.toHaveBeenCalled();
-    expect(applyConsiderLabels(SUGGESTIONS, read)).toBe(SUGGESTIONS);
-  });
-
-  // The request's deps read the switch from the reader's resolved env, exactly 'true' and nothing else,
-  // and never the environment. Asserted on `enabled()` itself: a considerLabels call with no ids
-  // answers null whichever way the switch is.
-  it("reads the switch from the env it is handed, on only for exactly 'true'", () => {
-    try {
-      for (const [value, on] of [["true", true], ["1", false], ["TRUE", false], ["", false]] as const) {
-        vi.stubEnv("LABEL_SURFACES_ENABLED", on ? "false" : "true");
-        expect(considerLabelDeps({ LABEL_SURFACES_ENABLED: value } as unknown as NodeJS.ProcessEnv).enabled()).toBe(on);
-      }
-    } finally {
-      vi.unstubAllEnvs();
-    }
-  });
-
-  it("on: calls readLabels once, with exactly the suggestion ids", async () => {
-    const d = deps(true);
+  it("calls readLabels once, with exactly the suggestion ids", async () => {
+    const d = deps();
     await considerLabels(ARGS, d);
     expect(d.readLabels).toHaveBeenCalledTimes(1);
     expect(d.readLabels).toHaveBeenCalledWith(["lantern", "staple"]);
   });
 
-  it("on: drops the graveyard-hate card offered as removal and keeps the EDHREC pick", async () => {
-    const read = await considerLabels(ARGS, deps(true));
+  it("drops the graveyard-hate card offered as removal and keeps the EDHREC pick", async () => {
+    const read = await considerLabels(ARGS, deps());
     expect(applyConsiderLabels(SUGGESTIONS, read).map((s) => s.oracleId)).toEqual(["staple"]);
   });
 
   // An empty list would draw "every card that fits is already in this deck", which a label drop makes false.
   it("leaves the list alone when the filter would empty it", async () => {
     const onlyRole = [SUGGESTIONS[0]];
-    const read = await considerLabels({ suggestionIds: ["lantern"] }, deps(true));
+    const read = await considerLabels({ suggestionIds: ["lantern"] }, deps());
     expect(applyConsiderLabels(onlyRole, read)).toBe(onlyRole);
   });
 
-  it("on with no suggestions: reads nothing", async () => {
-    const d = deps(true);
+  // A failed read is caught to null on the page: the suggestions pass through as the same list.
+  it("a null read passes the suggestions through as the same list", () => {
+    expect(applyConsiderLabels(SUGGESTIONS, null)).toBe(SUGGESTIONS);
+  });
+
+  it("with no suggestions: reads nothing", async () => {
+    const d = deps();
     expect(await considerLabels({ suggestionIds: [] }, d)).toBeNull();
     expect(d.readLabels).not.toHaveBeenCalled();
   });

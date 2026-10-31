@@ -535,11 +535,10 @@ export default async function DeckBuilderPage({
     })).catch(() => null),
     // THE CONSIDER FILTER's labels (card labels item 7), for the suggestion ids alone, in one read.
     // Here, AFTER the cached payload resolved and outside its entry, because a label publish moves
-    // nothing that entry's key carries. Off (`LABEL_SURFACES_ENABLED`), it reads nothing and answers
-    // null. Swallowed like its neighbours: a failed read filters nothing.
+    // nothing that entry's key carries. Swallowed like its neighbours: a failed read filters nothing.
     perf.timed("considerLabels", () => considerLabels({
       suggestionIds: suggestions.map((s) => s.oracleId),
-    }, considerLabelDeps(env))).catch(() => null),
+    }, considerLabelDeps())).catch(() => null),
     // THE ROW'S COMBO MARK: each card's two-card combo partner already in this deck, the commanders counted (rule 3). Started with the
     // detail (above), cached by its inputs; swallowed like its neighbours: a failed read draws no mark.
     inDeckCombosRead,
