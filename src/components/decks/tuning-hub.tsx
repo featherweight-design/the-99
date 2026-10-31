@@ -7,7 +7,7 @@
 // every tab switch (`builder-shell.tsx`), on leaving the page and on a reload (A6). Runs are read
 // from the ledger on mount, so a run still in flight reappears on its tile.
 
-import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from "react";
+import { Fragment, useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from "react";
 
 import { readTuningHub } from "../../app/decks/tuning-hub-actions";
 import { tuningHubCopy as copy } from "../../lib/copy/tuning-hub";
@@ -337,7 +337,11 @@ export function TuningHub({
       if (opening.early && opening.scroll && !movedEarly) {
         movedEarly = true;
         held = sectionRef.current;
-        if (held) held.style.minHeight = `${window.innerHeight}px`;
+        if (held) {
+          held.style.minHeight = `${window.innerHeight}px`;
+          // Lifted out of the effect so the hub can fill the held space (Cuts short, Small items 7).
+          setHolding(true);
+        }
         reveal(held);
       }
       // The tool's own heading keeps its landmark (README, other decisions 2); focus moves to it.
@@ -369,9 +373,57 @@ export function TuningHub({
     }
     return () => {
       cancelAnimationFrame(frame);
-      if (held) held.style.minHeight = "";
+      if (held) {
+        held.style.minHeight = "";
+        setHolding(false);
+      }
     };
   }, [opening]);
+
+  // Whether the section is holding a screen's height for a shortcut's opening, and whether the open
+  // tool ends above that height, which is what leaves the blank space the Other tools row fills.
+  const [holding, setHolding] = useState(false);
+  const [short, setShort] = useState(false);
+  const openedTool = openTool;
+  const otherToolsRef = useRef<HTMLDivElement>(null);
+  const otherToolsLabelId = useId();
+  useLayoutEffect(() => {
+    const panel = toolRef.current;
+    const section = sectionRef.current;
+    // The row going away while focus is inside it would drop focus to the body: it goes to the open tool instead.
+    const hide = () => {
+      const row = otherToolsRef.current;
+      if (row && document.activeElement && row.contains(document.activeElement)) {
+        const target = panel?.querySelector<HTMLElement>("h1, h2, h3") ?? panel;
+        if (target) {
+          if (!target.hasAttribute("tabindex")) target.tabIndex = -1;
+          target.focus({ preventScroll: true });
+        }
+      }
+      setShort(false);
+    };
+    if (!holding || openedTool !== "cuts" || !panel || !section || typeof ResizeObserver === "undefined") {
+      hide();
+      return;
+    }
+    // The panel's bottom against the held height: the row sits below the panel, so it never moves the figure it is judged by.
+    // Not before the tool has drawn: a loading panel is short, and the row would pop in and out as the content lands.
+    const measure = () => {
+      if (!toolDrew(panel)) { hide(); return; }
+      setShort(panel.getBoundingClientRect().bottom - section.getBoundingClientRect().top < window.innerHeight);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(panel);
+    const mo = new MutationObserver(measure);
+    mo.observe(panel, { childList: true, subtree: true, attributes: true, attributeFilter: ["aria-busy", "data-hub-pending"] });
+    window.addEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      mo.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [holding, openedTool]);
 
   // A History row's press: its tool with that run loaded, its tool on the deck as it is now (a free
   // count, a run in flight), or the read-only past view for a run with nothing to load.
@@ -544,6 +596,14 @@ export function TuningHub({
               </>
             ) : null}
           </div>
+          {holding && short && opened.tool === "cuts" ? (
+            <div ref={otherToolsRef} data-other-tools="" role="group" aria-labelledby={otherToolsLabelId} className="flex flex-col gap-[10px] pt-[16px]" style={{ borderTop: "1px solid var(--border)" }}>
+              <span id={otherToolsLabelId} className="font-mono text-[10.5px] font-medium uppercase tracking-[0.14em]" style={{ color: "var(--fg-faint)" }}>{copy.otherTools}</span>
+              <div className="grid grid-cols-1 gap-[8px] md:grid-cols-3 md:gap-[10px] md:[&>*]:min-h-[96px]">
+                {views.filter((v) => v.tool !== "cuts").map((v) => <ToolTile key={v.tool} view={v} onOpen={() => open(v.tool, { focus: true, scroll: true })} onLink={followLink} />)}
+              </div>
+            </div>
+          ) : null}
         </>
       ) : (
         <div className="anim-gentle-in grid grid-cols-1 gap-[8px] md:grid-cols-2 md:gap-[10px]">

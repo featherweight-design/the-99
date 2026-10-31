@@ -11,6 +11,8 @@ import { tuningHubShortcutsCopy } from "./tuning-hub-shortcuts";
 export const tuningHubCopy = {
   title: "Tuning",
   allTools: "All tools",
+  /** Engineering addition (Small items 7, item 4): the label over the tile row that fills a short tool's held space. Owed to /copy-review. */
+  otherTools: "Other tools",
   back: "‹ Tuning",
   /** The phone's header beside the open tool's mark. Engineering: counts the tools this
    *  deployment draws, so a hub with two tools says `1 of 2`. */

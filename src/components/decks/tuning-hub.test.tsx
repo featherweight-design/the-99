@@ -385,6 +385,78 @@ describe("TuningHub opening a tool", () => {
     expect(hub.style.minHeight).toBe("");
   });
 
+  it("fills the held space with the other tools only while a shortcut holds and Proposed cuts ends above the held height (Small items 7, item 4)", async () => {
+    const RO = globalThis.ResizeObserver;
+    globalThis.ResizeObserver = class { observe() {} disconnect() {} unobserve() {} } as unknown as typeof ResizeObserver;
+    // The panel ends 300px down the section, well above the screen the section holds.
+    const rect = vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (this: Element) {
+      const bottom = this.id === "tuning-tool-panel" ? 300 : 0;
+      return { top: 0, bottom, left: 0, right: 0, width: 0, height: bottom, x: 0, y: 0, toJSON: () => ({}) } as DOMRect;
+    });
+    try {
+      const panel = <section><h2 id="cuts-heading">Proposed cuts</h2>Six over</section>;
+      const spec: HubToolSpec = { tool: "cuts", panel, over: 6, total: 106 };
+      // Opened from its tile, no hold: nothing changes.
+      const first = render(<TuningHub deckId="d" drawn tools={[suggested(), spec]} />);
+      fireEvent.click(tile("cuts"));
+      await screen.findByRole("heading", { name: "Proposed cuts" });
+      expect(document.querySelector("[data-other-tools]")).toBeNull();
+      first.unmount();
+      // A shortcut holds the screen, and the short tool leaves the row under the notice, minus Proposed cuts.
+      render(<TuningHub deckId="d" drawn tools={[suggested(), spec]} request={{ tool: "cuts", nonce: 1 }} />);
+      const row = await waitFor(() => {
+        const el = document.querySelector("[data-other-tools]");
+        expect(el).not.toBeNull();
+        return el as HTMLElement;
+      });
+      expect(row.textContent).toContain(copy.otherTools);
+      expect(row.querySelector('[data-tool-tile="cuts"]')).toBeNull();
+      expect(row.querySelector('[data-tool-tile="suggested"]')).not.toBeNull();
+      // A tile opens its tool in place, and the row goes with the hold.
+      const press = row.querySelector('button[data-tool-tile="suggested"]') ?? row.querySelector('[data-tool-tile="suggested"] button');
+      expect(press).not.toBeNull();
+      expect(row.getAttribute("role")).toBe("group");
+      expect(document.getElementById(row.getAttribute("aria-labelledby") ?? "")?.textContent).toBe(copy.otherTools);
+      fireEvent.click(press as Element);
+      await waitFor(() => expect(document.querySelector("[data-other-tools]")).toBeNull());
+    } finally {
+      rect.mockRestore();
+      globalThis.ResizeObserver = RO;
+    }
+  });
+
+  it("shows no Other tools row at or below the held height, nor over a panel that has not drawn (Small items 7, item 4)", async () => {
+    const RO = globalThis.ResizeObserver;
+    globalThis.ResizeObserver = class { observe() {} disconnect() {} unobserve() {} } as unknown as typeof ResizeObserver;
+    let bottom = window.innerHeight;
+    const rect = vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (this: Element) {
+      const b = this.id === "tuning-tool-panel" ? bottom : 0;
+      return { top: 0, bottom: b, left: 0, right: 0, width: 0, height: b, x: 0, y: 0, toJSON: () => ({}) } as DOMRect;
+    });
+    try {
+      // Exactly at the held height: the blank space is gone, so is the row.
+      const drawn: HubToolSpec = { tool: "cuts", panel: <section><h2 id="cuts-heading">Proposed cuts</h2>Six over</section>, over: 6, total: 106 };
+      const first = render(<TuningHub deckId="d" drawn tools={[suggested(), drawn]} request={{ tool: "cuts", nonce: 1 }} />);
+      await screen.findByRole("heading", { name: "Proposed cuts" });
+      expect(document.querySelector("[data-other-tools]")).toBeNull();
+      first.unmount();
+      // One pixel above it: the row shows.
+      bottom = window.innerHeight - 1;
+      const second = render(<TuningHub deckId="d" drawn tools={[suggested(), drawn]} request={{ tool: "cuts", nonce: 1 }} />);
+      await waitFor(() => expect(document.querySelector("[data-other-tools]")).not.toBeNull());
+      second.unmount();
+      // Short but not drawn (empty, counting): no row.
+      bottom = 100;
+      const empty: HubToolSpec = { tool: "cuts", panel: <section aria-busy /> , over: 6, total: 106 };
+      render(<TuningHub deckId="d" drawn tools={[suggested(), empty]} request={{ tool: "cuts", nonce: 1 }} />);
+      await new Promise((r) => setTimeout(r, 50));
+      expect(document.querySelector("[data-other-tools]")).toBeNull();
+    } finally {
+      rect.mockRestore();
+      globalThis.ResizeObserver = RO;
+    }
+  });
+
   it("scrolls once for a shortcut, not again when the tool's content lands, and shows its counting state meanwhile", async () => {
     const scroll = vi.mocked(reveal);
     scroll.mockClear();
@@ -420,7 +492,11 @@ describe("TuningHub opening a tool", () => {
     read.mockResolvedValue(empty);
     const { rerender } = render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} request={{ tool: "cuts", nonce: 1 }} />);
     expect(await screen.findByRole("heading", { name: "Proposed cuts" })).toBeTruthy();
-    expect(tile("suggested")).toBeNull();
+    // The landing grid is not mounted with a tool open; a tile may only be the "Other tools" row's.
+    const other = screen.queryByRole("group", { name: copy.otherTools });
+    const open = tile("suggested");
+    expect(open === null || (other !== null && other.contains(open))).toBe(true);
+    expect(tile("cuts")).toBeNull();
     rerender(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} request={{ tool: null, nonce: 2 }} />);
     await waitFor(() => expect(tile("suggested")).not.toBeNull());
     expect(screen.queryByRole("heading", { name: "Proposed cuts" })).toBeNull();
