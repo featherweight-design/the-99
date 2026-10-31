@@ -50,7 +50,7 @@ now_p = now_p[now_p.find('<div class="ph"'):now_p.rfind('<p class="cap">')]
 # ---- phone, proposed: the band, a glyph per line, one sentence each
 new_p = P2
 i = new_p.find('<ul style="margin-left:32px">'); j = new_p.find('</ul>', i) + 5
-ul = ('<ul style="margin-left:32px">'
+ul = ('<ul style="margin-left:0">'
       f'<li class="g8">{glyph("home","gs")}<span>{TOP_LEAD} <a>Show me</a></span></li>'
       f'<li class="g8">{glyph("decks","gs")}<span>{MATCH} <a>Show me</a></span></li>'
       f'<li class="g8">{glyph("decks","gs")}<span>{SPARE} <a>Show me</a></span></li></ul>')
@@ -75,7 +75,7 @@ now_d = dk_with('<section class="bn"><span class="crop dashx"><img src="art/d-ho
 one_d = dk_with(f'<section class="bn g8">{glyph("home")}<div class="tx"><p>{TOP_LEAD}</p><a>Show me</a></div><span class="x">✕</span></section>')
 band_d = dk_with('<section class="bn2" style="padding:6px 8px 6px 14px"><div class="hh"><span class="mark"><i></i></span><h2>New in the app</h2>'
                  '<span class="x" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;color:var(--fg-faint);font-size:13px">✕</span></div>'
-                 '<ul style="margin:2px 0 0 32px">'
+                 '<ul style="margin:2px 0 0 0">'
                  f'<li class="g8" style="font-size:13.5px">{glyph("home","gs")}<span>{TOP_LEAD} <a>Show me</a></span></li>'
                  f'<li class="g8" style="font-size:13.5px">{glyph("decks","gs")}<span>{MATCH} <a>Show me</a></span></li>'
                  f'<li class="g8" style="font-size:13.5px">{glyph("decks","gs")}<span>{SPARE} <a>Show me</a></span></li></ul></section>')
@@ -93,7 +93,7 @@ def build():
     body += L.fr('<b>Now</b> · 390 · two launches, the top story first', now_p,
                  'The crops (dashed) are whole screens at 44 wide: nothing in them reads. The top story’s two sentences run six lines beside one.')
     body += L.fr('<b>Proposed</b> · 390 · the band', new_p,
-                 'A 28px plate with the page’s glyph (16px), top-aligned with the first line. One sentence a line, so the top story is three lines.')
+                 'A 28px plate with the page’s glyph (16px), top-aligned with the first line. The lines start at the band’s left edge, the plates under the heading’s mark, so no indent. One sentence a line, so the top story is three lines.')
     body += L.fr('<b>Proposed</b> · 390 · one launch alone', one_p,
                  'A launch alone takes the 36px plate (glyph 19px) where the 64x48 crop was. The ✕ is unchanged.')
     body += '</div><div class="frames" style="gap:44px;flex-wrap:wrap;row-gap:60px">'
@@ -105,7 +105,7 @@ def build():
                  'The band at desktop: the heading row as shipped (32px ✕), a 28px plate a line.')
     body += '</div>'
     body += L.rule('The call', [
-        '<b>No screenshot in the banner.</b> Each About line draws the glyph of the page its Show me opens (Home, Collection, Commanders, Decks, Friends; Shopping lands on a deck, so Decks), from <code>NavIcon</code>, in <code>--accent</code> on the <code>Mark</code> plate’s tint. 28px plate in the band, 36px for a launch alone. A rule keeps the diamond <code>Mark</code>, as shipped.',
+        '<b>No screenshot in the banner.</b> Each About line draws the glyph of the page its Show me opens (Home, Collection, Commanders, Decks, Friends; Shopping lands on a deck, so Decks), from <code>NavIcon</code>, in <code>--accent</code> on the <code>Mark</code> plate’s tint. 28px plate in the band, 36px for a launch alone. In the band the lines lose the shipped 32px indent: each plate sits at the band’s left edge, under the heading’s mark. A rule keeps the diamond <code>Mark</code>, as shipped.',
         '<b>One sentence.</b> A label’s line is its lead and the first sentence of its rest. The banner never shows a second sentence; Show me lands on the full label. A rule or a new sentence alone is already one sentence.',
         '<b>Retires</b> <code>LaunchCrop</code>, <code>CROP_SIZES</code>, <code>cropStyle</code>, the crop theme refresh (<code>ThemeRefresh</code> here) and the per-width capture fetch. The banner no longer reads the capture manifest.',
         '<b>Unchanged:</b> the band, its heading, “and N more”, the cap, ✕, focus, and the arrivals’ own lines.',

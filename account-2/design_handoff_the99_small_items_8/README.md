@@ -1,7 +1,7 @@
 # The 99 · Small items 8 (account 2, 2026-10-31)
 
 Canvas: https://claude.ai/artifact/WFm5ErpwVJpwU72W9zxQ2D
-Status: **R1, awaiting Hugh's audit.**
+Status: **R1b (glyphs at the left edge), awaiting Hugh's audit.**
 
 Six states the shipped handoffs left undrawn or illegible, plus four errata. Each item is drawn at 390 and 1300 over the shipped boards it extends (item 3 at 768 and 1024, where the problem is). Strings marked DRAFT go through `/copy-review`.
 
@@ -22,7 +22,7 @@ Sources read: main @ebfb3e1 and the files each section names.
 
 ## 1 · Home, New in the app (`about_visual` Ways-In, `arrivals-banner.tsx`)
 
-- **No screenshot.** Each About line draws the rail/tab glyph (`NavIcon`) of the page its Show me opens, in `--accent` on the `Mark` plate's tint. 28px plate (16px glyph) in the band; 36px (19px glyph) for a launch alone. Shopping lands on a deck, so it takes Decks. A rule keeps the diamond `Mark`.
+- **No screenshot.** Each About line draws the rail/tab glyph (`NavIcon`) of the page its Show me opens, in `--accent` on the `Mark` plate's tint. 28px plate (16px glyph) in the band, at the band’s left edge under the heading’s mark (no 32px indent, R1b); 36px (19px glyph) for a launch alone. Shopping lands on a deck, so it takes Decks. A rule keeps the diamond `Mark`.
 - **One sentence a line:** the label's lead plus the first sentence of its rest. The top story goes from six phone lines to three.
 - Retires `LaunchCrop`, `CROP_SIZES`, `cropStyle`, the banner's `ThemeRefresh` and the capture fetch.
 - Unchanged: band, heading, cap and "and N more", ✕, focus, arrivals lines.
