@@ -1,5 +1,5 @@
 import { creditsCopy } from "../copy/credits";
-import { freeCount, freeRoom, hasCredit, heldCredits, paidAtLimit, type Allowance } from "./allowance-rule";
+import { freeCount, freeRoom, hasCredit, heldCredits, paidAtLimit, type Allowance, type RunFunding } from "./allowance-rule";
 
 /**
  * THE CREDIT LINE, as every spend surface draws it (buying credits U2b, frames L1 to L8). Pure.
@@ -131,4 +131,24 @@ export function creditStanding(a: LineAllowance, now: Date = new Date()): string
   if (kind === "spent" || kind === "limit") return creditSpent(a);
   if (kind === "paidNext") return `${creditsCopy.paidNext(a.limit, freeNext(a), paidShown(a), welcomeLeft(a))}${expiringTail(a, now)}`;
   return creditCount(a, now);
+}
+
+/**
+ * The line beside a press whose run costs 2 credits and can start (Small items 7, SC-Cost B, D and E): the source and the
+ * count in `lead`, why it is 2 in `why` (drawn in `--fg-body`), then the count that source is spent from. Null for a
+ * 1-credit run, which keeps the shipped line, and for a run that cannot start (`short`/`spent`: the surface draws those).
+ */
+export function creditTwo(a: LineAllowance, f: RunFunding, now: Date = new Date()): { lead: string; why: string; count: string } | null {
+  if (f.units < 2) return null;
+  if (f.source === "free") {
+    return {
+      lead: creditsCopy.two.lead("free"),
+      why: creditsCopy.two.whyFree,
+      count: creditsCopy.two.freeAfter(f.freeLeft, a.limit, f.freeAfter, a.nextAt, paidShown(a), welcomeLeft(a)),
+    };
+  }
+  if (f.source === "welcome" || f.source === "paid") {
+    return { lead: creditsCopy.two.lead(f.source), why: creditsCopy.two.whyLot, count: creditsCopy.two.count(creditCount(a, now)) };
+  }
+  return null;
 }

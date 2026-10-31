@@ -25,6 +25,8 @@ export const suggestedChangesV2Copy = {
       line: (n: number, pool: number) => `${n} in, ${n} out. You’ll pick from about ${pool} of each.`,
       range: "1 to 20",
       atMax: "20 at most",
+      // Small items 7, SC-Cost A: the tag the line carries above 10 (`unitsFor`), in the tiles' cost-tag shape.
+      twoCredits: "2 credits",
       // PLACEHOLDER for /copy-review: the stepper's accessible names (the board draws only − and +).
       fewer: "Fewer cards",
       more: "More cards",

@@ -15,8 +15,10 @@ import {
   paidAtLimit,
   freeRoom,
   paidRoom,
+  runFunding,
 } from "./allowance-rule";
 import { pickGrant, type CreditGrant } from "./credit-rule";
+import { unitsFor } from "../tuning/v2/charge";
 
 const now = new Date("2026-09-23T12:00:00Z");
 const hoursAgo = (h: number) => new Date(now.getTime() - h * 3_600_000);
@@ -210,5 +212,58 @@ describe("a run's units", () => {
     expect(pickGrant(balances)?.id).toBe("welcome");
     expect(pickGrant(balances, 2)?.id).toBe("pack");
     expect(pickGrant([balances[0], { ...balances[1], remaining: 1 }], 2)).toBeNull();
+  });
+});
+
+describe("runFunding (Small items 7, the 2-credit cue)", () => {
+  it("costs 1 credit at 10 swaps and 2 at 11", () => {
+    expect(runFunding({ used: 0, limit: 1 }, unitsFor(10))).toEqual({ source: "free", units: 1, freeLeft: 1, freeAfter: 0 });
+    expect(runFunding({ used: 0, limit: 1 }, unitsFor(11))).toEqual({ source: "short", units: 2, freeHoldsOne: true });
+  });
+
+  it("the free allowance funds a 2-credit run only when it holds both, and says what it leaves", () => {
+    expect(runFunding({ used: 0, limit: 5 }, 2)).toEqual({ source: "free", units: 2, freeLeft: 5, freeAfter: 3 });
+    expect(runFunding({ used: 3, limit: 5 }, 2)).toEqual({ source: "free", units: 2, freeLeft: 2, freeAfter: 0 });
+    // Holding 1 is not enough for 2: it is never split with a lot.
+    expect(runFunding({ used: 4, limit: 5, welcome: 15 }, 2)).toEqual({ source: "welcome", units: 2 });
+    expect(runFunding({ used: 4, limit: 5 }, 1)).toEqual({ source: "free", units: 1, freeLeft: 1, freeAfter: 0 });
+  });
+
+  it("welcome before paid, and a gift is shown as paid", () => {
+    expect(runFunding({ used: 0, limit: 1, welcome: 15 }, 2)).toEqual({ source: "welcome", units: 2 });
+    expect(runFunding({ used: 0, limit: 1, welcome: 15, pack: 8 }, 2)).toEqual({ source: "welcome", units: 2 });
+    expect(runFunding({ used: 0, limit: 1, pack: 8 }, 2)).toEqual({ source: "paid", units: 2 });
+    expect(runFunding({ used: 0, limit: 1, gift: 3 }, 2)).toEqual({ source: "paid", units: 2 });
+    // A welcome lot down to 1 cannot hold 2, so the paid source behind it does.
+    expect(runFunding({ used: 1, limit: 1, welcome: 1, plan: 8 }, 2)).toEqual({ source: "paid", units: 2 });
+    expect(runFunding({ used: 1, limit: 1, welcome: 1, plan: 8 }, 1)).toEqual({ source: "welcome", units: 1 });
+  });
+
+  it("is short when the free run is gone and one lot credit is left", () => {
+    expect(runFunding({ used: 1, limit: 1, pack: 1 }, 2)).toEqual({ source: "short", units: 2, freeHoldsOne: false });
+    expect(runFunding({ used: 1, limit: 1, welcome: 1 }, 2)).toEqual({ source: "short", units: 2, freeHoldsOne: false });
+  });
+
+  it("is short when the paid limit has room for 1 but not 2", () => {
+    const a = { used: 1, limit: 1, pack: 8, paidUsedToday: 19, paidLimit: 20 };
+    expect(runFunding(a, 2)).toEqual({ source: "short", units: 2, freeHoldsOne: false });
+    expect(runFunding(a, 1)).toEqual({ source: "paid", units: 1 });
+  });
+
+  it("is spent when nothing funds even 1, whatever the run costs", () => {
+    expect(runFunding({ used: 1, limit: 1 }, 2)).toEqual({ source: "spent", units: 2 });
+    expect(runFunding({ used: 1, limit: 1 }, 1)).toEqual({ source: "spent", units: 1 });
+    expect(runFunding({ used: 1, limit: 1, pack: 8, paidUsedToday: 20, paidLimit: 20 }, 2)).toEqual({ source: "spent", units: 2 });
+  });
+
+  it("agrees with hasCredit on every 1-credit run", () => {
+    for (const a of [
+      { used: 0, limit: 1 },
+      { used: 1, limit: 1 },
+      { used: 1, limit: 1, pack: 1 },
+      { used: 1, limit: 1, welcome: 2, paidUsedToday: 20, paidLimit: 20 },
+    ]) {
+      expect(runFunding(a, 1).source !== "spent").toBe(hasCredit(a));
+    }
   });
 });

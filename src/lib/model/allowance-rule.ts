@@ -231,8 +231,8 @@ export function paidAtLimit(a: HeldLots & { paidUsedToday?: number | null; paidL
   return a.paidUsedToday != null && a.paidLimit != null && !paidRoom({ paidUsed: a.paidUsedToday, paidLimit: a.paidLimit });
 }
 
-/** A one-credit run's gate. A run costing 2 (Suggested changes v2 over 10 swaps) is decided by `reserveModelCall`
- *  alone, with `freeRoom` and `paidRoom` taking its units; the panel's cue for it comes with the Small items 7 handoff. */
+/** A one-credit run's gate. A run costing 2 (Suggested changes v2 over 10 swaps) is decided on the server by
+ *  `reserveModelCall`, with `freeRoom` and `paidRoom` taking its units; the panel asks `runFunding` (Small items 7, SC-Cost). */
 export function hasCredit(a: HeldLots & {
   used: number; limit: number;
   paidUsedToday?: number | null; paidLimit?: number | null;
@@ -241,6 +241,46 @@ export function hasCredit(a: HeldLots & {
   if (heldCredits(a) <= 0) return false;
   // An Allowance without the paid counter (a fixture, a caller that did not read it) has no limit to apply.
   return a.paidUsedToday == null || a.paidLimit == null || paidRoom({ paidUsed: a.paidUsedToday, paidLimit: a.paidLimit });
+}
+
+/**
+ * Where a run costing `units` credits would be funded, as the panel can tell from the allowance it holds (Small items 7,
+ * the 2-credit cue). ONE SOURCE FUNDS THE WHOLE RUN, in `reserveModelCall`'s order: the free allowance when it holds all
+ * of it; else the welcome lot; else a paid lot (plan, gift or pack, all shown as paid). Lots are counted by source here,
+ * not by lot, so a source split across lots is approximated; the server's `costs: 2` refusal stays the backstop.
+ *
+ *   free     the free allowance holds the run; `freeAfter` is what it leaves
+ *   welcome  the welcome lot holds the run
+ *   paid     a paid source holds the run
+ *   short    the run costs 2 and nothing can fund 2, though a 1-credit run would start (`freeHoldsOne`: it is the free
+ *            allowance that holds the one, the board's "Your free run covers up to 10")
+ *   spent    nothing can fund even 1 credit: `hasCredit` is false
+ *
+ * Says nothing about the owner's share, which every caller checks first. Pure.
+ */
+export type RunFunding =
+  | { source: "free"; units: number; freeLeft: number; freeAfter: number }
+  | { source: "welcome" | "paid"; units: number }
+  | { source: "short"; units: number; freeHoldsOne: boolean }
+  | { source: "spent"; units: number };
+
+export function runFunding(
+  a: HeldLots & { used: number; limit: number; paidUsedToday?: number | null; paidLimit?: number | null },
+  units = 1,
+): RunFunding {
+  if (freeRoom(a, units)) {
+    const freeLeft = freeCount(a);
+    return { source: "free", units, freeLeft, freeAfter: Math.max(0, freeLeft - units) };
+  }
+  // The paid limit counts a lot-funded run whole, welcome included (`reserveModelCall`'s `paidOk(units)`).
+  const paidOk = a.paidUsedToday == null || a.paidLimit == null || paidRoom({ paidUsed: a.paidUsedToday, paidLimit: a.paidLimit }, units);
+  if (paidOk) {
+    if ((a.welcome ?? 0) >= units) return { source: "welcome", units };
+    if ([a.plan, a.gift, a.pack].some((n) => (n ?? 0) >= units)) return { source: "paid", units };
+  }
+  if (!hasCredit(a)) return { source: "spent", units };
+  // A 1-credit run would start; this one cannot (only reachable with units > 1).
+  return { source: "short", units, freeHoldsOne: freeRoom(a) };
 }
 
 /** When a counted row stops counting: a spent unit at the window's edge, a reservation at its TTL. */

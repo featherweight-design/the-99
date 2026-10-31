@@ -141,6 +141,26 @@ export const creditsCopy = {
     return line.endsWith(more) ? `${line.slice(0, -more.length)}${tail}${more}` : `${line}${tail}`;
   },
 
+  /**
+   * A run costing 2 credits (Suggested changes v2 above 10 swaps; Small items 7, SC-Cost B, D and E). DRAFT, owed to
+   * /copy-review. The line beside the press reads `lead`, then `why` (drawn in `--fg-body`), then the count: `Uses 2
+   * welcome credits. Your free run covers up to 10. 1 of 1 free · 15 welcome.`
+   */
+  two: {
+    /** `Uses 2 welcome credits.`: the source that funds the whole run (`runFunding`). A gift is shown as paid. */
+    lead: (source: "free" | "welcome" | "paid") => `Uses 2 ${source} credits.`,
+    /** B and D: a lot funds it, because the free run covers 1 to 10. */
+    whyLot: "Your free run covers up to 10.",
+    /** E (addendum 1): the free allowance funds it, counting 2. */
+    whyFree: "A run above 10 counts 2.",
+    /** E's count: credits, never runs, and what this run leaves. With lots held their shipped segment follows. */
+    freeAfter: (left: number, total: number, after: number, next: Date | null, paidTotal = 0, welcomeLeft = 0) =>
+      `${left} of ${total} free left, ${after} after this run${next ? ` · reset at ${clockTime(next)}` : ""}${
+        paidTotal > 0 || welcomeLeft > 0 ? ` · ${lots(paidTotal, welcomeLeft)}` : ""}.`,
+    /** B and D's count: the shipped count (`creditCount`) ending the line. */
+    count: (line: string) => `${line}.`,
+  },
+
   /** The account menu's chip (M1b), by state. The count and the date are the server's read. */
   chip: {
     credits: (n: number) => `${n} ${n === 1 ? "credit" : "credits"}`,

@@ -92,6 +92,55 @@ describe("TuningPanel with Suggested changes v2 off", () => {
   });
 });
 
+describe("Suggested changes v2's 2-credit cue (Small items 7, SC-Cost)", () => {
+  const withAllowance = (allowance: TuningState["allowance"]) => {
+    const d = deps();
+    d.read = vi.fn(async () => ({ ...fresh, allowance }));
+    return d;
+  };
+  const typeCount = (n: number) => {
+    const field = screen.getByRole("textbox", { name: sc.intake.count.countLabel });
+    fireEvent.change(field, { target: { value: String(n) } });
+    fireEvent.blur(field);
+  };
+  const line = () => document.querySelector("[data-sc-credit-line]") as HTMLElement | null;
+  const stop = () => document.querySelector("[data-sc-two-stop]") as HTMLElement | null;
+
+  it("C: only the free run left, above 10: the press is off, the row says why, and Change to 10 turns it back on", async () => {
+    await draw(withAllowance({ used: 0, limit: 1, reopensAt: null, nextAt: null, payments: true }), v2At());
+    typeCount(12);
+    expect(send().getAttribute("aria-disabled")).toBe("true");
+    expect(stop()!.textContent).toContain(deckTuningCopy.allowance.costsTwoFree(12));
+    expect(screen.getByRole("link", { name: "Get more credits" }).getAttribute("href")).toBe("/credits");
+    fireEvent.click(screen.getByRole("button", { name: deckTuningCopy.allowance.changeTo(10) }));
+    expect((screen.getByRole("textbox", { name: sc.intake.count.countLabel }) as HTMLInputElement).value).toBe("10");
+    expect(stop()).toBeNull();
+    expect(send().getAttribute("aria-disabled")).toBeNull();
+  });
+
+  it("C: Get more credits only while payments are on, and costsTwo once the free run is gone", async () => {
+    await draw(withAllowance({ used: 1, limit: 1, reopensAt: null, nextAt: null, pack: 1 }), v2At());
+    typeCount(12);
+    expect(stop()!.textContent).toContain(deckTuningCopy.allowance.costsTwo);
+    expect(screen.queryByRole("link", { name: "Get more credits" })).toBeNull();
+  });
+
+  it("B: welcome credits fund a run of 12, and the line says so", async () => {
+    await draw(withAllowance({ used: 0, limit: 1, reopensAt: null, nextAt: null, welcome: 15 }), v2At());
+    typeCount(12);
+    expect(send().getAttribute("aria-disabled")).toBeNull();
+    expect(line()!.textContent).toContain("Uses 2 welcome credits. Your free run covers up to 10. 1 of 1 free · 15 welcome.");
+  });
+
+  it("E: the free allowance holds 2, and the line counts credits left after the run", async () => {
+    await draw(deps(), v2At());
+    typeCount(12);
+    expect(line()!.textContent).toContain("Uses 2 free credits. A run above 10 counts 2. 5 of 5 free left, 3 after this run.");
+    typeCount(10);
+    expect(line()!.textContent).not.toContain("after this run");
+  });
+});
+
 describe("TuningPanel with Suggested changes v2 on", () => {
   it("draws the intake in place of Additional notes, Suggest changes, and the usual time by N", async () => {
     await draw(deps(), v2At());

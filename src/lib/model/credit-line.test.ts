@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { creditsCopy } from "../copy/credits";
-import { creditAgain, creditCount, creditFirst, creditLineKind, creditSpent, creditStanding, expiringPhrase, type LineAllowance } from "./credit-line";
+import { creditAgain, creditCount, creditFirst, creditLineKind, creditSpent, creditStanding, creditTwo, expiringPhrase, type LineAllowance } from "./credit-line";
+import { runFunding } from "./allowance-rule";
 
 const at = (h: number, m = 0) => new Date(2026, 9, 17, h, m);
 const NOW = new Date("2026-11-14T12:00:00Z");
@@ -160,5 +161,44 @@ describe("welcome credits on the line (D2, Line-and-Chip W1 to W6)", () => {
     const a = w({ used: 1, reopensAt: at(2, 1), welcome: 0, pack: 40 });
     expect(creditStanding(a)).toBe(`0 of 1 free · reset at ${t(at(2, 1))} · this run uses 1 of 40 paid`);
     expect(creditFirst(a)).toMatch(/^Uses a paid credit\. /);
+  });
+});
+
+describe("a run costing 2 credits (Small items 7, SC-Cost B, D, E)", () => {
+  const two = (a: LineAllowance) => creditTwo(a, runFunding(a, 2), NOW);
+
+  it("a 1-credit run keeps the shipped line", () => {
+    const a = base();
+    expect(creditTwo(a, runFunding(a, 1), NOW)).toBeNull();
+  });
+
+  it("B: welcome credits fund it, and the line counts them in the shipped form", () => {
+    expect(two({ used: 0, limit: 1, nextAt: null, reopensAt: null, welcome: 15 })).toEqual({
+      lead: "Uses 2 welcome credits.",
+      why: "Your free run covers up to 10.",
+      count: "1 of 1 free · 15 welcome.",
+    });
+  });
+
+  it("D: paid credits fund it", () => {
+    expect(two({ used: 0, limit: 1, nextAt: null, reopensAt: null, pack: 8 })).toEqual({
+      lead: "Uses 2 paid credits.",
+      why: "Your free run covers up to 10.",
+      count: "1 of 1 free · 8\u00a0paid.",
+    });
+  });
+
+  it("E: the free allowance holds 2, and the line says what the run leaves, in credits", () => {
+    expect(two({ used: 0, limit: 5, nextAt: null, reopensAt: null })).toEqual({
+      lead: "Uses 2 free credits.",
+      why: "A run above 10 counts 2.",
+      count: "5 of 5 free left, 3 after this run.",
+    });
+    expect(two(base({ used: 0 }))!.count).toBe(`5 of 5 free left, 3 after this run · reset at ${t(at(14, 1))}.`);
+  });
+
+  it("draws nothing for a run that cannot start: the surface says why", () => {
+    expect(two({ used: 0, limit: 1, nextAt: null, reopensAt: null })).toBeNull();
+    expect(two({ used: 1, limit: 1, nextAt: null, reopensAt: null })).toBeNull();
   });
 });
