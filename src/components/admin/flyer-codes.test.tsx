@@ -56,6 +56,31 @@ describe("FlyerCodes", () => {
   });
 });
 
+describe("FlyerCodes with no codes", () => {
+  const empty = flyersView({ codes: [], listed: 0, held: 37, open: [], holds: [] }, new Date("2026-10-30T12:00:00Z"));
+
+  it("keeps New flyer code, writes the zero meta and holds the muted line in a card (No-Codes.dc.html)", () => {
+    render(<FlyerCodes view={empty} />);
+    expect(screen.getByText("none yet · from your invites, 37 left")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "New flyer code" })).toBeTruthy();
+    expect(screen.getByTestId("flyer-codes-empty").textContent).toBe("No flyer codes yet: make one for a store, then print its flyer.");
+    expect(document.querySelectorAll("[data-flyer]")).toHaveLength(0);
+  });
+
+  it("keeps the launch list card at zero with its new meta and no Download CSV", () => {
+    render(<FlyerCodes view={empty} />);
+    const card = screen.getByTestId("launch-list-card");
+    expect(within(card).getByText("Launch list · 0")).toBeTruthy();
+    expect(within(card).getByText("no emails yet · a used-up or ended flyer asks for one")).toBeTruthy();
+    expect(screen.queryByText("Download CSV")).toBeNull();
+  });
+
+  it("draws no empty line when a code exists", () => {
+    render(<FlyerCodes view={view} />);
+    expect(screen.queryByTestId("flyer-codes-empty")).toBeNull();
+  });
+});
+
 describe("New flyer code", () => {
   beforeEach(() => {
     makeCode.mockReset().mockResolvedValue({ ok: true, code: "ABC234" });
@@ -141,6 +166,18 @@ describe("Revoke", () => {
     render(<FlyerCodes view={view} />);
     fireEvent.click(within(document.querySelector("[data-flyer=MOX4QK]") as HTMLElement).getByTestId("flyer-revoke"));
     fireEvent.click(screen.getByRole("button", { name: "Revoke code" }));
-    expect(await within(screen.getByRole("dialog")).findByRole("alert")).toBeTruthy();
+    const alert = await within(screen.getByRole("dialog")).findByRole("alert");
+    expect(alert.textContent).toBe("Couldn’t revoke the code, so nothing changed. Try again.");
+    expect(screen.getByRole("dialog")).toBeTruthy();
+  });
+
+  it("says the code may be revoked, and refreshes the list, when the reply is lost", async () => {
+    revokeCode.mockRejectedValue(new Error("network"));
+    render(<FlyerCodes view={view} />);
+    fireEvent.click(within(document.querySelector("[data-flyer=MOX4QK]") as HTMLElement).getByTestId("flyer-revoke"));
+    fireEvent.click(screen.getByRole("button", { name: "Revoke code" }));
+    const alert = await within(screen.getByRole("dialog")).findByRole("alert");
+    expect(alert.textContent).toBe("Lost the connection, so the code may be revoked. Check the list before trying again.");
+    expect(refresh).toHaveBeenCalled();
   });
 });

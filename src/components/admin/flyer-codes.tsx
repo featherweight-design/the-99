@@ -100,6 +100,13 @@ export function FlyerCodes({ view, groups = [] }: { view: FlyersView; groups?: r
         )}
       </div>
       {making && <FlyerNewForm groups={groups} onClose={() => setMaking(false)} />}
+      {view.rows.length === 0 && (
+        <div className={CARD}>
+          <p data-testid="flyer-codes-empty" className="m-0 px-[16px] py-[18px] text-[13px] leading-[1.6] text-[color:var(--fg-muted)] [text-wrap:pretty]">
+            {copy.empty}
+          </p>
+        </div>
+      )}
       {view.rows.length > 0 && (
         <div className={CARD}>
           <div

@@ -6,6 +6,10 @@
 .flyer-bar .fb-code { display: inline-flex; align-items: center; height: 24px; padding: 0 8px; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--surface-sunken); font: 400 12px var(--font-plex-mono), monospace; color: var(--fg); }
 .flyer-bar small { font: 400 11px var(--font-plex-mono), monospace; color: var(--fg-faint); flex-basis: 100%; order: 5; }
 .flyer-bar .fb-sp { flex: 1; }
+/* A revoked code (Print-Revoked.dc.html .s7x, .s7rv, .s7dim). */
+.flyer-bar .fb-code.fb-muted { color: var(--fg-muted); }
+.flyer-bar small.fb-revoked { color: var(--fg-muted); }
+.flyer-fit-dim { opacity: 0.32; filter: grayscale(0.6); }
 .flyer-bar button { display: inline-flex; align-items: center; justify-content: center; height: 44px; padding: 0 16px; border-radius: 10px; font: 500 14px var(--font-plex-sans), sans-serif; cursor: pointer; }
 .flyer-bar .fb-ghost { font-weight: 400; border: 1px solid var(--border-strong); background: transparent; color: var(--fg); }
 .flyer-bar .fb-solid { border: 0; background: var(--fg); color: var(--bg); }
@@ -60,6 +64,7 @@
   body * { visibility: hidden !important; }
   .flyer-sheet, .flyer-sheet * { visibility: visible !important; }
   .flyer-bar { display: none !important; }
+  .flyer-fit-dim { display: none !important; }
   .flyer-sheet { position: fixed !important; left: 0; top: 0; transform: none !important; box-shadow: none; background: none; }
   .flyer-sheet::before { display: none; }
 }

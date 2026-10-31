@@ -87,8 +87,11 @@ export function flyersView(read: FlyersRead, now: Date): FlyersView {
     .sort((a, b) => b.listed - a.listed || a.label.localeCompare(b.label))
     .map((c) => `${c.label} ${c.listed}`);
   return {
-    meta: copy.meta(live, left, read.listed),
+    meta: read.codes.length === 0 ? copy.metaNone(left) : copy.meta(live, left, read.listed),
     rows,
-    launch: { title: copy.launchList(read.listed), meta: [copy.launchListMeta, ...perCode].join(" · ") },
+    launch: {
+      title: copy.launchList(read.listed),
+      meta: read.listed === 0 ? copy.launchListNone : [copy.launchListMeta, ...perCode].join(" · "),
+    },
   };
 }

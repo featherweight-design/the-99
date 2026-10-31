@@ -9,9 +9,11 @@ const PX = 24;
 
 /**
  * The screen-only bar above the flyer (`Print.dc.html` `.pvb`): back to Invites, the store and its code, Download QR (a PNG
- * drawn from the same path the flyer's QR is) and Print (the browser's dialog). `@media print` hides it (`print.css`).
+ * drawn from the same path the flyer's QR is) and Print (the browser's dialog). `@media print` hides it (`print.css`). A
+ * revoked code (`revoked` is its day, "Nov 2") keeps the way back, the store and the muted code, says when it was revoked,
+ * and has neither button (`Print-Revoked.dc.html`).
  */
-export function FlyerPrintBar({ store, code, qr }: { store: string; code: string; qr: { size: number; d: string } }) {
+export function FlyerPrintBar({ store, code, qr, revoked = null }: { store: string; code: string; qr: { size: number; d: string }; revoked?: string | null }) {
   function download() {
     const canvas = document.createElement("canvas");
     canvas.width = canvas.height = qr.size * PX;
@@ -40,11 +42,19 @@ export function FlyerPrintBar({ store, code, qr }: { store: string; code: string
         <PendingReporter href="/admin/invites" />
       </Link>
       <b>{store}</b>
-      <span className="fb-code">{code}</span>
-      <small>{flyerAdminCopy.printBar}</small>
+      <span className={revoked ? "fb-code fb-muted" : "fb-code"}>{code}</span>
+      {revoked ? (
+        <small className="fb-revoked" data-testid="flyer-revoked-note">{flyerAdminCopy.printRevoked(revoked)}</small>
+      ) : (
+        <small>{flyerAdminCopy.printBar}</small>
+      )}
       <span className="fb-sp" />
-      <button type="button" className="fb-ghost" data-testid="flyer-download-qr" onClick={download}>{flyerAdminCopy.downloadQr}</button>
-      <button type="button" className="fb-solid" data-testid="flyer-print" onClick={() => window.print()}>{flyerAdminCopy.print}</button>
+      {!revoked && (
+        <>
+          <button type="button" className="fb-ghost" data-testid="flyer-download-qr" onClick={download}>{flyerAdminCopy.downloadQr}</button>
+          <button type="button" className="fb-solid" data-testid="flyer-print" onClick={() => window.print()}>{flyerAdminCopy.print}</button>
+        </>
+      )}
     </div>
   );
 }

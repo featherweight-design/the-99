@@ -47,7 +47,11 @@ describe("flyersView", () => {
       title: "Launch list · 23",
       meta: "emails left on used-up and ended flyers · Knight Moves Cafe 19 · Pizza Pod test 4",
     });
-    expect(flyersView({ ...read, codes: [], listed: 0 }, now).launch).toEqual({ title: "Launch list · 0", meta: flyerAdminCopy.launchListMeta });
+    expect(flyersView({ ...read, codes: [], listed: 0 }, now).launch).toEqual({ title: "Launch list · 0", meta: "no emails yet · a used-up or ended flyer asks for one" });
+  });
+
+  it("writes the zero-code meta: none yet, the invites left, nothing about the launch list", () => {
+    expect(flyersView({ ...read, codes: [], listed: 0 }, now).meta).toBe("none yet · from your invites, 37 left");
   });
 
   it("states: revoked beats full, full is the capacity", () => {
