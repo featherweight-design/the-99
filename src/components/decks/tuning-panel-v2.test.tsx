@@ -628,6 +628,15 @@ describe("TuningPanel with Suggested changes v2 on: the wait and the results (UI
     expect(screen.queryByRole("button", { name: deckTuningCopy.panel.suggest })).toBeNull();
   });
 
+  it("with the switch off, a stored v2 run opened from the tile (no History row) takes the past-run box too", async () => {
+    const d = { ...deps(), v2: v2Actions() };
+    d.read = vi.fn(async () => finished);
+    await draw(d, null, [2]);
+    expect(document.querySelector("[data-sc-run]")!.getAttribute("data-sc-past")).toBe("stale");
+    expect(document.querySelector("[data-sc-past-note]")!.textContent).toBe(tuningHubCopy.history.pastNoteUncounted);
+    expect(document.querySelector("[data-sc-apply]")).toBeNull();
+  });
+
   it("with the switch off, the read-only v2 run view calls no write action (apply, undo, pick) on mount or render", async () => {
     const reopened: TuningState = { ...finished, review: { runId: RUN, at, readVersion: 4 } };
     const actions = v2Actions();

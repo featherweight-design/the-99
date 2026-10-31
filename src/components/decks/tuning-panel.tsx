@@ -1240,9 +1240,10 @@ export function TuningPanel({
         // no Apply, Undo or pick control, since the v2 actions refuse a reader with the switch off.
         readOnly={(reviewing && state.retired !== null) || v2 === null}
         // A stored run read with v2 off takes History C's box (Small items 8, item 5), opened from History or from the
-        // tile: the box's note needs no day, so a run with no History row passes none.
-        past={reviewing && (review?.past || v2 === null) ? {
-          date: review?.past ? historyDay(review.past.at) : "", stale: state.retired !== null || v2 === null,
+        // tile. A run with no History row takes its day from the run itself.
+        past={(reviewing && review?.past) || v2 === null ? {
+          date: review?.past ? historyDay(review.past.at) : state.run?.createdAt ? historyDay(state.run.createdAt.toISOString()) : "",
+          stale: state.retired !== null || v2 === null,
           version: state.review?.readVersion ?? null, moved: state.review?.moved ?? null,
         } : null}
         credits={{ left: freeCount(state.allowance), total: state.allowance.limit }}
