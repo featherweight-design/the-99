@@ -8,8 +8,7 @@ const KEY_ORDER = Object.keys(howItWorksCopy.methods) as HowMethod[];
 
 /**
  * "How the app reaches its answers": About's appendix, after the four chapters (handoff
- * about_how_it_works R1; plan 2026-09-28, PR B). The page mounts it only while
- * `HOW_IT_WORKS_ENABLED` is on.
+ * about_how_it_works R1; plan 2026-09-28, PR B).
  *
  * A server component: the key and every sentence are static. The rows are the one client part,
  * because a row opens and closes, and a hash naming one opens it before the jump lands.

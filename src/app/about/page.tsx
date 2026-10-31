@@ -7,7 +7,6 @@
 import { requireUserId } from "../../lib/auth";
 import { aboutSeen } from "../../lib/about/read";
 import { feedbackEnabled } from "../../lib/feedback/flag";
-import { howItWorksEnabled } from "../../lib/about/how-it-works-flag";
 import { referenceScreens } from "../../lib/about/reference";
 import { displayedId, switchedIds, unseenEntries, visibleEntries } from "../../lib/about/visible";
 import { ABOUT_VERSION, fillAllowance } from "../../lib/copy/about";
@@ -97,11 +96,10 @@ export default async function AboutRoute({
   // Listed in the Reference's own order.
   const whatsNew = screens.flatMap((s) => s.entries).filter((e) => unseen.has(e.id)).map((e) => ({ id: e.id, title: e.title }));
 
-  const howItWorks = howItWorksEnabled(env);
   // What this render shows, by id, for the visit to acknowledge: nothing it did not draw, so an entry switched on
   // between this render and the write is still new afterwards.
-  const shown = [...switchedIds(visible), ...(howItWorks ? [HOW_IT_WORKS_ID] : [])];
-  const owes = behind || (howItWorks && !seen.ids.includes(HOW_IT_WORKS_ID));
+  const shown = [...switchedIds(visible), HOW_IT_WORKS_ID];
+  const owes = behind || !seen.ids.includes(HOW_IT_WORKS_ID);
   // What Home's banner checks is the pages' unit keys, not these legacy ids. A visit that writes acknowledges what its
   // write confirms (the action's answer); one that writes nothing acknowledges the units the reader's state already
   // covers and the ids it holds (`heldAnswer`), so Back to Home does not redraw their launches.
@@ -119,7 +117,7 @@ export default async function AboutRoute({
           <ReferenceTab
             screens={screens}
             whatsNew={whatsNew}
-            how={howItWorks ? <HowItWorks entries={visible} creditLimit={creditLimit} /> : null}
+            how={<HowItWorks entries={visible} creditLimit={creditLimit} />}
             howCount={howItWorksRowsCopy.rows.length}
           />
         }

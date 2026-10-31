@@ -1784,7 +1784,7 @@ describe("DecklistRow, the other-ways press", () => {
   const withSpares = async (ui: React.ReactNode, tools = true) => {
     await act(async () => {
       renderRow(
-        <DeckPageSwitches howItWorks={false}>
+        <DeckPageSwitches>
           <FriendSparesProvider oracleIds={[card.oracleId]} newestAsOf={asOf}>
             {tools ? (
               <SwapToolsProvider deckId="d1" deckName="Test deck" storedLimitCents={null}>{ui}</SwapToolsProvider>

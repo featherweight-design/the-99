@@ -277,8 +277,7 @@ export const aboutCopy = {
 } as const;
 
 // ---- How the app reaches its answers (handoff about_how_it_works, R1) -----
-// Reference rows, not entries: no `since`, no NEW, never in the index. Behind
-// HOW_IT_WORKS_ENABLED. The method tags are shared with the Analysis tab's
+// Reference rows, not entries: no `since`, no NEW, never in the index. The method tags are shared with the Analysis tab's
 // "How we make these decisions" sheet (Hugh, 2026-09-28: five methods, and the
 // tags appear in both places). All five are drawn identically on purpose:
 // coloring them by trust would be a score.
