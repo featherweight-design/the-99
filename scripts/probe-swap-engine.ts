@@ -1,6 +1,10 @@
 // probe:swap-engine — the swap tools' stand-in gather against a real Postgres and the real catalog
 // (sub-project 4, PR 1), by calling the real `loadStandIns`.
 //
+// LABELS. Stand-in labels are always read now (their switch is retired), so sections 1–9 read whatever
+// real `card_labels` rows the target database holds: a labelled stand-in can change their results there.
+// Section 10 seeds its own label on an unlabelled card to pin the labelled read.
+//
 // WHY A DATABASE. Every rule `rankStandIns` applies is a pure function and unit-tested. What only
 // a database answers is the GATHER: the guards in SQL (legal in Commander, inside the identity,
 // not already in the draft), the commander figure read from the right table (a PAIR's own list for
