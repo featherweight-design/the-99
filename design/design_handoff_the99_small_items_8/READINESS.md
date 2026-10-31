@@ -29,3 +29,15 @@ Sizes: S under 150 lines, M 150 to 500, L over 500, tests included.
 - (i) and (ii): confirmed against `credits.ts` (`two.freeAfter`, `creditShortStanding`) and `tuning-panel.tsx:1410, :1600–1620`. The `Errata` board replaces Small items 7 `SC-Cost` C, E, and B and D's why line. There is no code change.
 - (iii): confirmed against `tuning-limits-box.tsx:140`. Keep the fine-pointer condition on the 14px.
 - (iv): confirmed against `suggested-changes-run.tsx:377` and #2476. There is no code change.
+
+## Engineering audit (2026-10-31, against `origin/main` @ebfb3e1)
+
+**Verdict: Green.** No Orange items. No migration, no new switch. Line references in the handoff all match the tree. Notes for the builders:
+
+- **Item 1.** The crop machinery is wider than the retire list: `banner-line.ts` also holds `cropStyle`, `CROP_FILL` and the `BannerCrop` type, `notice.ts` holds `cropAt`, and `notice.test.ts` and `arrivals-banner.test.tsx` pin `cropStyle`. Delete them with the component and drop those tests. The About launch text is cut to one sentence in `notice.ts`; copy goes through `/copy-review`. No new About entry is needed: the item changes how an existing label is drawn, and the Suggested changes v2 New mark rides after it.
+- **Item 2.** Parked. It builds on Small items 7 item 5 (custom sign-up pages), which is not built: `src/app/sign-up/page.tsx` is still the landing for a reader without a ticket.
+- **Item 3.** `useCartPhone` also gates `social-toast.tsx:33`. Move the cart stack to its own 768 to 1223 query rather than widening `useCartPhone`, so the social toast keeps its shipped place.
+- **Item 4.** Confirmed at `deck-stats-results.tsx:88` (`beads.length > 0`); change to `>= 5` and update the test that pins the ends line.
+- **Item 5.** Confirmed at `suggested-changes-run.tsx:545`; the `past.stale` branch exists, the History B live line is what a v2-off run opened from History draws today.
+- **Item 6.** Parked with the flyer line. `global-error.tsx` exists; there is no `/report` route yet.
+- **Errata.** (iii) confirmed at `tuning-limits-box.tsx:140`. (iv) the sticky head is already opaque on `--surface-sunken` (`suggested-changes-run.tsx:377`). The Pick-above-✕ half rests on Design's check against #2476.
