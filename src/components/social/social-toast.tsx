@@ -7,6 +7,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ToastFrame, useToastClock } from "../collection/edit-toast";
+import { useCartPhone } from "../decks/cart/cart-toast-stack";
 import { PersonText, type PersonParts } from "../../lib/person-name";
 
 /** `text` that names someone is `PersonParts` (`personText`): `PersonText` marks the span holding it. */
@@ -16,12 +17,20 @@ export function SocialToast({
   toast,
   onDone,
   role = "alert",
+  placement = "center",
 }: {
   toast: SocialToastState | null;
   onDone: () => void;
   /** `status` for a receipt with an action (Rule 0's `Swapped to …` with Undo); a refusal stays `alert`. */
   role?: "alert" | "status";
+  /** `cart` is the cart's failed ask while a cart receipt is open (small items 7, item 3): on a phone it joins the cart
+   *  toast stack, 10px above the receipt, which keeps the floor for its Undo. From md, and for `center`, the toast
+   *  stays in its centre slot, 16px above the tab bar. The caller passes `cart` only while the receipt is open, so
+   *  when the receipt closes the toast drops at once to its shipped place. */
+  placement?: "center" | "cart";
 }) {
+  const phone = useCartPhone();
+  const stacked = placement === "cart" && phone;
   const ref = useRef<HTMLDivElement>(null);
   // Hover and focus hold the window separately, and it runs again only once both have let go.
   const [hover, setHover] = useState(false);
@@ -43,12 +52,21 @@ export function SocialToast({
     setHover(frame.matches(":hover"));
     setFocus(frame.contains(document.activeElement));
   }, [toast?.id, restart]);
+  // The frame moves between the slot and the stack with the receipt (a remount: a portal), taking its holds with it.
+  useEffect(() => {
+    const frame = ref.current;
+    if (!frame) return;
+    setHover(frame.matches(":hover"));
+    setFocus(frame.contains(document.activeElement));
+  }, [stacked]);
   if (!toast) return null;
   return (
     <ToastFrame
       key={toast.id}
       frameRef={ref}
       role={role}
+      placement={stacked ? "cart" : "center"}
+      kind={stacked ? "alert" : undefined}
       onHold={(kind, on) => (kind === "hover" ? setHover : setFocus)(on)}
       title={<PersonText text={toast.text} />}
       actions={toast.retry ? (

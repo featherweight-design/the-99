@@ -13,6 +13,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { deckToastStack } from "../decks/deck-toast-stack";
+import { cartToastStack, useCartPhone } from "../decks/cart/cart-toast-stack";
 import { useMomentHold } from "../../lib/moments/hold";
 import { settleCollectionWrite } from "../../app/collection/edit-actions";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
@@ -90,12 +91,9 @@ export function useToastClock(ref: RefObject<HTMLElement | null>, running: boole
 /** /credits' toast slot, the deck slot as it shipped before the stack: above the tab bar, bottom left of the pane from md. */
 const CREDITS_SLOT =
   "fixed bottom-[calc(var(--tabbar-h,0px)+10px)] left-[16px] right-[16px] z-[60] md:bottom-[16px] md:left-[calc(var(--rail-w)+16px)] md:right-auto md:w-[440px]";
-/**
- * The all-decks cart's slot: bottom right at 380 on desktop; on the phone above the tab bar, over
- * the foot of the cart's list (the checkout heads the page there).
- */
-const CART_SLOT =
-  "fixed bottom-[calc(var(--tabbar-h,0px)+10px)] left-[16px] right-[16px] z-[60] md:bottom-[22px] md:left-auto md:right-[22px] md:w-[380px]";
+// The all-decks cart's toast (`cart`): bottom right at 380 on desktop; on the phone it stands in the cart's toast
+// stack (`decks/cart/cart-toast-stack.tsx`), above the tab bar over the foot of the cart's list, the receipt on the
+// floor and a failed ask 10px above it.
 
 export function ToastFrame({
   frameRef, role = "status", placement = "center", lift = 0, kind, marks, title, detail, body, actions, onHold,
@@ -124,6 +122,8 @@ export function ToastFrame({
 }) {
   // A toast up over the page keeps every moment off it until it closes (moments plan, E6); the specimen does not.
   useMomentHold(placement !== "inline");
+  // The cart's toasts stand in the phone stack (`cart-toast-stack.tsx`); from md each keeps its fixed slot.
+  const cartPhone = useCartPhone();
   const holds = onHold
     ? {
         onPointerEnter: () => onHold("hover", true),
@@ -150,7 +150,8 @@ export function ToastFrame({
   }
   const slot =
     placement === "inline" ? "w-full max-w-[440px]"
-      : placement === "cart" ? CART_SLOT
+      : placement === "cart"
+        ? (cartPhone ? `pointer-events-auto ${kind === "receipt" ? "order-2" : "order-1"}` : `fixed bottom-[22px] right-[22px] z-[60] w-[380px]`)
         : placement === "credits" ? CREDITS_SLOT
           // In the stack: the receipt last (the floor), an alert first (above it); a press takes the toast, never the gap.
           : `pointer-events-auto ${kind === "receipt" ? "order-2" : "order-1"}`;
@@ -173,6 +174,7 @@ export function ToastFrame({
     </div>
   );
   // A deck toast only ever mounts from a press, in the browser.
+  if (placement === "cart" && cartPhone) return createPortal(frame, cartToastStack());
   return placement === "deck" ? createPortal(frame, deckToastStack()) : frame;
 }
 
