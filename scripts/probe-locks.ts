@@ -26,7 +26,6 @@ import { applySwap, planSwap, restoreSwap } from "../src/lib/swaps/draft-swap";
 import { loadAvailability } from "../src/lib/decks/availability-query";
 import { deckCards } from "../src/db/schema";
 import { and, eq } from "drizzle-orm";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
 

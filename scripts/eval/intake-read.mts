@@ -36,7 +36,6 @@ import { parseArgs } from "node:util";
 
 import { LEDGER_LIMITS } from "../../src/lib/eval/ledger-limits";
 import { acquireRunLock, readLedger, record, spent } from "./lib/ledger.mjs";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 const LEDGER = "docs/superpowers/eval/ledger-help-me-choose.jsonl";
 const CAP_USD = LEDGER_LIMITS["ledger-help-me-choose.jsonl"].hardCapUsd;

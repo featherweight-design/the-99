@@ -28,7 +28,6 @@ import ws from "ws";
 import { applyCollectionChange } from "../src/lib/collection/write";
 import { replaceCollection } from "../src/lib/collection/import";
 import { backfillAddedAt } from "../src/lib/collection/added-at-backfill";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
 

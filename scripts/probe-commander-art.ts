@@ -40,7 +40,6 @@ import {
   listOwnedLegalCommanders,
 } from "../src/lib/decks/read";
 import { DEFAULT_DECK_SORT } from "../src/lib/decks/sort";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
 

@@ -32,7 +32,6 @@ import { buildPoolRollup } from "../src/lib/recs/pool-rollup";
 import { loadCollectionPool } from "../src/lib/recs/recommend";
 import { ROLE_TARGETS } from "../src/lib/recs/roles";
 import { computeFit, wholeTarget, type RoleName } from "../src/lib/recs/score";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 const TOP = 20;
 const MOVED = 5;

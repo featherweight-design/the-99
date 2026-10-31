@@ -28,7 +28,6 @@ import ws from "ws";
 import { READ_JUDGE_MODEL, READ_SHORTLIST_MODEL } from "../src/lib/intake/limits";
 import type { JudgeReply, ShortlistReply } from "../src/lib/intake/the-read";
 import type { ModelOutcome } from "../src/lib/model/client";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
 

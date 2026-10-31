@@ -32,7 +32,6 @@ import {
 } from "../src/lib/decks/draft-state";
 import { computeRoleCounts } from "../src/lib/decks/mix";
 import { restoreDraftFromVersion } from "../src/lib/decks/versions";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
 

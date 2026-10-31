@@ -26,7 +26,6 @@ import { listDecksWithStats } from "../src/lib/decks/read";
 // The prune runs inside its callers' transactions; here it is handed the app's
 // own db singleton, which satisfies the same interface for a single statement.
 import { db as realDb } from "../src/db";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
 

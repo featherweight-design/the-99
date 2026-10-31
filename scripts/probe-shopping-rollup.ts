@@ -28,7 +28,6 @@ import { db } from "../src/db";
 import { decks } from "../src/db/schema";
 import { listDecksWithStats } from "../src/lib/decks/read";
 import { loadShoppingRollup } from "../src/lib/decks/shopping-rollup";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 async function main() {
   const owners = await db

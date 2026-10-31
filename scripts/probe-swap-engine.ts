@@ -30,7 +30,6 @@ import { jobOf, mainType, type StandIn } from "../src/lib/swaps/stand-ins";
 import { classifyRoles } from "../src/lib/recs/roles";
 import { labelInputHash, LABEL_PROMPT_VERSION } from "../src/lib/labels/prompt";
 import type { Job as LabelJob } from "../src/lib/labels/types";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
 

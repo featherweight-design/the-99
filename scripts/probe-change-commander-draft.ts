@@ -26,7 +26,6 @@ import { loadAvailability } from "../src/lib/decks/availability-query";
 import { changeCount, loadDraftState, releasedCopies } from "../src/lib/decks/draft-state";
 import { listDecksWithStats } from "../src/lib/decks/read";
 import { commitVersion, newestVersion, restoreDraftFromVersion } from "../src/lib/decks/versions";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
 

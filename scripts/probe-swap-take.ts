@@ -17,7 +17,6 @@ import ws from "ws";
 
 import { commitVersion } from "../src/lib/decks/versions";
 import { setShoppingLimit, takeStandIn, undoSwap } from "../src/lib/swaps/take";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
 

@@ -131,7 +131,7 @@ export async function previewRevert(
   /** The pick this undo also drops (see `revertCollectionEntry`), so the preview's deck check is the save's. */
   undoPlacement?: UndoPlacement,
 ): Promise<RevertPreview | RevertRefusal> {
-  const { userId } = await signedInEditorEnv();
+  const userId = await signedInEditor();
   if (!isUuid(entryId)) return { notFound: true };
   const ignore = { ...ignoredDecks(ignoreDeckId), ...placementOf(undoPlacement) };
   const entry = await getHistoryEntry(userId, entryId);

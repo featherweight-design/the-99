@@ -20,7 +20,6 @@ import { getDeckDetail, listDecksWithStats } from "../src/lib/decks/read";
 import { commitVersion, loadVersionDiff } from "../src/lib/decks/versions";
 import { loadPrices, priceFor } from "../src/lib/decks/price-query";
 import { readHeldPricePicks } from "../src/lib/decks/printings";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
 

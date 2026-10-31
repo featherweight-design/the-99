@@ -31,7 +31,6 @@ import ws from "ws";
 import { applyCollectionChange, type ChangeResult } from "../src/lib/collection/write";
 import { commitVersion } from "../src/lib/decks/versions";
 import { cartReceiptFacts, cartSource, receiptFacts } from "../src/lib/decks/mark-bought";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
 

@@ -33,7 +33,6 @@ import { countTokens } from "./lib/batch.mjs";
 import { LEDGER_LIMITS } from "../../src/lib/eval/ledger-limits";
 import { acquireRunLock, readLedger, record, spent } from "./lib/ledger.mjs";
 import { buildParams } from "./lib/request.mjs";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 const LEDGER = "docs/superpowers/eval/ledger-find-a-deck.jsonl";
 const CAP_USD = LEDGER_LIMITS["ledger-find-a-deck.jsonl"].hardCapUsd;

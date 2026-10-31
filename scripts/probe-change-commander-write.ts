@@ -28,7 +28,6 @@ import { writeCommanderChange } from "../src/lib/commander-change/write";
 import { isCommanderCandidate } from "../src/lib/recs/score";
 import { partnerAbility } from "../src/lib/decks/partner";
 import { loadUniversalStaples } from "../src/lib/staples/universal";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
 

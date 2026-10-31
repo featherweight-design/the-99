@@ -26,7 +26,6 @@ import {
 import { listDecksWithStats } from "../src/lib/decks/read";
 import { validateFolderName } from "../src/lib/decks/folder-name";
 import { isUniqueViolation, sqlstate } from "../src/lib/db-error";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
 

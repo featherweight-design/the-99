@@ -31,7 +31,6 @@ import { collectionTotals, editedKeysSinceUpload, editsSinceUpload, lastUploadCo
 import { collectionItemKey } from "../src/lib/collection/key";
 import { replaceCollection } from "../src/lib/collection/import";
 import { resolvePrintings } from "../src/lib/collection/catalog-read";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
 

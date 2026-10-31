@@ -17,7 +17,6 @@
 //   MEASURE_USER_ID=<staging account> pnpm measure:intake-tribes
 
 import { requireEnv } from "./lib/env.mjs";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 const STAGING_BRANCH = "br-polished-pond-a6e63y0b";
 const { THE_99_NEON_STAGING_DIRECT } = requireEnv(["THE_99_NEON_STAGING_DIRECT"]);

@@ -18,7 +18,6 @@ import "./lib/env.mjs";
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import ws from "ws";
 import { isReadStatement } from "./lib/read-statement";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 async function fits() {
   const url = process.env.MEASURE_TARGET_URL;

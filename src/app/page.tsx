@@ -194,7 +194,6 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
         // The bracket chip on the resume row (Home bracket-chip addendum), behind the same flag
         // `/decks` reads it under. 0.83ms on staging.
         includeBracket: analysisTabEnabled(env),
-        // The env the load is handed, which is the one the entry is keyed on.
       })),
       // About's notice (About on the banner): read on both surfaces, since About's first run and Home's checklist
       // are separate states. One primary-key lookup.

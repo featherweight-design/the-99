@@ -27,7 +27,6 @@ import { assignCopyFor } from "../src/lib/decks/assign";
 import { pruneOrphanProxies } from "../src/lib/decks/prune-proxies";
 import { pruneOrphanAssignments } from "../src/lib/decks/prune-assignments";
 import { loadContestedCards, countContestedCards } from "../src/lib/collection/summary-read";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
 

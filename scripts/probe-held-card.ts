@@ -25,7 +25,6 @@ import { buysCard } from "../src/lib/intake/buys-card";
 import { loadFillGate } from "../src/lib/intake/fill-facts";
 import { loadPrices } from "../src/lib/discovery/price";
 import { commitVersion } from "../src/lib/decks/versions";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
 

@@ -49,7 +49,6 @@ import { touchDeck } from "../src/lib/decks/touch";
 import { byTouched, touchedBy } from "../src/lib/decks/touched";
 import { createFolder, moveDeck } from "../src/lib/decks/folders";
 import { commitVersion, newestVersion, restoreDraftFromVersion } from "../src/lib/decks/versions";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
 

@@ -23,7 +23,6 @@
 //   pnpm probe:help-me-choose-search
 import { requireEnv } from "./lib/env.mjs";
 import { sql } from "drizzle-orm";
-// No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 requireEnv(["DATABASE_URL"]);
 
