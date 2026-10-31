@@ -70,7 +70,7 @@ import Link from "next/link";
 import { BUY_HREF, CreditsText } from "../ui/credits-text";
 import { PendingReporter } from "../shell/pending-reporter";
 import { freeCount, runFunding } from "../../lib/model/allowance-rule";
-import { creditAgain, creditCount, creditFirst, creditSpent, creditTwo } from "../../lib/model/credit-line";
+import { creditAgain, creditFirst, creditShortStanding, creditSpent, creditTwo } from "../../lib/model/credit-line";
 import { ArrivalOrder } from "../ui/arrival-queue";
 
 /**
@@ -1561,7 +1561,7 @@ export function TuningPanel({
             {stop ? (
               <TwoCreditStop
                 line={stop.freeHoldsOne ? deckTuningCopy.allowance.costsTwoFree(count) : deckTuningCopy.allowance.costsTwo}
-                standing={note ? `${note} · ${creditCount(state.allowance)}` : creditCount(state.allowance)}
+                standing={note ? `${note} · ${creditShortStanding(state.allowance)}` : creditShortStanding(state.allowance)}
                 payments={state.allowance.payments === true}
                 onChangeTo={() => changeIntake({ count: ONE_CREDIT_MAX_COUNT })}
               />
@@ -1637,7 +1637,7 @@ function TwoCreditStop({ line, standing, payments, onChangeTo }: { line: string;
           </Link>
         ) : null}
       </span>
-      <span><CreditsText text={standing} /></span>
+      <span data-sc-two-standing=""><CreditsText text={standing} /></span>
     </div>
   );
 }

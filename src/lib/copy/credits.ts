@@ -77,6 +77,10 @@ const welcome = (n: number) => `${n} welcome`;
 const lots = (paidTotal: number, welcomeLeft: number) =>
   welcomeLeft > 0 ? (paidTotal > 0 ? `${welcome(welcomeLeft)} · ${paid(paidTotal)}` : welcome(welcomeLeft)) : paid(paidTotal);
 
+/** `1 of 5 free · reset at 2:01 AM`, or `1 of 1 free` while nothing counts (no reset to name). */
+const freeHead = (left: number, total: number, next: Date | null) =>
+  next ? `${left} of ${total} free · reset at ${clockTime(next)}` : `${left} of ${total} free`;
+
 export const creditsCopy = {
   /**
    * The count and, when one is out, when the next comes back: `4 of 5 left · reset at 2:01 AM`.
@@ -97,7 +101,11 @@ export const creditsCopy = {
    * L2: free credits remain and paid ones are held. `left` becomes `free` once paid credits are held.
    */
   withPaid: (left: number, total: number, next: Date | null, paidTotal: number, welcomeLeft = 0) =>
-    `${next ? `${left} of ${total} free · reset at ${clockTime(next)}` : `${left} of ${total} free`} · ${lots(paidTotal, welcomeLeft)}`,
+    `${freeHead(left, total, next)} · ${lots(paidTotal, welcomeLeft)}`,
+  /** The free count in the `N of M free` form, with the lots' segment only while one is held (SC-Cost C's last line):
+   *  `1 of 1 free`, `1 of 5 free · reset at 2:01 AM`, `1 of 1 free · 15 welcome`. "reset at" only when a credit counts. */
+  freeStanding: (left: number, total: number, next: Date | null, paidTotal = 0, welcomeLeft = 0) =>
+    paidTotal > 0 || welcomeLeft > 0 ? `${freeHead(left, total, next)} · ${lots(paidTotal, welcomeLeft)}` : freeHead(left, total, next),
   /** L3: the free allowance is spent and the next run takes a lot's credit: the welcome lot's while it holds one (it is
    *  spent first, `SOURCE_RANK`), `this run uses 1 of 15 welcome`, with the paid total after it; a paid one otherwise. */
   paidNext: (total: number, next: Date | null, paidTotal: number, welcomeLeft = 0) =>

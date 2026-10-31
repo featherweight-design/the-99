@@ -152,3 +152,9 @@ export function creditTwo(a: LineAllowance, f: RunFunding, now: Date = new Date(
   }
   return null;
 }
+
+/** SC-Cost C's last line, under a run that costs 2 and cannot start: the free count in its `N of M free` form, the real
+ *  "reset at" only while a credit counts, the lots after it while one is held, and their expiry tails. */
+export function creditShortStanding(a: LineAllowance, now: Date = new Date()): string {
+  return `${creditsCopy.freeStanding(freeCount(a), a.limit, freeNext(a), paidShown(a), welcomeLeft(a))}${expiringTail(a, now)}`;
+}

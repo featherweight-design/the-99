@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { localDay } from "../../lib/copy/credits";
+import { clockTime, localDay } from "../../lib/copy/credits";
 import { strategyName } from "../../lib/copy/strategy-focus";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
@@ -105,12 +105,15 @@ describe("Suggested changes v2's 2-credit cue (Small items 7, SC-Cost)", () => {
   };
   const line = () => document.querySelector("[data-sc-credit-line]") as HTMLElement | null;
   const stop = () => document.querySelector("[data-sc-two-stop]") as HTMLElement | null;
+  const standing = () => document.querySelector("[data-sc-two-standing]") as HTMLElement | null;
 
   it("C: only the free run left, above 10: the press is off, the row says why, and Change to 10 turns it back on", async () => {
     await draw(withAllowance({ used: 0, limit: 1, reopensAt: null, nextAt: null, payments: true }), v2At());
     typeCount(12);
     expect(send().getAttribute("aria-disabled")).toBe("true");
     expect(stop()!.textContent).toContain(deckTuningCopy.allowance.costsTwoFree(12));
+    // The drawn state: nothing counts yet, so there is no reset to name.
+    expect(standing()!.textContent).toBe("1 of 1 free");
     expect(screen.getByRole("link", { name: "Get more credits" }).getAttribute("href")).toBe("/credits");
     fireEvent.click(screen.getByRole("button", { name: deckTuningCopy.allowance.changeTo(10) }));
     expect((screen.getByRole("textbox", { name: sc.intake.count.countLabel }) as HTMLInputElement).value).toBe("10");
@@ -118,10 +121,19 @@ describe("Suggested changes v2's 2-credit cue (Small items 7, SC-Cost)", () => {
     expect(send().getAttribute("aria-disabled")).toBeNull();
   });
 
+  it("C: with credits used, the last line names the real reset from the allowance window", async () => {
+    const nextAt = new Date("2026-10-31T02:01:00Z");
+    await draw(withAllowance({ used: 4, limit: 5, reopensAt: null, nextAt }), v2At());
+    typeCount(12);
+    expect(stop()!.textContent).toContain(deckTuningCopy.allowance.costsTwoFree(12));
+    expect(standing()!.textContent).toBe(`1 of 5 free · reset at ${clockTime(nextAt)}`);
+  });
+
   it("C: Get more credits only while payments are on, and costsTwo once the free run is gone", async () => {
     await draw(withAllowance({ used: 1, limit: 1, reopensAt: null, nextAt: null, pack: 1 }), v2At());
     typeCount(12);
     expect(stop()!.textContent).toContain(deckTuningCopy.allowance.costsTwo);
+    expect(standing()!.textContent).toBe("0 of 1 free · 1\u00a0paid");
     expect(screen.queryByRole("link", { name: "Get more credits" })).toBeNull();
   });
 
