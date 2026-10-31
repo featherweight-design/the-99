@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { flyerHoldRow } from "../flyer/rules";
 import type { InviteKind, ReservationState } from "../invites/rules";
-import type { Edge, FlyerEdge, FlyerNodeRow, InviteEvent, OpenRow, ReservationRow } from "./invites-rule";
+import type { Edge, FlyerEdge, FlyerOrigin, FlyerNodeRow, InviteEvent, OpenRow, ReservationRow } from "./invites-rule";
 
 /**
  * The admin's invite reads (plan `2026-10-16-invites.md`, PR 6). SERVER-ONLY. Each is ONE statement, so a page is
@@ -72,6 +72,8 @@ export type OneAccountInvites = {
   held: number | undefined;
   open: ReservationRow[];
   flyer: OpenRow[];
+  /** The flyer code this account signed up through, when it did. */
+  flyerBy: FlyerOrigin | null;
   edges: Edge[];
   events: InviteEvent[];
   holdsUntil: Date[];
@@ -87,6 +89,7 @@ export async function readAccountInvites(userId: string, limit: number): Promise
     held: number | null;
     open: (RawOpen & { id: string; email: string | null })[];
     flyer: RawFlyer[];
+    flyerBy: { code: string; label: string; joinedAt: string }[];
     edges: RawEdge[];
     events: (Omit<InviteEvent, "at"> & { at: string })[];
     sent: string[];
@@ -100,6 +103,9 @@ export async function readAccountInvites(userId: string, limit: number): Promise
     coalesce((select json_agg(json_build_object('userId', c.created_by, 'holdsUntil', f.holds_until))
       from flyer_claims f join flyer_codes c on c.id = f.code_id
       where c.created_by = ${userId} and f.state in ('open', 'proven')), '[]'::json) as flyer,
+    coalesce((select json_agg(json_build_object('code', c.code, 'label', c.label, 'joinedAt', f.resolved_at))
+      from flyer_claims f join flyer_codes c on c.id = f.code_id
+      where f.user_id = ${userId} and f.state = 'spent'), '[]'::json) as "flyerBy",
     coalesce((select json_agg(json_build_object(
       'inviter', e.inviter_user_id, 'invitee', e.invitee_user_id, 'kind', e.kind, 'joinedAt', e.joined_at
     ) order by e.joined_at desc) from (
@@ -120,6 +126,7 @@ export async function readAccountInvites(userId: string, limit: number): Promise
     held: row.held ?? undefined,
     open: row.open.map((r) => ({ ...toOpen(r), id: r.id, email: r.email })),
     flyer: row.flyer.map(toFlyer),
+    flyerBy: row.flyerBy[0] ? { ...row.flyerBy[0], joinedAt: utc(row.flyerBy[0].joinedAt)! } : null,
     edges: row.edges.map(toEdge),
     events: row.events.map((e) => ({ ...e, at: utc(e.at)! })),
     holdsUntil: row.sent.map((t) => utc(t)!),

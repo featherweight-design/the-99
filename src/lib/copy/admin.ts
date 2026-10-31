@@ -417,6 +417,8 @@ export const adminCopy = {
     colInvitedBy: "Invited by",
     /** An account no invite brought in: from before launch. (new, for /copy-review) */
     founder: "founder",
+    /** A flyer sign-up: the store label Hugh gave the code, then the code. */
+    flyer: (label: string, code: string) => `${label} · ${code}`,
     /** The phone row's meta pieces (Admin-Phone M1): `5 invites`, `by Hugh`. (new, for /copy-review) */
     phoneInvites: " invites",
     phoneBy: (name: string) => `by ${name}`,
