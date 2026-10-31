@@ -1554,7 +1554,6 @@ export async function commitDeckVersion(
         const availability = await loadAvailability(userId, {
           oracleIds: adds.map((a) => a.oracleId),
           excludeDeckId: deckId,
-          env,
         });
         buy = bucketAdds(
           adds,
@@ -1688,7 +1687,6 @@ export async function getVersionDiff(
   versionId: string,
 ): Promise<VersionDiffPayload | null> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
   if (!isUuid(deckId) || !isUuid(versionId)) return null;
   await requireDeck(deckId, userId);
 
@@ -1710,7 +1708,7 @@ export async function getVersionDiff(
     .where(and(eq(deckVersions.deckId, deckId), lt(deckVersions.number, asked.number)))
     .orderBy(desc(deckVersions.number))
     .limit(1);
-  if (previous) return loadVersionDiff(versionId, previous.id, userId, deckId, null, env);
+  if (previous) return loadVersionDiff(versionId, previous.id, userId, deckId, null);
   // The first has none: a linked deck's v1 diffs against v0, the precon's list (precons R3 K10), read
   // from the precon and never from a version. An unlinked one answers two empty lists, and so does a
   // started deck's first version, which IS the precon's list (`readDeckOriginAndStart`).
@@ -1720,7 +1718,7 @@ export async function getVersionDiff(
     cards: origin.cards,
     nonBasic: origin.nonBasic,
     commanders: [asked.commanderOracleId, ...(asked.partnerOracleId ? [asked.partnerOracleId] : [])],
-  }, env);
+  });
 }
 
 /**
@@ -1756,7 +1754,6 @@ export async function pullCardFromDeck(
   askingDeckId: string,
 ): Promise<PullResult> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
   if (!isUuid(sourceDeckId) || !isUuid(oracleId) || !isUuid(askingDeckId)) {
     return { ok: false, message: "We couldn’t find that card." };
   }
@@ -1774,7 +1771,7 @@ export async function pullCardFromDeck(
   // Which decks the claim on this card is made of, read BEFORE the transaction and used only to decide what to lock
   // (`pullClaimants`). The authorization inside `pullInTx` re-reads the claim under those locks and is the read that
   // decides. A read that throws leaves the set at the two decks this pull is between, which is still safe.
-  const claimants = await pullClaimants(userId, env, oracleId, askingDeckId);
+  const claimants = await pullClaimants(userId, oracleId, askingDeckId);
   // Every party, deduplicated and sorted once. Sorting the whole set — not the
   // two decks with claimants appended — is what makes the ordering global: a
   // concurrent pull between any other pair takes the same locks in the same
@@ -1799,7 +1796,7 @@ export async function pullCardFromDeck(
     // claimant's row is what stops it committing a release underneath this read.
     // Sorted order keeps that safe from deadlock (`lockDecksInOrder`).
     await lockDecksInOrder(tx, lockIds);
-    const pulled = await pullInTx(tx, { userId, env, sourceDeckId, oracleId, askingDeckId, lockIds });
+    const pulled = await pullInTx(tx, { userId, sourceDeckId, oracleId, askingDeckId, lockIds });
     return pulled.ok ? { ok: true } : { ok: false, message: pulled.message };
   });
   if (!outcome.ok) return outcome;
@@ -1809,7 +1806,7 @@ export async function pullCardFromDeck(
   // reader is about to be shown. A failed read still reports the pull: the card
   // has moved, and losing the sentence about it is not worth undoing that.
   try {
-    const state = await loadDraftState(askingDeckId, userId, env);
+    const state = await loadDraftState(askingDeckId, userId);
     // `claimsKnown` false is the loader's degraded answer, and it reports
     // `buyCount: 0` in that state — an honest zero for a figure it could not
     // compute, not a finished shopping list. Quoting it here would tell the

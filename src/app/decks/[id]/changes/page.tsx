@@ -73,7 +73,7 @@ export default async function ChangesPage({
   // One read, not two: `loadDraftRows` calls the same loader `loadDraftState`
   // does and returns its answer on `state`. Asking for both in a `Promise.all`
   // runs the whole diff, availability and price chain twice for one page.
-  const { state, rows } = await loadDraftRows(id, userId, env);
+  const { state, rows } = await loadDraftRows(id, userId);
 
   // The spine's `Commit as v1` offer, re-derived: a versionless list exactly its
   // pair-aware body size with nothing unresolved. `commitDeckVersion` enforces
@@ -157,7 +157,7 @@ export default async function ChangesPage({
     // PROXIED ADDS EXCLUDED. A printed card asks the collection for nothing — the draft buckets
     // it as `proxied` precisely because no physical copy is owed — so counting it here would
     // count a copy no deck is actually short of.
-    countContestedCards(rows.in.filter((r) => !r.proxied).map((r) => r.oracleId), userId, env)
+    countContestedCards(rows.in.filter((r) => !r.proxied).map((r) => r.oracleId), userId)
       .catch(() => 0),
     // "→ {n} cards" per candidate source — degrades to an empty map, same as the contested
     // count above: a failed read omits the figure rather than drawing a wrong one.

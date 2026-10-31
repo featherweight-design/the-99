@@ -372,7 +372,7 @@ export async function importDeck(input: ImportDeckInput): Promise<ImportDeckResu
     }
     let owned: Awaited<ReturnType<typeof importDeckOwned>>;
     try {
-      owned = await importDeckOwned(userId, deck, items, input.actionId as string, env);
+      owned = await importDeckOwned(userId, deck, items, input.actionId as string);
     } catch {
       // A write that throws has rolled back with its transaction, so it is the same refusal as one
       // that returns: the deck and the cards are both absent.

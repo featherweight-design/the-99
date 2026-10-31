@@ -46,7 +46,7 @@ export async function startPreconOwned(fileName: string, rawName: string, action
   const name = validateDeckName(rawName);
   if (typeof fileName !== "string" || fileName.length === 0 || fileName.length > 200) return { ok: false, reason: "notFound" };
   if (!isUuid(actionId)) throw new Error("bad action id");
-  const result = await startOwned(userId, fileName, name, actionId, env, true);
+  const result = await startOwned(userId, fileName, name, actionId, true);
   if (!result.ok) return result;
   revalidateClaims(result.deckId, userId);
   // The add's entry rides the redirect so the deck page can draw its receipt; it is only a claim there (`readPreconAddReceipt`).
@@ -97,7 +97,7 @@ export async function addPrecons(requests: unknown): Promise<PickOutcome[]> {
       if (one === null) refused.push({ rowFile: String((r as Record<string, unknown>).fileName), ok: false });
       else boxes.push(...one);
     }
-    added = [...refused, ...(boxes.length > 0 ? await runPickAdds(boxes, (fileName, actionId, name) => startOwned(userId, fileName, name, actionId, env, true)) : [])];
+    added = [...refused, ...(boxes.length > 0 ? await runPickAdds(boxes, (fileName, actionId, name) => startOwned(userId, fileName, name, actionId, true)) : [])];
   }
   const outcomes = [...split.recovered, ...added];
   if (outcomes.some((o) => o.ok)) {

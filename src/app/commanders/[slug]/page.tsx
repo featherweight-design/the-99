@@ -76,7 +76,7 @@ export default async function CommanderDetailPage({
     if (free.ok && idx === -1) redirect(`/commanders/${slug}`);
 
     // Already loaded and memoised by the ranking above, so this is a map read.
-    const freePool = idx === -1 ? null : await loadFreePool(userId, env);
+    const freePool = idx === -1 ? null : await loadFreePool(userId);
     if (freePool) {
       avail = "free";
       pool = freePool;
@@ -142,7 +142,6 @@ export default async function CommanderDetailPage({
   const [availability, { prices, newestAsOf }, ownedArt, openingArt] = await Promise.all([
     loadAvailability(userId, {
       oracleIds: [...new Set([...coveredOracleIds, ...synergyRead.map((c) => c.oracleId)])],
-      env,
     }).catch(() => new Map<string, Availability>()),
     loadPrices(synergyRead.filter((c) => !c.owned).map((c) => c.oracleId)).catch(() => ({
       prices: new Map(),

@@ -90,7 +90,7 @@ export async function handOffBracketReach(
     db.select({ oracleId: collectionItems.oracleId }).from(collectionItems)
       .where(and(eq(collectionItems.userId, userId), inArray(collectionItems.oracleId, picks)))
       .then((owned) => new Set(owned.map((r) => r.oracleId))),
-    loadAvailability(userId, { oracleIds: picks, env }),
+    loadAvailability(userId, { oracleIds: picks }),
   ]).then(([owned, availability]) => picks.filter((id) => !basics.has(id) && buysCopy(owned.has(id), availability.get(id))));
   const ids = [...new Set([
     ...selectedIds,
@@ -98,7 +98,7 @@ export async function handOffBracketReach(
     ...(reach.kind === "short" && reach.buy ? reach.buy.raisers : []),
   ])];
   const [chips, gameChangers] = await Promise.all([
-    Promise.all(ids.map(async (id) => [id, await loadCardChip(userId, id, env)] as const)),
+    Promise.all(ids.map(async (id) => [id, await loadCardChip(userId, id)] as const)),
     ids.length === 0 ? new Set<string>() : db.select({ oracleId: cards.oracleId }).from(cards)
       .where(and(inArray(cards.oracleId, ids), eq(cards.gameChanger, true)))
       .then((rows) => new Set(rows.map((r) => r.oracleId))),

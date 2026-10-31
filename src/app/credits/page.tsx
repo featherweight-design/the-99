@@ -91,7 +91,7 @@ async function readCellWelcome(userId: string, env: NodeJS.ProcessEnv, free: num
     const [state, stats, decks] = await Promise.all([
       readWelcomeState(userId, env, now),
       getCollectionStats(userId),
-      listDecksWithStats(userId, "name", { env }),
+      listDecksWithStats(userId, "name"),
     ]);
     const facts = lotFacts(state, now, free);
     const sheet = facts ? welcomeSheetFor(env, { cards: stats.uniqueCards, decks }) : null;

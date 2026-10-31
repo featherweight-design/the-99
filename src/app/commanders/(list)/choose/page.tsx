@@ -71,8 +71,6 @@ function toSearchParams(raw: Record<string, string | string[] | undefined>): URL
 export default async function ChoosePage({ searchParams }: { searchParams: SearchParams }) {
   // The reader first: the switch is theirs (`requestSwitchEnv`).
   const userId = await requireUserId();
-  // Resolved once and handed to every claim read below, so the card chip and the results' search
-  // share one `loadCardRow` (its `cache` key holds the env by identity).
   const env = await requestSwitchEnv(userId);
   if (!helpMeChooseEnabled(env)) notFound();
   // On the Commanders place the strip is the way out, so the form draws no "back to New deck" link.
@@ -145,7 +143,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
   const openedFromHistory = !!words && !!p.readId && sp.get(PAST_PARAM) === "1";
   const [card, [served, allowance, pastAt]] = await Promise.all([
     // `undefined` when the read failed, which says nothing about the card; `null` when it is no card.
-    p.card ? loadCardChip(userId, p.card, env).catch(() => undefined) : null,
+    p.card ? loadCardChip(userId, p.card).catch(() => undefined) : null,
     // The standing is read AFTER the read's state: reading the state can reap an abandoned read and
     // refund its credit, and a standing read beside it could count the credit the panel says came back.
     (async () => {
@@ -262,7 +260,6 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
           >
             <Results
               userId={userId}
-              env={env}
               params={p}
               themeLabels={themeLabels}
               cardName={card?.name ?? null}
@@ -287,7 +284,6 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
 /** The search, streamed under the bar. A failure is the search-failed state, never the error page. */
 async function Results({
   userId,
-  env,
   params,
   themeLabels,
   cardName,
@@ -300,8 +296,6 @@ async function Results({
   past,
 }: {
   userId: string;
-  /** The reader's resolved switches, the page's own, for the search's claim reads. */
-  env: NodeJS.ProcessEnv;
   params: ChooseParams;
   themeLabels: Record<string, string>;
   cardName: string | null;
@@ -317,7 +311,7 @@ async function Results({
 }) {
   let page;
   try {
-    page = await loadResultsPage(userId, answersOf(params), 0, picks, env);
+    page = await loadResultsPage(userId, answersOf(params), 0, picks);
   } catch (error) {
     // Next's own control flow (a bailout, a redirect) passes through untouched.
     unstable_rethrow(error);

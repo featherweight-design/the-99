@@ -180,12 +180,12 @@ export default async function DeckBuilderPage({
   // resolved; the model costs the same however few ids it is asked for. Reader-scoped by
   // `userId`, so a stranger's deck id reads nothing but the reader's own collection.
   const availabilityRead = early(
-    perf.timed("availability", () => loadAvailability(userId, { excludeDeckId: id, env })).catch(() => {
+    perf.timed("availability", () => loadAvailability(userId, { excludeDeckId: id })).catch(() => {
       recordSoftFailure();
       return null;
     }),
   );
-  const detailRead = early(perf.timed("getDeckDetail", () => getDeckDetail(id, userId, availabilityRead, env)));
+  const detailRead = early(perf.timed("getDeckDetail", () => getDeckDetail(id, userId, availabilityRead)));
   // The Jobs card's labels start the moment the detail resolves, beside every other read, and are
   // awaited only where the card is drawn.
   // One label read serves the Jobs card and the Mana colors card's non-land sources.
@@ -226,7 +226,7 @@ export default async function DeckBuilderPage({
   const nearCombosRead = early(
     // Uncapped: the sheet lists every combo its count names, so the segment's count and the sheet's
     // rows always agree. Two-card near combos run to 54 on staging's busiest deck, a small payload.
-    perf.timed("nearCombos", () => loadNearCombos({ userId, deckId: id, env, maxPieces: 2, cap: Number.POSITIVE_INFINITY })).catch(() => null),
+    perf.timed("nearCombos", () => loadNearCombos({ userId, deckId: id, maxPieces: 2, cap: Number.POSITIVE_INFINITY })).catch(() => null),
   );
   const suggestionsRead = early(indexGenRead.then((indexGen) =>
     // The reader's switches are in the key: the payload's mix follows LABEL_ROLE_COUNTS_ENABLED, and
@@ -238,7 +238,7 @@ export default async function DeckBuilderPage({
   // The notes read is its own, uncached read, outside the two cached ones above (a write revalidates the
   // route, and nothing cached holds a note).
   const notesRead = early(detailRead.then((d) => (d ? perf.timed("notes", () => readDeckNotes(id, userId, { commanderOracleId: d.commander.oracleId, partnerOracleId: d.partner?.oracleId ?? null })) : null)));
-  const allDecksRead = early(perf.timed("listDecks", () => listDecksWithStats(userId, "name", { env })));
+  const allDecksRead = early(perf.timed("listDecks", () => listDecksWithStats(userId, "name")));
   // The reader's shelves, for the header menu's Move (the deck's own shelf rides on its list row).
   // A failed read costs the menu its Move row and nothing else.
   const foldersRead = early(perf.timed("folders", () => listFolders(userId)).catch(() => null));
@@ -272,7 +272,7 @@ export default async function DeckBuilderPage({
   // Not swallowed either, and for the stronger version of the same reason: a failed read would
   // take the to-do card's pending row away, and a deck with pending changes and no row offers no
   // route to Review, where a commit is made, at all.
-  const draftRead = early(perf.timed("draft", () => loadDraftState(id, userId, env)));
+  const draftRead = early(perf.timed("draft", () => loadDraftState(id, userId)));
   // v0 (precons PR 6b): a linked deck's precon list, read from `precon_cards` and never a version.
   // Started here with no test of the link first, because the read IS the test: owner-scoped, and an
   // unlinked deck joins no row. A failed read draws no v0, rather than failing the deck.

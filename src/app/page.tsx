@@ -195,7 +195,6 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
         // `/decks` reads it under. 0.83ms on staging.
         includeBracket: analysisTabEnabled(env),
         // The env the load is handed, which is the one the entry is keyed on.
-        env,
       })),
       // About's notice (About on the banner): read on both surfaces, since About's first run and Home's checklist
       // are separate states. One primary-key lookup.
@@ -226,8 +225,8 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
     const inUse = new Map<string, ReceiptCounts>();
     let commitments: Commitments | null = null;
     try {
-      // No narrowing: the whole-user vantage, as /collection already takes, under the load's env.
-      const availability = await perf.timed("availability", () => loadAvailability(userId, { env }));
+      // No narrowing: the whole-user vantage, as /collection already takes.
+      const availability = await perf.timed("availability", () => loadAvailability(userId));
       commitments = commitmentFigures(availability.values());
     } catch {
       // Both consumers render nothing rather than a zero, which would be a claim.

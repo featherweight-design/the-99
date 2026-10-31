@@ -95,7 +95,6 @@ export default async function DecksPage({
         // And the tile's notice, behind the same flag: a notice qualifies an analysis the tab draws.
         includeNotice: includeBracket,
         // The env the load is handed, which is the one the entry is keyed on.
-        env,
       })),
       // The tile's To buy figure reads its copies and its cost from the same
       // roll-up, so the count and the price always cover the same cards.

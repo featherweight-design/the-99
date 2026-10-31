@@ -61,7 +61,7 @@ export async function submitChoose(query: string, from: "form" | "results" = "fo
   // results, nothing reserved. A failed vocabulary read refuses it the same way.
   if (!(await filtersKnown(p.themes, p.sets))) redirect(resultsTarget(path, p, null));
   // The card is null (above), so the answers are exactly the read's filters.
-  const begun = await beginTheRead(userId, { readId: randomUUID(), words, tagged: resolved.tagged, filters: answersOf(p), env, ask: askOf(p) });
+  const begun = await beginTheRead(userId, { readId: randomUUID(), words, tagged: resolved.tagged, filters: answersOf(p), ask: askOf(p) });
   if (begun.kind === "started") {
     after(begun.finish);
     // From the form the free list was never seen, so the page holds its loading state until the read

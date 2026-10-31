@@ -5,7 +5,6 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, collectionItems, deckCards, deckUnresolvedRows, decks } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
-import { requestSwitchEnv } from "../../lib/switches/request";
 import { loadMatchInputs } from "../../lib/collection/import";
 import type { DetailedCatalogCard } from "../../lib/collection/match";
 import type { Availability } from "../../lib/decks/availability";
@@ -155,7 +154,6 @@ function cardLookup(catalog: DetailedCatalogCard[]) {
  *  deck's cards. */
 export async function previewDeckUpdate(input: UpdateDeckInput): Promise<DeckUpdateResult> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
   const maxBytes = deckImportMaxBytes(input.source);
   if (Buffer.byteLength(input.text, "utf8") > maxBytes) {
     throw new Error(deckImportTooLargeMessage(input.source));
@@ -223,7 +221,6 @@ export async function previewDeckUpdate(input: UpdateDeckInput): Promise<DeckUpd
     userId,
     input.deckId,
     { out: plan.out, in: plan.in, recount: recountRows },
-    env,
   );
   const recount = widened.recount.map((r) => ({
     ...r,
@@ -279,8 +276,6 @@ async function withFacts(
   userId: string,
   deckId: string,
   groups: { out: DeckUpdateRow[]; in: DeckUpdateRow[]; recount: DeckUpdateRow[] },
-  /** The reader's resolved switches (`requestSwitchEnv`), for the claim model. */
-  env: NodeJS.ProcessEnv,
 ): Promise<{
   out: DeckUpdateChangedRow[];
   in: DeckUpdateChangedRow[];
@@ -308,7 +303,7 @@ async function withFacts(
   const ownedIds = oracleIds.filter((id) => have.has(id));
   const availability =
     ownedIds.length > 0
-      ? await loadAvailability(userId, { excludeDeckId: deckId, oracleIds: ownedIds, env }).catch(
+      ? await loadAvailability(userId, { excludeDeckId: deckId, oracleIds: ownedIds }).catch(
           () => null,
         )
       : null;

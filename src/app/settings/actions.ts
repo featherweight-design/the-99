@@ -20,11 +20,11 @@ import {
 type Off = { ok: false; reason: "off" };
 const OFF: Off = { ok: false, reason: "off" };
 
-/** The signed-in reader and their switches, when Friends is on for them; null when it is off. */
-async function spareReader(): Promise<{ userId: string; env: NodeJS.ProcessEnv } | null> {
+/** The signed-in reader, when Friends is on for them; null when it is off. */
+async function spareReader(): Promise<{ userId: string } | null> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  return socialFriendsEnabled(env) ? { userId, env } : null;
+  return socialFriendsEnabled(env) ? { userId } : null;
 }
 
 const refreshSettings = () => revalidatePath("/settings");
@@ -64,7 +64,7 @@ export type SpareSearchOutcome = { ok: true; hits: SpareSearchHit[] } | Off;
 export async function searchSpareCardsAction(query: unknown): Promise<SpareSearchOutcome> {
   const reader = await spareReader();
   if (!reader) return OFF;
-  return { ok: true, hits: await searchSpareCards(reader.userId, query, reader.env) };
+  return { ok: true, hits: await searchSpareCards(reader.userId, query) };
 }
 
 /**

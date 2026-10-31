@@ -302,7 +302,6 @@ export async function previewUploadChange(
   syncOpts?: SyncOptions,
 ): Promise<UploadChangePreview | { missingCard: string[] } | null> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
   const kind = parseMode(mode);
   const sync = kind === "sync" ? parseSyncOptions(syncOpts) : null;
   const upload = await loadUpload(userId, uploadId);
@@ -317,7 +316,7 @@ export async function previewUploadChange(
     applyCollectionChange(
       userId,
       sync ? { kind: "sync", items: pendingItems, uploadId, tokens, ...sync } : { kind: kind as "replace" | "add", items: pendingItems, uploadId },
-      { id: randomUUID(), dryRun: true, env },
+      { id: randomUUID(), dryRun: true },
     ),
     editsSinceUpload(userId),
     // Only a Replace overwrites hand changes, so only it tags rows `edited` from History. A Sync tags only
@@ -464,7 +463,7 @@ export async function confirmUpload(
       : { kind: mode as "replace" | "add", items: pendingItems, uploadId, tokens: preview.tokens },
     {
       id: randomUUID(), onlyIfEmpty: opts.firstImport, confirmShort: parseShortDecks(opts.confirmShort),
-      ownedCounts: true, env,
+      ownedCounts: true,
     },
   );
   switch (result.status) {
@@ -507,7 +506,6 @@ export async function confirmUpload(
     nowShort,
     unmatched: preview.unmatched ?? [],
     parseErrorCount: (preview.parseErrors ?? []).length,
-    env,
   });
 
   // Warm the new collection's scores without blocking the upload response. If this
