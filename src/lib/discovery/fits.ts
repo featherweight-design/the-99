@@ -71,7 +71,7 @@ export function fitsOf(decks: readonly DeckFacts[], tools: readonly DeckToolId[]
 
 export async function loadToolFits(
   userId: string,
-  /** The reader's resolved switches (`requestSwitchEnv`), for the deck list and Never cut's locks. */
+  /** The reader's resolved switches (`requestSwitchEnv`), for the deck list. */
   env: NodeJS.ProcessEnv,
   tools: readonly DeckToolId[],
 ): Promise<Partial<Record<DeckToolId, ToolFit>>> {
