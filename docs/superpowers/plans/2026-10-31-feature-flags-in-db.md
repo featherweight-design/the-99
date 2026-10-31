@@ -13,6 +13,8 @@ A flag is decided by `flag_overrides` alone. Today `resolve.ts:60 decide()` puts
 5. the app-wide row;
 6. the env value.
 
+A `plumbing` flag skips rungs 2–4 and takes the app row alone (`resolve.ts:69`). ALL_FEATURES raises only the flags in `ALL_FEATURES_RAISES`. Both stay as they are. Of the survivors, `LIST_CACHE`, `NAV_STALL_LOG`, `PUBLIC_PAGES`, `RATE_LIMIT` and `SCAN_LAB` are plumbing.
+
 After this work:
 
 - The **app-wide row** is each flag's default.
@@ -40,7 +42,7 @@ After this work:
 
 A plain `off` app row cannot be both the default and the kill switch:
 
-- Today a default-off flag with users raised above it is common (`FIND_A_DECK_READ` app on plus three user rows; the beta shape).
+- A default-off flag with a group or users raised above it is the beta shape, and two survivors use it today: `PAYMENTS` and `WELCOME_CREDITS` are off for everyone through the env and on for one group.
 - A kill must beat those user rows, and ALL_FEATURES too, as env `off` does now.
 
 **Recommended:** the app row's `value` gains a third state, `killed`.
@@ -57,14 +59,14 @@ A plain `off` app row cannot be both the default and the kill switch:
   1. app `killed`;
   2. the account's row;
   3. ALL_FEATURES;
-  4. the group's row, where `off` still wins if two apply;
+  4. the group's row, where `off` still wins if two apply (plumbing flags still skip 2–4);
   5. the app row;
   6. the registry fallback.
 
 Rejected alternatives:
 
 - **A separate `killed` boolean column.** It adds a second field to keep consistent with `value`, and the admin then has two controls for one decision.
-- **"App `off` beats everything."** It removes the beta shape that four flags use today.
+- **"App `off` beats everything."** It removes the beta shape that `PAYMENTS` and `WELCOME_CREDITS` rely on once their env default becomes an app `off` row.
 
 ## Failure mode
 
@@ -133,7 +135,7 @@ Every PR stays under ~20 files and ~800 lines, with no stacking: each opens afte
 1. **Kill state, fallback and seed** (risky: DB, migration).
    - The migration; `resolve.ts` handles `killed` and the fallback.
    - `registry.ts` gains the `fallback` field, and `vercel-migrate.ts` gets the seed step.
-   - Tests: resolve order with `killed` beating ALL_FEATURES, user and group rows; idempotent seeding.
+   - Tests: resolve order with `killed` beating ALL_FEATURES, user and group rows on a feature or model flag, and the app row on a plumbing flag; idempotent seeding.
    - About 10 files.
 2. **Drop the env layer** (risky: flag resolution).
    - `resolve.ts`, `snapshot.ts` (the failure path now serves the fallback) and `request.ts` stop reading `process.env`.
@@ -180,5 +182,5 @@ Every PR stays under ~20 files and ~800 lines, with no stacking: each opens afte
 - No `process.env.*_ENABLED` read under `src/` or `scripts/`; `check:flag-reads` fails one.
 - `vercel env ls` on both projects shows no `*_ENABLED` var.
 - Every survivor has exactly one app row on production and staging.
-- Pressing the admin's `killed` on a flag held on by ALL_FEATURES turns it off for that account within 30 s. This is a browser probe on local-dev, never production.
+- Pressing the admin's `killed` on a feature flag held on by ALL_FEATURES (`PUSH`, say) turns it off for that account within 30 s. This is a browser probe on local-dev, never production.
 - `docs/agents/feature-flags.md` describes the new order, `killed`, the fallback and the no-request path. No doc still says "switch".
