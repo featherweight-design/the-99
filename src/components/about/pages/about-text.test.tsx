@@ -33,6 +33,14 @@ describe("About's words, rendered (Small items 7, item 6, F1)", () => {
       `By card, By deck|${B(", By friend")} read the same cart three ways. By friend lists each friend’s spares.`,
     );
     expect(now["cart|unit:shopping/all-decks/views"]).toBe("By card, By deck| read the same cart two ways.");
+    // The banner's launches of the same two units, which `changed()` also exempts above.
+    for (const v of [0, 16]) {
+      for (const e of ["on", "cart"]) expect(now[`${e}|launch@${v}:shopping/all-decks/total`], `${e} ${v}`).toBe(`The total${total}`);
+      expect(now[`on|launch@${v}:shopping/all-decks/views`], `on ${v}`).toBe(
+        `By card, By deck${B(", By friend")} read the same cart three ways. By friend lists each friend’s spares.`,
+      );
+      expect(now[`cart|launch@${v}:shopping/all-decks/views`], `cart ${v}`).toBe("By card, By deck read the same cart two ways.");
+    }
   });
 
   it("draws text with no marker as the bare string, and each marked phrase in bold", () => {

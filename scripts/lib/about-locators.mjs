@@ -420,7 +420,7 @@ export const ABOUT_REGIONS = {
   "shopping/all-decks/total": both("p-cart", "d-cart", "[data-cart-checkout]:visible >> nth=0"),
   "shopping/all-decks/decks": both("p-cart", "d-cart", "[data-cart-decks]:visible >> nth=0"),
   "shopping/all-decks/views": both("p-cart", "d-cart", "[role='radiogroup'][aria-label='View']:visible >> nth=0"),
-  // The first line whose friend can still be asked (the board's first Ask, Chris's Lightning Greaves).
+  // The first line whose friend can still be asked (the board's first Ask, Chris's Lightning Greaves; in the fixture, Torin's first row).
   "shopping/all-decks/ask": both("p-cart", "d-cart", "[data-friend-line][data-ask='ask'] [data-cart-ask]:visible >> nth=0"),
   "shopping/all-decks/buy": both("p-cart", "d-cart", "[data-cart-row] button[aria-label^='Bought ']:visible >> nth=0"),
 

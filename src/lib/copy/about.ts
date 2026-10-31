@@ -97,6 +97,14 @@ export const ABOUT_SCREENS = [
 ] as const;
 export type AboutScreen = (typeof ABOUT_SCREENS)[number];
 
+/**
+ * Screens no entry lives on, which the About pages picture and the ? answers for (`ABOUT_Q_LANDINGS`): the all-decks
+ * cart (Small items 7, item 6). The Reference and its 390 shot set list screens by their entries, so they skip these.
+ */
+export const PAGE_ONLY_SCREENS: readonly AboutScreen[] = ['cart'];
+/** The screens the Reference lists, and its 390 shot set photographs: `ABOUT_SCREENS` less `PAGE_ONLY_SCREENS`. */
+export const REFERENCE_SCREEN_IDS: readonly AboutScreen[] = ABOUT_SCREENS.filter((s) => !PAGE_ONLY_SCREENS.includes(s));
+
 /** A deck's views, as the "?" reads them from the builder's live state. */
 export const DECK_VIEWS = ['your-deck', 'shopping', 'stats', 'notes', 'analysis', 'games', 'versions'] as const;
 export type DeckView = (typeof DECK_VIEWS)[number];

@@ -1,4 +1,4 @@
-import { DECK_VIEWS, ABOUT_SCREENS, type AboutEntry, type AboutScreen, type DeckView } from "../copy/about";
+import { DECK_VIEWS, REFERENCE_SCREEN_IDS, type AboutEntry, type AboutScreen, type DeckView } from "../copy/about";
 import { entryRow } from "../copy/how-it-works-links";
 import { SCREEN_WHERE, screenName, showcaseCopy } from "../copy/discovery";
 import type { ShowcaseGroup } from "../discovery/showcase";
@@ -47,7 +47,7 @@ export type ReferenceScreen = {
 
 /** The 23 screens, in order. */
 type Place = { screen: AboutScreen; view?: DeckView };
-export const REFERENCE_SCREENS: readonly Place[] = ABOUT_SCREENS.flatMap((screen): Place[] =>
+export const REFERENCE_SCREENS: readonly Place[] = REFERENCE_SCREEN_IDS.flatMap((screen): Place[] =>
   screen === "deck" ? DECK_VIEWS.map((view) => ({ screen, view })) : [{ screen }],
 );
 

@@ -14,7 +14,7 @@ import { existsSync, readdirSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { ABOUT_SCREENS, ABOUT_VERSION, ALLOWANCE_SLOT, DECK_VIEWS, aboutCopy, aboutMenuCopy, aboutSheetCopy, fillAllowance } from "./about";
+import { ABOUT_SCREENS, ABOUT_VERSION, ALLOWANCE_SLOT, DECK_VIEWS, REFERENCE_SCREEN_IDS, aboutCopy, aboutMenuCopy, aboutSheetCopy, fillAllowance } from "./about";
 import { ABOUT_AREAS, ABOUT_PAGE_STRINGS, ABOUT_RULES, ABOUT_SECTIONS } from "./about-pages";
 import { aboutEntries } from "./about-entries";
 import pin from "./about.version.json";
@@ -193,7 +193,7 @@ describe("every entry's place (discovery R2, E8)", () => {
 
   it("covers all 23 places the Reference lists, so no screen is drawn empty by accident", () => {
     const places = new Set(aboutEntries.map((e) => (e.view ? `${e.screen}/${e.view}` : e.screen)));
-    expect(places.size).toBe(ABOUT_SCREENS.length - 1 + DECK_VIEWS.length);
+    expect(places.size).toBe(REFERENCE_SCREEN_IDS.length - 1 + DECK_VIEWS.length);
     expect(places.size).toBe(23);
   });
 });

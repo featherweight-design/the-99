@@ -1,7 +1,7 @@
 import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { ABOUT_SCREENS, DECK_VIEWS } from "../copy/about";
+import { DECK_VIEWS, REFERENCE_SCREEN_IDS } from "../copy/about";
 import { aboutEntries } from "../copy/about-entries";
 import { TOOLS } from "../discovery/tools";
 import { DEFAULT_THEME, THEMES } from "../theme/themes";
@@ -24,7 +24,8 @@ describe("the screenshot set's coverage", () => {
     // the 14 tools, the tour's 3 pictures and Home with the feed on (`home-feed`, `AboutEntry.frame`). A screen, tool or view added to its registry moves this on purpose
     // (`credits`, the launch-end batch; `settings`, the push close-out).
     expect(REQUIRED_SHOTS).toHaveLength(41);
-    expect(ABOUT_SCREENS.filter((s) => s !== "deck")).toHaveLength(16);
+    expect(REFERENCE_SCREEN_IDS.filter((s) => s !== "deck")).toHaveLength(16);
+    expect(REQUIRED_SHOTS).not.toContain("cart");
     expect(DECK_VIEWS).toHaveLength(7);
     expect(TOOLS).toHaveLength(14);
     expect(TOUR_SHOTS).toHaveLength(3);
