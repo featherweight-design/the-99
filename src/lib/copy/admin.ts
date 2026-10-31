@@ -723,6 +723,10 @@ export const adminMaskCopy = {
 export const flyerAdminCopy = {
   section: "Flyer codes",
   meta: (live: number, left: number, listed: number) => `${live} live · from your invites, ${left} left · ${listed} on the launch list`,
+  /** The meta with no code made yet (No-Codes.dc.html): the live and launch-list counts have nothing to say. */
+  metaNone: (left: number) => `none yet · from your invites, ${left} left`,
+  /** The muted line in the empty section's card (READINESS item 3: one sentence, a colon). */
+  empty: "No flyer codes yet: make one for a store, then print its flyer.",
   newCode: "New flyer code",
   cols: { store: "Store", code: "Code", signups: "Sign-ups", group: "Group", made: "Made" },
   used: (n: number, capacity: number) => `${n} of ${capacity}`,
@@ -749,6 +753,14 @@ export const flyerAdminCopy = {
   noFriendLink: "no friend link to Hugh",
   launchList: (n: number) => `Launch list · ${n}`,
   launchListMeta: "emails left on used-up and ended flyers",
+  /** The launch card's meta with no address on it (No-Codes.dc.html). */
+  launchListNone: "no emails yet · a used-up or ended flyer asks for one",
+  /** The revoke dialog's alert (Revoke-Failed.dc.html; READINESS' tightened lost-reply line). A refusal wrote nothing. */
+  revokeRefused: "Couldn’t revoke the code, so nothing changed. Try again.",
+  /** A lost reply may have saved, so it points at the list the dialog refreshes. */
+  revokeLost: "Lost the connection, so the code may be revoked. Check the list before trying again.",
+  /** The print page's bar for a revoked code (Print-Revoked.dc.html V1/V2): no Print, no Download QR. */
+  printRevoked: (day: string) => `Revoked ${day}. This code no longer signs anyone up, so there’s nothing to print.`,
   csv: "Download CSV",
   printBar: "Letter · black ink on coloured paper · the toolbar doesn’t print",
   downloadQr: "Download QR",

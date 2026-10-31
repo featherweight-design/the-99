@@ -1,6 +1,6 @@
 {
   "feature": "Flyer trial PR 4c: the print page /admin/invites/flyers/[code] (board Print.dc.html, desktop only; the phone layout is the bar wrapped and the sheet scaled to fit)",
-  "note": "Signed in as an admin (ADMIN_USER_IDS naming the account, ADMIN_ENV_LABEL set), FLYER_TRIAL_ENABLED=true on the server, on local-dev or a scratch branch. Seed beforehand, outside this run, one live flyer_codes row with code MZX4QK and a revoked one with code REV8ZZ. Writes nothing: the walk loads the page, never pressing Print or Download QR. The runner photographs at 390 and 1300. The revoked code's page is the app's 404 (the board gives a revoked code no Print).",
+  "note": "Signed in as an admin (ADMIN_USER_IDS naming the account, ADMIN_ENV_LABEL set), FLYER_TRIAL_ENABLED=true on the server, on local-dev or a scratch branch. Seed beforehand, outside this run, one live flyer_codes row with code MZX4QK and a revoked one with code REV8ZZ. Writes nothing: the walk loads the page, never pressing Print or Download QR. The runner photographs at 390 and 1300. The revoked code's page opens with its bar saying when it was revoked and no Print or Download QR, the flyer dimmed (Print-Revoked.dc.html).",
   "out": "contact-sheets/flyer-print",
   "rows": [
     {
@@ -29,11 +29,12 @@
     },
     {
       "id": "flyer-print-revoked",
-      "label": "/admin/invites/flyers/REV8ZZ: a revoked code is the 404",
-      "view": "src/app/admin/invites/flyers/[code]/page.tsx",
+      "label": "/admin/invites/flyers/REV8ZZ: a revoked code opens with the revoked bar and a dimmed flyer, no Print or Download QR",
+      "view": "src/components/admin/flyer-print-bar.tsx",
       "steps": [
         {
           "goto": "/admin/invites/flyers/REV8ZZ",
+          "wait": "[data-testid='flyer-revoked-note']",
           "settle": 1000
         }
       ]

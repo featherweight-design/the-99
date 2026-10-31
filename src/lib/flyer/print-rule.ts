@@ -24,7 +24,7 @@ export function flyerQr(url: string): QrPath {
   return qrPath(url, 2);
 }
 
-/** The board draws Print on live and full rows and says revoked codes have none, so a revoked code has no page. */
+/** The board draws Print on live and full rows and says revoked codes have none: a revoked code's page opens, without Print. */
 export function flyerPrintable(code: { revokedAt: Date | null }): boolean {
   return code.revokedAt === null;
 }

@@ -9,8 +9,8 @@ vi.mock("next/navigation", () => ({ notFound }));
 vi.mock("../../../../../lib/admin/access", () => ({ requireAdmin, adminMetadata: async (m: object) => m }));
 vi.mock("../../../../../lib/flyer/claim", () => ({ findFlyerCode }));
 vi.mock("../../../../../lib/switches/request", () => ({ requestSwitchEnv: async () => switchEnv }));
-vi.mock("../../../../../components/admin/flyer-print-bar", () => ({ FlyerPrintBar: ({ code }: { code: string }) => <div data-bar={code} /> }));
-vi.mock("../../../../../components/admin/flyer-fit", () => ({ FlyerFit: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }));
+vi.mock("../../../../../components/admin/flyer-print-bar", () => ({ FlyerPrintBar: ({ code, revoked }: { code: string; revoked?: string | null }) => <div data-bar={code} data-revoked={revoked ?? undefined} /> }));
+vi.mock("../../../../../components/admin/flyer-fit", () => ({ FlyerFit: ({ children, dimmed }: { children: React.ReactNode; dimmed?: boolean }) => <div data-dimmed={dimmed ? "true" : undefined}>{children}</div> }));
 const { default: Page } = await import("./page");
 
 const render = async (code: string) => renderToStaticMarkup(await Page({ params: Promise.resolve({ code }) }));
@@ -42,13 +42,26 @@ describe("the flyer print page", () => {
     expect(html).toContain("<span>the-99.dev</span>");
   });
 
-  it("is the app's 404 for an unknown, revoked or switched-off code", async () => {
+  it("is the app's 404 for an unknown or switched-off code", async () => {
     findFlyerCode.mockResolvedValueOnce(null);
     await expect(render("ZZZZZZ")).rejects.toThrow("NEXT_NOT_FOUND");
-    findFlyerCode.mockResolvedValueOnce({ code: "MZX4QK", label: "Mox", revokedAt: new Date() });
-    await expect(render("MZX4QK")).rejects.toThrow("NEXT_NOT_FOUND");
     switchEnv.FLYER_TRIAL_ENABLED = "off";
     await expect(render("MZX4QK")).rejects.toThrow("NEXT_NOT_FOUND");
-    expect(notFound).toHaveBeenCalledTimes(3);
+    expect(notFound).toHaveBeenCalledTimes(2);
+  });
+
+  it("still opens a revoked code: the bar gets the real revoked day and the flyer is dimmed (Print-Revoked.dc.html)", async () => {
+    findFlyerCode.mockResolvedValueOnce({ code: "PZA9TC", label: "Pizza Pod test", revokedAt: new Date(Date.UTC(2026, 10, 2, 9)) });
+    const html = await render("PZA9TC");
+    expect(notFound).not.toHaveBeenCalled();
+    expect(html).toContain("data-revoked=\"Nov 2\"");
+    expect(html).toContain("data-dimmed=\"true\"");
+    expect(html).toContain("<em>PZA9TC</em>");
+  });
+
+  it("gives a live code no revoked day and no dimming", async () => {
+    const html = await render("MZX4QK");
+    expect(html).not.toContain("data-revoked");
+    expect(html).not.toContain("data-dimmed");
   });
 });
