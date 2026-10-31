@@ -752,14 +752,15 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     area: "shopping",
     id: "all-decks",
     name: "Shopping for all decks",
-    sub: `Every deck’s missing cards in one cart, basic lands aside. A big cart goes to Mana Pool in parts. Open it from Decks with Shop all decks.${ABOUT_SCREEN_OFF}`,
+    sub: `Every deck’s missing cards in one cart, basic lands aside. A big cart goes to Mana Pool in parts. Open it from the top of Decks.${ABOUT_SCREEN_OFF}`,
     subSentences: {
       "Every deck’s missing cards in one cart, basic lands aside. A big cart goes to Mana Pool in parts.": "ALL_DECKS_CART_ENABLED",
-      " Open it from Decks with Shop all decks.": "ALL_DECKS_CART_ENABLED",
+      " Open it from the top of Decks.": "ALL_DECKS_CART_ENABLED",
       [ABOUT_SCREEN_OFF]: "!ALL_DECKS_CART_ENABLED",
     },
     // The cart itself, By friend (Small items 7, item 6). It lists no screen: the ? on the cart lands here with the total
-    // lit (`question-landing.ts`). The way in, Shop all decks on Decks, is the sub line's last sentence.
+    // lit (`question-landing.ts`). The way in, at the top of Decks, is the sub line's last sentence: the cell there reads Shopping for all
+    // decks, or Shop all decks on a phone beside the precons line, so the sentence names the place, not a label.
     screens: [],
     captures: { phone: ["p-cart"], desktop: ["d-cart"] },
     labels: [
@@ -767,7 +768,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         id: "total",
         region: "shopping/all-decks/total",
         lead: "The total",
-        rest: " is every picked deck’s missing cards at single-copy prices. “Buy these at Mana Pool” sends them there, in parts when it’s big.",
+        rest: " is the selected decks’ missing cards at single-copy prices. “Buy these at Mana Pool” sends them there.",
         switch: "ALL_DECKS_CART_ENABLED",
         since: 16,
         legacy: ["all-decks-cart"],
@@ -795,7 +796,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         id: "ask",
         region: "shopping/all-decks/ask",
         lead: "Ask",
-        rest: " asks that friend for their spare.",
+        rest: " sends that friend a request for their spare.",
         switch: ["ALL_DECKS_CART_ENABLED", "SPARE_REQUESTS_ENABLED"],
         since: 16,
         legacy: [],
@@ -804,7 +805,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         id: "buy",
         region: "shopping/all-decks/buy",
         lead: "buy",
-        rest: ": press it once you’ve bought the card, and it goes into your Collection.",
+        rest: " shows the price. Press it when you’ve bought the card, and it goes into your Collection.",
         switch: ["ALL_DECKS_CART_ENABLED", "SHOPPING_MARK_BOUGHT_ENABLED"],
         since: 16,
         legacy: [],

@@ -415,8 +415,8 @@ describe("a section's sub-line", () => {
 
   it("draws one or two sentences under every combination of the switches its sentences name (Small items 3, item 4)", () => {
     // A section whose screen is reached from another names that way in as one more sentence (Small items 7, item 6:
-    // Shopping for all decks ends "Open it from Decks with Shop all decks.").
-    const WAY_IN: Record<string, string> = { "all-decks": " Open it from Decks with Shop all decks." };
+    // Shopping for all decks ends "Open it from the top of Decks.").
+    const WAY_IN: Record<string, string> = { "all-decks": " Open it from the top of Decks." };
     for (const sec of ABOUT_SECTIONS) {
       const names = [...new Set(Object.values(sec.subSentences ?? {}).flatMap(named))];
       for (let mask = 0; mask < 2 ** names.length; mask++) {
