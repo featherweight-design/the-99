@@ -154,7 +154,8 @@ describe("writtenForYou", () => {
   const env = (off: string[] = []): NodeJS.ProcessEnv => {
     const on = {} as NodeJS.ProcessEnv;
     for (const name of [
-      "ANALYSIS_TAB_ENABLED", "TUNING_ENABLED", "HELP_ME_CHOOSE_ENABLED", "PROPOSED_CUTS_ENABLED",
+      // No PROPOSED_CUTS_ENABLED: Look deeper follows the Analysis tab (its own switch is retired).
+      "ANALYSIS_TAB_ENABLED", "TUNING_ENABLED", "HELP_ME_CHOOSE_ENABLED",
       "SWAP_TOOLS_ENABLED",
     ]) on[name] = off.includes(name) ? "off" : "true";
     return on;

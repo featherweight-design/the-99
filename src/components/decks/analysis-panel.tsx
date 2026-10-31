@@ -98,7 +98,7 @@ export function AnalysisPanel({
   tuning?: (permits: readonly Bracket[]) => ReactNode;
   /** Proposed cuts (Tuning hub R2), drawn after Suggested changes. It does NOT wait for a reading (an
    *  overfull deck has none, and a reading needs a whole deck), so a caller must not gate it on
-   *  `held`. Absent with `PROPOSED_CUTS_ENABLED` off. */
+   *  `held`. Absent with the Analysis tab off (Proposed cuts has no switch of its own). */
   cuts?: ReactNode;
   /** The deck's strategy block: drawn last in the reading, above Tuning, and only over one. */
   strategy?: ReactNode;

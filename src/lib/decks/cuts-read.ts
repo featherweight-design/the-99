@@ -28,9 +28,9 @@ import { cutFacts, type CutFacts, type CutSupport } from "../tuning/cuts";
 import { CUTS_PROMPT_VERSION } from "../tuning/cuts-prompt";
 import type { CutsRun, CutsState, CutItem } from "../tuning/cuts-state";
 import type { CutsReport } from "../tuning/cuts-validate";
-import { proposedCutsEnabled } from "../tuning/flag";
 import { PROPOSED_CUTS_TOOL } from "../tuning/limits";
 import { reapCutoff } from "../tuning/reaper";
+import { analysisTabEnabled } from "./analysis-flag";
 import { liveLockedIds } from "./locks";
 import { profileOfHead } from "./tuning-read";
 
@@ -103,8 +103,8 @@ export type ProposedCutsInputs = {
 };
 
 /**
- * What a Proposed cuts run reads: the facts for this deck as it stands. Null when the switch is
- * off or the deck is not the reader's (ownership is in `readProfileHead`'s `where`).
+ * What a Proposed cuts run reads: the facts for this deck as it stands. Null when the Analysis tab
+ * is off or the deck is not the reader's (ownership is in `readProfileHead`'s `where`).
  *
  * The head, the locks and the newest version number come from ONE repeatable-read snapshot, as
  * `tuningInputs` takes them: read apart, a commit landing between them would pair the list before
@@ -113,7 +113,7 @@ export type ProposedCutsInputs = {
  * list was read under.
  */
 export async function readProposedCuts(deckId: string, userId: string, env: NodeJS.ProcessEnv): Promise<ProposedCutsInputs | null> {
-  if (!proposedCutsEnabled(env)) return null;
+  if (!analysisTabEnabled(env)) return null;
   const snapshot = await db.transaction(async (tx) => {
     const head = await readProfileHead(tx, deckId, userId);
     if (!head) return null;

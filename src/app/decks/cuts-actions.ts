@@ -13,6 +13,7 @@ import { creditsCopy } from "../../lib/copy/credits";
 import { deckCutsCopy } from "../../lib/copy/deck-cuts";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
+import { analysisTabEnabled } from "../../lib/decks/analysis-flag";
 import { readCutsState, readProposedCuts, reapCutsRuns } from "../../lib/decks/cuts-read";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { deckBodySize } from "../../lib/decks/deck-size";
@@ -32,7 +33,6 @@ import type { CutsPanel } from "../../lib/tuning/cuts-state";
 import { cutItem, setCutKept, undoCutItem, type CutOutcome } from "../../lib/tuning/cuts-verdicts";
 import { cutsResponseSchema } from "../../lib/tuning/cuts-schema";
 import { validateCuts, type CutsReport } from "../../lib/tuning/cuts-validate";
-import { proposedCutsEnabled } from "../../lib/tuning/flag";
 import { CUTS_MAX_TOKENS, CUTS_MODEL_TIMEOUT_MS, TUNING_EFFORT, TUNING_MODEL, TUNING_RETRY_FLOOR_MS } from "../../lib/tuning/limits";
 import { retryable } from "../../lib/tuning/retry";
 import { runIsPending, type Billed } from "../../lib/tuning/run-store";
@@ -82,7 +82,7 @@ export async function runProposedCuts(
 ): Promise<DeckMutationResult> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (!proposedCutsEnabled(env) || !isUuid(deckId)) return { ok: false, message: deckCutsCopy.run.refused };
+  if (!analysisTabEnabled(env) || !isUuid(deckId)) return { ok: false, message: deckCutsCopy.run.refused };
   // The panel names its run so it can wait on that run and no other (`await-run.ts`). Anything but
   // a uuid is refused rather than dropped: a wait keyed on an id the row does not carry would never end.
   const requested = typeof opts === "object" && opts !== null ? opts.runId : undefined;
@@ -206,7 +206,7 @@ export async function runProposedCuts(
 
 /**
  * The panel's one read: the run state, and the count the model reads for the deck as it stands.
- * Null when the switch is off, the id is not a uuid or the deck is not the reader's.
+ * Null when the Analysis tab is off, the id is not a uuid or the deck is not the reader's.
  *
  * `resultCurrent` is the re-offer rule (README open 9, decided in the R2 audit): the newest ok
  * run's cuts stand while the deck still matches the fingerprint they were made against, and a cut
@@ -216,7 +216,7 @@ export async function runProposedCuts(
 export async function readCutsPanel(deckId: string, runId: string | null = null): Promise<CutsPanel | null> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (!proposedCutsEnabled(env) || !isUuid(deckId)) return null;
+  if (!analysisTabEnabled(env) || !isUuid(deckId)) return null;
   const inputs = await readProposedCuts(deckId, userId, env);
   if (!inputs) return null;
   const { head, facts, locked, allLocked: lockedOut, fingerprint } = inputs;
@@ -281,14 +281,14 @@ async function settleVerdict(outcome: CutOutcome, userId: string, membership: bo
 export async function cutProposed(itemId: string, review = false): Promise<DeckMutationResult> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (!proposedCutsEnabled(env) || !isUuid(itemId)) return { ok: false, message: REFUSALS.generic };
+  if (!analysisTabEnabled(env) || !isUuid(itemId)) return { ok: false, message: REFUSALS.generic };
   return settleVerdict(await cutItem(itemId, userId, { review: review === true }), userId, true);
 }
 
 export async function undoProposedCut(itemId: string, review = false): Promise<DeckMutationResult> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (!proposedCutsEnabled(env) || !isUuid(itemId)) return { ok: false, message: REFUSALS.generic };
+  if (!analysisTabEnabled(env) || !isUuid(itemId)) return { ok: false, message: REFUSALS.generic };
   return settleVerdict(await undoCutItem(itemId, userId, { review: review === true }), userId, true);
 }
 
@@ -296,13 +296,13 @@ export async function undoProposedCut(itemId: string, review = false): Promise<D
 export async function keepProposedCut(itemId: string): Promise<DeckMutationResult> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (!proposedCutsEnabled(env) || !isUuid(itemId)) return { ok: false, message: REFUSALS.generic };
+  if (!analysisTabEnabled(env) || !isUuid(itemId)) return { ok: false, message: REFUSALS.generic };
   return settleVerdict(await setCutKept(itemId, userId, true), userId, false);
 }
 
 export async function restoreProposedCut(itemId: string): Promise<DeckMutationResult> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (!proposedCutsEnabled(env) || !isUuid(itemId)) return { ok: false, message: REFUSALS.generic };
+  if (!analysisTabEnabled(env) || !isUuid(itemId)) return { ok: false, message: REFUSALS.generic };
   return settleVerdict(await setCutKept(itemId, userId, false), userId, false);
 }

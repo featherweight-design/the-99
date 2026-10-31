@@ -73,7 +73,7 @@ import { loadFriendDeckPrefs } from "../../../lib/social/deck-visibility";
 import { tablePrefill } from "../../../lib/social/rule-zero-log";
 import { logPrefillTable } from "../../../lib/rule-zero/table-view";
 import { gameLandingId } from "../../../lib/games/landing";
-import { proposedCutsEnabled, suggestedChangesV2Enabled, tuningEnabled, tuningHubEnabled } from "../../../lib/tuning/flag";
+import { suggestedChangesV2Enabled, tuningEnabled, tuningHubEnabled } from "../../../lib/tuning/flag";
 import { loadDeckNotices } from "../../../lib/notices/read";
 import { NOTICES_PARAM, readNoticesArrival } from "../../../lib/notices/arrival";
 import { SwapToolsProvider } from "../../../lib/swaps/context";
@@ -736,7 +736,6 @@ export default async function DeckBuilderPage({
       gamePrefill={prefillRead ? await prefillRead : null}
       // The cross-deck Games view's rows land on a game (`?tab=games&game=<id>`): validated here, ringed by the Games tab.
       gameLanding={gameLandingId(query)}
-      proposedCutsEnabled={proposedCutsEnabled(env)}
       tuningHubEnabled={tuningHubEnabled(env)}
       suggestedChangesV2={suggestedChangesV2Enabled(env)}
       initialNotices={notices}

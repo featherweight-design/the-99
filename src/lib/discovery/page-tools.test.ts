@@ -43,7 +43,9 @@ describe("pageTools", () => {
     const noCuts = all.map((s) => ({ ...s, labels: s.labels.filter((l) => l.key !== "decks/analysis/cuts") }));
     expect(placed(ALL_ON, noCuts).get("decks/analysis")).toEqual(["suggested-changes", "mana-balance"]);
     // The switch off: both the label and the card.
-    expect(placed(without("PROPOSED_CUTS_ENABLED")).get("decks/analysis")).toEqual(["suggested-changes", "mana-balance"]);
+    expect(placed(without("MANA_BALANCE_ENABLED")).get("decks/analysis")).toEqual(["suggested-changes", "proposed-cuts"]);
+    // Proposed cuts has no switch but the Analysis tab's: its own retired name moves nothing.
+    expect(placed(without("PROPOSED_CUTS_ENABLED")).get("decks/analysis")).toEqual(["suggested-changes", "proposed-cuts", "mana-balance"]);
     // A section left with no card is absent.
     expect(placed(without("HELP_ME_CHOOSE_ENABLED")).has("commanders/for-you")).toBe(false);
   });
@@ -111,7 +113,7 @@ describe("landableIn and landingFor", () => {
     expect(landingFor([cuts, cuts], land(seen), cards)).toBeNull();
     expect(landingFor(undefined, land(seen), cards)).toBeNull();
     expect(landingFor("toString", land(seen), cards)).toBeNull();
-    expect(landingFor(cuts, land(seen, visibleSections(without("PROPOSED_CUTS_ENABLED"))), cards)).toBeNull();
+    expect(landingFor(cuts, land(seen, visibleSections(without("ANALYSIS_TAB_ENABLED"))), cards)).toBeNull();
   });
 
   it("carries no card for a label no tool aims at", () => {

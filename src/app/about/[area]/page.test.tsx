@@ -212,7 +212,10 @@ describe("/about/[area]", () => {
   it("a switch off for the reader takes the tool card with its label (Review Focus 2)", async () => {
     const cards = async () => (await draw("decks")).props.sections.flatMap((s) => s.tools.map((c) => c.card.id));
     expect(await cards()).toContain("proposed-cuts");
+    // Proposed cuts' own switch is retired: its retired name set off keeps the card, and the Analysis tab takes it.
     m.env = env({ ...(ALL_ON as Record<string, string>), PROPOSED_CUTS_ENABLED: "off" });
+    expect(await cards()).toContain("proposed-cuts");
+    m.env = env({ ...(ALL_ON as Record<string, string>), ANALYSIS_TAB_ENABLED: "off" });
     expect(await cards()).not.toContain("proposed-cuts");
     expect(renderToStaticMarkup(await draw("decks"))).not.toContain('data-tool-card="proposed-cuts"');
   });
@@ -252,7 +255,7 @@ describe("/about/[area]", () => {
       const el = await draw("decks", { lit });
       expect(el.props.initialLit).toBeNull();
     }
-    m.env = env({ ...(ALL_ON as Record<string, string>), PROPOSED_CUTS_ENABLED: "off" });
+    m.env = env({ ...(ALL_ON as Record<string, string>), ANALYSIS_TAB_ENABLED: "off" });
     const off = await draw("decks", { lit: "decks/analysis/cuts" });
     expect(off.props.initialLit).toBeNull();
     expect(off.props.landable).not.toHaveProperty(["decks/analysis/cuts"]);

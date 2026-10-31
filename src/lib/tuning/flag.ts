@@ -29,12 +29,11 @@ export function suggestedChangesV2Enabled(env: NodeJS.ProcessEnv): boolean {
 }
 
 /**
- * Whether this deployment offers Proposed cuts' model pass (Look deeper on a deck over 100): the
- * server actions that run and stop it, and the reads behind them. The same shape as
- * `tuningEnabled`, and OFF for anything but the exact string `'true'`. It needs the Analysis tab
- * for the same reason Suggested changes does (the panel mounts there, over a reading), so it reads
- * true only when BOTH `PROPOSED_CUTS_ENABLED` and `ANALYSIS_TAB_ENABLED` are `'true'`. Independent
- * of `TUNING_ENABLED`: a deployment can ship either tool without the other.
+ * RETIRED (Hugh 2026-10-31): nothing gates on this any more. Proposed cuts (its panel, and the
+ * model pass behind Look deeper on a deck over 100) follows its parent, the Analysis tab, where it
+ * mounts: every caller reads `analysisTabEnabled`. Only the admin registry reads this, until the
+ * switch is deleted. It once read true only when BOTH `PROPOSED_CUTS_ENABLED` and
+ * `ANALYSIS_TAB_ENABLED` were `'true'`.
  */
 export function proposedCutsEnabled(env: NodeJS.ProcessEnv): boolean {
   return env.PROPOSED_CUTS_ENABLED === "true" && env.ANALYSIS_TAB_ENABLED === "true";
@@ -45,14 +44,15 @@ export type HubTool = "suggested" | "mana" | "cuts";
 
 /**
  * The tools the Tuning hub would draw, read from each tool's own switch: no switch of its own
- * (orchestrator, 2026-10-11). Each of these already needs the Analysis tab. Mana Balance has no switch
- * of its own, so it is a tool whenever the Analysis tab is on.
+ * (orchestrator, 2026-10-11). Each of these already needs the Analysis tab. Mana Balance and Proposed
+ * cuts have no switch of their own (Proposed cuts' retired 2026-10-31), so both are tools whenever the
+ * Analysis tab is on, and the hub draws wherever the tab does.
  */
 export function hubTools(env: NodeJS.ProcessEnv): HubTool[] {
   return [
     ...(tuningEnabled(env) ? ["suggested" as const] : []),
     ...(analysisTabEnabled(env) ? ["mana" as const] : []),
-    ...(proposedCutsEnabled(env) ? ["cuts" as const] : []),
+    ...(analysisTabEnabled(env) ? ["cuts" as const] : []),
   ];
 }
 
