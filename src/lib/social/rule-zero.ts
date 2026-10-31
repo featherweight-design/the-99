@@ -26,6 +26,7 @@ import { commanderCard, commanderColumns, facePrinting, faceJoin, toCommander, t
 import { socialFriendsEnabled } from "./flag";
 import { friendDecksIn, pickerSeesDeck } from "./games";
 import { isUuid } from "./rules";
+import { ownedDeckArt, type DeckArt } from "./rule-zero-art";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -548,7 +549,20 @@ async function podSetupIn(tx: Tx, viewerId: string, podId: string): Promise<PodS
 /** Setup for a pod the viewer is in (`Rule 0 check`, PR 6), or null. */
 export async function podSetup(viewerId: string, podId: unknown): Promise<PodSetup | null> {
   if (!isUuid(podId)) return null;
-  return db.transaction((tx) => podSetupIn(tx, viewerId, podId), { isolationLevel: "repeatable read" });
+  const setup = await db.transaction((tx) => podSetupIn(tx, viewerId, podId), { isolationLevel: "repeatable read" });
+  if (!setup) return null;
+  return withSetupArt(setup, await ownedDeckArt(viewerId, setupDeckIds(setup)));
+}
+
+const setupDeckIds = (setup: PodSetup) => setup.members.flatMap((m) => m.decks.map((d) => d.deckId));
+
+/** Setup's listed decks drawn from the copy each deck's owner holds (`ownedDeckArt`), else the oracle art read. */
+function withSetupArt<T extends PodSetup>(setup: T, art: ReadonlyMap<string, DeckArt>): T {
+  if (art.size === 0) return setup;
+  return {
+    ...setup,
+    members: setup.members.map((m) => ({ ...m, decks: m.decks.map((d) => ({ ...d, artCropUri: art.get(d.deckId)?.commander ?? d.artCropUri })) })),
+  };
 }
 
 /** The pod's members as setup offers them, for a viewer who is one of them; empty otherwise. */
@@ -567,7 +581,10 @@ export type TableSetup = PodSetup & { tableId: string; seated: SeatedNow[] };
  */
 export async function tableSetup(viewerId: string, tableId: unknown): Promise<TableSetup | null> {
   if (!isUuid(tableId)) return null;
-  return db.transaction(async (tx) => {
+  // Each drawn seat's deck, by the seat's public id, for its owner's art once the snapshot is done (no other player's
+  // deck id leaves this function).
+  const seatDecks = new Map<string, string>();
+  const read = await db.transaction(async (tx) => {
     const { rows: [table] } = await tx.execute<{ podId: string }>(sql`
       select t.pod_id as "podId" from ${ruleZeroTables} t
       where t.id = ${tableId} and t.set_by = ${viewerId} and ${seatedAt(viewerId, tableId)}`);
@@ -585,6 +602,7 @@ export async function tableSetup(viewerId: string, tableId: unknown): Promise<Ta
       order by s.seat`);
     // A friend's deck chosen while it was listed and hidden since is no longer drawn (the setup list's own rule).
     const hidden = await hiddenFriendDecksIn(tx, seated.flatMap((s) => (s.deckId !== null && s.ownerId !== null && s.ownerId !== viewerId ? [{ id: s.deckId, userId: s.ownerId }] : [])));
+    for (const s of seated) if (s.deckId !== null && s.name !== null && !hidden.has(s.deckId)) seatDecks.set(s.publicId, s.deckId);
     return {
       ...setup,
       tableId,
@@ -594,6 +612,16 @@ export async function tableSetup(viewerId: string, tableId: unknown): Promise<Ta
       })),
     };
   }, { isolationLevel: "repeatable read" });
+  if (!read) return null;
+  const art = await ownedDeckArt(viewerId, [...setupDeckIds(read), ...seatDecks.values()]);
+  const withArt = withSetupArt(read, art);
+  return {
+    ...withArt,
+    seated: withArt.seated.map((s) => {
+      const own = art.get(seatDecks.get(s.publicId) ?? "")?.commander;
+      return s.deck && own ? { ...s, deck: { ...s.deck, artCropUri: own } } : s;
+    }),
+  };
 }
 
 export type RuleZeroPurge = { seats: number; tables: number };
