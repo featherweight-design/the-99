@@ -32,18 +32,28 @@ export function countFor(held: number | undefined, open: readonly HoldingRow[], 
   return inviteCount(held ?? 0, open, now);
 }
 
-/** Who brought an account in: no edge names it as the invitee (a founder), a deleted inviter, or an account. */
-export type InvitedBy = { kind: "founder" } | { kind: "deleted"; joinedAt: Date } | { kind: "account"; id: string; name: string; joinedAt: Date };
+/** The flyer code an account signed up through: the store's label (Hugh's own name for it) and the code itself. */
+export type FlyerOrigin = { code: string; label: string; joinedAt: Date };
 
-export function invitedBy(userId: string, edges: readonly Edge[], name: (id: string) => string): InvitedBy {
+/**
+ * Who brought an account in: no edge and no flyer names it as the invitee (a founder), a flyer code, a deleted
+ * inviter, or an account. A flyer sign-up makes no friend link, so it has no edge; its claim is the only record.
+ */
+export type InvitedBy =
+  | { kind: "founder" }
+  | { kind: "flyer"; code: string; label: string; joinedAt: Date }
+  | { kind: "deleted"; joinedAt: Date }
+  | { kind: "account"; id: string; name: string; joinedAt: Date };
+
+export function invitedBy(userId: string, edges: readonly Edge[], name: (id: string) => string, flyer: FlyerOrigin | null = null): InvitedBy {
   const edge = edges.find((e) => e.invitee === userId);
-  if (!edge) return { kind: "founder" };
+  if (!edge) return flyer ? { kind: "flyer", ...flyer } : { kind: "founder" };
   return edge.inviter === null ? { kind: "deleted", joinedAt: edge.joinedAt } : { kind: "account", id: edge.inviter, name: name(edge.inviter), joinedAt: edge.joinedAt };
 }
 
 /** The name an Invited by cell or line draws. */
 export function invitedByName(by: InvitedBy): string {
-  return by.kind === "founder" ? copy.founder : by.kind === "deleted" ? copy.deleted : by.name;
+  return by.kind === "founder" ? copy.founder : by.kind === "deleted" ? copy.deleted : by.kind === "flyer" ? copy.flyer(by.label, by.code) : by.name;
 }
 
 export type RowInvites = { left: number; waiting: number; invitedBy: InvitedBy };
@@ -56,16 +66,25 @@ export function rowInvites(input: {
   /** Claims holding on flyer codes: each holds one of its code creator's invites, as a waiting reservation does. */
   flyer?: readonly OpenRow[];
   edges: readonly Edge[];
+  /** The flyer codes that took a sign-up and the accounts they made: an account with no edge may have come in on one. */
+  flyerCodes?: readonly FlyerNodeRow[];
+  flyerEdges?: readonly FlyerEdge[];
   accounts: readonly Account[];
   now: Date;
 }): Map<string, RowInvites> {
   const { userName } = accountNames(input.accounts, "");
+  const codes = new Map((input.flyerCodes ?? []).map((c) => [c.id, c]));
+  const originOf = new Map<string, FlyerOrigin>();
+  for (const e of input.flyerEdges ?? []) {
+    const c = codes.get(e.codeId);
+    if (c) originOf.set(e.invitee, { code: c.code, label: c.label, joinedAt: e.joinedAt });
+  }
   const openOf = new Map<string, OpenRow[]>();
   for (const r of [...input.open, ...(input.flyer ?? [])]) openOf.set(r.userId, [...(openOf.get(r.userId) ?? []), r]);
   return new Map(
     input.ids.map((id) => {
       const c = countFor(input.balances.get(id), openOf.get(id) ?? [], input.now);
-      return [id, { left: c.left, waiting: c.waiting, invitedBy: invitedBy(id, input.edges, userName) }];
+      return [id, { left: c.left, waiting: c.waiting, invitedBy: invitedBy(id, input.edges, userName, originOf.get(id) ?? null) }];
     }),
   );
 }
@@ -118,6 +137,8 @@ export function accountInvites(input: {
   open: readonly ReservationRow[];
   /** Claims holding on this account's flyer codes: counted as waiting invites, never listed as revocable rows. */
   flyer?: readonly OpenRow[];
+  /** The flyer code this account itself signed up through, when it did. */
+  flyerBy?: FlyerOrigin | null;
   edges: readonly Edge[];
   events: readonly InviteEvent[];
   holdsUntil: readonly Date[];
@@ -152,7 +173,7 @@ export function accountInvites(input: {
     ...made.map((e) => ({ at: e.joinedAt, what: copy.history.joined(e.invitee === null ? copy.deleted : userName(e.invitee), name) })),
   ].sort((a, b) => b.at.getTime() - a.at.getTime());
 
-  const by = invitedBy(input.userId, input.edges, userName);
+  const by = invitedBy(input.userId, input.edges, userName, input.flyerBy ?? null);
   return {
     left: count.left,
     waiting: count.waiting,

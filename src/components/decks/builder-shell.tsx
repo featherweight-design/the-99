@@ -540,6 +540,21 @@ export function BuilderShell({
   // Leaving the builder (for the review page, where the commit is) settles every open burst AT ONCE, so the count
   // the player saw is saved on the way out rather than 600ms later, behind a commit that would snapshot the old one.
   useEffect(() => () => void basicCounts.flush(), [basicCounts]);
+  // Closing the tab, or the phone going to the background, never runs the cleanup above, so the last tap would
+  // wait out its 600ms with nothing left to send it. `visibilitychange` fires first and most reliably; `pagehide`
+  // covers the browsers that skip it.
+  useEffect(() => {
+    const leave = () => void basicCounts.flush();
+    const hidden = () => {
+      if (document.visibilityState === "hidden") leave();
+    };
+    document.addEventListener("visibilitychange", hidden);
+    window.addEventListener("pagehide", leave);
+    return () => {
+      document.removeEventListener("visibilitychange", hidden);
+      window.removeEventListener("pagehide", leave);
+    };
+  }, [basicCounts]);
   useEffect(() => {
     basicCounts.configure({
       save: (oracleId, n, expected) => setBasicQuantity(deck.id, oracleId, n, expected),

@@ -75,6 +75,7 @@ function reachesDb(file: string, seen = new Set<string>()): boolean {
 }
 
 describe("client bundle safety", () => {
+  // A whole-tree scan: it timed out at the 5s default on a loaded CI shard.
   it("no 'use client' module value-imports its way to the db client", () => {
     const offenders = allSourceFiles(SRC)
       .filter((file) => hasDirective(file, "use client"))
@@ -82,5 +83,5 @@ describe("client bundle safety", () => {
       .map((file) => file.slice(SRC.length + 1));
 
     expect(offenders).toEqual([]);
-  });
+  }, 30_000);
 });

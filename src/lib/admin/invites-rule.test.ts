@@ -40,6 +40,25 @@ describe("who invited an account", () => {
     expect(["u_hugh", "u_peter", "u_colin"].map((id) => invitedByName(invitedBy(id, edges, name)))).toEqual(["founder", "deleted account", "Hugh"]);
   });
 
+  it("names a flyer sign-up by its store label and code, not a founder, and lets an edge win", () => {
+    const flyer = { code: "K7M2QA", label: "Corner Games", joinedAt: day(20) };
+    expect(invitedBy("u_new", edges, name, flyer)).toEqual({ kind: "flyer", ...flyer });
+    expect(invitedByName(invitedBy("u_new", edges, name, flyer))).toBe("Corner Games · K7M2QA");
+    expect(invitedBy("u_colin", edges, name, flyer).kind).toBe("account");
+    const rows = rowInvites({
+      ids: ["u_new", "u_hugh"],
+      balances: new Map(),
+      open: [],
+      edges,
+      flyerCodes: [{ id: "c1", code: "K7M2QA", label: "Corner Games", capacity: 50, createdBy: "u_hugh", createdAt: day(1) }],
+      flyerEdges: [{ codeId: "c1", invitee: "u_new", joinedAt: day(20) }],
+      accounts,
+      now,
+    });
+    expect(rows.get("u_new")?.invitedBy).toEqual({ kind: "flyer", ...flyer });
+    expect(rows.get("u_hugh")?.invitedBy).toEqual({ kind: "founder" });
+  });
+
   it("counts every row's left and waiting through inviteCount, a missing stock as 0", () => {
     const rows = rowInvites({
       ids: ["u_hugh", "u_colin", "u_peter"],
