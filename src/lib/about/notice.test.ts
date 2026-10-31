@@ -24,7 +24,10 @@ function readerAt(floor: number, e = ALL_ON): SeenState {
 /** Task 1.2's sweep, at one floor: the units a reader there has not been told about (`pages-visible.test.ts`). */
 function sweepAt(floor: number, visible: readonly VisibleSection[]): string[] {
   const met = new Set(readerAt(floor).ids);
+  const drawn = new Set(units(visible).map((u) => u.key));
   return units(visible).filter((u) => {
+    // A unit riding a drawn label (the pick card on Suggested changes) is told with it, never on its own.
+    if (u.announcedWith && drawn.has(u.announcedWith)) return false;
     if (u.legacy.some((id) => met.has(id))) return false;
     const own = typeof u.switch === "string" ? u.switch : null;
     const announces = own !== null && u.legacy.some((id) => id.endsWith(`@${own}`) || aboutEntries.find((x) => x.id === id)?.switch === own);
@@ -33,8 +36,11 @@ function sweepAt(floor: number, visible: readonly VisibleSection[]): string[] {
 }
 
 describe("aboutLine", () => {
-  it("tells a reader at floor 16 holding every switched id nothing", () => {
-    expect(aboutLine(readerAt(16), visibleSections(ALL_ON), THEME)).toBeNull();
+  it("tells a reader at floor 16 holding every switched id nothing but Suggested changes v2's rewrite", () => {
+    // The Reference never wrote a v2 id (the entry has no variant), so v2 turning on is told to every reader, this one
+    // too, as the one sentence (Small items 7 addendum 4).
+    expect(aboutLine(readerAt(16), visibleSections(ALL_ON), THEME)?.ids)
+      .toEqual([sentenceKey("decks/analysis/suggested", "SUGGESTED_CHANGES_V2_ENABLED")]);
     expect(aboutLine(readerAt(16, OFF), visibleSections(OFF), THEME)).toBeNull();
   });
 
