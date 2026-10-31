@@ -1573,7 +1573,8 @@ export function BuilderShell({
   // Suggested changes v2 (plan 2026-10-27, UI PRs 5a and 5b), on this reader's switch: the 99 the tool keeps a deck at, the links
   // to the tools that bring a deck back there, and what the "What we noticed" chips read (README item 2, plan H5).
   // `at` is the deck on the tool's 99 scale: the built count, with a partner's second slot added back.
-  // Proposed cuts has no switch but the Analysis tab's (its own retired 2026-10-31).
+  // Gated on the Analysis tab (`analysisEnabled`): Proposed cuts' own switch is retired (2026-10-31), so the press is
+  // offered wherever the tab is.
   const proposedCutsPress = !analysisEnabled
     ? undefined
     : tuningHubEnabled
