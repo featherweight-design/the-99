@@ -94,7 +94,7 @@ function LaunchSentence({ launch }: { launch: AboutLaunch }) {
  *  are the board's, paler than the diamond `Mark` plate's (`banner-mark.tsx`); the glyph is `--accent`. */
 const PLATE_SIZES = {
   line: "h-[36px] w-[36px] rounded-[8px]",
-  list: "h-[28px] w-[28px] rounded-[7px] [&>svg]:h-[16px] [&>svg]:w-[16px]",
+  list: "-mt-[2px] h-[28px] w-[28px] rounded-[7px] [&>svg]:h-[16px] [&>svg]:w-[16px]",
 } as const;
 
 /** A launch's mark: the nav glyph of the page Show me opens on an accent plate, or the diamond `Mark` for a rule. */
@@ -209,7 +209,7 @@ export function ArrivalsBanner({
               `${SHELL} mx-[16px] mt-[14px] flex items-start py-[10px] ` +
               `${smMx} sm:mt-[18px] sm:min-h-[46px] sm:items-center sm:gap-[12px] sm:py-[7px] ` +
               // A launch's glyph plate takes the mark's place at the board's insets (Ways-In `.bn`).
-              (launch ? "gap-[12px] pl-[10px] sm:pl-[8px] " : "gap-[10px] pl-[14px] ") +
+              (launch ? "gap-[12px] pl-[12px] sm:pl-[10px] " : "gap-[10px] pl-[14px] ") +
               (closable ? "pr-[4px] sm:pr-[8px]" : "pr-[14px]")
             }
           >
@@ -217,7 +217,7 @@ export function ArrivalsBanner({
             <div
               className={
                 "flex min-w-0 flex-1 flex-col gap-[4px] sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-[14px] sm:pt-0 " +
-                (launch ? "pt-[1px]" : "pt-[2px]")
+                (launch ? "pt-0" : "pt-[2px]")
               }
             >
               {/* A launch's words drop to 13.5 at desktop with its link (Ways-In `.dk .bn .tx p`). */}
