@@ -244,7 +244,7 @@ export function validateSuggestions(args: {
   /** Suggested changes v2 (spec 2026-10-27): the run's words are cited as `request`, and a CUT's reason may say the deck
    *  gets "stronger" (`noResultClaim` narrowed on cuts, §6.2). Absent for v10 and every other caller, unchanged. */
   v2?: boolean;
-}): { kept: ValidatedSuggestion[]; droppedCount: number; drops: Drop[]; /** Ungroundable citations removed (`stripUngroundable`), each from a line that kept others. */ strippedCites: number } {
+}): { kept: ValidatedSuggestion[]; droppedCount: number; drops: Drop[]; /** Citations removed from a line that kept others: ungroundable ones (`stripUngroundable`), and on v2 any that failed (`salvage`). */ strippedCites: number } {
   const { response, pack, resolveName } = args;
   const requestKind = args.v2 ? "request" : "notes";
   const inDeck = new Map(pack.cards.map((c) => [c.oracleId, c]));
@@ -305,9 +305,22 @@ export function validateSuggestions(args: {
     strippedCites += line.evidence.length - evidence.length;
     return { ...line, evidence };
   };
+  // Suggested changes v2 (C1, Hugh 2026-10-31): a citation that fails its check goes, and the line stays, when another
+  // citation on the line holds and neither rationale restates the failed one. On Aang one false `games` figure dropped
+  // ~30% of the cut lines and refunded half the small runs, though each line had a citation that held. A line whose
+  // every citation fails, or whose words repeat the failed claim, still drops as `citation`.
+  const salvage = (line: TuningLine, side: "add" | "cut"): TuningLine => {
+    if (!args.v2) return line;
+    const holding = line.evidence.filter((c) => !ungroundable(c.kind, side) && citationHolds(c, line));
+    const failed = line.evidence.filter((c) => !holding.includes(c));
+    if (failed.length === 0 || holding.length === 0 || failed.some((c) => restates(c, line))) return line;
+    strippedCites += failed.length;
+    return { ...line, evidence: holding };
+  };
+  const prepare = (l: TuningLine, side: "add" | "cut") => salvage(stripUngroundable(relabel(l), side), side);
   const sides = [
-    ["add", response.additions.map((l) => stripUngroundable(relabel(l), "add"))],
-    ["cut", response.cuts.map((l) => stripUngroundable(relabel(l), "cut"))],
+    ["add", response.additions.map((l) => prepare(l, "add"))],
+    ["cut", response.cuts.map((l) => prepare(l, "cut"))],
   ] as const;
   for (const [side, lines] of sides) {
     lines.forEach((line, position) => {
@@ -503,6 +516,18 @@ export function validateSuggestions(args: {
       }
     }
   }
+}
+
+/**
+ * Whether a line's rationale repeats a citation: its whole text, or any `N of M` figure it states. Such words
+ * lean on the citation, so a line whose citation failed cannot keep them by dropping the citation alone.
+ */
+function restates(c: TuningCitation, line: TuningLine): boolean {
+  const words = `${line.rationale}\n${line.rationaleShort}`.toLowerCase();
+  const value = c.value.toLowerCase().trim();
+  if (value.length > 0 && words.includes(value)) return true;
+  return [...value.matchAll(new RegExp(`\\b(?:\\d+|${NUMBER_WORDS})\\s+of\\s+(?:the\\s+|your\\s+)?\\d+\\b`, "g"))]
+    .some(([figure]) => words.includes(figure));
 }
 
 /** A citation's direction: the axis worked against the player, or for them. */
