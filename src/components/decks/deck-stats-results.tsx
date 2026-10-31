@@ -66,7 +66,7 @@ export function ResultsCard({ results, onLogGame }: { results: ResultsStats; onL
           </div>
           <div className="flex flex-col gap-[8px]">
             <span className="font-mono text-[9.5px] tracking-[0.12em] text-[color:var(--fg-faint)]">{copy.every}</span>
-            {/* Small items 7, addendum 6 (`Dates.dc.html`): no date under a bead. The row is dated once, under its
+            {/* Small items 7, addendum 6 (`Dates.dc.html`): no date under a bead. From five beads the row is dated once, under its
                 first and last beads, on a line as wide as the beads (`w-fit`; a wrapped row fills the card, so its
                 dates sit at the card's edges). On a fine pointer a bead's date shows on hover or focus in the card
                 mark's bubble, result first; each bead keeps its spoken label: the focusable wrapper's name on a fine pointer, the sr-only line under touch. */}
@@ -89,7 +89,7 @@ export function ResultsCard({ results, onLogGame }: { results: ResultsStats; onL
               {beads.length >= 5 ? (
                 <div aria-hidden="true" data-results-ends className="flex justify-between gap-[8px] whitespace-nowrap font-mono text-[10.5px] text-[color:var(--fg-muted)]">
                   <span>{formatPlayed(beads[0].playedAt)}</span>
-                  {beads.length > 1 ? <span>{formatPlayed(beads[beads.length - 1].playedAt)}</span> : null}
+                  <span>{formatPlayed(beads[beads.length - 1].playedAt)}</span>
                 </div>
               ) : null}
             </div>
