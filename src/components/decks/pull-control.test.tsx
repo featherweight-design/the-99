@@ -613,10 +613,10 @@ describe("PullControl — 2+ choosable sources", () => {
     }
   });
 
-  // Bug batch 2026-10-12: the phone sheet's body takes the other sheets' inset (16 / 14 / 16), and
-  // the desktop popover keeps its own box padding with no second inset inside it.
+  // The phone sheet's body takes the board's inset (Small items 4, Other Decks: `.sh2`, 16 sides and 28
+  // below, the grabber's 12px above), and the desktop popover keeps its own box padding with no second inset.
   it("insets the phone sheet's body, and leaves the popover's own padding alone", () => {
-    const INSET = ["px-[16px]", "pt-[14px]", "pb-[16px]"];
+    const INSET = ["px-[16px]", "pb-[28px]"];
     const insetOf = () => {
       // The order line sits in the shared column's scrolling body; that column's parent is this shell's.
       const line = screen.getByText("In the order they committed it");

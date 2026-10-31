@@ -1170,8 +1170,9 @@ export function FilterPanel({
             {selected.length}
           </span>
         )}
-        {/* The field look's chevron is the board's 12px in --fg-faint (the cap field's affix); the chip keeps the shared one. */}
-        <Chevron open={open} style={triggerLook === "field" ? { fontSize: 12, color: "var(--fg-faint)" } : undefined} />
+        {/* The field look's chevron is the board's 12px in --fg-faint (the cap field's affix), or the disabled field's
+            locked ink; the chip keeps the shared one. */}
+        <Chevron open={open} style={triggerLook === "field" ? { fontSize: 12, ...(disabled ? {} : { color: "var(--fg-faint)" }) } : undefined} />
       </button>
 
       {open &&

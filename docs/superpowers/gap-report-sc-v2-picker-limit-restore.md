@@ -19,7 +19,7 @@ Enumerate and verify ran as one audit pass (board CSS against `pull-control.tsx`
 | 11 | Sheet | first focus | the list's radio | the head's card name | the checked radio |
 | 12 | Set field | gap, chevron ink | 6, --fg-faint | 8, --fg | 6, --fg-faint |
 
-All overrides are picker-local; `ANCHORED_PANEL_CLASS` and `sheet.tsx`'s defaults are unchanged for their other callers.
+The picker's overrides are local to `pull-control.tsx`; `ANCHORED_PANEL_CLASS` and `sheet.tsx`'s defaults are unchanged for their other callers. The Set field's change sits in `FilterPanel`'s field look, whose only caller is the limit box (`tuning-limits-box.tsx`); a disabled field's chevron keeps the locked ink.
 
 ## Kept on purpose (ruled 2026-10-30 by the orchestrator)
 
