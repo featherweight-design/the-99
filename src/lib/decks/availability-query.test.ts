@@ -39,7 +39,8 @@ describe("loadAvailability with unownedAsZero (the cart's chooser)", () => {
     expect(q).toContain("from (");
     expect(q).toMatch(/select x\.oracle_id, 0 from unnest\(\$\d+::uuid\[\]\) as x\(oracle_id\)/);
     expect(q).toContain("where not exists (select 1 from owned w where w.oracle_id = x.oracle_id)");
-    expect(await render({ oracleIds: ["o1"] })).not.toContain("unnest(");
+    // Without the flag no unowned card joins the select (the moved-commander clause has its own unnest).
+    expect(await render({ oracleIds: ["o1"] })).not.toMatch(/from unnest\(\$\d+::uuid\[\]\) as x\(oracle_id\)/);
   });
 });
 
