@@ -88,11 +88,6 @@ let pairCleanup: { a: string; b: string; card: string } | null = null;
 let labelCleanup: string[] | null = null;
 const LABEL_MODEL = "probe-swap-engine";
 
-// Every section but 10's switch-on read runs with the label switch OFF, whatever the caller's `.env` says:
-// those sections prove the text path, and a caller with the switch on would run them through labels.
-const callerLabels = process.env.STAND_IN_LABELS_ENABLED;
-delete process.env.STAND_IN_LABELS_ENABLED;
-
 async function main() {
   // A Naya commander, found by query rather than named, so the fixture follows the catalog.
   const [commander] = await rows<{ oracle_id: string; name: string }>(sql`
@@ -277,20 +272,20 @@ async function main() {
       `${ramp.card.name} at ${pairRow?.inclusion}; listed ${all(pairRead!).filter((s) => s.inclusion !== null).length}`);
   }
 
-  // 10. The labels are LIVE with the switch on (the run plan's Task 5). Everything above ran with it off,
-  //     which proves the label path inert and nothing more. Seeded labels for Mana Vault and two of its
-  //     stand-ins must change the read: one stand-in labelled as burst mana fails the ramp-kind gate and
+  // 10. The labels are LIVE (the run plan's Task 5). Mana Vault carries no label before the seed, so the
+  //     first read below is the text path's. Seeded labels for Mana Vault and two of its stand-ins must
+  //     change the read: one stand-in labelled as burst mana fails the ramp-kind gate and
   //     leaves, one labelled with an extra theme gains it, and every unlabelled row is the text path's.
-  const offRead = await loadStandIns(deckId, USER, vault.oracle_id, true, process.env);
-  const offRows = all(offRead!).filter((s) => !s.isUniversal);
+  const beforeRead = await loadStandIns(deckId, USER, vault.oracle_id, true, process.env);
+  const beforeRows = all(beforeRead!).filter((s) => !s.isUniversal);
   // Seeds go only where no label row exists. Debris from a run that died before its cleanup carries this
   // model, which no real label does, so sweeping it can never remove anyone's label.
   await fixture.execute(sql`delete from card_labels where model = ${LABEL_MODEL}`);
   const labelled = new Set((await rows<{ oracle_id: string }>(sql`
-    select oracle_id from card_labels where oracle_id = any(${sql.param([vault.oracle_id, ...offRows.map((s) => s.card.oracleId)])}::uuid[])`))
+    select oracle_id from card_labels where oracle_id = any(${sql.param([vault.oracle_id, ...beforeRows.map((s) => s.card.oracleId)])}::uuid[])`))
     .map((r) => r.oracle_id));
   if (labelled.has(vault.oracle_id)) throw new Error("Mana Vault already carries a label; section 10 seeds only unlabelled cards");
-  const free = offRows.filter((s) => !labelled.has(s.card.oracleId));
+  const free = beforeRows.filter((s) => !labelled.has(s.card.oracleId));
   if (free.length < 2) throw new Error(`Mana Vault has ${free.length} unlabelled non-staple stand-ins; section 10 needs 2`);
   const [gated, gainer] = free;
   const rampJob = (rampKind: string): LabelJob => ({
@@ -313,29 +308,20 @@ async function main() {
       insert into card_labels (oracle_id, labels, model, prompt_version, input_hash)
       values (${c.oracle_id}::uuid, ${JSON.stringify(seeds.get(c.oracle_id))}::jsonb, ${LABEL_MODEL}, ${LABEL_PROMPT_VERSION}, ${hash})`);
   }
-  const offAgain = await loadStandIns(deckId, USER, vault.oracle_id, true, process.env);
-  check("labels: with the switch OFF, seeded labels change nothing",
-    JSON.stringify(offAgain) === JSON.stringify(offRead), `${all(offAgain!).length} rows, as before the seed`);
-  process.env.STAND_IN_LABELS_ENABLED = "true";
-  let onRead: StandInsRead | null;
-  try {
-    onRead = await loadStandIns(deckId, USER, vault.oracle_id, true, process.env);
-  } finally {
-    delete process.env.STAND_IN_LABELS_ENABLED;
-  }
-  const onRows = all(onRead!);
+  const afterRead = await loadStandIns(deckId, USER, vault.oracle_id, true, process.env);
+  const afterRows = all(afterRead!);
   check("labels: a labelled stand-in that fails the ramp-kind gate leaves the sheet",
-    offRows.some((s) => s.card.oracleId === gated.card.oracleId) && !onRows.some((s) => s.card.oracleId === gated.card.oracleId),
-    `${gated.card.name}: off ${offRows.some((s) => s.card.oracleId === gated.card.oracleId)}, on ${onRows.some((s) => s.card.oracleId === gated.card.oracleId)}`);
-  const gainedOn = onRows.find((s) => s.card.oracleId === gainer.card.oracleId);
+    beforeRows.some((s) => s.card.oracleId === gated.card.oracleId) && !afterRows.some((s) => s.card.oracleId === gated.card.oracleId),
+    `${gated.card.name}: before ${beforeRows.some((s) => s.card.oracleId === gated.card.oracleId)}, after ${afterRows.some((s) => s.card.oracleId === gated.card.oracleId)}`);
+  const gainedAfter = afterRows.find((s) => s.card.oracleId === gainer.card.oracleId);
   check("labels: a labelled stand-in's reasons are its label's (it gains the tokens theme it was given)",
-    !gainer.extra.includes("tokens") && gainedOn?.extra.includes("tokens") === true && gainedOn.shared.includes("tapsForMana"),
-    `${gainer.card.name}: off [${gainer.extra.join(", ")}], on [${gainedOn?.extra.join(", ")}]`);
+    !gainer.extra.includes("tokens") && gainedAfter?.extra.includes("tokens") === true && gainedAfter.shared.includes("tapsForMana"),
+    `${gainer.card.name}: before [${gainer.extra.join(", ")}], after [${gainedAfter?.extra.join(", ")}]`);
   const unlabelled = (r: StandIn[]) => r.filter((s) => !seeds.has(s.card.oracleId)).map((s) => `${s.card.oracleId}:${s.shared}:${s.extra}`);
   // Non-empty: with no unlabelled row left, this would compare two empty lists and pass about nothing.
   check("labels: every unlabelled stand-in reads as the text path's (Q1)",
-    unlabelled(onRows).length > 0 && JSON.stringify(unlabelled(onRows).sort()) === JSON.stringify(unlabelled(all(offRead!)).sort()),
-    `${unlabelled(onRows).length} unlabelled rows`);
+    unlabelled(afterRows).length > 0 && JSON.stringify(unlabelled(afterRows).sort()) === JSON.stringify(unlabelled(all(beforeRead!)).sort()),
+    `${unlabelled(afterRows).length} unlabelled rows`);
 }
 
 void (async () => {
@@ -345,8 +331,6 @@ try {
   failures += 1;
   console.log(`FAIL  the run threw — ${(e as Error).message}`);
 } finally {
-  if (callerLabels === undefined) delete process.env.STAND_IN_LABELS_ENABLED;
-  else process.env.STAND_IN_LABELS_ENABLED = callerLabels;
   // Assigned inside `main`, which flow analysis cannot see from here.
   const pair = pairCleanup as { a: string; b: string } | null;
   if (pair) {
