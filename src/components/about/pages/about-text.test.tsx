@@ -45,8 +45,8 @@ describe("the friend page label follows the page's order: Decks, Wishlist, Spare
   const read = (decks: boolean, wishlist: boolean) => {
     const env = {
       SOCIAL_FRIENDS_ENABLED: "true",
-      ...(decks ? { FRIEND_DECKS_ENABLED: "true" } : {}),
-      ...(wishlist ? { SOCIAL_WISHLIST_ENABLED: "true" } : {}),
+      FRIEND_DECKS_ENABLED: decks ? "true" : "off",
+      SOCIAL_WISHLIST_ENABLED: wishlist ? "true" : "off",
     } as unknown as NodeJS.ProcessEnv;
     const label = visibleSections(env).flatMap((s) => s.labels).find((l) => l.key === "friends/friends/friend");
     return `${label?.lead}${label?.text}`;
