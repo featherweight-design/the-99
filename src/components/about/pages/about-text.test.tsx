@@ -11,8 +11,8 @@ import before from "./about-text.snapshot.json";
 const render = (text: string) => renderToStaticMarkup(createElement(AboutText, { text }));
 const B = (s: string) => `<b class="font-semibold text-[color:var(--fg)]">${s}</b>`;
 
-/** The only units F1 and F2 change: the cart's total (its second bold phrase) and its views (the lead follows By friend). */
-const CHANGED = ["shopping/all-decks/total", "shopping/all-decks/views"];
+/** The only units F1, F2 and the friend page change: the cart's total (its second bold phrase) and its views (the lead follows By friend), and the friend page's order (Decks, Wishlist, Spares). */
+const CHANGED = ["shopping/all-decks/total", "shopping/all-decks/views", "friends/friends/friend"];
 const changed = (key: string) => CHANGED.some((c) => key.endsWith(`:${c}`));
 
 describe("About's words, rendered (Small items 7, item 6, F1)", () => {
@@ -38,6 +38,32 @@ describe("About's words, rendered (Small items 7, item 6, F1)", () => {
   it("draws text with no marker as the bare string, and each marked phrase in bold", () => {
     expect(render("plain & “quoted”.")).toBe("plain &amp; “quoted”.");
     expect(render("a **b** c **d**")).toBe(`a ${B("b")} c ${B("d")}`);
+  });
+});
+
+describe("the friend page label follows the page's order: Decks, Wishlist, Spares", () => {
+  // Both of its sentence switches are retired (the wishlist's is always on, the decks' follows the label's own), so
+  // only one combination can draw today; the label is proven whole in all four anyway, by cutting each sentence the way
+  // `resolveText` does, in case either switch is ever live again.
+  const label = ABOUT_SECTIONS.flatMap((s) => s.labels).find((l) => l.id === "friend" && l.region === "friends/friends/friend");
+  const read = (decks: boolean, wishlist: boolean) => {
+    let out = label!.rest;
+    for (const [sentence, sw] of Object.entries(label!.sentences ?? {})) {
+      if ((sw === "FRIEND_DECKS_ENABLED" && !decks) || (sw === "SOCIAL_WISHLIST_ENABLED" && !wishlist)) out = out.replace(sentence, "");
+    }
+    return `${label!.lead}${out.trimEnd()}`;
+  };
+  it("reads whole under every combination of its two switches", () => {
+    expect(read(true, true)).toBe(
+      "A friend’s page shows what they share. It lists the decks they let you open. It shows their wishlist too. It also shows their spares.",
+    );
+    expect(read(true, false)).toBe("A friend’s page shows what they share. It lists the decks they let you open. It also shows their spares.");
+    expect(read(false, true)).toBe("A friend’s page shows what they share. It shows their wishlist too. It also shows their spares.");
+    expect(read(false, false)).toBe("A friend’s page shows what they share. It also shows their spares.");
+  });
+  it("draws the all-on text the reader sees today", () => {
+    const drawn = visibleSections(PROOF_ENVS.on).flatMap((s) => s.labels).find((l) => l.key === "friends/friends/friend");
+    expect(`${drawn?.lead}${drawn?.text}`).toBe(read(true, true));
   });
 });
 
