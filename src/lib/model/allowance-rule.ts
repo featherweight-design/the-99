@@ -253,7 +253,7 @@ export function hasCredit(a: HeldLots & {
  *   welcome  the welcome lot holds the run
  *   paid     a paid source holds the run
  *   short    the run costs 2 and nothing can fund 2, though a 1-credit run would start (`freeHoldsOne`: it is the free
- *            allowance that holds the one, the board's "Your free run covers up to 10")
+ *            allowance that holds the one, the line's "A free credit covers up to 10")
  *   spent    nothing can fund even 1 credit: `hasCredit` is false
  *
  * Says nothing about the owner's share, which every caller checks first. Pure.

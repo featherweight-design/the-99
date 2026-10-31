@@ -142,21 +142,25 @@ export const creditsCopy = {
   },
 
   /**
-   * A run costing 2 credits (Suggested changes v2 above 10 swaps; Small items 7, SC-Cost B, D and E). DRAFT, owed to
-   * /copy-review. The line beside the press reads `lead`, then `why` (drawn in `--fg-body`), then the count: `Uses 2
-   * welcome credits. Your free run covers up to 10. 1 of 1 free · 15 welcome.`
+   * A run costing 2 credits (Suggested changes v2 above 10 swaps; Small items 7, SC-Cost B, D and E). Copy-reviewed
+   * 2026-10-30. The line beside the press reads `lead`, then `why` (drawn in `--fg-body`), then the count: `Uses 2
+   * welcome credits. A free credit covers up to 10. 1 of 1 free · 15 welcome.`
    */
   two: {
     /** `Uses 2 welcome credits.`: the source that funds the whole run (`runFunding`). A gift is shown as paid. */
     lead: (source: "free" | "welcome" | "paid") => `Uses 2 ${source} credits.`,
-    /** B and D: a lot funds it, because the free run covers 1 to 10. */
-    whyLot: "Your free run covers up to 10.",
+    /** B and D: a lot funds it, because a free credit covers 1 to 10. "Free credit", never "free run": the lines count
+     *  credits, and the sentence must hold whether the free allowance holds 1 or none. */
+    whyLot: "A free credit covers up to 10.",
     /** E (addendum 1): the free allowance funds it, counting 2. */
     whyFree: "A run above 10 counts 2.",
-    /** E's count: credits, never runs, and what this run leaves. With lots held their shipped segment follows. */
-    freeAfter: (left: number, total: number, after: number, next: Date | null, paidTotal = 0, welcomeLeft = 0) =>
-      `${left} of ${total} free left, ${after} after this run${next ? ` · reset at ${clockTime(next)}` : ""}${
-        paidTotal > 0 || welcomeLeft > 0 ? ` · ${lots(paidTotal, welcomeLeft)}` : ""}.`,
+    /** E's count: credits, never runs, and what this run leaves. It extends the shipped forms: `standing`'s `N of M left`
+     *  with nothing bought, `withPaid`'s `N of M free` with lots held, whose segment then follows. */
+    freeAfter: (left: number, total: number, after: number, next: Date | null, paidTotal = 0, welcomeLeft = 0) => {
+      const held = paidTotal > 0 || welcomeLeft > 0;
+      return `${left} of ${total} ${held ? "free" : "left"}, ${after} after this run${next ? ` · reset at ${clockTime(next)}` : ""}${
+        held ? ` · ${lots(paidTotal, welcomeLeft)}` : ""}.`;
+    },
     /** B and D's count: the shipped count (`creditCount`) ending the line. */
     count: (line: string) => `${line}.`,
   },

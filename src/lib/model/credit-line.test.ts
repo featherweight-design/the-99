@@ -175,7 +175,7 @@ describe("a run costing 2 credits (Small items 7, SC-Cost B, D, E)", () => {
   it("B: welcome credits fund it, and the line counts them in the shipped form", () => {
     expect(two({ used: 0, limit: 1, nextAt: null, reopensAt: null, welcome: 15 })).toEqual({
       lead: "Uses 2 welcome credits.",
-      why: "Your free run covers up to 10.",
+      why: "A free credit covers up to 10.",
       count: "1 of 1 free · 15 welcome.",
     });
   });
@@ -183,7 +183,7 @@ describe("a run costing 2 credits (Small items 7, SC-Cost B, D, E)", () => {
   it("D: paid credits fund it", () => {
     expect(two({ used: 0, limit: 1, nextAt: null, reopensAt: null, pack: 8 })).toEqual({
       lead: "Uses 2 paid credits.",
-      why: "Your free run covers up to 10.",
+      why: "A free credit covers up to 10.",
       count: "1 of 1 free · 8\u00a0paid.",
     });
   });
@@ -192,9 +192,11 @@ describe("a run costing 2 credits (Small items 7, SC-Cost B, D, E)", () => {
     expect(two({ used: 0, limit: 5, nextAt: null, reopensAt: null })).toEqual({
       lead: "Uses 2 free credits.",
       why: "A run above 10 counts 2.",
-      count: "5 of 5 free left, 3 after this run.",
+      count: "5 of 5 left, 3 after this run.",
     });
-    expect(two(base({ used: 0 }))!.count).toBe(`5 of 5 free left, 3 after this run · reset at ${t(at(14, 1))}.`);
+    expect(two(base({ used: 0 }))!.count).toBe(`5 of 5 left, 3 after this run · reset at ${t(at(14, 1))}.`);
+    // With lots held it extends `withPaid`'s `N of M free` form, and their segment follows.
+    expect(two({ used: 0, limit: 5, nextAt: null, reopensAt: null, welcome: 15 })!.count).toBe("5 of 5 free, 3 after this run · 15 welcome.");
   });
 
   it("draws nothing for a run that cannot start: the surface says why", () => {

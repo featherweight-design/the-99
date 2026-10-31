@@ -129,13 +129,13 @@ describe("Suggested changes v2's 2-credit cue (Small items 7, SC-Cost)", () => {
     await draw(withAllowance({ used: 0, limit: 1, reopensAt: null, nextAt: null, welcome: 15 }), v2At());
     typeCount(12);
     expect(send().getAttribute("aria-disabled")).toBeNull();
-    expect(line()!.textContent).toContain("Uses 2 welcome credits. Your free run covers up to 10. 1 of 1 free · 15 welcome.");
+    expect(line()!.textContent).toContain("Uses 2 welcome credits. A free credit covers up to 10. 1 of 1 free · 15 welcome.");
   });
 
   it("E: the free allowance holds 2, and the line counts credits left after the run", async () => {
     await draw(deps(), v2At());
     typeCount(12);
-    expect(line()!.textContent).toContain("Uses 2 free credits. A run above 10 counts 2. 5 of 5 free left, 3 after this run.");
+    expect(line()!.textContent).toContain("Uses 2 free credits. A run above 10 counts 2. 5 of 5 left, 3 after this run.");
     typeCount(10);
     expect(line()!.textContent).not.toContain("after this run");
   });
