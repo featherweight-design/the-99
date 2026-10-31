@@ -153,9 +153,10 @@ describe("deckVersioningCopy", () => {
 
     // The card is OUT and the restore is what failed. The removal's fallback
     // says the opposite, which is why this string exists at all.
-    it("says the card is still going out when the write fails", () => {
-      expect(copy.restore.failed).toContain("going out");
+    it("says it could not put the card back, and claims nothing about where the card is", () => {
+      expect(copy.restore.failed).toContain("couldn’t put that card back");
       expect(copy.restore.failed).not.toContain("still in the deck");
+      expect(copy.restore.failed).not.toContain("going out");
     });
 
     // No count of nought is ever drawn, including in an announcement.

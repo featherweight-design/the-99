@@ -80,10 +80,10 @@ export function Balance({ total, cells, freeLimit, nextAtMs, added, paidToday = 
 }) {
   const hydrated = useHydrated();
   return (
-    <section aria-label={c.total} className="flex flex-col gap-[12px]">
+    <section aria-label={c.total(total)} className="flex flex-col gap-[12px]">
       <div className="flex items-baseline gap-[10px]">
         <b className="font-display text-[44px] font-bold leading-[44px] tracking-[-0.01em] text-[color:var(--fg)]" data-testid="credits-total">{total}</b>
-        <span className="font-mono text-[12px] text-[color:var(--fg-muted)]">{c.total}</span>
+        <span className="font-mono text-[12px] text-[color:var(--fg-muted)]">{c.total(total)}</span>
       </div>
       {cells.length > 1 ? (
         <div className="flex items-center gap-[8px] font-mono text-[9.5px] font-medium uppercase tracking-[0.14em] text-[color:var(--fg-faint)]">
