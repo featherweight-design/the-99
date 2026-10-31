@@ -14,6 +14,7 @@ import { v2Line } from "../../lib/tuning/v2/results-fixture";
 import type { Bracket } from "../../lib/profile/types";
 import { OpenHistoryProvider, OpenRunProvider, ReviewRunProvider, type OpenRun } from "./review-run";
 import { TuningPanel, type TuningDeps, type TuningFacts, type TuningV2 } from "./tuning-panel";
+import type { RunFigures } from "./suggested-changes-run";
 
 vi.mock("../../app/decks/tuning-actions", () => ({
   applySuggestion: vi.fn(), dismissSuggestion: vi.fn(),
@@ -69,8 +70,10 @@ function deps(answer: (opts: unknown) => unknown = () => ({ ok: true })): Tuning
   };
 }
 
-async function draw(d: TuningDeps, v2: TuningV2 | null, permits: Bracket[] = [2], wrap?: (node: React.ReactNode) => React.ReactNode) {
-  const panel = <TuningPanel deckId="d1" permits={permits} facts={facts} onLogGame={vi.fn()} deps={d} v2={v2} />;
+async function draw(
+  d: TuningDeps, v2: TuningV2 | null, permits: Bracket[] = [2], wrap?: (node: React.ReactNode) => React.ReactNode, runFigures?: RunFigures,
+) {
+  const panel = <TuningPanel deckId="d1" permits={permits} facts={facts} onLogGame={vi.fn()} deps={d} v2={v2} runFigures={runFigures} />;
   return act(async () => render(<>{wrap ? wrap(panel) : panel}</>));
 }
 
@@ -575,6 +578,33 @@ describe("TuningPanel with Suggested changes v2 on: the wait and the results (UI
     expect(screen.getByRole("button", { name: deckTuningCopy.lists.applyAll })).toBeTruthy();
     expect(screen.getAllByRole("button", { name: deckTuningCopy.lists.add }).length).toBeGreaterThan(0);
     expect(screen.getAllByRole("button", { name: deckTuningCopy.lists.reject }).length).toBeGreaterThan(0);
+  });
+
+  it("a stored v2 run's group heads read the same deck count with the switch off as with it on", async () => {
+    const figures: RunFigures = { typeCounts: { Instants: 12 }, roles: [{ role: "removal", have: 6, target: 10 }] };
+    // N = 5: the results group their lines only from GROUP_FROM_N (4) up, so the fixture's N = 3 draws no heads at all.
+    const grouped: TuningState = {
+      ...finished,
+      run: { ...finished.run!, requestedCount: 5 },
+      itemsAsk: { ...ask, requestedCount: 5 },
+      review: { runId: RUN, at, readVersion: 4 },
+    };
+    const heads = async (v2: TuningV2 | null) => {
+      const d = { ...deps(), v2: v2Actions() };
+      d.read = vi.fn(async () => grouped);
+      const view = await draw(d, v2, [2], (node) => (
+        <ReviewRunProvider value={{ tool: "suggested", runId: RUN, past: { at: at.toISOString(), tier: "credit", back: vi.fn() } }}>{node}</ReviewRunProvider>
+      ), figures);
+      // Each list's Instants head, as drawn (both lists' lines are Instants).
+      const text = [...document.querySelectorAll("[data-sc-group='Instants'] h4")].map((h) => h.textContent ?? "");
+      view.unmount();
+      return text;
+    };
+    const on = await heads(v2At());
+    const off = await heads(null);
+    expect(on).toHaveLength(2);
+    for (const head of on) expect(head).toContain(sc.results.typeHead(12));
+    expect(off).toEqual(on);
   });
 
   it("the same stored v2 run with the switch on keeps its Apply bar and pick controls", async () => {
