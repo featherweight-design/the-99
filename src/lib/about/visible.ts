@@ -6,7 +6,6 @@
 // new" is how the sheet announces an entry the page does not mark.
 
 import { analysisTabEnabled } from "../decks/analysis-flag";
-import { howItWorksEnabled } from "./how-it-works-flag";
 import { helpMeChooseEnabled } from "../intake/flag";
 import { findADeckReadEnabled, swapToolsEnabled } from "../swaps/flag";
 import { manaBalanceEnabled, proposedCutsEnabled, suggestedChangesV2Enabled, tuningEnabled, tuningHubEnabled } from "../tuning/flag";
@@ -42,7 +41,8 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   // Retired (always on): Change commander. The name stays as the entry's historical identity.
   CHANGE_COMMANDER_ENABLED: () => true,
   ANALYSIS_TAB_ENABLED: analysisTabEnabled,
-  HOW_IT_WORKS_ENABLED: howItWorksEnabled,
+  // Retired (always on): How the app reaches its answers. The name stays as the appendix's historical identity.
+  HOW_IT_WORKS_ENABLED: () => true,
   TUNING_ENABLED: tuningEnabled,
   SUGGESTED_CHANGES_V2_ENABLED: suggestedChangesV2Enabled,
   // Retired (always on): Stats. The name stays as the entry's and the section's historical identity.
