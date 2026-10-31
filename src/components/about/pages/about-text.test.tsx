@@ -42,14 +42,16 @@ describe("About's words, rendered (Small items 7, item 6, F1)", () => {
 });
 
 describe("the friend page label follows the page's order: Decks, Wishlist, Spares", () => {
+  // Both of its sentence switches are retired (the wishlist's is always on, the decks' follows the label's own), so
+  // only one combination can draw today; the label is proven whole in all four anyway, by cutting each sentence the way
+  // `resolveText` does, in case either switch is ever live again.
+  const label = ABOUT_SECTIONS.flatMap((s) => s.labels).find((l) => l.id === "friend" && l.region === "friends/friends/friend");
   const read = (decks: boolean, wishlist: boolean) => {
-    const env = {
-      SOCIAL_FRIENDS_ENABLED: "true",
-      FRIEND_DECKS_ENABLED: decks ? "true" : "off",
-      SOCIAL_WISHLIST_ENABLED: wishlist ? "true" : "off",
-    } as unknown as NodeJS.ProcessEnv;
-    const label = visibleSections(env).flatMap((s) => s.labels).find((l) => l.key === "friends/friends/friend");
-    return `${label?.lead}${label?.text}`;
+    let out = label!.rest;
+    for (const [sentence, sw] of Object.entries(label!.sentences ?? {})) {
+      if ((sw === "FRIEND_DECKS_ENABLED" && !decks) || (sw === "SOCIAL_WISHLIST_ENABLED" && !wishlist)) out = out.replace(sentence, "");
+    }
+    return `${label!.lead}${out.trimEnd()}`;
   };
   it("reads whole under every combination of its two switches", () => {
     expect(read(true, true)).toBe(
@@ -58,6 +60,10 @@ describe("the friend page label follows the page's order: Decks, Wishlist, Spare
     expect(read(true, false)).toBe("A friend’s page shows what they share. It lists the decks they let you open. It also shows their spares.");
     expect(read(false, true)).toBe("A friend’s page shows what they share. It shows their wishlist too. It also shows their spares.");
     expect(read(false, false)).toBe("A friend’s page shows what they share. It also shows their spares.");
+  });
+  it("draws the all-on text the reader sees today", () => {
+    const drawn = visibleSections(PROOF_ENVS.on).flatMap((s) => s.labels).find((l) => l.key === "friends/friends/friend");
+    expect(`${drawn?.lead}${drawn?.text}`).toBe(read(true, true));
   });
 });
 
