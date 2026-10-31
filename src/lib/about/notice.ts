@@ -42,13 +42,15 @@ function launchText(u: UnseenUnit, visible: readonly VisibleSection[]): string {
   }
   // One sentence a line (Small items 8, item 1): a label's lead and the first sentence of its rest. A rule is already
   // one sentence and is told whole.
-  const text = key.startsWith("rule/") ? drawn.text : firstSentence(drawn.text);
+  // A unit announced for a switch whose sentence is only a phrase keeps its whole text: the first sentence would
+  // not mention what is new.
+  const text = key.startsWith("rule/") || sw ? drawn.text : firstSentence(drawn.text);
   return `${drawn.lead ?? ""}${text}`.trim();
 }
 
 /** The first sentence of `text`, or all of it when it has no sentence end. */
 function firstSentence(text: string): string {
-  return /^[\s\S]*?[.?!](?=\s|$)/.exec(text)?.[0] ?? text;
+  return /^[\s\S]*?[.?!][”’")\]*]*(?=\s|$)/.exec(text)?.[0] ?? text;
 }
 
 /** Show me's address for any announced unit: its page, the unit lit, scrolled to its section (`showMeHref`'s shape). */
