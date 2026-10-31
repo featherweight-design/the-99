@@ -10,7 +10,6 @@ const m = vi.hoisted(() => ({
   socialFriendsEnabled: vi.fn(),
   loadTable: vi.fn(),
   loadClosedTable: vi.fn(),
-  howItWorksEnabled: vi.fn(),
 }));
 vi.mock("next/navigation", () => ({
   notFound: () => { throw new Error("NOT_FOUND"); },
@@ -21,7 +20,6 @@ vi.mock("../../../../lib/auth", () => ({ requireUserId: m.requireUserId }));
 vi.mock("../../../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitchEnv }));
 vi.mock("../../../../lib/social/flag", () => ({ socialFriendsEnabled: m.socialFriendsEnabled }));
 vi.mock("../../../../lib/social/rule-zero-table", () => ({ loadTable: m.loadTable, loadClosedTable: m.loadClosedTable }));
-vi.mock("../../../../lib/about/how-it-works-flag", () => ({ howItWorksEnabled: m.howItWorksEnabled }));
 
 import TablePage from "./page";
 import { named } from "../../../../lib/person-name/mint";
@@ -36,7 +34,6 @@ beforeEach(() => {
   m.socialFriendsEnabled.mockReturnValue(true);
   m.loadTable.mockResolvedValue(null);
   m.loadClosedTable.mockResolvedValue(null);
-  m.howItWorksEnabled.mockReturnValue(false);
 });
 
 describe("TablePage", () => {
@@ -67,9 +64,8 @@ describe("TablePage", () => {
     expect(screen.getByText(/Thursday night’s table closed 24 hours after Colin set it/)).toBeInTheDocument();
   });
 
-  it("hands the reader's How it works switch to the read's provenance sheet", async () => {
+  it("draws the method tags on the read's provenance sheet", async () => {
     m.loadTable.mockResolvedValue(TABLES.T1);
-    m.howItWorksEnabled.mockReturnValue(true);
     await page();
     fireEvent.click(screen.getByRole("button", { name: /How we make these decisions/ }));
     const sheet = screen.getByRole("dialog", { name: /How we make these decisions/ });

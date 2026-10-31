@@ -6,7 +6,6 @@ import { ABOUT_AREA_IDS, type AboutArea } from "../../lib/copy/about-pages";
 import { heldAnswer, visibleSections, visitWrite } from "../../lib/about/pages-visible";
 import { aboutSeen, markAboutVisited } from "../../lib/about/read";
 import { switchedIds, visibleEntries } from "../../lib/about/visible";
-import { howItWorksEnabled } from "../../lib/about/how-it-works-flag";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import { HOW_IT_WORKS_ID } from "../../lib/copy/how-it-works-links";
 
@@ -47,10 +46,10 @@ const MAX_SHOWN = 200;
  * The switched ids the Reference's visit records (`?tab=reference`, kept for old bookmarks until PR 7b): the ones the
  * page SHOWED (sent back by the page, so an entry an override turned on after it rendered is not marked seen unread),
  * and of those only the ones this reader's switches still draw now (decided here from the proxy's resolution, so a
- * caller can drop an id but never add one). The appendix by its id, while its switch is on.
+ * caller can drop an id but never add one). The appendix by its id.
  */
 function acknowledged(env: NodeJS.ProcessEnv, shown: readonly unknown[]): string[] {
-  const drawn = new Set([...switchedIds(visibleEntries(env)), ...(howItWorksEnabled(env) ? [HOW_IT_WORKS_ID] : [])]);
+  const drawn = new Set([...switchedIds(visibleEntries(env)), HOW_IT_WORKS_ID]);
   const claimed = shown.slice(0, MAX_SHOWN).filter((id): id is string => typeof id === "string");
   return [...new Set(claimed.filter((id) => drawn.has(id)))];
 }

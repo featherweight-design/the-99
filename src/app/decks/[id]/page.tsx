@@ -79,7 +79,6 @@ import { loadDeckNotices } from "../../../lib/notices/read";
 import { NOTICES_PARAM, readNoticesArrival } from "../../../lib/notices/arrival";
 import { SwapToolsProvider } from "../../../lib/swaps/context";
 import { swapToolsEnabled } from "../../../lib/swaps/flag";
-import { howItWorksEnabled } from "../../../lib/about/how-it-works-flag";
 import { printedNameOf } from "../../../lib/collection/browse";
 import { loadDeckTokens } from "../../../lib/tokens/read";
 import { DeckTokensProvider } from "../../../components/decks/deck-tokens-context";
@@ -774,12 +773,11 @@ export default async function DeckBuilderPage({
       )}
     />
   );
-  // Switches read here and needed several layers down (the decisions sheet's method tags).
+  // Switches read here and needed several layers down.
   // `socialFriends`: the stand-ins modal reads friends' spares from the uncached route (Social R2 PR 8a).
   // `spareAsks`: Shopping's spares modal offers Ask, and the rows draw the ask's mark (spare requests PR 3b).
   const switched = (
     <DeckPageSwitches
-      howItWorks={howItWorksEnabled(env)}
       socialFriends={socialFriendsEnabled(env)}
       spareAsks={socialFriendsEnabled(env)}
     >
