@@ -44,8 +44,10 @@ describe("clientAddress validation", () => {
   it("treats text that is not an IP as absent", () => {
     for (const junk of ["unknown", "abc", "1.2.3", "999.1.1.1", "1.2.3.4, 5.6.7.8", "<script>", "a".repeat(300)]) {
       expect(clientAddress(hdr({ "x-real-ip": junk })), junk).toBeNull();
-      expect(clientAddress(hdr({ "x-forwarded-for": junk })), junk).toBeNull();
+      // A list in x-forwarded-for is the proxy chain: its first hop is the address, so only the other junk is absent.
+      if (!junk.includes(",")) expect(clientAddress(hdr({ "x-forwarded-for": junk })), junk).toBeNull();
     }
+    expect(clientAddress(hdr({ "x-forwarded-for": "1.2.3.4, 5.6.7.8" }))).toBe("1.2.3.4");
     expect(anonKey("not-an-ip", DAY)).toBe(UNKNOWN_KEY);
   });
 
