@@ -58,16 +58,6 @@ export function synopsisPreconContractVersion(v2: boolean): number {
   return synopsisPlayerContractVersion(v2, true);
 }
 
-/**
- * The contract a precon reader falls back to while no contract-13 row exists for a file (lane e7): 12,
- * the stages-less Overview the 180 stored precon rows were written at before PR #2421 moved the request
- * hash. Without the method there is nothing to fall back to. TEMPORARY: remove it, and `pickOverviewRow`'s
- * fallback leg, once the contract-13 batch has run on staging and been copied to production.
- */
-export function synopsisPreconFallbackContract(v2: boolean): number | null {
-  return v2 ? SYNOPSIS_CONTRACT_VERSION_V2_BENCHMARKS : null;
-}
-
 /** The pre-13 contracts: 11 while the v2 method is on, 7 otherwise; 12 and 9 when the interaction
  *  figures are the benchmarks' too. Neither a player's write nor a precon's uses it any more
  *  (`synopsisPlayerContractVersion`, `synopsisPreconContractVersion`); the eval harness does. */

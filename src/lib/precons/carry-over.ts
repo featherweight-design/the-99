@@ -30,9 +30,9 @@ import { holdsIllegalCard } from "../notices/read";
 import { listFingerprint } from "../profile/fingerprint";
 import { readProfileHead } from "../profile/load";
 import { computeAndStoreProfile, isNewestVersion, requestProfileDeps } from "../profile/stored";
-import { synopsisPreconContractVersion, synopsisPreconFallbackContract } from "../synopsis/limits";
+import { synopsisPreconContractVersion } from "../synopsis/limits";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
-import { carryOverDecision, pickOverviewRow } from "./overview";
+import { carryOverDecision } from "./overview";
 
 export type CarryOverResult =
   | { attached: true; synopsisId: string }
@@ -65,18 +65,11 @@ export async function carryOverPreconOverview(deckId: string, userId: string, en
   if (await holdsIllegalCard(deckId, userId)) return { attached: false, reason: "illegal" };
   const v2 = overviewV2Enabled(env);
   const contract = synopsisPreconContractVersion(v2);
-  const fallback = synopsisPreconFallbackContract(v2);
   // At the OWNER's contract AND role basis: the reading's roles reach the prompt, so an Overview built at
   // the other basis is not what this owner's Analyze would write, and none is attached.
   const keyFor = (c: number) => and(eq(preconSynopses.preconFile, deck.precon!), eq(preconSynopses.contractVersion, c), eq(preconSynopses.roleBasis, roleBasisFromEnv(env)));
-  // Until the contract-13 batch has run, a precon with only its contract-12 row carries that one over
-  // (`pickOverviewRow`); the deck's later free rewrite upgrades it.
-  const found = pickOverviewRow(await db.select().from(preconSynopses).where(keyFor(contract)).then(async (own) => [
-    ...own,
-    ...(fallback === null ? [] : await db.select().from(preconSynopses).where(keyFor(fallback))),
-  ]), contract, fallback);
-  const row = found.row;
-  const key = keyFor(row?.contractVersion ?? contract);
+  const [row] = await db.select().from(preconSynopses).where(keyFor(contract));
+  const key = keyFor(contract);
   const decision = carryOverDecision({ analysisTab: true, row: row ?? null, liveFingerprint: list });
   if (!decision.attach) return { attached: false, reason: decision.reason };
 

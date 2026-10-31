@@ -13,12 +13,11 @@ import { cards, preconSynopses } from "../../db/schema";
 import { analysisTabEnabled } from "../decks/analysis-flag";
 import { roleBasisFromEnv } from "../decks/label-counts-flag";
 import { allEvidenceIds } from "../synopsis/based-on";
-import { synopsisPreconContractVersion, synopsisPreconFallbackContract } from "../synopsis/limits";
+import { synopsisPreconContractVersion } from "../synopsis/limits";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
 import type { CheckedSynopsis } from "../synopsis/types";
 import { listFingerprint } from "../profile/fingerprint";
 import { preconDeckCards } from "./deck-cards";
-import { pickOverviewRow } from "./overview";
 
 export type PreconOverview = {
   content: CheckedSynopsis;
@@ -82,12 +81,10 @@ export async function loadPreconOverview(fileName: string, env: NodeJS.ProcessEn
   const { contract, basis } = preconOverviewKey(env);
   const rows = await db.select({ content: preconSynopses.content, current: preconSynopses.current, listFingerprint: preconSynopses.listFingerprint, contractVersion: preconSynopses.contractVersion }).from(preconSynopses).where(and(
     eq(preconSynopses.preconFile, fileName),
-    inArray(preconSynopses.contractVersion, [contract, synopsisPreconFallbackContract(overviewV2Enabled(env)) ?? contract]),
+    eq(preconSynopses.contractVersion, contract),
     eq(preconSynopses.roleBasis, basis),
   ));
-  // The owner's contract-13 row, else (until the batch) the contract-12 one: it draws through the old shape.
-  const { row } = pickOverviewRow(rows, contract, synopsisPreconFallbackContract(overviewV2Enabled(env)));
-  const shown = row ?? null;
+  const shown = rows[0] ?? null;
   if (!showsPreconOverview(shown)) return null;
   const content = shown.content;
   const v2 = overviewV2Enabled(env);
@@ -99,6 +96,6 @@ export async function loadPreconOverview(fileName: string, env: NodeJS.ProcessEn
         .then((rows) => Object.fromEntries(rows.map((r) => [r.oracleId, r.imageUri]))),
     v2 ? evidenceNamesOf(content) : Promise.resolve({}),
   ]);
-  // The shown row's own contract: a contract-12 fallback row draws the old shape.
+  // The shown row's own contract.
   return { content, art, evidenceNames, contractVersion: shown.contractVersion, listFingerprint: shown.listFingerprint };
 }

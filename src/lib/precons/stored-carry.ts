@@ -35,7 +35,7 @@ import { liveOffendingIds } from "../notices/read";
 import { listFingerprint, profileFingerprint } from "../profile/fingerprint";
 import { PROFILE_VERSION } from "../profile/version";
 import { isNewestVersion } from "../profile/stored";
-import { synopsisPreconContractVersion, synopsisPreconFallbackContract } from "../synopsis/limits";
+import { synopsisPreconContractVersion } from "../synopsis/limits";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
 import { carryOverDecision } from "./overview";
 import { preconReadingFresh, readPreconCarry } from "./reading";
@@ -58,11 +58,9 @@ export async function carryStoredOnArrival(deckId: string, userId: string, env: 
   // from a laptop), so every independent read shares one.
   const v2 = overviewV2Enabled(env);
   const contract = synopsisPreconContractVersion(v2);
-  // Until the contract-13 batch exists a precon's contract-12 row stands in (`pickOverviewRow`), reading and all.
-  const fallback = synopsisPreconFallbackContract(v2);
   const [[deck], stored] = await Promise.all([
     arrivalDeckQuery(deckId, userId),
-    readPreconCarry({ deckId, userId }, contract, roleBasisFromEnv(env), db, fallback),
+    readPreconCarry({ deckId, userId }, contract, roleBasisFromEnv(env)),
   ]);
   if (!deck?.precon || deck.hasReading) return { kind: "nothing" };
   const head = { commanderOracleId: deck.commanderOracleId, partnerOracleId: deck.partnerOracleId, cards: deck.cards };
