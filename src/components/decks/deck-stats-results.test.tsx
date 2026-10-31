@@ -45,6 +45,24 @@ describe("DeckStatsView results card", () => {
     expect(first.querySelector("[data-result-bead]")).toHaveAttribute("aria-hidden", "true");
   });
 
+  // Small items 7, addendum 6: no date under a bead; the row is dated once, under its first and last beads.
+  it("dates the row once, under its first and last beads, and draws no date under a bead", () => {
+    draw(six, []);
+    const beads = [...card().querySelectorAll("[data-results-beads] li")];
+    for (const b of beads) {
+      const visible = [...b.querySelectorAll("span")].filter((s) => !s.classList.contains("sr-only") && !s.querySelector(".sr-only"));
+      expect(visible.map((s) => s.textContent).join("")).not.toMatch(/Aug/);
+    }
+    const ends = card().querySelector("[data-results-ends]")!;
+    expect([...ends.children].map((c) => c.textContent)).toEqual(["Aug 1", "Aug 28"]);
+    expect(ends).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("dates a one-game row once", () => {
+    draw([g("win", 28, 1)], []);
+    expect([...card().querySelector("[data-results-ends]")!.children].map((c) => c.textContent)).toEqual(["Aug 28"]);
+  });
+
   it("says the last-five line starts at the sixth game under six games", () => {
     draw(six.slice(1), [v(1, 10)]);
     expect(card().querySelector("[data-results-trend]")).toHaveTextContent("The last-five line starts at the sixth game.");

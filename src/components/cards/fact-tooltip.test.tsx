@@ -67,6 +67,28 @@ describe("FactTooltip", () => {
     await waitFor(() => expect(screen.queryByText(cardMarkCopy.tooltip.massLandDenial)).toBeNull());
   });
 
+  // Small items 7, addendum 6: the Stats bead's date shows "on hover or focus".
+  it("takes a tab stop and opens on focus when `focusable`, and closes on blur", async () => {
+    pointer(true);
+    render(<FactTooltip sentence="L · Oct 9, 2025" focusable><i data-testid="mark" /></FactTooltip>);
+    const wrapper = screen.getByTestId("mark").parentElement!;
+    expect(wrapper).toHaveAttribute("tabindex", "0");
+    fireEvent.focus(wrapper);
+    await waitFor(() => expect(screen.getByText("L · Oct 9, 2025")).toBeTruthy(), { timeout: 2000 });
+    fireEvent.blur(wrapper);
+    await waitFor(() => expect(screen.queryByText("L · Oct 9, 2025")).toBeNull());
+  });
+
+  it("adds no tab stop without `focusable`, or under a coarse pointer", () => {
+    pointer(true);
+    const { unmount } = render(<FactTooltip sentence="x"><i data-testid="mark" /></FactTooltip>);
+    expect(screen.getByTestId("mark").parentElement).not.toHaveAttribute("tabindex");
+    unmount();
+    pointer(false);
+    render(<FactTooltip sentence="x" focusable><i data-testid="mark" /></FactTooltip>);
+    expect(document.querySelector("[tabindex]")).toBeNull();
+  });
+
   it("lists a row's folded marks one per line when given `lines`, and draws nothing under a coarse pointer", async () => {
     pointer(true);
     render(

@@ -98,6 +98,8 @@ export const deckStatsCopy = {
     letters: { win: "W", loss: "L", draw: "D" },
     words: { win: "win", loss: "loss", draw: "draw" },
     bead: (word: string, date: string) => `${word}, ${date}`,
+    // The bead's desktop tooltip, result first (Small items 7, addendum 6): `L · Oct 9, 2025`.
+    beadTip: (letter: string, date: string) => `${letter} · ${date}`,
   },
   money: {
     denom: (n: number) => `${n} ${n === 1 ? "card" : "cards"}`,
