@@ -65,7 +65,7 @@ describe("a switch flipped on", () => {
     process.env.ALL_DECKS_CART_ENABLED = "true";
     const first = line();
     expect(first?.kind).toBe("launches");
-    expect(first?.ids).toContain("shopping/all-decks/cart");
+    expect(first?.ids).toContain("shopping/all-decks/total");
     quiet(await load());
 
     // The reader opens Shopping (Show me lands there), which records that page's keys.
@@ -76,7 +76,7 @@ describe("a switch flipped on", () => {
     process.env.ANALYSIS_TAB_ENABLED = "true";
     const second = line();
     expect(second?.ids.length).toBeGreaterThan(0);
-    expect(second?.ids.some((k) => k.startsWith("shopping/all-decks/cart"))).toBe(false);
+    expect(second?.ids.some((k) => k.startsWith("shopping/all-decks/total"))).toBe(false);
     quiet(await load());
   });
 });

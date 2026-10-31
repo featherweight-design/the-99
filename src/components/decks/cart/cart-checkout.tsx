@@ -38,6 +38,8 @@ export function CartCheckout({
   ].join(" · ");
   return (
     <div
+      // About's label 1 on the cart's capture is boxed on this (`scripts/lib/about-locators.mjs`).
+      data-cart-checkout
       className="flex flex-col gap-[5px] rounded-[9px] border border-[color:var(--border)] px-[13px] pt-[10px] pb-0"
       style={{ background: "var(--surface-sunken)" }}
     >

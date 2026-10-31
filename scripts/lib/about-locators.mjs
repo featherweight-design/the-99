@@ -364,7 +364,6 @@ export const ABOUT_REGIONS = {
     "d-decks2",
     "[role='tablist'][aria-label='Show decks as'] [role='tab']:has-text('Stats')",
   ),
-  "shopping/all-decks/cart": both("p-decks", "d-decks2", "a[href='/decks/shopping']:visible >> nth=0"),
 
   // ---- decks: a deck's Your deck. The TOP shot leads with the to-do card (its commit row), the Recommended mix and
   // the toolbar's Lock cards; the LIST shot with the rows. ------------------------------------------------------------
@@ -416,6 +415,14 @@ export const ABOUT_REGIONS = {
     "[data-testid='other-ways']:has([data-testid='spare-glyph']) >> nth=0",
   ),
   "shopping/deck-shopping/buy": both("p-deck-shopping", "d-shopping", "button[aria-label^='Bought '] >> nth=0"),
+
+  // ---- shopping: Shopping for all decks, the cart itself in By friend (Small items 7, item 6) ------------------------
+  "shopping/all-decks/total": both("p-cart", "d-cart", "[data-cart-checkout]:visible >> nth=0"),
+  "shopping/all-decks/decks": both("p-cart", "d-cart", "[data-cart-decks]:visible >> nth=0"),
+  "shopping/all-decks/views": both("p-cart", "d-cart", "[role='radiogroup'][aria-label='View']:visible >> nth=0"),
+  // The first line whose friend can still be asked (the board's first Ask, Chris's Lightning Greaves).
+  "shopping/all-decks/ask": both("p-cart", "d-cart", "[data-friend-line][data-ask='ask'] [data-cart-ask]:visible >> nth=0"),
+  "shopping/all-decks/buy": both("p-cart", "d-cart", "[data-cart-row] button[aria-label^='Bought ']:visible >> nth=0"),
 
   // ---- friends -----------------------------------------------------------------------------------------------------
   "friends/friends/face": both("p-friends", "d-friends", "[data-face-button]:visible >> nth=0"),

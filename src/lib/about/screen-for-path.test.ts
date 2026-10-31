@@ -18,6 +18,7 @@ const PATHS: Record<Exclude<AboutScreen, "account">, [string, string?]> = {
   "new-deck": ["/decks/new"],
   decks: ["/decks"],
   deck: ["/decks/0b6c2f4e-1111-4222-8333-444455556666"],
+  cart: ["/decks/shopping"],
   friends: ["/friends"],
   credits: ["/credits"],
   settings: ["/settings"],
@@ -78,10 +79,14 @@ describe("screenForPath", () => {
     expect(screenForPath("/decks/precons/some-file")).toBe("new-deck");
     expect(screenForPath("/decks/import")).toBe("new-deck");
     expect(screenForPath("/collection/")).toBe("collection");
+    // The all-decks cart's views and its deck link are one screen (Small items 7, item 6).
+    expect(screenForPath("/decks/shopping", "?view=friend")).toBe("cart");
+    expect(screenForPath("/decks/shopping", "?deck=0b6c2f4e-1111-4222-8333-444455556666")).toBe("cart");
+    expect(screenForPath("/decks/shopping/")).toBe("cart");
   });
 
   it("answers null for a page no entry lives on (G21)", () => {
-    for (const p of ["/decks/shopping", "/about", "/admin", "/decks/abc/changes", "/decks/abc/import", "/lab/scan", "/collection/elsewhere"]) {
+    for (const p of ["/about", "/admin", "/decks/abc/changes", "/decks/abc/import", "/lab/scan", "/collection/elsewhere"]) {
       expect(screenForPath(p), p).toBeNull();
     }
   });

@@ -93,7 +93,7 @@ export type AboutWidth = 'inset' | 'plate';
  */
 export const ABOUT_SCREENS = [
   'home', 'collection', 'card-details', 'sets', 'proxies', 'history', 'wishlist', 'upload', 'commanders', 'discover',
-  'new-deck', 'decks', 'deck', 'friends', 'account', 'settings', 'credits',
+  'new-deck', 'decks', 'deck', 'cart', 'friends', 'account', 'settings', 'credits',
 ] as const;
 export type AboutScreen = (typeof ABOUT_SCREENS)[number];
 

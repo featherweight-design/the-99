@@ -414,11 +414,15 @@ describe("a section's sub-line", () => {
   const sentencesOf = (text: string) => text.split(/(?<=[.?])\s+/).filter(Boolean);
 
   it("draws one or two sentences under every combination of the switches its sentences name (Small items 3, item 4)", () => {
+    // A section whose screen is reached from another names that way in as one more sentence (Small items 7, item 6:
+    // Shopping for all decks ends "Open it from Decks with Shop all decks.").
+    const WAY_IN: Record<string, string> = { "all-decks": " Open it from Decks with Shop all decks." };
     for (const sec of ABOUT_SECTIONS) {
       const names = [...new Set(Object.values(sec.subSentences ?? {}).flatMap(named))];
       for (let mask = 0; mask < 2 ** names.length; mask++) {
         const e = off(...names.filter((_, i) => mask & (1 << i)));
-        const n = sentencesOf(sub(e, sec.id)).length;
+        const way = WAY_IN[sec.id];
+        const n = sentencesOf(way ? sub(e, sec.id).replace(way.trim(), "") : sub(e, sec.id)).length;
         expect(n, `${sec.id} ${mask}`).toBeGreaterThanOrEqual(1);
         expect(n, `${sec.id} ${mask}`).toBeLessThanOrEqual(2);
       }

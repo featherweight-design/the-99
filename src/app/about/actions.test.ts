@@ -67,13 +67,13 @@ describe("recordAboutPageVisit (About visual PR 6b)", () => {
     resolved.env = { ALL_DECKS_CART_ENABLED: "true" };
     await recordAboutPageVisit("shopping", rendered("shopping", resolved.env));
     expect(requestSwitchEnv).toHaveBeenCalledWith("user_1");
-    expect((markAboutVisited.mock.calls[0] as unknown as [string, number, string[]])[2]).toContain("shopping/all-decks/cart");
+    expect((markAboutVisited.mock.calls[0] as unknown as [string, number, string[]])[2]).toContain("shopping/all-decks/total");
     markAboutVisited.mockClear();
     // Rendered with it on, switched off for the reader before the visit: the key is not written.
     const withCart = rendered("shopping", { ALL_DECKS_CART_ENABLED: "true" });
     resolved.env = {};
     await recordAboutPageVisit("shopping", withCart);
-    expect((markAboutVisited.mock.calls[0] as unknown as [string, number, string[]])[2]).not.toContain("shopping/all-decks/cart");
+    expect((markAboutVisited.mock.calls[0] as unknown as [string, number, string[]])[2]).not.toContain("shopping/all-decks/total");
   });
 
   it("takes a first-run reader's first visit as their whole baseline: the floor and every page's keys", async () => {
@@ -91,8 +91,8 @@ describe("recordAboutPageVisit (About visual PR 6b)", () => {
     await recordAboutPageVisit("shopping", claim);
     const [, version, ids] = markAboutVisited.mock.calls[0] as unknown as [string, number, string[]];
     expect(version).toBe(9);
-    expect(ids).not.toContain("shopping/all-decks/cart");
-    expect(unseenUnits(visibleSections(envViewWith(resolved.env)), { version, ids }).map((u) => u.key)).toContain("shopping/all-decks/cart");
+    expect(ids).not.toContain("shopping/all-decks/total");
+    expect(unseenUnits(visibleSections(envViewWith(resolved.env)), { version, ids }).map((u) => u.key)).toContain("shopping/all-decks/total");
   });
 
   it("writes only what the page rendered: a first-run baseline does not take a unit switched on after the render", async () => {
@@ -101,9 +101,9 @@ describe("recordAboutPageVisit (About visual PR 6b)", () => {
     resolved.env = { ALL_DECKS_CART_ENABLED: "true" };
     await recordAboutPageVisit("home", claim);
     const [, version, ids] = markAboutVisited.mock.calls[0] as unknown as [string, number, string[]];
-    expect(ids).not.toContain("shopping/all-decks/cart");
+    expect(ids).not.toContain("shopping/all-decks/total");
     expect(new Set(ids)).toEqual(new Set(everyAnnouncement(visibleSections(envViewWith({}))).flatMap((u) => u.ack)));
-    expect(unseenUnits(visibleSections(envViewWith(resolved.env)), { version, ids }).map((u) => u.key)).toContain("shopping/all-decks/cart");
+    expect(unseenUnits(visibleSections(envViewWith(resolved.env)), { version, ids }).map((u) => u.key)).toContain("shopping/all-decks/total");
   });
 
   // Review round 6: both paths answer from the state the reader is left at, so a floor or legacy id another tab wrote
@@ -153,7 +153,7 @@ describe("recordAboutVisit (R6)", () => {
     const confirmed = await recordAboutVisit(["all-decks-cart"]);
     expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, ["all-decks-cart"]);
     expect(confirmed).toContain("all-decks-cart");
-    expect(confirmed).toContain("shopping/all-decks/cart");
+    expect(confirmed).toContain("shopping/all-decks/total");
     expect(confirmed).toContain("home/home/in-use");
   });
 
@@ -163,7 +163,7 @@ describe("recordAboutVisit (R6)", () => {
     const confirmed = await recordAboutVisit(["all-decks-cart"]);
     expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, []);
     expect(confirmed).not.toContain("all-decks-cart");
-    expect(confirmed).not.toContain("shopping/all-decks/cart");
+    expect(confirmed).not.toContain("shopping/all-decks/total");
   });
 
   it("records the current version and the switched entries the page showed", async () => {
