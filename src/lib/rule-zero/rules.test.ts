@@ -266,6 +266,10 @@ describe("tableClosesAt", () => {
     expect(tableClosesAt(at("2026-10-31T12:50:00Z"), LA).toISOString()).toBe("2026-11-01T14:00:00.000Z");
   });
 
+  it("refuses an invalid date rather than looping", () => {
+    expect(() => tableClosesAt(new Date(Number.NaN), LA)).toThrow(RangeError);
+  });
+
   it("judges an unknown zone as UTC", () => {
     expect(tableClosesAt(at("2026-10-31T00:00:00Z"), "Not/AZone").toISOString()).toBe("2026-10-31T06:00:00.000Z");
   });

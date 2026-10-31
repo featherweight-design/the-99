@@ -260,6 +260,7 @@ export const MIN_OPEN_HOURS = 4;
  * An unknown zone is judged as UTC.
  */
 export function tableClosesAt(setAt: Date, timeZone: string): Date {
+  if (Number.isNaN(setAt.getTime())) throw new RangeError("tableClosesAt: invalid date");
   const zone = validTimeZone(timeZone) ? timeZone : "UTC";
   const earliest = new Date(setAt.getTime() + MIN_OPEN_HOURS * 3_600_000);
   const w = wall(earliest, zone);

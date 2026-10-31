@@ -74,7 +74,7 @@ describe("on", () => {
     expect(await setTableAction("p", SEATS)).toEqual({ ok: false, reason: "occupied" });
     m.setTable.mockResolvedValueOnce({ kind: "refused", reason: "deck" });
     expect(await setTableAction("p", SEATS)).toEqual({ ok: false, reason: "refused" });
-    expect(m.setTable).toHaveBeenCalledWith("user_reader", "p", SEATS);
+    expect(m.setTable).toHaveBeenCalledWith("user_reader", "p", SEATS, "UTC");
   });
 
   it("maps reseatTable, and revalidates only a reseat that landed", async () => {
