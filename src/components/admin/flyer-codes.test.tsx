@@ -260,7 +260,9 @@ describe("the launch date row", () => {
   });
 
   it("alerts the same way when the reply is lost", async () => {
-    setLaunchDate.mockRejectedValue(new Error("network"));
+    setLaunchDate.mockImplementation(async () => {
+      throw new Error("network");
+    });
     render(<FlyerCodes view={withDate(null)} />);
     fireEvent.change(dateInput(), { target: { value: "2026-11-20" } });
     fireEvent.click(screen.getByTestId("launch-date-save"));
