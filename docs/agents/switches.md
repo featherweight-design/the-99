@@ -8,8 +8,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   literal `off` wins outright (the KILL SWITCH: no override can raise it, so a bad override is always beaten by a
   redeploy), then the account's override, then its group's (OFF wins if two apply), then app-wide, then the variable.
   A `plumbing` switch (`LIST_CACHE_ENABLED`, `RATE_LIMIT_ENABLED`, `LABEL_ROLE_COUNTS_ENABLED`, the role basis
-  scores are counted by, and since admin PR 8a `HOW_IT_WORKS_ENABLED`, by Design's answer
-  to the brief's open question 2; `ABOUT_SHEET_ENABLED` was one until About visual PR 6b retired it with the sheet)
+  scores are counted by; `ABOUT_SHEET_ENABLED` was one until About visual PR 6b retired it with the sheet)
   takes the app-wide override alone. A compound switch names its parent as `needs`
   in the registry, and a switch is tagged `model` exactly when turning it on can let a reader spend (the Analysis
   tab and Swap tools are parents of spending switches); `src/lib/switches/flags.test.ts` holds both to the flag

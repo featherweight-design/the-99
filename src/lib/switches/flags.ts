@@ -1,4 +1,3 @@
-import { howItWorksEnabled } from "../about/how-it-works-flag";
 import { announcementsEnabled } from "../announcements/flag";
 import { listCacheEnabled } from "../cache/list-cache-flag";
 import { allDecksCartEnabled } from "../decks/all-decks-cart-flag";
@@ -33,7 +32,8 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   FIND_A_DECK_READ_ENABLED: findADeckReadEnabled,
   HELP_ME_CHOOSE_ENABLED: helpMeChooseEnabled,
   FLYER_TRIAL_ENABLED: flyerTrialEnabled,
-  HOW_IT_WORKS_ENABLED: howItWorksEnabled,
+  // Retired (always on): the admin reports what every reader sees until the switch is deleted.
+  HOW_IT_WORKS_ENABLED: () => true,
   LABEL_ROLE_COUNTS_ENABLED: labelRoleCountsEnabled,
   LIST_CACHE_ENABLED: listCacheEnabled,
   MANA_BALANCE_ENABLED: manaBalanceEnabled,
