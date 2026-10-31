@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  formatCapCents,
   PRICE_STALE_AFTER_DAYS,
   formatCents,
   formatPriceFigure,
@@ -206,3 +207,11 @@ describe("priceRank", () => {
 });
 
 
+
+describe("formatCapCents", () => {
+  it("drops the cents on a whole-dollar cap, grouping thousands, and keeps them otherwise", () => {
+    expect(formatCapCents(200)).toBe("$2");
+    expect(formatCapCents(100000)).toBe("$1,000");
+    expect(formatCapCents(250)).toBe("$2.50");
+  });
+});

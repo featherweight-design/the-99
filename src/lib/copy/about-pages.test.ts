@@ -196,7 +196,7 @@ describe("about pages copy model", () => {
     const byName = Object.fromEntries(rows.map((r) => [r.name, r]));
     expect(byName["Came back empty-handed"].switch).toBe("!SUGGESTED_CHANGES_V2_ENABLED");
     expect(byName["Came back short or empty"]).toMatchObject({ switch: "SUGGESTED_CHANGES_V2_ENABLED", dim: true, tag: { text: "credit back", tone: "success" } });
-    expect(byName["Short by your price cap"]).toMatchObject({ switch: "SUGGESTED_CHANGES_V2_ENABLED", dim: true, tag: { text: "1 credit", tone: "accent" } });
+    expect(byName["Short by your price cap"]).toMatchObject({ switch: "SUGGESTED_CHANGES_V2_ENABLED", dim: true, tag: { text: "1 or 2 credits", tone: "accent" } });
   });
 
   it("puts every row in one column 250px wide or more, never beside another column (Small items 3, item 1)", () => {
