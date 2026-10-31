@@ -46,7 +46,6 @@ function resolveImport(fromFile, spec) {
   return null;
 }
 
-/** Value imports only: an `import type` brings in no query. */
 /**
  * Every module this source takes a VALUE from: a value import, or a value re-export
  * (`export { x } from`, `export * from`), since a barrel re-exporting a reader is as much a path to
@@ -55,7 +54,7 @@ function resolveImport(fromFile, spec) {
 export function importsOf(source) {
   const named = [...source.matchAll(/^[ \t]*(?:import|export)\s+(?!type\s)[^;]*?from\s+["']([^"']+)["']/gms)].map((m) => m[1]);
   // A bare side-effect import (`import "../social/access"`) runs the module's top level, so it is an edge too.
-  const bare = [...source.matchAll(/^[ \t]*import\s+["']([^"']+)["']/gm)].map((m) => m[1]);
+  const bare = [...source.matchAll(/^[ \t]*import\s+["']([^"']+)["']/gm)].map((m) => m[1]).filter((spec) => !/\.(css|svg|png|jpe?g|webp|json)$/.test(spec));
   return [...named, ...bare];
 }
 

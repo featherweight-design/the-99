@@ -12,26 +12,32 @@ import { dirname, join, resolve } from "node:path";
 const SOURCE_FILE = /\.tsx?$/;
 const TEST_FILE = /\.test\.tsx?$/;
 
-export const hasUseClient = (source) => /^\s*["']use client["']/m.test(source);
+/** A directive is the file's first statement, after any comments: a string literal further down is not one. */
+const directive = (name) => new RegExp(`^(?:\\s|//[^\\n]*\\n|/\\*[\\s\\S]*?\\*/)*["']${name}["']`);
+export const hasUseClient = (source) => directive("use client").test(source);
+const hasUseServer = (source) => directive("use server").test(source);
 
-/** A name a server may import from a client module: PascalCase with a lowercase letter, so `HomeView` yes, `HOME_ROWS` and `useThing` no. */
+/** A name a server may import from a client module: PascalCase with a lowercase letter, so `HomeView` yes, `HOME_ROWS` and `useThing` no. A name heuristic: a PascalCase non-component (a context, a class) passes, which is the guard's known gap. Dynamic `import()` edges are not followed either. */
 export const isComponentName = (name) => /^[A-Z][A-Za-z0-9]*$/.test(name) && /[a-z]/.test(name);
 
 /**
  * Every value binding this source takes from a first-party specifier, with its imported name: a default import
  * is named by its local name (the module's own name for it is not visible here), `{ a as b }` by `a`. A
- * type-only import or binding is left out, as is a namespace import (nothing in it is named).
+ * type-only import or binding is left out. A namespace import or `export *` yields name `*`: no name to check, but the walk still follows it.
  * @returns {{ spec: string, name: string }[]}
  */
 export function valueBindings(source) {
   const out = [];
-  const pattern = /^[ \t]*(import|export)\s+(type\s+)?([^"';]*?)\s*from\s+["']([^"']+)["']/gms;
-  for (const [, , typeKeyword, clause, spec] of source.matchAll(pattern)) {
-    if (typeKeyword || (!spec.startsWith(".") && !spec.startsWith("@/"))) continue;
-    const trimmed = clause.trim();
-    if (trimmed.startsWith("*")) continue;
+  // `export` only counts as `export {…}` or `export *`, so a semicolon-less `export const a = 1` cannot fuse with the next import.
+  const pattern = /^[ \t]*(?:import\s+(type\s+)?([^"';]*?)|export\s+(type\s+)?(\{[^}]*\}|\*(?:\s+as\s+\w+)?))\s*from\s+["']([^"']+)["']/gms;
+  for (const [, importType, importClause, exportType, exportClause, spec] of source.matchAll(pattern)) {
+    if (importType || exportType || (!spec.startsWith(".") && !spec.startsWith("@/"))) continue;
+    const trimmed = (importClause ?? exportClause).trim();
+    // A namespace names nothing to check; the edge is still followed (`edges`).
+    if (trimmed.startsWith("*")) { out.push({ spec, name: "*" }); continue; }
     const named = /\{([^}]*)\}/.exec(trimmed);
-    const defaultName = trimmed.replace(/\{[^}]*\}/, "").replace(/,/g, "").trim();
+    const defaultName = trimmed.replace(/\{[^}]*\}/, "").replace(/,?\s*\*\s+as\s+\w+/, "").replace(/,/g, "").trim();
+    if (/\*\s+as\s/.test(trimmed)) out.push({ spec, name: "*" });
     if (defaultName) out.push({ spec, name: defaultName });
     for (const binding of (named?.[1] ?? "").split(",").map((b) => b.trim()).filter(Boolean)) {
       if (binding.startsWith("type ")) continue;
@@ -60,8 +66,8 @@ function sourceFiles(dir) {
 }
 
 /** Next's server entry points under `src/app`, plus the request proxy: where a server module graph starts. */
-const ENTRY = /(^|\/)(src\/app\/.*(page|layout|route|loading|error|not-found|template|default|global-error|robots|manifest|sitemap|icon|apple-icon|opengraph-image|twitter-image)\.tsx?|src\/(proxy|middleware|instrumentation)\.ts)$/;
-const isEntry = (root, file, source) => ENTRY.test(file.slice(root.length + 1)) || /^\s*["']use server["']/m.test(source);
+const ENTRY = /(^|\/)(src\/app\/(.*\/)?(page|layout|route|loading|error|not-found|template|default|global-error|robots|manifest|sitemap|icon|apple-icon|opengraph-image|twitter-image)\.tsx?|src\/(proxy|middleware|instrumentation)\.ts)$/;
+const isEntry = (root, file, source) => ENTRY.test(file.slice(root.length + 1)) || hasUseServer(source);
 
 /**
  * Findings across a tree: a module the server can reach without crossing a client boundary (from a page, layout,
@@ -87,7 +93,7 @@ export function clientValueFindings(root = process.cwd(), files = null) {
       const next = target(file, spec);
       if (!next || !sources.has(next)) continue;
       if (clientFiles.has(next)) {
-        if (!isComponentName(name)) findings.push({ path: file.startsWith(root) ? file.slice(root.length + 1) : file, name, from: spec });
+        if (name !== "*" && !isComponentName(name)) findings.push({ path: file.startsWith(root) ? file.slice(root.length + 1) : file, name, from: spec });
       } else stack.push(next);
     }
   }
