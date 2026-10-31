@@ -4,7 +4,7 @@ import { playerText } from "../model/player-text";
 import type { MixRole } from "../decks/mix";
 import { cutsAsk, cutsNamed } from "./cuts-ask";
 import type { BracketFlag, CardCutFacts, CutFacts, MissingSignal, RoleFact } from "./cuts";
-import type { ComboFact, NearComboFact } from "../synopsis/facts-extra";
+import type { ComboFact, ComboPieceState, NearComboFact } from "../synopsis/facts-extra";
 
 /**
  * The evidence a Proposed cuts call is built from. Pure and client-safe. The facts are passed
@@ -25,6 +25,12 @@ export type CutsPlan = {
   combos: ComboFact[] | null;
   /** The ones it is exactly one card short of. */
   nearCombos: NearComboFact[] | null;
+  /**
+   * Every card the deck holds that is a piece of a combo it assembles or is one card short of, by
+   * oracle id, read before the two lists above are capped. Null when the read failed. The lists
+   * are what the prompt names; this is what a card's combo state is checked against.
+   */
+  comboPieces: ReadonlyMap<string, ComboPieceState> | null;
   /** The commander's (and partner's) own text, "Name: text", for the engine it asks the deck to run. */
   commanderText: string[];
   /** Nonland cards in the 99 whose mana cost needs each colour, most first. */
@@ -50,8 +56,8 @@ export type CutsPackCard = {
   opensGap?: MixRole;
   curve?: { cmc: number; have: number; average: number };
   flags?: BracketFlag[];
-  /** Set when the card is a piece of a combo in `plan`: assembled, or the pieces held of one that is a card short. */
-  comboState?: "assembled" | "oneShort";
+  /** Set when the card is a piece of a combo the deck assembles, or a held piece of one a card short: from `plan.comboPieces`, so a combo the lists' cap left out still counts. */
+  comboState?: ComboPieceState;
   /** A land that enters tapped: always, or only under a condition (a check land, a fast land). */
   entersTapped?: "always" | "sometimes";
   /** The colours the card's mana cost asks for. */
@@ -93,10 +99,10 @@ export function landEntersTapped(typeLine: string, text: string | undefined): "a
   return unconditional ? "always" : "sometimes";
 }
 
-function packCard(c: CardCutFacts, text: string | undefined, plan: CutsPlan | null, comboCards: ReadonlyMap<string, "assembled" | "oneShort">): CutsPackCard {
+function packCard(c: CardCutFacts, text: string | undefined, plan: CutsPlan | null): CutsPackCard {
   const tapped = landEntersTapped(c.typeLine, text);
   const needs = plan?.needs.get(c.oracleId);
-  const comboState = plan ? comboCards.get(normalizeName(c.name)) : undefined;
+  const comboState = plan?.comboPieces?.get(c.oracleId);
   return {
     oracleId: c.oracleId,
     name: c.name,
@@ -116,15 +122,6 @@ function packCard(c: CardCutFacts, text: string | undefined, plan: CutsPlan | nu
   };
 }
 
-/** Each combo piece the deck holds, by normalized name: assembled wins over one short. */
-function comboPieces(plan: CutsPlan | null): Map<string, "assembled" | "oneShort"> {
-  const out = new Map<string, "assembled" | "oneShort">();
-  if (!plan) return out;
-  for (const n of plan.nearCombos ?? []) for (const p of n.have.split(" + ")) out.set(normalizeName(p), "oneShort");
-  for (const c of plan.combos ?? []) for (const p of c.pieces) out.set(normalizeName(p), "assembled");
-  return out;
-}
-
 export function buildCutsPack(input: {
   facts: CutFacts;
   commanderName: string;
@@ -137,7 +134,6 @@ export function buildCutsPack(input: {
 }): CutsPack {
   const { facts, commanderName, keyCards, intent, texts } = input;
   const plan = input.plan ?? null;
-  const comboCards = comboPieces(plan);
   // Resolved as the overview's own validator resolves a Key card: case, spacing and curly quotes
   // folded, and a face answering for its card unless two cards share it.
   const byName = deckNameIndex(facts.cards);
@@ -158,7 +154,7 @@ export function buildCutsPack(input: {
     roles: facts.roles,
     curve: facts.curve ? facts.curve.map((b) => ({ cmc: b.cmc, have: b.have, average: round1(b.average) })) : null,
     brackets: facts.brackets.map((b) => ({ flag: b.flag, cards: b.cards.map((c) => c.name) })),
-    cards: facts.cards.map((c) => packCard(c, texts?.get(c.oracleId), plan, comboCards)),
+    cards: facts.cards.map((c) => packCard(c, texts?.get(c.oracleId), plan)),
     plan,
   };
 }

@@ -22,7 +22,7 @@ describe("buildCutsPrompt", () => {
     expect(user).not.toMatch(/- cmc 7: have/);
   });
 
-  it("has its own version", () => expect(CUTS_PROMPT_VERSION).toBe(5));
+  it("has its own version", () => expect(CUTS_PROMPT_VERSION).toBe(6));
 
   it("asks for three more cuts than the deck needs, says how many it needs, and carries the player-text rule and the cite rules", () => {
     const { system } = build();
@@ -72,6 +72,7 @@ describe("the plan in the prompt (v2)", () => {
     nearCombos: [{ have: "bear3", missing: "Elsewhere", produces: ["Infinite turns"] }],
     commanderText: ["Gishath: Vigilance"], colourNeeds: [{ colour: "G", cards: 50 }], basics: [{ type: "Forest", count: 37 }],
     needs: new Map([["bear1", ["G"]]]),
+    comboPieces: new Map([["bear1", "assembled"], ["bear2", "assembled"], ["bear3", "oneShort"]] as const),
   };
   const withPlan = () => buildCutsPrompt(buildCutsPack({
     facts: cutFacts({ profile: profile(), locked: new Set(), support: null, declaredBracket: null }),
@@ -125,13 +126,14 @@ describe("the plan in the prompt (v2)", () => {
     expect(near.system).not.toContain("run this again");
   });
 
-  it("tells the model a capped combo list may omit pieces, and says nothing of it under the cap", () => {
+  it("tells the model a capped combo list names only the leading combos, and says nothing of it under the cap", () => {
     const capped = buildCutsPrompt(buildCutsPack({
       facts: cutFacts({ profile: profile(), locked: new Set(), support: null, declaredBracket: null }),
       commanderName: "Gishath", keyCards: [], intent: null, plan: { ...plan, combos: Array.from({ length: 6 }, () => plan.combos[0]) },
     }));
-    expect(capped.user).toContain("never cite combo state none");
-    expect(withPlan().user).not.toContain("never cite combo state none");
+    expect(capped.user).toContain("These combo lists are capped and name only the leading combos.");
+    expect(capped.user).not.toContain("never cite combo state none");
+    expect(withPlan().user).not.toContain("These combo lists are capped");
   });
 
   it("drops the combo and colour cites and the plan wording when no plan was read", () => {
@@ -160,15 +162,15 @@ describe("the plan in the prompt (v2)", () => {
     expect(short.user).not.toContain("turned up");
   });
 
-  it("scopes the combo none cite to the plan's lists, not to the deck's synergy", () => {
-    expect(withPlan().system).toContain("none for a card in no combo the plan lists");
+  it("scopes the combo none cite to the card's own line, not to the deck's synergy", () => {
+    expect(withPlan().system).toContain("none for a card whose line names no combo");
     expect(withPlan().system).toContain("not about the deck's synergy");
   });
 
   it("says so when the combo read failed, and omits the whole plan block when none was given", () => {
     const failed = buildCutsPrompt(buildCutsPack({
       facts: cutFacts({ profile: profile(), locked: new Set(), support: null, declaredBracket: null }),
-      commanderName: "Gishath", keyCards: [], intent: null, plan: { ...plan, combos: null, nearCombos: null },
+      commanderName: "Gishath", keyCards: [], intent: null, plan: { ...plan, combos: null, nearCombos: null, comboPieces: null },
     }));
     expect(failed.user).toContain("The combo read failed");
     expect(build().user).not.toContain("The deck's plan.");

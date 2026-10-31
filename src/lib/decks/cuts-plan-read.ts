@@ -64,6 +64,7 @@ export async function readCutsPlan(
     // A mandatory loop is a risk, never the plan: its pieces are not protected from the cuts.
     combos: combos?.combos.filter((c) => !isMandatoryLoop(c.produces)) ?? null,
     nearCombos: combos?.nearCombos ?? null,
+    comboPieces: combos?.pieces ?? null,
     commanderText,
     colourNeeds: COLOURS.flatMap((colour) => (counts.has(colour) ? [{ colour, cards: counts.get(colour)! }] : [])).sort((a, b) => b.cards - a.cards),
     basics: BASIC_TYPES.flatMap((type) => (basics.has(type) ? [{ type, count: basics.get(type)! }] : [])),

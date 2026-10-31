@@ -8,8 +8,10 @@ import type { CutsPack, CutsPackCard } from "./cuts-evidence";
  * Its own version, apart from Suggested changes' `PROMPT_VERSION`. 4 (2026-10-12, model tiering): no
  * wording change; the model moved to Sonnet 5.5, so a deck with a run stored at 3 reopens the gate.
  * 5 (2026-10-27, small items R1b): a run names three more cuts than the deck needs, and the player chooses.
+ * 6 (2026-10-31): a card's combo state comes from every combo the deck holds, not only the capped
+ * lists, and a capped list no longer forbids `none`: a card whose line names no combo is in none.
  */
-export const CUTS_PROMPT_VERSION = 5;
+export const CUTS_PROMPT_VERSION = 6;
 
 /** The last curve bucket holds that mana value and above, so it reads `7+`; a cite still uses 7. */
 const bucket = (cmc: number) => (cmc >= CURVE_MAX ? `${cmc}+` : `${cmc}`);
@@ -57,7 +59,7 @@ export function buildCutsPrompt(pack: CutsPack): { system: string; user: string 
       lines.push(...plan.combos.map((c) => `- ${c.pieces.join(" + ")} -> ${c.produces.join(", ")}${c.manaNeeded === null ? "" : `, mana needed ${c.manaNeeded}`}${c.usesCommander ? ", uses the commander" : ""}`));
     }
     if ((plan.combos?.length ?? 0) >= MAX_COMBO_FACTS || (plan.nearCombos?.length ?? 0) >= MAX_NEAR_COMBO_FACTS) {
-      lines.push("These combo lists are capped and may omit combos, so never cite combo state none.");
+      lines.push("These combo lists are capped and name only the leading combos. Each card's own line says whether it is a piece of a combo, listed here or not.");
     }
     if (plan.nearCombos !== null && plan.nearCombos.length > 0) {
       lines.push("Combos one card short:", ...plan.nearCombos.map((n) => `- has ${n.have}, lacks ${n.missing} -> ${n.produces.join(", ")}`));

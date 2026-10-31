@@ -107,6 +107,8 @@ describe("the plan on the pack", () => {
     nearCombos: [{ have: "bear3", missing: "Elsewhere", produces: ["Infinite mana"] }],
     commanderText: ["Gishath: Vigilance"], colourNeeds: [{ colour: "G", cards: 50 }], basics: [{ type: "Forest", count: 37 }],
     needs: new Map([["bear1", ["G"]]]),
+    // bear5 is a piece of a near combo the capped list left out.
+    comboPieces: new Map([["bear1", "assembled"], ["bear2", "assembled"], ["bear3", "oneShort"], ["bear5", "oneShort"]] as const),
   };
   const withPlan = buildCutsPack({
     facts: cutFacts({ profile: profile(), locked: new Set(), support: null, declaredBracket: null }),
@@ -116,6 +118,7 @@ describe("the plan on the pack", () => {
     const by = (id: string) => withPlan.cards.find((c) => c.oracleId === id)!;
     expect(by("bear1")).toMatchObject({ comboState: "assembled", needs: ["G"] });
     expect(by("bear3").comboState).toBe("oneShort");
+    expect(by("bear5").comboState).toBe("oneShort");
     expect(by("bear4").comboState).toBeUndefined();
   });
   it("carries no plan, and marks no card, when the caller supplied none", () => {

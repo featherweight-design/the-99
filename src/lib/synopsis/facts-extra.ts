@@ -49,6 +49,9 @@ export type InteractionCounts = {
 
 export const MAX_COMBO_FACTS = 6;
 export const MAX_NEAR_COMBO_FACTS = 3;
+
+/** Whether a card the deck holds is a piece of a combo it assembles, or of one it is a card short of. */
+export type ComboPieceState = "assembled" | "oneShort";
 export const CHEAP_MANA_VALUE = 2;
 
 /**

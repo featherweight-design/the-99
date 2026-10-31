@@ -122,7 +122,7 @@ describe("validateCuts", () => {
       expect(r.kept).toHaveLength(1);
       expect(r.kept[0].cites).toEqual([OFF]);
       expect(r.kept[0].reason).toBe(deckCutsCopy.unchecked);
-      expect(r.report.softened).toEqual([{ position: 0, name: r.kept[0].name, rule: "citeMismatch", cite: "inclusion" }]);
+      expect(r.report.softened).toEqual([{ position: 0, name: r.kept[0].name, rule: "citeMismatch", cite: "inclusion", failed: { kind: "inclusion", pct: 5 } }]);
     });
 
     it("a cut with no cite that held shows the card's own counts, never the claim", () => {
@@ -189,6 +189,7 @@ describe("the plan cites (prompt v2)", () => {
     nearCombos: [{ have: "bear5", missing: "Elsewhere", produces: ["Infinite mana"] }],
     commanderText: [], colourNeeds: [{ colour: "G", cards: 40 }], basics: [],
     needs: new Map([["bear1", ["G"]], ["bear2", ["G"]]]),
+    comboPieces: new Map<string, "assembled" | "oneShort">([["bear1", "assembled"], ["bear3", "assembled"], ["bear5", "oneShort"]]),
   };
   const withPlan = (p: typeof plan | null = plan): CutsPack =>
     buildCutsPack({
@@ -207,15 +208,36 @@ describe("the plan cites (prompt v2)", () => {
   });
 
   it("refuses 'in no combo' when the combo read failed or there was no plan", () => {
-    const failed = withPlan({ ...plan, combos: null as never });
+    const failed = withPlan({ ...plan, combos: null as never, nearCombos: null as never, comboPieces: null as never });
     expect(citeHolds({ kind: "combo", state: "none" }, card(failed, "bear2"), failed)).toBe(false);
     const bare = withPlan(null);
     expect(citeHolds({ kind: "combo", state: "none" }, card(bare, "bear2"), bare)).toBe(false);
   });
 
-  it("refuses 'in no combo' when a combo list is at its cap, since it may omit pieces", () => {
-    const full = withPlan({ ...plan, combos: Array.from({ length: 6 }, () => plan.combos[0]) });
-    expect(citeHolds({ kind: "combo", state: "none" }, card(full, "bear2"), full)).toBe(false);
+  // Mutant Menace, 2026-10-31: the one-short list sat at its cap of 3, so every "none" and every
+  // piece of an omitted combo failed, and half the cut rows lost their reasons.
+  it("checks a combo cite against every combo the deck holds when both lists are at their cap", () => {
+    const near = plan.nearCombos[0];
+    const full = withPlan({
+      ...plan,
+      combos: Array.from({ length: 6 }, () => plan.combos[0]),
+      nearCombos: [near, near, near],
+      // bear4 is a held piece of a near combo the capped list left out.
+      comboPieces: new Map([...plan.comboPieces, ["bear4", "oneShort"]]),
+    });
+    expect(citeHolds({ kind: "combo", state: "none" }, card(full, "bear2"), full)).toBe(true);
+    expect(citeHolds({ kind: "combo", state: "oneShort" }, card(full, "bear4"), full)).toBe(true);
+    expect(citeHolds({ kind: "combo", state: "none" }, card(full, "bear4"), full)).toBe(false);
+  });
+
+  it("keeps the model's reason on a cut whose only combo cite is 'none', with both lists at their cap", () => {
+    const near = plan.nearCombos[0];
+    const full = withPlan({ ...plan, combos: Array.from({ length: 6 }, () => plan.combos[0]), nearCombos: [near, near, near] });
+    const r = validateCuts({
+      reply: { cuts: [{ name: "bear2", reason: "Serves no part of the plan.", cites: [{ kind: "combo", state: "none" }] }] },
+      pack: full, resolveName: resolve,
+    });
+    expect([r.kept[0].reason, r.report.softened]).toEqual(["Serves no part of the plan.", undefined]);
   });
 
   it("holds a cost cite only at the card's mana value", () => {
