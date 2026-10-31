@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { posthog } = vi.hoisted(() => ({
-  posthog: { init: vi.fn(), register: vi.fn(), identify: vi.fn(), reset: vi.fn(), get_property: vi.fn() },
+  posthog: { init: vi.fn(), register: vi.fn(), identify: vi.fn(), reset: vi.fn(), get_property: vi.fn(), capture: vi.fn() },
 }));
 vi.mock("posthog-js", () => ({ default: posthog }));
 
@@ -157,6 +157,35 @@ describe("identifyReader and resetReader", () => {
     const m = await load();
     void m.startAnalytics(LIVE);
     expect(() => m.identifyReader("user_1")).not.toThrow();
+    await settle();
+  });
+});
+
+describe("captureSurveyShown", () => {
+  it("does nothing while dormant", async () => {
+    const m = await load();
+    await m.startAnalytics({ ...LIVE, key: undefined });
+    m.captureSurveyShown();
+    await settle();
+    expect(posthog.capture).not.toHaveBeenCalled();
+  });
+
+  it("sends one event with no properties: no answers, no name, no email", async () => {
+    const m = await load();
+    void m.startAnalytics(LIVE);
+    m.captureSurveyShown();
+    await settle();
+    expect(posthog.capture).toHaveBeenCalledTimes(1);
+    expect(posthog.capture.mock.calls[0]).toEqual(["check_in_shown"]);
+  });
+
+  it("never throws when the SDK does", async () => {
+    posthog.capture.mockImplementationOnce(() => {
+      throw new Error("boom");
+    });
+    const m = await load();
+    void m.startAnalytics(LIVE);
+    expect(() => m.captureSurveyShown()).not.toThrow();
     await settle();
   });
 });

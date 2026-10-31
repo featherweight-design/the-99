@@ -179,3 +179,11 @@ export function resetReader(): void {
     posthog.register(release);
   });
 }
+
+/**
+ * The check-in opened on Home (flyer trial PR 6). One event, no properties of its own: no answers, no name, no email.
+ * Like every capture it carries the Clerk id `identifyReader` already gave PostHog and PostHog's page defaults.
+ */
+export function captureSurveyShown(): void {
+  withClient((posthog) => posthog.capture("check_in_shown"));
+}
