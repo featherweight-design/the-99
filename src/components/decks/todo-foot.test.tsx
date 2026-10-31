@@ -101,13 +101,17 @@ describe("the to-do card's foot", () => {
     expect(line.className).toContain("flex-wrap");
     expect(line.className).not.toMatch(/(^|\s)(md:)?py-/);
     const pad = quiet ? "py-[10px]" : "py-[9px]";
-    const items = [...line.children] as HTMLElement[];
-    // version, proxies, provenance, other drafts, and a separator between each.
+    // version, proxies, provenance, other drafts: one nowrap segment each (Small items 7, addendum 7), the
+    // separator inside the segment it leads. The padded items are the segments' children.
+    const segments = [...line.children] as HTMLElement[];
+    expect(segments).toHaveLength(4);
+    for (const seg of segments) expect(seg).toHaveAttribute("data-foot-segment");
+    const items = segments.flatMap((seg) => [...seg.children] as HTMLElement[]);
     expect(items).toHaveLength(7);
     for (const item of items) expect(item.className.split(/\s+/)).toContain(pad);
     for (const el of [line, ...line.querySelectorAll("*")]) expect(el.className.toString()).not.toMatch(/(^|\s)(md:)?-m[ty]?-/);
-    expect(provenance().parentElement).toBe(line);
-    expect(drafts().parentElement).toBe(line);
+    expect(provenance().parentElement!.parentElement).toBe(line);
+    expect(drafts().parentElement!.parentElement).toBe(line);
   });
 
   it("opens the provenance disclosure inside the card under the line", () => {

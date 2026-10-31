@@ -58,6 +58,23 @@ describe("DeckStatsView results card", () => {
     expect(ends).toHaveAttribute("aria-hidden", "true");
   });
 
+  // A focusable bead is never announced nameless: on a fine pointer its tab stop carries the result and date.
+  it("names each bead's tab stop by its result and date on a fine pointer", () => {
+    vi.stubGlobal("matchMedia", (q: string) => ({
+      matches: q.includes("pointer: fine"), media: q, onchange: null, addListener: vi.fn(), removeListener: vi.fn(),
+      addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn(),
+    }));
+    try {
+      draw(six, []);
+      const first = within(card()).getByRole("img", { name: "win, Aug 1" });
+      expect(first).toHaveAttribute("tabindex", "0");
+      expect(first.querySelector("[data-result-bead]")).not.toBeNull();
+      expect(within(card()).getAllByRole("img", { name: /^(win|loss|draw), / })).toHaveLength(6);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("dates a one-game row once", () => {
     draw([g("win", 28, 1)], []);
     expect([...card().querySelector("[data-results-ends]")!.children].map((c) => c.textContent)).toEqual(["Aug 28"]);

@@ -69,12 +69,15 @@ export function ResultsCard({ results, onLogGame }: { results: ResultsStats; onL
             {/* Small items 7, addendum 6 (`Dates.dc.html`): no date under a bead. The row is dated once, under its
                 first and last beads, on a line as wide as the beads (`w-fit`; a wrapped row fills the card, so its
                 dates sit at the card's edges). On a fine pointer a bead's date shows on hover or focus in the card
-                mark's bubble, result first; each bead keeps its spoken label, inside the focusable wrapper. */}
+                mark's bubble, result first; each bead keeps its spoken label: the focusable wrapper's name on a fine pointer, the sr-only line under touch. */}
             <div className="flex w-fit max-w-full flex-col gap-[8px]">
               <ol aria-label={copy.every} className="flex flex-wrap gap-[6px]" data-results-beads>
                 {beads.map((b, i) => (
                   <li key={i} data-result-last-five={b.lastFive ? "true" : undefined} className="flex flex-col items-center gap-[4px]">
-                    <FactTooltip sentence={copy.beadTip(copy.letters[b.result], formatPlayed(b.playedAt))} focusable>
+                    <FactTooltip
+                      sentence={copy.beadTip(copy.letters[b.result], formatPlayed(b.playedAt))}
+                      focusLabel={copy.bead(copy.words[b.result], formatPlayed(b.playedAt))}
+                    >
                       <Bead result={b.result} className="size-[30px] rounded-[5px] text-[11.5px] md:size-[28px]" />
                       <span className="sr-only">{copy.bead(copy.words[b.result], formatPlayed(b.playedAt))}</span>
                     </FactTooltip>

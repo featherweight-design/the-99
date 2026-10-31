@@ -310,6 +310,6 @@ describe("the date line over a precon start's reading", () => {
   });
   it("draws it in the verdict's head", () => {
     render(<VerdictBlock analyzedAt={at.toISOString()} versionNumber={0} {...drawn("2")} />);
-    expect(screen.getByTestId("verdict-analyzed").textContent).toMatch(/^Analysis from the precon list · \d{1,2} [A-Z][a-z]{2}$/);
+    expect(screen.getByTestId("verdict-analyzed").textContent).toMatch(/^Analysis from the precon list · [A-Z][a-z]{2} \d{1,2}(, \d{4})?$/);
   });
 });

@@ -68,10 +68,11 @@ describe("FactTooltip", () => {
   });
 
   // Small items 7, addendum 6: the Stats bead's date shows "on hover or focus".
-  it("takes a tab stop and opens on focus when `focusable`, and closes on blur", async () => {
+  it("takes a named tab stop and opens on focus when given `focusLabel`, and closes on blur", async () => {
     pointer(true);
-    render(<FactTooltip sentence="L · Oct 9, 2025" focusable><i data-testid="mark" /></FactTooltip>);
-    const wrapper = screen.getByTestId("mark").parentElement!;
+    render(<FactTooltip sentence="L · Oct 9, 2025" focusLabel="loss, Oct 9, 2025"><i data-testid="mark" /></FactTooltip>);
+    const wrapper = screen.getByRole("img", { name: "loss, Oct 9, 2025" });
+    expect(wrapper).toBe(screen.getByTestId("mark").parentElement);
     expect(wrapper).toHaveAttribute("tabindex", "0");
     fireEvent.focus(wrapper);
     await waitFor(() => expect(screen.getByText("L · Oct 9, 2025")).toBeTruthy(), { timeout: 2000 });
@@ -79,14 +80,28 @@ describe("FactTooltip", () => {
     await waitFor(() => expect(screen.queryByText("L · Oct 9, 2025")).toBeNull());
   });
 
-  it("adds no tab stop without `focusable`, or under a coarse pointer", () => {
+  // WCAG 1.4.13: a bubble opened by focus is dismissable without moving focus.
+  it("closes a focus-opened bubble on Escape, keeping focus where it was", async () => {
+    pointer(true);
+    render(<FactTooltip sentence="L · Oct 9, 2025" focusLabel="loss, Oct 9, 2025"><i data-testid="mark" /></FactTooltip>);
+    const wrapper = screen.getByRole("img", { name: "loss, Oct 9, 2025" });
+    wrapper.focus();
+    await waitFor(() => expect(screen.getByText("L · Oct 9, 2025")).toBeTruthy(), { timeout: 2000 });
+    fireEvent.keyDown(wrapper, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByText("L · Oct 9, 2025")).toBeNull());
+    expect(document.activeElement).toBe(wrapper);
+  });
+
+  it("adds no tab stop or name without `focusLabel`, or under a coarse pointer", () => {
     pointer(true);
     const { unmount } = render(<FactTooltip sentence="x"><i data-testid="mark" /></FactTooltip>);
     expect(screen.getByTestId("mark").parentElement).not.toHaveAttribute("tabindex");
+    expect(screen.queryByRole("img")).toBeNull();
     unmount();
     pointer(false);
-    render(<FactTooltip sentence="x" focusable><i data-testid="mark" /></FactTooltip>);
+    render(<FactTooltip sentence="x" focusLabel="y"><i data-testid="mark" /></FactTooltip>);
     expect(document.querySelector("[tabindex]")).toBeNull();
+    expect(screen.queryByRole("img", { name: "y" })).toBeNull();
   });
 
   it("lists a row's folded marks one per line when given `lines`, and draws nothing under a coarse pointer", async () => {
