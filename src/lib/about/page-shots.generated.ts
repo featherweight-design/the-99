@@ -816,43 +816,43 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-friends": {
           "w": 1950,
           "h": 1350,
-          "bytes": 33278,
+          "bytes": 32808,
           "quality": 60,
           "regions": {
             "friends/friends/face": [
-              0.2469,
+              0.0777,
               0.04,
               0.0492,
               0.0711
             ],
             "friends/friends/add": [
-              0.6992,
+              0.8685,
               0.04,
               0.1015,
               0.0489
             ],
             "friends/friends/friend": [
-              0.2869,
-              0.2403,
-              0.3658,
+              0.1177,
+              0.222,
+              0.3676,
               0.0242
             ],
             "friends/friends/pod": [
-              0.2469,
-              0.3935,
-              0.5538,
+              0.6469,
+              0.2252,
+              0.3231,
               0.3203
             ],
             "friends/friends/rule0": [
-              0.2615,
-              0.6408,
-              0.5246,
+              0.6615,
+              0.4724,
+              0.2938,
               0.0586
             ]
           },
           "tools": {
             "friends": [
-              0.6992,
+              0.8685,
               0.04,
               0.1015,
               0.0489
@@ -1867,43 +1867,43 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-friends": {
           "w": 1950,
           "h": 1350,
-          "bytes": 32412,
+          "bytes": 31844,
           "quality": 60,
           "regions": {
             "friends/friends/face": [
-              0.2469,
+              0.0777,
               0.04,
               0.0492,
               0.0711
             ],
             "friends/friends/add": [
-              0.6992,
+              0.8685,
               0.04,
               0.1015,
               0.0489
             ],
             "friends/friends/friend": [
-              0.2869,
-              0.2403,
-              0.3658,
+              0.1177,
+              0.222,
+              0.3676,
               0.0242
             ],
             "friends/friends/pod": [
-              0.2469,
-              0.3935,
-              0.5538,
+              0.6469,
+              0.2252,
+              0.3231,
               0.3203
             ],
             "friends/friends/rule0": [
-              0.2615,
-              0.6408,
-              0.5246,
+              0.6615,
+              0.4724,
+              0.2938,
               0.0586
             ]
           },
           "tools": {
             "friends": [
-              0.6992,
+              0.8685,
               0.04,
               0.1015,
               0.0489
@@ -2918,43 +2918,43 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-friends": {
           "w": 1950,
           "h": 1350,
-          "bytes": 33266,
+          "bytes": 32624,
           "quality": 60,
           "regions": {
             "friends/friends/face": [
-              0.2469,
+              0.0777,
               0.04,
               0.0492,
               0.0711
             ],
             "friends/friends/add": [
-              0.6992,
+              0.8685,
               0.04,
               0.1015,
               0.0489
             ],
             "friends/friends/friend": [
-              0.2869,
-              0.2403,
-              0.3658,
+              0.1177,
+              0.222,
+              0.3676,
               0.0242
             ],
             "friends/friends/pod": [
-              0.2469,
-              0.3935,
-              0.5538,
+              0.6469,
+              0.2252,
+              0.3231,
               0.3203
             ],
             "friends/friends/rule0": [
-              0.2615,
-              0.6408,
-              0.5246,
+              0.6615,
+              0.4724,
+              0.2938,
               0.0586
             ]
           },
           "tools": {
             "friends": [
-              0.6992,
+              0.8685,
               0.04,
               0.1015,
               0.0489
@@ -3969,43 +3969,43 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-friends": {
           "w": 1950,
           "h": 1350,
-          "bytes": 31992,
+          "bytes": 31374,
           "quality": 60,
           "regions": {
             "friends/friends/face": [
-              0.2469,
+              0.0777,
               0.04,
               0.0492,
               0.0711
             ],
             "friends/friends/add": [
-              0.6992,
+              0.8685,
               0.04,
               0.1015,
               0.0489
             ],
             "friends/friends/friend": [
-              0.2869,
-              0.2403,
-              0.3658,
+              0.1177,
+              0.222,
+              0.3676,
               0.0242
             ],
             "friends/friends/pod": [
-              0.2469,
-              0.3935,
-              0.5538,
+              0.6469,
+              0.2252,
+              0.3231,
               0.3203
             ],
             "friends/friends/rule0": [
-              0.2615,
-              0.6408,
-              0.5246,
+              0.6615,
+              0.4724,
+              0.2938,
               0.0586
             ]
           },
           "tools": {
             "friends": [
-              0.6992,
+              0.8685,
               0.04,
               0.1015,
               0.0489
@@ -5020,43 +5020,43 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-friends": {
           "w": 1950,
           "h": 1350,
-          "bytes": 32912,
+          "bytes": 32438,
           "quality": 60,
           "regions": {
             "friends/friends/face": [
-              0.2469,
+              0.0777,
               0.04,
               0.0492,
               0.0711
             ],
             "friends/friends/add": [
-              0.6992,
+              0.8685,
               0.04,
               0.1015,
               0.0489
             ],
             "friends/friends/friend": [
-              0.2869,
-              0.2403,
-              0.3658,
+              0.1177,
+              0.222,
+              0.3676,
               0.0242
             ],
             "friends/friends/pod": [
-              0.2469,
-              0.3935,
-              0.5538,
+              0.6469,
+              0.2252,
+              0.3231,
               0.3203
             ],
             "friends/friends/rule0": [
-              0.2615,
-              0.6408,
-              0.5246,
+              0.6615,
+              0.4724,
+              0.2938,
               0.0586
             ]
           },
           "tools": {
             "friends": [
-              0.6992,
+              0.8685,
               0.04,
               0.1015,
               0.0489
@@ -6071,43 +6071,43 @@ export const PAGE_MANIFEST: PageManifest = {
         "d-friends": {
           "w": 1950,
           "h": 1350,
-          "bytes": 33036,
+          "bytes": 32348,
           "quality": 60,
           "regions": {
             "friends/friends/face": [
-              0.2469,
+              0.0777,
               0.04,
               0.0492,
               0.0711
             ],
             "friends/friends/add": [
-              0.6992,
+              0.8685,
               0.04,
               0.1015,
               0.0489
             ],
             "friends/friends/friend": [
-              0.2869,
-              0.2403,
-              0.3658,
+              0.1177,
+              0.222,
+              0.3676,
               0.0242
             ],
             "friends/friends/pod": [
-              0.2469,
-              0.3935,
-              0.5538,
+              0.6469,
+              0.2252,
+              0.3231,
               0.3203
             ],
             "friends/friends/rule0": [
-              0.2615,
-              0.6408,
-              0.5246,
+              0.6615,
+              0.4724,
+              0.2938,
               0.0586
             ]
           },
           "tools": {
             "friends": [
-              0.6992,
+              0.8685,
               0.04,
               0.1015,
               0.0489
@@ -6357,10 +6357,10 @@ export const PAGE_MANIFEST: PageManifest = {
         "capture": "d-friends",
         "w": 975,
         "h": 650,
-        "bytes": 5406,
+        "bytes": 16528,
         "quality": 60,
         "halo": [
-          0.3985,
+          0.7369,
           0.0831,
           0.2031,
           0.1016
@@ -6541,10 +6541,10 @@ export const PAGE_MANIFEST: PageManifest = {
         "capture": "d-friends",
         "w": 975,
         "h": 650,
-        "bytes": 5264,
+        "bytes": 16152,
         "quality": 60,
         "halo": [
-          0.3985,
+          0.7369,
           0.0831,
           0.2031,
           0.1016
@@ -6725,10 +6725,10 @@ export const PAGE_MANIFEST: PageManifest = {
         "capture": "d-friends",
         "w": 975,
         "h": 650,
-        "bytes": 5348,
+        "bytes": 16566,
         "quality": 60,
         "halo": [
-          0.3985,
+          0.7369,
           0.0831,
           0.2031,
           0.1016
@@ -6909,10 +6909,10 @@ export const PAGE_MANIFEST: PageManifest = {
         "capture": "d-friends",
         "w": 975,
         "h": 650,
-        "bytes": 4898,
+        "bytes": 15504,
         "quality": 60,
         "halo": [
-          0.3985,
+          0.7369,
           0.0831,
           0.2031,
           0.1016
@@ -7093,10 +7093,10 @@ export const PAGE_MANIFEST: PageManifest = {
         "capture": "d-friends",
         "w": 975,
         "h": 650,
-        "bytes": 5282,
+        "bytes": 16302,
         "quality": 60,
         "halo": [
-          0.3985,
+          0.7369,
           0.0831,
           0.2031,
           0.1016
@@ -7277,10 +7277,10 @@ export const PAGE_MANIFEST: PageManifest = {
         "capture": "d-friends",
         "w": 975,
         "h": 650,
-        "bytes": 5312,
+        "bytes": 16286,
         "quality": 60,
         "halo": [
-          0.3985,
+          0.7369,
           0.0831,
           0.2031,
           0.1016
