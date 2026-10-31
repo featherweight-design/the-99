@@ -294,7 +294,7 @@ function landPool(a: PoolArgs) {
 
 /**
  * The commander's list, the player's own copies, the cheapest unlisted cards (header), and every universal staple.
- * With `labels` (the switch on and the original labelled), a second unlisted slice by those labels beside the
+ * With `labels` (the original labelled), a second unlisted slice by those labels beside the
  * text's. A label-only original has no role words, so its text slice is empty rather than everything.
  */
 export function spellPool(a: PoolArgs & {
