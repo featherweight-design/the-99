@@ -1,5 +1,5 @@
-// The page end of the how-it-works boundary: the deck page must wrap its shell in
-// `DeckPageSwitches` with the flag read on the server, and render THAT wrap. The page loads too
+// The page end of the deck page switches boundary: the deck page must wrap its shell in
+// `DeckPageSwitches` with the flags read on the server, and render THAT wrap. The page loads too
 // much to render in a unit test, so this reads its source as a syntax tree, as
 // `deeper-looks-boundary.test.ts` does. A deleted wrap, a literal, or a wrap built and never
 // rendered each fail it. The sheet's side is `provenance-panel.test.tsx`.
@@ -44,11 +44,10 @@ function reads(name: string): number {
   return n;
 }
 
-describe("the deck page hands DeckPageSwitches the how-it-works flag", () => {
-  it("wraps the shell once, with howItWorks={howItWorksEnabled(env)}", () => {
+describe("the deck page hands DeckPageSwitches its flags", () => {
+  it("wraps the shell once, with the reader's own friends switch", () => {
     const els = switchElements();
     expect(els).toHaveLength(1);
-    expect(els[0].attrs.howItWorks).toBe("howItWorksEnabled(env)");
     // Social R2 PR 8a: the stand-ins modal's spares follow the reader's own friends switch.
     expect(els[0].attrs.socialFriends).toBe("socialFriendsEnabled(env)");
     expect(els[0].children).toBe("{shell}");

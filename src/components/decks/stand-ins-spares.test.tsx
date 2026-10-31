@@ -125,7 +125,7 @@ async function open(socialFriends = true) {
   await act(async () => {
     render(
       <CardDetailProvider fetchCard={vi.fn().mockResolvedValue(null)}>
-        <DeckPageSwitches howItWorks={false} socialFriends={socialFriends}>
+        <DeckPageSwitches socialFriends={socialFriends}>
           <SwapToolsProvider deckId="d1" deckName="HD Gishath" storedLimitCents={null}>
             <StandInsSheet card={original} newestAsOf={asOf} onClose={() => {}} />
           </SwapToolsProvider>

@@ -119,7 +119,7 @@ export type ReferenceTabProps = {
   screens: readonly ReferenceScreen[];
   /** What's new since the reader's last visit, in page order; empty when nothing is. */
   whatsNew: readonly { id: string; title: string }[];
-  /** The shipped How it works section, or null with its switch off. */
+  /** The shipped How it works section. */
   how: ReactNode;
   /** Its row count, for the index. */
   howCount: number;
@@ -352,7 +352,7 @@ export function ReferenceTab({ screens, whatsNew, how, howCount }: ReferenceTabP
                 </div>
                 <div className={`${open ? "" : "hidden"} md:block`}>
                   {s.entries.map((e) => (
-                    <EntryRow key={e.id} entry={how ? e : { ...e, row: null }} open={openId === e.id} onToggle={() => setOpenId(openId === e.id ? null : e.id)} />
+                    <EntryRow key={e.id} entry={e} open={openId === e.id} onToggle={() => setOpenId(openId === e.id ? null : e.id)} />
                   ))}
                 </div>
               </section>
@@ -364,7 +364,7 @@ export function ReferenceTab({ screens, whatsNew, how, howCount }: ReferenceTabP
       </div>
 
       {/* While a search holds the column the screens are hidden, so an index of them would lead nowhere. */}
-      {!q && <ScreensIndex screens={screens} howCount={how ? howCount : 0} />}
+      {!q && <ScreensIndex screens={screens} howCount={howCount} />}
     </div>
   );
 }

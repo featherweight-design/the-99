@@ -64,7 +64,7 @@ describe("the Shopping head's key", () => {
 
 describe("the key's `over $N` item (Shopping row option B)", () => {
   const on = (ui: React.ReactNode) => (
-    <DeckPageSwitches howItWorks={false}>{withTools(ui)}</DeckPageSwitches>
+    <DeckPageSwitches>{withTools(ui)}</DeckPageSwitches>
   );
 
   it("draws an outlined plate and `over $10` after the buy item, at every width", () => {
@@ -86,7 +86,7 @@ describe("the key's `over $N` item (Shopping row option B)", () => {
 
   it("is absent with the swap tools off", () => {
     render(
-      <DeckPageSwitches howItWorks={false}>
+      <DeckPageSwitches>
         <GotItProvider deckId={DECK}>{head()}</GotItProvider>
       </DeckPageSwitches>,
     );

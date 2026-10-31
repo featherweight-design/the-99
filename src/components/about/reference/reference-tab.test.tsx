@@ -105,14 +105,11 @@ describe("ReferenceTab, the list", () => {
     expect(openEntry(container)).toBe(target.id);
   });
 
-  it("links an opened entry to its How it works row only while How it works draws", () => {
+  it("links an opened entry to its How it works row", () => {
     const e = screens.flatMap((x) => x.entries).find((x) => x.row)!;
-    const rowLink = (c: HTMLElement) => c.querySelector(`[data-entry-open="${e.id}"] a[href="#${e.row}"]`);
     window.location.hash = `#${e.id}`;
-    const { container, rerender } = draw();
-    expect(rowLink(container)).toBeNull();
-    rerender(<ReferenceTab screens={screens} whatsNew={[]} how={<section id="how" />} howCount={9} />);
-    expect(rowLink(container)).not.toBeNull();
+    const { container } = draw();
+    expect(container.querySelector(`[data-entry-open="${e.id}"] a[href="#${e.row}"]`)).not.toBeNull();
   });
 });
 

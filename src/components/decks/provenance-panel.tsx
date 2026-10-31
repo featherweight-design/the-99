@@ -7,7 +7,6 @@ import { howItWorksCopy, type HowMethod } from "../../lib/copy/about";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { formatDeckDate } from "../../lib/decks/format";
 import { MethodTags } from "../ui/method-tag";
-import { useDeckPageSwitches } from "./deck-page-switches";
 import { ModalChrome } from "./receipt-modal";
 import { LinkOutLabel } from "../ui/link-out-icon";
 
@@ -29,9 +28,8 @@ const copy = deckAnalysisCopy;
  * extra-turn rows combine Spellbook's bracket estimate with our own reading of the rules text,
  * and say so in their sentences; neither is a list to link to.
  *
- * METHOD TAGS, behind HOW_IT_WORKS_ENABLED (About's "How the app reaches its answers", Hugh
- * 2026-09-28): each row names how its count is reached, in the same words the About appendix uses.
- * Off, the sheet is exactly as it was.
+ * METHOD TAGS (About's "How the app reaches its answers", Hugh 2026-09-28): each row names how its
+ * count is reached, in the same words the About appendix uses.
  *
  * LOCAL STATE, NEVER PERSISTED. It is read once, mid-argument, and a sheet that reopened itself
  * on every visit would be a sheet nobody asked to see again.
@@ -76,7 +74,6 @@ export function ProvenanceOpener({
 
 function ProvenanceSheet({ onClose }: { onClose: () => void }) {
   const d = copy.detection;
-  const { howItWorks } = useDeckPageSwitches();
   const m = howItWorksCopy.bracketMethods;
   const rows: {
     key: string;
@@ -120,7 +117,7 @@ function ProvenanceSheet({ onClose }: { onClose: () => void }) {
             <div key={row.key} className="flex flex-col gap-[3px] border-t border-[color:var(--border)] pt-[10px]">
               <dt className="flex flex-wrap items-center gap-x-[8px] gap-y-[4px] font-semibold text-[12px]" style={{ color: "var(--fg)" }}>
                 {row.label}
-                {howItWorks ? <MethodTags methods={row.methods} /> : null}
+                <MethodTags methods={row.methods} />
               </dt>
               <dd className="m-0">
                 {row.from}

@@ -7,18 +7,16 @@ import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 // The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
 await (await import("../cards/card-detail-provider")).warmCardModal();
-import { DeckPageSwitches } from "./deck-page-switches";
 import { ProvenanceOpener } from "./provenance-panel";
 
 const copy = deckAnalysisCopy;
 
-function draw(howItWorks?: boolean) {
-  const opener = (
+function draw() {
+  render(
     <CardDetailProvider fetchCard={async () => null}>
       <ProvenanceOpener />
-    </CardDetailProvider>
+    </CardDetailProvider>,
   );
-  render(howItWorks === undefined ? opener : <DeckPageSwitches howItWorks={howItWorks}>{opener}</DeckPageSwitches>);
   fireEvent.click(screen.getByRole("button", { name: new RegExp(copy.provenance.toggle) }));
 }
 
@@ -42,9 +40,11 @@ describe("How we make these decisions", () => {
 
   it("draws five rows, and a misses line on every one but game changers", () => {
     draw();
-    expect(screen.getAllByRole("term").map((t) => t.textContent)).toEqual([
-      "Game changers", "Mass land denial", "Extra turns", "Two-card infinites", "Tutors",
-    ]);
+    // Each term is its row's name, then its method tags.
+    const names = ["Game changers", "Mass land denial", "Extra turns", "Two-card infinites", "Tutors"];
+    const terms = screen.getAllByRole("term");
+    expect(terms).toHaveLength(names.length);
+    terms.forEach((t, i) => expect(t.textContent!.startsWith(names[i]), names[i]).toBe(true));
     expect(screen.getByText(copy.detection.extraTurns.misses)).toBeTruthy();
     expect(screen.getByText(copy.detection.combos.misses)).toBeTruthy();
   });
@@ -64,19 +64,9 @@ describe("How we make these decisions", () => {
     expect(screen.getByText(copy.provenance.rulesChecked("Sep 22, 2026"))).toBeTruthy();
   });
 
-  // About's "How the app reaches its answers" (Hugh, 2026-09-28): the tags appear here too, behind
-  // HOW_IT_WORKS_ENABLED. Off (or outside the provider) the sheet is exactly as it was.
-  it("draws no method tag with the switch off, or outside the provider", () => {
-    for (const on of [undefined, false]) {
-      draw(on);
-      expect(document.querySelectorAll("[data-method]")).toHaveLength(0);
-      fireEvent.click(screen.getByRole("button", { name: copy.sheets.closeProvenance }));
-      document.body.innerHTML = "";
-    }
-  });
-
-  it("tags each row with how its count is reached when the switch is on", () => {
-    draw(true);
+  // About's "How the app reaches its answers" (Hugh, 2026-09-28): the tags appear here too.
+  it("tags each row with how its count is reached", () => {
+    draw();
     const tags = screen.getAllByRole("term").map((t) =>
       [...t.querySelectorAll("[data-method]")].map((el) => el.getAttribute("data-method")),
     );

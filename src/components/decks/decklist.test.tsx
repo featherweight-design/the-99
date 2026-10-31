@@ -176,7 +176,7 @@ function renderDecklist(
     ) : node;
 
   const withFriends = (node: React.ReactNode) =>
-    opts.socialFriends ? <DeckPageSwitches howItWorks={false} socialFriends>{node}</DeckPageSwitches> : node;
+    opts.socialFriends ? <DeckPageSwitches socialFriends>{node}</DeckPageSwitches> : node;
 
   const withTokens = (node: React.ReactNode) =>
     opts.tokens ? <DeckTokensProvider deckId="deck-1" read={opts.tokens}>{node}</DeckTokensProvider> : node;

@@ -1,22 +1,17 @@
 // About's "How the app reaches its answers", walked at 390x844 and 1300x900.
 //
-//   PROBE_BASE=http://localhost:3341 PROBE_HOW_IT_WORKS=on  pnpm probe:about-how-it-works
-//   PROBE_BASE=http://localhost:3342 PROBE_HOW_IT_WORKS=off pnpm probe:about-how-it-works
+//   PROBE_BASE=http://localhost:3341 pnpm probe:about-how-it-works
 //
-// A switch is read when the server starts, so the two passes need two servers: one started with
-// HOW_IT_WORKS_ENABLED=true, and one without it. The appendix is drawn in the Reference tab, so
-// every load is `/about?tab=reference`. The pass names which it expects, and fails when
-// the page disagrees, so a run against the wrong server cannot report a pass.
+// The appendix is always on (its switch is retired) and is drawn in the Reference tab, so every load
+// is `/about?tab=reference`.
 //
-// ON: the method key is one column on the phone and two from 1000px, with a 100px tag column; each
+// The method key is one column on the phone and two from 1000px, with a 100px tag column; each
 // row's head is at least 52px on the phone and 44px on desktop, its title, tags and verdict share
 // one line on desktop and the verdict takes a second line on the phone; an opened row's body is a
 // 128px label grid on desktop and stacked on the phone; nothing scrolls sideways. And a hash lands its row open, 20px from
 // the top or at the document's end, with its OPENED body on screen. That last needs the row opened
 // before the scroll: the browser's own jump lands on the closed layout, and the body it opens
 // afterwards would hang below the fold.
-//
-// OFF: no appendix, and nothing links to one of its rows.
 //
 // The entry link line, the contents group, the jump's wash and its focus on the row's heading were the
 // retired page's (Discovery R2·7 deleted `about-page.tsx`, `contents-r6.tsx` and `jump-mark.tsx`), and their
@@ -33,11 +28,6 @@ import { onPage } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "DATABASE_URL"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
-const MODE = process.env.PROBE_HOW_IT_WORKS;
-if (MODE !== "on" && MODE !== "off") {
-  console.error("Set PROBE_HOW_IT_WORKS to on or off, naming how the server at PROBE_BASE was started.");
-  process.exit(2);
-}
 
 const WIDTHS = [
   { label: 390, viewport: { width: 390, height: 844 } },
@@ -159,12 +149,6 @@ async function walkOn(page, w) {
   }
 }
 
-async function walkOff(page, w) {
-  const tag = `${w.label}:`;
-  report(`${tag} no appendix`, (await onPage(page, "#how-it-works").count()) === 0);
-  report(`${tag} nothing links to the appendix or a row`, (await onPage(page, "a[href='#how-it-works'], a[href^='#how-']").count()) === 0);
-}
-
 async function main() {
   await clerkSetup();
   const browser = await chromium.launch();
@@ -178,9 +162,8 @@ async function main() {
       await page.goto(`${BASE}/about?tab=reference`, { waitUntil: "networkidle" });
       await clearAboutSheet(page, userId);
       await page.goto(`${BASE}/about?tab=reference`, { waitUntil: "networkidle" });
-      console.log(`\n${w.label} (${MODE})`);
-      if (MODE === "on") await walkOn(page, w);
-      else await walkOff(page, w);
+      console.log(`\n${w.label}`);
+      await walkOn(page, w);
       await context.close();
     }
   } finally {
