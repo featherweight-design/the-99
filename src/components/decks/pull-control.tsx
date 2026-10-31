@@ -14,7 +14,8 @@
 // button or a link (`update-diff-row.tsx`). One mechanism in one place beats a
 // `stopPropagation` in every control the plate happens to contain.
 
-import { useCallback, useEffect, useId, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, useTransition } from "react";
+import { twMerge } from "tailwind-merge";
 import { pullCardFromDeck, type PullResult } from "../../app/decks/actions";
 import { cardAssignmentsCopy } from "../../lib/copy/card-assignments";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
@@ -26,11 +27,11 @@ import { lockedCardsCopy } from "../../lib/copy/locked-cards";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { CardDetailTrigger, cardDetailCopy, useCardDetail } from "../cards/card-detail-provider";
 import { ANCHORED_PANEL_CLASS, useAnchoredPanel, type AnchoredAt } from "../ui/anchored-panel";
-import { Sheet } from "../ui/sheet";
+import { PANEL as SHEET_PANEL, Sheet } from "../ui/sheet";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { draftAnnouncer } from "./draft-announcer";
 import { MutationError } from "./mutation-error";
-import { Chevron, CHEVRON_GAP_CLASS } from "../ui/chevron";
+import { Chevron } from "../ui/chevron";
 import { useMomentHold } from "../../lib/moments/hold";
 
 const copy = deckVersioningCopy.review;
@@ -337,7 +338,7 @@ function SourcePicker({
   const isDesktop = useIsDesktop();
   const wrapperRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
-  const { at, place, triggerRef, panelRef } = useAnchoredPanel({ open, width: POPOVER_WIDTH });
+  const { at, place, triggerRef, panelRef } = useAnchoredPanel({ open, width: POPOVER_WIDTH, gap: 6 });
   // Where focus goes once a successful pull unmounts the dialog — the row's own card trigger,
   // which survives the refresh. `useDialogA11y`'s own default (the popover/sheet trigger) is
   // right for every OTHER close path, so this is set only inside `confirm`'s success branch
@@ -469,8 +470,9 @@ function SourcePicker({
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-label={copy.pullManyA11y(card.name, claims.filter((c) => !c.commander && !c.locked).length)}
-        // The chevron keeps the filter chassis trigger's gap from the label (bug batch 2026-10-12).
-        className={`${PULL_BUTTON} ${CHEVRON_GAP_CLASS}`}
+        // The board's 6px between label and chevron, and its accent border while the picker is open
+        // (Small items 4, Other Decks: `.pbt`, `.pbt.op`).
+        className={`${PULL_BUTTON} gap-[6px] ${open ? "border-[color:var(--accent)]!" : ""}`}
         // Design state 8 extends to the trigger itself — found by Copilot's round-2 review: an
         // enabled trigger still visible above the popover could be pressed mid-pull, toggling
         // `open` closed and silently dropping a refusal the reader never saw.
@@ -510,6 +512,14 @@ function SourcePicker({
   );
 }
 
+const PICKER_PANEL_CLASS = twMerge(ANCHORED_PANEL_CLASS, "rounded-[12px] shadow-[0_18px_44px_rgba(0,0,0,0.55)]");
+
+/** The board's sheet (Small items 4, Other Decks: `.sh2`, `.gr`, `.scrim2`): an 18px top radius on --surface,
+ *  8px over the grabber and 12px under it, so the title sits 24px from the top edge. */
+const PICKER_SHEET_PANEL = twMerge(SHEET_PANEL, "rounded-t-[18px] bg-[color:var(--surface)] shadow-[0_-18px_44px_rgba(0,0,0,0.5)]");
+const PICKER_SHEET_SCRIM = "fixed inset-0 z-40 bg-[rgba(8,6,4,0.45)]";
+const PICKER_SHEET_HANDLE = "flex touch-none justify-center pt-[8px] pb-[12px]";
+
 function Popover({
   ref,
   at,
@@ -541,7 +551,9 @@ function Popover({
       // Held to the room on the side it hangs; the body's source list scrolls inside, under its title. `marginTop: 0`
       // because the gap is `place()`'s once the box is fixed: the class's 6px would push it past the room it was given.
       style={{ width: POPOVER_WIDTH, ...(at ? { position: "fixed", top: at.top, left: at.left, marginTop: 0, maxHeight: at.maxHeight } : {}) }}
-      className={`absolute top-full right-0 mt-[6px] flex flex-col p-[14px] ${ANCHORED_PANEL_CLASS}`}
+      // The board's own radius and shadow (Small items 4, Other Decks: `.pop`), set here rather than on the shared
+      // class, which the deck ⋯ menu, the seat picker and Rule 0's change-deck also draw.
+      className={`absolute top-full right-0 mt-[6px] flex flex-col p-[14px] ${PICKER_PANEL_CLASS}`}
     >
       {children}
     </div>
@@ -570,7 +582,13 @@ function MobileSheet({
   ariaLabel: string;
   children: React.ReactNode;
 }) {
-  useDialogA11y(panelRef, onDismiss, { returnFocusRef });
+  // First focus on the list's tabbable radio (the reader's pick), not the head's card name, which is the
+  // sheet's first button. A layout effect, so the ref is set before useDialogA11y's own effect reads it.
+  const firstRadioRef = useRef<HTMLElement | null>(null);
+  useLayoutEffect(() => {
+    firstRadioRef.current = panelRef.current?.querySelector<HTMLElement>('[role="radio"][tabindex="0"]') ?? null;
+  }, [panelRef]);
+  useDialogA11y(panelRef, onDismiss, { returnFocusRef, initialFocusRef: firstRadioRef });
   // A card opened from this list (its head's name, stacked sheets R1 s5) stacks over it, names it as
   // the way back, and REPLACES it on screen: the list stays mounted with the reader's pick, hidden
   // and out of the accessibility tree while the card is up, as every sheet under a card is.
@@ -588,10 +606,17 @@ function MobileSheet({
       className={"motion-safe:transition-opacity " + (faded ? "motion-safe:duration-[240ms]" : "motion-safe:duration-200")}
       style={covered ? { opacity: faded ? 0 : undefined, pointerEvents: "none" } : undefined}
     >
-      <Sheet open onDismiss={onDismiss} ariaLabel={ariaLabel} panelRef={panelRef}>
-        {/* The other sheets' body inset (`filter-sheet.tsx`, `deck-filter-sheet.tsx`): the
-            shared body is drawn bare, because the popover pads its own box. */}
-        <div className="px-[16px] pt-[14px] pb-[16px]">{children}</div>
+      <Sheet
+        open
+        onDismiss={onDismiss}
+        ariaLabel={ariaLabel}
+        panelRef={panelRef}
+        panelClassName={PICKER_SHEET_PANEL}
+        scrimClassName={PICKER_SHEET_SCRIM}
+        handleClassName={PICKER_SHEET_HANDLE}
+      >
+        {/* The board's body inset: the shared body is drawn bare, because the popover pads its own box. */}
+        <div className="px-[16px] pb-[28px]">{children}</div>
       </Sheet>
     </div>
   );

@@ -1106,7 +1106,7 @@ export function FilterPanel({
         // size across 768-999 while sitting in the compact frame — losing the
         // 44px target the compact form promises, beside controls that kept it.
         className={(triggerLook === "field" ? [
-          "flex h-[40px] w-full items-center justify-between gap-[8px] whitespace-nowrap rounded-[9px] px-[10px] font-sans text-[13px] border border-solid",
+          "flex h-[40px] w-full items-center justify-between gap-[6px] whitespace-nowrap rounded-[9px] px-[10px] font-sans text-[13px] border border-solid",
           disabled
             ? "cursor-not-allowed bg-[color:var(--surface-raised)] text-[color:var(--fg-locked)] border-[color:var(--border)]"
             : `cursor-pointer text-[color:var(--fg)] bg-[color:var(--surface)] ${open ? "border-[color:var(--accent)]" : "border-[color:var(--border-strong)]"}`,
@@ -1170,8 +1170,9 @@ export function FilterPanel({
             {selected.length}
           </span>
         )}
-        {/* The field look's chevron is the board's 12px (the cap field's affix size); the chip keeps the shared size. */}
-        <Chevron open={open} style={triggerLook === "field" ? { fontSize: 12 } : undefined} />
+        {/* The field look's chevron is the board's 12px in --fg-faint (the cap field's affix), or the disabled field's
+            locked ink; the chip keeps the shared one. */}
+        <Chevron open={open} style={triggerLook === "field" ? { fontSize: 12, ...(disabled ? {} : { color: "var(--fg-faint)" }) } : undefined} />
       </button>
 
       {open &&

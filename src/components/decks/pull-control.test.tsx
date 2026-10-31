@@ -613,10 +613,10 @@ describe("PullControl — 2+ choosable sources", () => {
     }
   });
 
-  // Bug batch 2026-10-12: the phone sheet's body takes the other sheets' inset (16 / 14 / 16), and
-  // the desktop popover keeps its own box padding with no second inset inside it.
+  // The phone sheet's body takes the board's inset (Small items 4, Other Decks: `.sh2`, 16 sides and 28
+  // below, the grabber's 12px above), and the desktop popover keeps its own box padding with no second inset.
   it("insets the phone sheet's body, and leaves the popover's own padding alone", () => {
-    const INSET = ["px-[16px]", "pt-[14px]", "pb-[16px]"];
+    const INSET = ["px-[16px]", "pb-[28px]"];
     const insetOf = () => {
       // The order line sits in the shared column's scrolling body; that column's parent is this shell's.
       const line = screen.getByText("In the order they committed it");
@@ -644,13 +644,14 @@ describe("PullControl — 2+ choosable sources", () => {
     expect(popover).not.toContain("px-[16px]");
   });
 
-  // Bug batch 2026-10-12: the 2+ source trigger keeps the filter chassis trigger's gap between
-  // `Pull it` and its chevron, and draws the shared chevron.
-  it("spaces the trigger's chevron from its label with the chassis gap", () => {
+  // The 2+ source trigger draws the shared chevron 6px from `Pull it` (Small items 4, Other Decks: `.pbt`),
+  // and its border turns accent while the picker is open (`.pbt.op`).
+  it("spaces the trigger's chevron from its label with the board's gap", () => {
     setViewport(true);
     render(<PullControl deckId="d" card={CARD} claims={[FREE_TO_PULL, OTHER_SOURCE]} defaultId={FREE_TO_PULL.id} onPulled={noop} />);
     const trigger = screen.getByRole("button", { name: MANY_NAME });
-    expect(trigger.className.split(/\s+/)).toContain("gap-[8px]");
+    expect(trigger.className.split(/\s+/)).toContain("gap-[6px]");
+    expect(trigger.className).not.toContain("border-[color:var(--accent)]!");
     const glyph = trigger.querySelector('[aria-hidden="true"]')!;
     expect(glyph.textContent).toBe("▾");
     expect(glyph.className).toContain("text-[13px]");
@@ -677,6 +678,21 @@ describe("PullControl — 2+ choosable sources", () => {
       fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
     });
     expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  // Small items 4, Other Decks: the open trigger's border is accent, and the phone sheet opens with
+  // focus on the reader's pick in the list, not on the head's card name (the sheet's first button).
+  it("draws the open trigger in accent and focuses the pick when the phone sheet opens", () => {
+    setViewport(false);
+    render(<PullControl deckId="d" card={CARD} claims={[FREE_TO_PULL, OTHER_SOURCE]} defaultId={FREE_TO_PULL.id} onPulled={noop} />);
+    const trigger = screen.getByRole("button", { name: MANY_NAME });
+    act(() => {
+      trigger.click();
+    });
+    expect(trigger.className).toContain("border-[color:var(--accent)]!");
+    const focused = document.activeElement as HTMLElement;
+    expect(focused.getAttribute("role")).toBe("radio");
+    expect(focused.getAttribute("aria-checked")).toBe("true");
   });
 
   // Stacked sheets R1, s5: the phone list's head opens the card, which names the list as the way
