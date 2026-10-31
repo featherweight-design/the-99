@@ -128,6 +128,12 @@ jobs:
       - name: Third-party names
         run: pnpm check:third-party-names
 
+      # A server module that takes a value (a constant, a hook) from a "use client" module gets a client reference,
+      # not the value: it typechecks, lints and builds, and a page renders the wrong thing. Components are the one
+      # thing a server module may take from one.
+      - name: Client values
+        run: pnpm check:client-values
+
       # Routes meant to carry the same control have to render the same component, not
       # a lookalike. Every inventory is passed; one with no `shares` block is a no-op.
       - name: Shared components

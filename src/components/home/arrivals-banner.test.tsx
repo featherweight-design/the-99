@@ -16,7 +16,8 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/",
 }));
 
-const { ArrivalsBanner, BLANK_PIXEL, COLLAPSE_MS, CROP_MEDIA, HOME_HEADING_ID } = await import("./arrivals-banner");
+const { ArrivalsBanner, BLANK_PIXEL, COLLAPSE_MS, CROP_MEDIA } = await import("./arrivals-banner");
+const { HOME_HEADING_ID } = await import("./home-heading");
 const { cropStyle } = await import("../../lib/about/banner-line");
 const { Dashboard } = await import("./dashboard");
 const { aboutFirstRunOver, acknowledgeAbout, acknowledgeArrivals, endAboutFirstRun, resetArrivalsAcknowledged } = await import("./arrivals-seen");

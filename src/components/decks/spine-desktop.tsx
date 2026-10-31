@@ -41,6 +41,7 @@ import { ProxyTag } from "./proxy-tag";
 import { shortName } from "../../lib/cards/short-name";
 import { DeckIntentLine } from "./deck-intent-line";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
+import { TRUNCATES } from "./truncates";
 
 /** The slice of the deck both widths of the header read. Narrower than
     `DeckDetail` on purpose: nothing in this band knows about the decklist. */
@@ -118,20 +119,6 @@ export interface SpineBandProps {
 // §B16's single-field box is retired: editing now draws name and description at one width,
 // `max-w-[560px]`, set inline on the editor block below (H35, STATES §2).
 
-/**
- * Decision 18's shrinking half. Both names take it; the partner additionally
- * raises `flexShrink` so it is the half that gives first. `minWidth: 0` is what
- * makes the ellipsis reachable at all — a flex child's default `min-width:auto`
- * floors it at its content width, so without this the group overflows rather
- * than truncating.
- */
-export const TRUNCATES: React.CSSProperties = {
-  flex: "0 1 auto",
-  minWidth: 0,
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-  whiteSpace: "nowrap",
-};
 
 export function SpineDesktop({
   deck,

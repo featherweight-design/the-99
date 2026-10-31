@@ -25,7 +25,7 @@ import { FeedItemRow, type FeedFaces } from "../feed/feed-item";
 import { FEED_SHOWN, ShowAllFooter, useShowAll } from "../feed/show-all";
 import { DismissButton, useFeedDismiss } from "../feed/dismiss";
 import { AnswerSheetProvider } from "./answer-sheet";
-import { HOME_HEADING_ID } from "./arrivals-banner";
+import { HOME_HEADING_ID } from "./home-heading";
 import { HoverPreviewProvider } from "../decks/hover-preview";
 import { PendingReporter } from "../shell/pending-reporter";
 import { Checkbox } from "../ui/checkbox";
