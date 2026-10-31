@@ -27,6 +27,7 @@ import { EmptyState, EmptyStateBody, EmptyStateTitle } from "../../ui/empty-stat
 import { BAR } from "../../ui/tile-skeleton";
 import { PendingReporter } from "../../shell/pending-reporter";
 import { CartFriendLine, CartHeldSlot } from "./cart-line";
+import { useCartGotIt } from "./cart-got-it";
 import { NameFitProvider } from "./cart-facts";
 import { FRIEND_GRID } from "./cart-columns";
 
@@ -142,6 +143,8 @@ export function ByFriendList({
 }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [toast, setToast] = useState<SocialToastState | null>(null);
+  // While a receipt is open the failed ask joins its stack on the phone, 10px above it (small items 7, item 3).
+  const receiptOpen = useCartGotIt()?.receiptOpen ?? false;
   const seq = useRef(0);
   // FOCUS AFTER AN ASK, as the modal does: the pressed Ask gives way to the line's Requested, so the focused control
   // leaves the document. Focus lands on that status, unless the reader has moved on.
@@ -207,7 +210,7 @@ export function ByFriendList({
           })}
         </FriendPanel>
       ))}
-      <SocialToast toast={toast} onDone={() => setToast(null)} />
+      <SocialToast toast={toast} onDone={() => setToast(null)} placement={receiptOpen ? "cart" : "center"} />
     </div>
     </NameFitProvider>
   );

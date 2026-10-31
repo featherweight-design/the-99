@@ -1,5 +1,6 @@
 import { shellUserId } from "./shell-session";
 import { DeckToastStackHost } from "../decks/deck-toast-stack";
+import { CartToastStackHost } from "../decks/cart/cart-toast-stack";
 import { after } from "next/server";
 import { NavRail, TabBar, MobileHeader, type NavBadges } from "./nav";
 import { getCollectionStats, hasAnyDeck } from "../../lib/home/summary";
@@ -182,6 +183,8 @@ export default async function Shell({
         {/* The deck page's toast stack (small items 3, item 8): empty until a deck toast portals in. Here, inside the
             lock's `--tabbar-h`, and outside every page's own stacking context. */}
         <DeckToastStackHost />
+        {/* The all-decks cart's phone stack (small items 7, item 3): empty until a cart toast portals in. */}
+        <CartToastStackHost />
       </div>
       </HelpRoot>
       </CardSearchRoot>
