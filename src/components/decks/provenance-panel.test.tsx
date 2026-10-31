@@ -40,9 +40,11 @@ describe("How we make these decisions", () => {
 
   it("draws five rows, and a misses line on every one but game changers", () => {
     draw();
-    expect(screen.getAllByRole("term").map((t) => t.textContent)).toEqual([
-      "Game changers", "Mass land denial", "Extra turns", "Two-card infinites", "Tutors",
-    ]);
+    // Each term is its row's name, then its method tags.
+    const names = ["Game changers", "Mass land denial", "Extra turns", "Two-card infinites", "Tutors"];
+    const terms = screen.getAllByRole("term");
+    expect(terms).toHaveLength(names.length);
+    terms.forEach((t, i) => expect(t.textContent!.startsWith(names[i]), names[i]).toBe(true));
     expect(screen.getByText(copy.detection.extraTurns.misses)).toBeTruthy();
     expect(screen.getByText(copy.detection.combos.misses)).toBeTruthy();
   });
