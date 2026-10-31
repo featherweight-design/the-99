@@ -131,6 +131,11 @@ describe("welcome credits on the line (D2, Line-and-Chip W1 to W6)", () => {
     expect(creditCount({ ...a, used: 0, reopensAt: null }, far)).toBe("1 of 1 free · 9 welcome · 40 paid");
   });
 
+  it("W4 above 10: a 2-credit run the free credits fund keeps an expiring lot's warning (SC-Cost E)", () => {
+    const soon = w({ used: 0, limit: 5, reopensAt: null, welcome: 9 });
+    expect(creditTwo(soon, runFunding(soon, 2), near)!.count).toBe(`5 of 5 free, 3 after this run · 9 welcome · 9 welcome credits expire ${day(EXP)}.`);
+  });
+
   it("W4: within three days the welcome tail, in the reader's own day, after the lots (and before a plan's, G5)", () => {
     const a = w({ used: 1, reopensAt: at(2, 1), welcome: 9 });
     expect(creditStanding(a, near)).toBe(`0 of 1 free · reset at ${t(at(2, 1))} · this run uses 1 of 9 welcome · 9 welcome credits expire ${day(EXP)}`);

@@ -144,7 +144,10 @@ export function creditTwo(a: LineAllowance, f: RunFunding, now: Date = new Date(
     return {
       lead: creditsCopy.two.lead("free"),
       why: creditsCopy.two.whyFree,
-      count: creditsCopy.two.freeAfter(f.freeLeft, a.limit, f.freeAfter, a.nextAt, paidShown(a), welcomeLeft(a)),
+      // The lots' expiry tails ride here as they do on the shipped `withPaid` line.
+      count: creditsCopy.two.count(
+        `${creditsCopy.two.freeAfter(f.freeLeft, a.limit, f.freeAfter, a.nextAt, paidShown(a), welcomeLeft(a))}${paidShown(a) > 0 || welcomeLeft(a) > 0 ? expiringTail(a, now) : ""}`,
+      ),
     };
   }
   if (f.source === "welcome" || f.source === "paid") {

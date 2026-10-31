@@ -167,7 +167,7 @@ export const creditsCopy = {
     freeAfter: (left: number, total: number, after: number, next: Date | null, paidTotal = 0, welcomeLeft = 0) => {
       const held = paidTotal > 0 || welcomeLeft > 0;
       return `${left} of ${total} ${held ? "free" : "left"}, ${after} after this run${next ? ` · reset at ${clockTime(next)}` : ""}${
-        held ? ` · ${lots(paidTotal, welcomeLeft)}` : ""}.`;
+        held ? ` · ${lots(paidTotal, welcomeLeft)}` : ""}`;
     },
     /** B and D's count: the shipped count (`creditCount`) ending the line. */
     count: (line: string) => `${line}.`,
