@@ -1,5 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import type { NextRequest } from "next/server";
+import { purgeAnonymousReports } from "../../../../lib/feedback/purge";
 import { purgeLaunchList } from "../../../../lib/flyer/launch-purge";
 import { sweepFlyerClaims } from "../../../../lib/flyer/sweep";
 import { sweepInvites } from "../../../../lib/invites/sweep";
@@ -16,7 +17,8 @@ export const dynamic = "force-dynamic";
  * token on every cron call, the account sweep's rule. Until that secret is set it answers 503 and does nothing; a
  * call without it is refused with 401 before anything runs. It reads no feature switch: a lapsed reservation is
  * returned whatever the switches say. It also purges the launch list once the launch date plus 30 days has passed
- * (the date set on the admin launch list card, else `FLYER_LAUNCH_DATE`; neither set, nothing is deleted).
+ * (the date set on the admin launch list card, else `FLYER_LAUNCH_DATE`; neither set, nothing is deleted), and deletes
+ * signed-out problem reports (`feedback` rows with no `user_id`) 90 days after they were filed (`feedback/purge.ts`).
  */
 export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
@@ -42,9 +44,24 @@ export async function GET(req: NextRequest) {
       purgeNote = `purge failed${typeof pcode === "string" && /^[0-9A-Z]{5}$/.test(pcode) ? ` (${pcode})` : ""}`;
       captureServerError("invite-sweep-launch-purge", purgeError);
     }
+    // Signed-out problem reports go 90 days after they were filed (`feedback/purge.ts`); signed-in rows are never touched.
+    // Its own try/catch too: a failure here must not fail the sweep. (The whole route no-ops on staging, so staging
+    // reports are not expired there.)
+    let anonReports: { deleted: number } | { error: true };
+    let reportNote: string;
+    try {
+      const gone = await purgeAnonymousReports();
+      anonReports = gone;
+      reportNote = `deleted ${gone.deleted}`;
+    } catch (reportError) {
+      const rcode = (reportError as { cause?: { code?: unknown }; code?: unknown })?.cause?.code ?? (reportError as { code?: unknown })?.code;
+      anonReports = { error: true };
+      reportNote = `failed${typeof rcode === "string" && /^[0-9A-Z]{5}$/.test(rcode) ? ` (${rcode})` : ""}`;
+      captureServerError("invite-sweep-anon-reports", reportError);
+    }
     // Counts only, never an id or an address.
-    console.info(`[invite-sweep] returned ${report.returned}, revoked ${report.revoked}, reconciled ${report.reconciled}, kept ${report.kept}; flyer released ${flyer.released}, kept ${flyer.kept}; launch list ${purgeNote}`);
-    return Response.json({ ...report, flyer, launchList });
+    console.info(`[invite-sweep] returned ${report.returned}, revoked ${report.revoked}, reconciled ${report.reconciled}, kept ${report.kept}; flyer released ${flyer.released}, kept ${flyer.kept}; launch list ${purgeNote}; signed-out reports ${reportNote}`);
+    return Response.json({ ...report, flyer, launchList, anonReports });
   } catch (error) {
     const code = (error as { cause?: { code?: unknown }; code?: unknown })?.cause?.code ?? (error as { code?: unknown })?.code;
     console.error(`[invite-sweep] sweep failed${typeof code === "string" && /^[0-9A-Z]{5}$/.test(code) ? ` (${code})` : ""}`);

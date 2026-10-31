@@ -6,6 +6,8 @@ vi.mock("../../../../lib/invites/sweep", () => ({ sweepInvites: sweep }));
 const purge = vi.hoisted(() => vi.fn());
 vi.mock("../../../../lib/flyer/launch-purge", () => ({ purgeLaunchList: purge }));
 vi.mock("../../../../lib/flyer/sweep", () => ({ sweepFlyerClaims: flyerSweep }));
+const reports = vi.hoisted(() => vi.fn());
+vi.mock("../../../../lib/feedback/purge", () => ({ purgeAnonymousReports: reports }));
 const { GET } = await import("./route");
 
 const call = (auth?: string) => GET(new Request("https://x/api/cron/invite-sweep", { headers: auth ? { authorization: auth } : {} }) as never);
@@ -16,6 +18,7 @@ describe("GET /api/cron/invite-sweep", () => {
     sweep.mockReset().mockResolvedValue({ returned: 2, revoked: 1, reconciled: 0, kept: 0 });
     flyerSweep.mockReset().mockResolvedValue({ released: 3, kept: 1 });
     purge.mockReset().mockResolvedValue({ due: false, deleted: 0 });
+    reports.mockReset().mockResolvedValue({ deleted: 0 });
     process.env.CRON_SECRET = "s3cret";
   });
   afterEach(() => {
@@ -41,7 +44,7 @@ describe("GET /api/cron/invite-sweep", () => {
     try {
       const res = await call("Bearer s3cret");
       expect(res.status).toBe(200);
-      expect(await res.json()).toEqual({ returned: 2, revoked: 1, reconciled: 0, kept: 0, flyer: { released: 3, kept: 1 }, launchList: { due: false, deleted: 0 } });
+      expect(await res.json()).toEqual({ returned: 2, revoked: 1, reconciled: 0, kept: 0, flyer: { released: 3, kept: 1 }, launchList: { due: false, deleted: 0 }, anonReports: { deleted: 0 } });
     } finally {
       delete process.env.SOCIAL_FRIENDS_ENABLED;
     }
@@ -57,10 +60,26 @@ describe("GET /api/cron/invite-sweep", () => {
     const err = vi.spyOn(console, "info").mockImplementation(() => {});
     const res = await call("Bearer s3cret");
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ returned: 2, revoked: 1, reconciled: 0, kept: 0, flyer: { released: 3, kept: 1 }, launchList: { error: true } });
+    expect(await res.json()).toEqual({ returned: 2, revoked: 1, reconciled: 0, kept: 0, flyer: { released: 3, kept: 1 }, launchList: { error: true }, anonReports: { deleted: 0 } });
     expect(err.mock.calls.flat().join(" ")).toContain("purge failed (40P01)");
     expect(err.mock.calls.flat().join(" ")).not.toContain("a@x.dev");
     err.mockRestore();
+  });
+
+  it("answers the signed-out report purge's count beside the others", async () => {
+    reports.mockResolvedValueOnce({ deleted: 5 });
+    expect((await (await call("Bearer s3cret")).json()).anonReports).toEqual({ deleted: 5 });
+  });
+
+  it("keeps the other counts and answers 200 when only the report purge fails", async () => {
+    reports.mockRejectedValueOnce(Object.assign(new Error("a@x.dev leaked"), { code: "40P01" }));
+    const info = vi.spyOn(console, "info").mockImplementation(() => {});
+    const res = await call("Bearer s3cret");
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ returned: 2, revoked: 1, reconciled: 0, kept: 0, flyer: { released: 3, kept: 1 }, launchList: { due: false, deleted: 0 }, anonReports: { error: true } });
+    expect(info.mock.calls.flat().join(" ")).toContain("signed-out reports failed (40P01)");
+    expect(info.mock.calls.flat().join(" ")).not.toContain("a@x.dev");
+    info.mockRestore();
   });
 
   it("answers 500 when the sweep fails, logging no message from the error", async () => {
@@ -83,6 +102,7 @@ describe("GET /api/cron/invite-sweep", () => {
       expect(await res.json()).toEqual({ paused: "staging" });
       expect(sweep).not.toHaveBeenCalled();
       expect(purge).not.toHaveBeenCalled();
+      expect(reports).not.toHaveBeenCalled();
       process.env.STAGING_CRONS = "run";
       await call("Bearer s3cret");
       expect(sweep).toHaveBeenCalledTimes(1);
