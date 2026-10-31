@@ -619,6 +619,9 @@ describe("TuningPanel with Suggested changes v2 on: the wait and the results (UI
     }
     expect(document.body.textContent).not.toContain("goes to 96");
     expect(document.body.textContent).not.toContain(sc.pastRun);
+    // Small items 8, item 5: the run takes History C's past-run box, since nothing here can be applied now.
+    expect(document.querySelector("[data-sc-run]")!.getAttribute("data-sc-past")).toBe("stale");
+    expect(document.querySelector("[data-sc-past-note]")!.textContent).toBe(tuningHubCopy.history.pastNoteUncounted);
     // Nor v10's intake under it: no Additional notes, no Kept for this deck, no v10 press.
     expect(screen.queryByRole("button", { name: deckTuningCopy.panel.again })).toBeNull();
     expect(screen.queryByLabelText(deckDescriptionCopy.notes.label)).toBeNull();
