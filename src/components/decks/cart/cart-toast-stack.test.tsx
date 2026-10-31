@@ -10,7 +10,7 @@ import { COVERED_WITH_MAIN } from "../../shell/covered-layer";
 
 function wide(on: boolean) {
   vi.stubGlobal("matchMedia", (query: string) => ({
-    matches: on && query.includes("768"), media: query, addEventListener: () => {}, removeEventListener: () => {},
+    matches: on && query.includes("76.5rem"), media: query, addEventListener: () => {}, removeEventListener: () => {},
   }));
 }
 afterEach(() => {
@@ -25,11 +25,13 @@ function Receipt() {
 const failed = { id: 1, text: "We couldn’t send that." };
 
 describe("the stack", () => {
-  it("stands on the tab bar's floor + 10 with 16px gutters and a 10px gap, hidden from md", () => {
+  it("stands on the tab bar's floor + 10 with 16px gutters and a 10px gap, the receipt's slot from md, hidden from 1224px", () => {
     expect(CART_STACK_CLASS).toContain("bottom-[calc(var(--tabbar-h,0px)+10px)]");
     expect(CART_STACK_CLASS).toContain("left-[16px] right-[16px] z-[60]");
     expect(CART_STACK_CLASS).toContain("flex flex-col gap-[10px]");
-    expect(CART_STACK_CLASS).toContain("md:hidden");
+    expect(CART_STACK_CLASS).toContain("md:bottom-[22px] md:left-auto md:right-[22px] md:w-[380px]");
+    expect(CART_STACK_CLASS).toContain("min-[76.5rem]:hidden");
+    expect(CART_STACK_CLASS).not.toContain("md:hidden");
   });
 
   it("is covered with main, in the shell's host and in the one a bare tree makes", () => {
@@ -43,7 +45,7 @@ describe("the stack", () => {
   });
 });
 
-describe("on a phone", () => {
+describe("below 1224px (a phone, and a tablet from md)", () => {
   it("draws the receipt on the floor (order-2) and the failed ask above it (order-1), both in the stack", () => {
     wide(false);
     render(<><Receipt /><SocialToast toast={failed} onDone={() => {}} placement="cart" /></>);
@@ -95,7 +97,7 @@ describe("on a phone", () => {
   });
 });
 
-describe("from md", () => {
+describe("from 1224px", () => {
   it("pins the shipped class strings: both toasts keep their own slots, nothing in the stack", () => {
     wide(true);
     render(<><Receipt /><SocialToast toast={failed} onDone={() => {}} placement="cart" /></>);

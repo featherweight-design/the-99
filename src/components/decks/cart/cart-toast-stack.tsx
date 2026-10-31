@@ -5,9 +5,9 @@
 // 10px above it. Each keeps its own clock; when the receipt goes the alert drops to the floor in the same layout, and
 // when the alert goes the receipt has not moved. Nothing measures another toast and nothing is lifted.
 //
-// From md both toasts keep the fixed slots they shipped in (this work leaves them unchanged; between md and about
-// 1224px the centre alert and the right-hand receipt can overlap, a pre-existing edge that is not drawn here), so the
-// stack is phone-only: it is `md:hidden`.
+// From md up to 1223px (Small items 8, item 3) the same column takes the receipt's fixed slot, 22px in from the bottom
+// and right edge and 380 wide, so an alert that would have overlapped the receipt there stands 10px above it. From
+// 1224px each toast keeps the fixed slot it shipped in, and the column is hidden. Alone, each keeps its own place.
 //
 // The column is a host the shell draws (inside its lock's `--tabbar-h`, and outside the page's stacking context); a tree
 // with no shell (a test) gets one made on the body.
@@ -17,10 +17,12 @@ import { COVERED_WITH_MAIN } from "../../shell/covered-layer";
 
 const HOST = "data-cart-toast-stack";
 
-/** Phone: 16px gutters, its floor 10px above the tab bar, 10px between the toasts. Pointer events pass through the
- *  column (its gap, and the band beside a short toast) to the page; each toast takes its own. Hidden from md. */
+/** Phone: 16px gutters, its floor 10px above the tab bar, 10px between the toasts. From md it is the receipt's slot
+ *  (bottom right, 22px in, 380 wide). Pointer events pass through the column (its gap, and the band beside a short
+ *  toast) to the page; each toast takes its own. Hidden from 76.5rem (1224px). */
 export const CART_STACK_CLASS =
-  "pointer-events-none fixed bottom-[calc(var(--tabbar-h,0px)+10px)] left-[16px] right-[16px] z-[60] flex flex-col gap-[10px] md:hidden";
+  "pointer-events-none fixed bottom-[calc(var(--tabbar-h,0px)+10px)] left-[16px] right-[16px] z-[60] flex flex-col gap-[10px] " +
+  "md:bottom-[22px] md:left-auto md:right-[22px] md:w-[380px] min-[76.5rem]:hidden";
 
 /** The host the shell draws once, empty: cart toasts portal into it on the phone. */
 export function CartToastStackHost() {
@@ -41,10 +43,11 @@ export function cartToastStack(): HTMLElement {
   return made;
 }
 
-const WIDE = "(min-width: 768px)";
+const WIDE = "(min-width: 76.5rem)";
 
-/** Below md. The server snapshot and a window with no `matchMedia` read as the phone, as `useMinWidth` does. */
-export function useCartPhone(): boolean {
+/** Below 1224px, where a cart toast stands in the stack. The server snapshot and a window with no `matchMedia` read as
+ *  the stack, as `useMinWidth` reads the phone. */
+export function useCartStacked(): boolean {
   const subscribe = useCallback((onChange: () => void) => {
     const mq = window.matchMedia?.(WIDE);
     mq?.addEventListener("change", onChange);
