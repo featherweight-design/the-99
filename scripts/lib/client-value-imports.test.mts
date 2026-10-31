@@ -53,6 +53,24 @@ describe("clientValueFindings", () => {
     expect(clientValueFindings(ROOT, files)).toEqual([]);
   });
 
+  it("reads only a leading directive, and follows export * and a namespace import", () => {
+    const files = tree({
+      "src/app/page.tsx": `import * as Parts from "../components/barrel";\n`,
+      "src/components/barrel.ts": `export * from "./banner";\nimport { useThing } from "./banner"\nexport const a = 1\n`,
+      "src/components/banner.tsx": CLIENT,
+      "src/components/list.ts": `export const FIXTURE = ['"use client"',\n  "x"];\n`,
+    });
+    expect(clientValueFindings(ROOT, files)).toEqual([{ path: "src/components/barrel.ts", name: "useThing", from: "./banner" }]);
+  });
+
+  it("treats only a file named like a Next entry as a server entry", () => {
+    const files = tree({
+      "src/app/foo/sidebar-layout.tsx": `import { HEADING_ID } from "../../components/banner";\n`,
+      "src/components/banner.tsx": CLIENT,
+    });
+    expect(clientValueFindings(ROOT, files)).toEqual([]);
+  });
+
   it("does not ask a module only client code reaches", () => {
     const files = tree({
       "src/app/page.tsx": `import { Banner } from "../components/banner";\n`,
