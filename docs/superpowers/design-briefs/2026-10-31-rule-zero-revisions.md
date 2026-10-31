@@ -23,12 +23,22 @@ marks the read's key is made of).
 4. **An open table sits at the top of Home, phone and desktop, when you are seated.** Today `HomeTableCard`
    (`src/components/rule-zero/home-table-card.tsx`, boards E3 and F3) sits at the head of the Friends section.
 5. **The host can Close the table, and a table also ends the next morning.** Today there is no close action: a table
-   lasts 24 hours from setup and then reads `This table has closed`.
+   lasts 24 hours from setup (changing, see Errata) and then reads `This table has closed`.
 6. **A seated player gets a push plus an in-app notice**, worded `<host> seated you at <pod>'s table`. **Visibility
    stays seated-only:** only seated players can open the table or see anyone's chosen deck.
 
 Lane a6 builds the engineering half (the notice delivery and the expiry). Wording goes through `/copy-review`; this
 brief fixes only the shape.
+
+## Errata to the existing handoff
+
+The expiry rule changes (lane a6 builds it): **a table closes at the first 6:00 am in the host's time zone that is at
+least 4 hours after setup**, not 24 hours after. The shipped expired body changes from "...closed 24 hours after
+{setter} set it." to "{pod}'s table closed the morning after {setter} set it. Games logged from it stay on each deck's
+Games tab." The handoff still says 24 hours in these places, and Design updates them:
+- `design/design_handoff_the99_rule_zero/README.md` line 150
+- `design/design_handoff_the99_rule_zero/rule-zero · copy strings.ts` line 131
+- `R1 - Log-Phone.dc.html` and `R2 - Log-Desktop.dc.html`, line 573 of each
 
 ## What exists today
 
