@@ -183,6 +183,8 @@ async function main() {
     const friends = (await sql`select sp.display_name as name, sp.public_id as pid from friend_links fl join social_profiles sp on sp.user_id = fl.friend_user_id where fl.user_id = ${userId} order by sp.display_name limit 6`) as { name: string; pid: string }[];
     const podNames = ((await sql`select distinct p.name as name from pods p join pod_members pm on pm.pod_id = p.id where pm.user_id = ${userId} limit 6`) as { name: string }[]).map((r) => r.name);
     const deckNames = ((await sql`select distinct d.name as name from decks d join friend_links fl on fl.friend_user_id = d.user_id where fl.user_id = ${userId} limit 8`) as { name: string }[]).map((r) => r.name);
+    // A table page is /friends/table/<id>; there is no index route, so use the account's open table, if it sits at one.
+    const tableIds = ((await sql`select t.id as id from rule_zero_tables t join rule_zero_seats s on s.table_id = t.id where s.user_id = ${userId} and t.expires_at > now() order by t.expires_at desc limit 2`) as { id: string }[]).map((r) => `/friends/table/${r.id}`);
     const long = (names: string[]) => [...new Set(names)].filter((n) => n.trim().length >= 3);
     const friendNames = long(friends.map((f) => f.name));
     const friendPages = friends.slice(0, 3).map((f) => `/friends/${f.pid}`);
@@ -193,7 +195,7 @@ async function main() {
       { family: "spares and requests", routes: friendPages, names: friendNames },
       { family: "feed", routes: ["/"], names: friendNames },
       { family: "friend decks", routes: [...friendPages, "/decks"], names: long(deckNames) },
-      { family: "Rule 0", routes: ["/friends/table"], names: [...friendNames, ...long(podNames)] },
+      { family: "Rule 0", routes: tableIds, names: [...friendNames, ...long(podNames)] },
       { family: "game log", routes: ["/decks"], names: [...friendNames, ...long(deckNames)] },
     ];
 
