@@ -2,6 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { visibleSections } from "../../../lib/about/pages-visible";
+import { ABOUT_RULES, ABOUT_SECTIONS } from "../../../lib/copy/about-pages";
 import { AboutText } from "./about-text";
 import { PROOF_ENVS, aboutTextSnapshot } from "./about-text.fixture";
 import before from "./about-text.snapshot.json";
@@ -37,6 +38,20 @@ describe("About's words, rendered (Small items 7, item 6, F1)", () => {
   it("draws text with no marker as the bare string, and each marked phrase in bold", () => {
     expect(render("plain & “quoted”.")).toBe("plain &amp; “quoted”.");
     expect(render("a **b** c **d**")).toBe(`a ${B("b")} c ${B("d")}`);
+  });
+});
+
+describe("About's bold markers", () => {
+  it("open and close in pairs around a phrase, in every sub line, label and rule", () => {
+    // An odd count would bold the rest of the line, and `****` would draw an empty bold.
+    const texts = [
+      ...ABOUT_SECTIONS.flatMap((s) => [s.sub, ...s.labels.map((l) => l.rest)]),
+      ...Object.values(ABOUT_RULES).map((r) => r.text),
+    ];
+    for (const t of texts) {
+      expect(t.split("**").length % 2, t).toBe(1);
+      expect(t, t).not.toContain("****");
+    }
   });
 });
 

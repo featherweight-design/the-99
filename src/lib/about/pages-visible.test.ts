@@ -470,6 +470,8 @@ describe("a section's sub-line", () => {
 
   it("cuts a sentence naming a switched feature while that switch is off, and keeps the rest (Small items 3, item 4)", () => {
     expect(sub(ALL_ON, "all-decks")).toContain("one cart");
+    // The way in (Small items 7, item 6) draws with the cart, and goes with it.
+    expect(sub(ALL_ON, "all-decks")).toContain("Open it from the top of Decks.");
     const noCart = env({ ...(ALL_ON as Record<string, string>), ALL_DECKS_CART_ENABLED: "off" });
     expect(sub(noCart, "all-decks")).toBe(ABOUT_SCREEN_OFF.trim());
     // Stats is retired (always on): its sentences always draw.

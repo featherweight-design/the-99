@@ -23,6 +23,7 @@ import { useEffect, useRef, useState } from "react";
 import { ABOUT_PAGE_STRINGS, type AboutRuleDiagram } from "../../../lib/copy/about-pages";
 import { Mark } from "../../home/banner-mark";
 import { RuleDiagram } from "./rule-diagrams";
+import { AboutText } from "./about-text";
 import { useLabelLanding, useLandingRequest } from "../../discovery/label-landing";
 
 /** A rule as the page hands it over: its key, its visible text and its switch-resolved diagram. */
@@ -64,7 +65,7 @@ export function RuleCard({ rule, lit = false }: { rule: RuleCardModel; lit?: boo
         <RuleDiagram diagram={rule.diagram} />
       </div>
       <p className="m-0 px-[14px] pb-[15px] pt-[13px] text-[13.5px] leading-[1.55] text-[color:var(--fg-body)] [text-wrap:pretty]">
-        {rule.text}
+        <AboutText text={rule.text} />
       </p>
     </article>
   );
