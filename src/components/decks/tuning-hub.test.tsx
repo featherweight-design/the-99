@@ -492,7 +492,11 @@ describe("TuningHub opening a tool", () => {
     read.mockResolvedValue(empty);
     const { rerender } = render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} request={{ tool: "cuts", nonce: 1 }} />);
     expect(await screen.findByRole("heading", { name: "Proposed cuts" })).toBeTruthy();
-    expect(tile("suggested")).toBeNull();
+    // The landing grid is not mounted with a tool open; a tile may only be the "Other tools" row's.
+    const other = screen.queryByRole("group", { name: copy.otherTools });
+    const open = tile("suggested");
+    expect(open === null || (other !== null && other.contains(open))).toBe(true);
+    expect(tile("cuts")).toBeNull();
     rerender(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} request={{ tool: null, nonce: 2 }} />);
     await waitFor(() => expect(tile("suggested")).not.toBeNull());
     expect(screen.queryByRole("heading", { name: "Proposed cuts" })).toBeNull();
