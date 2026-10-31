@@ -5,25 +5,21 @@
  * Read AFTER the cached suggestions payload resolves and outside every `cacheForUser` entry: a label
  * publish moves neither the deployment nor the catalog generation that key carries, so a label read
  * inside the cache would serve the previous run's labels for up to its ceiling.
- *
- * Off (`LABEL_SURFACES_ENABLED` anything but `'true'`), nothing is read and the suggestions pass
- * through untouched.
  */
 import { filterConsider } from "../labels/consider";
-import { labelSurfacesEnabled, readLabels } from "../labels/read";
+import { readLabels } from "../labels/read";
 import type { Job } from "../labels/types";
 import type { Suggestion } from "./suggest";
 
 export type ConsiderLabelDeps = {
-  enabled: () => boolean;
   readLabels: (oracleIds: readonly string[]) => Promise<Map<string, Job[]>>;
 };
 
 export type ConsiderLabels = { labels: ReadonlyMap<string, readonly Job[]> };
 
-/** The request's deps: the switch decided from the reader's resolved switches (`requestSwitchEnv`). */
-export function considerLabelDeps(env: NodeJS.ProcessEnv): ConsiderLabelDeps {
-  return { enabled: () => labelSurfacesEnabled(env), readLabels };
+/** The request's deps: the app's label read. */
+export function considerLabelDeps(): ConsiderLabelDeps {
+  return { readLabels };
 }
 
 export async function considerLabels(
@@ -33,13 +29,12 @@ export async function considerLabels(
   },
   deps: ConsiderLabelDeps,
 ): Promise<ConsiderLabels | null> {
-  if (!deps.enabled()) return null;
   if (args.suggestionIds.length === 0) return null;
   return { labels: await deps.readLabels(args.suggestionIds) };
 }
 
 /**
- * The suggestions the page renders: unchanged when the read is off or failed (null), and unchanged when
+ * The suggestions the page renders: unchanged when the read was skipped or failed (null), and unchanged when
  * the filter would leave none. An empty list draws the panel's empty state, which tells the reader every
  * fitting card in their collection is already in the deck; that is false for cards dropped by a label,
  * and this filter adds no copy of its own to say otherwise.

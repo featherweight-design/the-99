@@ -325,8 +325,8 @@ export function rankStandIns(
    */
   deck: DeckLens | null,
   /**
-   * Fresh card labels by oracle id (`readLabels`); empty while `STAND_IN_LABELS_ENABLED` is off, which leaves
-   * every row exactly as the text comparison draws it. A pair is compared by its labels only when BOTH cards
+   * Fresh card labels by oracle id (`readLabels`); empty leaves every row exactly as the text comparison
+   * draws it. A pair is compared by its labels only when BOTH cards
    * carry one (Q1); every other pair by text.
    */
   labels: ReadonlyMap<string, readonly LabelJob[]> = NO_LABELS,

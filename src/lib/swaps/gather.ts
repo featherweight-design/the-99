@@ -12,8 +12,8 @@
  * its figure), the player's own copies (free ones lead), and the cheapest unlisted cards. So the
  * pool is exactly those three, with the unlisted half cut to the `UNLISTED_POOL` cheapest live
  * cards whose text carries a role's words; `rankStandIns` then keeps the ones that share a role.
- * With `STAND_IN_LABELS_ENABLED` on and the original labelled, the unlisted half gains a second slice
- * of the same size, chosen by the original's labelled jobs (the run plan's Task 5).
+ * With the original labelled, the unlisted half gains a second slice of the same size, chosen by
+ * the original's labelled jobs (the run plan's Task 5).
  * The cheapest-first order is only used to choose that pool; every figure the sheet draws comes
  * from `loadPrices`, the same read the buy tag uses.
  */
@@ -26,7 +26,7 @@ import { loadPrices } from "../decks/price-query";
 import { keyCreatureType } from "../recs/themes";
 import { loadUniversalStaples } from "../staples/universal";
 import { heldCardTypes, labelPatterns } from "../labels/match";
-import { readLabels, standInLabelsEnabled } from "../labels/read";
+import { readLabels } from "../labels/read";
 import type { Job as LabelJob } from "../labels/types";
 import { isLandFace } from "../cards/facet";
 import { heldSubtypes } from "./honest";
@@ -173,9 +173,7 @@ export async function loadStandIns(
   const identity = sql.param([...new Set(cmdrRows.rows.flatMap((r) => r.color_identity))]);
   const draft = sql.param([...new Set([...draftRows.rows.map((r) => r.oracle_id), ...commanderIds])]);
 
-  // Off, no label is read and the pool and every comparison are the text path's, unchanged.
-  const labelsOn = standInLabelsEnabled(env);
-  const originalLabels: readonly LabelJob[] | undefined = labelsOn && !isLandFace(original.typeLine)
+  const originalLabels: readonly LabelJob[] | undefined = !isLandFace(original.typeLine)
     ? (await readLabels([cutOracleId])).get(cutOracleId)
     : undefined;
   const job = jobOf(original);

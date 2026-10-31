@@ -2,7 +2,7 @@
 // suggestions payload resolves, outside every `cacheForUser` entry, in the same wave as the price,
 // availability and facts reads, and the filter is applied to the list the tiles render. The page loads
 // too much to render in a unit test, so this reads its source as a syntax tree, as
-// `how-it-works-boundary.test.ts` does. The rule and the switch are `consider.test.ts` and
+// `how-it-works-boundary.test.ts` does. The rule and the read are `consider.test.ts` and
 // `consider-labels.test.ts`.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
