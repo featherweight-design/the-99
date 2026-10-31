@@ -18,10 +18,10 @@ describe("isComponentName", () => {
 });
 
 describe("valueBindings", () => {
-  it("reads default, named and re-exported values, and skips types and namespaces", () => {
+  it("reads default, named and re-exported values, skips types, and names a namespace `*`", () => {
     const source = `import Def, { a, type B, c as d } from "./x";\nimport type { E } from "./y";\nimport * as ns from "./z";\nexport { f } from "./w";\nimport { g } from "react";\n`;
     expect(valueBindings(source)).toEqual([
-      { spec: "./x", name: "Def" }, { spec: "./x", name: "a" }, { spec: "./x", name: "c" }, { spec: "./w", name: "f" },
+      { spec: "./x", name: "Def" }, { spec: "./x", name: "a" }, { spec: "./x", name: "c" }, { spec: "./z", name: "*" }, { spec: "./w", name: "f" },
     ]);
   });
 });
