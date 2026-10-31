@@ -1,11 +1,11 @@
 {
   "feature": "US date order, PR 1 (player dates): every fixed-width or tight slot that draws a player date, at its longest realistic value",
-  "note": "Run on a scratch branch made from local-dev. DATE_DECK (the audit account's HD - Tovolar) had v1 committed_at set to 2025-12-31 18:00 UTC and its two games played_at 2025-12-31 18:00 and 2026-09-30 18:00 UTC; DATE_DECK_2 (HD - Avatar Aang) had v1 2025-12-31 and v2 2026-09-30. So the slots draw Dec 31, 2025 (the longest year-carrying form) and Sep 30 (the longest short form).",
+  "note": "Run on a scratch branch made from local-dev. DATE_DECK (the audit account's HD - Tovolar) has v1 committed_at 2025-12-31 18:00 UTC and six games played 2025-12-31, 2026-01-09, 2026-03-16, 2026-05-23, 2026-09-28 and 2026-09-30 (18:00 UTC; four inserted on the scratch branch); DATE_DECK_2 (HD - Avatar Aang) has v1 2025-12-31 and v2 2026-09-30, and its one game played 2025-12-31. So the slots draw Dec 31, 2025 (the longest year-carrying form) and Sep 30 / Sep 30, 2026. Re-run after Small items 7 addendum 5-7 (Dates.dc.html).",
   "clearAbout": true,
   "rows": [
     {
       "id": "game-rows",
-      "label": "/decks/[id] Games: history rows, meta slot `4-player · Dec 31, 2025` (md:w-[132px]) and `· Sep 30`",
+      "label": "/decks/[id] Games: history rows, meta slot `4-player · Dec 31, 2025` (md:w-[156px], Small items 7 A5) and `· Sep 30`",
       "view": "src/components/decks/game-history-row.tsx",
       "steps": [
         {
@@ -24,7 +24,7 @@
     },
     {
       "id": "stats-results",
-      "label": "/decks/[id] Stats: result beads with a 9px date under each 30px bead, the span line and the by-version sub dates",
+      "label": "/decks/[id] Stats: six result beads, no date under a bead, the row dated once under its ends (`Dec 31, 2025` … `Sep 30`, A6)",
       "view": "src/components/decks/deck-stats-results.tsx",
       "steps": [
         {
@@ -42,8 +42,53 @@
       ]
     },
     {
+      "id": "stats-results-one",
+      "label": "/decks/[id] Stats: one game, one bead, one date under it (`Dec 31, 2025`, A6)",
+      "view": "src/components/decks/deck-stats-results.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${DATE_DECK_2}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "^Show the deck as stats",
+          "wait": "[data-results-beads]",
+          "scrollTo": "[data-stats-card=results]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "stats-bead-tooltip",
+      "label": "/decks/[id] Stats, desktop: the second bead hovered, its tooltip `L · Jan 9` (A6, the card mark's bubble)",
+      "view": "src/components/decks/deck-stats-results.tsx",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/decks/${DATE_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "^Show the deck as stats",
+          "wait": "[data-results-beads]",
+          "scrollTo": "[data-stats-card=results]",
+          "settle": 800
+        },
+        {
+          "hover": "[data-results-beads] li:nth-child(2) [data-result-bead]",
+          "settle": 900
+        }
+      ]
+    },
+    {
       "id": "todo-foot",
-      "label": "/decks/[id]: the deck foot's version line `v1 · Dec 31, 2025`",
+      "label": "/decks/[id]: the deck foot `v1 · committed Dec 31, 2025`, each later segment led by its own `·` (A7)",
       "view": "src/components/decks/todo-foot.tsx",
       "steps": [
         {
