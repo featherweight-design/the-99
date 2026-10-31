@@ -52,7 +52,6 @@ export function CommitmentsCard({
   commitments,
   shopping,
   totalCards,
-  cartEnabled = false,
 }: {
   commitments: Commitments;
   shopping: ShoppingRollup;
@@ -62,8 +61,6 @@ export function CommitmentsCard({
    * holds. It is not on `Commitments`, which knows only about decks.
    */
   totalCards: number;
-  /** The all-decks cart's switch for this reader. Off, the card keeps its one button. */
-  cartEnabled?: boolean;
 }) {
   const c = refreshCopy.home;
   // Each value as the copy module writes it; `CountUp` moves the number inside it and leaves the words and the money.
@@ -107,9 +104,9 @@ export function CommitmentsCard({
             collection that buried 43 over-committed cards under 1,015 that are
             merely sleeved, which needs no review. `/collection` with no filter
             would be the whole collection, which is not what "review" means here. */}
-        {/* Beside it when the cart is on, two equal halves like `New deck` and `Import a deck`
+        {/* Beside it, two equal halves like `New deck` and `Import a deck`
             at every width: the figures say what is short, and the second button is where to buy it. */}
-        <div className="mt-[2px] grid grid-cols-1 gap-[8px] min-[360px]:data-[two]:grid-cols-2" data-two={cartEnabled ? "" : undefined}>
+        <div className="mt-[2px] grid grid-cols-1 gap-[8px] min-[360px]:data-[two]:grid-cols-2" data-two="">
           <GhostButton
             href="/collection?avail=over"
             // 44 on a phone, 32 above it. The card was desktop-only when this was
@@ -119,14 +116,12 @@ export function CommitmentsCard({
           >
             {c.reviewCommitments}
           </GhostButton>
-          {cartEnabled && (
-            <GhostButton
-              href="/decks/shopping"
-              className="flex h-[44px] w-full min-w-0 items-center justify-center whitespace-nowrap rounded-[8px] px-[8px] text-[12.5px] font-normal sm:h-[32px]"
-            >
-              {c.shopAllDecks}
-            </GhostButton>
-          )}
+          <GhostButton
+            href="/decks/shopping"
+            className="flex h-[44px] w-full min-w-0 items-center justify-center whitespace-nowrap rounded-[8px] px-[8px] text-[12.5px] font-normal sm:h-[32px]"
+          >
+            {c.shopAllDecks}
+          </GhostButton>
         </div>
       </div>
     </section>

@@ -11,7 +11,7 @@ import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ABOUT_VERSION } from "./lib/copy/about";
 import { aboutLine } from "./lib/about/notice";
-import { afterVisit, visibleSections } from "./lib/about/pages-visible";
+import { afterVisit, unseenUnits, visibleSections } from "./lib/about/pages-visible";
 import { switchedIds, visibleEntries } from "./lib/about/visible";
 
 const session = vi.fn(async () => ({ userId: "user_1" as string | null }));
@@ -39,12 +39,14 @@ const quiet = (res: NextResponse | undefined) => {
 };
 
 beforeEach(() => {
-  // Current: the floor, and every switched entry the reader was drawn with every switch off.
+  // Current: the floor, every switched entry the reader was drawn with every switch off, and every unit drawn then
+  // (a retired switch's units are always drawn, and a reader past them has seen them).
   stored.version = ABOUT_VERSION;
   stored.ids = switchedIds(visibleEntries(process.env));
+  stored.ids = [...stored.ids, ...unseenUnits(visibleSections(process.env), { version: stored.version, ids: stored.ids }).flatMap((u) => u.ack)];
 });
 afterEach(() => {
-  delete process.env.ALL_DECKS_CART_ENABLED;
+  delete process.env.SWAP_TOOLS_ENABLED;
   delete process.env.ANALYSIS_TAB_ENABLED;
 });
 
@@ -60,11 +62,11 @@ describe("a switch flipped on", () => {
     expect(line()).toBeNull();
     quiet(await load());
 
-    // The all-decks cart switched on: Home names its units, and the proxy still redirects nowhere.
-    process.env.ALL_DECKS_CART_ENABLED = "true";
+    // The swap tools switched on: Home names their units, and the proxy still redirects nowhere.
+    process.env.SWAP_TOOLS_ENABLED = "true";
     const first = line();
     expect(first?.kind).toBe("launches");
-    expect(first?.ids).toContain("shopping/all-decks/total");
+    expect(first?.ids).toContain("shopping/deck-shopping/standins");
     quiet(await load());
 
     // The reader opens Shopping (Show me lands there), which records that page's keys.
@@ -75,7 +77,7 @@ describe("a switch flipped on", () => {
     process.env.ANALYSIS_TAB_ENABLED = "true";
     const second = line();
     expect(second?.ids.length).toBeGreaterThan(0);
-    expect(second?.ids.some((k) => k.startsWith("shopping/all-decks/total"))).toBe(false);
+    expect(second?.ids.some((k) => k.startsWith("shopping/deck-shopping/standins"))).toBe(false);
     quiet(await load());
   });
 });

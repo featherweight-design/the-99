@@ -110,12 +110,11 @@ export type DecksViewProps = {
    * this: a folder holding no decks has no deck row to be named by.
    */
   folders: DeckFolderWithCount[];
-  shopping: ShoppingRollup;
   /**
-   * `ALL_DECKS_CART_ENABLED`, read on the server. On, the cart's entry line draws above the
-   * shelves whenever a deck is missing cards, and each To buy tile's figure links into the cart.
+   * The Shopping roll-up. The cart's entry line draws above the shelves whenever a deck is
+   * missing cards, and each To buy tile's figure links into the cart.
    */
-  cartEnabled?: boolean;
+  shopping: ShoppingRollup;
   /** The precons line, with its summary. */
   precons?: { summary: PreconSummary | null } | null;
   /** `HELP_ME_CHOOSE_ENABLED`, read on the server: the zero state's door (discovery R3 E1). */
@@ -207,7 +206,6 @@ export function DecksView({
   decks: serverDecks,
   folders: serverFolders,
   shopping,
-  cartEnabled = false,
   precons = null,
   helpMeChoose = false,
   friendPrefs = null,
@@ -650,8 +648,8 @@ export function DecksView({
   }, []);
   const active = activeFilterCount(state.filters);
   const zero = decks.length === 0;
-  // The cart line draws only with its switch on and some deck missing a card (A1-0).
-  const showCart = cartEnabled && shopping.byDeck.size > 0;
+  // The cart line draws only when some deck is missing a card (A1-0).
+  const showCart = shopping.byDeck.size > 0;
   const chips = chipLabels(state.filters);
   // The chassis switches form on its own breakpoint, not Tailwind's — 1000px,
   // because `/collection`'s seven controls need 987 and the row must never wrap.
@@ -932,7 +930,7 @@ export function DecksView({
           cells: at 390 two cells share it half and half and one alone fills it; from 640 it is
           always two columns, so a line alone keeps its half-width cell rather than reading as a
           banner. With it off (P4), the cart's own row as it shipped, absent when no deck is missing a
-          card (A1-0) or the cart's switch is off. */}
+          card (A1-0). */}
       {precons ? (
         <div className={`grid gap-[8px] px-[16px] pt-[12px] pb-[4px] sm:grid-cols-2 sm:gap-[12px] sm:px-[22px] sm:pt-[16px] sm:pb-[16px] ${showCart ? "grid-cols-2" : "grid-cols-1"}`}>
           {showCart && <CartEntry total={shopping.total} deckCount={shopping.byDeck.size} paired />}
@@ -952,7 +950,7 @@ export function DecksView({
               when there is at least one deck: a shelf for nothing is furniture
               (STATES W6/C5), and `zero` above has already taken that case. */}
           {statsOn ? (
-            <LineupView data={heldStats!} now={nowIso} foldServer={lineup!.foldServer} viewSwitch={viewSwitch} cartEnabled={cartEnabled} amongDeck={amongDeck} />
+            <LineupView data={heldStats!} now={nowIso} foldServer={lineup!.foldServer} viewSwitch={viewSwitch} amongDeck={amongDeck} />
           ) : (<>
           {wide ? (
             <ShelfLine
@@ -1320,7 +1318,6 @@ export function DecksView({
                     deferArt={i >= EAGER_ART_TILES}
                     claimPrefetch={() => claimPrefetch(deck.id)}
                     shopping={shopping.byDeck.get(deck.id)}
-                    cartLink={cartEnabled}
                     now={now}
                     folders={folders}
                     onCreateFolder={() => {

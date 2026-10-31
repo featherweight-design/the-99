@@ -77,7 +77,6 @@ beforeEach(() => {
   state.calls = [];
   state.invalidated = 0;
   state.after = 0;
-  process.env.ALL_DECKS_CART_ENABLED = "true";
 });
 
 describe("markBought", () => {
@@ -192,10 +191,12 @@ describe("markBoughtForDecks", () => {
     owes: { [OTHER]: 1 },
   });
 
-  it("refuses with the cart's switch off, writing nothing", async () => {
-    process.env.ALL_DECKS_CART_ENABLED = "";
-    expect(await cartPress()).toEqual({ refused: "off" });
-    expect(state.calls).toEqual([]);
+  // Shopping for all decks is retired as a switch: the press writes with nothing set in the environment.
+  it("writes with no cart switch set", async () => {
+    state.result = cartApplied();
+    const out = await cartPress();
+    expect("applied" in out).toBe(true);
+    expect(state.calls).toHaveLength(1);
   });
 
   it("refuses malformed decks and a pick off the line", async () => {
@@ -295,11 +296,8 @@ describe("readCartChooser", () => {
     expect(card?.claimants.map((c) => c.deckId)).toEqual([B, A]);
   });
 
-  it("answers null with a switch off, or when none of the line's decks claims the card", async () => {
+  it("answers null when none of the line's decks claims the card", async () => {
     state.contested = { oracleId: CARD, cardName: "Sol Ring", arrived: 0, ownedBefore: 0, fromImport: false, owned: 17, claimants: [claimant(C)] };
-    expect(await readCartChooser(CARD, [A])).toBeNull();
-    process.env.ALL_DECKS_CART_ENABLED = "";
-    state.contested = { oracleId: CARD, cardName: "Sol Ring", arrived: 0, ownedBefore: 0, fromImport: false, owned: 17, claimants: [claimant(A)] };
     expect(await readCartChooser(CARD, [A])).toBeNull();
   });
 

@@ -13,7 +13,6 @@ import {
   socialFriendsEnabled,
 } from "../social/flag";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
-import { allDecksCartEnabled } from "../decks/all-decks-cart-flag";
 import { paymentsEnabled, welcomeCreditsEnabled } from "../payments/flag";
 import { type AboutEntry, type AboutLineSwitch, type AboutLineSwitchOne, type AboutSwitch } from "../copy/about";
 import { aboutEntries } from "../copy/about-entries";
@@ -64,7 +63,8 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   DECK_TOKENS_ENABLED: () => true,
   // Already reads ANALYSIS_TAB_ENABLED: the tool lives in the tab's Tuning hub.
   MANA_BALANCE_ENABLED: manaBalanceEnabled,
-  ALL_DECKS_CART_ENABLED: allDecksCartEnabled,
+  // Retired (always on): Shopping for all decks. The name stays as the entries', variants' and sentences' historical identity.
+  ALL_DECKS_CART_ENABLED: () => true,
   // Retired (always on): Precons, and the Announced group and banner that lived under it.
   PRECONS_ENABLED: () => true,
   UPCOMING_PRECONS_ENABLED: () => true,

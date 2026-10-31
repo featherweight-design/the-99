@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { allDecksCartEnabled } from "../lib/decks/all-decks-cart-flag";
 import { helpMeChooseEnabled } from "../lib/intake/flag";
 import type { ComponentProps } from "react";
 import { perfRoute } from "../lib/perf/timing";
@@ -394,7 +393,6 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       about={about}
       welcome={welcome && <WelcomeStrip facts={welcome} sheet={welcomeSheet} place="dashboard" />}
       signature={signatureStrip}
-      cartEnabled={allDecksCartEnabled(env)}
       helpMeChoose={helpMeChooseEnabled(env)}
       noCards={data.stats.uniqueCards === 0}
       feed={feed}

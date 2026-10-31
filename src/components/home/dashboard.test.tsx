@@ -42,12 +42,9 @@ describe("Dashboard header", () => {
 });
 
 describe("Dashboard commitments", () => {
-  it("hands the cart switch to the card: Shop all decks with it on, absent by default", () => {
-    const { unmount } = render(<Dashboard {...BASE} cartEnabled />);
-    expect(screen.getByRole("link", { name: "Shop all decks" })).toHaveAttribute("href", "/decks/shopping");
-    unmount();
+  it("draws the card's Shop all decks link to the cart", () => {
     render(<Dashboard {...BASE} />);
-    expect(screen.queryByRole("link", { name: "Shop all decks" })).toBeNull();
+    expect(screen.getByRole("link", { name: "Shop all decks" })).toHaveAttribute("href", "/decks/shopping");
   });
 });
 

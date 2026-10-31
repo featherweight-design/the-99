@@ -49,15 +49,13 @@ function Filter({ filter, onFilter, phone }: { filter: LineupFilter; onFilter: (
   );
 }
 
-export function LineupView({ data, now, foldServer, viewSwitch, cartEnabled = false, amongDeck = null }: {
+export function LineupView({ data, now, foldServer, viewSwitch, amongDeck = null }: {
   data: LineupData;
   /** The server's clock, ISO: every "N days ago" is measured against it. */
   now: string;
   /** The fold memory the page read from its cookie, so the server draws the cards this browser keeps open. */
   foldServer: string | null;
   viewSwitch: ReactNode;
-  /** `ALL_DECKS_CART_ENABLED`: a shared row's to-buy line links to Shopping for all decks only while it is on. */
-  cartEnabled?: boolean;
   /** A tile's `See it among your decks`: the deck This deck among yours opens on, with that card open and focused. */
   amongDeck?: string | null;
 }) {
@@ -158,7 +156,7 @@ export function LineupView({ data, now, foldServer, viewSwitch, cartEnabled = fa
             open={fold.open.has("shared")}
             onToggle={() => fold.toggle("shared")}
           >
-            <SharedBody shared={data.shared!} decks={decks} cartEnabled={cartEnabled} />
+            <SharedBody shared={data.shared!} decks={decks} />
           </FoldCard>
         ) : null}
         {data.collection ? (() => {

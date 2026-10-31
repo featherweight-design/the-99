@@ -67,9 +67,10 @@ describe("dismissArrivals", () => {
 // announcements now, from their own resolved switches.
 describe("dismissArrivals, About's lines", () => {
   const CART = "shopping/all-decks/total";
+  // Ask rides spare requests, which follow SOCIAL_FRIENDS_ENABLED: off for a reader with no switches set.
+  const ASK = "shopping/all-decks/ask";
 
   it("writes a launch the reader is still told, by its ack, with the floor", async () => {
-    stub.env = { ALL_DECKS_CART_ENABLED: "true" };
     about.seen = { version: ABOUT_VERSION, ids: ["x"] };
     const written = await dismissArrivals([], [CART]);
     expect(about.read).toHaveBeenCalledWith("user_1");
@@ -85,11 +86,10 @@ describe("dismissArrivals, About's lines", () => {
   it("never writes a key the page did not draw, one no longer new, or one switched off for the reader", async () => {
     stub.env = {};
     about.seen = { version: ABOUT_VERSION, ids: ["x"] };
-    const answer = await dismissArrivals([], [CART, "made/up/key"]);
-    expect(answer).not.toContain(CART);
+    const answer = await dismissArrivals([], [ASK, "made/up/key"]);
+    expect(answer).not.toContain(ASK);
     expect(answer).not.toContain("made/up/key");
     expect(about.mark).not.toHaveBeenCalled();
-    stub.env = { ALL_DECKS_CART_ENABLED: "true" };
     about.seen = { version: ABOUT_VERSION, ids: ["x", CART] };
     await dismissArrivals([], [CART]);
     expect(about.mark).not.toHaveBeenCalled();
@@ -97,7 +97,6 @@ describe("dismissArrivals, About's lines", () => {
 
   // Review round 7: a launch another tab already marked seen writes nothing here, and is still acknowledged.
   it("answers a no-write ✕ with the state the reader holds, so a launch seen in another tab is acknowledged", async () => {
-    stub.env = { ALL_DECKS_CART_ENABLED: "true" };
     about.seen = { version: ABOUT_VERSION, ids: ["x", CART] };
     const answer = await dismissArrivals([], [CART]);
     expect(about.mark).not.toHaveBeenCalled();
@@ -106,7 +105,6 @@ describe("dismissArrivals, About's lines", () => {
   });
 
   it("takes both halves in one press", async () => {
-    stub.env = { ...stub.env, ALL_DECKS_CART_ENABLED: "true" };
     about.seen = { version: ABOUT_VERSION, ids: ["x"] };
     await dismissArrivals(["trc"], [CART]);
     expect(stub.mark).toHaveBeenCalledWith("user_1", ["trc"]);
