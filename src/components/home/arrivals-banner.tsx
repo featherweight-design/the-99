@@ -8,23 +8,23 @@
 //
 // About's lines (About visual build, plan `2026-10-27-about-visual.md` PR 6b; handoff `design_handoff_the99_about_visual`,
 // call 7, Ways-In "Banner"): the only place a launch is announced, now the one-time sheet has retired. Drawn first.
-// One launch alone takes the one-line shape with the diamond mark swapped for a crop of its label's region (64x48 on a
-// phone, 56x38 from `md`, each cut from the capture at that width, call 0): "New on Decks:", the unit's words, Show me.
-// Two or more launches, or About beside arrivals, take the `New in the app` band, a crop per About line (44x32) and
-// "and N more" past four. A rule has no region, so its line keeps the diamond mark. A first-run reader's line (A3) is
+// One launch alone takes the one-line shape with the diamond mark swapped for the glyph of the page it opens on an
+// accent plate (36px; Small items 8, item 1): "New on Decks:", the unit's one sentence, Show me.
+// Two or more launches, or About beside arrivals, take the `New in the app` band, a glyph plate per About line (28px)
+// and "and N more" past four. A rule opens no page of its own, so its line keeps the diamond mark. A first-run reader's line (A3) is
 // unchanged and points at the `/about` index. One ✕ dismisses both halves. On the first-run checklist the band draws
 // About's line alone, with no ✕ (`closable={false}`): the checklist is itself the first-run surface.
 
 import Link from "next/link";
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useState } from "react";
 
 import { dismissArrivals } from "../../app/arrivals-actions";
-import { bannerCap, cropStyle, type AboutLaunch, type AboutLine, type BannerCrop } from "../../lib/about/banner-line";
+import { bannerCap, type AboutLaunch, type AboutLine } from "../../lib/about/banner-line";
 import { arrivalsCopy as copy } from "../../lib/copy/arrivals";
 import type { ArrivalsBannerData, BannerLine } from "../../lib/precons/banner";
 import { aboutAcknowledged, aboutFirstRunOver, acknowledgeHeld, arrivalsAcknowledged, launchAcknowledged } from "./arrivals-seen";
-import { ThemeRefresh } from "../about/pages/theme-refresh";
 import { AboutText } from "../about/pages/about-text";
+import { NavIcon } from "../shell/nav-icons";
 import { PendingReporter } from "../shell/pending-reporter";
 import { useTarget } from "../discovery/targets-provider";
 import { Mark } from "./banner-mark";
@@ -52,7 +52,7 @@ const LINK =
 const CLOSE =
   "flex flex-none cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-[color:var(--fg-faint)] " +
   "hover:text-[color:var(--fg)] rounded-[6px] " + RING;
-/** A launch's line in the band (Ways-In `.bn2 li`): the crop beside the words, 8px above and below at every width. */
+/** A launch's line in the band (Ways-In `.bn2 li`): the glyph plate beside the words, 8px above and below at every width. */
 const LAUNCH_LINE =
   "border-t border-solid border-[color:var(--border)] py-[8px] text-[14px] leading-[1.45] text-[color:var(--fg-body)] sm:text-[13.5px]";
 /** One line of the A2 band. */
@@ -90,80 +90,28 @@ function LaunchSentence({ launch }: { launch: AboutLaunch }) {
   );
 }
 
-/** Tailwind's `md`, where the desktop capture takes over from the phone's (call 0). */
-export const CROP_MEDIA = "(min-width: 48rem)";
-/** A transparent pixel: the source at a width whose crop is not drawn, so no capture is fetched for it. */
-export const BLANK_PIXEL = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
-
-/** The diamond mark in a crop's place, where a width has no region to show (a rule). */
-function MarkBox({ w, h, className }: { w: number; h: number; className: string }) {
-  return (
-    <span aria-hidden="true" className={`flex flex-none items-center justify-center ${className}`} style={{ width: w, height: h }}>
-      <Mark />
-    </span>
-  );
-}
-
-/** Each size's box at each width: a launch alone (Ways-In `.bn`), or a line in the band (`.bn2`). */
-const CROP_SIZES = {
-  line: { phone: [64, 48], desktop: [56, 38], box: "h-[48px] w-[64px] md:h-[38px] md:w-[56px]", round: "rounded-[7px]" },
-  list: { phone: [44, 32], desktop: [44, 32], box: "h-[32px] w-[44px]", round: "rounded-[5px]" },
+/** Each size's plate: a launch alone (36px, 19px glyph) or a line in the band (28px, 16px glyph). The tint and edge are
+ *  the diamond `Mark` plate's (`banner-mark.tsx`), the glyph is `--accent`. */
+const PLATE_SIZES = {
+  line: "h-[36px] w-[36px] rounded-[8px]",
+  list: "h-[28px] w-[28px] rounded-[7px] [&>svg]:h-[16px] [&>svg]:w-[16px]",
 } as const;
 
-/** Where a crop's image sits in its box at one width, as custom properties the image's classes read per breakpoint.
- *  Spelled out, one literal name each, so each is declared where it is set (`check:tokens`). */
-function cropVars(phone: BannerCrop | null, desktop: BannerCrop | null, s: (typeof CROP_SIZES)[keyof typeof CROP_SIZES]): CSSProperties {
-  const px = (n: number) => `${n}px`;
-  const p = phone ? cropStyle(phone, s.phone[0], s.phone[1]) : null;
-  const d = desktop ? cropStyle(desktop, s.desktop[0], s.desktop[1]) : null;
-  return {
-    ...(p ? { "--pl": px(p.left), "--pt": px(p.top), "--pw": px(p.width), "--ph": px(p.height) } : {}),
-    ...(d ? { "--dl": px(d.left), "--dt": px(d.top), "--dw": px(d.width), "--dh": px(d.height) } : {}),
-  } as CSSProperties;
-}
-
-/**
- * A launch's picture: the phone capture's crop below `md`, the desktop capture's from `md` (call 0). ONE `<picture>`,
- * so the browser fetches only the capture its width draws (two `<img>`s, one hidden by CSS, fetched both full
- * screenshots). The box and the image's place in it switch at `md` through classes and custom properties. A width with
- * no region (a rule, or a label no capture measured) draws the mark there, and its source is a blank pixel.
- */
-function LaunchCrop({ launch, size }: { launch: AboutLaunch; size: "line" | "list" }) {
-  const s = CROP_SIZES[size];
-  const { phone, desktop } = launch;
-  if (!phone && !desktop) {
-    return (
-      <>
-        <MarkBox w={s.phone[0]} h={s.phone[1]} className="md:hidden" />
-        <MarkBox w={s.desktop[0]} h={s.desktop[1]} className="hidden md:flex" />
-      </>
-    );
-  }
-  const shown = phone && desktop ? "" : phone ? "md:hidden" : "hidden md:flex";
+/** A launch's mark: the nav glyph of the page Show me opens on an accent plate, or the diamond `Mark` for a rule. */
+function LaunchGlyph({ launch, size }: { launch: AboutLaunch; size: "line" | "list" }) {
+  if (!launch.icon) return <Mark className={size === "list" ? "mt-[3px]" : ""} />;
   return (
-    <>
-      {!phone && <MarkBox w={s.phone[0]} h={s.phone[1]} className="md:hidden" />}
-      <span
-        aria-hidden="true"
-        data-about-crop
-        className={`relative box-content flex-none overflow-hidden border border-solid border-[color:var(--border-strong)] bg-[color:var(--bg)] ${s.round} ${s.box} ${shown}`}
-        style={cropVars(phone, desktop, s)}
-      >
-        <picture>
-          <source media={CROP_MEDIA} srcSet={desktop?.src ?? BLANK_PIXEL} />
-          <img
-            src={phone?.src ?? BLANK_PIXEL}
-            alt=""
-            decoding="async"
-            className={
-              "absolute block max-w-none left-[var(--pl)] top-[var(--pt)] h-[var(--ph)] w-[var(--pw)] " +
-              "md:left-[var(--dl)] md:top-[var(--dt)] md:h-[var(--dh)] md:w-[var(--dw)]"
-            }
-          />
-        </picture>
-      </span>
-      {!desktop && <MarkBox w={s.desktop[0]} h={s.desktop[1]} className="hidden md:flex" />}
-    </>
+    <span
+      aria-hidden="true"
+      data-about-glyph
+      className={`box-border flex flex-none items-center justify-center text-[color:var(--accent)] ${PLATE_SIZES[size]}`}
+      style={{
+        background: "color-mix(in srgb, var(--accent) 12%, transparent)",
+        border: "1px solid color-mix(in srgb, var(--accent) 40%, transparent)",
+      }}
+    >
+      <NavIcon href={launch.icon} />
+    </span>
   );
 }
 
@@ -241,9 +189,6 @@ export function ArrivalsBanner({
   const { shown, more } = bannerCap(lines.length);
   const aboutCap = bannerCap(launches.length);
   const closeButton = (className: string) => (closable ? <CloseButton onClose={close} className={className} /> : null);
-  // The crops are captures chosen in the theme the server drew in: a theme picked in place (the account menu repaints
-  // without navigating) asks the server again, as the About pages do. Only while a crop is drawn.
-  const cropTheme = about?.kind === "launches" && launches.some((l) => l.phone || l.desktop) ? about.theme : null;
 
   return (
     // The collapse: one grid row from its height to none. `overflow-hidden` only while closing, so a focus ring
@@ -256,7 +201,6 @@ export function ArrivalsBanner({
       }
     >
       <div className={`min-h-0 ${closing ? "overflow-hidden" : ""}`} inert={closing}>
-        {cropTheme !== null && <ThemeRefresh drawnIn={cropTheme} />}
         {single ? (
           <section
             ref={tourTarget}
@@ -264,12 +208,12 @@ export function ArrivalsBanner({
             className={
               `${SHELL} mx-[16px] mt-[14px] flex items-start py-[10px] ` +
               `${smMx} sm:mt-[18px] sm:min-h-[46px] sm:items-center sm:gap-[12px] sm:py-[7px] ` +
-              // A launch's crop takes the mark's place at the board's insets (Ways-In `.bn`).
+              // A launch's glyph plate takes the mark's place at the board's insets (Ways-In `.bn`).
               (launch ? "gap-[12px] pl-[10px] sm:pl-[8px] " : "gap-[10px] pl-[14px] ") +
               (closable ? "pr-[4px] sm:pr-[8px]" : "pr-[14px]")
             }
           >
-            {launch ? <LaunchCrop launch={launch} size="line" /> : <Mark className="mt-[2px] sm:mt-0" />}
+            {launch ? <LaunchGlyph launch={launch} size="line" /> : <Mark className="mt-[2px] sm:mt-0" />}
             <div
               className={
                 "flex min-w-0 flex-1 flex-col gap-[4px] sm:flex-row sm:flex-wrap sm:items-baseline sm:gap-[14px] sm:pt-0 " +
@@ -305,7 +249,7 @@ export function ArrivalsBanner({
           </section>
         ) : aboutShown ? (
           // Two or more launches, or About beside arrivals (call 7, A2): the heading `New in the app` and ✕ on one row,
-          // then About's lines first, each with its crop (Ways-In `.bn2`) and its own Show me, under the shipped cap;
+          // then About's lines first, each with its glyph plate (Ways-In `.bn2`) and its own Show me, under the shipped cap;
           // then the arrivals under theirs, their one Precons link closing the last of their lines.
           <section
             ref={tourTarget}
@@ -322,7 +266,7 @@ export function ArrivalsBanner({
               </h2>
               {closeButton("h-[44px] w-[44px] text-[14px] sm:h-[32px] sm:w-[32px] sm:text-[13px]")}
             </div>
-            <ul className="m-0 mr-[10px] ml-[32px] list-none p-0 sm:mt-[2px] sm:mr-0">
+            <ul className="m-0 mr-[10px] list-none p-0 sm:mt-[2px] sm:mr-0">
               {firstRun && (
                 <li className={LINE}>
                   <FirstRunSentence />{" "}
@@ -333,8 +277,8 @@ export function ArrivalsBanner({
                 </li>
               )}
               {launches.slice(0, aboutCap.shown).map((l) => (
-                <li key={l.key} data-about-launch={l.key} className={`${LAUNCH_LINE} flex items-center gap-[10px]`}>
-                  <LaunchCrop launch={l} size="list" />
+                <li key={l.key} data-about-launch={l.key} className={`${LAUNCH_LINE} flex items-start gap-[10px]`}>
+                  <LaunchGlyph launch={l} size="list" />
                   <span className="min-w-0">
                     <LaunchSentence launch={l} />{" "}
                     <Link href={l.href} data-about-link className={`${LINK} whitespace-nowrap`}>

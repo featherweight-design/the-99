@@ -7,7 +7,7 @@ import { AboutText } from "./about-text";
 import { PROOF_ENVS, aboutTextSnapshot } from "./about-text.fixture";
 import before from "./about-text.snapshot.json";
 
-/** The renderer About's labels, sub lines and banner launches use. */
+/** The renderer About's labels and sub lines use. */
 const render = (text: string) => renderToStaticMarkup(createElement(AboutText, { text }));
 const B = (s: string) => `<b class="font-semibold text-[color:var(--fg)]">${s}</b>`;
 
@@ -16,7 +16,7 @@ const CHANGED = ["shopping/all-decks/total", "shopping/all-decks/views"];
 const changed = (key: string) => CHANGED.some((c) => key.endsWith(`:${c}`));
 
 describe("About's words, rendered (Small items 7, item 6, F1)", () => {
-  it("draws every other sub line, label, rule and launch exactly as the snapshot taken before the change", () => {
+  it("draws every other sub line, label and rule exactly as the snapshot taken before the change", () => {
     const now = aboutTextSnapshot(render);
     expect(Object.keys(now).sort()).toEqual(Object.keys(before).sort());
     for (const [key, markup] of Object.entries(before as Record<string, string>)) {
@@ -33,14 +33,6 @@ describe("About's words, rendered (Small items 7, item 6, F1)", () => {
       `By card, By deck|${B(", By friend")} read the same cart three ways. By friend lists each friend’s spares.`,
     );
     expect(now["cart|unit:shopping/all-decks/views"]).toBe("By card, By deck| read the same cart two ways.");
-    // The banner's launches of the same two units, which `changed()` also exempts above.
-    for (const v of [0, 16]) {
-      for (const e of ["on", "cart"]) expect(now[`${e}|launch@${v}:shopping/all-decks/total`], `${e} ${v}`).toBe(`The total${total}`);
-      expect(now[`on|launch@${v}:shopping/all-decks/views`], `on ${v}`).toBe(
-        `By card, By deck${B(", By friend")} read the same cart three ways. By friend lists each friend’s spares.`,
-      );
-      expect(now[`cart|launch@${v}:shopping/all-decks/views`], `cart ${v}`).toBe("By card, By deck read the same cart two ways.");
-    }
   });
 
   it("draws text with no marker as the bare string, and each marked phrase in bold", () => {

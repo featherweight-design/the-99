@@ -4,21 +4,20 @@
 //
 // ONE RULE, the pages' own (`unseenUnits`): a first-run reader (`isFirstRun`) is pointed at the `/about` index, a
 // reader behind is named each label or rule they have not been told about, and a current reader is told nothing. Each
-// launch line names its page ("New on Decks:"), says the unit's own words, carries a crop of its label's region from
-// the capture at the reader's width (call 0), and its Show me lands on the label lit and marked New (PR 5).
+// launch line names its page ("New on Decks:"), says the unit's own words, is marked by the glyph of the page it opens, and its Show me lands on the label lit and marked New (PR 5).
 //
 // Pure. The seen state rides in Home's cached payload (`user_prefs` carries the stamp trigger, so a write retires it);
-// the reader's switches and theme are applied per request, outside it.
+// the reader's switches are applied per request, outside it.
 
 import { ABOUT_VERSION } from "../copy/about";
 import { ABOUT_AREAS, ABOUT_PAGE_STRINGS, ABOUT_RULES, ABOUT_SECTIONS, type AboutArea, type AboutLabel, type AboutRuleId } from "../copy/about-pages";
 import { LIT_PARAM } from "../discovery/page-tools";
-import type { AboutLaunch, AboutLine, BannerCrop } from "./banner-line";
-import { pageShotFor, type PageWidth } from "./page-shots";
+import type { NavHref } from "../../components/shell/nav-icons";
+import type { AboutLaunch, AboutLine } from "./banner-line";
 import { claimedKeys, claimWrite, everyAnnouncement, unseenUnits, type UnseenUnit, type VisibleSection } from "./pages-visible";
 import { isFirstRun, type SeenState } from "./visible";
 
-export type { AboutLaunch, AboutLine, BannerCrop } from "./banner-line";
+export type { AboutLaunch, AboutLine } from "./banner-line";
 
 const baseKey = (key: string) => key.split("@")[0];
 
@@ -41,21 +40,15 @@ function launchText(u: UnseenUnit, visible: readonly VisibleSection[]): string {
     );
     if (sentences.length > 0) return sentences.join(" ");
   }
-  return `${drawn.lead ?? ""}${drawn.text}`.trim();
+  // One sentence a line (Small items 8, item 1): a label's lead and the first sentence of its rest. A rule is already
+  // one sentence and is told whole.
+  const text = key.startsWith("rule/") ? drawn.text : firstSentence(drawn.text);
+  return `${drawn.lead ?? ""}${text}`.trim();
 }
 
-/** The label's region on the first of its section's captures at `width` that measured it, in the reader's theme. */
-function cropAt(u: UnseenUnit, visible: readonly VisibleSection[], theme: string, width: PageWidth): BannerCrop | null {
-  const key = baseKey(u.key);
-  const section = visible.find((s) => s.area === u.area && s.id === u.section);
-  const label = section?.labels.find((l) => l.key === key);
-  if (!section || !label) return null;
-  const region = (rawUnit(key) as AboutLabel | null)?.region ?? key;
-  for (const capture of section.captures[width]) {
-    const shot = pageShotFor(theme, width, capture);
-    if (shot && Object.hasOwn(shot.regions, region)) return { src: shot.src, w: shot.w, h: shot.h, box: shot.regions[region] };
-  }
-  return null;
+/** The first sentence of `text`, or all of it when it has no sentence end. */
+function firstSentence(text: string): string {
+  return /^[\s\S]*?[.?!](?=\s|$)/.exec(text)?.[0] ?? text;
 }
 
 /** Show me's address for any announced unit: its page, the unit lit, scrolled to its section (`showMeHref`'s shape). */
@@ -65,11 +58,21 @@ export function launchHref(u: Pick<UnseenUnit, "key" | "area" | "section">): str
 
 const pageName = (area: AboutArea) => ABOUT_AREAS.find((a) => a.id === area)?.name ?? area;
 
+/** The nav glyph of the page a launch opens; Shopping lives under Decks, so it wears Decks'. */
+const AREA_ICON: Record<AboutArea, NavHref> = {
+  home: "/",
+  collection: "/collection",
+  commanders: "/commanders",
+  decks: "/decks",
+  shopping: "/decks",
+  friends: "/friends",
+};
+
 /**
  * About's line on Home, or null. `visible` is `visibleSections` of the reader's resolved switches (env and
  * `flag_overrides`, `requestSwitchEnv`), so a unit switched off for the reader never reaches the banner (Review Focus 2).
  */
-export function aboutLine(seen: SeenState, visible: readonly VisibleSection[], theme: string): AboutLine | null {
+export function aboutLine(seen: SeenState, visible: readonly VisibleSection[]): AboutLine | null {
   if (isFirstRun(seen)) {
     const every = everyAnnouncement(visible);
     return { kind: "firstRun", ids: every.map((u) => u.key), ack: every.flatMap((u) => u.ack) };
@@ -82,10 +85,9 @@ export function aboutLine(seen: SeenState, visible: readonly VisibleSection[], t
     lead: ABOUT_PAGE_STRINGS.bannerLead(pageName(u.area)),
     text: launchText(u, visible),
     href: launchHref(u),
-    phone: cropAt(u, visible, theme, "phone"),
-    desktop: cropAt(u, visible, theme, "desktop"),
+    icon: u.key.startsWith("rule/") ? null : AREA_ICON[u.area],
   }));
-  return { kind: "launches", launches, ids: launches.map((l) => l.key), theme };
+  return { kind: "launches", launches, ids: launches.map((l) => l.key) };
 }
 
 /**

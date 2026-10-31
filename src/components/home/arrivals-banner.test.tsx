@@ -9,16 +9,15 @@ vi.mock("../../app/arrivals-actions", () => ({ dismissArrivals: dismiss }));
 // The checklist's live step needs the app router; About's line is what these tests read.
 vi.mock("./first-run-step-one", () => ({ FirstRunStepOne: () => null }));
 vi.mock("../discovery/home-tour", () => ({ HomeTour: () => null }));
-// The crops' theme check asks the server again through the router (`ThemeRefresh`).
+// Show me and the arrivals link are `next/link`s, which read the router.
 const nav = vi.hoisted(() => ({ refresh: vi.fn(), router: null as unknown }));
 vi.mock("next/navigation", () => ({
   useRouter: () => (nav.router ??= { refresh: nav.refresh, push: () => {} }),
   usePathname: () => "/",
 }));
 
-const { ArrivalsBanner, BLANK_PIXEL, COLLAPSE_MS, CROP_MEDIA } = await import("./arrivals-banner");
+const { ArrivalsBanner, COLLAPSE_MS } = await import("./arrivals-banner");
 const { HOME_HEADING_ID } = await import("./home-heading");
-const { cropStyle } = await import("../../lib/about/banner-line");
 const { Dashboard } = await import("./dashboard");
 const { aboutFirstRunOver, acknowledgeAbout, acknowledgeArrivals, endAboutFirstRun, resetArrivalsAcknowledged } = await import("./arrivals-seen");
 const { FirstRunChecklist } = await import("./first-run");
@@ -48,24 +47,6 @@ const DASH = {
 };
 
 const region = () => screen.queryByRole("region", { name: "New in the app" });
-
-/**
- * A crop is ONE `<picture>`: the desktop capture as a `<source>` for `md` and up, the phone capture as the `<img>`, so
- * each width is eligible for exactly one capture and the browser fetches only that one (two `<img>`s, one hidden by
- * CSS, fetched both full screenshots).
- */
-function expectOnePicture(crop: HTMLElement, phoneSrc: string, deskSrc: string) {
-  const pictures = crop.querySelectorAll("picture");
-  expect(pictures).toHaveLength(1);
-  const sources = pictures[0]!.querySelectorAll("source");
-  expect(sources).toHaveLength(1);
-  expect(sources[0]!.getAttribute("media")).toBe(CROP_MEDIA);
-  expect(sources[0]!.getAttribute("srcset")).toBe(deskSrc);
-  const imgs = crop.querySelectorAll("img");
-  expect(imgs).toHaveLength(1);
-  expect(imgs[0]!.getAttribute("src")).toBe(phoneSrc);
-  expect(imgs[0]!.parentElement!.tagName).toBe("PICTURE");
-}
 
 let reduce = false;
 beforeEach(() => {
@@ -257,19 +238,16 @@ describe("Dashboard", () => {
 });
 
 // About on the banner (plan 2026-10-15, PR A; `R2 - Home-About`, A1–A3).
-// A launch as the server words it (`aboutLine`): a label with its region on both captures, or a rule with none.
-const CROP = { src: "/about/pages/dark/phone/p-deck-games.webp", w: 780, h: 1688, box: [0.05, 0.3, 0.9, 0.1] as const };
-const DCROP = { src: "/about/pages/dark/desktop/d-analysis.webp", w: 2600, h: 1800, box: [0.4, 0.4, 0.2, 0.1] as const };
-const launch = (key: string, page = "Decks", text = "Matchups splits a deck’s games by who you played against.", crop = true, ack: string[] = [key]): AboutLaunch => ({
+// A launch as the server words it (`aboutLine`): a label with the glyph of its page, or a rule with none.
+const launch = (key: string, page = "Decks", text = "Matchups splits a deck’s games by who you played against.", glyph = true, ack: string[] = [key]): AboutLaunch => ({
   key,
   ack,
   lead: `New on ${page}:`,
   text,
   href: `/about/${page.toLowerCase()}?lit=${encodeURIComponent(key)}#games`,
-  phone: crop ? CROP : null,
-  desktop: crop ? DCROP : null,
+  icon: glyph ? "/decks" : null,
 });
-const behind = (...launches: AboutLaunch[]): AboutLine => ({ kind: "launches", launches, ids: launches.map((l) => l.key), theme: "dark" });
+const behind = (...launches: AboutLaunch[]): AboutLine => ({ kind: "launches", launches, ids: launches.map((l) => l.key) });
 const MATCHUPS = launch("decks/games/matchups");
 const SPARES = launch("shopping/list/spares", "Shopping", "Ask a friend for a spare.");
 const RULE = launch("rule/credits", "Decks", "Anything written just for you costs credits.", false);
@@ -277,7 +255,7 @@ const firstRunLine = (ids: string[]): AboutLine => ({ kind: "firstRun", ids, ack
 const FIRST: AboutLine = firstRunLine(["home/home/help", "decks/games/matchups"]);
 
 describe("ArrivalsBanner, one launch (call 7, Ways-In “Banner · one launch”)", () => {
-  it("names the page and the unit's words, with its crop in the mark's place, Show me to the label lit, and ✕", () => {
+  it("names the page and the unit's words, with its glyph in the mark's place, Show me to the label lit, and ✕", () => {
     render(<ArrivalsBanner data={null} about={behind(MATCHUPS)} />);
     const r = region()!;
     expect(r.tagName).toBe("SECTION");
@@ -285,39 +263,17 @@ describe("ArrivalsBanner, one launch (call 7, Ways-In “Banner · one launch”
     expect(within(r).getByRole("link", { name: "Show me" })).toHaveAttribute("href", MATCHUPS.href);
     expect(within(r).getByRole("button", { name: "Dismiss" })).toBeInTheDocument();
     expect(within(r).queryByRole("heading")).toBeNull();
-    // One box, switched at md: the phone's 64x48 cut from the phone capture, the desktop's 56x38 from its own.
-    const crops = r.querySelectorAll<HTMLElement>("[data-about-crop]");
-    expect(crops).toHaveLength(1);
-    expect(crops[0]!.className).toContain("h-[48px] w-[64px] md:h-[38px] md:w-[56px]");
-    expectOnePicture(crops[0]!, CROP.src, DCROP.src);
-    // Each width's place in its own box, the server's `cropStyle` of that capture at that box size.
-    const vars = (k: string) => crops[0]!.style.getPropertyValue(k);
-    const p = cropStyle(CROP, 64, 48);
-    const d = cropStyle(DCROP, 56, 38);
-    expect([vars("--pl"), vars("--pt"), vars("--pw"), vars("--ph")]).toEqual([p.left, p.top, p.width, p.height].map((n) => `${n}px`));
-    expect([vars("--dl"), vars("--dt"), vars("--dw"), vars("--dh")]).toEqual([d.left, d.top, d.width, d.height].map((n) => `${n}px`));
-    const img = crops[0]!.querySelector("img")!;
-    expect(img.className).toContain("left-[var(--pl)] top-[var(--pt)] h-[var(--ph)] w-[var(--pw)]");
-    expect(img.className).toContain("md:left-[var(--dl)] md:top-[var(--dt)] md:h-[var(--dh)] md:w-[var(--dw)]");
+    // The glyph of the page Show me opens, on a 36px accent plate in the mark's place.
+    const glyphs = r.querySelectorAll<HTMLElement>("[data-about-glyph]");
+    expect(glyphs).toHaveLength(1);
+    expect(glyphs[0]!.className).toContain("h-[36px] w-[36px]");
+    expect(glyphs[0]!.querySelector("svg")).not.toBeNull();
+    expect(r.querySelector("picture, img")).toBeNull();
   });
 
-  it("fetches only one width's capture: a width with no region gets a blank pixel and the mark in its place", () => {
-    const phoneOnly = { ...MATCHUPS, key: "decks/games/phone-only", desktop: null };
-    const { unmount } = render(<ArrivalsBanner data={null} about={behind(phoneOnly)} />);
-    let crop = region()!.querySelector<HTMLElement>("[data-about-crop]")!;
-    expect(crop.className).toContain("md:hidden");
-    expectOnePicture(crop, CROP.src, BLANK_PIXEL);
-    unmount();
-    const deskOnly = { ...MATCHUPS, key: "decks/games/desk-only", phone: null };
-    render(<ArrivalsBanner data={null} about={behind(deskOnly)} />);
-    crop = region()!.querySelector<HTMLElement>("[data-about-crop]")!;
-    expect(crop.className).toContain("hidden md:flex");
-    expectOnePicture(crop, BLANK_PIXEL, DCROP.src);
-  });
-
-  it("keeps the diamond mark for a rule, which has no region to crop", () => {
+  it("keeps the diamond mark for a rule, which opens no page of its own", () => {
     render(<ArrivalsBanner data={null} about={behind(RULE)} />);
-    expect(region()!.querySelectorAll("[data-about-crop]")).toHaveLength(0);
+    expect(region()!.querySelectorAll("[data-about-glyph]")).toHaveLength(0);
     expect(region()).toHaveTextContent("New on Decks: Anything written just for you costs credits.");
   });
 
@@ -325,12 +281,12 @@ describe("ArrivalsBanner, one launch (call 7, Ways-In “Banner · one launch”
     render(<ArrivalsBanner data={null} about={FIRST} />);
     expect(region()).toHaveTextContent(/What The\s99 does: every tool, mark and figure in the app, and where to find it\./);
     expect(screen.getByRole("link", { name: "Show me" })).toHaveAttribute("href", "/about");
-    expect(region()!.querySelectorAll("[data-about-crop]")).toHaveLength(0);
+    expect(region()!.querySelectorAll("[data-about-glyph]")).toHaveLength(0);
   });
 });
 
 describe("ArrivalsBanner, two or more launches (call 7, Ways-In “Banner · two launches”)", () => {
-  it("takes the `New in the app` band, a 44x32 crop and a Show me per line, and one ✕", () => {
+  it("takes the `New in the app` band, a 28px glyph plate and a Show me per line, and one ✕", () => {
     render(<ArrivalsBanner data={null} about={behind(MATCHUPS, SPARES)} />);
     const r = region()!;
     expect(within(r).getByRole("heading", { level: 2, name: "New in the app" })).toBeInTheDocument();
@@ -341,11 +297,9 @@ describe("ArrivalsBanner, two or more launches (call 7, Ways-In “Banner · two
     ]);
     expect(within(items[1]!).getByRole("link", { name: "Show me" })).toHaveAttribute("href", SPARES.href);
     for (const li of items) {
-      const crops = li.querySelectorAll<HTMLElement>("[data-about-crop]");
-      expect(crops).toHaveLength(1);
-      expect(crops[0]!.className).toContain("h-[32px] w-[44px]");
-      expect(crops[0]!.className).not.toContain("md:w-");
-      expectOnePicture(crops[0]!, CROP.src, DCROP.src);
+      const glyphs = li.querySelectorAll<HTMLElement>("[data-about-glyph]");
+      expect(glyphs).toHaveLength(1);
+      expect(glyphs[0]!.className).toContain("h-[28px] w-[28px]");
     }
     expect(within(r).getAllByRole("button", { name: "Dismiss" })).toHaveLength(1);
   });
@@ -527,31 +481,5 @@ describe("About's line on both Home surfaces", () => {
     unmount();
     render(<FirstRunChecklist />);
     expect(region()).toBeNull();
-  });
-});
-
-describe("ArrivalsBanner, the crops' theme (ThemeRefresh)", () => {
-  it("asks the server again when the theme is picked in place, so the crops are cut in the new theme", async () => {
-    render(<ArrivalsBanner data={null} about={behind(MATCHUPS)} />);
-    expect(nav.refresh).not.toHaveBeenCalled();
-    await act(async () => {
-      document.documentElement.dataset.theme = "amonkhet";
-      await new Promise((r) => setTimeout(r, 0));
-    });
-    expect(nav.refresh).toHaveBeenCalledOnce();
-  });
-
-  it("asks at mount when Back restores a banner drawn in an older theme", () => {
-    document.documentElement.dataset.theme = "amonkhet";
-    render(<ArrivalsBanner data={null} about={behind(MATCHUPS)} />);
-    expect(nav.refresh).toHaveBeenCalledOnce();
-  });
-
-  it("asks nothing for a line with no crop to redraw: a rule's launch, a first-run line", () => {
-    document.documentElement.dataset.theme = "amonkhet";
-    const { unmount } = render(<ArrivalsBanner data={null} about={behind(RULE)} />);
-    unmount();
-    render(<ArrivalsBanner data={null} about={FIRST} />);
-    expect(nav.refresh).not.toHaveBeenCalled();
   });
 });

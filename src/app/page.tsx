@@ -31,7 +31,6 @@ import { aboutLine } from "../lib/about/notice";
 import { visibleSections } from "../lib/about/pages-visible";
 import { aboutSeen } from "../lib/about/read";
 import type { SeenState } from "../lib/about/visible";
-import { resolveTheme } from "../lib/theme/server";
 import { PICK_RECEIPT_PARAM } from "../lib/precons/pick";
 import { readPickReceipt, type PickReceipt } from "../lib/precons/pick-receipt-read";
 import { PreconPickReceipt } from "../components/home/precon-pick-receipt";
@@ -256,9 +255,8 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
     : null;
 
   // About's lines (About visual PR 6b), decided per request from the cached seen state and THIS request's resolved
-  // switches (env and `flag_overrides`), so a unit switched off for the reader never reaches the banner; the crops are
-  // cut from the captures in the reader's theme.
-  const about = data.aboutSeen ? aboutLine(data.aboutSeen, visibleSections(env), await resolveTheme()) : null;
+  // switches (env and `flag_overrides`), so a unit switched off for the reader never reaches the banner.
+  const about = data.aboutSeen ? aboutLine(data.aboutSeen, visibleSections(env)) : null;
   // The no-collection entry (S1, S12): step 1's ways group, and the dashboard's zero-card header for an account with
   // decks and no cards. Decided per request from the resolved switches, outside the cached payload.
   // Rule 0's `Tonight's table` (plan decision 1): read per request after the cached load, never stored, so a reseat,

@@ -13,7 +13,6 @@ import { ABOUT_VERSION } from "./lib/copy/about";
 import { aboutLine } from "./lib/about/notice";
 import { afterVisit, visibleSections } from "./lib/about/pages-visible";
 import { switchedIds, visibleEntries } from "./lib/about/visible";
-import { DEFAULT_THEME } from "./lib/theme/themes";
 
 const session = vi.fn(async () => ({ userId: "user_1" as string | null }));
 const stored = { version: ABOUT_VERSION, ids: [] as string[] };
@@ -50,7 +49,7 @@ afterEach(() => {
 });
 
 describe("a switch flipped on", () => {
-  const line = () => aboutLine({ version: stored.version, ids: [...stored.ids] }, visibleSections(process.env), DEFAULT_THEME);
+  const line = () => aboutLine({ version: stored.version, ids: [...stored.ids] }, visibleSections(process.env));
   const visit = (area: "shopping") => {
     const after = afterVisit(visibleSections(process.env), area, { version: stored.version, ids: [...stored.ids] });
     stored.version = Math.max(stored.version, after.version);
