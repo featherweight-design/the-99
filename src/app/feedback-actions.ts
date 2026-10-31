@@ -33,7 +33,8 @@ export async function sendProblemReport(input: {
   if (userId === null) return sendSignedOutReport(input);
   if (!feedbackEnabled(await requestSwitchEnv(userId))) return { ok: false, reason: "off" };
   const report = input && typeof input === "object" ? parseReport(input) : null;
-  if (!report) return { ok: false, reason: "invalid" };
+  // `report` marks a row filed signed out with no user; a signed-in caller cannot claim it.
+  if (!report || report.source === "report") return { ok: false, reason: "invalid" };
   await observeHit(userId, "feedback");
   await db.insert(playerFeedback).values({
     userId,
@@ -52,7 +53,7 @@ export async function sendProblemReport(input: {
  * A report from a visitor with no account (the public /report page). The switch is decided for nobody
  * (`resolveSwitchEnv(null)`: the variable and the app-wide override). The row has no user and `source` `report`; the
  * network address is used only to count the visit in `rate_hits` (a daily hash) and is never stored here. Enforced
- * limits: 10 an hour (`report-anon`) AND 30 a day (`report-anon-day`) per network, both counted, fail open. The
+ * limits: 10 an hour (`report-anon`) AND 30 a day (`report-anon-day`) per network, the day counted only after the hour passes, fail open. The
  * words typed are stored and read in /admin only; they reach no model prompt, so no `playerText`.
  */
 async function sendSignedOutReport(input: ReportInput): Promise<ReportOutcome> {
@@ -60,9 +61,9 @@ async function sendSignedOutReport(input: ReportInput): Promise<ReportOutcome> {
   const report = input && typeof input === "object" ? parseReport({ ...input, source: "report" }) : null;
   if (!report) return { ok: false, reason: "invalid" };
   const h = await headers();
-  const overHour = await overAnonymousLimit(h, "report-anon");
-  const overDay = await overAnonymousLimit(h, "report-anon-day");
-  if (overHour || overDay) return { ok: false, reason: "limited" };
+  // The day is counted only for a visit the hour let through, so a refused burst cannot spend the day's allowance.
+  if (await overAnonymousLimit(h, "report-anon")) return { ok: false, reason: "limited" };
+  if (await overAnonymousLimit(h, "report-anon-day")) return { ok: false, reason: "limited" };
   await db.insert(playerFeedback).values({
     userId: null,
     kind: "problem",

@@ -65,6 +65,11 @@ describe("sendProblemReport", () => {
     expect(m.insert).not.toHaveBeenCalled();
   });
 
+  it("will not let a signed-in reader file under the signed-out source", async () => {
+    expect(await sendProblemReport({ ...input, source: "report" })).toEqual({ ok: false, reason: "invalid" });
+    expect(m.insert).not.toHaveBeenCalled();
+  });
+
   it("never asks the anonymous limiter for a signed-in reader", async () => {
     await sendProblemReport(input);
     expect(m.overAnonymousLimit).not.toHaveBeenCalled();
@@ -108,6 +113,8 @@ describe("sendProblemReport signed out", () => {
     m.overAnonymousLimit.mockImplementation(async (_h: unknown, bucket: string) => bucket === "report-anon");
     expect(await sendProblemReport(input)).toEqual({ ok: false, reason: "limited" });
     expect(m.insert).not.toHaveBeenCalled();
+    // The day is not spent on a visit the hour refused.
+    expect(m.overAnonymousLimit.mock.calls.map((c: unknown[]) => c[1])).toEqual(["report-anon"]);
   });
 
   it("refuses over the daily cap, writing nothing", async () => {
