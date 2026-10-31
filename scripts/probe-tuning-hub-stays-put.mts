@@ -39,8 +39,8 @@
 // is a stand-in (`scripts/lib/model-stand-in.mjs`). A dummy ANTHROPIC_API_KEY on the server as well
 // makes a mistake fail instead of spending.
 //
-// The same switches must be given to the server: ANALYSIS_TAB_ENABLED, TUNING_ENABLED,
-// MANA_BALANCE_ENABLED and PROPOSED_CUTS_ENABLED all `true`, and SYNOPSIS_STUB_DELAY_MS=3000 so the
+// The same switches must be given to the server: ANALYSIS_TAB_ENABLED, TUNING_ENABLED and
+// PROPOSED_CUTS_ENABLED all `true` (Mana Balance is always on with the tab), and SYNOPSIS_STUB_DELAY_MS=3000 so the
 // running state lasts long enough to be seen. Local-dev or a scratch branch only: it refuses
 // staging and production by `neon.branch_id`, and a non-loopback PROBE_BASE.
 //

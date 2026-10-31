@@ -52,8 +52,8 @@ const sql = neon(TARGET);
 // How long after a never-analyzed deck's empty state its credit note may land (#1465: measured at
 // about 0.7 to 2s, the note's own read).
 const NOTE_BOUND_MS = 2_500;
-// Whether the server has the Tuning hub on (two or more of TUNING_ENABLED, MANA_BALANCE_ENABLED and
-// PROPOSED_CUTS_ENABLED, Mana Balance among them, so it draws on a deck with no reading). On by default:
+// Whether the server has the Tuning hub on (Mana Balance, always on with ANALYSIS_TAB_ENABLED, plus
+// TUNING_ENABLED or PROPOSED_CUTS_ENABLED; Mana Balance lets it draw on a deck with no reading). On by default:
 // the hub must then stay put while the credit note lands. PROBE_HUB=off skips that one check, saying so.
 const HUB = process.env.PROBE_HUB ?? "on";
 if (HUB !== "on" && HUB !== "off") throw new Error("Set PROBE_HUB to on or off, matching the server's Tuning switches.");

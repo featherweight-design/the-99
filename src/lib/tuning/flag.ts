@@ -41,7 +41,10 @@ export function proposedCutsEnabled(env: NodeJS.ProcessEnv): boolean {
 }
 
 /**
- * Whether this deployment offers Mana Balance (tier 1, free): the counted read of a deck's colors
+ * RETIRED (Hugh 2026-10-31): nothing gates on this. Mana Balance follows the Analysis tab
+ * (`analysisTabEnabled`), and only the admin switch registry reads this until the switch is deleted.
+ *
+ * Was: whether this deployment offers Mana Balance (tier 1, free): the counted read of a deck's colors
  * and its suggestions. The same shape as `proposedCutsEnabled`: server-side, per request, OFF for
  * anything but the exact string `'true'`, and it needs the Analysis tab, where the tool mounts.
  * Independent of `TUNING_ENABLED` and `PROPOSED_CUTS_ENABLED`. It gates the surface and not a

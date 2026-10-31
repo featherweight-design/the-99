@@ -61,7 +61,7 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   // Retired (always on): deck printings. The name stays as the entry's historical identity.
   DECK_PRINTINGS_ENABLED: () => true,
   DECK_TOKENS_ENABLED: () => true,
-  // Retired (always on): Mana Balance. It still needs the Analysis tab, where it mounts. The name stays as its lines' historical identity.
+  // Retired: Mana Balance follows its parent, the Analysis tab, where it mounts. The name stays as its lines' historical identity.
   MANA_BALANCE_ENABLED: analysisTabEnabled,
   // Retired (always on): Shopping for all decks. The name stays as the entries', variants' and sentences' historical identity.
   ALL_DECKS_CART_ENABLED: () => true,

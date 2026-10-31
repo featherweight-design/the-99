@@ -305,9 +305,10 @@ interface BuilderShellProps {
   gamePrefill?: TablePrefill | null;
   /** `proposedCutsEnabled(env)`: whether the Analysis tab draws Proposed cuts after Suggested changes. */
   proposedCutsEnabled?: boolean;
-  /** `tuningHubEnabled(env)`: whether the Analysis tab draws the Tuning hub, mounting Suggested changes
-   *  and Proposed cuts inside its tiles, and the trim line offers `Proposed cuts →`. Off, both
-   *  tools mount directly, exactly as before the hub. */
+  /** `tuningHubEnabled(env)`: whether the Analysis tab draws the Tuning hub, mounting Suggested changes,
+   *  Mana Balance and Proposed cuts inside its tiles, and the trim line offers `Proposed cuts →`. Mana Balance
+   *  is always a tile with the tab on, so one more tool draws the hub. Off (Mana Balance alone), it mounts
+   *  directly, exactly as before the hub. */
   tuningHubEnabled?: boolean;
   /** `suggestedChangesV2Enabled(env)` for this reader (plan 2026-10-27, P5): Suggested changes draws the v2 intake and
    *  press, and its hub tile goes inert off 99 with a link to the tool that brings the deck back. Off, the panel and the
