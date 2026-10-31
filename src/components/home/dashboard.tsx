@@ -87,8 +87,6 @@ export type DashboardProps = {
   welcome?: React.ReactNode;
   /** Asking once for a signature card (avatar handoff 20, call 5), or null: the left column's first block. */
   signature?: React.ReactNode;
-  /** `ALL_DECKS_CART_ENABLED`, resolved for this reader: the card links to /decks/shopping only when it is on. */
-  cartEnabled?: boolean;
   /** `HELP_ME_CHOOSE_ENABLED`, resolved for this reader: `No decks yet` carries Help me choose's door (discovery R3 E1). */
   helpMeChoose?: boolean;
   /**
@@ -306,7 +304,6 @@ export function Dashboard(props: DashboardProps) {
                   commitments={props.commitments}
                   shopping={props.shopping}
                   totalCards={props.stats.totalCards}
-                  cartEnabled={props.cartEnabled}
                 />
               </div>
             )}

@@ -5,12 +5,12 @@ import { aboutEntries } from "../copy/about-entries";
 import { creditsEntryOf, drawnEntry, isFirstRun, isSeen, resolveEntry, switchedIds, unseenEntries, variantId, visibleEntries, type SeenState } from "./visible";
 
 // TUNING_ENABLED also requires ANALYSIS_TAB_ENABLED (`tuningEnabled()`), already "true" here.
-const ON = { HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", MANA_BALANCE_ENABLED: "true", ALL_DECKS_CART_ENABLED: "true", ADDED_COPY_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true", FIND_A_DECK_READ_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", HELP_PANEL_ENABLED: "true", FIRST_RUN_TOUR_ENABLED: "true", CARD_SCAN_ENABLED: "true", NEAR_COMBOS_ENABLED: "true", PUSH_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const ON = { HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", MANA_BALANCE_ENABLED: "true", ADDED_COPY_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true", FIND_A_DECK_READ_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", HELP_PANEL_ENABLED: "true", FIRST_RUN_TOUR_ENABLED: "true", CARD_SCAN_ENABLED: "true", NEAR_COMBOS_ENABLED: "true", PUSH_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 const OFF = {} as unknown as NodeJS.ProcessEnv;
 
 /** Two switched entries, a and b, beside one plain one, shaped like the launch entries. */
 const plain: AboutEntry = { ...aboutEntries[0], id: "plain", since: 3 };
-const a: AboutEntry = { ...aboutEntries[0], id: "a", since: 10, switch: "ALL_DECKS_CART_ENABLED" };
+const a: AboutEntry = { ...aboutEntries[0], id: "a", since: 10, switch: "SWAP_TOOLS_ENABLED" };
 const b: AboutEntry = { ...aboutEntries[0], id: "b", since: 10, switch: "HELP_ME_CHOOSE_ENABLED" };
 const catalog = [plain, a, b];
 const seen = (version: number, ids: string[] = []): SeenState => ({ version, ids });
@@ -19,13 +19,14 @@ const seen = (version: number, ids: string[] = []): SeenState => ({ version, ids
 // are drawn like an unswitched entry, and a reader who "met every launch" has met them too.
 // Collection editing's entries, and the names that followed it (scanning, added copy, the way in without a collection, I got
 // it), are among them. `upload-choice` draws in its Sync variant, so its variant id is met too.
-const RETIRED = ["CARD_SEARCH_ENABLED", "FIRST_RUN_TOUR_ENABLED", "HELP_PANEL_ENABLED", "NEAR_COMBOS_ENABLED", "PRECONS_ENABLED", "UPCOMING_PRECONS_ENABLED", "DECK_TOKENS_ENABLED", "LINEUP_ENABLED", "COMMANDERS_PLACE_ENABLED", "HOME_FEED_ENABLED", "SOCIAL_WISHLIST_ENABLED", "COLLECTION_EDIT_ENABLED", "CARD_SCAN_ENABLED", "ADDED_COPY_ENABLED", "NO_COLLECTION_ENTRY_ENABLED", "SHOPPING_MARK_BOUGHT_ENABLED", "DECK_NOTES_ENABLED", "DECK_STATS_ENABLED", "DECK_PRINTINGS_ENABLED", "NEVER_CUT_ENABLED", "CHANGE_COMMANDER_ENABLED"];
+const RETIRED = ["CARD_SEARCH_ENABLED", "FIRST_RUN_TOUR_ENABLED", "HELP_PANEL_ENABLED", "NEAR_COMBOS_ENABLED", "PRECONS_ENABLED", "UPCOMING_PRECONS_ENABLED", "DECK_TOKENS_ENABLED", "LINEUP_ENABLED", "COMMANDERS_PLACE_ENABLED", "HOME_FEED_ENABLED", "SOCIAL_WISHLIST_ENABLED", "COLLECTION_EDIT_ENABLED", "CARD_SCAN_ENABLED", "ADDED_COPY_ENABLED", "NO_COLLECTION_ENTRY_ENABLED", "SHOPPING_MARK_BOUGHT_ENABLED", "DECK_NOTES_ENABLED", "DECK_STATS_ENABLED", "DECK_PRINTINGS_ENABLED", "NEVER_CUT_ENABLED", "CHANGE_COMMANDER_ENABLED", "ALL_DECKS_CART_ENABLED"];
 const retiredEntries = aboutEntries.filter((e) => e.switch && RETIRED.includes(e.switch));
 const retiredIds = switchedIds(retiredEntries.map((e) => resolveEntry(e, OFF)));
 
 describe("all-decks-cart’s press line", () => {
   it("always carries the buy key: I got it is always on (collection editing is retired)", () => {
-    const cart = visibleEntries({ ALL_DECKS_CART_ENABLED: "true" } as unknown as NodeJS.ProcessEnv).find((e) => e.id === "all-decks-cart")!;
+    // Shopping for all decks is retired (always on): the entry draws with no switch set.
+    const cart = visibleEntries(OFF).find((e) => e.id === "all-decks-cart")!;
     expect(cart.keys).toHaveLength(4);
     expect(cart.keys[3]).toMatch(/press “buy”/);
   });
@@ -113,9 +114,9 @@ describe("with every switch off, nothing changes (the invariance Hugh’s ruling
 describe("an entry tied to a switch", () => {
   it("draws only while its switch is on", () => {
     expect(visibleEntries(OFF, catalog)).toEqual([plain]);
-    expect(visibleEntries({ ALL_DECKS_CART_ENABLED: "true" } as unknown as NodeJS.ProcessEnv, catalog)).toEqual([plain, a]);
+    expect(visibleEntries({ SWAP_TOOLS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv, catalog)).toEqual([plain, a]);
     // The feature's own flag rule: anything but the exact string 'true' is off.
-    expect(visibleEntries({ ALL_DECKS_CART_ENABLED: "1" } as unknown as NodeJS.ProcessEnv, catalog)).toEqual([plain]);
+    expect(visibleEntries({ SWAP_TOOLS_ENABLED: "1" } as unknown as NodeJS.ProcessEnv, catalog)).toEqual([plain]);
   });
 
   it("reads unseen for a returning reader at the current version, in the shipped catalog", () => {
@@ -633,10 +634,8 @@ describe("friend-spares' requests form (SPARE_REQUESTS_ENABLED, retired)", () =>
   });
 
   it("keeps the entry's key switches in its requests form", () => {
-    const keys = drawn(ASKS)!.keys;
-    expect(keys).not.toContain("The same mark shows on the cart for all your decks.");
-    expect(drawn({ ...ASKS, ALL_DECKS_CART_ENABLED: "true" } as unknown as NodeJS.ProcessEnv)!.keys)
-      .toContain("The same mark shows on the cart for all your decks.");
+    // The cart's key rides ALL_DECKS_CART_ENABLED, which is retired (always on): it draws with friends alone.
+    expect(drawn(ASKS)!.keys).toContain("The same mark shows on the cart for all your decks.");
   });
 });
 

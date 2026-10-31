@@ -72,7 +72,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   Hugh 2026-10-13). Phone: the document scrolls, the list is not its own scroll box, the switch and heading stay pinned
   at `top: 0` after a 700px scroll, and at least five cards show under them (about two and a half did in the old box).
   Desktop: the page fits the screen, the list scrolls in its own box, and the controls are not pinned. Needs
-  `ALL_DECKS_CART_ENABLED=true` on the server and an account whose decks miss at least eight cards. Giving the list box
+  an account whose decks miss at least eight cards. Giving the list box
   its overflow back at the phone width fails the "not its own scroll box" check.
 - `pnpm probe:history-cart-decks` also walks an add entry whose rows carry `wentTo` (PR 3): the entry line names the decks in
   the rows' order and the opened rows each say their own. It walks a cart purchase's row on `/collection/history` at 390 and 1300 (History deck

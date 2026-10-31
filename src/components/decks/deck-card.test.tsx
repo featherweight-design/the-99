@@ -115,22 +115,14 @@ describe("DeckCard", () => {
   });
 
   // All-decks cart (Q8): the To buy figure links into the cart on this deck, beside the cover link.
-  it("links the To buy figure into the cart on this deck when the cart is on", () => {
+  it("links the To buy figure into the cart on this deck", () => {
     render(
-      <DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} deck={deck()} shopping={{ copies: 3, cents: 1840, pricedCopies: 3 }} now={now} cartLink />,
+      <DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} deck={deck()} shopping={{ copies: 3, cents: 1840, pricedCopies: 3 }} now={now} />,
     );
     const link = document.querySelector("[data-cart-link]")!;
     expect(link.getAttribute("href")).toBe(`/decks/shopping?deck=${deck().id}`);
     expect(link.textContent).toContain("3 to buy · $18.40");
     expect(link.getAttribute("aria-hidden")).toBe("true");
-  });
-
-  it("draws the figure as plain text with the cart off", () => {
-    render(
-      <DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} deck={deck()} shopping={{ copies: 3, cents: 1840, pricedCopies: 3 }} now={now} />,
-    );
-    expect(document.querySelector("[data-cart-link]")).toBeNull();
-    expect(screen.getByText("3 to buy · $18.40")).toBeInTheDocument();
   });
 
   // #364. A pair's commanders take two of the hundred, so a finished pair deck
@@ -368,10 +360,13 @@ describe("DeckCard", () => {
     const footer = container.querySelector(".deck-card-footer")!;
     expect(block).toHaveAttribute("aria-hidden", "true");
     expect(footer).toHaveAttribute("aria-hidden", "true");
-    // Safe only because neither holds anything focusable. The overflow control
-    // sits outside both and stays exposed, as does the link.
-    expect(block.querySelector("a, button, input, [tabindex]")).toBeNull();
-    expect(footer.querySelector("a, button, input, [tabindex]")).toBeNull();
+    // Safe only because neither holds anything in the tab order. The overflow control
+    // sits outside both and stays exposed, as does the link. The one link inside is the
+    // To buy figure's way into the cart, out of the tab order and the tree on purpose.
+    const tabbable = "a:not([tabindex='-1']), button, input, [tabindex]:not([tabindex='-1'])";
+    expect(block.querySelector(tabbable)).toBeNull();
+    expect(footer.querySelector(tabbable)).toBeNull();
+    expect([...footer.querySelectorAll("a")].map((a) => a.hasAttribute("data-cart-link"))).toEqual([true]);
     expect(screen.getAllByRole("button")).toHaveLength(1);
     expect(screen.getAllByRole("link")).toHaveLength(1);
   });

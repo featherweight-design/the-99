@@ -28,7 +28,11 @@ describe("visibleSections", () => {
     const off = visibleSections(OFF);
     const shopping = off.find((s) => s.id === "deck-shopping")!;
     expect(shopping.labels.map((l) => l.key)).not.toContain("shopping/deck-shopping/standins");
-    expect(off.find((s) => s.id === "all-decks")!.labels).toEqual([]);
+    // ALL_DECKS_CART_ENABLED is retired (always on): the cart's labels draw whatever the env, less Ask, which still
+    // rides spare requests.
+    expect(off.find((s) => s.id === "all-decks")!.labels.map((l) => l.key)).toEqual([
+      "shopping/all-decks/total", "shopping/all-decks/decks", "shopping/all-decks/views", "shopping/all-decks/buy",
+    ]);
     // NEVER_CUT_ENABLED, DECK_NOTES_ENABLED and DECK_STATS_ENABLED are retired (always on): their labels draw whatever the env.
     expect(off.find((s) => s.id === "your-deck")!.labels.map((l) => l.key)).toContain("decks/your-deck/lock");
     expect(off.find((s) => s.id === "notes")!.labels.map((l) => l.key)).toEqual(["decks/notes/note"]);
@@ -227,13 +231,15 @@ describe("seen translation", () => {
       sentenceKey("decks/analysis/suggested", "SUGGESTED_CHANGES_V2_ENABLED"),
       "shopping/all-decks/decks", "shopping/all-decks/views", "shopping/all-decks/ask", "shopping/all-decks/buy",
     ]);
-    // Every one rides ALL_DECKS_CART_ENABLED. Ask also rides SPARE_REQUESTS_ENABLED, which resolves through
-    // SOCIAL_FRIENDS_ENABLED (`visible.ts`); buy's SHOPPING_MARK_BOUGHT_ENABLED is retired, always on. A label switched
-    // off is neither drawn nor told.
+    // Every one rides ALL_DECKS_CART_ENABLED, which is retired (always on): set to off, it hides none of them. Ask also
+    // rides SPARE_REQUESTS_ENABLED, which resolves through SOCIAL_FRIENDS_ENABLED (`visible.ts`); buy's
+    // SHOPPING_MARK_BOUGHT_ENABLED is retired, always on. A label switched off is neither drawn nor told.
     const without = (sw: string) =>
       told(env({ ...(ALL_ON as Record<string, string>), [sw]: "off" })).filter((k) => k.startsWith("shopping/all-decks/"));
     expect(without("SOCIAL_FRIENDS_ENABLED")).toEqual(["shopping/all-decks/decks", "shopping/all-decks/views", "shopping/all-decks/buy"]);
-    expect(without("ALL_DECKS_CART_ENABLED")).toEqual([]);
+    expect(without("ALL_DECKS_CART_ENABLED")).toEqual([
+      "shopping/all-decks/decks", "shopping/all-decks/views", "shopping/all-decks/ask", "shopping/all-decks/buy",
+    ]);
   });
 
   it("tells Suggested changes v2's rewrite as New when its switch turns on, and only then (Small items 7 addendum 4)", () => {
@@ -446,12 +452,16 @@ describe("a section's sub-line", () => {
     }
   });
 
+  // Retired (always on) but still in the registry until its removal PR: Shopping for all decks.
+  const BAKED_IN = new Set(["ALL_DECKS_CART_ENABLED"]);
+
   it("names no feature whose switch is off: a section emptied of labels by a switch says only that its screen is off", () => {
     for (const sec of ABOUT_SECTIONS) {
       // With every switch on, every screen is on, and no sub says otherwise.
       expect(sub(ALL_ON, sec.id), sec.id).not.toContain(ABOUT_SCREEN_OFF.trim());
-      // A retired switch is gone from the registry and always on: there is no off state to assert.
-      for (const sw of switchesOfSection(sec).filter((n) => (SWITCH_NAMES as readonly string[]).includes(n))) {
+      // A retired switch is always on: there is no off state to assert. Most are gone from the registry; one retired
+      // ahead of its registry removal is named in `BAKED_IN`.
+      for (const sw of switchesOfSection(sec).filter((n) => (SWITCH_NAMES as readonly string[]).includes(n) && !BAKED_IN.has(n))) {
         const e = off(sw);
         const drawn = visibleSections(e).find((s) => s.id === sec.id)!;
         const text = sub(e, sec.id);
@@ -468,7 +478,6 @@ describe("a section's sub-line", () => {
   it("describes each screen while its switch is on, and only says it is off while it is off", () => {
     const cases: [string, string, string][] = [
       ["analysis", "ANALYSIS_TAB_ENABLED", "bracket"],
-      ["all-decks", "ALL_DECKS_CART_ENABLED", "one cart"],
       ["friends", "SOCIAL_FRIENDS_ENABLED", "pods"],
     ];
     for (const [id, sw, phrase] of cases) {
@@ -476,6 +485,9 @@ describe("a section's sub-line", () => {
       expect(sub(ALL_ON, id), id).not.toContain(ABOUT_SCREEN_OFF.trim());
       expect(sub(off(sw), id), id).toBe(ABOUT_SCREEN_OFF.trim());
     }
+    // Shopping for all decks is retired (always on): its screen is described whatever the env, never said to be off.
+    expect(sub(off("ALL_DECKS_CART_ENABLED"), "all-decks")).toContain("one cart");
+    expect(sub(off("ALL_DECKS_CART_ENABLED"), "all-decks")).not.toContain(ABOUT_SCREEN_OFF.trim());
   });
 
   it("names Analysis's tuning tools only while all three are on, and keeps the bracket while they are off", () => {
@@ -487,10 +499,11 @@ describe("a section's sub-line", () => {
 
   it("cuts a sentence naming a switched feature while that switch is off, and keeps the rest (Small items 3, item 4)", () => {
     expect(sub(ALL_ON, "all-decks")).toContain("one cart");
-    // The way in (Small items 7, item 6) draws with the cart, and goes with it.
+    // The way in (Small items 7, item 6) draws with the cart. The cart's switch is retired (always on): set to off,
+    // it cuts nothing.
     expect(sub(ALL_ON, "all-decks")).toContain("Open it from the top of Decks.");
     const noCart = env({ ...(ALL_ON as Record<string, string>), ALL_DECKS_CART_ENABLED: "off" });
-    expect(sub(noCart, "all-decks")).toBe(ABOUT_SCREEN_OFF.trim());
+    expect(sub(noCart, "all-decks")).toBe(sub(ALL_ON, "all-decks"));
     // Stats is retired (always on): its sentences always draw.
     expect(sub(OFF, "stats")).toContain("curve by card type");
     // Collection editing is retired: its sentence always draws.

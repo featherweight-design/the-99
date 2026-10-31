@@ -42,7 +42,11 @@ describe("aboutLine", () => {
       sentenceKey("decks/analysis/suggested", "SUGGESTED_CHANGES_V2_ENABLED"),
       "shopping/all-decks/decks", "shopping/all-decks/views", "shopping/all-decks/ask", "shopping/all-decks/buy",
     ]);
-    expect(aboutLine(readerAt(16, OFF), visibleSections(OFF))).toBeNull();
+    // Shopping for all decks is retired (always on), so a reader drawn with every live switch off is told the same
+    // sourceless labels, less Ask, which still rides spare requests.
+    expect(aboutLine(readerAt(16, OFF), visibleSections(OFF))?.ids).toEqual([
+      "shopping/all-decks/decks", "shopping/all-decks/views", "shopping/all-decks/buy",
+    ]);
   });
 
   it("names exactly the units Task 1.2's sweep names for a reader at floor 9, in page order", () => {
@@ -56,12 +60,12 @@ describe("aboutLine", () => {
   });
 
   it("never names a unit switched off for the reader (Review Focus 2)", () => {
-    // The cart's total follows ALL_DECKS_CART_ENABLED and is announced by its id alone.
+    // Shopping's stand-ins label follows SWAP_TOOLS_ENABLED and is announced by its id alone.
     const reader: SeenState = { version: 16, ids: ["something-else"] };
-    const on = aboutLine(reader, visibleSections(env({ ALL_DECKS_CART_ENABLED: "true" })));
-    expect(on?.ids).toContain("shopping/all-decks/total");
+    const on = aboutLine(reader, visibleSections(env({ SWAP_TOOLS_ENABLED: "true" })));
+    expect(on?.ids).toContain("shopping/deck-shopping/standins");
     const off = aboutLine(reader, visibleSections(OFF));
-    expect(off?.ids ?? []).not.toContain("shopping/all-decks/total");
+    expect(off?.ids ?? []).not.toContain("shopping/deck-shopping/standins");
     for (const k of off?.ids ?? []) expect(units(visibleSections(OFF)).map((u) => u.key)).toContain(k.split("@")[0]);
   });
 
@@ -145,7 +149,7 @@ describe("aboutDismissal (the banner's ✕)", () => {
 
   it("writes nothing for a unit switched off since the page rendered", () => {
     const reader: SeenState = { version: 16, ids: ["x"] };
-    expect(aboutDismissal(["shopping/all-decks/total"], reader, visibleSections(OFF))).toBeNull();
+    expect(aboutDismissal(["shopping/deck-shopping/standins"], reader, visibleSections(OFF))).toBeNull();
   });
 
   it("gives a first-run reader the baseline a first visit writes", () => {
@@ -194,13 +198,13 @@ describe("aboutDismissal, a switch turned on between the render and the ✕", ()
   it("a first-run ✕ takes only the baseline it rendered: a unit and a sentence switched on since stay new", () => {
     const line = aboutLine(NEVER_SEEN, visibleSections(OFF));
     expect(line?.kind).toBe("firstRun");
-    const now = visibleSections(env({ ALL_DECKS_CART_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true" }));
+    const now = visibleSections(env({ SWAP_TOOLS_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true" }));
     const write = aboutDismissal(line?.kind === "firstRun" ? line.ack : [], NEVER_SEEN, now)!;
-    expect(write.ids).not.toContain("shopping/all-decks/total");
+    expect(write.ids).not.toContain("shopping/deck-shopping/standins");
     expect(write.ids).not.toContain(FRIEND);
     const after: SeenState = { version: write.version, ids: write.ids };
     const told = unseenUnits(now, after).map((u) => u.key);
-    expect(told).toContain("shopping/all-decks/total");
+    expect(told).toContain("shopping/deck-shopping/standins");
     expect(told).toContain(FRIEND);
   });
 

@@ -1173,7 +1173,7 @@ describe("DecksView head row", () => {
 
   it("pairs the cart with the precons line in one grid (P1)", () => {
     render(
-      <DecksView decks={[deckOf()]} folders={[]} shopping={cart} cartEnabled precons={{ summary: { count: 181, newest: "2026-10-02" } }} buildable={9} cards={1284} now={NOW} />,
+      <DecksView decks={[deckOf()]} folders={[]} shopping={cart} precons={{ summary: { count: 181, newest: "2026-10-02" } }} buildable={9} cards={1284} now={NOW} />,
     );
     expect(headRow().className).toContain("sm:grid-cols-2");
     expect(screen.getByRole("link", { name: /Commander precons/ })).toBeInTheDocument();
@@ -1184,7 +1184,7 @@ describe("DecksView head row", () => {
   // Hugh, 2026-10-13: from 640 up the two buttons sat tight against the Decks top bar.
   it("keeps top margin from the Decks top bar from 640 up", () => {
     render(
-      <DecksView decks={[deckOf()]} folders={[]} shopping={cart} cartEnabled precons={{ summary: { count: 181, newest: "2026-10-02" } }} buildable={9} cards={1284} now={NOW} />,
+      <DecksView decks={[deckOf()]} folders={[]} shopping={cart} precons={{ summary: { count: 181, newest: "2026-10-02" } }} buildable={9} cards={1284} now={NOW} />,
     );
     expect(headRow().className).toContain("sm:pt-[16px]");
     expect(headRow().className).not.toContain("sm:pt-0");
@@ -1196,7 +1196,7 @@ describe("DecksView head row", () => {
   });
 
   it("keeps the cart's own full-width row with the precons switch off (P4)", () => {
-    render(<DecksView decks={[deckOf()]} folders={[]} shopping={cart} cartEnabled buildable={9} cards={1284} now={NOW} />);
+    render(<DecksView decks={[deckOf()]} folders={[]} shopping={cart} buildable={9} cards={1284} now={NOW} />);
     expect(headRow().className).not.toContain("grid");
     expect(screen.queryByRole("link", { name: /Commander precons/ })).toBeNull();
   });

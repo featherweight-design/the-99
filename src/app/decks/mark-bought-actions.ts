@@ -11,7 +11,6 @@ import { isFinish, type CollectionItemIdentity } from "../../lib/collection/key"
 import { invalidateCollectionReaders } from "../../lib/collection/invalidate";
 import { applyCollectionChange } from "../../lib/collection/write";
 import { requireDeck } from "../../lib/decks/read";
-import { allDecksCartEnabled } from "../../lib/decks/all-decks-cart-flag";
 import { loadDeckBuyRows } from "../../lib/decks/availability-query";
 import { buildContestedCard, loadContestedCard, type ContestedCard } from "../../lib/collection/summary-read";
 import { placementsOf } from "../../lib/decks/placements";
@@ -162,11 +161,10 @@ export type MarkBoughtForDecksOutcome =
   | { stale: (CollectionItemIdentity & { quantity: number })[]; need: number }
   | { missingCard: string[] }
   /**
-   * The all-decks cart off; a deck that no longer holds the card (the line is read again, audit G2); a
-   * printing or finish that does not exist; or the chooser's pick refused, by its reason, with
-   * nothing written.
+   * A deck that no longer holds the card (the line is read again, audit G2); a printing or finish
+   * that does not exist; or the chooser's pick refused, by its reason, with nothing written.
    */
-  | { refused: "off" | "notInDeck" | "notAPrinting" }
+  | { refused: "notInDeck" | "notAPrinting" }
   | { pickRefused: AssignRefusal };
 
 /**
@@ -190,7 +188,6 @@ export async function markBoughtForDecks(
 ): Promise<MarkBoughtForDecksOutcome> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (!allDecksCartEnabled(env)) return { refused: "off" };
   const { scryfallId, finish, quantity, expected, id, pickDeckId } = input;
   if (!isUuid(rawOracleId) || !isUuid(id) || !isUuid(scryfallId)) throw new Error("bad mark-bought input");
   if (!Array.isArray(input.deckIds) || input.deckIds.length === 0 || input.deckIds.length > CART_DECKS_MAX
@@ -280,13 +277,11 @@ export async function markBoughtForDecks(
  * The S1b chooser's read (cart PR 6b): the card's claimants, narrowed to the cart line's decks in
  * the claim model's own queue order, for the confirm to preview who gets the copies being bought.
  * Read-only: the pick it previews is written by `markBoughtForDecks`, with the purchase. Null when
- * the all-decks cart is off, or the claim model does not list every one of the line's decks, and the confirm then lists the decks as
+ * the claim model does not list every one of the line's decks, and the confirm then lists the decks as
  * it does at full count.
  */
 export async function readCartChooser(rawOracleId: string, rawDeckIds: unknown): Promise<ContestedCard | null> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
-  if (!allDecksCartEnabled(env)) return null;
   if (!isUuid(rawOracleId) || !Array.isArray(rawDeckIds) || rawDeckIds.length === 0
     || rawDeckIds.length > CART_DECKS_MAX || !rawDeckIds.every(isUuid)) {
     throw new Error("bad chooser input");

@@ -240,7 +240,7 @@ describe("LineupView: cards your decks share", () => {
   };
 
   it("draws a square per deck, held filled and short dashed, with the count against what you own", () => {
-    render(<LineupView data={SH} now={NOW} foldServer="shared" viewSwitch={null} cartEnabled />);
+    render(<LineupView data={SH} now={NOW} foldServer="shared" viewSwitch={null} />);
     const sol = card("shared").querySelector('[data-stats-shared="sol"]') as HTMLElement;
     expect(sol.querySelectorAll("[data-held]").length).toBe(2);
     expect(within(sol).getByText("3 decks")).toBeTruthy();
@@ -250,7 +250,7 @@ describe("LineupView: cards your decks share", () => {
   });
 
   it("opens a short row to name the decks with no copy, and links to Shopping for all decks", () => {
-    render(<LineupView data={SH} now={NOW} foldServer="shared" viewSwitch={null} cartEnabled />);
+    render(<LineupView data={SH} now={NOW} foldServer="shared" viewSwitch={null} />);
     fireEvent.click(within(card("shared")).getByRole("button", { name: /^Copies left of Sol Ring/ }));
     expect(within(card("shared")).getByText("No copy left for Scrappy.")).toBeTruthy();
     expect(within(card("shared")).getByRole("link", { name: "1 on Shopping for all decks" }).getAttribute("href")).toBe("/decks/shopping");
@@ -258,17 +258,11 @@ describe("LineupView: cards your decks share", () => {
 
   it("opens a row whose only short deck holds some of its copies, naming no deck and still linking the buy", () => {
     const rats = { oracleId: "rats", name: "Relentless Rats", imageUri: null, owned: 3, decks: [{ id: "tovolar", wants: 4, held: 1 }, { id: "gishath", wants: 2, held: 2 }] };
-    render(<LineupView data={{ ...SH, shared: [rats] }} now={NOW} foldServer="shared" viewSwitch={null} cartEnabled />);
+    render(<LineupView data={{ ...SH, shared: [rats] }} now={NOW} foldServer="shared" viewSwitch={null} />);
     expect(card("shared").querySelectorAll('[data-stats-shared="rats"] [data-held]').length).toBe(2);
     fireEvent.click(within(card("shared")).getByRole("button", { name: /^Copies left of Relentless Rats/ }));
     expect(within(card("shared")).queryByText(/^No copy left/)).toBeNull();
     expect(within(card("shared")).getByRole("link", { name: "3 on Shopping for all decks" })).toBeTruthy();
-  });
-
-  it("draws that row closed, with nothing to open, when the cart is off", () => {
-    const rats = { oracleId: "rats", name: "Relentless Rats", imageUri: null, owned: 3, decks: [{ id: "tovolar", wants: 4, held: 1 }, { id: "gishath", wants: 2, held: 2 }] };
-    render(<LineupView data={{ ...SH, shared: [rats] }} now={NOW} foldServer="shared" viewSwitch={null} />);
-    expect(within(card("shared")).queryByRole("button", { name: /^Copies left of Relentless Rats/ })).toBeNull();
   });
 
   it("lists only the cards wanted more than owned under that chip", () => {

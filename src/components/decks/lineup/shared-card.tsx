@@ -18,7 +18,7 @@ import { SegmentedSwitch } from "../../ui/segmented-switch";
 const copy = decksStatsCopy.shared;
 const SQUARE = "h-[11px] w-[11px] rounded-[2px] md:h-[13px] md:w-[13px]";
 
-export function SharedBody({ shared, decks, cartEnabled }: { shared: readonly LineupShared[]; decks: readonly LineupDeck[]; cartEnabled: boolean }) {
+export function SharedBody({ shared, decks }: { shared: readonly LineupShared[]; decks: readonly LineupDeck[] }) {
   const [mode, setMode] = useState<SharedMode>("most");
   const [open, setOpen] = useState<string | null>(null);
   const names = new Map(decks.map((d) => [d.id, d.name]));
@@ -44,8 +44,8 @@ export function SharedBody({ shared, decks, cartEnabled }: { shared: readonly Li
       <HoverPreviewProvider className="flex flex-col">
         {v.rows.map((r) => {
           const short = r.decks.filter((d) => !d.held);
-          // A row opens only when it has something to say: a deck with no copy to name, or the buy to link.
-          const opens = r.short > 0 && (short.length > 0 || cartEnabled);
+          // A row opens only when it has something to say: a short row always has the buy to link.
+          const opens = r.short > 0;
           const isOpen = open === r.oracleId && opens;
           const squares = (
             <span aria-hidden="true" className="flex flex-wrap gap-[3px] [grid-area:q]">
@@ -83,12 +83,10 @@ export function SharedBody({ shared, decks, cartEnabled }: { shared: readonly Li
               {isOpen ? (
                 <div className="flex flex-col gap-[4px] pt-[2px] text-[12.5px] leading-[1.55] text-[color:var(--fg-body)] [text-wrap:pretty] md:pl-[202px]">
                   {short.length > 0 ? <span>{copy.noCopy(short.map((d) => names.get(d.id) ?? ""))}</span> : null}
-                  {cartEnabled ? (
-                    <Link href="/decks/shopping" className="self-start font-mono text-[11px] text-[color:var(--warning)] underline decoration-[color:color-mix(in_oklab,var(--warning)_45%,transparent)]">
-                      {copy.toCart(r.cart)}
-                      <PendingReporter href="/decks/shopping" />
-                    </Link>
-                  ) : null}
+                  <Link href="/decks/shopping" className="self-start font-mono text-[11px] text-[color:var(--warning)] underline decoration-[color:color-mix(in_oklab,var(--warning)_45%,transparent)]">
+                    {copy.toCart(r.cart)}
+                    <PendingReporter href="/decks/shopping" />
+                  </Link>
                 </div>
               ) : null}
             </div>

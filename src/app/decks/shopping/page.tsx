@@ -3,11 +3,9 @@
 // never a write (lock 8).
 
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
 import { requireUserId } from "../../../lib/auth";
 import { cachePageForUser } from "../../../lib/cache/page-cache";
 import { allDecksCartCopy } from "../../../lib/copy/all-decks-cart";
-import { allDecksCartEnabled } from "../../../lib/decks/all-decks-cart-flag";
 import { loadCart } from "../../../lib/decks/cart-read";
 import { provenanceForm } from "../../../lib/decks/price";
 import { isUuid } from "../../../lib/uuid";
@@ -29,10 +27,9 @@ export default async function AllDecksShoppingPage({
 }: {
   searchParams: Promise<{ view?: string | string[]; deck?: string | string[]; q?: string | string[]; sort?: string | string[]; friend?: string | string[]; owned?: string | string[] }>;
 }) {
-  // The reader first: the switch is theirs (`requestSwitchEnv`), resolved once for the whole render.
+  // The reader first: their switches (`requestSwitchEnv`), resolved once for the whole render.
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (!allDecksCartEnabled(env)) notFound();
   const params = await searchParams;
   // `?deck=<id>` is the tile's link (Q8): it lands by deck, on that deck. Anything else is ignored.
   // Lowercased: `isUuid` takes either case, and every deck id the cart holds is Postgres's lowercase.
