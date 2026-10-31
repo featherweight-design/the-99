@@ -10,7 +10,7 @@ import { COVERED_WITH_MAIN } from "../../shell/covered-layer";
 
 function wide(on: boolean) {
   vi.stubGlobal("matchMedia", (query: string) => ({
-    matches: on && query.includes("76.5rem"), media: query, addEventListener: () => {}, removeEventListener: () => {},
+    matches: on && query === "(min-width: 76.5rem)", media: query, addEventListener: () => {}, removeEventListener: () => {},
   }));
 }
 afterEach(() => {

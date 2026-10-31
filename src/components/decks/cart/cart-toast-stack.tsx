@@ -43,16 +43,17 @@ export function cartToastStack(): HTMLElement {
   return made;
 }
 
-const WIDE = "(min-width: 76.5rem)";
+/** Where the stack ends: keep it equal to the `min-[76.5rem]:hidden` in `CART_STACK_CLASS`. */
+const STACK_ENDS = "(min-width: 76.5rem)";
 
 /** Below 1224px, where a cart toast stands in the stack. The server snapshot and a window with no `matchMedia` read as
  *  the stack, as `useMinWidth` reads the phone. */
 export function useCartStacked(): boolean {
   const subscribe = useCallback((onChange: () => void) => {
-    const mq = window.matchMedia?.(WIDE);
+    const mq = window.matchMedia?.(STACK_ENDS);
     mq?.addEventListener("change", onChange);
     return () => mq?.removeEventListener("change", onChange);
   }, []);
-  const wide = useSyncExternalStore(subscribe, () => window.matchMedia?.(WIDE)?.matches ?? false, () => false);
+  const wide = useSyncExternalStore(subscribe, () => window.matchMedia?.(STACK_ENDS)?.matches ?? false, () => false);
   return !wide;
 }
