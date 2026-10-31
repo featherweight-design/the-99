@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState, useTransition } from "react";
+import { useId, useState } from "react";
 import { setLaunchDate } from "../../app/admin/invites/flyer-actions";
 import { adminCopy, flyerAdminCopy } from "../../lib/copy/admin";
 
@@ -23,14 +23,15 @@ export function FlyerLaunchDate({ saved: initial }: { saved: string | null }) {
   // What the last press did, shown while the field still equals what it saved.
   const [done, setDone] = useState<"saved" | "cleared" | null>(null);
   const [failed, setFailed] = useState(false);
-  const [pending, start] = useTransition();
+  const [pending, setPending] = useState(false);
   const dirty = typed !== (saved ?? "");
 
   function save(next: string) {
     // What the field held when the button was pressed: a Clear is pressed over the saved date, a Save over the typed one.
     const held = typed;
     setFailed(false);
-    start(async () => {
+    setPending(true);
+    void (async () => {
       try {
         const result = await setLaunchDate(next);
         if (!result.ok) {
@@ -43,8 +44,10 @@ export function FlyerLaunchDate({ saved: initial }: { saved: string | null }) {
         setDone(result.state);
       } catch {
         setFailed(true);
+      } finally {
+        setPending(false);
       }
-    });
+    })();
   }
 
   return (
