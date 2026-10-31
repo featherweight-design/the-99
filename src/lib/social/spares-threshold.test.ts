@@ -30,7 +30,6 @@ vi.mock("../decks/availability-query", () => ({
     return new Map((opts?.oracleIds ?? []).filter((id) => model.has(id)).map((id) => [id, model.get(id)!]));
   },
 }));
-vi.mock("../switches/snapshot", () => ({ resolveSwitchEnv: async () => ({}) }));
 vi.mock("./spare-settings", () => ({
   spareSettingsIn: async (_q: unknown, userId: string, asked: readonly string[]) => {
     m.settingsAsked.push({ userId, asked });

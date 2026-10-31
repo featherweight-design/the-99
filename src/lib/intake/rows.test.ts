@@ -3,9 +3,7 @@
 // so a pick is never repeated and a free row never skipped. The search and the decorations are stubbed;
 // what is proved here is the order and the lines, which the page and the action only pass through.
 
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ENV_VIEW } from "@/test/env-view";
-import { envViewWith } from "@/test/env-view";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const stub = vi.hoisted(() => ({ search: vi.fn(), cardRow: vi.fn(), chainArt: vi.fn(async () => new Map()) }));
 vi.mock("./search", () => ({ searchCommanders: stub.search, loadCardRow: stub.cardRow }));
@@ -34,51 +32,45 @@ describe("loadResultsPage under a read", () => {
   const picks = { picks: [{ oracleId: id(20), reason: [{ text: "First." }] }, { oracleId: id(5), reason: [{ text: "Second." }] }] };
 
   it("puts the read's picks first, in its order, with their lines, then the rest in the free order", async () => {
-    const page = await loadResultsPage("u", answers, 0, picks, ENV_VIEW);
+    const page = await loadResultsPage("u", answers, 0, picks);
     expect(page.rows.map((r) => r.name).slice(0, 4)).toEqual(["Commander 20", "Commander 5", "Commander 1", "Commander 2"]);
     expect(page.rows[0].reason).toEqual([{ text: "First." }]);
     expect(page.rows[2].reason).toBeUndefined();
   });
 
   it("continues the same list across slices: no pick repeated, no free row skipped", async () => {
-    const first = await loadResultsPage("u", answers, 0, picks, ENV_VIEW);
-    const second = await loadResultsPage("u", answers, RESULT_PAGE, picks, ENV_VIEW);
-    const all = [...first.rows, ...second.rows, ...(await loadResultsPage("u", answers, RESULT_PAGE * 2, picks, ENV_VIEW)).rows].map((r) => r.oracleId);
+    const first = await loadResultsPage("u", answers, 0, picks);
+    const second = await loadResultsPage("u", answers, RESULT_PAGE, picks);
+    const all = [...first.rows, ...second.rows, ...(await loadResultsPage("u", answers, RESULT_PAGE * 2, picks)).rows].map((r) => r.oracleId);
     expect(new Set(all).size).toBe(30);
     expect(second.rows.some((r) => r.reason)).toBe(false);
   });
 
   it("leaves the free order alone with no read", async () => {
-    const page = await loadResultsPage("u", answers, 0, null, ENV_VIEW);
+    const page = await loadResultsPage("u", answers, 0, null);
     expect(page.rows.map((r) => r.name).slice(0, 2)).toEqual(["Commander 1", "Commander 2"]);
   });
 });
 
-// Admin PR 6f-2: every claim read under the results and the card chip takes the reader's env. It is checked
-// by identity, never compared, so a dropped argument is seen.
-describe("the reader's env", () => {
-  const ENV = envViewWith({});
+// The claim reads under the results and the card chip.
+describe("the claim reads", () => {
   beforeEach(() => {
     vi.mocked(loadAvailability).mockClear();
     stub.cardRow.mockReset().mockResolvedValue({ name: "Sol Ring", owned: true, held: null, gameChanger: false, imageUri: null });
     stub.chainArt.mockClear();
   });
-  afterEach(() => vi.unstubAllEnvs());
 
-  it("reaches the search and the owned rows' claim read from loadResultsPage", async () => {
+  it("narrows the owned rows' claim read to the owned rows", async () => {
     const owned = (i: number) => ({ ...ranked(i), candidate: { ...ranked(i).candidate, owned: true } });
     stub.search.mockResolvedValue({ rows: [owned(1), ranked(2)], order: "owned", tooNarrow: null, card: null });
-    await loadResultsPage("u", answers, 0, null, ENV);
-    expect(stub.search.mock.calls[0][2] === ENV).toBe(true);
+    await loadResultsPage("u", answers, 0, null);
     const [, opts] = vi.mocked(loadAvailability).mock.calls[0];
     expect(opts?.oracleIds).toEqual([id(1)]);
-    expect(opts?.env === ENV).toBe(true);
   });
 
-  it("reaches the card's claim read from loadCardChip", async () => {
-    await loadCardChip("u", id(7), ENV);
-    expect(stub.cardRow.mock.calls[0].slice(0, 2)).toEqual(["u", id(7)]);
-    expect(stub.cardRow.mock.calls[0][2] === ENV).toBe(true);
+  it("reads the card's row from loadCardChip", async () => {
+    await loadCardChip("u", id(7));
+    expect(stub.cardRow.mock.calls[0]).toEqual(["u", id(7)]);
   });
 });
 
@@ -89,14 +81,14 @@ describe("loadResultsPage: picks the search no longer lists (History's aged run)
       { oracleId: id(99), reason: [{ text: "Built since." }] },
       { oracleId: id(98), reason: [{ text: "Not ranked." }] },
     ] };
-    const page = await loadResultsPage("u", answers, 0, picks, ENV_VIEW);
+    const page = await loadResultsPage("u", answers, 0, picks);
     expect(page.gone).toEqual([id(99), id(98)]);
     expect(page.rows[0].name).toBe("Commander 5");
     expect(page.rows.some((r) => r.oracleId === id(99))).toBe(false);
   });
 
   it("has none gone with no read, and none when every pick is still listed", async () => {
-    expect((await loadResultsPage("u", answers, 0, null, ENV_VIEW)).gone).toEqual([]);
-    expect((await loadResultsPage("u", answers, 0, { picks: [{ oracleId: id(3), reason: [{ text: "x" }] }] }, ENV_VIEW)).gone).toEqual([]);
+    expect((await loadResultsPage("u", answers, 0, null)).gone).toEqual([]);
+    expect((await loadResultsPage("u", answers, 0, { picks: [{ oracleId: id(3), reason: [{ text: "x" }] }] })).gone).toEqual([]);
   });
 });

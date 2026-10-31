@@ -1,6 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { envViewWith } from "@/test/env-view";
-import { requestSwitchEnv } from "../../lib/switches/request";
 
 // The proxy resolves each reader's switches onto a request header; with no request here, the
 // action reads the environment alone, as it did before overrides.
@@ -96,20 +94,6 @@ describe("confirmUpload", () => {
     expect(stub.receipt.mock.calls[0][0].nowShort).toEqual([deck]);
   });
 
-  it("hands the write and the receipt the reader's resolved env, not the environment", async () => {
-    // The claim reads under both take it; checked by identity, so a dropped argument is seen.
-    const env = envViewWith({});
-    vi.mocked(requestSwitchEnv).mockResolvedValueOnce(env);
-    stub.apply.mockResolvedValue(applied("upload_replace"));
-    try {
-      await confirmUpload(UPLOAD);
-      expect(stub.apply.mock.calls[0][2].env === env).toBe(true);
-      expect(stub.receipt.mock.calls[0][0].env === env).toBe(true);
-    } finally {
-      vi.unstubAllEnvs();
-    }
-  });
-
   it("gives an Add's receipt the counts the write read under its lock, not the earlier snapshot", async () => {
     stub.apply.mockResolvedValue(applied("upload_add"));
     await confirmUpload(UPLOAD, { mode: "add" });
@@ -149,18 +133,6 @@ describe("previewUploadChange", () => {
     expect(got).toHaveProperty("detail.copiesAfter", 24);
     expect(got).toHaveProperty("detail.unchanged", 9);
     expect(stub.apply.mock.calls[0][2].dryRun).toBe(true);
-  });
-
-  it("hands the dry run the reader's resolved env, not the environment", async () => {
-    const env = envViewWith({});
-    vi.mocked(requestSwitchEnv).mockResolvedValueOnce(env);
-    stub.apply.mockResolvedValue({ status: "preview", raised: 0, lowered: 0, rows: [], decks: [] });
-    try {
-      await previewUploadChange(UPLOAD, "replace");
-      expect(stub.apply.mock.calls[0][2].env === env).toBe(true);
-    } finally {
-      vi.unstubAllEnvs();
-    }
   });
 
   it("says whether history reaches back to the last upload, and never quotes one older than the window", async () => {

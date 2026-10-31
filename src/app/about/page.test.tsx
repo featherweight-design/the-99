@@ -5,7 +5,7 @@ import { isValidElement, type ReactElement, type ReactNode } from "react";
 // `?tab=reference` with `loadToolFits` asked only for the deck tools this reader's switches draw and the visit mounted
 // on it, and the legacy gate's way back kept for a reader it sent.
 const m = vi.hoisted(() => ({
-  loadToolFits: vi.fn<(userId: string, env: NodeJS.ProcessEnv, tools: readonly string[]) => Promise<object>>(async () => ({})),
+  loadToolFits: vi.fn<(userId: string, tools: readonly string[]) => Promise<object>>(async () => ({})),
   hasSyncAnchor: vi.fn(async () => false),
   dailyLimitFor: vi.fn(async () => 5),
   seen: { version: 14, ids: [] as string[] },
@@ -159,18 +159,18 @@ describe("/about, the fits (E10)", () => {
     vi.stubEnv("TUNING_ENABLED", "true");
     await tabs();
     expect(m.loadToolFits).toHaveBeenCalledTimes(1);
-    expect(m.loadToolFits.mock.calls[0]![2]).toEqual(["top-off", "suggested-changes"]);
+    expect(m.loadToolFits.mock.calls[0]![1]).toEqual(["top-off", "suggested-changes"]);
   });
 
   it("with every deck tool's switch off, asks only for Top off, which has none", async () => {
     await tabs();
-    expect(m.loadToolFits.mock.calls[0]![2]).toEqual(["top-off"]);
+    expect(m.loadToolFits.mock.calls[0]![1]).toEqual(["top-off"]);
   });
 
   it("decides by the tool's own switch, even where its entry is drawn", async () => {
     m.everyEntry = true;
     await tabs();
-    expect(m.loadToolFits.mock.calls[0]![2]).toEqual(["top-off"]);
+    expect(m.loadToolFits.mock.calls[0]![1]).toEqual(["top-off"]);
   });
 
   // Collection Sync's switch and its parent's, collection editing, are retired: the sync base is always read.
@@ -182,7 +182,7 @@ describe("/about, the fits (E10)", () => {
   it("every tool it asks for is a deck tool", async () => {
     for (const s of DECK_SWITCHES) vi.stubEnv(s, "true");
     await tabs();
-    const asked = m.loadToolFits.mock.calls[0]![2] as string[];
+    const asked = m.loadToolFits.mock.calls[0]![1] as string[];
     expect(asked.length).toBeGreaterThan(1);
     for (const id of asked) expect(TOOLS.find((t) => t.id === id)!.lands.kind).toBe("deck");
   });

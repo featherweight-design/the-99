@@ -2124,7 +2124,7 @@ describe("getVersionDiff", () => {
     );
     await getVersionDiff(DECK_ID, VERSION_ID);
     expect(loadVersionDiff).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(loadVersionDiff).mock.calls[0]).toEqual([VERSION_ID, V2, USER_ID, DECK_ID, null, ENV]);
+    expect(vi.mocked(loadVersionDiff).mock.calls[0]).toEqual([VERSION_ID, V2, USER_ID, DECK_ID, null]);
   });
 
   // A v1 has nothing before it, and the diff loader is told so explicitly rather
@@ -2132,7 +2132,7 @@ describe("getVersionDiff", () => {
   it("names no predecessor for the first version", async () => {
     stub.state.deckVersions.push({ id: VERSION_ID, number: 1, deckId: DECK_ID });
     await getVersionDiff(DECK_ID, VERSION_ID);
-    expect(vi.mocked(loadVersionDiff).mock.calls[0]).toEqual([VERSION_ID, null, USER_ID, DECK_ID, null, ENV]);
+    expect(vi.mocked(loadVersionDiff).mock.calls[0]).toEqual([VERSION_ID, null, USER_ID, DECK_ID, null]);
   });
 
   // Precons R3 K10: a linked deck's v1 diffs against v0, read from the precon and never a version.
@@ -2146,7 +2146,7 @@ describe("getVersionDiff", () => {
     await getVersionDiff(DECK_ID, VERSION_ID);
     expect(readDeckOriginAndStart).toHaveBeenCalledWith(USER_ID, DECK_ID);
     expect(vi.mocked(loadVersionDiff).mock.calls[0]).toEqual([
-      VERSION_ID, null, USER_ID, DECK_ID, { cards: [], nonBasic: ["a", "b"], commanders: [CMD] }, ENV,
+      VERSION_ID, null, USER_ID, DECK_ID, { cards: [], nonBasic: ["a", "b"], commanders: [CMD] },
     ]);
   });
 
@@ -2159,7 +2159,7 @@ describe("getVersionDiff", () => {
       nonBasic: ["a", "b"],
     });
     await getVersionDiff(DECK_ID, VERSION_ID);
-    expect(vi.mocked(loadVersionDiff).mock.calls[0]).toEqual([VERSION_ID, null, USER_ID, DECK_ID, null, ENV]);
+    expect(vi.mocked(loadVersionDiff).mock.calls[0]).toEqual([VERSION_ID, null, USER_ID, DECK_ID, null]);
   });
 });
 
@@ -2358,22 +2358,9 @@ describe("pullCardFromDeck", () => {
     await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
     expect(loadAvailability).toHaveBeenCalledWith(
       USER_ID,
-      { oracleIds: [CARD_A], excludeDeckId: ASKING_ID, env: ENV },
+      { oracleIds: [CARD_A], excludeDeckId: ASKING_ID },
       expect.anything(),
     );
-  });
-
-  // Admin adoption 6e: both claim reads, the one that names the parties and the one that decides
-  // under the locks, run the claim model under the reader's resolved switches, never the environment
-  // alone. Identity, not equality: the sentinel is `{}`.
-  it("hands the reader's resolved env to both of its claim reads", async () => {
-    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
-    vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
-    vi.mocked(loadAvailability).mockClear();
-    await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
-    const calls = vi.mocked(loadAvailability).mock.calls;
-    expect(calls.length).toBe(2);
-    expect(calls.map(([, opts]) => opts?.env === ENV)).toEqual([true, true]);
   });
 
   // One id for both ends is not a transfer: the deck loses a copy to satisfy a
@@ -2497,7 +2484,7 @@ describe("pullCardFromDeck", () => {
     expect(result).toEqual({ ok: true, buy: 7, total: "$241.00" });
     // After the revalidation, so the figures describe the world the reader is
     // about to be shown rather than the one the pull replaced.
-    expect(loadDraftState).toHaveBeenCalledWith(ASKING_ID, USER_ID, ENV);
+    expect(loadDraftState).toHaveBeenCalledWith(ASKING_ID, USER_ID);
   });
 
   // The card has already moved by then. Failing the pull over the sentence

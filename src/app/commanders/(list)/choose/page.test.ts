@@ -3,14 +3,13 @@
 // route error that would bypass *Search failed* and its Retry. The form still needs its vocabulary.
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { envViewWith } from "@/test/env-view";
 
-const stub = vi.hoisted(() => ({ history: vi.fn(), past: vi.fn(), themes: vi.fn(), chip: vi.fn(), allowance: vi.fn(), read: vi.fn(), decks: vi.fn(), page: vi.fn(), env: null as NodeJS.ProcessEnv | null }));
+const stub = vi.hoisted(() => ({ history: vi.fn(), past: vi.fn(), themes: vi.fn(), chip: vi.fn(), allowance: vi.fn(), read: vi.fn(), decks: vi.fn(), page: vi.fn() }));
 vi.mock("../../../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 // The reader's resolved switches: the environment, so `vi.stubEnv` still sets them.
 vi.mock("../../../../lib/switches/request", async () => {
   const { ENV_VIEW } = await import("@/test/env-view");
-  return { requestSwitchEnv: async () => stub.env ?? ENV_VIEW };
+  return { requestSwitchEnv: async () => ENV_VIEW };
 });
 vi.mock("../../../../lib/intake/flag", () => ({ helpMeChooseEnabled: () => true }));
 vi.mock("../../../../lib/intake/search", () => ({ loadIntakeThemes: stub.themes, loadIntakeCatalog: vi.fn() }));
@@ -111,23 +110,6 @@ describe("the choose page", () => {
     const other = await ChoosePage({ searchParams: Promise.resolve({ v: "results", w: "scary", t: "dinosaurs" }) });
     expect(keyOf(reading)).toBe(keyOf(unread));
     expect(keyOf(other)).not.toBe(keyOf(unread));
-  });
-
-  it("hands the results' search the reader's resolved env, not the environment", async () => {
-    // The search's claim reads take it; checked by identity, so a dropped argument is seen.
-    stub.env = envViewWith({});
-    try {
-      stub.themes.mockResolvedValue([]);
-      stub.page.mockReset().mockResolvedValue({ order: "fit", tooNarrow: false, card: null, rows: [], hasMore: false, total: 0 });
-      const page = await ChoosePage({ searchParams: Promise.resolve({ v: "results", t: "dinosaurs" }) });
-      // The streamed search under the Suspense, run as React would run it.
-      const results = find(page, Suspense)!.props.children as { type: (p: unknown) => Promise<unknown>; props: unknown };
-      await results.type(results.props);
-      expect(stub.page.mock.calls[0][4] === stub.env).toBe(true);
-    } finally {
-      stub.env = null;
-      vi.unstubAllEnvs();
-    }
   });
 
   describe("the list while a read is pending (entry path)", () => {

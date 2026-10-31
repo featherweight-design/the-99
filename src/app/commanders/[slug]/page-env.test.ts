@@ -1,7 +1,6 @@
-// Admin PR 6f-1: a commander page in free mode reads the free pool, whose claim model takes the env it is
-// handed. `loadFreePool` requires that env (admin PR 7c-2), and the page's resolved env must be the one that
-// reaches it (and, being memoised by argument, the same env the ranking above it passed, or the page pays the
-// rollup twice). The handed env is checked by identity, as a boolean.
+// Admin PR 6f-1: a commander page in free mode ranks and scores under the reader's resolved switches (the role
+// basis follows `LABEL_ROLE_COUNTS_ENABLED`), so the page's resolved env must be the one that reaches both. The
+// free pool is read once. The handed env is checked by identity, as a boolean.
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const m = vi.hoisted(() => ({
@@ -37,14 +36,14 @@ const { default: CommanderDetailPage } = await import("./page");
 describe("the commander page in free mode", () => {
   afterEach(() => vi.unstubAllEnvs());
 
-  it("reads the free pool under the reader's resolved switches, the env its ranking was handed", async () => {
+  it("ranks and scores under the reader's resolved switches, reading the free pool once", async () => {
     // The score is stubbed empty, so the page ends at its not-found; the reads before it are the subject.
     await expect(CommanderDetailPage({
       params: Promise.resolve({ slug: "cmd" }),
       searchParams: Promise.resolve({ avail: "free" }),
     })).rejects.toThrow("NOT_FOUND");
     expect(m.loadFreePool).toHaveBeenCalledTimes(1);
-    expect(m.loadFreePool.mock.calls[0][1] === m.READER).toBe(true);
+    expect(m.loadFreePool.mock.calls[0]).toEqual(["user_1"]);
     expect(m.rankFree.mock.calls[0][3] === m.READER).toBe(true);
     expect(m.scoreOneCommander.mock.calls[0][4] === m.READER).toBe(true);
   });

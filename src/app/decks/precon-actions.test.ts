@@ -158,7 +158,7 @@ describe("startPreconOwned", () => {
   it("starts for the signed-in player under the action id, and lands on the deck carrying the add's entry", async () => {
     state.addResult = STARTED;
     await expect(startPreconOwned("MultiverseReforged_FRC", "  Mine ", ACTION)).rejects.toThrow(`REDIRECT:/decks/deck-9?from=precon&added=${ENTRY}`);
-    expect(state.addCalls.map(([user, file, name, id, , placements]) => [user, file, name, id, placements])).toEqual([
+    expect(state.addCalls.map(([user, file, name, id, placements]) => [user, file, name, id, placements])).toEqual([
       ["user_1", "MultiverseReforged_FRC", "Mine", ACTION, true],
     ]);
     expect(state.revalidated).toEqual(["deck-9"]);
@@ -204,7 +204,7 @@ describe("addPrecons (no-collection entry S4 to S7)", () => {
     ]);
     // Each box starts its deck under the precon's own name; a Collector's Edition under the plain one, as the dialog names it.
     expect(state.picks.map((a) => a[2])).toEqual(["Abzan Armor", "Revival Trance"]);
-    expect(state.picks.map((a) => a[5])).toEqual([true, true]);
+    expect(state.picks.map((a) => a[4])).toEqual([true, true]);
     expect(state.invalidated).toEqual(["user_1"]);
     expect(state.revalidated).toEqual(["deck-Abzan", "deck-Revival_CE"]);
     await Promise.all(state.after.map((f) => f()));

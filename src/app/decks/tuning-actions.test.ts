@@ -80,8 +80,7 @@ vi.mock("../../db", () => ({
 vi.mock("../../lib/decks/availability-query", () => ({
   // SLEEVEABLE MEANS SLEEVEABLE (review round 6): a row absent here reads as "nothing known",
   // same as `fill.ts`'s own predicate (`a === undefined || a.free > 0`).
-  loadAvailability: async (_u: string, opts?: { env?: unknown }) => {
-    sawEnv("loadAvailability", opts?.env);
+  loadAvailability: async () => {
     return new Map([...calls.freeCopies].map(([id, free]) => [id, { free }]));
   },
 }));
@@ -429,27 +428,6 @@ describe("runTuning's 6-asked/5-kept slice, per list", () => {
     expect(await applySuggestion(ITEM)).toEqual({ ok: true });
     expect(calls.applied).toBe(1);
     expect(await undoSuggestion(ITEM)).toEqual({ ok: true });
-  });
-
-  // Admin adoption 6f-1: an owned-only run reads the claim model twice, for the shortlist and for the
-  // answer's free copies, and each takes the env the action resolved, checked by identity.
-  it("hands an owned-only run's two claim reads the reader's resolved switches, not the environment", async () => {
-    const { requestSwitchEnv } = await import("../../lib/switches/request");
-    const READER = {} as unknown as NodeJS.ProcessEnv;
-    vi.mocked(requestSwitchEnv).mockResolvedValue(READER);
-    try {
-      calls.limits = { capCents: null, sets: [], ownedOnly: true };
-      calls.ownedIds = new Set(SIX.map((i) => `add${i}`));
-      await runTuning(DECK, { anyway: true });
-      expect(calls.persisted).toHaveLength(1);
-      expect((calls.candidateArgs as { env?: unknown }).env === READER).toBe(true);
-      const seen = envs.seen.loadAvailability ?? [];
-      expect(seen.length).toBe(1);
-      expect(seen[0] === READER).toBe(true);
-    } finally {
-      vi.mocked(requestSwitchEnv).mockResolvedValue(ENV);
-      vi.unstubAllEnvs();
-    }
   });
 
   it("keeps only the first five of six valid survivors in EACH list, additions first", async () => {

@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ENV_VIEW } from "@/test/env-view";
 
 // `loadCart` through its own boundary: the rows, decks and card names resolve, and the price read
 // REJECTS. T2 says the cart still draws its rows, with no figure (audit finding 8).
@@ -46,7 +45,7 @@ describe("loadCart", () => {
   it("keeps its rows when the price read fails (T2), drawing no figure", async () => {
     readBuyRowPrices.mockRejectedValue(new Error("price read failed"));
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
-    const cart = await loadCart("user", ENV_VIEW);
+    const cart = await loadCart("user");
     spy.mockRestore();
     expect(cart.priced).toBe(false);
     expect(cart.newestAsOf).toBeNull();
@@ -66,7 +65,7 @@ describe("loadCart", () => {
   it("starts the other reads without waiting on the price read", async () => {
     let settle: (v: null) => void = () => {};
     readBuyRowPrices.mockReturnValue(new Promise((resolve) => { settle = resolve; }));
-    const pending = loadCart("user", ENV_VIEW);
+    const pending = loadCart("user");
     await new Promise((r) => setTimeout(r, 0));
     // Both metadata selects were consumed while the price read is still in flight.
     expect(selects).toHaveLength(0);
@@ -80,7 +79,7 @@ describe("loadCart", () => {
       prices: new Map([["sol", { cents: 150, foilCents: null, etchedCents: null, asOf: now }]]),
       newestAsOf: now,
     });
-    const cart = await loadCart("user", ENV_VIEW);
+    const cart = await loadCart("user");
     expect(cart.priced).toBe(true);
     expect(cart.decks.map((d) => d.cents)).toEqual([150, 150]);
   });
@@ -89,7 +88,7 @@ describe("loadCart", () => {
     readBuyRowPrices.mockRejectedValue(new Error("price read failed"));
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     chainArt.mockResolvedValue(new Map([["sol", "owned-sol.jpg"]]));
-    expect((await loadCart("user", ENV_VIEW)).lines[0].imageUri).toBe("owned-sol.jpg");
+    expect((await loadCart("user")).lines[0].imageUri).toBe("owned-sol.jpg");
     // The first three arguments only: the fourth is the env, which a test never compares or prints.
     expect(chainArt.mock.calls[0].slice(0, 3)).toEqual(["user", null, ["sol"]]);
     selects.length = 0;
@@ -102,7 +101,7 @@ describe("loadCart", () => {
       [{ oracleId: "sol", name: "Sol Ring", imageUri: "catalog-sol.jpg" }],
     );
     chainArt.mockResolvedValue(new Map());
-    expect((await loadCart("user", ENV_VIEW)).lines[0].imageUri).toBe("catalog-sol.jpg");
+    expect((await loadCart("user")).lines[0].imageUri).toBe("catalog-sol.jpg");
     spy.mockRestore();
   });
 });
@@ -118,24 +117,18 @@ describe("loadCart names the decks holding owned copies (G1)", () => {
       ],
     }]]) as never);
     readBuyRowPrices.mockResolvedValue(null);
-    const cart = await loadCart("user", ENV_VIEW);
+    const cart = await loadCart("user");
     expect(cart.lines[0].heldBy).toEqual([{ deckId: "zeta", held: 2 }]);
     expect(cart.holders).toEqual([{ id: "zeta", name: "Zeta Tokens" }]);
   });
 });
 
-// Admin adoption 6e: the cart is a cached page's load, keyed on the reader's resolved switches, and
-// the claim model's holders read takes that env. It requires its env, so the one handed in must be the one
-// handed on.
-describe("loadCart threads the env it is handed", () => {
-  it("hands the same env to every read it starts", async () => {
-    const ENV = {} as unknown as NodeJS.ProcessEnv;
-    const { loadDeckBuyRows, loadAvailability } = await import("./availability-query");
+describe("loadCart's buy rows", () => {
+  it("reads every deck's buy rows for the reader", async () => {
+    const { loadDeckBuyRows } = await import("./availability-query");
     vi.mocked(loadDeckBuyRows).mockClear();
-    vi.mocked(loadAvailability).mockClear();
     readBuyRowPrices.mockResolvedValue(null);
-    await loadCart("user", ENV);
+    await loadCart("user");
     expect(vi.mocked(loadDeckBuyRows).mock.calls[0]).toEqual(["user"]);
-    expect(vi.mocked(loadAvailability).mock.calls[0][1]?.env === ENV).toBe(true);
   });
 });

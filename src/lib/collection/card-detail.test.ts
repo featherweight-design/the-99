@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
 import { ENV_VIEW } from "@/test/env-view";
-import { envViewWith } from "../../test/env-view";
 
 // Only the two reads are stood in for; the aggregation they feed is the real one, so a
 // change to how a collection row becomes a BrowseCard still shows up here.
@@ -277,17 +276,14 @@ describe("loadCardDetail availability", () => {
     selectCollectionRows.mockResolvedValue([row]);
     loadAvailability.mockResolvedValue(new Map([["o-1", availability]]));
     loadPrintingPrices.mockResolvedValue(EMPTY_PRICES);
-    const env = envViewWith({});
-    const card = await loadCardDetail("user_1", "o-1", undefined, env);
+    const card = await loadCardDetail("user_1", "o-1", undefined, ENV_VIEW);
     expect(card?.availability).toEqual(availability);
     // Row 1.5: card detail is off any deck's own decklist, so no deck is excluded —
     // passing one here would silently switch the surface to the other `free` formula.
-    // The env is the reader's, checked by identity so a failure never prints an environment.
-    const [user, opts] = loadAvailability.mock.calls[0] as [string, { oracleIds: string[]; env?: unknown; excludeDeckId?: string }];
+    const [user, opts] = loadAvailability.mock.calls[0] as [string, { oracleIds: string[]; excludeDeckId?: string }];
     expect(user).toBe("user_1");
     expect(opts.oracleIds).toEqual(["o-1"]);
     expect("excludeDeckId" in opts).toBe(false);
-    expect(opts.env === env).toBe(true);
   });
 
   // /collection fails quiet on this read; the modal must too. Losing the card because

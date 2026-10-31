@@ -106,13 +106,12 @@ vi.mock("./run", () => ({ deckTotal: () => 99, V2_DECK_TOTAL: 99 }));
 
 import { applyPicks, MAX_SET_PULLS, parseSetPulls, undoSet } from "./apply-set";
 
-const ENV = {} as NodeJS.ProcessEnv;
 const open = (id: string, side: "add" | "cut"): Line => ({
   id, addOracleId: side === "add" ? `o-${id}` : null, cutOracleId: side === "cut" ? `o-${id}` : null,
   verdict: "pending", applySet: null, undoSnapshot: null,
 });
 const apply = (pulls?: { itemId: string; sourceDeckId: string }[]) =>
-  applyPicks({ runId: RUN, addIds: ["a1", "a2"], cutIds: ["c1", "c2"], actionId: SET, userId: "me", env: ENV, pulls });
+  applyPicks({ runId: RUN, addIds: ["a1", "a2"], cutIds: ["c1", "c2"], actionId: SET, userId: "me", pulls });
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -173,14 +172,14 @@ describe("applyPicks with staged pulls", () => {
   it("runs each pull after every swap, against the run's deck, and locks the run deck, sources and claimants as one sorted set", async () => {
     const r = await apply([{ itemId: "a1", sourceDeckId: SOURCE }]);
     expect(r).toMatchObject({ ok: true, sourceDeckIds: [SOURCE] });
-    expect(pull.pullClaimants).toHaveBeenCalledWith("me", ENV, "o-a1", DECK);
+    expect(pull.pullClaimants).toHaveBeenCalledWith("me", "o-a1", DECK);
     // ONE call, before anything else in the transaction, with every party: the run's deck is not locked on its own first.
     expect(pull.lockDecksInOrder).toHaveBeenCalledTimes(1);
     expect(pull.lockDecksInOrder.mock.calls[0][1]).toEqual(expect.arrayContaining([DECK, SOURCE, CLAIMANT]));
     expect(fx.events).not.toContain(`lock:${DECK}`);
     const lockIds = [CLAIMANT, SOURCE, DECK].sort();
     expect(pull.pullInTx).toHaveBeenCalledWith(expect.anything(), {
-      userId: "me", env: ENV, sourceDeckId: SOURCE, oracleId: "o-a1", askingDeckId: DECK, lockIds,
+      userId: "me", sourceDeckId: SOURCE, oracleId: "o-a1", askingDeckId: DECK, lockIds,
     });
     const swaps = fx.events.filter((e) => e.startsWith("swap:"));
     expect(swaps).toHaveLength(4);

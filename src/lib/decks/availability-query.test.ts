@@ -3,12 +3,11 @@ import { describe, expect, it } from "vitest";
 import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
 import { loadAvailability, loadDeckBuyRows } from "./availability-query";
-import { ENV_VIEW } from "@/test/env-view";
 
 async function emitted(): Promise<string> {
   let captured: SQL | null = null;
   const tx = { execute: async (q: SQL) => { captured = q; return { rows: [] }; } };
-  await loadAvailability("user_1", { oracleIds: ["o1"], env: ENV_VIEW }, tx as never);
+  await loadAvailability("user_1", { oracleIds: ["o1"] }, tx as never);
   return new PgDialect().sqlToQuery(captured!).sql;
 }
 
@@ -23,10 +22,10 @@ describe("loadAvailability and the lock", () => {
 });
 
 describe("loadAvailability with unownedAsZero (the cart's chooser)", () => {
-  const render = async (opts: Omit<Parameters<typeof loadAvailability>[1], "env">) => {
+  const render = async (opts: Parameters<typeof loadAvailability>[1]) => {
     let captured: SQL | null = null;
     const tx = { execute: async (q: SQL) => { captured = q; return { rows: [] }; } };
-    await loadAvailability("user_1", { ...opts, env: ENV_VIEW }, tx as never);
+    await loadAvailability("user_1", opts, tx as never);
     return new PgDialect().sqlToQuery(captured!).sql;
   };
 
@@ -56,7 +55,7 @@ describe("the claim readers count a moved commander as pending", () => {
 
   it("loadAvailability", async () => {
     const { tx, text } = capture();
-    await loadAvailability("user_1", { oracleIds: ["o1"], env: ENV_VIEW }, tx);
+    await loadAvailability("user_1", { oracleIds: ["o1"] }, tx);
     expect(text()).toContain(MOVED);
   });
 

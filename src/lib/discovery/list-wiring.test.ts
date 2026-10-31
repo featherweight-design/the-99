@@ -217,23 +217,8 @@ describe("loadDiscovery — wiring", () => {
     expect(got.cardsRead).toBe(2);
   });
 
-  // Admin PR 6f-1: the claim model takes the env it is handed, and the pool requires its env: the list must
-  // hand it the reader's. Identity is checked as a boolean.
-  it("runs the availability read under the reader's resolved switches, not the environment", async () => {
-    const READER = {} as unknown as NodeJS.ProcessEnv;
-    try {
-      loadAvailability.mockClear();
-      await loadDiscoveryWithIds("user-1", { sort: "fit" }, READER);
-      expect(loadAvailability).toHaveBeenCalledTimes(1);
-      const [, opts] = loadAvailability.mock.calls[0] as unknown as [string, { env?: unknown }];
-      expect(opts.env === READER).toBe(true);
-    } finally {
-      vi.unstubAllEnvs();
-    }
-  });
-
   it("scopes the availability read to the collection it will score", async () => {
-    await loadDiscoveryPool("user-1", ENV_VIEW);
+    await loadDiscoveryPool("user-1");
     const [userArg, opts] = loadAvailability.mock.calls[0] as unknown as [
       string,
       { oracleIds: string[] },

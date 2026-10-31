@@ -7,7 +7,6 @@ vi.mock("../bracket/flags-read", () => ({ loadBracketFlags: vi.fn(async () => ne
 
 import type { FillCandidate } from "../decks/fill";
 import { loadFillGate } from "./fill-facts";
-import { ENV_VIEW } from "@/test/env-view";
 
 const card = (over: Partial<FillCandidate>): FillCandidate => ({
   oracleId: "x", name: "x", typeLine: "Creature", oracleText: null, keywords: [], manaCost: null,
@@ -20,7 +19,7 @@ describe("loadFillGate's budget", () => {
     // them: no price, no ownership. A basic is never a buy, so the budget must not refuse one.
     const gate = await loadFillGate({
       userId: "u", commanderIds: ["cmd"], candidates: [],
-      answers: { budgetCents: 1000, bracket: null, cardOracleId: null }, env: ENV_VIEW,
+      answers: { budgetCents: 1000, bracket: null, cardOracleId: null },
     });
     expect(gate!.admits(card({ oracleId: "cat-mountain", name: "Mountain", typeLine: "Basic Land — Mountain" }))).toBe(true);
     // And an unpriced non-basic it was never told about is still refused, as before.
@@ -40,7 +39,7 @@ describe("loadFillGate's cap (Hit bracket N, G1)", () => {
     await priced();
     const gate = await loadFillGate({
       userId: "u", commanderIds: ["cmd"], candidates: [card({ oracleId: "rhystic" }), card({ oracleId: "spell" })],
-      answers: { budgetCents: 2000, bracket: null, cardOracleId: null }, env: ENV_VIEW, capCents: 3200,
+      answers: { budgetCents: 2000, bracket: null, cardOracleId: null }, capCents: 3200,
     });
     // The budget alone ($20) would refuse the $32 set; the cap admits it.
     expect(gate!.admits(card({ oracleId: "rhystic" }))).toBe(true);
@@ -53,7 +52,7 @@ describe("loadFillGate's cap (Hit bracket N, G1)", () => {
     await priced();
     const gate = await loadFillGate({
       userId: "u", commanderIds: ["cmd"], candidates: [card({ oracleId: "rhystic" }), card({ oracleId: "penny" })],
-      answers: { budgetCents: 3300, bracket: null, cardOracleId: null }, env: ENV_VIEW, capCents: 3200,
+      answers: { budgetCents: 3300, bracket: null, cardOracleId: null }, capCents: 3200,
     });
     gate!.place(card({ oracleId: "rhystic" }));
     expect(gate!.admits(card({ oracleId: "penny" }))).toBe(false);
@@ -66,7 +65,7 @@ describe("loadFillGate's cap (Hit bracket N, G1)", () => {
     ]) as unknown as Awaited<ReturnType<typeof loadPrices>>);
     const gate = await loadFillGate({
       userId: "u", commanderIds: ["cmd"], candidates: [card({ oracleId: "rhystic" }), card({ oracleId: "quarter" })],
-      answers: { budgetCents: 5000, bracket: null, cardOracleId: null }, env: ENV_VIEW,
+      answers: { budgetCents: 5000, bracket: null, cardOracleId: null },
     });
     gate!.place(card({ oracleId: "rhystic" }));
     expect(gate!.admits(card({ oracleId: "quarter" }))).toBe(true);
@@ -76,7 +75,7 @@ describe("loadFillGate's cap (Hit bracket N, G1)", () => {
     await priced();
     const gate = await loadFillGate({
       userId: "u", commanderIds: ["cmd"], candidates: [card({ oracleId: "rhystic" }), card({ oracleId: "spell" })],
-      answers: { budgetCents: 5000, bracket: null, cardOracleId: null }, env: ENV_VIEW,
+      answers: { budgetCents: 5000, bracket: null, cardOracleId: null },
     });
     gate!.place(card({ oracleId: "rhystic" }));
     // $50 less $32 leaves $18: the $9 card still fits.
@@ -91,13 +90,13 @@ describe("loadBudgetLeftCents (audit item 10)", () => {
     const { loadBudgetLeftCents } = await import("./fill-facts");
     // Unowned (no availability row), not a basic (the catalog read returns none): charged.
     expect(await loadBudgetLeftCents({
-      userId: "u", commanderIds: ["cmd"], answers: { budgetCents: 5000, bracket: 3, cardOracleId: "around" }, env: ENV_VIEW,
+      userId: "u", commanderIds: ["cmd"], answers: { budgetCents: 5000, bracket: 3, cardOracleId: "around" },
     })).toBe(3500);
     expect(await loadBudgetLeftCents({
-      userId: "u", commanderIds: ["cmd"], answers: { budgetCents: 5000, bracket: 3, cardOracleId: null }, env: ENV_VIEW,
+      userId: "u", commanderIds: ["cmd"], answers: { budgetCents: 5000, bracket: 3, cardOracleId: null },
     })).toBe(5000);
     expect(await loadBudgetLeftCents({
-      userId: "u", commanderIds: ["cmd"], answers: { budgetCents: null, bracket: 3, cardOracleId: "around" }, env: ENV_VIEW,
+      userId: "u", commanderIds: ["cmd"], answers: { budgetCents: null, bracket: 3, cardOracleId: "around" },
     })).toBeNull();
   });
 });
