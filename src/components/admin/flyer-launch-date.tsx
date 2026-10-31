@@ -12,7 +12,7 @@ import { adminCopy, flyerAdminCopy } from "../../lib/copy/admin";
 
 const copy = flyerAdminCopy;
 const FIELD =
-  "h-[44px] w-full rounded-[8px] border border-solid bg-[color:var(--surface-sunken)] px-[12px] font-mono text-[16px] text-[color:var(--fg)] md:h-[38px] [@media(pointer:fine)]:md:text-[14px]";
+  "h-[44px] w-full rounded-[8px] border border-solid bg-[color:var(--surface-sunken)] px-[12px] text-[16px] text-[color:var(--fg)] md:h-[38px] [@media(pointer:fine)]:md:text-[14px]";
 const TEXT_BUTTON =
   "inline-flex min-h-[44px] cursor-pointer items-center whitespace-nowrap border-0 bg-transparent px-[6px] text-[13px] font-medium text-[color:var(--accent-text)] md:min-h-[32px]";
 
@@ -84,7 +84,7 @@ export function FlyerLaunchDate({ saved: initial }: { saved: string | null }) {
         )}
       </span>
       {failed && (
-        <p role="alert" className="m-0 mt-[12px] text-[13px] text-[color:var(--danger)] md:col-span-full">
+        <p role="alert" className="m-0 -mt-[2px] mb-[2px] text-[13px] text-[color:var(--danger)] md:col-span-full">
           {adminCopy.setting.saveFailed}
         </p>
       )}
