@@ -75,7 +75,7 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   LINEUP_ENABLED: () => true,
   // Already reads ANALYSIS_TAB_ENABLED: Look deeper lives in the tab's Tuning hub.
   PROPOSED_CUTS_ENABLED: proposedCutsEnabled,
-  // Retired (always on): Find a deck's read. It still needs swap tools, its parent. The name stays as the entry's and lines' historical identity.
+  // Find a deck's read follows its parent, swap tools (its own switch is retired). The name stays as the entry's and lines' historical identity.
   FIND_A_DECK_READ_ENABLED: swapToolsEnabled,
   // Starting without a collection ended on exactly when collection edit was (retired, always on).
   NO_COLLECTION_ENTRY_ENABLED: () => true,
