@@ -25,7 +25,8 @@ export function SocialToast({
   role?: "alert" | "status";
   /** `cart` is the cart's failed ask while a cart receipt is open (small items 7, item 3): on a phone it joins the cart
    *  toast stack, 10px above the receipt, which keeps the floor for its Undo. From md, and for `center`, the toast
-   *  stays in its centre slot, 16px above the tab bar. The caller passes `cart` only while the receipt is open, so
+   *  stays in its shipped centre slot, 16px above the tab bar (unchanged by the stack; it can overlap the receipt
+   *  between md and about 1224px, a pre-existing edge that is not drawn). The caller passes `cart` only while the receipt is open, so
    *  when the receipt closes the toast drops at once to its shipped place. */
   placement?: "center" | "cart";
 }) {

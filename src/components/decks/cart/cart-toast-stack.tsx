@@ -5,8 +5,9 @@
 // 10px above it. Each keeps its own clock; when the receipt goes the alert drops to the floor in the same layout, and
 // when the alert goes the receipt has not moved. Nothing measures another toast and nothing is lifted.
 //
-// From md the two slots never meet (the receipt is bottom right at 380, the alert bottom centre), so the column is
-// phone-only: it is `md:hidden`, and from md a cart toast draws in its own fixed slot as shipped.
+// From md both toasts keep the fixed slots they shipped in (this work leaves them unchanged; between md and about
+// 1224px the centre alert and the right-hand receipt can overlap, a pre-existing edge that is not drawn here), so the
+// stack is phone-only: it is `md:hidden`.
 //
 // The column is a host the shell draws (inside its lock's `--tabbar-h`, and outside the page's stacking context); a tree
 // with no shell (a test) gets one made on the body.

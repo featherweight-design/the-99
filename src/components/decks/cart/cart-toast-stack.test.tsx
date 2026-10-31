@@ -3,7 +3,7 @@
 // the floor and the alert 10px above it; from md, and with no receipt open, the toasts keep their shipped slots.
 import { act, cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ToastFrame } from "../../collection/edit-toast";
+import { ToastFrame, TOAST_MS } from "../../collection/edit-toast";
 import { SocialToast } from "../../social/social-toast";
 import { CART_STACK_CLASS, CartToastStackHost, cartToastStack } from "./cart-toast-stack";
 import { COVERED_WITH_MAIN } from "../../shell/covered-layer";
@@ -84,7 +84,10 @@ describe("on a phone", () => {
       act(() => { vi.advanceTimersByTime(3000); });
       rerender(<SocialToast toast={failed} onDone={onDone} placement="center" />);
       expect(onDone).not.toHaveBeenCalled();
-      act(() => { vi.advanceTimersByTime(30000); });
+      // 3000ms were spent before the move: a clock that kept running fires at TOAST_MS in all, a reset one 3000ms later.
+      act(() => { vi.advanceTimersByTime(TOAST_MS - 3000 - 250); });
+      expect(onDone).not.toHaveBeenCalled();
+      act(() => { vi.advanceTimersByTime(250); });
       expect(onDone).toHaveBeenCalledTimes(1);
     } finally {
       vi.useRealTimers();
@@ -93,7 +96,7 @@ describe("on a phone", () => {
 });
 
 describe("from md", () => {
-  it("leaves both toasts in their shipped slots, never in the stack", () => {
+  it("pins the shipped class strings: both toasts keep their own slots, nothing in the stack", () => {
     wide(true);
     render(<><Receipt /><SocialToast toast={failed} onDone={() => {}} placement="cart" /></>);
     expect(document.querySelector("[data-cart-toast-stack] *")).toBeNull();

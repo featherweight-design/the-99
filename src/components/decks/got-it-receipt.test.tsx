@@ -63,6 +63,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   cleanup();
+  document.querySelectorAll("[data-cart-toast-stack]").forEach((el) => el.remove());
   vi.useRealTimers();
   vi.clearAllMocks();
 });
