@@ -1,0 +1,126 @@
+{
+  "feature": "Suggested changes v2 close-out re-walk (fixes #2497 and #2500): only the cells the fixes changed, at 390 and 1300, with SUGGESTED_CHANGES_V2_ENABLED on and again unset",
+  "note": "Run twice against `next dev` with ANALYSIS_TAB_ENABLED, TUNING_ENABLED, PROPOSED_CUTS_ENABLED, MANA_BALANCE_ENABLED, PAYMENTS_ENABLED, WELCOME_CREDITS_ENABLED and ABOUT_SHEET_ENABLED 'true', TUNING_V2_STUB_DELAY_MS set, a dummy ANTHROPIC_API_KEY and ANTHROPIC_BASE_URL empty (nothing reaches a model): once with SUGGESTED_CHANGES_V2_ENABLED=true, once unset, copying `contact-sheets/sc-v2-closeout-rewalk` aside between runs. Seeded on a scratch branch of local-dev (the audit account): a gift grant of 20 credits, then SCV2_CAP_DECK (HD - Brago d3f9ccb4…) one N=11 run pressed from the intake against the staged stub (v2 on), set by SQL to spent under a $2.00 cap (restrictions.capCents 200, shortReason.add overCap, three overCap drops, top-level refunded false). Rows (ii) and (iii) are part 1's About rows; (i) is the v2-off pass of the two history rows, (iv) the short notice in `history-run-head` on both passes.",
+  "rows": [
+    {
+      "id": "about-credits-cap-row",
+      "label": "(ii) About › Decks › Analysis, the credits card: the `Short by your price cap` row (v2 on `1 or 2 credits`; v1 `1 credit`)",
+      "view": "src/lib/copy/about-pages.ts",
+      "steps": [
+        {
+          "goto": "/about/decks#analysis",
+          "wait": "[data-about-shot][data-loaded]",
+          "settle": 800
+        },
+        {
+          "scrollTo": "[data-rule='rule/credits']"
+        },
+        {
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "about-entry-suggested-body",
+      "label": "(iii) About Reference, Tuning a deck with Suggested changes opened: the body (v2 on `…asks how many cards to change…`; v2 off the v1 body)",
+      "view": "src/lib/copy/about-entries.ts",
+      "steps": [
+        {
+          "goto": "/about?tab=reference#suggested-changes",
+          "wait": "[data-entry-open='suggested-changes']",
+          "settle": 900
+        },
+        {
+          "scrollTo": "[data-entry-open='suggested-changes']",
+          "settle": 400
+        }
+      ]
+    },
+    {
+      "id": "history-run-head",
+      "label": "(i)+(iv) History › a stored v2 run (N=11, $2 cap, charged): the run view's head and short notice (`$2 cap`, never `$2.00`); v2 off: the v2 run view, read-only (no pick, no Apply/Undo, no Add/Reject, no `goes to 96`)",
+      "view": "src/components/decks/suggested-changes-run.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SCV2_CAP_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='history']",
+          "settle": 900
+        },
+        {
+          "wait": "[data-history-row]",
+          "settle": 900
+        },
+        {
+          "click": "[data-history-row] >> nth=0",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-sc-run='results']",
+          "settle": 1200
+        },
+        {
+          "wait": "[data-sc-short]",
+          "settle": 600
+        },
+        {
+          "scrollTo": "[data-sc-short]",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "history-run-lists",
+      "label": "(i) The same stored run scrolled to its cut list and the foot: v2 on picks and the Apply bar; v2 off no pick control, no Apply/Undo bar, no Add/Reject",
+      "view": "src/components/decks/suggested-changes-run.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SCV2_CAP_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "Analysis",
+          "settle": 700
+        },
+        {
+          "wait": "[data-tuning-hub]",
+          "settle": 900
+        },
+        {
+          "click": "[data-tool-tile='history']",
+          "settle": 900
+        },
+        {
+          "wait": "[data-history-row]",
+          "settle": 900
+        },
+        {
+          "click": "[data-history-row] >> nth=0",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-sc-run='results']",
+          "settle": 1200
+        },
+        {
+          "scrollTo": "[data-sc-side='cut']",
+          "settle": 600
+        }
+      ]
+    }
+  ]
+}
