@@ -61,7 +61,9 @@ export interface VisibleSection extends Omit<AboutSection, "labels" | "rules"> {
 
 const ENTRY_SWITCH = new Map(aboutEntries.map((e) => [e.id, e.switch ?? null]));
 
-function resolveText(text: string, sentences: AboutLabel["sentences"], env: NodeJS.ProcessEnv): [string, AboutSwitch[]] {
+function resolveText(
+  text: string, sentences: AboutLabel["sentences"], env: NodeJS.ProcessEnv, label = false,
+): [string, AboutSwitch[]] {
   let out = text;
   const announced: AboutSwitch[] = [];
   for (const [sentence, sw] of Object.entries(sentences ?? {})) {
@@ -69,9 +71,10 @@ function resolveText(text: string, sentences: AboutLabel["sentences"], env: Node
     if (!lineKept(sw, env)) out = out.replace(sentence, "");
     else announced.push(...positiveSwitches(sw));
   }
-  // A label's `rest` opens with a space after its lead and keeps it; text whose first sentence was cut loses the one
-  // that sentence left behind.
-  const kept = text.startsWith(" ") ? out.trimEnd() : out.trim();
+  // A label's `rest` opens with a space after its lead and keeps it, as it does what follows a cut phrase that ran on
+  // from the lead (the cart's views: `**, By friend**`); other text whose first sentence was cut loses the one that
+  // sentence left behind.
+  const kept = text.startsWith(" ") || label ? out.trimEnd() : out.trim();
   return [kept, [...new Set(announced)]];
 }
 
@@ -84,7 +87,7 @@ function unit(
   key: string, section: AboutSection, kind: VisibleUnit["kind"], u: AboutLabel | AboutRule, env: NodeJS.ProcessEnv,
 ): VisibleUnit | null {
   if (u.switch && !lineKept(u.switch, env)) return null;
-  const [text, sentenceSwitches] = resolveText("rest" in u ? u.rest : u.text, u.sentences, env);
+  const [text, sentenceSwitches] = resolveText("rest" in u ? u.rest : u.text, u.sentences, env, "rest" in u);
   return {
     key, area: section.area, section: section.id, kind, text,
     ...("lead" in u ? { lead: u.lead } : {}),

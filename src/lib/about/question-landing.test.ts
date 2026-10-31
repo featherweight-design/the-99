@@ -86,8 +86,13 @@ describe("questionLanding", () => {
       ["/collection/wishlist", "collection", "cards", "collection/cards/tabs"],
       ["/settings", "home", "whats-new", "home/whats-new/lead"],
       ["/credits", "decks", "analysis", "rule/credits"],
+      ["/decks/shopping", "shopping", "all-decks", "shopping/all-decks/total"],
+      ["/decks/shopping?view=friend", "shopping", "all-decks", "shopping/all-decks/total"],
     ];
-    for (const [path, area, section, lit] of rows) expect(at(path), path).toEqual({ area, section, lit });
+    for (const [href, area, section, lit] of rows) {
+      const [path, search = ""] = href.split("?");
+      expect(at(path, search), href).toEqual({ area, section, lit });
+    }
   });
 
   it("splits New deck by path", () => {
@@ -108,7 +113,7 @@ describe("questionLanding", () => {
   });
 
   it("has no landing for About itself, admin or an unknown path (account is never a path)", () => {
-    for (const path of ["/about", "/about/decks", "/admin", "/nowhere", "/decks/shopping"]) expect(at(path), path).toBeNull();
+    for (const path of ["/about", "/about/decks", "/admin", "/nowhere"]) expect(at(path), path).toBeNull();
     const screens: readonly AboutScreen[] = ABOUT_SCREENS;
     expect(screens).toContain("account");
   });

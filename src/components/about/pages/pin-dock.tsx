@@ -23,6 +23,7 @@
 // the page as it scrolls off (`--about-dock-floor`, followed on scroll). Same look, gutters and ✕.
 
 import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { AboutText } from "./about-text";
 import { ABOUT_PAGE_STRINGS } from "../../../lib/copy/about-pages";
 import { dockPlace, type DockPlace } from "../../../lib/about/dock-place";
 import type { ScreenLabel } from "../../../lib/about/pins";
@@ -178,7 +179,7 @@ export function PinDock({
       {/* 26px: the card's 12px padding top and foot and its 1px border, so the words scroll inside the cap. */}
       <p className="m-0 max-h-[calc(40dvh-26px)] min-w-0 flex-1 overflow-y-auto overscroll-contain [text-wrap:pretty]">
         <b className="font-semibold text-[color:var(--fg)]">{label.lead}</b>
-        {label.text}
+        <AboutText text={label.text} />
       </p>
       <button
         type="button"

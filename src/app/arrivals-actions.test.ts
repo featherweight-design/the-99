@@ -66,7 +66,7 @@ describe("dismissArrivals", () => {
 // About's half (About visual PR 6b): ✕ writes each launch's ack and raises the floor, re-decided against the reader's
 // announcements now, from their own resolved switches.
 describe("dismissArrivals, About's lines", () => {
-  const CART = "shopping/all-decks/cart";
+  const CART = "shopping/all-decks/total";
 
   it("writes a launch the reader is still told, by its ack, with the floor", async () => {
     stub.env = { ALL_DECKS_CART_ENABLED: "true" };

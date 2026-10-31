@@ -5,8 +5,9 @@
 // and fails on any drift.
 //
 // The ? on a screen some section lists in its `screens` lands on that section with nothing lit (`SCREEN_SECTIONS`).
-// The eight screens with no section of their own (`account` aside) land on the section that answers their question,
-// with one label or rule lit (the halo, no New tag): `ABOUT_Q_LANDINGS`, transcribed from the handoff's `copy-strings.ts` (Addendum A1).
+// The screens with no section of their own (`account` aside) land on the section that answers their question, with one
+// label or rule lit (the halo, no New tag): `ABOUT_Q_LANDINGS`, transcribed from the handoff's `copy-strings.ts`
+// (Addendum A1), and the all-decks cart's row from Small items 7, item 6.
 // New deck splits by path, because `/decks/new`, `/decks/import`, `/decks/precons/**` and `/commanders/choose` are all
 // its screen. `account` and a path no screen answers for (About itself, admin) have no landing: the ? opens `/about`.
 //
@@ -44,10 +45,10 @@ export const SCREEN_SECTIONS: Readonly<Partial<Record<AboutScreen | `deck:${Deck
 /** The ? on a screen with no section: the section it lands on and the one unit lit there. */
 export type QuestionLandingRow = { lands: SectionRef; lit: { label: string } | { rule: string } };
 
-/** The A1 screens, keyed by screen; New deck's three paths as `new-deck`, `new-deck@precons` and `new-deck@choose`. */
+/** The A1 screens and the cart, keyed by screen; New deck's three paths as `new-deck`, `new-deck@precons` and `new-deck@choose`. */
 export type QuestionLandingId =
   | "card-details" | "sets" | "proxies" | "history" | "wishlist" | "new-deck" | "new-deck@precons" | "new-deck@choose"
-  | "settings" | "credits";
+  | "settings" | "credits" | "cart";
 
 export const ABOUT_Q_LANDINGS: Readonly<Record<QuestionLandingId, QuestionLandingRow>> = {
   // Desktop only: at 390 card details covers the header's ?.
@@ -64,6 +65,8 @@ export const ABOUT_Q_LANDINGS: Readonly<Record<QuestionLandingId, QuestionLandin
   "new-deck@choose": { lands: "commanders/for-you", lit: { label: "places" } },
   settings: { lands: "home/whats-new", lit: { label: "lead" } },
   credits: { lands: "decks/analysis", lit: { rule: "credits" } },
+  // The all-decks cart (Small items 7, item 6): its section pictures the cart but lists no screen, so the ? lights the total.
+  cart: { lands: "shopping/all-decks", lit: { label: "total" } },
 };
 
 export type QuestionLanding = { area: AreaId; section: string; lit: string | null };

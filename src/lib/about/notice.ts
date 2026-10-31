@@ -35,8 +35,9 @@ function launchText(u: UnseenUnit, visible: readonly VisibleSection[]): string {
   if (!drawn) return "";
   const sw = u.key.slice(key.length + 1);
   if (sw) {
+    // Whole sentences only: a phrase gated on the same switch (the cart's `**, By friend**`) reads only inside its unit.
     const sentences = Object.entries(rawUnit(key)?.sentences ?? {}).flatMap(([text, on]) =>
-      on && (Array.isArray(on) ? on : [on]).includes(sw as never) ? [text.trim()] : [],
+      on && (Array.isArray(on) ? on : [on]).includes(sw as never) && /[.?!]$/.test(text.trim()) ? [text.trim()] : [],
     );
     if (sentences.length > 0) return sentences.join(" ");
   }

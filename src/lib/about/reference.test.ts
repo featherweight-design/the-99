@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { aboutEntries } from "../copy/about-entries";
-import { ABOUT_SCREENS, DECK_VIEWS, type AboutEntry } from "../copy/about";
+import { DECK_VIEWS, REFERENCE_SCREEN_IDS, type AboutEntry } from "../copy/about";
 import { entryRow } from "../copy/how-it-works-links";
 import { showcaseCopy } from "../copy/discovery";
 import { showcaseGroups, type ShowcaseInput } from "../discovery/showcase";
@@ -27,7 +27,7 @@ describe("the Reference's screens", () => {
   it("are the 23 screens in the order a reader meets them, a deck's seven views each one", () => {
     expect(REFERENCE_SCREENS).toHaveLength(23);
     expect(REFERENCE_SCREENS.map(screenKey)).toEqual(
-      ABOUT_SCREENS.flatMap((s) => (s === "deck" ? DECK_VIEWS.map((v) => `deck-${v}`) : [s])),
+      REFERENCE_SCREEN_IDS.flatMap((s) => (s === "deck" ? DECK_VIEWS.map((v) => `deck-${v}`) : [s])),
     );
     expect(REFERENCE_SCREENS.map(screenKey).slice(0, 2)).toEqual(["home", "collection"]);
   });

@@ -2,8 +2,8 @@ import type { AboutScreen } from "../copy/about";
 
 /**
  * The About screen a reader stands on, read from the path the ? is pressed on (discovery R2·8, README-r2 E8). Pure. The
- * routes are the ones `SCREEN_WHERE` prints. `null` is a page no entry lives on (the all-decks cart, About itself,
- * admin): the ? then opens the `/about` index (`questionHref`).
+ * routes are the ones `SCREEN_WHERE` prints. `null` is a page no entry lives on (About itself, admin): the ? then opens
+ * the `/about` index (`questionHref`).
  *
  * - `card-details` is the open card dialog on a Collection list, which the list mirrors as `?card=`.
  * - `account` never resolves from a path: the menu is on every screen, and it has no landing.
@@ -42,6 +42,9 @@ export function screenForPath(pathname: string, search: string | URLSearchParams
   if (seg[0] === "decks") {
     if (seg.length === 1) return "decks";
     if (seg[1] === "new" || seg[1] === "precons" || seg[1] === "import") return "new-deck";
+    // The all-decks cart (Small items 7, item 6): its ? lands on Shopping for all decks with the total lit. Its views
+    // (`?view=friend`, `?deck=`) are one screen.
+    if (path === "/decks/shopping") return "cart";
     // A deck's own page; its sub-pages (`/changes`, `/import`) are not a screen of the deck's.
     if (!DECKS_ROUTES.has(seg[1]) && seg.length === 2) return "deck";
     return null;

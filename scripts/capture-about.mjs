@@ -6,8 +6,9 @@
 // frame (R2·6a), found through the locator map `scripts/lib/about-locators.mjs` and measured at the moment the frame
 // is shot. An entry whose locator draws nothing visible on its frame is not captured, and the run exits 1.
 //
-// THE ACCOUNT: `E2E_AUDIT_USER_EMAIL`, built by `scripts/about-fixtures.mts` first (its three decks, Alex's
-// spare). THE SERVER: `next start` of a build whose `.env` names the same scratch branch, started with EVERY
+// THE ACCOUNT: `E2E_AUDIT_USER_EMAIL`, built by `scripts/about-fixtures.mts` first (its decks, Alex, and the
+// cart's four friends with their spares and asks, in a SECOND stage, `pnpm fixtures:about:cart`, run only after every
+// other frame, Friends among them, is shot: then `CAPTURE_IDS=p-cart,d-cart`). THE SERVER: `next start` of a build whose `.env` names the same scratch branch, started with EVERY
 // reader-facing switch on (the registry's, less the plumbing ones and the payments line but for `PAYMENTS_ENABLED` itself;
 // the all-decks cart and the Shopping buy tag each have their own; a deck's Stats and Notes tabs are always on), `SOCIAL_FRIENDS_ENABLED` (which also draws Rule 0 and invites) and
 // `PAYMENTS_ENABLED` ON, so the frames show the ?, the account menu's `Take the tour` row, the pod's `Rule 0 check` row,

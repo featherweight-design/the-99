@@ -39,6 +39,10 @@ export const PAGE_FRAMES = {
   "p-deck-stats": { width: "phone", deck: "played", view: "stats", scroll: "tabs" },
   "p-deck-notes": { width: "phone", deck: "played", view: "notes", scroll: "tabs" },
   "p-deck-shopping": { width: "phone", deck: "played", view: "shopping", scroll: "tabs" },
+  // The all-decks cart in By friend, at its top (Small items 7, item 6): the fixture's six decks and four friends.
+  // At 390 the first friend's first row sits under the tab bar at the top of the page: the least scroll that brings its
+  // buy tag above it keeps the total in frame, so all five labels share the one shot as the board draws them.
+  "p-cart": { width: "phone", path: "/decks/shopping?view=friend", reveal: "[data-friend-line] button[aria-label^='Bought ']" },
   "p-friends": { width: "phone", path: "/friends", reveal: "[data-testid='pod-rule-zero']" },
 
   // ---- 1300x900 ----------------------------------------------------------------------------------------------------
@@ -59,6 +63,7 @@ export const PAGE_FRAMES = {
   "d-stats": { width: "desktop", deck: "played", view: "stats", scroll: "tabs" },
   "d-notes": { width: "desktop", deck: "played", view: "notes", scroll: "tabs" },
   "d-shopping": { width: "desktop", deck: "played", view: "shopping", scroll: "tabs" },
+  "d-cart": { width: "desktop", path: "/decks/shopping?view=friend" },
   "d-friends": { width: "desktop", path: "/friends" },
 };
 

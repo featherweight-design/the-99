@@ -1,4 +1,4 @@
-import { ABOUT_SCREENS, DECK_VIEWS, type AboutScreen, type DeckView } from "../copy/about";
+import { DECK_VIEWS, REFERENCE_SCREEN_IDS, type AboutScreen, type DeckView } from "../copy/about";
 import { TOOLS, type ToolId } from "../discovery/tools";
 import { DEFAULT_THEME, isThemeKey } from "../theme/themes";
 import { SHOTS } from "./shots.generated";
@@ -33,7 +33,7 @@ export const TOUR_SHOTS = ["tour-commanders", "tour-decks", "tour-shopping"] as 
 
 /** Every image the set must hold in every theme. */
 export const REQUIRED_SHOTS: readonly string[] = [
-  ...ABOUT_SCREENS.flatMap((s) => (s === "deck" ? DECK_VIEWS.map((v) => screenShotId("deck", v)) : [s])),
+  ...REFERENCE_SCREEN_IDS.flatMap((s) => (s === "deck" ? DECK_VIEWS.map((v) => screenShotId("deck", v)) : [s])),
   ...VARIANT_FRAMES,
   ...TOOLS.map((t) => toolShotId(t.id)),
   ...TOUR_SHOTS,

@@ -212,6 +212,7 @@
     "probe:tool-landing": "node scripts/probe-tool-landing.mjs",
     "capture:about": "node scripts/capture-about.mjs",
     "fixtures:about": "tsx scripts/about-fixtures.mts",
+    "fixtures:about:cart": "ABOUT_FIXTURE_STAGE=cart tsx scripts/about-fixtures.mts",
     "probe:collection-write": "tsx scripts/probe-collection-write.ts",
     "probe:mark-bought": "tsx scripts/probe-mark-bought.ts",
     "probe:history-went-to": "tsx scripts/probe-history-went-to.ts",

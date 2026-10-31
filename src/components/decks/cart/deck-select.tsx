@@ -44,6 +44,8 @@ export function DeckSelect({
 
   return (
     <section
+      // About's label 2 on the cart's capture is boxed on this (`scripts/lib/about-locators.mjs`).
+      data-cart-decks
       className="order-2 flex min-w-0 flex-col rounded-[12px] border border-[color:var(--border)] px-[14px] pt-[2px] pb-[4px] md:order-1 md:min-h-0"
       style={{ background: "var(--surface)" }}
     >

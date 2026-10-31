@@ -8,8 +8,9 @@ import {
   type AboutDiagramColumn, type AboutDiagramPart, type AboutRuleDiagram,
 } from "./about-pages";
 
-/** The nine screens with no section until Design places them (plan PR 9); they keep the ? panel. */
-const UNSECTIONED = ["card-details", "sets", "proxies", "history", "wishlist", "new-deck", "account", "settings", "credits"];
+/** The ten screens no section lists (plan PR 9): they keep the ? panel. The all-decks cart's section pictures it but
+ *  lists no screen, so its ? lights the total (Small items 7, item 6). */
+const UNSECTIONED = ["card-details", "sets", "proxies", "history", "wishlist", "new-deck", "account", "settings", "credits", "cart"];
 const labels = ABOUT_SECTIONS.flatMap((s) => s.labels);
 const switchesOf = (sw: AboutLineSwitch): string[] =>
   (Array.isArray(sw) ? sw : [sw]).map((one: string) => one.replace(/^!/, ""));
@@ -95,7 +96,7 @@ describe("about pages copy model", () => {
     }
   });
 
-  it("covers every screen and deck view but the nine unsectioned screens", () => {
+  it("covers every screen and deck view but the ten unsectioned screens", () => {
     const covered = new Set(ABOUT_SECTIONS.flatMap((s) => s.screens.map((r) => ("view" in r ? `deck:${r.view}` : r.screen))));
     for (const screen of ABOUT_SCREENS) {
       if (screen === "deck" || UNSECTIONED.includes(screen)) continue;

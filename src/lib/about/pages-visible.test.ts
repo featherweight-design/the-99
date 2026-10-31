@@ -200,6 +200,9 @@ describe("seen translation", () => {
         const own = typeof u.switch === "string" ? u.switch : null;
         const isAnnouncement = own !== null && u.legacy.some((id) => id.endsWith(`@${own}`) || aboutEntries.find((x) => x.id === id)?.switch === own);
         if (isAnnouncement) return true;
+        // A switched unit with no source at all is new: its switch turning on announces it, whatever the floor (the
+        // all-decks cart's decks, views, ask and buy, Small items 7, item 6).
+        if (u.switch !== null && u.legacy.length === 0) return true;
         return u.since > floor;
       }).map((u) => u.key);
       const got = unseenUnits(visible, seen).filter((u) => !u.key.includes("@")).map((u) => u.key);
@@ -215,11 +218,22 @@ describe("seen translation", () => {
     }
   });
 
-  it("tells a reader who saw everything at version 16 nothing but Suggested changes v2's rewrite", () => {
+  it("tells a reader who saw everything at version 16 nothing but Suggested changes v2's rewrite and the cart's four new labels", () => {
     // The Reference never wrote a v2 id (its entry has no variant), so v2 turning on is told to every reader, this one
-    // too (Small items 7 addendum 4).
-    expect(unseenUnits(visibleSections(ALL_ON), readerAt(16)).map((u) => u.key))
-      .toEqual([sentenceKey("decks/analysis/suggested", "SUGGESTED_CHANGES_V2_ENABLED")]);
+    // too (Small items 7 addendum 4). The cart's decks, views, ask and buy have no source, so their switches announce
+    // them (Small items 7, item 6); its total is the old `all-decks-cart` entry, met.
+    const told = (e: NodeJS.ProcessEnv) => unseenUnits(visibleSections(e), readerAt(16, e)).map((u) => u.key);
+    expect(told(ALL_ON)).toEqual([
+      sentenceKey("decks/analysis/suggested", "SUGGESTED_CHANGES_V2_ENABLED"),
+      "shopping/all-decks/decks", "shopping/all-decks/views", "shopping/all-decks/ask", "shopping/all-decks/buy",
+    ]);
+    // Every one rides ALL_DECKS_CART_ENABLED. Ask also rides SPARE_REQUESTS_ENABLED, which resolves through
+    // SOCIAL_FRIENDS_ENABLED (`visible.ts`); buy's SHOPPING_MARK_BOUGHT_ENABLED is retired, always on. A label switched
+    // off is neither drawn nor told.
+    const without = (sw: string) =>
+      told(env({ ...(ALL_ON as Record<string, string>), [sw]: "off" })).filter((k) => k.startsWith("shopping/all-decks/"));
+    expect(without("SOCIAL_FRIENDS_ENABLED")).toEqual(["shopping/all-decks/decks", "shopping/all-decks/views", "shopping/all-decks/buy"]);
+    expect(without("ALL_DECKS_CART_ENABLED")).toEqual([]);
   });
 
   it("tells Suggested changes v2's rewrite as New when its switch turns on, and only then (Small items 7 addendum 4)", () => {
@@ -351,6 +365,9 @@ describe("seen translation", () => {
       ...Object.entries(ABOUT_RULES).map(([k, r]) => [`rule/${k}`, r] as const),
     ];
     for (const [key, u] of units2) for (const sw of Object.values(u.sentences ?? {})) {
+      // A unit with no source is new, and its sentences are told with it, never seen by the floor (`sentenceSeen`): the
+      // cart's views and its By friend clause (Small items 7, item 6).
+      if (u.legacy.length === 0) continue;
       for (const one of (Array.isArray(sw) ? sw : [sw]) as string[]) {
         if (one.startsWith("!")) continue;
         const carried = u.legacy.some((id) => id.endsWith(`@${one}`) || switchOf.get(id) === one);
@@ -414,11 +431,15 @@ describe("a section's sub-line", () => {
   const sentencesOf = (text: string) => text.split(/(?<=[.?])\s+/).filter(Boolean);
 
   it("draws one or two sentences under every combination of the switches its sentences name (Small items 3, item 4)", () => {
+    // A section whose screen is reached from another names that way in as one more sentence (Small items 7, item 6:
+    // Shopping for all decks ends "Open it from the top of Decks.").
+    const WAY_IN: Record<string, string> = { "all-decks": " Open it from the top of Decks." };
     for (const sec of ABOUT_SECTIONS) {
       const names = [...new Set(Object.values(sec.subSentences ?? {}).flatMap(named))];
       for (let mask = 0; mask < 2 ** names.length; mask++) {
         const e = off(...names.filter((_, i) => mask & (1 << i)));
-        const n = sentencesOf(sub(e, sec.id)).length;
+        const way = WAY_IN[sec.id];
+        const n = sentencesOf(way ? sub(e, sec.id).replace(way.trim(), "") : sub(e, sec.id)).length;
         expect(n, `${sec.id} ${mask}`).toBeGreaterThanOrEqual(1);
         expect(n, `${sec.id} ${mask}`).toBeLessThanOrEqual(2);
       }
@@ -466,6 +487,8 @@ describe("a section's sub-line", () => {
 
   it("cuts a sentence naming a switched feature while that switch is off, and keeps the rest (Small items 3, item 4)", () => {
     expect(sub(ALL_ON, "all-decks")).toContain("one cart");
+    // The way in (Small items 7, item 6) draws with the cart, and goes with it.
+    expect(sub(ALL_ON, "all-decks")).toContain("Open it from the top of Decks.");
     const noCart = env({ ...(ALL_ON as Record<string, string>), ALL_DECKS_CART_ENABLED: "off" });
     expect(sub(noCart, "all-decks")).toBe(ABOUT_SCREEN_OFF.trim());
     // Stats is retired (always on): its sentences always draw.
