@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { creditsCopy } from "../copy/credits";
-import { creditAgain, creditCount, creditFirst, creditLineKind, creditSpent, creditStanding, creditTwo, expiringPhrase, type LineAllowance } from "./credit-line";
+import { creditAgain, creditCount, creditFirst, creditLineKind, creditSpent, creditShortStanding, creditStanding, creditTwo, expiringPhrase, type LineAllowance } from "./credit-line";
 import { runFunding } from "./allowance-rule";
 
 const at = (h: number, m = 0) => new Date(2026, 9, 17, h, m);
@@ -204,8 +204,41 @@ describe("a run costing 2 credits (Small items 7, SC-Cost B, D, E)", () => {
     expect(two({ used: 0, limit: 5, nextAt: null, reopensAt: null, welcome: 15 })!.count).toBe("5 of 5 free, 3 after this run · 15 welcome.");
   });
 
+  it("an again-press keeps the shipped Replaces wording, at 2 credits", () => {
+    const a: LineAllowance = { used: 0, limit: 1, nextAt: null, reopensAt: null, welcome: 15 };
+    expect(creditTwo(a, runFunding(a, 2), NOW, true)!.lead).toBe("Replaces these suggestions and uses 2 welcome credits.");
+    const e: LineAllowance = { used: 0, limit: 5, nextAt: null, reopensAt: null };
+    expect(creditTwo(e, runFunding(e, 2), NOW, true)!.lead).toBe("Replaces these suggestions and uses 2 free credits.");
+  });
+
+  it("E with today's paid limit shut: the shipped limitFree count, never the lots as spendable", () => {
+    const back = at(9, 30);
+    const a: LineAllowance = { used: 0, limit: 5, nextAt: null, reopensAt: null, pack: 8, paidUsedToday: 20, paidLimit: 20, paidBackAt: back };
+    expect(creditLineKind(a)).toBe("limitFree");
+    expect(two(a)).toEqual({
+      lead: "Uses 2 free credits.",
+      why: "A run above 10 counts 2.",
+      count: `${creditsCopy.limitFree(5, 5, null, back)}.`,
+    });
+    expect(two(a)!.count).not.toContain("paid.");
+  });
+
   it("draws nothing for a run that cannot start: the surface says why", () => {
     expect(two({ used: 0, limit: 1, nextAt: null, reopensAt: null })).toBeNull();
     expect(two({ used: 1, limit: 1, nextAt: null, reopensAt: null })).toBeNull();
+  });
+});
+
+describe("SC-Cost C's last line (creditShortStanding)", () => {
+  it("is N of M free, with a reset only while a credit counts and lots only while held", () => {
+    expect(creditShortStanding({ used: 0, limit: 1, nextAt: null, reopensAt: null }, NOW)).toBe("1 of 1 free");
+    expect(creditShortStanding(base({ used: 4 }), NOW)).toBe(`1 of 5 free · reset at ${t(at(14, 1))}`);
+  });
+
+  it("says the paid limit when it is shut with lots held (L6), never the lots as spendable", () => {
+    const back = at(9, 30);
+    const a: LineAllowance = { used: 0, limit: 1, nextAt: null, reopensAt: null, pack: 8, paidUsedToday: 20, paidLimit: 20, paidBackAt: back };
+    expect(runFunding(a, 2)).toEqual({ source: "short", units: 2, freeHoldsOne: true });
+    expect(creditShortStanding(a, NOW)).toBe(creditsCopy.limitFree(1, 1, null, back));
   });
 });

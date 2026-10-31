@@ -344,12 +344,13 @@ export function TuningPanel({
   const [refused, setRefused] = useState<string | null>(null);
   const [announced, setAnnounced] = useState("");
   // SC-Cost C: the send button, so `Change to 10` (which unmounts C's block) hands focus to it once the count lands, and
-  // the id of C's sentence, which describes the press while it is off. `stopShown`: C was drawn last render, so its
-  // reason is announced once, on the way in.
+  // the id of C's sentence, which describes the press while it is off. `stopSaid`: the C sentence drawn last time the
+  // row was read (undefined before the first read), so a reason is announced when it appears or changes while drawn,
+  // never on the first draw (a restored count above 10) and never while the row is not drawn.
   const sendRef = useRef<HTMLButtonElement>(null);
   const focusSendOnCount = useRef(false);
   const stopId = useId();
-  const [stopShown, setStopShown] = useState(false);
+  const [stopSaid, setStopSaid] = useState<string | null | undefined>(undefined);
   useEffect(() => {
     if (!focusSendOnCount.current) return;
     focusSendOnCount.current = false;
@@ -1401,14 +1402,17 @@ export function TuningPanel({
   const tail = lockedNote ?? credit;
   // SC-Cost B, D and E: a 2-credit run that can start names its source and why it is 2. Only where the credit line is
   // what the row says (never under the owner's share or every card locked); a state's own note still leads it.
-  const two = lockedNote === null && !state.allowance.ownerShare ? creditTwo(state.allowance, funding) : null;
+  const two = lockedNote === null && !state.allowance.ownerShare ? creditTwo(state.allowance, funding, new Date(), primary.again === true) : null;
   // SC-Cost C: the owner's share and every card locked keep their own lines first.
   const stop = short !== null && lockedNote === null && !state.allowance.ownerShare ? short : null;
   const stopLine = stop ? (stop.freeHoldsOne ? deckTuningCopy.allowance.costsTwoFree(count) : deckTuningCopy.allowance.costsTwo) : null;
-  // The press turned off for C: say why once, on the transition in (the pattern `finishSaid` uses above).
-  if ((stopLine !== null) !== stopShown) {
-    setStopShown(stopLine !== null);
-    if (stopLine !== null) setAnnounced(stopLine);
+  // C is DRAWN only in the action row: not under the v2 results, a reading run or the same-request confirm.
+  const stopDrawn = stopLine !== null && !v2RunView && !reading && !(v2 && same) ? stopLine : null;
+  // Say why the press turned off, keyed on the sentence's text (pattern of `finishSaid` above): on the way into C and
+  // whenever its words change while drawn, never on the first read of the row.
+  if (stopDrawn !== stopSaid) {
+    setStopSaid(stopDrawn);
+    if (stopSaid !== undefined && stopDrawn !== null) setAnnounced(stopDrawn);
   }
   // Suggested changes v2: the wait hint by N follows the credit line while the press is live (Intake board A).
   const v2Drift = v2 !== null && v2.over !== 0;
@@ -1573,7 +1577,7 @@ export function TuningPanel({
               onClick={() => (sendOff ? undefined : v2 ? void pressV2() : void press(unchangedShown || failure !== null || priorResult || reviewing))}
               ref={sendRef}
               aria-disabled={sendOff || undefined}
-              aria-describedby={stopLine !== null ? stopId : undefined}
+              aria-describedby={stopDrawn !== null ? stopId : undefined}
               className={`h-[44px] w-full rounded-[8px] text-[13.5px] font-semibold md:h-auto md:w-auto md:px-[20px] md:py-[11px] md:text-[14px] ${sendOff ? "cursor-default text-[color:var(--fg-disabled)] [border:1px_solid_var(--border-strong)]" : "text-[color:var(--accent-text)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)] transition-colors"}`}
             >
               {primaryLabel}

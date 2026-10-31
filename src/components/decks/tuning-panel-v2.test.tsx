@@ -120,6 +120,9 @@ describe("Suggested changes v2's 2-credit cue (Small items 7, SC-Cost)", () => {
     expect(describedBy).toBeTruthy();
     expect(document.getElementById(describedBy!)!.textContent).toBe(deckTuningCopy.allowance.costsTwoFree(12));
     expect([...document.querySelectorAll('[role="status"]')].some((n) => n.textContent === deckTuningCopy.allowance.costsTwoFree(12))).toBe(true);
+    // Keyed on the sentence's words: a new count re-announces while C stays drawn.
+    typeCount(13);
+    expect([...document.querySelectorAll('[role="status"]')].some((n) => n.textContent === deckTuningCopy.allowance.costsTwoFree(13))).toBe(true);
     fireEvent.click(screen.getByRole("button", { name: deckTuningCopy.allowance.changeTo(10) }));
     expect((screen.getByRole("textbox", { name: sc.intake.count.countLabel }) as HTMLInputElement).value).toBe("10");
     expect(stop()).toBeNull();
