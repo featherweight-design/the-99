@@ -91,7 +91,7 @@ function LaunchSentence({ launch }: { launch: AboutLaunch }) {
 }
 
 /** Each size's plate: a launch alone (36px, 19px glyph) or a line in the band (28px, 16px glyph). The tint (12%) and edge (40%)
- *  are the board's, paler than the diamond `Mark` plate's (`banner-mark.tsx`); the glyph is `--accent`. */
+ *  are the board's, paler than the diamond `Mark` plate's (`banner-mark.tsx`); the glyph is `--accent-text`, the accent drawn as ink (`accent-text-sites.test.ts`). */
 const PLATE_SIZES = {
   line: "h-[36px] w-[36px] rounded-[8px]",
   list: "-mt-[2px] h-[28px] w-[28px] rounded-[7px] [&>svg]:h-[16px] [&>svg]:w-[16px]",
@@ -104,7 +104,7 @@ function LaunchGlyph({ launch, size }: { launch: AboutLaunch; size: "line" | "li
     <span
       aria-hidden="true"
       data-about-glyph
-      className={`box-border flex flex-none items-center justify-center text-[color:var(--accent)] ${PLATE_SIZES[size]}`}
+      className={`box-border flex flex-none items-center justify-center text-[color:var(--accent-text)] ${PLATE_SIZES[size]}`}
       style={{
         background: "color-mix(in srgb, var(--accent) 12%, transparent)",
         border: "1px solid color-mix(in srgb, var(--accent) 40%, transparent)",
