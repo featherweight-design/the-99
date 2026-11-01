@@ -130,7 +130,7 @@ export default async function DecksPage({
   // row draws locked. Read per request, AFTER the cached payload and outside it (`PER_REQUEST_READS`): the module is
   // the one cross-user reads share, and a payload reaching it would be keyed on every friend's stamp for no reason.
   // A failed read costs the tiles that row, nothing else, as on the deck page.
-  const friendPrefs = await loadFriendDeckPrefs(userId).catch(() => null);
+  const friendPrefs = await loadFriendDeckPrefs(userId).catch(() => /* not a fallback: read after the cached load, never stored */ null);
 
   return (
     <>
