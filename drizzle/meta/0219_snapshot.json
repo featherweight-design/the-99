@@ -1,5 +1,5 @@
 {
-  "id": "f59c81e3-927f-4843-950e-2efedf4c8505",
+  "id": "4feb4ce0-6b59-4a56-a256-6044a6e44586",
   "prevId": "6e55d93f-133e-4046-b8dd-e4118b5729af",
   "version": "7",
   "dialect": "postgresql",
@@ -6718,7 +6718,7 @@
       "checkConstraints": {
         "flag_overrides_switch_check": {
           "name": "flag_overrides_switch_check",
-          "value": "\"flag_overrides\".\"switch\" in ('ALL_DECKS_CART_ENABLED', 'ANALYSIS_TAB_ENABLED', 'ANNOUNCEMENTS_ENABLED', 'FEEDBACK_ENABLED', 'FIND_A_DECK_READ_ENABLED', 'HELP_ME_CHOOSE_ENABLED', 'FLYER_TRIAL_ENABLED', 'HOW_IT_WORKS_ENABLED', 'LABEL_ROLE_COUNTS_ENABLED', 'LIST_CACHE_ENABLED', 'MANA_BALANCE_ENABLED', 'NAV_STALL_LOG_ENABLED', 'OVERVIEW_V2_ENABLED', 'PAYMENTS_ENABLED', 'PUSH_ENABLED', 'PROPOSED_CUTS_ENABLED', 'PUBLIC_PAGES_ENABLED', 'RATE_LIMIT_ENABLED', 'SCAN_LAB_ENABLED', 'SOCIAL_FRIENDS_ENABLED', 'SUGGESTED_CHANGES_V2_ENABLED', 'SWAP_TOOLS_ENABLED', 'TUNING_ENABLED', 'WELCOME_CREDITS_ENABLED', 'ALL_FEATURES')"
+          "value": "\"flag_overrides\".\"switch\" in ('ANALYSIS_TAB_ENABLED', 'ANNOUNCEMENTS_ENABLED', 'FEEDBACK_ENABLED', 'HELP_ME_CHOOSE_ENABLED', 'FLYER_TRIAL_ENABLED', 'LIST_CACHE_ENABLED', 'NAV_STALL_LOG_ENABLED', 'OVERVIEW_V2_ENABLED', 'PAYMENTS_ENABLED', 'PUSH_ENABLED', 'PROPOSED_CUTS_ENABLED', 'PUBLIC_PAGES_ENABLED', 'RATE_LIMIT_ENABLED', 'SCAN_LAB_ENABLED', 'SUGGESTED_CHANGES_V2_ENABLED', 'SWAP_TOOLS_ENABLED', 'TUNING_ENABLED', 'WELCOME_CREDITS_ENABLED', 'ALL_FEATURES')"
         },
         "flag_overrides_scope_check": {
           "name": "flag_overrides_scope_check",
@@ -9934,7 +9934,7 @@
       "checkConstraints": {
         "push_outbox_kind_check": {
           "name": "push_outbox_kind_check",
-          "value": "\"push_outbox\".\"kind\" in ('new-set', 'new-precon', 'price-drop', 'trade-match', 'spare-request', 'combo', 'secret-lair', 'commander-decklists', 'wizards-news', 'rule_zero_seat')"
+          "value": "\"push_outbox\".\"kind\" in ('new-set', 'new-precon', 'price-drop', 'trade-match', 'spare-request', 'combo', 'secret-lair', 'commander-decklists', 'wizards-news')"
         }
       },
       "isRLSEnabled": false
@@ -10159,12 +10159,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
-        },
-        "notice_seen_at": {
-          "name": "notice_seen_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
         }
       },
       "indexes": {

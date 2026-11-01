@@ -1538,8 +1538,15 @@
     {
       "idx": 219,
       "version": "7",
-      "when": 1793516949087,
-      "tag": "0219_rule_zero_seat_push",
+      "when": 1793517371542,
+      "tag": "0219_retire_group3_six_switches",
+      "breakpoints": true
+    },
+    {
+      "idx": 220,
+      "version": "7",
+      "when": 1793518587143,
+      "tag": "0220_rule_zero_seat_push",
       "breakpoints": true
     }
   ]
