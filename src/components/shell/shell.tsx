@@ -16,7 +16,6 @@ import { requestSwitchEnv } from "../../lib/switches/request";
 import { FeedbackProvider } from "../feedback/feedback-provider";
 import { feedbackEnabled } from "../../lib/feedback/flag";
 import { PlacePathsProvider } from "../commanders/place-paths";
-import { socialFriendsEnabled } from "../../lib/social/flag";
 import { unseenFriendsCount } from "../../lib/feed/read";
 import { waitingAsksCount } from "../../lib/social/spare-requests";
 import { noticeTradeMatches } from "../../lib/social/trade-match";
@@ -75,16 +74,10 @@ export default async function Shell({
   // The deck probe runs only while locked; every other render keeps the shipped reads.
   const openLock = locked ? { hasDecks: await perfRead("shell.hasAnyDeck", () => hasAnyDeck(userId)) } : null;
   // The admin door: only the verdict leaves the server, never the list (admin locked rule 10).
-  // The Friends row, from the same resolved switches (Social R1): only the boolean reaches the client.
   const door = {
     ...(isAdmin(userId) ? { adminDoor: true, adminEnv: adminEnvironment() ?? undefined } : {}),
-    friends: socialFriendsEnabled(env),
     // The menu's credit chip (M1b), read PER REQUEST here and never inside a cached page payload (plan E10).
     credits: await perfRead("shell.creditChip", () => readChip(userId, env)),
-    // The Commanders place (always on): Discover leaves the bar, and with `friends` Friends takes its slot and Settings its row.
-    commandersPlace: true,
-    // Settings' news section: the menu's Settings row is always drawn for it, with Friends off too.
-    homeFeed: true,
   };
   // The stuck-loader diagnostic (plumbing). The deployment rides along so the server can tell a page
   // that outlived a deploy from one that did not; it is already in every page's HTML.
@@ -97,15 +90,10 @@ export default async function Shell({
     moments.includes("friends-after-game") && !spentMoments.includes("friends-after-game")
       ? await perfRead("shell.friendsAfterGame", () => friendsAfterGameDue(userId))
       : false;
-  // M12's condition (no deck yet) is read only while that moment is live and unspent.
-  const helpMoment =
-    moments.includes("help-me-choose") && !spentMoments.includes("help-me-choose")
-      ? !(await perfRead("shell.hasAnyDeck", () => hasAnyDeck(userId)))
-      : false;
   // The bar's unseen counts (menu and Home handoff, R1 Menu 8): Home's from the feed, Friends' from what waits on the
-  // reader. An absent count draws no badge. Home's is one statement over the feed's union; a failed read draws no badge rather than breaking every page. Friends' is the unseen trade
+  // reader. An absent count draws no badge. Home's is one statement over the feed's union; a failed read of either count draws no badge rather than breaking every page. Friends' is the unseen trade
   // matches (product call 2) and unseen answers to the reader's spare requests, cleared by a /friends visit, plus the
-  // spare requests waiting on the reader's answer, cleared only by answering (plan `2026-10-22-spare-requests.md`), and read only while Friends is on (it then has its slot in the bar). A trade
+  // spare requests waiting on the reader's answer, cleared only by answering (plan `2026-10-22-spare-requests.md`). A trade
   // match is noticed after the response (`noticeTradeMatches`, after() only), so one that appears is counted on the next
   // render.
   const badges: NavBadges = {};
@@ -114,17 +102,21 @@ export default async function Shell({
     return 0;
   });
   if (homeUnseen > 0) badges.home = homeUnseen;
-  if (door.friends) {
-    // Taken BEFORE the read, so an answer that lands during it is never taken off a count that may not hold it.
-    badges.friendsAt = new Date().toISOString();
-    const [seenHalf, waiting] = await Promise.all([
-      perfRead("shell.friendsBadge", () => unseenFriendsCount(userId, env)),
-      perfRead("shell.friendsWaiting", () => waitingAsksCount(userId, env)),
-    ]);
-    badges.friends = seenHalf;
-    if (waiting > 0) badges.friendsWaiting = waiting;
-    after(() => noticeTradeMatches(userId, env));
-  }
+  // Taken BEFORE the read, so an answer that lands during it is never taken off a count that may not hold it.
+  badges.friendsAt = new Date().toISOString();
+  const [seenHalf, waiting] = await Promise.all([
+    perfRead("shell.friendsBadge", () => unseenFriendsCount(userId, env)).catch((error: unknown) => {
+      console.error("shell: the Friends unseen count could not be read", error instanceof Error ? error.message : "");
+      return 0;
+    }),
+    perfRead("shell.friendsWaiting", () => waitingAsksCount(userId, env)).catch((error: unknown) => {
+      console.error("shell: the Friends waiting count could not be read", error instanceof Error ? error.message : "");
+      return 0;
+    }),
+  ]);
+  badges.friends = seenHalf;
+  if (waiting > 0) badges.friendsWaiting = waiting;
+  after(() => noticeTradeMatches(userId, env));
   // An installed app carries the Home slot's count on its icon (push PR 5, G6), only with this reader's
   // PUSH_ENABLED on (`pushEnabled`, never `pushAvailable`: the key parsing stays off the pages' switch path, `flag.ts`).
   const pushOn = pushEnabled(env);
@@ -152,11 +144,11 @@ export default async function Shell({
       <HelpRoot>
       {pushOn && <PushHeartbeat />}
       <div className="flex min-h-dvh flex-1">
-        <NavRail locked={locked} openLock={openLock} theme={theme} {...door} friendsMoment={friendsMoment} helpMoment={helpMoment} badges={badges} />
+        <NavRail locked={locked} openLock={openLock} theme={theme} {...door} friendsMoment={friendsMoment} badges={badges} />
         {/* The tab-bar reserve is on this column, not on <main>, so the Fan Content notice (a sibling of <main>, a
             `contentinfo` landmark) sits above it and clears the bar and the sheets by the same figure (launch epic A1). */}
         <div className="flex min-w-0 flex-1 flex-col pb-[var(--tabbar-h)] md:pb-0">
-          <MobileHeader theme={theme} {...door} friendsMoment={friendsMoment} />
+          <MobileHeader theme={theme} {...door} />
           {/* The bottom padding on mobile leaves room for the fixed tab bar, which
               is held to exactly --tabbar-h so this reservation is not an estimate. */}
           {/* `flex flex-col` continues the stretch chain the rail already starts,
@@ -173,10 +165,7 @@ export default async function Shell({
         <TabBar
           locked={locked}
           openLock={openLock}
-          helpMoment={helpMoment}
           friendsMoment={friendsMoment}
-          friends={door.friends}
-          commandersPlace={door.commandersPlace}
           badges={badges}
         />
         {pushOn && <AppBadge badges={badges} />}

@@ -50,36 +50,19 @@ type NavItem = {
 // If the ruling is ever reinstated, the rail widens to hold labels and the
 // icons come out. A 62px rail with labels is not a third option.
 //
-// Discover sits after Commanders and before Decks: owned before unowned, so the
-// two commander lanes read as one shelf, and Decks stays last because it is the
-// destination the app is for. With the Commanders place on, Discover leaves the bar and
+// Discover left the bar for Commanders' strip (the Commanders place), and
 // Friends, the social door, sits after Decks (menu and Home handoff, R1 Menu 1). It locks with the rest — a lane of 3,301
 // commanders you cannot yet score against is a catalogue, not a tool.
 const HOME: NavItem = { href: "/", label: "Home", lockable: false };
 const COLLECTION: NavItem = { href: "/collection", label: "Collection", lockable: true };
 const COMMANDERS: NavItem = { href: "/commanders", label: "Commanders", lockable: true };
-const DISCOVER: NavItem = { href: "/discover", label: "Discover", lockable: true };
 const DECKS: NavItem = { href: "/decks", label: "Decks", lockable: true };
 // Friends never locks: it needs no cards ("Any time, cards or not", menu and Home handoff, R1 Menu 2).
 const FRIENDS: NavItem = { href: "/friends", label: shellCopy.nav.friends, lockable: false };
 
-/**
- * Which switches shape the bar, resolved per reader by the shell. With the Commanders place on, Discover leaves the bar
- * for Commanders' strip, and with Friends on as well, Friends takes the fifth slot, last (menu and Home handoff, R1
- * Menu 1). Off, the bar is as shipped.
- */
-type BarShape = { commandersPlace: boolean; friends: boolean };
-
-/** The bar's slots, in order: as shipped, or Home, Collection, Commanders, Decks and Friends where it is in the bar. */
-function barItems({ commandersPlace, friends }: BarShape): NavItem[] {
-  if (!commandersPlace) return [HOME, COLLECTION, COMMANDERS, DISCOVER, DECKS];
-  return friends ? [HOME, COLLECTION, COMMANDERS, DECKS, FRIENDS] : [HOME, COLLECTION, COMMANDERS, DECKS];
-}
-
-/** Friends sits in the bar, so the account menu draws Settings in its row and M11 anchors on the slot. */
-function friendsInBar({ commandersPlace, friends }: BarShape): boolean {
-  return commandersPlace && friends;
-}
+/** The bar's slots, in order. Friends takes the fifth slot, last (menu and Home handoff, R1 Menu 1), so the account
+ *  menu draws Settings in its row and M11 anchors on the slot. */
+const ITEMS: NavItem[] = [HOME, COLLECTION, COMMANDERS, DECKS, FRIENDS];
 
 /** The live slots: every item, or while locked those the lock does not hold (Home, Friends, and Collection when open). */
 function liveItems(items: NavItem[], locked: boolean, openLock: OpenLock): NavItem[] {
@@ -670,17 +653,13 @@ function NavBadge({ count, rail }: { count: number; rail: boolean }) {
 // No `title`: the pointer rail draws its own tag (desktop nav labels R2, audit E3), and a native
 // tooltip would show beside it.
 function NavSlot({ href, name, active, pip, className, handlers, moment = false, badge = 0, children }: NavSlotProps) {
-  // M12 (discovery R1): Discover carries Help me choose, beside the rail's slot and above the tab bar's. From R3 on
-  // its own anchor is the door in /commanders' guided banner (E2), so this slot is a FALLBACK: it counts only while
-  // that door is not drawn (a reader with cards and no deck whose collection leads no commander, so no banner).
-  // M11 (Friends after a game) sits on the Friends slot once Friends is in the bar, as its own anchor (menu and Home
-  // audit, erratum 5). A slot's href never changes, so each slot asks for one moment for its whole life.
-  const friendsSlot = href === "/friends";
-  const slotMoment = useMomentAnchor(friendsSlot ? "friends-after-game" : "help-me-choose", {
+  // M11 (Friends after a game) sits on the Friends slot, as its own anchor (menu and Home audit, erratum 5), beside the
+  // rail's slot and above the tab bar's. M12 (Help me choose) is not the bar's: its anchor is the door in /commanders'
+  // guided banner (discovery R3 E2). Every slot calls the hook; only the Friends slot is ever eligible.
+  const slotMoment = useMomentAnchor("friends-after-game", {
     eligible: moment,
-    copy: friendsSlot ? momentsCopy.friendsAfterGameBar : momentsCopy.helpMeChoose,
+    copy: momentsCopy.friendsAfterGameBar,
     place: pip === "rail" ? "right" : "below",
-    fallback: !friendsSlot,
   });
   const counted = badge > 0;
   // The rail names its slot by `aria-label`, which hides any text inside, so the count joins the name there; the tab
@@ -704,20 +683,14 @@ function NavSlot({ href, name, active, pip, className, handlers, moment = false,
   );
 }
 
-/** The admin door (admin STATES D1): a boolean from the server, and the environment it names. And the
- *  Friends row (Social R1), drawn when `SOCIAL_FRIENDS_ENABLED` is on for this reader. */
+/** The admin door (admin STATES D1): a boolean from the server, and the environment it names. */
 export type AdminDoorProps = {
   adminDoor?: boolean;
   adminEnv?: string;
-  friends?: boolean;
   /** The menu's credit chip (M1b), read per request by the shell; null hides it. */
   credits?: ChipState | null;
-  /** M11 (discovery R1): a game logged and no friend yet, so the account button carries Friends after a game. */
+  /** M11 (discovery R1): a game logged and no friend yet, so the bar's Friends slot carries Friends after a game. */
   friendsMoment?: boolean;
-  /** the Commanders place (always on) for this reader: Discover leaves the bar, and with `friends` Friends takes its slot. */
-  commandersPlace?: boolean;
-  /** Always true now (the feed switch is retired): Settings has its news section, so the menu's Settings row has somewhere to go. */
-  homeFeed?: boolean;
 };
 
 /** The bar's unseen counts (menu and Home handoff, R1 Menu 8), filled by the feed and Friends PRs; absent draws none. */
@@ -768,15 +741,9 @@ function slotBadge(badges: NavBadges | undefined, href: NavHref): number {
   return href === "/" ? (badges?.home ?? 0) : href === "/friends" ? (badges?.friends ?? 0) + (badges?.friendsWaiting ?? 0) : 0;
 }
 
-/** The slot that carries a moment: M12 on Discover on the `/commanders` list, or M11 on Friends once it is in the bar. */
-function momentOnSlot(helpMoment: boolean, friendsMoment: boolean, pathname: string, href: string): boolean {
-  return href === "/friends" ? friendsMoment : helpOnSlot(helpMoment, pathname, href);
-}
-
-/** M12 (discovery R1): the reader has no deck, so on the `/commanders` list Discover carries Help me choose. */
-function helpOnSlot(helpMoment: boolean, pathname: string, href: string): boolean {
-  // The list itself, never a commander's own page under it: the tip is about where to start.
-  return helpMoment && href === "/discover" && pathname === "/commanders";
+/** The one slot that carries a moment: M11 on Friends. */
+function momentOnSlot(friendsMoment: boolean, href: string): boolean {
+  return href === "/friends" && friendsMoment;
 }
 
 export function NavRail({
@@ -785,19 +752,13 @@ export function NavRail({
   theme,
   adminDoor,
   adminEnv,
-  friends,
   credits,
   friendsMoment,
-  commandersPlace = false,
-  homeFeed = false,
-  helpMoment = false,
   badges,
-}: { locked: boolean; openLock?: OpenLock; theme: ThemeKey; helpMoment?: boolean; badges?: NavBadges } & AdminDoorProps) {
+}: { locked: boolean; openLock?: OpenLock; theme: ThemeKey; badges?: NavBadges } & AdminDoorProps) {
   const pathname = usePathname();
   const shown = useSeenBadges(badges, pathname);
-  const shape: BarShape = { commandersPlace, friends: friends ?? false };
-  const items = barItems(shape);
-  const inBar = friendsInBar(shape);
+  const items = ITEMS;
   // Live slots only: a locked slot's note already names it, and two popovers from one slot is
   // the collision the handoff's D1 warned of. Home, live in first run, gets the tag.
   const { bind, tag } = useRailTag(pathname);
@@ -866,7 +827,7 @@ export function NavRail({
               active={active}
               pip="rail"
               handlers={bind(href, label)}
-              moment={momentOnSlot(helpMoment, inBar && !!friendsMoment, pathname, href)}
+              moment={momentOnSlot(!!friendsMoment, href)}
               badge={slotBadge(shown, href)}
               // No `transition-colors`: the pending fill below must clear the frame the new page
               // lands, not fade out over it (audit correction 4).
@@ -896,7 +857,7 @@ export function NavRail({
         <HelpButton place="rail" />
         {/* Offline, above the account trigger: the rail has no top bar for it (PWA plan, call 1). */}
         <OfflinePill place="rail" />
-        <AccountMenu panel="popover" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} friends={friends} commandersPlace={commandersPlace} homeFeed={homeFeed} credits={credits} friendsMoment={friendsMoment} />
+        <AccountMenu panel="popover" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} credits={credits} />
       </div>
       {tag}
       {/* The search's desktop field and dropdown, and ⌘K (card search PR D). */}
@@ -913,27 +874,18 @@ export function NavRail({
 export function TabBar({
   locked,
   openLock = null,
-  helpMoment = false,
   friendsMoment = false,
-  friends = false,
-  commandersPlace = false,
   badges,
 }: {
   locked: boolean;
   openLock?: OpenLock;
-  helpMoment?: boolean;
-  /** M11's condition, resolved by the shell; drawn on the Friends slot only while Friends is in the bar. */
+  /** M11's condition, resolved by the shell; drawn on the Friends slot. */
   friendsMoment?: boolean;
-  /** `SOCIAL_FRIENDS_ENABLED` and the Commanders place (always on) for this reader: the bar's shape, as the rail's. */
-  friends?: boolean;
-  commandersPlace?: boolean;
   badges?: NavBadges;
 }) {
   const pathname = usePathname();
   const shown = useSeenBadges(badges, pathname);
-  const shape: BarShape = { commandersPlace, friends };
-  const items = barItems(shape);
-  const inBar = friendsInBar(shape);
+  const items = ITEMS;
 
   const slot = ({ href, label }: NavItem) => {
     const active = isActive(pathname, href);
@@ -947,7 +899,7 @@ export function TabBar({
         // 13 reserves colour for status. One `color` on the slot serves both
         // the icon (currentColor) and the label.
         pip="tab"
-        moment={momentOnSlot(helpMoment, inBar && friendsMoment, pathname, href)}
+        moment={momentOnSlot(friendsMoment, href)}
         badge={slotBadge(shown, href)}
         className={`flex h-[52px] flex-1 flex-col items-center justify-center gap-[3px] rounded-[12px] ${
           active
@@ -1015,7 +967,7 @@ export function TabBar({
 // §Mobile Top Header / §Mobile Wordmark
 // ---------------------------------------------------------------------------
 
-export function MobileHeader({ theme, adminDoor, adminEnv, friends, credits, friendsMoment, commandersPlace = false, homeFeed = false }: { theme: ThemeKey } & AdminDoorProps) {
+export function MobileHeader({ theme, adminDoor, adminEnv, credits }: { theme: ThemeKey } & Omit<AdminDoorProps, "friendsMoment">) {
   const ref = useRef<HTMLElement>(null);
   const { mode, slides, under } = useQuickReturn(ref);
   return (
@@ -1057,7 +1009,7 @@ export function MobileHeader({ theme, adminDoor, adminEnv, friends, credits, fri
         <div className="flex items-center gap-[6px]">
           <HelpButton place="header" />
           {/* Avatar — §Mobile top-right avatar trigger: 38×38px, br 12px, accent border */}
-          <AccountMenu panel="sheet" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} friends={friends} commandersPlace={commandersPlace} homeFeed={homeFeed} credits={credits} friendsMoment={friendsMoment} />
+          <AccountMenu panel="sheet" theme={theme} adminDoor={adminDoor} adminEnv={adminEnv} credits={credits} />
         </div>
       </div>
     </header>

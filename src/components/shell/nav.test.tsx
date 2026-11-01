@@ -9,7 +9,7 @@ vi.mock("../../lib/ui/reveal", async (importOriginal) => ({
   reveal: vi.fn(),
 }));
 
-const LABELS = ["Home", "Collection", "Commanders", "Discover", "Decks"];
+const LABELS = ["Home", "Collection", "Commanders", "Decks", "Friends"];
 
 let pathname = "/collection";
 const push = vi.fn();
@@ -103,16 +103,15 @@ describe("NavRail", () => {
     expect(marks[0].compareDocumentPosition(nav) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  // The two lanes are separate routes, so each marks itself current on its own
-  // pathname and neither claims the other's.
-  it("marks Discover current on the discover route, and Commanders not", () => {
-    pathname = "/discover";
+  // Commanders' own lanes live under its route, so a page there marks Commanders current, and no other slot.
+  it("marks Commanders current on a lane under its route, and Collection not", () => {
+    pathname = "/commanders/discover";
     render(<NavRail locked={false} theme="amonkhet" />);
-    expect(screen.getByRole("link", { name: "Discover" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Commanders" })).toHaveAttribute(
       "aria-current",
       "page",
     );
-    expect(screen.getByRole("link", { name: "Commanders" })).not.toHaveAttribute("aria-current");
+    expect(screen.getByRole("link", { name: "Collection" })).not.toHaveAttribute("aria-current");
   });
 });
 
@@ -204,15 +203,14 @@ describe("TabBar", () => {
     }
   });
 
-  // Discover sits after Commanders and before Decks: owned before unowned, and
-  // the two commander lanes read as one shelf.
+  // Discover lives in Commanders' strip, and Friends sits after Decks, last (menu and Home handoff, R1 Menu 1).
   it("renders the same five slots in the same order as the rail", () => {
     render(<TabBar locked={false} />);
     const nav = screen.getByRole("navigation", { name: "Primary" });
     const hrefs = within(nav)
       .getAllByRole("link")
       .map((a) => a.getAttribute("href"));
-    expect(hrefs).toEqual(["/", "/collection", "/commanders", "/discover", "/decks"]);
+    expect(hrefs).toEqual(["/", "/collection", "/commanders", "/decks", "/friends"]);
   });
 
   // 320pt is the narrowest phone the bar is measured against, and `Commanders`
@@ -267,7 +265,7 @@ describe("Nav glyphs", () => {
 // `probe:locked-nav`'s; these pin the contract and the open/close rules.
 // ---------------------------------------------------------------------------
 
-const DECKS_NOTE = "Decks opens once your cards are in. So do Collection, Commanders and Discover.";
+const DECKS_NOTE = "Decks opens once your cards are in. So do Collection and Commanders.";
 
 function slot(name: string) {
   return screen.getByRole("button", { name: `${name}, locked` });
@@ -283,7 +281,7 @@ describe("The lock, desktop rail", () => {
   it("draws each locked slot as a button that opens a note, not a disabled link", () => {
     render(<NavRail locked theme="amonkhet" />);
     const nav = screen.getByRole("navigation", { name: "Primary" });
-    for (const label of ["Collection", "Commanders", "Discover", "Decks"]) {
+    for (const label of ["Collection", "Commanders", "Decks"]) {
       const item = within(nav).getByRole("button", { name: `${label}, locked` });
       expect(item).toHaveAttribute("type", "button");
       expect(item).toHaveAttribute("aria-expanded", "false");
@@ -319,13 +317,14 @@ describe("The lock, desktop rail", () => {
     expect(container.querySelector(".bg-elevated")).toBeNull();
   });
 
-  it("puts the four locked slots and the LOCKED foot inside one well, with Home outside", () => {
+  it("puts the three locked slots and the LOCKED foot inside one well, with Home and Friends outside", () => {
     const { container } = render(<NavRail locked theme="amonkhet" />);
     const well = container.querySelector("[data-lock-well]")!;
     expect(well).not.toBeNull();
-    expect(within(well as HTMLElement).getAllByRole("button", { name: /, locked$/ })).toHaveLength(4);
+    expect(within(well as HTMLElement).getAllByRole("button", { name: /, locked$/ })).toHaveLength(3);
     expect(within(well as HTMLElement).getByText("Locked")).toBeInTheDocument();
     expect(well.contains(screen.getByRole("link", { name: "Home" }))).toBe(false);
+    expect(well.contains(screen.getByRole("link", { name: "Friends" }))).toBe(false);
     // The divider and the lone --fg-disabled padlock it replaces are gone.
     expect(container.querySelector('[stroke="var(--fg-disabled)"]')).toBeNull();
   });
@@ -333,7 +332,7 @@ describe("The lock, desktop rail", () => {
   it("opens on hover, on focus and on a click", () => {
     render(<NavRail locked theme="amonkhet" />);
     const decks = slot("Decks");
-    const discover = slot("Discover");
+    const commanders = slot("Commanders");
 
     fireEvent.pointerEnter(decks);
     expect(isOpen(decks)).toBe(true);
@@ -343,8 +342,8 @@ describe("The lock, desktop rail", () => {
     expect(within(note).getByRole("button", { name: "Go to step 1" })).toBeInTheDocument();
 
     // Hovering another slot moves the note there: one at a time.
-    fireEvent.pointerEnter(discover);
-    expect(isOpen(discover)).toBe(true);
+    fireEvent.pointerEnter(commanders);
+    expect(isOpen(commanders)).toBe(true);
     expect(isOpen(decks)).toBe(false);
 
     fireEvent.pointerDown(document.body);
@@ -353,8 +352,8 @@ describe("The lock, desktop rail", () => {
 
     fireEvent.pointerDown(document.body);
     act(() => (document.activeElement as HTMLElement).blur());
-    fireEvent.click(discover);
-    expect(isOpen(discover)).toBe(true);
+    fireEvent.click(commanders);
+    expect(isOpen(commanders)).toBe(true);
   });
 
   it("holds moments and the tour off while a note is open, in the rail and in the tab bar", () => {
@@ -524,13 +523,13 @@ describe("The lock, desktop rail", () => {
 });
 
 describe("The lock, phone tab bar", () => {
-  it("draws the bracket over tabs 2 to 5 and stacks it over the tabs, only while locked", () => {
+  it("draws the bracket over tabs 2 to 4 and stacks it over the tabs, only while locked", () => {
     const { container, rerender } = render(<TabBar locked />);
     const bar = screen.getByRole("navigation", { name: "Primary" });
     const bracket = container.querySelector("[data-lock-bracket]")!;
     expect(bracket).toHaveTextContent("Open once your cards are in");
     expect((bracket as HTMLElement).style.marginLeft).toBe("20%");
-    expect((bracket as HTMLElement).style.width).toBe("80%");
+    expect((bracket as HTMLElement).style.width).toBe("60%");
     expect(bar.className).toContain("flex-col");
     expect(bar.className).toContain("pt-[7px]");
     expect(bar.className).toContain("h-[var(--tabbar-h)]");
@@ -550,7 +549,7 @@ describe("The lock, phone tab bar", () => {
     expect(collection).not.toHaveAttribute("aria-disabled");
     expect(collection).not.toHaveAttribute("title");
     expect(collection).toHaveAccessibleDescription(
-      "Collection opens once your cards are in. So do Commanders, Discover and Decks.",
+      "Collection opens once your cards are in. So do Commanders and Decks.",
     );
     expect(collection.className).toContain("gap-[5px]");
   });
@@ -612,6 +611,5 @@ describe("the tour's slots on a live nav (discovery R3·2)", () => {
       const box = container.querySelector(`[data-target="${id}"]`);
       expect(box?.closest("a")?.getAttribute("href")).toBe(href);
     }
-    expect(container.querySelector('a[href="/discover"] [data-target]')).toBeNull();
   });
 });

@@ -1,7 +1,6 @@
 import { refreshCopy } from "../../lib/copy/refresh";
-// The bar with the Commanders place (menu and Home handoff, R1 Menu; plan `2026-10-22-menu-home.md`, PR 2): Discover
-// leaves it, Friends takes the fifth slot with `SOCIAL_FRIENDS_ENABLED`, Friends never locks, and the phone bracket
-// spans the locked run alone. Off, the shipped bar stands; nav.test.tsx pins that whole.
+// The bar (menu and Home handoff, R1 Menu; plan `2026-10-22-menu-home.md`, PR 2): Discover has left it, Friends takes
+// the fifth slot, Friends never locks, and the phone bracket spans the locked run alone.
 import { render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NavRail, TabBar } from "./nav";
@@ -34,30 +33,17 @@ const order = () =>
 const bracket = (container: HTMLElement) => container.querySelector<HTMLElement>("[data-lock-bracket]")!;
 
 describe("the bar's shape", () => {
-  it("is the shipped bar with the Commanders place off, Friends or not", () => {
-    render(<TabBar locked={false} friends />);
-    expect(order()).toEqual(["/", "/collection", "/commanders", "/discover", "/decks"]);
-    document.body.innerHTML = "";
-    render(<NavRail locked={false} theme="amonkhet" friends />);
-    expect(order()).toEqual(["/", "/collection", "/commanders", "/discover", "/decks"]);
-  });
-
   it("drops Discover and puts Friends fifth, last, in both chromes", () => {
-    render(<TabBar locked={false} commandersPlace friends />);
+    render(<TabBar locked={false} />);
     expect(order()).toEqual(["/", "/collection", "/commanders", "/decks", "/friends"]);
     expect(within(primary()).getByRole("link", { name: "Friends" })).toHaveAttribute("href", "/friends");
     document.body.innerHTML = "";
-    render(<NavRail locked={false} theme="amonkhet" commandersPlace friends />);
+    render(<NavRail locked={false} theme="amonkhet" />);
     expect(order()).toEqual(["/", "/collection", "/commanders", "/decks", "/friends"]);
   });
 
-  it("draws four slots with the Commanders place on and Friends off", () => {
-    render(<TabBar locked={false} commandersPlace />);
-    expect(order()).toEqual(["/", "/collection", "/commanders", "/decks"]);
-  });
-
   it("draws Friends with its own glyph, at the others' geometry", () => {
-    render(<TabBar locked={false} commandersPlace friends />);
+    render(<TabBar locked={false} />);
     const svgs = [...primary().querySelectorAll("a svg")];
     const friends = within(primary()).getByRole("link", { name: "Friends" }).querySelector("svg")!;
     expect(friends.getAttribute("viewBox")).toBe("0 0 20 20");
@@ -66,20 +52,20 @@ describe("the bar's shape", () => {
   });
 });
 
-describe("the lock with the Commanders place", () => {
+describe("the lock", () => {
   it("never holds Friends: it stays a live link after the locked run on the phone", () => {
-    render(<TabBar locked commandersPlace friends />);
+    render(<TabBar locked />);
     expect(order()).toEqual(["/", "Collection", "Commanders", "Decks", "/friends"]);
     expect(screen.queryByRole("button", { name: "Friends, locked" })).toBeNull();
   });
 
   it("holds Commanders and Decks alone with the lock open, Collection and Friends live either side", () => {
-    render(<TabBar locked openLock={FIRST_RUN} commandersPlace friends />);
+    render(<TabBar locked openLock={FIRST_RUN} />);
     expect(order()).toEqual(["/", "/collection", "Commanders", "Decks", "/friends"]);
   });
 
   it("puts Friends above the rail's well with Home, live, and names no Discover in a note", () => {
-    const { container } = render(<NavRail locked openLock={FIRST_RUN} theme="amonkhet" commandersPlace friends />);
+    const { container } = render(<NavRail locked openLock={FIRST_RUN} theme="amonkhet" />);
     const well = container.querySelector<HTMLElement>("[data-lock-well]")!;
     expect(within(well).getAllByRole("button", { name: /, locked$/ }).map((b) => b.getAttribute("aria-label"))).toEqual([
       "Commanders, locked",
@@ -95,7 +81,7 @@ describe("the lock with the Commanders place", () => {
   });
 
   it("holds Collection too with the lock shut, as shipped", () => {
-    const { container } = render(<NavRail locked theme="amonkhet" commandersPlace friends />);
+    const { container } = render(<NavRail locked theme="amonkhet" />);
     const well = container.querySelector<HTMLElement>("[data-lock-well]")!;
     expect(within(well).getAllByRole("button", { name: /, locked$/ })).toHaveLength(3);
     expect(within(primary()).getByRole("link", { name: "Friends" })).toBeInTheDocument();
@@ -104,36 +90,22 @@ describe("the lock with the Commanders place", () => {
 
 describe("the phone bracket spans the locked slots alone", () => {
   it.each([
-    // [label, props, left, width]
-    ["five slots, lock shut: tabs 2 to 4", { friends: true, openLock: null }, "20%", "60%"],
-    ["five slots, lock open: tabs 3 to 4", { friends: true, openLock: FIRST_RUN }, "40%", "40%"],
-    ["four slots, lock shut: tabs 2 to 4", { friends: false, openLock: null }, "25%", "75%"],
-    ["four slots, lock open: tabs 3 to 4", { friends: false, openLock: FIRST_RUN }, "50%", "50%"],
-  ] as const)("%s", (_, { friends, openLock }, left, width) => {
-    const { container } = render(<TabBar locked commandersPlace friends={friends} openLock={openLock} />);
+    // [label, openLock, left, width]
+    ["lock shut: tabs 2 to 4", null, "20%", "60%"],
+    ["lock open: tabs 3 to 4", FIRST_RUN, "40%", "40%"],
+  ] as const)("%s", (_, openLock, left, width) => {
+    const { container } = render(<TabBar locked openLock={openLock} />);
     expect(bracket(container).style.marginLeft).toBe(left);
     expect(bracket(container).style.width).toBe(width);
   });
 
-  it("keeps the shipped spans with the Commanders place off", () => {
-    const shut = render(<TabBar locked friends />);
-    expect(bracket(shut.container).style.marginLeft).toBe("20%");
-    expect(bracket(shut.container).style.width).toBe("80%");
-    shut.unmount();
-    const open = render(<TabBar locked friends openLock={FIRST_RUN} />);
-    expect(bracket(open.container).style.marginLeft).toBe("40%");
-    expect(bracket(open.container).style.width).toBe("60%");
-  });
   it("says less over a two-slot run, where the full line would hide the bracket", () => {
     const label = (c: HTMLElement) => c.querySelector("[data-lock-bracket-label]")!;
-    const two = render(<TabBar locked commandersPlace friends openLock={FIRST_RUN} />);
+    const two = render(<TabBar locked openLock={FIRST_RUN} />);
     expect(label(two.container)).toHaveTextContent(refreshCopy.firstRun.lock.tabBracketShort);
     two.unmount();
-    const three = render(<TabBar locked commandersPlace friends openLock={null} />);
+    const three = render(<TabBar locked openLock={null} />);
     expect(label(three.container)).toHaveTextContent(refreshCopy.firstRun.lock.tabBracket);
-    three.unmount();
-    const shipped = render(<TabBar locked friends openLock={FIRST_RUN} />);
-    expect(label(shipped.container)).toHaveTextContent(refreshCopy.firstRun.lock.tabBracket);
   });
 });
 
@@ -145,7 +117,7 @@ describe("the slot badge", () => {
   });
 
   it("draws the count as an accent pill with --bg ink, and says it in words", () => {
-    render(<TabBar locked={false} commandersPlace friends badges={{ home: 3, friends: 1 }} />);
+    render(<TabBar locked={false} badges={{ home: 3, friends: 1 }} />);
     const home = within(primary()).getByRole("link", { name: /^Home/ });
     expect(badgeOn(home)).toHaveTextContent(/^3$/);
     expect(badgeOn(home)).toHaveAttribute("aria-hidden", "true");
@@ -159,7 +131,7 @@ describe("the slot badge", () => {
   });
 
   it("adds the spare requests waiting on the reader to the Friends count", () => {
-    render(<TabBar locked={false} commandersPlace friends badges={{ friends: 1, friendsWaiting: 2 }} />);
+    render(<TabBar locked={false} badges={{ friends: 1, friendsWaiting: 2 }} />);
     const friends = within(primary()).getByRole("link", { name: /^Friends/ });
     expect(badgeOn(friends)).toHaveTextContent(/^3$/);
     expect(friends).toHaveAccessibleName("Friends, 3 waiting on you");
@@ -167,8 +139,8 @@ describe("the slot badge", () => {
 
   // Both bars clear the Friends count once the reader has been to /friends and left (useSeenBadges).
   it.each([
-    ["the tab bar", (b: { home: number; friends: number }) => <TabBar locked={false} commandersPlace friends badges={b} />],
-    ["the rail", (b: { home: number; friends: number }) => <NavRail locked={false} theme="amonkhet" commandersPlace friends badges={b} />],
+    ["the tab bar", (b: { home: number; friends: number }) => <TabBar locked={false} badges={b} />],
+    ["the rail", (b: { home: number; friends: number }) => <NavRail locked={false} theme="amonkhet" badges={b} />],
   ])("clears the Friends count in %s after a /friends visit, and keeps Home's", (_bar, bar) => {
     const badges = { home: 2, friends: 1 };
     pathname = "/friends";
@@ -181,13 +153,13 @@ describe("the slot badge", () => {
   });
 
   it("caps the drawn count at 9+, and keeps the exact count in words", () => {
-    render(<NavRail locked={false} theme="amonkhet" commandersPlace friends badges={{ home: 9, friends: 12 }} />);
+    render(<NavRail locked={false} theme="amonkhet" badges={{ home: 9, friends: 12 }} />);
     expect(badgeOn(within(primary()).getByRole("link", { name: "Home, 9 new" }))).toHaveTextContent(/^9$/);
     expect(badgeOn(within(primary()).getByRole("link", { name: "Friends, 12 waiting on you" }))).toHaveTextContent(/^9\+$/);
   });
 
   it("draws nothing at 0 or with no count, and the name is the label alone", () => {
-    render(<NavRail locked={false} theme="amonkhet" commandersPlace friends badges={{ home: 0 }} />);
+    render(<NavRail locked={false} theme="amonkhet" badges={{ home: 0 }} />);
     expect(primary().querySelector("[data-nav-badge]")).toBeNull();
     expect(within(primary()).getByRole("link", { name: "Home" })).toBeInTheDocument();
     expect(within(primary()).getByRole("link", { name: "Friends" })).toBeInTheDocument();
@@ -196,18 +168,18 @@ describe("the slot badge", () => {
   it("clears Home's count on a Home visit, and keeps it cleared until the shell renders a new count", () => {
     const home = () => within(primary()).getByRole("link", { name: /^Home/ });
     const badges = { home: 3, friends: 1 };
-    const { rerender } = render(<TabBar locked={false} commandersPlace friends badges={badges} />);
+    const { rerender } = render(<TabBar locked={false} badges={badges} />);
     expect(badgeOn(home())).toHaveTextContent(/^3$/);
     pathname = "/";
-    rerender(<TabBar locked={false} commandersPlace friends badges={badges} />);
+    rerender(<TabBar locked={false} badges={badges} />);
     expect(badgeOn(home())).toBeNull();
     expect(home()).toHaveAccessibleName("Home");
     // Friends' count is not Home's to clear.
     expect(badgeOn(within(primary()).getByRole("link", { name: /^Friends/ }))).toHaveTextContent(/^1$/);
     pathname = "/decks";
-    rerender(<TabBar locked={false} commandersPlace friends badges={badges} />);
+    rerender(<TabBar locked={false} badges={badges} />);
     expect(badgeOn(home())).toBeNull();
-    rerender(<TabBar locked={false} commandersPlace friends badges={{ home: 2, friends: 1 }} />);
+    rerender(<TabBar locked={false} badges={{ home: 2, friends: 1 }} />);
     expect(badgeOn(home())).toHaveTextContent(/^2$/);
   });
 

@@ -10,20 +10,17 @@
 // applied here and marked RD§n; the handoff itself is left verbatim.
 
 import { forgetThisDevice } from "../../lib/push/forget-device";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useClerk, useUser } from "@clerk/nextjs";
 import { clearRecent } from "../../lib/card-search/recent";
 import { leaveDialogsForNavigation, useDialogA11y } from "../../lib/a11y/dialog";
 import { useMomentHold } from "../../lib/moments/hold";
-import { momentsCopy } from "../../lib/copy/moments";
-import { useMomentAnchor } from "../moments/moments-provider";
 import { TargetBox } from "../discovery/targets-provider";
 import Link from "next/link";
 import { shellCopy } from "../../lib/copy/shell";
 import { aboutMenuCopy } from "../../lib/copy/about";
 import { adminCopy } from "../../lib/copy/admin";
-import { socialCopy } from "../../lib/copy/social";
 import { TOUR_HREF, tourAgainCopy } from "../../lib/copy/discovery";
 import { accountIdentity, type AccountIdentity } from "../../lib/shell/identity";
 import { ThemePicker } from "./theme-picker";
@@ -72,12 +69,6 @@ type MenuItemsProps = {
   admin: string | null;
   /** Leaves for /admin, as `onAbout` leaves for /about. */
   onAdmin: () => void;
-  /** `SOCIAL_FRIENDS_ENABLED` for this reader, decided on the server: the Friends row, else no row. */
-  friends: boolean;
-  /** Leaves for /friends, as `onAbout` leaves for /about. */
-  onFriends: () => void;
-  /** Friends is in the bar (the Commanders place (always on) with `friends`): Settings takes the Friends row's place. */
-  settings: boolean;
   /** Leaves for /settings, as `onAbout` leaves for /about. */
   onSettings: () => void;
   /** The credit chip (M1b), or null: absent for a reader who does not see credits. */
@@ -89,27 +80,23 @@ type MenuItemsProps = {
 };
 
 /**
- * The `role="menuitem"` children (About, then Friends and Admin where they are drawn, then the two
+ * The `role="menuitem"` children (About, the tour, Settings, then Admin where it is drawn, then the two
  * buttons), shared by both panels. Roving focus:
  * exactly one item is tabbable at a time and ↑/↓ move between them with wrap
  * (X11). Table ambiguity 3 — the handoff specs hover but no roving-focus
  * visual, so focus reuses the hover background rather than inventing one.
  */
-function MenuItems({ kind, busy, onManage, onSignOut, onClose, onAbout, admin, onAdmin, friends, onFriends, settings, onSettings, onTour }: MenuItemsProps) {
+function MenuItems({ kind, busy, onManage, onSignOut, onClose, onAbout, admin, onAdmin, onSettings, onTour }: MenuItemsProps) {
   const popover = kind === "popover";
   const [active, setActive] = useState(0);
-  // About first, Friends under it (Social R1 placement), or Settings in that row once Friends is in the bar, Admin after them; each drawn only where it applies.
+  // About first, then the tour, then Settings in the row Friends had before it moved into the bar, Admin after them where it applies.
   const links: { href: string; label: string; trailing: string | null; go: () => void }[] = [
     { href: "/about", label: aboutLabel, trailing: null, go: onAbout },
     // The tour taken again sits directly under About, drawn as that row is (plan decision 6).
     { href: TOUR_HREF, label: tourAgainCopy.menu, trailing: null, go: onTour },
-    // Once Friends is in the bar, Settings takes its row, in the same place, so the menu keeps its count of rows
+    // Friends is in the bar, so Settings takes its row, in the same place, and the menu keeps its count of rows
     // (menu and Home handoff, R1 Menu 3).
-    ...(settings
-      ? [{ href: "/settings", label: settingsLabel, trailing: null, go: onSettings }]
-      : friends
-        ? [{ href: "/friends", label: socialCopy.menu.friends, trailing: null, go: onFriends }]
-        : []),
+    { href: "/settings", label: settingsLabel, trailing: null, go: onSettings },
     ...(admin ? [{ href: "/admin", label: adminCopy.door.label, trailing: admin, go: onAdmin }] : []),
   ];
   const buttons = [
@@ -411,11 +398,7 @@ export function AccountMenu({
   theme,
   adminDoor = false,
   adminEnv,
-  friends = false,
-  commandersPlace = false,
-  homeFeed = false,
   credits = null,
-  friendsMoment = false,
 }: {
   panel: PanelKind;
   theme: ThemeKey;
@@ -423,18 +406,8 @@ export function AccountMenu({
   adminDoor?: boolean;
   /** The admin's environment, named at the row's end. Read only with the door. */
   adminEnv?: string;
-  /** `SOCIAL_FRIENDS_ENABLED` for this reader, resolved by the shell; only the boolean reaches the client. */
-  friends?: boolean;
-  /** the Commanders place (always on) for this reader. With `friends`, Friends is in the bar: the Settings row in place of
-   *  Friends, and M11 on the bar's slot rather than this button. */
-  commandersPlace?: boolean;
-  /** Always true now (the feed switch is retired): with the Commanders place, Settings has its news section, so its row is drawn
-   *  even with Friends off. */
-  homeFeed?: boolean;
   /** The credit chip, read per request by the shell (plan E10) and re-read on every open. */
   credits?: ChipState | null;
-  /** M11, Friends after a game: resolved by the shell (a game logged, no friend yet) and drawn only beside the Friends row. */
-  friendsMoment?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -477,11 +450,7 @@ export function AccountMenu({
   }
   const onAbout = () => go("/about");
   const onAdmin = () => go("/admin");
-  const onFriends = () => go("/friends");
   const onSettings = () => go("/settings");
-  // Settings is drawn once it has a section to show (news with the feed, Spares with Friends) and the Commanders place
-  // has moved the menu's rows. With `friends` on, that is exactly "Friends is in the bar", so its row is the one taken.
-  const settings = commandersPlace && (friends || homeFeed);
   const onCredits = () => go("/credits");
   // The chip is re-read each time the menu opens (plan E10): the layout does not re-render on navigation, so the
   // shell's value is only the first paint. A failed read keeps what is drawn.
@@ -562,21 +531,8 @@ export function AccountMenu({
 
   const label = triggerLabel(identity.name);
   const isPopover = panel === "popover";
-  // Below the phone header's avatar; above the rail's, which sits at the rail's foot, so the bubble flips (README, M11).
-  // Once Friends is in the bar the moment sits on its slot instead (menu and Home audit, erratum 5).
-  const afterGame = useMomentAnchor("friends-after-game", {
-    eligible: friends && friendsMoment && !settings,
-    copy: momentsCopy.friendsAfterGame,
-  });
-  // The trigger carries the moment's anchor and is where the deletion warning hands focus back.
-  const anchorRef = afterGame.ref;
-  const triggerAnchor = useCallback(
-    (el: HTMLButtonElement | null) => {
-      triggerRef.current = el;
-      anchorRef(el);
-    },
-    [anchorRef],
-  );
+  // M11 sits on the bar's Friends slot, never on this button (menu and Home audit, erratum 5). The trigger is where the
+  // deletion warning hands focus back.
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   // The popover has no backdrop, so an outside press is what dismisses it
@@ -617,8 +573,7 @@ export function AccountMenu({
         aria-label={label}
         // The contact sheet's `openAccount` step finds the trigger by this mark, as `openHelp` finds the ? by its own.
         data-account-trigger=""
-        {...afterGame}
-        ref={triggerAnchor}
+        ref={triggerRef}
         onClick={() => {
           // Each open reads the held credits afresh: a previous open's answer is never the press's.
           if (!open) setHeld(undefined);
@@ -681,9 +636,6 @@ export function AccountMenu({
             onSignOut={onSignOut}
             onAbout={onAbout}
             admin={admin}
-            friends={friends}
-            onFriends={onFriends}
-            settings={settings}
             onSettings={onSettings}
             onTour={onTour}
             onAdmin={onAdmin}
@@ -703,9 +655,6 @@ export function AccountMenu({
             onSignOut={onSignOut}
             onAbout={onAbout}
             admin={admin}
-            friends={friends}
-            onFriends={onFriends}
-            settings={settings}
             onSettings={onSettings}
             onTour={onTour}
             onAdmin={onAdmin}

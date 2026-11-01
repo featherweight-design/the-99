@@ -26,7 +26,7 @@ vi.mock("@clerk/nextjs/server", () => ({
 let uniqueCards = 5;
 // `hasAnyDeck`: the open lock reads it while locked (collection editing is retired, always on).
 vi.mock("../../lib/home/summary", () => ({ getCollectionStats: async () => ({ uniqueCards }), hasAnyDeck: async () => false }));
-// The props each menu's call site is handed, so the Friends row's switch can be read off them.
+// The props each nav call site is handed, so the Friends badge can be read off them.
 const navProps = vi.hoisted(() => [] as Record<string, unknown>[]);
 vi.mock("./nav", () => ({
   NavRail: (p: Record<string, unknown>) => (navProps.push(p), null),
@@ -37,13 +37,12 @@ vi.mock("./nav", () => ({
 const feed = vi.hoisted(() => ({ unseenFriendsCount: vi.fn(async (..._a: unknown[]) => 3), noticeTradeMatches: vi.fn(async (..._a: unknown[]) => 0), after: vi.fn((_fn: () => unknown) => {}) }));
 vi.mock("../../lib/feed/read", () => ({ unseenFriendsCount: feed.unseenFriendsCount, unseenCount: async () => 0 }));
 vi.mock("../../lib/social/trade-match", () => ({ noticeTradeMatches: feed.noticeTradeMatches }));
-// Spare requests follow friends (their own switch is retired), so the waiting-asks half reads with Friends on: none here.
+// The waiting-asks half of the Friends badge: none here.
 vi.mock("../../lib/social/spare-requests", () => ({ waitingAsksCount: async () => 0 }));
 vi.mock("next/server", async (importOriginal) => ({ ...(await importOriginal<typeof import("next/server")>()), after: feed.after }));
 
 const Shell = (await import("./shell")).default;
 const { DEFAULT_THEME } = await import("../../lib/theme/themes");
-const { switchBits } = await import("../../lib/switches/resolve");
 
 describe("Shell on a path the proxy never ran on (THE-99-1)", () => {
   it("draws the page signed out instead of throwing Clerk's error", async () => {
@@ -103,25 +102,13 @@ describe("Shell and the locked tab bar height", () => {
   });
 });
 
-describe("Shell and the Friends row (Social R1)", () => {
-  it.each([[true], [false]])("hands both menus the reader's own switch (%s)", async (on) => {
-    navProps.length = 0;
-    requestHeaders = new Headers({ "x-switches": switchBits((on ? { SOCIAL_FRIENDS_ENABLED: "true" } : {}) as NodeJS.ProcessEnv) });
-    await renderShell();
-    expect(navProps).toHaveLength(2);
-    for (const p of navProps) expect(p.friends).toBe(on);
-  });
-});
-
 describe("Shell and the Friends badge (menu and Home PR 7)", () => {
-  const as = (env: Record<string, string>) => new Headers({ "x-switches": switchBits(env as unknown as NodeJS.ProcessEnv) });
-
+  // Friends is always in the bar, so the count is read on every signed-in render, with no switch set.
   it("counts the unseen trade matches onto the Friends slot, and notices new ones after the response", async () => {
     navProps.length = 0;
     feed.unseenFriendsCount.mockClear();
     feed.after.mockClear();
     feed.noticeTradeMatches.mockClear();
-    requestHeaders = as({ SOCIAL_FRIENDS_ENABLED: "true" });
     await renderShell();
     expect(feed.unseenFriendsCount).toHaveBeenCalledWith("user_1", expect.anything());
     expect(navProps.some((n) => "badges" in n)).toBe(true);
@@ -131,17 +118,14 @@ describe("Shell and the Friends badge (menu and Home PR 7)", () => {
     expect(feed.noticeTradeMatches).toHaveBeenCalledWith("user_1", expect.anything());
   });
 
-  it.each([
-    ["Friends is off", {}],
-  ])("reads no count and notices nothing while %s", async (_label, env) => {
+  it("draws no Friends count when the read fails, and the page still renders", async () => {
     navProps.length = 0;
-    feed.unseenFriendsCount.mockClear();
-    feed.after.mockClear();
-    requestHeaders = as(env);
+    feed.unseenFriendsCount.mockRejectedValueOnce(new Error("down"));
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
     await renderShell();
-    expect(feed.unseenFriendsCount).not.toHaveBeenCalled();
-    expect(feed.after).not.toHaveBeenCalled();
-    for (const p of navProps.filter((n) => "badges" in n)) expect(p.badges).toEqual({});
+    expect(screen.getByText("page")).toBeTruthy();
+    for (const p of navProps.filter((n) => "badges" in n)) expect(p.badges).toEqual({ friends: 0, friendsAt: expect.any(String) });
+    err.mockRestore();
   });
 });
 
