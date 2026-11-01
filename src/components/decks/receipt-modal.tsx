@@ -129,6 +129,7 @@ export function ModalChrome({
   stackFooter,
   overCard,
   pendingName,
+  titleNode,
   eyebrow,
   lead,
   foot,
@@ -142,6 +143,8 @@ export function ModalChrome({
   title: string;
   /** The dialog's name while `title` is empty (a sheet whose title waits on its reads): read, never drawn. */
   pendingName?: string;
+  /** The eyebrow header's title when it names another reader (a `PersonText`): drawn in place of `title`, which is then empty. */
+  titleNode?: React.ReactNode;
   aside?: React.ReactNode;
   closeLabel: string;
   onClose: () => void;
@@ -289,6 +292,7 @@ export function ModalChrome({
           titleId={titleId}
           title={title}
           pendingName={pendingName}
+          titleNode={titleNode}
           mark={mark}
           aside={aside}
           closeLabel={closeLabel}
@@ -318,6 +322,7 @@ export function ModalPanel({
   titleId,
   title,
   pendingName,
+  titleNode,
   mark,
   aside,
   closeLabel,
@@ -334,6 +339,7 @@ export function ModalPanel({
   titleId?: string;
   title: string;
   pendingName?: string;
+  titleNode?: React.ReactNode;
   mark?: React.ReactNode;
   aside?: React.ReactNode;
   closeLabel: string;
@@ -391,7 +397,7 @@ export function ModalPanel({
               className="m-0 mt-[4px] font-display text-[17px] font-bold leading-tight outline-none"
               style={{ color: behind ? "var(--fg-muted)" : "var(--fg)" }}
             >
-              {title}
+              {titleNode ?? title}
             </h2>
             {lead != null ? <p className="m-0 mt-[4px] text-[12.5px] leading-[1.5] text-[color:var(--fg-body)]">{lead}</p> : null}
           </div>

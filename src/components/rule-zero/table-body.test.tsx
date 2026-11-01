@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 
 const nav = vi.hoisted(() => ({ refresh: vi.fn(), push: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => nav }));
-vi.mock("../../app/friends/table/setup-actions", () => ({ loadTableSetupAction: vi.fn(), reseatTableAction: vi.fn() }));
+vi.mock("../../app/friends/table/setup-actions", () => ({ loadTableSetupAction: vi.fn(), reseatTableAction: vi.fn(), closeTableAction: vi.fn() }));
 
 import { ruleZeroCopy as copy } from "../../lib/copy/rule-zero";
 import { TABLES, VIEWER_DECK_ID } from "../../lib/social/rule-zero-fixtures";
@@ -225,7 +225,7 @@ describe("another reader's names are marked", () => {
 
 describe("TableClosed", () => {
   it("says the table closed, why, and that logged games stay, with Back to Friends", () => {
-    render(<TableClosed podName={named("Thursday night")} setBy={named("Colin")} faces={[{ name: "Hugh", artCropUri: null }, { name: named("Colin"), artCropUri: "https://cards.example/a.jpg" }]} />);
+    render(<TableClosed closed={{ tableId: "table-1", viewerDeckId: VIEWER_DECK_ID, podName: named("Thursday night"), setBy: named("Colin"), how: { kind: "morning", at: NOW }, faces: [{ name: "Hugh", artCropUri: null }, { name: named("Colin"), artCropUri: "https://cards.example/a.jpg" }] }} />);
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("This table has closed");
     expect(screen.getByText(plain(copy.expired.body(named("Thursday night"), named("Colin"))))).toBeInTheDocument();
     expect(screen.getByText(plain(copy.expired.body(named("Thursday night"), named("Colin")))).className).toContain("ph-no-capture");

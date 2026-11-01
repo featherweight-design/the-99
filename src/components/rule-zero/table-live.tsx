@@ -16,6 +16,10 @@
 // page comes back into view, and never if the reader leaves first. So the next visit starts from what this one
 // actually showed, and a refresh does not lose it.
 //
+// The setter's `Close the table` (revisions 5): once the action answers ok the page asks the poll's route at once and
+// draws the closed table from its answer, so the host's page closes in the press rather than at the next check; a lost
+// follow-up refreshes the route, whose page draws the closed table itself. A refused close is the shared toast, with Try again.
+//
 // A closed table's answer swaps the body for the closed page in place (L4). A 404 (the reader left the pod, or
 // their seat went) refreshes the route, whose page then answers not found.
 
@@ -23,6 +27,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { TablePoll } from "../../app/api/rule-zero/tables/[id]/route";
 import { markTableSeen, swapSeatDeckAction } from "../../app/friends/table/actions";
+import { closeTableAction } from "../../app/friends/table/setup-actions";
 import { bracketPhrase } from "../../lib/copy/deck-analysis";
 import { ruleZeroCopy } from "../../lib/copy/rule-zero";
 import { middleBrackets } from "../../lib/rule-zero/table-view";
@@ -36,6 +41,7 @@ import { TableClosed } from "./table-closed";
 export const POLL_MS = 20_000;
 
 const swapCopy = ruleZeroCopy.swap;
+const closeCopy = ruleZeroCopy.close;
 
 type Closed = ReturnType<typeof reviveClosedTable>;
 
@@ -82,6 +88,12 @@ export function TableLive({
   const recorded = useRef(0);
   // Whether the visit's first check has answered: held across re-runs of the checking effect.
   const firstAnswered = useRef(false);
+  // A closed table has nothing left to ask: `stopPoll` ends the checking effect's timer and listeners.
+  const stopPoll = useRef<() => void>(() => {});
+  const adoptClosed = (c: Closed) => {
+    stopPoll.current();
+    setClosed(c);
+  };
   const routerRef = useRef(router);
   useEffect(() => {
     routerRef.current = router;
@@ -136,6 +148,42 @@ export function TableLive({
     }
   }
 
+  // The setter's close. True when the table closed (the page then shows it closed, or is about to); a refusal and a throw
+  // are the toast, and the confirm leaves its place to it.
+  // One close at a time, whichever render's handler calls: a toast's Try again holds the `closeNow` of an older render.
+  const closing = useRef(false);
+  async function closeNow(): Promise<boolean> {
+    if (closing.current) return false;
+    closing.current = true;
+    try {
+      return await closeOnce();
+    } finally {
+      closing.current = false;
+    }
+  }
+  async function closeOnce(): Promise<boolean> {
+    try {
+      const out = await closeTableAction(tableId);
+      if (!out.ok) throw new Error("refused");
+    } catch {
+      setToast({ id: ++toastId.current, text: closeCopy.failed, retry: { label: closeCopy.retry, run: () => void closeNow() } });
+      return false;
+    }
+    setToast(null);
+    try {
+      const res = await fetch(`/api/rule-zero/tables/${tableId}`, { cache: "no-store" });
+      const poll = res.ok ? ((await res.json()) as TablePoll) : null;
+      if (poll?.kind === "closed") {
+        adoptClosed(reviveClosedTable(poll.closed));
+        return true;
+      }
+    } catch {
+      // Falls through to the refresh below.
+    }
+    routerRef.current.refresh();
+    return true;
+  }
+
   useEffect(() => {
     let stopped = false;
     let inFlight = false;
@@ -153,7 +201,7 @@ export function TableLive({
         if (!res.ok) return;
         const poll = (await res.json()) as TablePoll;
         if (stopped || swaps.current !== swapsAtStart) return;
-        if (poll.kind === "closed") setClosed(reviveClosedTable(poll.closed));
+        if (poll.kind === "closed") adoptClosed(reviveClosedTable(poll.closed));
         else {
           const next = reviveTableView(poll.view);
           adopt(next);
@@ -181,12 +229,14 @@ export function TableLive({
     };
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("focus", onVisible);
-    return () => {
+    const stop = () => {
       stopped = true;
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("focus", onVisible);
     };
+    stopPoll.current = stop;
+    return stop;
   }, [tableId]);
 
   const revision = view.revision.getTime();
@@ -195,11 +245,11 @@ export function TableLive({
     recordSeen(tableId, shown.current, recorded);
   });
 
-  if (closed) return <TableClosed podName={closed.podName} setBy={closed.setBy} faces={closed.faces} />;
+  if (closed) return <TableClosed closed={closed} />;
   const middle = view.read.kind === "read" ? bracketPhrase(middleBrackets(view.read.middle)) : null;
   return (
     <SwapContext.Provider value={{ offer: view.offer, middle, busy: swapping, swap: (deckId) => void seat(deckId, null) }}>
-      <TableBody view={{ ...view, seenAt: lookedAt }} now={now} updated={updated} swappedTo={swappedTo} />
+      <TableBody view={{ ...view, seenAt: lookedAt }} now={now} updated={updated} swappedTo={swappedTo} onClose={closeNow} />
       <SocialToast toast={toast} onDone={() => setToast(null)} role={toast?.retry ? "status" : "alert"} />
     </SwapContext.Provider>
   );

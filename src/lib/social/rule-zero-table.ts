@@ -522,8 +522,8 @@ export type ClosedHow =
   | { kind: "host"; byYou: boolean; by: ThirdPartyName | null; at: Date; logOpen: boolean }
   | { kind: "morning"; at: Date };
 
-/** What the closed page (L4, H3) draws: the pod, who set the table (null when the viewer did), how it ended, and the seated faces. */
-export type ClosedTable = { podName: ThirdPartyName; setBy: ThirdPartyName | null; how: ClosedHow; faces: { name: string | ThirdPartyName; artCropUri: string | null }[] };
+/** What the closed page (L4, H3) draws: the table's id and the viewer's seated deck (Log this game's link while a host-closed table is `logOpen`), the pod, who set the table (null when the viewer did), how it ended, and the seated faces. */
+export type ClosedTable = { tableId: string; viewerDeckId: string | null; podName: ThirdPartyName; setBy: ThirdPartyName | null; how: ClosedHow; faces: { name: string | ThirdPartyName; artCropUri: string | null }[] };
 
 type ClosedGrant = { closesAt: Date; closedAt: Date | null; closedBy: string | null; closerName: string | null; loggable: boolean };
 
@@ -550,6 +550,8 @@ export async function loadClosedTable(viewerId: string, tableId: unknown): Promi
   const { table, rows } = read;
   const art = await ownedDeckArt(viewerId, rows.flatMap((r) => (r.deckId ? [r.deckId] : [])));
   return {
+    tableId,
+    viewerDeckId: rows.find((r) => r.userId === viewerId)?.deckId ?? null,
     podName: named(table.podName),
     setBy: table.setBy === viewerId || table.setByName === null ? null : named(table.setByName),
     how: closedHow(viewerId, table),
