@@ -3,7 +3,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { PENDING_DROP_SWITCHES } from "./pending-drop";
+import { PENDING_DROP_SWITCHES, withPendingDrops } from "./pending-drop";
 import { ALL_FEATURES, SWITCH_NAMES, switchDefaultsOn, switchKind } from "./registry";
 
 const SRC = join(process.cwd(), "src");
@@ -37,7 +37,10 @@ describe("the switch registry", () => {
     const last = sources.filter((s) => s.includes("flag_overrides_switch_check")).at(-1) ?? "";
     const listed = /flag_overrides_switch_check" CHECK \([^)]*in \(([^)]*)\)/.exec(last)?.[1] ?? "";
     const inForce = listed.split(",").map((s) => s.trim().replace(/'/g, ""));
-    expect(inForce.sort()).toEqual([...SWITCH_NAMES, ...PENDING_DROP_SWITCHES, ALL_FEATURES].sort());
+    expect([...inForce].sort()).toEqual([...SWITCH_NAMES, ...PENDING_DROP_SWITCHES, ALL_FEATURES].sort());
+    // In order too: the schema builds the CHECK from `withPendingDrops`, so a pending name placed anywhere but where it
+    // sat would make `db:generate` drop and re-add the constraint.
+    expect(inForce).toEqual([...withPendingDrops(SWITCH_NAMES), ALL_FEATURES]);
   });
 
   it("keeps a pending drop out of the registry, so nothing reads or writes it", () => {
