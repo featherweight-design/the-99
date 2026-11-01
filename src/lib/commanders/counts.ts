@@ -18,13 +18,14 @@ export type CommanderCounts = { owned: number; discover: number; hidden: number 
  * stored, and the head then leaves it out rather than say "0 yours". `discover` is `/discover`'s candidate set
  * (`discoverCandidates`: legal, unbuilt, unowned) counted in the database, so the two agree by construction.
  *
- * Neither counts a commander the reader has hidden: each list leaves those out, so its figure does.
+ * Neither counts a commander the reader has hidden: each list leaves those out, so its figure does. The Hidden tab's
+ * own count is `loadHiddenCount`, which `loadPlaceCounts` reads beside these.
  *
  * Both are per reader and read live, as a count over indexed rows is cheaper than a cache entry the reader's decks
  * would have to invalidate: building a deck moves both figures, and no tag drops on a deck write.
  */
-export async function loadCommanderCounts(userId: string): Promise<CommanderCounts> {
-  const [owned, discover, hidden] = await Promise.all([
+export async function loadCommanderCounts(userId: string): Promise<Omit<CommanderCounts, "hidden">> {
+  const [owned, discover] = await Promise.all([
     db
       .select({ n: sql<number>`count(*)::int` })
       .from(commanderScores)
@@ -51,9 +52,8 @@ export async function loadCommanderCounts(userId: string): Promise<CommanderCoun
           )`,
         ),
       ),
-    loadHiddenCount(userId),
   ]);
-  return { owned: owned[0]?.n ?? 0, discover: discover[0]?.n ?? 0, hidden };
+  return { owned: owned[0]?.n ?? 0, discover: discover[0]?.n ?? 0 };
 }
 
 /**
@@ -80,7 +80,8 @@ export async function loadHiddenCount(userId: string): Promise<number> {
  * many are waiting there.
  */
 export async function loadPlaceCounts(userId: string): Promise<CommanderCounts> {
-  const stats = await getCollectionStats(userId);
-  if (stats.uniqueCards === 0) return { owned: 0, discover: 0, hidden: await loadHiddenCount(userId) };
-  return loadCommanderCounts(userId);
+  // The Hidden count needs no collection, so it is read beside the stats rather than after them, and once.
+  const [stats, hidden] = await Promise.all([getCollectionStats(userId), loadHiddenCount(userId)]);
+  if (stats.uniqueCards === 0) return { owned: 0, discover: 0, hidden };
+  return { ...(await loadCommanderCounts(userId)), hidden };
 }

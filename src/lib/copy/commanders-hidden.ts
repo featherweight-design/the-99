@@ -4,8 +4,8 @@
 import type { HiddenLane } from "../commanders/hidden-row";
 
 /** Where an Unhide put the commander, in the Undo row's receipt voice: the board's *back in For you* / *back in
-    Discover*, or, when neither list will show it (READINESS Y3: built, not legal, or not in the index), just that it
-    is no longer hidden. DRAFT (the neutral line is Y3's own suggestion). */
+    Discover*, or, when neither list will show it (READINESS Y3: built, not legal, owned but not ranked by For you, or
+    unowned and not in the index), just that it is no longer hidden. DRAFT (the neutral line is Y3's own suggestion). */
 function backIn(name: string, lane: HiddenLane): string {
   if (lane === "foryou") return `${name} back in For you`;
   if (lane === "discover") return `${name} back in Discover`;

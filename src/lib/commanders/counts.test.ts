@@ -38,10 +38,12 @@ describe("the Commanders place counts", () => {
     expect(await loadHiddenCount("u")).toBe(3);
   });
 
-  it("reads all three figures for a reader with cards", async () => {
-    expect(await loadCommanderCounts("u")).toEqual({ owned: 228, discover: 3068, hidden: 3 });
+  it("reads all three figures for a reader with cards, the hidden count once", async () => {
+    expect(await loadCommanderCounts("u")).toEqual({ owned: 228, discover: 3068 });
+    asked.tables = [];
     stats.uniqueCards = 40;
     expect(await loadPlaceCounts("u")).toEqual({ owned: 228, discover: 3068, hidden: 3 });
+    expect(asked.tables.filter((t) => t === hiddenCommanders)).toHaveLength(1);
   });
 
   // No cards: nothing can be ranked, so neither list figure is read, but the Hidden list still holds its hides.

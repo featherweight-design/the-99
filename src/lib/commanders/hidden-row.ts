@@ -3,11 +3,16 @@
 // back in live here, apart from the read (`hidden-list.ts`), so a test can pin them without a database.
 
 /**
- * The list an Unhide puts the commander back in, which the Undo row names: For you for one the reader owns,
- * Discover for one they do not. Null when NEITHER list would show it (READINESS Y3): a commander a deck is built
- * around (built commanders are out of both lists, `notBuiltBy`), one the catalog no longer calls commander-legal,
- * or an unowned one the offline index holds nothing for (no `commander_support` row, so not a Discover candidate).
- * Saying "back in Discover" of any of those would send the reader to a list that does not hold it.
+ * The list an Unhide puts the commander back in, which the Undo row names, as each list's DEFAULT view would draw
+ * it. For you for one the reader owns that For you ranks: a row in their rankable stored scores
+ * (`rankableScoreRows`, what `/commanders` draws), not merely an owned legal unbuilt card. Discover for one they do
+ * not own that is a Discover candidate (`discoverCandidates`: an index row, legal, unbuilt); its default order is
+ * the fit ranking, which excludes nothing else (the novelty floor is the `new` order's alone, `classifyMatches`).
+ *
+ * Null when NEITHER list would show it (READINESS Y3): a commander a deck is built around (built commanders are out
+ * of both lists, `notBuiltBy`), one the catalog no longer calls commander-legal, an owned one For you has not
+ * ranked (no stored score, or a set being recomputed), or an unowned one the offline index holds nothing for.
+ * Saying "back in" a list of any of those would send the reader to a list that does not hold it.
  */
 export type HiddenLane = "foryou" | "discover" | null;
 
@@ -20,14 +25,24 @@ export type HiddenRow = {
   /** When it was hidden, ISO: the row's *Hidden Oct 31*. */
   hiddenAt: string;
   lane: HiddenLane;
+  /** A deck is built around it, so the row opens that deck (READINESS Y3) and says so. */
+  built: boolean;
   /** Where the row opens: the commander's page, or a built commander's deck. Null when neither resolves. */
   href: string | null;
 };
 
-export function hiddenLane(f: { built: boolean; owned: boolean; legal: boolean; candidate: boolean }): HiddenLane {
+export function hiddenLane(f: {
+  built: boolean;
+  owned: boolean;
+  legal: boolean;
+  /** An index row, so a Discover candidate when unowned (`commander_support`). */
+  candidate: boolean;
+  /** A rankable stored score: For you draws it (`rankableScoreRows`). */
+  ranked: boolean;
+}): HiddenLane {
   if (f.built || !f.legal) return null;
-  // For you's population is owned, legal and unbuilt (`loadOwnedHiddenNameMatches` holds it to the same).
-  if (f.owned) return "foryou";
+  // For you draws its stored, rankable scores: an owned commander it has not ranked is in neither list.
+  if (f.owned) return f.ranked ? "foryou" : null;
   // Discover's is legal, unbuilt and unowned, and only what the index measures (`discoverCandidates`).
   return f.candidate ? "discover" : null;
 }

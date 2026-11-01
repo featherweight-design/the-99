@@ -4,8 +4,8 @@ import { isValidElement, type ReactElement } from "react";
 import type { HiddenRow } from "../../../../lib/commanders/hidden-row";
 
 const rows: HiddenRow[] = [
-  { oracleId: "g", name: "Ghalta", colorIdentity: ["G"], imageUri: null, hiddenAt: "2026-10-31T15:00:00.000Z", lane: "foryou", href: "/commanders/ghalta" },
-  { oracleId: "z", name: "Zada", colorIdentity: ["R"], imageUri: null, hiddenAt: "2026-10-29T15:00:00.000Z", lane: null, href: "/decks/d1" },
+  { oracleId: "g", name: "Ghalta", colorIdentity: ["G"], imageUri: null, hiddenAt: "2026-10-31T15:00:00.000Z", lane: "foryou", built: false, href: "/commanders/ghalta" },
+  { oracleId: "z", name: "Zada", colorIdentity: ["R"], imageUri: null, hiddenAt: "2026-10-29T15:00:00.000Z", lane: null, built: true, href: "/decks/d1" },
 ];
 vi.mock("../../../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("../../../../lib/switches/request", () => ({ requestSwitchEnv: async () => ({}) as NodeJS.ProcessEnv }));

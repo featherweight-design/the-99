@@ -1,7 +1,7 @@
 import { desc, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, collectionItems, commanderSupport, decks, hiddenCommanders } from "../../db/schema";
-import { loadHiddenSlugs } from "./hidden-matches";
+import { loadHiddenPages } from "./hidden-matches";
 import { hiddenLane, hiddenRowHref, type HiddenRow } from "./hidden-row";
 
 // The Hidden list's read (`/commanders/hidden`, hide-commander README §3). Off Home's and /decks' cached import
@@ -48,8 +48,9 @@ export function hiddenListQuery(userId: string) {
 }
 
 /**
- * The rows `/commanders/hidden` draws. The page slug of each unbuilt one comes from `loadHiddenSlugs`, which
- * resolves it the way the page does; a built one needs none, since its row opens the deck.
+ * The rows `/commanders/hidden` draws. The page slug of each unbuilt one comes from `loadHiddenPages`, which
+ * resolves it the way the page does; a built one needs none, since its row opens the deck. The same read says
+ * which owned ones For you ranks (a rankable stored score), the half of the lane `hiddenLane` cannot see in a row.
  *
  * The whole collection's ids are read only when an unbuilt hidden commander is unowned: that is the one case the
  * slug lookup reads the discovery population for, and the population's dedup suffixes depend on the whole
@@ -68,9 +69,9 @@ export async function loadHiddenList(userId: string, env: NodeJS.ProcessEnv): Pr
           .where(eq(collectionItems.userId, userId))
       ).map((r) => r.oracleId)
     : unbuilt.map((r) => r.oracleId);
-  const slugs = unbuilt.length > 0
-    ? await loadHiddenSlugs(userId, unbuilt.map((r) => r.oracleId), collectionIds, env)
-    : new Map<string, string>();
+  const { slugs, ranked } = unbuilt.length > 0
+    ? await loadHiddenPages(userId, unbuilt.map((r) => r.oracleId), collectionIds, env)
+    : { slugs: new Map<string, string>(), ranked: new Set<string>() };
 
   return rows.map((r) => ({
     oracleId: r.oracleId,
@@ -78,7 +79,14 @@ export async function loadHiddenList(userId: string, env: NodeJS.ProcessEnv): Pr
     colorIdentity: r.colorIdentity,
     imageUri: r.imageUri,
     hiddenAt: r.hiddenAt.toISOString(),
-    lane: hiddenLane({ built: !!r.deckId, owned: r.owned, legal: r.legal, candidate: r.candidate }),
+    lane: hiddenLane({
+      built: !!r.deckId,
+      owned: r.owned,
+      legal: r.legal,
+      candidate: r.candidate,
+      ranked: ranked.has(r.oracleId),
+    }),
+    built: !!r.deckId,
     href: hiddenRowHref({ deckId: r.deckId, slug: slugs.get(r.oracleId) ?? null }),
   }));
 }

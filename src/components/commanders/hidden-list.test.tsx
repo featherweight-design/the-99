@@ -11,20 +11,21 @@ vi.mock("../../app/commanders/actions", () => ({
   unhideCommanderAction: (id: string) => unhideCommanderAction(id),
 }));
 
-const { HiddenList } = await import("./hidden-list");
+const { HiddenList, mergeServed } = await import("./hidden-list");
 
 const row = (over: Partial<HiddenRow> & Pick<HiddenRow, "oracleId" | "name">): HiddenRow => ({
   colorIdentity: ["G"],
   imageUri: null,
   hiddenAt: "2026-10-31T15:00:00.000Z",
   lane: "foryou",
+  built: false,
   href: `/commanders/${over.oracleId}`,
   ...over,
 });
 
 const GHALTA = row({ oracleId: "g", name: "Ghalta, Primal Hunger", href: "/commanders/ghalta-primal-hunger" });
 const ASHLING = row({ oracleId: "a", name: "Ashling the Pilgrim", hiddenAt: "2026-10-29T12:00:00.000Z", lane: "discover" });
-const ZADA = row({ oracleId: "z", name: "Zada, Hedron Grinder", hiddenAt: "2026-10-29T09:00:00.000Z", lane: null, href: "/decks/deck-1" });
+const ZADA = row({ oracleId: "z", name: "Zada, Hedron Grinder", hiddenAt: "2026-10-29T09:00:00.000Z", lane: null, built: true, href: "/decks/deck-1" });
 
 const unhideButton = (name: string) => screen.getByRole("button", { name: `Unhide ${name}` });
 const undoButton = (name: string) => screen.queryByRole("button", { name: `Undo unhiding ${name}` });
@@ -42,8 +43,11 @@ beforeEach(() => {
 });
 afterEach(() => {
   window.removeEventListener("the99:commander-counts-stale", onStale);
+  vi.useRealTimers();
   cleanup();
 });
+
+const order = () => screen.getAllByRole("listitem").map((li) => li.getAttribute("data-hidden-row"));
 
 describe("the Hidden list", () => {
   it("draws the rows in the order served (newest first), each dated without its year", () => {
@@ -128,6 +132,38 @@ describe("the Hidden list", () => {
       expect(screen.getByText("Ghalta, Primal Hunger back in For you")).toBeInTheDocument();
     });
 
+    // The toast belongs to the row it names: pressing Unhide on another row leaves it, and its Try again, standing.
+    it("keeps another row's refusal toast when a different row is unhidden", async () => {
+      unhideCommanderAction.mockResolvedValueOnce(false);
+      render(<HiddenList rows={[GHALTA, ASHLING]} />);
+      await act(async () => {
+        fireEvent.click(unhideButton("Ghalta, Primal Hunger"));
+      });
+      expect(screen.getByRole("alert")).toHaveTextContent("We couldn’t unhide Ghalta, Primal Hunger.");
+      await act(async () => {
+        fireEvent.click(unhideButton("Ashling the Pilgrim"));
+      });
+      expect(screen.getByRole("alert")).toHaveTextContent("We couldn’t unhide Ghalta, Primal Hunger.");
+    });
+
+    // The counts moved when the write landed, whichever press is now the newest.
+    it("refreshes the counts for a write that landed after a later press superseded it", async () => {
+      let land: (ok: boolean) => void = () => {};
+      unhideCommanderAction.mockImplementationOnce(() => new Promise<boolean>((r) => (land = r)));
+      hideCommanderAction.mockImplementationOnce(() => new Promise<boolean>(() => {}));
+      render(<HiddenList rows={[GHALTA]} />);
+      await act(async () => {
+        fireEvent.click(unhideButton("Ghalta, Primal Hunger"));
+      });
+      await act(async () => {
+        fireEvent.click(undoButton("Ghalta, Primal Hunger")!);
+      });
+      await act(async () => {
+        land(true);
+      });
+      expect(stale).toBe(1);
+    });
+
     it("reads a thrown unhide as a refusal", async () => {
       unhideCommanderAction.mockRejectedValue(new Error("down"));
       render(<HiddenList rows={[GHALTA]} />);
@@ -140,6 +176,8 @@ describe("the Hidden list", () => {
 
   describe("Undo of an unhide", () => {
     it("hides it again: the row returns, and the counts refresh", async () => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date("2026-10-31T15:00:00Z"));
       render(<HiddenList rows={[GHALTA]} />);
       await act(async () => {
         fireEvent.click(unhideButton("Ghalta, Primal Hunger"));
@@ -151,6 +189,22 @@ describe("the Hidden list", () => {
       expect(unhideButton("Ghalta, Primal Hunger")).toHaveFocus();
       expect(screen.getByText("Hidden Oct 31")).toBeInTheDocument();
       expect(stale).toBe(2);
+    });
+
+    // The hide writes a new `hidden_at`: the row is the newest now, at the top and dated today, as the server has it.
+    it("moves the re-hidden row to the top, dated today", async () => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date("2026-11-01T12:00:00Z"));
+      render(<HiddenList rows={[GHALTA, ASHLING, ZADA]} />);
+      await act(async () => {
+        fireEvent.click(unhideButton("Ashling the Pilgrim"));
+      });
+      await act(async () => {
+        fireEvent.click(undoButton("Ashling the Pilgrim")!);
+      });
+      expect(order()).toEqual(["a", "g", "z"]);
+      expect(within(screen.getAllByRole("listitem")[0]).getByText("Hidden Nov 1")).toBeInTheDocument();
+      expect(unhideButton("Ashling the Pilgrim")).toHaveFocus();
     });
 
     it("says under the row where to hide it from when the hide is refused", async () => {
@@ -171,12 +225,37 @@ describe("the Hidden list", () => {
 
   // The unhide's action drops the list cache, and the route's next payload no longer carries the row; the Undo
   // row stands regardless, until the reader leaves the tab.
-  it("keeps its rows when the route hands it a new list", async () => {
+  it("keeps its Undo rows when the route hands it a new list", async () => {
     const { rerender } = render(<HiddenList rows={[GHALTA, ASHLING]} />);
     await act(async () => {
       fireEvent.click(unhideButton("Ghalta, Primal Hunger"));
     });
     rerender(<HiddenList rows={[ASHLING]} />);
     expect(undoButton("Ghalta, Primal Hunger")).toBeInTheDocument();
+    expect(order()).toEqual(["g", "a"]);
+  });
+
+  // A soft navigation back, or a back/forward restore, hands a newer list: its rows are taken, not the first one's.
+  it("takes a new list's rows from the route, where it has pressed nothing", () => {
+    const { rerender } = render(<HiddenList rows={[ASHLING]} />);
+    rerender(<HiddenList rows={[GHALTA, ASHLING, ZADA]} />);
+    expect(order()).toEqual(["g", "a", "z"]);
+    expect(screen.getByTestId("hidden-count")).toHaveTextContent("3 hidden · newest first");
+    rerender(<HiddenList rows={[ZADA]} />);
+    expect(order()).toEqual(["z"]);
+  });
+});
+
+describe("mergeServed", () => {
+  it("keeps a pressed row the new list lacks, in the server's order, and nothing unpressed", () => {
+    const pressed = new Map([["g", "back" as const]]);
+    expect(mergeServed([ASHLING, ZADA], [GHALTA, ASHLING, ZADA], pressed).map((r) => r.oracleId)).toEqual(["g", "a", "z"]);
+    expect(mergeServed([ZADA], [GHALTA, ASHLING, ZADA], pressed).map((r) => r.oracleId)).toEqual(["g", "z"]);
+  });
+
+  it("takes the new list's copy of a row it carries", () => {
+    const moved = { ...ASHLING, hiddenAt: "2026-11-01T00:00:00.000Z" };
+    const merged = mergeServed([moved, GHALTA], [GHALTA, ASHLING], new Map([["a", "hidden" as const]]));
+    expect(merged).toEqual([moved, GHALTA]);
   });
 });

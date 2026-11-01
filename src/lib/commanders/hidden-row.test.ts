@@ -3,20 +3,42 @@ import { describe, expect, it } from "vitest";
 import { hiddenDay, hiddenLane, hiddenRowHref } from "./hidden-row";
 import { hiddenListCopy } from "../copy/commanders-hidden";
 
-const base = { built: false, owned: false, legal: true, candidate: true };
+const base = { built: false, owned: false, legal: true, candidate: true, ranked: false };
 
 describe("hiddenLane", () => {
   it("puts an owned commander back in For you and an unowned one in Discover", () => {
-    expect(hiddenLane({ ...base, owned: true })).toBe("foryou");
+    expect(hiddenLane({ ...base, owned: true, ranked: true })).toBe("foryou");
     expect(hiddenLane(base)).toBe("discover");
   });
 
   // Neither list would show it, so naming one would be false.
   it("names no list for a built commander, one no longer legal, or an unowned one the index lacks", () => {
-    expect(hiddenLane({ ...base, owned: true, built: true })).toBeNull();
+    expect(hiddenLane({ ...base, owned: true, ranked: true, built: true })).toBeNull();
     expect(hiddenLane({ ...base, built: true })).toBeNull();
-    expect(hiddenLane({ ...base, owned: true, legal: false })).toBeNull();
+    expect(hiddenLane({ ...base, owned: true, ranked: true, legal: false })).toBeNull();
     expect(hiddenLane({ ...base, candidate: false })).toBeNull();
+  });
+
+  // For you draws its rankable stored scores, not every owned legal unbuilt card: one it has not ranked (no stored
+  // score, or a set being recomputed) is in neither list, and an index row does not make an owned one a Discover row.
+  it("names no list for an owned commander For you has not ranked", () => {
+    expect(hiddenLane({ ...base, owned: true, ranked: false })).toBeNull();
+    expect(hiddenLane({ ...base, owned: true, ranked: false, candidate: true })).toBeNull();
+  });
+
+  // Discover's default order is the fit ranking, which excludes no candidate: the novelty floor is the `new` order's.
+  it("puts an unowned index candidate back in Discover whatever its support", () => {
+    expect(hiddenLane({ ...base, candidate: true })).toBe("discover");
+  });
+
+  it("picks the refused line by the same lane", () => {
+    expect(hiddenListCopy.undoRow.refused(hiddenLane({ ...base, owned: true, ranked: true }))).toBe(
+      "Couldn’t hide that again. Hide it from For you.",
+    );
+    expect(hiddenListCopy.undoRow.refused(hiddenLane(base))).toBe("Couldn’t hide that again. Hide it from Discover.");
+    expect(hiddenListCopy.undoRow.refused(hiddenLane({ ...base, owned: true, ranked: false }))).toBe(
+      "Couldn’t hide that again.",
+    );
   });
 
   it("draws each lane's Undo row line", () => {

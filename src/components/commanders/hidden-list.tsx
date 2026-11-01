@@ -7,9 +7,11 @@
 // the name and **Unhide** where the figures were. The row opens the commander's page, or a built commander's deck.
 //
 // OPTIMISTIC, and it holds its own rows. Unhide turns the row into the shared Undo row at once, saying where it
-// went; Undo hides it again. The unhide's action drops the reader's list cache, and a refresh of this route would
-// hand back a list without the row, so the rows are seeded once from the server and kept: an Undo row stands until
-// the reader leaves the tab (the board's "gone when the reader leaves").
+// went; Undo hides it again, and the row moves to the top dated today, as the server re-dates the hide. The unhide's
+// action drops the reader's list cache, and a refresh of this route hands back a list without the row, so a new list
+// from the route (a soft navigation back, a back/forward restore) is MERGED in rather than taken whole: every row it
+// carries is taken from it, and a row this list has pressed that it lacks is kept, so an Undo row stands until the
+// reader leaves the tab (the board's "gone when the reader leaves") and a re-hide in flight is not dropped.
 //
 // Refusals, as the board draws them. Unhide refused: the row stays as it was, with the shared toast and Try again.
 // The Undo of an unhide refused: the button goes and one line under the row says where to hide it from instead.
@@ -22,14 +24,12 @@ import { hideCommanderAction, unhideCommanderAction } from "../../app/commanders
 import { hiddenDay, type HiddenRow } from "../../lib/commanders/hidden-row";
 import { hiddenListCopy as copy } from "../../lib/copy/commanders-hidden";
 import { hideCommanderCopy } from "../../lib/copy/commander-explained";
-import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { CommanderThumb } from "../ui/commander-thumb";
 import { useHydrated } from "../ui/hydrated-art";
 import { TOUCH_HIT } from "../ui/touch-hit";
-import { UndoShell } from "../ui/undo-row";
 import { ZeroState } from "../ui/zero-state";
 import { IdentityPips } from "./commander-art";
-import { COMMANDER_UNDO_SHELL, commanderUndoRefusedLine } from "./commander-undo-row";
+import { CommanderUndoRow } from "./commander-undo-row";
 import { announceCommanderCountsStale } from "./counts-event";
 import { EyeOff } from "./eye-off";
 import { RefusalToast } from "./hide-commander";
@@ -46,10 +46,37 @@ function bump(tickets: Map<string, number>, id: string): () => boolean {
   return () => tickets.get(id) === ticket;
 }
 
+/** The server's order: newest hide first, then oracle id (`hiddenListQuery`). ISO strings sort as their instants. */
+function newestFirst(a: HiddenRow, b: HiddenRow): number {
+  if (a.hiddenAt !== b.hiddenAt) return a.hiddenAt < b.hiddenAt ? 1 : -1;
+  return a.oracleId < b.oracleId ? -1 : a.oracleId > b.oracleId ? 1 : 0;
+}
+
+/**
+ * A new list from the route, merged over the rows held: every row it carries, as it carries it, and every held row
+ * this list has pressed (`states` names it) that it lacks, in the server's order. A pressed row the server no longer
+ * lists is an Undo row standing, or a re-hide whose write the list was read before; dropping either would take the
+ * row out from under the reader. Exported for the test.
+ */
+export function mergeServed(
+  served: readonly HiddenRow[],
+  held: readonly HiddenRow[],
+  pressed: ReadonlyMap<string, HiddenRowState>,
+): HiddenRow[] {
+  const listed = new Set(served.map((r) => r.oracleId));
+  const kept = held.filter((r) => pressed.has(r.oracleId) && !listed.has(r.oracleId));
+  return kept.length === 0 ? [...served] : [...served, ...kept].sort(newestFirst);
+}
+
 export function HiddenList({ rows: served }: { rows: HiddenRow[] }) {
-  // Seeded once: see the head of the file.
-  const [rows] = useState(served);
+  // Held, and merged with each new list the route hands down: see the head of the file.
+  const [rows, setRows] = useState(served);
+  const [seed, setSeed] = useState(served);
   const [states, setStates] = useState<ReadonlyMap<string, HiddenRowState>>(() => new Map());
+  if (served !== seed) {
+    setSeed(served);
+    setRows(mergeServed(served, rows, states));
+  }
   const [refusal, setRefusal] = useState<{ row: HiddenRow; text: string } | null>(null);
   const tickets = useRef(new Map<string, number>());
   const [focusTo, setFocusTo] = useState<{ id: string; kind: Focus } | null>(null);
@@ -79,7 +106,8 @@ export function HiddenList({ rows: served }: { rows: HiddenRow[] }) {
     (row: HiddenRow) => {
       const latest = bump(tickets.current, row.oracleId);
       set(row.oracleId, "back");
-      setRefusal(null);
+      // Only this row's own refusal: another row's toast, and its Try again, stay.
+      setRefusal((r) => (r && r.row.oracleId === row.oracleId ? null : r));
       setFocusTo({ id: row.oracleId, kind: "undo" });
       const refuse = () => {
         if (!latest()) return;
@@ -87,9 +115,10 @@ export function HiddenList({ rows: served }: { rows: HiddenRow[] }) {
         setFocusTo({ id: row.oracleId, kind: "unhide" });
         setRefusal({ row, text: copy.unhideRefused(row.name) });
       };
+      // A write that landed moved the counts, whether or not a later press has superseded this one.
       unhideCommanderAction(row.oracleId).then((ok) => {
         if (!ok) return refuse();
-        if (latest()) announceCommanderCountsStale();
+        announceCommanderCountsStale();
       }, refuse);
     },
     [set],
@@ -99,6 +128,10 @@ export function HiddenList({ rows: served }: { rows: HiddenRow[] }) {
     (row: HiddenRow) => {
       const latest = bump(tickets.current, row.oracleId);
       set(row.oracleId, "hidden");
+      // The hide writes a new `hidden_at`, so the row is now the newest: the top of the list, dated today, where the
+      // server's next list puts it. A refused hide leaves it there, an Undo row with its line and no date to read.
+      const now = new Date().toISOString();
+      setRows((rs) => [{ ...row, hiddenAt: now }, ...rs.filter((r) => r.oracleId !== row.oracleId)]);
       setFocusTo({ id: row.oracleId, kind: "unhide" });
       const refuse = () => {
         if (!latest()) return;
@@ -107,7 +140,7 @@ export function HiddenList({ rows: served }: { rows: HiddenRow[] }) {
       };
       hideCommanderAction(row.oracleId).then((ok) => {
         if (!ok) return refuse();
-        if (latest()) announceCommanderCountsStale();
+        announceCommanderCountsStale();
       }, refuse);
     },
     [set],
@@ -140,17 +173,17 @@ export function HiddenList({ rows: served }: { rows: HiddenRow[] }) {
                   unhideRef={register("unhide", row.oracleId)}
                 />
               ) : (
-                <UndoShell
-                  marks={{ "data-commander-undo-row": "" }}
-                  shell={COMMANDER_UNDO_SHELL}
-                  label={copy.undoRow.label(row.name, row.lane)}
-                  action={addPanelCopy.undo.action}
-                  actionAria={copy.undoRow.actionAria(row.name)}
+                <CommanderUndoRow
+                  name={row.name}
+                  refused={state === "refused"}
                   onUndo={() => undo(row)}
-                  error={state === "refused" ? copy.undoRow.refused(row.lane) : null}
                   undoRef={register("undo", row.oracleId)}
                   frameRef={register("line", row.oracleId)}
-                  errorLine={commanderUndoRefusedLine}
+                  copy={{
+                    label: (name) => copy.undoRow.label(name, row.lane),
+                    actionAria: copy.undoRow.actionAria,
+                    refused: copy.undoRow.refused(row.lane),
+                  }}
                 />
               )}
             </li>
@@ -184,7 +217,6 @@ function Row({
 }) {
   const nameClass =
     "min-w-0 truncate font-display font-semibold text-[14px] sm:text-[16px] text-[color:var(--fg)] no-underline";
-  const built = row.href?.startsWith("/decks/") ?? false;
   return (
     <div
       className={[
@@ -200,7 +232,7 @@ function Row({
           {row.href ? (
             <Link
               href={row.href}
-              aria-label={built ? copy.openDeck(row.name) : undefined}
+              aria-label={row.built ? copy.openDeck(row.name) : undefined}
               data-testid="hidden-row-open"
               className={`${nameClass} after:absolute after:inset-0 after:content-[''] focus-visible:outline-2 focus-visible:outline-[color:var(--accent)]`}
             >

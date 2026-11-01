@@ -5,7 +5,8 @@ Always on (the `COMMANDERS_PLACE_ENABLED` switch is retired; `place-flag.ts` is 
 
 ## Shape
 
-- `src/app/commanders/(list)/` holds the three tab routes: `page.tsx` (For you), `discover/page.tsx`, `choose/page.tsx` (Help me choose).
+- `src/app/commanders/(list)/` holds the four tab routes: `page.tsx` (For you), `discover/page.tsx`, `choose/page.tsx` (Help me choose),
+  `hidden/page.tsx` (Hidden, `/commanders/hidden`, named once as `HIDDEN_PATH` in `lib/commanders/place-paths.ts`; the commanders the reader hid, newest first).
   `/commanders/[slug]` is a sibling OUTSIDE the group, so the strip never reaches it.
 - `(list)/layout.tsx` mounts `CommandersPlaceHead` (title on desktop, then `PlaceStrip`) once. The strip is `src/components/place/place-strip.tsx`, extracted from `collection-place-head.tsx`
   so both places draw one strip (links, not ARIA tabs; the optimistic highlight; a layout so a press does not remount it).
@@ -29,4 +30,4 @@ The head re-reads them (`refreshCommanderCounts`) on a tab switch and on window 
 
 The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbatim. Where they and the text above differ in wording, both are current.
 
-- **The Commanders place** (always on). `commanders/(list)/` holds For you, Discover and Help me choose under the Collection place's strip (`PlaceStrip`, extracted); `/commanders/[slug]` stays outside the group. `/discover` and `/decks/new/choose` redirect (temporary, query kept); every link and redirect names the place through `choosePath` / `discoverPath` (`lib/commanders/place-paths.ts`). A new path a collection change can stale goes in `COLLECTION_ROUTES`. Plan `2026-10-22-menu-home.md`, PR 1.
+- **The Commanders place** (always on). `commanders/(list)/` holds For you, Discover, Help me choose and Hidden (`/commanders/hidden`, `HIDDEN_PATH`) under the Collection place's strip (`PlaceStrip`, extracted); `/commanders/[slug]` stays outside the group. `/discover` and `/decks/new/choose` redirect (temporary, query kept); every link and redirect names the place through `choosePath` / `discoverPath` (`lib/commanders/place-paths.ts`). A new path a collection change can stale goes in `COLLECTION_ROUTES`. Plan `2026-10-22-menu-home.md`, PR 1.
