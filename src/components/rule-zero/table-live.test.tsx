@@ -156,7 +156,7 @@ describe("TableLive", () => {
     fetchMock.mockResolvedValueOnce(open(base));
     render(<TableLive initial={base} now={AT} />);
     await settle();
-    fetchMock.mockResolvedValueOnce(json(200, { kind: "closed", closed: { podName: named("Thursday night"), setBy: named("Colin"), faces: [] } }));
+    fetchMock.mockResolvedValueOnce(json(200, { kind: "closed", closed: { podName: named("Thursday night"), setBy: named("Colin"), how: { kind: "morning", at: AT.toISOString() }, faces: [] } }));
     await settle(POLL_MS);
     expect(screen.getByTestId("table-closed")).toBeInTheDocument();
     expect(screen.queryByTestId("table-body")).toBeNull();

@@ -9,7 +9,7 @@
  */
 import type { ThirdPartyName } from "../person-name/brand";
 import { ruleZeroCopy } from "../copy/rule-zero";
-import type { TableSeat, TableView } from "../social/rule-zero-table";
+import type { ClosedHow, ClosedTable, TableSeat, TableView } from "../social/rule-zero-table";
 
 export function seatChanged(seat: Pick<TableSeat, "you" | "changedAt">, seenAt: Date | null): boolean {
   return !seat.you && seenAt !== null && seat.changedAt.getTime() > seenAt.getTime();
@@ -48,4 +48,14 @@ export function reviveTableView(raw: TableView): TableView {
     seenAt: raw.seenAt === null ? null : at(raw.seenAt),
     seats: raw.seats.map((s) => ({ ...s, changedAt: at(s.changedAt) })),
   };
+}
+
+/** A closed table as the poll's JSON carries it: `how.at` is an ISO string, not the Date the server held. */
+export type ClosedTableWire = Omit<ClosedTable, "how"> & {
+  how: { kind: "host"; byYou: boolean; by: ThirdPartyName | null; at: string; logOpen: boolean } | { kind: "morning"; at: string };
+};
+
+/** The closed twin of `reviveTableView`: `how.at` goes back to a Date before anything calls a Date method on it. */
+export function reviveClosedTable(raw: ClosedTableWire): ClosedTable {
+  return { ...raw, how: { ...raw.how, at: new Date(raw.how.at) } as ClosedHow };
 }

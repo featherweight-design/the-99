@@ -34,7 +34,9 @@ describe("tableSeatsQuery", () => {
     expect(q.sql).toContain(`inner join "rule_zero_seats" "viewer_seat" on ("viewer_seat"."table_id" = "rule_zero_tables"."id" and "viewer_seat"."user_id" = $1)`);
     expect(q.sql).toContain(`inner join "pod_members" "viewer_in" on ("viewer_in"."pod_id" = "rule_zero_tables"."pod_id" and "viewer_in"."user_id" = $2)`);
     expect(q.sql).toContain(`inner join "pod_members" on ("pod_members"."pod_id" = "rule_zero_tables"."pod_id" and "pod_members"."user_id" = "rule_zero_seats"."user_id")`);
+    // The clock alone (`tableLoggable`): a host-closed table keeps Log this game until its morning, an expired one does not.
     expect(q.sql).toMatch(/where \("rule_zero_seats"\."table_id" = \$\d+ and "rule_zero_tables"\."expires_at" > now\(\)\)/);
+    expect(q.sql).not.toContain("closed_at");
   });
 
   it("reads a seat's deck only while it is that seat player's own", () => {
