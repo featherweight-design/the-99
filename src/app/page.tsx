@@ -395,6 +395,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       pushVisit={pushVisit}
       commandersPlace
       tables={homeTables}
+      receipt={receipt && <PreconPickReceipt receipt={receipt} />}
       friends={homeFriends && { you: homeFriends.you, friends: homeFriends.friends, links: homeFriends.links, invites }}
       // One clock for the whole page, read on the server, so every relative
       // date below agrees.
@@ -402,10 +403,9 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
     />
   );
   // On the dashboard the tour runs on the real app, and is never due: only asked for.
-  const page = receipt ? <><PreconPickReceipt receipt={receipt} />{dashboard}</> : dashboard;
   // The tour taken again (R3·2, plan decision 6): `/?tour=1` starts it whatever `tour_seen_at` says; the client reads and
   // strips the parameter itself.
   // The check-in (flyer trial PR 6) asks for itself after the page settles: its due test is outside the cached payload.
   const tour = <HomeTour due={false} mode="dashboard" precons={false} />;
-  return feedbackEnabled(env) ? <>{page}{tour}<CheckInPrompt /></> : <>{page}{tour}</>;
+  return feedbackEnabled(env) ? <>{dashboard}{tour}<CheckInPrompt /></> : <>{dashboard}{tour}</>;
 }

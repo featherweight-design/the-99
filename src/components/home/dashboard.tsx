@@ -69,6 +69,8 @@ export type DashboardProps = {
   friends?: (Omit<FriendsSectionProps, "className" | "now" | "head">) | null;
   /** Rule 0's open tables the reader sits at, read per request (plan decision 1); empty with a failed read. */
   tables?: OpenTable[];
+  /** A precon pick's receipt (no-collection entry S5), or null: drawn under Rule 0's cards, above the strips. */
+  receipt?: React.ReactNode;
   shopping: ShoppingRollup;
   /**
    * The arrivals banner (upcoming precons), or null: switch off, nothing to show, or the read failed. Part of the
@@ -127,13 +129,8 @@ export function Dashboard(props: DashboardProps) {
   // Both arrive at the copy module pre-formatted: it formats no numbers by
   // contract, and the greeting's freshness figure is a word, not a date.
   const noDecks = props.decks.length === 0;
-  const tableCards = props.tables && props.tables.length > 0 ? (
-    <>
-      {props.tables.map((t) => (
-        <HomeTableCard key={t.tableId} table={t} now={new Date(props.now)} />
-      ))}
-    </>
-  ) : null;
+  // Rule 0's cards lead the body (revisions Home): soonest closing first, and nothing at all, no wrapper and no gap, without one.
+  const tables = [...(props.tables ?? [])].sort((a, b) => a.closesAt.getTime() - b.closesAt.getTime());
   const when = formatWhen(props.lastUpdated, new Date(props.now));
   const kicker = refreshCopy.home.kicker(props.stats.totalCards.toLocaleString("en-US"), when);
   const noCards = props.noCards === true;
@@ -213,6 +210,18 @@ export function Dashboard(props: DashboardProps) {
         )}
       </header>
 
+      {/* Rule 0's cards come first: under the page head, above the receipt, the strips and the lead. From `xl` each is one row. */}
+      {tables.length > 0 && (
+        <div data-home-tables className="px-[16px] pt-[14px] min-[1180px]:px-[26px] min-[1180px]:pt-[20px]">
+          <div className="flex flex-col gap-[12px] sm:max-w-[392px] xl:max-w-none">
+            {tables.map((t) => (
+              <HomeTableCard key={t.tableId} table={t} now={new Date(props.now)} />
+            ))}
+          </div>
+        </div>
+      )}
+      {props.receipt}
+
       {/* The lock's page line, as first run draws it (desktop only; the phone's bracket carries it): the three
           slots still locked while this account has decks and no cards. */}
       {noCards && (
@@ -289,14 +298,13 @@ export function Dashboard(props: DashboardProps) {
           {feed && <WhatsNew feed={feed} now={props.now} faces={faces} className="order-3 min-[1180px]:order-none" />}
         </div>
 
-        {/* The column exists only when the card does. Null when the availability
+        {/* The column exists only when a card in it does. Null when the availability
             read failed — three zeroes after a failed query is a lie, so the card
             leaves rather than guessing — and an empty column reserving 316px
             would leave a blank rail squeezing the resume rows beside it for a
             block that is not there. */}
-        {/* It renders when Commitments, Friends or Rule 0's table card does (G7): with Commitments absent, Friends (or the
-            card alone, when the friends read failed) tops the column. */}
-        {(props.commitments !== null || props.friends || tableCards) && (
+        {/* It renders when Commitments or Friends does (G7): with Commitments absent, Friends tops the column. */}
+        {(props.commitments !== null || props.friends) && (
           <div className="contents min-[1180px]:flex min-[1180px]:w-[316px] min-[1180px]:flex-none min-[1180px]:flex-col min-[1180px]:gap-[11px]">
             {props.commitments !== null && (
               <div className={`${feed ? "order-5" : "order-3"} flex flex-col min-[1180px]:order-none`}>
@@ -311,14 +319,8 @@ export function Dashboard(props: DashboardProps) {
               <FriendsSection
                 {...props.friends}
                 now={props.now}
-                head={tableCards}
                 className={`${feed ? "order-4" : "order-1"} mt-[6px] min-[1180px]:order-none ${props.commitments ? "min-[1180px]:mt-[4px]" : "min-[1180px]:mt-0"}`}
               />
-            ) : tableCards ? (
-              // A failed friends read still draws the card, alone at the section's place, with no heading.
-              <div className={`${feed ? "order-4" : "order-1"} mt-[6px] flex flex-col gap-[12px] min-[1180px]:order-none ${props.commitments ? "min-[1180px]:mt-[4px]" : "min-[1180px]:mt-0"}`}>
-                {tableCards}
-              </div>
             ) : null}
           </div>
         )}

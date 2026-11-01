@@ -1,8 +1,8 @@
 "use client";
-// Home's `Tonight's table` card (Rule 0 plan §PR 6, decision 1; boards E3, F3): for every seated player at an open
-// table, the setter too, until it closes. It heads Home's Friends section (readiness gap 1: once a Friends section
-// ships, the card moves to its head) with its own kicker and no heading of its own. Read per request
-// (`loadHomeTables`), never from Home's cached payload.
+// Home's `Tonight's table` card (Rule 0 plan §PR 6, decision 1; boards E3, F3; revisions board H1 to H8): for every seated
+// player at an open table, the setter too, until it closes. It leads Home's body, above everything but the page head, with its own
+// kicker and no heading of its own; from `xl` it is one row (kicker, pod and faces | sentence | Open the table). Read per
+// request (`loadHomeTables`), never from Home's cached payload.
 
 import Link from "next/link";
 import { Fragment } from "react";
@@ -37,7 +37,7 @@ export function HomeTableCard({ table, now }: { table: OpenTable; now: Date }) {
     <section
       aria-label={copy.homeKicker}
       data-testid="home-table-card"
-      className="relative flex flex-col gap-[10px] overflow-hidden rounded-[14px] bg-[color:var(--surface-rail)] p-[14px] [border:1px_solid_var(--accent)]"
+      className="relative flex flex-col gap-[10px] overflow-hidden rounded-[14px] bg-[color:var(--surface-rail)] p-[14px] [border:1px_solid_var(--accent)] xl:flex-row xl:items-center xl:gap-[22px] xl:p-[16px_18px]"
     >
       {art.length > 0 ? (
         <div aria-hidden className="pointer-events-none absolute inset-[-40px] flex opacity-[.28] [filter:blur(34px)_saturate(1.25)]">
@@ -47,9 +47,10 @@ export function HomeTableCard({ table, now }: { table: OpenTable; now: Date }) {
           ))}
         </div>
       ) : null}
-      <span className="relative font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-[color:var(--accent-text)]">{copy.homeKicker}</span>
-      <h3 className="relative m-0 font-display text-[18px] font-bold text-[color:var(--fg)]"><PersonName n={table.podName} /></h3>
-      <div className="relative flex flex-wrap gap-[6px]">
+      <div className="relative flex flex-col gap-[10px] xl:w-[230px] xl:flex-none xl:gap-[8px]">
+      <span className="font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-[color:var(--accent-text)]">{copy.homeKicker}</span>
+      <h3 className="m-0 font-display text-[18px] font-bold text-[color:var(--fg)]"><PersonName n={table.podName} /></h3>
+      <div className="flex flex-wrap gap-[6px]">
         {table.seats.map((s, i) => (
           <Face
             key={i}
@@ -60,7 +61,8 @@ export function HomeTableCard({ table, now }: { table: OpenTable; now: Date }) {
           />
         ))}
       </div>
-      <p className="relative m-0 text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">
+      </div>
+      <p className="relative m-0 text-[13.5px] xl:min-w-0 xl:flex-1 leading-[1.55] text-[color:var(--fg-body)]">
         {drawn.map((part, i) => {
           if (isThirdPartyName(part)) return <PersonName key={i} n={part} />;
           const [before, ...after] = part.split(SLOT);
@@ -73,7 +75,7 @@ export function HomeTableCard({ table, now }: { table: OpenTable; now: Date }) {
           );
         })}
       </p>
-      <Link href={`/friends/table/${table.tableId}`} className={`${ACCENT_BUTTON} relative w-full no-underline`}>
+      <Link href={`/friends/table/${table.tableId}`} className={`${ACCENT_BUTTON} relative w-full no-underline xl:h-[40px] xl:min-h-0 xl:w-auto xl:text-[13.5px]`}>
         {copy.homeOpen}
         <PendingReporter href={`/friends/table/${table.tableId}`} />
       </Link>
