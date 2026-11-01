@@ -15,6 +15,8 @@ export default async function TablePage({ params }: { params: Promise<{ id: stri
   const { id } = await params;
   const view = await loadTable(userId, id);
   if (view) {
+    // The "seated you" notice is marked seen by `TableLive` on mount (`markSeatNoticeSeenAction`), not here: a render is a GET
+    // that `router.refresh()` repeats, and it would be awaited before the first byte. This PR has no dismiss path.
     return (
       // Same stretch chain as the closed branch below, so a table that closes in place centers its card as a refresh would.
       <div className="flex w-full flex-1 flex-col">

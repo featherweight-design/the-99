@@ -5,12 +5,22 @@
  * Time zones are IANA names the browser reported. An unknown name is judged as UTC rather than refused, so a bad row
  * still holds the night somewhere instead of waking a phone.
  */
+import { SEAT_PUSH_KIND } from "../feed/kinds";
 import { validTimeZone, wall, zonedToInstant } from "../time/zoned";
 
 export const HOLD_FROM = 21;
 export const RELEASE_AT = 9;
 
 export { validTimeZone };
+
+/**
+ * The kinds the hold does not apply to (Rule 0 revisions, item 6; Hugh approved 2026-10-31): a seat notice is for a game
+ * night, so it goes at once, whatever the hour. Every other kind keeps the hold.
+ */
+export const HOLD_EXEMPT_KINDS: readonly string[] = [SEAT_PUSH_KIND];
+
+/** Whether a kind's push waits out the held hours. */
+export const heldKind = (kind: string): boolean => !HOLD_EXEMPT_KINDS.includes(kind);
 
 /** The zone a row is judged in: its own when valid, else UTC. */
 export const judgedZone = (timeZone: string): string => (validTimeZone(timeZone) ? timeZone : "UTC");

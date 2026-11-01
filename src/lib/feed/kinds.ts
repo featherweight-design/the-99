@@ -40,6 +40,16 @@ export const isAnnouncementKind = (k: unknown): k is AnnouncementFeedKind => typ
 export const PUSH_OUTBOX_KINDS = ["new-set", "new-precon", "price-drop", "trade-match", "spare-request", "combo", ...ANNOUNCEMENT_KINDS] as const satisfies readonly FeedKind[];
 
 /**
+ * The seat notice's push kind (Rule 0 revisions, item 6): a `push_outbox` kind that is NOT a feed kind. It is a toast plus a
+ * push and nothing else: no `FeedKind`, so no What's new row, no Settings checkbox, no `feed_kinds`/`push_kinds` key, and it
+ * obeys the reader's master push switch alone. Snake case is the outbox column's own value, not a feed key.
+ */
+export const SEAT_PUSH_KIND = "rule_zero_seat" as const;
+
+/** Every kind `push_outbox_kind_check` allows: the feed kinds' pushes, then the seat notice (appended, so the constraint's earlier text is unchanged). */
+export const PUSH_OUTBOX_ALL_KINDS = [...PUSH_OUTBOX_KINDS, SEAT_PUSH_KIND] as const;
+
+/**
  * The kinds ON for a reader who never chose (spare requests G4): "a friend wants your spare" waits on the reader's
  * answer, so it is heard of by default, and Wizards' own announcements start on (handoff README, call 7). A default-on kind is on while it is stamped in `feed_kinds` or absent from both
  * `feed_kinds` and `feed_kinds_declined`; turned off, it moves to `feed_kinds_declined`. Every other kind starts off.

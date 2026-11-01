@@ -78,3 +78,32 @@ describe("planDevice", () => {
     expect(planDevice(r, items(drop("1")), tokyo, NOON).held).toBe(true);
   });
 });
+
+describe("planDevice, the seat notice and the overnight hold (Rule 0 revisions, item 6)", () => {
+  const TABLE_A = "6f1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b";
+  const TABLE_B = "7a1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b";
+  const seat = (tableId: string): PushItem => ({ kind: "rule_zero_seat", key: `table:${tableId}`, batch: `table:${tableId}`, tableId, host: "Colin", pod: "Thursday night", deck: null });
+  const seatRow = (id: string, created: string): OutboxRow => ({ id, itemKey: `table:${id}`, createdAt: at(created) });
+  const night = at("2026-10-22T03:00:00Z"); // 23:00 in New York, inside the held hours
+
+  it("sends a seat notice at 23:00 local, when every other kind is held", () => {
+    const plan = planDevice([seatRow("s1", "2026-10-22T02:55:00Z")], new Map([["s1", seat(TABLE_A)]]), device, night);
+    expect(plan.sends).toHaveLength(1);
+    expect(plan.sends[0]?.message.route).toBe(`/friends/table/${TABLE_A}`);
+    expect(plan.sends[0]?.rowIds).toEqual(["s1"]);
+    expect(plan.covered).toEqual(["s1"]);
+  });
+
+  it("still holds the other kinds beside it, covering only the seat row", () => {
+    const rows = [seatRow("s1", "2026-10-22T02:55:00Z"), row("1", "2026-10-22T02:50:00Z")];
+    const plan = planDevice(rows, new Map([["s1", seat(TABLE_A)], ["1", drop("1")]]), device, night);
+    expect(plan.sends.map((s) => s.message.tag)).toEqual([`rule_zero_seat:table:${TABLE_A}`]);
+    expect(plan.covered).toEqual(["s1"]);
+  });
+
+  it("never merges two tables into one push", () => {
+    const rows = [seatRow("a", "2026-10-22T14:00:00Z"), seatRow("b", "2026-10-22T14:01:00Z")];
+    const map = new Map([["a", seat(TABLE_A)], ["b", seat(TABLE_B)]]);
+    expect(planDevice(rows, map, device, NOON).sends).toHaveLength(2);
+  });
+});

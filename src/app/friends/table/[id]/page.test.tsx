@@ -8,13 +8,15 @@ const m = vi.hoisted(() => ({
   requireUserId: vi.fn(),
   loadTable: vi.fn(),
   loadClosedTable: vi.fn(),
+  markSeatNoticeSeen: vi.fn(),
 }));
 vi.mock("next/navigation", () => ({
   notFound: () => { throw new Error("NOT_FOUND"); },
   useRouter: () => ({ refresh: () => {} }),
 }));
-vi.mock("../actions", () => ({ markTableSeen: async () => true }));
+vi.mock("../actions", () => ({ markTableSeen: async () => true, markSeatNoticeSeenAction: async () => true }));
 vi.mock("../../../../lib/auth", () => ({ requireUserId: m.requireUserId }));
+vi.mock("../../../../lib/social/rule-zero-notice", () => ({ markSeatNoticeSeen: m.markSeatNoticeSeen }));
 vi.mock("../../../../lib/social/rule-zero-table", () => ({ loadTable: m.loadTable, loadClosedTable: m.loadClosedTable }));
 
 import TablePage from "./page";
@@ -43,6 +45,13 @@ describe("TablePage", () => {
     expect(screen.getByTestId("table-body")).toBeInTheDocument();
     expect(screen.getAllByTestId("table-seat")).toHaveLength(4);
     expect(m.loadClosedTable).not.toHaveBeenCalled();
+  });
+
+  it("writes nothing while rendering: the seat notice is marked seen by TableLive, not by the GET", async () => {
+    m.loadTable.mockResolvedValue(TABLES.T2);
+    await page();
+    expect(m.markSeatNoticeSeen).not.toHaveBeenCalled();
+    expect(screen.getByTestId("table-body")).toBeInTheDocument();
   });
 
   it("draws the expired page when the night has ended", async () => {

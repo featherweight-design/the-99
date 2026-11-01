@@ -7,6 +7,7 @@
 
 import { requireUserId } from "../../../lib/auth";
 import { markSeen, setSeatDeck } from "../../../lib/social/rule-zero";
+import { markSeatNoticeSeen } from "../../../lib/social/rule-zero-notice";
 import { loadDeckChoices, loadTable, type DeckChoice, type TableView } from "../../../lib/social/rule-zero-table";
 
 /** `revision` is the drawn snapshot's `revision` as an ISO string, never the time of the call. */
@@ -14,6 +15,15 @@ export async function markTableSeen(tableId: unknown, revision: unknown): Promis
   const userId = await requireUserId();
   if (typeof revision !== "string") return false;
   return markSeen(userId, tableId, new Date(revision));
+}
+
+/**
+ * The viewer has the table open: their "seated you" notice is seen. Called by `TableLive` on mount, not by the page's render, so
+ * a `router.refresh()` never re-writes it. One guarded UPDATE of the viewer's own seat row; a no-op once seen.
+ */
+export async function markSeatNoticeSeenAction(tableId: unknown): Promise<boolean> {
+  const userId = await requireUserId();
+  return markSeatNoticeSeen(userId, tableId);
 }
 
 export type SwapOutcome = { ok: true; view: TableView } | { ok: false };
