@@ -2,6 +2,7 @@ import * as React from "react";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { BrowseCard } from "../../lib/collection/browse";
+import type { ViewPrinting } from "./card-detail-provider";
 import { printingPickerCopy } from "../../lib/copy/collection";
 import { cardCarouselCopy, cardSheetCopy } from "../../lib/copy/card-carousel";
 
@@ -2215,6 +2216,30 @@ describe("viewPrintings", () => {
     await waitFor(() => expect(dialog.outerHTML).toContain("precon-sol.jpg"));
     expect(dialog.outerHTML).not.toContain("owned-sol.jpg");
     expect(dialog.textContent).toContain("FDC");
+  });
+
+  it("views a card its holder owns none of in the list's finish, over the reader's own foil copy", async () => {
+    const foilSol: BrowseCard = {
+      ...ownedSol,
+      printings: [{ setCode: "FDN", collectorNumber: "222", imageUri: "https://cards.scryfall.io/owned-sol.jpg", quantity: 1, finishes: { foil: 1 }, hasOwnArt: true, flavorName: null }] as unknown as BrowseCard["printings"],
+    };
+    const drawn = (views: Record<string, ViewPrinting> | undefined) => (
+      <CardDetailProvider fetchCard={async () => foilSol} viewPrintings={views}>
+        <CardDetailTrigger oracleId="o-sol" name="Sol Ring">Sol Ring</CardDetailTrigger>
+      </CardDetailProvider>
+    );
+    // Control: with no entry, the reader's own foil copy draws its film.
+    const { unmount } = render(drawn(undefined));
+    await click(screen.getByText("Sol Ring"));
+    let dialog = await screen.findByRole("dialog");
+    await waitFor(() => expect(dialog.querySelector('[data-testid="foil-film"]')).not.toBeNull());
+    unmount();
+    // A finish with no printing keeps the reader's printing and draws it plain.
+    render(drawn({ "o-sol": { finish: "nonfoil" } }));
+    await click(screen.getByText("Sol Ring"));
+    dialog = await screen.findByRole("dialog");
+    await waitFor(() => expect(dialog.outerHTML).toContain("owned-sol.jpg"));
+    expect(dialog.querySelector('[data-testid="foil-film"]')).toBeNull();
   });
 
   it("draws its neighbor plate at that printing, before it is paged onto", async () => {

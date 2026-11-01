@@ -50,7 +50,7 @@ import { cardLinkOutCopy } from "../../lib/copy/collection-browse";
 import { cardCarouselCopy, cardSheetCopy } from "../../lib/copy/card-carousel";
 import { SHEET, SWIPE, useCardSheetGestures, type SheetSnap } from "./card-sheet-gesture";
 import { dropTilt, liftTilt, tiltsOnHover } from "./card-tilt";
-import type { SheetFooterLayout, SiblingCard } from "./card-detail-provider";
+import type { SheetFooterLayout, SiblingCard, ViewFinish } from "./card-detail-provider";
 import { useMinWidth } from "../ui/use-min-width";
 import { ProxyControl } from "../decks/proxy-control";
 import { CardWishlist } from "../wishlist/card-wishlist";
@@ -993,7 +993,7 @@ export function CardModal({
     scryfallId?: string;
     /** The finish the opener's list holds it in (a precon box's): the face's film, whatever the reader owns. */
     finish?: Finish;
-  }) | null;
+  } | ViewFinish) | null;
 }) {
   const dialogRef = useRef<HTMLDivElement>(null);
   // The fixed backdrop — the one ancestor the dialog and the desktop neighbor plates share.
@@ -1295,6 +1295,11 @@ export function CardModal({
   // reads from this one object, so an optimistic pick moves all three together or none.
   const preview = useMemo<BrowseCard>(() => {
     const at = picked ? null : openAtPrinting;
+    // A finish with no printing (a list card its holder owns none of): the reader's own printing, in the list's finish.
+    if (at && at.setCode === undefined) {
+      const next = { ...card, preferredPrinting: effective(pick) };
+      return { ...next, printings: next.printings.map((p) => ({ ...p, viewedFinish: at.finish })) };
+    }
     if (!at) {
       const next = { ...card, preferredPrinting: effective(pick) };
       // Only once the reader has actually picked. `card.printedName` is the server's

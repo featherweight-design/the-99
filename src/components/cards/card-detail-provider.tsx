@@ -303,12 +303,25 @@ export type SiblingCard = {
 export type Sibling = string | SiblingCard;
 
 /** One printing a card is viewed at: `open`'s `atPrinting`. */
-export type ViewPrinting = PreferredPrinting & {
+export type ViewPrinting = (PreferredPrinting & {
   imageUri?: string | null;
   backImageUri?: string | null;
   scryfallId?: string;
   /** The finish the list holds the card in (a precon box's), which the details face draws whoever owns what. */
   finish?: Finish;
+}) | ViewFinish;
+
+/**
+ * A finish with no printing: a list card whose holder owns none of it, so no printing is theirs to show. Card details
+ * draw the reader's own printing, in the list's finish rather than the reader's own copy's.
+ */
+export type ViewFinish = {
+  setCode?: undefined;
+  collectorNumber?: undefined;
+  imageUri?: undefined;
+  backImageUri?: undefined;
+  scryfallId?: undefined;
+  finish: Finish;
 };
 
 /** A list in the one shape the provider holds. */
@@ -590,7 +603,7 @@ export { STACK_DROP_MS };
 type EditCardRef = { oracleId: string; name: string; imageUri: string | null };
 type OpenAt = {
   oracleId: string;
-  printing: PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null; finish?: Finish };
+  printing: ViewPrinting;
 } | null;
 /** A card lifted out of the live slot by a sheet opened over it, with what it needs to come back. */
 /** `opener`: the control the held card was opened from, handed back when the sheet over it goes. */
@@ -789,7 +802,7 @@ export function CardDetailProvider({
    */
   const pendingAt = useRef<{
     oracleId: string;
-    printing: (PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null }) | null;
+    printing: ViewPrinting | null;
   } | null>(null);
   const [pendingOracleId, setPendingOracleId] = useState<string | null>(null);
   const shownPending = pendingOracleId ?? (card !== null && !modalReady ? card.oracleId : null);
@@ -1019,7 +1032,7 @@ export function CardDetailProvider({
     async (
       oracleId: string,
       list?: readonly Sibling[],
-      at?: (PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null }) | null,
+      at?: ViewPrinting | null,
       // Where the card was reached from, when that moves the door: a combo partner is reached from
       // the combo block and never draws the Shopping door, while paging keeps it. Applied when the
       // card ARRIVES, so a read that fails leaves the card on screen, door and all, as it was.

@@ -97,6 +97,9 @@ describe("FriendDeckView", () => {
       // The owner's finish, never the reader's: their foil Sol Ring draws foil, their plain Sai draws plain.
       sai: { setCode: "m19", collectorNumber: "69", imageUri: "https://img/sai.jpg", finish: "nonfoil" },
       sol: { setCode: "cmm", collectorNumber: "1", imageUri: "https://img/sol.jpg", backImageUri: null, scryfallId: "sf-sol", finish: "foil" },
+      // A card the owner holds none of names no printing but is viewed plain, so the reader's own foil copy never shows.
+      ws: { finish: "nonfoil" },
+      isl: { finish: "nonfoil" },
     });
     // The same picks as deck printings with no deck: card details offer the viewer no picker over the owner's printing.
     expect(providerProps.picks).toEqual({ sai: { setCode: "m19", collectorNumber: "69" }, sol: { setCode: "cmm", collectorNumber: "1" } });
