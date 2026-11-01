@@ -1,7 +1,10 @@
 # The 99 · Game history (account 2, 2026-10-31)
 
 Canvas: https://claude.ai/artifact/1XCrDWAFPn2LzCJtTHvrqU
-Status: **R1b, awaiting Hugh's audit.** R1 6bb2425. R1b (Hugh, 2026-11-01): each game row leads with its deck's commander art (26px, radius 6, the tile's art crop; a pair's first commander) instead of the identity mark. Fixture decks renamed to commanders the design folder has art for (Sai, Lathliss, Dina, Ashling, Zada, Killian).
+Status: **Approved by Hugh, 2026-11-01** ("Update the tab order to be Decks/Games/Stats and then you're good to open a PR"), at R1c.
+- R1 (6bb2425): the round.
+- R1b (14d63cf, Hugh): each game row leads with its deck's commander art (26px, radius 6, the tile's art crop; a pair's first commander) instead of the identity mark. Fixture decks renamed to commanders the design folder has art for (Sai, Lathliss, Dina, Ashling, Zada, Killian).
+- R1c (Hugh): the view switch reads **Decks · Games · Stats**. The Tiles segment is renamed Decks (copy only: `decksStatsCopy.view.tiles` = "Decks"; the value, cookie and URL stay `tiles`) and Games sits second, before Stats.
 
 One consolidated view of a player's past games across every deck, at 390 and 1300 for each state, drawn over the shipped Decks page. A history, not a live tracker. Strings marked DRAFT go through `/copy-review`.
 
@@ -20,7 +23,7 @@ To view a board, open `Main.dc.html` or the board's own page, with `support.js` 
 
 ## The calls
 
-1. **Placement.** A third segment on the Decks view row: **Tiles · Stats · Games** (`?view=games`), beside the shipped switch. It displaces nothing: no rail item, no user-menu row, no Home section. One door: *See every game ›* on Stats' *When each deck last played* card. Drawn when Stats is (`LINEUP_ENABLED`, one deck or more).
+1. **Placement.** A third segment on the Decks view row: **Decks · Games · Stats** (`?view=games`) on the shipped switch (R1c: Tiles renamed Decks, Games second). It displaces nothing: no rail item, no user-menu row, no Home section. One door: *See every game ›* on Stats' *When each deck last played* card. Drawn when Stats is (`LINEUP_ENABLED`, one deck or more).
 2. **The row.** The shipped `GameHistoryRow` with its deck added (commander art + name: the row's first line on the phone, a 230px column on desktop, the Stats lanes' width) and a chevron; the ✕ removed. Every shipped slot stays: result square (W `--success`, L and D neutral), *N-player · date*, version stamp (`—` when deleted), marks, vs line (snapshot, trophy), note. The whole row is one press: the deck's Games tab at that game (`?tab=games&game=<id>`), scrolled into view and ringed for 2s.
 3. **Filters and grouping.** Deck, Result, Played against (friends first, then commanders, with the reader's count of games against each; searchable). Phone: the deck picker in the shelf picker's slot; Result and Played against in the shipped filter sheet behind *Filter games*. Desktop: three dropdowns on the view row, Played against in the anchored panel. Active filters are chips on the shipped *No filters on* line. Grouped by month, newest first.
 4. **Relation to the Games tab.** The tab stays the only place to log, correct or delete. Rule 0 games are ordinary rows with no table id, and a table expires after 24h, so a row has no Rule 0 link; Rule 0 is pointed to from the empty state.
@@ -28,11 +31,11 @@ To view a board, open `Main.dc.html` or the board's own page, with `support.js` 
 6. **Low N.** Under 3 games: a count (with the record from 2), one DRAFT line on where games come from, no filters. From 3 (`PATTERN_MIN`): filters and most played.
 7. **Empty.** *No games logged yet.* + DRAFT body; *Log one on* [the shipped deck select, last-opened deck] **Log a game** (opens that deck's Games tab, form open); a Rule 0 line with *Your pods ›* when the social switches are on and the reader has a pod. No decks at all: the shipped `decks-zero` page, no view row.
 8. **Long history.** 50 a read, *Showing 50 of 212 games* + **Show 50 more** (Loading… with the spinner); month heads count the whole month. Failure: shared toast with Try again, list kept.
-9. **First read failed.** As Stats: Tiles stays drawn; Games adds the shared toast (*We couldn't load your games.* + Try again).
+9. **First read failed.** As Stats: the deck tiles stay drawn; Games adds the shared toast (*We couldn't load your games.* + Try again).
 10. **Social games off.** No vs lines, no Played against; otherwise whole.
 11. **A deleted deck.** Games cascade with the deck, as the shipped confirm says; no tombstone. A friend's deleted deck stays as its snapshot.
 
-## Open for Hugh
+## Closed with the approval (drawn as is)
 
 - Q1: the recency card's door only, or also *Every deck's games ›* on the deck's Games tab?
 - Q2: keep the marks in the row (drawn, matches the shipped row) or drop them here?
@@ -40,7 +43,7 @@ To view a board, open `Main.dc.html` or the board's own page, with `support.js` 
 
 ## New strings (DRAFT unless shipped)
 
-- `view.games`: "Games"
+- `view.games`: "Games"; `view.tiles`: "Tiles" → "Decks" (R1c)
 - `recency.everyGame`: "See every game ›"
 - `games.headline(n, w, l, d)`: "N games logged." / "N games logged. W–L(–D)." (the Games tab's form)
 - `games.span`: "N decks · pods of a–b · Jul to Oct 2026" (Stats' `pods` and `span`)

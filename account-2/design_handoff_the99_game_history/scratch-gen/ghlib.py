@@ -304,7 +304,7 @@ def head(desk):
 
 
 def switch(view='games', new=True):
-    segs = ''.join(f'<span class="{"on" if v.lower() == view else ""}{" nw" if (v == "Games" and new) else ""}">{v}</span>' for v in ('Tiles', 'Stats', 'Games'))
+    segs = ''.join(f'<span class="{"on" if k == view else ""}{" nw" if (k != "stats" and new) else ""}">{v}</span>' for k, v in (('tiles', 'Decks'), ('games', 'Games'), ('stats', 'Stats')))
     return f'<span class="seg">{segs}</span>'
 
 
@@ -355,4 +355,4 @@ DRAFT = '<span class="draft8">DRAFT</span>'
 
 
 def build_doc(title, body, width=2000):
-    return L.doc(title, HELM + CSS, body.replace('<span class="tag">R1</span>', '<span class="tag">R1b</span>'), width)
+    return L.doc(title, HELM + CSS, body.replace('<span class="tag">R1</span>', '<span class="tag">R1c</span>'), width)

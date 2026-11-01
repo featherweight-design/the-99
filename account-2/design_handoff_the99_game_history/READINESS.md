@@ -1,6 +1,6 @@
-# Game history · readiness (R1, 2026-10-31)
+# Game history · readiness (R1c, 2026-11-01)
 
-**Verdict: R1 drawn, awaiting Hugh's audit.** Not for build until approved.
+**Verdict: GREEN. Approved by Hugh 2026-11-01 at R1c** (R1b commander art on rows; R1c switch Decks · Games · Stats). Ready to build once the cross-deck read lands.
 
 | Brief state | Where |
 |---|---|

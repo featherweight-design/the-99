@@ -42,12 +42,12 @@ def landing(src, w, ring, pin, h=None):
 
 
 def build():
-    body = L.head('1 · Where it lives', 'A third view on Decks: Tiles · Stats · Games',
-                  'The view row on <code>/decks</code> already switches Tiles and Stats (<code>stats-view-switch.tsx</code>, <code>?view=stats</code>). Games joins it as a third segment (<code>?view=games</code>). '
+    body = L.head('1 · Where it lives', 'A third view on Decks: Decks · Games · Stats',
+                  'The view row on <code>/decks</code> already switches Tiles and Stats (<code>stats-view-switch.tsx</code>, <code>?view=stats</code>). Games joins it as the second segment (<code>?view=games</code>), and the Tiles segment is renamed Decks (<code>decksStatsCopy.view.tiles</code>; the value stays <code>tiles</code>). '
                   'Nothing is displaced: no new rail item, no user-menu row, no Home section. Stats’ <i>When each deck last played</i> card gains one door to it, and every row in it opens its deck’s Games tab, which stays the only place a game is logged.')
     body += '<div class="frames" style="gap:56px">'
     body += L.fr('<b>W1</b> · 390 · Stats, the door', stats_phone(), 'The recency card is the one place Stats already counts games across decks. Its caption line gains <i>See every game ›</i> (dashed: new), which opens Games with no filter on.')
-    body += L.fr('<b>W2</b> · 1300 · the same', stats_desk(), 'Games sits third, after Stats: Tiles stays the default and Stats keeps its place and its moment. The segment is drawn when Stats is (<code>LINEUP_ENABLED</code>, one deck or more).')
+    body += L.fr('<b>W2</b> · 1300 · the same', stats_desk(), 'The order is Decks · Games · Stats (Hugh, 2026-11-01): Decks (was Tiles) stays the default, Games sits beside it, and Stats keeps its moment. Dashed: Games is new and Decks is the renamed Tiles. The segment is drawn when Stats is (<code>LINEUP_ENABLED</code>, one deck or more).')
     body += '</div><div class="frames" style="gap:56px">'
     body += L.fr('<b>W3</b> · 390 · a row pressed: the deck’s Games tab', landing('p-deck-games.webp', 390, (14, 466, 362, 128), (150, 456)),
                  'Over the shipped Games tab (About capture). The row opens <code>/decks/[id]?tab=games&amp;game=&lt;id&gt;</code>: the tab scrolls that game into view and rings it in accent for two seconds, then the ring fades. Back returns to the Games view where it was.')

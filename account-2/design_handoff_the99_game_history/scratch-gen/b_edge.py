@@ -83,7 +83,7 @@ def build():
     body += L.fr('<b>L2</b> · 1300 · loading the next fifty', long_desk('busy'), 'The button holds its place and says <i>Loading…</i> with the app’s spinner; the rows above stay.')
     body += '</div><div class="frames" style="gap:56px">'
     body += L.fr('<b>L3</b> · 390 · the next fifty failed', long_phone('more', True), 'The shared toast (ToastFrame) with Try again. The button comes back as it was; nothing already shown moves.')
-    body += L.fr('<b>X1</b> · 390 · Games pressed, the read failed', fail_phone(), 'As Stats does today, a failed first read leaves Tiles drawn and the switch on Tiles. Games adds the toast so the press is not silent. Try again asks again. Opening <code>?view=games</code> directly and failing lands here too.')
+    body += L.fr('<b>X1</b> · 390 · Games pressed, the read failed', fail_phone(), 'As Stats does today, a failed first read leaves the deck tiles drawn and the switch on Decks. Games adds the toast so the press is not silent. Try again asks again. Opening <code>?view=games</code> directly and failing lands here too.')
     body += '</div><div class="frames" style="gap:56px">'
     body += L.fr('<b>X2</b> · 1300 · the same', fail_desk(), '')
     body += '</div><div class="frames" style="gap:56px">'
