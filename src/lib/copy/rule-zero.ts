@@ -249,9 +249,9 @@ export const ruleZeroCopy = {
   },
   // The in-app seat notice (Rule 0 revisions board "Notice", item 6): the shared toast, no clock. The ✕ is named `close.dismiss`.
   notice: {
-    // DRAFT, goes through /copy-review
+    // Copy-reviewed (seat notice).
     toast: (host: Said, pod: Said) => personText`${host} seated you at ${pod}’s table.`,
-    // DRAFT, goes through /copy-review
+    // Copy-reviewed (seat notice).
     open: "Open",
   },
 } as const;
