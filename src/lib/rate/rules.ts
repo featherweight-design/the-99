@@ -76,3 +76,8 @@ export function overLimit(hits: number, rule: RateRule): boolean {
 
 /** How long a window's row is kept, whoever it belongs to: the bound on a row written after its account was purged. */
 export const RETAIN_MS = 60 * 60 * 1000;
+
+/** How long a bucket's row must outlive its window start: `RETAIN_MS`, or the whole window when that is longer (a day cap's row starts at 00:00 and has to survive the day, or the sweep would reset the cap). */
+export function retainMs(bucket: RateBucket): number {
+  return Math.max(RETAIN_MS, RATE_RULES[bucket].windowMs);
+}
