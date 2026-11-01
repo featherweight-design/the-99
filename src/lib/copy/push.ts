@@ -32,7 +32,7 @@ export const pushCopy = {
     // is the title; the body is the deck the seat holds, or the nudge to pick one. Host and pod are the readers' own words.
     // The push title has no trailing period, as the board's lock-screen and banner drawings show (the in-app toast keeps its own).
     // A title of 40 characters or fewer is the shipped one. Longer, the title is `{host} seated you` and the pod moves to the body
-    // (DRAFT bodies below); a host alone past 40 is cut with an ellipsis, the only cut. payloadFor (send.ts) still clips titles at 120.
+    // (copy-reviewed bodies below); a host alone past 40 is cut with an ellipsis, the only cut. payloadFor (send.ts) still clips titles at 120.
     seat: {
       title: (host: string, pod: string) => `${host} seated you at ${pod}\u2019s table`,
       /** The title when the full one runs past `titleMax`: the pod and deck move to `splitBody`. */
