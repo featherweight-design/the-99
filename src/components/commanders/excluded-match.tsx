@@ -17,9 +17,12 @@ const CORRECTION =
   "font-mono text-[11.5px] cursor-pointer bg-transparent border-0 p-0 text-[color:var(--accent-text)] hover:underline";
 
 /**
- * `href` is the correction for the one cause this lane cannot undo in place:
- * the commander is already built, and the list that shows it is another route.
- * A route is a link, so it middle-clicks and opens in a new tab like any other.
+ * `href` is the correction for the two causes this lane cannot undo in place:
+ * the commander is already built, and the list that shows it is another route;
+ * or the player hid it, and its own page is where it still opens. A route is a
+ * link, so it middle-clicks and opens in a new tab like any other. A hidden match
+ * with no `href` has no page any list holds a slug for, so the sentence stands
+ * alone rather than offering a control that does nothing.
  */
 export function ExcludedMatchAside({
   report,
@@ -52,7 +55,7 @@ export function ExcludedMatchAside({
             {report.cta}
             <PendingReporter href={href} />
           </Link>
-        ) : (
+        ) : report.cause === "hidden" ? null : (
           <button type="button" onClick={onCorrect} className={CORRECTION}>
             {report.cta}
           </button>

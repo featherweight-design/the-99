@@ -117,6 +117,66 @@ describe("resolveExcludedReport", () => {
     expect(out?.body).toBe(planeCopy.search.heldMany(1, planeCopy.excluded.control.scope));
   });
 
+  describe("a hidden match", () => {
+    const hidden = (over: Partial<ExcludedMatch> = {}) =>
+      server({ name: "Ghalta, Primal Hunger", cause: "hidden", pct: null, slug: "ghalta-primal-hunger", ...over });
+    const ex = planeCopy.excluded;
+
+    it("names the commander, says it is hidden, and opens its page", () => {
+      const out = resolve({ server: [hidden()], listHasRows: false });
+      expect(out?.cause).toBe("hidden");
+      expect(out?.heading).toBe("Ghalta, Primal Hunger is here. You hid it");
+      expect(out?.body).toBe(
+        "It matches, but you hid it, so it stays out of your lists.",
+      );
+      expect(out?.cta).toBe("Open its page");
+      expect(out?.aside).toBe("1 match, 0 shown");
+      expect(out?.slug).toBe("ghalta-primal-hunger");
+    });
+
+    it("is one sentence above a live list, naming the commander", () => {
+      const out = resolve({ server: [hidden()] });
+      expect(out?.heading).toBeNull();
+      expect(out?.aside).toBeNull();
+      expect(out?.name).toBe("Ghalta, Primal Hunger");
+      expect(out?.body).toBe(ex.hiddenAlso("Ghalta, Primal Hunger"));
+      expect(out?.cta).toBe(ex.hiddenCta);
+    });
+
+    // A hide removed the row on the server, before any pip was asked: clearing them would not bring it back.
+    it("outranks the pips and the floor, and yields to built", () => {
+      expect(resolve({ server: [hidden(), server()], colour: [colour()], colors: ["G"] })?.cause).toBe(
+        "hidden",
+      );
+      expect(resolve({ server: [hidden(), server({ cause: "built", pct: null })] })?.cause).toBe("built");
+    });
+
+    it("says \"you hid them\" when every match is hidden, and names the page it opens", () => {
+      const out = resolve({
+        server: [hidden(), hidden({ oracleId: "b", name: "Ghalta, Stampede Tyrant", slug: "ghalta-stampede-tyrant" })],
+        listHasRows: false,
+      });
+      expect(out?.heading).toBe(ex.heldHiddenHeadingMany(2));
+      expect(out?.body).toBe(ex.heldHiddenMany);
+      expect(out?.cta).toBe(ex.hiddenCtaNamed("Ghalta, Primal Hunger"));
+      expect(out?.slug).toBe("ghalta-primal-hunger");
+    });
+
+    it("counts the hidden ones when another cause holds a match back too", () => {
+      const out = resolve({ server: [hidden(), server({ oracleId: "b" })], listHasRows: false });
+      expect(out?.heading).toBe(planeCopy.search.heldHeadingMany(2));
+      expect(out?.body).toBe(ex.heldHiddenSome(1));
+    });
+
+    it("carries no page when no list holds a slug for it", () => {
+      expect(resolve({ server: [hidden({ slug: null })], listHasRows: false })?.slug).toBeNull();
+    });
+
+    it("carries no page for any other cause", () => {
+      expect(resolve({ server: [server()] })?.slug).toBeNull();
+    });
+  });
+
   it("prints the row's distance from the floor, and offers the sort that has none", () => {
     const out = resolve({ server: [server({ pct: 12 })] });
     expect(out?.body).toContain("12%");

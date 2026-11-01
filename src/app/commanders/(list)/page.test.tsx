@@ -8,6 +8,7 @@ const seen = vi.hoisted(() => ({
   store: undefined as ((v: { labelFallback?: true }) => boolean) | undefined,
   env: {} as Record<string, string>,
   candidateCount: 0,
+  hiddenCount: undefined as number | undefined,
 }));
 vi.mock("../../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: async () => seen.env as NodeJS.ProcessEnv }));
@@ -27,7 +28,10 @@ vi.mock("../../../lib/commanders/rankings", () => ({
 vi.mock("../../../lib/cache/user-lists", () => ({
   cacheForUser: async (_u: string, _k: string[], _load: unknown, opts: { store?: typeof seen.store } = {}) => {
     seen.store = opts.store;
-    return { items: [], degraded: false, uniqueCardsRead: 10, candidateCount: seen.candidateCount, freeRanking: null, availOk: true };
+    return {
+      items: [], degraded: false, uniqueCardsRead: 10, candidateCount: seen.candidateCount,
+      hiddenCount: seen.hiddenCount, freeRanking: null, availOk: true,
+    };
   },
 }));
 vi.mock("../actions", () => ({ retryRecs: async () => {} }));
@@ -54,5 +58,26 @@ describe("/commanders' first-run flag", () => {
     expect(el.props.firstRun).toBe(true);
     expect(el.props.helpMeChoose).toBeUndefined();
     seen.candidateCount = 0;
+  });
+});
+
+// Hide a commander, Edges state 11: a list the player emptied by hiding has candidates, all of them hidden,
+// so it is the view's "Everything here is hidden" under its rack, not the page's no-candidates state.
+describe("/commanders with every candidate hidden", () => {
+  it("hands the view the hidden count instead of drawing no candidates", async () => {
+    seen.candidateCount = 0;
+    seen.hiddenCount = 3;
+    const section = (await CommandersPage({ searchParams: Promise.resolve({}) })) as ReactElement<{ children: ReactElement }>;
+    const el = section.props.children as ReactElement<{ hiddenCount?: number; candidateCount?: number }>;
+    expect(el.type).toBe(CommandersView);
+    expect(el.props.hiddenCount).toBe(3);
+    expect(el.props.candidateCount).toBe(0);
+    seen.hiddenCount = undefined;
+  });
+
+  it("keeps the no-candidates state when nothing is hidden", async () => {
+    seen.candidateCount = 0;
+    const section = (await CommandersPage({ searchParams: Promise.resolve({}) })) as ReactElement<{ children: ReactElement }>;
+    expect(section.props.children).not.toHaveProperty("type", CommandersView);
   });
 });

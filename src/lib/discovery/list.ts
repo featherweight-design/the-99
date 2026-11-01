@@ -105,6 +105,9 @@ export type DiscoveryList = {
       novelty sort's two, and the client's colour filter. `items.length` is the
       same number under `fit` and a smaller one under `new`. */
   candidateCount: number;
+  /** Candidates the player has hidden, which every other figure here leaves out. Read only to tell a
+      list emptied by hiding ("Everything here is hidden") from one with no candidates at all. */
+  hiddenCount: number;
   /** Collection size the subtitle reads against. */
   cardsRead: number;
   /** Cards in the pool this ranking actually scored — now always `cardsRead`,
@@ -305,6 +308,7 @@ export function assembleDiscoveryWithIds(input: AssembleInput): { list: Discover
     })),
     // A hidden candidate is in none of the figures: not this one, not floor-excluded, not unmeasured.
     candidateCount: shown.length,
+    hiddenCount: withSlugs.length - shown.length,
     cardsRead: input.cardsRead,
     freePoolSize: input.freePoolSize,
     bestPct,

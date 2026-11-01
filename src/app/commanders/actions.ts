@@ -11,7 +11,10 @@ import { loadDiscoveryPool } from "../../lib/discovery/list";
 import { loadCommanderCounts, type CommanderCounts } from "../../lib/commanders/counts";
 import { deleteAllScores } from "../../lib/recs/store";
 import { getCollectionStats } from "../../lib/home/summary";
-import { hideCommander, isHideable, unhideCommander } from "../../lib/commanders/hidden";
+import { hideCommander, isHideable, loadHiddenIds, unhideCommander } from "../../lib/commanders/hidden";
+import { loadHiddenNameMatches, loadHiddenSlugs } from "../../lib/commanders/hidden-matches";
+import { loadCollectionPool } from "../../lib/recs/recommend";
+import { requestSwitchEnv } from "../../lib/switches/request";
 import { isUuid } from "../../lib/uuid";
 
 /**
@@ -33,8 +36,8 @@ export async function retryRecs() {
 }
 
 /**
- * The commanders a name search matched that the SERVER removed from the list —
- * built, below the floor, below it only against this pool, or never measurable.
+ * The commanders a name search matched that the SERVER removed from the list:
+ * built, hidden by the player, below the floor, or never measurable.
  *
  * It answers the one question the client cannot: those rows are absent from the
  * payload, so a search that finds nothing on screen cannot tell "nothing is
@@ -60,18 +63,67 @@ export async function findExcludedMatches(
   if (trimmed.length < 2) return [];
 
   const { collection } = await loadDiscoveryPool(userId);
-  const [matches, builtOracleIds] = await Promise.all([
+  const collectionIds = collection.map((c) => c.oracleId);
+  const [matches, builtOracleIds, hiddenIds] = await Promise.all([
     // One oracle-id set and no second aggregate, exactly as `loadDiscovery`
     // asks it: the lane scores the whole collection, so the two support counts
     // would be the same count.
-    loadNameMatches(
-      trimmed,
-      collection.map((c) => c.oracleId),
-    ),
+    loadNameMatches(trimmed, collectionIds),
     loadBuiltCommanderIds(userId),
+    // Beside the built ids, and for their reason: a hidden commander left the list
+    // on the server, so only the server can say it is there.
+    loadHiddenIds(userId),
   ]);
+  if (matches === null) return null;
 
-  return matches === null ? null : classifyMatches(matches, { sort: opts.sort, builtOracleIds });
+  const classified = classifyMatches(matches, {
+    sort: opts.sort,
+    builtOracleIds,
+    hiddenOracleIds: new Set(hiddenIds),
+  });
+  return withHiddenSlugs(userId, classified, collectionIds);
+}
+
+/**
+ * For you's half of the same question, asked only when its search matched nothing it holds.
+ *
+ * For you's other exclusions (the pips, the mode, `Build from`) narrow rows the client already holds,
+ * and a built commander is a different lane's, so a player's hide is the one thing that can take a match
+ * out of this list where the client cannot see it. The answer is the same shape Discover's is, so the
+ * same report draws it; every match in it is `hidden`.
+ *
+ * One request per settled query, as `findExcludedMatches`; null past the cap, read the same way.
+ */
+export async function findOwnedExcludedMatches(query: string): Promise<ExcludedMatch[] | null> {
+  const userId = await requireUserId();
+  const trimmed = query.trim();
+  if (trimmed.length < 2) return [];
+
+  const hidden = await loadHiddenNameMatches(userId, trimmed);
+  if (hidden === null) return null;
+  // Nothing hidden is named that: no slug to look for, and no collection read to make for it.
+  if (hidden.length === 0) return [];
+
+  const { collection } = await loadCollectionPool(userId);
+  return withHiddenSlugs(
+    userId,
+    hidden.map((m) => ({ ...m, cause: "hidden" as const, pct: null })),
+    collection.map((c) => c.oracleId),
+  );
+}
+
+/** Each `hidden` match given the slug its page opens at (`loadHiddenSlugs`), or null where no list
+    holds one. Matches of any other cause pass through as they are, and with no hidden match there is
+    no read at all. */
+async function withHiddenSlugs(
+  userId: string,
+  matches: ExcludedMatch[],
+  collectionIds: string[],
+): Promise<ExcludedMatch[]> {
+  const ids = matches.filter((m) => m.cause === "hidden").map((m) => m.oracleId);
+  if (ids.length === 0) return matches;
+  const slugs = await loadHiddenSlugs(userId, ids, collectionIds, await requestSwitchEnv(userId));
+  return matches.map((m) => (m.cause === "hidden" ? { ...m, slug: slugs.get(m.oracleId) ?? null } : m));
 }
 
 /**

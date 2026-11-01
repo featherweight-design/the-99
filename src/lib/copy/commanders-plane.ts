@@ -171,6 +171,22 @@ export const planeCopy = {
         filtered,
       )} excludes it: its identity is ${identity(own)}.`,
     heldScope: "It matches, but you have already built a deck around it.",
+    // The player's own hide (hide-commander handoff §4). The heading names the commander, as
+    // `search.heldHeading` does; a hidden commander's page still opens, so the CTA is a link to it.
+    heldHiddenHeading: (name: string) => `${name} is here. You hid it`,
+    heldHidden: "It matches, but you hid it, so it stays out of your lists.",
+    heldHiddenHeadingMany: (matches: number) => `${n(matches)} matches are here. You hid them`,
+    heldHiddenMany: "They match, but you hid them, so they stay out of your lists.",
+    // A hide is the player's own choice, not a control, so its counts say "hidden" rather than
+    // naming a control through `search.heldMany` / `search.asideMore`.
+    heldHiddenSome: (hidden: number) =>
+      hidden === 1 ? "1 of them is hidden." : `${n(hidden)} of them are hidden.`,
+    hiddenMore: (hidden: number) =>
+      hidden === 1 ? "1 more match is hidden." : `${n(hidden)} more matches are hidden.`,
+    hiddenAlso: (name: string) => `${name} also matches, but you hid it, so it stays out of your lists.`,
+    hiddenCta: "Open its page",
+    /** With several hidden matches the CTA opens one of them, so it says which. */
+    hiddenCtaNamed: (name: string) => `Open ${name}`,
     heldFloor: (pct: number, floorPct: number) =>
       `It matches, but Something new only shows commanders you could build, and you own ${pct}% of the cards decks with it play, against the ${floorPct}% floor.`,
 
@@ -341,6 +357,23 @@ export const planeCopy = {
     fewer: "show fewer",
     moreAria: (total: number, name: string) => `Show all ${n(total)} themes for ${name}`,
     fewerAria: (name: string) => `Show three themes for ${name}`,
+  },
+
+  // ── Everything here is hidden (hide-commander handoff §5, Edges state 11) ──
+  // The list's whole population is hidden, so the list is empty for a reason the reader chose. Both
+  // lanes draw it; the count is the hidden rows the list would otherwise have shown. Discover's
+  // sentence is not drawn on the board and follows For you's with the lane's own population.
+  allHidden: {
+    heading: "Everything here is hidden",
+    owned: (hidden: number) =>
+      hidden === 1
+        ? "You hid the only commander you own and haven’t built. Bring it back from Hidden, or find one to build in Discover."
+        : `You hid all ${n(hidden)} commanders you own and haven’t built. Bring one back from Hidden, or find one to build in Discover.`,
+    discover: (hidden: number) =>
+      hidden === 1
+        ? "You hid the only commander you don’t own and haven’t built. Bring it back from Hidden, or find one to build in For you."
+        : `You hid all ${n(hidden)} commanders you don’t own and haven’t built. Bring one back from Hidden, or find one to build in For you.`,
+    cta: "See hidden",
   },
 
   // The row's two floor notes are sites 1 and 2 of the seven, and they are NOT here: they are

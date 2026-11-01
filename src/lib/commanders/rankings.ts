@@ -57,6 +57,10 @@ export type CommanderRankings = {
   degraded: boolean;
   uniqueCardsRead: number;
   candidateCount: number;
+  /** How many of the ranked rows the player has hidden, which `candidateCount` and `items` leave out.
+      Read only to tell a list the player emptied by hiding ("Everything here is hidden") from one with
+      no candidates at all: no figure on the page prints it. */
+  hiddenCount: number;
   freeRanking: FreeRankingDelta | null;
   availOk: boolean;
   /** Either ranking was counted by the classifier only because the label read failed under a labels
@@ -192,12 +196,15 @@ export async function loadCommanderRankings(
   // No candidates means the page draws its empty state, which reads none of
   // what follows. The pool query is the expensive one and is skipped rather
   // than made and discarded.
-  if (candidateCount === 0) {
+  //
+  // A list the player emptied by hiding takes the same exit: nothing below has a row to read, and the
+  // page draws the all-hidden state off `hiddenCount` instead of the list.
+  if (candidateCount === 0 || (items.length === 0 && hiddenCount > 0)) {
     // `items` is empty here, so it satisfies the row type without enrichment —
     // and the three reads below are skipped rather than made against an empty
     // id list.
     return {
-      items: [], degraded, uniqueCardsRead, candidateCount,
+      items: [], degraded, uniqueCardsRead, candidateCount: Math.max(0, candidateCount - hiddenCount), hiddenCount,
       freeRanking: null, availOk: true,
     };
   }
@@ -272,7 +279,7 @@ export async function loadCommanderRankings(
   });
 
   return {
-    items: rows, degraded, uniqueCardsRead, candidateCount: candidateCount - hiddenCount, freeRanking, availOk,
+    items: rows, degraded, uniqueCardsRead, candidateCount: candidateCount - hiddenCount, hiddenCount, freeRanking, availOk,
     ...(labelFallback ? { labelFallback: true as const } : {}),
   };
 }

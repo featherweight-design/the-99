@@ -13,28 +13,135 @@ vi.mock("../../lib/commanders/avail-pref", async (importOriginal) => ({
 vi.mock("../../lib/cache/user-lists", () => ({ revalidateUserLists: vi.fn() }));
 // The excluded-matches lookup re-derives the discover pool.
 const loadDiscoveryPool = vi.hoisted(() => vi.fn<(...a: unknown[]) => Promise<unknown>>(async () => ({ collection: [{ oracleId: "c1" }] })));
-vi.mock("../../lib/discovery/candidates", () => ({ loadNameMatches: async () => [] }));
-vi.mock("../../lib/decks/built", () => ({ loadBuiltCommanderIds: async () => new Set() }));
-vi.mock("../../lib/discovery/excluded-match", () => ({ classifyMatches: () => [] }));
+const loadNameMatches = vi.hoisted(() => vi.fn<(...a: unknown[]) => Promise<unknown>>(async () => []));
+vi.mock("../../lib/discovery/candidates", () => ({ loadNameMatches }));
+vi.mock("../../lib/decks/built", () => ({ loadBuiltCommanderIds: async () => new Set(["built"]) }));
+const classifyMatches = vi.hoisted(() => vi.fn<(...a: unknown[]) => unknown[]>(() => []));
+vi.mock("../../lib/discovery/excluded-match", () => ({ classifyMatches }));
 vi.mock("../../lib/discovery/list", () => ({ loadDiscoveryPool }));
+// The hidden read and the slug lookup reach the database; the actions are tested for what they ask.
+const loadHiddenIds = vi.hoisted(() => vi.fn<(...a: unknown[]) => Promise<string[]>>(async () => []));
+const loadHiddenNameMatches = vi.hoisted(() =>
+  vi.fn<(...a: unknown[]) => Promise<{ oracleId: string; name: string }[] | null>>(async () => []),
+);
+const loadHiddenSlugs = vi.hoisted(() =>
+  vi.fn<(...a: unknown[]) => Promise<Map<string, string>>>(async () => new Map()),
+);
+vi.mock("../../lib/commanders/hidden-matches", () => ({ loadHiddenNameMatches, loadHiddenSlugs }));
+const loadCollectionPool = vi.hoisted(() =>
+  vi.fn<(...a: unknown[]) => Promise<unknown>>(async () => ({ collection: [{ oracleId: "c1" }] })),
+);
+vi.mock("../../lib/recs/recommend", () => ({ loadCollectionPool }));
+vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: async () => ({}) }));
 vi.mock("../../lib/recs/store", () => ({}));
 const hideCommander = vi.fn(async () => {});
 const unhideCommander = vi.fn(async () => {});
 const isHideable = vi.fn(async () => true);
 vi.mock("../../lib/commanders/hidden", () => ({
+  loadHiddenIds: (...a: unknown[]) => loadHiddenIds(...a),
   hideCommander: (...a: unknown[]) => hideCommander(...(a as [])),
   unhideCommander: (...a: unknown[]) => unhideCommander(...(a as [])),
   isHideable: (...a: unknown[]) => isHideable(...(a as [])),
 }));
 
-const { findExcludedMatches, hideCommanderAction, rememberCommandersAvail, unhideCommanderAction } = await import("./actions");
+const {
+  findExcludedMatches,
+  findOwnedExcludedMatches,
+  hideCommanderAction,
+  rememberCommandersAvail,
+  unhideCommanderAction,
+} = await import("./actions");
 const { revalidateUserLists } = await import("../../lib/cache/user-lists");
 
 describe("findExcludedMatches", () => {
+  beforeEach(() => {
+    loadDiscoveryPool.mockClear();
+    loadHiddenIds.mockReset();
+    loadHiddenIds.mockResolvedValue([]);
+    loadHiddenSlugs.mockClear();
+    classifyMatches.mockReset();
+    classifyMatches.mockReturnValue([]);
+  });
+
   it("reads the reader's pool once", async () => {
     expect(await findExcludedMatches("korvold", { sort: "fit" })).toEqual([]);
     expect(loadDiscoveryPool).toHaveBeenCalledTimes(1);
     expect(loadDiscoveryPool.mock.calls[0]).toEqual(["user_1"]);
+  });
+
+  // Beside the built ids: a hidden commander left the list on the server, so only the server can say so.
+  it("reads the reader's hidden ids and classifies against them", async () => {
+    loadHiddenIds.mockResolvedValue(["h1", "h2"]);
+    await findExcludedMatches("ghal", { sort: "fit" });
+    expect(loadHiddenIds).toHaveBeenCalledWith("user_1");
+    const [, opts] = classifyMatches.mock.calls[0] as [unknown, { hiddenOracleIds: Set<string>; builtOracleIds: Set<string> }];
+    expect([...opts.hiddenOracleIds]).toEqual(["h1", "h2"]);
+    expect([...opts.builtOracleIds]).toEqual(["built"]);
+  });
+
+  it("gives each hidden match the slug its page opens at, and no slug read without one", async () => {
+    classifyMatches.mockReturnValue([
+      { oracleId: "h1", name: "Ghalta, Primal Hunger", cause: "hidden", pct: null },
+      { oracleId: "h2", name: "Ghalta, Stampede Tyrant", cause: "hidden", pct: null },
+      { oracleId: "f1", name: "Ghave", cause: "floor", pct: 12 },
+    ]);
+    loadHiddenSlugs.mockResolvedValueOnce(new Map([["h1", "ghalta-primal-hunger"]]));
+    const out = await findExcludedMatches("gha", { sort: "new" });
+    expect(loadHiddenSlugs.mock.calls[0].slice(0, 3)).toEqual(["user_1", ["h1", "h2"], ["c1"]]);
+    expect(out).toEqual([
+      { oracleId: "h1", name: "Ghalta, Primal Hunger", cause: "hidden", pct: null, slug: "ghalta-primal-hunger" },
+      // No list holds a slug for it: the held state then offers no page rather than a 404.
+      { oracleId: "h2", name: "Ghalta, Stampede Tyrant", cause: "hidden", pct: null, slug: null },
+      { oracleId: "f1", name: "Ghave", cause: "floor", pct: 12 },
+    ]);
+
+    loadHiddenSlugs.mockClear();
+    classifyMatches.mockReturnValue([{ oracleId: "f1", name: "Ghave", cause: "floor", pct: 12 }]);
+    await findExcludedMatches("gha", { sort: "new" });
+    expect(loadHiddenSlugs).not.toHaveBeenCalled();
+  });
+
+  it("answers null past the cap without classifying", async () => {
+    loadNameMatches.mockResolvedValueOnce(null);
+    expect(await findExcludedMatches("a b", { sort: "fit" })).toBeNull();
+    expect(classifyMatches).not.toHaveBeenCalled();
+  });
+});
+
+// For you's half (hide a commander, READINESS Y4): only a hide can take a match out of that list where
+// the client cannot see it.
+describe("findOwnedExcludedMatches", () => {
+  beforeEach(() => {
+    loadHiddenNameMatches.mockReset();
+    loadHiddenNameMatches.mockResolvedValue([]);
+    loadHiddenSlugs.mockClear();
+    loadCollectionPool.mockClear();
+  });
+
+  it("asks nothing of a query under two characters", async () => {
+    expect(await findOwnedExcludedMatches(" g ")).toEqual([]);
+    expect(loadHiddenNameMatches).not.toHaveBeenCalled();
+  });
+
+  it("reports a hidden match by name, with its page's slug", async () => {
+    loadHiddenNameMatches.mockResolvedValue([{ oracleId: "h1", name: "Ghalta, Primal Hunger" }]);
+    loadHiddenSlugs.mockResolvedValueOnce(new Map([["h1", "ghalta-primal-hunger"]]));
+    expect(await findOwnedExcludedMatches(" ghal ")).toEqual([
+      { oracleId: "h1", name: "Ghalta, Primal Hunger", cause: "hidden", pct: null, slug: "ghalta-primal-hunger" },
+    ]);
+    expect(loadHiddenNameMatches).toHaveBeenCalledWith("user_1", "ghal");
+    expect(loadHiddenSlugs.mock.calls[0].slice(0, 3)).toEqual(["user_1", ["h1"], ["c1"]]);
+  });
+
+  it("reads no collection and no slug when nothing hidden is named that", async () => {
+    expect(await findOwnedExcludedMatches("korvold")).toEqual([]);
+    expect(loadCollectionPool).not.toHaveBeenCalled();
+    expect(loadHiddenSlugs).not.toHaveBeenCalled();
+  });
+
+  it("answers null past the cap", async () => {
+    loadHiddenNameMatches.mockResolvedValue(null);
+    expect(await findOwnedExcludedMatches("ghal")).toBeNull();
   });
 });
 

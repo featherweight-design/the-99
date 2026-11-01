@@ -9,14 +9,16 @@ const copy = planeCopy.excluded;
  *
  * ONE control is named. A row can be excluded by three at once, and naming all
  * three turns a one-tap fix into a diagnosis, so the outermost wins: built, then
- * the pips or the mode, then the sort's floor. The unmeasurable are the floor
+ * the player's own hide, then the pips or the mode, then the sort's floor. A hide
+ * sits above the pips because it removed the row on the server, before any pip
+ * was asked: clearing them would not bring it back. The unmeasurable are the floor
  * tier's other population, which does not reorder the tiers.
  *
  * `heading` is present only when no row survived — that state replaces the list
  * and needs a title; the aside sits above a live list and is one sentence.
  */
 export type ExcludedReport = {
-  cause: "built" | "colors" | "join" | "floor" | "unmeasured";
+  cause: "built" | "hidden" | "colors" | "join" | "floor" | "unmeasured";
   heading: string | null;
   /** The commander the sentence names, so the surface can mark it inside the
       finished sentence. Null when the report counts matches instead of naming
@@ -27,6 +29,9 @@ export type ExcludedReport = {
   /** `1 match, 0 shown`, printed beside the CTA when the list is empty so the
       offer is not a guess. Null above a live list, where the rows are the count. */
   aside: string | null;
+  /** The commander page the `hidden` cause's CTA opens. Null for every other cause, and for a hidden
+      match no list holds a slug for: the surface then draws no CTA rather than a link that 404s. */
+  slug: string | null;
 };
 
 /** A match the CLIENT removed: it is in the payload, so the colour answer needs
@@ -83,6 +88,40 @@ export function resolveExcludedReport(input: {
           : more(built.length, copy.control.scope),
       cta: copy.scopeCta,
       aside,
+      slug: null,
+    };
+  }
+
+  const hidden = server.filter((m) => m.cause === "hidden");
+  if (hidden.length > 0) {
+    const first = hidden[0];
+    // When every match is hidden, the held state can say "you hid them" outright. With another cause
+    // also holding a match back, it counts the hidden ones the way the other tiers count theirs.
+    const allHidden = hidden.length === total;
+    return {
+      cause: "hidden",
+      name: held || hidden.length > 1 ? null : first.name,
+      heading: held
+        ? total === 1
+          ? copy.heldHiddenHeading(first.name)
+          : allHidden
+            ? copy.heldHiddenHeadingMany(total)
+            : planeCopy.search.heldHeadingMany(total)
+        : null,
+      body: held
+        ? total === 1
+          ? copy.heldHidden
+          : allHidden
+            ? copy.heldHiddenMany
+            : copy.heldHiddenSome(hidden.length)
+        : hidden.length === 1
+          ? copy.hiddenAlso(first.name)
+          : copy.hiddenMore(hidden.length),
+      // One page per report: with several hidden, the first by name, and the CTA names it, since
+      // "its page" would not say whose.
+      cta: hidden.length === 1 ? copy.hiddenCta : copy.hiddenCtaNamed(first.name),
+      aside,
+      slug: first.slug ?? null,
     };
   }
 
@@ -117,6 +156,7 @@ export function resolveExcludedReport(input: {
             ),
       cta: tier2.mode ? copy.joinCta : copy.colorsCta,
       aside,
+      slug: null,
     };
   }
 
@@ -134,6 +174,7 @@ export function resolveExcludedReport(input: {
           : more(floor.length, copy.control.floor(FLOOR_PCT)),
       cta: copy.floorCta,
       aside,
+      slug: null,
     };
   }
 
@@ -152,5 +193,6 @@ export function resolveExcludedReport(input: {
     // nothing, so it is where an unmeasurable commander appears.
     cta: copy.floorCta,
     aside,
+    slug: null,
   };
 }
