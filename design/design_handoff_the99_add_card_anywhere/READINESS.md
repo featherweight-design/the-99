@@ -239,6 +239,21 @@ boards are Design's and stay as dropped; these rulings govern the build.
   row only needs to say what the reader can do there. The middle dot is drawn and hidden from screen readers.
   Strings: `cardSearchCopy.addSeveral.lead` and `.aside` (`src/lib/copy/card-search.ts`).
 
+## Errata from the PR 3 build (copy-review, 2026-11-01)
+
+- **E8 · the +'s name and the foot line.** O4 keeps the + out of the accessibility tree, so the +'s name, drawn as
+  *Add {card} to your collection*, becomes the last clause of the row's own name, with the keys: *add to your
+  collection with Command Enter* (*Control Enter* off a Mac), and the option carries `aria-keyshortcuts`. /copy-review
+  TIGHTENED it: the card's name is dropped, because the row's name already opens with it and a reader arrowing
+  through twenty rows would hear each name twice. The desktop foot line reads *↑ ↓ to move · ↵ to open · ⌘↵ to add*
+  (*Ctrl ↵* off a Mac) beside the shipped *⌘K opens this from anywhere*: O4's reading. C-D2 and C-D3 still draw the
+  shipped *↑ ↓ to move · ↵ to open · esc to close*; a fourth segment does not fit the 540px dropdown beside the
+  shortcut line, so *esc to close* is CUT while the + is on (Escape and a press outside still close it). Strings:
+  `cardSearchCopy.keysHintAdd`, `.addShortcutMac`, `.addShortcutOther`, `.row.addAria`, `.row.addKeysMac`,
+  `.row.addKeysOther`.
+- **E9 · the ×1 after a save reads in `--success`.** C6 and C-D3 draw the saved row's count in `--success` beside the
+  return ring. It is built so, on the ringed row only, while the ring stands; any other row keeps `--fg-body`.
+
 ---
 
 ## Design's readiness note (as dropped, kept for the record)

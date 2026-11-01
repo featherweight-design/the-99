@@ -11,6 +11,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, type MutableRefObject } from "react";
 import { createPortal } from "react-dom";
 import type { CardSearchRow } from "../../lib/card-search/search";
+import { isAddShortcut } from "../../lib/card-search/shortcut";
 import { cardSearchCopy } from "../../lib/copy/card-search";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { CardDetailProvider, useCardDetail, type SiblingCard } from "../cards/card-detail-provider";
@@ -60,6 +61,13 @@ export type SearchLayerProps = {
    * shell mounted no sheet host, and then the row is not drawn.
    */
   onAddSeveral?: (() => void) | null;
+  /**
+   * A row's + and ⌘↵ / Ctrl ↵ (C3, C-D2; READINESS O4): opens the shell's Add cards sheet with that row's card on the
+   * list. Null where the shell mounted no sheet host, and then no row draws a +.
+   */
+  onAdd?: ((from: readonly CardSearchRow[], index: number) => void) | null;
+  /** The card a row's + just saved copies of (C6, C-D3). */
+  addedTo?: string | null;
 };
 
 export function SearchLayer(props: SearchLayerProps) {
@@ -288,6 +296,8 @@ function Rows({
   returned,
   listboxId,
   onPick,
+  onAdd,
+  addedTo,
 }: SearchLayerProps & { from: CardSearchRow[]; matchQuery: string }) {
   return (
     <div role="listbox" id={listboxId} aria-label={cardSearchCopy.label}>
@@ -300,10 +310,15 @@ function Rows({
           first={i === 0}
           active={i === active}
           returned={row.oracleId === returned}
+          added={row.oracleId === returned && row.oracleId === addedTo}
           onPick={() => onPick(from, i)}
-          // A row focus came back to (H3) keeps the list's keys: ↑ ↓ move between rows, ↵ and Space open.
+          onAdd={onAdd ? () => onAdd(from, i) : undefined}
+          // A row focus came back to (H3) keeps the list's keys: ↑ ↓ move between rows, ↵ and Space open, ⌘↵ adds.
           onKey={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
+            if (onAdd && isAddShortcut(e)) {
+              e.preventDefault();
+              onAdd(from, i);
+            } else if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
               onPick(from, i);
             } else if (e.key === "ArrowDown" || e.key === "ArrowUp") {

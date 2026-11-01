@@ -18,7 +18,7 @@ import { CARD_SEARCH_CLEAR_DESKTOP, SearchGlyph, SearchOffline, SearchProgress, 
 
 const noSubscribe = () => () => {};
 /** Whether this device takes ⌘ (read after hydration, so the server's render and the first paint agree). */
-function useIsMac(): boolean {
+export function useIsMac(): boolean {
   return useSyncExternalStore(
     noSubscribe,
     () => isMacPlatform(navigator as Navigator & { userAgentData?: { platform?: string } }),
@@ -33,6 +33,16 @@ export function useSearchShortcutLabel(): { label: string; keys: string } {
     : { label: cardSearchCopy.shortcutOther, keys: "Control+K" };
 }
 
+/**
+ * The search's keyboard add (⌘↵ / Ctrl ↵, READINESS O4) for this platform: as the foot line draws it, as a row's name
+ * says it, and as `aria-keyshortcuts` spells it.
+ */
+export function useAddShortcutLabel(): { label: string; spoken: string; keys: string } {
+  return useIsMac()
+    ? { label: cardSearchCopy.addShortcutMac, spoken: cardSearchCopy.row.addKeysMac, keys: "Meta+Enter" }
+    : { label: cardSearchCopy.addShortcutOther, spoken: cardSearchCopy.row.addKeysOther, keys: "Control+Enter" };
+}
+
 /** The desktop's field and dropdown, and ⌘K / Ctrl+K. Nothing where the shell mounted no search, or below md. */
 export function SearchDesktop() {
   const search = useCardSearch();
@@ -42,10 +52,11 @@ export function SearchDesktop() {
 }
 
 function DesktopFrame() {
-  const { isOpen, veiled, query, setQuery, list, active, listboxId, onFieldKey, closeSearch, busy, placeBody, escape, inputRef, openSearch, warmSearch, searching, online } =
+  const { isOpen, veiled, query, setQuery, list, active, listboxId, onFieldKey, closeSearch, busy, placeBody, escape, inputRef, openSearch, warmSearch, searching, online, canAdd } =
     useCardSearch()!;
   const frameRef = useRef<HTMLDivElement>(null);
   const shortcut = useSearchShortcutLabel();
+  const addShortcut = useAddShortcutLabel();
 
   // A resize across md swaps this frame for the other while search is open: the old field unmounts, focus falls to the
   // body, and the new frame's Escape and Tab never hear a key. Put it back in the field the new frame mounts.
@@ -183,7 +194,8 @@ function DesktopFrame() {
           <div ref={placeBody} {...{ [COVERED_WITH_MAIN]: "" }} className="min-h-0 flex-1 overflow-y-auto overscroll-contain" />
           {showFoot ? (
             <p className="flex flex-none items-center justify-between gap-3 border-t border-solid border-[color:var(--border)] px-[14px] pt-[9px] pb-[5px] font-mono text-[11px] text-[color:var(--fg-faint)]">
-              <span>{cardSearchCopy.keysHint}</span>
+              {/* With the rows' + up, the line names the keyboard add too (READINESS O4). */}
+              <span>{canAdd ? cardSearchCopy.keysHintAdd(addShortcut.label) : cardSearchCopy.keysHint}</span>
               <span>{cardSearchCopy.shortcutFoot(shortcut.label)}</span>
             </p>
           ) : null}

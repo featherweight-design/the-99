@@ -34,6 +34,13 @@ export const cardSearchCopy = {
     body: "Search needs a connection. Keep typing if you like: results come in once you’re back online.",
   },
   keysHint: "↑ ↓ to move · ↵ to open · esc to close",
+  // The foot line once a row's + can add (add a card from anywhere, READINESS O4/O8), and the keyboard add as drawn
+  // on this platform (off a Mac: "Ctrl ↵"). Through /copy-review: TIGHTEN to O4's reading (READINESS E8). A fourth
+  // segment does not fit the 540px dropdown beside the shortcut line, and "esc to close" goes: Escape and a press
+  // outside still close it, as on the phone, which draws no foot.
+  keysHintAdd: (addKey: string) => `↑ ↓ to move · ↵ to open · ${addKey} to add`,
+  addShortcutMac: "⌘↵",
+  addShortcutOther: "Ctrl ↵",
 
   // The open search's way into the Add cards sheet, above Recent cards (C2, C-D1; add a card from anywhere, READINESS
   // O8). Through /copy-review: both KEEP, one wording at both widths (READINESS E7 cuts the desktop board's "save once").
@@ -48,6 +55,13 @@ export const cardSearchCopy = {
     moreDecks: (n: number) => `+${n}`,
     // The bookmark's words, said once: inside the row's one sentence below, never again on the bookmark itself.
     wishlistAria: "on your wishlist",
+    // The +'s name (READINESS O4/O8). The + is a pointer target kept out of the tree (an option's contents are
+    // presentational), so this is the last clause of the row's own name, with the keys that add it. Through
+    // /copy-review: TIGHTEN, the card's name dropped (READINESS E8): the row's name already opens with it, and a reader
+    // arrowing through twenty rows would hear each name twice.
+    addAria: (keys: string) => `add to your collection with ${keys}`,
+    addKeysMac: "Command Enter",
+    addKeysOther: "Control Enter",
     // The whole row's accessible name.
     aria: (name: string, owned: number, decks: readonly string[], wish: boolean) =>
       [

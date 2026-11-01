@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dialogIsUp, isMacPlatform, isSearchShortcut } from "./shortcut";
+import { dialogIsUp, isAddShortcut, isMacPlatform, isSearchShortcut } from "./shortcut";
 
 const key = (o: Partial<Parameters<typeof isSearchShortcut>[0]>) => ({
   key: "k",
@@ -62,5 +62,23 @@ describe("dialogIsUp", () => {
   });
   it("is false for a dialog inside an inert figure", () => {
     expect(dialogIsUp(doc([el({ inertAncestor: "1" })]), null)).toBe(false);
+  });
+});
+
+describe("isAddShortcut", () => {
+  const enter = (o: Partial<Parameters<typeof isAddShortcut>[0]>) => key({ key: "Enter", ...o });
+  it("is ⌘↵ or Ctrl ↵, one modifier only", () => {
+    expect(isAddShortcut(enter({ metaKey: true }))).toBe(true);
+    expect(isAddShortcut(enter({ ctrlKey: true }))).toBe(true);
+    expect(isAddShortcut(enter({ metaKey: true, ctrlKey: true }))).toBe(false);
+  });
+  it("is not a bare ↵, which opens the card", () => {
+    expect(isAddShortcut(enter({}))).toBe(false);
+  });
+  it("ignores Shift, Alt, other keys and IME composition", () => {
+    expect(isAddShortcut(enter({ metaKey: true, shiftKey: true }))).toBe(false);
+    expect(isAddShortcut(enter({ ctrlKey: true, altKey: true }))).toBe(false);
+    expect(isAddShortcut(key({ metaKey: true }))).toBe(false);
+    expect(isAddShortcut({ ...enter({ metaKey: true }), isComposing: true })).toBe(false);
   });
 });

@@ -28,6 +28,7 @@ import { flushSync } from "react-dom";
 import { searchAllCardsAction, cardSignalsAction } from "../../app/card-search-actions";
 import { clearRecent, pushRecent, readRecent, type RecentCard } from "../../lib/card-search/recent";
 import type { CardSearchRow, CardSignals } from "../../lib/card-search/search";
+import { isAddShortcut } from "../../lib/card-search/shortcut";
 import { afterDialogsReleased, useBackDismiss, useScrollLock, visibleFocusables } from "../../lib/a11y/dialog";
 import { cardSearchCopy } from "../../lib/copy/card-search";
 import { SearchField } from "../ui/text-field";
@@ -86,7 +87,9 @@ type CardSearchContextValue = {
   inputRef: RefObject<HTMLInputElement | null>;
   /** The element the results are drawn into; the mounted frame hands it over. */
   placeBody: (el: HTMLDivElement | null) => void;
-  /** The field's keys: ↑ ↓ move, ↵ opens. */
+  /** A row's + can add here (the shell's Add cards host is mounted, and this is not the public card page). */
+  canAdd: boolean;
+  /** The field's keys: ↑ ↓ move, ↵ opens, ⌘↵ / Ctrl ↵ adds. */
   onFieldKey: (e: KeyboardEvent<HTMLInputElement>) => void;
   /** Escape: clears a query first, then closes. */
   escape: () => void;
@@ -120,6 +123,10 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
   const [recentSignals, setRecentSignals] = useState<Record<string, CardSignals> | null>(null);
   const [moved, setActive] = useState(-1);
   const [returned, setReturned] = useState<string | null>(null);
+  // The card a row's + just saved copies of: while its row holds the return ring, its count reads in --success (C6, C-D3).
+  const [addedTo, setAddedTo] = useState<string | null>(null);
+  // Bumped when a sheet saved: the recents' signals are read again in place, keeping the rows drawn meanwhile (O6).
+  const [signalsAttempt, setSignalsAttempt] = useState(0);
   const [veiled, setVeiled] = useState(false);
   const veilRef = useRef<HTMLDivElement>(null);
   const [handover, setHandover] = useState<{ oracleId: string; siblings: SiblingCard[]; art: string | null; opener: HTMLElement | null } | null>(null);
@@ -206,6 +213,21 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
     };
   }, [open, online, recents, recentSignals, recentsFailed]);
 
+  // Back from a sheet that saved (O6): the recents' signals again, the old ones drawn until the new arrive. A failure
+  // keeps them: they were read once already, and a later open reads them afresh.
+  useEffect(() => {
+    if (signalsAttempt === 0 || !online || recents.length === 0) return;
+    let live = true;
+    cardSignalsAction(recents.map((r) => r.oracleId))
+      .then((s) => live && setRecentSignals(s))
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+    // On the bump only: an open reads them through the effect above.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [signalsAttempt]);
+
   // The read: 150ms after the last key, from two characters, never offline (S7 re-runs it on `online`).
   useEffect(() => {
     if (!searching) {
@@ -258,6 +280,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
       setRecentSignals((s) => (s ? { ...s, [card.oracleId]: { owned: card.owned, decks: card.decks, wishlist: card.wishlist } } : s));
       savedScroll.current = bodyRef.current?.scrollTop ?? 0;
       setReturned(card.oracleId);
+      setAddedTo(null);
       setActive(-1);
       setHandover({
         oracleId: card.oracleId,
@@ -306,6 +329,12 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
   const addInScope = useCollectionEditScope();
   const addCards = useAddCards();
   const addReturn = useRef(false);
+  // O6: the results are read once per query, so a sheet that saved has the standing query read again (the rows stay
+  // drawn under the bar meanwhile) and the recents' signals with it.
+  const rereadAfterSave = useCallback(() => {
+    setAttempt((n) => n + 1);
+    setSignalsAttempt((n) => n + 1);
+  }, []);
   const addSeveral = useCallback(() => {
     if (!addCards) return;
     // As a pick: under a navigation's screen the results' host is inert, and nothing in it opens.
@@ -317,13 +346,46 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
     setOpen(false);
     addCards({
       onOpened: () => setVeiled(false),
-      onClosed: () => {
+      onClosed: ({ saved }) => {
         addReturn.current = true;
+        if (saved) rereadAfterSave();
         setVeiled(false);
         setOpen(true);
       },
     });
-  }, [addCards]);
+  }, [addCards, rereadAfterSave]);
+
+  // A row's + (add a card from anywhere C3 to C6, C-D2, C-D3; READINESS O4, O6): the search closes under the shell's
+  // Add cards sheet, opened with that card on the list and its printing step open, and comes back as it was once the
+  // sheet closes: query and scroll kept, focus and the return ring (H3) on the row. A save reads the rows again, so the
+  // row says ×1 owned. ⌘↵ / Ctrl ↵ is the same add for the keyboard and assistive tech (the + is a pointer target).
+  const addCard = useCallback(
+    (from: readonly CardSearchRow[], index: number) => {
+      const card = from[index];
+      if (!card || !addCards) return;
+      if (bodyRef.current?.closest("[inert]")) return;
+      savedScroll.current = bodyRef.current?.scrollTop ?? 0;
+      setReturned(card.oracleId);
+      setAddedTo(null);
+      setActive(-1);
+      setVeiled(true);
+      setOpen(false);
+      addCards({
+        initialCard: { oracleId: card.oracleId, name: card.name, imageUri: card.imageUri },
+        onOpened: () => setVeiled(false),
+        onClosed: ({ saved }) => {
+          if (saved) {
+            setAddedTo(card.oracleId);
+            rereadAfterSave();
+          }
+          setVeiled(false);
+          setOpen(true);
+        },
+      });
+    },
+    [addCards, rereadAfterSave],
+  );
+  const canAdd = addCards !== null && addInScope;
   useLayoutEffect(() => {
     const body = bodyRef.current;
     if (!open || !addReturn.current || !body) return;
@@ -388,10 +450,11 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
         setActive(e.key === "ArrowDown" ? (active + 1) % list.length : active <= 0 ? list.length - 1 : active - 1);
       } else if (e.key === "Enter" && active >= 0) {
         e.preventDefault();
-        pick(list, active);
+        if (canAdd && isAddShortcut(e)) addCard(list, active);
+        else pick(list, active);
       }
     },
-    [list, active, pick],
+    [list, active, pick, canAdd, addCard],
   );
 
   // Escape clears a query first, then closes (README call 7).
@@ -434,6 +497,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
       active,
       busy,
       listboxId: LISTBOX_ID,
+      canAdd,
       inputRef,
       placeBody,
       onFieldKey,
@@ -442,7 +506,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
       pick,
       retry,
     }),
-    [openSearch, warmSearch, close, open, veiled, query, changeQuery, phase, searching, online, list, active, busy, placeBody, onFieldKey, escape, onClear, pick, retry],
+    [openSearch, warmSearch, close, open, veiled, query, changeQuery, phase, searching, online, list, active, busy, canAdd, placeBody, onFieldKey, escape, onClear, pick, retry],
   );
 
   const layerProps: SearchLayerProps = {
@@ -468,7 +532,9 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
     recentsFailed,
     open,
     openCardRef,
-    onAddSeveral: addCards && addInScope ? addSeveral : null,
+    onAddSeveral: canAdd ? addSeveral : null,
+    onAdd: canAdd ? addCard : null,
+    addedTo,
   };
 
   return (

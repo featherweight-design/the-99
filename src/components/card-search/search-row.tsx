@@ -1,13 +1,19 @@
 "use client";
 // One card search result (handoff R2, `R1 - Rows.dc.html`, the phone row; property table
 // `docs/superpowers/design-tables/card-search-phone.md` §Result row). The whole row is one option in the field's
-// listbox and one press; it carries no other control. Ownership is always drawn, so a row is never blank.
+// listbox and one press. Ownership is always drawn, so a row is never blank.
+//
+// Add a card from anywhere (C3, C-D1; READINESS O4) gives it a + at its end, after the bookmark: a 44px pointer target
+// (34px from md) that opens Add cards with this card and stops the press there, so the rest of the row still opens card
+// details. An option's contents are presentational, so the + stays out of the tree and out of the tab order; the row's
+// own name says the add and its keys (⌘↵ / Ctrl ↵), which the field and the row take.
 
 import type { KeyboardEvent, ReactNode } from "react";
 import type { CardSearchRow } from "../../lib/card-search/search";
 import { cardSearchCopy } from "../../lib/copy/card-search";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { FadingImg } from "../ui/hydrated-art";
+import { useAddShortcutLabel } from "./search-desktop";
 
 /**
  * Every run of `query` in `text`, in the accent (table: "every match position as drawn"). Case-insensitive and
@@ -48,7 +54,9 @@ export function SearchRow({
   first,
   active,
   returned,
+  added = false,
   onPick,
+  onAdd,
   onKey,
   rowRef,
 }: {
@@ -61,18 +69,25 @@ export function SearchRow({
   active: boolean;
   /** The row whose card was just closed: the focus ring the reader returns to (H3). */
   returned: boolean;
+  /** The ringed row's card just had copies saved from its +: its count reads in --success (C6, C-D3). */
+  added?: boolean;
   onPick: (el: HTMLElement) => void;
+  /** The + (and the keys the name says). No + where the shell has no Add cards host or off the shell's scope. */
+  onAdd?: () => void;
   onKey?: (e: KeyboardEvent<HTMLDivElement>) => void;
   rowRef?: (el: HTMLDivElement | null) => void;
 }) {
   const [deck, ...moreDecks] = row.decks;
+  const addKeys = useAddShortcutLabel();
+  const name = cardSearchCopy.row.aria(row.name, row.owned, row.decks, row.wishlist);
   return (
     <div
       ref={rowRef}
       id={id}
       role="option"
       aria-selected={active}
-      aria-label={cardSearchCopy.row.aria(row.name, row.owned, row.decks, row.wishlist)}
+      aria-label={onAdd ? `${name}, ${cardSearchCopy.row.addAria(addKeys.spoken)}` : name}
+      aria-keyshortcuts={onAdd ? addKeys.keys : undefined}
       tabIndex={-1}
       onClick={(e) => onPick(e.currentTarget)}
       onKeyDown={onKey}
@@ -97,7 +112,7 @@ export function SearchRow({
         <span className="flex min-w-0 font-mono text-[11.5px] whitespace-nowrap md:text-[11px] text-[color:var(--fg-faint)]">
           {row.owned > 0 ? (
             <span className="flex-none">
-              <b className="font-medium text-[color:var(--fg-body)]">×{row.owned}</b>
+              <b className={`font-medium ${added ? "text-[color:var(--success)]" : "text-[color:var(--fg-body)]"}`}>×{row.owned}</b>
               {addPanelCopy.quickAdd.rowOwned(row.owned).replace(`×${row.owned}`, "")}
             </span>
           ) : (
@@ -123,6 +138,32 @@ export function SearchRow({
       >
         <Bookmark />
       </span>
+      {onAdd ? (
+        <button
+          type="button"
+          aria-hidden
+          tabIndex={-1}
+          data-card-search-add=""
+          onClick={(e) => {
+            // The row's own press opens card details; this one adds.
+            e.stopPropagation();
+            onAdd();
+          }}
+          className="flex h-11 w-11 flex-none cursor-pointer items-center justify-center rounded-[10px] border border-solid border-[color:var(--border-strong)] text-[color:var(--fg)] md:h-[34px] md:w-[34px] md:rounded-[8px]"
+        >
+          <svg
+            viewBox="0 0 20 20"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-[18px] w-[18px] md:h-4 md:w-4"
+          >
+            <path d="M10 3.6v12.8M3.6 10h12.8" />
+          </svg>
+        </button>
+      ) : null}
     </div>
   );
 }
