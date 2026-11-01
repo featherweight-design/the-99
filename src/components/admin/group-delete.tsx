@@ -9,6 +9,7 @@
 // shows the toast (`DeletedGroupToast`), and the dialog holds its pending state until the redirect arrives.
 
 import Link from "next/link";
+import { PendingReporter } from "../shell/pending-reporter";
 import { unstable_rethrow, useRouter } from "next/navigation";
 import { useId, useState, useTransition } from "react";
 import { deleteGroup } from "../../app/admin/groups/actions";
@@ -109,6 +110,7 @@ export function GroupDelete({
         {line.codesLink && (
           <Link href="/admin/invites#flyer-codes" className="inline-flex min-h-[44px] items-center text-[13px] text-[color:var(--accent-text)] md:min-h-[32px]">
             {copy.codesLink}
+            <PendingReporter href="/admin/invites#flyer-codes" />
           </Link>
         )}
       </div>
