@@ -56,6 +56,7 @@ export function useReportDraft({ source, digest, eventId, page }: ReportDraftOpt
     setToast(null);
     setPhase("sending");
     let ok = false;
+    let limited = false;
     try {
       const result = await sendProblemReport({
         what,
@@ -66,6 +67,7 @@ export function useReportDraft({ source, digest, eventId, page }: ReportDraftOpt
         sentryEventId: eventId ?? null,
       });
       ok = result.ok;
+      limited = !result.ok && result.reason === "limited";
     } catch {
       ok = false;
     }
@@ -74,9 +76,9 @@ export function useReportDraft({ source, digest, eventId, page }: ReportDraftOpt
       setPhase("sent");
       return;
     }
-    // `invalid`, `limited` and a thrown send all read the same to the reader: it did not go, and the words are still here.
+    // `invalid` and a thrown send read the same to the reader: it did not go, and the words are still here. `limited` says it is the volume.
     setPhase("form");
-    setToast({ id: ++toastId.current, text: copy.failed, retry: { label: copy.retry, run: () => void send() } });
+    setToast({ id: ++toastId.current, text: limited ? copy.failedLimited : copy.failed, retry: { label: copy.retry, run: () => void send() } });
   }
 
   return {
