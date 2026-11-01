@@ -104,9 +104,23 @@ describe("QuickAddBar — the bridge to Add cards", () => {
     expect(press!.compareDocumentPosition(escape) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(press!.className).toContain("min-h-[44px]");
 
+    // With the filter off the dock lists the card the press was offered for (E15), and the press goes with the filter.
     fireEvent.click(toggle());
-    await waitFor(() => expect(screen.getByText(addPanelCopy.quickAddEmpty.bodyAllCards("ghalta", "Naya"))).toBeTruthy());
+    await waitFor(() => expect(screen.getAllByRole("row").length).toBe(1));
     expect(bridge()).toBeNull();
+    expect(screen.queryByText(addPanelCopy.quickAddEmpty.heading)).toBeNull();
+  });
+
+  it("draws no press on a miss with Owned only off (K9)", async () => {
+    searchCards.mockImplementation(async () => []);
+    mount();
+    fireEvent.click(toggle());
+    fireEvent.change(field(), { target: { value: "ghalta" } });
+    await waitFor(() => expect(screen.getByText(addPanelCopy.quickAddEmpty.bodyAllCards("ghalta", "Naya"))).toBeTruthy());
+    await act(async () => {});
+    expect(bridge()).toBeNull();
+    // No probe off the filter: the miss already is the filter-off answer.
+    expect(searchCards).toHaveBeenCalledTimes(1);
   });
 
   it("asks once, with the filter off and the dock's identity, whether the dock could list the card", async () => {
