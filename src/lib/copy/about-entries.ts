@@ -683,9 +683,9 @@ export const aboutEntries: readonly AboutEntry[] = [
       'Edit the deck and you’ll be asked if you want to “Re-analyze”.',
       'Describe the deck with the pencil beside its name. “Suggested changes” uses that description to understand what the deck is for.',
     ],
-    // The fourth key names Suggested changes, not this entry's own feature (the bracket): with
-    // Tuning off, nothing reads the description for that reason, so the line is dropped while
-    // the rest of the entry (and the entry's own switch, the tab) draws exactly as before.
+    // The fourth key names Suggested changes, not this entry's own feature (the bracket). Its
+    // switch, TUNING_ENABLED, is retired (2026-11-01) and resolves to the Analysis tab in
+    // `visible.ts`, so the line now draws exactly when the entry does; the name stays its identity.
     keySwitches: {
       'Describe the deck with the pencil beside its name. “Suggested changes” uses that description to understand what the deck is for.': 'TUNING_ENABLED',
     },
@@ -1524,8 +1524,9 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/decks',
     opens: "opens a deck’s Analysis tab",
     width: 'plate',
-    // 2026-10-08 (see the header comment above): Tuning decoupled from the Analysis tab, so this
-    // draws only while ITS OWN flag is on, never only the tab's.
+    // 2026-10-08 (see the header comment above): Tuning decoupled from the Analysis tab, and this
+    // took its own flag. That flag is retired (2026-11-01): `visible.ts` resolves TUNING_ENABLED
+    // to the Analysis tab, so this draws exactly when the tab does. The name stays its identity.
     switch: 'TUNING_ENABLED',
     caption:
       'Want a second opinion? “Suggested changes”, at the bottom of the “Analysis” tab, offers up to five cards to add and five to cut, each with its own reason. asks how many cards to change and what you’re after, then offers more of each than you asked for. You pick, and apply them as one change.\n\nTell it what the deck is for: describe your Meren deck as slow graveyard value for casual tables, cap cards at $5, ask for more removal, and the suggestions come back as cheap removal you already own.',
@@ -1630,8 +1631,8 @@ export const aboutEntries: readonly AboutEntry[] = [
     switch: 'STRATEGY_FOCUS_ENABLED',
     caption:
       'What is this deck about? On “Analysis”, “The deck’s strategy” rings up to five strategies the list leans on more than the Commander card pool does overall: a creature type, a theme like Tokens, or a card type. Pick one as the deck’s focus, and its icon takes the middle of the ring.\n\nWith a focus picked, “Suggested changes” aims at it: most of its additions count toward the focus, and each shows the count it moves. Add one and its arc grows.',
-    // The Suggested changes paragraph and its credit line need Tuning as well: the ring needs only Analysis
-    // (review round 1).
+    // The Suggested changes paragraph and its credit line name TUNING_ENABLED (review round 1). It is retired
+    // (2026-11-01) and resolves to the Analysis tab, as the ring does, so they draw wherever the entry does.
     captionLineSwitches: {
       'With a focus picked, “Suggested changes” aims at it: most of its additions count toward the focus, and each shows the count it moves. Add one and its arc grows.': 'TUNING_ENABLED',
     },
@@ -1753,9 +1754,9 @@ export const aboutEntries: readonly AboutEntry[] = [
     // The owner's monthly testing share is left out on purpose: Hugh, 2026-10-06, "friends only".
     caption:
       'Some features write something just for you, and those use credits. You get {allowance}, and each one comes back 24 hours after you use it.\n\nThe following use a credit:\n\n- Writing a deck’s Overview\n- Each “Suggested changes” run\n- Each “Suggested changes” run, or two for more than 10 changes\n- Each “Look deeper” in Proposed cuts\n- Each new “Help me choose” search where you fill in “Anything else?”\n- Each “Which deck needs it most?” read\n\nDetermining your deck’s bracket is free.\nOpening a past “Help me choose” run from History is free.',
-    // 2026-10-08: the second bullet names Suggested changes, which Tuning can now withhold while
-    // the Overview and Help me choose still spend credits — so, unlike the rest of this entry
-    // (which carries no switch), that one line does.
+    // 2026-10-08: the second bullet names Suggested changes, so, unlike the rest of this entry
+    // (which carries no switch), that one line does. Its TUNING_ENABLED is retired (2026-11-01) and
+    // resolves to the Analysis tab in `visible.ts`, as the Overview's line already follows.
     captionLineSwitches: {
       // 2026-10-17 (discovery R2·5, plan decision 3): the Overview is written only with the Analysis tab on
       // (`synopsis-actions.ts` refuses otherwise), so its line follows that switch. An ordinary edit, no bump.

@@ -20,7 +20,7 @@
  * switch, only `off` is the hard kill no override raises; `false` is a soft off an app-wide On row overrides. Only the
  * model-call kill switch: a deployment that forgets the variable must keep serving model calls.
  *
- * `needs`: the parent a compound switch's flag function also checks (`tuningEnabled` asks
+ * `needs`: the parent a compound switch's flag function also checks (`suggestedChangesV2Enabled` asks
  * `analysisTabEnabled`). The flag functions decide; this records it for the admin, and
  * `flags.test.ts` fails when the two disagree.
  *

@@ -20,7 +20,7 @@ import { ALL_FEATURES, ALL_FEATURES_RAISES, SWITCHES, switchDefaultsOn, type Ove
  * The result is env-shaped: each switch's variable is replaced by `"true"` or `"false"` where an
  * override decides it, and every other variable is passed through, so a flag function reads it
  * exactly as it reads `process.env`. Parents are checked inside the flag functions themselves
- * (`tuningEnabled` asks `analysisTabEnabled`), so an override of a child never raises its parent.
+ * (`suggestedChangesV2Enabled` asks `analysisTabEnabled`), so an override of a child never raises its parent.
  */
 export type OverrideValue = "on" | "off";
 export type OverrideRow = {

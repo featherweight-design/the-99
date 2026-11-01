@@ -675,9 +675,6 @@ export function BuilderShell({
     analyzed: deckAnalyzed({ storedPermits, hasReading: reading !== null, storedUnknown: storedPermitsUnknown }),
     peekPending: isOpening({ shown: true, kind: profile.state.kind, storedPermits, peekSettled: profile.peekSettled, storedUnknown: storedPermitsUnknown }),
     overviewSettled: !analysisEnabled || synopsis.settled,
-    hasReading: reading !== null,
-    // Suggested changes mounts only inside the hub, when opened: it has no first read for the opening to wait on.
-    suggestionsSettled: true,
     // The hub's landing read stands in for its tools'; with the tab off nothing is mounted to wait for.
     cutsSettled: !analysisEnabled || hubSettledKey === visitKey,
   });
@@ -1918,8 +1915,8 @@ export function BuilderShell({
                 ? undefined
                 : () => { setView("analysis"); setHubRequest({ tool: "mana", nonce: (hubNonce.current += 1) }); }}
               // N1 (discovery R3): a deck at its body size (98 with a partner) offers Suggested changes from a short
-              // cell. It lands on the hub's tile, or on the empty state when the hub draws nothing (no reading
-              // held, R3 gap 8); it never runs anything.
+              // cell. It lands on Suggested changes' tile in the Tuning hub, which draws wherever the tab does, with or
+              // without a reading held (R3 gap 8); it never runs anything.
               onSuggest={analysisEnabled && atSize
                 ? () => {
                     // A hub tool left open hides the tiles: back to them first, so the tile is there to land on.
@@ -2034,14 +2031,14 @@ export function BuilderShell({
                       />
                     ) : null
                   }
-                  // The hub draws for any deck (Mana Balance needs no reading), so the panel's `hubDraws` stays its default.
-                  hub={!analysisEnabled ? undefined : (permits, drawn) => (
+                  // The hub draws for any deck (Mana Balance needs no reading).
+                  hub={!analysisEnabled ? undefined : (permits) => (
                     <TuningHub
                       // Per deck: the shell survives a move between decks, and the hub's open tool,
                       // tiles and first-read latch belong to the deck they were read for.
                       key={deck.id}
                       deckId={deck.id}
-                      drawn={drawn}
+                      drawn
                       request={hubRequest}
                       onRequestAnswered={onHubRequestAnswered}
                       onSettled={onHubSettled}

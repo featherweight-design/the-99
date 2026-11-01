@@ -3,8 +3,6 @@
 import { strategyName } from "@/lib/copy/strategy-focus";
 import { parseStrategyKey } from "@/lib/strategy/focus";
 import type { StrategyKey } from "@/lib/strategy/score";
-import { useTarget } from "../discovery/targets-provider";
-import { useMergedRef } from "../ui/use-merged-ref";
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { useAiSweepRef } from "../ui/use-ai-sweep";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
@@ -197,7 +195,6 @@ function limitWire(key: LimitField, patch: { capDollars?: number | null; sets?: 
 }
 
 export function TuningPanel({
-  landingTarget = false,
   deckId,
   permits,
   facts,
@@ -210,8 +207,6 @@ export function TuningPanel({
   v2 = null,
   runFigures,
 }: {
-  /** With the Tuning hub off: this panel, once drawn, is Suggested changes' landing target. */
-  landingTarget?: boolean;
   deckId: string;
   permits: readonly Bracket[];
   facts: TuningFacts;
@@ -814,10 +809,8 @@ export function TuningPanel({
 
   // The firefly border's start point, measured off this panel's own box (`useAiSweepRef`).
   const sweepRef = useAiSweepRef();
-  // With the hub off there are no tiles: the drawn panel itself is Suggested changes' landing target (discovery R2,
-  // E11). Registered from the panel's own root, so a first read that draws nothing registers nothing.
-  const landingRef = useTarget(landingTarget ? "suggested-changes" : null);
-  const rootRef = useMergedRef(sweepRef, landingRef);
+  // Suggested changes' landing target (discovery R2, E11) is its tile in the Tuning hub, never this panel.
+  const rootRef = sweepRef;
 
   if (state === null) {
     return reviewFailed ? (

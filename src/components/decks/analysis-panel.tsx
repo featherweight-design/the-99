@@ -3,7 +3,6 @@
 import { useState, type ReactNode } from "react";
 
 import { slotDeck } from "../../lib/bracket/slot";
-import { useTarget } from "../discovery/targets-provider";
 import { bracketPhrase, deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { synopsisCopy } from "../../lib/copy/synopsis";
 import { shownReading, type ProfileState } from "./use-deck-profile";
@@ -50,7 +49,6 @@ export function AnalysisPanel({
   locked = NO_LOCKS,
   legality,
   hub,
-  hubDraws,
   strategy,
   opening = "off",
   overview,
@@ -90,12 +88,9 @@ export function AnalysisPanel({
   strategy?: ReactNode;
   /** The Tuning hub, present wherever the Analysis tab is: it mounts Suggested changes, Mana Balance and Proposed cuts
    *  inside its own tiles (none has a switch of its own). Handed the held reading's permits, or null with no reading (a
-   *  deck built long), and it decides for itself whether it draws at all. */
-  hub?: (permits: readonly Bracket[] | null, drawn: boolean) => ReactNode;
-  /** Whether `hub` draws anything for these permits (defaults true). The panel latches it for the visit and hands
-   *  the result to `hub` as `drawn`, so the hub and the landing target read one answer. Where the hub draws nothing,
-   *  Suggested changes has no tile, so the empty state is its landing target. */
-  hubDraws?: (permits: readonly Bracket[] | null) => boolean;
+   *  deck built long). It draws for any deck (Mana Balance needs no reading), so Suggested changes' landing target is
+   *  always its tile there (discovery R2, E11). */
+  hub?: (permits: readonly Bracket[] | null) => ReactNode;
   /** The deck's overview (sub-project 6), drawn beside the verdict and only over a reading. */
   overview?: ReactNode;
   /**
@@ -157,18 +152,7 @@ export function AnalysisPanel({
   // staging walk, 2026-09-25: nothing may pop in once the tab has painted). One tree in both
   // phases, so revealing it keeps every read that already landed rather than remounting.
   const gated = opening !== "off";
-  // Suggested changes' landing target (discovery R2, E11) is its hub tile. With the hub drawing nothing, the empty state
-  // stands in for the tile it would have drawn. A frame under `hidden` (the opening, the overview being written) is
-  // passed over by the registry until it shows.
-  // Latched for the visit, as the hub was before it moved here: once drawn the hub stays, so the last cut that brings a
-  // never-read deck to its size leaves the tiles (and Suggested changes' tile target) in place. The tab remounts this
-  // panel on every visit, which resets it.
   const hubPermits = held && !behind ? slotDeck(held.profile).permits : null;
-  const hubDrawsNow = hub !== undefined && (hubDraws?.(hubPermits) ?? true);
-  const [hubShown, setHubShown] = useState(hubDrawsNow);
-  if (hubDrawsNow && !hubShown) setHubShown(true);
-  const tiles = hubDrawsNow || (hub !== undefined && hubShown);
-  const emptyTarget = useTarget(!tiles && hub !== undefined ? "suggested-changes" : null);
   return (
     <>
     {gated ? (
@@ -213,7 +197,6 @@ export function AnalysisPanel({
         </div>
       ) : null}
       {!held || behind ? (hold || state.kind === "idle" || state.kind === "loading" || state.kind === "failed" || state.kind === "illegal" ? (
-        <div ref={emptyTarget}>
         <AnalysisEmpty
           phase={hold || state.kind === "loading" ? "loading" : state.kind === "failed" ? "failed" : "idle"}
           stage={hold === "writing" ? "writing" : "reading"}
@@ -225,7 +208,6 @@ export function AnalysisPanel({
           description={description}
           onSaveDescription={onSaveDescription}
         />
-        </div>
       ) : null) : null}
       {/* THE FLAG BEING OFF, OR A DECK THAT CANNOT BE READ, DRAWS NO READING: the tab is hidden by
           the same flag, and the page around it has already answered for a missing deck. */}
@@ -234,7 +216,7 @@ export function AnalysisPanel({
           but not yet shown, so the hub is handed no reading until the verdict paints: Suggested changes
           stays dimmed until then, and wakes in the same frame as the verdict. The tools below the
           reading (Proposed cuts, Mana Balance) need none, so they are never hidden either. */}
-      {hub ? hub(hubPermits, tiles) : null}
+      {hub ? hub(hubPermits) : null}
       <p role="status" className="sr-only">{announced}</p>
     </div>
     </>

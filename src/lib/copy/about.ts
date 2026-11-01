@@ -32,15 +32,17 @@
 //
 // 2026-10-08 (Tuning decoupled from the Analysis tab, `src/lib/tuning/flag.ts`): that condition
 // no longer holds — a deployment can now run the tab with Suggested changes off. The entry now
-// carries `switch: 'TUNING_ENABLED'`, its own flag, rather than ANALYSIS_TAB_ENABLED: Tuning
-// already requires the tab (`tuningEnabled(env)` reads both), so naming the narrower switch is
-// never looser than naming the tab's. No bump: this is the SAME entry catching up to a flag
-// that split under it, not a new capability.
+// carries `switch: 'TUNING_ENABLED'`, its own flag, rather than ANALYSIS_TAB_ENABLED. No bump:
+// this is the SAME entry catching up to a flag that split under it, not a new capability.
+//
+// 2026-11-01: TUNING_ENABLED is retired. `visible.ts` resolves it to the Analysis tab, so the
+// entry and every line naming it draw exactly when the tab does; the name stays as their
+// historical identity (seen state is keyed by it), until the switch is deleted.
 //
 // Two OTHER entries name Suggested changes without being its own: `credits`' bullet list and
 // `deck-analysis`'s fourth key line (the one about the description it reads). Neither carries
-// the whole-entry `switch` — the Overview and the bracket exist with Tuning off — so each
-// gates just its own line, via `captionLineSwitches`/`keySwitches`, resolved in `visible.ts`.
+// the whole-entry `switch`, so each gates just its own line, via `captionLineSwitches`/
+// `keySwitches`, resolved in `visible.ts` (to the Analysis tab, since the retirement).
 //
 // Voice: Kitchen Table. An entry explains a thing the app already does, to a
 // player who has met it and wants to know what it meant.

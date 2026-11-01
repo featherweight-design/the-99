@@ -18,7 +18,9 @@ vi.mock("../../app/decks/actions", () => ({
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 vi.mock("../../lib/notices/actions", () => ({ peekNotices: vi.fn(async () => null), openNotices: vi.fn(async () => null) }));
-vi.mock("./analysis-panel", () => ({ AnalysisPanel: () => null }));
+// The Analysis tab, standing in to hand back what the shell gave it: drawn only once a press opens the tab.
+const panel = vi.hoisted(() => ({ props: null as null | { hub?: (permits: null) => { props: { request: { tool: string | null; nonce: number } | null } } } }));
+vi.mock("./analysis-panel", () => ({ AnalysisPanel: (p: typeof panel.props) => { panel.props = p; return null; } }));
 vi.mock("./synopsis-state", () => ({
   useDeckSynopsis: () => ({ view: { kind: "ready", state: {}, busy: false, current: true }, write: vi.fn(), retry: vi.fn() }),
 }));
@@ -58,6 +60,7 @@ const deck = (built: number) =>
 
 function draw(props: { built?: number; analysis?: boolean }) {
   seen.strip = {};
+  panel.props = null;
   render(
     <BuilderShell mix={recommendedMix(null, false)} deck={deck(props.built ?? 99)} suggestions={[]} degraded={false} firstRun={false}
       commanderIdentity={["G"]} arrivedFromImport={false} newestAsOf={null} analysisEnabled={props.analysis ?? true} initialView="deck" />,
@@ -80,17 +83,27 @@ beforeEach(() => {
 
 afterEach(() => vi.restoreAllMocks());
 
+/** What the press asked the hub for: the Analysis tab is open (the panel drew) and the hub is handed the request. */
+const hubAsked = () => {
+  expect(panel.props, "the Analysis tab opened").not.toBeNull();
+  return panel.props!.hub!(null).props.request;
+};
+
 describe("BuilderShell — nudges follow the Analysis tab (discovery R3·5)", () => {
-  it("N2: draws balance mana → and keeps the hub's own request, writing no ?tool=", () => {
+  it("N2: draws balance mana →, opens the Analysis tab and asks the hub for Mana Balance, writing no ?tool=", () => {
     draw({});
     expect(seen.strip.onBalanceMana).toBeTypeOf("function");
+    expect(panel.props).toBeNull();
     act(() => seen.strip.onBalanceMana!());
+    expect(hubAsked()).toMatchObject({ tool: "mana" });
     expect(written).toEqual([]);
   });
 
-  it("N2b: draws the over row's Cuts and keeps the hub's own request, writing no ?tool=", () => {
+  it("N2b: draws the over row's Cuts, opens the Analysis tab and asks the hub for Proposed cuts, writing no ?tool=", () => {
     draw({ built: 101 });
+    expect(panel.props).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: tuningHubShortcutsCopy.proposedCutsAria }));
+    expect(hubAsked()).toMatchObject({ tool: "cuts" });
     expect(written).toEqual([]);
   });
 
@@ -108,6 +121,10 @@ describe("BuilderShell — nudges follow the Analysis tab (discovery R3·5)", ()
     draw({});
     expect(seen.strip.onSuggest).toBeTypeOf("function");
     act(() => seen.strip.onSuggest!());
+    // Back to the tiles (no tool open), so Suggested changes' tile is there to land on.
+    const asked = hubAsked();
+    expect(asked).toMatchObject({ tool: null });
+    expect(asked!.nonce).toBeGreaterThan(0);
     expect(written).toEqual(["suggested-changes"]);
   });
 

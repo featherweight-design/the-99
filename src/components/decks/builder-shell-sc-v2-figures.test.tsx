@@ -61,8 +61,8 @@ function panelProps(suggestedChangesV2: boolean): { runFigures?: RunFigures; v2:
   );
   // Suggested changes mounts inside the Tuning hub's tile (its own switch is retired): the first tool the hub is handed.
   type Panel = ReactElement<{ runFigures?: RunFigures; v2: unknown }>;
-  const hub = (seen.panel as unknown as { hub: (permits: number[], drawn: boolean) => ReactElement<{ tools: { tool: string; panel?: Panel | null }[] }> }).hub;
-  const suggested = hub([2], true).props.tools.find((t) => t.tool === "suggested")!;
+  const hub = (seen.panel as unknown as { hub: (permits: number[]) => ReactElement<{ tools: { tool: string; panel?: Panel | null }[] }> }).hub;
+  const suggested = hub([2]).props.tools.find((t) => t.tool === "suggested")!;
   return suggested.panel!.props;
 }
 

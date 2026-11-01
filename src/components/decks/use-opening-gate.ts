@@ -38,9 +38,10 @@ export function isOpening({
 
 /**
  * WHAT THE OPENING WAITS ON (Hugh's staging walk, 2026-09-25): not the stored reading alone, but
- * everything the tab paints on its first frame. The overview's first read (which also prices the
- * credit notes beside Analyze) and, over a reading, Suggested changes' first read with its credit
- * line. Before, each arrived on its own clock and the tab painted in pieces.
+ * everything the tab paints on its first frame: the overview's first read (which also prices the
+ * credit notes beside Analyze) and the Tuning hub's landing read. Before, each arrived on its own
+ * clock and the tab painted in pieces. Suggested changes mounts only inside the hub, when opened,
+ * so it has no first read of its own for the opening to wait on.
  *
  * ONLY FOR A DECK WITH A READING TO LOAD (Hugh, 2026-10-11). A deck that has never been analyzed
  * has nothing to open: its empty state, the Analyze offer, is the answer, drawn at once, and the
@@ -65,8 +66,6 @@ export function holdsOpening({
   analyzed,
   peekPending,
   overviewSettled,
-  hasReading,
-  suggestionsSettled,
   cutsSettled = true,
 }: {
   /** The deck has a reading: one stored, or one already on screen. False draws the tab at once. */
@@ -74,15 +73,13 @@ export function holdsOpening({
   /** `isOpening`'s answer: a stored reading still being fetched. */
   peekPending: boolean;
   overviewSettled: boolean;
-  hasReading: boolean;
-  suggestionsSettled: boolean;
-  /** Proposed cuts' first read, when the tool is on. It needs no reading drawn, so it is held
-   *  on its own and not behind `hasReading`, but like every hold only for an `analyzed` deck: a
-   *  deck never analyzed opens at once and the tool fills in. True when the tool is off. */
+  /** The Tuning hub's landing read, which stands in for its tools'. It needs no reading drawn, but
+   *  like every hold only for an `analyzed` deck: a deck never analyzed opens at once and the hub
+   *  fills in. True with the Analysis tab off, where nothing is mounted. */
   cutsSettled?: boolean;
 }): boolean {
   if (!analyzed) return false;
-  return peekPending || !overviewSettled || (hasReading && !suggestionsSettled) || !cutsSettled;
+  return peekPending || !overviewSettled || !cutsSettled;
 }
 
 /**

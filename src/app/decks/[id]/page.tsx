@@ -146,7 +146,7 @@ export default async function DeckBuilderPage({
   // `measure:load`'s spans (PERF_TIMING=1 only; a pass-through otherwise).
   const perf = perfRoute("/decks/[id]");
   // Read up front, beside the other switches below, because it gates a Stage A read
-  // (`printedInSetsRead`) that must not start at all when the Analysis tab, where Suggested changes mounts, is off.
+  // (`printedInSetsRead`): Suggested changes mounts on the Analysis tab, so with the tab off it is not started.
   const tuned = analysisTabEnabled(env);
   // THE PRECON CARRY-OVER, INLINE ON THE ARRIVAL VISIT (small items 5, d9's ruling): the start's own landing
   // (`?from=precon`) stores the deck's first reading and attaches the precon's Overview before anything
@@ -278,8 +278,9 @@ export default async function DeckBuilderPage({
   )));
   // "Kept for this deck"'s Set picker (H35, PR 2) — the same cached, unscoped list
   // help-me-choose's intake form reads. Degrades to an empty picker rather than failing the page.
-  // Tuning-only: the Set picker lives inside the tuning panel alone (`builder-shell.tsx`), so
-  // with the Analysis tab off this read is never started and the page pays none of its catalog queries.
+  // The Set picker lives inside Suggested changes' panel alone (`builder-shell.tsx`), which follows the Analysis tab
+  // (its own switch is retired), so this read runs on every page render with the tab on, and with it off it is never
+  // started and the page pays none of its catalog queries.
   const printedInSetsRead = tuned
     ? early(perf.timed("printedInSets", () => loadCommanderPrintings().then((x) => x.sets).catch(() => [])))
     : Promise.resolve([] as PrintedInSet[]);

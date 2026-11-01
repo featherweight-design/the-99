@@ -101,7 +101,7 @@ describe("/about/[area]", () => {
     expect(html).toContain("On this page");
   });
 
-  it("a label switched off for the reader has no line and no pin, and the numbers close up (Review Focus 2)", async () => {
+  it("a label switched off for the reader has no line and no pin (Review Focus 2)", async () => {
     // Every Analysis label hangs on the tab: Suggested changes' own switch (its label and Describe your deck's) and
     // Proposed cuts' are retired, so their names set off move nothing, and the tab off takes every one of them.
     const TOOLS = ["decks/analysis/suggested", "decks/analysis/describe", "decks/analysis/cuts"];
@@ -121,7 +121,13 @@ describe("/about/[area]", () => {
         expect(off[width].labels.map((l) => l.key)).not.toContain(key);
         expect(off[width].shots.flatMap((s) => s.pins).map((p) => p.key)).not.toContain(key);
       }
-      expect(off[width].labels.map((l) => l.n)).toEqual(off[width].labels.map((_, i) => i + 1));
+      // No live switch hides one label beside others in any area any more (every label switch but the tab's is
+      // retired), so close-up numbering has no partial case left to prove: the tab off empties the list outright, and on,
+      // every Analysis label draws, numbered from 1 with no gap.
+      expect(off[width].labels).toEqual([]);
+      const all = ABOUT_SECTIONS.find((s) => s.area === "decks" && s.id === "analysis")!.labels.length;
+      expect(on[width].labels).toHaveLength(all);
+      expect(on[width].labels.map((l) => l.n)).toEqual(Array.from({ length: all }, (_, i) => i + 1));
     }
     // Nothing of them reaches the page, at either width.
     const html = renderToStaticMarkup(await draw("decks"));

@@ -15,8 +15,6 @@ import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { deckBenchmarksCopy } from "../../lib/copy/deck-benchmarks";
 import type { ProfileState } from "./use-deck-profile";
 import { benchmarksWire } from "./__fixtures__/benchmarks";
-import { TargetsProvider, useTargets, type Targets } from "../discovery/targets-provider";
-import { useEffect } from "react";
 
 const copy = deckAnalysisCopy.panel;
 const AT = new Date().toISOString();
@@ -270,57 +268,6 @@ describe("AnalysisPanel", () => {
     expect(onRequest).toHaveBeenCalledTimes(1);
   });
 
-  // Discovery R2, E11: Suggested changes' landing target is its hub tile (tuning-hub.test.tsx); only where the hub draws
-  // no tiles does the empty state stand in for it. Its own switch is retired, so it is on wherever the hub is.
-  describe("Suggested changes' landing target", () => {
-    let targets: Targets | null = null;
-    function Grab() {
-      const t = useTargets();
-      useEffect(() => {
-        targets = t;
-      }, [t]);
-      return null;
-    }
-    const drawWith = (state: ProfileState, hub?: () => React.ReactNode, hubDraws?: () => boolean) =>
-      render(
-        <TargetsProvider>
-          <Grab />
-          <CardDetailProvider fetchCard={async () => null}>
-            <AnalysisPanel state={state} onRequest={onRequest} hub={hub} hubDraws={hubDraws}>
-            </AnalysisPanel>
-          </CardDetailProvider>
-        </TargetsProvider>,
-      );
-
-    it("is nothing here with the hub on and drawing its tiles", () => {
-      drawWith({ kind: "idle" }, () => <p>hub</p>, () => true);
-      expect(targets!.haloTarget("suggested-changes")).toBe(false);
-    });
-
-    it("stays the tile once the hub has drawn this visit, as the hub stays (the last cut to the body size)", () => {
-      const seenDrawn: boolean[] = [];
-      const hub = (_p: unknown, drawn: boolean) => { seenDrawn.push(drawn); return drawn ? <p>hub</p> : null; };
-      const { rerender } = drawWith({ kind: "idle" }, hub as () => React.ReactNode, () => true);
-      rerender(
-        <TargetsProvider>
-          <Grab />
-          <CardDetailProvider fetchCard={async () => null}>
-            <AnalysisPanel state={{ kind: "idle" }} onRequest={onRequest} hub={hub} hubDraws={() => false}>
-            </AnalysisPanel>
-          </CardDetailProvider>
-        </TargetsProvider>,
-      );
-      expect(seenDrawn.at(-1)).toBe(true);
-      expect(targets!.haloTarget("suggested-changes")).toBe(false);
-    });
-
-    it("is the empty state with the hub on but drawing nothing (discovery R3, N1)", () => {
-      drawWith({ kind: "idle" }, () => null, () => false);
-      expect(targets!.haloTarget("suggested-changes")).toBe(true);
-      expect(screen.getByTestId("analysis-empty").parentElement!.hasAttribute("data-target-halo")).toBe(true);
-    });
-  });
-
   // The Tuning hub mounts every Tuning tool inside its tiles (none has a switch of its own), and is
   // asked whether a reading is held: it draws for a deck with none when that deck is over 100.
   describe("the hub slot", () => {
@@ -342,7 +289,7 @@ describe("AnalysisPanel", () => {
 
     it("is asked with no permits before a first reading", () => {
       const hub = withHub({ kind: "idle" });
-      expect(hub).toHaveBeenCalledWith(null, true);
+      expect(hub).toHaveBeenCalledWith(null);
       expect(screen.getByText("hub without a reading")).toBeInTheDocument();
     });
 
