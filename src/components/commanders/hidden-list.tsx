@@ -19,6 +19,7 @@
 // themselves land in the order they were pressed.
 
 import Link from "next/link";
+import { PendingReporter } from "../shell/pending-reporter";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { hideCommanderAction, unhideCommanderAction } from "../../app/commanders/actions";
 import { hiddenDay, type HiddenRow } from "../../lib/commanders/hidden-row";
@@ -237,6 +238,7 @@ function Row({
               className={`${nameClass} after:absolute after:inset-0 after:content-[''] focus-visible:outline-2 focus-visible:outline-[color:var(--accent)]`}
             >
               {row.name}
+              <PendingReporter href={row.href} />
             </Link>
           ) : (
             <span className={nameClass}>{row.name}</span>
