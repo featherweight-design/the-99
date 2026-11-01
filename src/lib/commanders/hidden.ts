@@ -1,7 +1,6 @@
 import { and, desc, eq, sql, type SQL, type SQLWrapper } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, hiddenCommanders } from "../../db/schema";
-import { isCommanderCandidate } from "../recs/score";
 
 /**
  * Hiding a commander: the player's own "not this one", which takes it out of every list that answers
@@ -21,21 +20,17 @@ export async function unhideCommander(userId: string, oracleId: string): Promise
     .where(and(eq(hiddenCommanders.userId, userId), eq(hiddenCommanders.oracleId, oracleId)));
 }
 
-/** Whether a card is one the lists could ever have offered: legal in Commander and able to lead a deck. The
-    same two tests the candidate pool applies, so a hide can only name a row a player was shown. */
+/** Whether a card is one a list could have offered: a card in the catalog, legal in Commander. Every list a
+    hide reaches requires `commander_legal` (For you's scoring, Discover's `unbuiltCommanders`, Help me
+    choose's `isCandidate`); they do not all apply `isCommanderCandidate`, so asking that here would refuse
+    a row a player was shown. */
 export async function isHideable(oracleId: string): Promise<boolean> {
   const [card] = await db
-    .select({
-      commanderLegal: cards.commanderLegal,
-      typeLine: cards.typeLine,
-      oracleText: cards.oracleText,
-      manaCost: cards.manaCost,
-      layout: cards.layout,
-    })
+    .select({ commanderLegal: cards.commanderLegal })
     .from(cards)
     .where(eq(cards.oracleId, oracleId))
     .limit(1);
-  return !!card && card.commanderLegal && isCommanderCandidate(card);
+  return card?.commanderLegal === true;
 }
 
 /** The player's hidden commanders, newest first: the order the Hidden list draws. */

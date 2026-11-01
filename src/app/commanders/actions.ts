@@ -105,8 +105,8 @@ export async function refreshCommanderCounts(): Promise<{ owned: number; discove
 /**
  * Hide one commander from For you, Discover and Help me choose until the player undoes it.
  *
- * False when the id names nothing a player could have been offered: not a uuid, not a card, or a card that
- * cannot lead a deck. The row is optimistic, so false is what puts it back and raises the refusal; a
+ * False when the id names nothing a player could have been offered: not a uuid, not a card, or a card not
+ * legal in Commander. The row is optimistic, so false is what puts it back and raises the refusal; a
  * database failure throws and reaches the caller the same way.
  *
  * Only the list cache is dropped. A hide changes which rows a list draws, never a slug or a score, so the
