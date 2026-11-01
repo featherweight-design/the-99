@@ -1,5 +1,6 @@
-// The root crash screen (small items 8, board 6: C1, C2): the wordmark, the notice, a plain link to /report carrying the
-// digest and the path, and the error code line only when the server gave a digest. No shell, no router.
+// The root crash screen (small items 8, board 6: C1, C2): the wordmark, the notice, and the error code line only when the
+// server gave a digest. No shell, no router. The drawn link to /report is not here: this screen cannot read the feedback
+// switch, and a link to a page that answers 404 while it is off is worse than none.
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -13,23 +14,21 @@ import { reportCopy } from "../lib/copy/report";
 
 beforeEach(() => {
   vi.spyOn(console, "error").mockImplementation(() => {});
-  window.history.replaceState(null, "", "/decks/abc?x=1");
 });
 
 const err = (digest?: string) => Object.assign(new Error("x"), digest === undefined ? {} : { digest });
+const mount = (e: Error) => render(<GlobalError error={e} retry={() => {}} />, { container: document.body.appendChild(document.createElement("div")) });
 
 describe("GlobalError", () => {
-  it("links Report a problem to /report with the digest and the path, both encoded, and names the code", () => {
-    render(<GlobalError error={err("7f3a91c2")} retry={() => {}} />, { container: document.body.appendChild(document.createElement("div")) });
-    const link = screen.getByRole("link", { name: reportCopy.title });
-    expect(link.getAttribute("href")).toBe("/report?ref=7f3a91c2&from=%2Fdecks%2Fabc");
+  it("names the code and draws no link to /report", () => {
+    mount(err("7f3a91c2"));
     expect(screen.getByTestId("wordmark")).toBeTruthy();
     expect(screen.getByTestId("crash-code").textContent).toBe(reportCopy.codeLine("7f3a91c2"));
+    expect(screen.queryByRole("link", { name: reportCopy.title })).toBeNull();
   });
 
-  it("links without a ref and draws no code line when the error carried no digest", () => {
-    render(<GlobalError error={err()} retry={() => {}} />, { container: document.body.appendChild(document.createElement("div")) });
-    expect(screen.getByRole("link", { name: reportCopy.title }).getAttribute("href")).toBe("/report?from=%2Fdecks%2Fabc");
+  it("draws no code line when the error carried no digest", () => {
+    mount(err());
     expect(screen.queryByTestId("crash-code")).toBeNull();
   });
 });

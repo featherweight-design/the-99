@@ -29,16 +29,10 @@ export function ErrorNotice({
   boundary,
   error,
   retry,
-  reportHref,
 }: {
   boundary: "page" | "root";
   error: Error & { digest?: string };
   retry: () => void;
-  /**
-   * Where "Report a problem" goes when the screen has no shell and no router to open the form with (`global-error.tsx`):
-   * a plain link to `/report`, which carries the error's digest. Unset, the shell's own link opens the sheet.
-   */
-  reportHref?: string;
 }) {
   // The event id of a browser-side throw, kept for "Tell us what happened" (a server error carries a digest instead).
   const eventId = useRef<string | null>(null);
@@ -72,14 +66,7 @@ export function ErrorNotice({
         </GhostButton>
       </div>
       {/* Flyer trial PR 5: a third, quiet line for a signed-in reader with Report a problem on (the shell's provider). */}
-      {reportHref ? (
-        <a
-          href={reportHref}
-          className="mt-[18px] flex min-h-[44px] items-center text-[13.5px] font-medium text-[color:var(--accent-text)] no-underline hover:underline"
-        >
-          {reportCopy.title}
-        </a>
-      ) : reportable && (
+      {reportable && (
         <>
           <button
             type="button"
