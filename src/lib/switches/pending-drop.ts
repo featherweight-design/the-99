@@ -1,24 +1,19 @@
 /**
  * Switches deleted from the registry whose names `flag_overrides_switch_check` still accepts, until a
- * follow-up migration drops their rows and narrows the CHECK (group 3, P13).
+ * follow-up migration drops their rows and narrows the CHECK. Empty between retirements.
  *
- * Two steps because migrations apply during the production build, before the new code serves: a
- * migration that deleted these rows in the same deploy would turn them off under the old code for the
- * whole build window (production's env has them at `false`, on only through app-wide rows), and an old
- * admin page could write a name the narrowed CHECK refuses. So this deploy only stops reading them, and
- * the next one deletes the rows and drops the names here.
+ * Retiring a switch whose override rows a reader depends on takes two deploys, because migrations
+ * apply during the production build, while the previous deployment still serves. Deleting the rows in
+ * the same deploy as the code would turn the switch off under the old code for the whole build window,
+ * and an old admin page could write a name the narrowed CHECK refuses. So:
+ * 1. The code PR removes the switch from the registry and lists its name here. The resolver ignores
+ *    rows for names outside the registry, and the admin write path refuses them.
+ * 2. Once that deploy is live, a migration deletes the rows, narrows the CHECK and empties this list.
+ * Group 3's six switches went this way: #2567, then migration 0219.
  *
- * Nothing reads or writes these names: the admin write path validates against the registry
- * (`isOverrideName`), which no longer has them. Client-safe: no imports.
+ * Client-safe: no imports.
  */
-export const PENDING_DROP_SWITCHES = [
-  "ALL_DECKS_CART_ENABLED",
-  "FIND_A_DECK_READ_ENABLED",
-  "HOW_IT_WORKS_ENABLED",
-  "LABEL_ROLE_COUNTS_ENABLED",
-  "MANA_BALANCE_ENABLED",
-  "SOCIAL_FRIENDS_ENABLED",
-] as const;
+export const PENDING_DROP_SWITCHES: readonly string[] = [];
 
 /**
  * The names the CHECK accepts: `names` with each pending name placed before the first name that sorts
@@ -28,7 +23,7 @@ export const PENDING_DROP_SWITCHES = [
 export function withPendingDrops(names: readonly string[]): string[] {
   const out = [...names];
   for (const p of PENDING_DROP_SWITCHES) {
-    const at = out.findIndex((n) => n > p && !(PENDING_DROP_SWITCHES as readonly string[]).includes(n));
+    const at = out.findIndex((n) => n > p && !PENDING_DROP_SWITCHES.includes(n));
     out.splice(at === -1 ? out.length : at, 0, p);
   }
   return out;

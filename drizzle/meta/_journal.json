@@ -1534,6 +1534,13 @@
       "when": 1793511281574,
       "tag": "0218_rule_zero_close",
       "breakpoints": true
+    },
+    {
+      "idx": 219,
+      "version": "7",
+      "when": 1793517371542,
+      "tag": "0219_retire_group3_six_switches",
+      "breakpoints": true
     }
   ]
 }
