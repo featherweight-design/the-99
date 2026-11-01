@@ -15,6 +15,13 @@ export const DELETED_PARAM = "deleted";
 
 export function DeletedGroupToast({ name }: { name: string | null }) {
   const [shown, setShown] = useState(name);
+  // A later delete on a Groups page that stayed mounted brings a new name: show that one (React's
+  // adjust-state-while-rendering pattern, no effect round trip).
+  const [prev, setPrev] = useState(name);
+  if (name !== prev) {
+    setPrev(name);
+    if (name !== null) setShown(name);
+  }
   useEffect(() => {
     if (name === null) return;
     const url = new URL(window.location.href);

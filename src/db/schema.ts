@@ -2795,6 +2795,8 @@ export const adminEvents = pgTable("admin_events", {
     or (${t.scope} = 'group' and ${t.groupId} is not null and ${t.userId} is null)
     or (${t.scope} = 'user' and ${t.userId} is not null and ${t.groupId} is null)`),
   index("admin_events_at_idx").on(t.at),
+  // The switch page names a deleted group from its delete event: a small partial index, so that lookup never scans the log.
+  index("admin_events_group_deleted_idx").on(t.groupId).where(sql`${t.kind} = 'group_deleted'`),
 ]);
 
 /**

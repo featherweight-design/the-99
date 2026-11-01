@@ -1,5 +1,6 @@
 ALTER TABLE "admin_events" DROP CONSTRAINT "admin_events_kind_check";--> statement-breakpoint
 ALTER TABLE "admin_events" DROP CONSTRAINT "admin_events_fields_check";--> statement-breakpoint
+CREATE INDEX "admin_events_group_deleted_idx" ON "admin_events" USING btree ("group_id") WHERE "admin_events"."kind" = 'group_deleted';--> statement-breakpoint
 ALTER TABLE "admin_events" ADD CONSTRAINT "admin_events_kind_check" CHECK ("admin_events"."kind" in ('override_set', 'override_cleared', 'group_created', 'group_renamed', 'group_described', 'member_added', 'member_removed', 'setting_set', 'group_allowance_set', 'invites_set', 'invites_topped_up', 'invite_revoked', 'account_revealed', 'group_paid_limit_set', 'credits_granted', 'purchase_block_cleared', 'flyer_code_made', 'flyer_code_revoked', 'launch_date_set', 'launch_list_exported', 'group_deleted'));--> statement-breakpoint
 ALTER TABLE "admin_events" ADD CONSTRAINT "admin_events_fields_check" CHECK (case "admin_events"."kind"
     when 'override_set' then "admin_events"."switch" is not null and "admin_events"."scope" is not null and "admin_events"."new_value" is not null

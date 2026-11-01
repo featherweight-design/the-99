@@ -1,5 +1,5 @@
 {
-  "id": "5207c7df-7789-4874-b2bf-60c53b4b652b",
+  "id": "b9218e3b-934c-40ed-98c2-7520cd72aa9b",
   "prevId": "9f97b425-d4e3-49ad-93f5-588415bb1dd9",
   "version": "7",
   "dialect": "postgresql",
@@ -149,6 +149,22 @@
             }
           ],
           "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "admin_events_group_deleted_idx": {
+          "name": "admin_events_group_deleted_idx",
+          "columns": [
+            {
+              "expression": "group_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "\"admin_events\".\"kind\" = 'group_deleted'",
           "concurrently": false,
           "method": "btree",
           "with": {}

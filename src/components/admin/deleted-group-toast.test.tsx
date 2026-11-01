@@ -28,4 +28,12 @@ describe("DeletedGroupToast", () => {
     expect(screen.queryByRole("status")).toBeNull();
     expect(mirror).not.toHaveBeenCalled();
   });
+
+  it("shows a later delete's name when the Groups page stayed mounted, even after the first was dismissed", () => {
+    const { rerender } = render(<DeletedGroupToast name="testers" />);
+    fireEvent.click(screen.getByRole("button"));
+    expect(screen.queryByText("Deleted testers.")).toBeNull();
+    rerender(<DeletedGroupToast name="founders" />);
+    expect(screen.getByText("Deleted founders.")).toBeTruthy();
+  });
 });
