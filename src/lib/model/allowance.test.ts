@@ -1,11 +1,17 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // The database is never reached: the limit's group read is handed a fake query.
 vi.mock("../../db", () => ({ db: {} }));
 // The model-call switch, resolved app-wide (no account): unset, so on, unless a test sets it.
-const switches = vi.hoisted(() => ({ env: {} as Record<string, string>, asked: [] as unknown[] }));
+// A reservation reads it strictly (a failed read refuses, `strictThrows`); a panel reads it through the memo.
+const switches = vi.hoisted(() => ({ env: {} as Record<string, string>, asked: [] as unknown[], strictThrows: false }));
 vi.mock("../switches/snapshot", () => ({
   resolveSwitchEnv: async (userId: unknown) => { switches.asked.push(userId); return switches.env; },
+  resolveSwitchEnvStrict: async (userId: unknown) => {
+    switches.asked.push(userId);
+    if (switches.strictThrows) throw new Error("switch overrides could not be read");
+    return switches.env;
+  },
 }));
 
 import { PgDialect } from "drizzle-orm/pg-core";
@@ -494,9 +500,14 @@ describe("settleModelCall: what the row ends on, and why", () => {
 });
 
 describe("the model-call switch (MODEL_CALLS_ENABLED)", () => {
+  // Every reservation in the file asks; each test here counts its own.
+  beforeEach(() => {
+    switches.asked = [];
+  });
   afterEach(() => {
     switches.env = {};
     switches.asked = [];
+    switches.strictThrows = false;
   });
   // A tx that fails the test on any read or write: a paused reservation must touch nothing.
   const untouched = () => {
@@ -519,6 +530,18 @@ describe("the model-call switch (MODEL_CALLS_ENABLED)", () => {
     switches.env = { MODEL_CALLS_ENABLED: "off" };
     const tx = untouched();
     expect(await reserveModelCall(tx as never, "user_a", "synopsis", "claude-sonnet-5", new Date(), "system")).toEqual({ refused: "paused" });
+    expect(tx.insert).not.toHaveBeenCalled();
+  });
+
+  it("fails closed: an override read that fails refuses as paused, with no lock, read or row", async () => {
+    switches.strictThrows = true;
+    const tx = untouched();
+    const quiet = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(await reserveModelCall(tx as never, "user_a", "tuning", "claude-sonnet-5")).toEqual({ refused: "paused" });
+    expect(await reserveModelCall(tx as never, "user_a", "synopsis", "claude-sonnet-5", new Date(), "system")).toEqual({ refused: "paused" });
+    quiet.mockRestore();
+    expect(tx.execute).not.toHaveBeenCalled();
+    expect(tx.select).not.toHaveBeenCalled();
     expect(tx.insert).not.toHaveBeenCalled();
   });
 

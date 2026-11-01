@@ -12,7 +12,10 @@
  * so the proxy's switch bits read it the same way.
  *
  * Off, `reserveModelCall` refuses every new run as `paused` before it writes a row or charges a credit,
- * and `readAllowance` reports `paused` so a panel shows the stop before a press. A run already in
+ * and it FAILS CLOSED: it reads the overrides fresh (`resolveSwitchEnvStrict`), and a read that fails
+ * refuses as `paused` too, so a database failure never lets calls through under an app-wide Off row.
+ * `readAllowance` reports `paused` so a panel shows the stop before a press; display only, it reads through
+ * the 30-second memo and lets the environment decide when that read fails. A run already in
  * flight settles or refunds as it would have.
  */
 export function modelCallsEnabled(env: NodeJS.ProcessEnv): boolean {

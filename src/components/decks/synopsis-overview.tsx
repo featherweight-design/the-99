@@ -216,7 +216,8 @@ export function SynopsisOverview({
   const notice = showNotice && mn ? (
     <MethodNotice
       line={none ? (lastRejected ? synopsisCopy.rejected : lastFailed ? synopsisCopy.failed : spent ? method.triesUsedNoCredit : method.triesUsed) : oneLeft ? method.failed : method.line}
-      note={noticeLeads ? method.withStale : none || paused ? retryNote : oneLeft ? method.oneLeft : method.note}
+      // Paused first: the free rewrite is refused too, so `withStale`'s "writes it the new way, free" would be untrue.
+      note={paused ? retryNote : noticeLeads ? method.withStale : none ? retryNote : oneLeft ? method.oneLeft : method.note}
       alert={oneLeft || none}
       // The paid press's own failure (the free tries are spent, so the slot's failure row is not
       // drawn over a held same-list overview): a rejection offers no retry, as everywhere else.

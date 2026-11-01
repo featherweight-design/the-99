@@ -16,7 +16,6 @@ import { PRIMARY } from "../ui/button";
 import { ColourControl } from "../commanders/rack/colour-control";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { colorNames } from "../../lib/copy/color-labels";
-import { creditsCopy } from "../../lib/copy/credits";
 import { helpMeChooseCopy as copy } from "../../lib/copy/help-me-choose";
 import { MAX_BUDGET_DOLLARS } from "../../lib/intake/answers";
 import { READ_TAGS_MAX, wordsLength } from "../../lib/intake/limits";
@@ -249,9 +248,10 @@ export function IntakeForm({
   const line = written && standing && hydrated ? formLine(standing) : null;
   // On the phone `Get more credits` sits under the box, where the credit is missing, not in the dock (R3 item 10).
   const phoneLine = line === null ? null : splitGetMore(line);
-  // Paused (the model-call switch is off) is no credit gone: its caption says the pause, never `captionSpent`.
+  // Paused (the model-call switch is off) is no credit gone, so never `captionSpent`; and the press's line already
+  // says the pause (`formLine`), so the box draws no caption at all rather than the same sentence twice.
   const caption = !written ? copy.intake.extra.caption
-    : standing && closed === "paused" ? creditsCopy.paused
+    : standing && closed === "paused" ? null
     : standing && closed !== null ? copy.intake.extra.captionSpent
     : copy.intake.extra.captionFilled;
 
@@ -463,7 +463,8 @@ function Field({
   after?: ReactNode;
   htmlFor?: string;
   labelId?: string;
-  caption: string;
+  /** Null draws none. */
+  caption: string | null;
   children: ReactNode;
 }) {
   const labelClass = "font-mono text-[10px] tracking-[.14em] uppercase text-[color:var(--fg-faint)]";
@@ -482,9 +483,11 @@ function Field({
         {aside}
       </div>
       {children}
-      <p className={`m-0 text-[12px] leading-[1.5] ${captionTone === "muted" ? "text-[color:var(--fg-muted)]" : "text-[color:var(--fg-faint)]"}`}>
-        {caption}
-      </p>
+      {caption !== null && (
+        <p className={`m-0 text-[12px] leading-[1.5] ${captionTone === "muted" ? "text-[color:var(--fg-muted)]" : "text-[color:var(--fg-faint)]"}`}>
+          {caption}
+        </p>
+      )}
       {after}
     </div>
   );

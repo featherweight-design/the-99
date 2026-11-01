@@ -15,8 +15,11 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   set the variable to `off`, or use the app-wide Off row without a deploy. It gates only runs reserved through
   `reserveModelCall` (player runs and the Overview rewrite); background jobs are not gated yet. The registry marks it `defaultOn`
   so `switchBits` encodes it the way its flag function reads it. Off, `reserveModelCall` refuses every new run, system
-  origin included, as `paused` (no row, no charge), and `readAllowance` reports `paused`, which every panel draws as it
-  draws the owner's share, with `creditsCopy.paused`. A compound switch names its parent as `needs`
+  origin included, as `paused` (no row, no charge). It FAILS CLOSED, unlike every other switch read: the reservation
+  reads the overrides fresh (`resolveSwitchEnvStrict`), and a read that fails refuses as `paused`, so a database failure
+  never lets calls through under an app-wide Off row. `readAllowance` reports `paused` for display only (through the
+  memo, the environment deciding on a failed read), which every panel draws as it draws the owner's share, with
+  `creditsCopy.paused`. A compound switch names its parent as `needs`
   in the registry, and a switch is tagged `model` exactly when turning it on can let a reader spend (the Analysis
   tab and Swap tools are parents of spending switches); `src/lib/switches/flags.test.ts` holds both to the flag
   functions. An app-wide override still flips one without a deploy, so its readers

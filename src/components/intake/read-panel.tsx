@@ -221,16 +221,20 @@ export function ReadPanel({
     // A standing line can name a time in the reader's own zone, which the server cannot know: it
     // is drawn after hydration, as the form's is, so the server's HTML and the first render agree.
     : !standing || !hydrated ? null
+    // Paused (the model-call switch is off): every phase says the pause, through `standingLine`, never a bare count.
+    : closed === "paused" ? standingLine(standing)
     : phase === "done" ? copy.read.doneLine(bareStanding(standing))
     : phase === "nothing" ? copy.read.emptyLine(bareStanding(standing))
     // Unread: the lead says why, so the bare count; the owner's share and a pause say their own (7n).
-    : phase === "unread" ? (closed === "ownerShare" || closed === "paused" ? standingLine(standing) : bareStanding(standing))
+    : phase === "unread" ? (closed === "ownerShare" ? standingLine(standing) : bareStanding(standing))
     // Stopped, failed: what *Try again* would do with a credit.
     : standingLine(standing);
   const retried = phase === "stopped" || phase === "failed";
   // The pill names what the press costs, only when a credit is known to be free: with nothing left,
   // or a standing that could not be read, the press is drawn plain, as the form's is.
   const pill = standing !== null && closed === null;
+  // A pause refuses the read before it reserves, so Try again is held: the line under it says why.
+  const paused = closed === "paused";
 
   const buttonBase =
     "inline-flex items-center justify-center md:justify-start gap-[9px] h-[44px] md:h-[38px] pl-[6px] pr-[14px] rounded-full text-[13.5px] font-semibold whitespace-nowrap";
@@ -294,7 +298,7 @@ export function ReadPanel({
           <button
             type="button"
             onClick={retry}
-            disabled={retrying}
+            disabled={retrying || paused}
             aria-busy={retrying || undefined}
             aria-label={pill ? `${copy.read.cost}. ${copy.read.retry}.` : undefined}
             className={`${buttonBase} ${pill ? "" : "px-[14px]"} border-0 bg-[color:var(--accent)] text-[color:var(--bg)] cursor-pointer disabled:cursor-default`}

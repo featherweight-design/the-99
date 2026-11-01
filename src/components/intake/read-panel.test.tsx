@@ -220,6 +220,24 @@ describe("7e, 7f: stopped and failed", () => {
   });
 });
 
+describe("paused: the model-call switch is off", () => {
+  const PAUSED = "Anything that uses credits is paused right now. Try again later.";
+  it("holds Try again and says the pause under it", () => {
+    draw({ kind: "failed" }, { over: { paused: true } });
+    const retry = screen.getByRole("button", { name: "Try again" }) as HTMLButtonElement;
+    expect(retry.disabled).toBe(true);
+    expect(screen.getByTestId("read-line").textContent).toBe(PAUSED);
+  });
+
+  it("says the pause, not a bare count, under a done or a nothing-fits read", () => {
+    draw(done(), { over: { paused: true } });
+    expect(screen.getByTestId("read-line").textContent).toBe(PAUSED);
+    cleanup();
+    draw({ kind: "nothing", result: { picks: [], pool: 3445, weighed: 0 } }, { over: { paused: true } });
+    expect(screen.getByTestId("read-line").textContent).toBe(PAUSED);
+  });
+});
+
 describe("7g to 7k, 7m: done", () => {
   it("tags it done, says what it read and weighed, and the credit it used, with no press", () => {
     draw(done());

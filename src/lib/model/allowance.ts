@@ -18,7 +18,7 @@ import type { RefundReason } from "./allowance-rule";
 import { creditTotals, earliestPlanExpiry, pickGrant, welcomeLotExpiry, planCreditsByExpiry, planCreditsExpiringAt, remaining, type CreditGrant, type CreditSource, type GrantBalance } from "./credit-rule";
 import type { ModelUsage } from "./client";
 import { modelCallsEnabled } from "./calls-flag";
-import { resolveSwitchEnv } from "../switches/snapshot";
+import { resolveSwitchEnv, resolveSwitchEnvStrict } from "../switches/snapshot";
 import { costMicroUsd, featureWorstCaseMicroUsd, FEATURE_CALLS } from "./prices";
 import {
   monthStartUtc,
@@ -247,15 +247,28 @@ async function grantBalances(q: Tx | typeof db, userId: string, now: Date): Prom
 }
 
 /**
- * Whether the app-wide model-call switch is off (`MODEL_CALLS_ENABLED`, `calls-flag.ts`). A plumbing
- * switch takes the app-wide override alone, so it is resolved with no account: every reader and every
- * system-origin call gets the same answer. Through the switches' 30-second memo, so a press costs no
- * query in steady state.
- * If the overrides read fails, the environment decides (fail-open to env, as every switch): the hard stop
- * that survives a database failure is the variable set to `off`.
+ * Whether the app-wide model-call switch is off (`MODEL_CALLS_ENABLED`, `calls-flag.ts`), for a PANEL: display
+ * only. A plumbing switch takes the app-wide override alone, so it is resolved with no account: every reader and
+ * every system-origin call gets the same answer. Through the switches' 30-second memo; if that read fails, the
+ * environment decides, which is harmless here because the reservation decides again, failing closed.
  */
-async function modelCallsPaused(): Promise<boolean> {
+async function modelCallsPausedForDisplay(): Promise<boolean> {
   return !modelCallsEnabled(await resolveSwitchEnv(null));
+}
+
+/**
+ * The same, for a RESERVATION, and FAIL CLOSED: a fresh read of the overrides (`resolveSwitchEnvStrict`),
+ * and a read that fails counts as paused. Read leniently, a database blip would serve the environment alone
+ * and let calls through under an app-wide Off row. A reservation needs the database anyway, so a failed
+ * read refuses nothing that could have run.
+ */
+async function modelCallsPausedForReservation(): Promise<boolean> {
+  try {
+    return !modelCallsEnabled(await resolveSwitchEnvStrict(null));
+  } catch (error) {
+    console.error("model-call switch could not be read; refusing the reservation as paused", error);
+    return true;
+  }
 }
 
 /**
@@ -266,7 +279,7 @@ async function modelCallsPaused(): Promise<boolean> {
  */
 export async function readAllowance(userId: string, now: Date = new Date(), feature?: ModelFeature): Promise<Allowance> {
   const [rows, spend, balances, limit, paused] = await Promise.all([
-    ledgerRows(db, userId, now), ownerMonthMicro(db, userId, now), grantBalances(db, userId, now), dailyLimitFor(db, userId), modelCallsPaused(),
+    ledgerRows(db, userId, now), ownerMonthMicro(db, userId, now), grantBalances(db, userId, now), dailyLimitFor(db, userId), modelCallsPausedForDisplay(),
   ]);
   // The paid counter and limit are read only for a player who holds a lot, so everyone else costs no extra query.
   const paid = balances.length > 0
@@ -289,8 +302,8 @@ export async function readAllowance(userId: string, now: Date = new Date(), feat
 /**
  * Inside the CALLER's transaction: lock, check, insert. Refused as `paused`, for EVERY origin and before
  * anything is written or read, while the app-wide model-call switch is off (`MODEL_CALLS_ENABLED`): no
- * row, no charge. A run already reserved is untouched, and settles or refunds as it would have.
- * Otherwise refused, with the reason, when the owner's
+ * row, no charge, and also when the switch cannot be read (fail closed). A run already reserved is
+ * untouched, and settles or refunds as it would have. Otherwise refused, with the reason, when the owner's
  * testing share would be passed (`ownerShare`), or when the player's own allowance is spent
  * (`allowance`) — in that order, the order a panel names them in. There is no app-wide limit
  * (2026-10-17): the Anthropic workspace limits bound the whole app's spend.
@@ -327,7 +340,7 @@ export async function reserveModelCall(
    */
   units = 1,
 ): Promise<{ id: string } | ReserveRefused> {
-  if (await modelCallsPaused()) return { refused: "paused" };
+  if (await modelCallsPausedForReservation()) return { refused: "paused" };
   if (origin === "system") {
     const [row] = await tx
       .insert(modelCalls)
