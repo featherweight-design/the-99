@@ -39,6 +39,8 @@ vi.mock("../../lib/feed/read", () => ({ unseenFriendsCount: feed.unseenFriendsCo
 vi.mock("../../lib/social/trade-match", () => ({ noticeTradeMatches: feed.noticeTradeMatches }));
 // The waiting-asks half of the Friends badge: none here.
 vi.mock("../../lib/social/spare-requests", () => ({ waitingAsksCount: async () => 0 }));
+// The seat toast reads the reader's notices through a server action; this suite draws the shell only, and a marker stands for the host.
+vi.mock("../rule-zero/seat-notice-host", () => ({ SeatNoticeHost: () => <div data-testid="seat-notice-host" /> }));
 vi.mock("next/server", async (importOriginal) => ({ ...(await importOriginal<typeof import("next/server")>()), after: feed.after }));
 
 const Shell = (await import("./shell")).default;
@@ -66,6 +68,19 @@ beforeEach(() => {
 afterEach(() => {
   uniqueCards = 5;
   signedInUser = "user_1";
+});
+
+describe("Shell and the seat notice host (Rule 0 revisions, item 6)", () => {
+  it("mounts the host for a signed-in reader", async () => {
+    await renderShell();
+    expect(screen.getByTestId("seat-notice-host")).toBeTruthy();
+  });
+
+  it("mounts no host for a signed-out reader", async () => {
+    signedInUser = null;
+    await renderShell();
+    expect(screen.queryByTestId("seat-notice-host")).toBeNull();
+  });
 });
 
 describe("Shell and the retired About sheet (About visual PR 6b)", () => {

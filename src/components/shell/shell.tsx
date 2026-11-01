@@ -30,6 +30,7 @@ import { unseenCount } from "../../lib/feed/read";
 import { pushEnabled } from "../../lib/push/flag";
 import { AppBadge } from "../push/app-badge";
 import { PushHeartbeat } from "../push/push-heartbeat";
+import { SeatNoticeHost } from "../rule-zero/seat-notice-host";
 
 /**
  * Server component. Signed-out users get the bare page (Task 8 renders the
@@ -174,6 +175,8 @@ export default async function Shell({
         <DeckToastStackHost />
         {/* The all-decks cart's phone stack (small items 7, item 3): empty until a cart toast portals in. */}
         <CartToastStackHost />
+        {/* Rule 0's "seated you" toast (revisions item 6): reads the reader's unseen seat notices; none on Home or on its own table. */}
+        <SeatNoticeHost />
       </div>
       </HelpRoot>
       </CardSearchRoot>

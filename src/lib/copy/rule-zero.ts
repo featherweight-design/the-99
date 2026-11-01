@@ -247,6 +247,14 @@ export const ruleZeroCopy = {
     retry: "Try again", // the shipped word the toast's action carries
     dismiss: "Close", // the ✕'s name, as Change deck's
   },
+  // The in-app seat notice (Rule 0 revisions board "Notice", item 6): the shared toast, no clock. The ✕ is named `close.dismiss`.
+  notice: {
+    // Copy-reviewed (seat notice).
+    // The sentence is "<host> seated you at <pod>’s table.": the board draws the two names semibold, so they are drawn between these runs.
+    toast: { between: " seated you at ", end: "’s table." },
+    // Copy-reviewed (seat notice).
+    open: "Open",
+  },
 } as const;
 
 /**
