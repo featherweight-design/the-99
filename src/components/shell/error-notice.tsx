@@ -65,6 +65,16 @@ export function ErrorNotice({
           {copy.home}
         </GhostButton>
       </div>
+      {/* The root crash screen has no shell, no provider and no router, so its link is a plain anchor to /report (the page
+          decides the switch). The code rides as `ref`; the form sends it with the report (small items 8, board 6: C1). */}
+      {boundary === "root" && !reportable && (
+        <a
+          href={error.digest ? `/report?ref=${encodeURIComponent(error.digest)}` : "/report"}
+          className="mt-[18px] flex min-h-[44px] items-center text-[13.5px] font-medium text-[color:var(--accent-text)] hover:underline"
+        >
+          {reportCopy.aboutPress}
+        </a>
+      )}
       {/* Flyer trial PR 5: a third, quiet line for a signed-in reader with Report a problem on (the shell's provider). */}
       {reportable && (
         <>

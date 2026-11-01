@@ -1,6 +1,6 @@
 // The root crash screen (small items 8, board 6: C1, C2): the wordmark, the notice, and the error code line only when the
-// server gave a digest. No shell, no router. The drawn link to /report is not here: this screen cannot read the feedback
-// switch, and a link to a page that answers 404 while it is off is worse than none.
+// server gave a digest. No shell, no router. Its Report a problem link is a plain anchor to /report, which decides the
+// feedback switch itself (FEEDBACK_ENABLED is on app-wide); this screen cannot read the switch.
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -20,11 +20,17 @@ const err = (digest?: string) => Object.assign(new Error("x"), digest === undefi
 const mount = (e: Error) => render(<GlobalError error={e} retry={() => {}} />, { container: document.body.appendChild(document.createElement("div")) });
 
 describe("GlobalError", () => {
-  it("names the code and draws no link to /report", () => {
+  it("names the code and links to /report with it", () => {
     mount(err("7f3a91c2"));
     expect(screen.getByTestId("wordmark")).toBeTruthy();
     expect(screen.getByTestId("crash-code").textContent).toBe(reportCopy.codeLine("7f3a91c2"));
-    expect(document.body.querySelector('a[href^="/report"]')).toBeNull();
+    const link = screen.getByRole("link", { name: reportCopy.aboutPress });
+    expect(link.getAttribute("href")).toBe("/report?ref=7f3a91c2");
+  });
+
+  it("links to /report with no code when the error carried no digest", () => {
+    mount(err());
+    expect(screen.getByRole("link", { name: reportCopy.aboutPress }).getAttribute("href")).toBe("/report");
   });
 
   it("draws no code line when the error carried no digest", () => {
