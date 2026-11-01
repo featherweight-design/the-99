@@ -50,7 +50,7 @@ describe("switchReadsIn", () => {
   });
 
   it("reports a call made INSIDE a default, which is a call like any other", () => {
-    expect(lines("export function f(basis = roleBasisFromEnv(process.env)) {}")).toEqual([1]);
+    expect(lines("export function f(on = tuningEnabled(process.env)) {}")).toEqual([1]);
   });
 });
 

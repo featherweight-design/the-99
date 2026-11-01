@@ -25,7 +25,7 @@
 // FAILS CLOSED on its target: `PRECON_OVERVIEW_TARGET_BRANCH` is never defaulted and must equal
 // the database's `neon.branch_id`, or it exits 2 having written nothing.
 //
-//   [PRECON_OVERVIEW_FORCE=File_A,File_B] PRECON_OVERVIEW_TARGET_BRANCH=br-… PRECON_OVERVIEW_ROLE_BASIS=labels|classifier pnpm db:build:precon-overviews [--dry-run] [--stub] [--readings-only] [--max-usd N] [--limit N]
+//   [PRECON_OVERVIEW_FORCE=File_A,File_B] PRECON_OVERVIEW_TARGET_BRANCH=br-… pnpm db:build:precon-overviews [--dry-run] [--stub] [--readings-only] [--max-usd N] [--limit N]
 //   (locally, name the database with PRECON_OVERVIEW_DB_URL)
 //
 // THE READING TOO (small items 5, PR 6a). Every request is built from the precon's reading
@@ -42,7 +42,7 @@
 import { requireEnv } from "./lib/env.mjs";
 import { and, eq, isNull, sql } from "drizzle-orm";
 
-requireEnv(["DATABASE_URL", "PRECON_OVERVIEW_TARGET_BRANCH", "PRECON_OVERVIEW_ROLE_BASIS"]);
+requireEnv(["DATABASE_URL", "PRECON_OVERVIEW_TARGET_BRANCH"]);
 // `PRECON_OVERVIEW_DB_URL`, when set, names the database instead: the env import above overrides
 // DATABASE_URL from a local `.env`, so a developer's run (a probe on a scratch branch) names its
 // target here. The workflow sets DATABASE_URL itself. The client is loaded dynamically below, so it
@@ -74,7 +74,7 @@ async function main(): Promise<number> {
   const { checkReply, repairPrompt, applyRepair } = await import("../src/lib/synopsis/generate");
   const { stagesSchemaFor } = await import("../src/lib/synopsis/stages");
   const { settleStages, stagesRepairTargets } = await import("../src/lib/synopsis/stages-run");
-  const { PRECON_OVERVIEW_CONTRACT, buildPreconRequest, preconOverviewCall, preconRequestParams, preconRoleBasis } = await import("./lib/precon-overview-request");
+  const { PRECON_OVERVIEW_CONTRACT, buildPreconRequest, preconOverviewCall, preconRequestParams, PRECON_ROLE_BASIS } = await import("./lib/precon-overview-request");
   const { STUB_MODEL, stubReply } = await import("../src/lib/synopsis/stub");
   const { batchCostMicroUsd } = await import("../src/lib/model/prices");
   const { parseReply } = await import("./eval/lib/request.mjs");
@@ -109,7 +109,7 @@ async function main(): Promise<number> {
   }
 
   const contract = PRECON_OVERVIEW_CONTRACT;
-  const basis = preconRoleBasis(process.env.PRECON_OVERVIEW_ROLE_BASIS);
+  const basis = PRECON_ROLE_BASIS;
   const call = preconOverviewCall;
   const model = STUB ? STUB_MODEL : call.model;
   const capMicro = capMicroUsd(process.env.PRECON_OVERVIEW_MAX_USD, flag("--max-usd"));
@@ -151,7 +151,7 @@ async function main(): Promise<number> {
   let current = 0;
   let held = 0;
   for (const [i, file] of files.entries()) {
-    const req = await buildPreconRequest(file, basis);
+    const req = await buildPreconRequest(file);
     if (!req.ok) {
       skipped.push({ file, why: req.why });
       // No request means no way to show a stored row still fits: it is never carried over meanwhile. Not under
@@ -273,7 +273,7 @@ async function main(): Promise<number> {
     // stored either way (it is paid for), but current only when this database still builds the very
     // request it answered; otherwise the next run, or the copy, writes or checks it again.
     const at = await readingStamps();
-    const now = await buildPreconRequest(s.file, basis);
+    const now = await buildPreconRequest(s.file);
     const fits = now.ok && now.hash === m.hash && now.list === m.list;
     if (!fits) moved.push(s.file);
     if (withAlternate.has(s.file) && s.content.alternate === undefined) console.log(`  ${s.file}: stored without its alternate line (the box has alternates; the reply's line failed its check or was absent)`);

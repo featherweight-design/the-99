@@ -18,10 +18,9 @@
 // Suggested changes depends on the Tuning hub, so PROBE_HUB states which the server runs (and the run
 // fails when the page disagrees). OFF is now reached only with ANALYSIS_TAB_ENABLED on and neither
 // TUNING_ENABLED nor PROPOSED_CUTS_ENABLED, so Mana Balance mounts alone and no Suggested changes
-// section paints. ON (ANALYSIS_TAB_ENABLED plus TUNING_ENABLED or PROPOSED_CUTS_ENABLED, beside Mana
-// Balance, always on with the tab): the hub stands from the tab's first frame (#1809), so the check is
-// the hub
-// staying put, as the same node, from its first frame (the credit note landing under the empty state
+// section paints, so OFF checks only that no hub draws beside the hold itself. ON (ANALYSIS_TAB_ENABLED
+// plus TUNING_ENABLED or PROPOSED_CUTS_ENABLED, beside Mana Balance, always on with the tab): the hub
+// stands from the tab's first frame (#1809), so the check is the hub staying put, as the same node, from its first frame (the credit note landing under the empty state
 // included) through the press to the frame the verdict lands. See `hubStaysPut`.
 // Mana Balance is a PREREQUISITE of ON, not a convenience: it is what lets the hub draw on a deck with no
 // reading yet (`drawn` in builder-shell.tsx). With only Tuning and Proposed cuts on, the hub waits for the
@@ -333,12 +332,6 @@ async function run() {
         report(at("no Tuning hub, as PROBE_HUB says"), w.hub.at === null, w.hub.at === null ? "absent" : `drawn at ${w.hub.at}ms`);
       }
       if (MODE === "held") {
-        // With the hub off, Suggested changes' own section waits for the verdict and paints with it.
-        // With it on, the hub stands from the first frame instead (#1809), checked above.
-        if (HUB === "off") {
-          report(at("the verdict and Suggested changes paint in one frame"),
-            released !== null && w.seen.tuning?.at === released, JSON.stringify({ verdict: w.seen.verdict, tuning: w.seen.tuning }));
-        }
         report(at("the written overview paints with them, never the status line"),
           w.seen.written?.at === released && !w.seen.writing, JSON.stringify({ written: w.seen.written, writing: w.seen.writing ?? null }));
         report(at("nothing moves after the first paint"),
@@ -353,15 +346,6 @@ async function run() {
           w.seen.writing?.at === released, JSON.stringify({ writing: w.seen.writing ?? null, verdict: w.seen.verdict }));
         report(at("the overview lands after, in its slot"),
           (w.seen.written?.at ?? 0) > released, JSON.stringify(w.seen.written ?? null));
-        // Next runs a page's server actions one at a time, so Suggested changes' read waits behind
-        // the write and lands with the overview, below everything else: it moves nothing above it.
-        // Hub off only: with it on the hub stands from the first frame (#1809), checked above.
-        if (HUB === "off") {
-          report(at("Suggested changes lands with the overview, at the foot"),
-            w.seen.tuning && w.seen.written && w.seen.tuning.at >= released && w.seen.tuning.at <= w.seen.written.at + 1_000
-              && w.seen.tuning.top > w.seen.verdict.top,
-            JSON.stringify({ tuning: w.seen.tuning ?? null, written: w.seen.written ?? null }));
-        }
         // The one-time growth Hugh accepted for a slow run: measured, not failed.
         console.log(`  info  ${at("the verdict's tops after the paint")} — ${JSON.stringify(w.tops.verdict)}`);
         report(at("said twice: the verdict, then the overview"),

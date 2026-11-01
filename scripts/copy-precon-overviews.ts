@@ -16,12 +16,12 @@
 // reading (`planReadingCopy`), with the target's change log head read before the requests were built.
 //
 // The target's requests are built before the publish transaction, through `src/db`, which this
-// points at the target, at the run's role basis (`PRECON_OVERVIEW_ROLE_BASIS`). The target's catalog
+// points at the target, at the labels role basis (`PRECON_ROLE_BASIS`). The target's catalog
 // generation is read before they are built and again under the target's lock, and a moved one refuses
 // the publish, so nothing is installed against a catalog the requests were not built from.
 import { requireEnv } from "./lib/env.mjs";
 
-const env = requireEnv(["CATALOG_COPY_SOURCE_URL", "CATALOG_COPY_TARGET_URL", "CATALOG_COPY_TARGET_BRANCH", "PRECON_OVERVIEW_ROLE_BASIS"]);
+const env = requireEnv(["CATALOG_COPY_SOURCE_URL", "CATALOG_COPY_TARGET_URL", "CATALOG_COPY_TARGET_BRANCH"]);
 // After the env import, which overrides DATABASE_URL from `.env`: the requests are built through
 // `src/db`, and they must be built from the TARGET's catalog. Everything below is imported
 // dynamically so it reads this value.
@@ -31,7 +31,7 @@ async function main() {
   const { and, eq, inArray, isNull, ne } = await import("drizzle-orm");
   const { precons, preconSynopses } = await import("../src/db/schema");
   const { publishOnTarget, readSourceSnapshot, runCopyMain, withCopyPair } = await import("./lib/catalog-copy");
-  const { PRECON_OVERVIEW_CONTRACT, buildPreconRequest, preconRoleBasis } = await import("./lib/precon-overview-request");
+  const { PRECON_OVERVIEW_CONTRACT, buildPreconRequest, PRECON_ROLE_BASIS } = await import("./lib/precon-overview-request");
   const { CopyRefused } = await import("./lib/catalog-copy");
   const { catalogRefreshes } = await import("../src/db/schema");
   const { sql } = await import("drizzle-orm");
@@ -44,8 +44,8 @@ async function main() {
   type Content = typeof preconSynopses.$inferSelect["content"];
 
   const contract = PRECON_OVERVIEW_CONTRACT;
-  // One basis per run, the build's (`preconRoleBasis`): rows of the other basis are neither read nor touched.
-  const basis = preconRoleBasis(process.env.PRECON_OVERVIEW_ROLE_BASIS);
+  // The labels basis, the build's (`PRECON_ROLE_BASIS`): rows of another basis are neither read nor touched.
+  const basis = PRECON_ROLE_BASIS;
   runCopyMain(() => withCopyPair(async ({ source, sourceUrl, target, sourceBranch, targetBranch, dryRun }) => {
     console.log(`copy precon overviews: ${sourceBranch} -> ${targetBranch}${dryRun ? " (dry run)" : ""}`);
     // Only the source's CURRENT rows written by a real model: a stub's fixture never travels.
@@ -78,7 +78,7 @@ async function main() {
     const requests: TargetRequest[] = [];
     const built = new Map<string, { list: string; profile: DeckProfile; analyzedOracleIds: string[]; head: { partnerOracleId: string | null; cards: { oracleId: string; quantity: number }[] } }>();
     for (const file of plain) {
-      const r = await buildPreconRequest(file, basis);
+      const r = await buildPreconRequest(file);
       requests.push(r.ok ? { file, ok: true, list: r.list, hash: r.hash } : { file, ok: false, why: r.why });
       if (r.ok) built.set(file, { list: r.list, profile: r.profile, analyzedOracleIds: r.analyzedOracleIds, head: r.head });
     }

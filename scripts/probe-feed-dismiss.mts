@@ -23,9 +23,7 @@ import { randomUUID } from "node:crypto";
 const run = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 const R = `probe-fd-r-${run}`; // the reader
 const F = `probe-fd-f-${run}`; // the friend
-const ENV = {
-  ...process.env, SOCIAL_FRIENDS_ENABLED: "true",
-} as NodeJS.ProcessEnv;
+const ENV = process.env;
 
 let failed = 0;
 const check = (label: string, ok: boolean, detail = "") => {

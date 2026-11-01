@@ -10,7 +10,7 @@
 // cart's four friends with their spares and asks, in a SECOND stage, `pnpm fixtures:about:cart`, run only after every
 // other frame, Friends among them, is shot: then `CAPTURE_IDS=p-cart,d-cart`). THE SERVER: `next start` of a build whose `.env` names the same scratch branch, started with EVERY
 // reader-facing switch on (the registry's, less the plumbing ones and the payments line but for `PAYMENTS_ENABLED` itself;
-// the all-decks cart and the Shopping buy tag each have their own; a deck's Stats and Notes tabs are always on), `SOCIAL_FRIENDS_ENABLED` (which also draws Rule 0 and invites) and
+// the all-decks cart and the Shopping buy tag each have their own; a deck's Stats and Notes tabs are always on, as are friends, Rule 0 and invites) and
 // `PAYMENTS_ENABLED` ON, so the frames show the ?, the account menu's `Take the tour` row, the pod's `Rule 0 check` row,
 // the invite count line and /credits that the launch-end entries point at (About batch, 2026-10-21). Moments are always live now, so a bubble can appear in a frame (the About sheet retired in About visual PR 6b). The `settings` frame (push close-out) also needs a throwaway VAPID pair from
 // `pnpm push:keys` in the server's environment only, or /settings draws no push column. The fixture account has decks, so its Home is the dashboard and the
@@ -527,7 +527,7 @@ async function attempt(page, theme, id, run) {
 /**
  * What the server's switch set must draw on a frame before it is photographed: the ? on every screen
  * (always on), the account menu's `Take the tour` row (always on) and the pod's `Rule 0 check`
- * row and the invite count line on /friends (`SOCIAL_FRIENDS_ENABLED`), and the balance on /credits
+ * row and the invite count line on /friends (always on), and the balance on /credits
  * (`PAYMENTS_ENABLED`). The launch-end About entries point at these, so a set captured without them
  * is refused rather than shipped.
  */
@@ -536,9 +536,9 @@ const REQUIRED_ON_FRAME = {
   "*": [["[data-help-button]:visible", "the ?"]],
   account: [["[role='dialog'] a[href='/?tour=1'], [role='menu'] a[href='/?tour=1']", "the Take the tour row"]],
   friends: [
-    ["[data-testid='pod-rule-zero']", "the pod's Rule 0 check row (SOCIAL_FRIENDS_ENABLED on)"],
-    // The invites entry's box takes in the count line (launch-end batch G2), drawn only with friends on (invites follow friends).
-    ["[data-invite-count]", "the invite count line under Add a friend (SOCIAL_FRIENDS_ENABLED on)"],
+    ["[data-testid='pod-rule-zero']", "the pod's Rule 0 check row"],
+    // The invites entry's box takes in the count line (launch-end batch G2).
+    ["[data-invite-count]", "the invite count line under Add a friend"],
   ],
   // The feed Home (the feed always on, the fixture's one unseen price drop): the lead story is what `whats-new` boxes.
   "home-feed": [["[data-feed-lead]", "the lead story (the fixture account's feed kinds on and one unseen item)"]],

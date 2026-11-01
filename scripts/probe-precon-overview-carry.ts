@@ -12,7 +12,6 @@
 //   fresh copies nothing and says to fall back.
 //   THE FIRST EDIT: one card added through `touchDeck` makes the same read call it stale.
 //   NOT CURRENT: a deck started from a precon whose row is not current gets the reading, no Overview.
-//   ANOTHER BASIS: an owner counting roles by the other basis gets no Overview built at this one.
 //   SWITCH OFF: with the Analysis tab off, nothing at all.
 // It writes decks under a per-run user id and deletes them, and the precon row it wrote, in a
 // `finally`. Scratch branch only (`assertScratchBranch`), named by `PROBE_DB_URL`.
@@ -28,8 +27,8 @@ process.env.DATABASE_URL = process.env.PROBE_DB_URL;
 
 const USER = `probe-precon-carry-${Date.now()}`;
 // The owner's switches: the Analysis tab, and contract 13 (the stages shape), what production writes.
-// The classifier role basis, the one the build below is told: a row of the other basis would not be attached.
-const ON = { ...process.env, ANALYSIS_TAB_ENABLED: "true", OVERVIEW_V2_ENABLED: "true", LABEL_ROLE_COUNTS_ENABLED: "" } as NodeJS.ProcessEnv;
+// The build below writes the labels role basis, the only one the carry-over attaches.
+const ON = { ...process.env, ANALYSIS_TAB_ENABLED: "true", OVERVIEW_V2_ENABLED: "true" } as NodeJS.ProcessEnv;
 const OFF = { ...ON, ANALYSIS_TAB_ENABLED: "" } as NodeJS.ProcessEnv;
 
 let failures = 0;
@@ -57,7 +56,7 @@ async function main() {
 
   // The first plain precon the build orders by, and the second, each with a stub-written Overview.
   const files = (await db.select({ f: precons.fileName }).from(precons).where(sql`${precons.twinOf} is null`).orderBy(precons.fileName).limit(2)).map((r) => r.f);
-  const mine = and(eq(preconSynopses.contractVersion, 13), eq(preconSynopses.roleBasis, "classifier"), inArray(preconSynopses.preconFile, files));
+  const mine = and(eq(preconSynopses.contractVersion, 13), eq(preconSynopses.roleBasis, "labels"), inArray(preconSynopses.preconFile, files));
   await db.delete(preconSynopses).where(mine);
   // The cleanup's trackers come first, so a setup or build that fails is cleaned up too.
   const made: string[] = [];
@@ -73,7 +72,7 @@ async function main() {
     const [prior] = await db.insert(deckDataChanges).values({ kind: "gameChanger", direction: "added", oracleIds: [anyCard.id], detail: { probe: USER } }).returning({ seq: deckDataChanges.seq });
     logged.push(prior.seq);
     execFileSync("pnpm", ["-s", "db:build:precon-overviews", "--stub", "--limit", "2"], {
-      encoding: "utf8", env: { ...process.env, PRECON_OVERVIEW_DB_URL: process.env.PROBE_DB_URL, PRECON_OVERVIEW_TARGET_BRANCH: branch!.id!, PRECON_OVERVIEW_ROLE_BASIS: "classifier" },
+      encoding: "utf8", env: { ...process.env, PRECON_OVERVIEW_DB_URL: process.env.PROBE_DB_URL, PRECON_OVERVIEW_TARGET_BRANCH: branch!.id! },
     });
     const deckId = await start(files[0]);
     const r = await carryOverPreconOverview(deckId, USER, ON);
@@ -158,11 +157,6 @@ async function main() {
     check("a precon whose row is not current: the reading, no Overview", !nc.attached && nc.reason === "not_current" && !!ncReading, `${JSON.stringify(nc)}, reading ${!!ncReading}`);
     const [ncSrc] = await db.select({ createdAt: preconSynopses.createdAt }).from(preconSynopses).where(and(mine, eq(preconSynopses.preconFile, files[1])));
     check("with no Overview attached the reading keeps its own date", !!ncReading && ncReading.computedAt.getTime() !== ncSrc.createdAt.getTime() && Date.now() - ncReading.computedAt.getTime() < 10 * 60_000, `reading ${ncReading?.computedAt.toISOString()}, precon ${ncSrc.createdAt.toISOString()}`);
-
-    // An owner on the OTHER role basis: the reading is theirs, and the classifier's Overview is not attached.
-    const labelsDeck = await start(files[0]);
-    const lb = await carryOverPreconOverview(labelsDeck, USER, { ...ON, LABEL_ROLE_COUNTS_ENABLED: "true" } as NodeJS.ProcessEnv);
-    check("an owner on the other role basis gets no Overview", !lb.attached && lb.reason === "none", JSON.stringify(lb));
 
     const third = await start(files[0]);
     const off = await carryOverPreconOverview(third, USER, OFF);

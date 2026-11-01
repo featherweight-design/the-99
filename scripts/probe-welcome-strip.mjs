@@ -20,7 +20,7 @@
 // The database is the worktree's `.env` DATABASE_URL: local-dev or a scratch branch of it, never staging or production
 // (checked by `neon.branch_id`). The server: a dev or `next start` of this worktree, with the sheet's rows switched on:
 //   PAYMENTS_ENABLED=true TUNING_ENABLED=true HELP_ME_CHOOSE_ENABLED=true PROPOSED_CUTS_ENABLED=true
-//   SWAP_TOOLS_ENABLED=true FIND_A_DECK_READ_ENABLED=true ANALYSIS_TAB_ENABLED=true
+//   SWAP_TOOLS_ENABLED=true ANALYSIS_TAB_ENABLED=true
 //
 //   PROBE_BASE=http://localhost:3311 pnpm probe:welcome-strip
 import { neon } from "@neondatabase/serverless";
