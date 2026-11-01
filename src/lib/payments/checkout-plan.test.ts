@@ -27,12 +27,12 @@ const stripe = {
   customers: { update: vi.fn(async () => ({})) }, subscriptions: { list }, checkout: { sessions: { create: sessionCreate } },
 } as unknown as Stripe;
 const ACTION = "11111111-1111-4111-8111-111111111111";
-const go = () => createPlanCheckout(stripe, { userId: "user_a", email: "a@x.dev", planId: "plan60", actionId: ACTION });
+const go = () => createPlanCheckout(stripe, { userId: "user_a", email: "a@x.dev", planId: "plan50", actionId: ACTION });
 
 beforeEach(() => {
   state.subs = []; state.mapped = "cus_1"; state.hits = 0; state.blocked = false;
   list.mockClear(); sessionCreate.mockClear(); list.mockResolvedValue({ data: [] });
-  vi.stubEnv("STRIPE_PRICE_PLAN_60", "price_plan60");
+  vi.stubEnv("STRIPE_PRICE_PLAN_50", "price_plan50");
   vi.stubEnv("APP_ORIGIN", "https://the-99.dev");
   vi.stubEnv("ADMIN_ENV_LABEL", "staging");
 });
@@ -53,7 +53,7 @@ describe("createPlanCheckout", () => {
   });
 
   it("is unconfigured while the plan's Price is unset, and makes nothing", async () => {
-    vi.stubEnv("STRIPE_PRICE_PLAN_60", "");
+    vi.stubEnv("STRIPE_PRICE_PLAN_50", "");
     expect(await go()).toEqual({ ok: false, reason: "unconfigured" });
     expect(sessionCreate).not.toHaveBeenCalled();
   });

@@ -37,7 +37,7 @@ export function longDate(at: Date): string {
 /** The plan as the page draws it: the closed registry's facts, never a price typed in a component. */
 export type PlanOffer = { id: PlanId; units: number; price: string };
 
-export function planOffer(id: PlanId = "plan60"): PlanOffer {
+export function planOffer(id: PlanId = "plan50"): PlanOffer {
   return { id, units: PLANS[id].units, price: dollars(PLANS[id].priceCents) };
 }
 

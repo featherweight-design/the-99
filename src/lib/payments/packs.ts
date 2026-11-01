@@ -53,11 +53,11 @@ export function packForPrice(priceId: string, env: Record<string, string | undef
  * The monthly plan, the second sellable product: "a credit bundle that renews" (never a membership). It is a
  * SEPARATE registry from `PACKS` on purpose: `isPackId` is the one-time Buy's closed set and `packsConfigured`
  * gates every pack payment, and an unset plan Price must make the plan "not on sale", never stop pack payments.
- * `mode: "subscription"` is what Checkout is created with. $5 a month for 60 credits that roll over, with no
+ * `mode: "subscription"` is what Checkout is created with. $5 a month for 50 credits that roll over, with no
  * cap, while the plan is held (Hugh, the payments plan, K2). The webhook judges an invoice against this entry.
  */
 export const PLANS = {
-  plan60: { units: 60, priceCents: 500, currency: "usd", priceEnv: "STRIPE_PRICE_PLAN_60", mode: "subscription" },
+  plan50: { units: 50, priceCents: 500, currency: "usd", priceEnv: "STRIPE_PRICE_PLAN_50", mode: "subscription" },
 } as const;
 
 export type PlanId = keyof typeof PLANS;

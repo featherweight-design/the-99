@@ -53,7 +53,7 @@ describe("invoiceReceiptUrlFor", () => {
 });
 
 describe("receiptUrlFor for a plan's Checkout Session", () => {
-  const session = (viewer: string) => ({ mode: "subscription", invoice: "in_1", metadata: { app: "the-99", plan: "plan60", user_id: viewer } });
+  const session = (viewer: string) => ({ mode: "subscription", invoice: "in_1", metadata: { app: "the-99", plan: "plan50", user_id: viewer } });
   it("falls to the Session's first invoice, since a subscription has no PaymentIntent of its own", async () => {
     const stripe = stripeWith({ hosted_invoice_url: "https://invoice.stripe.com/i/1" }, session("user_a"));
     expect(await receiptUrlFor(stripe, { sessionId: "cs_test_1", viewerId: "user_a" })).toBe("https://invoice.stripe.com/i/1");

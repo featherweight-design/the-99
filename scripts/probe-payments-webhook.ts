@@ -27,8 +27,8 @@
 //   q  the purge keeps the dispute record, which names no account
 //   The monthly plan (the subscription PR), by `fulfilInvoice` and `syncSubscription` with a stand-in Stripe
 //   whose invoice and subscription are crafted and mutable:
-//   P1  the first invoice grants one 60-credit plan lot labelled `subscription_create`, stores the subscription
-//      and a payment record under the INVOICE id, and `readAllowance` reports plan 60 with no planExpiresAt
+//   P1  the first invoice grants one 50-credit plan lot labelled `subscription_create`, stores the subscription
+//      and a payment record under the INVOICE id, and `readAllowance` reports plan 50 with no planExpiresAt
 //   P2  a renewal invoice grants a second lot labelled `subscription_cycle`
 //   P3  cancel_at_period_end sets every live plan lot to the period end, and `readAllowance` reports it
 //   P4  keeping the plan clears it again
@@ -76,7 +76,7 @@ const RUN = `probe-pw-${Date.now()}`;
 const PRICE = `price_${RUN}`;
 process.env.STRIPE_PRICE_PACK_40 = PRICE;
 const PLAN_PRICE = `price_plan_${RUN}`;
-process.env.STRIPE_PRICE_PLAN_60 = PLAN_PRICE;
+process.env.STRIPE_PRICE_PLAN_50 = PLAN_PRICE;
 
 let failures = 0;
 const check = (label: string, actual: unknown, expected: unknown) => {
@@ -256,7 +256,7 @@ async function run() {
     ({ invoices: { retrieve: async (i: string) => state.invoices[i] }, subscriptions: { retrieve: async () => state.sub } }) as unknown as Stripe;
   const subObj = (customerId: string, userId: string, over: { cancel?: boolean; status?: string; end?: Date; app?: string } = {}) => ({
     id: subId, status: over.status ?? "active", customer: customerId, cancel_at_period_end: over.cancel ?? false,
-    metadata: { app: over.app ?? "the-99", plan: "plan60", user_id: userId },
+    metadata: { app: over.app ?? "the-99", plan: "plan50", user_id: userId },
     items: { data: [{ current_period_end: Math.floor((over.end ?? PERIOD1).getTime() / 1000), price: { id: PLAN_PRICE } }] },
   });
   const invObj = (iid: string, customerId: string, userId: string, reason: string) => {
@@ -264,7 +264,7 @@ async function run() {
     return {
       id: iid, status: "paid", billing_reason: reason, currency: "usd", amount_paid: 500, total: 500, total_excluding_tax: 500,
       customer: customerId, customer_address: { country: "US" },
-      parent: { subscription_details: { subscription: subId, metadata: { app: "the-99", plan: "plan60", user_id: userId } } },
+      parent: { subscription_details: { subscription: subId, metadata: { app: "the-99", plan: "plan50", user_id: userId } } },
       lines: { data: [{ quantity: 1, pricing: { price_details: { price: PLAN_PRICE } } }] },
       payments: { data: [{ status: "paid", payment: { type: "payment_intent", payment_intent: id("pi") } }] },
     };
@@ -280,12 +280,12 @@ async function run() {
   const ps = planStripe(state);
   const ej = eventId();
   check("P1 · the first invoice grants", (await fulfilInvoice(ps, ej, "invoice.paid", inv1, subId)).outcome, "grant");
-  check("P1 · one 60-credit lot labelled subscription_create, not expiring", (await planLots(j.userId)).map((l) => [l.reason, l.units, l.exp]), [["subscription_create", 60, null]]);
+  check("P1 · one 50-credit lot labelled subscription_create, not expiring", (await planLots(j.userId)).map((l) => [l.reason, l.units, l.exp]), [["subscription_create", 50, null]]);
   check("P1 · the payment is recorded under the invoice id", await record(inv1), ["granted"]);
   check("P1 · the subscription is stored", await subRow(), { status: "active", cancel: false });
   {
     const al = await readAllowance(j.userId);
-    check("P1 · readAllowance reports plan 60 and no expiry", [al.plan, al.planExpiresAt ?? null], [60, null]);
+    check("P1 · readAllowance reports plan 50 and no expiry", [al.plan, al.planExpiresAt ?? null], [50, null]);
   }
   check("P2 · a renewal grants a second lot", (await fulfilInvoice(ps, eventId(), "invoice.paid", inv2, subId)).outcome, "grant");
   check("P2 · labelled subscription_cycle", (await planLots(j.userId)).map((l) => l.reason).sort(), ["subscription_create", "subscription_cycle"]);

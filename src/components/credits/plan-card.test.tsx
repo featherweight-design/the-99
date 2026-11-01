@@ -26,7 +26,7 @@ const updateCardIcon = () => screen.getByRole("button", { name: "Update card" })
 describe("the states", () => {
   it("K1: the four fine-print lines come BEFORE the Subscribe press, and the price and the Stripe line are drawn", () => {
     const { container } = render(<PlanCard plan={plan("offer", { on: null, credits: 0 })} onToast={vi.fn()} />);
-    expect(screen.getByText("60 credits a month")).toBeTruthy();
+    expect(screen.getByText("50 credits a month")).toBeTruthy();
     expect(screen.getByText("$5 a month")).toBeTruthy();
     const items = screen.getAllByRole("listitem");
     expect(items).toHaveLength(4);
@@ -119,7 +119,7 @@ describe("Subscribe", () => {
     render(<PlanCard plan={plan("offer")} onToast={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: /^Subscribe/ }));
     await waitFor(() => expect(assign).toHaveBeenCalledWith("https://checkout.stripe.com/c/9"));
-    expect(m.buyPlan).toHaveBeenCalledWith("plan60", expect.stringMatching(/^[0-9a-f-]{36}$/));
+    expect(m.buyPlan).toHaveBeenCalledWith("plan50", expect.stringMatching(/^[0-9a-f-]{36}$/));
     vi.unstubAllGlobals();
   });
 

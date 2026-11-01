@@ -14,11 +14,11 @@ const NOW = new Date("2026-11-10T12:00:00Z");
 const decision = decideInvoice(
   {
     id: "in_1", status: "paid", billingReason: "subscription_create", currency: "usd", amountPaid: 500, total: 500, totalExcludingTax: 500,
-    customerId: "cus_1", subscriptionId: "sub_1", subscriptionMetadata: { app: "the-99", plan: "plan60", user_id: "user_a" },
-    lines: [{ priceId: "price_plan60", quantity: 1 }], paymentIntentId: "pi_inv1", country: "US",
+    customerId: "cus_1", subscriptionId: "sub_1", subscriptionMetadata: { app: "the-99", plan: "plan50", user_id: "user_a" },
+    lines: [{ priceId: "price_plan50", quantity: 1 }], paymentIntentId: "pi_inv1", country: "US",
   },
-  { id: "sub_1", status: "active", customerId: "cus_1", metadata: { app: "the-99", plan: "plan60", user_id: "user_a" }, cancelAtPeriodEnd: false, currentPeriodEnd: NOW, priceIds: ["price_plan60"] },
-  "user_a", { STRIPE_PRICE_PLAN_60: "price_plan60" },
+  { id: "sub_1", status: "active", customerId: "cus_1", metadata: { app: "the-99", plan: "plan50", user_id: "user_a" }, cancelAtPeriodEnd: false, currentPeriodEnd: NOW, priceIds: ["price_plan50"] },
+  "user_a", { STRIPE_PRICE_PLAN_50: "price_plan50" },
 );
 if (decision.kind !== "grant") throw new Error("fixture must grant");
 
@@ -81,12 +81,12 @@ describe("K2's reversal against a plan lot", () => {
 
   it("a full refund of the invoice's charge revokes the whole plan lot", async () => {
     expect(await refund(500, "evt_full")).toEqual({ outcome: "refund", shortfall: false });
-    expect(world.lots.get("in_1")?.revokedUnits).toBe(60);
+    expect(world.lots.get("in_1")?.revokedUnits).toBe(50);
   });
 
-  it("a partial refund revokes pro rata: $2.50 of $5.00 takes 30 of 60", async () => {
+  it("a partial refund revokes pro rata: $2.50 of $5.00 takes 25 of 50", async () => {
     expect((await refund(250, "evt_half")).outcome).toBe("refund");
-    expect(world.lots.get("in_1")?.revokedUnits).toBe(30);
+    expect(world.lots.get("in_1")?.revokedUnits).toBe(25);
     expect((await refund(250, "evt_half")).outcome).toBe("duplicate");
   });
 
@@ -106,7 +106,7 @@ describe("K2's reversal against a plan lot", () => {
   it("a dispute revokes the plan lot and blocks buying; a win gives it back", async () => {
     status.dp_1 = "needs_response";
     expect((await reverseCharge(stripe, "evt_d1", "charge.dispute.created", "dp_1", NOW, store)).outcome).toBe("dispute_opened");
-    expect(world.lots.get("in_1")?.revokedUnits).toBe(60);
+    expect(world.lots.get("in_1")?.revokedUnits).toBe(50);
     expect(world.blocked).toBe(true);
     status.dp_1 = "won";
     expect((await reverseCharge(stripe, "evt_d2", "charge.dispute.closed", "dp_1", NOW, store)).outcome).toBe("dispute_won");
@@ -118,7 +118,7 @@ describe("K2's reversal against a plan lot", () => {
     await reverseCharge(stripe, "evt_d3", "charge.dispute.created", "dp_2", NOW, store);
     status.dp_2 = "lost";
     expect((await reverseCharge(stripe, "evt_d4", "charge.dispute.closed", "dp_2", NOW, store)).outcome).toBe("dispute_lost");
-    expect(world.lots.get("in_1")?.revokedUnits).toBe(60);
+    expect(world.lots.get("in_1")?.revokedUnits).toBe(50);
   });
 
   // KNOWN GAP, pinned so a change is deliberate: before the invoice's payment record exists, a refund is judged by the

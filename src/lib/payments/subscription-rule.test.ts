@@ -4,25 +4,25 @@ import {
   type FetchedInvoice, type FetchedSubscription, type PlanEvent,
 } from "./subscription-rule";
 
-const ENV = { STRIPE_PRICE_PLAN_60: "price_plan60" };
+const ENV = { STRIPE_PRICE_PLAN_50: "price_plan50" };
 const NOW = new Date("2026-11-01T00:00:00Z");
 const END = new Date("2026-12-01T00:00:00Z");
-const TAG = { app: "the-99", plan: "plan60", user_id: "user_a" };
+const TAG = { app: "the-99", plan: "plan50", user_id: "user_a" };
 
 const sub = (over: Partial<FetchedSubscription> = {}): FetchedSubscription => ({
   id: "sub_1", status: "active", customerId: "cus_1", metadata: { ...TAG }, cancelAtPeriodEnd: false,
-  currentPeriodEnd: END, priceIds: ["price_plan60"], ...over,
+  currentPeriodEnd: END, priceIds: ["price_plan50"], ...over,
 });
 const inv = (over: Partial<FetchedInvoice> = {}): FetchedInvoice => ({
   id: "in_1", status: "paid", billingReason: "subscription_create", currency: "usd", amountPaid: 500, total: 500,
   totalExcludingTax: 500, customerId: "cus_1", subscriptionId: "sub_1", subscriptionMetadata: { ...TAG },
-  lines: [{ priceId: "price_plan60", quantity: 1 }], paymentIntentId: "pi_1", country: "US", ...over,
+  lines: [{ priceId: "price_plan50", quantity: 1 }], paymentIntentId: "pi_1", country: "US", ...over,
 });
 
 describe("decideInvoice", () => {
   it("grants a plan month to the mapped account, carrying the billing reason", () => {
     const d = decideInvoice(inv(), sub(), "user_a", ENV);
-    expect(d).toMatchObject({ kind: "grant", userId: "user_a", plan: "plan60", units: 60, billingReason: "subscription_create" });
+    expect(d).toMatchObject({ kind: "grant", userId: "user_a", plan: "plan50", units: 50, billingReason: "subscription_create" });
     expect(d.kind === "grant" && d.record).toEqual({ paymentIntentId: "pi_1", checkoutSessionId: "in_1", amountCents: 500, taxCents: 0, currency: "usd", country: "US" });
   });
 
@@ -47,8 +47,8 @@ describe("decideInvoice", () => {
     ["no subscription", { subscriptionId: null }, {}, "no_subscription"],
     ["another subscription", { subscriptionId: "sub_2" }, {}, "no_subscription"],
     ["no payment intent", { paymentIntentId: null }, {}, "no_payment_intent"],
-    ["two lines", { lines: [{ priceId: "price_plan60", quantity: 1 }, { priceId: "price_plan60", quantity: 1 }] }, {}, "line_items"],
-    ["quantity 2", { lines: [{ priceId: "price_plan60", quantity: 2 }] }, {}, "line_items"],
+    ["two lines", { lines: [{ priceId: "price_plan50", quantity: 1 }, { priceId: "price_plan50", quantity: 1 }] }, {}, "line_items"],
+    ["quantity 2", { lines: [{ priceId: "price_plan50", quantity: 2 }] }, {}, "line_items"],
     ["another Price", { lines: [{ priceId: "price_other", quantity: 1 }] }, {}, "unknown_price"],
     ["a subscription naming another plan", {}, { metadata: { ...TAG, plan: "plan999" } }, "plan_mismatch"],
     ["another currency", { currency: "eur" }, {}, "currency"],
@@ -81,7 +81,7 @@ describe("decideSubscription", () => {
   it.each([
     ["another app's", { metadata: { app: "concert-crawl" } }, "not_ours"],
     ["one on another Price", { priceIds: ["price_other"] }, "unknown_price"],
-    ["one with two items", { priceIds: ["price_plan60", "price_plan60"] }, "unknown_price"],
+    ["one with two items", { priceIds: ["price_plan50", "price_plan50"] }, "unknown_price"],
     ["one naming another plan", { metadata: { ...TAG, plan: "x" } }, "plan_mismatch"],
     ["one naming another account", { metadata: { ...TAG, user_id: "user_b" } }, "attribution"],
     ["one with no customer", { customerId: null }, "no_customer"],

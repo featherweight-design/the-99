@@ -128,7 +128,7 @@ describe("buildCreditsModel: the plan card and plan history", () => {
 
   it("K1: no subscription, switch on: the offer, sized from the registry", () => {
     expect(model({ switchOn: true, allowance: allowance(), history: [], offers, now: NOW }).plan).toEqual({
-      state: "offer", cancelling: false, offer: { id: "plan60", units: 60, price: "$5" }, on: null, credits: 0, days: null,
+      state: "offer", cancelling: false, offer: { id: "plan50", units: 50, price: "$5" }, on: null, credits: 0, days: null,
     });
   });
 
