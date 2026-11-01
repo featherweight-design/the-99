@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { jobTally, type JobRowsByCard } from "./job-tally";
 import { computeLabelRoleCounts, labelRolesOf, roleCounterFor, roleNamedFor, type LabelCountCard } from "./label-role-counts";
 import { computeRoleCounts } from "./mix";
-import { labelRoleCountsEnabled, roleBasisFromEnv } from "./label-counts-flag";
 
 const c = (id: string, role: LabelCountCard["role"], quantity = 1): LabelCountCard =>
   ({ oracleId: id, name: id, role, quantity });
@@ -89,20 +88,6 @@ describe("labelRolesOf", () => {
     expect(labelRolesOf(["removal", "ramp", "finisher"])).toEqual(["ramp", "removal"]);
     expect(labelRolesOf(undefined)).toEqual([]);
     expect(labelRolesOf([])).toEqual([]);
-  });
-});
-
-describe("LABEL_ROLE_COUNTS_ENABLED", () => {
-  it("is off unless exactly 'true'", () => {
-    expect(labelRoleCountsEnabled({} as unknown as NodeJS.ProcessEnv)).toBe(false);
-    expect(labelRoleCountsEnabled({ LABEL_ROLE_COUNTS_ENABLED: "" } as unknown as NodeJS.ProcessEnv)).toBe(false);
-    expect(labelRoleCountsEnabled({ LABEL_ROLE_COUNTS_ENABLED: "1" } as unknown as NodeJS.ProcessEnv)).toBe(false);
-    expect(labelRoleCountsEnabled({ LABEL_ROLE_COUNTS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv)).toBe(true);
-  });
-
-  it("selects the targets' basis", () => {
-    expect(roleBasisFromEnv({} as unknown as NodeJS.ProcessEnv)).toBe("classifier");
-    expect(roleBasisFromEnv({ LABEL_ROLE_COUNTS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv)).toBe("labels");
   });
 });
 

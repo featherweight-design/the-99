@@ -45,13 +45,13 @@ describe("resolveEnv", () => {
     expect(resolveEnv(e({}), app, "u1").LIST_CACHE_ENABLED).toBe("true");
   });
 
-  it("takes only the app-wide override of the role-count basis, which is plumbing", () => {
-    const user = snap([row({ switchName: "LABEL_ROLE_COUNTS_ENABLED", scope: "user", userId: "u1", value: "on" })]);
-    expect(resolveEnv(e({ LABEL_ROLE_COUNTS_ENABLED: "false" }), user, "u1").LABEL_ROLE_COUNTS_ENABLED).toBe("false");
-    const group = snap([row({ switchName: "LABEL_ROLE_COUNTS_ENABLED", scope: "group", groupId: "g1", value: "on" })], { u1: "g1" });
-    expect(resolveEnv(e({}), group, "u1").LABEL_ROLE_COUNTS_ENABLED).toBeUndefined();
-    const app = snap([row({ switchName: "LABEL_ROLE_COUNTS_ENABLED", scope: "app", value: "on" })]);
-    expect(resolveEnv(e({ LABEL_ROLE_COUNTS_ENABLED: "false" }), app, "u1").LABEL_ROLE_COUNTS_ENABLED).toBe("true");
+  it("ignores an account or group override of a plumbing switch, and takes the app-wide one over the environment", () => {
+    const user = snap([row({ switchName: "SCAN_LAB_ENABLED", scope: "user", userId: "u1", value: "on" })]);
+    expect(resolveEnv(e({ SCAN_LAB_ENABLED: "false" }), user, "u1").SCAN_LAB_ENABLED).toBe("false");
+    const group = snap([row({ switchName: "SCAN_LAB_ENABLED", scope: "group", groupId: "g1", value: "on" })], { u1: "g1" });
+    expect(resolveEnv(e({}), group, "u1").SCAN_LAB_ENABLED).toBeUndefined();
+    const app = snap([row({ switchName: "SCAN_LAB_ENABLED", scope: "app", value: "on" })]);
+    expect(resolveEnv(e({ SCAN_LAB_ENABLED: "false" }), app, "u1").SCAN_LAB_ENABLED).toBe("true");
   });
 
   it("never raises a parent: a child switched on for an account still needs its parent", () => {
@@ -102,15 +102,15 @@ describe("All features", () => {
     const s = snap([
       all(),
       row({ switchName: "HELP_ME_CHOOSE_ENABLED", scope: "user", userId: "u1", value: "off" }),
-      row({ switchName: "ALL_DECKS_CART_ENABLED", scope: "group", groupId: "g1", value: "off" }),
-      row({ switchName: "SOCIAL_FRIENDS_ENABLED", scope: "app", value: "off" }),
+      row({ switchName: "FLYER_TRIAL_ENABLED", scope: "group", groupId: "g1", value: "off" }),
+      row({ switchName: "ANNOUNCEMENTS_ENABLED", scope: "app", value: "off" }),
     ], { u1: "g1" });
     const env = resolveEnv(e({ SWAP_TOOLS_ENABLED: "off" }), s, "u1");
     expect(env.SWAP_TOOLS_ENABLED).toBe("off");
     expect(env.HELP_ME_CHOOSE_ENABLED).toBe("false");
-    expect(env.ALL_DECKS_CART_ENABLED).toBe("true");
-    expect(env.SOCIAL_FRIENDS_ENABLED).toBe("true");
-    expect(decide("ALL_DECKS_CART_ENABLED", "feature", e({}), s, "u1").source).toEqual({ kind: "all" });
+    expect(env.FLYER_TRIAL_ENABLED).toBe("true");
+    expect(env.ANNOUNCEMENTS_ENABLED).toBe("true");
+    expect(decide("FLYER_TRIAL_ENABLED", "feature", e({}), s, "u1").source).toEqual({ kind: "all" });
   });
 
   it("leaves plumbing to its app-wide rung", () => {

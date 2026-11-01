@@ -13,12 +13,3 @@
 export function swapToolsEnabled(env: NodeJS.ProcessEnv): boolean {
   return env.SWAP_TOOLS_ENABLED === "true";
 }
-
-/**
- * RETIRED (Hugh 2026-10-31): nothing gates on this. Find a deck's read follows swap tools
- * (`swapToolsEnabled`), its parent, wherever it is decided. Only the admin switch registry reads
- * this, until the switch is deleted.
- */
-export function findADeckReadEnabled(env: NodeJS.ProcessEnv): boolean {
-  return env.FIND_A_DECK_READ_ENABLED === "true" && swapToolsEnabled(env);
-}

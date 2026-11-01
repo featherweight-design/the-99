@@ -13,8 +13,7 @@
  *   or a parent of one (the Analysis tab gates the Overview; Swap tools gates Find a deck's read).
  *   The Switches list marks it; the confirm fires on the capabilities a write raises, not on this tag.
  *   `flags.test.ts` holds the tag to exactly that.
- * - `plumbing`: infrastructure, or a surface no friend tries on its own (How it works, by Design's
- *   answer to the brief's open question 2). App-wide only: an account or group
+ * - `plumbing`: infrastructure, or a surface no friend tries on its own. App-wide only: an account or group
  *   override of one is ignored by the resolver, so no reader runs on different plumbing.
  *
  * `needs`: the parent a compound switch's flag function also checks (`tuningEnabled` asks
@@ -26,17 +25,12 @@
 export type SwitchKind = "feature" | "model" | "plumbing";
 
 export const SWITCHES = [
-  { name: "ALL_DECKS_CART_ENABLED", kind: "feature" },
   { name: "ANALYSIS_TAB_ENABLED", kind: "model" },
   { name: "ANNOUNCEMENTS_ENABLED", kind: "feature" },
   { name: "FEEDBACK_ENABLED", kind: "feature" },
-  { name: "FIND_A_DECK_READ_ENABLED", kind: "model", needs: "SWAP_TOOLS_ENABLED" },
   { name: "HELP_ME_CHOOSE_ENABLED", kind: "model" },
   { name: "FLYER_TRIAL_ENABLED", kind: "feature" },
-  { name: "HOW_IT_WORKS_ENABLED", kind: "plumbing" },
-  { name: "LABEL_ROLE_COUNTS_ENABLED", kind: "plumbing" },
   { name: "LIST_CACHE_ENABLED", kind: "plumbing" },
-  { name: "MANA_BALANCE_ENABLED", kind: "feature", needs: "ANALYSIS_TAB_ENABLED" },
   { name: "NAV_STALL_LOG_ENABLED", kind: "plumbing" },
   { name: "OVERVIEW_V2_ENABLED", kind: "model" },
   { name: "PAYMENTS_ENABLED", kind: "feature" },
@@ -45,7 +39,6 @@ export const SWITCHES = [
   { name: "PUBLIC_PAGES_ENABLED", kind: "plumbing" },
   { name: "RATE_LIMIT_ENABLED", kind: "plumbing" },
   { name: "SCAN_LAB_ENABLED", kind: "plumbing" },
-  { name: "SOCIAL_FRIENDS_ENABLED", kind: "feature" },
   { name: "SUGGESTED_CHANGES_V2_ENABLED", kind: "model", needs: "TUNING_ENABLED" },
   { name: "SWAP_TOOLS_ENABLED", kind: "model" },
   { name: "TUNING_ENABLED", kind: "model", needs: "ANALYSIS_TAB_ENABLED" },

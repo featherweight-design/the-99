@@ -20,25 +20,25 @@ vi.mock("../cache/user-lists", () => ({
 const { cachedDeckProfile } = await import("./load");
 const { profileOfHead } = await import("../decks/tuning-read");
 
-// Sentinels holding only the switch that decides the role basis: never the environment.
-const LABELS = { LABEL_ROLE_COUNTS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
-const CLASSIFIER = { LABEL_ROLE_COUNTS_ENABLED: "false" } as unknown as NodeJS.ProcessEnv;
+// Sentinels holding one registry switch, on and off: never the environment.
+const ON = { FLYER_TRIAL_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const OFF = { FLYER_TRIAL_ENABLED: "false" } as unknown as NodeJS.ProcessEnv;
 
 beforeEach(() => { keys.seen = []; });
 
 describe("the deck profile's cache key", () => {
   it("is the same key from cachedDeckProfile and profileOfHead under one env", async () => {
-    await cachedDeckProfile(HEAD.deckId, HEAD.userId, LABELS);
-    await profileOfHead(HEAD, LABELS);
+    await cachedDeckProfile(HEAD.deckId, HEAD.userId, ON);
+    await profileOfHead(HEAD, ON);
     expect(keys.seen).toHaveLength(2);
     expect(keys.seen[0]).toEqual(keys.seen[1]);
   });
 
-  it("differs when the reader's role-basis switch differs, from either reader", async () => {
-    await cachedDeckProfile(HEAD.deckId, HEAD.userId, LABELS);
-    await cachedDeckProfile(HEAD.deckId, HEAD.userId, CLASSIFIER);
-    await profileOfHead(HEAD, LABELS);
-    await profileOfHead(HEAD, CLASSIFIER);
+  it("differs when the reader's switches differ, from either reader", async () => {
+    await cachedDeckProfile(HEAD.deckId, HEAD.userId, ON);
+    await cachedDeckProfile(HEAD.deckId, HEAD.userId, OFF);
+    await profileOfHead(HEAD, ON);
+    await profileOfHead(HEAD, OFF);
     const [cachedOn, cachedOff, headOn, headOff] = keys.seen;
     expect(cachedOn).not.toEqual(cachedOff);
     expect(headOn).not.toEqual(headOff);

@@ -39,25 +39,25 @@ describe("switchRows", () => {
   });
 
   it("names the kill switch, and marks the overrides it refuses (L4)", () => {
-    const r = rows({ SOCIAL_FRIENDS_ENABLED: "off" }, [row({ switchName: "SOCIAL_FRIENDS_ENABLED", scope: "user", userId: "u1", value: "on" })]);
-    expect(r.get("SOCIAL_FRIENDS_ENABLED")).toMatchObject({ env: "off", on: 0, state: "off", refused: true, reason: { kind: "kill" } });
+    const r = rows({ FLYER_TRIAL_ENABLED: "off" }, [row({ switchName: "FLYER_TRIAL_ENABLED", scope: "user", userId: "u1", value: "on" })]);
+    expect(r.get("FLYER_TRIAL_ENABLED")).toMatchObject({ env: "off", on: 0, state: "off", refused: true, reason: { kind: "kill" } });
   });
 
   it("names the parent when it turns a child off for everyone (L5)", () => {
-    const r = rows({ MANA_BALANCE_ENABLED: "true", ANALYSIS_TAB_ENABLED: "false" });
-    expect(r.get("MANA_BALANCE_ENABLED")).toMatchObject({ parent: "ANALYSIS_TAB_ENABLED", state: "off", reason: { kind: "parent", parent: "ANALYSIS_TAB_ENABLED" } });
+    const r = rows({ PROPOSED_CUTS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "false" });
+    expect(r.get("PROPOSED_CUTS_ENABLED")).toMatchObject({ parent: "ANALYSIS_TAB_ENABLED", state: "off", reason: { kind: "parent", parent: "ANALYSIS_TAB_ENABLED" } });
     // Off by its own env var, not the parent: no reason, the count reads.
-    expect(rows({ ANALYSIS_TAB_ENABLED: "false" }).get("MANA_BALANCE_ENABLED")?.reason).toBeNull();
+    expect(rows({ ANALYSIS_TAB_ENABLED: "false" }).get("PROPOSED_CUTS_ENABLED")?.reason).toBeNull();
   });
 
   it("refuses an app-wide override under the kill switch, with no group or account row", () => {
-    const r = rows({ SOCIAL_FRIENDS_ENABLED: "off" }, [row({ switchName: "SOCIAL_FRIENDS_ENABLED", scope: "app", value: "on" })]);
-    expect(r.get("SOCIAL_FRIENDS_ENABLED")).toMatchObject({ app: "on", refused: true, appRefused: true, groups: 0, accounts: 0 });
+    const r = rows({ FLYER_TRIAL_ENABLED: "off" }, [row({ switchName: "FLYER_TRIAL_ENABLED", scope: "app", value: "on" })]);
+    expect(r.get("FLYER_TRIAL_ENABLED")).toMatchObject({ app: "on", refused: true, appRefused: true, groups: 0, accounts: 0 });
     // Not killed: nothing refused.
     expect(rows({}, [row({ scope: "app", value: "on" })]).get("FEEDBACK_ENABLED")).toMatchObject({ refused: false, appRefused: false });
     // Killed with only an account row: refused, but the app-wide cell has nothing to refuse.
-    const k = rows({ SOCIAL_FRIENDS_ENABLED: "off" }, [row({ switchName: "SOCIAL_FRIENDS_ENABLED", scope: "user", userId: "u1", value: "on" })]);
-    expect(k.get("SOCIAL_FRIENDS_ENABLED")).toMatchObject({ refused: true, appRefused: false });
+    const k = rows({ FLYER_TRIAL_ENABLED: "off" }, [row({ switchName: "FLYER_TRIAL_ENABLED", scope: "user", userId: "u1", value: "on" })]);
+    expect(k.get("FLYER_TRIAL_ENABLED")).toMatchObject({ refused: true, appRefused: false });
   });
 
   it("counts group and account rows on a plumbing switch as ignored", () => {
@@ -80,12 +80,12 @@ describe("the chips and the search", () => {
     expect(matchesFilter(get("HELP_ME_CHOOSE_ENABLED"), "overridden")).toBe(true);
     expect(matchesFilter(get("FEEDBACK_ENABLED"), "overridden")).toBe(false);
     expect(matchesFilter(get("FEEDBACK_ENABLED"), "offForAnyone")).toBe(false);
-    expect(matchesFilter(get("ALL_DECKS_CART_ENABLED"), "offForAnyone")).toBe(true);
+    expect(matchesFilter(get("FLYER_TRIAL_ENABLED"), "offForAnyone")).toBe(true);
     // Mixed is off for someone.
     const mixed = rows({ FEEDBACK_ENABLED: "true" }, [row({ scope: "user", userId: "u2", value: "off" })]).get("FEEDBACK_ENABLED") as SwitchRow;
     expect(matchesFilter(mixed, "offForAnyone")).toBe(true);
     expect(matchesFilter(get("TUNING_ENABLED"), "model")).toBe(true);
-    expect(matchesFilter(get("ALL_DECKS_CART_ENABLED"), "model")).toBe(false);
+    expect(matchesFilter(get("FLYER_TRIAL_ENABLED"), "model")).toBe(false);
   });
 
   it("matches the name or the variable, case-insensitively", () => {
@@ -98,7 +98,7 @@ describe("the chips and the search", () => {
   it("puts features A to Z by name, then plumbing", () => {
     const { features, plumbing } = sections([...r.values()], (x) => x.name);
     expect(features.every((x) => x.kind !== "plumbing")).toBe(true);
-    expect(plumbing.map((x) => x.name)).toEqual(["HOW_IT_WORKS_ENABLED", "LABEL_ROLE_COUNTS_ENABLED", "LIST_CACHE_ENABLED", "NAV_STALL_LOG_ENABLED", "PUBLIC_PAGES_ENABLED", "RATE_LIMIT_ENABLED", "SCAN_LAB_ENABLED"]);
+    expect(plumbing.map((x) => x.name)).toEqual(["LIST_CACHE_ENABLED", "NAV_STALL_LOG_ENABLED", "PUBLIC_PAGES_ENABLED", "RATE_LIMIT_ENABLED", "SCAN_LAB_ENABLED"]);
     // A to Z as the list sorts, by locale, where a code-point sort would put an underscore after a letter.
     expect(features.map((x) => x.name)).toEqual([...features.map((x) => x.name)].sort((a, b) => a.localeCompare(b, "en-US")));
   });

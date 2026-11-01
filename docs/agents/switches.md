@@ -7,8 +7,8 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   (`flag_groups`, one group per account in `flag_group_members`) or per account. Per switch: the variable set to the
   literal `off` wins outright (the KILL SWITCH: no override can raise it, so a bad override is always beaten by a
   redeploy), then the account's override, then its group's (OFF wins if two apply), then app-wide, then the variable.
-  A `plumbing` switch (`LIST_CACHE_ENABLED`, `RATE_LIMIT_ENABLED`, `LABEL_ROLE_COUNTS_ENABLED`, the role basis
-  scores are counted by; `ABOUT_SHEET_ENABLED` was one until About visual PR 6b retired it with the sheet)
+  A `plumbing` switch (`LIST_CACHE_ENABLED`, `RATE_LIMIT_ENABLED`; `ABOUT_SHEET_ENABLED` was one until About
+  visual PR 6b retired it with the sheet, and `LABEL_ROLE_COUNTS_ENABLED`, the role basis, until migration 0219)
   takes the app-wide override alone. A compound switch names its parent as `needs`
   in the registry, and a switch is tagged `model` exactly when turning it on can let a reader spend (the Analysis
   tab and Swap tools are parents of spending switches); `src/lib/switches/flags.test.ts` holds both to the flag
@@ -39,7 +39,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   `ALLOWED` list (a file, its approved uses and a reason a reviewer can check: `src/proxy.ts`'s signed-out request).
   It also fails every PARAMETER DEFAULT of `process.env` (`env = process.env`, destructured in a parameter included)
   but the `keep` entries in `DEFAULTS_PENDING`, each of which reads the environment on purpose and says why:
-  `envForPageBasis` (the environment's kill switch) and the model stand-ins' settings readers (`intake/stub.ts`,
+  the model stand-ins' settings readers (`intake/stub.ts`,
   `stubTheReadDeps`, `swaps/fits-read-stub.ts`, `synopsis/stub.ts`), which read `NODE_ENV` and their own `*_LIVE` /
   `*_STUB*` knobs, never a registry switch. Each approved use is pinned by a FINGERPRINT with a count, never a line
   or a per-file total: `<enclosing function, method or module const>:<use>` (`clerkMiddleware():fallback`) and

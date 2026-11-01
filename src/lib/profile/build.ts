@@ -67,6 +67,12 @@ type RoleFour = { ramp: number; draw: number; removal: number; wipes: number };
  *  picks the flat fallback that matches. */
 export type RoleBasis = "classifier" | "labels";
 
+/** A role basis named by a request (a follow-up asking for the page's own basis), parsed to the
+ *  closed set; anything else is null, which the caller refuses. */
+export function parseRoleBasis(value: unknown): RoleBasis | null {
+  return value === "labels" || value === "classifier" ? value : null;
+}
+
 /**
  * THE role-target selector: the chain's first measured hit, pair → commander → identity →
  * count, or the asserted `ROLE_TARGETS` when none was measured.

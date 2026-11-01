@@ -31,11 +31,11 @@ describe("SwitchesList", () => {
     draw({});
     expect(document.querySelectorAll("[data-switch]")).toHaveLength(SWITCH_NAMES.length);
     const [features, plumbing] = screen.getAllByRole("heading", { level: 2 });
-    expect(features.textContent).toBe("Features17");
+    expect(features.textContent).toBe("Features13");
     expect(plumbing).toHaveAttribute("data-testid", "switches-plumbing-head");
     expect(plumbing.textContent).toContain("app-wide only");
     const plumbingNames = [...plumbing.parentElement!.querySelectorAll("[data-switch]")].map((e) => e.getAttribute("data-switch"));
-    expect(plumbingNames).toEqual(["SCAN_LAB_ENABLED", "HOW_IT_WORKS_ENABLED", "LABEL_ROLE_COUNTS_ENABLED", "LIST_CACHE_ENABLED", "PUBLIC_PAGES_ENABLED", "RATE_LIMIT_ENABLED", "NAV_STALL_LOG_ENABLED"]);
+    expect(plumbingNames).toEqual(["SCAN_LAB_ENABLED", "LIST_CACHE_ENABLED", "PUBLIC_PAGES_ENABLED", "RATE_LIMIT_ENABLED", "NAV_STALL_LOG_ENABLED"]);
     expect(screen.getByText("Resolved counts the 2 accounts on staging. Signed out gets the app-wide result.")).toBeInTheDocument();
   });
 
@@ -47,28 +47,28 @@ describe("SwitchesList", () => {
   });
 
   it("counts each chip and filters by it, keeping the heads' counts (L2)", () => {
-    draw({ FEEDBACK_ENABLED: "true" }, [row({ switchName: "ALL_DECKS_CART_ENABLED", scope: "user", userId: "u1", value: "on" })]);
-    expect(chip(/^All/).textContent).toBe("All 24");
+    draw({ FEEDBACK_ENABLED: "true" }, [row({ switchName: "FLYER_TRIAL_ENABLED", scope: "user", userId: "u1", value: "on" })]);
+    expect(chip(/^All/).textContent).toBe("All 18");
     expect(chip(/^All/)).toHaveAttribute("aria-checked", "true");
-    expect(chip(/^Model features/).textContent).toBe("Model features 8");
+    expect(chip(/^Model features/).textContent).toBe("Model features 7");
     expect(chip(/^Overridden/).textContent).toBe("Overridden 1");
     fireEvent.click(chip(/^Overridden/));
     expect(chip(/^Overridden/)).toHaveAttribute("aria-checked", "true");
-    expect([...document.querySelectorAll("[data-switch]")].map((e) => e.getAttribute("data-switch"))).toEqual(["ALL_DECKS_CART_ENABLED"]);
-    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe("Features17");
+    expect([...document.querySelectorAll("[data-switch]")].map((e) => e.getAttribute("data-switch"))).toEqual(["FLYER_TRIAL_ENABLED"]);
+    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe("Features13");
     // The Plumbing head hides when it has no rows (L3).
     expect(screen.queryByTestId("switches-plumbing-head")).toBeNull();
   });
 
   // Segmented switch 3b: Show is the shared switch, a radiogroup, so the arrows move the filter with the focus.
   it("moves the Show filter with the arrow keys, never as pressed buttons", () => {
-    draw({ FEEDBACK_ENABLED: "true" }, [row({ switchName: "ALL_DECKS_CART_ENABLED", scope: "user", userId: "u1", value: "on" })]);
+    draw({ FEEDBACK_ENABLED: "true" }, [row({ switchName: "FLYER_TRIAL_ENABLED", scope: "user", userId: "u1", value: "on" })]);
     expect(screen.getByRole("radiogroup", { name: "Show" }).querySelector("[aria-pressed]")).toBeNull();
     chip(/^All/).focus();
     fireEvent.keyDown(chip(/^All/), { key: "ArrowRight" });
     expect(chip(/^Overridden/)).toHaveAttribute("aria-checked", "true");
     expect(document.activeElement).toBe(chip(/^Overridden/));
-    expect([...document.querySelectorAll("[data-switch]")].map((e) => e.getAttribute("data-switch"))).toEqual(["ALL_DECKS_CART_ENABLED"]);
+    expect([...document.querySelectorAll("[data-switch]")].map((e) => e.getAttribute("data-switch"))).toEqual(["FLYER_TRIAL_ENABLED"]);
   });
 
   it("searches the name and the variable, and offers Show all when nothing matches (L2, L3)", () => {
@@ -86,8 +86,8 @@ describe("SwitchesList", () => {
   });
 
   it("draws a kill switch row: env off in danger, Off, killed, its overrides refused (L4)", () => {
-    draw({ SOCIAL_FRIENDS_ENABLED: "off" }, [row({ switchName: "SOCIAL_FRIENDS_ENABLED", scope: "user", userId: "u1", value: "on" })]);
-    const r = rowOf("SOCIAL_FRIENDS_ENABLED");
+    draw({ FLYER_TRIAL_ENABLED: "off" }, [row({ switchName: "FLYER_TRIAL_ENABLED", scope: "user", userId: "u1", value: "on" })]);
+    const r = rowOf("FLYER_TRIAL_ENABLED");
     const env = within(r).getAllByText("off").find((e) => e.className.includes("font-mono"))!;
     expect(env.className).toContain("var(--danger)");
     expect(within(r).getAllByText("Off").length).toBeGreaterThan(0);
@@ -97,8 +97,8 @@ describe("SwitchesList", () => {
   });
 
   it("draws a compound row whose parent is off (L5), with its needs tag", () => {
-    draw({ MANA_BALANCE_ENABLED: "true", ANALYSIS_TAB_ENABLED: "false" });
-    const r = rowOf("MANA_BALANCE_ENABLED");
+    draw({ PROPOSED_CUTS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "false" });
+    const r = rowOf("PROPOSED_CUTS_ENABLED");
     expect(within(r).getByText("needs Analysis tab")).toBeInTheDocument();
     expect(within(r).getByText("Analysis tab is off", { selector: "span.font-mono" })).toBeInTheDocument();
   });
@@ -121,7 +121,7 @@ describe("SwitchesList", () => {
 
   // At 390 a row with two tags wrapped the pill onto a line of its own at the left (8a contact sheet).
   // The pill must sit outside the wrapping name-and-tags group, as a fixed sibling after it.
-  it.each(["FIND_A_DECK_READ_ENABLED", "PROPOSED_CUTS_ENABLED", "TUNING_ENABLED"] as const)(
+  it.each(["SUGGESTED_CHANGES_V2_ENABLED", "PROPOSED_CUTS_ENABLED", "TUNING_ENABLED"] as const)(
     "keeps the phone's resolved pill out of %s's wrapping title group",
     (name) => {
       draw({});
@@ -140,15 +140,15 @@ describe("SwitchesList", () => {
   );
 
   it("marks a killed switch's app-wide override refused, in the cell and the meta line (L4)", () => {
-    const first = draw({ SOCIAL_FRIENDS_ENABLED: "off" }, [row({ switchName: "SOCIAL_FRIENDS_ENABLED", scope: "app", value: "on" })]);
-    const r = rowOf("SOCIAL_FRIENDS_ENABLED");
+    const first = draw({ FLYER_TRIAL_ENABLED: "off" }, [row({ switchName: "FLYER_TRIAL_ENABLED", scope: "app", value: "on" })]);
+    const r = rowOf("FLYER_TRIAL_ENABLED");
     const cell = within(r).getByText("On, refused", { selector: "span.hidden" });
     expect(cell.className).toContain("var(--danger)");
     expect(within(r).getByTestId("switch-meta").textContent).toBe("env off · app-wide on, refused · no overrides · env var is off");
     // An app-wide override that is not refused reads plainly.
     first.unmount();
-    draw({}, [row({ switchName: "ALL_DECKS_CART_ENABLED", scope: "app", value: "on" })]);
-    expect(within(rowOf("ALL_DECKS_CART_ENABLED")).getByText("On", { selector: "span.hidden" }).className).not.toContain("var(--danger)");
+    draw({}, [row({ switchName: "FLYER_TRIAL_ENABLED", scope: "app", value: "on" })]);
+    expect(within(rowOf("FLYER_TRIAL_ENABLED")).getByText("On", { selector: "span.hidden" }).className).not.toContain("var(--danger)");
   });
 
   it("keeps the resolved count in one unbreakable piece, on the phone and on desktop", () => {

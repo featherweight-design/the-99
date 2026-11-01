@@ -59,14 +59,14 @@ describe("SwitchPageView", () => {
   });
 
   it("draws the kill banner and refuses the rows under it (F5)", () => {
-    draw("SOCIAL_FRIENDS_ENABLED", { SOCIAL_FRIENDS_ENABLED: "off" }, [ov({ scope: "user", userId: "u2" })]);
-    expect(screen.getByTestId("switch-banner-kill").textContent).toContain("SOCIAL_FRIENDS_ENABLED=off refuses every override.");
+    draw("FLYER_TRIAL_ENABLED", { FLYER_TRIAL_ENABLED: "off" }, [ov({ scope: "user", userId: "u2" })]);
+    expect(screen.getByTestId("switch-banner-kill").textContent).toContain("FLYER_TRIAL_ENABLED=off refuses every override.");
     expect(document.querySelector('[data-rung="account"]')?.textContent).toContain("refused");
     expect(document.querySelector('[data-override="u2"]')?.textContent).toContain("refused, env var is off");
   });
 
   it("links the compound banner to the parent's page (F4)", () => {
-    draw("MANA_BALANCE_ENABLED", { MANA_BALANCE_ENABLED: "true", ANALYSIS_TAB_ENABLED: "false" });
+    draw("PROPOSED_CUTS_ENABLED", { PROPOSED_CUTS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "false" });
     const banner = screen.getByTestId("switch-banner-compound");
     expect(within(banner).getByRole("link", { name: "Open Analysis tab ›" })).toHaveAttribute("href", "/admin/switches/ANALYSIS_TAB_ENABLED");
   });
