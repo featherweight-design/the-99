@@ -140,6 +140,39 @@ describe("a seat notice (Rule 0 revisions, item 6)", () => {
   it("names the deck the seat already holds", () => {
     expect(toMessage([seat(T1, "Atraxa")]).body).toBe("You’re seated with Atraxa.");
   });
+  describe("past 40 characters (Rule 0 defaults)", () => {
+    const wide = (host: string, pod: string, deck: string | null = null) => toMessage([{ ...seat(T1, deck), host, pod } as PushItem]);
+    const len = (t: string) => Array.from(t).length;
+    it("keeps the shipped title at exactly 40", () => {
+      const m = wide("Colin", "x".repeat(12));
+      expect(len(m.title)).toBe(40);
+      expect(m.title).toBe(`Colin seated you at ${"x".repeat(12)}’s table`);
+      expect(m.body).toBe("Pick your deck at the table.");
+    });
+    it("splits at 41: the pod and deck move to the body", () => {
+      const m = wide("Colin", "x".repeat(13), "Atraxa");
+      expect(m.title).toBe("Colin seated you");
+      expect(m.body).toBe(`At ${"x".repeat(13)}’s table, with Atraxa.`);
+    });
+    it("names no deck in the split body when none is held", () => {
+      expect(wide("Colin", "x".repeat(13)).body).toBe(`At ${"x".repeat(13)}’s table. Pick your deck there.`);
+    });
+    it("cuts a lone long host with an ellipsis, to exactly 40", () => {
+      const m = wide("H".repeat(60), "Pod");
+      expect(len(m.title)).toBe(40);
+      expect(m.title).toBe(`${"H".repeat(24)}… seated you`);
+      expect(m.body).toBe("At Pod’s table. Pick your deck there.");
+    });
+    it("leaves a host whose split title is exactly 40 uncut", () => {
+      const host = "H".repeat(24);
+      expect(wide(host, "Pod").title).toBe(`${host} seated you`);
+    });
+    it("counts an emoji host by code point and never splits a surrogate pair", () => {
+      const m = wide("😀".repeat(40), "Pod");
+      expect(len(m.title)).toBe(40);
+      expect(m.title).toBe(`${"😀".repeat(24)}… seated you`);
+    });
+  });
   it("is never collapsed, live or in the morning: two tables are two pushes", () => {
     expect(messagesFor([seat(T1), seat(T2)], "live")).toHaveLength(2);
     expect(messagesFor([seat(T1), seat(T2)], "release")).toHaveLength(2);

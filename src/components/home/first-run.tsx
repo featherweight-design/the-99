@@ -158,7 +158,6 @@ export function FirstRunChecklist({
     // the whole screen, which is a tint over the page rather than the light
     // behind the fan the frame draws. Phone gets `--bg` alone.
     <div className="group/first-run flex min-w-0 flex-auto flex-col sm:bg-[radial-gradient(640px_340px_at_40%_-40px,color-mix(in_oklab,var(--accent)_7%,transparent),transparent_70%)]">
-      {tables ? <div className="flex flex-col gap-[12px] p-[16px_16px_0] sm:max-w-[392px] sm:p-[26px_28px_0] xl:max-w-none">{tables}</div> : null}
       {/* While step 1's review is open on the phone (5a), the page keeps the kicker and gives the
           heading's room to the review: the card's `data-reviewing` reaches these through `:has`,
           since the heading is drawn here and the review state lives in the step card. Stops at
@@ -190,6 +189,10 @@ export function FirstRunChecklist({
           {lockPageLine(commandersPlace)}
         </p>
       </div>
+
+      {/* Rule 0's `Tonight's table` (Rule 0 defaults, H13): at 1300 it sits under the heading and above the About line, as one row.
+          The phone keeps it above the kicker as shipped, so `max-xl:order-first` lifts it there. */}
+      {tables ? <div className="flex flex-col gap-[12px] p-[16px_16px_0] max-xl:order-first sm:max-w-[392px] sm:p-[26px_28px_0] xl:max-w-none xl:pt-[16px]">{tables}</div> : null}
 
       {/* About's line (A3, or the launches for an account that read About and then cleared its collection), between
           the heading and the steps. No arrival lines here (H7), and no ✕: the checklist is the first-run surface

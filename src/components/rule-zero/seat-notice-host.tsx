@@ -161,7 +161,7 @@ export function SeatNoticeHost() {
         <div
           key={n.tableId}
           data-seat-notice={n.tableId}
-          className="pointer-events-auto flex min-h-[56px] items-center gap-[10px] rounded-[12px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--elevated)] py-[8px] pl-[10px] pr-[4px] text-[13.5px] leading-[1.4] text-[color:var(--fg-body)] shadow-[0_16px_40px_rgba(0,0,0,0.6)]"
+          className="pointer-events-auto flex min-h-[56px] items-start gap-[10px] rounded-[12px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--elevated)] py-[8px] pl-[10px] pr-[4px] text-[13.5px] leading-[1.4] text-[color:var(--fg-body)] shadow-[0_16px_40px_rgba(0,0,0,0.6)]"
         >
           <span aria-hidden className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-[8px] border border-solid border-[color:color-mix(in_srgb,var(--accent)_40%,transparent)] bg-[color:color-mix(in_srgb,var(--accent)_12%,transparent)] text-[color:var(--accent-text)]">
             <TableGlyph size={18} />
