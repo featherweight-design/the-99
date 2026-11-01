@@ -405,16 +405,16 @@ export function EditCopiesSheet({
               >
                 {r.keep(sum.held)}
               </button>
-            ) : (
+            ) : owned ? (
               <button
                 type="button"
-                disabled={!owned || saving || choosing !== null}
+                disabled={saving || choosing !== null}
                 onClick={() => { setRemoving(true); setNotice(null); }}
                 className={`order-2 min-h-[44px] shrink-0 whitespace-nowrap px-[14px] text-[14px] md:order-1 md:min-h-[38px] ${GHOST}`}
               >
                 {r.action}
               </button>
-            )}
+            ) : null}
             <span
               aria-live="polite"
               className={`text-[12px] text-[color:var(--fg-muted)] ${
