@@ -553,10 +553,10 @@ describe("AdminHead", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Costs" })).toBeInTheDocument();
     const tabs = within(screen.getByRole("navigation", { name: "Admin pages" })).getAllByRole("link");
     // Only pages that exist are listed, so no tab is a 404.
-    // Costs first (Hugh's ruling), then Switches (admin PR 8a), then Groups (9a).
+    // Costs first (Hugh's ruling), then Feature flags (admin PR 8a), then Groups (9a).
     expect(tabs.map((t) => [t.textContent, t.getAttribute("href"), t.getAttribute("aria-current")])).toEqual([
       ["Costs", "/admin", "page"],
-      ["Switches", "/admin/switches", null],
+      ["Feature flags", "/admin/switches", null],
       ["Groups", "/admin/groups", null],
       ["Accounts", "/admin/accounts", null],
       ["Models", "/admin/models", null],

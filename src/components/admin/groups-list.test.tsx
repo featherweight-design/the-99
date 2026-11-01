@@ -50,7 +50,7 @@ describe("AdminHead on a group's page", () => {
     expect(screen.getByRole("heading", { level: 1, name: "testers" })).toBeInTheDocument();
     expect(screen.getByText("Hugh plus one friend.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "‹ Groups" })).toHaveAttribute("href", "/admin/groups");
-    expect(tabs()).toEqual([["Costs", null], ["Switches", null], ["Groups", "page"], ["Accounts", null], ["Models", null], ["Invites", null], ["Payments", null]]);
+    expect(tabs()).toEqual([["Costs", null], ["Feature flags", null], ["Groups", "page"], ["Accounts", null], ["Models", null], ["Invites", null], ["Payments", null]]);
   });
 
   it("draws no sub for a group with no description, and New group on the new page", () => {
@@ -67,7 +67,7 @@ describe("AdminHead on a group's page", () => {
     path = "/admin/groups";
     render(<AdminHead env="staging" groups={groups} />);
     expect(screen.getByRole("heading", { level: 1, name: "Groups" })).toBeInTheDocument();
-    expect(screen.getByText("Named sets of accounts to switch together. One group per account.")).toBeInTheDocument();
+    expect(screen.getByText("Named sets of accounts that share overrides. One group per account.")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "‹ Groups" })).toBeNull();
   });
 });

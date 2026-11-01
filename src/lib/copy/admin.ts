@@ -21,7 +21,7 @@ const FIND_BY_NAME = "Find an account by name";
 export const adminCopy = {
   door: { label: "Admin" },
   eyebrow: "Admin",
-  tabs: { costs: "Costs", switches: "Switches", groups: "Groups", accounts: "Accounts", models: "Models", invites: "Invites", payments: "Payments" },
+  tabs: { costs: "Costs", switches: "Feature flags", groups: "Groups", accounts: "Accounts", models: "Models", invites: "Invites", payments: "Payments" },
   tabsLabel: "Admin pages",
 
   payments: {
@@ -281,7 +281,7 @@ export const adminCopy = {
   // new here and owed to /copy-review.
   groups: {
     title: "Groups",
-    sub: "Named sets of accounts to switch together. One group per account.",
+    sub: "Named sets of accounts that share overrides. One group per account.",
     headMeta: (n: number, none: number) => `${plural(n, "account", "accounts")} · ${none} in no group`,
     count: (n: number) => plural(n, "group", "groups"),
     back: "‹ Groups",
@@ -314,7 +314,7 @@ export const adminCopy = {
     noMatch: "No account matches.",
     carries: "Overrides this group carries",
     carriesNone: "This group carries no overrides.",
-    openSwitch: "Open the switch ›",
+    openSwitch: "Open the flag ›",
     none: "No groups yet.",
     historyHead: "History",
     historyFoot: "Times are UTC.",
@@ -390,7 +390,7 @@ export const adminCopy = {
     // Owed to /copy-review.
     allFeatures: {
       title: "All features",
-      body: "Every feature switch on for this account, those added later included. An Off set on one switch here still wins, and so does an env var set to off.",
+      body: "Every feature flag on for this account, those added later included. An Off set on one flag here still wins, and so does an env var set to off.",
     },
     envList: { on: (n: number) => `On · ${n}`, off: (n: number) => `Off · ${n}` },
     group: "Group",
@@ -524,7 +524,7 @@ export const adminCopy = {
     noEffort: "none set",
     partial: (figure: string) => `${figure} so far`,
     featuresFoot: "Overview’s free rewrite runs on the contract-8 model as system. Mana Balance makes no model call. Evals call whatever model they test and are under Costs, by ledger.",
-    jobs: "Job switches",
+    jobs: "Job flags",
     jobsMeta: "GitHub repository variables · read only",
     jobCols: { variable: "Variable", value: "Value", readAt: "Read at" },
     unset: "not set",
@@ -536,13 +536,13 @@ export const adminCopy = {
   // cell, the App-wide cell and the phone's meta line take the canvas's own shapes (`flagRow` in
   // `Admin R2.dc.html`).
   switches: {
-    title: "Switches",
+    title: "Feature flags",
     sub: "Env var first, then overrides: account beats group beats app-wide. Changes land within 30 seconds.",
     search: "Search by name or variable",
     chips: { all: "All", overridden: "Overridden", offForAnyone: "Off for anyone", model: "Model features" },
     chipsLabel: "Show",
     heads: { features: "Features", plumbing: "Plumbing", plumbingNote: "app-wide only, not features a friend tries" },
-    cols: { name: "Switch", env: "Env var", app: "App-wide", overrides: "Overrides", resolved: "Resolved" },
+    cols: { name: "Flag", env: "Env var", app: "App-wide", overrides: "Overrides", resolved: "Resolved" },
     resolved: { on: "On", off: "Off", mixed: "Mixed", count: (n: number, total: number) => `${n} of ${total} on` },
     app: { notSet: "Not set", on: "On", off: "Off" },
     envUnset: "unset",
@@ -571,7 +571,7 @@ export const adminCopy = {
   // `ignored` meta and Check an account's prompt are new here and owed to /copy-review (plan
   // §"New, owed to /copy-review" items 4, 5 and 8).
   switch: {
-    back: "‹ Switches",
+    back: "‹ Feature flags",
     ladderHead: "Who gets it",
     ladderMeta: "most specific wins",
     rungs: { account: "Account", group: "Group", app: "App-wide", env: "Env var", needs: "Needs" },
@@ -780,7 +780,7 @@ export const flyerAdminCopy = {
  * already does.
  */
 export const switchCopy: Readonly<Record<SwitchName, { label: string; description: string }>> = {
-  ANALYSIS_TAB_ENABLED: { label: "Analysis tab", description: "The Analysis tab on a deck. Two switches need it." },
+  ANALYSIS_TAB_ENABLED: { label: "Analysis tab", description: "The Analysis tab on a deck. Two flags need it." },
   FEEDBACK_ENABLED: { label: "Feedback", description: "Report a problem, the check-in on Home and the Feedback tab here." },
   FLYER_TRIAL_ENABLED: { label: "Flyer trial", description: "Gates the /join/<CODE> flyer sign-ups and the Flyer codes section on /admin/invites. Off retires every code." },
   ANNOUNCEMENTS_ENABLED: { label: "Announcements", description: "Wizards announcements on Home, in Settings and as pushes. No surface yet." },

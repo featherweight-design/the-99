@@ -99,21 +99,21 @@ describe("SwitchPageView", () => {
 });
 
 describe("AdminHead on a switch's page", () => {
-  it("titles itself with the switch, its variable and tags, keeps Switches selected and links back", () => {
+  it("titles itself with the switch, its variable and tags, keeps Feature flags selected and links back", () => {
     path.current = "/admin/switches/TUNING_ENABLED";
     render(<AdminHead env="staging" />);
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(switchCopy.TUNING_ENABLED.label);
     expect(screen.getByText("TUNING_ENABLED")).toBeInTheDocument();
     expect(screen.getByText("model")).toBeInTheDocument();
     expect(screen.getByText("needs Analysis tab")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "‹ Switches" })).toHaveAttribute("href", "/admin/switches");
-    expect(screen.getByRole("link", { name: "Switches" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "‹ Feature flags" })).toHaveAttribute("href", "/admin/switches");
+    expect(screen.getByRole("link", { name: "Feature flags" })).toHaveAttribute("aria-current", "page");
   });
 
   it("stays the list's head for an unknown name", () => {
     path.current = "/admin/switches/NOPE_ENABLED";
     render(<AdminHead env="staging" />);
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Switches");
-    expect(screen.queryByRole("link", { name: "‹ Switches" })).toBeNull();
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Feature flags");
+    expect(screen.queryByRole("link", { name: "‹ Feature flags" })).toBeNull();
   });
 });

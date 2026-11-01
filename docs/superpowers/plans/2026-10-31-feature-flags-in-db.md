@@ -168,7 +168,9 @@ Every PR stays under ~20 files and ~800 lines, with no stacking: each opens afte
 7. **Rename, final.**
    - Delete the shim.
    - Admin routes `/admin/switches*` become `/admin/flags*`, with a redirect from the old path.
-   - Admin component and rule files, and the admin copy (`src/lib/copy/admin.ts`, 20 lines plus `switchCopy`, through `/copy-review`).
+   - Admin component and rule files. The admin copy readers SEE already moved (Hugh, 2026-11-01): the nav tab, the list
+     title and back link, the column head and the lines in `src/lib/copy/admin.ts` and `switchCopy` say "Feature flags" or
+     "flag". What is left here is code names only (`adminCopy.switches`, `switchCopy` and the like).
    - `about-pages.ts` `switch:` keys become `flag:`.
    - About 20 files.
 8. **Optional: rename the DB column.** `flag_overrides.switch` becomes `flag` (risky: migration).

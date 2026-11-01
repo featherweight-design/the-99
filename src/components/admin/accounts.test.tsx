@@ -387,7 +387,7 @@ describe("AdminHead on the Accounts pages", () => {
     const { container } = render(<AdminHead env="staging" />);
     expect(screen.getByRole("heading", { level: 1, name: "Accounts" })).toBeInTheDocument();
     expect(container.querySelector("header p")).toBeNull();
-    expect(tabs()).toEqual([["Costs", null], ["Switches", null], ["Groups", null], ["Accounts", "page"], ["Models", null], ["Invites", null], ["Payments", null]]);
+    expect(tabs()).toEqual([["Costs", null], ["Feature flags", null], ["Groups", null], ["Accounts", "page"], ["Models", null], ["Invites", null], ["Payments", null]]);
   });
 
   it("draws the back link and no title on an account's page, which titles itself", () => {
