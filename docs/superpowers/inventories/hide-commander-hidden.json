@@ -3,8 +3,8 @@
   "note": "Needs the signed-in account to have hidden exactly Preston Garvey, Minuteman (owned), Wernog, Rider's Chaplain (unowned, an index candidate), Krenko, Mob Boss (a deck is built around it) and Kotis, Sibsig Champion (owned), on a scratch branch. Each width's rows leave the data as they found it: every Unhide is followed by its Undo, and the refused Undo is put back from the commander's page. The empty state (board state 5) is hide-commander-hidden-empty.json, run with no hidden rows.",
   "shares": [
     {
-      "binding": "UndoShell",
-      "module": "src/components/ui/undo-row.tsx"
+      "binding": "CommanderUndoRow",
+      "module": "src/components/commanders/commander-undo-row.tsx"
     },
     {
       "binding": "PlaceStrip",
@@ -43,7 +43,7 @@
           "settle": 1500
         }
       ],
-      "binding": "UndoShell"
+      "binding": "CommanderUndoRow"
     },
     {
       "id": "foryou-strip",
@@ -75,7 +75,7 @@
           "settle": 1500
         }
       ],
-      "binding": "UndoShell"
+      "binding": "CommanderUndoRow"
     },
     {
       "id": "undo-foryou",
@@ -89,7 +89,7 @@
           "settle": 1500
         }
       ],
-      "binding": "UndoShell"
+      "binding": "CommanderUndoRow"
     },
     {
       "id": "unhide-discover",
@@ -108,7 +108,7 @@
           "settle": 1500
         }
       ],
-      "binding": "UndoShell"
+      "binding": "CommanderUndoRow"
     },
     {
       "id": "undo-discover",
@@ -122,7 +122,7 @@
           "settle": 1500
         }
       ],
-      "binding": "UndoShell"
+      "binding": "CommanderUndoRow"
     },
     {
       "id": "unhide-built",
@@ -141,7 +141,7 @@
           "settle": 1500
         }
       ],
-      "binding": "UndoShell"
+      "binding": "CommanderUndoRow"
     },
     {
       "id": "undo-built",
@@ -155,7 +155,7 @@
           "settle": 1500
         }
       ],
-      "binding": "UndoShell"
+      "binding": "CommanderUndoRow"
     },
     {
       "id": "built-opens-deck",
@@ -174,7 +174,7 @@
           "settle": 2500
         }
       ],
-      "binding": "UndoShell"
+      "binding": "CommanderUndoRow"
     },
     {
       "id": "owned-opens-page",
@@ -192,7 +192,7 @@
           "settle": 2000
         }
       ],
-      "binding": "UndoShell"
+      "binding": "CommanderUndoRow"
     },
     {
       "id": "unhide-refused",
@@ -242,7 +242,7 @@
           "settle": 1000
         }
       ],
-      "binding": "UndoShell"
+      "binding": "CommanderUndoRow"
     },
     {
       "id": "restore-kotis",
