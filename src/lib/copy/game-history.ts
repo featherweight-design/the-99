@@ -1,5 +1,5 @@
 // The cross-deck Games view on /decks (design handoff `design_handoff_the99_game_history`, build PR 2+3, filter-free).
-// Every string below is NEW and goes through /copy-review (Hugh, 2026-11-01), the two the board marks DRAFT included.
+// Every string below is NEW and copy-reviewed (game history, 2026-11-01), the two the board marked DRAFT included.
 // Reused, not redefined: the headline's record form and `One game logged.` live in `gameLogCopy.headline`
 // (the board's F1 `1 game logged.` yields to the shipped string), the row's own slots in `gameLogCopy.history`, and the
 // view switch's `Games` and the recency card's door in `decksStatsCopy`. No percentage, no rate, never `net`.
@@ -26,7 +26,7 @@ export const gameHistoryCopy = {
   pods: (min: number, max: number) => (min === max ? `pod of ${min}` : `pods of ${min}–${max}`),
   /** `most played <deck>, 8 of 23`: lead, then the deck in bold, then the tail. From PATTERN_MIN games, when one deck leads outright. */
   mostPlayed: { lead: "most played", tail: (k: number, total: number) => `, ${n(k)} of ${n(total)}` },
-  /** DRAFT, goes through /copy-review. Under PATTERN_MIN games the headline is a count and this says where games come from. */
+  /** Copy-reviewed (game history). Under PATTERN_MIN games the headline is a count and this says where games come from. */
   low: "Games from every deck land here, newest first.",
   /** The window's foot: what is shown of the whole, and the press for more. */
   window: (shown: number, total: number) => `Showing ${n(shown)} of ${games(total)}`,
@@ -38,7 +38,7 @@ export const gameHistoryCopy = {
   retry: "Try again",
   empty: {
     title: "No games logged yet.",
-    // DRAFT, goes through /copy-review.
+    // Copy-reviewed (game history).
     body: "Every game you log, on any deck, lands here: who won, the pod, the date, who sat across the table.",
     pick: "Log one on",
     log: "Log a game",
