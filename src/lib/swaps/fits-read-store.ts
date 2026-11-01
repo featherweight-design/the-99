@@ -65,7 +65,7 @@ export function candidateHashes(inputs: FitsReadInputs, model: string, legacyPro
 
 export type StartedFitsRead =
   | ({ kind: "started" } & FitsReadHandle)
-  | { kind: "allowance" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "current" };
+  | { kind: "allowance" } | { kind: "ownerShare" } | { kind: "paused" } | { kind: "in_flight" } | { kind: "current" };
 
 class AlreadyCurrentError extends Error {}
 class InFlightError extends Error {}

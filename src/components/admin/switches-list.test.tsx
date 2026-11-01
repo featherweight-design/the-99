@@ -35,7 +35,7 @@ describe("SwitchesList", () => {
     expect(plumbing).toHaveAttribute("data-testid", "switches-plumbing-head");
     expect(plumbing.textContent).toContain("app-wide only");
     const plumbingNames = [...plumbing.parentElement!.querySelectorAll("[data-switch]")].map((e) => e.getAttribute("data-switch"));
-    expect(plumbingNames).toEqual(["SCAN_LAB_ENABLED", "LIST_CACHE_ENABLED", "PUBLIC_PAGES_ENABLED", "RATE_LIMIT_ENABLED", "NAV_STALL_LOG_ENABLED"]);
+    expect(plumbingNames).toEqual(["SCAN_LAB_ENABLED", "LIST_CACHE_ENABLED", "MODEL_CALLS_ENABLED", "PUBLIC_PAGES_ENABLED", "RATE_LIMIT_ENABLED", "NAV_STALL_LOG_ENABLED"]);
     expect(screen.getByText("Resolved counts the 2 accounts on staging. Signed out gets the app-wide result.")).toBeInTheDocument();
   });
 

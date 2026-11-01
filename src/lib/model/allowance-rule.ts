@@ -155,6 +155,9 @@ export type Allowance = {
   /** True for the owner once their month's testing share cannot fit one more call. OPTIONAL, so
    *  an Allowance written without it (every fixture) still type-checks. */
   ownerShare?: boolean;
+  /** True while the app-wide model-call switch is off (`MODEL_CALLS_ENABLED`): no press may start, whatever
+   *  the credits. A panel treats it as it treats `ownerShare`, with `creditsCopy.paused`. OPTIONAL likewise. */
+  paused?: boolean;
   /** Credits left in lots (`credit-rule.ts`), spent only once `used` reaches `limit`, in `SOURCE_RANK`'s order:
    *  the welcome lot first, then plan, then gift, then pack credits. OPTIONAL like `ownerShare`, and absent while
    *  the player holds no lot. */

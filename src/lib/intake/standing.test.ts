@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { creditsCopy } from "../copy/credits";
 import { bareStanding, closedBy, formLine, lineOf, standingLine, toStanding, type Standing } from "./standing";
 
 const base = { used: 1, limit: 5, nextAt: "2026-10-12T02:01:00.000Z", reopensAt: null, ownerShare: false, now: "2026-10-11T12:00:00.000Z" };
@@ -12,6 +13,11 @@ describe("the form's credit line", () => {
     // A paid lot keeps the press open once the free allowance is spent, behind the owner's share.
     expect(closedBy({ ...base, used: 5, plan: 2 })).toBeNull();
     expect(closedBy({ ...base, used: 5, plan: 2, ownerShare: true })).toBe("ownerShare");
+    // Paused (the model-call switch) closes ahead of the owner's share and every credit, with its own line.
+    expect(closedBy({ ...base, ownerShare: true, paused: true })).toBe("paused");
+    expect(closedBy({ ...base, plan: 2, paused: true })).toBe("paused");
+    expect(standingLine({ ...base, paused: true })).toBe(creditsCopy.paused);
+    expect(formLine({ ...base, paused: true })).toBe(creditsCopy.paused);
     // Open on a paid lot with more units out than the limit: the free count never reads below zero.
     expect(standingLine({ ...base, used: 7, pack: 3 })).not.toMatch(/-\d/);
   });

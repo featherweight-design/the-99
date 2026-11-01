@@ -15,6 +15,8 @@ export type Standing = {
   nextAt: string | null;
   reopensAt: string | null;
   ownerShare: boolean;
+  /** The app-wide model-call switch is off (`Allowance.paused`). Optional, so a Standing written without it reads as running. */
+  paused?: boolean;
   /** Paid credits left, as the `Allowance` carries them: absent while the player holds no lot. */
   welcome?: number;
   plan?: number;
@@ -41,6 +43,7 @@ export function toStanding(a: Allowance, now: Date): Standing {
     nextAt: a.nextAt?.toISOString() ?? null,
     reopensAt: a.reopensAt?.toISOString() ?? null,
     ownerShare: a.ownerShare === true,
+    ...(a.paused ? { paused: true } : {}),
     ...(a.welcome !== undefined ? { welcome: a.welcome } : {}),
     ...(a.plan !== undefined ? { plan: a.plan } : {}),
     ...(a.gift !== undefined ? { gift: a.gift } : {}),
@@ -67,10 +70,11 @@ export function lineOf(s: Standing): LineAllowance {
   };
 }
 
-/** Why a press is closed, in the tuning panel's precedence: the owner's share, then spent. */
-export type Closed = "ownerShare" | "spent" | null;
+/** Why a press is closed, in the tuning panel's precedence: paused (the model-call switch), the owner's share, then spent. */
+export type Closed = "paused" | "ownerShare" | "spent" | null;
 
 export function closedBy(s: Standing): Closed {
+  if (s.paused) return "paused";
   if (s.ownerShare) return "ownerShare";
   return hasCredit(s) ? null : "spent";
 }
@@ -78,6 +82,7 @@ export function closedBy(s: Standing): Closed {
 /** The line under the results panel's press, by allowance (STATES "Credit line, by allowance"). */
 export function standingLine(s: Standing): string {
   switch (closedBy(s)) {
+    case "paused": return creditsCopy.paused;
     case "ownerShare": return creditsCopy.ownerShare(new Date(s.now));
     case "spent": return creditSpent(lineOf(s));
     default: return creditFirst(lineOf(s), new Date(s.now));

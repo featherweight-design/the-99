@@ -131,7 +131,9 @@ export function SynopsisOverview({
   const overviewVerdict = content?.verdicts.find((v) => v.section === "overview");
     // No write can reserve: every credit out, or the owner's share used.
   // Each disables the press in 7g's form and says which, never "uses a credit".
-  const spent = !freeLeft && (!hasCredit(allowance) || !!allowance.ownerShare);
+  // Paused (the model-call switch is off) refuses every write, a free try's included, so it holds whatever is left.
+  const paused = !!allowance.paused;
+  const spent = paused || (!freeLeft && (!hasCredit(allowance) || !!allowance.ownerShare));
   // A withheld overview offers no write at all (the server refuses one before its reservation).
   const canWrite = readingFresh && settled && !state.pending && !state.illegal;
   // THE NOTE KEYS ON WHAT THE PRESS DOES (credits audit, finding 4): `wouldSpend` for a write,
@@ -139,13 +141,15 @@ export function SynopsisOverview({
   // credit out says so, whatever the press.
   // Spent, the credit comes back at `reopensAt`, which can be later than the earliest expiry
   // when more units count than the limit (a reservation beside spent units): as the tuning panel.
-  const spentNote = allowance.ownerShare
+  const spentNote = paused
+    ? creditsCopy.paused
+    : allowance.ownerShare
     ? creditsCopy.ownerShare(new Date())
     : creditSpent(allowance);
   const spendNote = creditFirst(allowance);
   // While a free try is left the press spends nothing, so no credit note stands over it.
-  const note = freeLeft ? null : spent ? spentNote : state.wouldSpend ? spendNote : null;
-  const retryNote = freeLeft ? null : spent ? spentNote : spendNote;
+  const note = paused ? spentNote : freeLeft ? null : spent ? spentNote : state.wouldSpend ? spendNote : null;
+  const retryNote = paused ? spentNote : freeLeft ? null : spent ? spentNote : spendNote;
 
   const failedRow = (
     <FailedRow
@@ -212,13 +216,13 @@ export function SynopsisOverview({
   const notice = showNotice && mn ? (
     <MethodNotice
       line={none ? (lastRejected ? synopsisCopy.rejected : lastFailed ? synopsisCopy.failed : spent ? method.triesUsedNoCredit : method.triesUsed) : oneLeft ? method.failed : method.line}
-      note={noticeLeads ? method.withStale : none ? retryNote : oneLeft ? method.oneLeft : method.note}
+      note={noticeLeads ? method.withStale : none || paused ? retryNote : oneLeft ? method.oneLeft : method.note}
       alert={oneLeft || none}
       // The paid press's own failure (the free tries are spent, so the slot's failure row is not
       // drawn over a held same-list overview): a rejection offers no retry, as everywhere else.
       cta={noticeLeads || (none && lastRejected) ? null : {
         label: oneLeft || (none && lastFailed) ? synopsisCopy.tryAgain : synopsisCopy.writeNew,
-        disabled: !canWrite || (none && spent),
+        disabled: !canWrite || (none && spent) || paused,
         busy,
         onPress: pressNotice,
       }}

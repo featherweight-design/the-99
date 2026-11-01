@@ -869,7 +869,9 @@ export function TuningPanel({
   // Every card but the commander locked (Locked, never cut): nothing to cut, so the press is
   // disabled and the server refuses it before a credit is reserved (the gate's `allLocked`).
   const allLocked = !reading && state.allLocked ? state.allLocked : null;
-  const blocked = spent || short !== null || state.allowance.ownerShare === true || allLocked !== null;
+  // Paused (the model-call switch is off) disables it the same way, with its own note.
+  const stopped = state.allowance.ownerShare === true || state.allowance.paused === true;
+  const blocked = spent || short !== null || stopped || allLocked !== null;
 
   async function press(anyway = false) {
     if (!state) return;
@@ -1388,7 +1390,9 @@ export function TuningPanel({
   // A failure's own note rides in the action row beside Try again, ahead of the credit line.
   if (failure?.note) note = note ? `${failure.note} · ${note}` : failure.note;
 
-  const credit = state.allowance.ownerShare
+  const credit = state.allowance.paused
+    ? creditsCopy.paused
+    : state.allowance.ownerShare
     ? creditsCopy.ownerShare(new Date())
     : spent
       // When a credit comes BACK is `reopensAt`: `nextAt` is only the first to leave, and with
@@ -1408,9 +1412,9 @@ export function TuningPanel({
   const tail = lockedNote ?? credit;
   // SC-Cost B, D and E: a 2-credit run that can start names its source and why it is 2. Only where the credit line is
   // what the row says (never under the owner's share or every card locked); a state's own note still leads it.
-  const two = lockedNote === null && !state.allowance.ownerShare ? creditTwo(state.allowance, funding, new Date(), primary.again === true) : null;
+  const two = lockedNote === null && !state.allowance.ownerShare && !state.allowance.paused ? creditTwo(state.allowance, funding, new Date(), primary.again === true) : null;
   // SC-Cost C: the owner's share and every card locked keep their own lines first.
-  const stop = short !== null && lockedNote === null && !state.allowance.ownerShare ? short : null;
+  const stop = short !== null && lockedNote === null && !state.allowance.ownerShare && !state.allowance.paused ? short : null;
   const stopLine = stop ? (stop.freeHoldsOne ? deckTuningCopy.allowance.costsTwoFree(count) : deckTuningCopy.allowance.costsTwo) : null;
   // C is DRAWN only in the action row: not under the v2 results, a reading run or the same-request confirm.
   const stopDrawn = stopLine !== null && !v2RunView && !reading && !(v2 && same) ? stopLine : null;

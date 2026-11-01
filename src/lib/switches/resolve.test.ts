@@ -73,6 +73,16 @@ describe("switchBits", () => {
     expect(bits).toHaveLength(SWITCH_NAMES.length);
     expect(bits.slice(0, 3)).toBe("100");
   });
+
+  // The proxy's header rebuilds the env from these bits (`envFromSwitchBits`), so a default-on switch's bit
+  // must be on while its variable is unset, or every page would read model calls as stopped.
+  it("reads a default-on switch as its flag function does: on unless false or off", () => {
+    const at = SWITCH_NAMES.indexOf("MODEL_CALLS_ENABLED");
+    expect(switchBits(e({}))[at]).toBe("1");
+    expect(switchBits(e({ MODEL_CALLS_ENABLED: "true" }))[at]).toBe("1");
+    expect(switchBits(e({ MODEL_CALLS_ENABLED: "false" }))[at]).toBe("0");
+    expect(switchBits(e({ MODEL_CALLS_ENABLED: "off" }))[at]).toBe("0");
+  });
 });
 
 // All features (2026-10-15): one account row raises every feature and model switch, parents included,

@@ -109,7 +109,7 @@ export async function startRun(
       readList?: { fingerprint: string; cardIds: readonly string[] };
     };
   },
-): Promise<({ kind: "started" } & RunHandle) | { kind: "allowance"; costs?: number } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "allLocked" }> {
+): Promise<({ kind: "started" } & RunHandle) | { kind: "allowance"; costs?: number } | { kind: "ownerShare" } | { kind: "paused" } | { kind: "in_flight" } | { kind: "allLocked" }> {
   const now = opts.now ?? new Date();
   try {
     const handle = await db.transaction(async (tx): Promise<RunHandle> => {

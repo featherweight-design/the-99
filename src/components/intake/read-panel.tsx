@@ -223,8 +223,8 @@ export function ReadPanel({
     : !standing || !hydrated ? null
     : phase === "done" ? copy.read.doneLine(bareStanding(standing))
     : phase === "nothing" ? copy.read.emptyLine(bareStanding(standing))
-    // Unread: the lead says why, so the bare count; the owner's share says its own (7n).
-    : phase === "unread" ? (closed === "ownerShare" ? standingLine(standing) : bareStanding(standing))
+    // Unread: the lead says why, so the bare count; the owner's share and a pause say their own (7n).
+    : phase === "unread" ? (closed === "ownerShare" || closed === "paused" ? standingLine(standing) : bareStanding(standing))
     // Stopped, failed: what *Try again* would do with a credit.
     : standingLine(standing);
   const retried = phase === "stopped" || phase === "failed";

@@ -1,4 +1,4 @@
-import { monthName } from "../../lib/copy/credits";
+import { creditsCopy, monthName } from "../../lib/copy/credits";
 import { deckNoticesCopy } from "../../lib/copy/notices";
 import { synopsisCopy } from "../../lib/copy/synopsis";
 import type { SynopsisView } from "./synopsis-state";
@@ -29,6 +29,9 @@ export function pressNote(view: SynopsisView, where: PressWhere): PressNote | nu
   // `blocked` line still wins over it (F13): the components draw no note over a blocked press.
   if (view.state.illegal) return { text: deckNoticesCopy.check.note, writes: false, see: true };
   if (!view.state.pressWrites) return null;
+  // PAUSED FIRST: the model-call switch refuses every write, a free try's included, so the press reads
+  // the bracket only and the note says why (`creditsCopy.paused`) in place of the free note and every credit form.
+  if (view.state.allowance.paused) return { text: creditsCopy.paused, writes: false };
   // THE METHOD-CHANGE REWRITE IS FREE (addendum_method_notice, build rule 2): while a free try is
   // left the overview this press writes spends no credit, so it writes whatever the allowance says
   // (owner share and used-up included) and the note says so instead of any credit form.

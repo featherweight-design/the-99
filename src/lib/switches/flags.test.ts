@@ -2,7 +2,7 @@
 // Every env here is a small sentinel object built from the registry, never the process environment.
 import { describe, expect, it } from "vitest";
 import { MODEL_CAPABILITIES, SWITCH_FLAGS } from "./flags";
-import { SWITCH_NAMES, switchKind, switchParent, type SwitchName } from "./registry";
+import { SWITCH_NAMES, switchDefaultsOn, switchKind, switchParent, type SwitchName } from "./registry";
 
 const all = (value: string, over: Partial<Record<SwitchName, string>> = {}): NodeJS.ProcessEnv =>
   ({ ...Object.fromEntries(SWITCH_NAMES.map((n) => [n, value])), ...over }) as unknown as NodeJS.ProcessEnv;
@@ -24,6 +24,25 @@ describe("SWITCH_FLAGS", () => {
       expect(SWITCH_FLAGS[name](all("true")), name).toBe(true);
       expect(SWITCH_FLAGS[name](all("true", { [name]: "false" })), name).toBe(false);
     }
+  });
+});
+
+describe("a switch's value while its variable is unset", () => {
+  // Every switch is off unset but the one the registry marks `defaultOn`, the model-call kill switch:
+  // a deployment that never sets it keeps serving model calls. `off` (the kill) and `false` (an Off override) stop it.
+  it("is on exactly for the switches marked defaultOn", () => {
+    for (const name of SWITCH_NAMES) {
+      const unset = all("true");
+      delete unset[name];
+      expect(SWITCH_FLAGS[name](unset), name).toBe(switchDefaultsOn(name));
+    }
+  });
+
+  it("stops model calls for off and false, and only those", () => {
+    const flag = SWITCH_FLAGS.MODEL_CALLS_ENABLED;
+    expect(flag(all("true", { MODEL_CALLS_ENABLED: "off" }))).toBe(false);
+    expect(flag(all("true", { MODEL_CALLS_ENABLED: "false" }))).toBe(false);
+    expect(flag(all("true", { MODEL_CALLS_ENABLED: "true" }))).toBe(true);
   });
 });
 

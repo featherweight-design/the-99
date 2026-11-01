@@ -141,6 +141,7 @@ export async function startTuningV2(args: {
     },
   });
   if (started.kind === "ownerShare") return { kind: "refused", message: creditsCopy.ownerShare(new Date()) };
+  if (started.kind === "paused") return { kind: "refused", message: creditsCopy.paused };
   if (started.kind === "allowance") {
     return started.costs
       ? { kind: "refused", message: deckTuningCopy.allowance.costsTwo, costs: started.costs }

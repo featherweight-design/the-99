@@ -4,6 +4,7 @@ import { analysisTabEnabled } from "../decks/analysis-flag";
 import { pushEnabled } from "../push/flag";
 import { helpMeChooseEnabled } from "../intake/flag";
 import type { ModelFeature } from "../model/allowance-rule";
+import { modelCallsEnabled } from "../model/calls-flag";
 import { publicPagesEnabled } from "../public/flag";
 import { navStallLogEnabled } from "../nav-stall/flag";
 import { paymentsEnabled, welcomeCreditsEnabled } from "../payments/flag";
@@ -28,6 +29,7 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   HELP_ME_CHOOSE_ENABLED: helpMeChooseEnabled,
   FLYER_TRIAL_ENABLED: flyerTrialEnabled,
   LIST_CACHE_ENABLED: listCacheEnabled,
+  MODEL_CALLS_ENABLED: modelCallsEnabled,
   NAV_STALL_LOG_ENABLED: navStallLogEnabled,
   OVERVIEW_V2_ENABLED: overviewV2Enabled,
   PAYMENTS_ENABLED: paymentsEnabled,

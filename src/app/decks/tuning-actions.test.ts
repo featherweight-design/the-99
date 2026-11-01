@@ -744,6 +744,7 @@ describe("runTuning's refused reservation", () => {
       return result.ok ? null : result.message;
     };
     expect(await said("ownerShare")).toBe(creditsCopy.ownerShare(new Date()));
+    expect(await said("paused")).toBe(creditsCopy.paused);
     expect(await said("allowance")).toBe(deckTuningCopy.allowance.spent);
   });
 });

@@ -1,4 +1,4 @@
-import { ALL_FEATURES, ALL_FEATURES_RAISES, SWITCHES, type OverrideName, type SwitchKind, type SwitchName } from "./registry";
+import { ALL_FEATURES, ALL_FEATURES_RAISES, SWITCHES, switchDefaultsOn, type OverrideName, type SwitchKind, type SwitchName } from "./registry";
 
 /**
  * One reader's switches, resolved from the environment and the admin's overrides (brief, locked
@@ -94,7 +94,16 @@ export function resolveEnv(base: NodeJS.ProcessEnv, snapshot: SwitchSnapshot | n
   return out;
 }
 
-/** The resolved switches as one string of bits in registry order: a cache key's part. */
+/**
+ * The resolved switches as one string of bits in registry order: a cache key's part, and the proxy's
+ * header. A bit is on for the string `true`; a `defaultOn` switch's is on unless it reads `false` or `off`,
+ * as its flag function decides, so the env `envFromSwitchBits` rebuilds says the same.
+ */
 export function switchBits(env: NodeJS.ProcessEnv): string {
-  return SWITCHES.map(({ name }) => (env[name] === "true" ? "1" : "0")).join("");
+  return SWITCHES.map(({ name }) => (switchBitOn(name, env[name]) ? "1" : "0")).join("");
+}
+
+function switchBitOn(name: SwitchName, value: string | undefined): boolean {
+  if (switchDefaultsOn(name)) return value !== "false" && value !== KILL;
+  return value === "true";
 }
