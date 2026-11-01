@@ -165,8 +165,13 @@ describe("Suggested changes v2's About errata (Small items 6, item 3)", () => {
       .toEqual(["Read the bracket", "Suggested changes run", "Look deeper", "Came back short or empty", "Short by your price cap"]);
   });
 
-  it("keeps the shipped row when v2 is on but its parents are not", () => {
-    expect(creditRows({ ANALYSIS_TAB_ENABLED: "true", SUGGESTED_CHANGES_V2_ENABLED: "true" })).toContain("Came back empty-handed");
+  it("keeps the shipped row when v2 is on but its parent is not, whatever the retired switch says", () => {
+    // v2's one parent is the Analysis tab now Suggested changes' own switch is retired: with the tab off, v2 resolves
+    // off, so the shipped row stays and neither v2 row draws, even with TUNING_ENABLED set.
+    const rows = creditRows({ TUNING_ENABLED: "true", SUGGESTED_CHANGES_V2_ENABLED: "true" });
+    expect(rows).toContain("Came back empty-handed");
+    expect(rows).not.toContain("Came back short or empty");
+    expect(rows).not.toContain("Short by your price cap");
   });
 
   it("announces the pick card as new when v2 turns on, to a reader who has seen everything else", () => {
