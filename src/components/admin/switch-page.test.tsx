@@ -99,7 +99,7 @@ describe("SwitchPageView", () => {
 });
 
 describe("AdminHead on a switch's page", () => {
-  it("titles itself with the switch, its variable and tags, keeps Switches selected and links back", () => {
+  it("titles itself with the switch, its variable and tags, keeps Feature flags selected and links back", () => {
     path.current = "/admin/switches/TUNING_ENABLED";
     render(<AdminHead env="staging" />);
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(switchCopy.TUNING_ENABLED.label);
