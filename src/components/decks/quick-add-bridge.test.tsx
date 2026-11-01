@@ -80,12 +80,15 @@ const toggle = () => screen.getByRole("checkbox", { name: /only cards you own/i 
 async function typeAndMiss(q = "ghalta") {
   fireEvent.change(field(), { target: { value: q } });
   await waitFor(() => expect(screen.getByText(addPanelCopy.quickAddEmpty.heading)).toBeTruthy());
+  // The miss's one read with the filter off (could the dock list this card once owned?) lands.
+  await act(async () => {});
 }
 
 beforeEach(() => {
   pathname = "/decks/deck-1";
   vi.clearAllMocks();
-  searchCards.mockResolvedValue([]);
+  // Nothing owned matches; with the filter off the dock would list the card (it is in identity and Commander-legal).
+  searchCards.mockImplementation(async (...args: unknown[]) => (args[2] ? [] : [{ ...ghalta, owned: false, ownedQty: 0 }]));
   forgetJustOwned("deck-1", "ghalta");
 });
 afterEach(() => cleanup());
@@ -101,8 +104,108 @@ describe("QuickAddBar — the bridge to Add cards", () => {
     expect(press!.compareDocumentPosition(escape) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(press!.className).toContain("min-h-[44px]");
 
+    // With the filter off the dock lists the card the press was offered for (E15), and the press goes with the filter.
     fireEvent.click(toggle());
+    await waitFor(() => expect(screen.getAllByRole("row").length).toBe(1));
+    expect(bridge()).toBeNull();
+    expect(screen.queryByText(addPanelCopy.quickAddEmpty.heading)).toBeNull();
+  });
+
+  it("draws no press on a miss with Owned only off (K9)", async () => {
+    searchCards.mockImplementation(async () => []);
+    mount();
+    fireEvent.click(toggle());
+    fireEvent.change(field(), { target: { value: "ghalta" } });
     await waitFor(() => expect(screen.getByText(addPanelCopy.quickAddEmpty.bodyAllCards("ghalta", "Naya"))).toBeTruthy());
+    await act(async () => {});
+    expect(bridge()).toBeNull();
+    // No probe off the filter: the miss already is the filter-off answer.
+    expect(searchCards).toHaveBeenCalledTimes(1);
+  });
+
+  it("asks once, with the filter off and the dock's identity, whether the dock could list the card", async () => {
+    mount();
+    await typeAndMiss();
+    expect(bridge()).toBeTruthy();
+    const unfiltered = searchCards.mock.calls.filter((c) => c[2] === false);
+    expect(unfiltered).toEqual([["ghalta", ["R", "G", "W"], false, "deck-1"]]);
+  });
+
+  it("draws no press for a card the dock can never list: off-identity or not Commander-legal", async () => {
+    searchCards.mockImplementation(async () => []);
+    mount();
+    await typeAndMiss("abstract iguanart");
+    expect(searchCards.mock.calls.some((c) => c[2] === false)).toBe(true);
+    expect(bridge()).toBeNull();
+    // The shipped escape still stands.
+    expect(screen.getByRole("button", { name: addPanelCopy.quickAddEmpty.dropFilter })).toBeTruthy();
+  });
+
+  /** The filter-off reads, each held until the test answers it, in the order they were asked. */
+  function holdUnfiltered() {
+    const held: { q: unknown; answer: (r: SearchResult[]) => void }[] = [];
+    searchCards.mockImplementation((...args: unknown[]) =>
+      args[2] ? Promise.resolve([]) : new Promise<SearchResult[]>((answer) => held.push({ q: args[0], answer })),
+    );
+    return held;
+  }
+  const listableRow: SearchResult = { ...ghalta, owned: false, ownedQty: 0 };
+
+  it("draws no press for a later query when an earlier query's read lands after the reader moved on", async () => {
+    const held = holdUnfiltered();
+    mount();
+    await typeAndMiss("ghalta");
+    expect(held.map((h) => h.q)).toEqual(["ghalta"]);
+    await typeAndMiss("zzyzx");
+    expect(held.map((h) => h.q)).toEqual(["ghalta", "zzyzx"]);
+    // The first query's answer arrives late, and says listable: it is filed under "ghalta", not the field's query.
+    await act(async () => held[0].answer([listableRow]));
+    expect(bridge()).toBeNull();
+    await act(async () => held[1].answer([]));
+    expect(bridge()).toBeNull();
+    // Back to the earlier miss: its kept answer draws the press, with no second read.
+    await typeAndMiss("ghalta");
+    expect(held).toHaveLength(2);
+    expect(bridge()).toBeTruthy();
+  });
+
+  it("draws no press when Owned only is turned off while the read is out", async () => {
+    const held = holdUnfiltered();
+    mount();
+    await typeAndMiss("ghalta");
+    fireEvent.click(toggle());
+    // The dock's own filter-off search is held too: answer it empty, so the all-cards miss is drawn.
+    await waitFor(() => expect(held).toHaveLength(2));
+    await act(async () => held[1].answer([]));
+    await waitFor(() => expect(screen.getByText(addPanelCopy.quickAddEmpty.bodyAllCards("ghalta", "Naya"))).toBeTruthy());
+    await act(async () => held[0].answer([listableRow]));
+    expect(bridge()).toBeNull();
+  });
+
+  it("draws no press when the read with the filter off is never answered", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const held = holdUnfiltered();
+      mount();
+      await typeAndMiss("ghalta");
+      expect(held).toHaveLength(1);
+      await act(async () => void vi.advanceTimersByTime(8_000));
+      expect(bridge()).toBeNull();
+      // A late answer after the timeout changes nothing.
+      await act(async () => held[0].answer([listableRow]));
+      expect(bridge()).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("draws no press when the read with the filter off fails", async () => {
+    searchCards.mockImplementation(async (...args: unknown[]) => {
+      if (args[2]) return [];
+      throw new Error("boom");
+    });
+    mount();
+    await typeAndMiss();
     expect(bridge()).toBeNull();
   });
 
@@ -220,7 +323,8 @@ describe("QuickAddBar — the bridge to Add cards", () => {
     await waitFor(() => expect(sheet()).toBeNull());
     // The close reaches the dock once the sheet's history entry has gone: it hands focus back and starts the re-run.
     await waitFor(() => expect(document.activeElement).toBe(field()));
-    await waitFor(() => expect(searchCards).toHaveBeenCalledTimes(2));
+    // The owned-only miss, its read with the filter off, and the re-run.
+    await waitFor(() => expect(searchCards).toHaveBeenCalledTimes(3));
   }
 
   it("rings nothing for a search typed before the re-run landed", async () => {

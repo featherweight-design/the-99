@@ -11,24 +11,28 @@ vi.mock("next/navigation", () => ({ usePathname: () => "/collection", useRouter:
 vi.mock("./search-layer", () => ({ SearchLayer: () => null }));
 // md and up: the desktop's frame, not the phone's.
 vi.mock("../ui/use-min-width", () => ({ useMinWidth: () => true }));
+// A shell Add cards host is up, so the rows' + is on wherever the collection edit scope is (mountScoped below).
+vi.mock("../collection/add-cards-host", () => ({ useAddCards: () => () => true }));
 
 const { CardSearchRoot } = await import("./card-search");
 const { pushRecent } = await import("../../lib/card-search/recent");
 const { SearchDesktop } = await import("./search-desktop");
+const { CollectionEditScope } = await import("../cards/collection-edit-scope");
 
-function mount(platform: string) {
+function mount(platform: string, { scoped = false }: { scoped?: boolean } = {}) {
   vi.spyOn(navigator, "platform", "get").mockReturnValue(platform);
   vi.stubGlobal("matchMedia", (q: string) => ({
     matches: q.includes("768"),
     addEventListener: () => {},
     removeEventListener: () => {},
   }));
-  render(
+  const root = (
     <CardSearchRoot userId="u1">
       <input aria-label="page field" />
       <SearchDesktop />
-    </CardSearchRoot>,
+    </CardSearchRoot>
   );
+  render(scoped ? <CollectionEditScope>{root}</CollectionEditScope> : root);
 }
 const frame = () => screen.queryByRole("dialog", { name: "Search all cards" });
 const press = (init: KeyboardEventInit) => act(async () => void fireEvent.keyDown(window, { key: "k", ...init }));
@@ -175,6 +179,23 @@ describe("the search on the desktop", () => {
     expect(combobox().getAttribute("aria-activedescendant")).toBe("card-search-list-0");
     await act(async () => void fireEvent.keyDown(combobox(), { key: "ArrowDown" }));
     expect(combobox().getAttribute("aria-activedescendant")).toBe("card-search-list-1");
+  });
+
+  it("C-D1: with the rows' + on, the foot line names ⌘↵ over Recent cards too", async () => {
+    pushRecent("u1", { oracleId: "a", name: "Alpha", imageUri: null, flavorName: null });
+    mount("MacIntel", { scoped: true });
+    await press({ metaKey: true });
+    await act(async () => {});
+    expect(frame()?.textContent).toContain("⌘↵ to add");
+    expect(frame()?.textContent).toContain("opens this from anywhere");
+  });
+
+  it("D2: with the rows' + off, Recent cards draw no foot line", async () => {
+    pushRecent("u1", { oracleId: "a", name: "Alpha", imageUri: null, flavorName: null });
+    mount("MacIntel");
+    await press({ metaKey: true });
+    await act(async () => {});
+    expect(frame()?.textContent).not.toContain("opens this from anywhere");
   });
 
   it("does not open under the veil while a picked card is on its way up", async () => {

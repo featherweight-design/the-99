@@ -15,8 +15,8 @@
 //
 // Replaced search-pane.tsx and search-result-row.tsx, both now deleted.
 
-import { useCallback, useId, useLayoutEffect, useRef, useState } from "react";
-import type { SearchResult } from "../../app/decks/[id]/search-action";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { searchCards, type SearchResult } from "../../app/decks/[id]/search-action";
 import { addCardToDeck } from "../../app/decks/actions";
 import { DECK_ADD_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { cardDetailCopy, useCardDetailIfAny, useCardIntentIfAny } from "../cards/card-detail-provider";
@@ -36,7 +36,7 @@ import { cardFactName } from "../../lib/copy/card-mark";
 import { MutationError } from "./mutation-error";
 import { useAddOptimisticCard } from "./optimistic-deck";
 import { useFlushBasicCounts } from "./basic-counts";
-import { type CardSearchColumn, type CardSearchInput, useCardSearch } from "./use-card-search";
+import { type CardSearchColumn, type CardSearchInput, SEARCH_TIMEOUT_MS, useCardSearch } from "./use-card-search";
 import { QuickAddFailedToast } from "./quick-add-failed-toast";
 import { type DeckComboMap, useDeckComboMap } from "./use-deck-combo-map";
 import { useDeckMutation } from "./use-deck-mutation";
@@ -178,7 +178,39 @@ export function QuickAddBar({
   // About figure, a test with no host), where there is no sheet to open.
   const addCards = useAddCards();
   const addInScope = useCollectionEditScope();
-  const canBridge = addCards !== null && addInScope;
+  const canBridgeHere = addCards !== null && addInScope;
+  // Only for a query the dock could list once its card is owned. The owned-only miss says nothing about that: a card
+  // outside the commander's identity, or not Commander-legal (an Un-set acorn), is never listed, so saving it would
+  // leave the dock reading the same miss with the bridge offered again. One read of the same query with the filter
+  // off answers it, through the dock's own search and so its own identity and legality rules (`searchCards` takes no
+  // limit; its page is 20 rows, and with every row unowned it skips the availability read). It is made only on an
+  // owned-only miss, and the answer is kept per query, identity and deck, so going back to an earlier miss reads
+  // nothing again. The bridge waits for it. A read that fails, or is unanswered after SEARCH_TIMEOUT_MS, offers
+  // nothing: the shipped escape below still stands. An answer is filed under the query it was asked for, so one that
+  // lands after the reader moved on never draws a bridge for the new query.
+  const listableKey = `${commanderIdentity.join(",")} ${deckId} ${trimmed}`;
+  const [listable, setListable] = useState<ReadonlyMap<string, boolean>>(() => new Map());
+  const probeListable = canBridgeHere && ownedOnly && noResults && !listable.has(listableKey);
+  useEffect(() => {
+    if (!probeListable) return;
+    const key = listableKey;
+    let settled = false;
+    const file = (any: boolean) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(deadline);
+      setListable((m) => (m.has(key) ? m : new Map(m).set(key, any)));
+    };
+    const deadline = setTimeout(() => file(false), SEARCH_TIMEOUT_MS);
+    (search ?? searchCards)(trimmed, commanderIdentity, false, deckId).then(
+      (found) => file(found.length > 0),
+      () => file(false),
+    );
+    // No cleanup: the answer belongs to its own key, wherever the reader has gone since.
+    // `search` is a constant at every call site (see use-card-search.ts); the key carries the rest.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [probeListable, listableKey]);
+  const canBridge = canBridgeHere && listable.get(listableKey) === true;
   // The request the ring answers: the same text and filter. With the epoch, any way the input moves clears it.
   const ringKey = `${ownedOnly ? "owned" : "all"} ${trimmed}`;
   // A saving sheet closed: the re-run's landing (the first to land after the close) rings its owned rows. A failed or

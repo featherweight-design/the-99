@@ -1681,6 +1681,10 @@ export function CardDetailProvider({
   // I got it's link for the live card, when a Shopping row opened it and the list bills it (`GotItDoorRegistration`
   // answers null for a card it does not): it takes the receipt's one link slot, ahead of Add to collection (O2).
   const liveReceiptLink: ReactNode = card && door && receiptLinkRender ? (receiptLinkRender(card.oracleId) ?? null) : null;
+  // The slot is Shopping's whenever a Shopping row opened the card and I got it has registered its link, whatever the
+  // link answers for this card (O2): a card the list no longer bills (the purchase took it off) draws neither link,
+  // never Add to collection in Bought this card?'s place.
+  const shoppingSlot = Boolean(card && door && receiptLinkRender);
   // The desktop neighbor plates (handoff decision 2): the card either side of the one on
   // screen, or null at a list's end — same bound as `nextId`/`prevId` above, which read the
   // same positions to prefetch them.
@@ -1857,8 +1861,8 @@ export function CardDetailProvider({
             ),
           } : null}
           // Inside the shell, and only on a card nothing is stacked on: a partner opened from a combo block or a card
-          // over a sheet is not the reader's own row. A card a Shopping row opened keeps I got it's link instead (O2).
-          onEditCopies={editOn && sheetsBelow === 0 && partnerOf === null && !liveReceiptLink ? () => startEdit(card) : null}
+          // over a sheet is not the reader's own row. A card a Shopping row opened keeps the slot for I got it (O2).
+          onEditCopies={editOn && sheetsBelow === 0 && partnerOf === null && !shoppingSlot ? () => startEdit(card) : null}
           fitsOpen={fitsFor !== null || fitsViewFor === card.oracleId}
           // Only a card the door has something for: a door with nothing in it would still take its room
           // from the art.

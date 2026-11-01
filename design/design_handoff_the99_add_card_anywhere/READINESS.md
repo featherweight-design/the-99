@@ -277,6 +277,34 @@ boards are Design's and stay as dropped; these rulings govern the build.
   "Briefly" is not drawn: the deck row holds it for 2s, as an edge with no animation, so reduced motion draws it the
   same. A proxied row draws no ring, and clearing or setting a proxy tag (no save) rings nothing.
 
+## Errata from the close-out walk (2026-11-01)
+
+- **E12 · the accent on the + and the ×N.** *Add several cards*' plus is drawn in the board's `--accent`, as a stroke:
+  it is a glyph, not text, so it needs 3:1 on the row's `--bg`, which `--accent` holds in all six themes
+  (`contract.test.ts` pins it; Phyrexia's `#52827A` reads 4.51). The receipt's `×N` (`card-modal.tsx`, both receipts)
+  stays in `--accent-text`, not the board's `--accent`: it is text, and `accent-text-sites.test.ts` fails every accent
+  text site, absolutely, because Phyrexia's `--accent` reads under 4.5:1 on its raised grounds (3.89 on `--elevated`).
+  The receipt sits on `--bg`, where it would read 4.51, so it is the guard, not this site's contrast, that keeps it.
+  In the other five themes the two are one ink, so the receipt reads as the board draws it there.
+- **E13 · the phone +'s radius is 10px.** Item 2 of Design's note says an 8px radius; the board's `.addp` draws the 44px
+  phone press at 10px, and 8px only at 34px from `md`. The board is the specimen: `search-row.tsx` ships 10px, 8px from `md`.
+- **E14 · a card with one printing skips the printing step.** Against brief state 3 (the + opens Add cards with the
+  card on the list, "printing step open, no default", C4 and C-D2): the shipped sheet takes a card's only printing as
+  the answer, as a pick in its own search does (`add-cards-sheet.tsx`, `choices.length === 1`). With one printing there
+  is no choice to make, so the step is not drawn.
+- **E15 · the dock's bridge only for a card the dock can list.** K2 offers *Add a card to your collection* on every
+  owned-only miss. It is offered only when the same query with the filter off finds a card the dock would list (the
+  commander's identity, Commander-legal, a game card: the dock's own search). The answer is kept per query, identity
+  and deck, so a miss gone back to reads nothing again. A card the dock can never list (*Abstract Iguanart* on the
+  walk) would save and leave the dock reading the same miss with the bridge offered again. A read that fails, or is
+  unanswered after the search's own 8s timeout, offers no bridge; *Search all cards instead* stands as shipped. It asks
+  whether any match is listable, not whether the card the sheet saves is: the bridge carries the query, not a card.
+- **E16 · a Shopping-row open keeps the slot.** O2's "a card opened from a Shopping row keeps *Bought this card?*"
+  holds whatever I got it answers for the card: a card a Shopping row opened never draws Add to collection while I got
+  it's link is registered, so a card the list no longer bills (a purchase took it off) draws neither link. The open
+  stays a Shopping open while paging, so a paged-to card the list does not bill draws neither link either: an edge,
+  accepted.
+
 ---
 
 ## Design's readiness note (as dropped, kept for the record)
