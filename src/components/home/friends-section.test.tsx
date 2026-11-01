@@ -54,7 +54,7 @@ describe("FriendsSection", () => {
     // Your seat is hidden from screen readers, like the empty seats beside it.
     expect(screen.getByText(socialCopy.home.you).closest("li")?.getAttribute("aria-hidden")).toBe("true");
     expect(seats(container)).toEqual(["empty", "empty", "empty", "empty"]);
-    expect(screen.getByText(`${socialCopy.home.invite} ${socialCopy.home.inviteMore(true)}`)).toBeTruthy();
+    expect(screen.getByText(`${socialCopy.home.invite} ${socialCopy.home.inviteMore}`)).toBeTruthy();
     expect(screen.getByRole("button", { name: socialCopy.page.invite })).toBeTruthy();
     expect(screen.queryByRole("link", { name: /All friends/ })).toBeNull();
   });

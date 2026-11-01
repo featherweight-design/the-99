@@ -45,9 +45,8 @@ export const socialCopy = {
     all: "All friends", // the › is drawn
     you: "You", // under your own face, in the no-friends state only
     invite: "Add the people you play with.",
-    /** G5: the line's second sentence; `games` names seating friends in a logged game (Home always passes true). */
-    inviteMore: (games: boolean) =>
-      games ? "Seat them when you log a game, and see their spares when you shop." : "See their spares when you shop.",
+    /** G5: the line's second sentence. */
+    inviteMore: "Seat them when you log a game, and see their spares when you shop.",
     more: (n: number) => `+${n}`, // the overflow slot, aria-hidden
     moreSub: "more",
     links: (n: number) => (n === 1 ? "Friend link open" : `${n} friend links open`),
@@ -85,9 +84,8 @@ export const socialCopy = {
     },
     nameField: {
       label: "Your name, as friends see it",
-      hint: "Up to 30 characters. Friends see this and your commander.",
-      // With the signature card on (handoff 20, call 1): the face is named a signature card, not a commander.
-      hintSignature: "Up to 30 characters. Friends see this and your signature card.",
+      // Handoff 20, call 1: the face is named a signature card, not a commander.
+      hint: "Up to 30 characters. Friends see this and your signature card.",
       save: "Save",
       cancel: "Cancel",
       failed: "We couldn’t save your name. Try again.", // toast, role alert
@@ -147,15 +145,11 @@ export const socialCopy = {
       noneBody: (name: string | ThirdPartyName) => personText`Spares show here when ${name} shares them with a pod you’re both in.`,
     },
     decks: {
-      line: (name: ThirdPartyName) => personText`View only. ${name}’s committed decks and drafts, newest first.`,
-      figure: (built: number, bodySize: number, toBuy: number) =>
-        toBuy > 0 ? `${built} / ${bodySize} · ${toBuy} ${toBuy === 1 ? "card" : "cards"}` : `${built} / ${bodySize}`,
       emptyTitle: (name: ThirdPartyName) => personText`${name} has no decks yet`,
-      emptyBody: (name: ThirdPartyName) => personText`A deck ${name} builds shows here, as a name, a commander and a status.`,
       // Friend decks (handoff call 6, States): every tile opens the deck, and the tile shows a count, never a status.
       // Passed /copy-review: the head names the friend and the strip names the tab, so the line says only the order and the press.
-      lineOpen: "Newest first. Open one to see its list.",
-      emptyBodyOpen: (name: ThirdPartyName) => personText`A deck ${name} shares shows here, with its whole list.`,
+      line: "Newest first. Open one to see its list.",
+      emptyBody: (name: ThirdPartyName) => personText`A deck ${name} shares shows here, with its whole list.`,
       /** The tile's press, named with what the tile shows, in its order. */
       tileAria: (deck: string | ThirdPartyName, commander: string | null, colour: string, cards: string): PersonParts =>
         joinNames([deck, commander, colour, cards].filter((x): x is string | ThirdPartyName => Boolean(x))),
@@ -322,17 +316,14 @@ export const socialCopy = {
     signIn: "Sign in",
     signedOutFine: "No account? The 99 is invite-only. Ask whoever sent this to invite you.",
     openTitle: (name: ThirdPartyName) => personText`${name} wants to be friends`,
-    // The card's text box (rules text), not a paragraph beside it.
-    openRules: (name: ThirdPartyName) => personText`When you accept, you and ${name} become friends. Each of you sees the other’s name and commander, and nothing else until one of you shares more.`,
     typeRequest: "Friend request",
     typeOwn: "Your friend link",
     typeFriend: (since: string) => `Friend · since ${since}`,
-    ownRules: "This is what a friend sees when they open your link: your name, your commander, and an Accept.",
-    friendRules: (name: ThirdPartyName) => personText`You and ${name} are friends. Each of you sees the other’s name and commander.`,
-    // With the signature card on (handoff 20, call 1), the three rules and the empty credit name the face as it is.
-    openRulesSignature: (name: ThirdPartyName) => personText`When you accept, you and ${name} become friends. Each of you sees the other’s name and signature card, and nothing else until one of you shares more.`,
-    ownRulesSignature: "This is what a friend sees when they open your link: your name, your signature card, and an Accept.",
-    friendRulesSignature: (name: ThirdPartyName) => personText`You and ${name} are friends. Each of you sees the other’s name and signature card.`,
+    // The card's text box (rules text), not a paragraph beside it. Handoff 20, call 1: the three rules and the empty
+    // credit name the face as a signature card.
+    openRules: (name: ThirdPartyName) => personText`When you accept, you and ${name} become friends. Each of you sees the other’s name and signature card, and nothing else until one of you shares more.`,
+    ownRules: "This is what a friend sees when they open your link: your name, your signature card, and an Accept.",
+    friendRules: (name: ThirdPartyName) => personText`You and ${name} are friends. Each of you sees the other’s name and signature card.`,
     noSignature: "No signature card chosen",
     credit: (commander: string) => `Art · ${commander}`, // drawn uppercase by CSS
     noCommander: "No commander chosen",

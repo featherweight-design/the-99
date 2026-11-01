@@ -23,13 +23,13 @@ export function FriendDecksTab({ name, decks, publicId }: {
     return (
       <div className="mt-[16px] flex flex-col gap-[6px] rounded-[12px] px-[20px] py-[22px] [border:1px_dashed_var(--border-dashed)] md:mt-[18px] md:px-[32px] md:py-[30px]">
         <p className="m-0 font-display text-[18px] font-bold text-[color:var(--fg)] [overflow-wrap:anywhere] md:text-[19px]"><PersonText text={p.decks.emptyTitle(name)} /></p>
-        <p className="m-0 max-w-[600px] text-[14px] leading-[1.6] text-[color:var(--fg-muted)] [overflow-wrap:anywhere]"><PersonText text={p.decks.emptyBodyOpen(name)} /></p>
+        <p className="m-0 max-w-[600px] text-[14px] leading-[1.6] text-[color:var(--fg-muted)] [overflow-wrap:anywhere]"><PersonText text={p.decks.emptyBody(name)} /></p>
       </div>
     );
   }
   return (
     <>
-      <p className="m-0 mt-[12px] font-mono text-[11px] text-[color:var(--fg-faint)]">{p.decks.lineOpen}</p>
+      <p className="m-0 mt-[12px] font-mono text-[11px] text-[color:var(--fg-faint)]">{p.decks.line}</p>
       <ul className="m-0 mt-[12px] grid list-none grid-cols-1 gap-[12px] p-0 md:grid-cols-3 md:gap-[14px]">
         {decks.map((d, i) => (
           <li key={d.id} data-testid="friend-deck" className="sm:h-full">

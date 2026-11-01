@@ -35,13 +35,13 @@ const turnMs = () => (prefersReducedMotion() ? 120 : 520);
 function faceOf(v: LandingView, since: (d: Date) => string): CardFace | null {
   switch (v.kind) {
     case "open":
-      return { name: v.name, commander: v.commander, type: copy.typeRequest, rules: copy.openRulesSignature(v.name) };
+      return { name: v.name, commander: v.commander, type: copy.typeRequest, rules: copy.openRules(v.name) };
     case "self":
-      return { name: v.name, commander: v.commander, type: copy.typeOwn, rules: copy.ownRulesSignature };
+      return { name: v.name, commander: v.commander, type: copy.typeOwn, rules: copy.ownRules };
     case "friends":
       return {
         name: v.name, commander: v.commander, type: copy.typeFriend(since(v.since)),
-        rules: copy.friendRulesSignature(v.name),
+        rules: copy.friendRules(v.name),
       };
     default:
       return null;
