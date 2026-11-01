@@ -25,6 +25,9 @@ export function sentryOptions(dsn: string | undefined, environment: string | und
       queues: false,
       stackFrameVariables: false,
     },
+    // React's own Suspense fallback, #419 ("the server could not finish this Suspense boundary, so the client renders it"): benign,
+    // and the one issue that filled the project (THE-99-3). Matched by number, so #4190 is not swallowed with it.
+    ignoreErrors: [/^Minified React error #419\b/],
     maxBreadcrumbs: 20,
     beforeSend: scrubEvent,
     beforeBreadcrumb: scrubBreadcrumb,
