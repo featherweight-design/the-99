@@ -24,7 +24,7 @@ describe("GlobalError", () => {
     mount(err("7f3a91c2"));
     expect(screen.getByTestId("wordmark")).toBeTruthy();
     expect(screen.getByTestId("crash-code").textContent).toBe(reportCopy.codeLine("7f3a91c2"));
-    expect(screen.queryByRole("link", { name: reportCopy.title })).toBeNull();
+    expect(document.body.querySelector('a[href^="/report"]')).toBeNull();
   });
 
   it("draws no code line when the error carried no digest", () => {

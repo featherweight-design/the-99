@@ -32,8 +32,8 @@ import { isQrToken } from "./lib/invites/rules";
 // page draws a signed-out reader a card that reads nothing and offers Sign in, and reads the link only for
 // a signed-in reader (`app/friend/[token]/page.tsx`, Social R1 E8). `/friends` stays
 // protected: the pattern needs the slash.
-// /report is public because Report a problem is also for a reader who cannot reach the app: the crash screen links
-// there, signed in or not (`app/report/page.tsx`). The page decides the feedback switch and answers 404 while it is off.
+// /report is public because Report a problem is also for a reader who cannot reach the app: the crash screen is drawn to link
+// there (once the switch is on for everyone), signed in or not (`app/report/page.tsx`). The page decides the feedback switch and answers 404 while it is off.
 // /card/<slug> and /commander/<slug> are the public catalog pages (launch epic F3): the PAGE enforces its switch
 // (`PUBLIC_PAGES_ENABLED`) and answers 404 while it is off, so a stranger is never sent to sign-in from one. `/commanders`
 // stays protected: the pattern needs the slash.

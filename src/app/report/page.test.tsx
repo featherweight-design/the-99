@@ -54,6 +54,8 @@ describe("/report", () => {
   it("draws the newcomer's frame for a signed-out reader, with the signed-out door and no promise of a reply", async () => {
     const el = (await render({ ref: "7f3a91c2", from: "/decks/abc?x=1" })) as ReactElement;
     expect((el.props as { className: string }).className).toBe(REPORT_MAIN);
+    expect(REPORT_MAIN).toContain("min-h-dvh");
+    expect(REPORT_MAIN).not.toContain("pt-[44px]");
     expect(pageOf(el)).toEqual({ source: "report", signedOut: true, digest: "7f3a91c2", page: "/decks/abc" });
   });
 

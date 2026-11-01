@@ -125,6 +125,7 @@ export function ReportBody({
       <div
         className={`flex flex-col items-center gap-[8px] text-center ${page ? "px-[8px] pb-[18px] pt-[26px]" : "px-[24px] pb-[42px] pt-[42px] md:px-[18px] md:pb-[36px]"}`}
         data-testid="report-sent"
+        role="status"
       >
         <span aria-hidden className="flex h-[44px] w-[44px] items-center justify-center rounded-full border-[1.5px] border-solid border-[color:var(--success)] text-[19px] font-bold text-[color:var(--success)]">
           ✓

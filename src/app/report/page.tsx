@@ -1,8 +1,9 @@
 // /report: Report a problem on a page of its own (small items 8, board 6; flyer trial `Report-Phone`, `Report-Desktop`).
 //
-// Public in `src/proxy.ts`: the crash screen (`global-error.tsx`, no shell, no router) links here with the error's digest as
-// `ref` and the path the reader was on as `from`, and the reader may not be signed in. The frame is the newcomer's
-// (`NEWCOMER_MAIN`) for EVERY reader, signed in or not. The page answers 404 while Report a problem is off FOR THIS READER:
+// Public in `src/proxy.ts`: the crash screen (`global-error.tsx`, no shell, no router) is drawn to link here with the error's
+// digest as `ref` and the path the reader was on as `from`; that link waits until the switch is on for everyone (the crash
+// screen cannot read it), so today the page is reached by address. The reader may not be signed in. The frame is the
+// newcomer's (`REPORT_MAIN`) for EVERY reader, signed in or not. The page answers 404 while Report a problem is off FOR THIS READER:
 // a signed-in reader's own switches (`requestSwitchEnv`), a signed-out one's the variable and the app-wide override
 // (`resolveSwitchEnv(null)`, as `sendProblemReport` decides). `ref` and `from` are read as the action stores them: a short
 // word-character code, and a path alone.
