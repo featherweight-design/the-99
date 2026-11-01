@@ -103,17 +103,19 @@ async function main() {
           throw new CopyRefused("the target's catalog moved while the copy built its requests: nothing was written; run the copy again");
         }
         const now = new Date();
+        // The log head under the lock this publish holds, the check's mark (`checked_seen_seq`).
+        const checkedSeenSeq = await readLogHead(tx);
         for (const r of plan.install) {
           const row = {
             preconFile: r.file, contractVersion: contract, roleBasis: basis, listFingerprint: r.listFingerprint, inputHash: r.inputHash, model: r.model,
             content: r.content, inputTokens: r.inputTokens, outputTokens: r.outputTokens, costMicroUsd: r.costMicroUsd,
-            current: true, createdAt: now, checkedAt: now,
+            current: true, createdAt: now, checkedAt: now, checkedSeenSeq,
           };
           await tx.insert(preconSynopses).values(row).onConflictDoUpdate({ target: [preconSynopses.preconFile, preconSynopses.contractVersion, preconSynopses.roleBasis], set: row });
         }
         const at = (files: string[]) => and(eq(preconSynopses.contractVersion, contract), eq(preconSynopses.roleBasis, basis), inArray(preconSynopses.preconFile, files));
-        if (plan.stale.length > 0) await tx.update(preconSynopses).set({ current: false, checkedAt: now }).where(at(plan.stale));
-        if (plan.restamp.length > 0) await tx.update(preconSynopses).set({ current: true, checkedAt: now }).where(at(plan.restamp));
+        if (plan.stale.length > 0) await tx.update(preconSynopses).set({ current: false, checkedAt: now, checkedSeenSeq }).where(at(plan.stale));
+        if (plan.restamp.length > 0) await tx.update(preconSynopses).set({ current: true, checkedAt: now, checkedSeenSeq }).where(at(plan.restamp));
         // After the installs, so a row this publish created takes its reading in the same transaction.
         for (const file of readingFiles) {
           const b = built.get(file)!;

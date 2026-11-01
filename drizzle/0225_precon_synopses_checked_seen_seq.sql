@@ -1,0 +1,1 @@
+ALTER TABLE "precon_synopses" ADD COLUMN "checked_seen_seq" bigint;

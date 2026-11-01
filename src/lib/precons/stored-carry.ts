@@ -161,7 +161,8 @@ export function sourceRowQuery(tx: Pick<Tx, "select">, file: string, contract: n
   return tx.select({
     listFingerprint: preconSynopses.listFingerprint, contractVersion: preconSynopses.contractVersion, current: preconSynopses.current,
     model: preconSynopses.model, content: preconSynopses.content, createdAt: preconSynopses.createdAt, readingAt: preconSynopses.readingAt,
-    logAtCheck: sql<number>`(select coalesce(max(dc.seq), 0)::bigint from ${deckDataChanges} dc where dc.published_at <= ${preconSynopses}.checked_at)`,
+    // The check's own mark, else for a row written before it the entries published by the check's time.
+    logAtCheck: sql<number>`coalesce(${preconSynopses}.checked_seen_seq, (select coalesce(max(dc.seq), 0)::bigint from ${deckDataChanges} dc where dc.published_at <= ${preconSynopses}.checked_at))`,
   }).from(preconSynopses).where(and(
     eq(preconSynopses.preconFile, file), eq(preconSynopses.contractVersion, contract), eq(preconSynopses.roleBasis, basis),
   )).for("share");

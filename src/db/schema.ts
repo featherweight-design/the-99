@@ -3593,6 +3593,14 @@ export const preconSynopses = pgTable("precon_synopses", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   checkedAt: timestamp("checked_at").notNull().defaultNow(),
   /**
+   * The deck data log's head as of that check (`checked_at`), read under the `catalog-ingest` lock BEFORE the check's
+   * inputs: every ingest holds that lock for its whole run, so no log entry is in flight, and the Overview has seen the
+   * log exactly up to it. A start reads it as the deck's `seen_seq` instead of comparing `published_at` to `checked_at`,
+   * which counts an entry whose ingest began before the check but committed after it as seen. Null for a row written
+   * before this column, or when the head was unreadable: readers fall back to the time comparison.
+   */
+  checkedSeenSeq: bigint("checked_seen_seq", { mode: "number" }),
+  /**
    * THE PRECON'S BRACKET READING (small items 5, PR 6a): exactly the `deck_profiles` row an Analyze press
    * would write for a deck holding this precon's list, computed from THIS database's catalog at the row's
    * role basis (no model), for a start to copy instead of computing it in the arrival render (that copy is
