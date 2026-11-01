@@ -1596,14 +1596,16 @@ describe("the Stats panel", () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ spares: [] }) });
     vi.stubGlobal("fetch", fetchMock);
     onTestFinished(() => { vi.unstubAllGlobals(); });
+    // The provider also reads the reader's asks (`/api/spare-requests`); only the spares read is counted.
+    const sparesCalls = () => fetchMock.mock.calls.filter(([url]) => String(url).startsWith("/api/friend-spares")).length;
     await act(async () => {
       renderDecklist([rampOwned, rampUnowned], { filter: "all", notesData: { open: [], done: [], readAt: 1 } });
     });
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(sparesCalls()).toBe(1);
     const bar = screen.getByRole("tablist");
     await act(async () => { fireEvent.click(screen.getByRole("tab", { name: "Notes, none yet" })); });
     await act(async () => { fireEvent.click(screen.getByRole("tab", { name: /^All/ })); });
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(sparesCalls()).toBe(1);
     expect(screen.getByRole("tablist")).toBe(bar);
   });
 
