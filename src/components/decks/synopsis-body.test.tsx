@@ -139,6 +139,13 @@ describe("the stages shape (contract 13)", () => {
     expect(within(stages[2]).queryAllByTestId("synopsis-card-image")).toHaveLength(0);
   });
 
+  it("lets every stage line break inside a long unbreakable card name, so it never runs past the card", () => {
+    drawStages(stage13(), 13);
+    const lines = screen.getAllByTestId("synopsis-stage").flatMap((s) => [...s.querySelectorAll("p")]);
+    expect(lines.length).toBeGreaterThan(0);
+    for (const p of lines) expect(p.className).toContain("[overflow-wrap:anywhere]");
+  });
+
   it("draws the timeline as one segment per stage after its label, never a line behind the labels", () => {
     drawStages(stage13(), 13);
     const plan = screen.getByTestId("synopsis-plan");

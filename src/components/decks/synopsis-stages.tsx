@@ -91,7 +91,7 @@ export function OverviewWithCommander({ content, art, text, commanderId }: Draw 
       {show ? (
         <CardImage oracleId={commanderId} name={name} art={art} onFail={onFail} className="mt-[4px] h-[100px] w-[72px] -rotate-3 md:h-[134px] md:w-[96px]" />
       ) : null}
-      <p className="text-[13.5px] leading-[1.65] md:text-[14.5px] md:leading-[1.7] text-[var(--fg-body)] [text-wrap:pretty]">{text(content.overview ?? "")}</p>
+      <p className="text-[13.5px] leading-[1.65] md:text-[14.5px] md:leading-[1.7] text-[var(--fg-body)] [text-wrap:pretty] [overflow-wrap:anywhere]">{text(content.overview ?? "")}</p>
     </div>
   );
 }
@@ -126,7 +126,7 @@ export function GamePlan({
                     <span className="mb-[5px] block font-mono text-[10px] font-medium uppercase leading-[13px] tracking-[0.14em] text-[var(--fg-body)] md:relative md:z-[1] md:mb-0 md:bg-[var(--surface-raised)] md:pr-[8px]">{labels[i]}</span>
                     {last ? null : <span aria-hidden className="hidden h-px min-w-0 flex-1 bg-[var(--fg-faint)] opacity-[0.55] md:block" />}
                   </div>
-                  <p className="m-0 text-[13px] leading-[1.55] text-[var(--fg-body)] [text-wrap:pretty]">{text(line)}{basedOn(i, line)}</p>
+                  <p className="m-0 text-[13px] leading-[1.55] text-[var(--fg-body)] [text-wrap:pretty] [overflow-wrap:anywhere]">{text(line)}{basedOn(i, line)}</p>
                 </div>
               </div>
             </div>
@@ -142,7 +142,7 @@ export function GamePlan({
                 <i aria-hidden className="block h-[8px] w-[8px] flex-none rotate-45 border border-[var(--fg-faint)] bg-[var(--surface-raised)]" />
                 {synopsisCopy.modal.plan.backup}
               </span>
-              <p className="m-0 text-[13px] leading-[1.55] text-[var(--fg-body)] [text-wrap:pretty]">{text(backup)}</p>
+              <p className="m-0 text-[13px] leading-[1.55] text-[var(--fg-body)] [text-wrap:pretty] [overflow-wrap:anywhere]">{text(backup)}</p>
             </div>
           </div>
         </div>
@@ -154,7 +154,7 @@ export function GamePlan({
           </span>
           <div className="min-w-0">
             <span className="mb-[5px] block font-mono text-[9.5px] font-medium uppercase tracking-[0.14em] text-[var(--fg-body)]">{synopsisCopy.modal.plan.alternate}</span>
-            <p className="m-0 text-[13px] leading-[1.55] text-[var(--fg-body)] [text-wrap:pretty]">{text(alternate)}{alternateBasedOn}</p>
+            <p className="m-0 text-[13px] leading-[1.55] text-[var(--fg-body)] [text-wrap:pretty] [overflow-wrap:anywhere]">{text(alternate)}{alternateBasedOn}</p>
           </div>
         </div>
       ) : null}
@@ -178,7 +178,7 @@ export function LandLine({ line, text, basedOn }: { line: string; text: (t: stri
           <span className="mt-[4px] font-mono text-[9px] font-medium uppercase tracking-[0.14em] text-[var(--fg-faint)]">{synopsisCopy.modal.plan.landsUnder}</span>
         </span>
       )}
-      <p className="m-0 text-[13px] leading-[1.55] text-[var(--fg-body)] [text-wrap:pretty]">{text(line)}{basedOn}</p>
+      <p className="m-0 text-[13px] leading-[1.55] text-[var(--fg-body)] [text-wrap:pretty] [overflow-wrap:anywhere]">{text(line)}{basedOn}</p>
     </div>
   );
 }
@@ -212,7 +212,7 @@ export function TipCards({
                 ))}
               </div>
             ) : null}
-            <p className="m-0 text-[13px] leading-[1.55] text-[var(--fg-body)] [text-wrap:pretty]">{text(tip.text)}{basedOn(i, tip.text)}</p>
+            <p className="m-0 text-[13px] leading-[1.55] text-[var(--fg-body)] [text-wrap:pretty] [overflow-wrap:anywhere]">{text(tip.text)}{basedOn(i, tip.text)}</p>
           </div>
         );
       })}
@@ -260,7 +260,7 @@ const SEVERITY_CHIP: Record<SeverityWord, string> = {
 export function WeaknessLine({ line, text }: { line: string; text: (t: string) => React.ReactNode }) {
   const sev = splitSeverity(line);
   return (
-    <p className="m-0 grid grid-cols-1 items-baseline gap-[5px] text-[13px] leading-[1.55] text-[var(--fg-body)] [text-wrap:pretty] md:grid-cols-[82px_minmax(0,1fr)] md:gap-[10px]">
+    <p className="m-0 grid grid-cols-1 items-baseline gap-[5px] text-[13px] leading-[1.55] text-[var(--fg-body)] [text-wrap:pretty] [overflow-wrap:anywhere] md:grid-cols-[82px_minmax(0,1fr)] md:gap-[10px]">
       {sev ? (
         <span
           data-testid="synopsis-severity"
