@@ -4,6 +4,7 @@ import { db } from "../../db";
 import { chainArt } from "../cards/chain-art";
 import { loadOpeningArt } from "../cards/opening-printing";
 import { resolveOwnedPrintings } from "../collection/owned-printings";
+import { loadHiddenIds } from "../commanders/hidden";
 import { hardDecks } from "../decks/availability";
 import { loadAvailability } from "../decks/availability-query";
 import { loadPrices, slotFor } from "../discovery/price";
@@ -69,6 +70,11 @@ export type ResultsPage = Pick<SearchResult, "order" | "tooNarrow"> & {
    * commander the player has built since, or one the index no longer ranks. Empty with no read.
    */
   gone: string[];
+  /**
+   * How many of the read's picks the player has hidden since. They are in neither `rows` nor `gone`:
+   * Help me choose leaves a hidden commander out silently, so History neither names nor counts it.
+   */
+  hiddenPicks: number;
 };
 
 /**
@@ -87,7 +93,11 @@ export async function loadResultsPage(
   const slice = ordered.slice(offset, offset + RESULT_PAGE);
   const reasons = new Map((picks?.picks ?? []).map((p) => [p.oracleId, p.reason]));
   const listed = new Set(outcome.rows.map((r) => r.candidate.oracleId));
-  const gone = (picks?.picks ?? []).filter((p) => !listed.has(p.oracleId)).map((p) => p.oracleId);
+  // The search already leaves hidden commanders out, so a hidden pick is unlisted; it is subtracted
+  // here rather than reported as gone. Read only when there are picks to judge.
+  const unlisted = (picks?.picks ?? []).filter((p) => !listed.has(p.oracleId)).map((p) => p.oracleId);
+  const hidden = unlisted.length > 0 ? new Set(await loadHiddenIds(userId)) : new Set<string>();
+  const gone = unlisted.filter((id) => !hidden.has(id));
   const rows = await decorate(userId, slice, answers.sets ?? []);
   return {
     order: outcome.order,
@@ -97,6 +107,7 @@ export async function loadResultsPage(
     hasMore: ordered.length > offset + RESULT_PAGE,
     total: ordered.length,
     gone,
+    hiddenPicks: unlisted.length - gone.length,
   };
 }
 

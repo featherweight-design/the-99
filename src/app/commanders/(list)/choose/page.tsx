@@ -341,9 +341,11 @@ async function Results({
     />
   );
   if (!past) return results;
+  // A pick hidden since the run is neither open nor gone: it leaves the count it would have joined.
+  const shownPicks = past.picks - page.hiddenPicks;
   return (
     <>
-      <PastRunNote nothing={past.nothing} aged={page.gone.length > 0 ? { open: past.picks - page.gone.length, picks: past.picks } : null} />
+      <PastRunNote nothing={past.nothing} aged={page.gone.length > 0 ? { open: shownPicks - page.gone.length, picks: shownPicks } : null} />
       {results}
     </>
   );

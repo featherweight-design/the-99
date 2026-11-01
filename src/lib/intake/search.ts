@@ -7,6 +7,7 @@ import { spellbookVariantCards, spellbookVariants } from "../../db/schema";
 import { loadBracketFlags } from "../bracket/flags-read";
 import { hardDecks } from "../decks/availability";
 import { loadAvailability } from "../decks/availability-query";
+import { notHiddenBy } from "../commanders/hidden";
 import { notBuiltBy } from "../decks/built";
 import { isBasicLand } from "../decks/grouping";
 import { loadPrices } from "../discovery/price";
@@ -210,12 +211,13 @@ export async function loadSearchFacts(userId: string, asked: Answers): Promise<S
 }
 
 /**
- * Which commanders the search lists: indexed, legal, and not one the player has already built. A
+ * Which commanders the search lists: indexed, legal, not one the player has already built, and not
+ * one they have hidden (silently: Help me choose never says a hidden commander was left out). A
  * condition on `commander_support cs` joined to `cards c`, shared so that anything taking a
  * commander id from the client (the trial fill) admits exactly the ids the search could return.
  */
 export const isCandidate = (userId: string) =>
-  sql`c.commander_legal and cs.synergy_state = 'ok' and ${notBuiltBy(userId, sql`cs.commander_oracle_id`)}`;
+  sql`c.commander_legal and cs.synergy_state = 'ok' and ${notBuiltBy(userId, sql`cs.commander_oracle_id`)} and ${notHiddenBy(userId, sql`cs.commander_oracle_id`)}`;
 
 /**
  * The build-around card, when it is one the intake could have offered: the free match's own

@@ -11,6 +11,7 @@ import { ROLE_TARGETS } from "../recs/roles";
 import { loadRoleTargetsForCommanders } from "../profile/role-targets";
 import { gapSlotFor, type GapSlot } from "../edhrec/gap-slot";
 import { assignDiscoverySlugs } from "./slugs";
+import { loadHiddenIds } from "../commanders/hidden";
 import {
   byFit, byNovelty, clearsFloor, floorPct, loadPlayedTags, nearestDeck, orderDeckSets,
   unplayedTags, type DeckTagSet,
@@ -104,6 +105,9 @@ export type DiscoveryList = {
       novelty sort's two, and the client's colour filter. `items.length` is the
       same number under `fit` and a smaller one under `new`. */
   candidateCount: number;
+  /** Of `candidateCount`, how many the player has hidden. They are in no other figure: not ranked,
+   *  not floor-excluded, not unmeasured. */
+  hiddenCount: number;
   /** Collection size the subtitle reads against. */
   cardsRead: number;
   /** Cards in the pool this ranking actually scored — now always `cardsRead`,
@@ -125,8 +129,8 @@ export type DiscoveryList = {
   poolExcluded: number;
   /** Candidates the floor could not measure at all — no tags, or no EDHREC
       denominator. Neither ranked nor floor-excluded, and the third term the
-      exclusion line needs for `candidateCount - items - floorExcluded -
-      unmeasured` to come to zero. Always 0 under `fit`, which excludes nothing. */
+      exclusion line needs for `candidateCount - hiddenCount - items -
+      floorExcluded - unmeasured` to come to zero. Always 0 under `fit`, which excludes nothing. */
   unmeasured: number;
   hasDecks: boolean;
   /** False when the price read failed. The rows still carry a `price` slot —
@@ -174,6 +178,9 @@ type AssembleInput = {
   /** Each candidate's `pickRoleTargets` answer, by oracle id: the fit score's role component
    *  is graded against these, exactly as the owned lane's is (brief 2026-09-28 §5.4). */
   roleTargets: Map<string, Record<RoleName, number>>;
+  /** The commanders this player has hidden. They leave after the slugs are assigned, so a hide never
+   *  moves another commander's slug, and before the floor, so they count in none of its figures. */
+  hiddenIds?: ReadonlySet<string>;
 };
 
 export function assembleDiscovery(input: AssembleInput): DiscoveryList {
@@ -186,8 +193,10 @@ export function assembleDiscoveryWithIds(input: AssembleInput): { list: Discover
   const orderedDecks = orderDeckSets(input.playedTags);
 
   const withSlugs = assignDiscoverySlugs(input.candidates);
+  const hidden = input.hiddenIds;
+  const shown = hidden && hidden.size > 0 ? withSlugs.filter((c) => !hidden.has(c.oracleId)) : withSlugs;
 
-  const enriched = withSlugs.map((c) => {
+  const enriched = shown.map((c) => {
     const unplayed = unplayedTags(c.tags, played);
     const rollup = rollupFor(input.rollup, c);
     return {
@@ -298,6 +307,7 @@ export function assembleDiscoveryWithIds(input: AssembleInput): { list: Discover
       fitSynergy: c.fitSynergy,
     })),
     candidateCount: input.candidates.length,
+    hiddenCount: withSlugs.length - shown.length,
     cardsRead: input.cardsRead,
     freePoolSize: input.freePoolSize,
     bestPct,
@@ -480,7 +490,7 @@ export async function loadDiscoveryWithIds(
   // and its detail page print one role count. A label outage during this compute is the classifier
   // on both sides, and this payload is cached (an hour at most), so it can disagree with the detail
   // page until it is rebuilt. The prices and played tags do not wait on either read.
-  const [priceRead, playedTags, { basis, fellBack, roleSets, roleTargets }] = await Promise.all([
+  const [priceRead, playedTags, { basis, fellBack, roleSets, roleTargets }, hiddenIds] = await Promise.all([
     perfRead("discovery.prices", () => readPrices(candidates.map((c) => c.oracleId))),
     perfRead("discovery.playedTags", () => loadPlayedTags(userId)),
     perfRead("discovery.basisAndTargets", () => basisRead.then(async ({ basis, fellBack, roleSets }) => ({
@@ -489,12 +499,14 @@ export async function loadDiscoveryWithIds(
       roleSets,
       roleTargets: await perfRead("discovery.targets", () => loadRoleTargetsForCommanders(candidates, basis)),
     }))),
+    perfRead("discovery.hidden", () => loadHiddenIds(userId)),
   ]);
 
   const { list, oracleIds } = assembleDiscoveryWithIds({
     availOk,
     roleTargets: new Map([...roleTargets].map(([id, t]) => [id, t.targets])),
     candidates,
+    hiddenIds: new Set(hiddenIds),
     playedTags,
     prices: priceRead.prices,
     priceOk: priceRead.ok,

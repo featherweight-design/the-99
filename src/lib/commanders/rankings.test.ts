@@ -20,6 +20,7 @@ vi.mock("../discovery/novelty", () => ({ loadPlayedTags: vi.fn() }));
 // The owned-printing enrichment, which the lane applies itself: `getRankedList` is shared
 // with callers that draw no card at all, so the join belongs at the draw, not in it.
 vi.mock("../collection/owned-printings", () => ({ withOwnedCardArt: vi.fn() }));
+vi.mock("./hidden", () => ({ loadHiddenIds: vi.fn(async () => []) }));
 
 import { commanderRankingsKey, loadCommanderRankings } from "./rankings";
 import { discoveryKey } from "../discovery/list";
@@ -30,6 +31,7 @@ import { rankFree } from "../recs/free-ranking";
 import { loadSupportMeta } from "../edhrec/support-read";
 import { loadPlayedTags } from "../discovery/novelty";
 import { withOwnedCardArt } from "../collection/owned-printings";
+import { loadHiddenIds } from "./hidden";
 
 const item = (oracleId: string, over: Record<string, unknown> = {}) => ({
   oracleId, slug: oracleId, name: oracleId.toUpperCase(),
@@ -61,6 +63,7 @@ describe("loadCommanderRankings · the row's four joined fields", () => {
     vi.mocked(loadSupportMeta).mockResolvedValue(new Map());
     // Pass-through by default, so every case above reads what it always did.
     vi.mocked(withOwnedCardArt).mockImplementation(async (_userId, rows) => rows);
+    vi.mocked(loadHiddenIds).mockResolvedValue([]);
   });
 
   it("carries the sentence, the deck count and the gap slot off the metadata", async () => {
@@ -224,6 +227,47 @@ describe("loadCommanderRankings · the owned printing", () => {
     const [, canonical] = vi.mocked(rankFree).mock.calls[0];
     expect((canonical as { imageUri: string | null }[]).every((c) => c.imageUri === "owned.jpg"))
       .toBe(true);
+  });
+});
+
+describe("loadCommanderRankings · hidden commanders", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(getRankedList).mockResolvedValue({
+      items: [item("a"), item("b"), item("c")],
+      degraded: false, uniqueCardsRead: 10, candidateCount: 3,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+    vi.mocked(loadCollectionPool).mockResolvedValue({ collection: [] as never[] } as never);
+    vi.mocked(loadAvailability).mockResolvedValue(new Map());
+    vi.mocked(rankFree).mockResolvedValue({ ok: true, items: [] } as never);
+    vi.mocked(loadPlayedTags).mockResolvedValue([]);
+    vi.mocked(loadSupportMeta).mockResolvedValue(new Map());
+    vi.mocked(withOwnedCardArt).mockImplementation(async (_userId, rows) => rows);
+    vi.mocked(loadHiddenIds).mockResolvedValue(["b"]);
+  });
+
+  it("drops a hidden commander and keeps the others in rank order, slugs untouched", async () => {
+    const out = await loadCommanderRankings("user_1", ENV_VIEW);
+    expect(out.items.map((i) => [i.oracleId, i.slug])).toEqual([["a", "a"], ["c", "c"]]);
+    expect(out.hiddenCount).toBe(1);
+    expect(out.candidateCount).toBe(3);
+  });
+
+  // The free mode re-ranks what it is handed; given the hidden row it could bring it back.
+  it("hands the free ranking only the rows it shows", async () => {
+    await loadCommanderRankings("user_1", ENV_VIEW);
+    const [, canonical] = vi.mocked(rankFree).mock.calls[0];
+    expect((canonical as { oracleId: string }[]).map((c) => c.oracleId)).toEqual(["a", "c"]);
+  });
+
+  // The page tells "nothing to rank" from "everything is hidden" by these two counts.
+  it("reports every row hidden as an empty list with candidates", async () => {
+    vi.mocked(loadHiddenIds).mockResolvedValue(["a", "b", "c"]);
+    const out = await loadCommanderRankings("user_1", ENV_VIEW);
+    expect(out.items).toEqual([]);
+    expect(out.hiddenCount).toBe(3);
+    expect(out.candidateCount).toBe(3);
   });
 });
 

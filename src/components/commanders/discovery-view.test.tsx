@@ -49,6 +49,7 @@ const list = (over: Partial<DiscoveryList> = {}): EncodedDiscovery =>
   encodeDiscovery({
     items: [],
     candidateCount: 0,
+    hiddenCount: 0,
     cardsRead: 2805,
     freePoolSize: 2805,
     bestPct: null,

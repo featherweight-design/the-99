@@ -17,6 +17,7 @@ import { getRankedList } from "../recs/ranked-list";
 import { loadCollectionPool } from "../recs/recommend";
 import type { CommanderListItem } from "../recs/recommend";
 import { loadSupportMeta } from "../edhrec/support-read";
+import { loadHiddenIds } from "./hidden";
 import { gapSlotFor, type GapSlot } from "../edhrec/gap-slot";
 import { loadPlayedTags } from "../discovery/novelty";
 
@@ -56,6 +57,9 @@ export type CommanderRankings = {
   degraded: boolean;
   uniqueCardsRead: number;
   candidateCount: number;
+  /** How many of the ranked commanders the player has hidden, and so are not in `items`. It is what lets
+   *  the page tell "nothing to rank" (`candidateCount === 0`) from "everything here is hidden". */
+  hiddenCount: number;
   freeRanking: FreeRankingDelta | null;
   availOk: boolean;
   /** Either ranking was counted by the classifier only because the label read failed under a labels
@@ -164,7 +168,7 @@ export async function loadCommanderRankings(
   /** The reader's resolved switches (`requestSwitchEnv`). */
   env: NodeJS.ProcessEnv,
 ): Promise<CommanderRankings> {
-  const rankedList = await getRankedList(userId, env);
+  const [rankedList, hiddenList] = await Promise.all([getRankedList(userId, env), loadHiddenIds(userId)]);
   const { items: ranked, degraded, uniqueCardsRead, candidateCount } = rankedList;
   let labelFallback = rankedList.labelFallback === true;
 
@@ -177,7 +181,15 @@ export async function loadCommanderRankings(
   // `toFreeDelta` diffs field by field — so enriching after it would send `imageUri` and
   // `artCropUri` as CHANGED and the free-mode flip would paint the oracle art back under
   // the owned printing's name.
-  const items = await withOwnedCardArt(userId, ranked);
+  //
+  // HIDDEN COMMANDERS LEAVE HERE, after the ranking and its slugs and before anything that counts or
+  // re-ranks rows. Never inside `getRankedList`: it also feeds slug resolution and the `/decks`
+  // payload, and a hide must not move another commander's slug or stale a cache it does not tag.
+  // `rankFree` then re-ranks only what is shown, so the free mode cannot bring a hidden row back.
+  const hiddenIds = new Set(hiddenList);
+  const shown = hiddenIds.size === 0 ? ranked : ranked.filter((r) => !hiddenIds.has(r.oracleId));
+  const hiddenCount = ranked.length - shown.length;
+  const items = await withOwnedCardArt(userId, shown);
 
   // No candidates means the page draws its empty state, which reads none of
   // what follows. The pool query is the expensive one and is skipped rather
@@ -187,7 +199,7 @@ export async function loadCommanderRankings(
     // and the three reads below are skipped rather than made against an empty
     // id list.
     return {
-      items: [], degraded, uniqueCardsRead, candidateCount,
+      items: [], degraded, uniqueCardsRead, candidateCount, hiddenCount,
       freeRanking: null, availOk: true,
     };
   }
@@ -262,7 +274,7 @@ export async function loadCommanderRankings(
   });
 
   return {
-    items: rows, degraded, uniqueCardsRead, candidateCount, freeRanking, availOk,
+    items: rows, degraded, uniqueCardsRead, candidateCount, hiddenCount, freeRanking, availOk,
     ...(labelFallback ? { labelFallback: true as const } : {}),
   };
 }

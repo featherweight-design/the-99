@@ -13,6 +13,8 @@ vi.mock("../collection/owned-printings", () => ({ resolveOwnedPrintings: vi.fn(a
 vi.mock("../decks/availability-query", () => ({ loadAvailability: vi.fn(async () => new Map()) }));
 vi.mock("../discovery/price", () => ({ loadPrices: vi.fn(async () => new Map()), slotFor: () => ({ kind: "none" }) }));
 vi.mock("../sets/printed-in-read", () => ({ loadCommanderPrintings: vi.fn() }));
+const loadHiddenIds = vi.hoisted(() => vi.fn(async (): Promise<string[]> => []));
+vi.mock("../commanders/hidden", () => ({ loadHiddenIds }));
 
 const { loadCardChip, loadResultsPage, RESULT_PAGE } = await import("./rows");
 const { loadAvailability } = await import("../decks/availability-query");
@@ -85,6 +87,26 @@ describe("loadResultsPage: picks the search no longer lists (History's aged run)
     expect(page.gone).toEqual([id(99), id(98)]);
     expect(page.rows[0].name).toBe("Commander 5");
     expect(page.rows.some((r) => r.oracleId === id(99))).toBe(false);
+  });
+
+  // Help me choose leaves a hidden commander out silently: History names it among neither the open
+  // picks nor the gone ones, and the page subtracts it from the run's count.
+  it("neither names nor counts a pick hidden since, as gone", async () => {
+    loadHiddenIds.mockResolvedValueOnce([id(98)]);
+    const picks = { picks: [
+      { oracleId: id(5), reason: [{ text: "Open." }] },
+      { oracleId: id(99), reason: [{ text: "Built since." }] },
+      { oracleId: id(98), reason: [{ text: "Hidden since." }] },
+    ] };
+    const page = await loadResultsPage("u", answers, 0, picks);
+    expect(page.gone).toEqual([id(99)]);
+    expect(page.hiddenPicks).toBe(1);
+  });
+
+  it("asks for hidden ids only when a pick is unlisted", async () => {
+    loadHiddenIds.mockClear();
+    await loadResultsPage("u", answers, 0, { picks: [{ oracleId: id(3), reason: [{ text: "x" }] }] });
+    expect(loadHiddenIds).not.toHaveBeenCalled();
   });
 
   it("has none gone with no read, and none when every pick is still listed", async () => {
