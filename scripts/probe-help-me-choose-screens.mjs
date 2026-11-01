@@ -14,7 +14,7 @@
 //   6. Find commanders, Change answers and Start over, each pressed.
 //   7. Typed plain words never become answer chips (#1469): they stay words, quoted under You wrote.
 //
-// Needs a server with HELP_ME_CHOOSE_ENABLED=true. Find commanders with words BEGINS A READ (`submitChoose`),
+// Find commanders with words BEGINS A READ (`submitChoose`),
 // which writes a read and reserves a credit, so it guards that path first (`assertModelStandIn`, `intake`):
 // run it against `next dev` with a dummy ANTHROPIC_API_KEY. Point it at local-dev.
 //

@@ -18,10 +18,8 @@
 //
 // The models are the held stand-ins, so no model is called. Help me choose and Find a deck's read still
 // SPEND a stand-in credit when they succeed; the probe deletes what it made (see `cleanStandIns`). THE SERVER MUST BE
-// STARTED WITH the switches below and the three delays, or the probe cannot hold a read open:
-//   ANALYSIS_TAB_ENABLED=true TUNING_ENABLED=true PROPOSED_CUTS_ENABLED=true HELP_ME_CHOOSE_ENABLED=true
-//   SWAP_TOOLS_ENABLED=true TUNING_STUB_DELAY_MS=9000
-//   INTAKE_STUB_DELAY_MS=10000 FITS_READ_STUB_DELAY_MS=10000
+// STARTED WITH the three delays below, or the probe cannot hold a read open:
+//   TUNING_STUB_DELAY_MS=9000 INTAKE_STUB_DELAY_MS=10000 FITS_READ_STUB_DELAY_MS=10000
 // Writes runs, reads and credit rows (and clones one over-100 deck for Proposed cuts, deleted in a
 // `finally`). Point DATABASE_URL at `local-dev` or a scratch branch: it refuses staging and production.
 //

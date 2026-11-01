@@ -19,7 +19,6 @@
 import { requireEnv } from "./lib/env.mjs";
 // No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
-process.env.SWAP_TOOLS_ENABLED = "true";
 delete process.env.FITS_READ_LIVE;
 // `fitsReadLive` is also true in production, whatever FITS_READ_LIVE says: a probe never is.
 (process.env as Record<string, string>).NODE_ENV = "development";

@@ -25,8 +25,8 @@
  * Four mutations fail it: the separator split from the count into its own flex item (the phone's
  * editing state then leaves `·` at the end of the first line), the ring dropped from `BuyTag` (24 checks), the stored limit not read by
  * the page (the reload never finds `reset to $10`), and the row's desktop `over $X` drawn at every
- * width (every phone row reads it twice). Needs a server with
- * `SWAP_TOOLS_ENABLED=true`. Point it at `local-dev`, never production.
+ * width (every phone row reads it twice).
+ * Point it at `local-dev`, never production.
  */
 import { readFileSync } from "node:fs";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";

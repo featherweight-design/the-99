@@ -14,7 +14,7 @@
 //   - The card view (4b): the mode is kept across List and Card, a tile's toggle locks its card,
 //     the tile keeps its lock on the meta line at rest (F8), and the tile's Undo returns it locked.
 //   - Under the Shopping filter Lock cards is absent, and a locked card opened from its Shopping row
-//     draws no stand-ins door while an unlocked one does (PR 6's modal half; SWAP_TOOLS_ENABLED=true).
+//     draws no stand-ins door while an unlocked one does (PR 6's modal half).
 //   - Outside the mode (Hugh, 2026-09-25): a locked row draws a 14px mark left of its ✕ at both
 //     widths, not a control, and an unlocked row reserves nothing for the lock.
 //   - Neither the decklist nor Shopping scrolls sideways at 390 or 1300, measured with one row's
@@ -25,8 +25,8 @@
 //
 // Fixture, built per width under the signed-in account and deleted in a `finally` (cards, versions
 // and locks cascade): a committed copy of the template at version 10, twelve of its cards marked
-// auto, and one card cut from the draft so the toolbar carries a draft note. Needs a server with
-// SWAP_TOOLS_ENABLED=true (Never cut is always on). Point it at `local-dev`, never production.
+// auto, and one card cut from the draft so the toolbar carries a draft note. Never cut and
+// the stand-ins door are always on. Point it at `local-dev`, never production.
 //
 //   PROBE_BASE=http://localhost:3239 node scripts/probe-deck-locks.mjs
 import { readFileSync } from "node:fs";
@@ -378,7 +378,7 @@ async function run() {
 
         // PR 6's modal half: a card locked in this deck, opened from its Shopping row, draws no
         // stand-ins door (offering stand-ins is offering to cut it), while an unlocked one does, so
-        // the check cannot pass on a page that never draws the door. Needs SWAP_TOOLS_ENABLED=true.
+        // the check cannot pass on a page that never draws the door.
         // Opened by the row trigger's WHOLE accessible name, never a name parsed out of it: a card name
         // may itself hold a comma, and the label runs on past it with the copy count and marks.
         const doorsOn = async (label) => {

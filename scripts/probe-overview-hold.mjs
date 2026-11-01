@@ -15,20 +15,12 @@
 // local-dev fixture account holds have one. Point PROBE_TARGET_URL at a scratch branch or local-dev, never
 // production.
 //
-// Suggested changes depends on the Tuning hub, so PROBE_HUB states which the server runs (and the run
-// fails when the page disagrees). OFF is now reached only with ANALYSIS_TAB_ENABLED on and neither
-// TUNING_ENABLED nor PROPOSED_CUTS_ENABLED, so Mana Balance mounts alone and no Suggested changes
-// section paints, so OFF checks only that no hub draws beside the hold itself. ON (ANALYSIS_TAB_ENABLED
-// plus TUNING_ENABLED or PROPOSED_CUTS_ENABLED, beside Mana Balance, always on with the tab): the hub
-// stands from the tab's first frame (#1809), so the check is the hub staying put, as the same node, from its first frame (the credit note landing under the empty state
-// included) through the press to the frame the verdict lands. See `hubStaysPut`.
-// Mana Balance is a PREREQUISITE of ON, not a convenience: it is what lets the hub draw on a deck with no
-// reading yet (`drawn` in builder-shell.tsx). With only Tuning and Proposed cuts on, the hub waits for the
-// reading on the whole, unread deck this probe opens, and the first-frame checks fail on shipped behavior.
-// That setup is not supported here; the probe does not infer the setup from what it sees, which would hide
-// a hub that went missing.
+// The Tuning hub is always on: it stands from the tab's first frame (#1809), so the check is the hub
+// staying put, as the same node, from its first frame (the credit note landing under the empty state
+// included) through the press to the frame the verdict lands. See `hubStaysPut`. Mana Balance is what
+// lets the hub draw on a deck with no reading yet (`drawn` in builder-shell.tsx).
 //
-//   PROBE_TARGET_URL=<local-dev> PROBE_EMAIL=<+clerk_test account> PROBE_HOLD=held PROBE_HUB=on \
+//   PROBE_TARGET_URL=<local-dev> PROBE_EMAIL=<+clerk_test account> PROBE_HOLD=held \
 //     PROBE_BASE=http://localhost:3260 node scripts/probe-overview-hold.mjs
 
 import { readFileSync } from "node:fs";
@@ -47,14 +39,9 @@ const TARGET = process.env.PROBE_TARGET_URL;
 const EMAIL = process.env.PROBE_EMAIL ?? E2E_AUDIT_USER_EMAIL;
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const MODE = process.env.PROBE_HOLD;
-// Whether the server has the Tuning hub on (ANALYSIS_TAB_ENABLED plus TUNING_ENABLED or
-// PROPOSED_CUTS_ENABLED, beside Mana Balance, always on with the tab): stated, never read off the page, so a hub that failed to draw fails the run
-// instead of switching it to the hub-off checks.
-const HUB = process.env.PROBE_HUB;
 if (!TARGET) throw new Error("Set PROBE_TARGET_URL to a scratch branch or local-dev.");
 if (!EMAIL.includes("+clerk_test")) throw new Error("PROBE_EMAIL must be a +clerk_test account.");
 if (MODE !== "held" && MODE !== "fallback") throw new Error("Set PROBE_HOLD to held or fallback, matching the server's SYNOPSIS_STUB_DELAY_MS.");
-if (HUB !== "on" && HUB !== "off") throw new Error("Set PROBE_HUB to on or off, matching the server's Tuning switches.");
 const STAGING_BRANCH = "br-polished-pond-a6e63y0b";
 const PRODUCTION_BRANCH = "br-noisy-violet-a6vw4ess";
 const HOLD_MS = 25_000;
@@ -181,7 +168,7 @@ async function reset(id, before) {
   }
 }
 
-// The Tuning hub with the hub on (#1809, tuning-hub-stays-put): drawn from the tab's first frame, the
+// The Tuning hub (#1809, tuning-hub-stays-put): drawn from the tab's first frame, the
 // same node throughout, never missing once drawn, and its top still (within 1px) from the press, through
 // the hold, to the frame the verdict lands. At that frame the reading is drawn ABOVE the hub, so the hub
 // moves down by the reading's height by design (#1809's own probe asserts the same); what is held there
@@ -295,7 +282,7 @@ async function run() {
       // The boundary is the click itself, not the moment before Playwright's actionability wait: the sampler
       // must already hold the credit note's frame (the hub must not move when it lands, #1465), and the
       // press time is stamped in the page by the click's own event.
-      if (HUB === "on") await page.waitForFunction(() => window.__hold.hub.noteAt !== null, null, { timeout: 30_000 });
+      await page.waitForFunction(() => window.__hold.hub.noteAt !== null, null, { timeout: 30_000 });
       const shape = await page.evaluate(NOTE_SHAPE, PAGE);
       await page.evaluate(() => {
         const w = window.__hold;
@@ -322,15 +309,11 @@ async function run() {
         heads.indexOf(READING) >= 0 && heads.indexOf(WRITING) > heads.indexOf(READING), JSON.stringify(w.headings));
       const writingAt = w.headings.find((h) => h.text === WRITING)?.at ?? null;
       const released = w.seen.verdict?.at ?? null;
-      if (HUB === "on") {
-        // On the fallback the overview also grows in place when it lands (the growth Hugh accepted), so
-        // the hub may move on that frame too.
-        const landed = w.seen.verdict?.frame ?? null;
-        const landings = MODE === "fallback" && w.seen.written ? [landed, w.seen.written.frame] : [landed];
-        hubStaysPut(at, w.hub, pressAt, landed, landings, shape);
-      } else {
-        report(at("no Tuning hub, as PROBE_HUB says"), w.hub.at === null, w.hub.at === null ? "absent" : `drawn at ${w.hub.at}ms`);
-      }
+      // On the fallback the overview also grows in place when it lands (the growth Hugh accepted), so
+      // the hub may move on that frame too.
+      const landed = w.seen.verdict?.frame ?? null;
+      const landings = MODE === "fallback" && w.seen.written ? [landed, w.seen.written.frame] : [landed];
+      hubStaysPut(at, w.hub, pressAt, landed, landings, shape);
       if (MODE === "held") {
         report(at("the written overview paints with them, never the status line"),
           w.seen.written?.at === released && !w.seen.writing, JSON.stringify({ written: w.seen.written, writing: w.seen.writing ?? null }));

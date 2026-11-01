@@ -17,18 +17,11 @@
 // opened, and that the Analysis panel holds NONE: a second mount in the panel looks right in a
 // screenshot of either surface alone.
 //
-// IT ASSERTS AGAINST A STATED EXPECTATION, never against what it finds. `PROBE_ANALYSIS_EXPECT`
-// is `on` (default) or `off`, and the run fails when the server disagrees with it. Reading the
-// flag's state off the page and then checking "the layout matches whatever I found" would pass
-// on a deployment where the tab silently failed to render — it would simply assert the off
-// layout and report a clean run. So the expectation comes from outside, and the two layouts are
-// both real, checkable states:
+// The Analysis tab is always on, so a page that does not draw it fails the run: the probe never
+// infers the layout from what it finds, which would pass on a tab that silently failed to render.
 //
-//   ANALYSIS_TAB_ENABLED=true  pnpm dev          → PROBE_ANALYSIS_EXPECT=on   (the drawn layout)
-//   pnpm dev                                      → PROBE_ANALYSIS_EXPECT=off  (today's layout)
-//
-// The action counts are for a server with the Tuning switches off, as above: with Suggested changes on,
-// its own reads land in the same windows and the counts name them as extra calls.
+// The action counts were set with the Tuning switches off, a state no server reaches any more:
+// Suggested changes' own reads land in the same windows, and the counts name them as extra calls.
 //
 // IT CLEARS THE WALKED DECK'S STORED READING before each width, and puts the row back as captured
 // in a `finally`. Since #874 a deck with a stored reading draws it on open, with no invitation,
@@ -102,11 +95,6 @@ function report(label, ok, detail) {
   console.log(`${ok ? "  ok  " : " FAIL "} ${label} — ${detail}`);
   if (!ok) failures += 1;
   return ok;
-}
-
-const EXPECT = process.env.PROBE_ANALYSIS_EXPECT ?? "on";
-if (!["on", "off"].includes(EXPECT)) {
-  throw new Error(`PROBE_ANALYSIS_EXPECT must be "on" or "off", got ${EXPECT}.`);
 }
 
 const WIDTHS = [
@@ -286,20 +274,8 @@ async function run() {
       const tabs = await readTabs(p);
       const analysisAt = tabs.findIndex((t) => /analysis/i.test(t.label) || /analysis/i.test(t.aria));
 
-      // THE EXPECTATION DECIDES, not the page. See the header.
-      if (EXPECT === "off") {
-        report(`${label}px · no Analysis tab, as the flag says`, analysisAt === -1,
-          analysisAt === -1 ? "absent" : `drawn at position ${analysisAt + 1}`);
-        const strip = await readStrip(p);
-        report(`${label}px · the mix strip stays in the spine`,
-          strip.count === 1 && strip.sides[0]?.above === true,
-          `${strip.count} strip(s), ${strip.sides[0]?.above ? "above" : "below"} the tabs`);
-        await ctx.close();
-        continue;
-      }
-
       if (!report(`${label}px · the Analysis tab is drawn`, analysisAt !== -1,
-          analysisAt === -1 ? "absent — is ANALYSIS_TAB_ENABLED set on this server?" : "present")) {
+          analysisAt === -1 ? "absent" : "present")) {
         await ctx.close();
         continue;
       }

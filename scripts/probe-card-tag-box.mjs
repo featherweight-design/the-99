@@ -9,7 +9,7 @@
 //    sends `[[<oracle id>|Name]]` in the server action's request. The request is ABORTED in the
 //    browser, so no read runs and no credit is spent.
 //
-// Needs a server with HELP_ME_CHOOSE_ENABLED=true. It writes the account's About row through
+// It writes the account's About row through
 // `clearAboutSheet` and nothing else. Point it at `local-dev`, never production.
 
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";

@@ -13,7 +13,8 @@
 //   included) completing a counted two-card combo; and the unconstrained fill breaks at least one
 //   of those, for the same reason.
 //   THE BODY is still whole: basics finish it whatever the gates refuse.
-//   NO ANSWERS, NO CHANGE: bracket 4 with no budget is no gate, and the plan equals the plain one.
+//   NO ANSWERS, NO CHANGE: no budget, bracket or card is no gate, and the plan equals the plain one.
+//   THE BRACKET AS A TARGET: a bracket answer places the owned cards that reach it, never a buy.
 //
 // It makes NO WRITES. `PROBE_USER_ID` names the account and `PROBE_COMMANDER` the commander; the
 // defaults are the local-dev fixture account and a commander whose plain fill buys Game Changers.
@@ -58,9 +59,8 @@ async function main() {
   const plain = await buildFillPlan(USER, commanders, new Set(), { selected: [], env: process.env });
   const budgeted = await buildFillPlan(USER, commanders, new Set(), { selected: [], answers: { budgetCents: BUDGET_CENTS, bracket: null, cardOracleId: null }, env: process.env });
   const bracketed = await buildFillPlan(USER, commanders, new Set(), { selected: [], answers: { budgetCents: null, bracket: 2, cardOracleId: null }, env: process.env });
-  const unasked = await buildFillPlan(USER, commanders, new Set(), { selected: [], answers: { budgetCents: null, bracket: 4, cardOracleId: null },
-    // The ceiling alone: with Help me choose on, a bracket-4 answer places raisers, which section 5 checks.
-    env: { ...process.env, HELP_ME_CHOOSE_ENABLED: "false" } });
+  // Any bracket answer is a target that places raisers (section 5), so "no gate" is an empty answer set.
+  const unasked = await buildFillPlan(USER, commanders, new Set(), { selected: [], answers: { budgetCents: null, bracket: null, cardOracleId: null }, env: process.env });
 
   console.log("\n1. The budget, priced independently");
   const ids = (p: typeof plain) => p.rows.map((r) => r.oracleId);
@@ -125,7 +125,7 @@ async function main() {
   console.log("\n3. The body, and no answers");
   check("every gated fill still fills the whole body", [budgeted, bracketed].every((p) => p.filled === plain.filled),
     `plain ${plain.filled}, budgeted ${budgeted.filled}, bracket 2 ${bracketed.filled}`);
-  check("bracket 4 with no budget is no gate: the plan equals the plain one", JSON.stringify(unasked.rows) === JSON.stringify(plain.rows),
+  check("no budget, bracket or card is no gate: the plan equals the plain one", JSON.stringify(unasked.rows) === JSON.stringify(plain.rows),
     `${unasked.rows.length} rows against ${plain.rows.length}`);
 
   console.log("\n4. A row's trial figures");
@@ -142,29 +142,19 @@ async function main() {
   check("with a build-around card the trial body is still the whole body, never one over",
     withCard.body === plain.filled, `body ${withCard.body}, plain ${plain.filled}`);
 
-  console.log("\n5. The bracket as a target (behind HELP_ME_CHOOSE_ENABLED), read independently");
-  // The switch is forced on and off here, so the check does not depend on the database's env.
-  const on = { ...process.env, HELP_ME_CHOOSE_ENABLED: "true" };
-  const off = { ...process.env, HELP_ME_CHOOSE_ENABLED: "false" };
+  console.log("\n5. The bracket as a target, read independently");
   const ask3 = { budgetCents: null, bracket: 3 as const, cardOracleId: null };
-  const [reached, ceilingOnly] = await Promise.all([
-    buildFillPlan(USER, commanders, new Set(), { selected: [], answers: ask3, env: on }),
-    buildFillPlan(USER, commanders, new Set(), { selected: [], answers: ask3, env: off }),
-  ]);
+  const reached = await buildFillPlan(USER, commanders, new Set(), { selected: [], answers: ask3, env: process.env });
   const reach = reached.bracketReach;
   console.log(`   reach: ${JSON.stringify(reach)}`);
-  check("on, a bracket answer always comes back with a reach", reach !== undefined, reach?.kind ?? "none");
-  check("off, the fill places nothing toward the answer and carries no reach",
-    ceilingOnly.bracketReach === undefined && !ceilingOnly.rows.some((r) => r.source === "bracket"), "ceiling only");
+  check("a bracket answer always comes back with a reach", reach !== undefined, reach?.kind ?? "none");
   const raised = reached.rows.filter((r) => r.source === "bracket").map((r) => r.oracleId);
   const raisedAvailability = await loadAvailability(USER, { oracleIds: raised });
   check("every card placed toward the answer is owned with a free copy, never a buy",
     raised.every((id) => owned.has(id) && (raisedAvailability.get(id)?.free ?? 1) > 0), `${raised.length} placed`);
-  const [reachedFacts, ceilingFacts] = await Promise.all([facts(reached), facts(ceilingOnly)]);
-  // THE BUG THIS SWITCH FIXES is a ceiling-only fill with nothing above bracket 2 in it. Not every
-  // commander shows it (an unowned Game Changer can still arrive as an EDHREC top card), so the line
-  // says which case this run measured: `PROBE_COMMANDER="Captain N'ghathrod"` is the reported one.
-  console.log(`   ceiling only: ${ceilingFacts.flagged.filter((f) => f.gc).length} Game Changers, ${ceilingFacts.combos.length} combos`);
+  // The reported case was a ceiling-only fill with nothing above bracket 2 in it:
+  // `PROBE_COMMANDER="Captain N'ghathrod"` reproduces it.
+  const reachedFacts = await facts(reached);
   const gameChangers = reachedFacts.flagged.filter((f) => f.gc).length;
   if (reach?.kind === "collection") {
     check("a reachable answer is reached: 1 to 3 Game Changers, or a counted combo, and no mass land denial",
@@ -194,7 +184,7 @@ async function main() {
     check("the fill places no card the buying half would buy", !raised.some((id) => toBuy.includes(id)), `${raised.length} placed`);
     // HIT BRACKET N (plan PR 3b): the player's pick places the buying set, every card of it, filed
     // `source: "bracket"`, and the deck then reaches the target by the analysis's own arithmetic.
-    const hit = await buildFillPlan(USER, commanders, new Set(), { selected: [], answers: { ...ask3, bracketBuys: true }, env: on });
+    const hit = await buildFillPlan(USER, commanders, new Set(), { selected: [], answers: { ...ask3, bracketBuys: true }, env: process.env });
     const hitPlaced = hit.rows.filter((r) => r.source === "bracket").map((r) => r.oracleId);
     const hitFacts = await loadBracketGateFacts([...commanders.map((c) => c.oracleId), ...hit.rows.map((r) => r.oracleId)]);
     const hitPermits = permitsOf(commanders.map((c) => c.oracleId), [...commanders.map((c) => c.oracleId), ...hit.rows.map((r) => r.oracleId)], hitFacts);
@@ -204,7 +194,7 @@ async function main() {
     check("Hit still fills the whole body", hit.filled === plain.filled, `${hit.filled} against ${plain.filled}`);
   }
   // THE ROW FIGURE: the trial reads the bracket its own rows land in.
-  const trialed = await trialFill(USER, commanders[0], ask3, on);
+  const trialed = await trialFill(USER, commanders[0], ask3, process.env);
   console.log(`   trial bracket: ${JSON.stringify(trialed.bracket)}`);
   check("a trial for a bracket-3 answer carries the bracket its rows land in", trialed.bracket !== null && trialed.bracket.permits.length > 0,
     trialed.bracket ? trialed.bracket.permits.join("-") : "none");

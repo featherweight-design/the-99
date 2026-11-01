@@ -23,7 +23,7 @@
  * universal staple, and one led by a mono-blue legend holding nothing, which the staple fits. The
  * staple is chosen through `loadUniversalStaples`, the one definition, never a list of our own.
  * Both decks are deleted in a `finally`, and the About row is put back as the run found it. Needs
- * a server with SWAP_TOOLS_ENABLED=true (PROBE_BASE). Point it at local-dev, never production.
+ * a server at PROBE_BASE. Point it at local-dev, never production.
  *
  * Four mutations fail it: the add revalidating inside the action (1,392,099 bytes against 77), the
  * phone door's 44px row removed (22px), the door's focus return removed (focus on BODY), and the

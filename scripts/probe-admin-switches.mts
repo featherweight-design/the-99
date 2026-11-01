@@ -107,7 +107,7 @@ async function main() {
     check("it is written", (await count(sql`select count(*)::int as n from flag_overrides where group_id = ${group}`)) === 1);
 
     // An unconfirmed model rise writes nothing; the confirmed count writes.
-    const H = "HELP_ME_CHOOSE_ENABLED";
+    const H = "SUGGESTED_CHANGES_V2_ENABLED";
     const savedH = process.env[H];
     process.env[H] = "true";
     await db.execute(sql`insert into flag_overrides ("switch", scope, value, updated_by) values (${H}, 'app', 'off', ${ADMIN})
@@ -120,7 +120,7 @@ async function main() {
       const c = await writeOverride(ADMIN, "clear", { switchName: H, scope: "app", confirmed: 2 }, deps);
       check("the confirmed count writes it", c.ok && (await count(sql`select count(*)::int as n from flag_overrides where "switch" = ${H} and scope = 'app'`)) === 0);
     } else {
-      check("the branch already held an app-wide Help me choose row; the rise check needs a clean branch", false);
+      check("the branch already held an app-wide Suggested changes v2 row; the rise check needs a clean branch", false);
     }
     if (savedH === undefined) delete process.env[H];
     else process.env[H] = savedH;

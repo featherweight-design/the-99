@@ -5,7 +5,7 @@
 // `?tool=` against the reader's switches, opening the tool's tab and view, its target drawing in the real tree, and
 // the landing on it:
 //   - the landing's halo (`data-target-halo`, never a bubble's `data-moment-halo`) on THAT tool's target and nothing else: a Tuning hub tile for a credit tool
-//     (never its run press), the panel's own head with the hub off, the first other-ways press holding the tool's glyph on a
+//     (never its run press), the first other-ways press holding the tool's glyph on a
 //     Shopping row,
 //     the Matchups split, the Top off door;
 //   - the parameter stripped (through `mirrorUrl`), the rest of the address kept;
@@ -28,18 +28,13 @@
 // is landed with its id taken out of the set first, so the spend is observed, and the row is put back exactly in a
 // `finally`. It calls `assertScratchBranch` before that first write, so it runs on a scratch branch off local-dev.
 //
-// The server: `next start` of a build with the worktree's `.env`, started with the deck tools' switches on
-// (`TUNING_ENABLED`, `PROPOSED_CUTS_ENABLED`, `SWAP_TOOLS_ENABLED`, `ANALYSIS_TAB_ENABLED`;
-// Mana Balance follows the tab), then again with them off.
+// The server: `next start` of a build with the worktree's `.env`. Every deck and page tool it lands is always on.
 //
 // THE PAGES (R2·3): each tool with a page of its own, landed by its `?tool=` on that page: the halo on the tool's own
 // control (Help me choose's first answer, the Precons and Wishlist searches, Collection Sync's drop zone, the Tiles ·
 // Stats switch, Add a friend), the parameter stripped, the moment spent. Find a deck's landing is DEFERRED: the
 // parameter goes at once and the next card details opened halo `Find a deck for it` once, so the probe presses a card
 // open. A control the page does not draw even without `?tool=` (the eligibility preflight) is a SKIP, never a PASS.
-// With `PROBE_SWITCHES=off` (the server started with the page tools' switches off too: `HELP_ME_CHOOSE_ENABLED`;
-// Collection Sync has none since collection editing retired), every page landing
-// must draw no halo and write nothing: the route is gone (its not-found page), or the parameter is stripped.
 //
 //   PROBE_BASE=http://localhost:3311 pnpm probe:tool-landing
 import { neon } from "@neondatabase/serverless";
@@ -61,7 +56,6 @@ const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
 if (!EMAIL.includes("+clerk_test") && !PASSWORD) throw new Error("Set E2E_AUDIT_USER_PASSWORD.");
 if (!CLERK_SECRET_KEY.startsWith("sk_test_")) throw new Error("refusing: CLERK_SECRET_KEY is not a development instance's");
-const SWITCHES_OFF = process.env.PROBE_SWITCHES === "off";
 /** `decks` or `pages` runs only that half (each is a few minutes a width); unset runs both. */
 const PHASE = process.env.PROBE_PHASE ?? "all";
 if (!["all", "decks", "pages"].includes(PHASE)) throw new Error(`PROBE_PHASE must be decks or pages, not ${PHASE}`);
@@ -75,9 +69,8 @@ const WIDTHS = [
 
 // Each deck tool, the name its moment's bubble carries (`momentsCopy`, named `${tool}, a tip`), and the elements its
 // target may be, as GROUPS in order of precedence: the first group with an element drawn is where the target is, and
-// within it the first such element in the document. A credit tool's group one is its hub tile; only with the hub
-// off (no tile drawn) is it the panel's head (Suggested changes: its frame, or the empty state's while no reading is
-// held). The other-ways press is Cheaper stand-ins' while it holds ⇄ and Friends' spares' while it holds the spare
+// within it the first such element in the document. A credit tool's group one is its hub tile; the panel's head
+// (Suggested changes: its frame, or the empty state's while no reading is held) is the fallback when no tile draws. The other-ways press is Cheaper stand-ins' while it holds ⇄ and Friends' spares' while it holds the spare
 // glyph, so each tool's selector names its own glyph.
 const TOOLS = [
   // The strip's door, by its shipped accessible name (`topOffCopy.strip.openAria`).
@@ -301,9 +294,6 @@ async function pageDrawsWithoutLanding(page, tool) {
 
 async function walkPages(page, w, userId) {
   for (const tool of PAGE_TOOLS) {
-    // Precons, Lineup, the Wishlist and Collection Sync have no switch any more: they land the same in both modes, so the off-mode walk
-    // leaves them out.
-    if (SWITCHES_OFF && (tool.id === "precons" || tool.id === "lineup" || tool.id === "wishlist" || tool.id === "collection-sync")) continue;
     await unspend(userId, tool.id);
     const label = `${w.name} page ${tool.id}`;
     const noteName = tool.name === null ? null : `${tool.name}, a tip`;
@@ -316,8 +306,8 @@ async function walkPages(page, w, userId) {
     let r = await readPage(page, tool.find, noteName);
     const stripped = !new URLSearchParams(r.search).has("tool") && new URLSearchParams(r.search).get("probe") === "1";
     if (r.notFound) {
-      // The route is gone for this reader: only right with its switch off.
-      check(SWITCHES_OFF, `${label}: the route is gone (its switch off)`, `notFound, switches ${SWITCHES_OFF ? "off" : "on"}`);
+      // The route is gone for this reader: never right, since no page tool has a switch any more.
+      check(false, `${label}: the route is gone`, "notFound");
       check(r.haloed === 0, `${label}: no halo on a gone route`, `${r.haloed} haloed`);
       check(!(await spentSoon(userId, tool.id, false)), `${label}: nothing written on a gone route`, "moments_spent");
       continue;
@@ -332,12 +322,7 @@ async function walkPages(page, w, userId) {
       }
       r = await readPage(page, tool.find, noteName);
     }
-    const spent = await spentSoon(userId, tool.id, r.drawn && noteName !== null && !SWITCHES_OFF);
-    if (SWITCHES_OFF) {
-      check(r.haloed === 0, `${label}: switch off, no halo`, `${r.haloed} haloed`);
-      check(!spent, `${label}: switch off, nothing written`, `${spent}`);
-      continue;
-    }
+    const spent = await spentSoon(userId, tool.id, r.drawn && noteName !== null);
     if (!r.drawn) {
       check(r.haloed === 0, `${label}: an undrawn control draws no halo`, `${r.haloed} haloed`);
       check(!spent, `${label}: an undrawn control spends nothing`, `${spent}`);
@@ -398,12 +383,8 @@ async function walk(browser, w, userId, decks, spentAtStart) {
           check(!r.visitTaken || r.bubbles.length > 0, `${label}: an unhaloed landing leaves the visit untouched`, `taken ${r.visitTaken}, bubbles ${JSON.stringify(r.bubbles)}`);
           // Independent of the landing: the deck's own controls do not draw it either, so this deck is truly not a
           // fixture for the tool. Were they to draw it, the landing missed a target it should have reached.
-          // With the switches off there is no tool to miss: a panel's generic empty state can still match its
-          // selectors, so the cross-check is for the on run only.
-          if (!SWITCHES_OFF) {
-            const own = await drawsWithoutLanding(page, deck, tool);
-            check(!own, `${label}: the deck's own controls do not draw it either (else the landing missed it)`, `${own}`);
-          }
+          const own = await drawsWithoutLanding(page, deck, tool);
+          check(!own, `${label}: the deck's own controls do not draw it either (else the landing missed it)`, `${own}`);
           continue;
         }
         check(r.onTarget, `${label}: the halo is on the tool's target, and only there`, `${r.haloed} haloed`);

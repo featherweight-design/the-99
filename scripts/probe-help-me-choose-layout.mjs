@@ -15,7 +15,7 @@
 //    the offer. An ellipsized label reads whole in `innerText`, so the check is its box's
 //    `scrollWidth` against `clientWidth`, and a run where the note draws no offer fails.
 //
-// Needs a server with HELP_ME_CHOOSE_ENABLED=true. It writes the account's About row through
+// It writes the account's About row through
 // `clearAboutSheet` and nothing else. Point it at `local-dev`, never production.
 
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";

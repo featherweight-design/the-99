@@ -20,8 +20,8 @@
  * (`lib/swap-lines-residue.mts`) reaches four, or when a residue entry no longer does.
  *
  * FIXTURE. A brew led by Kenrith holding one unowned card over $10, so the sheet has a row to borrow; it
- * is deleted in a `finally`, with the account's About row put back as found. Needs a server with
- * SWAP_TOOLS_ENABLED=true (PROBE_BASE). Reads the catalog only, from DATABASE_URL. Point it at local-dev,
+ * is deleted in a `finally`, with the account's About row put back as found. Needs a server at
+ * PROBE_BASE. Reads the catalog only, from DATABASE_URL. Point it at local-dev,
  * never production.
  */
 import { readFileSync } from "node:fs";

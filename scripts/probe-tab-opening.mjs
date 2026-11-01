@@ -19,8 +19,8 @@
 //    (Hugh, 2026-10-11: the hold is only for a deck with a reading to load).
 //
 // It makes no writes. It needs one account deck with a `deck_profiles` row and one without, and
-// FAILS when either is missing rather than passing over nothing. Needs a server with
-// ANALYSIS_TAB_ENABLED=true. Point it at `local-dev`.
+// FAILS when either is missing rather than passing over nothing.
+// Point it at `local-dev`.
 //
 //   PROBE_BASE=http://localhost:3049 node scripts/probe-tab-opening.mjs
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";

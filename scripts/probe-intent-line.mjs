@@ -11,8 +11,8 @@
 // its link lands on the Analysis tab with Suggested changes drawn.
 //
 // It writes the fixture deck's `intent` and one game, capturing the intent first and restoring
-// it, and deleting the game, in a `finally`. The deck is one with a stored reading. Needs a server
-// with ANALYSIS_TAB_ENABLED=true. Point it at `local-dev`, NEVER production.
+// it, and deleting the game, in a `finally`. The deck is one with a stored reading.
+// Point it at `local-dev`, NEVER production.
 //
 //   PROBE_BASE=http://localhost:3047 node scripts/probe-intent-line.mjs
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";

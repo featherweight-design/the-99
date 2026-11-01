@@ -20,8 +20,8 @@
 // the copy, and deletes the copy in a `finally`; locks, cards and the reading cascade. A run that
 // dies before its `finally` leaves only a stamped copy, which a later run sweeps once it is 30
 // minutes old (never sooner, since a younger copy may be a concurrent run's).
-// It also raises the account's `user_prefs.about_version_seen`, as every signed-in probe here does. Needs a server with
-// ANALYSIS_TAB_ENABLED=true (Never cut is always on). Point it at `local-dev`, never production.
+// It also raises the account's `user_prefs.about_version_seen`, as every signed-in probe here does. Never cut is always on.
+// Point it at `local-dev`, never production.
 //
 //   PROBE_BASE=http://localhost:3237 node scripts/probe-climb-locks.mjs
 import { readFileSync } from "node:fs";

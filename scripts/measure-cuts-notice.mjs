@@ -2,8 +2,7 @@
 // movement, to the tool's panel being in view, and to its content being drawn (CUTS_PRESS_PROBE, in the
 // page). Median of MEASURE_RUNS (default 7) cold loads of the deck at 390x844 and 1300x900.
 //
-// Against `next start` on a scratch branch (never `next dev`), the server started with the Tuning hub's
-// switches on (TUNING_ENABLED, TUNING_HUB_ENABLED, PROPOSED_CUTS_ENABLED, ANALYSIS_TAB_ENABLED). It writes
+// Against `next start` on a scratch branch (never `next dev`); the Tuning hub is always on. It writes
 // nothing of its own; the pages it loads write what any visit writes, so it refuses production, staging and
 // local-dev by `neon.branch_id`.
 //

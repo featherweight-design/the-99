@@ -26,7 +26,7 @@
 //
 // It also seeds `user_prefs.about_version_seen` forward with `greatest(...)`, as
 // `probe:verdict-block` does and for its reason: the About gate would otherwise redirect every
-// route to `/about`. Needs a server with ANALYSIS_TAB_ENABLED=true. Point it at `local-dev`,
+// route to `/about`. Point it at `local-dev`,
 // never production.
 //
 //   PROBE_BASE=http://localhost:3021 node scripts/probe-declaration-ask.mjs
@@ -142,7 +142,7 @@ async function openAnalysis(p, deckId, label) {
   if (!report(`${label}px · the deck page rendered`, up, up ? "tablist is up" : "no tablist")) return false;
   const tab = onPageRole(p, "tab", /Analysis/);
   if (!report(`${label}px · the Analysis tab is drawn`, (await tab.count()) > 0,
-      "absent means ANALYSIS_TAB_ENABLED is off on this server")) return false;
+      "absent: the tab is always on, so the page failed to draw it")) return false;
   await tab.first().click();
   await onPageRole(p, "button", /^(Re-)?[Aa]nalyze$/).first().click();
   const ready = await onPage(p, 'section[aria-label="Your bracket"]')

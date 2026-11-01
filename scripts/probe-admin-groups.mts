@@ -59,7 +59,7 @@ async function main() {
     (await db.execute<{ group_id: string }>(sql`select group_id from flag_group_members where user_id = ${userId}`)).rows.map((r) => r.group_id);
   const nameA = `probe-a-${run}`;
   const nameB = `probe-b-${run}`;
-  const H = "HELP_ME_CHOOSE_ENABLED";
+  const H = "SUGGESTED_CHANGES_V2_ENABLED";
   const savedH = process.env[H];
 
   try {
