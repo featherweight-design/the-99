@@ -1,6 +1,6 @@
 # Readiness: Rule 0 revisions
 
-**Verdict: Green from Design.** Hugh approved every board on 2026-11-01 (R1). Each call was checked against `origin/main` @80c4498. Nothing needs a new switch: everything rides the shipped Rule 0 switch. Lane a6 builds the engineering half (the seat push and in-app notice delivery, the morning expiry and the host Close action); the UI below waits on it where noted. The DRAFT strings go through `/copy-review` before they ship. Engineering's own audit may move any item.
+**Verdict: ORANGE (engineering audit, lane c4, 2026-11-01; Design's own call was Green).** Hugh approved every board on 2026-11-01 (R1). Each call was checked against `origin/main` @80c4498. Nothing needs a new switch: everything rides the shipped Rule 0 switch. Lane a6 builds the engineering half (the seat push and in-app notice delivery, the morning expiry and the host Close action); the UI below waits on it where noted. The DRAFT strings go through `/copy-review` before they ship. Engineering's own audit may move any item.
 
 Sizes: S under 150 lines, M 150 to 500, L over 500, tests included.
 
@@ -31,3 +31,19 @@ Sizes: S under 150 lines, M 150 to 500, L over 500, tests included.
 ## No About entry
 
 Hugh decides at launch (brief, Not in scope).
+
+## Engineering audit (lane c4, 2026-11-01, rebased on current main)
+
+Every brief item is drawn at 390 and 1300 in its listed states. Verdict is ORANGE for the notice PR only; the key, picker, Home and morning-expiry work can start today.
+
+**Orange (send back to Design):**
+1. **The seat notice's feed row and Settings tick.** Lane a6's ruling is that a stored kind ships with its drawn feed row: registering it forces a Settings checkbox (`news-section.tsx:369`) and a row in the exhaustive switch (`feed-item.tsx:73`). This handoff draws neither and calls the notice "not one of the feed's six kinds". Draw the What's new row and the Settings row, or Hugh confirms in writing a non-feed transport (and where a toast-only notice stores "seen").
+2. **A long pod or host name in the notice.** No frame shows the toast or the lock-screen title at the push caps (title 40, body 120) with a long name. "Colin seated you at Thursday night's table" is already 42 characters.
+3. **Undrawn but described:** Home at 1300 with no open table (README says no gap), and first-run Home with the card above the checklist.
+4. **Close confirm busy state and the failed-close toast** are not drawn (shared components; a note may be enough).
+
+**Engineering needs READINESS understates:**
+- The Close PR is not S/M frontend work: `rule_zero_tables` has no `closed_at` or `closed_by`, so "You closed ... at 11:52 pm" and keeping Log this game after a host close need a migration and a seat-retention rule.
+- `MarkKey` has no `md` opt-in (`phoneColumns` 2 or 3 only), as the README names. The service worker's page handoff is new work.
+
+**Build split, in order:** (1) read key, S, normal; (2) picker with desktop modal, M, normal; (3) Home leads, S to M, normal; (4) Close backend, migration and API, risky; (5) Close and Log UI, M, normal, needs 4; (6) seat notice, migration and push (`push_outbox_kind_check`, overnight-hold skip for the seat push), one PR, backend can start now, toast and feed row wait on Orange 1.
