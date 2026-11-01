@@ -251,7 +251,7 @@ export async function createDeck(
             budgetCents: answerColumns.answerBudgetCents ?? null, bracket: asked.bracket,
             cardOracleId: card?.oracleId ?? null, bracketBuys: asked.bracketBuys,
             // The sets asked (picked, or named in the words): owned cards printed in them lead
-            // the fill. Soft; a retry (`retryAnswersOf`) stores none and fills without them.
+            // the fill. Soft; stored as `answer_sets`, so a retry (`retryAnswersOf`) leads with them too.
             ...(asked.sets.length > 0 ? { sets: asked.sets } : {}),
           },
           // Only cards I own (three answers §3): the 99 from what the collection can supply.

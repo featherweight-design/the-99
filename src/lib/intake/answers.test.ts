@@ -30,7 +30,7 @@ describe("validateCreateAnswers", () => {
 describe("answerColumnsFor", () => {
   it("stores the budget in cents, with no intent written any more (H35)", () => {
     expect(answerColumnsFor(validateCreateAnswers(ok), { oracleId: UUID, name: "Doubling Season" })).toEqual({
-      answerAsked: true, answerBudgetCents: 15_000, answerBracket: 3, answerCardOracleId: UUID, answerOwnedOnly: false, answerBracketBuys: false,
+      answerAsked: true, answerBudgetCents: 15_000, answerBracket: 3, answerCardOracleId: UUID, answerOwnedOnly: false, answerBracketBuys: false, answerSets: [],
     });
   });
 
@@ -80,6 +80,15 @@ describe("retryAnswersOf", () => {
     expect(retryAnswersOf({ ...none, answerCardOracleId: UUID })).toMatchObject({ cardOracleId: UUID });
     expect(retryAnswersOf({ ...none, answerBudgetCents: 5_000, answerBracketBuys: true, answerBudgetRaised: true }))
       .toEqual({ budgetCents: 5_000, bracket: null, cardOracleId: null, bracketBuys: true, budgetRaised: true });
+  });
+
+  it("hands the sets asked back to the retry, as the create gave them to the plan", () => {
+    const asked = validateCreateAnswers({ ...ok, sets: ["hob", "hoc"] });
+    expect(answerColumnsFor(asked, null).answerSets).toEqual(["hob", "hoc"]);
+    expect(retryAnswersOf({ ...none, ...answerColumnsFor(asked, null) })?.sets).toEqual(["hob", "hoc"]);
+    // None asked, and a row from before the column: no sets key, so the plan fills without the preference.
+    expect(retryAnswersOf({ ...none, answerAsked: true, answerSets: [] })).not.toHaveProperty("sets");
+    expect(retryAnswersOf({ ...none, answerAsked: true })).not.toHaveProperty("sets");
   });
 
   it("reads an out-of-range stored bracket as no bracket", () => {

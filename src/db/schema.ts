@@ -696,6 +696,9 @@ export const decks = pgTable("decks", {
   /** The budget `answer_budget_cents` holds was RAISED to pay for *Hit bracket N*'s set (G1), so the
    *  fill buys nothing besides it, at the create and again by a retry. False for every other deck. */
   answerBudgetRaised: boolean("answer_budget_raised").notNull().default(false),
+  /** The sets Help me choose asked for (the picked ones, or named in the words), as lowercase codes: owned cards printed
+   *  in them lead the fill, at the create and again by a retry. Empty for a deck asking none and for every other deck. */
+  answerSets: text("answer_sets").array().notNull().default(sql`'{}'::text[]`),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   /**
    * When this deck's contents last changed — a card added or removed, basics
