@@ -1,7 +1,7 @@
 /**
  * Whether model calls may start at all: the app-wide switch for every run the app reserves through
  * `reserveModelCall` (player runs and the Overview's system-origin rewrite). Background jobs (GitHub
- * workflows) do not reserve there yet, and a follow-up gates them. A `plumbing` switch, so only the
+ * workflows) read it from `/api/health` (`src/lib/health/model-calls.ts`, `scripts/lib/model-calls-gate.mjs`). A `plumbing` switch, so only the
  * app-wide override applies.
  *
  * ON BY DEFAULT, unlike every other switch: on while the variable is unset, and this function reads

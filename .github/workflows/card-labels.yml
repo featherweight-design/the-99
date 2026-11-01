@@ -321,7 +321,10 @@ jobs:
           #
           #    0   done, published or nothing stale
           #   75   more work: a wave went out, or batches are still processing — call again
-          #    *   stop and look: refused, paused, or nothing labelable
+          #   76   model calls paused (MODEL_CALLS_ENABLED off): every paid batch was collected and
+          #        no wave was submitted. Ends the loop GREEN; the same run id resumes it later.
+          #    *   stop and look: refused, paused on the projection, nothing labelable, or the
+          #        model-call switch could not be confirmed
           # REFUSE AN EMPTY BOUND rather than inheriting a default. `boundedNumber` returns its
           # FALLBACK for an absent or empty variable, and those fallbacks are 65 and 65 — the
           # backfill's ceilings, not this job's 9 and 5. (Not the widest it would allow, which is
@@ -354,6 +357,15 @@ jobs:
             case "$code" in
               0)  echo '```' >> "$GITHUB_STEP_SUMMARY"; exit 0 ;;
               75) ;;  # more work; fall through to the sleep
+              76)
+                {
+                  echo '```'
+                  echo ""
+                  echo "**paused (MODEL_CALLS_ENABLED off).** No wave was submitted; every batch already paid for was collected."
+                  echo "The stale cards wait. To resume once model calls are back on, dispatch again with run_id=\`$LABEL_RUN_ID\`"
+                  echo "and scope=\`$LABEL_SCOPE\` (a blank run_id starts a different run under this ISO week)."
+                } >> "$GITHUB_STEP_SUMMARY"
+                exit 0 ;;
               *)  echo '```' >> "$GITHUB_STEP_SUMMARY"; exit "$code" ;;
             esac
             # Batches are minutes rather than seconds.

@@ -82,7 +82,12 @@ export type BuildResult = {
   deferred: string[];
   spentMicro: number;
   batches: { id: string; requests: number; micro: number; usage: { input: number; output: number } }[];
+  /** Set when `beforeSend` stopped the run before a batch: what it said. The unsent precons are in `deferred`. */
+  halted?: Halt;
 };
+
+/** Why a run stopped before a batch: the model-call switch was off, or could not be confirmed on. */
+export type Halt = { state: "off" | "unconfirmed"; line: string };
 
 const refused = (c: CheckedSynopsis): SectionId[] => c.verdicts.filter((v) => v.status !== "ok").map((v) => v.section);
 
@@ -96,6 +101,13 @@ export async function runBuild<V>(input: {
   capMicro: number;
   store: (s: Stored) => Promise<void>;
   log: (line: string) => void;
+  /**
+   * Asked immediately before EVERY batch is sent, first answers and repairs alike: the model-call
+   * switch, read fresh, so an earlier "on" never authorizes a later spend. A halt stops the run as
+   * the cap does: nothing more is sent, a first answer whose repair was only advisory is stored, and
+   * the rest are deferred.
+   */
+  beforeSend?: () => Promise<Halt | null>;
 }): Promise<BuildResult> {
   const result: BuildResult = { stored: [], failed: [], deferred: [], spentMicro: 0, batches: [] };
   type Pending = { job: Job<V>; out: Outgoing; first?: { content: CheckedSynopsis; failing: SectionId[]; micro: number; usage: { input: number; output: number } } };
@@ -114,21 +126,32 @@ export async function runBuild<V>(input: {
     await input.store(s);
     result.stored.push(s);
   };
+  /** Stops sending: stores each advisory-only first answer as it stands and defers the rest. */
+  const settleUnsent = async (unsent: readonly Pending[]) => {
+    for (const p of unsent) {
+      if (!advisoryOnly(p)) {
+        result.deferred.push(p.job.file);
+        continue;
+      }
+      try {
+        await storeSettled(p.job, p.first!.content, p.first!.micro, p.first!.usage);
+      } catch (e) {
+        result.failed.push({ file: p.job.file, reason: `first answer could not be handled: ${e instanceof Error ? e.message : String(e)}` });
+      }
+    }
+  };
   while (queue.length > 0) {
     const { take, rest } = takeWithinCap(queue.map((p) => ({ ...p, worstMicro: p.out.worstMicro })), result.spentMicro, input.capMicro);
     if (take.length === 0) {
-      for (const p of rest) {
-        if (!advisoryOnly(p)) {
-          result.deferred.push(p.job.file);
-          continue;
-        }
-        try {
-          await storeSettled(p.job, p.first!.content, p.first!.micro, p.first!.usage);
-        } catch (e) {
-          result.failed.push({ file: p.job.file, reason: `first answer could not be handled: ${e instanceof Error ? e.message : String(e)}` });
-        }
-      }
+      await settleUnsent(rest);
       input.log(`cap: $${(input.capMicro / 1e6).toFixed(2)} leaves no room for ${rest.length} more request(s); stopping`);
+      break;
+    }
+    const halt = input.beforeSend ? await input.beforeSend() : null;
+    if (halt) {
+      await settleUnsent(queue);
+      result.halted = halt;
+      input.log(`model calls: ${halt.line}`);
       break;
     }
     const worst = take.reduce((n, p) => n + p.out.worstMicro, 0);

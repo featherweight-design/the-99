@@ -29,6 +29,7 @@
 import { readFileSync } from "node:fs";
 
 import { requireEnv } from "./lib/env.mjs";
+import { assertModelCallsOn } from "./lib/model-calls-gate.mjs";
 import { callModel } from "../src/lib/model/client";
 import type { EvidencePack } from "../src/lib/tuning/evidence";
 import { MODEL_TIMEOUT_MS, TUNING_EFFORT, TUNING_MAX_TOKENS, TUNING_MODEL, TUNING_RETRY_FLOOR_MS } from "../src/lib/tuning/limits";
@@ -84,6 +85,8 @@ async function main() {
     return;
   }
 
+  // The app-wide model-call switch, before the one paid call (`model-calls-gate.mjs`).
+  await assertModelCallsOn();
   requireEnv(["ANTHROPIC_API_KEY"]);
   const failures: string[] = [];
   const outcome = await callModel({

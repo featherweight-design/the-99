@@ -142,6 +142,8 @@ Usage basics: pageviews (App Router navigations included, `capture_pageview: "hi
 
 **To see a change on staging sooner,** dispatch Staging sync, then confirm with `curl https://staging.the-99.dev/api/health`.
 
+**`GET /api/health` also reports `modelCalls: "on" | "off"`**, the app-wide `MODEL_CALLS_ENABLED` resolution (a strict read held 30 seconds per instance; "off" when the read fails, failing closed as `reserveModelCall` does, and never held). It never changes the status code, which stays the migration verdict. The background jobs that call a model read it through `scripts/lib/model-calls-gate.mjs`, always from production's health, since the switch is production's admin row: "off" skips green, an unconfirmed read exits non-zero (docs/agents/switches.md).
+
 **When to undo it.** Put staging back on main when production gets a release cycle (as Concert Crawl's has), because staging is then the gate and must track main. To undo: set the staging project's production branch back to `main` (Vercel, the-99-staging, Settings, Git, Production Branch), set `STAGING_BRANCH` to `main`, delete `staging-sync.yml` and both branches (`staging`, `staging-deployed`), and remove the `ref:` lines from the catalog workflows' staging legs.
 
 ## From AGENTS.md (moved 2026-10-28)

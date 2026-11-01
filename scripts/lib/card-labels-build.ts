@@ -102,11 +102,19 @@ export const REQUEST_WORST_USD = requestWorstFor(RATES, MAX_TOKENS_PER_BATCH);
  *   0   done — published, or nothing was stale
  *   75  MORE WORK: a wave went out, or batches are still processing. Call again with the same
  *       LABEL_RUN_ID. (75 is EX_TEMPFAIL — "try again", not a failure.)
- *   1   stop and look: refused, paused, held below the floor, or nothing labelable
+ *   76  MODEL CALLS PAUSED: the app-wide switch (`MODEL_CALLS_ENABLED`) is off, so no wave was
+ *       submitted. Every paid batch was collected first. Stop calling; resume with the same
+ *       LABEL_RUN_ID once model calls are back on. Not a failure.
+ *   1   stop and look: refused, paused on the projection, held below the floor, nothing
+ *       labelable, or the model-call switch could not be confirmed
  */
 export const EXIT_DONE = 0;
 export const EXIT_MORE_WORK = 75;
+export const EXIT_CALLS_PAUSED = 76;
 export const EXIT_STOP = 1;
+
+/** The model-call switch's answer (`readModelCalls` in `model-calls-gate.mjs`). */
+export type ModelCallsVerdict = { state: "on" } | { state: "off" | "unconfirmed"; line: string };
 
 
 export type BuildOptions = {
@@ -120,6 +128,14 @@ export type BuildOptions = {
   /** The highest report line a dispatch can ask for, so a pause can say whether one can resume. */
   dispatchCeilingUsd: number;
   dryRun: boolean;
+  /**
+   * Read before a wave is submitted, after every paid batch has been collected: the app-wide
+   * model-call switch (`readModelCalls`, `model-calls-gate.mjs`). Only the submit spends, so a run
+   * paused mid-backfill still collects and publishes what it paid for. Off returns
+   * `EXIT_CALLS_PAUSED`; unconfirmed returns `EXIT_STOP`. Absent (a probe's fake provider), nothing
+   * is checked.
+   */
+  modelCalls?: () => Promise<ModelCallsVerdict>;
   /** Which cards the run labels (`LABEL_SCOPE`); `src/lib/labels/scope.ts` states the trade. */
   scope: LabelScope;
   /**
@@ -871,6 +887,18 @@ async function build(opts: BuildOptions): Promise<number> {
     return EXIT_DONE;
   }
 
+  const calls = opts.modelCalls ? await opts.modelCalls() : { state: "on" as const };
+  if (calls.state === "off") {
+    console.log(`\n${calls.line}`);
+    console.log(`No wave submitted; ${cards.length} card(s) still need labels. Every batch already paid for `
+      + `was collected. Re-run with LABEL_RUN_ID=${runId} once model calls are back on.`);
+    return EXIT_CALLS_PAUSED;
+  }
+  if (calls.state === "unconfirmed") {
+    console.error(`\n${calls.line}`);
+    console.error(`No wave submitted; ${cards.length} card(s) still need labels. Re-run with LABEL_RUN_ID=${runId}.`);
+    return EXIT_STOP;
+  }
   await submit(opts, wave, new Map(cards.map((c) => [c.name, c])));
   console.log(`\nSubmitted wave of ${wave.length}. Batches are asynchronous: re-run with `
     + `LABEL_RUN_ID=${runId} to collect it and submit the next wave.`);

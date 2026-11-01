@@ -41,6 +41,7 @@
 // branch: the paid model never runs outside the staging build.
 import { requireEnv } from "./lib/env.mjs";
 import { and, eq, isNull, sql } from "drizzle-orm";
+import { readModelCalls } from "./lib/model-calls-gate.mjs";
 
 requireEnv(["DATABASE_URL", "PRECON_OVERVIEW_TARGET_BRANCH"]);
 // `PRECON_OVERVIEW_DB_URL`, when set, names the database instead: the env import above overrides
@@ -101,7 +102,36 @@ async function main(): Promise<number> {
   if (READINGS_ONLY && (STUB || COLLECT)) throw new Error("--readings-only writes readings alone: not with --stub or --collect");
   const live = !DRY && !STUB && !READINGS_ONLY;
   if (COLLECT && (DRY || STUB)) throw new Error("--collect collects a real batch: not with --dry-run or --stub");
-  if (live) requireEnv(["ANTHROPIC_API_KEY"]);
+  // THE MODEL-CALL SWITCH (`model-calls-gate.mjs`) is read FRESH at each point that would call the
+  // model, never once and reused: before the first token count (`confirmCounting`, below) and before
+  // EVERY batch is submitted (`beforeSend`), so a switch turned off during the long no-model pass, or
+  // between batches, stops the spend. The readings and not-current marks run either way. The key is
+  // required only once the switch reads on, so a paused run needs none. Not for `--collect`: that
+  // batch is already paid for, and collecting it spends nothing new. A dry run, a stub and
+  // `--readings-only` call no model.
+  const requireKey = () => {
+    if (!process.env.ANTHROPIC_API_KEY) {
+      console.error("build-precon-overviews: model calls are on but ANTHROPIC_API_KEY is not set (the catalog-staging environment's secret, or .env locally).");
+      process.exit(1);
+    }
+  };
+  if (COLLECT) requireKey();
+  const gated = live && !COLLECT;
+  /** Off or unconfirmed at the first count: tokens are estimated from then on, and nothing is sent. */
+  let paused: { state: "off" | "unconfirmed"; line: string } | null = null;
+  let counting = false;
+  const confirmCounting = async (): Promise<boolean> => {
+    if (counting) return true;
+    if (paused) return false;
+    const v = await readModelCalls();
+    if (v.state !== "on") {
+      paused = v;
+      return false;
+    }
+    requireKey();
+    counting = true;
+    return true;
+  };
   // A stub's Overview is a fixture: written only to a scratch branch, never where a real one belongs.
   if (STUB) {
     const { assertScratchBranch } = await import("./lib/scratch-branch.mjs");
@@ -139,7 +169,12 @@ async function main(): Promise<number> {
     at.seenSeq === null ? NO_PRECON_READING : columnsFor(req, { catalog: at.catalog, seenSeq: at.seenSeq });
   let readings = 0;
 
-  const inputTokensOf = async (params: object) => (live ? countTokens(params as never) : Math.ceil(JSON.stringify(params).length / 3));
+  // Counted only when the model may be called: `countTokens` is an Anthropic call too, so the switch
+  // is confirmed fresh before the first count. It costs nothing, so later counts reuse that read; every
+  // SUBMIT reads again (`beforeSend`).
+  const inputTokensOf = async (params: object) => (gated && await confirmCounting()
+    ? countTokens(params as never)
+    : Math.ceil(JSON.stringify(params).length / 3));
 
   const facts = new Map<string, SynopsisFacts>();
   // Per custom id: the box's alternates, which decide the reply schema the answer is parsed with and the stub's line.
@@ -222,10 +257,18 @@ async function main(): Promise<number> {
   const worst = jobs.reduce((n, j) => n + j.first.worstMicro, 0);
   console.log(`precons: ${files.length} plain, ${current} current, ${jobs.length} to write, ${held} held back by --limit, ${skipped.length} skipped`);
   for (const s of skipped) console.log(`  skipped ${s.file}: ${s.why}`);
-  console.log(`first answers' worst case $${(worst / 1e6).toFixed(2)}${live ? "" : " (input tokens estimated)"}; cap $${(capMicro / 1e6).toFixed(2)}; model ${model}; role basis ${basis}`);
+  console.log(`first answers' worst case $${(worst / 1e6).toFixed(2)}${counting ? "" : " (input tokens estimated)"}; cap $${(capMicro / 1e6).toFixed(2)}; model ${model}; role basis ${basis}`);
   if (DRY) {
     console.log("dry run: nothing was called and nothing was written");
     return 0;
+  }
+  // Paused at the first count: off is a pause (exit 0), unconfirmed a failure to look at (non-zero).
+  // Either way nothing is sent. (A `let` narrowed through a closure, so read it through a const.)
+  const pausedAtCount = paused as { state: "off" | "unconfirmed"; line: string } | null;
+  if (pausedAtCount) {
+    if (pausedAtCount.state === "off") console.log(pausedAtCount.line);
+    else console.error(pausedAtCount.line);
+    return pausedAtCount.state === "off" ? 0 : 1;
   }
 
   const unrecorded: { batchId: string; usd: number; error: string }[] = [];
@@ -354,16 +397,27 @@ async function main(): Promise<number> {
       return { batchId, replies };
     },
     store,
+    // Fresh before EVERY batch, first answers and repairs: an earlier "on" never authorizes a later spend.
+    beforeSend: gated ? async () => {
+      const v = await readModelCalls();
+      return v.state === "on" ? null : v;
+    } : undefined,
   });
 
   console.log(`\nstored ${result.stored.length} of ${jobs.length}; failed ${result.failed.length}; deferred ${result.deferred.length}`);
   for (const f of result.failed) console.log(`  failed ${f.file}: ${f.reason}`);
-  for (const d of result.deferred) console.log(`  deferred ${d} (the cap)`);
+  for (const d of result.deferred) console.log(`  deferred ${d} (${result.halted ? "model calls" : "the cap"})`);
   for (const f of moved) console.log(`  stored NOT current ${f}: its inputs moved while the batch ran`);
   console.log(`spent $${(result.spentMicro / 1e6).toFixed(4)} over ${result.batches.length} batch(es)`);
   if (unrecorded.length > 0) {
     for (const u of unrecorded) console.error(`model_calls: batch ${u.batchId} ($${u.usd.toFixed(4)}) was NOT recorded: ${u.error}`);
     return 1;
+  }
+  // Stopped before a batch by the switch: off is a pause (exit 0), unconfirmed a failure to look at.
+  if (result.halted) {
+    if (result.halted.state === "off") console.log(result.halted.line);
+    else console.error(result.halted.line);
+    return result.halted.state === "off" ? 0 : 1;
   }
   return 0;
 }
