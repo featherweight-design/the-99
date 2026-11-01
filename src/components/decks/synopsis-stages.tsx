@@ -240,7 +240,7 @@ export function KeyCardGrid({
                   ? <CardName oracleId={card.oracleId} name={k.card} imageUri={art.get(card.oracleId)?.imageUri ?? null} />
                   : <span className="font-semibold text-[var(--fg)]">{k.card}</span>}
               </b>
-              <span className="text-[11.5px] leading-[1.45] text-[var(--fg-muted)] [text-wrap:pretty] md:text-[12.5px]">{text(k.job)}{basedOn(i, k.job, card?.oracleId)}</span>
+              <span className="text-[11.5px] leading-[1.45] text-[var(--fg-muted)] [text-wrap:pretty] [overflow-wrap:anywhere] md:text-[12.5px]">{text(k.job)}{basedOn(i, k.job, card?.oracleId)}</span>
             </div>
           </div>
         );
