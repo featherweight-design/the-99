@@ -12,6 +12,7 @@ import {
   memberEffects,
   memberRows,
   type GroupCard,
+  type GroupCode,
   type GroupEvent,
   type GroupsList,
   type MemberRow,
@@ -36,6 +37,7 @@ type RawState = {
   events: (Omit<GroupEvent, "at"> & { at: string })[];
   inviteBalances: { userId: string; held: number }[];
   inviteOpen: { userId: string; kind: InviteKind; state: ReservationState; qrExpiresAt: string | null; holdsUntil: string | null }[];
+  flyerCodes: GroupCode[];
 };
 
 // A timestamp inside json_build_object arrives as text, without a zone; the columns hold UTC.
@@ -64,7 +66,10 @@ async function readState(groupId: string | null) {
     coalesce((select json_agg(json_build_object(
       'userId', r.user_id, 'kind', r.kind, 'state', r.state, 'qrExpiresAt', r.qr_expires_at, 'holdsUntil', r.holds_until
     )) from invite_reservations r where r.state in ('qr_open', 'claimed', 'reserved')
-      and r.user_id in (select user_id from flag_group_members where group_id = ${groupId}::uuid)), '[]'::json) as "inviteOpen"`);
+      and r.user_id in (select user_id from flag_group_members where group_id = ${groupId}::uuid)), '[]'::json) as "inviteOpen",
+    -- The group's flyer codes, for Delete's refusal and its confirm (small items 9, item 7): a live one blocks it.
+    coalesce((select json_agg(json_build_object('code', c.code, 'revoked', c.revoked_at is not null) order by c.created_at)
+      from flyer_codes c where c.group_id = ${groupId}::uuid), '[]'::json) as "flyerCodes"`);
   const [row] = rows;
   const snapshot: SwitchSnapshot = {
     // An All features row outranks the group rung, so the resolver's snapshot keeps it.
@@ -76,6 +81,7 @@ async function readState(groupId: string | null) {
     groups: row.groups,
     snapshot,
     events: row.events.map((e) => ({ ...e, at: utc(e.at) })),
+    flyerCodes: row.flyerCodes,
     invites: {
       balances: new Map(row.inviteBalances.map((b) => [b.userId, b.held])),
       open: row.inviteOpen.map((r): OpenRow => ({ ...r, qrExpiresAt: maybe(r.qrExpiresAt), holdsUntil: maybe(r.holdsUntil) })),
@@ -110,6 +116,9 @@ export type GroupPage = {
   historyCut: boolean;
   /** Top up invites (M3): each member's name and invites left now. Empty on the new-group page. */
   topUp: TopUpMember[];
+  /** Delete (small items 9, item 7): the saved member count and the group's flyer codes. Zero and empty on the new-group page. */
+  memberCount: number;
+  codes: GroupCode[];
   clerk: "ok" | "down";
 };
 
@@ -139,6 +148,8 @@ export async function loadGroupPage(groupId: string | null, viewerId: string, no
     history: groupHistory(state.events.slice(0, HISTORY_LIMIT), accounts, viewerId, group?.name ?? ""),
     historyCut: state.events.length > HISTORY_LIMIT,
     topUp: groupId ? topUpMembers(groupId, state, accounts, now) : [],
+    memberCount: groupId ? [...state.snapshot.groupOf.values()].filter((g) => g === groupId).length : 0,
+    codes: state.flyerCodes,
     clerk,
   };
 }

@@ -43,14 +43,21 @@ type RawState = {
   members: { userId: string; groupId: string }[];
   groups: GroupInfo[];
   events: (Omit<SwitchEvent, "at"> & { at: string })[];
+  deletedGroups: { id: string; name: string }[];
 };
 
 // A timestamp inside json_build_object arrives as text, without a zone; the columns hold UTC.
 const utc = (text: string) => new Date(`${text}Z`);
 
-async function readSwitchState(name: SwitchName) {
-  try {
-    const { rows } = await db.execute<RawState>(sql`select
+/**
+ * The state's one statement. `recent` is this switch's history window (one past the limit, so the page can say the
+ * list is cut); a deleted group's name is read only for the groups that window names, from the small set of
+ * `group_deleted` events, so History still names it (small items 9, item 7) without scanning the switch's whole log.
+ */
+export const switchStateSql = (name: SwitchName) => sql`with recent as (
+      select * from admin_events where "switch" = ${name} order by at desc, id desc limit ${HISTORY_LIMIT + 1}
+    )
+    select
       coalesce((select json_agg(json_build_object(
         'switchName', o."switch", 'scope', o.scope, 'groupId', o.group_id, 'userId', o.user_id, 'value', o.value,
         'note', o.note, 'updatedBy', o.updated_by, 'updatedAt', o.updated_at
@@ -62,10 +69,14 @@ async function readSwitchState(name: SwitchName) {
       coalesce((select json_agg(json_build_object(
         'at', e.at, 'actorId', e.actor_id, 'kind', e.kind, 'scope', e.scope, 'groupId', e.group_id, 'userId', e.user_id,
         'oldValue', e.old_value, 'newValue', e.new_value, 'note', e.note
-      ) order by e.at desc, e.id desc) from (
-        -- One past the limit, so the page can say the list is cut.
-        select * from admin_events where "switch" = ${name} order by at desc, id desc limit ${HISTORY_LIMIT + 1}
-      ) e), '[]'::json) as events`);
+      ) order by e.at desc, e.id desc) from recent e), '[]'::json) as events,
+      coalesce((select json_agg(json_build_object('id', d.group_id, 'name', d.old_value)) from admin_events d
+        where d.kind = 'group_deleted' and d.group_id in (select r.group_id from recent r where r.group_id is not null)
+      ), '[]'::json) as "deletedGroups"`;
+
+async function readSwitchState(name: SwitchName) {
+  try {
+    const { rows } = await db.execute<RawState>(switchStateSql(name));
     const [row] = rows;
     // The resolver's snapshot keeps an All features row (`isOverrideName`), so the page's verdicts read
     // an account it raises as the request path does; the rows the page lists are switches alone.
@@ -79,6 +90,7 @@ async function readSwitchState(name: SwitchName) {
       overrides,
       groups: row.groups,
       events: row.events.map((e) => ({ ...e, at: utc(e.at) })),
+      deletedGroups: new Map(row.deletedGroups.map((d) => [d.id, d.name])),
     };
   } catch (error) {
     console.error("admin: switch overrides could not be read; drawing the env var alone", error);
@@ -102,6 +114,7 @@ export async function loadSwitchPage(name: SwitchName, viewerId: string): Promis
     accounts,
     groups: state?.groups ?? [],
     events: state?.events ?? [],
+    deletedGroups: state?.deletedGroups,
     historyLimit: HISTORY_LIMIT,
     viewerId,
   });

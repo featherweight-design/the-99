@@ -642,8 +642,11 @@ html { --collection-head-h: 48px; }
 html { --mobile-header-h: 79px; }
 
 /* A returned phone header (quick return, card search plan PR B) covers the top of the page by the room it publishes,
-   so an anchor jump or a scroll into view lands below it. 0 whenever the header is in the page, away, or on desktop. */
-html { scroll-padding-top: var(--header-offset, 0px); }
+   so an anchor jump or a scroll into view lands below it. 0 whenever the header is in the page, away, or on desktop.
+   The admin's pinned head (`--admin-head-h`, set only while it is mounted) covers the top the same way. Next's
+   navigation scroll reads this padding to decide whether a new page's top is in view, so without it a page whose top
+   sits under the pinned head (Groups, after a group's delete from its scrolled foot) is left there, not scrolled up. */
+html { scroll-padding-top: calc(var(--header-offset, 0px) + var(--admin-head-h, 0px)); }
 
 /* The lift every dialog in the app sits on — the card modal, the export dialog,
    and the collection's confirm and issue dialogs. Copies of the same literal

@@ -1583,6 +1583,13 @@
       "when": 1793554571171,
       "tag": "0225_precon_synopses_checked_seen_seq",
       "breakpoints": true
+    },
+    {
+      "idx": 226,
+      "version": "7",
+      "when": 1793559302326,
+      "tag": "0226_admin_events_group_deleted",
+      "breakpoints": true
     }
   ]
 }
