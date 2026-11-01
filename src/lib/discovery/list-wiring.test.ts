@@ -96,6 +96,9 @@ vi.mock("./novelty", async (importOriginal) => ({
   loadPlayedTags: async () => [],
 }));
 
+// The player's hidden commanders, read beside the prices; none here, so every candidate is listed.
+vi.mock("../commanders/hidden", () => ({ loadHiddenIds: async () => [] }));
+
 const { loadDiscovery, loadDiscoveryPool, loadDiscoveryWithIds } = await import("./list");
 
 /** One copy owned, claimed by a committed deck — nothing left free. */

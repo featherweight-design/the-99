@@ -11,7 +11,7 @@ vi.mock("../cache/catalog-generation", () => ({ catalogGeneration: async () => "
 // The Sets answer's index is the lanes' own reader, memoized there; this file is about this memo.
 vi.mock("../sets/printed-in-read", () => ({ loadCommanderPrintings: async () => ({ sets: [], byOracle: {} }) }));
 
-const { loadIntakeCatalog, loadIntakeThemes } = await import("./search");
+const { isCandidate, loadIntakeCatalog, loadIntakeThemes } = await import("./search");
 const text = (q: SQL) => new PgDialect().sqlToQuery(q).sql;
 const reads = () => execute.mock.calls.map(([q]) => text(q));
 
@@ -26,5 +26,15 @@ describe("the intake catalog memo", () => {
     expect(a.index).toBe(b.index);
     expect(reads().filter((q) => q.includes("from cards c"))).toHaveLength(1);
     expect(reads().filter((q) => q.includes("commander_support"))).toHaveLength(1);
+  });
+});
+
+// One condition admits both the search's results and the trial fill's ids, so a hidden commander leaves
+// both by being absent from it. Qualified on `cs`: a bare `oracle_id` would match every hidden row.
+describe("isCandidate", () => {
+  it("leaves out the player's hidden commanders, correlated on the search's own alias", () => {
+    const q = new PgDialect().sqlToQuery(isCandidate("user_1"));
+    expect(q.sql).toMatch(/not exists \(\s*select 1 from "hidden_commanders" hc\s+where hc\.user_id = \$\d+\s+and hc\.oracle_id = cs\.commander_oracle_id/);
+    expect(q.params.filter((p) => p === "user_1")).toHaveLength(2);
   });
 });

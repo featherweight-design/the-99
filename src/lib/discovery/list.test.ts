@@ -369,6 +369,59 @@ describe("assembleDiscoveryWithIds", () => {
   });
 });
 
+describe("assembleDiscoveryWithIds · hidden commanders", () => {
+  const input = (hiddenIds: Set<string>, sort: "fit" | "new" = "fit") => ({
+    candidates: [
+      candidate({ oracleId: "first", name: "Twin", ownedSupport: 90 }),
+      candidate({ oracleId: "second", name: "Twin", ownedSupport: 50 }),
+      candidate({ oracleId: "other", name: "Other", ownedSupport: 10 }),
+    ],
+    playedTags: [],
+    prices: new Map(),
+    rollup: buildPoolRollup([], new Map()),
+    cardsRead: 2805,
+    freePoolSize: 2805,
+    availOk: true,
+    roleTargets: new Map(),
+    priceOk: true,
+    sort,
+    hiddenIds,
+  });
+
+  // Slugs dedup same-name commanders by position, so filtering before assigning them would hand the
+  // second Twin the first one's slug and point its URL at a hidden commander.
+  it("drops a hidden row after the slugs are assigned, so no other row's slug moves", () => {
+    const before = assembleDiscoveryWithIds(input(new Set()));
+    const after = assembleDiscoveryWithIds(input(new Set(["first"])));
+    const slugOf = (r: ReturnType<typeof assembleDiscoveryWithIds>, id: string) =>
+      r.list.items[r.oracleIds.indexOf(id)]?.slug;
+    expect(after.oracleIds).toEqual(["second", "other"]);
+    expect(slugOf(after, "second")).toBe(slugOf(before, "second"));
+    expect(slugOf(after, "other")).toBe(slugOf(before, "other"));
+  });
+
+  // The empty states print `candidateCount` ("none of the N"), and the place head's count leaves hidden
+  // commanders out, so the two agree only if this does too.
+  it("counts a hidden row in no figure", () => {
+    const { list } = assembleDiscoveryWithIds(input(new Set(["first", "other"])));
+    expect(list.candidateCount).toBe(1);
+    expect(list.items.map((i) => i.rank)).toEqual([1]);
+    expect(list.floorExcluded + list.unmeasured).toBe(0);
+  });
+
+  it("counts a hidden row as neither floor-excluded nor unmeasured under the novelty sort", () => {
+    const { list } = assembleDiscoveryWithIds(input(new Set(["first", "other"]), "new"));
+    expect(list.candidateCount).toBe(1);
+    expect(list.candidateCount - list.items.length - list.floorExcluded - list.unmeasured).toBe(0);
+  });
+
+  it("hides nothing when the set is empty", () => {
+    const { list } = assembleDiscoveryWithIds(input(new Set()));
+    expect(list.items).toHaveLength(3);
+    expect(list.candidateCount).toBe(3);
+  });
+});
+
 describe("discoveryKey", () => {
   it("files a payload under its sort, its version and the labels basis", () => {
     expect(discoveryKey("fit")).toEqual(["discovery", "fit", "v9", "basis:labels"]);
