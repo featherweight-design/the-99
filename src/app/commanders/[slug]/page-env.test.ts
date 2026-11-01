@@ -19,8 +19,11 @@ vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: async () => 
 vi.mock("../../../lib/recs/recommend", () => ({ scoreOneCommander: m.scoreOneCommander }));
 vi.mock("../../../lib/recs/free-ranking", () => ({ loadFreePool: m.loadFreePool, rankFree: m.rankFree }));
 vi.mock("../../../lib/discovery/resolve-slug", () => ({
-  resolveCommanderSlug: async () => ({ oracleId: "cmd-1", rank: 1, anyDegraded: false }),
+  resolveCommanderSlug: async () => ({ oracleId: "cmd-1", rank: 1, hidden: false, anyDegraded: false }),
+  rankAmongShown: vi.fn(),
 }));
+// The free mode reads the hidden ids to leave them out of its re-rank: a database read, mocked here.
+vi.mock("../../../lib/commanders/hidden", () => ({ loadHiddenIds: async () => [] }));
 vi.mock("../../../lib/recs/ranked-list", () => ({ getRankedList: async () => ({ items: [] }) }));
 vi.mock("../../../lib/collection/owned-printings", () => ({ resolveOwnedPrintings: vi.fn(), withOwnedCardArt: vi.fn() }));
 vi.mock("../../../components/commanders/detail", () => ({ CommanderDetail: () => null }));

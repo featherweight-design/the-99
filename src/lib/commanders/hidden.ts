@@ -63,3 +63,17 @@ export function notHiddenBy(userId: string, oracleIdColumn: SQLWrapper): SQL {
       and hc.oracle_id = ${oracleIdColumn}
   )`;
 }
+
+/**
+ * "This player has hidden this commander": `notHiddenBy`'s complement, for a read that has to keep the
+ * hidden rows and tell them apart (the commander page's rank window, `scoredCommanderQuery`).
+ *
+ * The same qualification rule holds: pass the column QUALIFIED, or it resolves to the hidden row's own.
+ */
+export function hiddenBy(userId: string, oracleIdColumn: SQLWrapper): SQL {
+  return sql`exists (
+    select 1 from ${hiddenCommanders} hc
+    where hc.user_id = ${userId}
+      and hc.oracle_id = ${oracleIdColumn}
+  )`;
+}

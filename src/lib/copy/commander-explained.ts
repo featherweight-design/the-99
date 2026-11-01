@@ -383,3 +383,29 @@ export const heroNoteEdits = {
       `\u2014 we couldn’t reach EDHREC. This score is out of ${n(max)} until it returns.`,
   },
 } as const;
+
+// ── Hide a commander: the commander's own page ─────────────────────────────
+// design_handoff_the99_hide_commander README §4 and the Page board, settled at /copy-review
+// (2026-11-01). One family for the control and the way back: Hide, Hidden, Unhide.
+
+export const hideCommanderCopy = {
+  /** The phone band's kicker, in place of the rank. */
+  kicker: "Hidden",
+  /** The hero's rank clause while hidden: the lists it ranks in leave it out, so it has no rank. */
+  notRanked: "Not ranked while hidden",
+  /** The note that leads the body (phone) or the right column (desktop). Heading in the note's
+      strong weight, as the hero's synergy notes draw theirs. */
+  note: {
+    heading: "Hidden.",
+    body: "It stays out of For you, Discover and Help me choose until you bring it back.",
+  },
+  unhide: "Unhide",
+  unhideAria: (name: string) => `Unhide ${name}`,
+  /** The quiet line the page offers while the commander is not hidden. WAS: "Hide from my lists",
+      over the 3-word button cap; the aria-label names the commander. */
+  hide: "Hide from lists",
+  hideAria: (name: string) => `Hide ${name}`,
+  /** The shared toast, when the write is refused and the page goes back. */
+  hideRefused: (name: string) => `We couldn’t hide ${name}. Try again.`,
+  unhideRefused: (name: string) => `We couldn’t unhide ${name}. Try again.`,
+} as const;

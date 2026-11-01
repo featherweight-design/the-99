@@ -1,3 +1,4 @@
+import { loadHiddenIds } from "../commanders/hidden";
 import { getRankedList } from "../recs/ranked-list";
 import { findScoredCommander } from "../recs/store";
 import { loadCandidateSlugRows } from "./candidates";
@@ -5,7 +6,31 @@ import { loadDiscoveryPool } from "./list";
 import { byFit } from "./novelty";
 import { assignDiscoverySlugs } from "./slugs";
 
-export type ResolvedCommander = { oracleId: string; rank: number; anyDegraded: boolean };
+export type ResolvedCommander = {
+  oracleId: string;
+  /** Its place in the list it was clicked from. Null while the player has it hidden: no list draws it. */
+  rank: number | null;
+  hidden: boolean;
+  anyDegraded: boolean;
+};
+
+/**
+ * The place the row at `at` takes in a list that leaves hidden commanders out, counted over a list that
+ * still holds them. The two fallbacks below, and the commander page's own re-ranks, index lists that
+ * keep hidden rows (slug assignment shares them, so they cannot be filtered before it), while the lists
+ * the reader clicked from drop them. Counting every row would put a commander one place lower per hidden
+ * row ahead of it. A hidden row has no place.
+ */
+export function rankAmongShown(
+  rows: readonly { oracleId: string }[],
+  at: number,
+  hiddenIds: ReadonlySet<string>,
+): { rank: number | null; hidden: boolean } {
+  if (hiddenIds.has(rows[at].oracleId)) return { rank: null, hidden: true };
+  let rank = 1;
+  for (let i = 0; i < at; i++) if (!hiddenIds.has(rows[i].oracleId)) rank++;
+  return { rank, hidden: false };
+}
 
 /**
  * A commander detail slug, from whichever of the three rankings owns it.
@@ -17,6 +42,9 @@ export type ResolvedCommander = { oracleId: string; rank: number; anyDegraded: b
  * 3. The discovery ranking, for a commander the player has not built. It has
  *    no persisted score and no place in the owned list, but the discovery list
  *    links to it all the same — roughly 3,100 rows resolve nowhere else.
+ *
+ * A HIDDEN COMMANDER RESOLVES, with no rank: its page still opens. The hidden ids are read only when a
+ * fallback runs; the store answers the flag in its own statement.
  *
  * Shared with `retryCoverageFigures` rather than inlined in the page: the retry
  * has to reach the same commander the page rendered, and resolving through the
@@ -32,10 +60,12 @@ export async function resolveCommanderSlug(
   const found = await findScoredCommander(userId, slug, env);
   if (found) return found;
 
-  const { items } = await getRankedList(userId, env);
+  // Read once, beside the owned list, and shared with the discovery fallback below.
+  const [{ items }, hiddenList] = await Promise.all([getRankedList(userId, env), loadHiddenIds(userId)]);
+  const hiddenIds = new Set(hiddenList);
   const idx = items.findIndex((i) => i.slug === slug);
   if (idx !== -1) {
-    return { oracleId: items[idx].oracleId, rank: idx + 1, anyDegraded: false };
+    return { oracleId: items[idx].oracleId, ...rankAmongShown(items, idx, hiddenIds), anyDegraded: false };
   }
 
   // The whole collection, because that is what the discover list ranks against.
@@ -60,5 +90,5 @@ export async function resolveCommanderSlug(
 
   // The rank the row itself showed: position in the fit ranking, which is
   // discovery's default and the only ordering this page can name.
-  return { oracleId: rows[at].oracleId, rank: at + 1, anyDegraded: false };
+  return { oracleId: rows[at].oracleId, ...rankAmongShown(rows, at, hiddenIds), anyDegraded: false };
 }

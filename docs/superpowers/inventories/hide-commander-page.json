@@ -1,0 +1,46 @@
+{
+  "feature": "Hide a commander, PR 5: the commander's own page, hidden and not hidden (README section 4, the Page board)",
+  "note": "HC_SLUG is a commander slug the signed-in account has scored and NOT hidden (on a local-dev scratch branch, any For you row). The rows run in order at each width and leave the commander as they found it: shown, Hide pressed, the next visit served hidden, Unhide pressed. A run that stops between rows 2 and 4 leaves one hidden_commanders row for the account; delete it. The phone frame is drawn tall so the Hide line under the hero is in the photograph.",
+  "widths": [
+    { "label": "phone", "width": 390, "height": 1300 },
+    { "label": "desktop", "width": 1300, "height": 900 }
+  ],
+  "rows": [
+    {
+      "id": "shown",
+      "label": "/commanders/[slug], not hidden: the Hide line (phone under the hero, desktop under the build note)",
+      "view": "src/components/commanders/hide-commander.tsx",
+      "steps": [
+        { "goto": "/commanders/${HC_SLUG}", "wait": "button[aria-label^='Hide ']:visible", "settle": 1500 }
+      ]
+    },
+    {
+      "id": "hide-pressed",
+      "label": "/commanders/[slug], Hide pressed: the note leads, the kicker reads Hidden, the rank clause says not ranked",
+      "view": "src/components/commanders/hide-commander.tsx",
+      "steps": [
+        { "goto": "/commanders/${HC_SLUG}", "wait": "button[aria-label^='Hide ']:visible", "settle": 1500 },
+        { "clickRole": "button", "name": "^Hide ", "settle": 400 },
+        { "wait": "[data-hidden-note]:visible", "settle": 1200 }
+      ]
+    },
+    {
+      "id": "served-hidden",
+      "label": "/commanders/[slug], the next visit: served hidden by the server",
+      "view": "src/components/commanders/hide-commander.tsx",
+      "steps": [
+        { "goto": "/commanders/${HC_SLUG}", "wait": "[data-hidden-note]:visible", "settle": 1500 }
+      ]
+    },
+    {
+      "id": "unhide-pressed",
+      "label": "/commanders/[slug], Unhide pressed: the Hide line is back and the rank returns with the refresh",
+      "view": "src/components/commanders/hide-commander.tsx",
+      "steps": [
+        { "goto": "/commanders/${HC_SLUG}", "wait": "[data-hidden-note]:visible", "settle": 1500 },
+        { "clickRole": "button", "name": "^Unhide ", "settle": 400 },
+        { "wait": "button[aria-label^='Hide ']:visible", "settle": 2500 }
+      ]
+    }
+  ]
+}

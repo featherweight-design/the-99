@@ -152,6 +152,11 @@ describe("SynergySelection", () => {
 // CoverageSection refreshes the route after a recovered retry, so the whole
 // detail tree needs a router even where no test clicks Retry.
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+// The page's Hide control calls these server actions; mocked so no render here reaches a database.
+vi.mock("../../app/commanders/actions", () => ({
+  hideCommanderAction: vi.fn(async () => true),
+  unhideCommanderAction: vi.fn(async () => true),
+}));
 
 import { CommanderDetail } from "./detail";
 import type { CommanderDetailScore } from "../../lib/recs/recommend";
@@ -194,7 +199,7 @@ describe("SelectableLiveAnnouncer — placement in CommanderDetail", () => {
     // container and duplicating it, will fail this assertion — the isolated test
     // above cannot see either of those regressions.
     const { container } = render(
-      <CommanderDetail
+      <CommanderDetail hidden={false}
         commander={detailCommander()}
         rank={1}
         isBestFit

@@ -32,6 +32,7 @@ import {
 import type { SynergyCard } from "../../lib/commanders/synergy-cards";
 import { PRIMARY } from "../ui/button";
 import { ArtLayer } from "../ui/art-layer";
+import { BandKicker, CommanderHideProvider, HeroRankClause, HiddenNote, HideLine } from "./hide-commander";
 
 // ─── Fit Hero (right column top section) ─────────────────────────────────────
 
@@ -44,7 +45,7 @@ type FitHeroProps = {
   // Written down so the next reader knows the object can carry it, rather than being
   // surprised by a name that has no declaration behind it.
   commander: RankedCommander & { printedName?: string | null };
-  rank: number;
+  rank: number | null;
   isBestFit: boolean;
   avail: "all" | "free";
   width: "desktop" | "phone";
@@ -74,18 +75,9 @@ function FitHero({ commander: c, rank, isBestFit, avail, width }: FitHeroProps) 
         ] as FitLegendSegment[])),
   ];
 
-  const rankClause = isBestFit ? (
-    <span
-      className="font-sans font-[600]"
-      style={{ fontSize: 13, color: "var(--success)", marginLeft: isPhone ? 0 : 6 }}
-    >
-      {explainedCopy.score.bestInPool}
-    </span>
-  ) : (
-    <span className="font-mono" style={{ fontSize: 13, color: "var(--fg-faint)" }}>
-      Rank #{rank}
-    </span>
-  );
+  // The rank, Best in your pool, or Not ranked while hidden: the page's one hide state decides, so a
+  // press flips it with the band's kicker and the note.
+  const rankClause = <HeroRankClause rank={rank} isBestFit={isBestFit} isPhone={isPhone} />;
 
   return (
     <div
@@ -210,8 +202,14 @@ function FitHero({ commander: c, rank, isBestFit, avail, width }: FitHeroProps) 
 
 export type CommanderDetailProps = {
   commander: CommanderDetailScore;
-  rank: number;
+  /** Its place in the list it was clicked from; null while the player has it hidden. */
+  rank: number | null;
   isBestFit: boolean;
+  /**
+   * Whether the player has hidden this commander from their lists. REQUIRED for the reason `avail` is:
+   * a default would draw a hidden commander's page with a Hide line and no way back.
+   */
+  hidden: boolean;
   /**
    * Which pool the score and the rank above were computed against.
    *
@@ -244,6 +242,7 @@ export function CommanderDetail({
   commander: c,
   rank,
   isBestFit,
+  hidden,
   avail,
   synergyCards,
   newestAsOf,
@@ -274,6 +273,9 @@ export function CommanderDetail({
     // The synergy selection sits beside it at the same level, so Task 7's promise
     // line and Build href can read the picks as siblings of the panel.
     <CardDetailProvider>
+      {/* The page's one hide state, so the kicker, the rank clause, the note and the Hide line flip
+          together at both widths. */}
+      <CommanderHideProvider oracleId={c.oracleId} name={commanderDisplayName(c)} hidden={hidden}>
       <SynergySelectionProvider>
       {/* Live region — outside both breakpoint containers so it is present
           at every width. Exactly one instance in the DOM. */}
@@ -347,8 +349,7 @@ export function CommanderDetail({
               textShadow: "0 1px 3px rgba(0,0,0,0.8)",
             }}
           >
-            Rank {rank}
-            {isBestFit ? " · your best fit" : ""}
+            <BandKicker rank={rank} isBestFit={isBestFit} />
           </p>
           {/* The pips arrive here from the band's top edge. Beside the name, as
               every other band in the app already draws them — five plated
@@ -415,8 +416,14 @@ export function CommanderDetail({
         // bottom padding here is the gap that band was hiding.
         style={{ flex: 1, padding: "16px 14px 16px" }}
       >
+        {/* Hidden: the note leads the body. */}
+        <HiddenNote />
+
         {/* Fit Hero (mobile) */}
         <FitHero commander={c} rank={rank} isBestFit={isBestFit} avail={avail} width="phone" />
+
+        {/* Not hidden: the quiet Hide line, under the hero. */}
+        <HideLine width="phone" />
 
         <WhySection
           prose={prose}
@@ -662,10 +669,16 @@ export function CommanderDetail({
 
           {/* Promise line + clear, below seed note — desktop width */}
           <SelectableSynergySelection cards={synergyCards} width="desktop" />
+
+          {/* Not hidden: the quiet Hide line, under the build note. */}
+          <HideLine width="desktop" />
         </div>
 
         {/* Right column — scrolling */}
         <div className="flex flex-col gap-[32px]">
+          {/* Hidden: the note leads the right column. */}
+          <HiddenNote />
+
           {/* Fit Hero */}
           <FitHero commander={c} rank={rank} isBestFit={isBestFit} avail={avail} width="desktop" />
 
@@ -772,6 +785,7 @@ export function CommanderDetail({
         </div>
       </div>
       </SynergySelectionProvider>
+      </CommanderHideProvider>
     </CardDetailProvider>
   );
 }

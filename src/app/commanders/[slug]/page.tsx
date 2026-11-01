@@ -3,7 +3,8 @@ import { requireUserId } from "../../../lib/auth";
 import { scoreOneCommander } from "../../../lib/recs/recommend";
 import { loadFreePool, rankFree } from "../../../lib/recs/free-ranking";
 import type { PoolCard } from "../../../lib/recs/score";
-import { resolveCommanderSlug } from "../../../lib/discovery/resolve-slug";
+import { rankAmongShown, resolveCommanderSlug } from "../../../lib/discovery/resolve-slug";
+import { loadHiddenIds } from "../../../lib/commanders/hidden";
 import { resolveOwnedPrintings, withOwnedCardArt } from "../../../lib/collection/owned-printings";
 import { getRankedList } from "../../../lib/recs/ranked-list";
 import { CommanderDetail } from "../../../components/commanders/detail";
@@ -39,15 +40,23 @@ export default async function CommanderDetailPage({
   // candidate set to render one.
   let found = await resolveCommanderSlug(userId, slug, env);
   if (!found) notFound();
-  if (found.anyDegraded) {
+  // A HIDDEN COMMANDER HAS NO RANK, in either mode: no list draws it. Its page opens all the same,
+  // canonical, with nothing below re-ranking it.
+  const hidden = found.hidden;
+  // The two re-ranks below index `getRankedList`, which still holds hidden rows (slug assignment shares
+  // them); the lists the reader clicked from do not, so each counts only the shown rows. Read once, and
+  // only when one of them runs.
+  let hiddenIds: Promise<ReadonlySet<string>> | undefined;
+  const readHiddenIds = () => (hiddenIds ??= loadHiddenIds(userId).then((ids) => new Set(ids)));
+  if (found.anyDegraded && !hidden) {
     // The persisted ranks came from an outage-era compute, so the rank shown beside
     // a freshly-scored commander would disagree with the list. Refresh the rank
     // only — matched by oracleId, because a recompute can reassign this slug to a
     // different commander (duplicate names take rank-order suffixes) and the URL
     // belongs to whichever commander the persisted row named.
-    const { items } = await getRankedList(userId, env);
+    const [{ items }, ids] = await Promise.all([getRankedList(userId, env), readHiddenIds()]);
     const idx = items.findIndex((i) => i.oracleId === found!.oracleId);
-    if (idx !== -1) found = { ...found, rank: idx + 1, anyDegraded: false };
+    if (idx !== -1) found = { ...found, ...rankAmongShown(items, idx, ids), anyDegraded: false };
   }
 
   // Both halves of the free mode or neither. The rank and the score have to come
@@ -57,8 +66,14 @@ export default async function CommanderDetailPage({
   // than pairing a free score with a rank from the other list.
   let avail: "all" | "free" = "all";
   let pool: PoolCard[] | undefined;
+  // A hidden commander is sent to the canonical URL, as a commander the free ranking does not hold is
+  // below: there is no free rank to pair a free score with while it is hidden.
+  if (requested === "free" && found.hidden) redirect(`/commanders/${slug}`);
   if (requested === "free") {
-    const { items } = await getRankedList(userId, env);
+    const [{ items: ranked }, ids] = await Promise.all([getRankedList(userId, env), readHiddenIds()]);
+    // Only what the list shows is re-ranked, as `loadCommanderRankings` does, so a hidden row ahead of this one
+    // takes no free place either.
+    const items = ids.size === 0 ? ranked : ranked.filter((i) => !ids.has(i.oracleId));
     const free = await rankFree(userId, items, undefined, env);
     const idx = free.ok ? free.items.findIndex((i) => i.oracleId === found!.oracleId) : -1;
 
@@ -182,6 +197,7 @@ export default async function CommanderDetailPage({
       commander={withClaims}
       rank={found.rank}
       isBestFit={found.rank === 1}
+      hidden={hidden}
       avail={avail}
       synergyCards={synergyWithClaims}
       newestAsOf={newestAsOf}

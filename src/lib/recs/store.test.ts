@@ -755,7 +755,7 @@ describe("findScoredCommander when the schema is behind the code", () => {
   // The ranked CTE columns are consumed by eq() and by the select builder, so they
   // are stubbed with real SQL fragments rather than bare objects.
   const col = sql`x`;
-  const rankedStub = { oracleId: col, rank: col, anyDegraded: col, slug: col };
+  const rankedStub = { oracleId: col, rank: col, hidden: col, anyDegraded: col, slug: col };
 
   function stubWith(err: unknown) {
     const limit = vi.fn(() => Promise.reject(err));
@@ -780,5 +780,32 @@ describe("findScoredCommander when the schema is behind the code", () => {
     await expect(findScoredCommander("user_1", "atraxa-praetors-voice", ENV_VIEW)).rejects.toThrow(
       "pg error 53300",
     );
+  });
+});
+
+describe("findScoredCommander for a hidden commander", () => {
+  const col = sql`x`;
+  const rankedStub = { oracleId: col, rank: col, hidden: col, anyDegraded: col, slug: col };
+
+  function stubRow(row: unknown) {
+    stub.db.$with = () => ({ as: () => rankedStub });
+    stub.db.select = () => ({ from: () => ({ where: () => ({}) }) });
+    stub.db.with = () => ({
+      select: () => ({ from: () => ({ where: () => ({ limit: () => Promise.resolve([row]) }) }) }),
+    });
+  }
+
+  // The window nulls a hidden row's rank (`scored-commander.sql.test.ts` pins the SQL); the read hands
+  // that row back rather than treating it as a miss, so the page opens with no rank.
+  it("resolves the hidden target with a null rank", async () => {
+    stubRow({ oracleId: "a", rank: null, hidden: true, anyDegraded: false });
+    await expect(findScoredCommander("user_1", "atraxa-praetors-voice", ENV_VIEW)).resolves.toEqual({
+      oracleId: "a", rank: null, hidden: true, anyDegraded: false,
+    });
+  });
+
+  it("hands back a shown commander's window rank as the window counted it", async () => {
+    stubRow({ oracleId: "b", rank: 1, hidden: false, anyDegraded: false });
+    await expect(findScoredCommander("user_1", "kess", ENV_VIEW)).resolves.toMatchObject({ rank: 1, hidden: false });
   });
 });
