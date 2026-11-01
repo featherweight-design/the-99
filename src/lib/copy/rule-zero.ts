@@ -202,7 +202,9 @@ export const ruleZeroCopy = {
     // Not drawn: a deck of 100 we have not read yet (S3 draws only a short one).
     notReadYet: "not read yet",
     loadFailed: "We couldn’t load your decks. Try again.", // Change deck’s list did not arrive
-    nearestFirst: "nearest first", // W3's panel head, right
+    // DRAFT, goes through /copy-review: Change deck's modal while the list is on its way (Picker board, loading frame).
+    finding: "Finding your decks",
+    retry: "Try again", // Change deck's modal, after a list that did not arrive
     decksList: "Your decks", // the list's name
     close: "Close",
   },

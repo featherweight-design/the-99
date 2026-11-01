@@ -1,6 +1,6 @@
 // Change deck (Rule 0 plan PR 7b; boards S3, W3): every own deck, the seated one first, then nearest the table, then
 // the ones not in the read; a press seats it through the swap; the seated row closes; a short deck is pressable.
-import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const m = vi.hoisted(() => ({ load: vi.fn(), swap: vi.fn() }));
@@ -109,33 +109,128 @@ describe("Change deck's failures and focus", () => {
     await act(async () => fireEvent.click(link));
     expect(screen.queryByRole("alert")).toBeNull();
   });
+});
 
-  it("moves focus to the first row once the desktop panel is placed", async () => {
-    const was = window.matchMedia;
-    Object.defineProperty(window, "matchMedia", {
-      writable: true,
-      configurable: true,
-      value: (query: string) => ({ matches: true, media: query, onchange: null, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {}, dispatchEvent: () => false }),
-    });
+function wideViewport(matches: boolean) {
+  const was = window.matchMedia;
+  Object.defineProperty(window, "matchMedia", {
+    writable: true,
+    configurable: true,
+    value: (query: string) => ({ matches, media: query, onchange: null, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {}, dispatchEvent: () => false }),
+  });
+  return () => Object.defineProperty(window, "matchMedia", { writable: true, configurable: true, value: was });
+}
+
+describe("the seated slot (revisions 2 + 3)", () => {
+  it("gives every read row a 38px slot before its chip, filled only for the seated deck", async () => {
+    await open();
+    const rows = within(screen.getByRole("list", { name: s.decksList })).getAllByRole("button");
+    const slotOf = (row: HTMLElement) => row.querySelector<HTMLElement>(".w-\\[38px\\]");
+    const seated = slotOf(rows[0])!;
+    const other = slotOf(rows[1])!;
+    expect(seated.textContent).toBe(s.seatedTag);
+    expect(other.textContent).toBe("");
+    // The slot is the chip's previous sibling, so the tag sits left of the chip and every chip ends on one edge.
+    for (const slot of [seated, other]) expect(slot.nextElementSibling?.textContent).toMatch(/Optimized|Upgraded|Core|Exhibition|cEDH|Ultra/i);
+    // The chip is the row's last child, so the tag cannot trail it.
+    for (const [slot, row] of [[seated, rows[0]], [other, rows[1]]] as const) expect(slot.nextElementSibling).toBe(row.lastElementChild);
+    // An unready row has no chip and no slot.
+    expect(slotOf(rows[2])).toBeNull();
+  });
+});
+
+describe("Change deck from md (a modal)", () => {
+  it("opens a dialog at once on the press, loading, then holds the list", async () => {
+    const restore = wideViewport(true);
     try {
-      await open();
-      // The panel stays hidden until `useAnchoredPanel` places it. The link reaches the hook's trigger ref in a passive
-      // effect, after the hook's first synchronous placement, so `at` arrives from its frame loop, outside the press's
-      // `act`: wait for the placed (visible) panel, then for focus.
-      const dialog = await screen.findByRole("dialog");
-      expect(dialog.style.visibility).toBe("visible");
-      await waitFor(() => expect(document.activeElement).toBe(within(dialog).getAllByRole("button")[0]));
-      // The panel is capped by `useAnchoredPanel`'s room on the side it hangs: jsdom's link sits at 0 on a 768px
-      // viewport, at the very edge, so it hangs from the top margin (8px) with 8px kept at the foot. The list scrolls inside,
-      // and the head stays outside the scroller.
-      expect(dialog.style.maxHeight).toBe(`${window.innerHeight - 8 - 8}px`);
-      const scroller = screen.getByRole("list", { name: s.decksList }).closest(".overflow-y-auto");
-      expect(scroller?.className).toContain("min-h-0");
-      expect(scroller?.textContent).not.toContain(s.sheetTitle);
-      // The head keeps its height while the list takes what is left.
-      expect(within(dialog).getByText(s.sheetTitle).parentElement?.className).toContain("shrink-0");
+      let resolve!: (v: DeckChoice[]) => void;
+      m.load.mockReturnValue(new Promise<DeckChoice[]>((r) => (resolve = r)));
+      render(
+        <SwapContext.Provider value={{ offer: [], middle: null, busy: false, swap: m.swap }}>
+          <ChangeDeck tableId="t1" />
+        </SwapContext.Provider>,
+      );
+      await act(async () => fireEvent.click(screen.getByRole("button", { name: ruleZeroCopy.seat.changeDeck })));
+      const dialog = screen.getByRole("dialog");
+      expect(within(dialog).getByText(s.sheetTitle)).toBeTruthy();
+      expect(within(dialog).getByText(s.sheetSub)).toBeTruthy();
+      expect(within(dialog).getByText(s.finding)).toBeTruthy();
+      expect(within(dialog).queryByRole("list")).toBeNull();
+      await act(async () => resolve(CHOICES));
+      expect(within(screen.getByRole("dialog")).getByRole("list", { name: s.decksList })).toBeTruthy();
+      expect(screen.queryByText(s.finding)).toBeNull();
     } finally {
-      Object.defineProperty(window, "matchMedia", { writable: true, configurable: true, value: was });
+      restore();
     }
+  });
+
+  it("says a failed load inside the modal with Try again, and the retry loads the list", async () => {
+    const restore = wideViewport(true);
+    try {
+      m.load.mockRejectedValueOnce(new Error("network")).mockResolvedValueOnce(CHOICES);
+      render(
+        <SwapContext.Provider value={{ offer: [], middle: null, busy: false, swap: m.swap }}>
+          <ChangeDeck tableId="t1" />
+        </SwapContext.Provider>,
+      );
+      await act(async () => fireEvent.click(screen.getByRole("button", { name: ruleZeroCopy.seat.changeDeck })));
+      const dialog = screen.getByRole("dialog");
+      expect(within(dialog).getByRole("alert").textContent).toBe(s.loadFailed);
+      await act(async () => fireEvent.click(within(dialog).getByRole("button", { name: s.retry })));
+      expect(m.load).toHaveBeenCalledTimes(2);
+      expect(within(screen.getByRole("dialog")).getByRole("list", { name: s.decksList })).toBeTruthy();
+      expect(screen.queryByRole("alert")).toBeNull();
+    } finally {
+      restore();
+    }
+  });
+
+  it("closes on a pick and swaps, and closes without a swap on the seated row", async () => {
+    const restore = wideViewport(true);
+    try {
+      m.load.mockResolvedValue(CHOICES);
+      render(
+        <SwapContext.Provider value={{ offer: [], middle: null, busy: false, swap: m.swap }}>
+          <ChangeDeck tableId="t1" />
+        </SwapContext.Provider>,
+      );
+      const open = () => act(async () => fireEvent.click(screen.getByRole("button", { name: ruleZeroCopy.seat.changeDeck })));
+      await open();
+      fireEvent.click(screen.getByText("Sai Thopters").closest("button")!);
+      expect(m.swap).toHaveBeenCalledWith("s");
+      expect(screen.queryByRole("dialog")).toBeNull();
+      await open();
+      fireEvent.click(screen.getByText("Zimone Combo").closest("button")!);
+      expect(m.swap).toHaveBeenCalledTimes(1);
+      expect(screen.queryByRole("dialog")).toBeNull();
+    } finally {
+      restore();
+    }
+  });
+
+  it("opens nothing, and closes the loading modal, when the seat grant has lapsed", async () => {
+    const restore = wideViewport(true);
+    try {
+      m.load.mockResolvedValue(null);
+      render(<ChangeDeck tableId="t1" />);
+      await act(async () => fireEvent.click(screen.getByRole("button", { name: ruleZeroCopy.seat.changeDeck })));
+      expect(screen.queryByRole("dialog")).toBeNull();
+    } finally {
+      restore();
+    }
+  });
+});
+
+describe("Change deck below md (the sheet, as shipped)", () => {
+  it("loads first, then opens the sheet, with no loading modal", async () => {
+    let resolve!: (v: DeckChoice[]) => void;
+    m.load.mockReturnValue(new Promise<DeckChoice[]>((r) => (resolve = r)));
+    render(<ChangeDeck tableId="t1" />);
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: ruleZeroCopy.seat.changeDeck })));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByText(s.finding)).toBeNull();
+    expect(screen.getByRole("button", { name: ruleZeroCopy.seat.changeDeck }).getAttribute("aria-busy")).toBe("true");
+    await act(async () => resolve(CHOICES));
+    expect(screen.getByRole("list", { name: s.decksList })).toBeTruthy();
   });
 });
