@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { reportCopy as copy } from "../../lib/copy/report";
 import { shellCopy } from "../../lib/copy/shell";
 import type { ReportSource } from "../../lib/feedback/report-rule";
+import { PendingReporter } from "../shell/pending-reporter";
 import { SocialToast } from "../social/social-toast";
 import { ReportBody, useReportDraft } from "./report-body";
 
@@ -31,6 +32,7 @@ export function ReportPage({
       <div className="w-full max-w-[520px] text-left">
         <Link href="/" className="flex min-h-[44px] items-center text-[13px] font-medium text-[color:var(--accent-text)] no-underline hover:underline">
           ‹ {shellCopy.errorBoundary.home}
+          <PendingReporter href="/" />
         </Link>
         <h1 className="m-0 mb-[12px] mt-[4px] font-display text-[22px] font-bold leading-[1.25] text-[color:var(--fg)] [text-wrap:balance]">{copy.title}</h1>
         <ReportBody draft={draft} layout="page" signedOut={signedOut} code={digest} onClose={() => router.push("/")} />

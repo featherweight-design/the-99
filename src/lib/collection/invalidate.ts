@@ -36,6 +36,9 @@ export const COLLECTION_ROUTES: CollectionRoute[] = [
   { path: "/about", dynamic: false },
   // /about/[area] (the six visual pages) is listed for the same reason, and is dynamic.
   { path: "/about/[area]", dynamic: true },
+  // /report renders nothing out of the collection either: its form is the shared Report a problem body, and the page reaches
+  // `db/schema` (the switch read), the same import-reachability answer as /about. Listed for the same reason.
+  { path: "/report", dynamic: false },
   // /credits reads the collection's card count (`getCollectionStats`) for the Welcome cell's sheet: before a collection
   // the sheet draws the lock line, once cards are in Help me choose leads with Try it (welcome credits D2). So a replace
   // does change what it draws, and the listing is needed, not merely conservative.
