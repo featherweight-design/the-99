@@ -616,24 +616,11 @@ describe("loadCardDetail's round trips", () => {
     loadPrintingPrices.mockResolvedValue(null);
     loadAvailability.mockReset();
     loadAvailability.mockResolvedValue(new Map());
-    const gateRows: unknown[] = [{ commander_legal: true, has_decks: true }];
-    const { load, asked } = await fresh({ catalog: [catalogRow], gateRows });
+    const { load } = await fresh({ catalog: [catalogRow], gateRows: [{ commander_legal: true, has_decks: true }] });
     try {
       vi.stubEnv("SWAP_TOOLS_ENABLED", "false");
       const on = await load("user_1", "o-1", undefined, ON);
-      // TEMP DIAGNOSTIC (reverted next commit).
-      const diag: Record<string, unknown> = { executes: asked.execute, rowsAfter: JSON.stringify(gateRows), keys: Object.keys(on ?? {}) };
-      try {
-        const { db } = await import("../../db");
-        const { sql } = await import("drizzle-orm");
-        const r = await (db as unknown as { execute: (q: unknown) => Promise<{ rows: unknown[] }> }).execute(sql`select 1`);
-        diag.direct = JSON.stringify(r);
-      } catch (e) { diag.directErr = String(e) + " " + String((e as Error)?.stack).slice(0, 600); }
-      try {
-        const mod = await import("./card-detail");
-        diag.gate = JSON.stringify(await mod.fitsGate("user_1", "o-1", undefined));
-      } catch (e) { diag.gateErr = String(e); }
-      expect([on?.commanderLegal, on?.hasDecks, on?.fitsRead], JSON.stringify(diag)).toEqual([true, true, true]);
+      expect([on?.commanderLegal, on?.hasDecks, on?.fitsRead]).toEqual([true, true, true]);
       vi.stubEnv("SWAP_TOOLS_ENABLED", "true");
       const off = await load("user_1", "o-1", undefined, OFF);
       expect([off?.commanderLegal, off?.hasDecks, off?.fitsRead]).toEqual([true, true, true]);
