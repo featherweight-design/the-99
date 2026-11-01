@@ -99,8 +99,12 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   terminal for its id and a period end monotone. `readAllowance` fills `planExpiresAt` from the earliest expiry of
   the plan lots that still hold credits. The webhook runs whatever `PAYMENTS_ENABLED` says; another app's objects are
   200 and ignored; a paid invoice whose customer maps to no account is `unattributed` (refund by hand). Stripe setup:
-  add the three events to the endpoint, the Price id as `STRIPE_PRICE_PLAN_50`, and the restricted key needs
+  add the three events to the endpoint, the Price id as `STRIPE_PRICE_PLAN_50` (Production scope only, in two Vercel projects: `the-99` holds the live Price, `the-99-staging` the sandbox one), and the restricted key needs
   Subscriptions read (Checkout's duplicate-plan list) and Invoices read (the invoice webhook and `reconcile:payments` retrieve invoices). Subscriptions write arrives with in-app cancel, U3.
+  **Changing the plan ($5/60 became $5/50 on 2026-11-01):** the plan id is stamped into each subscription's Stripe metadata, and
+  the webhook refuses an invoice whose Price or `metadata.plan` the registry does not name. So set the new Price variable
+  BEFORE the deploy (unset, plan events answer 503 and the plan is off sale), and retire an old entry only when no
+  subscription still bills its Price; otherwise keep it in `PLANS`, or every renewal on it is charged and grants nothing.
 
   **Cancel, keep and Update card (U3a, plan E4/E5; no UI yet, the plan card is U3b).** `cancelPlanAction` and
   `keepPlanAction` (`src/app/credits/actions.ts`, logic in `plan-manage.ts`, rule `plan-manage-rule.ts`) set
