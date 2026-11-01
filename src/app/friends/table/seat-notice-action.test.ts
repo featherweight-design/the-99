@@ -17,17 +17,25 @@ beforeEach(() => {
 });
 
 describe("unseenSeatNoticesAction", () => {
-  it("reads the session reader's notices and sends only the table and the names", async () => {
+  it("reads the session reader's notices and sends only the table, the names and when the seat last changed", async () => {
     const host = named("Colin");
+    const since = new Date(1_700_000_000_000);
     const podName = named("Thursday night");
-    m.unseenSeatNotices.mockResolvedValue([{ tableId: "t1", host, podName, deckName: "Ghalta", since: new Date() }]);
-    expect(await unseenSeatNoticesAction()).toEqual([{ tableId: "t1", host, podName }]);
+    m.unseenSeatNotices.mockResolvedValue([{ tableId: "t1", host, podName, deckName: "Ghalta", since }]);
+    expect(await unseenSeatNoticesAction()).toEqual([{ tableId: "t1", host, podName, since: 1_700_000_000_000 }]);
     expect(m.unseenSeatNotices).toHaveBeenCalledWith("user_reader");
   });
 
-  it("marks a notice seen for the session reader, whatever table id it is handed", async () => {
+  it("marks a notice seen for the session reader, as the session reader and not as an id the caller supplies", async () => {
     m.markSeatNoticeSeen.mockResolvedValue(true);
     await markSeatNoticeSeenAction("t1");
+    expect(m.requireUserId).toHaveBeenCalledOnce();
     expect(m.markSeatNoticeSeen).toHaveBeenCalledWith("user_reader", "t1");
+  });
+
+  it("hands the lib whatever it is given (the lib validates the id), still scoped to the session reader", async () => {
+    m.markSeatNoticeSeen.mockResolvedValue(false);
+    expect(await markSeatNoticeSeenAction(42)).toBe(false);
+    expect(m.markSeatNoticeSeen).toHaveBeenCalledWith("user_reader", 42);
   });
 });

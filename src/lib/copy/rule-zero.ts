@@ -250,7 +250,8 @@ export const ruleZeroCopy = {
   // The in-app seat notice (Rule 0 revisions board "Notice", item 6): the shared toast, no clock. The ✕ is named `close.dismiss`.
   notice: {
     // Copy-reviewed (seat notice).
-    toast: (host: Said, pod: Said) => personText`${host} seated you at ${pod}’s table.`,
+    // The sentence is "<host> seated you at <pod>’s table.": the board draws the two names semibold, so they are drawn between these runs.
+    toast: { between: " seated you at ", end: "’s table." },
     // Copy-reviewed (seat notice).
     open: "Open",
   },

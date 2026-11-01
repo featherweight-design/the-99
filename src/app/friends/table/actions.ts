@@ -27,8 +27,8 @@ export async function markSeatNoticeSeenAction(tableId: unknown): Promise<boolea
   return markSeatNoticeSeen(userId, tableId);
 }
 
-/** What the in-app seat toast draws: the table, and who seated the viewer where. Names stay branded; no Clerk id. */
-export type SeatToastNotice = { tableId: string; host: ThirdPartyName; podName: ThirdPartyName };
+/** What the in-app seat toast draws: the table, and who seated the viewer where. Names stay branded; no Clerk id. `since` (ms) is when the seat last changed: a re-seat re-arms a notice the reader had dismissed. */
+export type SeatToastNotice = { tableId: string; host: ThirdPartyName; podName: ThirdPartyName; since: number };
 
 /**
  * The viewer's unseen seat notices, for the toast host in the shell (Rule 0 revisions, item 6). Read on mount, on a navigation, on
@@ -37,7 +37,7 @@ export type SeatToastNotice = { tableId: string; host: ThirdPartyName; podName: 
  */
 export async function unseenSeatNoticesAction(): Promise<SeatToastNotice[]> {
   const userId = await requireUserId();
-  return (await unseenSeatNotices(userId)).map(({ tableId, host, podName }) => ({ tableId, host, podName }));
+  return (await unseenSeatNotices(userId)).map(({ tableId, host, podName, since }) => ({ tableId, host, podName, since: since.getTime() }));
 }
 
 export type SwapOutcome = { ok: true; view: TableView } | { ok: false };
