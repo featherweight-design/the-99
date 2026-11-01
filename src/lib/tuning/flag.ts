@@ -59,8 +59,8 @@ export function hubTools(env: NodeJS.ProcessEnv): HubTool[] {
 /**
  * Whether the Analysis tab draws the Tuning hub: the `Tuning` section with a tile per tool, the
  * tools opening in place (tuning hub handoff R1, canvas A), and the trim line's `Proposed cuts →`.
- * Two or more tools on draws it. Exactly one mounts that tool directly, as before the hub, since a
- * landing with one tile is a step with no choice in it; none leaves the tab as it was.
+ * Two or more tools on draws it. `hubTools` returns Mana Balance and Proposed cuts together whenever
+ * the Analysis tab is on, so the hub draws wherever the tab does; with the tab off, no tool is on.
  */
 export function tuningHubEnabled(env: NodeJS.ProcessEnv): boolean {
   return hubTools(env).length >= 2;

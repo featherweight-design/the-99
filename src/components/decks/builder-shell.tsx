@@ -1536,7 +1536,7 @@ export function BuilderShell({
       deckId={deck.id}
       // The commanders count too: their pips, their identity and the cards figure.
       revision={`${deck.commander.oracleId}|${deck.partner?.oracleId ?? ""}|${listKey}|${[...lockedIds].sort().join(",")}`}
-      // Mounted directly (Mana alone on), its first read holds the tab's opening, as Proposed cuts' does.
+      // Mounts inside the hub's tile, which always draws with the tab: the tab's opening waits on the hub's landing, not on this read.
       onSettled={onManaSettled}
     />
   );
