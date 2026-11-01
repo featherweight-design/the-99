@@ -299,8 +299,6 @@ interface BuilderShellProps {
   tuningEnabled?: boolean;
   /** `loadDeckStrategy` for this reader: the strategy block on Analysis. Null with the Analysis tab off. */
   strategy?: StrategyRead | null;
-  /** `socialFriendsEnabled(env)` for this reader (opponents follow friends): the game log draws its "Across the table" row. */
-  socialGames?: boolean;
   /** A Rule 0 table's seats for the game log to open with (plan §PR 8), read per request by the page. */
   gamePrefill?: TablePrefill | null;
   /** `proposedCutsEnabled(env)`: whether the Analysis tab draws Proposed cuts after Suggested changes. */
@@ -379,7 +377,6 @@ export function BuilderShell({
   storedPermitsUnknown = false,
   tuningEnabled = false,
   strategy = null,
-  socialGames = false,
   gamePrefill = null,
   proposedCutsEnabled = false,
   tuningHubEnabled = false,
@@ -2109,7 +2106,7 @@ export function BuilderShell({
                   tuned={headerBracket !== null}
                   onOpenAnalysis={() => setView("analysis")}
                   gameOpponents={gameOpponents}
-                  opponents={socialGames ? { you: { name: deck.commander.name, deckName: deck.name, imageUri: deck.commander.imageUri ?? null } } : undefined}
+                  opponents={{ you: { name: deck.commander.name, deckName: deck.name, imageUri: deck.commander.imageUri ?? null } }}
                   prefill={offeredPrefill ?? undefined}
                   onPrefillSpent={spendPrefill}
                 />

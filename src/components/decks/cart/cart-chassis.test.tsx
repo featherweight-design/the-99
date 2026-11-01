@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 
 const { loadPrintingChoices, markBoughtForDecks } = vi.hoisted(() => ({
@@ -251,8 +251,12 @@ const filtersPill = (on = 0) => screen.getByRole("button", { name: on === 0 ? "F
 const deckRegions = () => screen.getAllByRole("region", { name: /HD - / }).map((r) => r.textContent?.match(/HD - [A-Za-z]+/)?.[0]);
 
 describe("the cart's Owned filter (v2 PR 9)", () => {
-  it("filters from the phone sheet's segments, badges the Filters pill, chips it, mirrors ?owned and carries it to By deck", () => {
-    const { container } = render(<CartView cart={ownedCart()} provenance={provenance} />);
+  it("filters from the phone sheet's segments, badges the Filters pill, chips it, mirrors ?owned and carries it to By deck", async () => {
+    // The spares read lands with none, so no friend holds a spare of a selected line.
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ spares: [], asks: [] }) }));
+    onTestFinished(() => { vi.unstubAllGlobals(); });
+    let container!: HTMLElement;
+    await act(async () => { ({ container } = render(<CartView cart={ownedCart()} provenance={provenance} />)); });
     fireEvent.click(filtersPill());
     const sheet = screen.getByRole("dialog", { name: "Filters" });
     expect(within(sheet).getByText(copy.filters.sheetMatch(4, 4))).toBeTruthy();

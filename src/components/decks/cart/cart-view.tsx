@@ -121,30 +121,26 @@ function ByCardList({
  * Friend filter narrows its lines by them (PR 9).
  */
 export function CartView(props: CartViewProps) {
-  const { cart, socialFriends = false, spareAsks = false, hasFriends = true } = props;
+  const { cart, hasFriends = true } = props;
   const newestAsOf = useMemo(() => (cart.newestAsOf ? new Date(cart.newestAsOf) : null), [cart.newestAsOf]);
   const deckNames = useMemo(() => new Map(cart.decks.map((d) => [d.id, d.name])), [cart.decks]);
   const sparesIds = useMemo(() => cart.lines.map((l) => l.oracleId), [cart.lines]);
   const page = <CartBody {...props} />;
   // Friends' spares (S5): one read of every card the cart lists, both views, outside the scroll box with the rest. A reader
   // with no friend has no spare to read (addendum R3 §4): no read is made, and every card reads as landed with none.
-  const withSpares = socialFriends ? (
-    <FriendSparesProvider oracleIds={sparesIds} newestAsOf={newestAsOf} hostSheet={false} requests={spareAsks} deckId={null} noFriends={!hasFriends}>{page}</FriendSparesProvider>
-  ) : page;
+  const withSpares = (
+    <FriendSparesProvider oracleIds={sparesIds} newestAsOf={newestAsOf} hostSheet={false} requests deckId={null} noFriends={!hasFriends}>{page}</FriendSparesProvider>
+  );
   return <CartGotItProvider deckNames={deckNames} newestAsOf={newestAsOf}>{withSpares}</CartGotItProvider>;
 }
 
 type CartViewProps = {
   cart: CartPayload;
   provenance: ProvenanceForm | null;
-  /** `SOCIAL_FRIENDS_ENABLED` for the reader: friends' spares on the cart's lines (Social R2 PR B, S5). */
-  socialFriends?: boolean;
-  /** `SOCIAL_FRIENDS_ENABLED` for the reader: the lines' spares modal offers Ask (from the cart, for no one deck). */
-  spareAsks?: boolean;
   /** The reader has a friend (`hasFriend`): By friend with nothing to draw says "No friends yet" without one (Empty-One C). */
   hasFriends?: boolean;
-  /** From `?view=deck`, or any `?deck=`: the tile's link lands on that deck's group. `?view=friend` lands By friend
-   *  (the page sends it only with spare requests on), which draws its reading state until the read lands (v2 G2). */
+  /** From `?view=deck`, or any `?deck=`: the tile's link lands on that deck's group. `?view=friend` lands By friend,
+   *  which draws its reading state until the read lands (v2 G2). */
   initialView?: CartViewMode;
   /** `?deck=<id>` (A5): that deck's group starts open. Unselected or absent, everything folds (A5-t). */
   focusDeckId?: string | null;
@@ -167,8 +163,6 @@ function CartBody({
   initialSort = null,
   initialFriend = null,
   initialOwned = null,
-  socialFriends = false,
-  spareAsks = false,
   hasFriends = true,
 }: CartViewProps) {
   const [selected, setSelected] = useState<ReadonlySet<string>>(() => new Set(cart.decks.map((d) => d.id)));
@@ -298,11 +292,10 @@ function CartBody({
   // Every figure (the result line and its denominator, the sheet's figure and Show press, the Owned and Friend counts
   // and their disabled rows, No match's figure) is a count of `viewRows`: the rows the view on screen draws under a
   // filter state. One helper, so no figure can disagree with its own view's list.
-  const drawnView: CartViewMode = view === "friend" && !(socialFriends && spareAsks) ? "card" : view;
   const rowSource = useMemo<RowSource>(() => ({
     selectedLines, heldLines, holdersOf, byCard: spares?.byCard ?? new Map(), seen: spares?.seen ?? new Map(),
   }), [selectedLines, heldLines, holdersOf, spares]);
-  const rowsFor = (patch: Partial<RowFilter> = {}) => viewRows(drawnView, { query, friend: friendOn, owned, ...patch }, rowSource);
+  const rowsFor = (patch: Partial<RowFilter> = {}) => viewRows(view, { query, friend: friendOn, owned, ...patch }, rowSource);
   const drawnNow = rowsFor();
   const figures: ViewFigures = {
     rows: drawnNow.rows,

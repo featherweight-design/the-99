@@ -11,7 +11,6 @@ import { SwapToolsProvider } from "../../lib/swaps/context";
 import { GotItProvider } from "./got-it";
 import { ShoppingKey } from "./shopping-key";
 import { StandInLimit } from "./stand-in-limit";
-import { DeckPageSwitches } from "./deck-page-switches";
 import { OVER_LIMIT_RING } from "./buy-tag";
 
 const DECK = "00000000-0000-4000-8000-000000000001";
@@ -63,9 +62,7 @@ describe("the Shopping head's key", () => {
 });
 
 describe("the key's `over $N` item (Shopping row option B)", () => {
-  const on = (ui: React.ReactNode) => (
-    <DeckPageSwitches>{withTools(ui)}</DeckPageSwitches>
-  );
+  const on = (ui: React.ReactNode) => withTools(ui);
 
   it("draws an outlined plate and `over $10` after the buy item, at every width", () => {
     render(on(<GotItProvider deckId={DECK}>{head()}</GotItProvider>));
@@ -85,11 +82,7 @@ describe("the key's `over $N` item (Shopping row option B)", () => {
   });
 
   it("is absent with the swap tools off", () => {
-    render(
-      <DeckPageSwitches>
-        <GotItProvider deckId={DECK}>{head()}</GotItProvider>
-      </DeckPageSwitches>,
-    );
+    render(<GotItProvider deckId={DECK}>{head()}</GotItProvider>);
     expect(screen.queryByTestId("shopping-key-over")).toBeNull();
   });
 });

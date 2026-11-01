@@ -80,7 +80,6 @@ import { swapToolsEnabled } from "../../../lib/swaps/flag";
 import { printedNameOf } from "../../../lib/collection/browse";
 import { loadDeckTokens } from "../../../lib/tokens/read";
 import { DeckTokensProvider } from "../../../components/decks/deck-tokens-context";
-import { DeckPageSwitches } from "../../../components/decks/deck-page-switches";
 import { GotItProvider } from "../../../components/decks/got-it";
 import { ChangeCommanderProvider } from "../../../components/decks/change-commander-context";
 import { readShoppingLimit } from "../../../lib/swaps/read";
@@ -735,7 +734,6 @@ export default async function DeckBuilderPage({
       }}
       tuningEnabled={tuned}
       strategy={strategy}
-      socialGames={true}
       gamePrefill={prefillRead ? await prefillRead : null}
       proposedCutsEnabled={proposedCutsEnabled(env)}
       tuningHubEnabled={tuningHubEnabled(env)}
@@ -762,19 +760,8 @@ export default async function DeckBuilderPage({
       )}
     />
   );
-  // Switches read here and needed several layers down.
-  // `socialFriends`: the stand-ins modal reads friends' spares from the uncached route (Social R2 PR 8a).
-  // `spareAsks`: Shopping's spares modal offers Ask, and the rows draw the ask's mark (spare requests PR 3b).
-  const switched = (
-    <DeckPageSwitches
-      socialFriends={true}
-      spareAsks={true}
-    >
-      {shell}
-    </DeckPageSwitches>
-  );
   // I got it: the Shopping rows' tags open its confirm. Keyed per deck, so an open confirm never carries to another deck's page.
-  const bought = <GotItProvider key={id} deckId={id}>{switched}</GotItProvider>;
+  const bought = <GotItProvider key={id} deckId={id}>{shell}</GotItProvider>;
   const tooled = swapTools ? (
     <SwapToolsProvider deckId={id} deckName={detail.name} storedLimitCents={shoppingLimit}>{bought}</SwapToolsProvider>
   ) : bought;

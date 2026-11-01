@@ -143,12 +143,11 @@ export async function fetchCardSpares(oracleId: string): Promise<FriendSpare[] |
 
 /**
  * The card's spares as the modal reads them: `loading` until the route answers, then the rows (empty when nobody
- * has one, or when the read failed). Off (`enabled` false) it reads nothing and is settled at once with none.
+ * has one, or when the read failed).
  */
-export function useCardSpares(oracleId: string, enabled: boolean): FriendSpare[] | "loading" {
+export function useCardSpares(oracleId: string): FriendSpare[] | "loading" {
   const [read, setRead] = useState<{ oracleId: string; spares: FriendSpare[] } | null>(null);
   useEffect(() => {
-    if (!enabled) return;
     let live = true;
     void fetchCardSpares(oracleId).then((spares) => {
       if (live) setRead({ oracleId, spares: spares ?? [] });
@@ -156,8 +155,7 @@ export function useCardSpares(oracleId: string, enabled: boolean): FriendSpare[]
     return () => {
       live = false;
     };
-  }, [oracleId, enabled]);
-  if (!enabled) return [];
+  }, [oracleId]);
   return read?.oracleId === oracleId ? read.spares : "loading";
 }
 

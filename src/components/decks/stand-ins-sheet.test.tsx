@@ -1,6 +1,6 @@
 import * as React from "react";
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
@@ -37,8 +37,14 @@ vi.mock("./swap-receipt", async (original) => {
     },
   };
 });
+// The sheet always reads friends' spares beside the stand-ins: none here, so it draws the shipped title and body.
+beforeEach(() => {
+  vi.stubGlobal("fetch", (url: string) =>
+    String(url).startsWith("/api/friend-spares") ? Promise.resolve({ ok: true, json: async () => ({ spares: [] }) }) : Promise.reject(new Error("offline")));
+});
 afterEach(() => {
   cleanup();
+  vi.unstubAllGlobals();
   for (const stop of holds.stops.splice(0)) stop();
 });
 vi.mock("../../lib/swaps/actions", () => ({ loadStandInsAction, takeStandInAction, undoSwapAction }));

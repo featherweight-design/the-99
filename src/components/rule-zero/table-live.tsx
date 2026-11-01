@@ -52,11 +52,9 @@ function recordSeen(tableId: string, shown: { revision: number; live: boolean },
 
 export function TableLive({
   initial,
-  gamesEnabled,
   now: serverNow,
 }: {
   initial: TableView;
-  gamesEnabled: boolean;
   /** The server's clock at the page's draw; each answered check moves it to the reader's. */
   now: Date;
 }) {
@@ -201,7 +199,7 @@ export function TableLive({
   const middle = view.read.kind === "read" ? bracketPhrase(middleBrackets(view.read.middle)) : null;
   return (
     <SwapContext.Provider value={{ offer: view.offer, middle, busy: swapping, swap: (deckId) => void seat(deckId, null) }}>
-      <TableBody view={{ ...view, seenAt: lookedAt }} gamesEnabled={gamesEnabled} now={now} updated={updated} swappedTo={swappedTo} />
+      <TableBody view={{ ...view, seenAt: lookedAt }} now={now} updated={updated} swappedTo={swappedTo} />
       <SocialToast toast={toast} onDone={() => setToast(null)} role={toast?.retry ? "status" : "alert"} />
     </SwapContext.Provider>
   );

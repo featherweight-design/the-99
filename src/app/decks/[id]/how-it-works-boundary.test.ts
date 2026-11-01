@@ -1,8 +1,7 @@
-// The page end of the deck page switches boundary: the deck page must wrap its shell in
-// `DeckPageSwitches` with the flags read on the server, and render THAT wrap. The page loads too
-// much to render in a unit test, so this reads its source as a syntax tree, as
-// `deeper-looks-boundary.test.ts` does. A deleted wrap, or a wrap built and never rendered,
-// fails it. The sheet's side is `provenance-panel.test.tsx`.
+// The page end of the deck page's provider boundary: the deck page must wrap its shell in
+// `GotItProvider` and render THAT wrap on both paths. The page loads too much to render in a unit
+// test, so this reads its source as a syntax tree, as `deeper-looks-boundary.test.ts` does. A deleted
+// wrap, or a wrap built and never rendered, fails it. The sheet's side is `provenance-panel.test.tsx`.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import ts from "typescript";
@@ -11,21 +10,15 @@ import { describe, expect, it } from "vitest";
 const PAGE = join(process.cwd(), "src/app/decks/[id]/page.tsx");
 const src = ts.createSourceFile(PAGE, readFileSync(PAGE, "utf8"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
 
-/** Every `<DeckPageSwitches …>` element: its attributes and the variable it is assigned to. */
-function switchElements(): { attrs: Record<string, string>; children: string; boundTo: string | null }[] {
-  const out: { attrs: Record<string, string>; children: string; boundTo: string | null }[] = [];
+/** Every `<GotItProvider …>` element: its children and the variable it is assigned to. */
+function wrapElements(): { children: string; boundTo: string | null }[] {
+  const out: { children: string; boundTo: string | null }[] = [];
   const visit = (node: ts.Node) => {
-    if (ts.isJsxElement(node) && node.openingElement.tagName.getText(src) === "DeckPageSwitches") {
-      const attrs: Record<string, string> = {};
-      for (const a of node.openingElement.attributes.properties) {
-        if (!ts.isJsxAttribute(a)) continue;
-        const init = a.initializer;
-        attrs[a.name.getText(src)] = init && ts.isJsxExpression(init) && init.expression ? init.expression.getText(src) : init?.getText(src) ?? "true";
-      }
+    if (ts.isJsxElement(node) && node.openingElement.tagName.getText(src) === "GotItProvider") {
       let p: ts.Node = node.parent;
       while (p && !ts.isVariableDeclaration(p) && !ts.isSourceFile(p)) p = p.parent;
       const boundTo = p && ts.isVariableDeclaration(p) ? p.name.getText(src) : null;
-      out.push({ attrs, children: node.children.map((c) => c.getText(src)).join("").trim(), boundTo });
+      out.push({ children: node.children.map((c) => c.getText(src)).join("").trim(), boundTo });
     }
     ts.forEachChild(node, visit);
   };
@@ -44,21 +37,17 @@ function reads(name: string): number {
   return n;
 }
 
-describe("the deck page hands DeckPageSwitches its flags", () => {
-  it("wraps the shell once, with friends always on", () => {
-    const els = switchElements();
+describe("the deck page wraps its shell", () => {
+  it("wraps the shell once, in GotItProvider", () => {
+    const els = wrapElements();
     expect(els).toHaveLength(1);
-    // Social R2 PR 8a: the stand-ins modal's spares; SOCIAL_FRIENDS_ENABLED is retired, so friends are always on.
-    expect(els[0].attrs.socialFriends).toBe("true");
     expect(els[0].children).toBe("{shell}");
   });
 
   it("renders that wrap on both paths, never the bare shell", () => {
-    const [el] = switchElements();
-    expect(el.boundTo).not.toBeNull();
-    // `bought` reads it once, inside GotItProvider (I got it is always on: collection editing is retired), and
+    const [el] = wrapElements();
+    expect(el.boundTo).toBe("bought");
     // `tooled` reads `bought` inside SwapToolsProvider and as the fallback: two reads.
-    expect(reads(el.boundTo!)).toBe(1);
     expect(reads("bought")).toBe(2);
     // The bare shell is read once, by the wrap alone.
     expect(reads("shell")).toBe(1);
