@@ -35,7 +35,7 @@ describe("purgeRuleZeroIn", () => {
     // The third delete (tables) is the set_by OR closed_by one; the seats and seen deletes name neither.
     expect(deleted[0]).not.toContain("closed_by");
     expect(deleted[1]).not.toContain("closed_by");
-    expect(deleted[2]).toMatch(/"set_by" = \$\d+ or "closed_by" = \$\d+/);
+    expect(deleted[2]).toMatch(/"rule_zero_tables"\."set_by" = \$\d+ or "rule_zero_tables"\."closed_by" = \$\d+/);
   });
 
   it("also deletes a table the account's seat leaves with fewer than two seats, and counts both", async () => {
