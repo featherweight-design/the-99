@@ -1,10 +1,15 @@
 /**
- * Whether model calls may start at all: the app-wide kill switch for every model call (player and
- * system origin alike). A `plumbing` switch, so only the app-wide override applies.
+ * Whether model calls may start at all: the app-wide switch for every run the app reserves through
+ * `reserveModelCall` (player runs and the Overview's system-origin rewrite). Background jobs (GitHub
+ * workflows) do not reserve there yet, and a follow-up gates them. A `plumbing` switch, so only the
+ * app-wide override applies.
  *
- * ON BY DEFAULT, unlike every other switch: on while the variable is unset, off only for `false` (an
- * app-wide Off override resolves to it) or the kill value `off`. A deployment that never sets it keeps
- * serving model calls. The registry marks it `defaultOn`, so the proxy's switch bits read it the same way.
+ * ON BY DEFAULT, unlike every other switch: on while the variable is unset, and this function reads
+ * `false` and `off` as off. As for every switch, only the variable set to `off` is the hard stop no
+ * override raises (the resolver's kill); `false` is a soft off an app-wide On row overrides, and an
+ * app-wide Off row resolves to `false`. So: `off` for a hard stop, or the app-wide Off row without a
+ * deploy. A deployment that never sets it keeps serving model calls. The registry marks it `defaultOn`,
+ * so the proxy's switch bits read it the same way.
  *
  * Off, `reserveModelCall` refuses every new run as `paused` before it writes a row or charges a credit,
  * and `readAllowance` reports `paused` so a panel shows the stop before a press. A run already in

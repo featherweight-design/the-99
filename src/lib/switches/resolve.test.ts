@@ -1,5 +1,6 @@
 // One reader's switches: the kill switch, then account, group, app-wide and the environment.
 import { describe, expect, it } from "vitest";
+import { modelCallsEnabled } from "../model/calls-flag";
 import { tuningEnabled } from "../tuning/flag";
 import { decide, resolveEnv, switchBits, type OverrideRow, type SwitchSnapshot } from "./resolve";
 import { ALL_FEATURES, ALL_FEATURES_EXCLUDED, ALL_FEATURES_RAISES, SWITCHES, SWITCH_NAMES } from "./registry";
@@ -64,6 +65,17 @@ describe("resolveEnv", () => {
     const env = e({ FEEDBACK_ENABLED: "false" });
     resolveEnv(env, snap([row({})]), "u1");
     expect(env.FEEDBACK_ENABLED).toBe("false");
+  });
+});
+
+describe("the model-call switch's soft and hard off", () => {
+  // Only the env `off` is the kill no override raises; `false` is a soft off an app-wide On row overrides, as for every switch.
+  const appOn = snap([row({ switchName: "MODEL_CALLS_ENABLED", scope: "app", value: "on" })]);
+  it("resolves env false under an app-wide On row to on", () => {
+    expect(modelCallsEnabled(resolveEnv(e({ MODEL_CALLS_ENABLED: "false" }), appOn, null))).toBe(true);
+  });
+  it("resolves env off under an app-wide On row to off", () => {
+    expect(modelCallsEnabled(resolveEnv(e({ MODEL_CALLS_ENABLED: "off" }), appOn, null))).toBe(false);
   });
 });
 

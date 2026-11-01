@@ -16,7 +16,8 @@
  * - `plumbing`: infrastructure, or a surface no friend tries on its own. App-wide only: an account or group
  *   override of one is ignored by the resolver, so no reader runs on different plumbing.
  *
- * `defaultOn`: on while the variable is unset, off for `false` or `off` (`switchDefaultsOn`). Only the
+ * `defaultOn`: on while the variable is unset, off for `false` or `off` (`switchDefaultsOn`). As for every
+ * switch, only `off` is the hard kill no override raises; `false` is a soft off an app-wide On row overrides. Only the
  * model-call kill switch: a deployment that forgets the variable must keep serving model calls.
  *
  * `needs`: the parent a compound switch's flag function also checks (`tuningEnabled` asks
@@ -34,7 +35,8 @@ export const SWITCHES = [
   { name: "HELP_ME_CHOOSE_ENABLED", kind: "model" },
   { name: "FLYER_TRIAL_ENABLED", kind: "feature" },
   { name: "LIST_CACHE_ENABLED", kind: "plumbing" },
-  // The model-call kill switch: ON unless set `off` (or `false`), unlike every other switch (`defaultOn`).
+  // The model-call kill switch, ON while unset, unlike every other switch (`defaultOn`). A hard stop: the variable set
+  // to `off`. Without a deploy: the app-wide Off row. `false` is a soft off an app-wide On row overrides.
   { name: "MODEL_CALLS_ENABLED", kind: "plumbing", defaultOn: true },
   { name: "NAV_STALL_LOG_ENABLED", kind: "plumbing" },
   { name: "OVERVIEW_V2_ENABLED", kind: "model" },

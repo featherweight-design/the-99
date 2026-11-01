@@ -249,9 +249,10 @@ async function grantBalances(q: Tx | typeof db, userId: string, now: Date): Prom
 /**
  * Whether the app-wide model-call switch is off (`MODEL_CALLS_ENABLED`, `calls-flag.ts`). A plumbing
  * switch takes the app-wide override alone, so it is resolved with no account: every reader and every
- * system job gets the same answer. Through the switches' 30-second memo, so a press costs no query in
- * steady state; a failed override read serves the environment alone (unset: on), and the variable set
- * to `off` still stops every call.
+ * system-origin call gets the same answer. Through the switches' 30-second memo, so a press costs no
+ * query in steady state.
+ * If the overrides read fails, the environment decides (fail-open to env, as every switch): the hard stop
+ * that survives a database failure is the variable set to `off`.
  */
 async function modelCallsPaused(): Promise<boolean> {
   return !modelCallsEnabled(await resolveSwitchEnv(null));
