@@ -98,8 +98,8 @@ describe("GoodToKnow", () => {
   it("draws no heading and nothing else for a section with no visible rules (call 8)", () => {
     const { container } = render(<GoodToKnow sectionId="notes" rules={[]} />);
     expect(container.innerHTML).toBe("");
-    // Friends' three rules are all switched: with Friends off the section keeps its screen and loses Good to know.
-    expect(rulesOf(without("SOCIAL_FRIENDS_ENABLED"), "friends")).toEqual([]);
+    // Friends' three rules rode SOCIAL_FRIENDS_ENABLED, which is retired: set to off, the section keeps all three.
+    expect(rulesOf(without("SOCIAL_FRIENDS_ENABLED"), "friends")).toHaveLength(3);
   });
 
   it("heads the cards with the mark, the title and its sub-line", () => {

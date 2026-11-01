@@ -42,7 +42,7 @@ describe("the tool registry", () => {
     const names = new Set<string>(SWITCHES.map((s) => s.name));
     for (const t of TOOLS) if (t.switch !== null) expect(names.has(t.switch)).toBe(true);
     expect(TOOLS.find((t) => t.id === "collection-sync")?.switch).toBeNull();
-    expect(TOOLS.filter((t) => t.switch === null).map((t) => t.id)).toEqual(["precons", "top-off", "wishlist", "collection-sync", "lineup"]);
+    expect(TOOLS.filter((t) => t.switch === null).map((t) => t.id)).toEqual(["precons", "top-off", "friend-spares", "wishlist", "collection-sync", "matchups", "lineup", "friends"]);
   });
 
   it("opens an About entry that exists for every tool", () => {

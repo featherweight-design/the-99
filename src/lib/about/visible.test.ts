@@ -19,7 +19,7 @@ const seen = (version: number, ids: string[] = []): SeenState => ({ version, ids
 // are drawn like an unswitched entry, and a reader who "met every launch" has met them too.
 // Collection editing's entries, and the names that followed it (scanning, added copy, the way in without a collection, I got
 // it), are among them. `upload-choice` draws in its Sync variant, so its variant id is met too.
-const RETIRED = ["CARD_SEARCH_ENABLED", "FIRST_RUN_TOUR_ENABLED", "HELP_PANEL_ENABLED", "NEAR_COMBOS_ENABLED", "PRECONS_ENABLED", "UPCOMING_PRECONS_ENABLED", "DECK_TOKENS_ENABLED", "LINEUP_ENABLED", "COMMANDERS_PLACE_ENABLED", "HOME_FEED_ENABLED", "SOCIAL_WISHLIST_ENABLED", "COLLECTION_EDIT_ENABLED", "CARD_SCAN_ENABLED", "ADDED_COPY_ENABLED", "NO_COLLECTION_ENTRY_ENABLED", "SHOPPING_MARK_BOUGHT_ENABLED", "DECK_NOTES_ENABLED", "DECK_STATS_ENABLED", "DECK_PRINTINGS_ENABLED", "NEVER_CUT_ENABLED", "CHANGE_COMMANDER_ENABLED", "ALL_DECKS_CART_ENABLED"];
+const RETIRED = ["CARD_SEARCH_ENABLED", "FIRST_RUN_TOUR_ENABLED", "HELP_PANEL_ENABLED", "NEAR_COMBOS_ENABLED", "PRECONS_ENABLED", "UPCOMING_PRECONS_ENABLED", "DECK_TOKENS_ENABLED", "LINEUP_ENABLED", "COMMANDERS_PLACE_ENABLED", "HOME_FEED_ENABLED", "SOCIAL_WISHLIST_ENABLED", "COLLECTION_EDIT_ENABLED", "CARD_SCAN_ENABLED", "ADDED_COPY_ENABLED", "NO_COLLECTION_ENTRY_ENABLED", "SHOPPING_MARK_BOUGHT_ENABLED", "DECK_NOTES_ENABLED", "DECK_STATS_ENABLED", "DECK_PRINTINGS_ENABLED", "NEVER_CUT_ENABLED", "CHANGE_COMMANDER_ENABLED", "ALL_DECKS_CART_ENABLED", "SOCIAL_FRIENDS_ENABLED", "FRIEND_DECKS_ENABLED", "SOCIAL_INVITES_ENABLED", "RULE_ZERO_ENABLED", "SOCIAL_GAMES_ENABLED"];
 const retiredEntries = aboutEntries.filter((e) => e.switch && RETIRED.includes(e.switch));
 const retiredIds = switchedIds(retiredEntries.map((e) => resolveEntry(e, OFF)));
 
@@ -355,10 +355,9 @@ describe("the friends key says what friends see of decks", () => {
   const entry = aboutEntries.find((e) => e.keys.includes(OLD))!;
   const keys = (on: Record<string, string>) => resolveEntry(entry, on as unknown as NodeJS.ProcessEnv).keys;
 
-  it("draws the new sentence wherever Friends is on, and neither without it", () => {
-    expect(keys({ SOCIAL_FRIENDS_ENABLED: "true" })).toContain(NEW);
-    expect(keys({ SOCIAL_FRIENDS_ENABLED: "true" })).not.toContain(OLD);
-    expect(keys({})).not.toContain(NEW);
+  it("always draws the new sentence, never the old (SOCIAL_FRIENDS_ENABLED is retired)", () => {
+    expect(keys({})).toContain(NEW);
+    expect(keys({})).not.toContain(OLD);
   });
 
   it("matches the privacy line's default sentence word for word", () => {
@@ -600,14 +599,14 @@ describe("an entry drawn in another's place (`replaces`, the launch-end batch)",
   });
 });
 
-describe("whats-new's line switches, in every state of the two live switches they name", () => {
+describe("whats-new's line switches, in every state of the live switch they name", () => {
   const entry = aboutEntries.find((e) => e.id === "whats-new")!;
-  // `SOCIAL_WISHLIST_ENABLED` is retired: its lines follow it as always on.
-  const flags = ["HELP_ME_CHOOSE_ENABLED", "SOCIAL_FRIENDS_ENABLED"] as const;
+  // `SOCIAL_WISHLIST_ENABLED` and `SOCIAL_FRIENDS_ENABLED` are retired: their lines follow them as always on.
+  const flags = ["HELP_ME_CHOOSE_ENABLED"] as const;
   // The renderer's own reading: a blank line starts a paragraph, an empty block is dropped (`EntryCaption`).
   const blocks = (caption: string) => caption.split(/\n\s*\n/).map((b) => b.trim()).filter((b) => b.length > 0);
 
-  it("draws clean text in all 4 combinations: no gated line left behind, no orphaned heading, no empty paragraph", () => {
+  it("draws clean text in both states: no gated line left behind, no orphaned heading, no empty paragraph", () => {
     for (let mask = 0; mask < 1 << flags.length; mask++) {
       const env = { ...Object.fromEntries(flags.map((f, i) => [f, mask & (1 << i) ? "true" : "false"])) } as unknown as NodeJS.ProcessEnv;
       const on = (f: (typeof flags)[number]) => env[f] === "true";
@@ -622,9 +621,9 @@ describe("whats-new's line switches, in every state of the two live switches the
       expect(caption.includes("- Help me choose:"), `mask ${mask}`).toBe(on("HELP_ME_CHOOSE_ENABLED"));
       expect(caption.includes("- A precon"), `mask ${mask}`).toBe(true);
       expect(caption.includes("- A price drop"), `mask ${mask}`).toBe(true);
-      expect(caption.includes("- A friend with a spare"), `mask ${mask}`).toBe(on("SOCIAL_FRIENDS_ENABLED"));
-      expect(caption.includes("Friends has its own spot"), `mask ${mask}`).toBe(on("SOCIAL_FRIENDS_ENABLED"));
-      expect(caption.includes("In Settings, you choose"), `mask ${mask}`).toBe(on("SOCIAL_FRIENDS_ENABLED"));
+      expect(caption.includes("- A friend with a spare"), `mask ${mask}`).toBe(true);
+      expect(caption.includes("Friends has its own spot"), `mask ${mask}`).toBe(true);
+      expect(caption.includes("In Settings, you choose"), `mask ${mask}`).toBe(true);
       // Settings' account-menu row is always drawn now that the place is retired.
       expect(caption.includes("then in Settings, in the account menu."), `mask ${mask}`).toBe(true);
       expect(caption.includes("then in Settings."), `mask ${mask}`).toBe(false);
@@ -633,23 +632,22 @@ describe("whats-new's line switches, in every state of the two live switches the
 });
 
 // Spare requests close-out: `friend-spares` reads its requests variant, which says how to ask and how an ask is answered.
-// SPARE_REQUESTS_ENABLED is retired: the variant keeps the name as its identity and follows SOCIAL_FRIENDS_ENABLED, so
-// the view-only form no longer draws.
+// SPARE_REQUESTS_ENABLED and SOCIAL_FRIENDS_ENABLED are retired: the variant keeps the name as its identity and always
+// draws, so the view-only form no longer does.
 describe("friend-spares' requests form (SPARE_REQUESTS_ENABLED, retired)", () => {
-  const ASKS = { SOCIAL_FRIENDS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+  const ASKS = {} as unknown as NodeJS.ProcessEnv;
   const drawn = (env: NodeJS.ProcessEnv) => visibleEntries(env).find((e) => e.id === "friend-spares");
   const VIEW_ONLY = "It’s view only";
 
-  it("reads the ask whenever friends are on", () => {
+  it("always reads the ask", () => {
     const on = drawn(ASKS)!;
     expect(on.caption).toContain("drafts included. Press “Ask”");
     expect(on.caption).not.toContain(VIEW_ONLY);
     expect(on.variantOn).toBe("SPARE_REQUESTS_ENABLED");
-    expect(drawn({} as unknown as NodeJS.ProcessEnv)).toBeUndefined();
   });
 
   it("keeps the entry's key switches in its requests form", () => {
-    // The cart's key rides ALL_DECKS_CART_ENABLED, which is retired (always on): it draws with friends alone.
+    // The cart's key rides ALL_DECKS_CART_ENABLED, which is retired (always on): it always draws.
     expect(drawn(ASKS)!.keys).toContain("The same mark shows on the cart for all your decks.");
   });
 });
@@ -722,11 +720,8 @@ describe("push (close-out): each line follows the kind's own availability (`feed
     expect(push(env({}))!.caption).toContain("- A set or a precon that just came out\n");
   });
 
-  it("names the spare-request kind, and its starting tick, only with friends on (spare requests follow them)", () => {
-    const off = push(env({}))!;
-    expect(off.caption).not.toContain("asking for one of your spares");
-    expect(off.keys[0]).toBe("Nothing is sent until you allow it on a device.");
-    const on = push(env({ SOCIAL_FRIENDS_ENABLED: "true" }))!;
+  it("names the spare-request kind, and its starting tick, always (SOCIAL_FRIENDS_ENABLED is retired)", () => {
+    const on = push(env({}))!;
     expect(on.caption).toContain("- A friend asking for one of your spares");
     expect(on.keys[0]).toBe("Only a friend asking for your spare starts ticked. Nothing is sent until you allow it on a device.");
     expect(on.keys).toHaveLength(4);
@@ -741,8 +736,8 @@ describe("push (close-out): each line follows the kind's own availability (`feed
 
 describe("the friends entry under the signature card", () => {
   const friends = aboutEntries.find((e) => e.id === "friends")!;
-  // SIGNATURE_CARD_ENABLED is retired: its lines follow SOCIAL_FRIENDS_ENABLED, which the friends entry needs anyway.
-  const env = () => ({ SOCIAL_FRIENDS_ENABLED: "true" }) as unknown as NodeJS.ProcessEnv;
+  // SIGNATURE_CARD_ENABLED and SOCIAL_FRIENDS_ENABLED are retired: its lines always draw.
+  const env = () => ({}) as unknown as NodeJS.ProcessEnv;
   it.each([
     ["your name, your signature card and the decks", "Pick a signature card, any card in any printing, and its art"],
   ])("draws one privacy key and one face sentence (%s)", (key, face) => {

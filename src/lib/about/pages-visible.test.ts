@@ -28,10 +28,10 @@ describe("visibleSections", () => {
     const off = visibleSections(OFF);
     const shopping = off.find((s) => s.id === "deck-shopping")!;
     expect(shopping.labels.map((l) => l.key)).not.toContain("shopping/deck-shopping/standins");
-    // ALL_DECKS_CART_ENABLED is retired (always on): the cart's labels draw whatever the env, less Ask, which still
-    // rides spare requests.
+    // ALL_DECKS_CART_ENABLED and SOCIAL_FRIENDS_ENABLED are retired (always on): the cart's labels, Ask included, draw
+    // whatever the env.
     expect(off.find((s) => s.id === "all-decks")!.labels.map((l) => l.key)).toEqual([
-      "shopping/all-decks/total", "shopping/all-decks/decks", "shopping/all-decks/views", "shopping/all-decks/buy",
+      "shopping/all-decks/total", "shopping/all-decks/decks", "shopping/all-decks/views", "shopping/all-decks/ask", "shopping/all-decks/buy",
     ]);
     // NEVER_CUT_ENABLED, DECK_NOTES_ENABLED and DECK_STATS_ENABLED are retired (always on): their labels draw whatever the env.
     expect(off.find((s) => s.id === "your-deck")!.labels.map((l) => l.key)).toContain("decks/your-deck/lock");
@@ -77,9 +77,8 @@ describe("each sentence follows its own switch", () => {
     ["a proxy keeps its retired tokens sentence with nothing on", {}, "rule/proxy", "I have one", undefined],
     ["a fill without Help me choose", {}, "rule/autofill", "then uses your Collection", "Help me choose"],
     ["a fill with Help me choose", { HELP_ME_CHOOSE_ENABLED: "true" }, "rule/autofill", "any cards will do", undefined],
-    ["friends see the wishlist with friends on (its own switch is retired)", { SOCIAL_FRIENDS_ENABLED: "true" }, "rule/friends-see", "Your wishlist is theirs to read too", undefined],
-    ["friends see nothing with friends off", {}, "rule/friends-see", undefined, undefined],
-    ["friends open decks", { SOCIAL_FRIENDS_ENABLED: "true" }, "rule/friends-see", "can open the decks", "names, status"],
+    ["friends see the wishlist (its switch and friends' are retired)", {}, "rule/friends-see", "Your wishlist is theirs to read too", undefined],
+    ["friends open decks", {}, "rule/friends-see", "can open the decks", "names, status"],
     ["bracket marks are explained with the Analysis tab off, as they are drawn", {}, "decks/your-deck/bracket-marks", "Game Changers", undefined],
   ] as const)("%s", (_name, e, key, has, lacks) => {
     const text = textOf(e as Record<string, string>, key);
@@ -232,11 +231,13 @@ describe("seen translation", () => {
       "shopping/all-decks/decks", "shopping/all-decks/views", "shopping/all-decks/ask", "shopping/all-decks/buy",
     ]);
     // Every one rides ALL_DECKS_CART_ENABLED, which is retired (always on): set to off, it hides none of them. Ask also
-    // rides SPARE_REQUESTS_ENABLED, which resolves through SOCIAL_FRIENDS_ENABLED (`visible.ts`); buy's
+    // rides SPARE_REQUESTS_ENABLED and SOCIAL_FRIENDS_ENABLED, both retired (always on, `visible.ts`); buy's
     // SHOPPING_MARK_BOUGHT_ENABLED is retired, always on. A label switched off is neither drawn nor told.
     const without = (sw: string) =>
       told(env({ ...(ALL_ON as Record<string, string>), [sw]: "off" })).filter((k) => k.startsWith("shopping/all-decks/"));
-    expect(without("SOCIAL_FRIENDS_ENABLED")).toEqual(["shopping/all-decks/decks", "shopping/all-decks/views", "shopping/all-decks/buy"]);
+    expect(without("SOCIAL_FRIENDS_ENABLED")).toEqual([
+      "shopping/all-decks/decks", "shopping/all-decks/views", "shopping/all-decks/ask", "shopping/all-decks/buy",
+    ]);
     expect(without("ALL_DECKS_CART_ENABLED")).toEqual([
       "shopping/all-decks/decks", "shopping/all-decks/views", "shopping/all-decks/ask", "shopping/all-decks/buy",
     ]);
@@ -452,9 +453,9 @@ describe("a section's sub-line", () => {
     }
   });
 
-  // Retired but still in the registry until their removal PRs: Shopping for all decks (always on), and Mana Balance,
-  // which follows its parent, the Analysis tab (whose own off state this test already covers).
-  const BAKED_IN = new Set(["ALL_DECKS_CART_ENABLED", "MANA_BALANCE_ENABLED"]);
+  // Retired but still in the registry until their removal PRs: Shopping for all decks and friends (always on), and
+  // Mana Balance, which follows its parent, the Analysis tab (whose own off state this test already covers).
+  const BAKED_IN = new Set(["ALL_DECKS_CART_ENABLED", "MANA_BALANCE_ENABLED", "SOCIAL_FRIENDS_ENABLED"]);
 
   it("names no feature whose switch is off: a section emptied of labels by a switch says only that its screen is off", () => {
     for (const sec of ABOUT_SECTIONS) {
@@ -479,7 +480,6 @@ describe("a section's sub-line", () => {
   it("describes each screen while its switch is on, and only says it is off while it is off", () => {
     const cases: [string, string, string][] = [
       ["analysis", "ANALYSIS_TAB_ENABLED", "bracket"],
-      ["friends", "SOCIAL_FRIENDS_ENABLED", "pods"],
     ];
     for (const [id, sw, phrase] of cases) {
       expect(sub(ALL_ON, id), id).toContain(phrase);
@@ -489,6 +489,9 @@ describe("a section's sub-line", () => {
     // Shopping for all decks is retired (always on): its screen is described whatever the env, never said to be off.
     expect(sub(off("ALL_DECKS_CART_ENABLED"), "all-decks")).toContain("one cart");
     expect(sub(off("ALL_DECKS_CART_ENABLED"), "all-decks")).not.toContain(ABOUT_SCREEN_OFF.trim());
+    // So is friends.
+    expect(sub(off("SOCIAL_FRIENDS_ENABLED"), "friends")).toContain("pods");
+    expect(sub(off("SOCIAL_FRIENDS_ENABLED"), "friends")).not.toContain(ABOUT_SCREEN_OFF.trim());
   });
 
   it("names Analysis's tuning tools only while both paid tools are on, and keeps the bracket while they are off", () => {
@@ -515,9 +518,9 @@ describe("a section's sub-line", () => {
     // Ready to build is gone (the feed is always on).
     expect(sub(ALL_ON, "home")).not.toContain("best-fit commanders");
     // Only a spare request ever waits on you, so the sentence saying what comes first hangs on spare requests too, which
-    // follow friends now their own switch is retired.
+    // are always on now their switch and friends' are retired.
     expect(sub(ALL_ON, "whats-new")).toContain("Within Today and Earlier, anything waiting on you comes first.");
-    expect(sub(env({ ...(ALL_ON as Record<string, string>), SOCIAL_FRIENDS_ENABLED: "off" }), "whats-new")).not.toContain("waiting on you");
+    expect(sub(OFF, "whats-new")).toContain("Within Today and Earlier, anything waiting on you comes first.");
   });
 });
 

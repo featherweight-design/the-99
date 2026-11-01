@@ -228,10 +228,11 @@ describe("a trade match a friend kept back", () => {
 });
 
 describe("the reads", () => {
-  const never = { execute: async () => { throw new Error("no statement should run"); } } as never;
-
-  it("runs no statement for the friends count with Friends off, and answers 0", async () => {
-    expect(await unseenFriendsCount("u", env(), NOW, never)).toBe(0);
+  it("counts the Friends badge as unseen trade matches plus unseen answers, one statement each", async () => {
+    const ran: SQL[] = [];
+    const q = { execute: async (s: SQL) => { ran.push(s); return { rows: [{ n: 1 }] }; } } as never;
+    expect(await unseenFriendsCount("u", env(), NOW, q)).toBe(2);
+    expect(ran).toHaveLength(2);
   });
 
   it("reads New precon (feed and badge), and never writes its stored choice", async () => {

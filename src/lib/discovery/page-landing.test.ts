@@ -48,9 +48,9 @@ describe("pageLanding", () => {
     expect(pageLanding(tool, { ...ALL_ON, [name]: "" }, tool).landing).toBeNull();
   });
 
-  it("leaves the retired switches' pages with no off state: precons, lineup, the wishlist and Collection Sync", () => {
+  it("leaves the retired switches' pages with no off state: precons, lineup, the wishlist, Collection Sync and Friends", () => {
     const retired = PAGES.filter((p) => TOOLS.find((t) => t.id === p.tool)!.switch === null).map((p) => p.tool);
-    expect(retired).toEqual(["precons", "wishlist", "collection-sync", "lineup"]);
+    expect(retired).toEqual(["precons", "wishlist", "collection-sync", "lineup", "friends"]);
     const NONE = {} as NodeJS.ProcessEnv;
     for (const tool of retired) expect(pageLanding(tool, NONE, tool).landing, tool).toMatchObject({ tool });
   });

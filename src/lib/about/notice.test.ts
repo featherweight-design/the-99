@@ -171,8 +171,6 @@ describe("aboutDismissal, a switch turned on between the render and the ✕", ()
   const HMC_ON = env({ HELP_ME_CHOOSE_ENABLED: "true" });
   const HMC_OFF = env({});
   const reader: SeenState = { version: 0, ids: ["x"] };
-  // A friend's page: its unit follows SOCIAL_FRIENDS_ENABLED.
-  const FRIEND = "friends/friends/friend";
 
   it("a base unit drawn before HELP_ME_CHOOSE_ENABLED turned on does not take its new sentence's key", () => {
     const line = aboutLine(reader, visibleSections(HMC_OFF));
@@ -195,17 +193,15 @@ describe("aboutDismissal, a switch turned on between the render and the ✕", ()
     expect(aboutDismissal(drawn!.ack, reader, now)!.ids).toContain(SENTENCE);
   });
 
-  it("a first-run ✕ takes only the baseline it rendered: a unit and a sentence switched on since stay new", () => {
+  it("a first-run ✕ takes only the baseline it rendered: a unit switched on since stays new", () => {
     const line = aboutLine(NEVER_SEEN, visibleSections(OFF));
     expect(line?.kind).toBe("firstRun");
-    const now = visibleSections(env({ SWAP_TOOLS_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true" }));
+    const now = visibleSections(env({ SWAP_TOOLS_ENABLED: "true" }));
     const write = aboutDismissal(line?.kind === "firstRun" ? line.ack : [], NEVER_SEEN, now)!;
     expect(write.ids).not.toContain("shopping/deck-shopping/standins");
-    expect(write.ids).not.toContain(FRIEND);
     const after: SeenState = { version: write.version, ids: write.ids };
     const told = unseenUnits(now, after).map((u) => u.key);
     expect(told).toContain("shopping/deck-shopping/standins");
-    expect(told).toContain(FRIEND);
   });
 
   it("cuts a claim past the bound, as a page never draws one that long", () => {
