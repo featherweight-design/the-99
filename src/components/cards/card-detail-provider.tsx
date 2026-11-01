@@ -1711,12 +1711,14 @@ export function CardDetailProvider({
       const foil = viewed.finish === "nonfoil" ? undefined : viewed.finish;
       return viewed.imageUri !== (s.imageUri ?? null) || s.foil !== foil ? { ...s, imageUri: viewed.imageUri, foil } : s;
     }
+    // A finish with no printing: the reader's own printing, drawn in the list's finish, never the reader's own copy's.
+    const filmOf = (reader: FoilFinish | undefined) => (viewed && viewed.setCode === undefined ? (viewed.finish === "nonfoil" ? undefined : viewed.finish) : reader);
     const readCard = readArt.get(s.oracleId);
-    if (!readCard) return s;
+    if (!readCard) return s.foil !== filmOf(s.foil) ? { ...s, foil: filmOf(s.foil) } : s;
     const shown = withDeckPick(readCard, deckPickFor(deckPrintingPicks, deckId, deckOracleIds, s.oracleId));
     const printing = resolvedPrinting(shown);
     // The film follows the printing the plate draws, as the details face's does (foil handoff R2, G9).
-    const read = { art: printing?.imageUri ?? null, name: printedNameOf(shown), foil: faceFilm(printing) };
+    const read = { art: printing?.imageUri ?? null, name: printedNameOf(shown), foil: filmOf(faceFilm(printing)) };
     return read.art !== (s.imageUri ?? null) || read.name !== s.name || read.foil !== s.foil
       ? { ...s, imageUri: read.art, name: read.name, foil: read.foil }
       : s;

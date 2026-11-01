@@ -2254,6 +2254,32 @@ describe("viewPrintings", () => {
     expect(screen.getAllByTestId("phone-peek-next")[0].outerHTML).not.toContain("owned-sol.jpg");
   });
 
+  it("draws the neighbor plate of a finish-only card plain, over the reader's foil copy", async () => {
+    const foilSol: BrowseCard = {
+      ...ownedSol,
+      printings: [{ setCode: "FDN", collectorNumber: "222", imageUri: "https://cards.scryfall.io/owned-sol.jpg", quantity: 1, finishes: { foil: 1 }, hasOwnArt: true, flavorName: null }] as unknown as BrowseCard["printings"],
+    };
+    render(
+      <CardDetailProvider
+        fetchCard={async (id) => (id === "o-sol" ? foilSol : SIGNET)}
+        prefetchCard={async (id) => (id === "o-sol" ? foilSol : SIGNET)}
+        viewPrintings={{ "o-sol": { finish: "nonfoil" } }}
+      >
+        <CardDetailTrigger
+          oracleId="o-signet"
+          name="Arcane Signet"
+          siblings={[{ oracleId: "o-signet" }, { oracleId: "o-sol", name: "Sol Ring", imageUri: "https://cards.scryfall.io/owned-sol.jpg", foil: "foil" }]}
+        >
+          Arcane Signet
+        </CardDetailTrigger>
+      </CardDetailProvider>,
+    );
+    await click(screen.getByText("Arcane Signet"));
+    await screen.findByRole("dialog");
+    await waitFor(() => expect(screen.getAllByTestId("phone-peek-next")[0].outerHTML).toContain("owned-sol.jpg"));
+    expect(screen.getAllByTestId("phone-peek-next")[0].querySelector('[data-testid="sibling-foil-film"]')).toBeNull();
+  });
+
   it("views it there when paged onto, too", async () => {
     render(tree());
     await click(screen.getByText("Arcane Signet"));
