@@ -1,6 +1,6 @@
 import { loadHiddenIds } from "../commanders/hidden";
 import { getRankedList } from "../recs/ranked-list";
-import { findScoredCommander } from "../recs/store";
+import { findScoredCommander, isSchemaLagError } from "../recs/store";
 import { loadCandidateSlugRows } from "./candidates";
 import { loadDiscoveryPool } from "./list";
 import { byFit } from "./novelty";
@@ -12,6 +12,9 @@ export type ResolvedCommander = {
   rank: number | null;
   hidden: boolean;
   anyDegraded: boolean;
+  /** The player's hidden ids, when a fallback below already read them: handed on so the page's own
+   *  re-ranks do not read them a second time. Absent when the store answered. */
+  hiddenIds?: ReadonlySet<string>;
 };
 
 /**
@@ -60,12 +63,20 @@ export async function resolveCommanderSlug(
   const found = await findScoredCommander(userId, slug, env);
   if (found) return found;
 
-  // Read once, beside the owned list, and shared with the discovery fallback below.
-  const [{ items }, hiddenList] = await Promise.all([getRankedList(userId, env), loadHiddenIds(userId)]);
-  const hiddenIds = new Set(hiddenList);
+  // Read once, beside the owned list, and shared with the discovery fallback below. Schema lag reads as
+  // nothing hidden, as `findScoredCommander` reads it as a miss: a late migration slows the page rather
+  // than failing it.
+  const [{ items }, hiddenList] = await Promise.all([
+    getRankedList(userId, env),
+    loadHiddenIds(userId).catch((err: unknown) => {
+      if (!isSchemaLagError(err)) throw err;
+      return [];
+    }),
+  ]);
+  const hiddenIds: ReadonlySet<string> = new Set(hiddenList);
   const idx = items.findIndex((i) => i.slug === slug);
   if (idx !== -1) {
-    return { oracleId: items[idx].oracleId, ...rankAmongShown(items, idx, hiddenIds), anyDegraded: false };
+    return { oracleId: items[idx].oracleId, ...rankAmongShown(items, idx, hiddenIds), anyDegraded: false, hiddenIds };
   }
 
   // The whole collection, because that is what the discover list ranks against.
@@ -90,5 +101,5 @@ export async function resolveCommanderSlug(
 
   // The rank the row itself showed: position in the fit ranking, which is
   // discovery's default and the only ordering this page can name.
-  return { oracleId: rows[at].oracleId, ...rankAmongShown(rows, at, hiddenIds), anyDegraded: false };
+  return { oracleId: rows[at].oracleId, ...rankAmongShown(rows, at, hiddenIds), anyDegraded: false, hiddenIds };
 }

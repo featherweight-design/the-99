@@ -497,22 +497,22 @@ export type ScoredCommander = {
  * non-hidden rows ahead of it (the list it was clicked from leaves the hidden ones out), and a hidden
  * one gets no rank at all.
  *
+ * The flag is computed ONCE per row, in `flagged`, and the window in `ranked` reads that column for both
+ * its CASE and its partition, rather than running the `exists` three times over.
+ *
  * The flag's subquery is aliased and its outer column written `"commander_scores".oracle_id` by hand:
  * this is a single-table select, whose projection Drizzle leaves unqualified, and a bare
  * `"oracle_id"` there would resolve to the hidden row's own column and mark every row hidden.
  */
 export function scoredCommanderQuery(userId: string, slug: string, env: NodeJS.ProcessEnv) {
-  const hidden = hiddenBy(userId, sql`${commanderScores}.oracle_id`);
-  const ranked = db.$with("ranked").as(
+  const flagged = db.$with("flagged").as(
     db
       .select({
         oracleId: commanderScores.oracleId,
         slug: commanderScores.slug,
-        hidden: sql<boolean>`${hidden}`.as("hidden"),
-        rank: sql<number | null>`(case when ${hidden} then null else row_number() over (partition by ${hidden} order by ${commanderScores.rankScore} desc, ${commanderScores.oracleId}) end)::int`.as("rank"),
-        // Same window pass, so the caller learns whether these ranks came from an
-        // outage-era compute without paying a second round trip.
-        anyDegraded: sql<boolean>`bool_or(${commanderScores.synergyState} = 'degraded') over ()`.as("any_degraded"),
+        rankScore: commanderScores.rankScore,
+        synergyState: commanderScores.synergyState,
+        hidden: sql<boolean>`${hiddenBy(userId, sql`${commanderScores}.oracle_id`)}`.as("hidden"),
       })
       .from(commanderScores)
       // The window runs over the UNBUILT rows, the same population the list
@@ -531,8 +531,21 @@ export function scoredCommanderQuery(userId: string, slug: string, env: NodeJS.P
       // settle by handing out a rank no list agrees with.
       .where(rankableScoreRows(userId, env)),
   );
+  const ranked = db.$with("ranked").as(
+    db
+      .select({
+        oracleId: sql<string>`flagged.oracle_id`.as("oracle_id"),
+        slug: sql<string>`flagged.slug`.as("slug"),
+        hidden: sql<boolean>`flagged.hidden`.as("hidden"),
+        rank: sql<number | null>`(case when flagged.hidden then null else row_number() over (partition by flagged.hidden order by flagged.rank_score desc, flagged.oracle_id) end)::int`.as("rank"),
+        // Same window pass, so the caller learns whether these ranks came from an
+        // outage-era compute without paying a second round trip.
+        anyDegraded: sql<boolean>`bool_or(flagged.synergy_state = 'degraded') over ()`.as("any_degraded"),
+      })
+      .from(flagged),
+  );
   return db
-    .with(ranked)
+    .with(flagged, ranked)
     .select({ oracleId: ranked.oracleId, rank: ranked.rank, hidden: ranked.hidden, anyDegraded: ranked.anyDegraded })
     .from(ranked)
     .where(eq(ranked.slug, slug))

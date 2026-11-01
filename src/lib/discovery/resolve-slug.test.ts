@@ -10,7 +10,11 @@ const { findScoredCommander, getRankedList, loadDiscoveryPool, loadCandidateSlug
     loadHiddenIds: vi.fn(),
   }));
 
-vi.mock("../recs/store", () => ({ findScoredCommander }));
+// The schema-lag test is the store's own two codes; a stand-in, since the real module opens the database.
+vi.mock("../recs/store", () => ({
+  findScoredCommander,
+  isSchemaLagError: (err: unknown) => ["42P01", "42703"].includes((err as { code?: string } | null)?.code ?? ""),
+}));
 vi.mock("../recs/ranked-list", () => ({ getRankedList }));
 vi.mock("./list", () => ({ loadDiscoveryPool }));
 vi.mock("./candidates", () => ({ loadCandidateSlugRows }));
@@ -40,7 +44,7 @@ describe("resolveCommanderSlug", () => {
   it("falls through to the computed owned ranking on a store miss", async () => {
     getRankedList.mockResolvedValue({ items: [{ slug: "zur", oracleId: "z" }, { slug: "meren", oracleId: "m" }] });
     expect(await resolveCommanderSlug("user", "meren", ENV_VIEW))
-      .toEqual({ oracleId: "m", rank: 2, hidden: false, anyDegraded: false });
+      .toEqual({ oracleId: "m", rank: 2, hidden: false, anyDegraded: false, hiddenIds: new Set() });
     expect(loadCandidateSlugRows).not.toHaveBeenCalled();
   });
 
@@ -50,14 +54,14 @@ describe("resolveCommanderSlug", () => {
     });
     loadHiddenIds.mockResolvedValue(["z"]);
     expect(await resolveCommanderSlug("user", "meren", ENV_VIEW))
-      .toEqual({ oracleId: "m", rank: 2, hidden: false, anyDegraded: false });
+      .toEqual({ oracleId: "m", rank: 2, hidden: false, anyDegraded: false, hiddenIds: new Set(["z"]) });
   });
 
   it("resolves a hidden commander from the owned ranking, with no rank", async () => {
     getRankedList.mockResolvedValue({ items: [{ slug: "zur", oracleId: "z" }, { slug: "meren", oracleId: "m" }] });
     loadHiddenIds.mockResolvedValue(["m"]);
     expect(await resolveCommanderSlug("user", "meren", ENV_VIEW))
-      .toEqual({ oracleId: "m", rank: null, hidden: true, anyDegraded: false });
+      .toEqual({ oracleId: "m", rank: null, hidden: true, anyDegraded: false, hiddenIds: new Set(["m"]) });
   });
 
   it("resolves an unbuilt commander from the discovery ranking, at its fit rank", async () => {
@@ -66,7 +70,7 @@ describe("resolveCommanderSlug", () => {
       { oracleId: "high", name: "High", ownedSupport: 90 },
     ]);
     expect(await resolveCommanderSlug("user", "low", ENV_VIEW))
-      .toEqual({ oracleId: "low", rank: 2, hidden: false, anyDegraded: false });
+      .toEqual({ oracleId: "low", rank: 2, hidden: false, anyDegraded: false, hiddenIds: new Set() });
   });
 
   it("does not count a hidden commander ahead of the target in the discovery ranking", async () => {
@@ -76,7 +80,7 @@ describe("resolveCommanderSlug", () => {
     ]);
     loadHiddenIds.mockResolvedValue(["high"]);
     expect(await resolveCommanderSlug("user", "low", ENV_VIEW))
-      .toEqual({ oracleId: "low", rank: 1, hidden: false, anyDegraded: false });
+      .toEqual({ oracleId: "low", rank: 1, hidden: false, anyDegraded: false, hiddenIds: new Set(["high"]) });
   });
 
   it("resolves a hidden commander from the discovery ranking, with no rank", async () => {
@@ -86,9 +90,24 @@ describe("resolveCommanderSlug", () => {
     ]);
     loadHiddenIds.mockResolvedValue(["low"]);
     expect(await resolveCommanderSlug("user", "low", ENV_VIEW))
-      .toEqual({ oracleId: "low", rank: null, hidden: true, anyDegraded: false });
+      .toEqual({ oracleId: "low", rank: null, hidden: true, anyDegraded: false, hiddenIds: new Set(["low"]) });
     // Read once for both fallbacks.
     expect(loadHiddenIds).toHaveBeenCalledTimes(1);
+  });
+
+  // As the store's own read does: a hidden_commanders table the migration has not reached yet is a
+  // slower page, not a failed one.
+  it("reads schema lag on the hidden ids as nothing hidden", async () => {
+    getRankedList.mockResolvedValue({ items: [{ slug: "meren", oracleId: "m" }] });
+    loadHiddenIds.mockRejectedValue(Object.assign(new Error("relation does not exist"), { code: "42P01" }));
+    expect(await resolveCommanderSlug("user", "meren", ENV_VIEW))
+      .toEqual({ oracleId: "m", rank: 1, hidden: false, anyDegraded: false, hiddenIds: new Set() });
+  });
+
+  it("rethrows any other failure of the hidden read", async () => {
+    getRankedList.mockResolvedValue({ items: [{ slug: "meren", oracleId: "m" }] });
+    loadHiddenIds.mockRejectedValue(Object.assign(new Error("pg error 53300"), { code: "53300" }));
+    await expect(resolveCommanderSlug("user", "meren", ENV_VIEW)).rejects.toThrow("pg error 53300");
   });
 
   it("ranks against the whole collection, so the rank matches the row it was reached from", async () => {

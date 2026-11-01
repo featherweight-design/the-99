@@ -783,7 +783,7 @@ describe("findScoredCommander when the schema is behind the code", () => {
   });
 });
 
-describe("findScoredCommander for a hidden commander", () => {
+describe("findScoredCommander passes the row through", () => {
   const col = sql`x`;
   const rankedStub = { oracleId: col, rank: col, hidden: col, anyDegraded: col, slug: col };
 
@@ -795,16 +795,16 @@ describe("findScoredCommander for a hidden commander", () => {
     });
   }
 
-  // The window nulls a hidden row's rank (`scored-commander.sql.test.ts` pins the SQL); the read hands
-  // that row back rather than treating it as a miss, so the page opens with no rank.
-  it("resolves the hidden target with a null rank", async () => {
+  // A stubbed row, so these pin only the pass-through: `hidden` and a null rank come back as the query
+  // returned them, not read as a miss. The window that computes them is `scored-commander.sql.test.ts`.
+  it("hands back a hidden row's `hidden` flag and null rank unchanged", async () => {
     stubRow({ oracleId: "a", rank: null, hidden: true, anyDegraded: false });
     await expect(findScoredCommander("user_1", "atraxa-praetors-voice", ENV_VIEW)).resolves.toEqual({
       oracleId: "a", rank: null, hidden: true, anyDegraded: false,
     });
   });
 
-  it("hands back a shown commander's window rank as the window counted it", async () => {
+  it("hands back a shown row's rank and `hidden: false` unchanged", async () => {
     stubRow({ oracleId: "b", rank: 1, hidden: false, anyDegraded: false });
     await expect(findScoredCommander("user_1", "kess", ENV_VIEW)).resolves.toMatchObject({ rank: 1, hidden: false });
   });

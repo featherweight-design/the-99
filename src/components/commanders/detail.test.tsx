@@ -629,7 +629,7 @@ describe("CommanderDetail hide state", () => {
     expect(screen.getAllByText(hideCommanderCopy.notRanked)).toHaveLength(2);
     expect(screen.getAllByText(hideCommanderCopy.note.body, { exact: false })).toHaveLength(2);
     expect(screen.getAllByRole("button", { name: hideCommanderCopy.unhideAria(NAME) })).toHaveLength(2);
-    expect(screen.queryByRole("button", { name: hideCommanderCopy.hideAria(NAME) })).toBeNull();
+    expect(screen.queryByRole("button", { name: hideCommanderCopy.hide })).toBeNull();
   });
 
   it("while hidden: the note takes the synergy note's shape", () => {
@@ -645,14 +645,14 @@ describe("CommanderDetail hide state", () => {
     expect(screen.getAllByText("Rank #3")).toHaveLength(2);
     expect(screen.queryByText(hideCommanderCopy.notRanked)).toBeNull();
     expect(screen.queryByText(hideCommanderCopy.note.body, { exact: false })).toBeNull();
-    const lines = screen.getAllByRole("button", { name: hideCommanderCopy.hideAria(NAME) });
+    const lines = screen.getAllByRole("button", { name: hideCommanderCopy.hide });
     expect(lines).toHaveLength(2);
     expect(lines[0].textContent).toBe(hideCommanderCopy.hide);
   });
 
   it("pressing Hide turns the page hidden at once, and asks the action", async () => {
     renderPage(false, 3);
-    fireEvent.click(screen.getAllByRole("button", { name: hideCommanderCopy.hideAria(NAME) })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: hideCommanderCopy.hide })[0]);
     expect(screen.getByText(hideCommanderCopy.kicker)).toBeTruthy();
     expect(screen.getAllByText(hideCommanderCopy.notRanked)).toHaveLength(2);
     expect(hideAction).toHaveBeenCalledWith("oracle-1");
@@ -666,16 +666,16 @@ describe("CommanderDetail hide state", () => {
   it("a refused Hide puts the page back and raises the shared toast", async () => {
     hideAction.mockResolvedValue(false);
     renderPage(false, 3);
-    fireEvent.click(screen.getAllByRole("button", { name: hideCommanderCopy.hideAria(NAME) })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: hideCommanderCopy.hide })[0]);
     expect((await screen.findByText(hideCommanderCopy.hideRefused(NAME))).closest("[role=alert]")).not.toBeNull();
     expect(screen.getByText("Rank 3")).toBeTruthy();
-    expect(screen.getAllByRole("button", { name: hideCommanderCopy.hideAria(NAME) })).toHaveLength(2);
+    expect(screen.getAllByRole("button", { name: hideCommanderCopy.hide })).toHaveLength(2);
   });
 
   it("a Hide that throws is a refusal too", async () => {
     hideAction.mockRejectedValue(new Error("db down"));
     renderPage(false, 3);
-    fireEvent.click(screen.getAllByRole("button", { name: hideCommanderCopy.hideAria(NAME) })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: hideCommanderCopy.hide })[0]);
     expect((await screen.findByText(hideCommanderCopy.hideRefused(NAME))).closest("[role=alert]")).not.toBeNull();
     expect(screen.queryByText(hideCommanderCopy.kicker)).toBeNull();
   });
@@ -687,7 +687,7 @@ describe("CommanderDetail hide state", () => {
     expect(unhideAction).toHaveBeenCalledWith("oracle-1");
     await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
     await waitFor(() =>
-      expect(document.activeElement?.getAttribute("aria-label")).toBe(hideCommanderCopy.hideAria(NAME)),
+      expect(document.activeElement?.textContent).toBe(hideCommanderCopy.hide),
     );
   });
 

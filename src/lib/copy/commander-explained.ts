@@ -402,9 +402,9 @@ export const hideCommanderCopy = {
   unhide: "Unhide",
   unhideAria: (name: string) => `Unhide ${name}`,
   /** The quiet line the page offers while the commander is not hidden. WAS: "Hide from my lists",
-      over the 3-word button cap; the aria-label names the commander. */
+      over the 3-word button cap. Its accessible name is this visible text (WCAG 2.5.3): the page is the
+      commander's own, so the line needs no name of its own. */
   hide: "Hide from lists",
-  hideAria: (name: string) => `Hide ${name}`,
   /** The shared toast, when the write is refused and the page goes back. */
   hideRefused: (name: string) => `We couldn’t hide ${name}. Try again.`,
   unhideRefused: (name: string) => `We couldn’t unhide ${name}. Try again.`,

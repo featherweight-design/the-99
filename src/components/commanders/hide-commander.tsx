@@ -74,7 +74,9 @@ export function CommanderHideProvider({
     if (!target) return;
     focusTo.current = null;
     const drawn = [...controls.current[target]];
-    (drawn.find((el) => el.getClientRects().length > 0) ?? drawn[0])?.focus();
+    // Without scrolling: on desktop the revealed control sits in the other column, and a scroll to it
+    // would move the page out from under the press.
+    (drawn.find((el) => el.getClientRects().length > 0) ?? drawn[0])?.focus({ preventScroll: true });
   }, [hidden]);
 
   const toggle = useCallback(() => {
@@ -248,7 +250,7 @@ export function HiddenNote() {
  * on the phone, under the build note on desktop. Nothing over the band or the card face.
  */
 export function HideLine({ width }: { width: "phone" | "desktop" }) {
-  const { hidden, toggle, name, register } = useHide();
+  const { hidden, toggle, register } = useHide();
   if (hidden) return null;
   const isPhone = width === "phone";
   return (
@@ -256,7 +258,6 @@ export function HideLine({ width }: { width: "phone" | "desktop" }) {
       type="button"
       ref={(el) => register("hide", el)}
       onClick={toggle}
-      aria-label={hideCommanderCopy.hideAria(name)}
       className={`flex cursor-pointer items-center gap-[8px] border-0 bg-transparent p-0 font-sans font-medium text-[color:var(--fg-muted)] transition-colors hover:text-[color:var(--fg-body)] ${isPhone ? "justify-start self-start" : "justify-center"}`}
       // The phone line sits in a 16px-gap column; its negative margins pull the 44px target's slack back
       // into the gaps, as the board draws it.

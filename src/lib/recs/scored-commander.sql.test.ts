@@ -23,16 +23,26 @@ describe("scoredCommanderQuery's hidden flag", () => {
     expect(flat()).not.toMatch(/hc\.oracle_id = "oracle_id"/);
   });
 
+  // The flag is computed once per row, in the `flagged` CTE, and the window reads that column: one
+  // `exists` per score row rather than one each for the column, the CASE and the partition.
+  it("computes the flag once, as a column the window reads", () => {
+    expect(flat().match(/exists \( select 1 from "hidden_commanders"/g)).toHaveLength(1);
+    expect(flat()).toMatch(/^with "flagged" as \(select .*exists \( select 1 from "hidden_commanders" hc .*?\) as "hidden" from "commander_scores"/);
+    expect(flat()).toMatch(/"ranked" as \(select .* from "flagged"\)/);
+  });
+
   // A hidden row ahead of the target does not count: the window is partitioned by the flag, so a shown
-  // commander is numbered among the shown rows only.
+  // commander is numbered among the shown rows only. Every column the window reads is qualified by the CTE.
   it("partitions the rank window by the flag", () => {
-    expect(flat()).toMatch(/row_number\(\) over \(partition by exists \(/);
+    expect(flat()).toContain(
+      "row_number() over (partition by flagged.hidden order by flagged.rank_score desc, flagged.oracle_id)",
+    );
   });
 
   // A hidden target resolves, with no rank: the CASE nulls it rather than a WHERE dropping it, which
   // would 404 the page the Hidden list links to.
   it("keeps a hidden target and gives it a null rank", () => {
-    expect(flat()).toMatch(/case when exists \(.*?\) then null else row_number\(\)/);
+    expect(flat()).toContain("case when flagged.hidden then null else row_number()");
     expect(flat()).toContain(`"hidden"`);
     expect(flat()).not.toMatch(/not exists \( select 1 from "hidden_commanders"/);
   });

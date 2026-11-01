@@ -45,8 +45,8 @@ export default async function CommanderDetailPage({
   const hidden = found.hidden;
   // The two re-ranks below index `getRankedList`, which still holds hidden rows (slug assignment shares
   // them); the lists the reader clicked from do not, so each counts only the shown rows. Read once, and
-  // only when one of them runs.
-  let hiddenIds: Promise<ReadonlySet<string>> | undefined;
+  // only when one of them runs, and not at all when the resolver's fallback already read them.
+  let hiddenIds: Promise<ReadonlySet<string>> | undefined = found.hiddenIds && Promise.resolve(found.hiddenIds);
   const readHiddenIds = () => (hiddenIds ??= loadHiddenIds(userId).then((ids) => new Set(ids)));
   if (found.anyDegraded && !hidden) {
     // The persisted ranks came from an outage-era compute, so the rank shown beside
@@ -66,10 +66,10 @@ export default async function CommanderDetailPage({
   // than pairing a free score with a rank from the other list.
   let avail: "all" | "free" = "all";
   let pool: PoolCard[] | undefined;
-  // A hidden commander is sent to the canonical URL, as a commander the free ranking does not hold is
-  // below: there is no free rank to pair a free score with while it is hidden.
-  if (requested === "free" && found.hidden) redirect(`/commanders/${slug}`);
-  if (requested === "free") {
+  // A hidden commander draws the canonical mode, with no rank: there is no free rank to pair a free score
+  // with while it is hidden. Rendered, NOT redirected: pressing Hide on a `?avail=free` page re-renders this
+  // route inside the action's response, and a redirect there would refuse the action or navigate away.
+  if (requested === "free" && !hidden) {
     const [{ items: ranked }, ids] = await Promise.all([getRankedList(userId, env), readHiddenIds()]);
     // Only what the list shows is re-ranked, as `loadCommanderRankings` does, so a hidden row ahead of this one
     // takes no free place either.
