@@ -1,4 +1,4 @@
-// The shared admin confirm: the model confirm draws in it today, and Delete a group and Kill a flag (small items 9)
+// The shared admin confirm: the model confirm draws in it today; Delete a group and Kill a flag (small items 9) will
 // draw in it with `tone: "danger"`. Pins what both callers rely on: the danger fill, Cancel taking the focus, the
 // caller's own body under the facts, and a pending write holding both buttons.
 import { fireEvent, render, screen } from "@testing-library/react";
