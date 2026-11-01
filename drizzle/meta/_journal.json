@@ -1534,6 +1534,13 @@
       "when": 1793511281574,
       "tag": "0218_rule_zero_close",
       "breakpoints": true
+    },
+    {
+      "idx": 219,
+      "version": "7",
+      "when": 1793516949087,
+      "tag": "0219_rule_zero_seat_push",
+      "breakpoints": true
     }
   ]
 }

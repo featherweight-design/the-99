@@ -28,6 +28,12 @@ export const pushCopy = {
       no: { title: spareCopy.request.mine.keeping, body: "Your requests are in Friends." },
     },
     combo: { title: "You can make a combo", body: (a: string, b: string, added: string) => `${a} + ${b}. ${feedCopy.home.line.combo(added)}` },
+    // DRAFT, goes through /copy-review. The board's words (Rule 0 revisions, Notice board, item 6): the toast's sentence is
+    // the title; the body is the deck the seat holds, or the nudge to pick one. Host and pod are the readers' own words.
+    seat: {
+      title: (host: string, pod: string) => `${host} seated you at ${pod}\u2019s table.`,
+      body: (deck: string | null) => (deck === null ? "Pick your deck at the table." : `You\u2019re seated with ${deck}.`),
+    },
     /** A Wizards post (Announcements UI 3b): its own title, and its summary, or where a tap goes when it has none. */
     post: { title: (title: string) => title, body: (excerpt: string | null) => excerpt ?? "Read it on Wizards." },
   },

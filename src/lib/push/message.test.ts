@@ -125,3 +125,23 @@ describe("collapse", () => {
     expect(() => toMessage([])).toThrow();
   });
 });
+
+describe("a seat notice (Rule 0 revisions, item 6)", () => {
+  const T1 = "6f1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b";
+  const T2 = "7a1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b";
+  const seat = (tableId: string, deck: string | null = null): PushItem => ({ kind: "rule_zero_seat", key: `table:${tableId}`, batch: `table:${tableId}`, tableId, host: "Colin", pod: "Thursday night", deck });
+
+  it("says who seated you, lands on the table, and carries no image", () => {
+    expect(toMessage([seat(T1)])).toEqual({
+      title: "Colin seated you at Thursday night’s table.", body: "Pick your deck at the table.", route: `/friends/table/${T1}`,
+      tag: `rule_zero_seat:table:${T1}`, keys: [`table:${T1}`], openCard: null, openCombo: false, image: null,
+    });
+  });
+  it("names the deck the seat already holds", () => {
+    expect(toMessage([seat(T1, "Atraxa")]).body).toBe("You’re seated with Atraxa.");
+  });
+  it("is never collapsed, live or in the morning: two tables are two pushes", () => {
+    expect(messagesFor([seat(T1), seat(T2)], "live")).toHaveLength(2);
+    expect(messagesFor([seat(T1), seat(T2)], "release")).toHaveLength(2);
+  });
+});

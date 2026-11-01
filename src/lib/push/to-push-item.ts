@@ -6,8 +6,15 @@
  * with no card count yet (none of its printings has art) still goes, without the figure. Home draws such a row with its title alone; a notification has no line to leave out.
  */
 import type { FeedView } from "../feed/home";
+import { SEAT_PUSH_KIND } from "../feed/kinds";
 import { reveal } from "../person-name/reveal";
+import type { SeatNotice } from "../social/rule-zero-notice";
 import type { PushItem } from "./message";
+
+/** A seat notice as a push item: a notification is not a page, so this is a server-side reveal of the host and the pod (like the feed's friend). */
+export function seatPushItem(notice: SeatNotice, key: string, batch: string): PushItem {
+  return { kind: SEAT_PUSH_KIND, key, batch, tableId: notice.tableId, host: reveal(notice.host), pod: reveal(notice.podName), deck: notice.deckName };
+}
 
 export function toPushItem(view: FeedView, batch: string): PushItem | null {
   const base = { key: view.key, batch };

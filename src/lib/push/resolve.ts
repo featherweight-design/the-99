@@ -8,29 +8,44 @@
 import { db } from "../../db";
 import { lookups, toViews } from "../feed/home";
 import { toFeedItem, type FeedRow } from "../feed/read";
-import { isStoredKind, type CatalogKind, type FeedKind, type StoredKind } from "../feed/kinds";
+import { isStoredKind, SEAT_PUSH_KIND, type CatalogKind, type FeedKind, type StoredKind } from "../feed/kinds";
 import { storedItemsByKeyQuery } from "../social/feed-items";
+import { unseenSeatNotices } from "../social/rule-zero-notice";
+import { isUuid } from "../social/rules";
 import { catalogItemsByKeyQuery } from "./catalog";
 import type { PushItem } from "./message";
-import { toPushItem } from "./to-push-item";
+import { tableIdOfSeatKey } from "./seat";
+import { seatPushItem, toPushItem } from "./to-push-item";
 
-export type OutboxRef = { kind: FeedKind; key: string; batch: string };
+/** A feed kind's ref, or the seat notice's (not a feed kind). */
+export type OutboxRef = { kind: FeedKind | typeof SEAT_PUSH_KIND; key: string; batch: string };
 
 type Q = Pick<typeof db, "execute">;
 
 export async function resolvePushItems(
   userId: string, refs: readonly OutboxRef[], env: NodeJS.ProcessEnv, now: Date, q: Q = db,
 ): Promise<{ items: PushItem[]; dropped: OutboxRef[] }> {
-  const stored = refs.flatMap((r) => (isStoredKind(r.kind) ? [{ kind: r.kind as StoredKind, key: r.key }] : []));
-  const catalog = refs.flatMap((r) => (isStoredKind(r.kind) ? [] : [{ kind: r.kind as CatalogKind, key: r.key }]));
+  // The seat notices are not feed items: their own read, through the reader's seat (an unseen notice at a table still open).
+  const seats = refs.filter((r) => r.kind === SEAT_PUSH_KIND);
+  const feedRefs = refs.filter((r) => r.kind !== SEAT_PUSH_KIND);
+  const stored = feedRefs.flatMap((r) => (isStoredKind(r.kind) ? [{ kind: r.kind as StoredKind, key: r.key }] : []));
+  const catalog = feedRefs.flatMap((r) => (isStoredKind(r.kind) ? [] : [{ kind: r.kind as CatalogKind, key: r.key }]));
   const queries = [storedItemsByKeyQuery(userId, stored, now), catalogItemsByKeyQuery(userId, catalog, now)].filter((x) => x !== null);
-  if (queries.length === 0) return { items: [], dropped: [...refs] };
   const found = (await Promise.all(queries.map((query) => q.execute<FeedRow>(query)))).flatMap(({ rows }) => (rows as FeedRow[]).map(toFeedItem));
-  const views = toViews(found, await lookups(userId, found, q, env));
+  const views = queries.length === 0 ? [] : toViews(found, await lookups(userId, found, q, env));
   const byKey = new Map(views.map((v) => [`${v.kind}\u0000${v.key}`, v]));
+  const tableIds = seats.flatMap((r) => { const id = tableIdOfSeatKey(r.key); return isUuid(id) ? [id] : []; });
+  const notices = new Map((await unseenSeatNotices(userId, tableIds)).map((n) => [n.tableId, n]));
   const items: PushItem[] = [];
   const dropped: OutboxRef[] = [];
   for (const ref of refs) {
+    if (ref.kind === SEAT_PUSH_KIND) {
+      const tableId = tableIdOfSeatKey(ref.key);
+      const notice = isUuid(tableId) ? notices.get(tableId) : undefined;
+      if (notice) items.push(seatPushItem(notice, ref.key, ref.batch));
+      else dropped.push(ref);
+      continue;
+    }
     const view = byKey.get(`${ref.kind}\u0000${ref.key}`);
     const item = view ? toPushItem(view, ref.batch) : null;
     if (item) items.push(item);

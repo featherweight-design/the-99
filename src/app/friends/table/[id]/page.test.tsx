@@ -8,6 +8,7 @@ const m = vi.hoisted(() => ({
   requireUserId: vi.fn(),
   loadTable: vi.fn(),
   loadClosedTable: vi.fn(),
+  markSeatNoticeSeen: vi.fn(),
 }));
 vi.mock("next/navigation", () => ({
   notFound: () => { throw new Error("NOT_FOUND"); },
@@ -15,6 +16,7 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("../actions", () => ({ markTableSeen: async () => true }));
 vi.mock("../../../../lib/auth", () => ({ requireUserId: m.requireUserId }));
+vi.mock("../../../../lib/social/rule-zero-notice", () => ({ markSeatNoticeSeen: m.markSeatNoticeSeen }));
 vi.mock("../../../../lib/social/rule-zero-table", () => ({ loadTable: m.loadTable, loadClosedTable: m.loadClosedTable }));
 
 import TablePage from "./page";
@@ -28,6 +30,7 @@ beforeEach(() => {
   m.requireUserId.mockResolvedValue("user_viewer");
   m.loadTable.mockResolvedValue(null);
   m.loadClosedTable.mockResolvedValue(null);
+  m.markSeatNoticeSeen.mockResolvedValue(true);
 });
 
 describe("TablePage", () => {
@@ -43,6 +46,18 @@ describe("TablePage", () => {
     expect(screen.getByTestId("table-body")).toBeInTheDocument();
     expect(screen.getAllByTestId("table-seat")).toHaveLength(4);
     expect(m.loadClosedTable).not.toHaveBeenCalled();
+  });
+
+  it("marks the seat notice seen when the open table is drawn, and not for a closed or unknown table", async () => {
+    m.loadTable.mockResolvedValue(TABLES.T2);
+    await page();
+    expect(m.markSeatNoticeSeen).toHaveBeenCalledWith("user_viewer", ID);
+    vi.clearAllMocks();
+    m.requireUserId.mockResolvedValue("user_viewer");
+    m.loadTable.mockResolvedValue(null);
+    m.loadClosedTable.mockResolvedValue(null);
+    await expect(page()).rejects.toThrow("NOT_FOUND");
+    expect(m.markSeatNoticeSeen).not.toHaveBeenCalled();
   });
 
   it("draws the expired page when the night has ended", async () => {

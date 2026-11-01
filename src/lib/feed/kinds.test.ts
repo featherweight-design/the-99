@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  ANNOUNCEMENT_KINDS, CATALOG_KINDS, DEFAULT_ON_KINDS, FEED_KINDS, FEED_WINDOW_DAYS, LEAD_PRIORITY, NEVER_LEADS, PUSH_OUTBOX_KINDS, STORED_KINDS,
+  ANNOUNCEMENT_KINDS, CATALOG_KINDS, DEFAULT_ON_KINDS, FEED_KINDS, FEED_WINDOW_DAYS, LEAD_PRIORITY, NEVER_LEADS, PUSH_OUTBOX_ALL_KINDS, PUSH_OUTBOX_KINDS, SEAT_PUSH_KIND, STORED_KINDS,
   feedOrder, isAnnouncementKind, isDefaultOn, isFeedKind, isStoredKind, leadStory, windowFloor, type FeedKind,
 } from "./kinds";
 
@@ -42,6 +42,18 @@ describe("the feed's kinds", () => {
   it("keeps the outbox's kinds every feed kind, in the order migration 0193's check was generated in", () => {
     expect([...PUSH_OUTBOX_KINDS].sort()).toEqual([...FEED_KINDS].sort());
     expect(PUSH_OUTBOX_KINDS).toEqual(["new-set", "new-precon", "price-drop", "trade-match", "spare-request", "combo", "secret-lair", "commander-decklists", "wizards-news"]);
+  });
+});
+
+describe("the seat notice's push kind (Rule 0 revisions, item 6)", () => {
+  it("is an outbox kind and NOT a feed kind: no feed row, no Settings checkbox, no preference key", () => {
+    expect(SEAT_PUSH_KIND).toBe("rule_zero_seat");
+    expect(PUSH_OUTBOX_ALL_KINDS).toEqual([...PUSH_OUTBOX_KINDS, "rule_zero_seat"]);
+    expect((FEED_KINDS as readonly string[]).includes(SEAT_PUSH_KIND)).toBe(false);
+    expect((PUSH_OUTBOX_KINDS as readonly string[]).includes(SEAT_PUSH_KIND)).toBe(false);
+    expect(isFeedKind(SEAT_PUSH_KIND)).toBe(false);
+    expect(isStoredKind(SEAT_PUSH_KIND)).toBe(false);
+    expect(LEAD_PRIORITY.includes(SEAT_PUSH_KIND as never)).toBe(false);
   });
 });
 

@@ -30,6 +30,8 @@ import { tableClosesAt } from "../rule-zero/rules";
 import { isUuid } from "./rules";
 import { tableOpen, tableOpenAs } from "./rule-zero-open";
 import { ownedDeckArt, type DeckArt } from "./rule-zero-art";
+import { enqueueSeatPushQuery } from "../push/seat";
+import { kickPush } from "../push/kick";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -106,6 +108,24 @@ async function hiddenFriendDecksIn(tx: Tx, rows: readonly { id: string; userId: 
 type ResolvedSeat = { userId: string; deckId: string | null };
 
 /**
+ * Queue the seat notice's push for each NEWLY seated player but the setter (item 6): one row per (table, player), inside the
+ * setup's own transaction, so a rolled-back setup sends nothing. Returns the players a push was queued for; the caller kicks
+ * them once the transaction has committed (`kickSeated`).
+ */
+export async function queueSeatPushes(tx: Tx, tableId: string, setter: string, userIds: readonly string[], now: Date): Promise<string[]> {
+  const queued: string[] = [];
+  for (const userId of userIds) {
+    if (userId === setter) continue;
+    const { rows } = await tx.execute(enqueueSeatPushQuery(userId, tableId, now));
+    if (rows.length > 0) queued.push(userId);
+  }
+  return queued;
+}
+
+/** After the commit: flush each notified player's outbox in the background (D1's kick). A no-op outside a request. */
+const kickSeated = (userIds: readonly string[]): void => { for (const userId of userIds) kickPush(userId); };
+
+/**
  * Turn the asks into seats, in order, or refuse them all. Under the pod row's lock: every seat must be a member of
  * the pod now, the viewer must be one of them, and a picked deck must be the seat's own player's: the viewer's own
  * deck for the viewer's seat, a friend's deck (`friendDecksIn`, through the viewer's own link) for a friend's seat.
@@ -166,7 +186,8 @@ async function resolveSeatsIn(tx: Tx, viewerId: string, podId: string, asks: rea
 export async function setTable(viewerId: string, podId: unknown, rawSeats: unknown, timeZone: string): Promise<SetTableResult> {
   if (!isUuid(podId) || !validAsks(rawSeats)) return { kind: "refused", reason: "invalid" };
   const asks = rawSeats;
-  return db.transaction(async (tx) => {
+  const notified: string[] = [];
+  const result = await db.transaction(async (tx) => {
     const [pod] = await tx.select({ id: pods.id }).from(pods).where(eq(pods.id, podId)).for("update");
     if (!pod || !(await isMemberIn(tx, podId, viewerId))) return { kind: "refused", reason: "notInPod" } as const;
     const [open] = await tx
@@ -192,9 +213,13 @@ export async function setTable(viewerId: string, podId: unknown, rawSeats: unkno
       .insert(ruleZeroTables)
       .values({ podId, setBy: viewerId, expiresAt: tableClosesAt(new Date(), timeZone) })
       .returning({ id: ruleZeroTables.id });
-    await tx.insert(ruleZeroSeats).values(seats.map((s, i) => ({ tableId: table.id, userId: s.userId, seat: i + 1, deckId: s.deckId })));
+    // The setter's own seat is born seen: only the players they seat get a notice.
+    await tx.insert(ruleZeroSeats).values(seats.map((s, i) => ({ tableId: table.id, userId: s.userId, seat: i + 1, deckId: s.deckId, noticeSeenAt: s.userId === viewerId ? new Date() : null })));
+    notified.push(...await queueSeatPushes(tx, table.id, viewerId, seats.map((s) => s.userId), new Date()));
     return { kind: "set", tableId: table.id } as const;
   });
+  kickSeated(notified);
+  return result;
 }
 
 export type ReseatResult = { kind: "reseated" } | { kind: "refused"; reason: SeatRefusal | "notFound" };
@@ -207,7 +232,8 @@ export type ReseatResult = { kind: "reseated" } | { kind: "refused"; reason: Sea
 export async function reseatTable(viewerId: string, tableId: unknown, rawSeats: unknown): Promise<ReseatResult> {
   if (!isUuid(tableId) || !validAsks(rawSeats)) return { kind: "refused", reason: "invalid" };
   const asks = rawSeats;
-  return db.transaction(async (tx) => {
+  const notified: string[] = [];
+  const result = await db.transaction(async (tx) => {
     const [found] = await tx.select({ podId: ruleZeroTables.podId }).from(ruleZeroTables).where(eq(ruleZeroTables.id, tableId));
     if (!found) return { kind: "refused", reason: "notFound" } as const;
     // The pod row first, as `setTable` takes it, then the table, re-read under the lock. The table row is the lock
@@ -228,7 +254,7 @@ export async function reseatTable(viewerId: string, tableId: unknown, rawSeats: 
       select d.id from ${decks} d join ${ruleZeroSeats} s on s.deck_id = d.id
       where s.table_id = ${tableId} order by d.id for key share of d`);
     const before = await tx
-      .select({ userId: ruleZeroSeats.userId, deckId: ruleZeroSeats.deckId, changedAt: ruleZeroSeats.changedAt })
+      .select({ userId: ruleZeroSeats.userId, deckId: ruleZeroSeats.deckId, changedAt: ruleZeroSeats.changedAt, noticeSeenAt: ruleZeroSeats.noticeSeenAt })
       .from(ruleZeroSeats)
       .where(eq(ruleZeroSeats.tableId, tableId));
     const kept = new Map(before.map((s) => [s.userId, s]));
@@ -248,13 +274,17 @@ export async function reseatTable(viewerId: string, tableId: unknown, rawSeats: 
     await tx.insert(ruleZeroSeats).values(seats.map((s, i) => {
       const stay = kept.get(s.userId);
       return stay
-        ? { tableId, userId: s.userId, seat: i + 1, deckId: stay.deckId, changedAt: stay.changedAt }
-        : { tableId, userId: s.userId, seat: i + 1, deckId: s.deckId, changedAt: joinedAt };
+        ? { tableId, userId: s.userId, seat: i + 1, deckId: stay.deckId, changedAt: stay.changedAt, noticeSeenAt: stay.noticeSeenAt }
+        : { tableId, userId: s.userId, seat: i + 1, deckId: s.deckId, changedAt: joinedAt, noticeSeenAt: null };
     }));
+    // Only a NEW seat is news: a player who stays, changes seat or is removed is told nothing (brief state 12).
+    notified.push(...await queueSeatPushes(tx, tableId, viewerId, seats.filter((s) => !kept.has(s.userId)).map((s) => s.userId), new Date()));
     const gone = before.map((s) => s.userId).filter((u) => !seats.some((s) => s.userId === u));
     if (gone.length > 0) await tx.delete(ruleZeroSeen).where(and(eq(ruleZeroSeen.tableId, tableId), inArray(ruleZeroSeen.userId, gone)));
     return { kind: "reseated" } as const;
   });
+  kickSeated(notified);
+  return result;
 }
 
 /**

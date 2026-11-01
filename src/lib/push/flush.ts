@@ -22,7 +22,7 @@ import { eq, inArray, lt, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { pushOutbox, pushSubscriptions } from "../../db/schema";
 import { availableFeedKinds } from "../feed/flag";
-import { isFeedKind } from "../feed/kinds";
+import { isFeedKind, SEAT_PUSH_KIND } from "../feed/kinds";
 import { enqueueCatalogArrivals } from "./catalog";
 import type { PushConfig } from "./config";
 import { stillWanted } from "./eligible";
@@ -126,7 +126,8 @@ export async function flushPush(deps: FlushDeps): Promise<FlushReport> {
       // after the event, or its feature went off for them.
       const prefs = await readPushPrefs(userId, q);
       const available = availableFeedKinds(env);
-      const fresh = young.filter((r) => isFeedKind(r.kind) && stillWanted(prefs, r.kind, r.createdAt, available));
+      // The seat notice has no kind preference to judge (the master switch above is its only gate); every other row is a feed kind.
+      const fresh = young.filter((r) => r.kind === SEAT_PUSH_KIND || (isFeedKind(r.kind) && stillWanted(prefs, r.kind, r.createdAt, available)));
       const unwanted = young.filter((r) => !fresh.includes(r));
       await settle(unwanted.map((r) => r.id), "off");
       report.abandoned += unwanted.length;
@@ -135,7 +136,7 @@ export async function flushPush(deps: FlushDeps): Promise<FlushReport> {
       const devices = await q.select().from(pushSubscriptions).where(eq(pushSubscriptions.userId, userId)).orderBy(pushSubscriptions.createdAt);
       if (devices.length === 0) { await settle(fresh.map((r) => r.id), "no-device"); report.abandoned += fresh.length; continue; }
 
-      const refs: OutboxRef[] = fresh.flatMap((r) => (isFeedKind(r.kind) ? [{ kind: r.kind, key: r.itemKey, batch: r.batchKey }] : []));
+      const refs: OutboxRef[] = fresh.flatMap((r) => (r.kind === SEAT_PUSH_KIND || isFeedKind(r.kind) ? [{ kind: r.kind as OutboxRef["kind"], key: r.itemKey, batch: r.batchKey }] : []));
       const { items: resolved, dropped } = await resolvePushItems(userId, refs, env, now, q);
       const dropKeys = new Set(dropped.map((d) => `${d.kind}\u0000${d.key}`));
       const live = fresh.filter((r) => !dropKeys.has(`${r.kind}\u0000${r.itemKey}`));
@@ -152,7 +153,7 @@ export async function flushPush(deps: FlushDeps): Promise<FlushReport> {
         const waiting: OutboxRow[] = live.filter((r) => !done.get(r.id)!.has(device.id)).map((r) => ({ id: r.id, itemKey: r.itemKey, createdAt: r.createdAt }));
         if (waiting.length === 0) continue;
         const plan = planDevice(waiting, items, device, now);
-        if (plan.held) { report.held += waiting.length; continue; }
+        if (plan.held && plan.sends.length === 0 && plan.covered.length === 0) { report.held += waiting.length; continue; }
         let allOk = true;
         for (const s of plan.sends) {
           const result = await send({ endpoint: device.endpoint, p256dh: device.p256dh, auth: device.auth }, payloadFor(s.message), config);

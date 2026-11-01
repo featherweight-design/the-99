@@ -187,3 +187,16 @@ A message carries `route`, `tag` (the kind), the item `keys`, and for a price dr
 The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbatim. Where they and the text above differ in wording, both are current.
 
 - **Push notifications** (`PUSH_ENABLED`; unset in production until Hugh turns it on; its About entry is `push`). Web push, the feed's six kinds, each with its own push tick (`user_prefs.push_kinds`, `feed_kinds`' shape and rule, `spare-request` on by default). The code is DORMANT unless `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT` are all set and well formed (`pushConfig`; Hugh sets them in Vercel himself, Production scope on BOTH projects, the private key Sensitive; `pnpm push:keys` prints a pair and touches nothing). A device is a `push_subscriptions` row; an event is a `push_outbox` row written in the SAME transaction as its feed item, never a send from inside `recordFeedItem`. Nothing is sent 21:00 to 09:00 in the device's zone (`hold.ts`); several of one kind from one job are one message, a spare request never (`message.ts`). `/api/cron/push-flush` (every 15 minutes; a request that queued a push also kicks a flush of that reader's rows with `after()`, `kick.ts`) sends the outbox through `web-push` (`flush.ts`, `send.ts`), the cron's run first queueing each subscribed reader's new sets and precons from `catalog_first_seen` itself (`catalog.ts`, the feed's own arrival rule): per device, a 404 or 410 deletes it, a transient failure retries next run. With the switch on, Home opens a landing's `push-card`/`push-combo` through the feed's card opener, strips them through `mirrorUrl` and closes every delivered notification, and the shell puts the Home slot's count on an installed app's icon (`push-landing.tsx`, `app-badge.tsx`). Proofs: `pnpm probe:push-subscriptions`, `pnpm probe:push-flush`. Plan `2026-10-22-push.md`.
+
+## Added by the seat push (Rule 0 revisions, item 6, PR 6a)
+
+- **A push kind that is not a feed kind.** `SEAT_PUSH_KIND` = `rule_zero_seat` (`feed/kinds.ts`) is allowed by `push_outbox_kind_check` through
+  `PUSH_OUTBOX_ALL_KINDS` (migration 0219) and by nothing else: it is not in `FEED_KINDS` or `PUSH_OUTBOX_KINDS`, so there is no Home row,
+  no Settings tick, no `push_kinds` key and no `stillWanted` judgment. It obeys the reader's master switch (`pushEnabled`) and needs a device.
+- **Send.** `setTable` and `reseatTable` queue `enqueueSeatPushQuery` (`push/seat.ts`) in their own transaction for each NEWLY seated player but the
+  setter, then `kickPush` after the commit. `item_key` is `table:<id>`, so a player gets one push per table however often they are reseated.
+  The row holds no words; the flush resolves host, pod and the reader's own deck through `unseenSeatNotices` (`social/rule-zero-notice.ts`), and
+  a table closed, a seat gone or a notice already seen is dropped. A seat changed or removed sends nothing.
+- **No overnight hold.** `HOLD_EXEMPT_KINDS` (`push/hold.ts`); `planDevice` plans only exempt rows inside a device's held hours and never merges a
+  seat notice (tagged by its own key).
+- **Seen** is `rule_zero_seats.notice_seen_at` (null = unseen; the setter's seat is born seen). `markSeatNoticeSeen` runs when `/friends/table/<id>` draws.

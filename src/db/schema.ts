@@ -17,7 +17,7 @@ import type { FitsDropReason } from "../lib/swaps/fits-read";
 import type { StoredFitsPick } from "../lib/swaps/fits-read-state";
 import { withPendingDrops } from "../lib/switches/pending-drop";
 import { ALL_FEATURES, SWITCH_NAMES } from "../lib/switches/registry";
-import { ANNOUNCEMENT_KINDS, PUSH_OUTBOX_KINDS, STORED_KINDS } from "../lib/feed/kinds";
+import { ANNOUNCEMENT_KINDS, PUSH_OUTBOX_ALL_KINDS, STORED_KINDS } from "../lib/feed/kinds";
 
 /**
  * Scryfall's set catalog (api.scryfall.com/sets). Sourced from /sets rather than derived
@@ -3786,6 +3786,9 @@ export const ruleZeroSeats = pgTable("rule_zero_seats", {
   // Millisecond precision, the precision a JavaScript Date carries: a revision handed to a client and back to
   // `markSeen` must compare equal to the stamp it came from, and a reseat re-writes a staying seat's stamp exactly.
   changedAt: timestamp("changed_at", { withTimezone: true, precision: 3 }).notNull().defaultNow(),
+  // When this player saw "<host> seated you at <pod>'s table": null until they open the table (or dismiss the toast).
+  // The setter's own seat is written seen. Server-side, so the push and the toast agree; a reseat carries a staying seat's stamp.
+  noticeSeenAt: timestamp("notice_seen_at", { withTimezone: true }),
 }, (t) => [
   primaryKey({ columns: [t.tableId, t.userId] }),
   unique("rule_zero_seats_seat_unique").on(t.tableId, t.seat),
@@ -3996,7 +3999,7 @@ export const pushOutbox = pgTable("push_outbox", {
 }, (t) => [
   uniqueIndex("push_outbox_item_idx").on(t.userId, t.kind, t.itemKey),
   index("push_outbox_due_idx").on(t.userId, t.createdAt).where(sql`${t.sentAt} is null`),
-  check("push_outbox_kind_check", sql`${t.kind} in (${sql.raw(PUSH_OUTBOX_KINDS.map((k) => `'${k}'`).join(", "))})`),
+  check("push_outbox_kind_check", sql`${t.kind} in (${sql.raw(PUSH_OUTBOX_ALL_KINDS.map((k) => `'${k}'`).join(", "))})`),
 ]);
 
 /**

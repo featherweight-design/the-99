@@ -12,7 +12,7 @@
  */
 import { formatCents } from "../decks/price";
 import { pushCopy } from "../copy/push";
-import type { AnnouncementFeedKind } from "../feed/kinds";
+import type { AnnouncementFeedKind, SEAT_PUSH_KIND } from "../feed/kinds";
 
 export type PushItem =
   | { kind: "new-set"; key: string; batch: string; name: string; cards: number | null; href: string }
@@ -21,6 +21,8 @@ export type PushItem =
   | { kind: "trade-match"; key: string; batch: string; friend: string; publicId: string; oracleId: string; card: string; image: string | null; askable: boolean }
   | { kind: "spare-request"; key: string; batch: string; friend: string; card: string; image: string | null; answer?: "yes" | "no" }
   | { kind: "combo"; key: string; batch: string; oracleId: string; a: string; b: string; added: string; image: string | null }
+  /** A seat notice (Rule 0 revisions, item 6): not a feed kind. `deck` is the reader's own seated deck, null while the seat waits. */
+  | { kind: typeof SEAT_PUSH_KIND; key: string; batch: string; tableId: string; host: string; pod: string; deck: string | null }
   /** A Wizards post (Announcements UI 3b): `href` is its out route (`/out/wizards/<contentful id>`), `image` its hero. */
   | { kind: AnnouncementFeedKind; key: string; batch: string; title: string; excerpt: string | null; image: string | null; href: string };
 
@@ -47,7 +49,7 @@ export type CollapseMode = "live" | "release";
 export function collapse(items: readonly PushItem[], mode: CollapseMode): PushItem[][] {
   const groups = new Map<string, PushItem[]>();
   for (const item of items) {
-    const id = item.kind === "spare-request" ? `${item.kind}\u0000${item.key}` : mode === "release" ? item.kind : `${item.kind}\u0000${item.batch}`;
+    const id = item.kind === "spare-request" || item.kind === "rule_zero_seat" ? `${item.kind}\u0000${item.key}` : mode === "release" ? item.kind : `${item.kind}\u0000${item.batch}`;
     const g = groups.get(id);
     if (g) g.push(item);
     else groups.set(id, [item]);
@@ -98,6 +100,10 @@ export function toMessage(group: readonly PushItem[]): PushMessage {
       // Never collapsed: one group, one item. An answer to the reader's own ask reads as one, landing on Your requests.
       const words = first.answer ? c.one.spareAnswer[first.answer] : c.one.spareRequest;
       return home(`spare-request:${first.key}`, keys, words.title(first.friend, first.card), words.body, { route: "/friends", image: first.image });
+    }
+    case "rule_zero_seat": {
+      // Never collapsed (one table, one reader): the table's own page, tagged by its key so two tables never replace each other.
+      return home(`rule_zero_seat:${first.key}`, keys, c.one.seat.title(first.host, first.pod), c.one.seat.body(first.deck), { route: `/friends/table/${first.tableId}` });
     }
     case "combo": {
       if (n === 1) return home("combo", keys, c.one.combo.title, c.one.combo.body(first.a, first.b, first.added), { openCard: first.oracleId, openCombo: true, image: first.image });
