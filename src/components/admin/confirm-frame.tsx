@@ -91,8 +91,7 @@ export function ConfirmFrame({
             type="button"
             onClick={onConfirm}
             disabled={pending}
-            data-tone={tone}
-            className={`h-[46px] flex-1 rounded-[10px] px-[20px] text-[14px] font-semibold disabled:opacity-60 md:h-[40px] md:flex-none ${CONFIRM_TONE[tone]}`}
+            className={`h-[46px] flex-1 rounded-[10px] ${CONFIRM_TONE[tone]} px-[20px] text-[14px] font-semibold disabled:opacity-60 md:h-[40px] md:flex-none`}
           >
             {confirmLabel}
           </button>

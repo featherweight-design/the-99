@@ -53,4 +53,14 @@ describe("ConfirmFrame", () => {
     fireEvent.click(go);
     expect(onConfirm).not.toHaveBeenCalled();
   });
+
+  it("closes on Escape, except while the write is in flight", () => {
+    const onCancel = vi.fn();
+    const { rerender } = render(<ConfirmFrame {...base} tone="danger" pending onConfirm={vi.fn()} onCancel={onCancel} />);
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onCancel).not.toHaveBeenCalled();
+    rerender(<ConfirmFrame {...base} tone="danger" pending={false} onConfirm={vi.fn()} onCancel={onCancel} />);
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(onCancel).toHaveBeenCalledTimes(1);
+  });
 });
