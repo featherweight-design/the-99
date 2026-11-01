@@ -83,7 +83,7 @@ describe("GroupDelete", () => {
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "Delete the group" })));
     expect(screen.getByRole("alert")).toHaveTextContent("Couldn’t delete the group. Nothing was deleted.");
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "Delete the group" })));
-    expect(screen.getByRole("alert")).toHaveTextContent("Lost touch with the server, so it may have deleted.");
+    expect(screen.getByRole("alert")).toHaveTextContent("Lost touch with the server, so the group may be gone.");
     expect(refresh).not.toHaveBeenCalled();
   });
 });

@@ -18,7 +18,7 @@ describe("deleteState and deleteLine", () => {
   it("refuses members alone, with the count", () => {
     expect(deleteState(2, [revoked("MOXB7K")])).toEqual({ kind: "members", members: 2 });
     expect(deleteLine(deleteState(2, []))).toEqual({ text: "It still has 2 members. Unselect them above and save, then delete it.", refused: true, codesLink: false });
-    expect(deleteLine(deleteState(1, [])).text).toBe("It still has 1 member. Unselect them above and save, then delete it.");
+    expect(deleteLine(deleteState(1, [])).text).toBe("It still has 1 member. Unselect that member above and save, then delete it.");
   });
 
   it("refuses a live code alone, naming the first live one, with the Flyer codes link", () => {

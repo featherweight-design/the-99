@@ -367,7 +367,8 @@ export const adminCopy = {
     delete: {
       action: "Delete this group",
       hint: "Only an empty group can go: no members, no flyer codes.",
-      refusedMembers: (n: number) => `It still has ${plural(n, "member", "members")}. Unselect them above and save, then delete it.`,
+      refusedMembers: (n: number) =>
+        `It still has ${plural(n, "member", "members")}. Unselect ${n === 1 ? "that member" : "them"} above and save, then delete it.`,
       // Only a live code blocks (READINESS, closed with the approval, 4): a revoked code loses its group instead.
       refusedCode: (code: string) => `It has the live flyer code ${code}. Revoke it on Invites first.`,
       refusedBoth: (n: number, code: string) =>
@@ -393,7 +394,7 @@ export const adminCopy = {
       confirm: "Delete the group",
       raced: (g: string) => `${g} isn’t empty now. Nothing was deleted.`,
       failed: "Couldn’t delete the group. Nothing was deleted.",
-      lost: "Lost touch with the server, so it may have deleted. Reload the page before pressing again.",
+      lost: "Lost touch with the server, so the group may be gone. Reload the page before pressing again.",
       toast: (g: string) => `Deleted ${g}.`,
       toastDismiss: "Dismiss",
     },
