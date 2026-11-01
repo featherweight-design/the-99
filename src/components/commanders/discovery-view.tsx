@@ -26,8 +26,7 @@ import { inSets as inSetsOf, ordered, searchRows, settleOrder, upper } from "../
 // value because `encode.ts` imports nothing but types from `list.ts`, which
 // reaches `src/db/index.ts` (whose body throws when DATABASE_URL is unset), so
 // the database module never comes with it. `window.ts` holds to the same rule.
-import { decodeDiscovery, type DiscoveryRow, type EncodedDiscovery } from "../../lib/discovery/encode";
-import type { DiscoveryItem } from "../../lib/discovery/list";
+import { decodeDiscovery, isDrawn, type DiscoveryRow, type EncodedDiscovery } from "../../lib/discovery/encode";
 import { useDrawFields } from "./use-draw-fields";
 import { filePrintedIn, type LanePrintedIn, type PrintedInSet } from "../../lib/sets/printed-in";
 import { mergeSets, printedInOptions } from "../../lib/commanders/printed-in-lane";
@@ -35,6 +34,8 @@ import { printedInLabel } from "./rack/chip-line";
 import { FilterRack } from "./rack/filter-rack";
 import { PageHeader } from "./page-header";
 import { CommanderRow } from "./commander-row";
+import { CommanderUndoRow } from "./commander-undo-row";
+import { useStandingHides } from "./use-standing-hides";
 import { commanderDetailHref } from "./list-nav";
 import { useDiscoveryCache } from "./discovery-cache";
 import { laneHref, useRerankAnnouncement } from "./list-nav";
@@ -51,7 +52,7 @@ import { ZERO_PRIMARY, ZERO_SECONDARY, ZeroState } from "../ui/zero-state";
 import { GhostButton, PrimaryButton } from "../ui/button";
 import { ExcludedMatchAside } from "./excluded-match";
 import { FLOOR_PCT } from "../../lib/discovery/floor";
-import { findExcludedMatches } from "../../app/commanders/actions";
+import { findExcludedMatches, hideCommanderAction } from "../../app/commanders/actions";
 // Type-only for the same reason `DiscoveryList` is: the module it comes from is
 // imported by the server action, which reaches the database.
 import type { ExcludedMatch } from "../../lib/discovery/excluded-match";
@@ -112,8 +113,8 @@ export function DiscoveryView({
   // back out of the cache. A ranking already seen this visit is served with no
   // request at all, which is also what makes the design table's "motion: none"
   // true for it — there is nothing to wait for.
-  const { view: discovery, viewBasis, serve } = useDiscoveryCache(served, basis);
-  // Each row's sets, keyed by slug (a discover row ships no oracle id). Filed from every payload
+  const { view: discovery, viewBasis, serve, forget } = useDiscoveryCache(served, basis);
+  // Each row's sets, keyed by slug (only a drawn row carries its oracle id). Filed from every payload
   // this visit has seen rather than replaced: a card's printings do not depend on which ranking
   // shipped it, and a cached ranking has no index of its own when it comes back. Adjusted during
   // render, like the ranking cache, so no frame shows rows without their sets.
@@ -133,6 +134,49 @@ export function DiscoveryView({
       setKnownSets([]);
     }
   }
+  // The rows hidden from this list in this visit, each an Undo row in its place until the reader leaves the tab
+  // (hide a commander, README §2). The hide drops the reader's list cache, so the next payload of this sort (often
+  // the action's own response) no longer carries the row: it is put back where it stood, and the ranks renumbered
+  // over the list it stands in, so rows below keep their numbers while it does. Another sort's ranking held in the
+  // client cache still carries it if it was served before the hide, and there it draws as the Undo row too: a sort
+  // flip never brings a hidden row back.
+  //
+  // A ranking read AFTER a hide lacks the row and has no place for it, so it draws no Undo row: the row is hidden
+  // there, as asked. Once the hide is undone, every such ranking filed in the client cache is dropped (`onUndone`),
+  // so flipping to it reads it fresh, with the row back where it ranks.
+  const hides = useStandingHides<DiscoveryRow>();
+  const { restore, standing } = hides;
+  const items = useMemo(() => {
+    const restored = restore(discovery.items, discovery.sort);
+    if (restored === discovery.items) return restored;
+    // The server ranks every row it ships 1..n in list order (`assembleDiscoveryWithIds`), so the list with its
+    // Undo rows back in is renumbered the same way, from the first row the restore moved: every row above it is
+    // the payload's own, numbered as served. A withheld row has no rank yet and is numbered too: its fields come
+    // from the payload that no longer carries the hidden row, whose rank for it is one short per row put back above
+    // it, and a rank the row holds wins over the one its fields bring (`useWithheldFields`).
+    let first = 0;
+    while (first < restored.length && restored[first] === discovery.items[first]) first++;
+    const out = restored.slice();
+    for (let i = first; i < out.length; i++) {
+      if (out[i].rank !== i + 1) out[i] = { ...out[i], rank: i + 1 };
+    }
+    return out;
+  }, [restore, discovery.items, discovery.sort]);
+  // The lists a press places its row in, read when it is pressed and again by Try again: kept current here rather
+  // than closed over by the render that drew the row.
+  const pressLists = useRef<readonly (readonly [string, readonly DiscoveryRow[]])[]>([]);
+  useEffect(() => {
+    pressLists.current = [[discovery.sort, items]];
+  }, [discovery.sort, items]);
+  const readPressLists = useCallback(() => pressLists.current, []);
+  // An undone hide: every ranking filed in the cache that the row was not placed in and does not carry was read
+  // after the hide, so it is dropped and read fresh when it is asked for again.
+  const forgetReadAfter = useCallback(
+    (slug: string, placed: ReadonlySet<string>) =>
+      forget((sort, list) => !placed.has(sort) && !list.items.some((r) => r.slug === slug)),
+    [forget],
+  );
+
   const place = usePlace();
   const search = useSearchParams();
   const router = useRouter();
@@ -229,7 +273,7 @@ export function DiscoveryView({
   // Search narrows before colour, so the colour figures below describe the list
   // the reader is actually looking at. The steps live in `lib/discovery/window`,
   // which the server reads too, to know the URL's first window.
-  const searched = useMemo(() => searchRows(discovery.items, params.q), [discovery.items, params.q]);
+  const searched = useMemo(() => searchRows(items, params.q), [items, params.q]);
 
   // `Printed in` (decision 9). With no index the selection is not applied: there is nothing to
   // apply it against, and the control is not drawn either.
@@ -260,12 +304,12 @@ export function DiscoveryView({
         ? printedInOptions(
             knownSets,
             codesBySlug,
-            discovery.items.map((r) => r.slug),
-            filterByColors(discovery.items, colors, params.match).map((r) => r.slug),
+            items.map((r) => r.slug),
+            filterByColors(items, colors, params.match).map((r) => r.slug),
             setCodes,
           )
         : undefined,
-    [codesBySlug, knownSets, discovery.items, colors, params.match, setCodes],
+    [codesBySlug, knownSets, items, colors, params.match, setCodes],
   );
 
   // What `Exactly` costs against `Any`, counted over the SAME searched list on
@@ -336,22 +380,27 @@ export function DiscoveryView({
   // rows already drawn on screen, the list `aria-busy`, until they do: about one round trip, and
   // no drawn waiting state, which would be a Design question this does not answer.
   const wanted = useMemo(() => filtered.slice(0, shown), [filtered, shown]);
+  // An Undo row draws a name and nothing else, so its fields are never asked for: the route reads a payload that
+  // no longer carries a hidden row, and a wanted row it leaves out reads the whole page again.
+  const fetchWanted = useMemo(() => wanted.filter((r) => standing(r.slug) === null), [wanted, standing]);
   const refreshStale = useCallback(() => router.refresh(), [router]);
   // The DRAWN ranking's basis, not the prop's: a ranking served from the cache was counted by the
-  // basis of the payload that filed it, which an app-wide flip since may have moved off.
-  const { resolve } = useDrawFields({ sort: discovery.sort, basis: viewBasis }, discovery.items, wanted, refreshStale);
-  const resolvedWanted = wanted.map(resolve);
+  // basis of the payload that filed it, which an app-wide flip since may have moved off. Over the
+  // payload as served, never the restored list: fields belong to the payload they complete, and the
+  // restored list is a new array at every hide and undo.
+  const { resolve } = useDrawFields({ sort: discovery.sort, basis: viewBasis }, discovery.items, fetchWanted, refreshStale);
+  const resolvedWanted: (DiscoveryRow | null)[] = wanted.map((r) => (standing(r.slug) === null ? resolve(r) : r));
   const complete = resolvedWanted.every((r) => r !== null);
   // The last rows drawn WHOLE, kept as drawn: a change of order resolves against another
-  // ranking's fields, which the rows on screen may not have.
-  const [held, setHeld] = useState<{ from: DiscoveryRow[]; rows: DiscoveryItem[] }>(() => ({
+  // ranking's fields, which the rows on screen may not have. Every row here is drawn, or an Undo row.
+  const [held, setHeld] = useState<{ from: DiscoveryRow[]; rows: DiscoveryRow[] }>(() => ({
     from: wanted,
-    rows: resolvedWanted.filter((r): r is DiscoveryItem => r !== null),
+    rows: resolvedWanted.filter((r): r is DiscoveryRow => r !== null),
   }));
   if (complete && held.from !== wanted) {
-    setHeld({ from: wanted, rows: resolvedWanted as DiscoveryItem[] });
+    setHeld({ from: wanted, rows: resolvedWanted as DiscoveryRow[] });
   }
-  const rows = complete ? (resolvedWanted as DiscoveryItem[]) : held.rows;
+  const rows = complete ? (resolvedWanted as DiscoveryRow[]) : held.rows;
   // The window the reader can see, for the reveal's focus and announcement: a row whose fields
   // are still arriving is not revealed yet, so neither is it announced or focused.
   const settledShown = complete ? shown : held.rows.length;
@@ -401,8 +450,8 @@ export function DiscoveryView({
   const nameMatchesAny = useMemo(() => {
     if (trimmedQuery === "") return false;
     const q = trimmedQuery.toLowerCase();
-    return discovery.items.some((r) => r.name.toLowerCase().includes(q));
-  }, [discovery.items, trimmedQuery]);
+    return items.some((r) => r.name.toLowerCase().includes(q));
+  }, [items, trimmedQuery]);
   // The matches the SERVER removed, for the settled query only: one round trip
   // per query the reader has stopped typing, and none at all until the field
   // holds something the index can answer (the action's own floor is 2 too).
@@ -556,8 +605,8 @@ export function DiscoveryView({
       resolveExclusionLine({
         // Over the rows the set filter left, so the clause answers for the colors alone.
         colorExcluded:
-          inSets(discovery.items).length -
-          filterByColors(inSets(discovery.items), colors, params.match).length,
+          inSets(items).length -
+          filterByColors(inSets(items), colors, params.match).length,
         colors,
         join: params.match,
         floorExcluded: discovery.floorExcluded,
@@ -565,7 +614,7 @@ export function DiscoveryView({
         bestPct: discovery.bestPct,
         sort: discovery.sort,
       }),
-    [discovery, inSets, colors, params.match],
+    [discovery, items, inSets, colors, params.match],
   );
 
   // Where the owned lane's copy of this search lives. The `scope` cause is the
@@ -629,7 +678,7 @@ export function DiscoveryView({
         lane="discover"
         onChange={update}
         shown={filtered.length}
-        total={discovery.items.length}
+        total={items.length}
         orderPending={navPending}
         excludedByExactly={excludedByExactly}
         chooseLink={chooseLink}
@@ -724,10 +773,10 @@ export function DiscoveryView({
             body={
               <>
                 {bothLit
-                  ? emptyCopy.filteredTogetherBody(colorWords(colors), printedInLabel(setCodes), discovery.items.length)
+                  ? emptyCopy.filteredTogetherBody(colorWords(colors), printedInLabel(setCodes), items.length)
                   : setCodes.length > 0
-                    ? emptyCopy.filteredSetsBody(printedInLabel(setCodes), discovery.items.length)
-                    : emptyCopy.filteredBody(colorWords(colors), discovery.items.length)}
+                    ? emptyCopy.filteredSetsBody(printedInLabel(setCodes), items.length)
+                    : emptyCopy.filteredBody(colorWords(colors), items.length)}
                 {builtClause ? (
                   <>
                     {" "}
@@ -827,8 +876,34 @@ export function DiscoveryView({
                   {/* `item.rank`, not the map index — see above. `priceOk` is a
                       LIST-level fact: one read serves every row, so a failed one
                       omits the figure on all of them rather than on some. */}
+                  {standing(item.slug) ? (
+                    <CommanderUndoRow
+                      name={item.name}
+                      refused={standing(item.slug) === "refused"}
+                      onUndo={() => hides.undo(item.slug)}
+                      undoRef={hides.register("undo", item.slug)}
+                      frameRef={hides.register("line", item.slug)}
+                    />
+                  ) : isDrawn(item) ? (
                   <CommanderRow
                     position={i}
+                    onHide={() => {
+                      // The drawn row's oracle id, which arrived with its draw fields from the payload it draws.
+                      const oracleId = item.oracleId;
+                      hides.hide({
+                        slug: item.slug,
+                        name: item.name,
+                        lists: readPressLists,
+                        // The row as drawn: the list may hold it without its withheld fields.
+                        snapshot: item,
+                        act: () =>
+                          oracleId
+                            ? hideCommanderAction(oracleId).then((ok) => (ok ? oracleId : null))
+                            : Promise.resolve(null),
+                        onUndone: (placed) => forgetReadAfter(item.slug, placed),
+                      });
+                    }}
+                    hideRef={hides.register("hide", item.slug)}
                     item={{
                       slug: item.slug,
                       name: item.name,
@@ -854,6 +929,7 @@ export function DiscoveryView({
                       href: commanderDetailHref(item.slug, "all"),
                     }}
                   />
+                  ) : null}
                 </li>
               ))}
 
@@ -897,6 +973,7 @@ export function DiscoveryView({
       <span className="sr-only" aria-live="polite" aria-atomic="true">
         {announcement}
       </span>
+      {hides.toast}
     </>
   );
 }

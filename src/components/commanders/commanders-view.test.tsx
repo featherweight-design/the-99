@@ -47,9 +47,15 @@ const replaceState = vi
 const urls = () => replaceState.mock.calls.map((c) => c[2]);
 
 const rememberCommandersAvail = vi.fn();
+// The hide and its undo (hide a commander, README §2): the action is the boundary, and the real one reaches the
+// database through `lib/commanders/hidden`.
+const hideCommanderAction = vi.fn<(oracleId: string) => Promise<boolean>>();
+const unhideCommanderAction = vi.fn<(oracleId: string) => Promise<boolean>>();
 vi.mock("../../app/commanders/actions", () => ({
   retryRecs: vi.fn(),
   rememberCommandersAvail: (...a: unknown[]) => rememberCommandersAvail(...a),
+  hideCommanderAction: (id: string) => hideCommanderAction(id),
+  unhideCommanderAction: (id: string) => unhideCommanderAction(id),
 }));
 
 function results(n: number, colorIdentity: string[] = ["R"]): CommanderRowItem[] {
@@ -913,5 +919,176 @@ describe("the first-run banner's door", () => {
     expect(screen.queryByRole("link", { name: "Help me choose →" })).toBeNull();
     rerender(<CommandersView {...props} firstRun={false} helpMeChoose />);
     expect(screen.queryByRole("link", { name: "Help me choose →" })).toBeNull();
+  });
+});
+
+// Hide a commander (design_handoff_the99_hide_commander README §1-2, the Rows and Undo boards).
+describe("CommandersView · hiding a row", () => {
+  const ALL = "All my cards";
+  const FREE = "Free cards only";
+  const segment = (name: string) => screen.getAllByRole("radio", { name })[0];
+  const glyph = (name: string) => screen.getByRole("button", { name: `Hide ${name}` });
+  const undo = (name: string) => screen.queryByRole("button", { name: `Undo hiding ${name}` });
+  const undoRow = (name: string) => screen.queryByText(`${name} hidden`);
+  const rowLink = (name: string) => screen.queryByRole("link", { name: new RegExp(`^${name} · `) });
+
+  beforeEach(() => {
+    hideCommanderAction.mockReset();
+    unhideCommanderAction.mockReset();
+  });
+
+  it("turns the row into the Undo row in place, focuses Undo, and keeps the ranks below", async () => {
+    hideCommanderAction.mockResolvedValue(true);
+    const list = results(3);
+    const { again } = view(list);
+
+    await act(async () => {
+      fireEvent.click(glyph("General 0"));
+    });
+
+    expect(hideCommanderAction).toHaveBeenCalledWith("oracle-0");
+    expect(undoRow("General 0")).toBeInTheDocument();
+    expect(rowLink("General 0")).toBeNull();
+    // The pressed glyph is gone, so focus moves to the control that replaced it.
+    expect(undo("General 0")).toHaveFocus();
+    // First in the list still: in place, not appended.
+    expect(cards()[0]).toHaveTextContent("General 0 hidden");
+
+    // The action dropped the list cache, so the next payload no longer carries the row. The Undo row stands
+    // where it was, and the rows below keep their numbers until the next load.
+    again(list.slice(1));
+    expect(cards()[0]).toHaveTextContent("General 0 hidden");
+    expect(within(cards()[1]).getAllByText("2").length).toBeGreaterThan(0);
+    expect(within(cards()[2]).getAllByText("3").length).toBeGreaterThan(0);
+  });
+
+  it("brings a refused hide's row back where it was, with the shared toast", async () => {
+    hideCommanderAction.mockResolvedValue(false);
+    view(results(3));
+
+    await act(async () => {
+      fireEvent.click(glyph("General 1"));
+    });
+
+    expect(undoRow("General 1")).toBeNull();
+    expect(cards()[1]).toHaveTextContent("General 1");
+    expect(glyph("General 1")).toHaveFocus();
+    const toast = screen.getByRole("alert");
+    expect(toast).toHaveTextContent("We couldn’t hide General 1.");
+
+    // Try again asks the same hide again.
+    hideCommanderAction.mockResolvedValue(true);
+    await act(async () => {
+      fireEvent.click(within(toast).getByRole("button", { name: "Try again" }));
+    });
+    expect(hideCommanderAction).toHaveBeenCalledTimes(2);
+    expect(undoRow("General 1")).toBeInTheDocument();
+  });
+
+  it("treats a hide that throws as refused", async () => {
+    hideCommanderAction.mockRejectedValue(new Error("down"));
+    view(results(2));
+    await act(async () => {
+      fireEvent.click(glyph("General 0"));
+    });
+    expect(undoRow("General 0")).toBeNull();
+    expect(screen.getByRole("alert")).toHaveTextContent("We couldn’t hide General 0.");
+  });
+
+  it("puts the row back at once on Undo, in place and with its rank, from a payload that lost it", async () => {
+    hideCommanderAction.mockResolvedValue(true);
+    let answer!: (ok: boolean) => void;
+    unhideCommanderAction.mockReturnValue(new Promise((resolve) => (answer = resolve)));
+    const list = results(3);
+    const { again } = view(list);
+    await act(async () => {
+      fireEvent.click(glyph("General 0"));
+    });
+    again(list.slice(1));
+
+    await act(async () => {
+      fireEvent.click(undo("General 0")!);
+    });
+    // Optimistic: back before the server answers.
+    expect(unhideCommanderAction).toHaveBeenCalledWith("oracle-0");
+    expect(undoRow("General 0")).toBeNull();
+    expect(cards()[0]).toHaveTextContent("General 0");
+    expect(within(cards()[0]).getAllByText("1").length).toBeGreaterThan(0);
+    expect(glyph("General 0")).toHaveFocus();
+    await act(async () => answer(true));
+    expect(cards()[0]).toHaveTextContent("General 0");
+  });
+
+  it("drops Undo and points to Hidden when the undo is refused", async () => {
+    hideCommanderAction.mockResolvedValue(true);
+    unhideCommanderAction.mockResolvedValue(false);
+    view(results(2));
+    await act(async () => {
+      fireEvent.click(glyph("General 0"));
+    });
+    await act(async () => {
+      fireEvent.click(undo("General 0")!);
+    });
+
+    expect(undoRow("General 0")).toBeInTheDocument();
+    expect(undo("General 0")).toBeNull();
+    expect(screen.getByRole("alert")).toHaveTextContent("Couldn’t bring that back. Unhide it from Hidden.");
+  });
+
+  // The free ranking is a delta indexed into the canonical list, and both arrive in one payload: a hide in one mode
+  // must hold in the other, and the payload that comes back without the row must not bring it back on a flip.
+  it("keeps a hidden row out of both rankings across a Build from flip", async () => {
+    hideCommanderAction.mockResolvedValue(true);
+    const list = results(3);
+    const free = [list[2], list[0], list[1]];
+    const { again } = view(list, { freeItems: free });
+
+    await act(async () => {
+      fireEvent.click(glyph("General 0"));
+    });
+
+    fireEvent.click(segment(FREE));
+    expect(rowLink("General 0")).toBeNull();
+    expect(cards()[1]).toHaveTextContent("General 0 hidden");
+
+    // The server's next payload leaves it out of both rankings.
+    const kept = list.slice(1);
+    again(kept, { avail: "free", freeItems: [list[2], list[1]] });
+    expect(rowLink("General 0")).toBeNull();
+    expect(cards()[1]).toHaveTextContent("General 0 hidden");
+
+    fireEvent.click(segment(ALL));
+    expect(rowLink("General 0")).toBeNull();
+    expect(cards()[0]).toHaveTextContent("General 0 hidden");
+  });
+
+  it("keeps a hidden row out when the payload served before the hide comes round again", async () => {
+    hideCommanderAction.mockResolvedValue(true);
+    const list = results(3);
+    const { again } = view(list, { freeItems: list });
+    await act(async () => {
+      fireEvent.click(glyph("General 1"));
+    });
+    // The same payload, the row still in it (the action's response not yet applied): the Undo row, not the row.
+    again(list, { freeItems: list });
+    fireEvent.click(segment(FREE));
+    fireEvent.click(segment(ALL));
+    expect(rowLink("General 1")).toBeNull();
+    expect(undoRow("General 1")).toBeInTheDocument();
+  });
+
+  it("re-reads the place head's figures once a hide has gone through", async () => {
+    hideCommanderAction.mockResolvedValue(true);
+    const heard = vi.fn();
+    window.addEventListener("the99:commander-counts-stale", heard);
+    try {
+      view(results(2));
+      await act(async () => {
+        fireEvent.click(glyph("General 0"));
+      });
+      expect(heard).toHaveBeenCalledTimes(1);
+    } finally {
+      window.removeEventListener("the99:commander-counts-stale", heard);
+    }
   });
 });

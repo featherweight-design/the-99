@@ -13,6 +13,7 @@ import { usePathname } from "next/navigation";
 import { PlaceStrip, type PlaceTab } from "../place/place-strip";
 import { refreshCommanderCounts } from "../../app/commanders/actions";
 import { commandersPlaceCopy } from "../../lib/copy/commanders-place";
+import { COMMANDER_COUNTS_STALE_EVENT } from "./counts-event";
 
 export type CommandersPlace = "foryou" | "discover" | "choose";
 
@@ -44,7 +45,7 @@ export function CommandersPlaceHead({ helpMeChoose, counts: initialCounts }: { h
     throw new Error(`CommandersPlaceHead rendered on an unrecognised path: ${pathname}`);
   }
   // The layout that mounts this does not re-run on a sibling navigation, so the figures are re-read here on every
-  // tab switch and on window focus, and only the latest of several in-flight reads may apply. A failed read leaves
+  // tab switch, on window focus and after a row's hide or undo, and only the latest of several in-flight reads may apply. A failed read leaves
   // the line as it was. The first pass is skipped: the layout's props are already fresh.
   const [counts, setCounts] = useState<Counts>(initialCounts);
   const latest = useRef(0);
@@ -61,6 +62,7 @@ export function CommandersPlaceHead({ helpMeChoose, counts: initialCounts }: { h
       })
       .catch(() => {});
   }, [pathname]);
+  // On window focus, and when a row on the list below has just been hidden or brought back.
   useEffect(() => {
     const onFocus = () => {
       const ticket = ++latest.current;
@@ -71,7 +73,11 @@ export function CommandersPlaceHead({ helpMeChoose, counts: initialCounts }: { h
         .catch(() => {});
     };
     window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
+    window.addEventListener(COMMANDER_COUNTS_STALE_EVENT, onFocus);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener(COMMANDER_COUNTS_STALE_EVENT, onFocus);
+    };
   }, []);
   const line = counts ? commandersPlaceCopy.count(counts.owned, counts.discover) : "";
   return (

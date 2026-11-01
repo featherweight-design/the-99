@@ -73,7 +73,9 @@ export default async function DiscoverPage({
     : null;
   const first = discoveryRows(decoded.items, settleOrder(params, decoded.sort), codesBySlug)
     .slice(0, REVEAL_STEP);
-  const shipped = cutToWindow(encoded, new Set(first.map((r) => r.slug)));
+  // The window's rows carry their oracle ids, which the row's Hide hands `hideCommanderAction`: from this entry, so
+  // each is the card its row draws. The withheld rows' arrive with their other draw fields.
+  const shipped = cutToWindow(encoded, new Set(first.map((r) => r.slug)), oracleIds);
 
   return (
     <section className="flex flex-col min-h-screen">

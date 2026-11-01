@@ -7,13 +7,15 @@
 // line never distinguished anything. A lane-specific line reopens that ruling.
 //
 // NO `"use client"`. The disclosure trigger retired with the tag list, so the
-// row holds no state and announces nothing.
+// row holds no state and announces nothing. Its one control, Hide (hide a
+// commander, README §1), is the caller's: `onHide` is handed in by For you and
+// Discover, both client views, which own the hide and the Undo row it leaves.
 //
 // Two sentences and three figures. The first sentence is what the commander
 // does, the second is what the reader's collection has never done, and
 // everything else waits for Commander Details.
 
-import { type ReactNode } from "react";
+import { type ReactNode, type Ref } from "react";
 import Link from "next/link";
 import { formatCents } from "../../lib/decks/price";
 import { commanderRowCopy, type GapPart } from "../../lib/copy/commander-row";
@@ -32,6 +34,8 @@ import { FitBar } from "./fit-bar";
 import { commanderDisplayName } from "../../lib/cards/printed-name";
 import { IdentityPips } from "./commander-art";
 import { PendingTrack } from "../shell/pending-track";
+import { EyeOff } from "./eye-off";
+import { hideCommanderCopy } from "../../lib/copy/commander-explained";
 
 const { price: priceCopy, untagged } = discoveryCopy;
 
@@ -246,7 +250,19 @@ function PriceFigure({ price, priceOk }: { price: PriceSlotValue; priceOk: boole
     sees while the page loads. Every row below waits for hydration and the viewport. */
 export const EAGER_ART_ROWS = 5;
 
-export function CommanderRow({ item, position = 0 }: { item: CommanderRowView; position?: number }) {
+export function CommanderRow({
+  item,
+  position = 0,
+  onHide,
+  hideRef,
+}: {
+  item: CommanderRowView;
+  position?: number;
+  /** Hide this commander (README §1). Absent, the row draws no glyph and its foot is as it shipped. */
+  onHide?: () => void;
+  /** The glyph, for a caller that returns focus to it (a refused hide, an Undo). */
+  hideRef?: Ref<HTMLButtonElement>;
+}) {
   // An unmeasured commander keeps its own denominator: `/100` under a score out
   // of 40 would be a reading nobody took.
   //
@@ -288,8 +304,9 @@ export function CommanderRow({ item, position = 0 }: { item: CommanderRowView; p
       className="relative group transition-colors hover:bg-[color:var(--elevated-hover)] has-[[data-pending]]:bg-[color:var(--elevated-hover)]"
       style={{ borderBottom: "1px solid var(--border)" }}
     >
-      {/* Stretched link keeps the whole row clickable. The row has no other
-          control on it, so nothing has to sit above this. */}
+      {/* Stretched link keeps the whole row clickable. Its one other control,
+          the Hide glyph beside the Fit bar, sits above it (`z-[2]`), so a
+          press on the glyph never opens the page. */}
       {/* THE NAME COMES FIRST, and the figure after it. This link is an empty
           stretched box, so its `aria-label` IS its whole accessible name — a
           label of `scoreAria` alone gave a screen reader twenty-five links
@@ -503,13 +520,54 @@ export function CommanderRow({ item, position = 0 }: { item: CommanderRowView; p
             `aria-hidden`: the link's own name already carries Fit. The legend
             is drawn from `sm` up by `FitBar` itself, so passing `legend`
             unconditionally still hides the labels on a 390px foot line. */}
-        <div
-          aria-hidden="true"
-          className="w-full"
-          style={{ marginTop: 2, maxWidth: 520 }}
-        >
-          <FitBar fit={fitSegments(item)} legend />
-        </div>
+        {onHide ? (
+          // THE HIDE GLYPH SHARES THE BAR'S LINE (R1c option A, the Rows
+          // board's `.fbrow`). Phone: the bar takes what the 44px target
+          // leaves. Desktop: the bar keeps its 520px and legend, and the glyph
+          // sits at the row's right edge, under the Fit chip. The margins are
+          // the board's `.hb.bb` exactly (-19/-14/-19/0 phone, -18/-14/-18/auto
+          // desktop) and keep the row's height. As the board draws it, the 44px
+          // target's centre sits 2px above the track's midline (3px against 5px
+          // phone, 4px against 6px desktop), and on a phone its right edge runs
+          // 1px past the body's 13px padding.
+          //
+          // A SIBLING of the bar's wrapper, never inside it: the wrapper is
+          // `aria-hidden`, and the glyph is a real button.
+          <div className="flex items-start gap-[6px]">
+            <div
+              aria-hidden="true"
+              className="min-w-0 flex-1 sm:flex-[0_1_520px]"
+              style={{ marginTop: 2 }}
+            >
+              <FitBar fit={fitSegments(item)} legend />
+            </div>
+            <button
+              ref={hideRef}
+              type="button"
+              data-hide-glyph=""
+              onClick={onHide}
+              aria-label={hideCommanderCopy.rowHide(commanderDisplayName(item))}
+              title={hideCommanderCopy.rowHide(commanderDisplayName(item))}
+              // Bare: no plate. `--fg-faint` at rest, the quietest thing on the
+              // row; `--fg` on hover (a fine pointer) and pressed, where it sits
+              // on an `--elevated` disc; the app's 2px accent ring on focus.
+              className="group/hide relative z-[2] flex-none flex items-center justify-center w-[44px] h-[44px] mt-[-19px] mb-[-19px] mr-[-14px] sm:mt-[-18px] sm:mb-[-18px] sm:ml-auto p-0 border-0 bg-transparent cursor-pointer text-[color:var(--fg-faint)] hover:text-[color:var(--fg)] active:text-[color:var(--fg)] focus-visible:outline-none"
+            >
+              <EyeOff
+                size={16}
+                className="box-content rounded-[6px] group-active/hide:bg-[color:var(--elevated)] group-active/hide:p-[5px] group-active/hide:m-[-5px] group-focus-visible/hide:outline-2 group-focus-visible/hide:outline-offset-4 group-focus-visible/hide:outline-[color:var(--accent)]"
+              />
+            </button>
+          </div>
+        ) : (
+          <div
+            aria-hidden="true"
+            className="w-full"
+            style={{ marginTop: 2, maxWidth: 520 }}
+          >
+            <FitBar fit={fitSegments(item)} legend />
+          </div>
+        )}
       </div>
     </div>
   );

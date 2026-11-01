@@ -29,8 +29,10 @@ import { filePrintedIn, isPrintedIn, type LanePrintedIn } from "../../lib/sets/p
 import { printedInLabel } from "./rack/chip-line";
 import { filterCopy } from "../../lib/copy/lanes";
 import { availabilityCopy } from "../../lib/copy/availability";
-import { rememberCommandersAvail } from "../../app/commanders/actions";
+import { hideCommanderAction, rememberCommandersAvail } from "../../app/commanders/actions";
 import { CommanderRow } from "./commander-row";
+import { CommanderUndoRow } from "./commander-undo-row";
+import { useStandingHides } from "./use-standing-hides";
 import { commanderDetailHref } from "./list-nav";
 import { FilterRack } from "./rack/filter-rack";
 import { GuidedBanner } from "./guided-banner";
@@ -149,10 +151,27 @@ export function CommandersView({
   // Rebuilt once per payload, not per flip: everything below reads the free
   // ranking as the plain list it was before the diff, and the toggle stays the
   // state change the design requires it to be.
-  const freeItems = useMemo(
+  const served = useMemo(
     () => (freeRanking ? fromFreeDelta(results, freeRanking) : null),
     [results, freeRanking],
   );
+
+  // The rows hidden from this list in this visit (hide a commander, README §2). Each keeps its place in BOTH
+  // rankings as an Undo row until the reader leaves the tab, whichever mode it was pressed in, so a flip of
+  // `Build from` never brings a hidden row back from the ranking that still carries it, and never drops its
+  // Undo either. The free ranking is a delta indexed into the canonical list (`free-delta.ts`), so it is
+  // restored as the list it decodes to, after the decode: the delta stays aligned with the payload it came in.
+  const hides = useStandingHides<CommanderRowItem>();
+  const { restore } = hides;
+  const canonical = useMemo(() => restore(results, "all"), [restore, results]);
+  const freeItems = useMemo(() => (served ? restore(served, "free") : null), [restore, served]);
+  // The lists a press places its row in, read when it is pressed and again by Try again: kept current here rather
+  // than closed over by the render that drew the row.
+  const pressLists = useRef<readonly (readonly [string, readonly CommanderRowItem[]])[]>([]);
+  useEffect(() => {
+    pressLists.current = freeItems ? [["all", canonical], ["free", freeItems]] : [["all", canonical]];
+  }, [canonical, freeItems]);
+  const readPressLists = useCallback(() => pressLists.current, []);
 
   // One parameter object for the whole rack, seeded off the URL. `avail` is the
   // exception, and the rule has two halves: the URL is the reader's request, the
@@ -328,7 +347,7 @@ export function CommandersView({
   // missing keeps the page rendering something true rather than nothing — belt
   // and braces next to the reconciliation above, and reachable only on the
   // render that hands the mode back.
-  const active = avail === "free" && freeItems ? freeItems : results;
+  const active = avail === "free" && freeItems ? freeItems : canonical;
 
   // Search narrows before colour, so the colour counts below describe the list
   // the reader is actually looking at. Name matching only, case-insensitive,
@@ -408,16 +427,18 @@ export function CommandersView({
   const sleevedByFree = useMemo(() => {
     if (avail !== "free" || !freeItems) return null;
     const q = params.q.trim().toLowerCase();
-    const searchedAll = inSets(q === "" ? results : results.filter((r) => matchesQuery(r, q)));
+    const searchedAll = inSets(q === "" ? canonical : canonical.filter((r) => matchesQuery(r, q)));
     const hidden = filterByColors(searchedAll, colors, params.match).length - filtered.length;
     return hidden > 0 ? hidden : null;
-  }, [avail, freeItems, results, params.q, inSets, colors, params.match, filtered.length]);
+  }, [avail, freeItems, canonical, params.q, inSets, colors, params.match, filtered.length]);
 
   // Two rank maps, each built once over the FULL candidate set in that mode's
   // ordering. Both are pre-filter, so filtering still never renumbers: a hidden
   // rank leaves a gap rather than closing it. The numeral does move when the
   // toggle moves, and that is the point — the score itself changed.
-  const rankAll = useMemo(() => rankMap(results), [results]);
+  // Over the lists with their Undo rows still in them: rows below a hidden one keep their numbers while its
+  // Undo row stands, and the next load ranks without it (README §2).
+  const rankAll = useMemo(() => rankMap(canonical), [canonical]);
   const rankFreeBySlug = useMemo(
     () => (freeItems ? rankMap(freeItems) : null),
     [freeItems],
@@ -703,8 +724,26 @@ export function CommandersView({
                       is read off ownership (D1), so the receipt counts, the
                       delta and the availability mode no longer reach the row —
                       they belong to surfaces that survived it. */}
+                  {hides.standing(r.slug) ? (
+                    <CommanderUndoRow
+                      name={commanderDisplayName(r)}
+                      refused={hides.standing(r.slug) === "refused"}
+                      onUndo={() => hides.undo(r.slug)}
+                      undoRef={hides.register("undo", r.slug)}
+                      frameRef={hides.register("line", r.slug)}
+                    />
+                  ) : (
                   <CommanderRow
                     position={i}
+                    onHide={() =>
+                      hides.hide({
+                        slug: r.slug,
+                        name: commanderDisplayName(r),
+                        lists: readPressLists,
+                        act: () => hideCommanderAction(r.oracleId).then((ok) => (ok ? r.oracleId : null)),
+                      })
+                    }
+                    hideRef={hides.register("hide", r.slug)}
                     item={{
                       slug: r.slug,
                       name: r.name,
@@ -734,6 +773,7 @@ export function CommandersView({
                       href: commanderDetailHref(r.slug, avail),
                     }}
                   />
+                  )}
                 </li>
               ))}
               {remaining > 0 && (
@@ -751,6 +791,7 @@ export function CommandersView({
           </>
         )}
       </div>
+      {hides.toast}
     </div>
   );
 }

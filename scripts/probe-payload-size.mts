@@ -25,7 +25,7 @@ import { Pool, neonConfig } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-serverless";
 import { sql } from "drizzle-orm";
 import ws from "ws";
-import { loadDiscovery } from "../src/lib/discovery/list";
+import { loadDiscoveryWithIds } from "../src/lib/discovery/list";
 import { cutToWindow, decodeDiscovery, encodeDiscovery } from "../src/lib/discovery/encode";
 import { discoveryRows } from "../src/lib/discovery/window";
 import { REVEAL_STEP } from "../src/lib/commanders/reveal-step";
@@ -151,7 +151,7 @@ async function main() {
       let leastRows = Number.POSITIVE_INFINITY;
       let worstShipped = 0;
       for (const account of accounts) {
-        const list = await loadDiscovery(account.user_id, { sort }, process.env);
+        const { list, oracleIds } = await loadDiscoveryWithIds(account.user_id, { sort }, process.env);
         // A DEGRADED PAYLOAD IS A SMALLER PAYLOAD, so measuring one certifies
         // the budget from the wrong number. Both lanes now return `priceOk` /
         // `availOk` instead of throwing — the change this PR made two rounds
@@ -163,11 +163,11 @@ async function main() {
         const plain = Buffer.byteLength(JSON.stringify(list));
         const encoded = encodeDiscovery(list);
         const bytes = Buffer.byteLength(JSON.stringify(encoded));
-        // The page's own cut, for the default URL of this sort: no search, colour or set.
+        // The page's own cut, for the default URL of this sort: no search, colour or set, with the window's oracle ids.
         const order = sort === "new" ? "new" : "bestfit";
         const first = discoveryRows(decodeDiscovery(encoded).items, { q: "", colors: [], match: "contains", order, printedIn: [] }, null)
           .slice(0, REVEAL_STEP);
-        worstShipped = Math.max(worstShipped, Buffer.byteLength(JSON.stringify(cutToWindow(encoded, new Set(first.map((r) => r.slug))))));
+        worstShipped = Math.max(worstShipped, Buffer.byteLength(JSON.stringify(cutToWindow(encoded, new Set(first.map((r) => r.slug)), oracleIds))));
         worstRatio = Math.max(worstRatio, bytes / plain);
         leastRows = Math.min(leastRows, list.items.length);
         if (bytes > worst.bytes) {
