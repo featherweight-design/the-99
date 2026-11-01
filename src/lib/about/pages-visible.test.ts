@@ -458,9 +458,9 @@ describe("a section's sub-line", () => {
     }
   });
 
-  // Retired but still in the registry until their removal PR: Proposed cuts follows its parent, the Analysis tab, and the
-  // swap tools are always on, so either name set off moves nothing.
-  const BAKED_IN = new Set(["PROPOSED_CUTS_ENABLED", "SWAP_TOOLS_ENABLED"]);
+  // Retired but still in the registry until their removal PR: Proposed cuts and Suggested changes follow their parent, the
+  // Analysis tab, and the swap tools are always on, so any of these names set off moves nothing.
+  const BAKED_IN = new Set(["PROPOSED_CUTS_ENABLED", "SWAP_TOOLS_ENABLED", "TUNING_ENABLED"]);
 
   it("names no feature whose switch is off: a section emptied of labels by a switch says only that its screen is off", () => {
     for (const sec of ABOUT_SECTIONS) {
