@@ -1,17 +1,15 @@
 // /friends: your name and face, your friends and your open friend links (Social R1 PR C), and your pods (PR E).
-// With `SOCIAL_FRIENDS_ENABLED` off for this reader the route does not exist (E18).
 //
 // Loading is the shell's `LoadingScreen` (a route owns no `loading.tsx` here, `route-loading.test.ts`), and a
 // read that throws is the app's error boundary (E16): nothing here catches one into a half-drawn page.
 // `?accepted=<publicId>` is the receipt after Accept (E10), resolved through the reader's own friends, so a
 // forged or stale id draws nothing.
 
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { headers } from "next/headers";
 import { currentUser } from "@clerk/nextjs/server";
 import { requireUserId } from "../../lib/auth";
-import { socialFriendsEnabled } from "../../lib/social/flag";
 import { loadFriendDeckPrefs } from "../../lib/social/deck-visibility";
 import { loadInviteCount } from "../../lib/invites/read";
 import { requestSwitchEnv } from "../../lib/switches/request";
@@ -54,14 +52,12 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
   // on staging (2026-10-18), and a returning reader's name is stored. Every path that writes a profile has attempted the invite spend by then (the spend itself,
   // this page, and `ensureSenderProfile`), so an old profile has nothing left for this page to recover.
   const needsClerk = profileNeedsClerk(await perf.timed("profileAge", () => profileAgeMs(userId)));
-  // A reader who is past the newcomer window has nothing to recover, so the switch decides at once, as it always did.
-  if (!needsClerk && !socialFriendsEnabled(env)) notFound();
   const user = needsClerk ? await perf.timed("currentUser", () => currentUser()) : null;
   // A newcomer's first arrival (invites plan R8, ruling D). The webhook may have spent their invitation already or
   // not yet; the spend is idempotent, so this runs it when the account's own invitation names a reservation, and the
-  // receipt is then drawn once from the edge, whichever of the two ran first. It runs BEFORE the switch gate: a flyer
-  // sign-up's group is what turns Friends on for them, and the group is written by this spend, so the switches are
-  // read again once it has spent (the proxy's snapshot, and `env` above, predate it).
+  // receipt is then drawn once from the edge, whichever of the two ran first. A flyer sign-up's group is written by
+  // this spend and can change the reader's switches, so they are read again once it has spent (the proxy's snapshot,
+  // and `env` above, predate it).
   const reservationId = reservationIdFrom(user?.publicMetadata);
   if (reservationId !== null) {
     const personal = await spendInviteOnSignUp(userId, reservationId, user?.firstName);
@@ -71,7 +67,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
     // `already` re-reads too: a webhook or a concurrent request may have committed the group between the proxy's snapshot and now.
     if (recovery.spent || recovery.reason === "already") {
       clearSwitchSnapshot();
-      env = await resolveSwitchEnvStrict(userId); // strict: a failed read must not fall back to environment defaults and open the gate
+      env = await resolveSwitchEnvStrict(userId); // strict: a failed read must not fall back to environment defaults and open a gate
     }
     // The root shell reads the proxy's header snapshot, which predates this spend: one redirect to the same URL lets the
     // next request's proxy re-snapshot. It cannot loop, since that request finds the spend `already` done.
@@ -80,30 +76,26 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
       redirect(qs ? `/friends?${qs}` : "/friends");
     }
   }
-  if (!socialFriendsEnabled(env)) notFound();
   // Try it's landing (discovery R2·3): `?tool=friends` haloes Add a friend; anything else is stripped.
   const { landing, request } = pageLanding(query[TOOL_PARAM], env, "friends");
-  // The invite count (invites PR 4), read beside the rest; null with friends off (invites follow friends), so the head draws as shipped.
+  // The invite count (invites PR 4), read beside the rest.
   // A count that cannot be read (a database the invites migration has not reached) draws the page as shipped,
   // never an error: the count is an extra, and Add a friend's link path works without it.
-  const invitesRead = socialFriendsEnabled(env)
-    ? perf.timed("inviteCount", () => loadInviteCount(userId, now)).catch((error: unknown) => {
-        console.warn("[invites] count unreadable; drawing /friends without it", error instanceof Error ? error.message : "");
-        return null;
-      })
-    : Promise.resolve(null);
+  const invitesRead = perf.timed("inviteCount", () => loadInviteCount(userId, now)).catch((error: unknown) => {
+    console.warn("[invites] count unreadable; drawing /friends without it", error instanceof Error ? error.message : "");
+    return null;
+  });
   // Friends and open links from one snapshot, so a redraw never drops a redeemed link before its friend's row.
   // Rule 0's pod rows (plan decision 6): read fresh beside the pods, since this page caches nothing.
-  const ruleZero = socialFriendsEnabled(env);
   const [profile, { friends, links }, pods, shared, tables, waiting, deckPrefs, mine] = await Promise.all([
     perf.timed("ensureProfile", () => ensureProfile(userId, user?.firstName)),
     perf.timed("friendsAndLinks", () => loadFriendsAndLinks(userId, now)),
     perf.timed("pods", () => listPods(userId)),
     perf.timed("sharedPods", () => listSharedPods(userId)),
-    ruleZero ? perf.timed("openTables", () => openTablesFor(userId)) : Promise.resolve(null),
+    perf.timed("openTables", () => openTablesFor(userId)),
     perf.timed("waitingOnYou", () => loadWaitingOnYou(userId, env, now)),
     // The head's privacy line under friend decks: the reader's own two rules (README 4b).
-    socialFriendsEnabled(env) ? perf.timed("friendDeckPrefs", () => loadFriendDeckPrefs(userId)) : Promise.resolve(null),
+    perf.timed("friendDeckPrefs", () => loadFriendDeckPrefs(userId)),
     // Your requests (spare requests PR 3d): the reader's own asks, under Waiting on you. Empty with the switch off. Read
     // before `after()` moves the Friends cursor, so an answer this visit shows is still marked new.
     perf.timed("yourRequests", () => loadYourRequests(userId, env, now)),
@@ -142,7 +134,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
         </CardDetailProvider>
         <YourRequests rows={mine} now={now} />
       </>}
-      pods={<PodsPane pods={pods} sharedIds={shared.map((s) => s.podId)} friends={friends} ruleZero={tables ? { tables, now } : null} />}
+      pods={<PodsPane pods={pods} sharedIds={shared.map((s) => s.podId)} friends={friends} ruleZero={{ tables, now }} />}
       friends={friends}
       links={links}
       openInviteNew={query[INVITE_PARAM] === "new"}
@@ -157,7 +149,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
       friendPages
       invites={invites}
       decksSeen={deckPrefs}
-      signature={socialFriendsEnabled(env)}
+      signature
     />
     </>
   );

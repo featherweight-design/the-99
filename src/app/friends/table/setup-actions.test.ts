@@ -1,10 +1,8 @@
-// Rule 0 setup's actions (plan PR 5): each decides SOCIAL_FRIENDS_ENABLED for the READER and, off, reads and writes
-// nothing; each maps the library's answer to an outcome the sheet draws, so a refusal never reads as done.
+// Rule 0 setup's actions (plan PR 5): each reads and writes for the session's reader, and each maps the library's answer to an outcome the sheet draws, so a refusal never reads as done.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const m = vi.hoisted(() => ({
   requireUserId: vi.fn(),
-  requestSwitchEnv: vi.fn(),
   revalidatePath: vi.fn(),
   podSetup: vi.fn(),
   tableSetup: vi.fn(),
@@ -12,7 +10,6 @@ const m = vi.hoisted(() => ({
   reseatTable: vi.fn(),
 }));
 vi.mock("../../../lib/auth", () => ({ requireUserId: m.requireUserId }));
-vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitchEnv }));
 vi.mock("next/cache", () => ({ revalidatePath: m.revalidatePath }));
 const ip = vi.hoisted(() => ({ zone: null as string | null }));
 vi.mock("next/headers", () => ({ headers: async () => new Headers(ip.zone ? { "x-vercel-ip-timezone": ip.zone } : {}) }));
@@ -21,29 +18,15 @@ vi.mock("../../../lib/social/rule-zero", () => ({ podSetup: m.podSetup, tableSet
 import { loadPodSetupAction, loadTableSetupAction, reseatTableAction, setTableAction } from "./setup-actions";
 import { named } from "../../../lib/person-name/mint";
 
-const ON = { SOCIAL_FRIENDS_ENABLED: "true" };
 const SEATS = [{ member: "a", deck: null }];
 
 beforeEach(() => {
   vi.clearAllMocks();
   m.requireUserId.mockResolvedValue("user_reader");
-  m.requestSwitchEnv.mockResolvedValue(ON);
 });
 
-describe("off for the reader", () => {
-  beforeEach(() => m.requestSwitchEnv.mockResolvedValue({}));
-
-  it("reads nothing and writes nothing", async () => {
-    expect(await loadPodSetupAction("p")).toBeNull();
-    expect(await loadTableSetupAction("t")).toBeNull();
-    expect(await setTableAction("p", SEATS)).toEqual({ ok: false, reason: "off" });
-    expect(await reseatTableAction("t", SEATS)).toEqual({ ok: false, reason: "off" });
-    for (const f of [m.podSetup, m.tableSetup, m.setTable, m.reseatTable]) expect(f).not.toHaveBeenCalled();
-  });
-});
-
-describe("on", () => {
-  it("reads for the session's reader and draws the invite row, which follows friends", async () => {
+describe("setup actions", () => {
+  it("reads for the session's reader and draws the invite row", async () => {
     m.tableSetup.mockResolvedValue({ tableId: "t" });
     expect(await loadTableSetupAction("t")).toEqual({ setup: { tableId: "t" }, invites: true });
     expect(m.tableSetup).toHaveBeenCalledWith("user_reader", "t");

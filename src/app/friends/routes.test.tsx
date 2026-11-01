@@ -1,5 +1,4 @@
-// `/friends` and `/friend/[token]` (Social R1 PR B): not found with the switch off for a signed-in reader
-// (E18); the friend link's signed-out card drawn whatever the switches say, reading nothing (E8); and the
+// `/friends` and `/friend/[token]` (Social R1 PR B): the friend link's signed-out card, reading nothing (E8); and the
 // already-friends spend run once after mount, only for an open link from a friend, never by the render (G4).
 import { renderToString } from "react-dom/server";
 import { cleanup, render, screen } from "@testing-library/react";
@@ -62,9 +61,9 @@ vi.mock("../../lib/switches/snapshot", () => ({ clearSwitchSnapshot: () => {}, r
 vi.mock("../../lib/social/deck-visibility", () => ({ loadFriendDeckPrefs: async () => ({ seeDecks: true, seeUnfinished: false }) }));
 vi.mock("../../lib/social/access", () => ({ listFriends: m.listFriends, listPods: m.listPods }));
 vi.mock("../../lib/social/spares", () => ({ listSharedPods: m.listSharedPods }));
-// Invites now follow the friends switch alone (SOCIAL_INVITES_ENABLED retired), so every enabled render reads the count.
+// Every render reads the invite count.
 vi.mock("../../lib/invites/read", async (orig) => ({ ...(await orig<typeof import("../../lib/invites/read")>()), loadInviteCount: async () => null }));
-// Rule 0 tables now follow the friends switch alone (RULE_ZERO_ENABLED retired), so every enabled render reads them.
+// Every render reads the Rule 0 tables.
 vi.mock("../../lib/social/rule-zero", async (orig) => ({ ...(await orig<typeof import("../../lib/social/rule-zero")>()), openTablesFor: async () => [] }));
 // Waiting on you and its after() work have their own tests (`waiting.test.ts`, `waiting-on-you.test.tsx`).
 vi.mock("../../lib/social/waiting", () => ({ loadWaitingOnYou: m.loadWaitingOnYou }));
@@ -119,14 +118,7 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("/friends", () => {
-  it("is not found while the switch is off for the reader", async () => {
-    m.requestSwitchEnv.mockResolvedValue({});
-    await expect(FriendsPage({ searchParams: query() })).rejects.toThrow("NOT_FOUND");
-    expect(m.requestSwitchEnv).toHaveBeenCalledWith("user_1");
-    expect(m.ensureProfile).not.toHaveBeenCalled();
-  });
-
-  it("draws with it on, starting a first visit's name from the Clerk first name", async () => {
+  it("draws, starting a first visit's name from the Clerk first name", async () => {
     render(await FriendsPage({ searchParams: query() }));
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(socialCopy.page.title);
     expect(m.ensureProfile).toHaveBeenCalledWith("user_1", "Hugh");
@@ -213,8 +205,7 @@ describe("/friends", () => {
       expect(m.spendFlyerOnSignUp).not.toHaveBeenCalled();
     });
 
-    it("recovers a flyer sign-up BEFORE the switch gate, reads the switches again, and redirects so the shell re-snapshots", async () => {
-      m.requestSwitchEnv.mockResolvedValue({});
+    it("recovers a flyer sign-up, reads the switches again, and redirects so the shell re-snapshots", async () => {
       m.currentUser.mockResolvedValue({ firstName: "Ana", publicMetadata: { inviteReservation: RES } });
       m.spendFlyerOnSignUp.mockResolvedValue({ spent: true });
       await expect(FriendsPage({ searchParams: query() })).rejects.toThrow("REDIRECT:/friends");
@@ -222,7 +213,6 @@ describe("/friends", () => {
     });
 
     it("reads the switches again when the recovery reports already (a webhook committed the group), without a redirect", async () => {
-      m.requestSwitchEnv.mockResolvedValue({});
       m.currentUser.mockResolvedValue({ firstName: "Ana", publicMetadata: { inviteReservation: RES } });
       m.spendFlyerOnSignUp.mockResolvedValue({ spent: false, reason: "already" });
       render(await FriendsPage({ searchParams: query() }));
@@ -231,18 +221,17 @@ describe("/friends", () => {
     });
 
     it("does not render Friends when the fresh switch read fails after a recovery (no fall back to environment defaults)", async () => {
-      m.requestSwitchEnv.mockResolvedValue({});
       m.currentUser.mockResolvedValue({ firstName: "Ana", publicMetadata: { inviteReservation: RES } });
       m.spendFlyerOnSignUp.mockResolvedValue({ spent: false, reason: "already" });
       m.resolveSwitchEnv.mockRejectedValue(new Error("switch read failed"));
       await expect(FriendsPage({ searchParams: query() })).rejects.toThrow("switch read failed");
     });
 
-    it("stays not found when the recovery spent nothing and Friends is off", async () => {
-      m.requestSwitchEnv.mockResolvedValue({});
+    it("draws without reading the switches again when the recovery spent nothing", async () => {
       m.currentUser.mockResolvedValue({ firstName: "Ana", publicMetadata: { inviteReservation: RES } });
-      await expect(FriendsPage({ searchParams: query() })).rejects.toThrow("NOT_FOUND");
+      render(await FriendsPage({ searchParams: query() }));
       expect(m.resolveSwitchEnv).not.toHaveBeenCalled();
+      expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(socialCopy.page.title);
     });
 
     it("a MISSING or YOUNG profile still asks Clerk and still runs the invite spend", async () => {
@@ -323,9 +312,8 @@ describe("/friends", () => {
 });
 
 describe("/friend/[token]", () => {
-  it("draws a signed-out reader the signed-out card, whatever the switches, and reads nothing", async () => {
+  it("draws a signed-out reader the signed-out card, and reads nothing", async () => {
     m.auth.mockResolvedValue({ userId: null });
-    m.requestSwitchEnv.mockResolvedValue({});
     render(await FriendLinkPage({ params: params() }));
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(socialCopy.landing.signedOutTitle);
     expect(screen.getByRole("button", { name: socialCopy.landing.signIn })).toBeTruthy();
@@ -342,13 +330,6 @@ describe("/friend/[token]", () => {
     expect(screen.queryByText(/create an account/i)).toBeNull();
     // Signing in comes back to this link, so the card turns over for them.
     expect(screen.getByTestId("sign-in").dataset.return).toBe(`/friend/${TOKEN}`);
-    expect(m.requestSwitchEnv).not.toHaveBeenCalled();
-    expect(m.readInvite).not.toHaveBeenCalled();
-  });
-
-  it("is not found for a signed-in reader whose switch is off, before the link is read", async () => {
-    m.requestSwitchEnv.mockResolvedValue({});
-    await expect(FriendLinkPage({ params: params() })).rejects.toThrow("NOT_FOUND");
     expect(m.readInvite).not.toHaveBeenCalled();
   });
 

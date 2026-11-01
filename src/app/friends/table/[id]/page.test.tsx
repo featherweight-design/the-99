@@ -1,4 +1,4 @@
-// /friends/table/[id] (Rule 0 PR 3): not found with the switch off, and for a table the reader is not seated at; the
+// /friends/table/[id] (Rule 0 PR 3): not found for a table the reader is not seated at; the
 // open table draws the read, and a table whose night has ended draws the expired page (L4, H3).
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -6,8 +6,6 @@ import { TABLES } from "../../../../lib/social/rule-zero-fixtures";
 
 const m = vi.hoisted(() => ({
   requireUserId: vi.fn(),
-  requestSwitchEnv: vi.fn(),
-  socialFriendsEnabled: vi.fn(),
   loadTable: vi.fn(),
   loadClosedTable: vi.fn(),
 }));
@@ -17,8 +15,6 @@ vi.mock("next/navigation", () => ({
 }));
 vi.mock("../actions", () => ({ markTableSeen: async () => true }));
 vi.mock("../../../../lib/auth", () => ({ requireUserId: m.requireUserId }));
-vi.mock("../../../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitchEnv }));
-vi.mock("../../../../lib/social/flag", () => ({ socialFriendsEnabled: m.socialFriendsEnabled }));
 vi.mock("../../../../lib/social/rule-zero-table", () => ({ loadTable: m.loadTable, loadClosedTable: m.loadClosedTable }));
 
 import TablePage from "./page";
@@ -30,19 +26,11 @@ const page = async () => render(await TablePage({ params: Promise.resolve({ id: 
 beforeEach(() => {
   vi.clearAllMocks();
   m.requireUserId.mockResolvedValue("user_viewer");
-  m.requestSwitchEnv.mockResolvedValue({});
-  m.socialFriendsEnabled.mockReturnValue(true);
   m.loadTable.mockResolvedValue(null);
   m.loadClosedTable.mockResolvedValue(null);
 });
 
 describe("TablePage", () => {
-  it("is not found with SOCIAL_FRIENDS_ENABLED off, and reads nothing", async () => {
-    m.socialFriendsEnabled.mockReturnValue(false);
-    await expect(page()).rejects.toThrow("NOT_FOUND");
-    expect(m.loadTable).not.toHaveBeenCalled();
-  });
-
   it("is not found for a table the reader is not seated at, open or closed", async () => {
     await expect(page()).rejects.toThrow("NOT_FOUND");
     expect(m.loadTable).toHaveBeenCalledWith("user_viewer", ID);
