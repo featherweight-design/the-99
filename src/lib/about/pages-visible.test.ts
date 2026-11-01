@@ -156,9 +156,10 @@ describe("Suggested changes v2's About errata (Small items 6, item 3)", () => {
   });
 
   it("swaps the credits card's empty-handed row for the two v2 rows with v2 on", () => {
-    expect(creditRows(PARENTS)).toEqual(["Read the bracket", "Suggested changes run", "Came back empty-handed"]);
+    // Look deeper rides the Analysis tab now Proposed cuts' own switch is retired, so it sits in both lists.
+    expect(creditRows(PARENTS)).toEqual(["Read the bracket", "Suggested changes run", "Look deeper", "Came back empty-handed"]);
     expect(creditRows({ ...PARENTS, SUGGESTED_CHANGES_V2_ENABLED: "true" }))
-      .toEqual(["Read the bracket", "Suggested changes run", "Came back short or empty", "Short by your price cap"]);
+      .toEqual(["Read the bracket", "Suggested changes run", "Look deeper", "Came back short or empty", "Short by your price cap"]);
   });
 
   it("keeps the shipped row when v2 is on but its parents are not", () => {
