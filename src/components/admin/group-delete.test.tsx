@@ -3,7 +3,6 @@
 // own), a delete the server refuses or loses saying so in the dialog's body, and one already gone leaving for Groups.
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { redirect } from "next/navigation";
 import type { GroupDeleteResult } from "../../lib/admin/group-writes";
 
 const refresh = vi.fn();
@@ -78,7 +77,8 @@ describe("GroupDelete", () => {
   });
 
   it("leaves a landed delete to the action's redirect: no push of its own, no failure line, the dialog held pending", async () => {
-    remove.mockImplementation(async () => redirect("/admin/groups?deleted=testers"));
+    // A server redirect never resolves the call on the client: the navigation replaces the page.
+    remove.mockImplementation(() => new Promise(() => {}));
     render(<GroupDelete id={T} name="testers" members={0} codes={[]} overrides={[]} remove={remove} />);
     fireEvent.click(press());
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "Delete the group" })));
