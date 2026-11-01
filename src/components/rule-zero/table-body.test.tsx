@@ -153,7 +153,7 @@ describe("TableBody", () => {
       const { unmount } = draw(view);
       expect(screen.getByText(copy.read.honest)).toBeInTheDocument();
       expect(screen.getByTestId("provenance-opener")).toHaveTextContent("How we make these decisions");
-      expect(screen.getByTestId("counts-key")).toBeInTheDocument();
+      expect(screen.getByRole("group", { name: copy.read.keyLabel })).toBeInTheDocument();
       unmount();
     }
   });

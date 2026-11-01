@@ -59,6 +59,15 @@ describe("the mark key", () => {
     expect(screen.getByRole("group", { name: proxyCopy.key.regionAria }).className).not.toMatch(/grid/);
   });
 
+  it("keeps the columns from md only when asked, for a key in a narrow desktop column (Rule 0's read)", () => {
+    const { rerender } = render(<MarkKey marks={[proxy, buy]} phoneColumns={2} keepColumnsFromMd />);
+    const group = screen.getByRole("group", { name: proxyCopy.key.regionAria });
+    expect(group.className).toMatch(/(^|\s)grid grid-cols-2/);
+    expect(group.className).not.toMatch(/md:flex/);
+    rerender(<MarkKey marks={[proxy, buy]} keepColumnsFromMd />);
+    expect(screen.getByRole("group", { name: proxyCopy.key.regionAria }).className).not.toMatch(/grid/);
+  });
+
   it("sets each sample in a flex box, so an inline sample cannot grow the line by a baseline strut", () => {
     const { container } = render(<MarkKey marks={[proxy]} />);
     const sample = container.querySelector('[aria-hidden="true"]');

@@ -15,6 +15,7 @@ import { middleBrackets, sharedReading, type Headline, type SeatDraw, type Table
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { BracketMark } from "../decks/bracket-mark";
 import { FindingMark } from "../decks/finding-mark";
+import { MarkKey, type MarkKeyEntry } from "../decks/mark-key";
 import { ProvenanceOpener } from "../decks/provenance-panel";
 import { Face } from "../social/face";
 import { FLAG_INK, flagKind, type FlagKind } from "./flag-tag";
@@ -66,7 +67,8 @@ export function ReadCard({ draw, updated }: { draw: TableDraw; /** `updated just
         </p>
       ) : null}
       {draw.read.kind === "read" ? <Rail draw={draw} /> : null}
-      <CountsKey />
+      {/* What the counts on each seat are: the shared key, two columns (three wrap "Two-card infinites" at the card's width), all five marks. */}
+      <MarkKey marks={COUNTS_KEY} regionAria={copy.read.keyLabel} phoneColumns={2} keepColumnsFromMd />
       <div className="flex flex-col gap-[2px] border-t border-[color:var(--border)] pt-[10px] text-[12.5px] leading-[1.55] text-[color:var(--fg-muted)]">
         <span>{copy.read.honest}</span>
         {/* The opener's sheet draws through the shared modal chrome, which reads the card detail context. */}
@@ -328,19 +330,5 @@ function RailFace({ seat }: { seat: SeatDraw }) {
   );
 }
 
-/** What the counts on each seat are: each fact's mark and its shipped label, in `findings` order. */
-function CountsKey() {
-  const labels = deckAnalysisCopy.findings.labels;
-  return (
-    <div role="group" aria-label={copy.read.keyLabel} data-testid="counts-key" className="flex flex-wrap gap-x-[12px] gap-y-[4px] font-mono text-[10px] text-[color:var(--fg-muted)]">
-      {FINDING_ORDER.map((id) => (
-        <span key={id} className="inline-flex items-center gap-[5px]">
-          <span aria-hidden>
-            <FindingMark id={id} />
-          </span>
-          {labels[id]}
-        </span>
-      ))}
-    </div>
-  );
-}
+/** The five finding marks in `findings` order, each with its shipped label. Always all five: every seat draws all five counts. */
+const COUNTS_KEY: MarkKeyEntry[] = FINDING_ORDER.map((id) => ({ id, sample: <FindingMark id={id} />, word: deckAnalysisCopy.findings.labels[id] }));
