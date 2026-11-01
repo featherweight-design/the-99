@@ -256,7 +256,11 @@ export async function reseatTable(viewerId: string, tableId: unknown, rawSeats: 
     const before = await tx
       .select({ userId: ruleZeroSeats.userId, deckId: ruleZeroSeats.deckId, changedAt: ruleZeroSeats.changedAt, noticeSeenAt: ruleZeroSeats.noticeSeenAt })
       .from(ruleZeroSeats)
-      .where(eq(ruleZeroSeats.tableId, tableId));
+      .where(eq(ruleZeroSeats.tableId, tableId))
+      // FOR UPDATE: the seats are deleted and re-written below, so a staying seat carries `noticeSeenAt` from THIS read. Under READ
+      // COMMITTED a `markSeatNoticeSeen` committed after a plain read would be overwritten with null; the row lock makes its UPDATE
+      // wait (and then find the old row gone) instead of racing, and a mark committed before is in this read.
+      .for("update");
     const kept = new Map(before.map((s) => [s.userId, s]));
     // A staying player's deck is theirs to change, so only a NEW seat's pick is checked (and used).
     const members = await tx

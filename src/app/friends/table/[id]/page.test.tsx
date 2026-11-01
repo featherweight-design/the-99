@@ -14,7 +14,7 @@ vi.mock("next/navigation", () => ({
   notFound: () => { throw new Error("NOT_FOUND"); },
   useRouter: () => ({ refresh: () => {} }),
 }));
-vi.mock("../actions", () => ({ markTableSeen: async () => true }));
+vi.mock("../actions", () => ({ markTableSeen: async () => true, markSeatNoticeSeenAction: async () => true }));
 vi.mock("../../../../lib/auth", () => ({ requireUserId: m.requireUserId }));
 vi.mock("../../../../lib/social/rule-zero-notice", () => ({ markSeatNoticeSeen: m.markSeatNoticeSeen }));
 vi.mock("../../../../lib/social/rule-zero-table", () => ({ loadTable: m.loadTable, loadClosedTable: m.loadClosedTable }));
@@ -30,7 +30,6 @@ beforeEach(() => {
   m.requireUserId.mockResolvedValue("user_viewer");
   m.loadTable.mockResolvedValue(null);
   m.loadClosedTable.mockResolvedValue(null);
-  m.markSeatNoticeSeen.mockResolvedValue(true);
 });
 
 describe("TablePage", () => {
@@ -48,16 +47,11 @@ describe("TablePage", () => {
     expect(m.loadClosedTable).not.toHaveBeenCalled();
   });
 
-  it("marks the seat notice seen when the open table is drawn, and not for a closed or unknown table", async () => {
+  it("writes nothing while rendering: the seat notice is marked seen by TableLive, not by the GET", async () => {
     m.loadTable.mockResolvedValue(TABLES.T2);
     await page();
-    expect(m.markSeatNoticeSeen).toHaveBeenCalledWith("user_viewer", ID);
-    vi.clearAllMocks();
-    m.requireUserId.mockResolvedValue("user_viewer");
-    m.loadTable.mockResolvedValue(null);
-    m.loadClosedTable.mockResolvedValue(null);
-    await expect(page()).rejects.toThrow("NOT_FOUND");
     expect(m.markSeatNoticeSeen).not.toHaveBeenCalled();
+    expect(screen.getByTestId("table-body")).toBeInTheDocument();
   });
 
   it("draws the expired page when the night has ended", async () => {

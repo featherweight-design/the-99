@@ -9,7 +9,7 @@
  * held or failing cannot keep an awake one from its news. Per reader: the switch again (an off switch abandons the row); rows older
  * than a day are no longer news and are abandoned; a row whose kind the reader has since unticked, re-stamped after the event or
  * lost the feature for is abandoned (`stillWanted`); the words come from the feed's own read (`resolvePushItems`), and a row that no longer stands is abandoned
- * too. Per device (`planDevice`): nothing inside its held hours, a live push for what arrived while it was not held, the
+ * too. Per device (`planDevice`): nothing inside its held hours (but the seat notice, which is exempt from the hold and goes out live), a live push for what arrived while it was not held, the
  * morning release for what arrived while it was. A device the push service answers 404 or 410 is deleted. A transient failure
  * leaves the rows for the next run. A row is SENT once every device the reader has is done with it (`payload.done`).
  * Every outcome is a count; no endpoint, key or word is logged.

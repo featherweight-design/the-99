@@ -10,7 +10,7 @@ const NOW = new Date("2026-10-31T23:30:00.000Z");
 describe("the seat notice's outbox row", () => {
   const q = dialect.sqlToQuery(enqueueSeatPushQuery("user_seated", TABLE, NOW));
 
-  it("is one outbox row per (reader, kind, table), nothing on a repeat", () => {
+  it("is one outbox row per (reader, kind, table); a repeat hits the conflict clause and does nothing", () => {
     expect(q.sql).toContain('insert into "push_outbox"');
     expect(q.sql).toContain("on conflict (user_id, kind, item_key) do nothing");
     expect(q.params).toContain("user_seated");

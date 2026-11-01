@@ -101,7 +101,7 @@ describe("planDevice, the seat notice and the overnight hold (Rule 0 revisions, 
     expect(plan.covered).toEqual(["s1"]);
   });
 
-  it("never merges two tables into one push, live or in the morning", () => {
+  it("never merges two tables into one push", () => {
     const rows = [seatRow("a", "2026-10-22T14:00:00Z"), seatRow("b", "2026-10-22T14:01:00Z")];
     const map = new Map([["a", seat(TABLE_A)], ["b", seat(TABLE_B)]]);
     expect(planDevice(rows, map, device, NOON).sends).toHaveLength(2);

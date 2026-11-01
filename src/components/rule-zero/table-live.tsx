@@ -26,7 +26,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { TablePoll } from "../../app/api/rule-zero/tables/[id]/route";
-import { markTableSeen, swapSeatDeckAction } from "../../app/friends/table/actions";
+import { markSeatNoticeSeenAction, markTableSeen, swapSeatDeckAction } from "../../app/friends/table/actions";
 import { closeTableAction } from "../../app/friends/table/setup-actions";
 import { bracketPhrase } from "../../lib/copy/deck-analysis";
 import { ruleZeroCopy } from "../../lib/copy/rule-zero";
@@ -237,6 +237,21 @@ export function TableLive({
     };
     stopPoll.current = stop;
     return stop;
+  }, [tableId]);
+
+  // Opening the table is seeing its "seated you" notice (Rule 0 revisions, item 6): once, while the page is visible. The action is
+  // one guarded UPDATE that does nothing once seen. Best effort: a lost write costs one stale toast.
+  useEffect(() => {
+    let done = false;
+    const mark = () => {
+      if (done || document.visibilityState !== "visible") return;
+      done = true;
+      document.removeEventListener("visibilitychange", mark);
+      markSeatNoticeSeenAction(tableId).catch(() => {});
+    };
+    document.addEventListener("visibilitychange", mark);
+    mark();
+    return () => document.removeEventListener("visibilitychange", mark);
   }, [tableId]);
 
   const revision = view.revision.getTime();

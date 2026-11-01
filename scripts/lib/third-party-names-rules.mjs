@@ -42,7 +42,7 @@ export function mayImport(path, target) {
  */
 export const SOCIAL_DIR = "src/lib/social/";
 /** The columns that hold another reader's name, as `table.column`. */
-export const NAME_COLUMNS = ["socialProfiles.displayName", "pods.name", "decks.name"];
+export const NAME_COLUMNS = ["socialProfiles.displayName", "pods.name", "decks.name", "noticeHost.displayName"];
 /** The calls that mint (or are a thin wrapper over `named()`). */
 export const MINT_HELPERS = ["named", "savedName", "feedFriend"];
 /** `path#function` of a projection that returns a raw row on purpose; the row is minted by its caller in the same file. */

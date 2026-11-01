@@ -15,7 +15,7 @@ const never = { execute: async () => { throw new Error("a seat notice reads no f
 beforeEach(() => vi.clearAllMocks());
 
 describe("resolving seat notices", () => {
-  it("words a notice that still stands, and drops one whose table closed, whose seat went or that was already seen", async () => {
+  it("words a notice the query still returns and drops every ref it does not (which notices stand is the query\u2019s rule: rule-zero-notice.test.ts)", async () => {
     m.unseenSeatNotices.mockResolvedValue([{ tableId: T1, host: named("Colin"), podName: named("Thursday night"), deckName: "Atraxa", since: NOW }]);
     const refs = [
       { kind: "rule_zero_seat" as const, key: `table:${T1}`, batch: `table:${T1}` },

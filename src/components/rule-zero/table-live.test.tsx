@@ -4,9 +4,9 @@
 import { act, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const m = vi.hoisted(() => ({ refresh: vi.fn(), seen: vi.fn(async () => true), close: vi.fn() }));
+const m = vi.hoisted(() => ({ refresh: vi.fn(), seen: vi.fn(async () => true), notice: vi.fn(async () => true), close: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: m.refresh }) }));
-vi.mock("../../app/friends/table/actions", () => ({ markTableSeen: m.seen }));
+vi.mock("../../app/friends/table/actions", () => ({ markTableSeen: m.seen, markSeatNoticeSeenAction: m.notice }));
 vi.mock("../../app/friends/table/setup-actions", () => ({ loadTableSetupAction: vi.fn(), reseatTableAction: vi.fn(), closeTableAction: m.close }));
 
 import { TABLES } from "../../lib/social/rule-zero-fixtures";
@@ -61,6 +61,7 @@ describe("TableLive", () => {
     vi.useFakeTimers();
     m.refresh.mockReset();
     m.seen.mockClear();
+    m.notice.mockClear();
     fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
     visibility = vi.spyOn(document, "visibilityState", "get").mockReturnValue("visible");
@@ -98,6 +99,27 @@ describe("TableLive", () => {
     expect(within(readCard()).getByTestId("since")).toBeInTheDocument();
     expect(within(readCard()).getByText(/^updated /)).toBeInTheDocument();
     expect(m.seen).toHaveBeenLastCalledWith(base.tableId, later(60_000).toISOString());
+  });
+
+  it("marks the seat notice seen once while visible, and waits for the page to be visible when it opens hidden", async () => {
+    fetchMock.mockResolvedValue(open(base));
+    render(<TableLive initial={base} now={AT} />);
+    await settle();
+    await settle(POLL_MS);
+    expect(m.notice).toHaveBeenCalledTimes(1);
+    expect(m.notice).toHaveBeenCalledWith(base.tableId);
+  });
+
+  it("does not mark the notice while the page is hidden, then marks it when it comes into view", async () => {
+    visibility.mockReturnValue("hidden");
+    fetchMock.mockResolvedValue(open(base));
+    render(<TableLive initial={base} now={AT} />);
+    await settle();
+    expect(m.notice).not.toHaveBeenCalled();
+    await show("visible");
+    expect(m.notice).toHaveBeenCalledTimes(1);
+    await show("visible");
+    expect(m.notice).toHaveBeenCalledTimes(1);
   });
 
   it("draws a fresh server payload at once (Seats saved, the router refreshed), keeping the visit's seenAt", async () => {

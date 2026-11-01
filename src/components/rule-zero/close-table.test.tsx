@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const m = vi.hoisted(() => ({ refresh: vi.fn(), seen: vi.fn(async () => true), close: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: m.refresh }) }));
-vi.mock("../../app/friends/table/actions", () => ({ markTableSeen: m.seen, swapSeatDeckAction: vi.fn() }));
+vi.mock("../../app/friends/table/actions", () => ({ markTableSeen: m.seen, markSeatNoticeSeenAction: async () => true, swapSeatDeckAction: vi.fn() }));
 vi.mock("../../app/friends/table/setup-actions", () => ({ loadTableSetupAction: vi.fn(), reseatTableAction: vi.fn(), closeTableAction: m.close }));
 
 import { ruleZeroCopy as copy } from "../../lib/copy/rule-zero";

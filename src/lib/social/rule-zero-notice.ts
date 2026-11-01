@@ -7,7 +7,7 @@
  * A seat changed or removed sends no notice (brief state 12): nothing here reads a seat's change, and a removed seat has no row.
  *
  * The push flush resolves its words through `unseenSeatNotices` (so a table closed, a seat gone or a notice already seen is
- * dropped), and the in-app toast (PR 6b) reads the same list. `markSeatNoticeSeen` is the write: opening the table page calls it.
+ * dropped), and the in-app toast (PR 6b) reads the same list. `markSeatNoticeSeen` is the write: `TableLive` calls it through `markSeatNoticeSeenAction` when the table is open.
  * Nothing returned carries a Clerk id or another player's deck id: the deck is the viewer's own, the host a `ThirdPartyName`.
  */
 import { and, asc, eq, inArray, isNull, ne } from "drizzle-orm";
@@ -59,9 +59,9 @@ export function unseenSeatNoticesQuery(viewerId: string, tableIds?: readonly str
     .orderBy(asc(ruleZeroTables.expiresAt), asc(ruleZeroTables.id));
 }
 
-export async function unseenSeatNotices(viewerId: string, tableIds?: readonly string[]): Promise<SeatNotice[]> {
+export async function unseenSeatNotices(viewerId: string, tableIds?: readonly string[], q: Reader = db): Promise<SeatNotice[]> {
   if (tableIds && tableIds.length === 0) return [];
-  const rows = await unseenSeatNoticesQuery(viewerId, tableIds);
+  const rows = await unseenSeatNoticesQuery(viewerId, tableIds, q);
   return rows.map((r) => ({ tableId: r.tableId, host: named(r.hostName), podName: named(r.podName), deckName: r.deckName, since: r.since }));
 }
 
@@ -69,12 +69,15 @@ export async function unseenSeatNotices(viewerId: string, tableIds?: readonly st
  * The viewer has seen their notice for this table (they opened it, or dismissed the toast). ONE guarded UPDATE of the
  * viewer's own seat row; false when there was nothing to mark (not seated, or already seen). Idempotent.
  */
-export async function markSeatNoticeSeen(viewerId: string, tableId: unknown): Promise<boolean> {
-  if (!isUuid(tableId)) return false;
-  const marked = await db
+export function markSeatNoticeSeenQuery(viewerId: string, tableId: string, now: Date, q: Pick<typeof db, "update"> = db) {
+  return q
     .update(ruleZeroSeats)
-    .set({ noticeSeenAt: new Date() })
+    .set({ noticeSeenAt: now })
     .where(and(eq(ruleZeroSeats.tableId, tableId), eq(ruleZeroSeats.userId, viewerId), isNull(ruleZeroSeats.noticeSeenAt)))
     .returning({ tableId: ruleZeroSeats.tableId });
-  return marked.length > 0;
+}
+
+export async function markSeatNoticeSeen(viewerId: string, tableId: unknown): Promise<boolean> {
+  if (!isUuid(tableId)) return false;
+  return (await markSeatNoticeSeenQuery(viewerId, tableId, new Date())).length > 0;
 }
