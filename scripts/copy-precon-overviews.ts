@@ -68,9 +68,13 @@ async function main() {
     // Read under the target's `catalog-ingest` lock, so no ingest's or rules entry's log row is uncommitted beside a higher one
     // and the head is a watermark; released before the requests are built, so the head is a lower bound on what they see.
     const seenSeq = await target.transaction(async (tx) => {
+      await tx.execute(sql`set local lock_timeout = '60s'`);
       await tx.execute(catalogLockSql);
       return readLogHead(tx);
-    }).catch(() => null);
+    }).catch((err) => {
+      console.warn(`copy precon overviews: no log head this run (${err instanceof Error ? err.message : String(err)}): no readings, and rows keep the check mark they had`);
+      return null;
+    });
 
     const plain = (await target.select({ file: precons.fileName }).from(precons).where(isNull(precons.twinOf)).orderBy(precons.fileName)).map((r) => r.file);
     const targetRows = await target.select({
@@ -110,18 +114,19 @@ async function main() {
         const now = new Date();
         // The check's mark (`checked_seen_seq`): the log head read before any request was built, a lower bound on what
         // the check saw, read under the lock (above). Read before the transaction, since a failed read inside it would abort the publish.
-        const checkedSeenSeq = seenSeq;
+        // Null leaves the column alone: a mark an earlier run wrote is still a lower bound.
+        const mark = seenSeq === null ? {} : { checkedSeenSeq: seenSeq };
         for (const r of plan.install) {
           const row = {
             preconFile: r.file, contractVersion: contract, roleBasis: basis, listFingerprint: r.listFingerprint, inputHash: r.inputHash, model: r.model,
             content: r.content, inputTokens: r.inputTokens, outputTokens: r.outputTokens, costMicroUsd: r.costMicroUsd,
-            current: true, createdAt: now, checkedAt: now, checkedSeenSeq,
+            current: true, createdAt: now, checkedAt: now, ...mark,
           };
           await tx.insert(preconSynopses).values(row).onConflictDoUpdate({ target: [preconSynopses.preconFile, preconSynopses.contractVersion, preconSynopses.roleBasis], set: row });
         }
         const at = (files: string[]) => and(eq(preconSynopses.contractVersion, contract), eq(preconSynopses.roleBasis, basis), inArray(preconSynopses.preconFile, files));
-        if (plan.stale.length > 0) await tx.update(preconSynopses).set({ current: false, checkedAt: now, checkedSeenSeq }).where(at(plan.stale));
-        if (plan.restamp.length > 0) await tx.update(preconSynopses).set({ current: true, checkedAt: now, checkedSeenSeq }).where(at(plan.restamp));
+        if (plan.stale.length > 0) await tx.update(preconSynopses).set({ current: false, checkedAt: now, ...mark }).where(at(plan.stale));
+        if (plan.restamp.length > 0) await tx.update(preconSynopses).set({ current: true, checkedAt: now, ...mark }).where(at(plan.restamp));
         // After the installs, so a row this publish created takes its reading in the same transaction.
         for (const file of readingFiles) {
           const b = built.get(file)!;
