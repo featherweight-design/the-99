@@ -5,7 +5,7 @@
 // library checks the seat grant itself. Nothing is revalidated: the table page redraws from the swap's own answer and
 // its polls, and the pod row and Home's card are read per request.
 
-import { requireUserId } from "../../../lib/auth";
+import { currentUserId, requireUserId } from "../../../lib/auth";
 import { markSeen, setSeatDeck } from "../../../lib/social/rule-zero";
 import type { ThirdPartyName } from "../../../lib/person-name";
 import { markSeatNoticeSeen, unseenSeatNotices } from "../../../lib/social/rule-zero-notice";
@@ -36,7 +36,10 @@ export type SeatToastNotice = { tableId: string; host: ThirdPartyName; podName: 
  * the seat, the open table and the pod membership on the viewer in one statement.
  */
 export async function unseenSeatNoticesAction(): Promise<SeatToastNotice[]> {
-  const userId = await requireUserId();
+  // Read on mount and on focus, so it also runs in the moment a session token has lapsed before it refreshes: no reader is no
+  // notices, not a throw that Sentry files as a failed request.
+  const userId = await currentUserId();
+  if (userId === null) return [];
   return (await unseenSeatNotices(userId)).map(({ tableId, host, podName, since }) => ({ tableId, host, podName, since: since.getTime() }));
 }
 
