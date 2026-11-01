@@ -42,10 +42,10 @@ describe("aboutLine", () => {
       sentenceKey("decks/analysis/suggested", "SUGGESTED_CHANGES_V2_ENABLED"),
       "shopping/all-decks/decks", "shopping/all-decks/views", "shopping/all-decks/ask", "shopping/all-decks/buy",
     ]);
-    // Shopping for all decks is retired (always on), so a reader drawn with every live switch off is told the same
-    // sourceless labels, less Ask, which still rides spare requests.
+    // Shopping for all decks and friends are retired (always on), so a reader drawn with every live switch off is told
+    // the same sourceless labels, Ask included.
     expect(aboutLine(readerAt(16, OFF), visibleSections(OFF))?.ids).toEqual([
-      "shopping/all-decks/decks", "shopping/all-decks/views", "shopping/all-decks/buy",
+      "shopping/all-decks/decks", "shopping/all-decks/views", "shopping/all-decks/ask", "shopping/all-decks/buy",
     ]);
   });
 

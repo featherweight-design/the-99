@@ -387,10 +387,12 @@ describe("the collection home epic’s two entries (one bump, 14)", () => {
   const ids = (env: Record<string, string>) => visibleEntries(env as unknown as NodeJS.ProcessEnv).map((e) => e.id);
 
   // SHOPPING_MARK_BOUGHT_ENABLED and its parent COLLECTION_EDIT_ENABLED are retired: the entry always draws.
-  it("always draws I got it, after stand-ins", () => {
+  // Friend spares (always on, SOCIAL_FRIENDS_ENABLED retired) sits between them.
+  it("always draws I got it, after stand-ins and friend spares", () => {
     expect(ids({})).toContain("shopping-got-it");
     const on = ids({ SWAP_TOOLS_ENABLED: "true" });
-    expect(on[on.indexOf("stand-ins") + 1]).toBe("shopping-got-it");
+    const at = on.indexOf("stand-ins");
+    expect(on.slice(at + 1, at + 3)).toEqual(["friend-spares", "shopping-got-it"]);
   });
 
   it("always draws the precons entry (retired switch), after starting a new deck", () => {

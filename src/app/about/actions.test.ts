@@ -151,10 +151,10 @@ describe("recordAboutVisit (R6)", () => {
   it("confirms no unit a switch flipped off between the render and the visit took out of the write", async () => {
     stored.seen = { version: 14, ids: [] };
     resolved.env = {};
-    const confirmed = await recordAboutVisit(["rule-zero"]);
+    const confirmed = await recordAboutVisit(["stand-ins"]);
     expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, []);
-    expect(confirmed).not.toContain("rule-zero");
-    expect(confirmed).not.toContain("friends/friends/rule0");
+    expect(confirmed).not.toContain("stand-ins");
+    expect(confirmed).not.toContain("shopping/deck-shopping/standins");
   });
 
   it("records the current version and the switched entries the page showed", async () => {
@@ -166,8 +166,8 @@ describe("recordAboutVisit (R6)", () => {
   });
 
   it("records every switched entry the page showed that the reader's switches draw, and only those", async () => {
-    // `all-decks-cart` rides a retired switch (always on), so every reader draws it; `rule-zero` needs friends, off here.
-    await recordAboutVisit(["all-decks-cart", "rule-zero", "made-up"]);
+    // `all-decks-cart` rides a retired switch (always on), so every reader draws it; `stand-ins` needs swap tools, off here.
+    await recordAboutVisit(["all-decks-cart", "stand-ins", "made-up"]);
     expect(markAboutVisited).toHaveBeenCalledWith("user_1", ABOUT_VERSION, ["all-decks-cart"]);
   });
 
