@@ -1,11 +1,46 @@
 // What leaves the app for Sentry. Errors only, and nothing about who the player is: no user, no
 // cookies, no headers, no request body (a webhook's body and signature included), no query string,
-// no exception message. A client error's message is the original and can carry a card name, a deck
-// name or a query (see `logBoundaryError`), so an event keeps its type, stack and digest tag and
-// not its words. Pure: it imports nothing from the app, so every runtime and the tests load it.
+// no exception message beyond a closed list of exact framework strings (`KEPT_EXCEPTION_MESSAGES`). A client error's message is the
+// original and can carry a card name, a deck name or a query (see `logBoundaryError`), so an event keeps its type, stack and digest
+// tag and not its words. Pure: it imports nothing from the app, so every runtime and the tests load it.
 import type { Breadcrumb, ErrorEvent } from "@sentry/nextjs";
 
 const REDACTED = "[redacted]";
+
+// An exception's message is kept only when it is one of a CLOSED set of strings the app or its framework write whole, none of
+// them built from player input, and then only on an EXACT match: a message that merely starts like one (`unauthenticated: Sol
+// Ring`) is redacted like any other. Never a shape rule (a pattern would let a card name through the first time it was
+// interpolated). Everything else reads `[redacted]`: a client error's message is the original and can carry a card name, a
+// deck name or a query.
+//
+// Clerk's `auth()` without the middleware: the message is a template whose only variable parts are the file reference and the
+// "exists at" step (`app-router/server/auth.js`), so the exact texts for this app's Next 16 (`middleware or proxy`) are written
+// out here, with and without `src/` and with no step, and `scrub.test.ts` fails if Clerk's source stops saying them.
+const CLERK_FILE = "middleware or proxy";
+const clerkNoMiddleware = (step: string | null) =>
+  `Clerk: auth() was called but Clerk can't detect usage of clerkMiddleware(). Please ensure the following:\n- ${step === null ? "" : `${step}\n- `}clerkMiddleware() is used in your Next.js ${CLERK_FILE} file.\n- Your ${CLERK_FILE} matcher is configured to match this route or page.\n- If you are using the src directory, make sure the ${CLERK_FILE} file is inside of it.\n\nIf you've verified your configuration and are still seeing this error, there may be a runtime issue or a problem communicating with Clerk.\n\nFor more details, see https://clerk.com/err/auth-middleware\n`;
+const clerkStep = (dir: string) => `Your ${CLERK_FILE} file exists at ./${dir}middleware.(ts|js) or proxy.(ts|js)`;
+
+export const KEPT_EXCEPTION_MESSAGES: ReadonlySet<string> = new Set([
+  "unauthenticated",
+  "NEXT_NOT_FOUND",
+  "NEXT_HTTP_ERROR_FALLBACK;404", // what `notFound()` throws since Next 15; `NEXT_NOT_FOUND` is the older spelling
+  "NEXT_REDIRECT",
+  clerkNoMiddleware(null),
+  clerkNoMiddleware(clerkStep("")),
+  clerkNoMiddleware(clerkStep("src/")),
+]);
+
+// React's production errors say the number, then a link, then (for some) the offending text as `?args[]=`. Only the number is kept.
+const MINIFIED_REACT = /^Minified React error #(\d{1,4})\b/;
+
+/** What an exception's message becomes: itself when it is on the closed list, the bare React error number, else `[redacted]`. */
+export function scrubExceptionValue(value: string | undefined): string {
+  if (typeof value !== "string") return REDACTED;
+  if (KEPT_EXCEPTION_MESSAGES.has(value)) return value;
+  const react = MINIFIED_REACT.exec(value);
+  return react ? `Minified React error #${react[1]}` : REDACTED;
+}
 
 // A friend link and a join link are capabilities: whoever holds the token can use it. They travel as
 // a path segment, which a URL in a breadcrumb, a request or a transaction name would carry.
@@ -71,7 +106,7 @@ export function scrubEvent(event: ErrorEvent): ErrorEvent {
   if (next.exception?.values) {
     next.exception = {
       ...next.exception,
-      values: next.exception.values.map((v) => ({ ...v, value: REDACTED, stacktrace: scrubStacktrace(v.stacktrace) })),
+      values: next.exception.values.map((v) => ({ ...v, value: scrubExceptionValue(v.value), stacktrace: scrubStacktrace(v.stacktrace) })),
     };
   }
   if (next.threads?.values) {
