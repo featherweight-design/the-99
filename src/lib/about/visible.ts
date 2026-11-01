@@ -7,7 +7,6 @@
 
 import { analysisTabEnabled } from "../decks/analysis-flag";
 import { helpMeChooseEnabled } from "../intake/flag";
-import { swapToolsEnabled } from "../swaps/flag";
 import { suggestedChangesV2Enabled, tuningEnabled, tuningHubEnabled } from "../tuning/flag";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
 import { paymentsEnabled, welcomeCreditsEnabled } from "../payments/flag";
@@ -32,7 +31,8 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   ADDED_COPY_ENABLED: () => true,
   // Retired (always on): Locked, never cut. The name stays as the entries', pages' and rules' historical identity.
   NEVER_CUT_ENABLED: () => true,
-  SWAP_TOOLS_ENABLED: swapToolsEnabled,
+  // Retired (always on): the swap tools. The name stays as the entries', pages' and sentences' historical identity.
+  SWAP_TOOLS_ENABLED: () => true,
   HELP_ME_CHOOSE_ENABLED: helpMeChooseEnabled,
   // Retired (always on): Change commander. The name stays as the entry's historical identity.
   CHANGE_COMMANDER_ENABLED: () => true,
@@ -72,8 +72,8 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   LINEUP_ENABLED: () => true,
   // Retired: Proposed cuts follows its parent, the Analysis tab, where it mounts. The name stays as its lines' historical identity.
   PROPOSED_CUTS_ENABLED: analysisTabEnabled,
-  // Find a deck's read follows its parent, swap tools (its own switch is retired). The name stays as the entry's and lines' historical identity.
-  FIND_A_DECK_READ_ENABLED: swapToolsEnabled,
+  // Retired (always on): Find a deck's read followed its parent, swap tools, which is retired too. The name stays as the entry's and lines' historical identity.
+  FIND_A_DECK_READ_ENABLED: () => true,
   // Starting without a collection ended on exactly when collection edit was (retired, always on).
   NO_COLLECTION_ENTRY_ENABLED: () => true,
   // Retired (always on): the Social line. Friends, and opponents with it, which needed it; the wishlist stood alone.

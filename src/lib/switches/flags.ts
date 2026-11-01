@@ -61,6 +61,6 @@ export const MODEL_CAPABILITIES: readonly { key: ModelCapabilityKey; on: (env: N
   // Proposed cuts' own switch is retired: its paid pass follows the Analysis tab, where it mounts.
   { key: "proposed_cuts", on: analysisTabEnabled },
   { key: "intake", on: helpMeChooseEnabled },
-  // Find a deck's read follows its parent, swap tools.
-  { key: "fits_read", on: swapToolsEnabled },
+  // Find a deck's read followed swap tools, whose switch is retired (always on): only the model-call kill switch stops it.
+  { key: "fits_read", on: () => true },
 ];

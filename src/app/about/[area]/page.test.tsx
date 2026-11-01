@@ -311,11 +311,12 @@ describe("/about/[area], reached by the ? (PR 6a)", () => {
   });
 
   it("a unit switched off for the reader lands on its section with nothing lit (Review Focus 2)", async () => {
-    m.env = env({ ...ALL_ON, SWAP_TOOLS_ENABLED: "" });
-    const el = await draw("shopping", { from: "/settings", lit: "shopping/deck-shopping/limit" });
+    // Suggested changes' label (Shopping's limit was the example until SWAP_TOOLS_ENABLED retired: it always draws now).
+    m.env = env({ ...ALL_ON, TUNING_ENABLED: "" });
+    const el = await draw("decks", { from: "/settings", lit: "decks/analysis/suggested" });
     expect(el.props.initialLit).toBeNull();
-    expect(el.props.landable).not.toHaveProperty(["shopping/deck-shopping/limit"]);
-    expect(el.props.sections.map((s) => s.id)).toContain("deck-shopping");
+    expect(el.props.landable).not.toHaveProperty(["decks/analysis/suggested"]);
+    expect(el.props.sections.map((s) => s.id)).toContain("analysis");
     expect(el.props.back).toEqual({ from: "/settings", screen: "Settings" });
   });
 });

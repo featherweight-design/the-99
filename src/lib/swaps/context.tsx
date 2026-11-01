@@ -2,9 +2,9 @@
 
 /**
  * What a deck page's swap surfaces need to know: that the tools are on, which deck this is, and the
- * limit it marks against. Mounted by the deck page ONLY when `SWAP_TOOLS_ENABLED` is set, so a
- * surface reading `null` draws nothing of the swap tools. That is how the flag reaches a row
- * without threading a prop through every component between the page and it.
+ * limit it marks against. Mounted by every deck page (its switch, `SWAP_TOOLS_ENABLED`, is retired:
+ * always on), so a surface reading `null` is outside a deck page and draws nothing of the swap
+ * tools. That is how the deck reaches a row without threading a prop through every component.
  */
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 

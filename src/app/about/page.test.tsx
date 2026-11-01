@@ -65,7 +65,7 @@ const tabs = async (query: Record<string, string | string[]> = { tab: "reference
 const tiles = async (query: Record<string, string | string[]> = {}) => find(await draw(query), AboutIndex)!.props.tiles as IndexTile[];
 
 const DECK_SWITCHES = [
-  "TUNING_ENABLED", "SWAP_TOOLS_ENABLED", "SOCIAL_FRIENDS_ENABLED",
+  "TUNING_ENABLED", "SOCIAL_FRIENDS_ENABLED",
   "ANALYSIS_TAB_ENABLED",
 ];
 
@@ -158,18 +158,18 @@ describe("/about, the fits (E10)", () => {
     await tabs();
     expect(m.loadToolFits).toHaveBeenCalledTimes(1);
     // Proposed cuts and Mana Balance follow the Analysis tab (their own switches are retired), so the tab on asks for them too.
-    expect(m.loadToolFits.mock.calls[0]![1]).toEqual(["top-off", "proposed-cuts", "suggested-changes", "mana-balance", "friend-spares", "matchups"]);
+    expect(m.loadToolFits.mock.calls[0]![1]).toEqual(["top-off", "proposed-cuts", "suggested-changes", "mana-balance", "stand-ins", "friend-spares", "matchups"]);
   });
 
-  it("with every deck tool's switch off, asks only for the ones with none: Top off and the friends tools", async () => {
+  it("with every deck tool's switch off, asks only for the ones with none: Top off, Stand-ins (swap tools retired) and the friends tools", async () => {
     await tabs();
-    expect(m.loadToolFits.mock.calls[0]![1]).toEqual(["top-off", "friend-spares", "matchups"]);
+    expect(m.loadToolFits.mock.calls[0]![1]).toEqual(["top-off", "stand-ins", "friend-spares", "matchups"]);
   });
 
   it("decides by the tool's own switch, even where its entry is drawn", async () => {
     m.everyEntry = true;
     await tabs();
-    expect(m.loadToolFits.mock.calls[0]![1]).toEqual(["top-off", "friend-spares", "matchups"]);
+    expect(m.loadToolFits.mock.calls[0]![1]).toEqual(["top-off", "stand-ins", "friend-spares", "matchups"]);
   });
 
   // Collection Sync's switch and its parent's, collection editing, are retired: the sync base is always read.
@@ -230,7 +230,9 @@ describe("/about, the visit (R2 gap 10)", () => {
       "added-copy", "edit-copies", "remove-card", "collection-history", "shopping-got-it",
     ];
     const friends = ["friend-spares", "friend-spares@SPARE_REQUESTS_ENABLED", "friends", "friend-decks", "invites", "rule-zero", "opponents"];
-    m.seen = { version: 16, ids: ["locked-cards", "how-it-works", "card-search", "getting-help", "combos-one-away", "precons", "upcoming-precons", "decks-stats", "deck-tokens", "whats-new", "commander-lane", "wishlist", "notes", "deck-stats", "deck-printings", "change-commander", "all-decks-cart", ...collectionEdit, ...friends] };
+    // The swap tools' entries always draw (SWAP_TOOLS_ENABLED retired), so a current reader has met them too.
+    const swapTools = ["stand-ins", "fits-your-decks", "find-a-deck-read"];
+    m.seen = { version: 16, ids: [...swapTools, "locked-cards", "how-it-works", "card-search", "getting-help", "combos-one-away", "precons", "upcoming-precons", "decks-stats", "deck-tokens", "whats-new", "commander-lane", "wishlist", "notes", "deck-stats", "deck-printings", "change-commander", "all-decks-cart", ...collectionEdit, ...friends] };
     const props = find(await draw({ tab: "reference" }), RecordVisit)!.props as { behind: boolean; answered: string[] };
     expect(props.behind).toBe(false);
     expect(props.answered).toContain("decks/your-deck/lock");

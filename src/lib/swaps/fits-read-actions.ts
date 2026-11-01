@@ -3,26 +3,25 @@
 import { requireUserId } from "../auth";
 import { requestSwitchEnv } from "../switches/request";
 import { isUuid } from "../uuid";
-import { swapToolsEnabled } from "./flag";
 import { pressFitsRead, readFitsRead, type FitsReadPanel, type FitsReadPress } from "./fits-read-run";
 
 /**
  * Find a deck read's server actions. Each is a PUBLIC ENDPOINT, so every gate is re-applied here:
- * the switch (the read follows swap tools, its parent: a reader without `SWAP_TOOLS_ENABLED` is answered nothing), the session, and the
- * shape of the card id. Nothing is revalidated: the read changes no page but the picker's own view,
+ * the session and the shape of the card id. Its switch's parent, swap tools, is retired (always on), so only the
+ * model-call kill switch stops it (`reserveModelCall`). Nothing is revalidated: the read changes no page but the picker's own view,
  * which draws the panel these return.
  */
 
 export async function readFitsReadAction(oracleId: string): Promise<FitsReadPanel | null> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (!swapToolsEnabled(env) || !isUuid(oracleId)) return null;
+  if (!isUuid(oracleId)) return null;
   return readFitsRead(userId, oracleId, undefined, env);
 }
 
 export async function pressFitsReadAction(oracleId: string): Promise<FitsReadPress> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (!swapToolsEnabled(env) || !isUuid(oracleId)) return { ok: false, reason: "notFound" };
+  if (!isUuid(oracleId)) return { ok: false, reason: "notFound" };
   return pressFitsRead(userId, oracleId, undefined, env);
 }

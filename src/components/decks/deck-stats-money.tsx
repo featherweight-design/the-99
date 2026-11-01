@@ -26,7 +26,7 @@ function Figure({ k, v, sub, ink }: { k: string; v: string; sub: string; ink: st
 export type MoneyOverLimit = { count: number; limit: string };
 
 /**
- * `overLimit` is set only under `swapToolsEnabled` with at least one row over (N3): the Shopping line then names them, and
+ * `overLimit` is set only on a deck page (the swap tools' provider) with at least one row over (N3): the Shopping line then names them, and
  * `onShop` lands on the first over row's ⇄. Null keeps the line as shipped.
  */
 export function MoneyCard({

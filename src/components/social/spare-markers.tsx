@@ -1,7 +1,7 @@
 "use client";
 // Friends' spares on a deck's rows (Social R2 PR A; handoff R3 `Spares` S1 to S4, foil addendum #1875): one read of every
 // card the deck is buying, the row's one other-ways press (⇄ and the spare glyph) on line 2 at both widths, the Shopping
-// key's item, and the spares-only modal the press opens when the swap tools are off.
+// key's item, and the spares-only modal the press opens where the swap tools' provider is not mounted (the cart).
 //
 // Spares land after the page, so a row draws the glyph only once the read arrives; the press keeps no slot (#1875: neither
 // is no press). Off, the provider is not mounted and every piece here draws nothing.
@@ -88,7 +88,7 @@ type Ctx = {
   /** Every card's spares read this visit, a card that left the list included (the cart keeps a line bought this
    *  visit as a held slot, and By friend draws it under the friends it sat under). */
   seen: ReadonlyMap<string, FriendSpare[]>;
-  /** The card whose spares-only modal is open (swap tools off), or null. */
+  /** The card whose spares-only modal is open (outside a deck page: the cart), or null. */
   opened: SpareCard | null;
   open: (card: SpareCard) => void;
   close: () => void;
@@ -362,7 +362,7 @@ export function StaticSparesProvider({
  * The row's one other-ways press (#1875: a single press on the card row's second line, at both widths): ⇄ when a
  * cheaper stand-in can be looked for, the spare glyph when a friend holds a spare, both in that order, and nothing at
  * all when neither (no slot is kept: the buy tag sits at the right). It opens the stand-ins modal, which names the
- * friends too (PR 8a), or with the swap tools off the spares-only modal.
+ * friends too (PR 8a), or outside a deck page (the cart, a locked row) the spares-only modal.
  */
 export function OtherWaysPress({
   card,
@@ -374,7 +374,7 @@ export function OtherWaysPress({
   oneLine = false,
 }: {
   card: SpareCard;
-  /** Opens the row's stand-ins modal: a deck row with the swap tools on whose card may be cut (never a locked one).
+  /** Opens the row's stand-ins modal: a deck row whose card may be cut (never a locked one).
    *  Absent (a locked row, the cart), the press opens the spares-only modal. */
   openStandIns?: () => void;
   /** The row may look for cheaper stand-ins (the swap tools' over-limit rule, decided by the row). */

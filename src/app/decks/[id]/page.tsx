@@ -77,7 +77,6 @@ import { suggestedChangesV2Enabled, tuningEnabled, tuningHubEnabled } from "../.
 import { loadDeckNotices } from "../../../lib/notices/read";
 import { NOTICES_PARAM, readNoticesArrival } from "../../../lib/notices/arrival";
 import { SwapToolsProvider } from "../../../lib/swaps/context";
-import { swapToolsEnabled } from "../../../lib/swaps/flag";
 import { printedNameOf } from "../../../lib/collection/browse";
 import { loadDeckTokens } from "../../../lib/tokens/read";
 import { DeckTokensProvider } from "../../../components/decks/deck-tokens-context";
@@ -314,9 +313,6 @@ export default async function DeckBuilderPage({
   const initialNotices = showNotices
     ? carried.then(() => perf.timed("notices", () => loadDeckNotices(id, userId))).catch(() => null)
     : Promise.resolve(null);
-  // The swap tools read the flag once, here, and reach every surface through one provider: a row
-  // that finds no provider draws nothing of them.
-  const swapTools = swapToolsEnabled(env);
   // The deck's tokens start with the rest of the wave and are awaited where the page is assembled. Off,
   // nothing is read at all. `loadDeckTokens` never rejects: a failed read is a value the group draws.
   // The makers draw the art the deck's own rows draw (an owned or picked printing), so the read waits for the
@@ -351,9 +347,9 @@ export default async function DeckBuilderPage({
       ...[d.commander, d.partner].filter((c) => !!c).map((c) => [c!.oracleId, { imageUri: c!.imageUri ?? null, name: c!.printedName ?? c!.name }] as const),
     ])))
     : ({ status: "absent" } as const))));
-  const shoppingLimitRead = swapTools
-    ? early(perf.timed("shoppingLimit", () => readShoppingLimit(id, userId)))
-    : Promise.resolve(null);
+  // The swap tools (retired switch, always on) reach every surface through one provider, which marks
+  // against this limit.
+  const shoppingLimitRead = early(perf.timed("shoppingLimit", () => readShoppingLimit(id, userId)));
 
 
   // `total`, not `built`, and the same figure the strip is measured against:
@@ -609,7 +605,7 @@ export default async function DeckBuilderPage({
   const storedRead = await storedPermits;
   const storedBracket = storedRead ?? null;
   const notices = await initialNotices;
-  // Started in stage A; see `swapTools` there.
+  // Started in stage A; see `shoppingLimitRead` there.
   const shoppingLimit = await shoppingLimitRead;
   // WHAT THIS DECK IS COMPARED TO, taken off the suggestions payload rather than resolved
   // again here. `loadDeckSuggestions` already ran in the first wave above and already built
@@ -762,9 +758,7 @@ export default async function DeckBuilderPage({
   );
   // I got it: the Shopping rows' tags open its confirm. Keyed per deck, so an open confirm never carries to another deck's page.
   const bought = <GotItProvider key={id} deckId={id}>{shell}</GotItProvider>;
-  const tooled = swapTools ? (
-    <SwapToolsProvider deckId={id} deckName={detail.name} storedLimitCents={shoppingLimit}>{bought}</SwapToolsProvider>
-  ) : bought;
+  const tooled = <SwapToolsProvider deckId={id} deckName={detail.name} storedLimitCents={shoppingLimit}>{bought}</SwapToolsProvider>;
   // Change commander's door and sheet read this context.
   const page = (
     <ChangeCommanderProvider

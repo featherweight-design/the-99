@@ -4,7 +4,8 @@ import type { SwitchName } from "../switches/registry";
  * The fifteen moments (discovery R1, plan `2026-10-16-moments.md`), in the FIXED ORDER that breaks a tie: the order a
  * deck is made (handoff README, Q2). M16, the Friends Home card, is not a moment (Hugh, 2026-10-16): Home gets a
  * permanent Friends section instead, in a PR of its own. `tool` is the switch the moment's tool lives behind, or null
- * for a surface that has none (Top off, Card assignments; the friends moments since `SOCIAL_FRIENDS_ENABLED` retired):
+ * for a surface that has none (Top off, Card assignments; the friends moments since `SOCIAL_FRIENDS_ENABLED` retired; Stand-ins and Find a
+ * deck since `SWAP_TOOLS_ENABLED` retired):
  * off for a reader, the moment is absent. `after` names a moment that must be spent first, which is how Mana Balance
  * always takes a later visit than Suggested changes.
  *
@@ -18,9 +19,9 @@ export const MOMENTS = [
   { id: "suggested-changes", m: "M2", tool: "TUNING_ENABLED" },
   { id: "mana-balance", m: "M4", tool: "ANALYSIS_TAB_ENABLED", after: "suggested-changes" },
   { id: "card-assignments", m: "M7", tool: null },
-  { id: "stand-ins", m: "M5", tool: "SWAP_TOOLS_ENABLED" },
+  { id: "stand-ins", m: "M5", tool: null },
   { id: "friend-spares", m: "M6", tool: null },
-  { id: "find-a-deck", m: "M8", tool: "SWAP_TOOLS_ENABLED" },
+  { id: "find-a-deck", m: "M8", tool: null },
   { id: "wishlist", m: "M9", tool: null },
   { id: "collection-sync", m: "M15", tool: null },
   { id: "lineup", m: "M13", tool: null },

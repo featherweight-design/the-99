@@ -505,7 +505,7 @@ export function GroupToggle({
       {/* A sibling of the strip, not a child: the strip returns null without provenance, and the
           limit still shows then (it reads `none over`). */}
       {!panelOpen && filter === "shopping" && <StandInLimit shoppingCount={shoppingCount} overCount={shoppingOverCount} />}
-      {/* I got it's key, a host of its own so it draws with the swap tools off (null with I got it off). */}
+      {/* I got it's key, a host of its own so it draws without the swap tools' provider (null with I got it off). */}
       {!panelOpen && filter === "shopping" && <ShoppingKey shoppingCount={shoppingCount} />}
     </div>
   );

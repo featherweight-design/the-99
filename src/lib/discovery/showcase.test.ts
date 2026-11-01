@@ -60,10 +60,11 @@ describe("showcaseGroups", () => {
 
   it("drops a tool whose switch is off (STATES: switch off)", () => {
     const off = (...names: SwitchName[]) => (n: SwitchName) => !names.includes(n);
-    const groups = showcaseGroups(input({ isOn: off("SWAP_TOOLS_ENABLED") }));
-    expect(card(groups, "stand-ins")).toBeUndefined();
-    expect(card(groups, "find-a-deck")).toBeUndefined();
-    // Top off and the friends tools have no switch: they always draw.
+    const groups = showcaseGroups(input({ isOn: off("HELP_ME_CHOOSE_ENABLED", "SWAP_TOOLS_ENABLED") }));
+    expect(card(groups, "help-me-choose")).toBeUndefined();
+    // Top off, the friends tools, and the swap tools (their switch retired) have no switch: they always draw.
+    expect(card(groups, "stand-ins")).toBeDefined();
+    expect(card(groups, "find-a-deck")).toBeDefined();
     expect(card(groups, "top-off")).toBeDefined();
     expect(card(groups, "friend-spares")).toBeDefined();
     expect(card(groups, "friends")).toBeDefined();
@@ -154,9 +155,9 @@ describe("writtenForYou", () => {
   const env = (off: string[] = []): NodeJS.ProcessEnv => {
     const on = {} as NodeJS.ProcessEnv;
     for (const name of [
-      // No PROPOSED_CUTS_ENABLED: Look deeper follows the Analysis tab (its own switch is retired).
+      // No PROPOSED_CUTS_ENABLED: Look deeper follows the Analysis tab (its own switch is retired). No SWAP_TOOLS_ENABLED:
+      // Find a deck's read is always on (swap tools retired).
       "ANALYSIS_TAB_ENABLED", "TUNING_ENABLED", "HELP_ME_CHOOSE_ENABLED",
-      "SWAP_TOOLS_ENABLED",
     ]) on[name] = off.includes(name) ? "off" : "true";
     return on;
   };
@@ -176,6 +177,10 @@ describe("writtenForYou", () => {
     const w = writtenForYou(resolveEntry(credits, env(["ANALYSIS_TAB_ENABLED", "HELP_ME_CHOOSE_ENABLED"])).caption, false)!;
     expect(w.rows.map((r) => r.id)).not.toContain("overview");
     expect(w.rows.map((r) => r.id)).not.toContain("help-me-choose");
+    // Find a deck's read has no live switch (swap tools retired): it stays with SWAP_TOOLS_ENABLED off.
+    expect(w.rows.map((r) => r.id)).toContain("find-a-deck-read");
+    const swapOff = { ...env(), SWAP_TOOLS_ENABLED: "off" } as NodeJS.ProcessEnv;
+    expect(writtenForYou(resolveEntry(credits, swapOff).caption, false)!.rows.map((r) => r.id)).toContain("find-a-deck-read");
     expect(w.free).toBe(writtenForYouCopy.freeBracket);
   });
 

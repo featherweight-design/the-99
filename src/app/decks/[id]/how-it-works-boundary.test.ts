@@ -47,8 +47,8 @@ describe("the deck page wraps its shell", () => {
   it("renders that wrap on both paths, never the bare shell", () => {
     const [el] = wrapElements();
     expect(el.boundTo).toBe("bought");
-    // `tooled` reads `bought` inside SwapToolsProvider and as the fallback: two reads.
-    expect(reads("bought")).toBe(2);
+    // `tooled` reads `bought` once, inside SwapToolsProvider (always mounted since SWAP_TOOLS_ENABLED retired).
+    expect(reads("bought")).toBe(1);
     // The bare shell is read once, by the wrap alone.
     expect(reads("shell")).toBe(1);
   });

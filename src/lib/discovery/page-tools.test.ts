@@ -46,6 +46,8 @@ describe("pageTools", () => {
     expect(placed(without("TUNING_ENABLED")).get("decks/analysis")).toEqual(["proposed-cuts", "mana-balance"]);
     // Proposed cuts has no switch but the Analysis tab's: its own retired name moves nothing.
     expect(placed(without("PROPOSED_CUTS_ENABLED")).get("decks/analysis")).toEqual(["suggested-changes", "proposed-cuts", "mana-balance"]);
+    // The swap tools have no switch (theirs is retired): its retired name moves nothing.
+    expect(placed(without("SWAP_TOOLS_ENABLED"))).toEqual(placed(ALL_ON));
     // A section left with no card is absent.
     expect(placed(without("HELP_ME_CHOOSE_ENABLED")).has("commanders/for-you")).toBe(false);
   });

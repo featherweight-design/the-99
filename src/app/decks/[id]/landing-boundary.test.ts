@@ -47,7 +47,7 @@ describe("the deck page's landing remount", () => {
     // `page` is the outermost deck-local wrap: Change commander around swap tools around I got it around the builder.
     const text = src.getFullText();
     expect(text).toMatch(/const page = \(\n    <ChangeCommanderProvider/);
-    expect(text).toMatch(/const tooled = swapTools \?/);
+    expect(text).toMatch(/const tooled = <SwapToolsProvider deckId=\{id\} deckName=\{detail\.name\} storedLimitCents=\{shoppingLimit\}>\{bought\}<\/SwapToolsProvider>;/);
     expect(text).toMatch(/const bought = <GotItProvider key=\{id\} deckId=\{id\}>/);
   });
 

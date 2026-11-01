@@ -449,35 +449,21 @@ describe("loadCardDetail availability", () => {
 // both fields absent, which keeps the door shut. The wiring into both branches of `loadCardDetail`
 // is `probe:swap-fits-data`'s, against a real database.
 describe("fitsGate", () => {
-  // The reader's resolved switches, as sentinels: the gate decides from these and never the environment.
-  const ON = { SWAP_TOOLS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
-  const OFF = { SWAP_TOOLS_ENABLED: "false" } as unknown as NodeJS.ProcessEnv;
-
-  // Find a deck's read follows swap tools, so wherever the gate is read the door opens the view.
+  // The swap tools and Find a deck's read are retired (always on), so wherever the gate is read the door opens the view.
   it("reads both flags off one row, with the read on beside them", async () => {
     const { fitsGate } = await import("./card-detail");
     const on = { execute: async () => ({ rows: [{ commander_legal: true, has_decks: false }] }) };
-    expect(await fitsGate("user_1", "o-1", on, ON)).toEqual({ commanderLegal: true, hasDecks: false, fitsRead: true });
+    expect(await fitsGate("user_1", "o-1", on)).toEqual({ commanderLegal: true, hasDecks: false, fitsRead: true });
   });
 
-  it("reads nothing while the swap tools are off", async () => {
-    const { fitsGate } = await import("./card-detail");
-    const execute = vi.fn(async () => ({ rows: [{ commander_legal: true, has_decks: true }] }));
-    expect(await fitsGate("user_1", "o-1", { execute }, OFF)).toEqual({});
-    expect(execute).not.toHaveBeenCalled();
-  });
-
-  // Admin adoption 6d: the reader's resolved switches win over the environment, both ways round.
-  it("decides from the env it is handed, never the environment", async () => {
+  // Retired switch: the variable set to false in the environment no longer shuts the door.
+  it("reads the gate whatever SWAP_TOOLS_ENABLED says", async () => {
     const { fitsGate } = await import("./card-detail");
     const execute = vi.fn(async () => ({ rows: [{ commander_legal: true, has_decks: true }] }));
     try {
       vi.stubEnv("SWAP_TOOLS_ENABLED", "false");
-      expect(await fitsGate("user_1", "o-1", { execute }, ON)).toEqual({ commanderLegal: true, hasDecks: true, fitsRead: true });
-      vi.stubEnv("SWAP_TOOLS_ENABLED", "true");
-      execute.mockClear();
-      expect(await fitsGate("user_1", "o-1", { execute }, OFF)).toEqual({});
-      expect(execute).not.toHaveBeenCalled();
+      expect(await fitsGate("user_1", "o-1", { execute })).toEqual({ commanderLegal: true, hasDecks: true, fitsRead: true });
+      expect(execute).toHaveBeenCalledTimes(1);
     } finally {
       vi.unstubAllEnvs();
     }
@@ -485,8 +471,8 @@ describe("fitsGate", () => {
 
   it("is absent for a card it cannot find, and when the read fails", async () => {
     const { fitsGate } = await import("./card-detail");
-    expect(await fitsGate("user_1", "o-1", { execute: async () => ({ rows: [] }) }, ON)).toEqual({});
-    expect(await fitsGate("user_1", "o-1", { execute: async () => { throw new Error("down"); } }, ON)).toEqual({});
+    expect(await fitsGate("user_1", "o-1", { execute: async () => ({ rows: [] }) })).toEqual({});
+    expect(await fitsGate("user_1", "o-1", { execute: async () => { throw new Error("down"); } })).toEqual({});
   });
 });
 
@@ -502,27 +488,10 @@ describe("loadCardDetail's round trips", () => {
 
   /** A fresh module over a db stub that counts what it is asked, plus the two side reads. */
   const cardComboCalls: unknown[] = [];
+  const dbSpies: { mockRestore: () => void }[] = [];
   async function fresh(opts: { catalog: unknown[] | Error | "stall"; printings?: Promise<unknown[]>; token?: unknown; gateRows?: unknown[]; cardCombos?: unknown }) {
     cardComboCalls.length = 0;
     const asked = { select: 0, printings: 0, execute: 0, flags: 0, token: [] as string[] };
-    vi.doMock("../../db", () => ({
-      db: {
-        select: () => {
-          asked.select += 1;
-          return {
-            from: () => ({
-              where: async () => {
-                if (opts.catalog === "stall") return new Promise<never>(() => {});
-                if (opts.catalog instanceof Error) throw opts.catalog;
-                return opts.catalog;
-              },
-              leftJoin: () => ({ where: () => { asked.printings += 1; return opts.printings ?? Promise.resolve([]); } }),
-            }),
-          };
-        },
-        execute: async () => { asked.execute += 1; return { rows: opts.gateRows ?? [] }; },
-      },
-    }));
     vi.doMock("../bracket/flags-read", () => ({
       loadBracketFlags: async () => { asked.flags += 1; return new Map(); },
     }));
@@ -536,11 +505,36 @@ describe("loadCardDetail's round trips", () => {
       loadTokenDetail: async (id: string) => { asked.token.push(id); return opts.token ?? null; },
     }));
     vi.resetModules();
+    // The REAL db module (its pool never connects: the setup file's stub URL), with its two methods
+    // spied, and never a `vi.doMock` factory. The loader imports `../../db` lazily from several reads
+    // in one tick (`proxyingDecks`, `fitsGate`), and Vitest's factory mock pushes its id onto the
+    // importer's shared callstack while it resolves: a second concurrent import of it sees that id and
+    // falls through to the real module. The gate then queried the stub URL, failed and read `{}`.
+    // A real module is cached like any other, so every concurrent import gets these spies.
+    vi.doUnmock("../../db");
+    const { db } = await import("../../db");
+    dbSpies.push(vi.spyOn(db, "select").mockImplementation((() => {
+      asked.select += 1;
+      return {
+        from: () => ({
+          where: async () => {
+            if (opts.catalog === "stall") return new Promise<never>(() => {});
+            if (opts.catalog instanceof Error) throw opts.catalog;
+            return opts.catalog;
+          },
+          leftJoin: () => ({ where: () => { asked.printings += 1; return opts.printings ?? Promise.resolve([]); } }),
+        }),
+      };
+    }) as never));
+    dbSpies.push(vi.spyOn(db, "execute").mockImplementation((async () => {
+      asked.execute += 1;
+      return { rows: opts.gateRows ?? [] };
+    }) as never));
     const mod = await import("./card-detail");
     return { load: mod.loadCardDetail, asked };
   }
   const done = () => {
-    vi.doUnmock("../../db");
+    for (const spy of dbSpies.splice(0)) spy.mockRestore();
     vi.doUnmock("../bracket/flags-read");
     vi.doUnmock("../combos/near-miss");
     vi.doUnmock("../combos/near-combos");
@@ -614,9 +608,9 @@ describe("loadCardDetail's round trips", () => {
     } finally { done(); }
   });
 
-  // Admin adoption 6d: the Fits door's gate is decided from the env the loader is HANDED, never the
-  // environment. Sentinel envs, compared by identity, so no assertion prints the process environment.
-  it("hands the reader's env to the Fits gate, whatever the environment says", async () => {
+  // The swap tools' switch is retired: the Fits door's gate is read for every reader, whatever the
+  // env handed in or the environment says. Sentinel envs, so no assertion prints the process environment.
+  it("reads the Fits gate whatever the reader's env or the environment says", async () => {
     const ON = { SWAP_TOOLS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
     const OFF = { SWAP_TOOLS_ENABLED: "false" } as unknown as NodeJS.ProcessEnv;
     selectCollectionRows.mockResolvedValue([ownedRow]);
@@ -631,7 +625,7 @@ describe("loadCardDetail's round trips", () => {
       expect([on?.commanderLegal, on?.hasDecks, on?.fitsRead]).toEqual([true, true, true]);
       vi.stubEnv("SWAP_TOOLS_ENABLED", "true");
       const off = await load("user_1", "o-1", undefined, OFF);
-      expect([off?.commanderLegal, off?.hasDecks, off?.fitsRead]).toEqual([undefined, undefined, undefined]);
+      expect([off?.commanderLegal, off?.hasDecks, off?.fitsRead]).toEqual([true, true, true]);
     } finally {
       vi.unstubAllEnvs();
       done();

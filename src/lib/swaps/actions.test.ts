@@ -1,17 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// The reader's resolved switches: a sentinel holding no variable at all (the flags are mocked below), so a
-// write is seen to receive exactly the env the action resolved, and a failing diff prints nothing real.
-const ENV = vi.hoisted(() => ({ SENTINEL: "resolved" }) as unknown as NodeJS.ProcessEnv);
-vi.mock("../switches/request", () => ({ requestSwitchEnv: vi.fn(async () => ENV) }));
-
 // The two Fits actions are PUBLIC ENDPOINTS: every gate is re-checked here, and the add's
-// revalidation waits for `after()` rather than shipping the caller's page back.
-const state = vi.hoisted(() => ({ afters: [] as (() => unknown)[], enabled: true }));
+// revalidation waits for `after()` rather than shipping the caller's page back. Their switch,
+// SWAP_TOOLS_ENABLED, is retired (always on): no action reads it.
+const state = vi.hoisted(() => ({ afters: [] as (() => unknown)[] }));
 vi.mock("next/server", () => ({ after: (fn: () => unknown) => state.afters.push(fn) }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("../auth", () => ({ requireUserId: async () => "user_1" }));
-vi.mock("./flag", () => ({ swapToolsEnabled: () => state.enabled }));
 vi.mock("../decks/revalidate-claims", () => ({ revalidateClaims: vi.fn() }));
 vi.mock("../decks/read", () => ({ requireDeck: vi.fn(async () => ({ id: "deck" })) }));
 vi.mock("../decks/remove-card", () => ({ removeOneCopy: vi.fn(async () => true) }));
@@ -40,7 +35,6 @@ const CARD = "22222222-2222-4222-8222-222222222222";
 
 beforeEach(() => {
   state.afters = [];
-  state.enabled = true;
   vi.clearAllMocks();
 });
 
@@ -63,10 +57,17 @@ describe("addFromFits", () => {
     expect(revalidateAdd).toHaveBeenCalledWith(DECK, "user_1", { result: { ok: true }, wrote: "added" });
   });
 
-  it("refuses with the flag off or a malformed id, writing nothing", async () => {
-    state.enabled = false;
-    expect((await addFromFits(DECK, CARD)).ok).toBe(false);
-    state.enabled = true;
+  it("adds whatever SWAP_TOOLS_ENABLED says, now the switch is retired", async () => {
+    vi.stubEnv("SWAP_TOOLS_ENABLED", "false");
+    try {
+      expect(await addFromFits(DECK, CARD)).toEqual({ ok: true });
+      expect(addCardToDeckFor).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("refuses a malformed id, writing nothing", async () => {
     expect((await addFromFits("not-a-uuid", CARD)).ok).toBe(false);
     expect((await addFromFits(DECK, "x")).ok).toBe(false);
     expect(addCardToDeckFor).not.toHaveBeenCalled();
@@ -80,10 +81,7 @@ describe("loadFitsAction", () => {
     expect(vi.mocked(loadFits).mock.calls[0] as unknown[]).toEqual(["user_1", CARD]);
   });
 
-  it("answers null with the flag off or a malformed id", async () => {
-    state.enabled = false;
-    expect(await loadFitsAction(CARD)).toBeNull();
-    state.enabled = true;
+  it("answers null for a malformed id", async () => {
     expect(await loadFitsAction("nope")).toBeNull();
     expect(loadFits).not.toHaveBeenCalled();
   });
@@ -104,10 +102,7 @@ describe("swapFromReadAction", () => {
     expect(revalidateClaims).toHaveBeenCalledWith(DECK, "user_1");
   });
 
-  it("refuses with swap tools off or a malformed id, writing nothing", async () => {
-    state.enabled = false;
-    expect(await swapFromReadAction(DECK, CUT, CARD)).toEqual({ ok: false, reason: "notFound" });
-    state.enabled = true;
+  it("refuses a malformed id, writing nothing", async () => {
     expect(await swapFromReadAction(DECK, "x", CARD)).toEqual({ ok: false, reason: "notFound" });
     expect(takeStandIn).not.toHaveBeenCalled();
   });
@@ -128,12 +123,11 @@ describe("undoReadSwapAction", () => {
     expect(revalidateClaims).toHaveBeenCalledWith(DECK, "user_1");
   });
 
-  it("is refused for a swap that is not the reader's or already undone, and gated", async () => {
+  it("is refused for a swap that is not the reader's or already undone, and for a malformed id", async () => {
     vi.mocked(undoSwap).mockResolvedValueOnce(null);
     expect(await undoReadSwapAction(SWAP)).toEqual({ ok: false });
     expect(state.afters).toHaveLength(0);
-    state.enabled = false;
-    expect(await undoReadSwapAction(SWAP)).toEqual({ ok: false });
+    expect(await undoReadSwapAction("x")).toEqual({ ok: false });
     expect(undoSwap).toHaveBeenCalledTimes(1);
   });
 });
@@ -153,10 +147,7 @@ describe("undoReadAddAction", () => {
     expect(removeOneCopy).not.toHaveBeenCalled();
   });
 
-  it("is refused with swap tools off or a malformed id, and when nothing was there to take out", async () => {
-    state.enabled = false;
-    expect(await undoReadAddAction(DECK, CARD)).toEqual({ ok: false });
-    state.enabled = true;
+  it("is refused for a malformed id, and when nothing was there to take out", async () => {
     expect(await undoReadAddAction("x", CARD)).toEqual({ ok: false });
     expect(removeOneCopy).not.toHaveBeenCalled();
     vi.mocked(removeOneCopy).mockResolvedValueOnce(false);

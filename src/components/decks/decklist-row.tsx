@@ -410,8 +410,8 @@ export function DecklistRow({
   // The printed cost, for All's fixed pip track. Shopping draws no pips (L2).
   const cost = hasFrontFaceCost(card.manaCost) ? card.manaCost : null;
   // Over the deck's Shopping limit (swap tools): the buy tag gains an outline, and the words `over $X` ride its
-  // description and the key's item, never beside the price. Shopping only, and only where the tools are on
-  // (`swapTools` is null otherwise).
+  // description and the key's item, never beside the price. Shopping only, and only on a deck page, where the
+  // tools' provider is mounted (`swapTools` is null otherwise).
   //
   // Never on a COMMANDER's Shopping row (H28): the stand-ins exist to cut the card, and a deck
   // cannot cut its commander from a buying list, so neither the ring, the ⇄ nor the door draws.

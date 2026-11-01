@@ -27,7 +27,8 @@ describe("spendMomentAction", () => {
 
   it("spends nothing for a moment whose tool is off", async () => {
     await spendMomentAction("help-me-choose");
-    await spendMomentAction("stand-ins");
+    // Proposed cuts follows the Analysis tab, off here. (Stand-ins was the example until SWAP_TOOLS_ENABLED retired.)
+    await spendMomentAction("proposed-cuts");
     expect(spendMoment).not.toHaveBeenCalled();
   });
 });

@@ -67,8 +67,8 @@ describe("welcomeSheet", () => {
 describe("welcomeSheetFor", () => {
   const ON = {
     ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true",
-    SWAP_TOOLS_ENABLED: "true",
   } as unknown as NodeJS.ProcessEnv; // No PROPOSED_CUTS_ENABLED: Look deeper follows the Analysis tab (its own switch is retired).
+  // No SWAP_TOOLS_ENABLED: Find a deck's read is always on (swap tools retired).
 
   it("draws the rows whose caption lines survive the reader's switches", () => {
     const s = welcomeSheetFor({ ...ON, TUNING_ENABLED: "off" }, { cards: 0, decks: [] })!;
@@ -89,8 +89,11 @@ describe("welcomeSheetFor", () => {
       .not.toContain("suggested");
   });
 
-  it("is null with every row's switch off, so no Where they work is drawn", () => {
-    expect(welcomeSheetFor({} as unknown as NodeJS.ProcessEnv, { cards: 0, decks: [] })).toBeNull();
+  // Find a deck's read has no live switch (swap tools retired), so with every live switch off it is the one row left.
+  it("draws Find a deck's read alone with every live switch off", () => {
+    const s = welcomeSheetFor({} as unknown as NodeJS.ProcessEnv, { cards: 0, decks: [] })!;
+    expect(s.shape).toBe("locked");
+    expect(s.rows.map((r) => r.id)).toEqual(["find-a-deck-read"]);
   });
 });
 
