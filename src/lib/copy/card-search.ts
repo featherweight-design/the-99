@@ -35,6 +35,13 @@ export const cardSearchCopy = {
   },
   keysHint: "↑ ↓ to move · ↵ to open · esc to close",
 
+  // DRAFT, for /copy-review (add a card from anywhere, READINESS O8): the open search's way into the Add cards sheet,
+  // above Recent cards (C2, C-D1). The lead, then the faint aside after a middle dot.
+  addSeveral: {
+    lead: "Add several cards",
+    aside: "search or scan",
+  },
+
   row: {
     inDeck: (deck: string) => `in ${deck}`,
     moreDecks: (n: number) => `+${n}`,

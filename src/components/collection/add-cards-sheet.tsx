@@ -61,10 +61,17 @@ const SEARCH_DEBOUNCE_MS = 150;
 
 type Phase = "editing" | "saving" | "failed" | "saved";
 
+/** A card the sheet opens with already on its list (add a card from anywhere, READINESS O5): what a pick needs of it. */
+export type InitialAddCard = Pick<CatalogCardResult, "oracleId" | "name" | "imageUri">;
+
 export type AddCardsSheetProps =
   | {
       mode: "add";
-      onClose: () => void;
+      /**
+       * The sheet is done. `leaving` is true when it closed on the way to another route (See it in History, the
+       * precon pick), so a host that would bring something back on a close (the shell's search) leaves it be.
+       */
+      onClose: (leaving?: boolean) => void;
       /** Called once with the copies a save added, so the head can re-read its figures. */
       onSaved?: (copiesAdded: number) => void;
       returnFocusRef?: RefObject<HTMLElement | null>;
@@ -77,6 +84,13 @@ export type AddCardsSheetProps =
       preconPick?: boolean;
       /** Collection edit on, decided by the host: the Scan press beside the search (card-scan PR 3). Absent, as shipped. */
       scan?: boolean;
+      /**
+       * Opens with this card on the list and its printing step open, exactly as picking it in the sheet's own search
+       * would (READINESS O5): the same printing read, no default printing, Save waiting on the pick.
+       */
+      initialCard?: InitialAddCard;
+      /** Opens with this typed in the sheet's search, its read already running (READINESS O5, the dock's bridge). */
+      initialQuery?: string;
     }
   | {
       /** One card's holdings, one line each (collection edit R2 §C). */
@@ -99,6 +113,8 @@ function AddMode({
   totalCards: totalCardsNow,
   preconPick = false,
   scan = false,
+  initialCard,
+  initialQuery,
 }: Extract<AddCardsSheetProps, { mode: "add" }>) {
   // The size when the sheet opened: the head re-reads its figure after a save, and the saved state
   // reports the move from the old one.
@@ -187,7 +203,8 @@ function AddMode({
     target?.focus();
   }, [fixing, pulse]);
 
-  const [query, setQuery] = useState("");
+  // Seeded once, at open: the sheet's own search takes it from there.
+  const [query, setQuery] = useState(() => initialCard ? "" : (initialQuery ?? ""));
   const [results, setResults] = useState<CatalogCardResult[]>([]);
   const [searched, setSearched] = useState<string | null>(null);
   const [active, setActive] = useState(0);
@@ -291,6 +308,11 @@ function AddMode({
   async function pick(card: CatalogCardResult) {
     // Rows from an earlier query stay drawn while the next is pending: they are not this search.
     if (searchDisabled || searched !== trimmed) return;
+    await addCard(card);
+  }
+
+  /** A card onto the list: its printings read, then the printing step (or the one printing taken). */
+  async function addCard(card: InitialAddCard) {
     // A search pick is a new line of its own: an open fix closes rather than coming back once the pick is done.
     setFixing(null);
     setLoadingCard(card.name);
@@ -320,6 +342,17 @@ function AddMode({
     setPickerFor(id);
     setAnnounce(copy.announceChoose(card.name, choices.length));
   }
+
+  // The card the sheet was opened with goes on the list as a pick would put it, once (a remount in development runs
+  // the effect again; the ref holds across it).
+  const seeded = useRef(false);
+  useEffect(() => {
+    if (seeded.current || !initialCard) return;
+    seeded.current = true;
+    void addCard(initialCard);
+    // On open only: the card is the opener's, not a value the sheet follows.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /**
    * A scanned card onto the list, as a search pick lands (card-scan PR 3). Auto takes the printing the scan matched; Normal's pick
@@ -611,13 +644,13 @@ function AddMode({
               went={saved.went}
               historyHref={`/collection/history?entry=${saved.entryId}`}
               historyLabel={copy.seeInHistory}
-              onNavigate={onClose}
+              onNavigate={() => onClose(true)}
             >
               <div className="mt-[8px] flex w-full flex-col gap-[8px] md:flex-row">
                 <button type="button" onClick={addMore} className="min-h-[44px] cursor-pointer rounded-[8px] border border-solid border-[color:var(--border-strong)] px-[16px] text-[14px] md:min-h-[38px]">
                   {copy.addMore}
                 </button>
-                <button type="button" onClick={onClose} className={`min-h-[44px] cursor-pointer rounded-[8px] px-[18px] text-[14px] font-semibold md:min-h-[38px] ${PRIMARY}`}>
+                <button type="button" onClick={() => onClose()} className={`min-h-[44px] cursor-pointer rounded-[8px] px-[18px] text-[14px] font-semibold md:min-h-[38px] ${PRIMARY}`}>
                   {copy.done}
                 </button>
               </div>
@@ -678,7 +711,7 @@ function AddMode({
                   onNavigate={(e) => {
                     e.preventDefault();
                     leaveDialogsForNavigation();
-                    onClose();
+                    onClose(true);
                     leave.go(PICK_FROM_COLLECTION_HREF);
                   }}
                   className="flex min-h-[52px] items-center gap-[12px] rounded-[10px] border border-solid border-[color:var(--border)] bg-[color:var(--bg)] px-[14px] text-[14px] md:mt-[4px]"
@@ -774,7 +807,7 @@ function AddMode({
             <div className="mt-[16px] flex gap-[10px]">
               <button
                 type="button"
-                onClick={onClose}
+                onClick={() => onClose()}
                 className="min-h-[44px] flex-1 cursor-pointer rounded-[8px] border border-solid border-[color:var(--border-strong)] text-[14px]"
               >
                 {copy.discard}
