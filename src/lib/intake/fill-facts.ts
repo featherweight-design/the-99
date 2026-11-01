@@ -27,7 +27,7 @@ export type DeckAnswers = {
   budgetRaised?: boolean;
   /** Set codes (lower case) the player asked for. The fill ranks the OWNED cards printed in them
    *  ahead of the other owned cards (`inPreferredSets`); never an exclusion, never a gate input.
-   *  Absent or empty: today's order. Not stored, so a retry fills without them. */
+   *  Absent or empty: today's order. Stored as `decks.answer_sets`, so a retry leads with them too. */
   sets?: readonly string[];
 };
 
