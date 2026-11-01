@@ -2,6 +2,7 @@ import * as React from "react";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { BrowseCard } from "../../lib/collection/browse";
+import type { ViewPrinting } from "./card-detail-provider";
 import { printingPickerCopy } from "../../lib/copy/collection";
 import { cardCarouselCopy, cardSheetCopy } from "../../lib/copy/card-carousel";
 
@@ -2217,6 +2218,30 @@ describe("viewPrintings", () => {
     expect(dialog.textContent).toContain("FDC");
   });
 
+  it("views a card its holder owns none of in the list's finish, over the reader's own foil copy", async () => {
+    const foilSol: BrowseCard = {
+      ...ownedSol,
+      printings: [{ setCode: "FDN", collectorNumber: "222", imageUri: "https://cards.scryfall.io/owned-sol.jpg", quantity: 1, finishes: { foil: 1 }, hasOwnArt: true, flavorName: null }] as unknown as BrowseCard["printings"],
+    };
+    const drawn = (views: Record<string, ViewPrinting> | undefined) => (
+      <CardDetailProvider fetchCard={async () => foilSol} viewPrintings={views}>
+        <CardDetailTrigger oracleId="o-sol" name="Sol Ring">Sol Ring</CardDetailTrigger>
+      </CardDetailProvider>
+    );
+    // Control: with no entry, the reader's own foil copy draws its film.
+    const { unmount } = render(drawn(undefined));
+    await click(screen.getByText("Sol Ring"));
+    let dialog = await screen.findByRole("dialog");
+    await waitFor(() => expect(dialog.querySelector('[data-testid="foil-film"]')).not.toBeNull());
+    unmount();
+    // A finish with no printing keeps the reader's printing and draws it plain.
+    render(drawn({ "o-sol": { finish: "nonfoil" } }));
+    await click(screen.getByText("Sol Ring"));
+    dialog = await screen.findByRole("dialog");
+    await waitFor(() => expect(dialog.outerHTML).toContain("owned-sol.jpg"));
+    expect(dialog.querySelector('[data-testid="foil-film"]')).toBeNull();
+  });
+
   it("draws its neighbor plate at that printing, before it is paged onto", async () => {
     render(
       <CardDetailProvider fetchCard={async (id) => (id === "o-sol" ? ownedSol : SIGNET)} prefetchCard={async (id) => (id === "o-sol" ? ownedSol : SIGNET)} viewPrintings={view}>
@@ -2227,6 +2252,32 @@ describe("viewPrintings", () => {
     await screen.findByRole("dialog");
     await waitFor(() => expect(screen.getAllByTestId("phone-peek-next")[0].outerHTML).toContain("precon-sol.jpg"));
     expect(screen.getAllByTestId("phone-peek-next")[0].outerHTML).not.toContain("owned-sol.jpg");
+  });
+
+  it("draws the neighbor plate of a finish-only card plain, over the reader's foil copy", async () => {
+    const foilSol: BrowseCard = {
+      ...ownedSol,
+      printings: [{ setCode: "FDN", collectorNumber: "222", imageUri: "https://cards.scryfall.io/owned-sol.jpg", quantity: 1, finishes: { foil: 1 }, hasOwnArt: true, flavorName: null }] as unknown as BrowseCard["printings"],
+    };
+    render(
+      <CardDetailProvider
+        fetchCard={async (id) => (id === "o-sol" ? foilSol : SIGNET)}
+        prefetchCard={async (id) => (id === "o-sol" ? foilSol : SIGNET)}
+        viewPrintings={{ "o-sol": { finish: "nonfoil" } }}
+      >
+        <CardDetailTrigger
+          oracleId="o-signet"
+          name="Arcane Signet"
+          siblings={[{ oracleId: "o-signet" }, { oracleId: "o-sol", name: "Sol Ring", imageUri: "https://cards.scryfall.io/list-sol.jpg", foil: "foil" }]}
+        >
+          Arcane Signet
+        </CardDetailTrigger>
+      </CardDetailProvider>,
+    );
+    await click(screen.getByText("Arcane Signet"));
+    await screen.findByRole("dialog");
+    await waitFor(() => expect(screen.getAllByTestId("phone-peek-next")[0].outerHTML).toContain("owned-sol.jpg"));
+    expect(screen.getAllByTestId("phone-peek-next")[0].querySelector('[data-testid="sibling-foil-film"]')).toBeNull();
   });
 
   it("views it there when paged onto, too", async () => {

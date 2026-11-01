@@ -16,7 +16,7 @@ import { commanderRepeats } from "../../lib/decks/commander-repeats";
 import type { ProfileCommander } from "../../lib/social/commander";
 import { isBasicType } from "../../lib/decks/basic-type";
 import type { FriendDeckCard, FriendDeckPage } from "../../lib/social/decks";
-import { CardDetailProvider } from "../cards/card-detail-provider";
+import { CardDetailProvider, type ViewPrinting } from "../cards/card-detail-provider";
 import { DecklistGroup } from "../decks/decklist-group";
 import { DECK_VIEWS, isDeckView } from "../decks/group-toggle";
 import { HoverPreviewProvider } from "../decks/hover-preview";
@@ -72,16 +72,19 @@ export function FriendDeckView({
   // The same picks go in as deck printings with no deck, which is what keeps the viewer's own picker (and its save) away.
   const named = [...deck.commanders, ...deck.cards].filter((c) => c.printedSetCode && c.printedCollectorNumber);
   const printingPicks = Object.fromEntries(named.map((c) => [c.oracleId, { setCode: c.printedSetCode!, collectorNumber: c.printedCollectorNumber! }]));
-  const viewPrintings = Object.fromEntries(
-    named.map((c) => [c.oracleId, {
-      setCode: c.printedSetCode!, collectorNumber: c.printedCollectorNumber!, imageUri: c.imageUri ?? null,
-      ...(c.printedBackImageUri !== undefined ? { backImageUri: c.printedBackImageUri } : {}),
-      ...(c.printedScryfallId ? { scryfallId: c.printedScryfallId } : {}),
-      // The owner's finish, the tile's film: their foil animates in card details, and a printing they hold plain (or in
-      // mixed finishes) stays plain over the reader's own foil copy. The precon page's rule (#2354). A card they hold
-      // none of names no printing, so it has no entry here.
-      finish: c.foil ?? ("nonfoil" as const),
-    }]),
+  const viewPrintings: Record<string, ViewPrinting> = Object.fromEntries(
+    [...deck.commanders, ...deck.cards].map((c): [string, ViewPrinting] => [c.oracleId, c.printedSetCode && c.printedCollectorNumber
+      ? {
+        setCode: c.printedSetCode, collectorNumber: c.printedCollectorNumber, imageUri: c.imageUri ?? null,
+        ...(c.printedBackImageUri !== undefined ? { backImageUri: c.printedBackImageUri } : {}),
+        ...(c.printedScryfallId ? { scryfallId: c.printedScryfallId } : {}),
+        // The owner's finish, the tile's film: their foil animates in card details, and a printing they hold plain (or in
+        // mixed finishes) stays plain over the reader's own foil copy. The precon page's rule (#2354).
+        finish: c.foil ?? ("nonfoil" as const),
+      }
+      // A card they hold none of names no printing, but is still theirs to show plain: the reader's own printing,
+      // never the reader's own foil copy.
+      : { finish: c.foil ?? "nonfoil" }]),
   );
   const head = deck.commanders[0];
   // The commander line is left out when the deck's name already says it (whole, or the part before the comma).
