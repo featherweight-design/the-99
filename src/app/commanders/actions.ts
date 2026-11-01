@@ -105,9 +105,8 @@ export async function refreshCommanderCounts(): Promise<{ owned: number; discove
 /**
  * Hide one commander from For you, Discover and Help me choose until the player undoes it.
  *
- * False when the id names nothing a player could have been offered: not a uuid, not a card, or a card not
- * legal in Commander. The row is optimistic, so false is what puts it back and raises the refusal; a
- * database failure throws and reaches the caller the same way.
+ * False when the id names no card: not a uuid, or not in the catalog. The row is optimistic, so false is
+ * what puts it back and raises the refusal; a database failure throws and reaches the caller the same way.
  *
  * Only the list cache is dropped. A hide changes which rows a list draws, never a slug or a score, so the
  * detail pages and `commander_scores` stay as they are.
@@ -123,8 +122,7 @@ export async function hideCommanderAction(oracleId: unknown): Promise<boolean> {
 /**
  * Undo a hide, from the row's in-place Undo, the Hidden list or the commander page.
  *
- * No card check: removing a row the player owns is safe for any id, and an unhide must still work for a
- * card the catalog has since stopped calling a commander, or that row could never be cleared.
+ * No card check: removing a row the player owns is safe for any id.
  */
 export async function unhideCommanderAction(oracleId: unknown): Promise<boolean> {
   const userId = await requireUserId();

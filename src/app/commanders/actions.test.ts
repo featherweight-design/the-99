@@ -89,7 +89,7 @@ describe("hideCommanderAction / unhideCommanderAction", () => {
     expect(revalidateUserLists).not.toHaveBeenCalled();
   });
 
-  it("refuses a card no list could have offered", async () => {
+  it("refuses an id the catalog does not hold", async () => {
     isHideable.mockResolvedValue(false);
     expect(await hideCommanderAction(ID)).toBe(false);
     expect(hideCommander).not.toHaveBeenCalled();

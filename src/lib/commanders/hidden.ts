@@ -20,17 +20,16 @@ export async function unhideCommander(userId: string, oracleId: string): Promise
     .where(and(eq(hiddenCommanders.userId, userId), eq(hiddenCommanders.oracleId, oracleId)));
 }
 
-/** Whether a card is one a list could have offered: a card in the catalog, legal in Commander. Every list a
-    hide reaches requires `commander_legal` (For you's scoring, Discover's `unbuiltCommanders`, Help me
-    choose's `isCandidate`); they do not all apply `isCommanderCandidate`, so asking that here would refuse
-    a row a player was shown. */
+/** Whether the id names a card in the catalog. Deliberately no legality test: For you can still draw a
+    persisted score for a commander the catalog has since stopped calling legal, and a hide must work on any
+    row a player was shown. A hide of anything else only ever narrows that player's own lists. */
 export async function isHideable(oracleId: string): Promise<boolean> {
   const [card] = await db
-    .select({ commanderLegal: cards.commanderLegal })
+    .select({ oracleId: cards.oracleId })
     .from(cards)
     .where(eq(cards.oracleId, oracleId))
     .limit(1);
-  return card?.commanderLegal === true;
+  return !!card;
 }
 
 /** The player's hidden commanders, newest first: the order the Hidden list draws. */
