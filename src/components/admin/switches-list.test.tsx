@@ -175,7 +175,7 @@ describe("SwitchesList", () => {
 });
 
 describe("AdminHead on /admin/switches", () => {
-  it("marks the Switches tab, after Costs, and titles the page", () => {
+  it("marks the Feature flags tab, after Costs, and titles the page", () => {
     render(<AdminHead env="staging" />);
     expect(screen.getByRole("heading", { level: 1, name: "Feature flags" })).toBeInTheDocument();
     const tabs = within(screen.getByRole("navigation", { name: "Admin pages" })).getAllByRole("link");
