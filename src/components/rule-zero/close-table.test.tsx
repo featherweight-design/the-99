@@ -42,6 +42,8 @@ function wideViewport(matches: boolean) {
 
 const press = () => act(async () => fireEvent.click(screen.getByRole("button", { name: c.action })));
 const dialog = () => screen.getByRole("dialog");
+/** The handler React holds for an element, as an older render's closure would still hold it. */
+const handlerOf = (el: Element) => (el as unknown as Record<string, { onClick: () => void }>)[Object.keys(el).find((k) => k.startsWith("__reactProps"))!].onClick;
 
 describe("the Close button (T1, D1)", () => {
   it("is the setter's, under Log this game, and never a guest's", () => {
@@ -77,22 +79,39 @@ describe("the confirm on the phone (a sheet)", () => {
     render(<CloseTable podName={POD} run={run} />);
     await press();
     const danger = within(dialog()).getByRole("button", { name: c.action });
+    // Two presses through the same render's handler, so only the `running` ref can stop the second.
+    const press1 = handlerOf(danger);
     await act(async () => {
-      fireEvent.click(danger);
-      fireEvent.click(danger);
+      press1();
+      press1();
     });
     expect(run).toHaveBeenCalledTimes(1);
-    expect(danger).toBeDisabled();
+    // Held, not disabled: a disabled button would drop the focus the keyboard is on.
+    expect(danger).not.toBeDisabled();
+    expect(danger).toHaveAttribute("aria-disabled", "true");
     expect(danger).toHaveAttribute("aria-busy", "true");
     await act(async () => finish(true));
-    expect(danger).not.toBeDisabled();
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+
+  it("names the dialog by its question on the phone", async () => {
+    render(<CloseTable podName={POD} run={async () => true} />);
+    await press();
+    expect(screen.getByRole("dialog", { name: "Close Thursday night’s table?" })).toBeInTheDocument();
+  });
+
+  it("closes the confirm when the close landed too, since the page may stay mounted", async () => {
+    render(<CloseTable podName={POD} run={async () => true} />);
+    await press();
+    await act(async () => fireEvent.click(within(dialog()).getByRole("button", { name: c.action })));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   });
 
   it("closes the confirm when the close did not happen, so the page's toast is seen", async () => {
     render(<CloseTable podName={POD} run={async () => false} />);
     await press();
     await act(async () => fireEvent.click(within(dialog()).getByRole("button", { name: c.action })));
-    expect(screen.queryByRole("dialog")).toBeNull();
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   });
 });
 
@@ -105,6 +124,7 @@ describe("the confirm from md (a 480 modal)", () => {
       await press();
       expect(within(dialog()).getByRole("heading", { level: 2 })).toHaveTextContent("Close Thursday night’s table?");
       expect(dialog()).toHaveTextContent(c.body);
+      expect(screen.getByRole("dialog", { name: "Close Thursday night’s table?" })).toBeInTheDocument();
       fireEvent.click(within(dialog()).getByRole("button", { name: c.keep }));
       expect(screen.queryByRole("dialog")).toBeNull();
       expect(run).not.toHaveBeenCalled();
@@ -171,6 +191,51 @@ describe("TableLive's close", () => {
     expect(m.close).toHaveBeenCalledTimes(2);
   });
 
+  it("closes the confirm and refreshes once when the follow-up answers open", async () => {
+    m.close.mockResolvedValue({ ok: true });
+    render(<TableLive initial={TABLES.T5} now={NOW} />);
+    await press();
+    await act(async () => fireEvent.click(within(dialog()).getByRole("button", { name: c.action })));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(m.refresh).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("table-body")).toBeInTheDocument();
+    expect(screen.queryByText(c.failed)).toBeNull();
+  });
+
+  it("closes the confirm and refreshes once when the follow-up fetch is lost", async () => {
+    let lost = false;
+    fetchMock.mockImplementation(async () => {
+      if (lost) throw new Error("offline");
+      return json({ kind: "open", view: TABLES.T5 });
+    });
+    m.close.mockImplementation(async () => {
+      lost = true;
+      return { ok: true };
+    });
+    render(<TableLive initial={TABLES.T5} now={NOW} />);
+    await press();
+    await act(async () => fireEvent.click(within(dialog()).getByRole("button", { name: c.action })));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(m.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("sends one close when Try again is pressed twice through the same toast handler", async () => {
+    m.close.mockResolvedValueOnce({ ok: false });
+    render(<TableLive initial={TABLES.T5} now={NOW} />);
+    await press();
+    await act(async () => fireEvent.click(within(dialog()).getByRole("button", { name: c.action })));
+    expect(m.close).toHaveBeenCalledTimes(1);
+    let finish: (v: { ok: boolean }) => void = () => {};
+    m.close.mockImplementation(() => new Promise((resolve) => { finish = resolve; }));
+    const retry = handlerOf(screen.getByRole("button", { name: c.retry }));
+    await act(async () => {
+      retry();
+      retry();
+    });
+    expect(m.close).toHaveBeenCalledTimes(2);
+    await act(async () => finish({ ok: false }));
+  });
+
   it("says a close that threw the same way", async () => {
     m.close.mockRejectedValue(new Error("network"));
     render(<TableLive initial={TABLES.T5} now={NOW} />);
@@ -210,6 +275,14 @@ describe("the closed table's sentence (C3 to C5)", () => {
     const body = plain(copy.expired.bodyClosedBy(named("Colin"), POD, time));
     expect(body).toMatch(/^Colin closed Thursday night’s table at \d{1,2}:\d{2} [ap]m\. Games logged/);
     expect(screen.getByText(body).className).toContain("ph-no-capture");
+  });
+
+  it("still says when a host close names no one, never the morning's sentence", () => {
+    render(<TableClosed closed={{ ...closed({ kind: "host", byYou: false, by: null, at: AT, logOpen: true }), setBy: null }} />);
+    const body = plain(copy.expired.bodyClosedByUnknown(POD, time));
+    expect(body).toMatch(/^Thursday night’s table was closed at \d{1,2}:\d{2} [ap]m\. Games logged from it stay on each deck’s Games tab\.$/);
+    expect(screen.getByText(body)).toBeInTheDocument();
+    expect(screen.queryByText(/the morning after/)).toBeNull();
   });
 
   it("keeps the morning end's own sentence", () => {

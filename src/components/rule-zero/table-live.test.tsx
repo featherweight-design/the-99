@@ -162,6 +162,23 @@ describe("TableLive", () => {
     expect(screen.queryByTestId("table-body")).toBeNull();
   });
 
+  it("stops asking once the table is closed", async () => {
+    fetchMock.mockResolvedValueOnce(open(base));
+    render(<TableLive initial={base} now={AT} />);
+    await settle();
+    fetchMock.mockResolvedValueOnce(json(200, { kind: "closed", closed: { tableId: base.tableId, viewerDeckId: null, podName: named("Thursday night"), setBy: named("Colin"), how: { kind: "morning", at: AT.toISOString() }, faces: [] } }));
+    await settle(POLL_MS);
+    expect(screen.getByTestId("table-closed")).toBeInTheDocument();
+    const asked = fetchMock.mock.calls.length;
+    await settle(POLL_MS * 3);
+    await show("visible");
+    await act(async () => {
+      window.dispatchEvent(new Event("focus"));
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(fetchMock.mock.calls.length).toBe(asked);
+  });
+
   it("refreshes the route when the reader has lost the table, and keeps drawing on a failed check", async () => {
     fetchMock.mockRejectedValueOnce(new Error("offline"));
     render(<TableLive initial={base} now={AT} />);

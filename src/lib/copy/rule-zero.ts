@@ -228,6 +228,9 @@ export const ruleZeroCopy = {
     // Copy-reviewed (Close UI).
     bodyClosedBy: (closer: Said, pod: Said, time: string) =>
       personText`${closer} closed ${pod}’s table at ${time}. Games logged from it stay on each deck’s Games tab.`,
+    // Copy-reviewed (Close UI), the board's sentence without the closer.
+    bodyClosedByUnknown: (pod: Said, time: string) =>
+      personText`${pod}’s table was closed at ${time}. Games logged from it stay on each deck’s Games tab.`,
   },
   // Close the table (Table board C1 to C5, T1, D1, D2). The setter's text button at the table's foot and its confirm.
   close: {

@@ -28,13 +28,15 @@ export function TableClosed({ closed }: { closed: ClosedTable }) {
   const utc = !useHydrated();
   const at = (d: Date) => closesWhen(d, d, utc ? "UTC" : undefined);
   const closer = how.kind === "host" ? (how.byYou ? "you" : (how.by ?? setBy)) : null;
-  // A host close names who closed it; with no one to name (their profile is gone), the shipped sentence stands.
+  // A host close names who closed it; with no one to name (their profile is gone) it still says when, never the morning's sentence.
   const body =
     how.kind === "host" && closer === "you"
       ? copy.bodyClosedByYou(podName, at(how.at))
       : how.kind === "host" && closer !== null
         ? copy.bodyClosedBy(closer, podName, at(how.at))
-        : copy.body(podName, setBy ?? "you");
+        : how.kind === "host"
+          ? copy.bodyClosedByUnknown(podName, at(how.at))
+          : copy.body(podName, setBy ?? "you");
   const log = how.kind === "host" && how.logOpen ? logGameHref(closed) : null;
   return (
     // The phone keeps its `‹ Friends` row (L4); desktop draws the card alone, centered in the page (H3).
@@ -66,7 +68,7 @@ export function TableClosed({ closed }: { closed: ClosedTable }) {
             <GhostButton href={log} className="flex min-h-[44px] w-full items-center justify-center rounded-[10px] px-[18px] text-[14.5px]">
               {ruleZeroCopy.page.log}
             </GhostButton>
-            <GhostButton href="/friends" className="flex min-h-[44px] w-full items-center justify-center rounded-[10px] border-transparent px-[18px] text-[14.5px]">
+            <GhostButton href="/friends" className="flex min-h-[44px] w-full items-center justify-center rounded-[10px] border-transparent! hover:border-transparent! px-[18px] text-[14.5px]">
               {copy.back}
             </GhostButton>
           </div>

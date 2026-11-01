@@ -79,7 +79,7 @@ export function TableBody({
           </div>
           {log || (view.setByYou && onClose) ? (
             // The table's foot: Log this game, then the setter's Close the table under it (T1, D1); on desktop it closes the read's column.
-            <div className="flex flex-col xl:col-start-2 xl:row-start-2">
+            <div className="flex flex-col gap-[14px] xl:col-start-2 xl:row-start-2">
               {log ? <LogGame href={log} /> : null}
               {view.setByYou && onClose ? <CloseTable podName={view.podName} run={onClose} /> : null}
             </div>

@@ -88,6 +88,12 @@ export function TableLive({
   const recorded = useRef(0);
   // Whether the visit's first check has answered: held across re-runs of the checking effect.
   const firstAnswered = useRef(false);
+  // A closed table has nothing left to ask: `stopPoll` ends the checking effect's timer and listeners.
+  const stopPoll = useRef<() => void>(() => {});
+  const adoptClosed = (c: Closed) => {
+    stopPoll.current();
+    setClosed(c);
+  };
   const routerRef = useRef(router);
   useEffect(() => {
     routerRef.current = router;
@@ -144,7 +150,18 @@ export function TableLive({
 
   // The setter's close. True when the table closed (the page then shows it closed, or is about to); a refusal and a throw
   // are the toast, and the confirm leaves its place to it.
+  // One close at a time, whichever render's handler calls: a toast's Try again holds the `closeNow` of an older render.
+  const closing = useRef(false);
   async function closeNow(): Promise<boolean> {
+    if (closing.current) return false;
+    closing.current = true;
+    try {
+      return await closeOnce();
+    } finally {
+      closing.current = false;
+    }
+  }
+  async function closeOnce(): Promise<boolean> {
     try {
       const out = await closeTableAction(tableId);
       if (!out.ok) throw new Error("refused");
@@ -157,7 +174,7 @@ export function TableLive({
       const res = await fetch(`/api/rule-zero/tables/${tableId}`, { cache: "no-store" });
       const poll = res.ok ? ((await res.json()) as TablePoll) : null;
       if (poll?.kind === "closed") {
-        setClosed(reviveClosedTable(poll.closed));
+        adoptClosed(reviveClosedTable(poll.closed));
         return true;
       }
     } catch {
@@ -184,7 +201,7 @@ export function TableLive({
         if (!res.ok) return;
         const poll = (await res.json()) as TablePoll;
         if (stopped || swaps.current !== swapsAtStart) return;
-        if (poll.kind === "closed") setClosed(reviveClosedTable(poll.closed));
+        if (poll.kind === "closed") adoptClosed(reviveClosedTable(poll.closed));
         else {
           const next = reviveTableView(poll.view);
           adopt(next);
@@ -212,12 +229,14 @@ export function TableLive({
     };
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("focus", onVisible);
-    return () => {
+    const stop = () => {
       stopped = true;
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("focus", onVisible);
     };
+    stopPoll.current = stop;
+    return stop;
   }, [tableId]);
 
   const revision = view.revision.getTime();
