@@ -15,6 +15,7 @@ import type { ValidationReport } from "../lib/tuning/validate";
 import type { CutCite } from "../lib/tuning/cuts-schema";
 import type { FitsDropReason } from "../lib/swaps/fits-read";
 import type { StoredFitsPick } from "../lib/swaps/fits-read-state";
+import { withPendingDrops } from "../lib/switches/pending-drop";
 import { ALL_FEATURES, SWITCH_NAMES } from "../lib/switches/registry";
 import { ANNOUNCEMENT_KINDS, PUSH_OUTBOX_KINDS, STORED_KINDS } from "../lib/feed/kinds";
 
@@ -2806,7 +2807,8 @@ export const flagGroupMembers = pgTable("flag_group_members", {
  * rule 4): app-wide, for a group, or for one account. A row is `on` or `off`; there is no inherit
  * value, because absence is inheritance, and clearing an override deletes its row. Each target holds
  * at most one override per switch (unique with nulls not distinct), so resolution is deterministic.
- * The switch names are the closed set in `src/lib/switches/registry.ts`.
+ * The switch names are the closed set in `src/lib/switches/registry.ts`, plus the deleted switches the
+ * CHECK still accepts until their follow-up migration (`PENDING_DROP_SWITCHES`, `pending-drop.ts`).
  *
  * Not a `user_data_touch` table, though it carries `user_id`: an app-wide or group row changes many
  * readers, and a per-row trigger moves one stamp. The cached pages put the reader's RESOLVED switches
@@ -2823,7 +2825,7 @@ export const flagOverrides = pgTable("flag_overrides", {
   updatedBy: text("updated_by").notNull(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (t) => [
-  check("flag_overrides_switch_check", sql`${t.switchName} in (${sql.raw([...SWITCH_NAMES, ALL_FEATURES].map((n) => `'${n}'`).join(", "))})`),
+  check("flag_overrides_switch_check", sql`${t.switchName} in (${sql.raw([...withPendingDrops(SWITCH_NAMES), ALL_FEATURES].map((n) => `'${n}'`).join(", "))})`),
   check("flag_overrides_scope_check", sql`${t.scope} in ('app', 'group', 'user')`),
   check("flag_overrides_value_check", sql`${t.value} in ('on', 'off')`),
   check("flag_overrides_target_check", sql`(${t.scope} = 'app' and ${t.groupId} is null and ${t.userId} is null)

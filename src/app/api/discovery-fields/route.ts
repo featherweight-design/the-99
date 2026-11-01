@@ -20,7 +20,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { drawFieldsFor } from "../../../lib/discovery/encode";
 import { loadDiscoveryPayload } from "../../../lib/discovery/payload";
 import { requestSwitchEnv } from "../../../lib/switches/request";
-import { parseRoleBasis } from "../../../lib/decks/label-counts-flag";
+import { parseRoleBasis } from "../../../lib/profile/build";
 import { MAX_FIELDS_BATCH } from "../../../lib/discovery/fields-batch";
 
 export const runtime = "nodejs";

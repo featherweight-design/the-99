@@ -3,6 +3,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { PENDING_DROP_SWITCHES } from "./pending-drop";
 import { ALL_FEATURES, SWITCH_NAMES, switchKind } from "./registry";
 
 const SRC = join(process.cwd(), "src");
@@ -27,7 +28,8 @@ describe("the switch registry", () => {
     expect([...SWITCH_NAMES].sort()).toEqual([...readVariables()].sort());
   });
 
-  // The set, plus All features' reserved name (2026-10-15), which the table holds and no variable carries.
+  // The set, plus All features' reserved name (2026-10-15), which the table holds and no variable carries, and the
+  // deleted switches the CHECK keeps until their follow-up migration (two-step delete, `pending-drop.ts`).
   it("checks the overrides table against exactly this set", () => {
     const migrations = readdirSync(join(process.cwd(), "drizzle")).filter((f) => f.endsWith(".sql")).sort();
     // The newest migration that (re)states the constraint is the one in force.
@@ -35,13 +37,14 @@ describe("the switch registry", () => {
     const last = sources.filter((s) => s.includes("flag_overrides_switch_check")).at(-1) ?? "";
     const listed = /flag_overrides_switch_check" CHECK \([^)]*in \(([^)]*)\)/.exec(last)?.[1] ?? "";
     const inForce = listed.split(",").map((s) => s.trim().replace(/'/g, ""));
-    expect(inForce.sort()).toEqual([...SWITCH_NAMES, ALL_FEATURES].sort());
+    expect(inForce.sort()).toEqual([...SWITCH_NAMES, ...PENDING_DROP_SWITCHES, ALL_FEATURES].sort());
   });
 
-  // LABEL_ROLE_COUNTS is a scoring basis no reader sees as a feature (admin PR 6d-2): a per-account
-  // override of it would add nothing and score one reader's stored set by a basis another's does not use.
+  it("keeps a pending drop out of the registry, so nothing reads or writes it", () => {
+    for (const n of PENDING_DROP_SWITCHES) expect(SWITCH_NAMES as readonly string[]).not.toContain(n);
+  });
+
   // RATE_LIMIT counts requests (payments scope PR S), and NAV_STALL_LOG reports stuck loaders; no reader sees a difference.
-  // How it works is app-wide only by Design’s answer to the brief’s open question 2 (admin PR 8a).
   // ANALYSIS_TAB spends: it gates every Overview press (READINESS audit finding 2), and SWAP_TOOLS
   // gates Find a deck's read the same way.
   // PUBLIC_PAGES is the public card and commander pages (launch epic F3): a stranger has no account, so only the
@@ -49,12 +52,12 @@ describe("the switch registry", () => {
   // SCAN_LAB is the card-scan spike's measuring page (staging only, never linked).
   it("keeps plumbing app-wide only, and marks the switches that spend model calls", () => {
     expect(SWITCH_NAMES.filter((n) => switchKind(n) === "plumbing")).toEqual([
-      "HOW_IT_WORKS_ENABLED", "LABEL_ROLE_COUNTS_ENABLED", "LIST_CACHE_ENABLED", "NAV_STALL_LOG_ENABLED", "PUBLIC_PAGES_ENABLED",
+      "LIST_CACHE_ENABLED", "NAV_STALL_LOG_ENABLED", "PUBLIC_PAGES_ENABLED",
       "RATE_LIMIT_ENABLED", "SCAN_LAB_ENABLED",
     ]);
     expect(SWITCH_NAMES.filter((n) => switchKind(n) === "model").sort()).toEqual(
       [
-        "ANALYSIS_TAB_ENABLED", "FIND_A_DECK_READ_ENABLED", "HELP_ME_CHOOSE_ENABLED", "OVERVIEW_V2_ENABLED", "PROPOSED_CUTS_ENABLED",
+        "ANALYSIS_TAB_ENABLED", "HELP_ME_CHOOSE_ENABLED", "OVERVIEW_V2_ENABLED", "PROPOSED_CUTS_ENABLED",
         "SUGGESTED_CHANGES_V2_ENABLED", "SWAP_TOOLS_ENABLED", "TUNING_ENABLED",
       ],
     );

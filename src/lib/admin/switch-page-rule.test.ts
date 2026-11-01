@@ -56,7 +56,7 @@ describe("switchPage", () => {
       groupOf: new Map(),
     };
     const p = switchPage({
-      name: "ALL_DECKS_CART_ENABLED",
+      name: "FLYER_TRIAL_ENABLED",
       env: envValues({}),
       overrides: [],
       verdicts: explainAccounts({} as NodeJS.ProcessEnv, snapshot, ACCOUNTS.map((a) => a.id)),
@@ -99,12 +99,12 @@ describe("switchPage", () => {
   });
 
   it("refuses every override under a kill, and says so on the rungs, the rows and the banner (F5)", () => {
-    const p = page("SOCIAL_FRIENDS_ENABLED", { SOCIAL_FRIENDS_ENABLED: "off" }, [
-      ov({ name: "SOCIAL_FRIENDS_ENABLED", scope: "user", userId: "u2", value: "on", note: "Early look" }),
-      ov({ name: "SOCIAL_FRIENDS_ENABLED", scope: "app", value: "on" }),
+    const p = page("FLYER_TRIAL_ENABLED", { FLYER_TRIAL_ENABLED: "off" }, [
+      ov({ name: "FLYER_TRIAL_ENABLED", scope: "user", userId: "u2", value: "on", note: "Early look" }),
+      ov({ name: "FLYER_TRIAL_ENABLED", scope: "app", value: "on" }),
     ]);
     expect(p.banner).toMatchObject({ kind: "kill", title: "Off: the env var is off." });
-    expect(p.banner?.body).toContain("SOCIAL_FRIENDS_ENABLED=off refuses every override.");
+    expect(p.banner?.body).toContain("FLYER_TRIAL_ENABLED=off refuses every override.");
     expect(rung(p, "account")).toMatchObject({ decides: "refused", deciding: false });
     expect(rung(p, "app")).toMatchObject({ decides: "refused" });
     expect(rung(p, "group")).toMatchObject({ decides: "decides for none" });
@@ -116,7 +116,7 @@ describe("switchPage", () => {
   });
 
   it("draws the compound banner when the parent is off for everyone (F4)", () => {
-    const p = page("MANA_BALANCE_ENABLED", { MANA_BALANCE_ENABLED: "true", ANALYSIS_TAB_ENABLED: "false" });
+    const p = page("PROPOSED_CUTS_ENABLED", { PROPOSED_CUTS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "false" });
     expect(p.banner).toMatchObject({ kind: "compound", title: "Off: needs Analysis tab, which is off.", link: "Open Analysis tab ›", parent: "ANALYSIS_TAB_ENABLED" });
     expect(rung(p, "needs")).toMatchObject({ value: "Analysis tab: off for all 3 accounts", decides: "decides for 3", deciding: true });
     expect(p.explanations[0].source).toBe("Analysis tab is off");

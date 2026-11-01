@@ -143,18 +143,18 @@ describe("switchGroups (A4, A5)", () => {
     overrides: [
       { switchName: "SWAP_TOOLS_ENABLED", scope: "group", groupId: G, userId: null, value: "on" },
       { switchName: "PROPOSED_CUTS_ENABLED", scope: "user", groupId: null, userId: MARA.id, value: "on" },
-      { switchName: "MANA_BALANCE_ENABLED", scope: "app", groupId: null, userId: null, value: "off" },
+      { switchName: "FEEDBACK_ENABLED", scope: "app", groupId: null, userId: null, value: "off" },
     ],
     groupOf: new Map([[MARA.id, G]]),
   };
-  const env = { ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "off" } as unknown as NodeJS.ProcessEnv;
+  const env = { ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", FLYER_TRIAL_ENABLED: "off" } as unknown as NodeJS.ProcessEnv;
 
   it("sorts every switch into exactly one group, with the source each verdict names", () => {
     const g = switchGroups(explainAccount(env, snapshot, MARA.id), (id) => (id === G ? "friends" : id));
     expect(g.total).toBe(SWITCHES.length);
     expect(g.override.length + g.rule.length + g.envOn.length + g.envOff.length).toBe(SWITCHES.length);
     expect(g.override.map((l) => [l.name, l.on, l.source])).toEqual([
-      ["MANA_BALANCE_ENABLED", false, "app-wide override"],
+      ["FEEDBACK_ENABLED", false, "app-wide override"],
       ["PROPOSED_CUTS_ENABLED", true, "account override"],
       ["SWAP_TOOLS_ENABLED", true, "group friends"],
     ]);

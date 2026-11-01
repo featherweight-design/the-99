@@ -1,9 +1,6 @@
-import { howItWorksEnabled } from "../about/how-it-works-flag";
 import { announcementsEnabled } from "../announcements/flag";
 import { listCacheEnabled } from "../cache/list-cache-flag";
-import { allDecksCartEnabled } from "../decks/all-decks-cart-flag";
 import { analysisTabEnabled } from "../decks/analysis-flag";
-import { labelRoleCountsEnabled } from "../decks/label-counts-flag";
 import { pushEnabled } from "../push/flag";
 import { helpMeChooseEnabled } from "../intake/flag";
 import type { ModelFeature } from "../model/allowance-rule";
@@ -12,12 +9,11 @@ import { navStallLogEnabled } from "../nav-stall/flag";
 import { paymentsEnabled, welcomeCreditsEnabled } from "../payments/flag";
 import { rateLimitEnabled } from "../rate/flag";
 import { scanLabEnabled } from "../scan-lab/flag";
-import { socialFriendsEnabled } from "../social/flag";
-import { findADeckReadEnabled, swapToolsEnabled } from "../swaps/flag";
+import { swapToolsEnabled } from "../swaps/flag";
 import { feedbackEnabled } from "../feedback/flag";
 import { flyerTrialEnabled } from "../flyer/flag";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
-import { manaBalanceEnabled, proposedCutsEnabled, suggestedChangesV2Enabled, tuningEnabled } from "../tuning/flag";
+import { proposedCutsEnabled, suggestedChangesV2Enabled, tuningEnabled } from "../tuning/flag";
 import type { SwitchName } from "./registry";
 
 /**
@@ -26,17 +22,12 @@ import type { SwitchName } from "./registry";
  * decides it. Server-side by its imports.
  */
 export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) => boolean>> = {
-  ALL_DECKS_CART_ENABLED: allDecksCartEnabled,
   ANALYSIS_TAB_ENABLED: analysisTabEnabled,
   ANNOUNCEMENTS_ENABLED: announcementsEnabled,
   FEEDBACK_ENABLED: feedbackEnabled,
-  FIND_A_DECK_READ_ENABLED: findADeckReadEnabled,
   HELP_ME_CHOOSE_ENABLED: helpMeChooseEnabled,
   FLYER_TRIAL_ENABLED: flyerTrialEnabled,
-  HOW_IT_WORKS_ENABLED: howItWorksEnabled,
-  LABEL_ROLE_COUNTS_ENABLED: labelRoleCountsEnabled,
   LIST_CACHE_ENABLED: listCacheEnabled,
-  MANA_BALANCE_ENABLED: manaBalanceEnabled,
   NAV_STALL_LOG_ENABLED: navStallLogEnabled,
   OVERVIEW_V2_ENABLED: overviewV2Enabled,
   PAYMENTS_ENABLED: paymentsEnabled,
@@ -44,7 +35,6 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   PUBLIC_PAGES_ENABLED: publicPagesEnabled,
   RATE_LIMIT_ENABLED: rateLimitEnabled,
   SCAN_LAB_ENABLED: scanLabEnabled,
-  SOCIAL_FRIENDS_ENABLED: socialFriendsEnabled,
   PUSH_ENABLED: pushEnabled,
   SUGGESTED_CHANGES_V2_ENABLED: suggestedChangesV2Enabled,
   SWAP_TOOLS_ENABLED: swapToolsEnabled,
@@ -68,6 +58,6 @@ export const MODEL_CAPABILITIES: readonly { key: ModelCapabilityKey; on: (env: N
   { key: "suggested_changes_v2", on: suggestedChangesV2Enabled },
   { key: "proposed_cuts", on: proposedCutsEnabled },
   { key: "intake", on: helpMeChooseEnabled },
-  // Find a deck's read follows its parent, swap tools (its own switch is retired).
+  // Find a deck's read follows its parent, swap tools.
   { key: "fits_read", on: swapToolsEnabled },
 ];

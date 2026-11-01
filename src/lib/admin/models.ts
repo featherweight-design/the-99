@@ -83,7 +83,7 @@ export const MODEL_ROWS: readonly ModelRowDef[] = [
   },
   {
     key: "fitsRead", origin: "player", model: FITS_READ_MODEL, effort: FITS_READ_EFFORT,
-    at: "src/lib/swaps/fits-read-limits.ts · FIND_A_DECK_READ",
+    at: "src/lib/swaps/fits-read-limits.ts · SWAP_TOOLS",
     spend: { feature: "fits_read", origin: "player" },
   },
   {

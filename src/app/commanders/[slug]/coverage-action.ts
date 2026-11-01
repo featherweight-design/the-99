@@ -9,7 +9,7 @@ import { loadAvailability } from "../../../lib/decks/availability-query";
 import { withAvailability } from "../../../lib/decks/availability";
 import { resolveOwnedPrintings } from "../../../lib/collection/owned-printings";
 import { requestSwitchEnv } from "../../../lib/switches/request";
-import { parseRoleBasis } from "../../../lib/decks/label-counts-flag";
+import { parseRoleBasis } from "../../../lib/profile/build";
 
 /** A1: one retry for the whole section. Re-resolves EDHREC and hands back only
     the role cards — the four panels read one payload, so there is one action,

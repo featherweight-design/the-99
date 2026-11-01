@@ -79,7 +79,7 @@ describe("cachePageForUser", () => {
       await cachePageForUser("u1", "home", [], async () => ({ value: 1, store: true }), envViewWith(vars));
       return vi.mocked(cacheForUser).mock.calls[0][1].join("|");
     };
-    expect(await key({ SOCIAL_FRIENDS_ENABLED: "true" })).not.toBe(await key({}));
+    expect(await key({ FLYER_TRIAL_ENABLED: "true" })).not.toBe(await key({}));
   });
 
   it("serves a repeat from the cache while the reader's stamp stands", async () => {
@@ -134,18 +134,18 @@ describe("cachePageForUser", () => {
     expect(store.size).toBe(0);
   });
 
-  it("loads again once SOCIAL_FRIENDS_ENABLED flips: the switch is in the key", async () => {
-    const before = process.env.SOCIAL_FRIENDS_ENABLED;
+  it("loads again once FLYER_TRIAL_ENABLED flips: the switch is in the key", async () => {
+    const before = process.env.FLYER_TRIAL_ENABLED;
     try {
-      delete process.env.SOCIAL_FRIENDS_ENABLED;
+      delete process.env.FLYER_TRIAL_ENABLED;
       const load = vi.fn(async () => ({ value: { n: 1 }, store: true }));
       await cachePageForUser("u1", "decks", [], load);
-      process.env.SOCIAL_FRIENDS_ENABLED = "true";
+      process.env.FLYER_TRIAL_ENABLED = "true";
       await cachePageForUser("u1", "decks", [], load);
       expect(load).toHaveBeenCalledTimes(2);
     } finally {
-      if (before === undefined) delete process.env.SOCIAL_FRIENDS_ENABLED;
-      else process.env.SOCIAL_FRIENDS_ENABLED = before;
+      if (before === undefined) delete process.env.FLYER_TRIAL_ENABLED;
+      else process.env.FLYER_TRIAL_ENABLED = before;
     }
   });
 

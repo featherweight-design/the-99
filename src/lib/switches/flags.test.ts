@@ -56,19 +56,14 @@ describe("MODEL_CAPABILITIES", () => {
   const raisedBy = (name: SwitchName) =>
     MODEL_CAPABILITIES.filter((c) => !c.on(all("true", { [name]: "false" })) && c.on(all("true"))).map((c) => c.key);
 
-  // FIND_A_DECK_READ_ENABLED is retired (Hugh 2026-10-31): the paid read follows swap tools, so it raises
-  // nothing and only the registry still lists it, until the switch is deleted.
-  const RETIRED: readonly SwitchName[] = ["FIND_A_DECK_READ_ENABLED"];
-
   it("is raised by every model switch", () => {
-    for (const name of SWITCH_NAMES.filter((n) => switchKind(n) === "model" && !RETIRED.includes(n))) {
+    for (const name of SWITCH_NAMES.filter((n) => switchKind(n) === "model")) {
       expect(raisedBy(name).length, name).toBeGreaterThan(0);
     }
   });
 
-  it("decides the paid read from swap tools, and the retired switch raises nothing", () => {
+  it("decides the paid read from swap tools", () => {
     expect(raisedBy("SWAP_TOOLS_ENABLED")).toContain("fits_read");
-    expect(raisedBy("FIND_A_DECK_READ_ENABLED")).toEqual([]);
   });
 
   it("is raised by no switch that is not a model switch", () => {
