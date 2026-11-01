@@ -76,7 +76,9 @@ describe("GamesView: the list", () => {
     expect(within(first).getByText("Speed")).toBeInTheDocument();
     // A game with no version and no marks reads as complete: the dashes, and the loss in the neutral square.
     expect(within(second).getByText(gameLogCopy.history.lost)).toBeInTheDocument();
-    expect(within(second).getByText(deckVersioningCopy.stamp.absent)).toBeInTheDocument();
+    // The marks row draws its own dash, so the version slot (the fixed 44px cell) is the one asked.
+    const slot = Array.from(second.querySelectorAll("span")).filter((el) => el.className.includes("w-[44px]") && el.textContent === deckVersioningCopy.stamp.absent);
+    expect(slot).toHaveLength(1);
     expect(within(second).getAllByText(gameLogCopy.history.noMarks).length).toBeGreaterThan(0);
   });
 
@@ -245,7 +247,7 @@ describe("GamesView: the window", () => {
   });
 
   it("reads a request that never arrived as the same failed state", async () => {
-    more.load.mockRejectedValue(new Error("offline"));
+    more.load.mockImplementation(async () => { throw new Error("offline"); });
     draw(first);
     fireEvent.click(screen.getByRole("button", { name: `Show ${GAME_HISTORY_WINDOW} more` }));
     expect(await screen.findByRole("alert")).toHaveTextContent(gameHistoryCopy.moreFailed);

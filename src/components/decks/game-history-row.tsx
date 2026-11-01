@@ -10,6 +10,7 @@ import type { GameOpponent } from "../../lib/decks/game-opponents";
 import type { DeckGame } from "../../lib/decks/games";
 import { formatPlayed } from "../../lib/decks/format";
 import { gameRowId } from "../../lib/games/landing";
+import { noteAppScroll } from "../../lib/ui/reveal";
 import { ANCHORED_PANEL_CLASS, useAnchoredPanel } from "../ui/anchored-panel";
 import { DeleteConfirm, DELETE_CONFIRM_WIDTH } from "../ui/delete-confirm";
 import { GameMarks, GameNote } from "./game-row-parts";
@@ -39,6 +40,7 @@ export function GameHistoryRow({ deckId, game, isLast, onDeleted, opponents, rin
   useEffect(() => {
     if (!ringed) return;
     const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    noteAppScroll();
     rowRef.current?.scrollIntoView?.({ block: "center", behavior: reduce ? "auto" : "smooth" });
     // Focus on the game, so a screen reader lands on it and reads it: the ring is only what the eye gets.
     rowRef.current?.focus?.({ preventScroll: true });
