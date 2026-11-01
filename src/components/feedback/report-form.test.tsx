@@ -79,6 +79,16 @@ describe("ReportForm", () => {
     expect(send).toHaveBeenCalledTimes(2);
   });
 
+  it("thanks with the shipped promise in the app, and sends the page's own path", async () => {
+    send.mockResolvedValue({ ok: true });
+    render(<ReportForm source="about" onClose={() => {}} />);
+    type("report-what", "Blank page");
+    fireEvent.click(sendButton());
+    await waitFor(() => expect(screen.getByText(copy.sentBody)).toBeTruthy());
+    expect(screen.queryByText(copy.sentSignedOut)).toBeNull();
+    expect(screen.queryByTestId("report-code")).toBeNull();
+  });
+
   it("a send that throws reads as failed too", async () => {
     send.mockRejectedValue(new Error("network"));
     render(<ReportForm source="about" onClose={() => {}} />);

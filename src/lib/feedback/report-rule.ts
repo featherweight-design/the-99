@@ -35,7 +35,7 @@ export type ParsedReport = {
 };
 
 /** An id the app handed out (a digest, a Sentry event id): short and made of word characters, else nothing. */
-function idOf(value: unknown): string | null {
+export function idOf(value: unknown): string | null {
   return typeof value === "string" && value.length > 0 && value.length <= ID_MAX && /^[\w-]+$/.test(value) ? value : null;
 }
 

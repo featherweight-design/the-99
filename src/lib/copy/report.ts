@@ -19,10 +19,16 @@ export const reportCopy = {
   sending: "Sending…",
   sentTitle: "Sent. Thank you.",
   sentBody: "We’ll be in touch if we need any more insight.",
+  // COPY-REVIEW PENDING: placeholder wording, to be replaced by /copy-review. A signed-out reader left no contact, so this
+  // makes no promise of a reply or follow-up.
+  sentSignedOut: "We read every report, and it helps us fix what broke.",
   close: "Close",
   cancel: "Cancel",
   failed: "We couldn’t send that. Try again.",
   retry: "Try again",
+  // The error code line of the crash screen and of /report (small items 8, board 6: C1, R1, R4): drawn only when there is a code.
+  codeLine: (digest: string) => `error ${digest}`,
+  sentWithCode: (digest: string) => `Sent with error ${digest}`,
 } as const;
 
 // The check-in on Home (flyer trial PR 6; `Survey-Phone`, `Survey-Desktop`), verbatim from `flyer-trial · copy strings.ts`
