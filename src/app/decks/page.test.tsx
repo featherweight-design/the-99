@@ -122,7 +122,8 @@ describe("/decks' games prop", () => {
   it("reads the filters off the address and hands them to the read and to the view", async () => {
     history.load.mockResolvedValueOnce(FIRST);
     const page = await visit({ view: "games", deck: "d1", result: "win", friend: "f1", against: "c1" });
-    const filter = { deckId: "d1", result: "win", friend: "f1", commander: "c1" };
+    // Played against is one choice: the friend wins over a commander the address also names.
+    const filter = { deckId: "d1", result: "win", friend: "f1" };
     expect(history.load).toHaveBeenCalledWith("user_1", { filter });
     expect(page.props.games?.data?.filter).toEqual(filter);
   });

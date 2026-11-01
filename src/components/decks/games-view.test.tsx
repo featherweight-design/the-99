@@ -196,7 +196,7 @@ describe("GamesView: the window", () => {
     more.load.mockReturnValue(new Promise<MoreGames>((r) => { resolve = r; }));
     draw(first);
     fireEvent.click(screen.getByRole("button", { name: `Show ${GAME_HISTORY_WINDOW} more` }));
-    expect(more.load).toHaveBeenCalledWith(first.next);
+    expect(more.load).toHaveBeenCalledWith(first.next, {});
     const busy = screen.getByRole("button", { name: gameHistoryCopy.loading });
     // Held, not removed: the button stays enabled and focusable (aria-disabled), so focus is not thrown out of the page.
     expect(busy).not.toBeDisabled();
@@ -233,7 +233,7 @@ describe("GamesView: the window", () => {
     more.load.mockResolvedValue({ ok: true, games: [game("g3", "2026-09-12T12:00:00Z")], next: null } satisfies MoreGames);
     fireEvent.click(screen.getByRole("button", { name: gameHistoryCopy.retry }));
     await waitFor(() => expect(screen.getAllByRole("listitem")).toHaveLength(3));
-    expect(more.load).toHaveBeenNthCalledWith(2, first.next);
+    expect(more.load).toHaveBeenNthCalledWith(2, first.next, {});
     expect(screen.queryByRole("alert")).toBeNull();
   });
 

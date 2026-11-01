@@ -9,7 +9,8 @@ const read = (q: string) => { const p = new URLSearchParams(q); return (k: strin
 describe("the filters on the address", () => {
   it("reads the four fields and nothing else; `commander` is the builder redirect's, so the commander rides as `against`", () => {
     expect(GAMES_FILTER_PARAMS).toEqual(["deck", "result", "friend", "against"]);
-    expect(gamesFilterFromParams(read("view=games&deck=d&result=win&friend=f&against=c&commander=x"))).toEqual({ deckId: "d", result: "win", friend: "f", commander: "c" });
+    expect(gamesFilterFromParams(read("view=games&deck=d&result=win&friend=f&commander=x"))).toEqual({ deckId: "d", result: "win", friend: "f" });
+    expect(gamesFilterFromParams(read("against=c&commander=x"))).toEqual({ commander: "c" });
   });
 
   it("keeps a value as written (the read matches nothing for a stale one) and drops an empty one", () => {
@@ -19,7 +20,7 @@ describe("the filters on the address", () => {
 
   it("folds ids to lower case, so a capitalised address keys, chips and picks like the lower-case one", () => {
     const up = "6F1C2A3B-4D5E-4F60-8A7B-9C0D1E2F3A4B";
-    expect(gamesFilterFromParams(read(`deck=${up}&friend=${up}&against=${up}&result=WIN`))).toEqual({ deckId: up.toLowerCase(), friend: up.toLowerCase(), commander: up.toLowerCase(), result: "WIN" });
+    expect(gamesFilterFromParams(read(`deck=${up}&friend=${up}&against=${up}&result=WIN`))).toEqual({ deckId: up.toLowerCase(), friend: up.toLowerCase(), result: "WIN" });
     expect(gamesFilterKey(gamesFilterFromParams(read(`friend=${up}`)))).toBe(gamesFilterKey({ friend: up.toLowerCase() }));
     expect(cleanGamesFilter({ deckId: up })).toEqual({ deckId: up.toLowerCase() });
   });
