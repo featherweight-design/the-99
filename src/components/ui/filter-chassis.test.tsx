@@ -66,6 +66,12 @@ describe("FilterChassis", () => {
     }
   });
 
+  it("draws no hairline and promises no sort when a route passes none (the Games view)", () => {
+    const { container } = render(<FilterChassis onClearAll={() => {}} resultLine="5 games" form="wide" controls={null} chips={[{ key: "a", label: "A", onRemove: vi.fn() }]} />);
+    expect(container.querySelector("[data-chassis-hairline]")).toBeNull();
+    expect(screen.getByRole("button", { name: "Clear all filters" })).toBeInTheDocument();
+  });
+
   it("never lets the control row wrap", () => {
     // Decision 18: two forms, nothing in between. A sort landing on its own
     // line reads as a bug, which is exactly how R1's wrapping row was reported.

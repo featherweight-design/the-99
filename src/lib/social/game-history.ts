@@ -16,6 +16,7 @@ import { db } from "../../db";
 import { cards, deckGameOpponents, deckGames, decks, friendLinks, socialProfiles } from "../../db/schema";
 import { assembleOpponents, type GameOpponent } from "../decks/game-opponents";
 import { named } from "../person-name/mint";
+import { commanderCard, commanderColumns, facePrinting, faceJoin, toCommander, type ProfileCommander } from "./commander";
 import type { ThirdPartyName } from "../person-name/brand";
 
 type Reader = Pick<typeof db, "select">;
@@ -95,24 +96,28 @@ export async function loadHistorySeats(viewerId: string, gameIds: readonly strin
   return seatsFromRows(await historySeatsQuery(viewerId, gameIds));
 }
 
-export type PlayedAgainstFriend = { publicId: string; name: ThirdPartyName; games: number };
+/** `commander` is the friend's face (their signature commander's art), null while they have chosen none. */
+export type PlayedAgainstFriend = { publicId: string; name: ThirdPartyName; games: number; commander: ProfileCommander | null };
 
 /** The viewer's current friends who sat in any of the viewer's games, with the number of games, over the whole history. */
 export function playedAgainstFriendsQuery(viewerId: string, q: Reader = db) {
   const games = sql<number>`count(distinct ${deckGameOpponents.gameId})::int`;
   return q
-    .select({ publicId: socialProfiles.publicId, displayName: socialProfiles.displayName, games })
+    .select({ publicId: socialProfiles.publicId, displayName: socialProfiles.displayName, ...commanderColumns, games })
     .from(deckGameOpponents)
     .innerJoin(deckGames, eq(deckGames.id, deckGameOpponents.gameId))
     .innerJoin(decks, and(eq(decks.id, deckGames.deckId), eq(decks.userId, viewerId)))
     .innerJoin(friendLinks, and(eq(friendLinks.userId, viewerId), eq(friendLinks.friendUserId, deckGameOpponents.friendUserId)))
     .innerJoin(socialProfiles, eq(socialProfiles.userId, friendLinks.friendUserId))
+    // The face joins in this same statement, so the grant above decides whose art may be drawn.
+    .leftJoin(commanderCard, eq(commanderCard.oracleId, socialProfiles.commanderOracleId))
+    .leftJoin(facePrinting, faceJoin)
     .where(eq(deckGames.userId, viewerId))
-    .groupBy(socialProfiles.publicId, socialProfiles.displayName)
+    .groupBy(socialProfiles.publicId, socialProfiles.displayName, commanderCard.oracleId, commanderCard.name, commanderCard.artCropUri, facePrinting.artCropUri)
     .orderBy(desc(games), socialProfiles.publicId);
 }
 
 export async function listPlayedAgainstFriends(viewerId: string): Promise<PlayedAgainstFriend[]> {
   const rows = await playedAgainstFriendsQuery(viewerId);
-  return rows.map((r) => ({ publicId: r.publicId, name: named(r.displayName), games: r.games }));
+  return rows.map((r) => ({ publicId: r.publicId, name: named(r.displayName), games: r.games, commander: toCommander(r) }));
 }

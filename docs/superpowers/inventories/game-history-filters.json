@@ -1,0 +1,189 @@
+{
+  "feature": "Game history PR 4: the filters (handoff design_handoff_the99_game_history; Small items 9 A1 no-match frame and B1 shared Sheet)",
+  "note": "Needs a signed-in account with three games of history or more and friends who sat in them: GH_DECK (a deck with games against GH_FRIEND), GH_DECK_NONE (a deck with none against GH_FRIEND) and GH_FRIEND (a friend's public id). Run on a scratch branch seeded for the audit account; the rows only read.",
+  "out": "contact-sheets/game-history-filters",
+  "shares": [
+    {
+      "binding": "FilterChassis",
+      "module": "src/components/ui/filter-chassis.tsx"
+    },
+    {
+      "binding": "Sheet",
+      "module": "src/components/ui/sheet.tsx"
+    },
+    {
+      "binding": "useAnchoredPanel",
+      "module": "src/components/ui/anchored-panel.ts"
+    }
+  ],
+  "rows": [
+    {
+      "id": "games-phone",
+      "label": "/decks?view=games at 390: the view row, the deck picker, Filter games, No filters on, the list",
+      "view": "src/components/decks/games-view.tsx",
+      "binding": "FilterChassis",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/decks?view=games",
+          "wait": "[data-games-summary]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "games-desktop",
+      "label": "/decks?view=games at 1300: the switch and the three dropdowns on one row, No filters on, the list",
+      "view": "src/components/decks/games-view.tsx",
+      "binding": "FilterChassis",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/decks?view=games",
+          "wait": "[data-games-summary]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "deck-friend-phone",
+      "label": "390: one deck against one friend, chips, the scoped summary and the trophy line",
+      "view": "src/components/decks/games-view.tsx",
+      "binding": "FilterChassis",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/decks?view=games&deck=${GH_DECK}&friend=${GH_FRIEND}",
+          "wait": "[data-games-beat-me]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "deck-friend-desktop",
+      "label": "1300: the same, the deck as a chip too",
+      "view": "src/components/decks/games-view.tsx",
+      "binding": "FilterChassis",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/decks?view=games&deck=${GH_DECK}&friend=${GH_FRIEND}",
+          "wait": "[data-games-beat-me]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "sheet-phone",
+      "label": "390: Filter games, the shared Sheet (Result counts, Played against, Show N games)",
+      "view": "src/components/decks/games-filter-controls.tsx",
+      "binding": "Sheet",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/decks?view=games&deck=${GH_DECK}&friend=${GH_FRIEND}",
+          "wait": "[data-games-beat-me]",
+          "settle": 800
+        },
+        {
+          "clickRole": "button",
+          "name": "^Filter games"
+        },
+        {
+          "wait": "[role=dialog]",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "panel-desktop",
+      "label": "1300: Played against open, the anchored panel under its dropdown",
+      "view": "src/components/decks/games-filter-controls.tsx",
+      "binding": "useAnchoredPanel",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/decks?view=games&deck=${GH_DECK}&friend=${GH_FRIEND}",
+          "wait": "[data-games-beat-me]",
+          "settle": 800
+        },
+        {
+          "clickRole": "button",
+          "name": "^Played against"
+        },
+        {
+          "wait": "[role=dialog]",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "no-match-phone",
+      "label": "390: filters that match nothing (A1 Z1)",
+      "view": "src/components/decks/games-view.tsx",
+      "binding": "FilterChassis",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/decks?view=games&deck=${GH_DECK_NONE}&friend=${GH_FRIEND}&result=win",
+          "wait": "[data-games-no-match]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "no-match-sheet-phone",
+      "label": "390: the sheet before it closes on Show 0 games (A1 Z3)",
+      "view": "src/components/decks/games-filter-controls.tsx",
+      "binding": "Sheet",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/decks?view=games&deck=${GH_DECK_NONE}&friend=${GH_FRIEND}&result=win",
+          "wait": "[data-games-no-match]",
+          "settle": 800
+        },
+        {
+          "clickRole": "button",
+          "name": "^Filter games"
+        },
+        {
+          "wait": "[role=dialog]",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "no-match-desktop",
+      "label": "1300: filters that match nothing (A1 Z2)",
+      "view": "src/components/decks/games-view.tsx",
+      "binding": "FilterChassis",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/decks?view=games&deck=${GH_DECK_NONE}&friend=${GH_FRIEND}&result=win",
+          "wait": "[data-games-no-match]",
+          "settle": 1500
+        }
+      ]
+    }
+  ]
+}

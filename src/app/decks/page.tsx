@@ -25,13 +25,14 @@ import { TOOL_PARAM } from "../../lib/discovery/tool-param";
 import { ToolLandingMount } from "../../components/discovery/tool-landing-mount";
 import { loadFriendDeckPrefs } from "../../lib/social/deck-visibility";
 import { loadGameHistory } from "../../lib/games/history";
+import { gamesFilterFromParams } from "../../lib/games/history-filter";
 import { toGamesPayload, type GamesPayload } from "../../lib/games/history-wire";
 
 
 export default async function DecksPage({
   searchParams,
 }: {
-  searchParams: Promise<{ commander?: string; select?: string | string[]; view?: string | string[]; tool?: string | string[] }>;
+  searchParams: Promise<{ commander?: string; select?: string | string[]; view?: string | string[]; tool?: string | string[]; deck?: string | string[]; result?: string | string[]; friend?: string | string[]; against?: string | string[] }>;
 }) {
   // Ahead of auth, as it has always been: the redirect is a URL rewrite and
   // needs no user.
@@ -140,9 +141,11 @@ export default async function DecksPage({
   // keyed on no stamp the payload has. A read that throws draws the tiles and the toast, never an empty history that lies.
   let games: GamesPayload | null = null;
   let gamesFailed = false;
+  // The filters ride the address (`deck`, `result`, `friend`, `against`), so a reload or a shared link lands on the same list.
+  const gamesFilter = gamesFilterFromParams((key) => params[key as keyof typeof params]);
   if (asked === "games") {
     try {
-      games = toGamesPayload(await loadGameHistory(userId));
+      games = toGamesPayload(await loadGameHistory(userId, { filter: gamesFilter }), gamesFilter);
       // A read with no aggregates cannot draw the view: it is a failed read like a throw, never a silent Decks.
       if (games === null) gamesFailed = true;
     } catch {

@@ -98,6 +98,7 @@ import type { LineupData } from "../../lib/lineup/types";
 import { type DecksView as DecksViewName } from "../ui/view-cookie";
 import { readLineupStats } from "../../app/decks/lineup-actions";
 import { readGameHistory } from "../../app/decks/game-history-actions";
+import { GAMES_FILTER_PARAMS, gamesFilterToParams } from "../../lib/games/history-filter";
 import type { GamesPayload } from "../../lib/games/history-wire";
 import { gameHistoryCopy } from "../../lib/copy/game-history";
 import { deckIdentity } from "../../lib/decks/format";
@@ -387,16 +388,28 @@ export function DecksView({
     // A press on Stats that had to ask the server lands here: the payload it asked for, drawn as Stats.
     if (lineup.view === "stats") setView("stats");
   }
-  if (games?.data && games.data !== heldGames) {
+  // Against the server's own last payload, not the held one: the Games filters swap the held payload for one they read.
+  const [seenGames, setSeenGames] = useState(games?.data ?? null);
+  if (games?.data && games.data !== seenGames) {
+    setSeenGames(games.data);
     setHeldGames(games.data);
     setHeldMore(freshGames(games.data));
     // The Stats door's `See every game` navigates to `?view=games`: the first window it asked for, drawn as Games.
     setView("games");
   }
+  // A payload read under a new filter (or served back from the Games view's own cache) is the first window now drawn.
+  const onGamesData = useCallback((next: GamesPayload) => {
+    setHeldGames(next);
+    setHeldMore(freshGames(next));
+  }, []);
   const onView = (next: DecksViewName) => {
     const params = new URLSearchParams(window.location.search);
     if (next === "stats" || next === "games") params.set("view", next);
     else params.delete("view");
+    // The Games filters ride the address only while Games is drawn: Decks and Stats do not own them and drop them, and
+    // Games puts back the ones the held payload was read under.
+    for (const key of GAMES_FILTER_PARAMS) params.delete(key);
+    if (next === "games" && heldGames) for (const [key, value] of gamesFilterToParams(heldGames.filter)) params.set(key, value);
     // A whole path, never a bare `?…`: a write that landed after the reader had moved on would otherwise
     // resolve against wherever they went.
     const path = window.location.pathname;
@@ -427,6 +440,8 @@ export function DecksView({
           // or sort chosen meanwhile is the reader's newer word.
           const now = new URLSearchParams(window.location.search);
           now.set("view", next);
+          // The read above was unfiltered: an address that still names filters would say otherwise.
+          for (const key of GAMES_FILTER_PARAMS) now.delete(key);
           mirrorUrl(`${path}?${now}`);
         })
         .catch(() => { if (next === "games" && mounted.current) setGamesFailed(true); })
@@ -1006,6 +1021,7 @@ export function DecksView({
             <GamesView
               data={heldGames!}
               hold={{ value: heldMore, set: setHeldMore }}
+              onData={onGamesData}
               viewSwitch={viewSwitch}
               decks={serverDecks.map((d) => ({ id: d.id, name: d.name, identity: deckIdentity(d.commanderColorIdentity, d.partnerColorIdentity) }))}
             />

@@ -26,7 +26,7 @@ describe("the face's readers", () => {
 
   it("covers the readers it names", () => {
     const withFace = files.filter((f) => /commanderColumns/.test(read(f)));
-    expect(withFace.sort()).toEqual(["access.ts", "friends.ts", "home-friends.ts", "rule-zero.ts", "spares.ts"]);
+    expect(withFace.sort()).toEqual(["access.ts", "friends.ts", "game-history.ts", "home-friends.ts", "rule-zero.ts", "spares.ts"]);
   });
 
   it("joins printings in every raw-SQL read of a profile's card", () => {

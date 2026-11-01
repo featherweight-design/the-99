@@ -1,4 +1,4 @@
-// The cross-deck Games view on /decks (design handoff `design_handoff_the99_game_history`, build PR 2+3, filter-free).
+// The cross-deck Games view on /decks (design handoff `design_handoff_the99_game_history`, build PR 2+3, filters PR 4).
 // Every string below is NEW and copy-reviewed (game history, 2026-11-01), the two the board marked DRAFT included.
 // Reused, not redefined: the headline's record form and `One game logged.` live in `gameLogCopy.headline`
 // (the board's F1 `1 game logged.` yields to the shipped string), the row's own slots in `gameLogCopy.history`, and the
@@ -36,6 +36,37 @@ export const gameHistoryCopy = {
   failed: "We couldn’t load your games.",
   moreFailed: "We couldn’t load more games.",
   retry: "Try again",
+  /** The filters (build PR 4; the board's `games.filter` strings, and Small items 9's no-match frame). */
+  filter: {
+    /** The phone's door, and the sheet's title. */
+    open: "Filter games",
+    close: "Close",
+    deck: "Deck",
+    allDecks: "All decks",
+    result: "Result",
+    anyResult: "Any result",
+    results: { win: "Won", loss: "Lost", draw: "Drawn" },
+    playedAgainst: "Played against",
+    search: "Friend or commander",
+    friends: "Friends",
+    commanders: "Commanders",
+    /** An option's count, beside its name: `17 games`. */
+    optionCount: games,
+    /** The sheet's button: what it would show. A zero stays pressable, so `Show 0 games` lands on the no-match frame. */
+    show: (shown: number) => `Show ${games(shown)}`,
+    clearAll: "Clear all",
+    /** Undrawn (eng default): the Played against list when the search matches nobody. */
+    noOption: "Nothing matches.",
+    /** Undrawn (eng default): a chip for a friend an address names who is not the reader's friend now. */
+    formerFriend: "Former friend",
+    /** Small items 9, A1: the list's place when the filters match nothing, in the shipped Decks empty's words. */
+    noMatch: "No games match",
+    clearFilters: "Clear filters",
+  },
+  /** The summary's facts line under a Played against filter: `HD - Sai with Colin at the table`. */
+  scoped: { with: "with", atTable: "at the table" },
+  /** The trophy line under a friend filter: `Colin won 2 of the 3 you lost`, the name drawn before this. */
+  beatMe: (won: number, losses: number) => ` won ${n(won)} of the ${n(losses)} you lost`,
   empty: {
     title: "No games logged yet.",
     // Copy-reviewed (game history).

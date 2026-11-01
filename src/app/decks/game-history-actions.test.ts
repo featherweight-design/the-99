@@ -1,11 +1,12 @@
 // The Games view's two server actions (game history, build PR 2+3): the first window for a press on `Games`, and the next
 // window for `Show 50 more`. The viewer is the session's, never an argument; a cursor the read did not write is refused as
 // the failed state rather than answered with the first window again; later windows carry no aggregates.
+import type { HistoryAggregates } from "../../lib/games/history";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
   user: "user_1" as string | null,
-  load: vi.fn<(viewerId: string, opts?: { cursor?: string | null }) => Promise<unknown>>(),
+  load: vi.fn<(viewerId: string, opts?: { cursor?: string | null; filter?: unknown }) => Promise<unknown>>(),
 }));
 vi.mock("../../lib/auth", () => ({
   requireUserId: async () => {
@@ -13,20 +14,26 @@ vi.mock("../../lib/auth", () => ({
     return state.user;
   },
 }));
-vi.mock("../../lib/games/history", () => ({ loadGameHistory: (viewerId: string, opts?: { cursor?: string | null }) => state.load(viewerId, opts) }));
+vi.mock("../../lib/games/history", () => ({ loadGameHistory: (viewerId: string, opts?: { cursor?: string | null; filter?: unknown }) => state.load(viewerId, opts) }));
 
 const { loadMoreGamesAction, readGameHistory } = await import("./game-history-actions");
 
 const CURSOR = "2026-09-19 12:00:00.123456|11111111-1111-4111-8111-111111111111";
+const AGGREGATES: HistoryAggregates = {
+  total: 60,
+  byResult: { wins: 30, losses: 20, draws: 10 },
+  byDeck: [{ deckId: "11111111-1111-4111-8111-111111111111", games: 60 }],
+  months: [{ month: "2026-09", games: 60 }],
+  summary: {
+    games: 60, wins: 30, losses: 20, draws: 10, decks: 1, podMin: 4, podMax: 4, firstPlayedAt: null, lastPlayedAt: null,
+    mostPlayed: null, friendWonLosses: null,
+  },
+  playedAgainst: { friends: [], commanders: [] },
+};
 const FIRST = {
   games: [{ id: "g1" }],
   next: CURSOR,
-  aggregates: {
-    total: 60,
-    months: [{ month: "2026-09", games: 60 }],
-    summary: { games: 60 },
-    playedAgainst: { friends: [{ publicId: "p1" }], commanders: [] },
-  },
+  aggregates: AGGREGATES,
 };
 
 beforeEach(() => {
@@ -35,17 +42,22 @@ beforeEach(() => {
 });
 
 describe("readGameHistory", () => {
-  it("reads the first window for the session's user and drops the filters' options", async () => {
+  it("reads the first window for the session's user, with the filters' options, and names the filter it was read under", async () => {
     state.load.mockResolvedValue(FIRST);
     const res = await readGameHistory();
     expect(state.load).toHaveBeenCalledTimes(1);
-    expect(state.load).toHaveBeenCalledWith("user_1", undefined);
-    expect(res).toEqual({
-      games: FIRST.games,
-      next: CURSOR,
-      aggregates: { total: 60, months: FIRST.aggregates.months, summary: FIRST.aggregates.summary },
-    });
-    expect(res && "playedAgainst" in res.aggregates).toBe(false);
+    expect(state.load).toHaveBeenCalledWith("user_1", { filter: {} });
+    expect(res).toEqual({ filter: {}, games: FIRST.games, next: CURSOR, aggregates: FIRST.aggregates });
+    // The new wire fields ride the first window: Result counts and per-deck counts.
+    expect(res?.aggregates.byResult).toEqual({ wins: 30, losses: 20, draws: 10 });
+    expect(res?.aggregates.byDeck).toEqual(AGGREGATES.byDeck);
+  });
+
+  it("reads under a filter the caller sent, keeping a string for each of the four fields and nothing else", async () => {
+    state.load.mockResolvedValue(FIRST);
+    const res = await readGameHistory({ deckId: "d", result: "win", viewerId: "someone_else" } as never);
+    expect(state.load).toHaveBeenCalledWith("user_1", { filter: { deckId: "d", result: "win" } });
+    expect(res?.filter).toEqual({ deckId: "d", result: "win" });
   });
 
   it("answers null when the read fails, which the view says in its toast", async () => {
@@ -64,9 +76,15 @@ describe("loadMoreGamesAction", () => {
   it("reads the window after the cursor for the session's user, with no aggregates", async () => {
     state.load.mockResolvedValue({ games: [{ id: "g51" }], next: null, aggregates: null });
     const res = await loadMoreGamesAction(CURSOR);
-    expect(state.load).toHaveBeenCalledWith("user_1", { cursor: CURSOR });
+    expect(state.load).toHaveBeenCalledWith("user_1", { cursor: CURSOR, filter: {} });
     expect(res).toEqual({ ok: true, games: [{ id: "g51" }], next: null });
     expect(res).not.toHaveProperty("aggregates");
+  });
+
+  it("reads the later window under the filter the first was read with", async () => {
+    state.load.mockResolvedValue({ games: [], next: null, aggregates: null });
+    await loadMoreGamesAction(CURSOR, { friend: "f1" });
+    expect(state.load).toHaveBeenCalledWith("user_1", { cursor: CURSOR, filter: { friend: "f1" } });
   });
 
   it("refuses a cursor the read did not write, instead of answering with the first window", async () => {
