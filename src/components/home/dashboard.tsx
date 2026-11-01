@@ -209,17 +209,6 @@ export function Dashboard(props: DashboardProps) {
         )}
       </header>
 
-      {/* Rule 0's cards come first: under the page head, above the strips and the lead. From `xl` each is one row. */}
-      {tables.length > 0 && (
-        <div data-home-tables className="px-[16px] pt-[14px] min-[1180px]:px-[26px] min-[1180px]:pt-[20px]">
-          <div className="flex flex-col gap-[12px] sm:max-w-[392px] xl:max-w-none">
-            {tables.map((t) => (
-              <HomeTableCard key={t.tableId} table={t} now={new Date(props.now)} />
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* The lock's page line, as first run draws it (desktop only; the phone's bracket carries it): the three
           slots still locked while this account has decks and no cards. */}
       {noCards && (
@@ -265,6 +254,15 @@ export function Dashboard(props: DashboardProps) {
             every width, which this layout already accepts for Commitments. */}
         {/* The lead's ✕ hands focus on to What's new's first row (`nextDismiss`); the rows keep their own section's scope. */}
         <div data-dismiss-scope className="contents min-[1180px]:flex min-[1180px]:min-w-0 min-[1180px]:flex-auto min-[1180px]:flex-col min-[1180px]:gap-[11px]">
+          {/* Rule 0's cards head the main column (board H6-H8): the right rail starts level with them from 1180, and below it
+              they are first in the one column. Drawn once. 10px apart; 12px to the next block (the column's 11px gap + 1). */}
+          {tables.length > 0 && (
+            <div data-home-tables className="flex flex-col gap-[10px] sm:max-w-[392px] min-[1180px]:mb-[1px] xl:max-w-none">
+              {tables.map((t) => (
+                <HomeTableCard key={t.tableId} table={t} now={new Date(props.now)} />
+              ))}
+            </div>
+          )}
           {props.signature}
           {props.welcome}
           {/* Direction B: the lead story where Ready to build stood, which leaves Home. */}

@@ -311,6 +311,20 @@ describe("Dashboard, Rule 0's table cards", () => {
     expect(before(card, container.querySelector("#home-friends-head")!)).toBe(true);
   });
 
+  it("sits first inside the main column, level with the rail, drawn once, 10px apart", () => {
+    const sooner = { ...TABLE, tableId: "t3" };
+    const { container } = render(<Dashboard {...BASE} tables={[sooner, TABLE]} friends={FRIENDS} />);
+    const wrap = container.querySelector("[data-home-tables]")!;
+    const main = container.querySelector("[data-dismiss-scope]")!;
+    expect(wrap.parentElement).toBe(main);
+    expect(main.firstElementChild).toBe(wrap);
+    expect(container.querySelectorAll("[data-home-tables]")).toHaveLength(1);
+    expect(main.parentElement!.contains(container.querySelector("#home-friends-head"))).toBe(true);
+    expect(main.contains(container.querySelector("#home-friends-head"))).toBe(false);
+    expect(wrap.className).toContain("gap-[10px]");
+    expect(wrap.className).toContain("min-[1180px]:mb-[1px]");
+  });
+
   it("is not drawn inside Friends any more", () => {
     const { container } = render(<Dashboard {...BASE} tables={[TABLE]} friends={FRIENDS} />);
     expect(container.querySelector("#home-friends-head")!.closest("section")!.querySelector("[data-testid=home-table-card]")).toBeNull();
