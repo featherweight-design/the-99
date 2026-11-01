@@ -221,8 +221,8 @@ describe("/about, the visit (R2 gap 10)", () => {
     expect(props.answered).toEqual([]);
   });
 
-  // Collection editing, Notes, Stats, deck printings, Locked (never cut), Change commander, Shopping for all decks and
-  // friends are retired (always on), so their entries and those that followed them always draw: a current reader has
+  // Collection editing, Notes, Stats, deck printings, Locked (never cut), Change commander, Shopping for all decks,
+  // friends and Help me choose are retired (always on), so their entries and those that followed them always draw: a current reader has
   // met them too.
   it("hands a current reader's visit the unit keys their state covers", async () => {
     const collectionEdit = [
@@ -232,7 +232,8 @@ describe("/about, the visit (R2 gap 10)", () => {
     const friends = ["friend-spares", "friend-spares@SPARE_REQUESTS_ENABLED", "friends", "friend-decks", "invites", "rule-zero", "opponents"];
     // The swap tools' entries always draw (SWAP_TOOLS_ENABLED retired), so a current reader has met them too.
     const swapTools = ["stand-ins", "fits-your-decks", "find-a-deck-read"];
-    m.seen = { version: 16, ids: [...swapTools, "locked-cards", "how-it-works", "card-search", "getting-help", "combos-one-away", "precons", "upcoming-precons", "decks-stats", "deck-tokens", "whats-new", "commander-lane", "wishlist", "notes", "deck-stats", "deck-printings", "change-commander", "all-decks-cart", ...collectionEdit, ...friends] };
+    // Help me choose's entry always draws (HELP_ME_CHOOSE_ENABLED retired), so a current reader has met it too.
+    m.seen = { version: 16, ids: [...swapTools, "help-me-choose", "locked-cards", "how-it-works", "card-search", "getting-help", "combos-one-away", "precons", "upcoming-precons", "decks-stats", "deck-tokens", "whats-new", "commander-lane", "wishlist", "notes", "deck-stats", "deck-printings", "change-commander", "all-decks-cart", ...collectionEdit, ...friends] };
     const props = find(await draw({ tab: "reference" }), RecordVisit)!.props as { behind: boolean; answered: string[] };
     expect(props.behind).toBe(false);
     expect(props.answered).toContain("decks/your-deck/lock");
