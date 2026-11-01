@@ -356,7 +356,7 @@ const SYSTEM_LINES = [
   "Ground every card in the evidence you are given: the player's games and notes, the decklist and its targets, and what the player says the deck is for. Cite what you used.",
   KINDS_LINE,
   "A games citation names what it counts, in the words the games section uses, with the figure it gives: \"Mana hurt in 3 of 5 games\", \"Lost 4 of 5 games\".",
-  "A note citation names the date of the note you quote, as the notes list writes it: \"26 Aug\". Quote that note in the rationale.",
+  "A note citation names the date of the note you quote, as the notes list writes it: \"Aug 26\". Quote that note in the rationale.",
   "An intent citation uses the player's own words. Quote their whole line in quotation marks, or cite a part of it WITHOUT quotation marks.",
   NOTES_LINE,
   "A mix citation names a target and its figure as the targets list writes it: \"draw 4 of 10\".",

@@ -478,7 +478,7 @@ export function validateSuggestions(args: {
       }
       case "note": {
         // Design's form: the citation names the note's date as the notes list writes it
-        // (`26 Aug`), and the suggestion quotes that note — `suggestionRules.quotedNote` then
+        // (`Aug 26`), and the suggestion quotes that note — `suggestionRules.quotedNote` then
         // holds the quotation to the byte and to its date wherever it appears.
         const year = pack.year;
         // In the rationale, or in this citation itself — both are drawn on the card. Not in some

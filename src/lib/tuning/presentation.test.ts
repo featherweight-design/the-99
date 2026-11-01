@@ -20,6 +20,12 @@ describe("presentationFailures", () => {
 
   it("catches a bare count with no denominator", () => {
     expect(fails("Mana hurt in 3 games.", notes)).toContain("denominator");
+    expect(fails("Mana hurt in 3 games on Sep 6.", notes)).toContain("denominator");
+  });
+
+  it("does not read a month-first date as a count", () => {
+    expect(fails("In your Sep 6 game you flooded, 3 of 5 games.", notes)).not.toContain("denominator");
+    expect(fails("In your Dec 31, 2025 game you flooded, 3 of 5 games.", notes)).not.toContain("denominator");
   });
 
   it("does not ask a card count for a denominator", () => {
@@ -124,9 +130,9 @@ describe("presentationFailures", () => {
   });
 
   it("holds a quoted note to its own day, not one that contains it", () => {
-    const sept = [{ text: "stuck on lands", date: "6 Sep" }];
-    expect(fails('On 6 Sep you wrote "stuck on lands".', sept)).toEqual([]);
-    expect(fails('On 16 Sep you wrote "stuck on lands".', sept)).toContain("quotedNote");
+    const sept = [{ text: "stuck on lands", date: "Sep 6" }];
+    expect(fails('On Sep 6 you wrote "stuck on lands".', sept)).toEqual([]);
+    expect(fails('On Sep 16 you wrote "stuck on lands".', sept)).toContain("quotedNote");
   });
 
   it("catches the word bracket at a sentence start, and lets ordinary prose about winning through", () => {
@@ -188,7 +194,7 @@ describe("presentationFailures", () => {
 
     it("never partially matches a DATED game note — only the intent/notes may be cited in part", () => {
       const notes = [{ text: "flooded out on turn six", date: "2026-09-01" }];
-      expect(fails('On 1 Sep: "flooded out".', notes)).toContain("quotedNote");
+      expect(fails('On Sep 1: "flooded out".', notes)).toContain("quotedNote");
     });
 
     it("repairs a standalone partial quote without corrupting a separate WHOLE quotation of a source containing its own embedded quote marks", () => {
@@ -216,13 +222,13 @@ describe("presentationFailures", () => {
 
     it("never rejects a valid whole quotation for omitting a DIFFERENT note's date, just because that note's words happen to sit inside it", () => {
       const notes = [
-        { text: 'I said "keep lands"', date: "1 Sep" },
-        { text: "keep lands", date: "2 Sep" },
+        { text: 'I said "keep lands"', date: "Sep 1" },
+        { text: "keep lands", date: "Sep 2" },
       ];
-      expect(fails('On 1 Sep: "I said "keep lands"".', notes)).toEqual([]);
+      expect(fails('On Sep 1: "I said "keep lands"".', notes)).toEqual([]);
       // Same check, sources in the other order.
       const reordered = [notes[1], notes[0]];
-      expect(fails('On 1 Sep: "I said "keep lands"".', reordered)).toEqual([]);
+      expect(fails('On Sep 1: "I said "keep lands"".', reordered)).toEqual([]);
     });
 
     it("keeps a model claim outside two IDENTICAL sources' shared quote, instead of corrupting it via stale offsets", () => {
@@ -288,7 +294,7 @@ describe("presentationFailures", () => {
       // the candidate unpromoted, and the generic gap check then finds it as a perfectly
       // ordinary single partial of the undated intent and repairs it, same as any other.
       const sources = [
-        { text: "win late", date: "1 Sep" },
+        { text: "win late", date: "Sep 1" },
         { text: "grind the table out and win late", date: null },
       ];
       expect(presentationFailures('You said "win late".', sources))
@@ -318,15 +324,15 @@ describe("presentationFailures", () => {
   describe("repair logic — round-6 review finding (a whole quotation's date is rechecked after repair)", () => {
     it("drops a note whose quoted date reads differently once a neighboring partial is unquoted", () => {
       const sources = [
-        { text: "stuck on lands", date: "6 Sep" },
-        { text: "I started this deck on 6 Sep", date: null },
+        { text: "stuck on lands", date: "Sep 6" },
+        { text: "I started this deck on Sep 6", date: null },
       ];
-      // Before repair, the quoted "6 Sep" sits between its own quote marks and the literal
+      // Before repair, the quoted "Sep 6" sits between its own quote marks and the literal
       // "2025" that follows, so mentionsDate's year lookahead does not fire and the dated note
-      // reads as sourced. "6 Sep" is also a genuine undated partial of the intent, so it is
+      // reads as sourced. "Sep 6" is also a genuine undated partial of the intent, so it is
       // repaired to its bare form — which puts "2025" directly after "Sep" and changes what
       // mentionsDate reads as the SAME date, now with an explicit different year attached.
-      expect(fails('Your note from "6 Sep" 2025 says "stuck on lands".', sources)).toContain("quotedNote");
+      expect(fails('Your note from "Sep 6" 2025 says "stuck on lands".', sources)).toContain("quotedNote");
     });
   });
 });

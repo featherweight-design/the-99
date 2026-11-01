@@ -54,7 +54,7 @@ describe("buildPrompt", () => {
   });
 
   it("renders a note verbatim with its date as its own delimited block, so a quote inside it cannot collide", () => {
-    expect(buildPrompt(pack).user).toContain("Note from 1 Sep:\n<<<PLAYER_TEXT>>>\nflooded out on turn six\n<<<END_PLAYER_TEXT>>>");
+    expect(buildPrompt(pack).user).toContain("Note from Sep 1:\n<<<PLAYER_TEXT>>>\nflooded out on turn six\n<<<END_PLAYER_TEXT>>>");
     const quoted = { ...pack, play: buildPlayGroup([game("g1", { note: 'I said "keep lands"' })]) };
     expect(buildPrompt(quoted).user).toContain('<<<PLAYER_TEXT>>>\nI said "keep lands"\n<<<END_PLAYER_TEXT>>>');
   });
@@ -344,6 +344,8 @@ describe("the prompt Hugh rated (eval round 4, 2026-09-24)", () => {
       "A notes citation quotes the player's own words from what they asked for this run, whole or a part of them.",
       "A notes citation uses the player's own words from what they asked for this run. Quote their whole line in quotation marks, or cite a part of it WITHOUT quotation marks.",
     )
+    // PROMPT_VERSION 11 (2026-11-01, US date order): the note citation's example date reads month first.
+    .replace('as the notes list writes it: "26 Aug".', 'as the notes list writes it: "Aug 26".')
     // PROMPT_VERSION 10 (2026-10-27): the focus becomes a seventh citation kind, for a deck with a focus only.
     .replace(
       "Cite with one of six kinds: games, note, decklist, intent, mix, notes.",

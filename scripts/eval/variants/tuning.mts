@@ -68,7 +68,7 @@ const CITE_RULES = [
   "Citations, exactly. A citation that does not match one of these forms discards the whole suggestion:",
   "- games: copy an axis label exactly as the Games section writes it, then its figure: \"Mana hurt in 3 of 5 games\". Or the record: \"Lost 4 of 5 games\".",
   "- mix: one line of the targets list, as written: \"draw 4 of 10\". Only the five targets are mix citations.",
-  "- note: the note's date only, as the notes list writes it: \"26 Aug\". Then quote the whole note, character for character, in double quotation marks, in the rationale.",
+  "- note: the note's date only, as the notes list writes it: \"Aug 26\". Then quote the whole note, character for character, in double quotation marks, in the rationale.",
   "- intent: the player's words, copied.",
   "- decklist: the name of the card in the deck you are relying on.",
   "How many decks run a staple is context for the rationale, never a citation.",
