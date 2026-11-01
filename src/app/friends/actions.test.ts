@@ -1,11 +1,9 @@
-// Social R1's actions (PR B): each decides the switch for the READER and refuses as `off` without writing,
-// and each maps its library result to an outcome the screen draws, so a refusal never reads as done (E12).
-// A component test mocks these away, so a write that skipped the gate or a mapping would pass everywhere else.
+// Social R1's actions (PR B): each takes the READER from the session before anything else, and each maps its library result to an outcome the screen draws, so a refusal never reads as done (E12).
+// A component test mocks these away, so a write that skipped the session or a mapping would pass everywhere else.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const m = vi.hoisted(() => ({
   requireUserId: vi.fn(),
-  requestSwitchEnv: vi.fn(),
   headers: vi.fn(),
   revalidatePath: vi.fn(),
   after: vi.fn(),
@@ -36,7 +34,6 @@ const m = vi.hoisted(() => ({
   skipFacePrompt: vi.fn(),
 }));
 vi.mock("../../lib/auth", () => ({ requireUserId: m.requireUserId }));
-vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitchEnv }));
 vi.mock("next/headers", () => ({ headers: m.headers }));
 vi.mock("next/cache", () => ({ revalidatePath: m.revalidatePath }));
 vi.mock("next/server", () => ({ after: m.after }));
@@ -60,7 +57,6 @@ vi.mock("../../lib/discovery/face-prompt", () => ({ skipFacePrompt: m.skipFacePr
 
 import * as actions from "./actions";
 
-const ON = { SOCIAL_FRIENDS_ENABLED: "true" };
 const TOKEN = "AbCdEfGhIjKlMnOpQrStUv";
 const POD = "11111111-1111-4111-8111-111111111111";
 const FRIEND = "22222222-2222-4222-8222-222222222222";
@@ -73,13 +69,12 @@ beforeEach(() => {
   vi.resetAllMocks();
   m.requireUserId.mockResolvedValue("user_1");
   m.profileAgeMs.mockResolvedValue(null);
-  m.requestSwitchEnv.mockResolvedValue(ON);
   m.headers.mockResolvedValue(headersOf({ host: "staging.the-99.dev", "x-forwarded-proto": "https" }));
   m.after.mockImplementation((fn: () => void) => fn());
 });
 
-describe("the switch", () => {
-  // Every action, called with arguments that would write if the gate were missing.
+describe("the session", () => {
+  // Every action, called with arguments that would write if the session were not read first.
   const calls: [string, () => Promise<unknown>][] = [
     ["setDisplayNameAction", () => actions.setDisplayNameAction("Ana")],
     ["setCommanderAction", () => actions.setCommanderAction("o")],
@@ -110,20 +105,13 @@ describe("the switch", () => {
     expect(calls.map(([name]) => name).sort()).toEqual(exported);
   });
 
-  it.each(calls)("%s refuses as off, reads nothing and writes nothing while it is off for the reader", async (_n, call) => {
-    m.requestSwitchEnv.mockResolvedValue({});
-    expect(await call()).toEqual({ ok: false, reason: "off" });
-    expect(m.requestSwitchEnv).toHaveBeenCalledWith("user_1");
+  it.each(calls)("%s refuses a signed-out caller, reading nothing and writing nothing", async (_n, call) => {
+    m.requireUserId.mockRejectedValue(new Error("unauthenticated"));
+    await expect(call()).rejects.toThrow("unauthenticated");
     for (const [key, fn] of Object.entries(m)) {
-      if (["requireUserId", "requestSwitchEnv", "after"].includes(key)) continue;
+      if (["requireUserId", "after"].includes(key)) continue;
       expect(fn, key).not.toHaveBeenCalled();
     }
-  });
-
-  it("refuses a signed-out caller before anything else", async () => {
-    m.requireUserId.mockRejectedValue(new Error("unauthenticated"));
-    await expect(actions.createInviteAction()).rejects.toThrow("unauthenticated");
-    expect(m.createInvite).not.toHaveBeenCalled();
   });
 });
 
@@ -312,39 +300,21 @@ describe("the picker's reads (E2)", () => {
   });
 });
 
-describe("the signature card (needs SOCIAL_FRIENDS_ENABLED)", () => {
-  const SIGNATURE = ON;
+describe("the signature card", () => {
   const CARD = "33333333-3333-4333-8333-333333333333";
-  const signatureCalls: [string, () => Promise<unknown>][] = [
-    ["listDeckFacesAction", () => actions.listDeckFacesAction()],
-    ["searchFaceCardsAction", () => actions.searchFaceCardsAction("plains")],
-    ["listFacePrintingsAction", () => actions.listFacePrintingsAction(CARD)],
-    ["skipFacePromptAction", () => actions.skipFacePromptAction()],
-    ["setSignatureCardAction", () => actions.setSignatureCardAction(CARD)],
-  ];
-
-  it.each(signatureCalls)("%s refuses as off with friends off, reading nothing", async (_n, call) => {
-    m.requestSwitchEnv.mockResolvedValue({});
-    expect(await call()).toEqual({ ok: false, reason: "off" });
-    for (const fn of [m.listOwnDeckFaces, m.searchFaceCards, m.listFacePrintings, m.skipFacePrompt, m.setCommander, m.ensureProfile]) expect(fn).not.toHaveBeenCalled();
-  });
-
   it("reads the deck row for the session's reader", async () => {
-    m.requestSwitchEnv.mockResolvedValue(SIGNATURE);
     m.listOwnDeckFaces.mockResolvedValue([]);
     expect(await actions.listDeckFacesAction()).toEqual({ ok: true, tiles: [] });
     expect(m.listOwnDeckFaces).toHaveBeenCalledWith("user_1");
   });
 
   it("hands the search its query as given", async () => {
-    m.requestSwitchEnv.mockResolvedValue(SIGNATURE);
     m.searchFaceCards.mockResolvedValue([]);
     expect(await actions.searchFaceCardsAction(42)).toEqual({ ok: true, hits: [] });
     expect(m.searchFaceCards).toHaveBeenCalledWith(42);
   });
 
   it("refuses a printings screen for a malformed id without reading, and one the catalog has not got", async () => {
-    m.requestSwitchEnv.mockResolvedValue(SIGNATURE);
     expect(await actions.listFacePrintingsAction("nope")).toEqual({ ok: false, reason: "noCard" });
     expect(m.listFacePrintings).not.toHaveBeenCalled();
     m.listFacePrintings.mockResolvedValue(null);
@@ -353,7 +323,6 @@ describe("the signature card (needs SOCIAL_FRIENDS_ENABLED)", () => {
   });
 
   it("stops asking for the session's reader, and redraws Home", async () => {
-    m.requestSwitchEnv.mockResolvedValue(SIGNATURE);
     m.skipFacePrompt.mockResolvedValue(false);
     expect(await actions.skipFacePromptAction()).toEqual({ ok: true });
     expect(m.skipFacePrompt).toHaveBeenCalledWith("user_1");
@@ -361,7 +330,6 @@ describe("the signature card (needs SOCIAL_FRIENDS_ENABLED)", () => {
   });
 
   it("makes a profile before a pick from Home, then saves it and redraws Home, /friends after the response", async () => {
-    m.requestSwitchEnv.mockResolvedValue(SIGNATURE);
     m.profileAgeMs.mockResolvedValue(null);
     m.currentUser.mockResolvedValue({ firstName: "Sam", publicMetadata: {} });
     m.setCommander.mockResolvedValue({ ok: true });
@@ -375,7 +343,6 @@ describe("the signature card (needs SOCIAL_FRIENDS_ENABLED)", () => {
   });
 
   it("refuses a null card from Home without writing, and passes a refusal through", async () => {
-    m.requestSwitchEnv.mockResolvedValue(SIGNATURE);
     expect(await actions.setSignatureCardAction(null)).toEqual({ ok: false, reason: "noCard" });
     expect(m.setCommander).not.toHaveBeenCalled();
     m.profileAgeMs.mockResolvedValue(1e12);

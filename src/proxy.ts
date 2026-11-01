@@ -30,7 +30,7 @@ import { isQrToken } from "./lib/invites/rules";
 // signature on the raw body and refuses anything unsigned (`api/stripe-webhook/route.ts`).
 // /friend/<token> is public because a friend link is opened by someone who may not be signed in yet: the
 // page draws a signed-out reader a card that reads nothing and offers Sign in, and reads the link only for
-// a signed-in reader whose own switch is on (`app/friend/[token]/page.tsx`, Social R1 E8). `/friends` stays
+// a signed-in reader (`app/friend/[token]/page.tsx`, Social R1 E8). `/friends` stays
 // protected: the pattern needs the slash.
 // /card/<slug> and /commander/<slug> are the public catalog pages (launch epic F3): the PAGE enforces its switch
 // (`PUBLIC_PAGES_ENABLED`) and answers 404 while it is off, so a stranger is never sent to sign-in from one. `/commanders`

@@ -1,5 +1,5 @@
-// A friend's page (Social R2 P2, P3; G9, decision 10; menu and Home PR 7): not found unless the friends switch is on for
-// the reader and the id is a current friend (the Wishlist tab too: its own switch is retired); the head with the
+// A friend's page (Social R2 P2, P3; G9, decision 10; menu and Home PR 7): not found unless the id is a current friend
+// (each tab too); the head with the
 // row's … menu; the wishlist as tiles
 // reading `wants N`, never an owned count; the empty state; and a removal from here leaves for `/friends`.
 import { renderToString } from "react-dom/server";
@@ -8,7 +8,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const m = vi.hoisted(() => ({
   requireUserId: vi.fn(),
-  requestSwitchEnv: vi.fn(),
   loadFriend: vi.fn(),
   loadFriendWishlist: vi.fn(),
   loadFriendSpareList: vi.fn(),
@@ -27,7 +26,6 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: m.replace, push: vi.fn(), refresh: vi.fn() }),
 }));
 vi.mock("../../../../lib/auth", () => ({ requireUserId: m.requireUserId }));
-vi.mock("../../../../lib/switches/request", () => ({ requestSwitchEnv: m.requestSwitchEnv }));
 vi.mock("../../../../lib/social/access", () => ({ loadFriend: m.loadFriend }));
 vi.mock("../../../../lib/social/wishlist", () => ({ loadFriendWishlist: m.loadFriendWishlist }));
 vi.mock("../../../../lib/social/spares", () => ({ loadFriendSpareList: m.loadFriendSpareList }));
@@ -61,7 +59,6 @@ import { named } from "../../../../lib/person-name/mint";
 import { plain } from "../../../../lib/person-name/testing";
 
 const p = socialCopy.friendPage;
-const BOTH = { SOCIAL_FRIENDS_ENABLED: "true" };
 const COLIN = {
   publicId: "00000000-0000-4000-8000-000000000002", displayName: named("Colin"), since: new Date("2026-10-02T12:00:00Z"),
   commander: { oracleId: "00000000-0000-4000-8000-0000000000aa", name: "Sai, Master Thopterist", artCropUri: null },
@@ -74,7 +71,6 @@ const params = (publicId = COLIN.publicId) => Promise.resolve({ publicId });
 
 beforeEach(() => {
   m.requireUserId.mockResolvedValue("user_viewer");
-  m.requestSwitchEnv.mockResolvedValue(BOTH);
   m.pathname = `/friends/${COLIN.publicId}`;
   m.loadFriend.mockResolvedValue(COLIN);
   m.loadFriendWishlist.mockResolvedValue([LINE]);
@@ -92,30 +88,6 @@ describe("a friend's page group", () => {
     m.loadFriendDecks.mockResolvedValue([DECK]);
     // The Spares tab always offers Ask now (SPARE_REQUESTS_ENABLED is retired), so it prices its cards.
     m.loadPrices.mockResolvedValue({ prices: new Map(), newestAsOf: null });
-  });
-
-  it.each([
-    ["the friends switch is off", { SOCIAL_WISHLIST_ENABLED: "true" }],
-  ])("is not found when %s, reading nothing", async (_label, env) => {
-    m.requestSwitchEnv.mockResolvedValue(env);
-    await expect(FriendPageLayout({ children: null, params: params() })).rejects.toThrow("NOT_FOUND");
-    expect(m.loadFriend).not.toHaveBeenCalled();
-    expect(m.loadFriendSpareList).not.toHaveBeenCalled();
-    expect(m.loadFriendDecks).not.toHaveBeenCalled();
-  });
-
-  // A tab press reuses the mounted layout, which does not run again: each tab answers the switch and the friend itself.
-  it.each([
-    ["Spares", () => FriendSparesPage({ params: params() })],
-    ["Wishlist", () => FriendWishlistPage({ params: params() })],
-    ["Decks", () => FriendDecksPage({ params: params() })],
-  ])("the %s tab is not found on its own with the friends switch off, reading nothing", async (_tab, page) => {
-    m.requestSwitchEnv.mockResolvedValue({ SOCIAL_WISHLIST_ENABLED: "true" });
-    await expect(page()).rejects.toThrow("NOT_FOUND");
-    expect(m.loadFriend).not.toHaveBeenCalled();
-    expect(m.loadFriendSpareList).not.toHaveBeenCalled();
-    expect(m.loadFriendWishlist).not.toHaveBeenCalled();
-    expect(m.loadFriendDecks).not.toHaveBeenCalled();
   });
 
   it("the Spares tab is not found on its own for a former friend, never the not-sharing state", async () => {
@@ -140,12 +112,11 @@ describe("a friend's page group", () => {
     expect(html).toMatch(/data-testid="friend-tab-wishlist-count"[^>]*>1</);
     expect(html).toMatch(/data-testid="friend-tab-decks-count"[^>]*>1</);
     expect(html).toContain("<p>tab</p>");
-    // The reader's friends switch (on here) rides the read, so the layout and the tab share one cached read.
+    // The read is the open kind for every reader, so the layout and the tab share one cached read.
     expect(m.loadFriendDecks).toHaveBeenCalledWith("user_viewer", COLIN.publicId, true);
   });
 
-  it("draws the Wishlist tab with friends on alone: the retired wishlist switch is never read", async () => {
-    m.requestSwitchEnv.mockResolvedValue({ SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "off" });
+  it("draws the Wishlist tab through the friend's wishlist read", async () => {
     m.loadFriendWishlist.mockClear();
     const html = renderToString(await FriendPageLayout({ children: null, params: params() }));
     expect(html).toContain(`href="/friends/${COLIN.publicId}/wishlist"`);
@@ -205,9 +176,8 @@ describe("a friend's page group", () => {
     expect(html.match(/data-testid="spare-name"[^>]*>Ghalta, Primal Hunger</g)).toHaveLength(1);
   });
 
-  // The reader's wishlist always rides the spares read now its switch is retired, whatever the old variable says.
-  it("reads the spares with the reader's wishlist, the retired wishlist switch never read", async () => {
-    m.requestSwitchEnv.mockResolvedValue({ SOCIAL_FRIENDS_ENABLED: "true", SOCIAL_WISHLIST_ENABLED: "off" });
+  // The reader's wishlist always rides the spares read now its switch is retired.
+  it("reads the spares with the reader's wishlist", async () => {
     m.loadFriendSpareList.mockClear();
     await FriendSparesPage({ params: params() });
     renderToString(await FriendPageLayout({ children: null, params: params() }));
@@ -376,7 +346,6 @@ describe("FriendHead and the wishlist tab", () => {
   });
 
   it("opens an offered card from a ?spare= written in upper case, never calling it gone", async () => {
-    m.requestSwitchEnv.mockResolvedValue({ SOCIAL_FRIENDS_ENABLED: "true" });
     m.loadPrices.mockResolvedValue({ prices: new Map(), newestAsOf: null });
     m.catalogCardName.mockReset();
     const page = await FriendSparesPage({ params: params(), searchParams: Promise.resolve({ spare: SPARE.oracleId.toUpperCase() }) });

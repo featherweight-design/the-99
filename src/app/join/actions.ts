@@ -1,8 +1,8 @@
 "use server";
 
-// The newcomer's three steps (plan `2026-10-16-invites.md`, PR 3; dark until PR 5 draws `/join/[token]`). The newcomer
-// has no account, so there is no reader: each action finds the token's SENDER and decides `SOCIAL_FRIENDS_ENABLED`
-// (invites follow friends since their own switch retired) for THEM (`resolveSwitchEnv(sender)`); off reads as an ended invite, which names nobody (N12). What binds a claim
+// The newcomer's three steps (plan `2026-10-16-invites.md`, PR 3), drawn by `/join/[token]`. The newcomer
+// has no account, so there is no reader: each action finds the token's SENDER; a token that is
+// nobody's reads as an ended invite, which names nobody (N12). What binds a claim
 // to this browser is the claim secret in an httpOnly cookie scoped to the token's own path. The rate buckets
 // (`invite-claim`, `invite-code`) are keyed by the sender, observe-only.
 
@@ -11,16 +11,12 @@ import { atFloor } from "../../lib/invites/floor";
 import { claimInvite, confirmCode, handOver, senderOfToken, type ClaimResult, type ConfirmResult, type HandOverResult } from "../../lib/invites/claim";
 import { CLAIM_COOKIE, claimCookieOptions } from "../../lib/invites/claim-cookie";
 import { observeHit } from "../../lib/rate/observe";
-import { socialFriendsEnabled } from "../../lib/social/flag";
-import { resolveSwitchEnv } from "../../lib/switches/snapshot";
 
 
-/** The token's sender when their switch is on; null when it is off or the token is nobody's. */
+/** The token's sender; null when the token is nobody's. */
 async function liveSender(token: unknown): Promise<string | null> {
   if (typeof token !== "string") return null;
-  const sender = await senderOfToken(token);
-  if (!sender) return null;
-  return socialFriendsEnabled(await resolveSwitchEnv(sender)) ? sender : null;
+  return senderOfToken(token);
 }
 
 const ENDED = { ok: false, reason: "ended" } as const;

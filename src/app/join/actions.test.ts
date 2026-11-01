@@ -1,4 +1,4 @@
-// The newcomer's actions (invites PR 3): the SENDER's switch decides, off reads as an ended invite that names nobody,
+// The newcomer's actions (invites PR 3): a token that is nobody's reads as an ended invite that names nobody,
 // the claim secret travels only in an httpOnly cookie scoped to the token's own path, and the claim answers at the
 // floor.
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -8,27 +8,23 @@ const m = vi.hoisted(() => ({
   claimInvite: vi.fn(),
   confirmCode: vi.fn(),
   handOver: vi.fn(),
-  resolveSwitchEnv: vi.fn(),
   atFloor: vi.fn(),
   observeHit: vi.fn(),
   jar: { get: vi.fn(), set: vi.fn() },
 }));
 vi.mock("next/headers", () => ({ cookies: async () => m.jar }));
 vi.mock("../../lib/invites/claim", () => ({ senderOfToken: m.senderOfToken, claimInvite: m.claimInvite, confirmCode: m.confirmCode, handOver: m.handOver }));
-vi.mock("../../lib/switches/snapshot", () => ({ resolveSwitchEnv: m.resolveSwitchEnv }));
 vi.mock("../../lib/invites/floor", () => ({ atFloor: m.atFloor }));
 vi.mock("../../lib/rate/observe", () => ({ observeHit: m.observeHit }));
 
 import { claimInviteAction, confirmCodeAction, handOverAction } from "./actions";
 
 const TOKEN = "A".repeat(43);
-const ON = { SOCIAL_FRIENDS_ENABLED: "true" };
 const ENDED = { ok: false, reason: "ended" };
 
 beforeEach(() => {
   vi.resetAllMocks();
   m.senderOfToken.mockResolvedValue("user_sender");
-  m.resolveSwitchEnv.mockResolvedValue(ON);
   m.atFloor.mockImplementation((work: () => Promise<unknown>) => work());
   m.jar.get.mockReturnValue(undefined);
   m.claimInvite.mockResolvedValue({ ok: true, claimSecret: "the-secret", mailed: true });
@@ -36,15 +32,12 @@ beforeEach(() => {
   m.handOver.mockResolvedValue({ ok: true, url: "https://accounts.x/sign-up?ticket=t" });
 });
 
-describe("the sender's switch decides", () => {
-  it("reads an off switch, an unknown token and a non-string as an ended invite, touching nothing", async () => {
-    m.resolveSwitchEnv.mockResolvedValue({ SOCIAL_INVITES_ENABLED: "true" });
+describe("a token with no sender", () => {
+  it("reads an unknown token and a non-string as an ended invite, touching nothing", async () => {
+    m.senderOfToken.mockResolvedValue(null);
     expect(await claimInviteAction(TOKEN, "a@x.dev")).toEqual(ENDED);
     expect(await confirmCodeAction(TOKEN, "123456")).toEqual(ENDED);
     expect(await handOverAction(TOKEN)).toEqual(ENDED);
-    expect(m.resolveSwitchEnv).toHaveBeenCalledWith("user_sender");
-    m.senderOfToken.mockResolvedValue(null);
-    expect(await claimInviteAction(TOKEN, "a@x.dev")).toEqual(ENDED);
     expect(await claimInviteAction(42, "a@x.dev")).toEqual(ENDED);
     expect(m.claimInvite).not.toHaveBeenCalled();
     expect(m.confirmCode).not.toHaveBeenCalled();

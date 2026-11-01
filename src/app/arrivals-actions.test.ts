@@ -67,7 +67,8 @@ describe("dismissArrivals", () => {
 // announcements now, from their own resolved switches.
 describe("dismissArrivals, About's lines", () => {
   const CART = "shopping/all-decks/total";
-  // Ask rides spare requests, which follow SOCIAL_FRIENDS_ENABLED: off for a reader with no switches set.
+  // Ask's About line still resolves through the friends flag (`lib/about/visible.ts`; the flag is retired and is being
+  // baked in by a later PR): off for a reader with no switches set until then.
   const ASK = "shopping/all-decks/ask";
 
   it("writes a launch the reader is still told, by its ack, with the floor", async () => {

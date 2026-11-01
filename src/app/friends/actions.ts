@@ -1,8 +1,7 @@
 "use server";
 
 // Social R1's writes (plan `2026-10-15-social-r1.md`, PR B; audit E12, E18). Every action takes the reader
-// from the session, decides `SOCIAL_FRIENDS_ENABLED` for THAT reader (`requestSwitchEnv`), and refuses as
-// `off` while it is off: the library functions do not check the switch themselves. Each maps its library
+// from the session. Each maps its library
 // result to an outcome the screen draws, so a `false` that means "refused" never reads as done; only a
 // revoke, a member removal, a pod delete and turning spares off may report `changed: false` as done (E12).
 //
@@ -17,8 +16,6 @@ import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { requireUserId } from "../../lib/auth";
 import { ensureSenderProfile } from "./sender-profile";
-import { socialFriendsEnabled } from "../../lib/social/flag";
-import { requestSwitchEnv } from "../../lib/switches/request";
 import {
   createInvite, declineInvite, readInvite, redeemInvite, revokeInvite, setDisplayName, spendAlreadyFriendsInvite, unfriend,
 } from "../../lib/social/friends";
@@ -34,14 +31,8 @@ import {
 import { isUuid } from "../../lib/social/rules";
 import { skipFacePrompt } from "../../lib/discovery/face-prompt";
 
+// `off` is no longer answered (the friends switch is retired); it stays in the outcomes until the screens stop naming it.
 type Off = { ok: false; reason: "off" };
-const OFF: Off = { ok: false, reason: "off" };
-
-/** The signed-in reader, when their own switch is on; null when it is off. */
-async function socialReader(): Promise<string | null> {
-  const userId = await requireUserId();
-  return socialFriendsEnabled(await requestSwitchEnv(userId)) ? userId : null;
-}
 
 const FRIENDS = "/friends";
 const refreshFriends = () => revalidatePath(FRIENDS);
@@ -53,8 +44,7 @@ export type SetNameOutcome = { ok: true; displayName: string } | Off | { ok: fal
 
 /** `invalid`: the name fails `cleanName` (empty, over 30 code points, a control character). */
 export async function setDisplayNameAction(name: unknown): Promise<SetNameOutcome> {
-  const userId = await socialReader();
-  if (!userId) return OFF;
+  const userId = await requireUserId();
   const displayName = cleanDisplayName(name);
   if (displayName === null) return { ok: false, reason: "invalid" };
   if (!(await setDisplayName(userId, displayName))) return { ok: false, reason: "noProfile" };
@@ -69,8 +59,7 @@ export type SetCommanderOutcome = { ok: true } | Off | { ok: false; reason: "noC
  * initials (`Use initials instead`).
  */
 export async function setCommanderAction(oracleId: unknown, printingId: unknown = null): Promise<SetCommanderOutcome> {
-  const userId = await socialReader();
-  if (!userId) return OFF;
+  const userId = await requireUserId();
   const result = await setCommander(userId, oracleId, printingId);
   if (!result.ok) return result;
   refreshFriends();
@@ -81,42 +70,32 @@ export type PickerTilesOutcome = { ok: true; tiles: CommanderTile[] } | Off;
 
 /** The picker's first row: the commanders of the reader's own decks, newest deck first (E2). A read, so nothing revalidates. */
 export async function listDeckCommandersAction(): Promise<PickerTilesOutcome> {
-  const userId = await socialReader();
-  if (!userId) return OFF;
+  const userId = await requireUserId();
   return { ok: true, tiles: await listOwnDeckCommanders(userId) };
 }
 
 /** The picker's search: any commander the catalog lists, by name, with its art (E2). Too short a query finds nothing. */
 export async function searchFaceCommandersAction(query: unknown): Promise<PickerTilesOutcome> {
-  const userId = await socialReader();
-  if (!userId) return OFF;
+  await requireUserId();
   return { ok: true, tiles: await searchFaceCommanders(query) };
 }
 
 // --- The signature card (plan `2026-10-27-signature-card.md`; its own switch is retired) ---------------------------
-// Each decides `SOCIAL_FRIENDS_ENABLED` for the reader, as the rest of this file does. A
-// pick is saved by `setCommanderAction` above, with the printing the screen offered.
-
-/** The signed-in reader, when their friends switch is on; null otherwise. */
-async function signatureReader(): Promise<{ userId: string } | null> {
-  const userId = await requireUserId();
-  return socialFriendsEnabled(await requestSwitchEnv(userId)) ? { userId } : null;
-}
+// A pick is saved by `setCommanderAction` above, with the printing the screen offered.
 
 export type FaceDeckTilesOutcome = { ok: true; tiles: FaceTile[] } | Off;
 
 /** The deck row, each lead in its deck's own printing (call 2). A read, so nothing revalidates. */
 export async function listDeckFacesAction(): Promise<FaceDeckTilesOutcome> {
-  const reader = await signatureReader();
-  if (!reader) return OFF;
-  return { ok: true, tiles: await listOwnDeckFaces(reader.userId) };
+  const userId = await requireUserId();
+  return { ok: true, tiles: await listOwnDeckFaces(userId) };
 }
 
 export type FaceSearchOutcome = { ok: true; hits: FaceCardHit[] } | Off;
 
 /** Any game card by name, with its type line and printing count (call 2, G3). Too short a query finds nothing. */
 export async function searchFaceCardsAction(query: unknown): Promise<FaceSearchOutcome> {
-  if (!(await signatureReader())) return OFF;
+  await requireUserId();
   return { ok: true, hits: await searchFaceCards(query) };
 }
 
@@ -124,7 +103,7 @@ export type FacePrintingsOutcome = { ok: true; card: FacePrintings } | Off | { o
 
 /** A card's printings screen (call 2, G3). `noCard`: not a uuid, not in the catalog, or not a game card. */
 export async function listFacePrintingsAction(oracleId: unknown): Promise<FacePrintingsOutcome> {
-  if (!(await signatureReader())) return OFF;
+  await requireUserId();
   if (!isUuid(oracleId)) return { ok: false, reason: "noCard" };
   const card = await listFacePrintings(oracleId);
   return card ? { ok: true, card } : { ok: false, reason: "noCard" };
@@ -137,9 +116,8 @@ export type SkipFacePromptOutcome = { ok: true } | Off;
  * from Home, so Home redraws in the reply: the flag moves the reader's stamp and retires Home's cached payload.
  */
 export async function skipFacePromptAction(): Promise<SkipFacePromptOutcome> {
-  const reader = await signatureReader();
-  if (!reader) return OFF;
-  await skipFacePrompt(reader.userId);
+  const userId = await requireUserId();
+  await skipFacePrompt(userId);
   revalidatePath("/");
   return { ok: true };
 }
@@ -152,11 +130,10 @@ export type SetSignatureOutcome = SetCommanderOutcome;
  * on /friends, which stamps the ask done. Home redraws in the reply; /friends is deferred, as a write made away from it.
  */
 export async function setSignatureCardAction(oracleId: unknown, printingId: unknown = null): Promise<SetSignatureOutcome> {
-  const reader = await signatureReader();
-  if (!reader) return OFF;
+  const userId = await requireUserId();
   if (oracleId === null) return { ok: false, reason: "noCard" };
-  await ensureSenderProfile(reader.userId);
-  const result = await setCommander(reader.userId, oracleId, printingId);
+  await ensureSenderProfile(userId);
+  const result = await setCommander(userId, oracleId, printingId);
   if (!result.ok) return result;
   revalidatePath("/");
   refreshFriendsLater();
@@ -175,8 +152,7 @@ export type CreateInviteOutcome =
  * request whose host cannot be read makes no link it could not hand back.
  */
 export async function createInviteAction(): Promise<CreateInviteOutcome> {
-  const userId = await socialReader();
-  if (!userId) return OFF;
+  const userId = await requireUserId();
   const origin = originFrom(await headers());
   if (origin === null) return { ok: false, reason: "noOrigin" };
   await ensureSenderProfile(userId);
@@ -190,8 +166,7 @@ export async function createInviteAction(): Promise<CreateInviteOutcome> {
 export type DoneOutcome = { ok: true; changed: boolean } | Off;
 
 export async function revokeInviteAction(token: unknown): Promise<DoneOutcome> {
-  const userId = await socialReader();
-  if (!userId) return OFF;
+  const userId = await requireUserId();
   const changed = isInviteToken(token) && (await revokeInvite(userId, token));
   refreshFriends();
   return { ok: true, changed };
@@ -204,8 +179,7 @@ export type RedeemOutcome =
 
 /** Accept. The receipt on `/friends` is resolved by `friend.publicId` (E10). */
 export async function redeemInviteAction(token: unknown): Promise<RedeemOutcome> {
-  const userId = await socialReader();
-  if (!userId) return OFF;
+  const userId = await requireUserId();
   if (!isInviteToken(token)) return { ok: false, reason: "notFound" };
   const result = await redeemInvite(userId, token);
   if (result.ok) refreshFriendsLater();
@@ -219,8 +193,7 @@ export type DeclineOutcome = { ok: true } | Off | { ok: false; reason: "ended" |
  * from a fresh read: the card redraws as what the link now is, never as declined.
  */
 export async function declineInviteAction(token: unknown): Promise<DeclineOutcome> {
-  const userId = await socialReader();
-  if (!userId) return OFF;
+  const userId = await requireUserId();
   if (!isInviteToken(token)) return { ok: false, reason: "ended" };
   if (await declineInvite(userId, token)) {
     refreshFriendsLater();
@@ -240,8 +213,7 @@ export type SpendOutcome = { ok: true; spent: boolean } | Off;
  * accepted by a page view. `spent: false` means there was nothing to spend, which the card does not draw.
  */
 export async function spendFriendLinkAction(token: unknown): Promise<SpendOutcome> {
-  const userId = await socialReader();
-  if (!userId) return OFF;
+  const userId = await requireUserId();
   if (!isInviteToken(token)) return { ok: true, spent: false };
   // Marks the link used and writes no friendship, so an unfriend that lands first is never undone by a view.
   const spent = await spendAlreadyFriendsInvite(userId, token);
@@ -253,8 +225,7 @@ export type UnfriendOutcome = { ok: true } | Off | { ok: false; reason: "notFrie
 
 /** `notFriend`: no friendship with that `publicId` stands, so there was nothing to remove. */
 export async function unfriendAction(friendPublicId: unknown): Promise<UnfriendOutcome> {
-  const userId = await socialReader();
-  if (!userId) return OFF;
+  const userId = await requireUserId();
   const removed = await unfriend(userId, friendPublicId);
   refreshFriends();
   return removed ? { ok: true } : { ok: false, reason: "notFriend" };
@@ -265,8 +236,7 @@ export async function unfriendAction(friendPublicId: unknown): Promise<UnfriendO
 export type CreatePodOutcome = { ok: true; podId: string } | Off | { ok: false; reason: "invalid" };
 
 export async function createPodAction(name: unknown): Promise<CreatePodOutcome> {
-  const userId = await socialReader();
-  if (!userId) return OFF;
+  const userId = await requireUserId();
   const pod = await createPod(userId, name);
   if (pod === null) return { ok: false, reason: "invalid" };
   refreshFriends();
@@ -277,8 +247,7 @@ export type RenamePodOutcome = { ok: true; name: string } | Off | { ok: false; r
 
 /** `invalid` is the name; `notOwner` is a pod the reader does not own (or that is gone). */
 export async function renamePodAction(podId: unknown, name: unknown): Promise<RenamePodOutcome> {
-  const userId = await socialReader();
-  if (!userId) return OFF;
+  const userId = await requireUserId();
   const clean = cleanPodName(name);
   if (clean === null) return { ok: false, reason: "invalid" };
   if (!(await renamePod(userId, podId, clean))) return { ok: false, reason: "notOwner" };
@@ -288,8 +257,7 @@ export async function renamePodAction(podId: unknown, name: unknown): Promise<Re
 
 /** A pod already gone is gone: `changed: false` reads as done (E12). */
 export async function deletePodAction(podId: unknown): Promise<DoneOutcome> {
-  const userId = await socialReader();
-  if (!userId) return OFF;
+  const userId = await requireUserId();
   const changed = await deletePod(userId, podId);
   refreshFriends();
   return { ok: true, changed };
@@ -299,8 +267,7 @@ export type AddMembersOutcome = { ok: true; added: number } | Off | { ok: false;
 
 /** All or none (E11): `notFriend` adds nobody. */
 export async function addMembersAction(podId: unknown, friendPublicIds: unknown): Promise<AddMembersOutcome> {
-  const userId = await socialReader();
-  if (!userId) return OFF;
+  const userId = await requireUserId();
   const result = await addMembers(userId, podId, friendPublicIds);
   if (result.ok) refreshFriends();
   return result;
@@ -308,8 +275,7 @@ export async function addMembersAction(podId: unknown, friendPublicIds: unknown)
 
 /** A member already out is out: `changed: false` reads as done (E12). */
 export async function removeMemberAction(podId: unknown, memberPublicId: unknown): Promise<DoneOutcome> {
-  const userId = await socialReader();
-  if (!userId) return OFF;
+  const userId = await requireUserId();
   const changed = await removeMember(userId, podId, memberPublicId);
   refreshFriends();
   return { ok: true, changed };
@@ -318,8 +284,7 @@ export async function removeMemberAction(podId: unknown, memberPublicId: unknown
 export type LeavePodOutcome = { ok: true; outcome: Exclude<LeaveOutcome, "notMember"> } | Off | { ok: false; reason: "notMember" };
 
 export async function leavePodAction(podId: unknown): Promise<LeavePodOutcome> {
-  const userId = await socialReader();
-  if (!userId) return OFF;
+  const userId = await requireUserId();
   const outcome = await leavePod(userId, podId);
   if (outcome === "notMember") return { ok: false, reason: "notMember" };
   refreshFriends();
@@ -333,8 +298,7 @@ export type ShareSparesOutcome = { ok: true; on: boolean } | Off | { ok: false; 
  * in; turning it OFF always ends unshared, so the library's `false` there (already off) is done.
  */
 export async function shareSparesWithAction(podId: unknown, on: unknown): Promise<ShareSparesOutcome> {
-  const userId = await socialReader();
-  if (!userId) return OFF;
+  const userId = await requireUserId();
   const want = on === true;
   const written = await shareSparesWith(userId, podId, want);
   if (want && !written) return { ok: false, reason: "notMember" };

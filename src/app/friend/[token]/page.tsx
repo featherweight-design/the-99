@@ -1,16 +1,11 @@
 // /friend/[token]: a friend link's landing, the friend request card (Social R1 PR D; boards `R2 - Landing-*`).
 //
-// Public in `src/proxy.ts`. A signed-out reader is drawn the signed-out card WHATEVER the switches say,
-// because it reads nothing (E8): a signed-out request resolves to the environment alone, so a switch on
-// for a group only would otherwise answer not found to everyone not yet signed in. A signed-in reader is
-// gated by their OWN switch (E18), and only then is the link read. Loading is the shell's `LoadingScreen` (no
+// Public in `src/proxy.ts`. A signed-out reader is drawn the signed-out card, which reads nothing (E8);
+// only a signed-in reader's request reads the link. Loading is the shell's `LoadingScreen` (no
 // `loading.tsx`, `route-loading.test.ts`), and a read that throws is the app's error boundary (E16).
 
 import { auth } from "@clerk/nextjs/server";
 import { SignInButton } from "@clerk/nextjs";
-import { notFound } from "next/navigation";
-import { socialFriendsEnabled } from "../../../lib/social/flag";
-import { requestSwitchEnv } from "../../../lib/switches/request";
 import { readInvite } from "../../../lib/social/friends";
 import { landingView } from "../../../lib/social/landing";
 import { invitePath, isInviteToken } from "../../../lib/social/client-rules";
@@ -47,8 +42,6 @@ export default async function FriendLinkPage({ params }: { params: Promise<{ tok
       </main>
     );
   }
-  const env = await requestSwitchEnv(userId);
-  if (!socialFriendsEnabled(env)) notFound();
   // `readInvite` names the inviter only for an open link (E6); an ended one carries its state alone.
   const view = landingView(isInviteToken(token) ? await readInvite(userId, token) : null);
   // The server's clock, so the card's first render names the same day as the server drew it.
@@ -57,7 +50,7 @@ export default async function FriendLinkPage({ params }: { params: Promise<{ tok
     <>
       {/* Opening a friend's link spends it, once, after mount (G4): the card says it is used up. */}
       {view.kind === "friends" && <SpendFriendLink token={token} />}
-      <FriendLanding token={token} view={view} nowMs={now.getTime()} signature={socialFriendsEnabled(env)} />
+      <FriendLanding token={token} view={view} nowMs={now.getTime()} signature />
     </>
   );
 }

@@ -1,11 +1,9 @@
 // /friends/[publicId]/spares: a friend's Spares tab, the last since Decks became the default (Hugh, 2026-10-30; menu and
 // Home PR 7). View only. The friend's own threshold and keeps have already filtered it (`loadFriendSpareList`), so it
-// agrees with the stand-ins modal and the feed. Each tab answers the switch and the friendship itself: a tab press reuses
+// agrees with the stand-ins modal and the feed. Each tab answers the friendship itself: a tab press reuses
 // the mounted layout, which does not run again.
 import { notFound } from "next/navigation";
 import { requireUserId } from "../../../../../lib/auth";
-import { socialFriendsEnabled } from "../../../../../lib/social/flag";
-import { requestSwitchEnv } from "../../../../../lib/switches/request";
 import { loadFriend } from "../../../../../lib/social/access";
 import { isUuid } from "../../../../../lib/social/rules";
 import { catalogCardName, friendSpareList } from "../../../../../lib/social/friend-page-data";
@@ -23,8 +21,6 @@ export default async function FriendSparesPage({
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
-  if (!socialFriendsEnabled(env)) notFound();
   const { publicId } = await params;
   const [friend, spares] = await Promise.all([loadFriend(userId, publicId), friendSpareList(userId, publicId, true)]);
   if (!friend) notFound();

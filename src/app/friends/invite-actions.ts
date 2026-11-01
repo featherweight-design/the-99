@@ -1,8 +1,7 @@
 "use server";
 
-// The sender's two ways to invite someone new (plan `2026-10-16-invites.md`, PR 2; dark until PR 4 draws them). Each
-// action takes the reader from the session and decides `SOCIAL_FRIENDS_ENABLED` for THAT reader (invites follow friends since their own switch retired), refusing as `off`
-// while it is off; the library functions do not check the switch.
+// The sender's two ways to invite someone new (plan `2026-10-16-invites.md`, PR 2). Each action
+// takes the reader from the session.
 
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
@@ -14,18 +13,8 @@ import { joinPath } from "../../lib/invites/rules";
 import { inviteSecret } from "../../lib/invites/tokens";
 import { observeHit } from "../../lib/rate/observe";
 import { originFrom } from "../../lib/social/client-rules";
-import { socialFriendsEnabled } from "../../lib/social/flag";
-import { requestSwitchEnv } from "../../lib/switches/request";
 
-type Off = { ok: false; reason: "off" };
-const OFF: Off = { ok: false, reason: "off" };
-
-async function inviteReader(): Promise<string | null> {
-  const userId = await requireUserId();
-  return socialFriendsEnabled(await requestSwitchEnv(userId)) ? userId : null;
-}
-
-export type SendEmailInviteOutcome = { ok: true } | Off | { ok: false; reason: "invalid" | "out" | "failed" };
+export type SendEmailInviteOutcome = { ok: true } | { ok: false; reason: "invalid" | "out" | "failed" };
 
 /**
  * By email (R5). `invalid` is the address's shape (E1), checked before anything else, and `out` none left; neither
@@ -34,8 +23,7 @@ export type SendEmailInviteOutcome = { ok: true } | Off | { ok: false; reason: "
  * case in which nothing can have been sent; it waits for the floor too.
  */
 export async function sendEmailInviteAction(email: unknown): Promise<SendEmailInviteOutcome> {
-  const userId = await inviteReader();
-  if (!userId) return OFF;
+  const userId = await requireUserId();
   if (typeof email !== "string") return { ok: false, reason: "invalid" };
   await observeHit(userId, "invite-email");
   // The newcomer's friend row lists the sender through their profile: made first (sender-profile.ts).
@@ -54,7 +42,6 @@ export async function sendEmailInviteAction(email: unknown): Promise<SendEmailIn
 
 export type ShowInviteQrOutcome =
   | { ok: true; token: string; url: string; expiresAt: Date }
-  | Off
   | { ok: false; reason: "out" | "unconfigured" | "noOrigin" };
 
 /**
@@ -62,8 +49,7 @@ export type ShowInviteQrOutcome =
  * request whose host cannot be read holds nothing it could not hand back.
  */
 export async function showInviteQrAction(): Promise<ShowInviteQrOutcome> {
-  const userId = await inviteReader();
-  if (!userId) return OFF;
+  const userId = await requireUserId();
   const origin = originFrom(await headers());
   if (origin === null) return { ok: false, reason: "noOrigin" };
   await ensureSenderProfile(userId);
