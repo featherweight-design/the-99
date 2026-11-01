@@ -2,8 +2,7 @@ import { visibleEntries } from "../about/visible";
 import { MODEL_CAPABILITIES, SWITCH_FLAGS, type ModelCapabilityKey } from "./flags";
 import { SWITCHES, switchParent, type SwitchName } from "./registry";
 import { decide, resolveEnv, type SwitchSnapshot, type SwitchSource } from "./resolve";
-import { analysisTabEnabled } from "../decks/analysis-flag";
-import { hubTools } from "../tuning/flag";
+import { HUB_TOOLS } from "../tuning/flag";
 
 /**
  * The admin's reading of the switches (admin PR 8): for each account, each switch's effective value
@@ -49,14 +48,12 @@ export function explainForAccounts(snapshot: SwitchSnapshot | null, userIds: rea
 }
 
 /**
- * The deck page's Tuning hub as one account meets it (admin PR 9b, the Accounts page's tile): whether
- * the Analysis tab draws the hub, and how many of its tools are on, from the account's resolved env and
- * the deck page's own gates: the hub draws wherever the tab does (`analysisTabEnabled`), with `hubTools`' tools.
- * Under this deployment's environment.
+ * The deck page's Tuning hub as every account meets it (admin PR 9b, the Accounts page's tile): whether the
+ * Analysis tab draws the hub, and how many of its tools are on. The tab's switch is retired (always on, 2026-11-01)
+ * and no Tuning tool has a switch of its own, so the hub is always drawn with all of `HUB_TOOLS`.
  */
-export function hubForAccount(snapshot: SwitchSnapshot | null, userId: string): { drawn: boolean; tools: number } {
-  const env = resolveEnv(process.env, snapshot, userId);
-  return { drawn: analysisTabEnabled(env), tools: hubTools(env).length };
+export function hubForAccount(): { drawn: boolean; tools: number } {
+  return { drawn: true, tools: HUB_TOOLS.length };
 }
 
 /** Each switch's environment value as set on this deployment (`off` included), by member reads. */

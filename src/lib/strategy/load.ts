@@ -13,7 +13,6 @@ import { isLandFace } from "../cards/facet";
 import { isGameCard } from "../cards/game-card";
 import { freshJobsOf } from "../labels/read";
 import type { Job, LabelTheme } from "../labels/types";
-import { analysisTabEnabled } from "../decks/analysis-flag";
 import { parseStrategyKey } from "./focus";
 import {
   catalogBaseline, deckStrategy, pendingChanges, strategyAxis,
@@ -170,9 +169,8 @@ export function strategyRead(
   return { strategy, focus, pending };
 }
 
-/** A deck's top strategies, its focus and its pending changes, or null with the Analysis tab off or for a deck that is not the reader's. */
-export async function loadDeckStrategy(userId: string, deckId: string, env: NodeJS.ProcessEnv): Promise<StrategyRead | null> {
-  if (!analysisTabEnabled(env)) return null;
+/** A deck's top strategies, its focus and its pending changes, or null for a deck that is not the reader's. */
+export async function loadDeckStrategy(userId: string, deckId: string): Promise<StrategyRead | null> {
   const [[deck], rows, baseline, version] = await Promise.all([
     db.select({ focus: decks.strategyFocus }).from(decks).where(and(eq(decks.id, deckId), eq(decks.userId, userId))),
     deckCardsQuery(db, userId, deckId),

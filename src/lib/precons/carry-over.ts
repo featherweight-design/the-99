@@ -24,7 +24,6 @@
 import { and, asc, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { deckDataChanges, deckProfiles, deckSynopses, deckVersionSynopses, deckVersions, decks, preconSynopses } from "../../db/schema";
-import { analysisTabEnabled } from "../decks/analysis-flag";
 import { holdsIllegalCard } from "../notices/read";
 import { listFingerprint } from "../profile/fingerprint";
 import { readProfileHead } from "../profile/load";
@@ -33,13 +32,14 @@ import { synopsisPreconContractVersion } from "../synopsis/limits";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
 import { carryOverDecision } from "./overview";
 
+// `off` is never answered now the Analysis tab's switch is retired (always on); it stays in the type only because
+// `scripts/probe-precon-overview-carry.ts` still compares against it, until the switch's delete PR.
 export type CarryOverResult =
   | { attached: true; synopsisId: string }
   | { attached: false; reason: "off" | "none" | "not_current" | "list_moved" | "not_a_precon" | "illegal" | "no_reading" | "has_synopsis" | "has_reading" };
 
 /** Attach `deckId`'s precon Overview, if it is honest to. `env` is the OWNER's resolved switches. */
 export async function carryOverPreconOverview(deckId: string, userId: string, env: NodeJS.ProcessEnv): Promise<CarryOverResult> {
-  if (!analysisTabEnabled(env)) return { attached: false, reason: "off" };
   const [deck] = await db.select({ precon: decks.builtFromPrecon }).from(decks).where(and(eq(decks.id, deckId), eq(decks.userId, userId)));
   if (!deck?.precon) return { attached: false, reason: "not_a_precon" };
   // A DECK THAT ALREADY HAS A READING has nothing to carry: the arrival copied it, a press wrote one, or
@@ -70,7 +70,7 @@ export async function carryOverPreconOverview(deckId: string, userId: string, en
   const keyFor = (c: number) => and(eq(preconSynopses.preconFile, deck.precon!), eq(preconSynopses.contractVersion, c), eq(preconSynopses.roleBasis, "labels"));
   const [row] = await db.select().from(preconSynopses).where(keyFor(contract));
   const key = keyFor(contract);
-  const decision = carryOverDecision({ analysisTab: true, row: row ?? null, liveFingerprint: list });
+  const decision = carryOverDecision({ row: row ?? null, liveFingerprint: list });
   if (!decision.attach) return { attached: false, reason: decision.reason };
 
   const [v0] = await db.select({ id: deckVersions.id }).from(deckVersions).where(eq(deckVersions.deckId, deckId)).orderBy(asc(deckVersions.number)).limit(1);
@@ -87,7 +87,7 @@ export async function carryOverPreconOverview(deckId: string, userId: string, en
     // ONE REVISION OF THE SOURCE ROW: re-read under a shared lock, so a build or copy cannot rewrite it
     // between the decision, the content and the check time this transaction writes from it.
     const [src] = await tx.select().from(preconSynopses).where(key).for("share");
-    const held = carryOverDecision({ analysisTab: true, row: src ?? null, liveFingerprint: list });
+    const held = carryOverDecision({ row: src ?? null, liveFingerprint: list });
     if (!held.attach) return { attached: false, reason: held.reason };
     // THE OVERVIEW HAS SEEN THE DATA ONLY AS OF ITS LAST CHECK, not as of this reading: a deck data
     // change published after the build or copy last verified the row's inputs (`checked_at`) is one
@@ -127,7 +127,7 @@ export async function carryOverPreconOverview(deckId: string, userId: string, en
 }
 
 /**
- * The one line a carry-over logs, or none. Nothing to do is SILENT: the switch off, no Overview to carry,
+ * The one line a carry-over logs, or none. Nothing to do is SILENT: the switch off (no longer answered), no Overview to carry,
  * or a deck already read (a repeat arrival, a replayed start), which is not news (d9, 2026-10-28).
  */
 export function carryLogLine(r: CarryOverResult): string | null {

@@ -29,7 +29,6 @@ import { and, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { deckCards, deckDataChanges, deckProfiles, deckSynopses, deckVersionSynopses, deckVersions, decks, preconSynopses } from "../../db/schema";
 import type { CheckedSynopsis } from "../synopsis/types";
-import { analysisTabEnabled } from "../decks/analysis-flag";
 import { liveOffendingIds } from "../notices/read";
 import { listFingerprint, profileFingerprint } from "../profile/fingerprint";
 import { PROFILE_VERSION } from "../profile/version";
@@ -42,14 +41,13 @@ import { preconReadingFresh, readPreconCarry } from "./reading";
 export type StoredCarryResult =
   /** The stored reading was copied; `overview` says whether the Overview came with it. */
   | { kind: "copied"; overview: boolean }
-  /** Nothing to do: the switch is off, the deck is not a precon start, or it already has a reading. */
+  /** Nothing to do: the deck is not a precon start, or it already has a reading. */
   | { kind: "nothing" }
   /** No fresh stored reading: the caller runs the computing carry-over after the response. */
   | { kind: "fallback"; reason: "no_row" | "no_reading" | "not_fresh" | "edited" };
 
 /** Copy the precon's stored reading (and Overview, when honest) into `deckId`. `env` is the OWNER's switches. */
 export async function carryStoredOnArrival(deckId: string, userId: string, env: NodeJS.ProcessEnv): Promise<StoredCarryResult> {
-  if (!analysisTabEnabled(env)) return { kind: "nothing" };
   // THE DECK, ITS LIST, WHAT IT ALREADY HAS AND THE PRECON'S STORED ROW, in two reads side by side (the row
   // named by the deck, `readPreconCarry`'s by-deck form). The edit stamp and the list come from ONE statement
   // (`arrivalDeckQuery`), so they are one snapshot: the write below re-reads the stamp under the lock, and any
@@ -72,7 +70,7 @@ export async function carryStoredOnArrival(deckId: string, userId: string, env: 
   if (reading.profile.fingerprint !== profileFingerprint(head)) return { kind: "fallback", reason: "not_fresh" };
 
   const commanders = [deck.commanderOracleId, ...(deck.partnerOracleId ? [deck.partnerOracleId] : [])];
-  const decision = carryOverDecision({ analysisTab: true, row: { listFingerprint: stored.overview.listFingerprint, contractVersion: stored.overview.contractVersion, current: stored.overview.current }, liveFingerprint: list });
+  const decision = carryOverDecision({ row: { listFingerprint: stored.overview.listFingerprint, contractVersion: stored.overview.contractVersion, current: stored.overview.current }, liveFingerprint: list });
   const wantsOverview = decision.attach && !deck.hasSynopsis;
   // Side by side: the reading's freshness (one change log read) and the legality withhold a press makes
   // before an Overview.
@@ -185,7 +183,7 @@ export function lockedCarry(input: { wantsOverview: boolean; readAt: Date; readi
   const { src } = input;
   if (!src) return { kind: "fallback", reason: "no_row" };
   if (!src.readingAt || src.readingAt.getTime() !== input.readAt.getTime()) return { kind: "fallback", reason: "not_fresh" };
-  const decision = carryOverDecision({ analysisTab: true, row: src, liveFingerprint: input.list });
+  const decision = carryOverDecision({ row: src, liveFingerprint: input.list });
   if (!input.wantsOverview || !decision.attach) return { kind: "copy", overview: null };
   return {
     kind: "copy",

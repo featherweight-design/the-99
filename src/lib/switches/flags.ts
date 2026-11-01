@@ -46,21 +46,20 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
 
 /**
  * What a reader can press that spends model calls, per ledger feature (READINESS audit finding 2):
- * each capability's predicate over a reader's resolved env. A parent's flip (the Analysis tab gates
- * the Overview, Suggested changes and Proposed cuts) moves these as surely as a child's, which is why
- * `flags.test.ts` holds the registry's `model` tag to them. Admin PR 8c's confirm fires on a write that
+ * each capability's predicate over a reader's resolved env. A parent's flip moves these as surely as a
+ * child's, which is why `flags.test.ts` holds the registry's `model` tag to them. Admin PR 8c's confirm fires on a write that
  * raises how many accounts hold any of these (`riseBetween` in `explain.ts`).
  * `overview_v2` moves the Overview's model and method, so it counts apart.
  */
 export type ModelCapabilityKey = ModelFeature | "overview_v2";
 export const MODEL_CAPABILITIES: readonly { key: ModelCapabilityKey; on: (env: NodeJS.ProcessEnv) => boolean }[] = [
-  { key: "synopsis", on: analysisTabEnabled },
-  { key: "overview_v2", on: (env) => analysisTabEnabled(env) && overviewV2Enabled(env) },
-  // Suggested changes' own switch is retired: its runs follow the Analysis tab, where it mounts.
-  { key: "tuning", on: analysisTabEnabled },
+  // The Analysis tab's switch is retired (always on, Hugh 2026-11-01): the Overview, Suggested changes and Proposed cuts
+  // mount on it, so their paid runs are always offered and only the model-call kill switch stops them.
+  { key: "synopsis", on: () => true },
+  { key: "overview_v2", on: overviewV2Enabled },
+  { key: "tuning", on: () => true },
   { key: "suggested_changes_v2", on: suggestedChangesV2Enabled },
-  // Proposed cuts' own switch is retired: its paid pass follows the Analysis tab, where it mounts.
-  { key: "proposed_cuts", on: analysisTabEnabled },
+  { key: "proposed_cuts", on: () => true },
   // Help me choose's read followed its own switch, which is retired (always on): only the model-call kill switch stops it.
   { key: "intake", on: () => true },
   // Find a deck's read followed swap tools, whose switch is retired (always on): only the model-call kill switch stops it.

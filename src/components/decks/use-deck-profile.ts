@@ -30,8 +30,6 @@ export type ProfileState =
   /** A press in flight. `held` is the reading on screen when it was made, which stays (2i). */
   | { kind: "loading"; held: Reading | null; retry?: boolean }
   | ({ kind: "ready" } & Reading)
-  /** The flag is off. Nothing is wrong, and no surface may say otherwise. */
-  | { kind: "disabled" }
   /** The deck is absent or not this reader's. */
   | { kind: "missing" }
   /** The request itself failed. Distinct from `missing`: retrying is worth offering. Over a held
@@ -217,7 +215,7 @@ export function useDeckProfile(
       else if (result.reason === "illegal") {
         setState({ kind: "illegal", built: result.built, size: result.size, held });
       }
-      else setState({ kind: result.reason === "disabled" ? "disabled" : "missing" });
+      else setState({ kind: "missing" });
     })();
   }, [deckId, shownFor, state]);
 
@@ -241,15 +239,15 @@ export function useDeckProfile(
       settle();
       // Any request made since — a press, or a peek for another deck — owns the state now.
       if (mine !== generation.current || current.current !== deckId) return;
-      // Only `none` is a miss. `disabled` and `not-found` are answers the panel draws — the
-      // flag switched off mid-visit, or the deck is gone — and the press would lie about both.
+      // Only `none` is a miss. `not-found` is an answer the panel draws — the deck is gone — and
+      // the press would lie about it.
       if (!result.ok && result.reason === "none") return;
       setShownFor(deckId);
       if (result.ok) {
         setReadyKey(askedAbout);
         setState({ kind: "ready", ...readingOf(result) });
       }
-      else setState({ kind: result.reason === "disabled" ? "disabled" : "missing" });
+      else setState({ kind: "missing" });
     })();
   }, [deckId, state.kind]);
 

@@ -206,7 +206,7 @@ export async function loadAccountPage(userId: string, viewerId: string, now: Dat
       shareMicro,
       spentMicro: features.reduce((n, f) => n + f.micro, 0),
       presses: features.reduce((n, f) => n + f.presses, 0),
-      hub: hubForAccount(snapshot, userId),
+      hub: hubForAccount(),
       month,
     }).concat(invitesTile(invites.left, invites.waiting, invites.spent)),
     group: groupId ? { id: groupId, name: groupNames.get(groupId) ?? groupId } : null,

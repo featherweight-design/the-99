@@ -26,7 +26,6 @@ import { moneyStats } from "../decks/stats-money";
 import { readLabels } from "../labels/read";
 import { loadAvailability, loadDeckBuyRows, type DeckBuyRow } from "../decks/availability-query";
 import type { Availability } from "../decks/availability";
-import { analysisTabEnabled } from "../decks/analysis-flag";
 import { chainArt, withChainArt } from "../cards/chain-art";
 import { deckIdentity } from "../decks/format";
 import { listDecksWithStats } from "../decks/read";
@@ -172,11 +171,9 @@ async function readBuilds(userId: string, ids: string[], brews: ReadonlySet<stri
   return { builds, asOf: prices.newestAsOf, shared: withChainArt(shared, art), lists: every, collection };
 }
 
-/** `env` is the reader's resolved switches (`requestSwitchEnv`), the env the cached entry is keyed on. */
-export async function loadLineup(userId: string, env: NodeJS.ProcessEnv): Promise<LineupData> {
-  // The bracket follows the tile's own switch: a bracket only the Analysis tab can explain is drawn
-  // only while that tab exists.
-  const decks = await listDecksWithStats(userId, DEFAULT_DECK_SORT, { includeBracket: analysisTabEnabled(env) });
+export async function loadLineup(userId: string): Promise<LineupData> {
+  // The bracket is always read: the Analysis tab that explains it is always drawn (its switch is retired).
+  const decks = await listDecksWithStats(userId, DEFAULT_DECK_SORT, { includeBracket: true });
   const ids = decks.map((d) => d.id);
   const brews = new Set(decks.filter((d) => d.lastCommittedAt === null).map((d) => d.id));
   const [rows, built] = await Promise.all([ids.length === 0

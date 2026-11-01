@@ -13,7 +13,6 @@ import { getCollectionLastUpdated, getCollectionStats } from "../lib/home/summar
 import { FirstRunChecklist } from "../components/home/first-run";
 import { Dashboard } from "../components/home/dashboard";
 import { HomeTour } from "../components/discovery/home-tour";
-import { analysisTabEnabled } from "../lib/decks/analysis-flag";
 import { cachePageForUser, type PageLoad } from "../lib/cache/page-cache";
 import { recordSoftFailure } from "../lib/cache/soft-failure";
 import { requestSwitchEnv } from "../lib/switches/request";
@@ -166,7 +165,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   // for why that is correct after any write, from anywhere. The UTC DATE is in the key because
   // the Ready-to-build pair rotates on it (`dailyPicks`, whose boundary is UTC by Hugh's call),
   // so a pair cached yesterday is never served today.
-  const data = await cachePageForUser(userId, "home", [now.toISOString().slice(0, 10)], async (env): Promise<PageLoad<HomePayload>> => {
+  const data = await cachePageForUser(userId, "home", [now.toISOString().slice(0, 10)], async (): Promise<PageLoad<HomePayload>> => {
     const [stats, decks, seen, tourSeen] = await Promise.all([
       perf.timed("collectionStats", () => getCollectionStats(userId)),
       // `name`, which is the CHEAPEST ORDER this reader offers. Home does not use
@@ -189,9 +188,9 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
         includeProxyStats: true,
         includeDeckState: true,
         includeCommanderArt: true,
-        // The bracket chip on the resume row (Home bracket-chip addendum), behind the same flag
-        // `/decks` reads it under. 0.83ms on staging.
-        includeBracket: analysisTabEnabled(env),
+        // The bracket chip on the resume row (Home bracket-chip addendum), as `/decks` reads it.
+        // 0.83ms on staging.
+        includeBracket: true,
       })),
       // About's notice (About on the banner): read on both surfaces, since About's first run and Home's checklist
       // are separate states. One primary-key lookup.

@@ -18,7 +18,6 @@ import { requireUserId } from "../../../lib/auth";
 import { getDeckDetail, listDecksWithStats } from "../../../lib/decks/read";
 import { listFolders } from "../../../lib/decks/folders";
 import { loadCommanderPrintings } from "../../../lib/sets/printed-in-read";
-import type { PrintedInSet } from "../../../lib/sets/printed-in";
 import { cacheForUser } from "../../../lib/cache/user-lists";
 import { recordSoftFailure } from "../../../lib/cache/soft-failure";
 import { readDeckSynergy } from "../../../lib/decks/deck-synergy";
@@ -59,7 +58,6 @@ import { hasChanges, loadDraftState, loadVersionShape } from "../../../lib/decks
 import { listVersions } from "../../../lib/decks/versions";
 import type { JobRowsByCard } from "../../../lib/decks/job-tally";
 import { roleCounterFor } from "../../../lib/decks/label-role-counts";
-import { analysisTabEnabled } from "../../../lib/decks/analysis-flag";
 import { readDeckNotes } from "../../../lib/decks/notes-read";
 import { loadJobRows } from "../../../lib/decks/job-rows";
 import { loadDeckMix } from "../../../lib/decks/deck-mix";
@@ -145,9 +143,6 @@ export default async function DeckBuilderPage({
   const env = await requestSwitchEnv(userId);
   // `measure:load`'s spans (PERF_TIMING=1 only; a pass-through otherwise).
   const perf = perfRoute("/decks/[id]");
-  // Read up front, beside the other switches below, because it gates a Stage A read
-  // (`printedInSetsRead`): Suggested changes mounts on the Analysis tab, so with the tab off it is not started.
-  const tuned = analysisTabEnabled(env);
   // THE PRECON CARRY-OVER, INLINE ON THE ARRIVAL VISIT (small items 5, d9's ruling): the start's own landing
   // (`?from=precon`) stores the deck's first reading and attaches the precon's Overview before anything
   // reads the stored reading, so the header's bracket shows at once and no pending state is drawn. Started
@@ -241,9 +236,7 @@ export default async function DeckBuilderPage({
   const friendPrefsRead = early(perf.timed("friendDeckPrefs", () => loadFriendDeckPrefs(userId)).catch(() => null));
   // The deck's strategy and its focus, uncached: a card edit revalidates this page, and the
   // block's +N / −N counts the list as it stands. A failed read costs the block, nothing else.
-  const strategyRead = analysisTabEnabled(env)
-    ? early(perf.timed("strategy", () => loadDeckStrategy(userId, id, env)).catch(() => null))
-    : null;
+  const strategyRead = early(perf.timed("strategy", () => loadDeckStrategy(userId, id)).catch(() => null));
   const gamesRead = early(perf.timed("games", () => listDeckGames(id, userId)));
   // Who sat across the table, and the matchups drawn from it (Social R3). Never throws: a failed read draws no
   // Matchups and no `vs` lines, and the games stand as they were.
@@ -278,12 +271,9 @@ export default async function DeckBuilderPage({
   )));
   // "Kept for this deck"'s Set picker (H35, PR 2) — the same cached, unscoped list
   // help-me-choose's intake form reads. Degrades to an empty picker rather than failing the page.
-  // The Set picker lives inside Suggested changes' panel alone (`builder-shell.tsx`), which follows the Analysis tab
-  // (its own switch is retired), so this read runs on every page render with the tab on, and with it off it is never
-  // started and the page pays none of its catalog queries.
-  const printedInSetsRead = tuned
-    ? early(perf.timed("printedInSets", () => loadCommanderPrintings().then((x) => x.sets).catch(() => [])))
-    : Promise.resolve([] as PrintedInSet[]);
+  // The Set picker lives inside Suggested changes' panel alone (`builder-shell.tsx`), on the Analysis tab, which always
+  // draws (its switch and Suggested changes' are retired), so this read runs on every page render.
+  const printedInSetsRead = early(perf.timed("printedInSets", () => loadCommanderPrintings().then((x) => x.sets).catch(() => [])));
   const detail = await detailRead;
   // A Try it (`?tool=`) aimed at a deck that is gone since its card rendered lands on `/decks`, with no halo, rather
   // than on the not-found page (discovery R2, STATES-showcase-reference: "Deck gone since render", L2).
@@ -304,16 +294,11 @@ export default async function DeckBuilderPage({
   // The header's bracket chip, from the analysis already stored for this deck. It computes nothing
   // (see `readStoredPermits`), and a failed read draws no chip, which is what an unread deck draws
   // anyway.
-  const storedPermits = analysisTabEnabled(env)
-    ? carried.then(() => perf.timed("storedPermits", () => readStoredPermits(id, userId))).catch(() => undefined)
-    : Promise.resolve(null);
+  const storedPermits = carried.then(() => perf.timed("storedPermits", () => readStoredPermits(id, userId))).catch(() => undefined);
   // The header's notice tag, read WITH the page so it paints with the header rather than arriving
   // after it. A failed read draws no tag, as a deck with no notices does; the shell reads again
   // after mount in that case.
-  const showNotices = analysisTabEnabled(env);
-  const initialNotices = showNotices
-    ? carried.then(() => perf.timed("notices", () => loadDeckNotices(id, userId))).catch(() => null)
-    : Promise.resolve(null);
+  const initialNotices = carried.then(() => perf.timed("notices", () => loadDeckNotices(id, userId))).catch(() => null);
   // The deck's tokens start with the rest of the wave and are awaited where the page is assembled. Off,
   // nothing is read at all. `loadDeckTokens` never rejects: a failed read is a value the group draws.
   // The makers draw the art the deck's own rows draw (an owned or picked printing), so the read waits for the
@@ -591,12 +576,9 @@ export default async function DeckBuilderPage({
     comboPartner: comboFor(c.oracleId, completions),
   }));
 
-  // Read once per request rather than at each use, so the tab and the
-  // arrival view cannot disagree about which layout this deployment is drawing.
-  const analysisEnabled = analysisTabEnabled(env);
   // Try it's one-time `?tool=` (discovery R2, E11): a deck tool whose switch is on for this reader opens its tab
   // and view, and the shell lands on its target. Anything else is null, and the shell strips it with no halo.
-  const landing = deckToolLanding(query[TOOL_PARAM], (name) => SWITCH_FLAGS[name](env), analysisEnabled);
+  const landing = deckToolLanding(query[TOOL_PARAM], (name) => SWITCH_FLAGS[name](env));
   // A token per server render that carries `?tool=`: a client navigation to the same deck with a new (or the same)
   // `?tool=` re-renders the page and moves it, and `LandingKeyed` remounts the deck's builder and providers for it; a render without one is
   // null and keeps the builder as it is.
@@ -648,7 +630,7 @@ export default async function DeckBuilderPage({
   const thisDeck = allDecks.find((d) => d.id === id);
   const folders = await foldersRead;
   const friendPrefs = await friendPrefsRead;
-  const strategy = strategyRead ? await strategyRead : null;
+  const strategy = await strategyRead;
   const friendHide = friendPrefs && thisDeck ? { hidden: thisDeck.hiddenFromFriends === true, prefs: friendPrefs } : undefined;
   const shelf = folders && thisDeck
     ? {
@@ -709,11 +691,6 @@ export default async function DeckBuilderPage({
       // Deck printings: the strip's printing clauses, from the same one navigation.
       arrivalPrintings={readArrivalPrintings(query[PRINTINGS_PARAM])}
       updateArrival={readUpdateArrival(query[UPDATED_PARAM])}
-      // How a URL names the tab it opens on. Read on arrival only — the builder
-      // never writes it back, so switching tabs still costs no history entry.
-      // Nothing in the app produces such a URL now that `/decks/[id]/versions`
-      // is retired; see the note in `lib/decks/builder-view.ts`.
-      analysisEnabled={analysisEnabled}
       notesData={await notesRead}
       statsData={{
         jobs: await statsJobsRead,
@@ -736,12 +713,9 @@ export default async function DeckBuilderPage({
       initialNotices={notices}
       // The tile's `!` asks for the sheet (`noticesHref`). The shell opens it on arrival and strips
       // the parameter, so a refresh lands on the deck alone.
-      openNoticesOnArrival={showNotices && readNoticesArrival(query[NOTICES_PARAM])}
+      openNoticesOnArrival={readNoticesArrival(query[NOTICES_PARAM])}
       storedPermits={storedBracket}
       storedPermitsUnknown={storedRead === undefined}
-      // Resolved on the SERVER, where the flag is read. A URL naming `analysis` against a
-      // deployment that does not draw it lands on the decklist rather than on an unselected
-      // row above an empty panel — the same rule `versions` already has for a brew.
       landing={landing}
       landingRequest={landingRequest}
       nearCombos={nearCombos}
@@ -751,7 +725,6 @@ export default async function DeckBuilderPage({
         landing?.lands.tab ?? readBuilderView(query[TAB_PARAM]),
         // A linked brew's Versions tab holds v0 (K14), so a URL naming it lands there.
         versions.length + ((await originRead)?.summary.startVersionId === null ? 1 : 0),
-        analysisEnabled,
       )}
     />
   );
