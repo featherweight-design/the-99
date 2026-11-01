@@ -63,6 +63,7 @@ export function CloseTable({ podName, run }: { podName: ThirdPartyName; run: () 
           eyebrow=""
           lead={<span className="block text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.body}</span>}
           closeLabel={copy.dismiss}
+          closeHeld={busy}
           onClose={leave}
           width={480}
           fit

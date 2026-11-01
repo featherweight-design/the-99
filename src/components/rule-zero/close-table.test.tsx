@@ -90,6 +90,8 @@ describe("the confirm on the phone (a sheet)", () => {
     expect(danger).not.toBeDisabled();
     expect(danger).toHaveAttribute("aria-disabled", "true");
     expect(danger).toHaveAttribute("aria-busy", "true");
+    // The ✕ is held with the buttons (Rule 0 defaults, C6/C7): dimmed and aria-disabled, its press ignored.
+    expect(within(dialog()).getByRole("button", { name: c.dismiss })).toHaveAttribute("aria-disabled", "true");
     await act(async () => finish(true));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   });

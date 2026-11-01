@@ -179,7 +179,7 @@ export function SeatNoticeHost() {
           <Link
             href={tablePath(n.tableId)}
             onClick={() => settle(n)}
-            className="flex min-h-[40px] flex-none items-center px-[8px] font-semibold text-[color:var(--accent-text)] underline decoration-[color:color-mix(in_oklab,var(--accent)_50%,transparent)] underline-offset-4"
+            className="-mt-[4px] flex min-h-[40px] flex-none items-center px-[8px] font-semibold text-[color:var(--accent-text)] underline decoration-[color:color-mix(in_oklab,var(--accent)_50%,transparent)] underline-offset-4"
           >
             {copy.open}
             <PendingReporter href={tablePath(n.tableId)} />
@@ -192,7 +192,7 @@ export function SeatNoticeHost() {
               pendingFocus.current = (shown[i + 1] ?? shown[i - 1])?.tableId ?? "";
               settle(n);
             }}
-            className="flex h-[40px] w-[36px] flex-none cursor-pointer items-center justify-center border-0 bg-transparent text-[13px] text-[color:var(--fg-muted)]"
+            className="-mt-[4px] flex h-[40px] w-[36px] flex-none cursor-pointer items-center justify-center border-0 bg-transparent text-[13px] text-[color:var(--fg-muted)]"
           >
             <span aria-hidden>✕</span>
           </button>
