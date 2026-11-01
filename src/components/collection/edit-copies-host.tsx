@@ -25,11 +25,8 @@ export function EditCopiesHost({
   card,
   onReopen,
   onDone,
-  deck = false,
 }: {
   card: EditCard;
-  /** Opened from a deck page's card details: the toast stands in the deck toast stack, clear of the dock. */
-  deck?: boolean;
   /** The card's details again, re-read: Save or Cancel on a card that is still owned. */
   onReopen: () => void;
   /** Nothing is left to show. */
@@ -43,7 +40,6 @@ export function EditCopiesHost({
     announceEditToast({
       entryId: saved.entryId,
       removed: saved.removed,
-      ...(deck ? { deck: true } : {}),
       text: saved.removed ? r.toast(card.name, saved.copiesRemoved) : c.saved(card.name, saved.total),
     });
     // The sheet stays up, frozen on `Saving…`, until the readers behind it are fresh. A settle that

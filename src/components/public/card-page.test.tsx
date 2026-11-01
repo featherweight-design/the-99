@@ -1,10 +1,9 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
 import type { PublicCard, PublicPrinting } from "../../lib/public/card";
 import { PublicCardPage } from "./card-page";
 import { PHONE_PRINTINGS } from "./printings";
-import { CollectionEditScope } from "../cards/collection-edit-scope";
 
 const NO_BRACKET_FLAGS = { massLandDenial: false, massLandDenialSources: [], extraTurn: false, extraTurnSources: [], tutor: false };
 
@@ -150,12 +149,33 @@ describe("the public card page", () => {
   });
 });
 
-// Add a card from anywhere, D (READINESS O3): card details adds wherever the shell is, but not on the public card page.
-// A signed-in reader still gets the shell around it, so the page is drawn inside the scope here: it mounts no card
-// details, so nothing on it reads the scope and no link to the collection is drawn.
-describe("the public card page inside the signed-in shell", () => {
-  it("draws no Add to collection or Edit copies link", () => {
-    render(<CollectionEditScope><PublicCardPage card={rootha} commanderLinks /></CollectionEditScope>);
+
+// Add a card from anywhere, D (READINESS O3): card details adds to the collection only inside the signed-in shell. A
+// tree outside it that DOES open card details (a public page's, signed out) draws the card, and no link to edit it.
+vi.mock("../../app/collection/actions", () => ({
+  setCardArtPreference: vi.fn(async () => true),
+  clearCardArtPreference: vi.fn(async () => {}),
+}));
+
+describe("card details outside the signed-in shell", () => {
+  it("opens the card with no Add to collection or Edit copies link", async () => {
+    const { CardDetailProvider, CardDetailTrigger, warmCardModal } = await import("../cards/card-detail-provider");
+    await warmCardModal();
+    const sol = {
+      oracleId: "o-sol", name: "Sol Ring", typeLine: "Artifact", manaCost: "{1}", cmc: 1, oracleText: null, keywords: [],
+      rarity: "uncommon", colorIdentity: [], imageUri: null, printedName: null, quantity: 0, printings: [], setCodes: [],
+      primarySetCode: "", preferredPrinting: null,
+      availability: { owned: 0, hard: 0, soft: 0, free: 0, claims: [] },
+    };
+    render(
+      <CardDetailProvider fetchCard={vi.fn(async () => sol as never)}>
+        <PublicCardPage card={rootha} commanderLinks />
+        <CardDetailTrigger oracleId="o-sol" name="Sol Ring">open</CardDetailTrigger>
+      </CardDetailProvider>,
+    );
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: /View details for Sol Ring/ })));
+    await screen.findByRole("dialog", { name: /Sol Ring/ });
+    // The card details are up; inside the shell this card would draw its receipt with Add to collection.
     expect(screen.queryByTestId("edit-copies-link")).toBeNull();
     expect(screen.queryByText("Add to collection")).toBeNull();
     expect(screen.queryByText("Edit copies")).toBeNull();

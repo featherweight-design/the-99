@@ -24,7 +24,7 @@ vi.mock("../collection/edit-copies-host", () => ({
   },
 }));
 
-const { CardDetailProvider, CardDetailTrigger } = await import("./card-detail-provider");
+const { CardDetailProvider, CardDetailTrigger, useCardDetail } = await import("./card-detail-provider");
 const { CollectionEditScope } = await import("./collection-edit-scope");
 // The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
 await (await import("./card-detail-provider")).warmCardModal();
@@ -119,16 +119,60 @@ describe("the link inside the shell", () => {
     await screen.findByTestId("host");
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(hostProps.mock.calls.at(-1)?.[0].card).toMatchObject({ oracleId: "o-sol", name: "Sol Ring" });
-    // A deck page's save stands its toast in the deck toast stack, clear of the dock (errata E5).
-    expect(hostProps.mock.calls.at(-1)?.[0]).toMatchObject({ deck: true });
+  });
+});
+
+// The default path keeps the shipped guard: a card stacked over a sheet, or a combo partner, is not the reader's own row.
+describe("the link inside the shell, on a card that is not the reader's own row", () => {
+  const none = { owned: 0, hard: 0, soft: 0, free: 0, claims: [] } as unknown as BrowseCard["availability"];
+  const ring = sol({ quantity: 0, availability: none });
+  const signet = sol({
+    oracleId: "o-signet", name: "Arcane Signet", quantity: 0, availability: none,
+    comboPartners: [{ oracleId: "o-sol", name: "Sol Ring", state: "owned" as const, popularity: 9 }],
+  } as Partial<BrowseCard>);
+  const fetchCard = vi.fn(async (id: string) => (id === "o-signet" ? signet : ring));
+
+  it("draws none on a combo partner", async () => {
+    render(
+      <CollectionEditScope>
+        <CardDetailProvider fetchCard={fetchCard}>
+          <CardDetailTrigger oracleId="o-signet" name="Arcane Signet">signet</CardDetailTrigger>
+        </CardDetailProvider>
+      </CollectionEditScope>,
+    );
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: /View details for Arcane Signet/ })));
+    await screen.findByRole("dialog");
+    // The card opened from its row draws it.
+    expect(screen.getByTestId("edit-copies-link")).toBeTruthy();
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: /Two-card combos/ })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Sol Ring" })));
+    await screen.findByRole("dialog", { name: /Sol Ring/ });
+    expect(screen.queryByTestId("edit-copies-link")).toBeNull();
   });
 
-  it("keeps the toast in the centre slot off a deck page", async () => {
-    mount(sol({ availability: free }), {}, { inShell: true });
-    await openCard();
-    await act(async () => fireEvent.click(screen.getByTestId("edit-copies-link")));
-    await screen.findByTestId("host");
-    expect(hostProps.mock.calls.at(-1)?.[0]).toMatchObject({ deck: false });
+  it("draws none on a card opened over a sheet, nor on the card held under it", async () => {
+    function SheetOver() {
+      const { registerSheet } = useCardDetail();
+      const [up, setUp] = React.useState(false);
+      React.useEffect(() => (up ? registerSheet("Cheaper stand-ins", undefined, true) : undefined), [up, registerSheet]);
+      return <button type="button" onClick={() => setUp(true)}>sheet up</button>;
+    }
+    render(
+      <CollectionEditScope>
+        <CardDetailProvider fetchCard={fetchCard}>
+          <CardDetailTrigger oracleId="o-signet" name="Arcane Signet">signet</CardDetailTrigger>
+          <CardDetailTrigger oracleId="o-sol" name="Sol Ring">ring from the sheet</CardDetailTrigger>
+          <SheetOver />
+        </CardDetailProvider>
+      </CollectionEditScope>,
+    );
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: /View details for Arcane Signet/ })));
+    await screen.findByRole("dialog");
+    expect(screen.getByTestId("edit-copies-link")).toBeTruthy();
+    await act(async () => fireEvent.click(screen.getByText("sheet up")));
+    await act(async () => fireEvent.click(screen.getByText("ring from the sheet")));
+    await screen.findByRole("dialog", { name: /Sol Ring/ });
+    expect(screen.queryAllByTestId("edit-copies-link")).toHaveLength(0);
   });
 });
 

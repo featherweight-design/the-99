@@ -215,10 +215,19 @@ boards are Design's and stay as dropped; these rulings govern the build.
   save. The shipped flow reopens card details re-read (`EditCopiesHost` → `onReopen`) at both widths, as D4 draws on the
   phone; that is kept.
 - **E5 · on a deck page the toast stands in the deck toast stack.** The shipped centre slot would cover the quick-add
-  dock on a phone deck page, a case the boards do not draw (D4 draws the toast over card details). A save from card
-  details on a deck page (a provider with a `deckId`) announces its toast with `deck`, and `CollectionEditToast` draws
-  it in the deck toast stack as its receipt (`placement="deck"`, `kind="receipt"`): the shipped dock-safe placement,
-  10px above the dock. Everywhere else it keeps the centre slot (E1).
+  dock on a phone deck page, a case the boards do not draw (D4 draws the toast over card details). On a deck's own
+  pages (`/decks/<id>` and below, `onDeckPage`) `CollectionEditToast` draws the toast in the deck toast stack as its
+  receipt (`placement="deck"`, `kind="receipt"`): the shipped dock-safe placement, 10px above the dock. The route
+  decides, not the provider, so a save from any card details on that page (the deck's, the search layer's, a review
+  screen's) lands there. Everywhere else it keeps the centre slot (E1).
+  - **The floor keeps one receipt, the newest.** The Add to collection toast and I got it's receipt each claim the
+    floor with `DECK_TOAST_CLAIM`, carrying who sent it, and the older one leaves. A toast mid-undo (its revert or
+    deck warning open, or I got it's Change chooser) or reporting a failed undo stays.
+  - **A sheet over the page holds it still.** The toast's wrapper in the shell and the deck stack are siblings of the
+    column `<main>` sits in, so a side sheet's `useInertPage` makes them inert: Undo cannot be pressed and the window
+    does not run, as under /collection's head before.
+- **E6 · not on the public card page, signed in either.** O3's "not `/card/[slug]`" holds for a signed-in reader too,
+  who gets the shell there: `CollectionEditScope` is off on `/card` and below.
 
 ---
 

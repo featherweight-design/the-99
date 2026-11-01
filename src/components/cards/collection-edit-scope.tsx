@@ -4,14 +4,22 @@
 // `CardDetailProvider` under it (a deck page, a friend's deck, the search layer's own, the cart) turns the link on by
 // default. A provider outside it (a signed-out page, which gets no shell) keeps it off, so a public page draws none.
 //
-// A context of its own, holding one constant: the providers read it once and never re-render for it.
+// The public card page (`/card/[slug]`) is outside it even for a signed-in reader, who still gets the shell there
+// (READINESS O3: not the public card page). A context of its own, so the providers re-render only when it flips.
 
+import { usePathname } from "next/navigation";
 import { createContext, useContext, type ReactNode } from "react";
 
 const CollectionEditScopeContext = createContext(false);
 
 export function CollectionEditScope({ children }: { children: ReactNode }) {
-  return <CollectionEditScopeContext.Provider value>{children}</CollectionEditScopeContext.Provider>;
+  const pathname = usePathname();
+  return <CollectionEditScopeContext.Provider value={!isPublicCardPath(pathname)}>{children}</CollectionEditScopeContext.Provider>;
+}
+
+/** The public card page and anything under it. */
+export function isPublicCardPath(pathname: string | null): boolean {
+  return pathname === "/card" || (pathname?.startsWith("/card/") ?? false);
 }
 
 /** True inside the signed-in shell, where card details can add to the reader's collection. */

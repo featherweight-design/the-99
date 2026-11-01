@@ -1992,7 +1992,7 @@ export function CardDetailProvider({
       ) : null}
       {editing ? (
         <Suspense fallback={null}>
-          <EditCopiesHost key={editing.n} card={editing.card} onReopen={reopenEdited} onDone={doneEditing} deck={deckId !== null} />
+          <EditCopiesHost key={editing.n} card={editing.card} onReopen={reopenEdited} onDone={doneEditing} />
         </Suspense>
       ) : null}
     </CardDetailContext.Provider>
