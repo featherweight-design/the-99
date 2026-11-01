@@ -19,14 +19,15 @@ export const reportCopy = {
   sending: "Sending…",
   sentTitle: "Sent. Thank you.",
   sentBody: "We’ll be in touch if we need any more insight.",
-  // COPY-REVIEW PENDING: placeholder wording, to be replaced by /copy-review. A signed-out reader left no contact, so this
-  // makes no promise of a reply or follow-up.
-  sentSignedOut: "We read every report, and it helps us fix what broke.",
+  // A signed-out reader left no contact, so this makes no promise of a reply or a follow-up, and claims nothing about who reads it
+  // (the admin reader is not built yet). Copy-reviewed 2026-11-01.
+  sentSignedOut: "It helps us track down what broke.",
   close: "Close",
   cancel: "Cancel",
   failed: "We couldn’t send that. Try again.",
   retry: "Try again",
-  // The error code line of the crash screen and of /report (small items 8, board 6: C1, R1, R4): drawn only when there is a code.
+  // The error code line of the crash screen and of /report (small items 8, board 6: C1, R1, R4): drawn only when there is a code. Both strings are the board's, verbatim:
+  // `codeLine` under the crash screen's notice (C1, C2), `sentWithCode` under the /report form (R1, R3, R4).
   codeLine: (digest: string) => `error ${digest}`,
   sentWithCode: (digest: string) => `Sent with error ${digest}`,
 } as const;
