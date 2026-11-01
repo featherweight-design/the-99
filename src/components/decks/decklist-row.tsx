@@ -510,9 +510,11 @@ export function DecklistRow({
   // answers `proxy` first, before the ownership test, so this is the same
   // question the slot already asked.
   const proxied = tag === "proxy";
-  // O9: the row rings briefly when its dot fills under it (a collection save on this page), or when it is drawn owned
-  // for a card the dock's bridge just saved and this deck just accepted. Keyed on the drawn dot, so a proxied row never rings.
-  const ownedRing = useOwnedRing(deckId, card.oracleId, card.owned && !proxied);
+  // O9: the row rings briefly when its card turns owned under it (a collection save on this page), or when it is drawn
+  // owned for a card the dock's bridge just saved and this deck just accepted. Keyed on the collection fact, so a proxy
+  // tag cleared or set (which moves the dot with no save) never rings; and a proxied row, whose dot stays hollow, draws
+  // no ring.
+  const ownedRing = useOwnedRing(deckId, card.oracleId, card.owned) && !proxied;
   // The marker's own spoken sentence, count-only as the row draws it: a glyph-only marker's tooltip says it.
   const markerSentence = card.availability
     ? markerAria(card.availability, { selfExcluded: true, nameless: true, bareOne: true })

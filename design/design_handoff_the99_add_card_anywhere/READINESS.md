@@ -269,12 +269,13 @@ boards are Design's and stay as dropped; these rulings govern the build.
   in it does not clear the dock's query. Closing it puts focus back in the field with the query and Owned only kept. A
   sheet that saved has the search run again.
 - **E11 · the two rings (O9).** The dock row that the re-run brings back owned is ringed `inset 0 0 0 1.5px --success`
-  (K6, `.qrow.lit`), and its `×1 owned` reads in `--success` (`.up`), until the reader types or flips the filter, as
-  the search's ring lasts until the query changes. The deck row rings with the same edge (`.drow.lit`) when its dot
-  fills under it (D5, D-D3, S4), and when it is drawn owned for a card the bridge just saved and the dock then added,
-  once the deck has accepted the add and on that deck only (K7).
+  (K6, `.qrow.lit`), and its `×1 owned` reads in `--success` (`.up`), until the reader changes the search in any way
+  (types, clears it, flips the filter), as the search's ring lasts until the query changes. A re-run that fails keeps
+  the wait for Try again. The deck row rings with the same edge (`.drow.lit`) when its card turns owned under it
+  (D5, D-D3, S4), and when it is drawn owned for a card the bridge just saved and the dock then added, once the deck
+  has accepted the add and on that deck only (K7); that hand-off lapses after 10s.
   "Briefly" is not drawn: the deck row holds it for 2s, as an edge with no animation, so reduced motion draws it the
-  same. A proxied row never rings, since its dot never fills.
+  same. A proxied row draws no ring, and clearing or setting a proxy tag (no save) rings nothing.
 
 ---
 

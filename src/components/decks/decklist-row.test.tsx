@@ -2203,6 +2203,12 @@ describe("DecklistRow — the owned ring", () => {
     forgetJustOwned("d2", "sol-ring");
   });
 
+  it("does not ring when a proxy tag is cleared with no save (K1)", () => {
+    const { rerender } = render(ui(true, true));
+    rerender(ui(true, false));
+    expect(rowEl()).not.toHaveAttribute("data-owned-ring");
+  });
+
   it("does not ring a proxied row", () => {
     const { rerender } = render(ui(false, true));
     rerender(ui(true, true));

@@ -123,6 +123,8 @@ export function CardSearchRowBody({
   //
   // Both widths draw the same marker; only the slot it rides in differs, so it
   // is built once here rather than twice below.
+  // The phone meta line's ownership phrase: the short form beside a partner, where the line is tightest.
+  const metaOwnership = comboPartner ? (ownershipShort ?? ownership) : ownership;
   const a = result.availability;
   const marker =
     a && availabilityState(a, { selfExcluded }) !== "free" ? (
@@ -217,13 +219,7 @@ export function CardSearchRowBody({
             {flavor}
             {result.typeLine} ·{" "}
             {/* Its own span only when it takes a tone: an ordinary row keeps the shipped one-run meta text. */}
-            {ownershipTone ? (
-              <span style={{ color: ownershipTone }}>{comboPartner ? (ownershipShort ?? ownership) : ownership}</span>
-            ) : comboPartner ? (
-              (ownershipShort ?? ownership)
-            ) : (
-              ownership
-            )}
+            {ownershipTone ? <span style={{ color: ownershipTone }}>{metaOwnership}</span> : metaOwnership}
           </span>
           {marker && joiner}
           {marker}

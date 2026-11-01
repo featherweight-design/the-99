@@ -16,14 +16,22 @@ export const OWNED_RING_MS = 2_000;
 /** The board's ring: the deck row's inset edge (`.drow.lit`). */
 export const OWNED_RING_EDGE = "inset 0 0 0 1.5px var(--success)";
 
-/** True while the row should draw the ring. `owned` is the row's DRAWN ownership (its dot), not the raw flag. */
+/**
+ * True while the row should ring. `owned` is the collection fact (`card.owned`), never the drawn dot: a proxy tag
+ * cleared or set moves the dot with no save, and must not ring. The caller decides whether a ringing row draws it.
+ */
 export function useOwnedRing(deckId: string, oracleId: string, owned: boolean): boolean {
-  // The dot filled under the row. Adjusted during render, React's pattern for state that follows a prop's change: the
-  // frame that fills the dot is the frame that rings it. Turning unowned (an Undo) takes the ring away with the dot.
+  // The card turned owned under the row. Adjusted during render, React's pattern for state that follows a prop's
+  // change: the frame that fills the dot is the frame that rings it. Turning unowned (an Undo) takes the ring away. A
+  // row reused for another deck or card (a route that reconciles rather than remounts) starts over without ringing:
+  // only the same card on the same deck turning owned is a save.
   const [flipped, setFlipped] = useState(false);
-  const [was, setWas] = useState(owned);
-  if (was !== owned) {
-    setWas(owned);
+  const [seen, setSeen] = useState({ deckId, oracleId, owned });
+  if (seen.deckId !== deckId || seen.oracleId !== oracleId) {
+    setSeen({ deckId, oracleId, owned });
+    setFlipped(false);
+  } else if (seen.owned !== owned) {
+    setSeen({ deckId, oracleId, owned });
     setFlipped(owned);
   }
   useEffect(() => {
@@ -32,8 +40,8 @@ export function useOwnedRing(deckId: string, oracleId: string, owned: boolean): 
     return () => window.clearTimeout(t);
   }, [flipped]);
 
-  // The dock's note (K7). The note is spent when the ring ends, and also when the row leaves inside the window, so a
-  // row drawn later (another tab, a regroup) does not ring for an add it did not see.
+  // The dock's note (K7). Spent once the ring has run its full length, never on unmount (see just-owned.ts): a row
+  // that leaves inside the window hands what is left to the row that stands in for it, and the lapse ends it.
   const noted = useSyncExternalStore(
     subscribeJustOwned,
     () => isJustOwned(deckId, oracleId),
@@ -43,10 +51,7 @@ export function useOwnedRing(deckId: string, oracleId: string, owned: boolean): 
   useEffect(() => {
     if (!fromNote) return;
     const t = window.setTimeout(() => forgetJustOwned(deckId, oracleId), OWNED_RING_MS);
-    return () => {
-      window.clearTimeout(t);
-      forgetJustOwned(deckId, oracleId);
-    };
+    return () => window.clearTimeout(t);
   }, [fromNote, deckId, oracleId]);
 
   return flipped || fromNote;

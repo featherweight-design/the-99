@@ -8,11 +8,18 @@
 // Module state, not a context: the dock and the deck list are siblings far apart in the builder, and the note has to
 // outlive the dock row that made it (the add clears the dock's query). Rows subscribe (`subscribeJustOwned`), since a
 // row is already on screen when the add's answer arrives. Keyed by deck and card, so a note never rings a row on
-// another deck. The ring forgets the note when it ends or its row leaves; an add whose row never draws leaves a note
-// that lapses on its own.
+// another deck. A ring that has run its full length spends the note. A row that leaves sooner does not (a regroup
+// remounts the row, and Strict Mode's dev double mount does too): the row that stands in for it rings what is left,
+// and the lapse below spends the rest.
 
-/** How long a note waits for its row. */
-export const JUST_OWNED_LAPSE_MS = 60_000;
+/**
+ * How long a note waits for its row. The note is written once the add's answer lands, when the optimistic row is
+ * already drawn, so the ring starts at once; the wait only has to cover the page's re-render after the add (the
+ * revalidate, which can remount the row in a new group) and a slow one. Measured on the walk, press to ring was
+ * 1.2 to 1.3s on a dev server. Ten seconds covers that several times over, and is short enough that a reader who
+ * switches views a while later (card view, then rows) does not see a ring for an add long done.
+ */
+export const JUST_OWNED_LAPSE_MS = 10_000;
 
 const notes = new Map<string, ReturnType<typeof setTimeout>>();
 const listeners = new Set<() => void>();

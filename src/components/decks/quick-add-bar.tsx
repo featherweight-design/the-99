@@ -16,6 +16,7 @@
 // Replaced search-pane.tsx and search-result-row.tsx, both now deleted.
 
 import { useCallback, useId, useLayoutEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import type { SearchResult } from "../../app/decks/[id]/search-action";
 import { addCardToDeck } from "../../app/decks/actions";
 import { DECK_ADD_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
@@ -131,17 +132,35 @@ export function QuickAddBar({
   // is set) is outside the bar, and closing it returns to the query and list kept. Escape while the card is
   // still loading is `handleKeyDown`'s: focus is still in the field, and it cancels the open instead.
   const detailUp = detail?.sessionActive ?? false;
+  // ONE INVALIDATOR for the bridge's ring: every change the reader makes to the search (typing, clearing, the filter
+  // either way, a dismiss) moves it. A ring, or a re-run still on its way, belongs to the input it was made for; and a
+  // close that arrives after the reader has changed the input (the sheet leaves the page a beat before its close reaches
+  // here) re-runs and rings nothing. A ref for the close to read, mirrored in state for the render to key on.
+  const inputRef = useRef(0);
+  const [inputEpoch, setInputEpoch] = useState(0);
+  const bumpInput = useCallback(() => {
+    inputRef.current += 1;
+    setInputEpoch(inputRef.current);
+  }, []);
   // The bridge's Add cards sheet is up (add a card from anywhere, Dock K3 to K5): every press in it is outside the bar,
-  // and none of them is the reader putting the search down. The query waits for the sheet to close (K6).
-  const [bridging, setBridging] = useState(false);
+  // and none of them is the reader putting the search down. The query waits for the sheet to close (K6). Kept as the
+  // page it was opened on, so a close the host does not report (one on the way to another route) cannot leave the
+  // dismiss off: on another page, or another deck, it is no longer up.
+  const pathname = usePathname();
+  const here = `${deckId} ${pathname ?? ""}`;
+  const [bridgingOn, setBridgingOn] = useState<string | null>(null);
+  const bridging = bridgingOn === here;
   const { ref: rootRef, onEscape, insideProps } = useSearchDismiss<HTMLDivElement>(
     query.length > 0 && !detailUp && !bridging,
-    () => setQuery(""),
+    () => {
+      bumpInput();
+      setQuery("");
+    },
   );
 
   const {
     trimmed, results, stale, open, noResults, activeIndex, setActiveIndex, move, activeColumn, setActiveColumn,
-    failure, retry, dismissFailure,
+    failure, retry, dismissFailure, landings,
   } = useCardSearch({ query, colorIdentity: commanderIdentity, ownedOnly, deckId, search });
   const column: CardSearchColumn = detail ? activeColumn : "add";
   // Try again hands focus back to the field, so the keyboard stays up on a phone and ↵ adds as usual.
@@ -160,34 +179,46 @@ export function QuickAddBar({
   const addCards = useAddCards();
   const addInScope = useCollectionEditScope();
   const canBridge = addCards !== null && addInScope;
-  // The rows on screen when a saving sheet closed: the next landing is the re-run's, and its owned rows ring.
-  const [ringAfter, setRingAfter] = useState<readonly SearchResult[] | null>(null);
-  const [ringed, setRinged] = useState<ReadonlySet<string> | null>(null);
-  if (ringAfter !== null && results !== ringAfter && !stale) {
+  // The request the ring answers: the same text and filter. With the epoch, any way the input moves clears it.
+  const ringKey = `${ownedOnly ? "owned" : "all"} ${trimmed}`;
+  // A saving sheet closed: the re-run's landing (the first to land after the close) rings its owned rows. A failed or
+  // timed-out re-run lands nothing, so the wait stands for Try again. Read through a ref at the close, not from the
+  // press: a landing in between must not count as the re-run's.
+  const landingsRef = useRef(landings);
+  useLayoutEffect(() => {
+    landingsRef.current = landings;
+  });
+  const [ringAfter, setRingAfter] = useState<{ epoch: number; key: string; after: number } | null>(null);
+  const [ringed, setRinged] = useState<{ epoch: number; key: string; ids: ReadonlySet<string> } | null>(null);
+  if (ringAfter !== null && (ringAfter.epoch !== inputEpoch || ringAfter.key !== ringKey)) {
     setRingAfter(null);
-    setRinged(new Set(results.filter((r) => r.owned).map((r) => r.oracleId)));
+  } else if (ringAfter !== null && landings > ringAfter.after && !stale) {
+    setRingAfter(null);
+    setRinged({ epoch: inputEpoch, key: ringKey, ids: new Set(results.filter((r) => r.owned).map((r) => r.oracleId)) });
   }
+  const ringedIds = ringed !== null && ringed.epoch === inputEpoch && ringed.key === ringKey ? ringed.ids : null;
   const bridge = useCallback(() => {
     if (!addCards) return;
-    setBridging(true);
+    setBridgingOn(here);
     setRinged(null);
     // The sheet leaves the page a beat before the close reaches here (its history entry goes first), and the field is
-    // live again in that beat. Text typed then is the reader's own new search, already running: nothing is re-run or
-    // ringed for it.
-    const at = editGeneration.current;
+    // live again in that beat. Input changed then is the reader's own new search, already running: nothing is re-run
+    // or ringed for it, and focus is not pulled back.
+    const at = inputRef.current;
+    const key = ringKey;
     addCards({
       initialQuery: trimmed,
       onClosed: ({ saved }) => {
-        setBridging(false);
-        const edited = editGeneration.current !== at;
-        if (saved && !edited) {
-          setRingAfter(results);
+        setBridgingOn(null);
+        if (inputRef.current !== at) return;
+        if (saved) {
+          setRingAfter({ epoch: at, key, after: landingsRef.current });
           retry();
         }
-        if (!edited) fieldRef.current?.focus();
+        fieldRef.current?.focus();
       },
     });
-  }, [addCards, trimmed, results, retry]);
+  }, [addCards, here, trimmed, ringKey, retry]);
 
   // Keyed on the COMMITTED list, which is what this prop is (see its doc): the re-read after an
   // add must see the deck the add produced, and the optimistic list moves before that exists.
@@ -316,14 +347,15 @@ export function QuickAddBar({
           onChange={(e) => {
             startComboMap();
             editGeneration.current += 1;
-            // A new search: no ring, and none for a re-run still on its way (its rows would answer the old text).
-            setRinged(null);
-            setRingAfter(null);
+            bumpInput();
             setQuery(e.target.value);
           }}
           onKeyDown={handleKeyDown}
           clearLabel={addPanelCopy.quickAdd.clear}
-          onClear={() => setQuery("")}
+          onClear={() => {
+            bumpInput();
+            setQuery("");
+          }}
         />
 
         <label
@@ -335,8 +367,7 @@ export function QuickAddBar({
             className="sr-only peer"
             checked={ownedOnly}
             onChange={(e) => {
-              setRinged(null);
-              setRingAfter(null);
+              bumpInput();
               setOwnedOnly(e.target.checked);
             }}
             aria-label={addPanelCopy.quickAdd.ownedToggleAria}
@@ -443,7 +474,7 @@ export function QuickAddBar({
                 onActivate={() => setActiveIndex(i)}
                 registerAdd={i === activeIndex ? registerAdd : undefined}
                 beginAdd={beginAdd}
-                ringed={ringed?.has(r.oracleId) ?? false}
+                ringed={ringedIds?.has(r.oracleId) ?? false}
               />
             ))}
           </ul>
@@ -516,7 +547,10 @@ export function QuickAddBar({
           {ownedOnly && (
             <button
               type="button"
-              onClick={() => setOwnedOnly(false)}
+              onClick={() => {
+                bumpInput();
+                setOwnedOnly(false);
+              }}
               className={`${canBridge ? "mt-[8px] min-h-[36px] inline-flex items-center" : "mt-[12px]"} text-[12.5px] font-semibold underline cursor-pointer text-[color:var(--accent-text)] bg-transparent border-none`}
               style={{ padding: 0 }}
             >

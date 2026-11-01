@@ -3,7 +3,7 @@
 // With Owned only on and nothing owned matching, one press opens the shell's Add cards sheet with the query carried.
 // Closing it brings the dock back as it was; a save has the search run again and rings the rows that landed owned.
 import { EMPTY_NOTE_COUNTS } from "../../lib/bracket/card-note";
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SearchResult } from "../../app/decks/[id]/search-action";
 import type { AddCardsSheetProps } from "../collection/add-cards-sheet";
@@ -246,6 +246,59 @@ describe("QuickAddBar — the bridge to Add cards", () => {
     expect(screen.getByRole("row")).not.toHaveAttribute("data-quick-add-ring");
     // Only the typed search ran: the close started no re-run over it.
     expect(searchCards.mock.calls.length).toBe(before + 1);
+  });
+
+  it("leaves a filter flipped in the beat before the close arrives alone: no re-run, no ring (C1)", async () => {
+    mount();
+    await typeAndMiss();
+    fireEvent.click(bridge()!);
+    await waitFor(() => expect(sheet()).toBeTruthy());
+    searchCards.mockResolvedValue([ghalta]);
+    await act(async () => screen.getByRole("button", { name: "save" }).click());
+    act(() => screen.getByRole("button", { name: "done" }).click());
+    expect(sheet()).toBeNull();
+    const before = searchCards.mock.calls.length;
+    fireEvent.click(toggle());
+    await waitFor(() => expect(screen.getAllByRole("row").length).toBe(1));
+    expect(screen.getByRole("row")).not.toHaveAttribute("data-quick-add-ring");
+    expect(searchCards.mock.calls.length).toBe(before + 1);
+  });
+
+  it("keeps waiting through a failed re-run and rings the rows Try again lands (K7)", async () => {
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      mount();
+      await typeAndMiss();
+      fireEvent.click(bridge()!);
+      await waitFor(() => expect(sheet()).toBeTruthy());
+      searchCards.mockRejectedValueOnce(new Error("boom"));
+      searchCards.mockResolvedValue([ghalta]);
+      await act(async () => screen.getByRole("button", { name: "save" }).click());
+      await act(async () => screen.getByRole("button", { name: "done" }).click());
+      const alert = await screen.findByRole("alert");
+      await act(async () => within(alert).getByRole("button", { name: addPanelCopy.quickAdd.searchRetry }).click());
+      await waitFor(() => expect(screen.getAllByRole("row").length).toBe(1));
+      expect(screen.getByRole("row")).toHaveAttribute("data-quick-add-ring");
+    } finally {
+      errorSpy.mockRestore();
+    }
+  });
+
+  it("lets a press outside clear the query again after the sheet left with a navigation (K8)", async () => {
+    const { rerender } = mount();
+    await typeAndMiss();
+    fireEvent.click(bridge()!);
+    await waitFor(() => expect(sheet()).toBeTruthy());
+    // The host drops the sheet on a navigation and reports no close.
+    pathname = "/decks/deck-1/versions";
+    rerender(
+      <CollectionEditScope>
+        <AddCardsHost totalCards={4492}>{bar()}</AddCardsHost>
+      </CollectionEditScope>,
+    );
+    await waitFor(() => expect(sheet()).toBeNull());
+    fireEvent.pointerDown(document.body);
+    expect(field()).toHaveValue("");
   });
 
   it("rings nothing for a filter flipped before the re-run landed", async () => {
