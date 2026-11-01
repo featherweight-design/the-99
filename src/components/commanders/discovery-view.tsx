@@ -559,7 +559,7 @@ export function DiscoveryView({
     !showHeldEmpty &&
     !pending &&
     discovery.candidateCount === 0 &&
-    (discovery.hiddenCount ?? 0) > 0;
+    discovery.hiddenCount > 0;
   const showSearchEmpty =
     !showFloorEmpty &&
     !showHeldEmpty &&
@@ -638,7 +638,8 @@ export function DiscoveryView({
   // `correct` below has no case for it.
   const ownedHref = laneHref("owned", trimmedQuery, place);
   // The hidden cause's correction is the commander's own page, which opens while it is hidden. A
-  // route, so a link. Absent when no list holds a slug for it: the state then offers no page.
+  // route, so a link. Absent when no list holds a slug for it: the state then offers no page. The
+  // default scope, as every row link here carries: this lane has no availability control.
   const hiddenHref =
     report?.cause === "hidden" && report.slug ? commanderDetailHref(report.slug, "all") : undefined;
 

@@ -177,10 +177,8 @@ export const planeCopy = {
     heldHidden: "It matches, but you hid it, so it stays out of your lists.",
     heldHiddenHeadingMany: (matches: number) => `${n(matches)} matches are here. You hid them`,
     heldHiddenMany: "They match, but you hid them, so they stay out of your lists.",
-    // A hide is the player's own choice, not a control, so its counts say "hidden" rather than
-    // naming a control through `search.heldMany` / `search.asideMore`.
-    heldHiddenSome: (hidden: number) =>
-      hidden === 1 ? "1 of them is hidden." : `${n(hidden)} of them are hidden.`,
+    // A hide is the player's own choice, not a control, so its count says "hidden" rather than
+    // naming a control through `search.asideMore`.
     hiddenMore: (hidden: number) =>
       hidden === 1 ? "1 more match is hidden." : `${n(hidden)} more matches are hidden.`,
     hiddenAlso: (name: string) => `${name} also matches, but you hid it, so it stays out of your lists.`,

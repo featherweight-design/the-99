@@ -147,13 +147,18 @@ export type CommanderRankings = {
  * reaches that check, so without this a reader who writes nothing goes on seeing
  * Brisela or Hanweir ranked for up to the hour ceiling.
  *
+ * 12: `hiddenCount` joins the payload, for the all-hidden state. A warm v11 entry has none, and a
+ * reader served one whose every row is hidden would draw the no-candidates state instead of
+ * "Everything here is hidden" for up to the hour ceiling. Bumped with its sibling in
+ * `discovery/list.ts`.
+ *
  * 6 AND 7 ARE TWO RELEASES, not one renumbered. #702 took 6 while this branch
  * was in review and both had claimed it; taking 6 here would have left every
  * reader whose entry was written by #702 being served a payload with no
  * sentence, no gap slot and no headline figure, because the key would have
  * matched.
  */
-const PAYLOAD_VERSION = 11;
+const PAYLOAD_VERSION = 12;
 
 /**
  * The cache key this payload is filed under: the version, and the role basis both rankings were
@@ -279,7 +284,7 @@ export async function loadCommanderRankings(
   });
 
   return {
-    items: rows, degraded, uniqueCardsRead, candidateCount: candidateCount - hiddenCount, hiddenCount, freeRanking, availOk,
+    items: rows, degraded, uniqueCardsRead, candidateCount: Math.max(0, candidateCount - hiddenCount), hiddenCount, freeRanking, availOk,
     ...(labelFallback ? { labelFallback: true as const } : {}),
   };
 }

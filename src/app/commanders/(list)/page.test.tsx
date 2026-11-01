@@ -8,7 +8,7 @@ const seen = vi.hoisted(() => ({
   store: undefined as ((v: { labelFallback?: true }) => boolean) | undefined,
   env: {} as Record<string, string>,
   candidateCount: 0,
-  hiddenCount: undefined as number | undefined,
+  hiddenCount: 0,
 }));
 vi.mock("../../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: async () => seen.env as NodeJS.ProcessEnv }));
@@ -72,7 +72,7 @@ describe("/commanders with every candidate hidden", () => {
     expect(el.type).toBe(CommandersView);
     expect(el.props.hiddenCount).toBe(3);
     expect(el.props.candidateCount).toBe(0);
-    seen.hiddenCount = undefined;
+    seen.hiddenCount = 0;
   });
 
   it("keeps the no-candidates state when nothing is hidden", async () => {

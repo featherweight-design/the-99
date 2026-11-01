@@ -1,8 +1,8 @@
 import { and, eq, ilike, inArray } from "drizzle-orm";
 import { db } from "../../db";
-import { cards, commanderScores, commanderSupport, hiddenCommanders } from "../../db/schema";
+import { cards, collectionItems, commanderScores, hiddenCommanders } from "../../db/schema";
 import { notBuiltBy } from "../decks/built";
-import { discoverCandidates, escapeLike } from "../discovery/candidates";
+import { escapeLike, loadCandidateSlugRows } from "../discovery/candidates";
 import { assignDiscoverySlugs } from "../discovery/slugs";
 import { rankableScoreRows } from "../recs/store";
 
@@ -16,28 +16,45 @@ import { rankableScoreRows } from "../recs/store";
 const HIDDEN_MATCH_LIMIT = 200;
 
 /**
- * The commanders this player has hidden whose name contains `query`, by name. A commander they have
- * since built is left out: built is the outer cause (`classifyMatches`), and a hide is not what keeps it
- * off a list. Null past the cap, as `loadNameMatches` answers it.
+ * The commanders this player has hidden FROM FOR YOU whose name contains `query`, by name: hidden, in
+ * their collection, commander-legal and unbuilt, which is For you's own population. A hidden commander
+ * outside it (unowned, hidden on Discover) is not this list's to report: unhiding it would not put it
+ * here, so "you hid it" would be a false held claim, and the search falls through to the list's own
+ * miss state. A built one is left out for the same reason: built is the outer cause
+ * (`classifyMatches`). Null past the cap, as `loadNameMatches` answers it.
+ *
+ * Ownership is a join on the reader's `collection_items`, DISTINCT because a commander held in several
+ * printings has a row for each: the oracle ids alone, never the collection's wide rows.
  */
-export async function loadHiddenNameMatches(
+export async function loadOwnedHiddenNameMatches(
   userId: string,
   query: string,
 ): Promise<{ oracleId: string; name: string }[] | null> {
-  const rows = await db
-    .select({ oracleId: cards.oracleId, name: cards.name })
+  const rows = await ownedHiddenNameQuery(userId, query);
+  return rows.length > HIDDEN_MATCH_LIMIT ? null : rows;
+}
+
+/** The statement `loadOwnedHiddenNameMatches` runs, apart so a test can read the SQL it emits: the
+    lane boundary is the whole of the fix it carries, and only the SQL shows it. One row past the cap. */
+export function ownedHiddenNameQuery(userId: string, query: string) {
+  return db
+    .selectDistinct({ oracleId: cards.oracleId, name: cards.name })
     .from(hiddenCommanders)
     .innerJoin(cards, eq(cards.oracleId, hiddenCommanders.oracleId))
+    .innerJoin(
+      collectionItems,
+      and(eq(collectionItems.oracleId, hiddenCommanders.oracleId), eq(collectionItems.userId, userId)),
+    )
     .where(
       and(
         eq(hiddenCommanders.userId, userId),
+        eq(cards.commanderLegal, true),
         ilike(cards.name, `%${escapeLike(query)}%`),
         notBuiltBy(userId, hiddenCommanders.oracleId),
       ),
     )
     .orderBy(cards.name)
     .limit(HIDDEN_MATCH_LIMIT + 1);
-  return rows.length > HIDDEN_MATCH_LIMIT ? null : rows;
 }
 
 /**
@@ -48,8 +65,10 @@ export async function loadHiddenNameMatches(
  *
  * The discovery slugs are assigned over the whole candidate population, never over the hidden ids
  * alone: a dedup suffix depends on every commander sharing the name, and a population one row narrower
- * than the list's would hand back the slug of the commander beside this one. The population read is the
- * light projection, two columns and no aggregate, and is made only when an unowned id is asked about.
+ * than the list's would hand back the slug of the commander beside this one. So the population is read
+ * by `loadCandidateSlugRows`, the reader `resolveCommanderSlug` uses, and cannot drift from it. Its
+ * owned-support aggregate is asked over no owned ids (the slugs never read it), and the read is made
+ * only when an unowned id is asked about.
  *
  * An id neither ranking holds (scores not yet persisted, or not a candidate at all) is absent from the
  * map, and its held state offers no page rather than a link that 404s.
@@ -74,11 +93,7 @@ export async function loadHiddenSlugs(
   const unowned = oracleIds.filter((id) => !slugs.has(id) && !owned.has(id));
   if (unowned.length === 0) return slugs;
 
-  const population = await db
-    .select({ oracleId: commanderSupport.commanderOracleId, name: cards.name })
-    .from(commanderSupport)
-    .innerJoin(cards, eq(cards.oracleId, commanderSupport.commanderOracleId))
-    .where(discoverCandidates(userId, collectionOracleIds));
+  const population = await loadCandidateSlugRows(userId, [], collectionOracleIds);
   const wanted = new Set(unowned);
   for (const r of assignDiscoverySlugs(population)) if (wanted.has(r.oracleId)) slugs.set(r.oracleId, r.slug);
   return slugs;

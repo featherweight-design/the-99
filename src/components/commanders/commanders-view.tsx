@@ -45,6 +45,7 @@ import { AllHiddenEmpty } from "./all-hidden-empty";
 import { CommanderRow } from "./commander-row";
 import { CommanderUndoRow } from "./commander-undo-row";
 import { useStandingHides } from "./use-standing-hides";
+import { COMMANDER_COUNTS_STALE_EVENT } from "./counts-event";
 import { commanderDetailHref } from "./list-nav";
 import { FilterRack } from "./rack/filter-rack";
 import { GuidedBanner } from "./guided-banner";
@@ -590,13 +591,26 @@ export function CommandersView({
     const timer = setTimeout(() => setSettledQuery(trimmedQuery), 350);
     return () => clearTimeout(timer);
   }, [trimmedQuery]);
+  // A hide or an Undo the server took in this visit (`announceCommanderCountsStale`): the set of hidden
+  // commanders moved, so an answer read before it may name one that is back, or miss one just hidden.
+  // Counted, and the count is in the answer's key, so no answer outlives the hides it was read against.
+  const [hidesSettled, setHidesSettled] = useState(0);
+  useEffect(() => {
+    const bumpHides = () => setHidesSettled((n) => n + 1);
+    window.addEventListener(COMMANDER_COUNTS_STALE_EVENT, bumpHides);
+    return () => window.removeEventListener(COMMANDER_COUNTS_STALE_EVENT, bumpHides);
+  }, []);
+  // Nothing on this list is hidden, by the payload and by this visit: no search can find a hidden
+  // match here, so none is asked about and none waits on an answer. `hiddenCount` counts the hidden
+  // rows among this ranking's own, which is the population the lookup reports.
+  const mayHoldHidden = hiddenCount > 0 || hidesSettled > 0;
   const namesNothingHeld = useCallback(
     (q: string) => {
-      if (q.length < 2) return false;
+      if (!mayHoldHidden || q.length < 2) return false;
       const lower = q.toLowerCase();
       return !canonical.some((r) => matchesQuery(r, lower));
     },
-    [canonical],
+    [canonical, mayHoldHidden],
   );
   // Stamped with the query it answers, and read back only while the two agree, as Discover does: an
   // out-of-date answer is never paired with the query on screen.
@@ -604,11 +618,14 @@ export function CommandersView({
     null,
   );
   const asksServer = namesNothingHeld(settledQuery);
+  // The query and the hides it was read against.
+  const answerKey = `${hidesSettled}|${settledQuery}`;
   useEffect(() => {
     if (!asksServer) return;
     let live = true;
-    const key = settledQuery;
-    findOwnedExcludedMatches(key)
+    const key = answerKey;
+    const query = settledQuery;
+    findOwnedExcludedMatches(query)
       // Null (past the cap) and a failure both leave the question unanswered, and an unanswered
       // question draws the list's own search state, as it did before this lookup existed.
       .then((matches) => {
@@ -620,10 +637,10 @@ export function CommandersView({
     return () => {
       live = false;
     };
-  }, [asksServer, settledQuery]);
+  }, [asksServer, answerKey, settledQuery]);
   // Only for the query on screen, once it has settled into the one the answer is for.
   const lookupLive = asksServer && settledQuery === trimmedQuery;
-  const hiddenMatches = lookupLive && hiddenAnswer?.key === trimmedQuery ? hiddenAnswer.matches : null;
+  const hiddenMatches = lookupLive && hiddenAnswer?.key === answerKey ? hiddenAnswer.matches : null;
   const hiddenReport = useMemo(
     () =>
       hiddenMatches && hiddenMatches.length > 0

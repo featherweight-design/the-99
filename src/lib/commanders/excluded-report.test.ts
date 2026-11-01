@@ -143,12 +143,14 @@ describe("resolveExcludedReport", () => {
       expect(out?.cta).toBe(ex.hiddenCta);
     });
 
-    // A hide removed the row on the server, before any pip was asked: clearing them would not bring it back.
-    it("outranks the pips and the floor, and yields to built", () => {
+    // Opening a hidden commander's page puts nothing back on the list, so while another match has a
+    // correction, that correction is offered; once taken, the hide is the aside above the live list.
+    it("yields to built, the pips and the floor, and reports only when it is the one cause left", () => {
       expect(resolve({ server: [hidden(), server()], colour: [colour()], colors: ["G"] })?.cause).toBe(
-        "hidden",
+        "colors",
       );
       expect(resolve({ server: [hidden(), server({ cause: "built", pct: null })] })?.cause).toBe("built");
+      expect(resolve({ server: [hidden(), server({ oracleId: "b" })] })?.cause).toBe("floor");
     });
 
     it("says \"you hid them\" when every match is hidden, and names the page it opens", () => {
@@ -162,10 +164,12 @@ describe("resolveExcludedReport", () => {
       expect(out?.slug).toBe("ghalta-primal-hunger");
     });
 
-    it("counts the hidden ones when another cause holds a match back too", () => {
+    // A held state whose CTA opens one hidden page would leave the floor's match with no way back.
+    it("keeps the floor's correction when a floor match sits beside a hidden one", () => {
       const out = resolve({ server: [hidden(), server({ oracleId: "b" })], listHasRows: false });
-      expect(out?.heading).toBe(planeCopy.search.heldHeadingMany(2));
-      expect(out?.body).toBe(ex.heldHiddenSome(1));
+      expect(out?.cause).toBe("floor");
+      expect(out?.cta).toBe(ex.floorCta);
+      expect(out?.slug).toBeNull();
     });
 
     it("carries no page when no list holds a slug for it", () => {

@@ -58,9 +58,7 @@ export default async function CommandersPage({
     perfRead("commanders.availPref", () => readCommandersAvail(userId)),
   ]);
 
-  const { items, degraded, uniqueCardsRead, candidateCount, freeRanking, availOk } = rankings;
-  // Absent on an entry cached before the field shipped, which read as nothing hidden.
-  const hiddenCount = rankings.hiddenCount ?? 0;
+  const { items, degraded, uniqueCardsRead, candidateCount, hiddenCount, freeRanking, availOk } = rankings;
   // `Printed in ▾`'s index, aligned to these rows. The free ranking re-orders the same
   // commanders, so one index covers both lists.
   const printedIn = await perf.timed("printedIn", () => lanePrintedInFor(items, printings));

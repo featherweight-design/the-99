@@ -391,8 +391,12 @@ export function assembleDiscoveryWithIds(input: AssembleInput): { list: Discover
  * 9 — the cached value is `{ encoded, oracleIds }` rather than the encoded list alone, so the
  * page can build `Printed in ▾`'s index aligned to the rows by position (decision 9). A warm
  * version-8 entry is the bare list, and reading `.encoded` off it would be undefined.
+ *
+ * 10: `hiddenCount` rides in the payload's meta, for the all-hidden state. A warm v9 entry has none,
+ * so a reader whose every candidate is hidden would draw the bare empty list instead of "Everything
+ * here is hidden". Moves with rankings' v12, for version 3's reason.
  */
-const PAYLOAD_VERSION = 9;
+const PAYLOAD_VERSION = 10;
 
 /** The cache key a discovery payload is filed under: its sort, the version of the code that
     produced it, and the role basis it was counted by. Roles are always counted by label

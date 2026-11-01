@@ -287,14 +287,14 @@ describe("the list caches' payload versions", () => {
   // Pinned to the labels basis: roles are always counted by label (LABEL_ROLE_COUNTS retired, Hugh
   // 2026-10-31), and the key keeps the segment entries filed while the switch was live carry.
   it("pins both, so a pair bumped half-way fails", () => {
-    expect(commanderRankingsKey()).toEqual(["commander-rankings", "v11", "basis:labels"]);
-    expect(discoveryKey("fit")).toEqual(["discovery", "fit", "v9", "basis:labels"]);
+    expect(commanderRankingsKey()).toEqual(["commander-rankings", "v12", "basis:labels"]);
+    expect(discoveryKey("fit")).toEqual(["discovery", "fit", "v10", "basis:labels"]);
   });
 
   // The sort rides in the key beside the version, so two sorts cannot share an
   // entry — a property of the key's shape rather than of either number.
   it("keeps the two discovery sorts apart at the same version", () => {
     expect(discoveryKey("new")).not.toEqual(discoveryKey("fit"));
-    expect(discoveryKey("new")).toContain("v9");
+    expect(discoveryKey("new")).toContain("v10");
   });
 });

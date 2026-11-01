@@ -9,10 +9,12 @@ const copy = planeCopy.excluded;
  *
  * ONE control is named. A row can be excluded by three at once, and naming all
  * three turns a one-tap fix into a diagnosis, so the outermost wins: built, then
- * the player's own hide, then the pips or the mode, then the sort's floor. A hide
- * sits above the pips because it removed the row on the server, before any pip
- * was asked: clearing them would not bring it back. The unmeasurable are the floor
- * tier's other population, which does not reorder the tiers.
+ * the pips or the mode, then the sort's floor. The player's own hide is reported
+ * only when it is the one cause left: its CTA opens a commander's page and puts
+ * nothing back on the list, so while a pip, the mode or the floor holds another
+ * match back, that correction is the one offered, and once it is taken the hide
+ * is the aside above the rows it brought. The unmeasurable are the floor tier's
+ * other population, which does not reorder the tiers.
  *
  * `heading` is present only when no row survived — that state replaces the list
  * and needs a title; the aside sits above a live list and is one sentence.
@@ -93,27 +95,22 @@ export function resolveExcludedReport(input: {
   }
 
   const hidden = server.filter((m) => m.cause === "hidden");
-  if (hidden.length > 0) {
+  // Built is answered above, so every match left is hidden or has a correction of its own: the hide
+  // reports only when no correction is left to offer, and then every match counted is a hidden one.
+  if (hidden.length > 0 && hidden.length === total) {
     const first = hidden[0];
-    // When every match is hidden, the held state can say "you hid them" outright. With another cause
-    // also holding a match back, it counts the hidden ones the way the other tiers count theirs.
-    const allHidden = hidden.length === total;
     return {
       cause: "hidden",
       name: held || hidden.length > 1 ? null : first.name,
       heading: held
         ? total === 1
           ? copy.heldHiddenHeading(first.name)
-          : allHidden
-            ? copy.heldHiddenHeadingMany(total)
-            : planeCopy.search.heldHeadingMany(total)
+          : copy.heldHiddenHeadingMany(total)
         : null,
       body: held
         ? total === 1
           ? copy.heldHidden
-          : allHidden
-            ? copy.heldHiddenMany
-            : copy.heldHiddenSome(hidden.length)
+          : copy.heldHiddenMany
         : hidden.length === 1
           ? copy.hiddenAlso(first.name)
           : copy.hiddenMore(hidden.length),

@@ -12,8 +12,7 @@ import { loadCommanderCounts, type CommanderCounts } from "../../lib/commanders/
 import { deleteAllScores } from "../../lib/recs/store";
 import { getCollectionStats } from "../../lib/home/summary";
 import { hideCommander, isHideable, loadHiddenIds, unhideCommander } from "../../lib/commanders/hidden";
-import { loadHiddenNameMatches, loadHiddenSlugs } from "../../lib/commanders/hidden-matches";
-import { loadCollectionPool } from "../../lib/recs/recommend";
+import { loadHiddenSlugs, loadOwnedHiddenNameMatches } from "../../lib/commanders/hidden-matches";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import { isUuid } from "../../lib/uuid";
 
@@ -99,16 +98,19 @@ export async function findOwnedExcludedMatches(query: string): Promise<ExcludedM
   const trimmed = query.trim();
   if (trimmed.length < 2) return [];
 
-  const hidden = await loadHiddenNameMatches(userId, trimmed);
+  // Only this list's own hides: owned, legal and unbuilt (`loadOwnedHiddenNameMatches`). A commander
+  // hidden on Discover is not one unhiding would put here, so it is not reported as held.
+  const hidden = await loadOwnedHiddenNameMatches(userId, trimmed);
   if (hidden === null) return null;
-  // Nothing hidden is named that: no slug to look for, and no collection read to make for it.
+  // Nothing hidden is named that: no slug to look for.
   if (hidden.length === 0) return [];
 
-  const { collection } = await loadCollectionPool(userId);
+  // Every match is owned, so the matched ids stand in for the collection: a slug comes from the
+  // persisted scores alone, and the discovery population (unowned only) is never read for it.
   return withHiddenSlugs(
     userId,
     hidden.map((m) => ({ ...m, cause: "hidden" as const, pct: null })),
-    collection.map((c) => c.oracleId),
+    hidden.map((m) => m.oracleId),
   );
 }
 
