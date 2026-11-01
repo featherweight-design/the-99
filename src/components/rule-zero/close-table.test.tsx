@@ -135,6 +135,24 @@ describe("the confirm from md (a 480 modal)", () => {
       restore();
     }
   });
+
+  it("holds the modal's ✕ while the close runs, and its press does nothing (Rule 0 defaults, C7)", async () => {
+    const restore = wideViewport(true);
+    try {
+      let finish: (ok: boolean) => void = () => {};
+      const run = vi.fn(() => new Promise<boolean>((resolve) => { finish = resolve; }));
+      render(<CloseTable podName={POD} run={run} />);
+      await press();
+      await act(async () => fireEvent.click(within(dialog()).getByRole("button", { name: c.action })));
+      const x = within(dialog()).getByRole("button", { name: c.dismiss });
+      expect(x).toHaveAttribute("aria-disabled", "true");
+      fireEvent.click(x);
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+      await act(async () => finish(true));
+    } finally {
+      restore();
+    }
+  });
 });
 
 describe("TableLive's close", () => {
