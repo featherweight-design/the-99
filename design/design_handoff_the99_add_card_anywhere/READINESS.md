@@ -194,6 +194,32 @@ each branched from `main` after the one before merges, so nothing is stacked.
 - Prior handoffs whose rules still bind: `design_handoff_the99_card_search` (H3 ring, one row = one press),
   `design_handoff_the99_collection_edit` (§B sheet, §C Edit copies), `design_handoff_the99_card_scan`.
 
+## Errata from the PR 1 build (orchestrator rulings, 2026-11-01)
+
+The PR 1 design review (direction D) found the boards' redraws of shipped parts differing from the shipped code. The
+boards are Design's and stay as dropped; these rulings govern the build.
+
+- **E1 · the toast keeps the shipped look.** D4 and D-D3 draw a ✓ in `--success`, `--surface-raised`, `0 6px 0 14px`
+  padding, a 12px gap, a 48px minimum height, a `0 14px 34px` shadow, z 40 and an Undo with no underline. The shipped
+  `CollectionEditToast` (`edit-toast.tsx`) is kept as it is: no glyph, `--elevated`, its own padding, gap, shadow,
+  z-index and underlined Undo. Off a deck page it keeps the shipped centre slot, not the boards' bottom-right desktop
+  (left 900, width 376) or 12px phone gutters. The captions call it the shipped toast.
+- **E2 · the receipt link and padding stay shipped.** The boards draw the link at weight 500, underline offset 3,
+  inline-flex and a 32px minimum on both widths, and the receipt at 14px 16px on desktop. Shipped `RECEIPT_LINK_CLASS`
+  (default weight, offset 2, 44px on the phone and 32px from `md`) and the receipt's 18px 20px desktop padding are kept,
+  so the link reads the same as on /collection.
+- **E3 · Remove from collection stays, disabled.** D3 and D-D2 draw the sheet's foot with Save alone. For a card owned
+  in no copy the shipped Edit copies sheet draws `Remove from collection` disabled (`edit-copies-sheet.tsx`, `!owned`);
+  that is kept.
+- **E4 · the details reopen after a save at both widths.** D-D3 draws the deck page with no card details after the
+  save. The shipped flow reopens card details re-read (`EditCopiesHost` → `onReopen`) at both widths, as D4 draws on the
+  phone; that is kept.
+- **E5 · on a deck page the toast stands in the deck toast stack.** The shipped centre slot would cover the quick-add
+  dock on a phone deck page, a case the boards do not draw (D4 draws the toast over card details). A save from card
+  details on a deck page (a provider with a `deckId`) announces its toast with `deck`, and `CollectionEditToast` draws
+  it in the deck toast stack as its receipt (`placement="deck"`, `kind="receipt"`): the shipped dock-safe placement,
+  10px above the dock. Everywhere else it keeps the centre slot (E1).
+
 ---
 
 ## Design's readiness note (as dropped, kept for the record)

@@ -36,6 +36,12 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("the Edit copies host", () => {
+  it("asks for the deck toast stack when it was opened from a deck page (errata E5)", async () => {
+    render(<EditCopiesHost card={card} onReopen={onReopen} onDone={onDone} deck />);
+    await close({ saved: { entryId: "e1", removed: false, total: 1, copiesRemoved: 0 } });
+    expect(announce).toHaveBeenCalledWith({ entryId: "e1", removed: false, deck: true, text: c.saved("Sol Ring", 1) });
+  });
+
   it("opens the sheet in edit mode for the card", () => {
     mount();
     expect(screen.getByRole("dialog", { name: "edit Sol Ring" })).toBeTruthy();

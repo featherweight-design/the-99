@@ -34,7 +34,18 @@ const EVENT = "collection-edit-toast";
 const ARM = "collection-edit-toast-arm";
 const SAVED = "collection-edit-saved";
 
-export type EditToast = { text: string; entryId: string; removed: boolean; /** No Undo: the revert already went through. */ done?: boolean };
+export type EditToast = {
+  text: string;
+  entryId: string;
+  removed: boolean;
+  /** No Undo: the revert already went through. */
+  done?: boolean;
+  /**
+   * Saved from card details on a deck page (add a card from anywhere, READINESS errata E5): drawn in the deck toast
+   * stack, whose floor stands above the quick-add dock, as a receipt; anywhere else in the shipped centre slot.
+   */
+  deck?: boolean;
+};
 
 export function announceEditToast(toast: EditToast) {
   window.dispatchEvent(new CustomEvent<EditToast>(EVENT, { detail: toast }));
@@ -212,6 +223,8 @@ export function CollectionEditToast() {
       {toast && !undoing ? (
         <ToastFrame
           frameRef={ref}
+          placement={toast.deck ? "deck" : "center"}
+          kind={toast.deck ? "receipt" : undefined}
           title={toast.text}
           actions={toast.done ? null : (
             <button
@@ -240,7 +253,7 @@ export function CollectionEditToast() {
               restart();
               // The revert committed either way. A list that could not be refreshed says so, rather
               // than vanishing the toast over a page still showing the old count.
-              setToast(fresh ? null : { entryId: toast.entryId, removed: false, text: c.undoneStale, done: true });
+              setToast(fresh ? null : { entryId: toast.entryId, removed: false, text: c.undoneStale, done: true, deck: toast.deck });
               // The head's totals moved back too.
               announceCollectionSaved();
             })();

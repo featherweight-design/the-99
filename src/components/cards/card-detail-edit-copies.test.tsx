@@ -119,6 +119,16 @@ describe("the link inside the shell", () => {
     await screen.findByTestId("host");
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(hostProps.mock.calls.at(-1)?.[0].card).toMatchObject({ oracleId: "o-sol", name: "Sol Ring" });
+    // A deck page's save stands its toast in the deck toast stack, clear of the dock (errata E5).
+    expect(hostProps.mock.calls.at(-1)?.[0]).toMatchObject({ deck: true });
+  });
+
+  it("keeps the toast in the centre slot off a deck page", async () => {
+    mount(sol({ availability: free }), {}, { inShell: true });
+    await openCard();
+    await act(async () => fireEvent.click(screen.getByTestId("edit-copies-link")));
+    await screen.findByTestId("host");
+    expect(hostProps.mock.calls.at(-1)?.[0]).toMatchObject({ deck: false });
   });
 });
 
