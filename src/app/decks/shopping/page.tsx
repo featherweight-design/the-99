@@ -64,7 +64,7 @@ export default async function AllDecksShoppingPage({
       initialOwned={typeof params.owned === "string" ? params.owned : null}
       // Friends' spares on the lines (Social R2 PR B): read after the page from the uncached route, so no key changes.
       socialFriends={true}
-      // Ask in the lines' spares modal (spare requests PR 3b), re-checked by every action on the server.
+      // Ask in the lines' spares modal (spare requests PR 3b). Its actions still check sign-in and the grant on the server.
       spareAsks={true}
       hasFriends={friends}
     />
