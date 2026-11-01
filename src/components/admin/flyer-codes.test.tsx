@@ -360,6 +360,20 @@ describe("Download CSV failure line", () => {
     fireEvent.click(within(alert()!).getByRole("button", { name: "Try again" }));
     await waitFor(() => expect(exportLaunchList).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(alert()).toBeNull());
+    // The retry unmounted with the line: the focus lands on Download CSV, not the page body.
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByTestId("launch-csv")));
+  });
+
+  it("does not call a failed save 'nothing downloaded': only the call itself is lost", async () => {
+    exportLaunchList.mockResolvedValueOnce({ ok: true, filename: "f.csv", csv: "email\r\n" });
+    const create = vi.spyOn(URL, "createObjectURL").mockImplementation(() => {
+      throw new Error("blocked");
+    });
+    render(<FlyerCodes view={withListed(2)} />);
+    press();
+    await waitFor(() => expect(screen.getByTestId("launch-csv")).not.toBeDisabled());
+    expect(alert()).toBeNull();
+    create.mockRestore();
   });
 
   it("draws no line when the file saves", async () => {

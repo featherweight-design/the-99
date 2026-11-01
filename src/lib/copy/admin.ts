@@ -798,7 +798,7 @@ export const flyerAdminCopy = {
   /** The print page's bar for a revoked code (Print-Revoked.dc.html V1/V2): no Print, no Download QR. */
   printRevoked: (day: string) => `Revoked ${day}. This code no longer signs anyone up, so there’s nothing to print.`,
   csv: "Download CSV",
-  /** Download CSV's failure lines (small items 9, CSV-Failed.dc.html F1 to F7). DRAFT, owed to /copy-review. */
+  /** Download CSV's failure lines (small items 9, CSV-Failed.dc.html F1 to F7). Copy-reviewed 2026-11-01. */
   csvFailed: "The server couldn’t build the download. Reload the page and try again.",
   csvOff: "The flyer trial is off now, so there’s nothing to download. Reload to see the page as it is.",
   /** A lost reply saved nothing, so pressing again is safe. */

@@ -17,29 +17,47 @@ import { downloadTextFile } from "../../lib/decks/download";
 
 export type LaunchCsvFailure = "failed" | "off" | "lost";
 
-export type LaunchCsv = { pending: boolean; failure: LaunchCsvFailure | null; press: () => void };
+export type LaunchCsv = {
+  pending: boolean;
+  failure: LaunchCsvFailure | null;
+  press: () => void;
+  /** Try again: the press unmounts the focused retry, so the focus lands on Download CSV once the attempt settles. */
+  retry: () => void;
+};
+
+// The card draws one Download CSV; the retry sits in another row, so it finds the button by its marker.
+const focusDownload = () => document.querySelector<HTMLButtonElement>("[data-launch-csv]")?.focus();
 
 export function useLaunchCsv(): LaunchCsv {
   const [pending, setPending] = useState(false);
   const [failure, setFailure] = useState<LaunchCsvFailure | null>(null);
 
-  function press() {
+  function press(refocus = false) {
     setPending(true);
     setFailure(null);
     void (async () => {
+      // Only the call is "lost" when it throws: once the file is built, a throw saving it must not say nothing downloaded.
+      let result: Awaited<ReturnType<typeof exportLaunchList>>;
       try {
-        const result = await exportLaunchList();
-        if (result.ok) downloadTextFile(result.filename, result.csv, "text/csv;charset=utf-8");
-        else setFailure(result.error);
+        result = await exportLaunchList();
       } catch {
         setFailure("lost");
+        setPending(false);
+        if (refocus) requestAnimationFrame(focusDownload);
+        return;
+      }
+      try {
+        if (result.ok) downloadTextFile(result.filename, result.csv, "text/csv;charset=utf-8");
+        else setFailure(result.error);
       } finally {
         setPending(false);
+        // Download CSV is disabled until the frame after this; focus it once it is pressable again.
+        if (refocus) requestAnimationFrame(focusDownload);
       }
     })();
   }
 
-  return { pending, failure, press };
+  return { pending, failure, press: () => press(), retry: () => press(true) };
 }
 
 const TEXT_BUTTON =
@@ -47,7 +65,7 @@ const TEXT_BUTTON =
 
 export function FlyerLaunchCsv({ csv }: { csv: LaunchCsv }) {
   return (
-    <button type="button" data-testid="launch-csv" disabled={csv.pending} onClick={csv.press} className={TEXT_BUTTON}>
+    <button type="button" data-testid="launch-csv" data-launch-csv="" disabled={csv.pending} onClick={csv.press} className={TEXT_BUTTON}>
       {flyerAdminCopy.csv}
     </button>
   );
@@ -74,7 +92,7 @@ export function FlyerLaunchCsvAlert({ csv }: { csv: LaunchCsv }) {
           type="button"
           data-testid="launch-csv-retry"
           disabled={csv.pending}
-          onClick={csv.press}
+          onClick={csv.retry}
           className="inline-flex min-h-[44px] cursor-pointer items-center border-0 bg-transparent p-0 text-[12.5px] font-normal text-[color:var(--accent-text)] md:min-h-[32px]"
         >
           {flyerAdminCopy.csvRetry}
