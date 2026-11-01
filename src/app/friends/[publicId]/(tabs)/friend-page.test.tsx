@@ -206,7 +206,7 @@ describe("a friend's page group", () => {
       expect(within(tile).getByRole("heading", { level: 3, hidden: true }).querySelector(".ph-no-capture")?.textContent).toBe("Thopter Factory");
       expect(tile.textContent).toContain("99 cards");
       expect(tile.textContent).not.toMatch(/To buy|99 \/ 99/);
-      expect(screen.getByText(p.decks.lineOpen)).toBeTruthy();
+      expect(screen.getByText(p.decks.line)).toBeTruthy();
     });
 
     it("keeps the colour alone when the deck is named for its commander", async () => {
@@ -227,7 +227,7 @@ describe("a friend's page group", () => {
 
     it("rewords the empty tab's body: a deck shared shows with its whole list", async () => {
       m.loadFriendDecks.mockResolvedValue([]);
-      expect(renderToString(await FriendDecksPage({ params: params() }))).toContain(plain(p.decks.emptyBodyOpen(named("Colin"))));
+      expect(renderToString(await FriendDecksPage({ params: params() }))).toContain(plain(p.decks.emptyBody(named("Colin"))));
     });
   });
 

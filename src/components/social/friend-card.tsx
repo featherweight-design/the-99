@@ -27,7 +27,7 @@ export type CardFace = {
   commander: Pick<ProfileCommander, "name" | "artCropUri"> | null;
   /** The type line: `typeRequest`, `typeOwn` or `typeFriend(since)`. */
   type: string;
-  /** The text box: `openRulesSignature(name)`, `ownRulesSignature` or `friendRulesSignature(name)`. */
+  /** The text box: `openRules(name)`, `ownRules` or `friendRules(name)`. */
   rules: string | PersonParts;
   /** The 99's own face (a flyer's invitation, no sender): the crowned 99 in the art box, and `credit` and `mark` for the footer's two ends. */
   crown?: { credit: string; mark: string };

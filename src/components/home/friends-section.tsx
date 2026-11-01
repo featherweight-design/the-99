@@ -124,7 +124,7 @@ export function FriendsSection({ you, friends, links, now, invites = null, class
 
       {friends.length === 0 && (
         <p className="m-0 text-[13px] leading-[1.5] text-[color:var(--fg-body)] min-[1180px]:text-[12.5px]">
-          {h.invite} {h.inviteMore(true)}
+          {h.invite} {h.inviteMore}
         </p>
       )}
 

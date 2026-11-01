@@ -55,6 +55,6 @@ describe("the name field's hint", () => {
       <FriendsHead name="Hugh" commander={null} onRename={vi.fn()} onOpenPicker={vi.fn()} invitePending={false} held={false} onInvite={vi.fn()} />,
     );
     await act(async () => { fireEvent.click(getByRole("button", { name: p.nameLine("Hugh").action })); });
-    expect(getByText(p.nameField.hintSignature)).toBeTruthy();
+    expect(getByText(p.nameField.hint)).toBeTruthy();
   });
 });
