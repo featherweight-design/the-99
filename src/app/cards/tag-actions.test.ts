@@ -5,7 +5,8 @@ const stub = vi.hoisted(() => ({ on: true, tuningOn: true, search: vi.fn(), sign
 vi.mock("../../lib/auth", () => ({ requireUserId: stub.signedIn }));
 vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () => RESOLVED) }));
 vi.mock("../../lib/intake/flag", () => ({ helpMeChooseEnabled: (env?: unknown) => (stub.flagEnv.push(env), stub.on) }));
-vi.mock("../../lib/tuning/flag", () => ({ tuningEnabled: (env?: unknown) => (stub.flagEnv.push(env), stub.tuningOn) }));
+// Suggested changes' boxes follow the Analysis tab (its own switch retired 2026-11-01).
+vi.mock("../../lib/decks/analysis-flag", () => ({ analysisTabEnabled: (env?: unknown) => (stub.flagEnv.push(env), stub.tuningOn) }));
 vi.mock("../../lib/decks/notes-store", () => ({ searchNoteCards: stub.search }));
 
 const { searchTagCards } = await import("./tag-actions");
@@ -25,7 +26,7 @@ describe("searchTagCards", () => {
     expect(stub.flagEnv).toEqual([RESOLVED, RESOLVED]);
   });
 
-  it("searches the description surface with the tuning switch off, since the header pencil does not depend on it", async () => {
+  it("searches the description surface with the Analysis tab off, since the header pencil does not depend on it", async () => {
     stub.tuningOn = false;
     stub.on = false;
     expect(await searchTagCards("description", "sol")).toEqual([{ oracleId: "a", name: "Sol Ring", commanderLegal: true }]);

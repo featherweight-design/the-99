@@ -3,18 +3,19 @@
 import { requireUserId } from "../../lib/auth";
 import type { NoteCardHit } from "../../lib/decks/notes-store";
 import { searchNoteCards } from "../../lib/decks/notes-store";
+import { analysisTabEnabled } from "../../lib/decks/analysis-flag";
 import { helpMeChooseEnabled } from "../../lib/intake/flag";
 import { requestSwitchEnv } from "../../lib/switches/request";
-import { tuningEnabled } from "../../lib/tuning/flag";
 
 /**
- * The boxes that can name a card, each behind its own feature's switch. `description` is a deck's description box:
- * the header pencil that edits it is offered whatever the tuning switch says, so its lookup is behind no switch
+ * The boxes that can name a card, each behind its own feature's switch. `tuning` is Suggested changes' boxes, behind
+ * the Analysis tab where it mounts (its own switch is retired). `description` is a deck's description box:
+ * the header pencil that edits it is offered whatever the Analysis tab says, so its lookup is behind no switch
  * of its own (the reader still has to be signed in). `gameNote` is the log-a-game form's note, the same.
  */
 export type TagSurface = "intake" | "tuning" | "description" | "gameNote";
 
-const SWITCHES: Record<TagSurface, (env: NodeJS.ProcessEnv) => boolean> = { intake: helpMeChooseEnabled, tuning: tuningEnabled, description: () => true, gameNote: () => true };
+const SWITCHES: Record<TagSurface, (env: NodeJS.ProcessEnv) => boolean> = { intake: helpMeChooseEnabled, tuning: analysisTabEnabled, description: () => true, gameNote: () => true };
 
 /**
  * The `[[` picker's "any card" lookup for a box outside a deck's notes (the same lookup the notes

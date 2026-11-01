@@ -47,7 +47,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   delete process.env.ANALYSIS_TAB_ENABLED;
-  delete process.env.TUNING_ENABLED;
+  delete process.env.SUGGESTED_CHANGES_V2_ENABLED;
 });
 
 describe("a switch flipped on", () => {
@@ -74,10 +74,11 @@ describe("a switch flipped on", () => {
     visit("decks");
     expect(line()).toBeNull();
 
-    // Suggested changes switched on LATER. The floor would call this reader current; the unit is still new.
-    process.env.TUNING_ENABLED = "true";
+    // Suggested changes v2 switched on LATER (Suggested changes itself was the example until TUNING_ENABLED retired: it
+    // now draws with the tab). The floor would call this reader current; the label's v2 sentence is still new.
+    process.env.SUGGESTED_CHANGES_V2_ENABLED = "true";
     const second = line();
-    expect(second?.ids).toContain("decks/analysis/suggested");
+    expect(second?.ids).toContain("decks/analysis/suggested@SUGGESTED_CHANGES_V2_ENABLED");
     expect(second?.ids.some((k) => k.startsWith("decks/analysis/bracket"))).toBe(false);
     quiet(await load());
   });

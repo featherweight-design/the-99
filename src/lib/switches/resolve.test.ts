@@ -1,7 +1,7 @@
 // One reader's switches: the kill switch, then account, group, app-wide and the environment.
 import { describe, expect, it } from "vitest";
 import { modelCallsEnabled } from "../model/calls-flag";
-import { tuningEnabled } from "../tuning/flag";
+import { suggestedChangesV2Enabled } from "../tuning/flag";
 import { decide, resolveEnv, switchBits, type OverrideRow, type SwitchSnapshot } from "./resolve";
 import { ALL_FEATURES, ALL_FEATURES_EXCLUDED, ALL_FEATURES_RAISES, SWITCHES, SWITCH_NAMES } from "./registry";
 
@@ -56,9 +56,10 @@ describe("resolveEnv", () => {
   });
 
   it("never raises a parent: a child switched on for an account still needs its parent", () => {
-    const s = snap([row({ switchName: "TUNING_ENABLED", scope: "user", userId: "u1", value: "on" })]);
-    expect(tuningEnabled(resolveEnv(e({ ANALYSIS_TAB_ENABLED: "false" }), s, "u1"))).toBe(false);
-    expect(tuningEnabled(resolveEnv(e({ ANALYSIS_TAB_ENABLED: "true" }), s, "u1"))).toBe(true);
+    // Suggested changes v2 (Suggested changes itself was the example until TUNING_ENABLED retired).
+    const s = snap([row({ switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "user", userId: "u1", value: "on" })]);
+    expect(suggestedChangesV2Enabled(resolveEnv(e({ ANALYSIS_TAB_ENABLED: "false" }), s, "u1"))).toBe(false);
+    expect(suggestedChangesV2Enabled(resolveEnv(e({ ANALYSIS_TAB_ENABLED: "true" }), s, "u1"))).toBe(true);
   });
 
   it("does not change the environment it was given", () => {
@@ -111,7 +112,7 @@ describe("All features", () => {
       expect(theirs[name], name).toBeUndefined();
     }
     // A child's flag function asks its parent, so the parent being raised is what turns it on.
-    expect(tuningEnabled(mine)).toBe(true);
+    expect(suggestedChangesV2Enabled(mine)).toBe(true);
   });
 
   it("raises a switch added later: the set is the registry's, not a list kept with the row", () => {

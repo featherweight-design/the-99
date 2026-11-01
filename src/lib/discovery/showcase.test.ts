@@ -155,9 +155,9 @@ describe("writtenForYou", () => {
   const env = (off: string[] = []): NodeJS.ProcessEnv => {
     const on = {} as NodeJS.ProcessEnv;
     for (const name of [
-      // No PROPOSED_CUTS_ENABLED: Look deeper follows the Analysis tab (its own switch is retired). No SWAP_TOOLS_ENABLED:
-      // Find a deck's read is always on (swap tools retired).
-      "ANALYSIS_TAB_ENABLED", "TUNING_ENABLED", "HELP_ME_CHOOSE_ENABLED",
+      // No TUNING_ENABLED or PROPOSED_CUTS_ENABLED: Suggested changes and Look deeper follow the Analysis tab (their own
+      // switches are retired). No SWAP_TOOLS_ENABLED: Find a deck's read is always on (swap tools retired).
+      "ANALYSIS_TAB_ENABLED", "HELP_ME_CHOOSE_ENABLED",
     ]) on[name] = off.includes(name) ? "off" : "true";
     return on;
   };

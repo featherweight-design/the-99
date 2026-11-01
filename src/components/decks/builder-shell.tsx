@@ -292,22 +292,12 @@ interface BuilderShellProps {
   /** The stored analysis could not be read, so `storedPermits`' null says nothing about whether
    *  the deck was ever analyzed: the tab's opening then holds as it does for an analyzed deck. */
   storedPermitsUnknown?: boolean;
-  /** `tuningEnabled(env)` (`src/lib/tuning/flag.ts`): whether this deployment draws "Suggested
-   *  changes". Off, the Analysis tab still draws the bracket and the Overview — the tab mounts
-   *  no `TuningPanel`, the empty state's description field (asked only to feed a run) and the
-   *  credit lines' mention of it are withheld, same as `analysisEnabled` withholds the whole tab. */
-  tuningEnabled?: boolean;
   /** `loadDeckStrategy` for this reader: the strategy block on Analysis. Null with the Analysis tab off. */
   strategy?: StrategyRead | null;
   /** A Rule 0 table's seats for the game log to open with (plan §PR 8), read per request by the page. */
   gamePrefill?: TablePrefill | null;
   /** The game `?tab=games&game=<id>` lands on (the cross-deck Games view's rows): the Games tab rings that row for two seconds, once. */
   gameLanding?: string | null;
-  /** `tuningHubEnabled(env)`: whether the Analysis tab draws the Tuning hub, mounting Suggested changes,
-   *  Mana Balance and Proposed cuts inside its tiles, and the trim line offers `Proposed cuts →`. Mana Balance
-   *  and Proposed cuts are both tiles whenever the tab is on (neither has a switch of its own), so the hub
-   *  draws with the tab. Off, the tools mount directly, exactly as before the hub. */
-  tuningHubEnabled?: boolean;
   /** `suggestedChangesV2Enabled(env)` for this reader (plan 2026-10-27, P5): Suggested changes draws the v2 intake and
    *  press, and its hub tile goes inert off 99 with a link to the tool that brings the deck back. Off, the panel and the
    *  hub are as shipped. */
@@ -375,11 +365,9 @@ export function BuilderShell({
   openNoticesOnArrival = false,
   storedPermits = null,
   storedPermitsUnknown = false,
-  tuningEnabled = false,
   strategy = null,
   gamePrefill = null,
   gameLanding = null,
-  tuningHubEnabled = false,
   suggestedChangesV2 = false,
   landing = null,
   landingRequest = null,
@@ -659,14 +647,9 @@ export function BuilderShell({
   const [visit, setVisit] = useState({ view, n: 0 });
   if (visit.view !== view) setVisit({ view, n: view === "analysis" ? visit.n + 1 : visit.n });
   const visitKey = `${deck.id}:${visit.n}`;
-  const [tuningSettled, setTuningSettled] = useState<string | null>(null);
-  const onTuningSettled = useCallback(() => setTuningSettled(visitKey), [visitKey]);
-  const [cutsSettledKey, setCutsSettledKey] = useState<string | null>(null);
-  const onCutsSettled = useCallback(() => setCutsSettledKey(visitKey), [visitKey]);
-  const [manaSettledKey, setManaSettledKey] = useState<string | null>(null);
-  const onManaSettled = useCallback(() => setManaSettledKey(visitKey), [visitKey]);
-  // With the hub on, the tools mount only when opened, so the tab's loader waits on the landing's
-  // own first read instead of on theirs.
+  // The tools (Suggested changes, Proposed cuts, Mana Balance) live in the Tuning hub, which draws wherever the tab
+  // does (none of them has a switch of its own) and mounts each only when opened, so the tab's loader waits on the
+  // landing's own first read instead of on theirs.
   const [hubSettledKey, setHubSettledKey] = useState<string | null>(null);
   const onHubSettled = useCallback(() => setHubSettledKey(visitKey), [visitKey]);
   // A shortcut's ask for the hub (the trim line's `Proposed cuts →`), answered once per nonce.
@@ -692,13 +675,8 @@ export function BuilderShell({
     analyzed: deckAnalyzed({ storedPermits, hasReading: reading !== null, storedUnknown: storedPermitsUnknown }),
     peekPending: isOpening({ shown: true, kind: profile.state.kind, storedPermits, peekSettled: profile.peekSettled, storedUnknown: storedPermitsUnknown }),
     overviewSettled: !analysisEnabled || synopsis.settled,
-    hasReading: reading !== null,
-    // A tool that is off is never mounted, so it has nothing to wait for.
-    suggestionsSettled: tuningHubEnabled || !tuningEnabled || tuningSettled === visitKey,
-    // The tools mounted directly (hub off): Proposed cuts and Mana Balance, both on with the tab.
-    cutsSettled: tuningHubEnabled
-      ? hubSettledKey === visitKey
-      : (!analysisEnabled || cutsSettledKey === visitKey) && (!analysisEnabled || manaSettledKey === visitKey),
+    // The hub's landing read stands in for its tools'; with the tab off nothing is mounted to wait for.
+    cutsSettled: !analysisEnabled || hubSettledKey === visitKey,
   });
   const opening = useOpeningGate(useOpenOnce(holding, visitKey, view === "analysis"), deck.id);
   // The credit note beside each press that also writes, and whether it does (`synopsis-note.ts`).
@@ -1515,16 +1493,14 @@ export function BuilderShell({
 
   const openExport = () => setExportOpen(true);
 
-  // The tools, built once and mounted either directly (hub off) or inside the hub's tiles.
-  // `inHub`: mounted under the hub's tab row, where it opens fresh each visit and, at the line,
-  // finishes in place rather than draw nothing under the row.
-  const cutsPanel = (inHub: boolean) => (
+  // The tools, mounted inside the hub's tiles: under the hub's tab row, Proposed cuts opens fresh each
+  // visit and, at the line, finishes in place rather than draw nothing under the row.
+  const cutsPanel = (
     <CutsPanelView
-      freshEachVisit={inHub}
-      finishInPlace={inHub}
+      freshEachVisit
+      finishInPlace
       key={deck.id}
       deckId={deck.id}
-      onSettled={onCutsSettled}
       revision={`${listKey}|${deck.intent ?? ""}|${declaration.declared ?? ""}|${[...lockedIds].sort().join(",")}`}
     />
   );
@@ -1537,7 +1513,6 @@ export function BuilderShell({
       // The commanders count too: their pips, their identity and the cards figure.
       revision={`${deck.commander.oracleId}|${deck.partner?.oracleId ?? ""}|${listKey}|${[...lockedIds].sort().join(",")}`}
       // Mounts inside the hub's tile, which always draws with the tab: the tab's opening waits on the hub's landing, not on this read.
-      onSettled={onManaSettled}
     />
   );
   // The land cell offers Mana Balance only for a deck with a color to count (design table, R3).
@@ -1546,9 +1521,6 @@ export function BuilderShell({
   // own shortcut only while that shortcut is not drawn (audit resolution 2), which the provider decides.
   // Not while Analysis is the open tab: the tab is then where the reader already is.
   const atSize = built === bodySize;
-  // Whether the Tuning hub draws for these permits. Mana Balance needs no reading and is always on with the Analysis
-  // tab, so the hub draws for any deck. One rule for the hub and for the panel deciding where Suggested changes' landing target is.
-  const hubDraws = (permits: readonly Bracket[] | null) => permits !== null || built > bodySize || analysisEnabled;
   const offAnalysis = view !== "analysis";
   // The tab is the moment's control but never the tool's target: a landing reaches the tool itself (its tile).
   const suggestedMoment = useMomentAnchor("suggested-changes", {
@@ -1577,9 +1549,7 @@ export function BuilderShell({
   // offered wherever the tab is.
   const proposedCutsPress = !analysisEnabled
     ? undefined
-    : tuningHubEnabled
-      ? () => { setView("analysis"); setHubRequest({ tool: "cuts", nonce: (hubNonce.current += 1) }); }
-      : () => pressTool("proposed-cuts");
+    : () => { setView("analysis"); setHubRequest({ tool: "cuts", nonce: (hubNonce.current += 1) }); };
   const topOffPress = () => {
     setView("deck");
     setDeckPanel("list");
@@ -1623,12 +1593,12 @@ export function BuilderShell({
       onProposedCuts: proposedCutsPress,
     };
   }
-  const suggestedPanel = (permits: readonly Bracket[], freshEachVisit = false) => (
+  // Mounted inside the hub's tile, where it opens fresh each visit and the tile is its landing target.
+  const suggestedPanel = (permits: readonly Bracket[]) => (
     <TuningPanel
       v2={suggestedV2}
       runFigures={runFigures}
-      landingTarget={!tuningHubEnabled}
-      freshEachVisit={freshEachVisit}
+      freshEachVisit
       deckId={deck.id}
       permits={permits}
       facts={{
@@ -1646,7 +1616,6 @@ export function BuilderShell({
       }}
       printedInSets={printedInSets}
       onLogGame={() => setView("games")}
-      onSettled={onTuningSettled}
       onSaveDescription={saveDescription}
     />
   );
@@ -1944,16 +1913,14 @@ export function BuilderShell({
               // N2 (discovery R3): wherever Mana Balance is, which is wherever the Analysis tab is.
               onBalanceMana={!(analysisEnabled && coloredPip)
                 ? undefined
-                : tuningHubEnabled
-                  ? () => { setView("analysis"); setHubRequest({ tool: "mana", nonce: (hubNonce.current += 1) }); }
-                  : () => pressTool("mana-balance")}
+                : () => { setView("analysis"); setHubRequest({ tool: "mana", nonce: (hubNonce.current += 1) }); }}
               // N1 (discovery R3): a deck at its body size (98 with a partner) offers Suggested changes from a short
-              // cell. It lands on the hub's tile, or with the hub off on the panel, or on the empty state when no
-              // reading is held (R3 gap 8); it never runs anything.
-              onSuggest={tuningEnabled && analysisEnabled && atSize
+              // cell. It lands on Suggested changes' tile in the Tuning hub, which draws wherever the tab does, with or
+              // without a reading held (R3 gap 8); it never runs anything.
+              onSuggest={analysisEnabled && atSize
                 ? () => {
                     // A hub tool left open hides the tiles: back to them first, so the tile is there to land on.
-                    if (tuningHubEnabled) setHubRequest({ tool: null, nonce: (hubNonce.current += 1) });
+                    setHubRequest({ tool: null, nonce: (hubNonce.current += 1) });
                     pressTool("suggested-changes");
                   }
                 : undefined}
@@ -2010,7 +1977,6 @@ export function BuilderShell({
                   pressSee={analyzeNote?.see ? { label: deckNoticesCopy.check.seeWhich, onPress: openNoticesSheet } : null}
                   description={deck.intent ?? null}
                   onSaveDescription={saveDescription}
-                  tuningEnabled={tuningEnabled}
                   strategy={strategy ? (
                     <StrategyBlock read={strategy} focus={strategyFocus.focus} refused={strategyFocus.refused} onPick={strategyFocus.setFocus} />
                   ) : undefined}
@@ -2065,37 +2031,30 @@ export function BuilderShell({
                       />
                     ) : null
                   }
-                  cuts={analysisEnabled ? cutsPanel(false) : undefined}
-                  mana={analysisEnabled ? manaPanel : undefined}
-                  hubDraws={hubDraws}
-                  hub={!tuningHubEnabled ? undefined : (permits, drawn) => (
+                  // The hub draws for any deck (Mana Balance needs no reading).
+                  hub={!analysisEnabled ? undefined : (permits) => (
                     <TuningHub
                       // Per deck: the shell survives a move between decks, and the hub's open tool,
                       // tiles and first-read latch belong to the deck they were read for.
                       key={deck.id}
                       deckId={deck.id}
-                      drawn={drawn}
+                      drawn
                       request={hubRequest}
                       onRequestAnswered={onHubRequestAnswered}
                       onSettled={onHubSettled}
                       tools={[
-                        ...(tuningEnabled
-                          ? [{
-                            tool: "suggested" as const,
-                            panel: permits ? suggestedPanel(permits, true) : null,
-                            v2: suggestedV2 ? { at: suggestedV2.at, over: suggestedV2.over, onTopOff: suggestedV2.onTopOff } : null,
-                          }]
-                          : []),
-                        ...(analysisEnabled ? [{ tool: "mana" as const, panel: manaPanel }] : []),
-                        ...(analysisEnabled
-                          ? [{ tool: "cuts" as const, panel: cutsPanel(true), over: Math.max(0, built - bodySize), total: built + (deck.partner !== null ? 2 : 1) }]
-                          : []),
+                        {
+                          tool: "suggested" as const,
+                          panel: permits ? suggestedPanel(permits) : null,
+                          v2: suggestedV2 ? { at: suggestedV2.at, over: suggestedV2.over, onTopOff: suggestedV2.onTopOff } : null,
+                        },
+                        { tool: "mana" as const, panel: manaPanel },
+                        { tool: "cuts" as const, panel: cutsPanel, over: Math.max(0, built - bodySize), total: built + (deck.partner !== null ? 2 : 1) },
                         // History is part of the hub, not a switch of its own: last, whenever the hub draws.
                         { tool: "history" as const },
                       ]}
                     />
                   )}
-                  tuning={!tuningEnabled ? undefined : suggestedPanel}
                 >
                 </AnalysisPanel>
                 </HoverPreviewProvider>

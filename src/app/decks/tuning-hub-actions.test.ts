@@ -8,7 +8,8 @@ vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () 
 const order: string[] = [];
 vi.mock("../../lib/auth", () => ({ requireUserId: vi.fn(async () => "u1") }));
 const hubTools = vi.hoisted(() => vi.fn((_env?: NodeJS.ProcessEnv) => ["suggested", "cuts"]));
-vi.mock("../../lib/tuning/flag", () => ({ tuningHubEnabled: () => true, hubTools }));
+vi.mock("../../lib/tuning/flag", () => ({ hubTools }));
+vi.mock("../../lib/decks/analysis-flag", () => ({ analysisTabEnabled: () => true }));
 vi.mock("../../lib/tuning/reap-runs", () => ({ reapReaderRuns: vi.fn(async () => { order.push("reap"); }) }));
 const readArgs: unknown[][] = [];
 vi.mock("../../lib/tuning/hub-read", () => ({ readHubTiles: vi.fn(async (...a: unknown[]) => { order.push("read"); readArgs.push(a); return null; }) }));

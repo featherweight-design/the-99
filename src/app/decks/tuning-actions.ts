@@ -31,7 +31,8 @@ import { callModel } from "../../lib/model/client";
 import { buildPlayGroup } from "../../lib/profile/play";
 import { buildEvidencePack } from "../../lib/tuning/evidence";
 import { resolveBoxText } from "../../lib/cards/tagged-text";
-import { suggestedChangesV2Enabled, tuningEnabled } from "../../lib/tuning/flag";
+import { analysisTabEnabled } from "../../lib/decks/analysis-flag";
+import { suggestedChangesV2Enabled } from "../../lib/tuning/flag";
 import { gateReason } from "../../lib/tuning/gate";
 import { MAX_SUGGESTIONS, NOTES_TAGS_MAX, MODEL_TIMEOUT_MS, TUNING_EFFORT, TUNING_MAX_TOKENS, TUNING_MODEL, TUNING_RETRY_FLOOR_MS } from "../../lib/tuning/limits";
 import { MAX_BUDGET_DOLLARS, MAX_SETS } from "../../lib/intake/answers";
@@ -149,7 +150,7 @@ export async function saveDeckLimits(
 ): Promise<DeckMutationResult> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (!tuningEnabled(env) || !isUuid(deckId)) return { ok: false, message: deckDescriptionCopy.limits.refused };
+  if (!analysisTabEnabled(env) || !isUuid(deckId)) return { ok: false, message: deckDescriptionCopy.limits.refused };
   if (typeof fields !== "object" || fields === null) return { ok: false, message: deckDescriptionCopy.limits.refused };
   const { capDollars, sets, ownedOnly, otherDecks } = fields;
   if (
@@ -200,7 +201,7 @@ export async function runTuning(
 ): Promise<DeckMutationResult | SameRequest | CostsMore> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (!tuningEnabled(env) || !isUuid(deckId)) return { ok: false, message: deckTuningCopy.run.refused };
+  if (!analysisTabEnabled(env) || !isUuid(deckId)) return { ok: false, message: deckTuningCopy.run.refused };
   // Suggested changes v2 (plan 2026-10-27, P1 and P5): reached only by a press that carries a count, and only while the
   // reader's `SUGGESTED_CHANGES_V2_ENABLED` is on. Off, a replayed count is refused here, before anything is reserved:
   // it never falls through to v10 either. Every other press is v10's, below, exactly as it was.
@@ -442,7 +443,7 @@ async function runTuningV2(deckId: string, userId: string, env: NodeJS.ProcessEn
 export async function readTuningPanel(deckId: string, runId: string | null = null): Promise<TuningState | null> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (!tuningEnabled(env) || !isUuid(deckId)) return null;
+  if (!analysisTabEnabled(env) || !isUuid(deckId)) return null;
   const inputs = await tuningInputs(deckId, userId, env);
   if (!inputs) return null;
   // `runId` is History's re-review: that past run's lines, each re-checked live. Anything that is
@@ -478,7 +479,7 @@ async function verdict(
     ok: false,
     message: typeof refused === "string" ? refused : (await isLine(itemId)) ? refused.line : refused.pair,
   });
-  if (!tuningEnabled(env) || !isUuid(itemId)) return refuse();
+  if (!analysisTabEnabled(env) || !isUuid(itemId)) return refuse();
   const deckId = await write(userId);
   if (!deckId) return refuse();
   if (claims) revalidateClaims(deckId, userId);

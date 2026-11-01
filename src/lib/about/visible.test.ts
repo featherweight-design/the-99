@@ -4,7 +4,7 @@ import { ABOUT_VERSION, type AboutEntry } from "../copy/about";
 import { aboutEntries } from "../copy/about-entries";
 import { creditsEntryOf, drawnEntry, isFirstRun, isSeen, resolveEntry, switchedIds, unseenEntries, variantId, visibleEntries, type SeenState } from "./visible";
 
-// TUNING_ENABLED also requires ANALYSIS_TAB_ENABLED (`tuningEnabled()`), already "true" here.
+// TUNING_ENABLED is retired: Suggested changes' entry and lines follow ANALYSIS_TAB_ENABLED, already "true" here.
 const ON = { HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", ADDED_COPY_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", HELP_PANEL_ENABLED: "true", FIRST_RUN_TOUR_ENABLED: "true", CARD_SCAN_ENABLED: "true", NEAR_COMBOS_ENABLED: "true", PUSH_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 const OFF = {} as unknown as NodeJS.ProcessEnv;
 
@@ -236,7 +236,9 @@ describe("HOW_IT_WORKS_ENABLED", () => {
   });
 });
 
-describe("TUNING_ENABLED, and the two lines it gates without an entry switch of their own", () => {
+// TUNING_ENABLED is retired (Hugh 2026-11-01): Suggested changes follows its parent, the Analysis tab, so the name, kept
+// as its entry's and lines' historical identity, draws exactly when the tab does, whatever the variable says.
+describe("TUNING_ENABLED (retired), and the lines it gates without an entry switch of their own", () => {
   const anEntry: AboutEntry = {
     ...aboutEntries[0],
     id: "entry",
@@ -247,36 +249,35 @@ describe("TUNING_ENABLED, and the two lines it gates without an entry switch of 
     keySwitches: { "Drop this key": "TUNING_ENABLED" },
   };
 
-  it("drops the gated line and key with the switch off, keeping the rest of the entry", () => {
-    const [resolved] = visibleEntries({} as unknown as NodeJS.ProcessEnv, [anEntry]);
-    expect(resolved.caption).toBe("Before.\n\n- Keep\n\nAfter.");
-    expect(resolved.keys).toEqual(["Keep this key"]);
+  it("drops the gated line and key with the Analysis tab off, keeping the rest of the entry, whatever the retired switch says", () => {
+    for (const tuning of [undefined, "true"]) {
+      const [resolved] = visibleEntries({ TUNING_ENABLED: tuning } as unknown as NodeJS.ProcessEnv, [anEntry]);
+      expect(resolved.caption).toBe("Before.\n\n- Keep\n\nAfter.");
+      expect(resolved.keys).toEqual(["Keep this key"]);
+    }
   });
 
-  it("keeps every line with the switch on", () => {
-    const [resolved] = visibleEntries({ TUNING_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true" } as unknown as NodeJS.ProcessEnv, [anEntry]);
-    expect(resolved).toEqual(anEntry);
+  it("keeps every line with the Analysis tab on, whatever the retired switch says", () => {
+    for (const tuning of [undefined, "false", "off"]) {
+      const [resolved] = visibleEntries({ TUNING_ENABLED: tuning, ANALYSIS_TAB_ENABLED: "true" } as unknown as NodeJS.ProcessEnv, [anEntry]);
+      expect(resolved).toEqual(anEntry);
+    }
   });
 
-  it("draws the real deck-analysis and credits entries with Tuning off, Analysis on", () => {
-    const env = { ANALYSIS_TAB_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
-    const visible = visibleEntries(env);
-    const deckAnalysis = visible.find((e) => e.id === "deck-analysis")!;
-    expect(deckAnalysis.keys).toHaveLength(3);
-    expect(deckAnalysis.keys.join(" ")).not.toContain("Suggested changes");
-    const credits = visible.find((e) => e.id === "credits")!;
-    expect(credits.caption).not.toContain("Suggested changes");
-    expect(credits.caption).toContain("Writing a deck’s Overview");
-    // The entry itself is still gone: `TUNING_ENABLED` is off.
-    expect(visible.find((e) => e.id === "suggested-changes")).toBeUndefined();
-  });
-
-  it("draws every line with both Analysis and Tuning on", () => {
-    const env = { ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+  it("draws every line of the real deck-analysis and credits entries, and Suggested changes' own, with the Analysis tab on and the retired switch off", () => {
+    const env = { ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "off" } as unknown as NodeJS.ProcessEnv;
     const visible = visibleEntries(env);
     expect(visible.find((e) => e.id === "deck-analysis")!.keys).toHaveLength(4);
     expect(visible.find((e) => e.id === "credits")!.caption).toContain("Suggested changes");
     expect(visible.find((e) => e.id === "suggested-changes")).toBeDefined();
+  });
+
+  it("draws none of them with the Analysis tab off and the retired switch on", () => {
+    const visible = visibleEntries({ TUNING_ENABLED: "true" } as unknown as NodeJS.ProcessEnv);
+    const credits = visible.find((e) => e.id === "credits")!;
+    expect(credits.caption).not.toContain("Suggested changes");
+    expect(visible.find((e) => e.id === "deck-analysis")).toBeUndefined();
+    expect(visible.find((e) => e.id === "suggested-changes")).toBeUndefined();
   });
 });
 
@@ -527,15 +528,23 @@ describe("the History lines follow the Tuning hub, not one tool", () => {
   const HISTORY_KEY = "Every run is kept in History, under Tuning. Open one and its changes come back, each checked against the deck as it is now.";
   const HISTORY_LINE = "Each color you pick is kept in History too. Reopen it and each trade is checked against today’s deck.";
   const entry = (env: NodeJS.ProcessEnv, id: string) => visibleEntries(env).find((e) => e.id === id);
-  // Mana Balance and Proposed cuts have no switch but the Analysis tab's (Proposed cuts' own retired 2026-10-31), and the
-  // tab is on in ON: both are always tools, so the hub, and its History lines, draw whatever the other switches say.
+  // No Tuning tool has a switch but the Analysis tab's (Suggested changes' own retired 2026-11-01, Proposed cuts'
+  // 2026-10-31), and the tab is on in ON: all three are always tools, so the hub, and its History lines, draw whatever
+  // the retired switches say.
   const tools = (on: { tuning?: boolean }) =>
-    ({ ...ON, TUNING_ENABLED: on.tuning ? "true" : "false", PROPOSED_CUTS_ENABLED: "off" }) as unknown as NodeJS.ProcessEnv;
+    ({ ...ON, TUNING_ENABLED: on.tuning ? "true" : "off", PROPOSED_CUTS_ENABLED: "off" }) as unknown as NodeJS.ProcessEnv;
 
-  it("keeps them with the tab alone: Mana Balance and Proposed cuts draw the hub", () => {
-    expect(entry(tools({}), "mana-balance")?.caption).toContain(HISTORY_LINE);
-    expect(entry(tools({ tuning: true }), "suggested-changes")?.keys).toContain(HISTORY_KEY);
-    expect(entry(tools({ tuning: true }), "mana-balance")?.caption).toContain(HISTORY_LINE);
+  it("keeps them with the tab alone, whatever the retired switches say", () => {
+    for (const tuning of [false, true]) {
+      expect(entry(tools({ tuning }), "suggested-changes")?.keys).toContain(HISTORY_KEY);
+      expect(entry(tools({ tuning }), "mana-balance")?.caption).toContain(HISTORY_LINE);
+    }
+  });
+
+  it("drops them with the tab off, whatever the retired switches say", () => {
+    const off = { TUNING_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+    expect(entry(off, "suggested-changes")).toBeUndefined();
+    expect(entry(off, "mana-balance")).toBeUndefined();
   });
 });
 
@@ -654,36 +663,37 @@ describe("friend-spares' requests form (SPARE_REQUESTS_ENABLED, retired)", () =>
   });
 });
 
-describe("deck-focus without Suggested changes", () => {
-  // Review round 1 (#2254): the ring needs only Analysis, so with Tuning off the entry still draws but says nothing of
-  // Suggested changes, its paragraph or its credit line.
+describe("deck-focus and Suggested changes", () => {
+  // Review round 1 (#2254): the ring needs only Analysis. Suggested changes' own switch is retired (2026-11-01), so it
+  // follows the tab too: wherever the ring draws, the entry names Suggested changes in its paragraph and its credit key.
   const ring = { ANALYSIS_TAB_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
   const entry = (env: NodeJS.ProcessEnv) => visibleEntries(env).find((e) => e.id === "deck-focus");
 
-  it("drops the Suggested changes paragraph and key with Tuning off, and keeps them with it on", () => {
-    const off = entry(ring)!;
-    expect(off.caption).not.toContain("Suggested changes");
-    expect(off.keys.join(" ")).not.toContain("Suggested changes");
-    expect(off.keys).toContain("The ring and the focus are free.");
-    const on = entry({ ...ring, TUNING_ENABLED: "true" } as unknown as NodeJS.ProcessEnv)!;
-    expect(on.caption).toContain("“Suggested changes” aims at it");
-    expect(on.keys).toContain("“Suggested changes” uses a credit, as it always has.");
+  it("keeps the Suggested changes paragraph and key wherever the ring draws, whatever the retired switch says", () => {
+    for (const tuning of [undefined, "off"]) {
+      const on = entry({ ...ring, TUNING_ENABLED: tuning } as unknown as NodeJS.ProcessEnv)!;
+      expect(on.caption).toContain("“Suggested changes” aims at it");
+      expect(on.keys).toContain("The ring and the focus are free.");
+      expect(on.keys).toContain("“Suggested changes” uses a credit, as it always has.");
+    }
+    // The retired switch raises nothing on its own: with the tab off, the entry (the ring's) is hidden.
+    expect(entry({ TUNING_ENABLED: "true" } as unknown as NodeJS.ProcessEnv)).toBeUndefined();
   });
 
   it("with Suggested changes v2 on, the credit key says 2 over 10 changes instead; off, it never says two", () => {
     const V1 = "“Suggested changes” uses a credit, as it always has.";
     const V2 = "“Suggested changes” uses a credit, or two for more than 10 changes.";
-    const v2 = entry({ ...ring, TUNING_ENABLED: "true", SUGGESTED_CHANGES_V2_ENABLED: "true" } as unknown as NodeJS.ProcessEnv)!;
+    const v2 = entry({ ...ring, SUGGESTED_CHANGES_V2_ENABLED: "true" } as unknown as NodeJS.ProcessEnv)!;
     expect(v2.keys).toContain(V2);
     expect(v2.keys).not.toContain(V1);
-    const v1 = entry({ ...ring, TUNING_ENABLED: "true" } as unknown as NodeJS.ProcessEnv)!;
+    const v1 = entry(ring)!;
     expect(v1.keys).toContain(V1);
     expect(v1.keys).not.toContain(V2);
   });
 });
 
 describe("Suggested changes v2's price (2 credits for more than 10 changes) where About names a run's cost", () => {
-  const V1_ENV = { ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+  const V1_ENV = { ANALYSIS_TAB_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
   const V2_ENV = { ...V1_ENV, SUGGESTED_CHANGES_V2_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
   const of = (env: NodeJS.ProcessEnv, id: string) => visibleEntries(env).find((e) => e.id === id)!;
   const V1_BULLET = "- Each “Suggested changes” run";
@@ -697,7 +707,8 @@ describe("Suggested changes v2's price (2 credits for more than 10 changes) wher
     const v2 = of(env(V2_ENV), id).caption.split("\n");
     expect(v2).toContain(V2_BULLET);
     expect(v2).not.toContain(V1_BULLET);
-    const off = of(env({ ANALYSIS_TAB_ENABLED: "true" } as unknown as NodeJS.ProcessEnv), id).caption;
+    // Suggested changes' own switch is retired: only the Analysis tab off withholds both bullets, whatever that switch says.
+    const off = of(env({ TUNING_ENABLED: "true" } as unknown as NodeJS.ProcessEnv), id).caption;
     expect(off).not.toContain("Suggested changes");
   });
 

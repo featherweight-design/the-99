@@ -3,7 +3,6 @@
 import { useState, type ReactNode } from "react";
 
 import { slotDeck } from "../../lib/bracket/slot";
-import { useTarget } from "../discovery/targets-provider";
 import { bracketPhrase, deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { synopsisCopy } from "../../lib/copy/synopsis";
 import { shownReading, type ProfileState } from "./use-deck-profile";
@@ -49,11 +48,7 @@ export function AnalysisPanel({
   art = EMPTY_ART,
   locked = NO_LOCKS,
   legality,
-  tuning,
-  cuts,
-  mana,
   hub,
-  hubDraws,
   strategy,
   opening = "off",
   overview,
@@ -64,7 +59,6 @@ export function AnalysisPanel({
   pressSee,
   description = null,
   onSaveDescription,
-  tuningEnabled = true,
   ledgerAvailability,
   onStats,
 }: {
@@ -90,29 +84,13 @@ export function AnalysisPanel({
    * reads them, to list a locked candidate last; they never enter the stored profile.
    */
   locked?: ReadonlySet<string>;
-  /**
-   * Suggested changes, drawn last and only over a reading (placement addendum v2): tuning follows
-   * the analysis, and a deck with no reading gets no suggestions. Handed the permits on screen,
-   * current or held, so its bracket flag is worded against the reading the reader sees.
-   */
-  tuning?: (permits: readonly Bracket[]) => ReactNode;
-  /** Proposed cuts (Tuning hub R2), drawn after Suggested changes. It does NOT wait for a reading (an
-   *  overfull deck has none, and a reading needs a whole deck), so a caller must not gate it on
-   *  `held`. Absent with the Analysis tab off (Proposed cuts has no switch of its own). */
-  cuts?: ReactNode;
   /** The deck's strategy block: drawn last in the reading, above Tuning, and only over one. */
   strategy?: ReactNode;
-  /** Mana Balance, mounted directly when it is the only Tuning tool on. Like `cuts`, it needs no
-   *  reading. */
-  mana?: ReactNode;
-  /** The Tuning hub (`tuningHubEnabled`, two or more tools on): when present it is drawn INSTEAD of `tuning` and `cuts`,
-   *  which it mounts inside its own tiles. Handed the held reading's permits, or null with no
-   *  reading (a deck built long), and it decides for itself whether it draws at all. */
-  hub?: (permits: readonly Bracket[] | null, drawn: boolean) => ReactNode;
-  /** Whether `hub` draws anything for these permits (the shell's one rule). The panel latches it for the visit and hands
-   *  the result to `hub` as `drawn`, so the hub and the landing target read one answer. Where the hub draws nothing,
-   *  Suggested changes has no tile, so the empty state is its landing target, as with the hub off. */
-  hubDraws?: (permits: readonly Bracket[] | null) => boolean;
+  /** The Tuning hub, present wherever the Analysis tab is: it mounts Suggested changes, Mana Balance and Proposed cuts
+   *  inside its own tiles (none has a switch of its own). Handed the held reading's permits, or null with no reading (a
+   *  deck built long). It draws for any deck (Mana Balance needs no reading), so Suggested changes' landing target is
+   *  always its tile there (discovery R2, E11). */
+  hub?: (permits: readonly Bracket[] | null) => ReactNode;
   /** The deck's overview (sub-project 6), drawn beside the verdict and only over a reading. */
   overview?: ReactNode;
   /**
@@ -134,10 +112,6 @@ export function AnalysisPanel({
   /** The deck's description (H35), and its save — passed straight to the empty state's field. */
   description?: string | null;
   onSaveDescription?: (value: string) => Promise<import("../../lib/decks/mutation-result").DeckMutationResult>;
-  /** `tuningEnabled(env)`: whether the empty state draws the description field at all (asked only
-   *  to feed a Suggested changes run, per its own help text) — defaults true, same as `tuning`
-   *  itself being left undrawn is what withholds the panel below a reading. */
-  tuningEnabled?: boolean;
   /** Each deck card's ownership and availability, for the benchmark ledger's rows (decision 6). */
   ledgerAvailability?: LedgerAvailability;
   /** The ledger's Stats link: switch the deck page to Deck stats and scroll to `card`. */
@@ -178,21 +152,7 @@ export function AnalysisPanel({
   // staging walk, 2026-09-25: nothing may pop in once the tab has painted). One tree in both
   // phases, so revealing it keeps every read that already landed rather than remounting.
   const gated = opening !== "off";
-  // WITH THE HUB OFF there are no tiles, so Suggested changes' landing target (discovery R2, E11) is the panel itself
-  // once it draws (`TuningPanel`'s `landingTarget`), and with no reading held, the empty state that asks for one. Proposed cuts and Mana Balance need no reading and
-  // register their own heads. A frame under `hidden` (the opening, the overview being written) is passed over by the
-  // registry until it shows.
-  // With the hub ON but drawing nothing (no reading, the deck at its size, Mana Balance off), the empty state stands
-  // in for the tile it would have drawn.
-  // Latched for the visit, as the hub was before it moved here: once drawn the hub stays, so the last cut that brings a
-  // never-read deck to its size leaves the tiles (and Suggested changes' tile target) in place. The tab remounts this
-  // panel on every visit, which resets it.
   const hubPermits = held && !behind ? slotDeck(held.profile).permits : null;
-  const hubDrawsNow = hub !== undefined && (hubDraws?.(hubPermits) ?? true);
-  const [hubShown, setHubShown] = useState(hubDrawsNow);
-  if (hubDrawsNow && !hubShown) setHubShown(true);
-  const tiles = hubDrawsNow || (hub !== undefined && hubShown);
-  const emptyTarget = useTarget(!tiles && tuning ? "suggested-changes" : null);
   return (
     <>
     {gated ? (
@@ -237,7 +197,6 @@ export function AnalysisPanel({
         </div>
       ) : null}
       {!held || behind ? (hold || state.kind === "idle" || state.kind === "loading" || state.kind === "failed" || state.kind === "illegal" ? (
-        <div ref={emptyTarget}>
         <AnalysisEmpty
           phase={hold || state.kind === "loading" ? "loading" : state.kind === "failed" ? "failed" : "idle"}
           stage={hold === "writing" ? "writing" : "reading"}
@@ -248,9 +207,7 @@ export function AnalysisPanel({
           see={pressSee ?? null}
           description={description}
           onSaveDescription={onSaveDescription}
-          tuningEnabled={tuningEnabled}
         />
-        </div>
       ) : null) : null}
       {/* THE FLAG BEING OFF, OR A DECK THAT CANNOT BE READ, DRAWS NO READING: the tab is hidden by
           the same flag, and the page around it has already answered for a missing deck. */}
@@ -259,18 +216,7 @@ export function AnalysisPanel({
           but not yet shown, so the hub is handed no reading until the verdict paints: Suggested changes
           stays dimmed until then, and wakes in the same frame as the verdict. The tools below the
           reading (Proposed cuts, Mana Balance) need none, so they are never hidden either. */}
-      {hub ? hub(hubPermits, tiles) : null}
-      {!hub && held && tuning ? (
-        <div hidden={behind} className="pt-[18px] md:pt-6" style={{ borderTop: "1px solid var(--border)" }}>
-          {tuning(slotDeck(held.profile).permits)}
-        </div>
-      ) : null}
-      {/* PROPOSED CUTS DOES NOT WAIT FOR A READING. A reading is made of a whole deck (the body at its
-          size), and the tool exists for a deck that is over it, so the two preconditions exclude each
-          other: a deck built long was never read. Its facts come from the profile it builds for itself
-          and it draws nothing for a deck that is not over 100. */}
-      {!hub && cuts ? cuts : null}
-      {!hub && mana ? mana : null}
+      {hub ? hub(hubPermits) : null}
       <p role="status" className="sr-only">{announced}</p>
     </div>
     </>

@@ -7,7 +7,7 @@
 
 import { analysisTabEnabled } from "../decks/analysis-flag";
 import { helpMeChooseEnabled } from "../intake/flag";
-import { suggestedChangesV2Enabled, tuningEnabled, tuningHubEnabled } from "../tuning/flag";
+import { suggestedChangesV2Enabled } from "../tuning/flag";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
 import { paymentsEnabled, welcomeCreditsEnabled } from "../payments/flag";
 import { type AboutEntry, type AboutLineSwitch, type AboutLineSwitchOne, type AboutSwitch } from "../copy/about";
@@ -39,7 +39,9 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   ANALYSIS_TAB_ENABLED: analysisTabEnabled,
   // Retired (always on): How the app reaches its answers. The name stays as the appendix's historical identity.
   HOW_IT_WORKS_ENABLED: () => true,
-  TUNING_ENABLED: tuningEnabled,
+  // Retired: Suggested changes follows its parent, the Analysis tab, where it mounts. The name stays as its entry's and
+  // lines' historical identity.
+  TUNING_ENABLED: analysisTabEnabled,
   SUGGESTED_CHANGES_V2_ENABLED: suggestedChangesV2Enabled,
   // Retired (always on): Stats. The name stays as the entry's and the section's historical identity.
   DECK_STATS_ENABLED: () => true,
@@ -67,8 +69,8 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   UPCOMING_PRECONS_ENABLED: () => true,
   // Retired (always on): Notes. The name stays as the entry's and the section's historical identity.
   DECK_NOTES_ENABLED: () => true,
-  // History, the lines naming it: the hub's own rule, two or more Tuning tools on.
-  TUNING_HUB_ENABLED: tuningHubEnabled,
+  // History, the lines naming it: the hub draws wherever the Analysis tab does (no Tuning tool has a switch of its own).
+  TUNING_HUB_ENABLED: analysisTabEnabled,
   LINEUP_ENABLED: () => true,
   // Retired: Proposed cuts follows its parent, the Analysis tab, where it mounts. The name stays as its lines' historical identity.
   PROPOSED_CUTS_ENABLED: analysisTabEnabled,

@@ -15,8 +15,6 @@ import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { deckBenchmarksCopy } from "../../lib/copy/deck-benchmarks";
 import type { ProfileState } from "./use-deck-profile";
 import { benchmarksWire } from "./__fixtures__/benchmarks";
-import { TargetsProvider, useTargets, type Targets } from "../discovery/targets-provider";
-import { useEffect } from "react";
 
 const copy = deckAnalysisCopy.panel;
 const AT = new Date().toISOString();
@@ -270,126 +268,29 @@ describe("AnalysisPanel", () => {
     expect(onRequest).toHaveBeenCalledTimes(1);
   });
 
-  // Discovery R2, E11: with the hub off there are no tiles, so Suggested changes' landing target is the drawn panel
-  // (its own `landingTarget`), or with no reading held the empty state that asks for one; with the hub on, the tile is
-  // (tuning-hub.test.tsx).
-  describe("Suggested changes' landing target with the hub off", () => {
-    let targets: Targets | null = null;
-    function Grab() {
-      const t = useTargets();
-      useEffect(() => {
-        targets = t;
-      }, [t]);
-      return null;
-    }
-    const drawWith = (state: ProfileState, hub?: () => React.ReactNode, hubDraws?: () => boolean) =>
-      render(
-        <TargetsProvider>
-          <Grab />
-          <CardDetailProvider fetchCard={async () => null}>
-            <AnalysisPanel state={state} onRequest={onRequest} hub={hub} hubDraws={hubDraws} tuning={() => <p>tuning</p>}>
-            </AnalysisPanel>
-          </CardDetailProvider>
-        </TargetsProvider>,
-      );
-
-    it("is not the frame over a reading: the drawn panel registers itself (tuning-panel.test.tsx)", () => {
-      drawWith(ready());
-      expect(targets!.haloTarget("suggested-changes")).toBe(false);
-    });
-
-    it("is the empty state before a first reading", () => {
-      drawWith({ kind: "idle" });
-      expect(targets!.haloTarget("suggested-changes")).toBe(true);
-      expect(screen.getByTestId("analysis-empty").parentElement!.hasAttribute("data-target-halo")).toBe(true);
-    });
-
-    it("is nothing here with the hub on and drawing its tiles", () => {
-      drawWith({ kind: "idle" }, () => <p>hub</p>, () => true);
-      expect(targets!.haloTarget("suggested-changes")).toBe(false);
-    });
-
-    it("stays the tile once the hub has drawn this visit, as the hub stays (the last cut to the body size)", () => {
-      const seenDrawn: boolean[] = [];
-      const hub = (_p: unknown, drawn: boolean) => { seenDrawn.push(drawn); return drawn ? <p>hub</p> : null; };
-      const { rerender } = drawWith({ kind: "idle" }, hub as () => React.ReactNode, () => true);
-      rerender(
-        <TargetsProvider>
-          <Grab />
-          <CardDetailProvider fetchCard={async () => null}>
-            <AnalysisPanel state={{ kind: "idle" }} onRequest={onRequest} hub={hub} hubDraws={() => false} tuning={() => <p>tuning</p>}>
-            </AnalysisPanel>
-          </CardDetailProvider>
-        </TargetsProvider>,
-      );
-      expect(seenDrawn.at(-1)).toBe(true);
-      expect(targets!.haloTarget("suggested-changes")).toBe(false);
-    });
-
-    it("is the empty state with the hub on but drawing nothing (discovery R3, N1)", () => {
-      drawWith({ kind: "idle" }, () => null, () => false);
-      expect(targets!.haloTarget("suggested-changes")).toBe(true);
-      expect(screen.getByTestId("analysis-empty").parentElement!.hasAttribute("data-target-halo")).toBe(true);
-    });
-  });
-
-  // Suggested changes follows the analysis: drawn last, and only over a reading,
-  // current or held, handed the permits that reading slots to.
-  describe("the tuning slot", () => {
-    const withTuning = (state: ProfileState) => {
-      const tuning = vi.fn((permits: readonly number[]) => <div>tuning for {permits.join(",")}</div>);
-      render(
-        <CardDetailProvider fetchCard={async () => null}>
-          <AnalysisPanel state={state} onRequest={onRequest} tuning={tuning}>
-          </AnalysisPanel>
-        </CardDetailProvider>,
-      );
-      return tuning;
-    };
-
-    it("draws over a current reading", () => {
-      withTuning(ready());
-      expect(screen.getByText(/^tuning for/)).toBeInTheDocument();
-    });
-
-    it("stays over a held reading while the deck has changed", () => {
-      withTuning(ready({ fresh: false }));
-      expect(screen.getByText(/^tuning for/)).toBeInTheDocument();
-    });
-
-    it("is absent before a first reading", () => {
-      const tuning = withTuning({ kind: "idle" });
-      expect(tuning).not.toHaveBeenCalled();
-      expect(screen.queryByText(/^tuning for/)).toBeNull();
-    });
-  });
-
-  // The Tuning hub, when on, is drawn INSTEAD of the two tools it mounts inside its tiles, and is
+  // The Tuning hub mounts every Tuning tool inside its tiles (none has a switch of its own), and is
   // asked whether a reading is held: it draws for a deck with none when that deck is over 100.
   describe("the hub slot", () => {
     const withHub = (state: ProfileState) => {
       const hub = vi.fn((permits: readonly number[] | null) => <div>hub {permits === null ? "without a reading" : `for ${permits.join(",")}`}</div>);
       render(
         <CardDetailProvider fetchCard={async () => null}>
-          <AnalysisPanel state={state} onRequest={onRequest} hub={hub} tuning={() => <p>direct tuning</p>} cuts={<p>direct cuts</p>}>
+          <AnalysisPanel state={state} onRequest={onRequest} hub={hub}>
           </AnalysisPanel>
         </CardDetailProvider>,
       );
       return hub;
     };
 
-    it("replaces the directly mounted tools over a reading, handed its permits", () => {
+    it("draws over a reading, handed its permits", () => {
       withHub(ready());
       expect(screen.getByText(/^hub for/)).toBeInTheDocument();
-      expect(screen.queryByText("direct tuning")).toBeNull();
-      expect(screen.queryByText("direct cuts")).toBeNull();
     });
 
     it("is asked with no permits before a first reading", () => {
       const hub = withHub({ kind: "idle" });
-      expect(hub).toHaveBeenCalledWith(null, true);
+      expect(hub).toHaveBeenCalledWith(null);
       expect(screen.getByText("hub without a reading")).toBeInTheDocument();
-      expect(screen.queryByText("direct cuts")).toBeNull();
     });
 
     // Hugh, 2026-10-14: Tuning stays put before, during and after an analysis. It is the SAME node
@@ -447,7 +348,7 @@ describe("AnalysisPanel", () => {
     const opening = (phase: "wait" | "loader", state: ProfileState = { kind: "idle" }) =>
       render(
         <CardDetailProvider fetchCard={async () => null}>
-          <AnalysisPanel state={state} onRequest={onRequest} opening={phase} tuning={() => <p>tuning</p>}>
+          <AnalysisPanel state={state} onRequest={onRequest} opening={phase} hub={() => <p>tuning</p>}>
           </AnalysisPanel>
         </CardDetailProvider>,
       );
@@ -474,10 +375,10 @@ describe("AnalysisPanel", () => {
     });
 
     // Held for the hold even once the reading landed: the reading waits behind the loader.
-    // Suggested changes is MOUNTED under the held loader, which is what lets its first read run
+    // The Tuning hub is MOUNTED under the held loader, which is what lets its first read run
     // before the tab paints (the shell holds the loader until that read settles), and it is drawn
     // only once the loader lets go.
-    it("withholds a reading that landed while the loader is held, with Suggested changes mounted behind it", () => {
+    it("withholds a reading that landed while the loader is held, with the Tuning hub mounted behind it", () => {
       opening("loader", ready());
       expect(screen.getByText("tuning")).not.toBeVisible();
       expect(screen.getByText(copy.opening)).toBeVisible();

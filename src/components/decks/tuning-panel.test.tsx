@@ -1,5 +1,4 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { useEffect } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { saveDeckLimits } from "../../app/decks/tuning-actions";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
@@ -12,7 +11,6 @@ import type { LineItem, TuningItem, TuningState } from "../../lib/tuning/state";
 import { manifestRows, readSteps, runReads, runSteps, TuningPanel, type TuningDeps, type TuningFacts } from "./tuning-panel";
 import { ReviewRunProvider } from "./review-run";
 import { tuningHubCopy } from "../../lib/copy/tuning-hub";
-import { TargetsProvider, useTargets, type Targets } from "../discovery/targets-provider";
 import { creditLine } from "../ui/credit-line-matcher";
 
 vi.mock("../../app/decks/tuning-actions", () => ({
@@ -108,38 +106,6 @@ describe("TuningPanel", () => {
       );
     });
     expect(failed).toHaveBeenCalledTimes(1);
-  });
-
-  // Discovery R2, E11: with the hub off, the drawn panel is Suggested changes' landing target, and a first read that
-  // draws nothing registers nothing, so a landing never haloes an empty frame.
-  it("is Suggested changes' landing target once drawn, and nothing when its first read fails", async () => {
-    let targets: Targets | null = null;
-    function Grab() {
-      const t = useTargets();
-      useEffect(() => {
-        targets = t;
-      }, [t]);
-      return null;
-    }
-    const { unmount } = await act(async () =>
-      render(
-        <TargetsProvider>
-          <Grab />
-          <TuningPanel landingTarget deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={deps([fresh])} />
-        </TargetsProvider>,
-      ),
-    );
-    expect(targets!.haloTarget("suggested-changes")).toBe(true);
-    unmount();
-    await act(async () => {
-      render(
-        <TargetsProvider>
-          <Grab />
-          <TuningPanel landingTarget deckId="d2" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={deps([fresh], { read: vi.fn(async () => { throw new Error("down"); }) })} />
-        </TargetsProvider>,
-      );
-    });
-    expect(targets!.haloTarget("suggested-changes")).toBe(false);
   });
 
   it("opens at zero games rather than gating, and says the list alone will be read", async () => {

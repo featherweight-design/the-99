@@ -108,25 +108,20 @@ describe("isOpening", () => {
 // Hugh's staging walk, 2026-09-25: the opening waits on everything the tab paints, not on the
 // stored reading alone, and once a visit has opened nothing brings the loader back.
 describe("what the opening waits on", () => {
-  const all = { analyzed: true, peekPending: false, overviewSettled: true, hasReading: true, suggestionsSettled: true };
+  const all = { analyzed: true, peekPending: false, overviewSettled: true };
 
-  it("lets go only once the reading, the overview and Suggested changes have all answered", () => {
+  it("lets go only once the reading, the overview and the Tuning hub's landing have all answered", () => {
     expect(holdsOpening(all)).toBe(false);
     expect(holdsOpening({ ...all, peekPending: true })).toBe(true);
     expect(holdsOpening({ ...all, overviewSettled: false })).toBe(true);
-    // Proposed cuts holds an analyzed deck's opening even with no reading drawn on screen.
-    expect(holdsOpening({ ...all, hasReading: false, cutsSettled: false })).toBe(true);
-    expect(holdsOpening({ ...all, hasReading: false, cutsSettled: true })).toBe(false);
-    expect(holdsOpening({ ...all, suggestionsSettled: false })).toBe(true);
+    // The hub's landing (standing in for its tools, Suggested changes among them) holds an analyzed deck's opening.
+    expect(holdsOpening({ ...all, cutsSettled: false })).toBe(true);
+    expect(holdsOpening({ ...all, cutsSettled: true })).toBe(false);
   });
 
   // Hugh, 2026-10-11: a deck never analyzed has nothing to open, so its empty state draws at once.
   it("holds nothing for a deck that has never been analyzed, whatever else is still out", () => {
-    expect(holdsOpening({ analyzed: false, peekPending: false, overviewSettled: false, hasReading: false, suggestionsSettled: false, cutsSettled: false })).toBe(false);
-  });
-
-  it("does not wait on Suggested changes where there is no reading, since none is drawn", () => {
-    expect(holdsOpening({ ...all, hasReading: false, suggestionsSettled: false })).toBe(false);
+    expect(holdsOpening({ analyzed: false, peekPending: false, overviewSettled: false, cutsSettled: false })).toBe(false);
   });
 
   it("gates a visit only until it first lets go, and a new visit opens afresh", () => {
