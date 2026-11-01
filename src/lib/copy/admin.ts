@@ -795,7 +795,7 @@ export const switchCopy: Readonly<Record<SwitchName, { label: string; descriptio
   SCAN_LAB_ENABLED: { label: "Card-scan lab", description: "A camera page at /lab/scan that tries the card scanner and records whether each guess was right. Not linked anywhere." },
   PUSH_ENABLED: { label: "Push notifications", description: "Phone and browser push for the news kinds, on top of Home. Sends nothing until the push keys are set." },
   SUGGESTED_CHANGES_V2_ENABLED: { label: "Suggested changes v2", description: "Pick how many changes, ask for something, and see each one as it arrives. Needs Suggested changes." },
-  SWAP_TOOLS_ENABLED: { label: "Swap tools", description: "Swaps, stand-ins and Find a deck for it." },
+  SWAP_TOOLS_ENABLED: { label: "Swap tools", description: "Swaps, stand-ins and Find a deck for it. Also turns on Find a deck's one-credit read." },
   TUNING_ENABLED: { label: "Suggested changes", description: "Suggested changes for a deck." },
   WELCOME_CREDITS_ENABLED: { label: "Welcome credits", description: "Gives a new sign-up 15 credits that expire after 30 days. Off stops new grants; a lot already given is still spent." },
 };

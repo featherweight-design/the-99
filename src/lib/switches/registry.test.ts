@@ -3,6 +3,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { PENDING_DROP_SWITCHES } from "./pending-drop";
 import { ALL_FEATURES, SWITCH_NAMES, switchKind } from "./registry";
 
 const SRC = join(process.cwd(), "src");
@@ -27,7 +28,8 @@ describe("the switch registry", () => {
     expect([...SWITCH_NAMES].sort()).toEqual([...readVariables()].sort());
   });
 
-  // The set, plus All features' reserved name (2026-10-15), which the table holds and no variable carries.
+  // The set, plus All features' reserved name (2026-10-15), which the table holds and no variable carries, and the
+  // deleted switches the CHECK keeps until their follow-up migration (two-step delete, `pending-drop.ts`).
   it("checks the overrides table against exactly this set", () => {
     const migrations = readdirSync(join(process.cwd(), "drizzle")).filter((f) => f.endsWith(".sql")).sort();
     // The newest migration that (re)states the constraint is the one in force.
@@ -35,7 +37,11 @@ describe("the switch registry", () => {
     const last = sources.filter((s) => s.includes("flag_overrides_switch_check")).at(-1) ?? "";
     const listed = /flag_overrides_switch_check" CHECK \([^)]*in \(([^)]*)\)/.exec(last)?.[1] ?? "";
     const inForce = listed.split(",").map((s) => s.trim().replace(/'/g, ""));
-    expect(inForce.sort()).toEqual([...SWITCH_NAMES, ALL_FEATURES].sort());
+    expect(inForce.sort()).toEqual([...SWITCH_NAMES, ...PENDING_DROP_SWITCHES, ALL_FEATURES].sort());
+  });
+
+  it("keeps a pending drop out of the registry, so nothing reads or writes it", () => {
+    for (const n of PENDING_DROP_SWITCHES) expect(SWITCH_NAMES as readonly string[]).not.toContain(n);
   });
 
   // RATE_LIMIT counts requests (payments scope PR S), and NAV_STALL_LOG reports stuck loaders; no reader sees a difference.
