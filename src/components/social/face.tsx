@@ -1,6 +1,6 @@
 // A person's face (Social R1, README decision 22): their signature commander's art, or their initials while
 // they have chosen none. ONE component at every size a person is drawn: 64 in the head of /friends, 40 on a
-// friend row, 30 in the stand-ins modal's spares, 26 on a pod chip, and R3's game-log picker; Rule 0's 36 on Home's table card
+// friend row, 30 in the stand-ins modal's spares and on Home's Rule 0 table card (revisions Home), 26 on a pod chip, and R3's game-log picker; Rule 0's 36 on the lead story
 // and 24 in a pod row's overlapped strip; 16 in a friend's deck page's eyebrow. It draws the face and nothing else: a press, a
 // pencil badge or a ring belongs to whoever wraps it.
 
