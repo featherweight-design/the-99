@@ -21,11 +21,10 @@ vi.mock("../../../lib/recs/recommend", () => ({ scoreOneCommander }));
 vi.mock("../../../lib/recs/free-ranking", () => ({ loadFreePool }));
 vi.mock("../../../lib/decks/availability-query", () => ({ loadAvailability }));
 vi.mock("../../../lib/collection/owned-printings", () => ({ resolveOwnedPrintings }));
-// The reader's resolved switches, a stand-in pinned by identity: the retry scores under the role
-// basis the page rendered with (admin PR 6d-2), so the env must reach the resolve, the score and the
-// free pool (6f-1).
+// The reader's resolved switches, a stand-in pinned by identity: the env must reach the resolve and
+// the score untouched (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31: no basis is written over it).
 const RESOLVED = vi.hoisted(() => ({
-  LABEL_ROLE_COUNTS_ENABLED: "true",
+  FEEDBACK_ENABLED: "true",
 }) as unknown as NodeJS.ProcessEnv);
 vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: async () => RESOLVED }));
 
@@ -145,28 +144,18 @@ describe("retryCoverageFigures", () => {
     expect(scoreOneCommander).not.toHaveBeenCalled();
   });
 
-  // Admin PR 6d-2 (Copilot round 5): the retry answers on the OPEN page's basis, never a fresh
-  // snapshot. The reader's switch now says labels; the page was drawn under the classifier.
-  it("scores under the basis the page names, not the one the switch resolves to now", async () => {
-    scoreOneCommander.mockResolvedValue({ synergyState: "ok", roleBasis: "classifier", roleCards });
-    await expect(retryCoverageFigures("korvold", "all", "classifier")).resolves.not.toBeNull();
-    const env = scoreOneCommander.mock.calls[0][4] as NodeJS.ProcessEnv;
-    expect(env.LABEL_ROLE_COUNTS_ENABLED).toBe("false");
+  // LABEL_ROLE_COUNTS retired (Hugh 2026-10-31): a classifier page is still accepted, but the retry
+  // scores by label under the reader's own env, and labels cards never replace classifier counts.
+  it("still accepts a classifier page, scores by label, and answers it nothing", async () => {
+    scoreOneCommander.mockResolvedValue({ synergyState: "ok", roleBasis: "labels", roleCards });
+    await expect(retryCoverageFigures("korvold", "all", "classifier")).resolves.toBeNull();
+    expect(scoreOneCommander).toHaveBeenCalledWith("user_1", "korvold", "korvold", undefined, RESOLVED);
+    expect(loadAvailability).not.toHaveBeenCalled();
   });
 
   it("refuses a basis outside the closed set, and reads nothing", async () => {
     await expect(retryCoverageFigures("korvold", "all", "other")).resolves.toBeNull();
     expect(scoreOneCommander).not.toHaveBeenCalled();
-  });
-
-  it("answers a labels page under the kill switch with nothing, never classifier cards", async () => {
-    vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "off");
-    try {
-      await expect(retryCoverageFigures("korvold", "all", "labels")).resolves.toBeNull();
-      expect(scoreOneCommander).not.toHaveBeenCalled();
-    } finally {
-      vi.unstubAllEnvs();
-    }
   });
 
   it("answers nothing when the rescore fell back to another basis than the page's", async () => {

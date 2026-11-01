@@ -1,9 +1,9 @@
 "use client";
 
-// The deck page's label rows, for the components that count roles. With
-// `LABEL_ROLE_COUNTS_ENABLED` on the page provides the map the Jobs card reads, and every role count
-// below it goes through `jobTally` on it; with the switch off, or the read failed, the value is null and
-// `useRoleCounter` is `computeRoleCounts` exactly as before.
+// The deck page's label rows, for the components that count roles. The page provides the map the
+// Jobs card reads (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31), and every role count below it goes
+// through `jobTally` on it; when the read failed the value is null and `useRoleCounter` is
+// `computeRoleCounts`.
 
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 import type { JobRowsByCard } from "../../lib/decks/job-tally";

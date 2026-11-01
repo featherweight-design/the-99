@@ -16,7 +16,6 @@ import { deckBodySize } from "./deck-size";
 import type { ProfileSkeleton } from "../profile/types";
 import { readSynergyCards } from "../../app/commanders/[slug]/synergy-read";
 import { loadSkeletonForCommanders } from "../profile/load";
-import { labelRoleCountsEnabled } from "./label-counts-flag";
 import { readLabelRoleSets } from "../labels/read";
 import { dedupeSelectionFromPool, reachCandidates, planFill, type FillCandidate, type FillPlan, type HeldCard, type PlanFillArgs } from "./fill";
 import { gatherFillStaples } from "../staples/fill-staples";
@@ -150,7 +149,6 @@ export async function buildFillPlan(
   // shipped for a year, while a create that throws leaves the player with an empty deck and no
   // way to tell why. `planFill` reports `measured: false` for it, so nothing downstream
   // presents an asserted floor as a derived one.
-  const labelsOn = labelRoleCountsEnabled(options.env);
   let skeleton: ProfileSkeleton | null = null;
   try {
     ({ skeleton } = await loadSkeletonForCommanders(
@@ -158,7 +156,7 @@ export async function buildFillPlan(
       commanders[1]?.oracleId ?? null,
       [...new Set(commanders.flatMap((c) => c.colorIdentity))],
       undefined,
-      { roleBasis: labelsOn ? "labels" : "classifier" },
+      { roleBasis: "labels" },
     ));
   } catch (err) {
     console.warn("buildFillPlan: no skeleton — filling to the asserted baseline", err);
@@ -459,18 +457,18 @@ export async function buildFillPlan(
   const placedBeside = selected.reduce((n, c) => n + (c.quantity ?? 1), 0);
   const slots = fillOptions.slots
     ?? (placedBeside > 0 ? Math.max(0, deckBodySize(hasPartner) - placedBeside) : undefined);
-  // THE LABELS THE PLAN COUNTS BY, behind the same switch as the strip (labels-everywhere PR 4).
+  // THE LABELS THE PLAN COUNTS BY, as the strip does (labels-everywhere PR 4; LABEL_ROLE_COUNTS retired, Hugh 2026-10-31).
   // Read for every card the plan can weigh or hold. When the read fails the plan counts by the
   // classifier, so the targets are re-read on the classifier's basis too: a plan must never count
   // by one basis and build to the other's bars.
   // Only with a skeleton: with none, the plan builds to the asserted CLASSIFIER bars, and a label count
   // against those is the mismatch this guards. No skeleton means the classifier on both sides.
-  const labelRoles = labelsOn && skeleton
+  const labelRoles = skeleton
     // A bought raiser may be in no pool (an unowned top card under own-only): its label is read too.
     ? await readLabelRoleSets([...scoped, ...staples, ...held, ...boughtRaisers].flatMap((c) => (c.oracleId ? [c.oracleId] : [])))
         .catch((err) => { console.warn("buildFillPlan: no labels — filling by the classifier", err); return undefined; })
     : undefined;
-  if (labelsOn && !labelRoles && skeleton) {
+  if (!labelRoles && skeleton) {
     try {
       ({ skeleton } = await loadSkeletonForCommanders(
         commanders[0].oracleId, commanders[1]?.oracleId ?? null,

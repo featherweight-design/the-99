@@ -65,10 +65,10 @@ const basisMock = vi.hoisted(() => ({
   value: { basis: "classifier", roleSets: undefined, fellBack: false } as {
     basis: string; roleSets: Map<string, string[]> | undefined; fellBack: boolean;
   },
-  enabledSeen: [] as boolean[],
+  reads: 0,
 }));
 vi.mock("../recs/pool-role-basis", () => ({
-  loadSharedPoolRoleBasis: async (_user: unknown, _cards: unknown, enabled: boolean) => (basisMock.enabledSeen.push(enabled), basisMock.value),
+  loadSharedPoolRoleBasis: async () => (basisMock.reads++, basisMock.value),
 }));
 vi.mock("./candidates", () => ({
   loadCandidates: (...args: unknown[]) =>
@@ -180,9 +180,9 @@ describe("loadDiscovery — wiring", () => {
   it("always asks for the label read, even with the old switch off everywhere", async () => {
     vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "false");
     try {
-      basisMock.enabledSeen.length = 0;
+      basisMock.reads = 0;
       await loadDiscovery("user-1", { sort: "fit" }, { LABEL_ROLE_COUNTS_ENABLED: "false" } as unknown as NodeJS.ProcessEnv);
-      expect(basisMock.enabledSeen).toEqual([true]);
+      expect(basisMock.reads).toBe(1);
     } finally {
       vi.unstubAllEnvs();
     }

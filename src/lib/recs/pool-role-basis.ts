@@ -44,16 +44,13 @@ export const CLASSIFIER_POOL_BASIS: PoolRoleBasis = { basis: "classifier", roleS
 const FELL_BACK: PoolRoleBasis = { ...CLASSIFIER_POOL_BASIS, fellBack: true };
 
 /**
- * `enabled` asks for the label read. LABEL_ROLE_COUNTS is retired (Hugh 2026-10-31): the recs and
- * discovery callers pass `true`; `decks/suggestions-read.ts` still passes `labelRoleCountsEnabled(env)`
- * until part B, which drops the parameter.
+ * Always reads the labels: roles are always counted by label (LABEL_ROLE_COUNTS retired, Hugh
+ * 2026-10-31). A failed read falls back to the classifier on both sides (`fellBack`).
  */
 export async function loadPoolRoleBasis(
   cards: readonly { oracleId: string }[],
-  enabled: boolean,
   read: typeof readLabelRoleSets = readLabelRoleSets,
 ): Promise<PoolRoleBasis> {
-  if (!enabled) return CLASSIFIER_POOL_BASIS;
   try {
     const oracleIds = [...new Set(cards.map((c) => c.oracleId))];
     const roleSets = await read(oracleIds);
@@ -74,7 +71,7 @@ export async function loadPoolRoleBasis(
  * read that failed for one and not for another served a classifier ranking beside label figures on one page.
  * The three share the first read's PROMISE, success or fallback, so they agree with each other.
  *
- * Keyed on the user, the reader's resolved basis switch and how many distinct cards were asked about: every
+ * Keyed on the user and how many distinct cards were asked about: every
  * caller passes the user's whole collection, so the count is the cheap stand-in for the set (a collection
  * that changed between two reads of one render is not a case this has to survive). React's `cache` gives
  * each render its own map and, outside a render (a script, a server action, `after()`), none: each call then
@@ -86,14 +83,13 @@ const sharedBasisMemo = cache(() => new Map<string, Promise<PoolRoleBasis>>());
 export function loadSharedPoolRoleBasis(
   userId: string,
   cards: readonly { oracleId: string }[],
-  enabled: boolean,
   read?: typeof readLabelRoleSets,
   memo: Map<string, Promise<PoolRoleBasis>> = sharedBasisMemo(),
 ): Promise<PoolRoleBasis> {
-  const key = `${userId}|${enabled ? "labels" : "classifier"}|${new Set(cards.map((c) => c.oracleId)).size}`;
+  const key = `${userId}|${new Set(cards.map((c) => c.oracleId)).size}`;
   let started = memo.get(key);
   if (!started) {
-    started = loadPoolRoleBasis(cards, enabled, read);
+    started = loadPoolRoleBasis(cards, read);
     memo.set(key, started);
   }
   return started;

@@ -143,15 +143,13 @@ describe("buildFillPlan's Hit bracket N", () => {
   });
 
   it("reads the label of a bought raiser no pool carries (own-only), so it is counted by label", async () => {
-    vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "true");
     m.skeleton.mockResolvedValue({ skeleton: { roleTargets: { of: "labels", targets: {} }, composition: null, staples: [] } });
     await buildFillPlan("u", commanders, new Set(), {
-      selected: [], env: envViewWith({ HELP_ME_CHOOSE_ENABLED: "true", LABEL_ROLE_COUNTS_ENABLED: "true" }),
+      selected: [], env: envViewWith({ HELP_ME_CHOOSE_ENABLED: "true" }),
       pool: "sleeveable", failClosed: true,
       answers: { budgetCents: 5000, bracket: 3, cardOracleId: null, bracketBuys: true },
     });
     expect(m.readLabels).toHaveBeenCalledWith(expect.arrayContaining(["rhystic"]));
-    vi.unstubAllEnvs();
   });
 
   it("ignores the pick when the reach is no longer short", async () => {

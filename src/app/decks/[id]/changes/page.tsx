@@ -11,7 +11,6 @@ import { cacheForUser } from "../../../../lib/cache/user-lists";
 import { loadDeckMix } from "../../../../lib/decks/deck-mix";
 import { settleLabelRead } from "../../../../lib/decks/label-read-settle";
 import { loadJobRows } from "../../../../lib/decks/job-rows";
-import { labelRoleCountsEnabled, roleBasisFromEnv } from "../../../../lib/decks/label-counts-flag";
 import { deckBodySize } from "../../../../lib/decks/deck-size";
 import {
   changeCount, loadDraftRows, loadDraftShape, loadVersionShape,
@@ -183,23 +182,20 @@ export default async function ChangesPage({
   // staples join for the same five integers, measured at 632-831ms steady state.
   const mix = await cacheForUser(
     userId,
-    // Change commander: the live commander joins the key (audit F5). The reader's
-    // switches join it too: the mix's basis follows LABEL_ROLE_COUNTS_ENABLED, resolved per reader.
+    // Change commander: the live commander joins the key (audit F5). The reader's switches join it
+    // too; the mix's basis is always labels (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31).
     [...DECK_MIX_KEY, id, await indexGeneration(), switchBits(env), ...(await commanderKeyParts(id))],
-    () => loadDeckMix(id, userId, roleBasisFromEnv(env)),
+    () => loadDeckMix(id, userId, "labels"),
   );
 
-  // The strip counts by label when the switch is on, so the label rows cover every card it folds:
-  // both lists and the removed rows a restore puts back. Null (switch off, or the read failed)
-  // counts by role exactly as before.
-  const labelRead = labelRoleCountsEnabled(env)
-    ? await loadJobRows([
-        ...(before ?? []), ...after,
-        ...rows.out.map((r) => ({ oracleId: r.oracleId, typeLine: r.typeLine })),
-      ].filter((c): c is { oracleId: string; typeLine: string } => c.oracleId !== undefined))
-    : null;
-  // The switch is on but the read failed: counts fall back to the classifier, so the targets do too.
-  const settled = settleLabelRead(labelRoleCountsEnabled(env), [labelRead], []);
+  // The strip counts by label, so the label rows cover every card it folds: both lists and the
+  // removed rows a restore puts back. Null (the read failed) counts by role.
+  const labelRead = await loadJobRows([
+    ...(before ?? []), ...after,
+    ...rows.out.map((r) => ({ oracleId: r.oracleId, typeLine: r.typeLine })),
+  ].filter((c): c is { oracleId: string; typeLine: string } => c.oracleId !== undefined));
+  // The read failed: counts fall back to the classifier, so the targets do too.
+  const settled = settleLabelRead(true, [labelRead], []);
   const labelRows = settled.rows;
   const shownMix = settled.classifierTargets ? await loadDeckMix(id, userId, "classifier") : mix;
 

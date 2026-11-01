@@ -22,7 +22,6 @@ import { deckBodySize } from "./deck-size";
 import { cardTypeGroup, primaryRole, requireDeck } from "./read";
 import { recommendedMix, type RecommendedMix } from "./mix";
 import { loadSkeletonForCommanders } from "../profile/load";
-import { labelRoleCountsEnabled, roleBasisFromEnv } from "./label-counts-flag";
 import { loadPoolRoleBasis } from "../recs/pool-role-basis";
 import { buildSuggestionPayload, suggestDeck, type DeckSuggestion } from "./suggest";
 import { SHELF_CAP } from "./shelf-cap";
@@ -162,10 +161,8 @@ export async function resolveSuggestionBasis(
   partner: { oracleId: string; colorIdentity?: string[] | null } | null,
   hasPartner: boolean,
   available: readonly { oracleId: string }[],
-  /** The reader's resolved switches (`requestSwitchEnv`). */
-  env: NodeJS.ProcessEnv,
 ): Promise<{ mix: RecommendedMix; roleSets: Awaited<ReturnType<typeof loadPoolRoleBasis>>["roleSets"] }> {
-  const { basis: roleBasis, roleSets } = await loadPoolRoleBasis(available, labelRoleCountsEnabled(env));
+  const { basis: roleBasis, roleSets } = await loadPoolRoleBasis(available);
   let mix = recommendedMix(null, hasPartner, roleBasis);
   try {
     const { skeleton } = await loadSkeletonForCommanders(
@@ -173,8 +170,8 @@ export async function resolveSuggestionBasis(
       partner?.oracleId ?? null,
       [...new Set([...commander.colorIdentity ?? [], ...(partner?.colorIdentity ?? [])])],
       undefined,
-      // The strip counts by label when the switch is on, so its targets are the label ones. The
-      // switch is per reader, and the deck page puts the reader's resolved switches in this payload's cache key.
+      // The strip counts by label (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31), so its targets are the
+      // label ones, unless the label read fell back.
       { roleBasis },
     );
     mix = recommendedMix(skeleton, hasPartner, roleBasis);
@@ -191,13 +188,14 @@ export async function resolveSuggestionBasis(
 export async function loadDeckSuggestions(
   deckId: string,
   userId: string,
-  /** The reader's resolved switches (`requestSwitchEnv`). A caller that caches this payload keys it on them. */
-  env: NodeJS.ProcessEnv,
+  /** The reader's resolved switches (`requestSwitchEnv`). Unread since roles are always counted by
+   *  label (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31); a caller that caches this payload keys it on them. */
+  _env: NodeJS.ProcessEnv,
 ): Promise<DeckSuggestionsPayload> {
   const deck = await requireDeck(deckId, userId);
   const [commander] = await db.select().from(cards).where(eq(cards.oracleId, deck.commanderOracleId));
   if (!commander) {
-    return { suggestions: [], degraded: false, shoppingFigures: {}, mix: recommendedMix(null, false, roleBasisFromEnv(env)) };
+    return { suggestions: [], degraded: false, shoppingFigures: {}, mix: recommendedMix(null, false, "labels") };
   }
 
   // The partner is a second commander for every purpose below: the pool it
@@ -261,7 +259,7 @@ export async function loadDeckSuggestions(
   // THE SAME MIX THE DECK PAGE DRAWS. The Add panel's shelf headers count against these and
   // its tiles quote them; two sources would disagree by construction on any commander whose
   // measured ramp is not ten.
-  const { mix, roleSets } = await resolveSuggestionBasis(commander, partner ?? null, hasPartner, available, env);
+  const { mix, roleSets } = await resolveSuggestionBasis(commander, partner ?? null, hasPartner, available);
 
   const raw = suggestDeck({ commander, ownedPool: available, edhrecTopCards: topCards, hasPartner, mix, roleSets });
 

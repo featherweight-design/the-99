@@ -91,8 +91,8 @@ type ReviewChangesProps = {
    *  Null `before` is a brew, where nothing states a movement. */
   before: ShapeCard[] | null;
   after: ShapeCard[];
-  /** The label rows for every card the strip folds, when the strip counts by label
-   *  (`LABEL_ROLE_COUNTS_ENABLED`); absent or null counts by `role`, as before. */
+  /** The label rows for every card the strip folds (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31);
+   *  absent or null (the read failed) counts by `role`. */
   labelRows?: JobRowsByCard | null;
   /** The server's count of the cards the commit would freeze, passed straight
    *  through to the sheet — see `commit-sheet.tsx`. */

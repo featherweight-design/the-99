@@ -45,8 +45,8 @@ type RoleCounterStripProps = {
    *  `computeRoleCounts` over the version's cards — or the two figures in one
    *  cell are measuring different things. */
   wasCounts?: Record<MixRole, number>;
-  /** The deck's label rows when the strip counts by label (`LABEL_ROLE_COUNTS_ENABLED`); absent or
-   *  null counts by `card.role`, exactly as before. */
+  /** The deck's label rows the strip counts by (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31); absent
+   *  or null (the read failed) counts by `card.role`. */
   labelRows?: JobRowsByCard | null;
   /** Opens Mana Balance from the land cell, when that cell has no shelf to offer. */
   onBalanceMana?: () => void;
