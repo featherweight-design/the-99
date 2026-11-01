@@ -52,6 +52,7 @@ import { ZERO_PRIMARY, ZERO_SECONDARY, ZeroState } from "../ui/zero-state";
 import { GhostButton, PrimaryButton } from "../ui/button";
 import { ExcludedMatchAside } from "./excluded-match";
 import { AllHiddenEmpty } from "./all-hidden-empty";
+import { HIDDEN_PATH } from "../../lib/commanders/place-paths";
 import { FLOOR_PCT } from "../../lib/discovery/floor";
 import { findExcludedMatches, hideCommanderAction } from "../../app/commanders/actions";
 // Type-only for the same reason `DiscoveryList` is: the module it comes from is
@@ -756,8 +757,7 @@ export function DiscoveryView({
             }
           />
         ) : showAllHidden ? (
-          // Hidden (PR 4) adds the route `See hidden` opens; until then the state draws no button.
-          <AllHiddenEmpty lane="discover" hidden={discovery.hiddenCount} />
+          <AllHiddenEmpty lane="discover" hidden={discovery.hiddenCount} hiddenHref={HIDDEN_PATH} />
         ) : showSearchEmpty ? (
           // D5. The candidate count, not the ranked one: this state fires only
           // once the server has looked past the rows on screen and found nothing

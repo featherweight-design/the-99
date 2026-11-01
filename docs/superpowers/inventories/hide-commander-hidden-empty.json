@@ -1,0 +1,37 @@
+{
+  "feature": "Hide a commander, PR 4: the Hidden tab with nothing hidden (README section 3, Hidden board state 5)",
+  "note": "Needs the signed-in account to have no hidden_commanders rows, on a scratch branch. Read-only.",
+  "shares": [
+    {
+      "binding": "ZeroState",
+      "module": "src/components/ui/zero-state.tsx"
+    }
+  ],
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "label": "desktop",
+      "width": 1300,
+      "height": 900
+    }
+  ],
+  "rows": [
+    {
+      "id": "hidden-empty",
+      "label": "Hidden tab, nothing hidden: the zero state, no count on the tab, no count line",
+      "view": "src/components/commanders/hidden-list.tsx",
+      "steps": [
+        {
+          "goto": "/commanders/hidden",
+          "wait": "h2:has-text(\"Nothing hidden\")",
+          "settle": 1500
+        }
+      ],
+      "binding": "ZeroState"
+    }
+  ]
+}

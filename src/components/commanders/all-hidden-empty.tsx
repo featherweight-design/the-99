@@ -11,9 +11,8 @@ import { ZERO_PRIMARY, ZeroState } from "../ui/zero-state";
 const copy = planeCopy.allHidden;
 
 /**
- * `hiddenHref` is the Hidden list, the board's **See hidden**. It is optional because that route does
- * not exist yet: until it does the state draws no button rather than a link that 404s, and the sentence
- * still names both ways out.
+ * `hiddenHref` is the Hidden list (`HIDDEN_PATH`), the board's **See hidden**. Without it the state draws no
+ * button, and the sentence still names both ways out.
  */
 export function AllHiddenEmpty({
   lane,

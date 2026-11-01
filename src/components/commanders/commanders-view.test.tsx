@@ -516,8 +516,8 @@ describe("CommandersView · hidden commanders", () => {
         "You hid all 3 commanders you own and haven’t built. Bring one back from Hidden, or find one to build in Discover.",
       ),
     ).toBeInTheDocument();
-    // The Hidden list's route does not exist yet, so there is no button to it.
-    expect(screen.queryByRole("link", { name: "See hidden" })).toBeNull();
+    // **See hidden** opens the Hidden list.
+    expect(screen.getByRole("link", { name: "See hidden" })).toHaveAttribute("href", "/commanders/hidden");
   });
 
   it("names the hidden one over the all-hidden state when the search finds it", async () => {

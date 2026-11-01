@@ -11,8 +11,8 @@ import { addPanelCopy } from "../../lib/copy/decks-builder";
 
 // The Undo board's `.merr`: one line under the row in `--danger`, 12px on 1.5, 6px above and 2px in. The board draws
 // it so, not as the deck builder's amber `MutationError`; README §2's "as the builder's" is the behavior (the
-// button goes, one line stands under the row), not its tone.
-function refusedLine(message: string) {
+// button goes, one line stands under the row), not its tone. The Hidden list's Undo row draws the same line.
+export function commanderUndoRefusedLine(message: string) {
   return (
     <p role="alert" className="pt-[6px] px-[2px] text-[12px] leading-[1.5] text-[color:var(--danger)]">
       {message}
@@ -20,7 +20,8 @@ function refusedLine(message: string) {
   );
 }
 
-const SHELL = "flex items-center gap-[12px] min-h-[48px] px-[14px] rounded-[8px] sm:min-h-[44px] sm:px-[16px]";
+/** The commander Undo row's shell, shared with the Hidden list's (the board draws both as `.urow`). */
+export const COMMANDER_UNDO_SHELL = "flex items-center gap-[12px] min-h-[48px] px-[14px] rounded-[8px] sm:min-h-[44px] sm:px-[16px]";
 
 export function CommanderUndoRow({
   name,
@@ -39,7 +40,7 @@ export function CommanderUndoRow({
   return (
     <UndoShell
       marks={{ "data-commander-undo-row": "" }}
-      shell={SHELL}
+      shell={COMMANDER_UNDO_SHELL}
       label={hideCommanderCopy.undoRow.label(name)}
       action={addPanelCopy.undo.action}
       actionAria={hideCommanderCopy.undoRow.actionAria(name)}
@@ -47,7 +48,7 @@ export function CommanderUndoRow({
       error={refused ? hideCommanderCopy.undoRow.refused : null}
       undoRef={undoRef}
       frameRef={frameRef}
-      errorLine={refusedLine}
+      errorLine={commanderUndoRefusedLine}
     />
   );
 }

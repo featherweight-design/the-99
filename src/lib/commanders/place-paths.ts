@@ -16,3 +16,7 @@ export function discoverPath(place: boolean): string {
 export function atPlace(href: string, place: boolean): string {
   return place && href === "/decks/new/choose" ? choosePath(true) : href;
 }
+
+/** The Commanders place's Hidden tab (hide-commander README §3): the list a hidden commander waits in. One constant,
+    so the strip, the head's path match and every **See hidden** agree. */
+export const HIDDEN_PATH = "/commanders/hidden";

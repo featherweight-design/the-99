@@ -14,9 +14,11 @@
 
 import type { Lane } from "../../lib/commanders/lane-params";
 import { commandersCopy, discoverCopy } from "../../lib/copy/lanes";
+import { hiddenListCopy } from "../../lib/copy/commanders-hidden";
 
-export function PageHeader({ lane }: { lane: Lane }) {
-  const copy = lane === "owned" ? commandersCopy : discoverCopy;
+/** `hidden` is the Hidden tab's page (hide-commander README §3: *Hidden* / *commanders you hid*), in the same header. */
+export function PageHeader({ lane }: { lane: Lane | "hidden" }) {
+  const copy = lane === "owned" ? commandersCopy : lane === "hidden" ? hiddenListCopy : discoverCopy;
 
   return (
     <div
