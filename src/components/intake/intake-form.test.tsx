@@ -146,6 +146,13 @@ describe("Anything else? (the read addendum, 7a to 7c and 7n)", () => {
     expect(screen.getByText("Kept here for when a credit comes back.")).toBeTruthy();
   });
 
+  it("paused: no pill, and the caption says the pause, never that a credit is gone", () => {
+    render(<IntakeForm themes={[]} initial={{ ...emptyParams(), words: "scary" }} standing={{ ...credit, paused: true }} />);
+    expect(screen.queryByText("1 credit")).toBeNull();
+    expect(screen.queryByText("Kept here for when a credit comes back.")).toBeNull();
+    expect(screen.getAllByText("Anything that uses credits is paused right now. Try again later.").length).toBeGreaterThan(0);
+  });
+
   it("R3 item 10: on the phone, `Get more credits` sits under the box's caption, not in the dock; the desktop line keeps it", () => {
     render(<IntakeForm themes={[]} initial={{ ...emptyParams(), words: "scary" }} standing={{ ...credit, used: 10, payments: true }} />);
     const dock = screen.getByTestId("choose-dock");

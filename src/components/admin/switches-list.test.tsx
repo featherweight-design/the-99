@@ -119,6 +119,20 @@ describe("SwitchesList", () => {
     expect(within(r).getByTestId("switch-meta").textContent).toBe("env unset · app-wide on · no overrides · 2 of 2 on");
   });
 
+  // The default-on switch (MODEL_CALLS_ENABLED) is on while unset, so its env cell draws as on, the way `switchBits` reads it.
+  const envCell = (name: SwitchName) => rowOf(name).querySelector("span.hidden.font-mono") as HTMLElement;
+  it("draws an unset default-on switch's env as on, and an unset ordinary one as off", () => {
+    draw({});
+    expect(envCell("MODEL_CALLS_ENABLED").textContent).toContain("unset");
+    expect(envCell("MODEL_CALLS_ENABLED").className).toContain("var(--fg-body)");
+    expect(envCell("FEEDBACK_ENABLED").className).toContain("var(--fg-muted)");
+  });
+
+  it("draws a default-on switch set false as off", () => {
+    draw({ MODEL_CALLS_ENABLED: "false" });
+    expect(envCell("MODEL_CALLS_ENABLED").className).toContain("var(--fg-muted)");
+  });
+
   // At 390 a row with two tags wrapped the pill onto a line of its own at the left (8a contact sheet).
   // The pill must sit outside the wrapping name-and-tags group, as a fixed sibling after it.
   it.each(["SUGGESTED_CHANGES_V2_ENABLED", "PROPOSED_CUTS_ENABLED", "TUNING_ENABLED"] as const)(
