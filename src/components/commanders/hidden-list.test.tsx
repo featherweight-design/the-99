@@ -86,6 +86,15 @@ describe("the Hidden list", () => {
     expect(screen.queryByTestId("hidden-count")).toBeNull();
   });
 
+  it("hides only the empty state's glyph from a screen reader, never the word that reads it", () => {
+    render(<HiddenList rows={[]} />);
+    const word = screen.getByText("Hide");
+    expect(word).toHaveClass("sr-only");
+    expect(word.closest("[aria-hidden]")).toBeNull();
+    const glyph = word.parentElement?.querySelector("svg");
+    expect(glyph).toHaveAttribute("aria-hidden", "true");
+  });
+
   describe("Unhide", () => {
     it("turns the row into the Undo row, saying where it went, and refreshes the counts", async () => {
       render(<HiddenList rows={[GHALTA, ASHLING, ZADA]} />);
