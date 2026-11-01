@@ -278,7 +278,7 @@ describe("the daily paid line (P5, P5b)", () => {
 
 describe("the plan on the page", () => {
   const sub = (cancel: boolean, days: number, status = "active") => ({ status, cancelAtPeriodEnd: cancel, currentPeriodEnd: new Date(Date.parse("2026-11-14T12:00:00Z") + days * 86_400_000) });
-  const planRow: CreditHistoryRow = { id: "p1", source: "plan", units: 60, revokedUnits: 0, createdAt: new Date("2026-10-16T12:00:00Z"), externalId: "in_1", billingReason: "subscription_create", amountCents: 500, currency: "usd" };
+  const planRow: CreditHistoryRow = { id: "p1", source: "plan", units: 50, revokedUnits: 0, createdAt: new Date("2026-10-16T12:00:00Z"), externalId: "in_1", billingReason: "subscription_create", amountCents: 500, currency: "usd" };
 
   it("K1: the plan offer sits under the one Get more credits heading, AFTER the pack (L6: the pack leads)", () => {
     render(<CreditsView suggestedV2={false} model={model()} ret={null} />);
@@ -325,16 +325,16 @@ describe("the plan on the page", () => {
   });
 
   it("R3: a plan return says Plan started with the count the grant landed, and when it renews, with Cancel plan below", () => {
-    render(<CreditsView suggestedV2={false} model={model({ allowance: allowance({ plan: 60 }), subscription: sub(false, 2), history: [planRow] })} ret={{ kind: "done", sessionId: "cs_1", initial: { kind: "added", units: 60, plan: true } }} />);
-    expect(screen.getByText("Plan started: 60 credits added")).toBeTruthy();
+    render(<CreditsView suggestedV2={false} model={model({ allowance: allowance({ plan: 50 }), subscription: sub(false, 2), history: [planRow] })} ret={{ kind: "done", sessionId: "cs_1", initial: { kind: "added", units: 50, plan: true } }} />);
+    expect(screen.getByText("Plan started: 50 credits added")).toBeTruthy();
     expect(screen.getByText("Renews November 16. Cancel any time below.")).toBeTruthy();
     expect(screen.queryByText(/pack credits added/)).toBeNull();
     expect(screen.getByRole("button", { name: "Cancel plan" })).toBeTruthy();
   });
 
   it("R3 then a cancel on the page: the renew line goes, the band keeps its count", () => {
-    render(<CreditsView suggestedV2={false} model={model({ allowance: allowance({ plan: 60 }), subscription: sub(true, 20), history: [planRow] })} ret={{ kind: "done", sessionId: "cs_1", initial: { kind: "added", units: 60, plan: true } }} />);
-    expect(screen.getByText("Plan started: 60 credits added")).toBeTruthy();
+    render(<CreditsView suggestedV2={false} model={model({ allowance: allowance({ plan: 50 }), subscription: sub(true, 20), history: [planRow] })} ret={{ kind: "done", sessionId: "cs_1", initial: { kind: "added", units: 50, plan: true } }} />);
+    expect(screen.getByText("Plan started: 50 credits added")).toBeTruthy();
     expect(screen.queryByText(/Renews .*Cancel any time below/)).toBeNull();
   });
 
