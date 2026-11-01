@@ -316,11 +316,13 @@ describe("useDeckProfile", () => {
     });
   });
 
-  it("reports disabled without treating it as a failure", async () => {
+  // The Analysis tab is always on: a `disabled` refusal (a stale build's answer) has no state of
+  // its own any more and draws as missing, never as a failure.
+  it("reports a disabled answer as missing, not as a failure", async () => {
     stub.reply = { ok: false, reason: "disabled" };
     const c = render(<Harness />);
     await ask(c);
-    expect(kind(c)).toBe("disabled");
+    expect(kind(c)).toBe("missing");
   });
 
   it("reports a deck it cannot read as missing", async () => {
@@ -430,7 +432,7 @@ describe("useDeckProfile peek", () => {
   });
 
   it.each([
-    ["disabled", "disabled"],
+    ["disabled", "missing"],
     ["not-found", "missing"],
   ])("reports a %s answer as %s rather than as a miss", async (reason, expected) => {
     stub.stored = { ok: false, reason };

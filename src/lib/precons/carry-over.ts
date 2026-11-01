@@ -32,8 +32,8 @@ import { synopsisPreconContractVersion } from "../synopsis/limits";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
 import { carryOverDecision } from "./overview";
 
-// `off` is never answered now the Analysis tab's switch is retired (always on); it stays in the type only because
-// `scripts/probe-precon-overview-carry.ts` still compares against it, until the switch's delete PR.
+// `off` is never answered now the Analysis tab's switch is retired (always on); it stays in the type until the
+// switch's delete PR because `carryLogLine` below, its test and `scripts/probe-precon-overview-carry.ts` still read it.
 export type CarryOverResult =
   | { attached: true; synopsisId: string }
   | { attached: false; reason: "off" | "none" | "not_current" | "list_moved" | "not_a_precon" | "illegal" | "no_reading" | "has_synopsis" | "has_reading" };
