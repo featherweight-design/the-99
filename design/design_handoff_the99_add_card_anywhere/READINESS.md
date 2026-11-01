@@ -243,7 +243,9 @@ boards are Design's and stay as dropped; these rulings govern the build.
 
 - **E8 · the +'s name and the foot line.** O4 keeps the + out of the accessibility tree, so the +'s name, drawn as
   *Add {card} to your collection*, becomes the last clause of the row's own name, with the keys: *add to your
-  collection with Command Enter* (*Control Enter* off a Mac), and the option carries `aria-keyshortcuts`. /copy-review
+  collection with Command Enter* (*Control Enter* off a Mac), and the option carries `aria-keyshortcuts`. Both only
+  where a keyboard is likely (a fine pointer, or `md` and up): a phone's screen reader cannot press ⌘↵, and its add path
+  is the row's own press, card details' *Add to collection* (PR 1), so there the name stays as shipped. /copy-review
   TIGHTENED it: the card's name is dropped, because the row's name already opens with it and a reader arrowing
   through twenty rows would hear each name twice. The desktop foot line reads *↑ ↓ to move · ↵ to open · ⌘↵ to add*
   (*Ctrl ↵* off a Mac) beside the shipped *⌘K opens this from anywhere*: O4's reading. C-D2 and C-D3 still draw the

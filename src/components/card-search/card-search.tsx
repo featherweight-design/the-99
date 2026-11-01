@@ -341,6 +341,8 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
     if (bodyRef.current?.closest("[inert]")) return;
     savedScroll.current = bodyRef.current?.scrollTop ?? 0;
     setReturned(null);
+    // As a pick and a +: a count lit by an earlier + does not outlive the press that leaves it.
+    setAddedTo(null);
     setActive(-1);
     setVeiled(true);
     setOpen(false);
@@ -450,8 +452,10 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
         setActive(e.key === "ArrowDown" ? (active + 1) % list.length : active <= 0 ? list.length - 1 : active - 1);
       } else if (e.key === "Enter" && active >= 0) {
         e.preventDefault();
-        if (canAdd && isAddShortcut(e)) addCard(list, active);
-        else pick(list, active);
+        if (canAdd && isAddShortcut(e)) {
+          // A held ⌘↵ adds once: its repeats would land on the veil, or on a second ask the host drops.
+          if (!e.repeat) addCard(list, active);
+        } else pick(list, active);
       }
     },
     [list, active, pick, canAdd, addCard],

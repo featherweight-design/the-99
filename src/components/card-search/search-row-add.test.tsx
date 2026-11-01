@@ -1,6 +1,6 @@
 import * as React from "react";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CardSearchRow } from "../../lib/card-search/search";
 import { cardSearchCopy } from "../../lib/copy/card-search";
 import { SearchRow } from "./search-row";
@@ -28,7 +28,17 @@ function draw(r: CardSearchRow, opts: { onAdd?: () => void; onPick?: () => void;
   return { opt: screen.getByRole("option"), plus: container.querySelector<HTMLButtonElement>("[data-card-search-add]") };
 }
 
-afterEach(cleanup);
+// Whether a keyboard is likely (a fine pointer, or md and up): the only query the row asks.
+const realMatchMedia = window.matchMedia;
+function keyboard(likely: boolean) {
+  window.matchMedia = ((q: string) =>
+    ({ matches: likely, media: q, addEventListener() {}, removeEventListener() {} }) as unknown as MediaQueryList) as typeof window.matchMedia;
+}
+beforeEach(() => keyboard(true));
+afterEach(() => {
+  cleanup();
+  window.matchMedia = realMatchMedia;
+});
 
 describe("a search row's +", () => {
   it("adds, and the press stops there: the row does not open card details", () => {
@@ -58,6 +68,14 @@ describe("a search row's +", () => {
       `Ghalta, Primal Hunger, not owned, ${cardSearchCopy.row.addAria(cardSearchCopy.row.addKeysOther)}`,
     );
     expect(opt.getAttribute("aria-keyshortcuts")).toBe("Control+Enter");
+  });
+
+  it("names no keys where no keyboard is likely (a phone): the row's own press is the add path there", () => {
+    keyboard(false);
+    const { opt, plus } = draw(row(), { onAdd: vi.fn() });
+    expect(plus).toBeTruthy();
+    expect(opt.getAttribute("aria-label")).toBe("Ghalta, Primal Hunger, not owned");
+    expect(opt.hasAttribute("aria-keyshortcuts")).toBe(false);
   });
 
   it("comes after the bookmark, at the row's end, 44px on the phone and 34px from md", () => {

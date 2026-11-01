@@ -55,10 +55,17 @@ export type OpenAddCards = {
   onClosed?: (outcome: { saved: boolean }) => void;
 };
 
-const AddCardsContext = createContext<((open: OpenAddCards) => void) | null>(null);
+/**
+ * Asks for the sheet. False when the ask is dropped at once (a sheet is already up or on its way, or this is the
+ * public card page); a drop, then or once the opener's dialog has gone (another live modal is up), also calls the
+ * ask's `onClosed({ saved: false })`, so an opener that closed itself for the sheet comes back rather than staying shut.
+ */
+export type AskAddCards = (open: OpenAddCards) => boolean;
+
+const AddCardsContext = createContext<AskAddCards | null>(null);
 
 /** Opens the shell's Add cards sheet, or null where no shell host is mounted (signed out, a test). */
-export function useAddCards(): ((open: OpenAddCards) => void) | null {
+export function useAddCards(): AskAddCards | null {
   return useContext(AddCardsContext);
 }
 
@@ -82,22 +89,35 @@ export function AddCardsHost({ totalCards, children }: { totalCards: number; chi
   // The open sheet saved (Add more can follow a save, so a sheet that saved may close on an empty list).
   const [savedWhileOpen, setSavedWhileOpen] = useState(false);
   const count = useRef(0);
+  // An ask is on its way or its sheet is up. A ref, so two asks in one press see each other.
+  const held = useRef(false);
 
   const open = useCallback(
     (o: OpenAddCards) => {
-      // One sheet at a time: a second ask while one is up or on its way is the same press twice.
-      if (shown || !inScope) return;
-      setAsked((a) => a ?? { ...o, n: ++count.current });
+      // One sheet at a time: a second ask while one is up or on its way is the same press twice. It is dropped, and its
+      // opener hears so (`onClosed`), so it does not stay closed waiting for a sheet that never comes.
+      if (held.current || !inScope) {
+        o.onClosed?.({ saved: false });
+        return false;
+      }
+      held.current = true;
+      setAsked({ ...o, n: ++count.current });
+      return true;
     },
-    [shown, inScope],
+    [inScope],
   );
 
   useEffect(() => {
     if (!asked) return;
     return afterDialogsReleased(() => {
       setAsked(null);
-      // Another modal is still up (a page's own sheet): the sheet would stand over it as a second modal.
-      if (dialogIsUp(document, null)) return;
+      // Another modal is still up (a page's own sheet): the sheet would stand over it as a second modal. Dropped, and
+      // the opener comes back.
+      if (dialogIsUp(document, null)) {
+        held.current = false;
+        asked.onClosed?.({ saved: false });
+        return;
+      }
       setSavedWhileOpen(false);
       setShown(asked);
     });
@@ -129,9 +149,15 @@ export function AddCardsHost({ totalCards, children }: { totalCards: number; chi
     }
   }
 
+  // The navigation's reset above dropped any ask and sheet: the host takes asks again (a ref, so not during render).
+  useEffect(() => {
+    held.current = false;
+  }, [pathname]);
+
   const close = useCallback(
     (leaving?: boolean) => {
       if (!shown) return;
+      held.current = false;
       setShown(null);
       setClosed({ open: shown, saved: savedWhileOpen, leaving: leaving === true });
     },

@@ -5,15 +5,15 @@
 //
 // Add a card from anywhere (C3, C-D1; READINESS O4) gives it a + at its end, after the bookmark: a 44px pointer target
 // (34px from md) that opens Add cards with this card and stops the press there, so the rest of the row still opens card
-// details. An option's contents are presentational, so the + stays out of the tree and out of the tab order; the row's
-// own name says the add and its keys (⌘↵ / Ctrl ↵), which the field and the row take.
+// details. An option's contents are presentational, so the + stays out of the tree and out of the tab order; where a
+// keyboard is likely, the row's own name says the add and its keys (⌘↵ / Ctrl ↵), which the field and the row take.
 
 import type { KeyboardEvent, ReactNode } from "react";
 import type { CardSearchRow } from "../../lib/card-search/search";
 import { cardSearchCopy } from "../../lib/copy/card-search";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { FadingImg } from "../ui/hydrated-art";
-import { useAddShortcutLabel } from "./search-desktop";
+import { useAddShortcutLabel, useKeyboardLikely } from "./search-desktop";
 
 /**
  * Every run of `query` in `text`, in the accent (table: "every match position as drawn"). Case-insensitive and
@@ -78,7 +78,10 @@ export function SearchRow({
   rowRef?: (el: HTMLDivElement | null) => void;
 }) {
   const [deck, ...moreDecks] = row.decks;
-  const addKeys = useAddShortcutLabel();
+  const shortcut = useAddShortcutLabel();
+  // The keys are offered only where a keyboard is likely (a fine pointer, or md and up): on a phone a screen reader
+  // adds through the row's own press, card details' Add to collection.
+  const addKeys = useKeyboardLikely() && onAdd ? shortcut : null;
   const name = cardSearchCopy.row.aria(row.name, row.owned, row.decks, row.wishlist);
   return (
     <div
@@ -86,8 +89,8 @@ export function SearchRow({
       id={id}
       role="option"
       aria-selected={active}
-      aria-label={onAdd ? `${name}, ${cardSearchCopy.row.addAria(addKeys.spoken)}` : name}
-      aria-keyshortcuts={onAdd ? addKeys.keys : undefined}
+      aria-label={addKeys ? `${name}, ${cardSearchCopy.row.addAria(addKeys.spoken)}` : name}
+      aria-keyshortcuts={addKeys ? addKeys.keys : undefined}
       tabIndex={-1}
       onClick={(e) => onPick(e.currentTarget)}
       onKeyDown={onKey}

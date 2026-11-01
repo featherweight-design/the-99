@@ -28,6 +28,11 @@ vi.mock("./search-layer", () => ({
     return p.bodyEl
       ? createPortal(
           <div>
+            {p.onAddSeveral && !p.searching ? (
+              <button type="button" data-card-search-add-several="" onClick={p.onAddSeveral}>
+                Add several cards
+              </button>
+            ) : null}
             {from.map((r, i) => (
               <div key={r.oracleId} role="option" aria-selected={i === p.active} tabIndex={-1} data-card-search-row={r.oracleId}>
                 <span data-owned="">{r.owned}</span>
@@ -45,8 +50,18 @@ vi.mock("./search-layer", () => ({
   },
 }));
 const asks: OpenAddCards[] = [];
+// The host drops the next ask at once (a sheet already up), telling its opener as the real host does.
+let dropNext = false;
 vi.mock("../collection/add-cards-host", () => ({
-  useAddCards: () => (o: OpenAddCards) => asks.push(o),
+  useAddCards: () => (o: OpenAddCards) => {
+    asks.push(o);
+    if (dropNext) {
+      dropNext = false;
+      o.onClosed?.({ saved: false });
+      return false;
+    }
+    return true;
+  },
 }));
 
 const { CardSearchRoot, CardSearchIcon } = await import("./card-search");
@@ -76,6 +91,7 @@ async function searchGhalta() {
 
 beforeEach(() => {
   asks.length = 0;
+  dropNext = false;
   lastLayer = null;
   pathname = "/decks";
   actions.searchAllCardsAction.mockReset();
@@ -103,7 +119,9 @@ describe("a search row's + opens Add cards with that card", () => {
 
   it("comes back as it was: the query, the scroll, focus and the ring on the row (C6, C-D3)", async () => {
     await searchGhalta();
-    const body = ghaltaRow()!.closest("div")!.parentElement!;
+    // The element the frame placed for the results (`bodyRef`), which the layer portals into.
+    const body = lastLayer!.bodyEl!;
+    expect(body.contains(ghaltaRow())).toBe(true);
     body.scrollTop = 80;
     await act(async () => fireEvent.click(plus()!));
     await act(async () => asks[0].onOpened?.());
@@ -163,6 +181,42 @@ describe("a search row's + opens Add cards with that card", () => {
     await act(async () => fireEvent.keyDown(field(), { key: "Enter", ctrlKey: true }));
     expect(asks).toHaveLength(1);
     expect(asks[0].initialCard?.oracleId).toBe("o-gh");
+  });
+
+  it("comes back at once when the host drops the ask, not left closed under the veil", async () => {
+    await searchGhalta();
+    dropNext = true;
+    await act(async () => fireEvent.click(plus()!));
+    expect(asks).toHaveLength(1);
+    expect(document.querySelector("[data-card-search-veil]")).toBeNull();
+    expect(screen.getByRole("dialog", { name: "Search all cards" })).toBeTruthy();
+    expect(field().value).toBe("ghalta, p");
+    expect(document.activeElement).toBe(ghaltaRow());
+    expect(actions.searchAllCardsAction).toHaveBeenCalledTimes(1);
+  });
+
+  it("adds once for a held ⌘↵: a repeat does not ask again", async () => {
+    await searchGhalta();
+    fireEvent.keyDown(field(), { key: "ArrowDown" });
+    await act(async () => fireEvent.keyDown(field(), { key: "Enter", metaKey: true, repeat: true }));
+    expect(asks).toHaveLength(0);
+    await act(async () => fireEvent.keyDown(field(), { key: "Enter", metaKey: true }));
+    expect(asks).toHaveLength(1);
+  });
+
+  it("Add several drops a count lit by an earlier +, so no stale --success outlives it", async () => {
+    await searchGhalta();
+    await act(async () => fireEvent.click(plus()!));
+    await act(async () => asks[0].onOpened?.());
+    await act(async () => asks[0].onClosed?.({ saved: true }));
+    await waitFor(() => expect(lastLayer!.addedTo).toBe("o-gh"));
+    await act(async () => fireEvent.change(field(), { target: { value: "" } }));
+    const several = document.querySelector<HTMLButtonElement>("[data-card-search-add-several]")!;
+    await act(async () => fireEvent.click(several));
+    expect(lastLayer!.addedTo).toBeNull();
+    await act(async () => asks[1].onClosed?.({ saved: false }));
+    expect(lastLayer!.addedTo).toBeNull();
+    expect(lastLayer!.returned).toBeNull();
   });
 
   it("is not offered on the public card page (READINESS E6)", async () => {

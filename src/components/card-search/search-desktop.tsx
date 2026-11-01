@@ -33,6 +33,19 @@ export function useSearchShortcutLabel(): { label: string; keys: string } {
     : { label: cardSearchCopy.shortcutOther, keys: "Control+K" };
 }
 
+// A keyboard is likely: a fine pointer, or the desktop's width. A phone's screen reader cannot press ⌘↵; there the
+// row's own press is the add path (card details' Add to collection, PR 1), so the row's name does not offer the keys.
+const KEYBOARD_QUERY = "(pointer: fine), (min-width: 768px)";
+function subscribeKeyboard(onChange: () => void) {
+  const mq = window.matchMedia?.(KEYBOARD_QUERY);
+  mq?.addEventListener("change", onChange);
+  return () => mq?.removeEventListener("change", onChange);
+}
+/** Whether a keyboard is likely here (a fine pointer or md and up). The server, and the first render, say no. */
+export function useKeyboardLikely(): boolean {
+  return useSyncExternalStore(subscribeKeyboard, () => window.matchMedia?.(KEYBOARD_QUERY).matches ?? false, () => false);
+}
+
 /**
  * The search's keyboard add (⌘↵ / Ctrl ↵, READINESS O4) for this platform: as the foot line draws it, as a row's name
  * says it, and as `aria-keyshortcuts` spells it.

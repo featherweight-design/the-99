@@ -317,7 +317,8 @@ function Rows({
           onKey={(e) => {
             if (onAdd && isAddShortcut(e)) {
               e.preventDefault();
-              onAdd(from, i);
+              // A held ⌘↵ adds once.
+              if (!e.repeat) onAdd(from, i);
             } else if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
               onPick(from, i);
