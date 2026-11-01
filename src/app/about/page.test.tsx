@@ -230,7 +230,9 @@ describe("/about, the visit (R2 gap 10)", () => {
       "added-copy", "edit-copies", "remove-card", "collection-history", "shopping-got-it",
     ];
     const friends = ["friend-spares", "friend-spares@SPARE_REQUESTS_ENABLED", "friends", "friend-decks", "invites", "rule-zero", "opponents"];
-    m.seen = { version: 16, ids: ["locked-cards", "how-it-works", "card-search", "getting-help", "combos-one-away", "precons", "upcoming-precons", "decks-stats", "deck-tokens", "whats-new", "commander-lane", "wishlist", "notes", "deck-stats", "deck-printings", "change-commander", "all-decks-cart", ...collectionEdit, ...friends] };
+    // The swap tools' entries always draw (SWAP_TOOLS_ENABLED retired), so a current reader has met them too.
+    const swapTools = ["stand-ins", "fits-your-decks", "find-a-deck-read"];
+    m.seen = { version: 16, ids: [...swapTools, "locked-cards", "how-it-works", "card-search", "getting-help", "combos-one-away", "precons", "upcoming-precons", "decks-stats", "deck-tokens", "whats-new", "commander-lane", "wishlist", "notes", "deck-stats", "deck-printings", "change-commander", "all-decks-cart", ...collectionEdit, ...friends] };
     const props = find(await draw({ tab: "reference" }), RecordVisit)!.props as { behind: boolean; answered: string[] };
     expect(props.behind).toBe(false);
     expect(props.answered).toContain("decks/your-deck/lock");

@@ -89,8 +89,11 @@ describe("welcomeSheetFor", () => {
       .not.toContain("suggested");
   });
 
-  it("is null with every row's switch off, so no Where they work is drawn", () => {
-    expect(welcomeSheetFor({} as unknown as NodeJS.ProcessEnv, { cards: 0, decks: [] })).toBeNull();
+  // Find a deck's read has no live switch (swap tools retired), so with every live switch off it is the one row left.
+  it("draws Find a deck's read alone with every live switch off", () => {
+    const s = welcomeSheetFor({} as unknown as NodeJS.ProcessEnv, { cards: 0, decks: [] })!;
+    expect(s.shape).toBe("locked");
+    expect(s.rows.map((r) => r.id)).toEqual(["find-a-deck-read"]);
   });
 });
 
