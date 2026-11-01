@@ -1,0 +1,89 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-11-01T16:50:13Z"
+ },
+ "title": "The 99 \u00b7 Small items 9",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1612,
+   "h": 1285,
+   "title": "Small items 9 \u00b7 the calls"
+  },
+  "Games-NoMatch.dc.html": {
+   "x": 1692,
+   "y": 0,
+   "w": 2000,
+   "h": 2303,
+   "title": "1 \u00b7 Game history, no games match"
+  },
+  "Report.dc.html": {
+   "x": 3772,
+   "y": 0,
+   "w": 2000,
+   "h": 3845,
+   "title": "2 \u00b7 Report a problem, shell and 90 days"
+  },
+  "CSV-Failed.dc.html": {
+   "x": 5852,
+   "y": 0,
+   "w": 1440,
+   "h": 3672,
+   "title": "3 \u00b7 Flyer CSV download fails"
+  },
+  "Flags-Kill.dc.html": {
+   "x": 0,
+   "y": 3965,
+   "w": 1440,
+   "h": 8412,
+   "title": "4 \u00b7 Feature flags, kill a flag"
+  },
+  "Rule0.dc.html": {
+   "x": 1520,
+   "y": 3965,
+   "w": 2000,
+   "h": 7172,
+   "title": "5 \u00b7 Rule 0 defaults"
+  },
+  "Add-Card.dc.html": {
+   "x": 3600,
+   "y": 3965,
+   "w": 2000,
+   "h": 8634,
+   "title": "6 \u00b7 Add a card, ring, Remove, reopen, toasts"
+  },
+  "Groups-Delete.dc.html": {
+   "x": 5680,
+   "y": 3965,
+   "w": 1440,
+   "h": 8222,
+   "title": "7 \u00b7 Admin, delete a group"
+  },
+  "Errata.dc.html": {
+   "x": 7200,
+   "y": 3965,
+   "w": 1880,
+   "h": 2670,
+   "title": "Errata \u00b7 confirm shared"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Games-NoMatch.dc.html",
+  "Report.dc.html",
+  "CSV-Failed.dc.html",
+  "Flags-Kill.dc.html",
+  "Rule0.dc.html",
+  "Add-Card.dc.html",
+  "Groups-Delete.dc.html",
+  "Errata.dc.html"
+ ],
+ "notes": {}
+}

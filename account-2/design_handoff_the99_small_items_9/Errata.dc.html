@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Small items 9 · Errata</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet"><style>
+.er9{display:flex;flex-direction:column;gap:18px;max-width:1880px}
+.er9 .it{display:grid;grid-template-columns:300px 1fr 1fr;gap:28px;border:1px solid var(--border-strong);border-radius:12px;background:var(--surface);padding:20px 24px;align-items:start}
+.er9 .it h4{margin:0 0 6px;font:600 15px 'IBM Plex Sans';color:var(--fg)}
+.er9 .it .v{display:inline-block;margin-top:10px;font:600 10px 'IBM Plex Mono';letter-spacing:.1em;text-transform:uppercase;color:#14110E;background:var(--success);border-radius:4px;padding:3px 7px}
+.er9 .it p{margin:0;font-size:13px;line-height:1.55;color:var(--fg-body)}
+.er9 .it p+p{margin-top:6px}
+.er9 .sp{display:flex;flex-direction:column;gap:10px}
+.er9 .sl{font:500 10px 'IBM Plex Mono';letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint)}
+.er9 .sl.b{color:var(--accent-text)}
+.er9 .st{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:12px;align-items:flex-start;position:relative;min-height:90px}
+.er9 .ms{font:10.5px 'IBM Plex Mono';color:var(--fg-muted)}
+/* segmented */
+.er9 .well{display:inline-flex;gap:3px;border:1px solid var(--border-strong);border-radius:9px;background:var(--surface-sunken);padding:2px}
+.er9 .well span{display:inline-flex;align-items:center;padding:0 13px;border-radius:7px;color:var(--fg-muted);height:40px}
+.er9 .well span.on{background:var(--elevated);color:var(--fg)}
+.er9 .well.bd span{font-size:14px;padding:0 14px}
+.er9 .well.bt span{font-size:13px}
+.er9 .hair{width:1px;height:28px;background:var(--border-strong);display:inline-block;margin:0 10px;vertical-align:middle}
+/* toast */
+.er9 .tst{display:flex;align-items:center;gap:12px;background:var(--surface-raised);border:1px solid var(--border-strong);border-radius:10px;padding:0 6px 0 14px;box-shadow:0 10px 26px rgba(0,0,0,.45);font-size:13.5px;color:var(--fg)}
+.er9 .tst .ok{color:var(--success)}
+.er9 .tst a{margin-left:auto;font:600 13.5px 'IBM Plex Sans';color:var(--accent-text);padding:0 10px;min-height:44px;display:flex;align-items:center}
+.er9 .tst a.u{text-decoration:underline;text-underline-offset:2px}
+.er9 .tst .x{color:var(--fg-faint);padding:0 8px}
+.er9 .slot{width:100%;height:120px;border:1px dashed var(--border-strong);border-radius:8px;position:relative}
+.er9 .slot .tst{position:absolute;bottom:12px}
+/* sheet + select */
+.er9 .sel{height:44px;display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border-strong);border-radius:9px;padding:0 12px;font-size:16px;color:var(--fg)}
+.er9 .sel.b{font-size:14px;height:40px}
+.er9 .lnk{font-size:13.5px;color:var(--accent-text);text-decoration:underline;display:inline-flex;align-items:center;border:1px dashed var(--border);border-radius:4px}
+/* modal */
+.er9 .md{width:100%;max-width:420px;border:1px solid var(--border-strong);background:var(--surface);box-shadow:0 18px 40px rgba(0,0,0,.5)}
+.er9 .md .hd{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);padding:0 6px 0 18px}
+.er9 .md .hd b{color:var(--fg)}
+.er9 .md .hd i{font-style:normal;color:var(--fg-muted);display:flex;align-items:center;justify-content:center}
+.er9 .md .bd{padding:16px 18px;font-size:13px;color:var(--fg-body);display:flex;flex-direction:column;gap:10px;align-items:center}
+.er9 .crown{font-size:20px;color:var(--accent-text)}
+.er9 .dia3{display:flex;gap:6px}.er9 .dia3 i{width:7px;height:7px;transform:rotate(45deg);background:var(--accent);opacity:.5}.er9 .dia3 i:nth-child(2){opacity:1}
+.er9 .key{display:grid;grid-template-columns:1fr 1fr;gap:6px 18px;font-size:11.5px;color:var(--fg-muted);border:1px solid var(--border);border-radius:8px;padding:10px 12px;width:330px}
+.er9 .key span{display:flex;align-items:center;gap:7px}
+.er9 .key i{display:inline-block;border:1.5px solid var(--fg-muted);transform:rotate(45deg);flex:none}
+</style><style>
+body{margin:0;background:#0D0B09}
+.board{--bg:#14110E;--surface:#1E1A15;--surface-raised:#211D18;--surface-rail:#1A1611;--surface-sunken:#18140F;--elevated:#29241F;--border:#2B241B;--border-strong:#3A3229;--fg:#EDE6D8;--fg-body:#C0B8A6;--fg-muted:#A59C89;--fg-faint:#948B78;--accent:#CF8745;--accent-text:#CF8745;--success:#6FA368;--warning:#DEAA29;--danger:#C6533F;
+ box-sizing:border-box;padding:48px 56px 64px;background:#0D0B09;font-family:'IBM Plex Sans',sans-serif;color:var(--fg);display:flex;flex-direction:column;gap:34px}
+.board *{box-sizing:border-box}
+.board .bh{display:flex;flex-direction:column;gap:9px;max-width:1500px}
+.board .kick{display:flex;align-items:center;gap:10px;font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-faint)}
+.board .kick .tag{background:var(--accent);color:#14110E;border-radius:5px;padding:4px 8px;font-weight:600}
+.board .bh h2{margin:0;font:700 30px 'Cinzel',serif;color:var(--fg)}
+.board .bh p{margin:0;font-size:14px;line-height:1.6;color:var(--fg-body);max-width:1240px;text-wrap:pretty}
+.board .bh p b{color:var(--fg)}
+.board code{font:12px 'IBM Plex Mono',monospace;color:var(--fg-muted)}
+.board .frames9{display:flex;gap:44px;flex-wrap:wrap;row-gap:56px;align-items:flex-start}
+.board .fr9{display:flex;flex-direction:column;gap:10px;flex:none}
+.board .lab9{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint)}
+.board .lab9 b{color:var(--accent-text);font-weight:600}
+.board .lab9 .now{color:var(--fg-muted);border:1px solid var(--border-strong);border-radius:4px;padding:1px 5px;margin-right:6px}
+.board .lab9 .rec{color:#14110E;background:var(--accent);border-radius:4px;padding:1px 5px;margin-right:6px}
+.board .cap9{margin:0;font-size:12.5px;line-height:1.55;color:var(--fg-body);max-width:420px;text-wrap:pretty}
+.board .cap9 b{color:var(--fg)}
+.board .sec9{font:600 11px 'IBM Plex Mono',monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-text);border-top:1px solid var(--border);padding-top:18px;max-width:1880px}
+.board .rule8{border:1px solid var(--border-strong);border-radius:12px;background:var(--surface);padding:20px 24px;max-width:1240px}
+.board .rule8 h4{margin:0 0 10px;font:600 15px 'IBM Plex Sans';color:var(--fg)}
+.board .rule8 ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:13.5px;line-height:1.55;color:var(--fg-body)}
+.board .rule8 b{color:var(--fg)}
+.board .draft8{font:600 9px 'IBM Plex Mono';letter-spacing:.06em;color:#0D0B09;background:#8FA6BE;border-radius:3px;padding:1px 5px;margin-left:6px;vertical-align:2px}
+.board .new9{outline:1.5px dashed var(--accent);outline-offset:3px;border-radius:6px}
+</style></helmet>
+<div class="board" style="width:1880px"><div class="bh"><div class="kick"><span class="tag">R1</span>Errata (B) · shared components shipped in place of the board</div><h2>All ten confirmed as built</h2><p>Where engineering used the app’s shared component or default instead of a board’s one-off, the shared piece wins: it is what every other page draws, and Hugh’s standing rule is to match the shipped UI. Each is drawn as the board had it and as built (from the shipped classes). The handoff PR adds these errata to the three handoffs; no build work follows.</p></div><div class="er9"><div class="sec9">B1 · Game history (<code>design_handoff_the99_game_history</code>)</div><div class="it"><div><h4>Decks · Games · Stats switch</h4><p>Built as the shared compact <code>SegmentedSwitch</code> (the /decks switch’s own): 195×46 with 13px text, plus the view row’s hairline between it and the deck select.</p><p>Board: 207×46, 14px, no hairline. The shared one matches Cart’s and Matchups’ switches.</p><span class="v">Confirmed as built</span></div><div class="sp"><span class="sl">Board</span><div class="st"><div><span class="well bd"><span class="">Decks</span><span class="on">Games</span><span class="">Stats</span></span></div><span class="ms">207 × 46 · 14px</span></div></div><div class="sp"><span class="sl b">As built · the handoff follows</span><div class="st"><div><span class="well bt"><span class="">Decks</span><span class="on">Games</span><span class="">Stats</span></span><span class=hair></span></div><span class="ms">195 × 46 · 13px · hairline before the select</span></div></div></div><div class="it"><div><h4>The failed-read toast</h4><p>Built as the shared <code>ToastFrame</code>, centred, 358×54. Board: pinned right, 356×58.</p><p>Every other desktop toast outside a deck page sits centred; the deck stack is the one exception (item 6d).</p><span class="v">Confirmed as built</span></div><div class="sp"><span class="sl">Board</span><div class="st"><div class="slot"><div class="tst" style="right:12px;width:356px;min-height:58px"><span>We couldn’t load your games.</span><a class="">Try again</a></div></div></div></div><div class="sp"><span class="sl b">As built · the handoff follows</span><div class="st"><div class="slot"><div class="tst" style="left:50%;transform:translateX(-50%);width:358px;min-height:54px"><span>We couldn’t load your games.</span><a class="u">Try again</a></div></div></div></div></div><div class="it"><div><h4>Filters and the deck select</h4><p>Filter games uses the shared <code>Sheet</code> (grip, head, foot) the board traced. The deck select is 16px below <code>md</code> so iOS doesn’t zoom on focus, as every input in the app.</p><span class="v">Confirmed as built</span></div><div class="sp"><span class="sl">Board</span><div class="st"><span class="sel b">HD - Sai ▾</span><span class="ms">14px at 390</span></div></div><div class="sp"><span class="sl b">As built · the handoff follows</span><div class="st"><span class="sel">HD - Sai ▾</span><span class="ms">16px below md, 14px from md with a fine pointer</span></div></div></div><div class="sec9">B2 · Add a card from anywhere (<code>design_handoff_the99_add_card_anywhere</code>)</div><div class="it"><div><h4>The save toast</h4><p>Built as <code>ToastFrame</code> on <code>--surface-raised</code>, centred, Undo underlined (the shared action link). Board: bottom right on desktop, 12px sides on the phone, a success ✓, Undo plain.</p><p>The ✓ stays (the shared success tone); Undo underlined; centred. On a deck page it joins the deck stack instead (item 6d).</p><span class="v">Confirmed as built</span></div><div class="sp"><span class="sl">Board</span><div class="st"><div class="slot"><div class="tst" style="right:12px;width:356px;min-height:58px"><span class=ok>✓</span><span>Saved. Ghalta, Primal Hunger ×1.</span><a class="">Undo</a></div></div></div></div><div class="sp"><span class="sl b">As built · the handoff follows</span><div class="st"><div class="slot"><div class="tst" style="left:50%;transform:translateX(-50%);width:358px;min-height:54px"><span class=ok>✓</span><span>Saved. Ghalta, Primal Hunger ×1.</span><a class="u">Undo</a></div></div></div></div></div><div class="it"><div><h4>The receipt’s link (Add to collection / Edit copies)</h4><p>Built as the shared text link: regular weight, underline offset 2, 44px tall on the phone (the touch rule), padding 18/20. Board: 500, offset 3, 32px, 14/16.</p><span class="v">Confirmed as built</span></div><div class="sp"><span class="sl">Board</span><div class="st"><span class="lnk" style="font-weight:500;text-underline-offset:3px;height:32px;padding:0 16px">Add to collection</span><span class="ms">500 · offset 3 · 32 tall</span></div></div><div class="sp"><span class="sl b">As built · the handoff follows</span><div class="st"><span class="lnk" style="font-weight:400;text-underline-offset:2px;height:44px;padding:0 20px">Add to collection</span><span class="ms">400 · offset 2 · 44 tall on the phone</span></div></div></div><div class="sec9">B3 · Rule 0 revisions (<code>design_handoff_the99_rule_zero_revisions</code>)</div><div class="it"><div><h4>Close confirm chrome</h4><p>Built on the app’s shared <code>ModalChrome</code> (desktop) and <code>Sheet</code> (phone) chrome, as the README asked; the board drew its own copies of them.</p><span class="v">Confirmed as built</span></div><div class="sp"><span class="sl">Board</span><div class="st"><span class="ms">hand-drawn sheet and 480 modal</span></div></div><div class="sp"><span class="sl b">As built · the handoff follows</span><div class="st"><span class="ms">ModalChrome 480 · Sheet fit · shared head, 44px ✕</span></div></div></div><div class="it"><div><h4>One toast column</h4><p>The seat toast shares the desktop bottom-right slot with the cart receipt, so one column holds both, 10px apart, the receipt (Undo) on the floor.</p><span class="v">Confirmed as built</span></div><div class="sp"><span class="sl">Board</span><div class="st"><div class="slot"><div class="tst" style="right:12px;width:380px;min-height:58px"><span>Colin seated you at Thursday night’s table.</span><a class="">Open</a><span class=x>✕</span></div></div></div></div><div class="sp"><span class="sl b">As built · the handoff follows</span><div class="st"><div class="slot" style="height:150px"><div class="tst" style="position:absolute;right:12px;bottom:76px;width:380px;min-height:54px"><span>Colin seated you at Thursday night’s table.</span><a class="u">Open</a><span class="x">✕</span></div><div class="tst" style="position:absolute;right:12px;bottom:12px;width:380px;min-height:54px"><span class="ok">✓</span><span>Added to the cart.</span><a class="u">Undo</a></div></div></div></div></div><div class="it"><div><h4>The read’s key marks</h4><p><code>MarkKey</code>’s marks are 16px (board 12), so the key is 60px tall, not 51. The shared key is the same in every view.</p><span class="v">Confirmed as built</span></div><div class="sp"><span class="sl">Board</span><div class="st"><div class="key" style="min-height:51px"><span><i style="width:8px;height:8px"></i>Game changers</span><span><i style="width:8px;height:8px"></i>Mass land denial</span><span><i style="width:8px;height:8px"></i>Extra turns</span><span><i style="width:8px;height:8px"></i>Two-card infinites</span><span><i style="width:8px;height:8px"></i>Tutors</span></div><span class="ms">12px marks · 51 tall</span></div></div><div class="sp"><span class="sl b">As built · the handoff follows</span><div class="st"><div class="key" style="min-height:60px"><span><i style="width:11px;height:11px"></i>Game changers</span><span><i style="width:11px;height:11px"></i>Mass land denial</span><span><i style="width:11px;height:11px"></i>Extra turns</span><span><i style="width:11px;height:11px"></i>Two-card infinites</span><span><i style="width:11px;height:11px"></i>Tutors</span></div><span class="ms">16px marks · 60 tall</span></div></div></div><div class="it"><div><h4>Change deck modal</h4><p>Shared <code>ModalChrome</code>: Cinzel title, 44px ✕, 49px head, radius 14, and <code>SheetLoading</code>’s three diamonds. Board: Plex Sans 16, 36px ✕, 46px head, radius 10, a crown.</p><span class="v">Confirmed as built</span></div><div class="sp"><span class="sl">Board</span><div class="st"><div class="md" style="border-radius:10px"><div class="hd" style="height:46px"><b style="font:600 16px 'IBM Plex Sans'">Your deck tonight</b><i style="width:36px;height:36px">✕</i></div><div class="bd"><span class="crown">♛</span><span>Finding your decks</span></div></div></div></div><div class="sp"><span class="sl b">As built · the handoff follows</span><div class="st"><div class="md" style="border-radius:14px"><div class="hd" style="height:49px"><b style="font:400 18px 'Cinzel',serif">Your deck tonight</b><i style="width:44px;height:44px">✕</i></div><div class="bd"><span class="dia3"><i></i><i></i><i></i></span><span>Finding your decks</span></div></div></div></div></div></div><div class="rule8"><h4>The call</h4><ol><li><b>Confirm all as built.</b> The shared component is the design; the boards drew one-offs before the shared piece was picked. No code change.</li><li>The handoff PR records each in the three handoffs’ READMEs as an erratum pointing here, so the next round draws from the built sizes.</li><li>One rule going forward: a board that uses a toast, sheet, modal, switch, key or text link draws the shared one at its shipped size.</li></ol></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1880,"height":2670}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
