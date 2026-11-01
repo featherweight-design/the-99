@@ -38,6 +38,7 @@ import { useVisualViewportFrame, VV_FRAME } from "../ui/visual-viewport";
 import type { OpenCard, SearchLayerProps } from "./search-layer";
 import { COVERED_WITH_MAIN } from "../shell/covered-layer";
 import { useAddCards } from "../collection/add-cards-host";
+import { useCollectionEditScope } from "../cards/collection-edit-scope";
 
 /** A read starts this long after the last key, and only from this many characters (S3). */
 export const SEARCH_DEBOUNCE_MS = 150;
@@ -301,6 +302,8 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
   // Add several cards (add a card from anywhere C2): the search closes under the shell's Add cards sheet and comes back
   // as it was once the sheet closes, as it does for a card (C6, C-D3). The frame stays veiled until the sheet is drawn,
   // so the page is never shown between; focus comes back to the row that opened it.
+  // Not on the public card page, signed in or not (READINESS E6): the row is not drawn there.
+  const addInScope = useCollectionEditScope();
   const addCards = useAddCards();
   const addReturn = useRef(false);
   const addSeveral = useCallback(() => {
@@ -465,7 +468,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
     recentsFailed,
     open,
     openCardRef,
-    onAddSeveral: addCards ? addSeveral : null,
+    onAddSeveral: addCards && addInScope ? addSeveral : null,
   };
 
   return (

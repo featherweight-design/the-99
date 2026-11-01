@@ -10,6 +10,14 @@
 //
 // A save is settled here, once the sheet has closed (`settleCollectionWrite`), as /collection's head does, so every
 // reader behind it (a deck row's dot, /collection's grid) is fresh; the head re-reads its own totals on the event.
+//
+// Back on the sheet: the sheet's own `useBackDismiss` takes its entry, so by the time the close reaches the opener no
+// self-pop is pending (`afterDialogsReleased` runs at once) and the search pushes one fresh entry of its own: no dead
+// entry is left behind (a dirty list asks first, as shipped).
+//
+// One sheet at a time, page sheets included: /collection's own Add cards or Edit copies sheet holds the rest of the page
+// inert (`useInertPage`), the shell's search with it, so nothing in the shell can ask while one is up. The host still
+// refuses to open over any live modal it finds once the opener's dialog has gone (`dialogIsUp`).
 
 import { usePathname } from "next/navigation";
 import {
@@ -25,6 +33,8 @@ import {
 } from "react";
 import { settleCollectionWrite } from "../../app/collection/edit-actions";
 import { afterDialogsReleased } from "../../lib/a11y/dialog";
+import { dialogIsUp } from "../../lib/card-search/shortcut";
+import { useCollectionEditScope } from "../cards/collection-edit-scope";
 import type { InitialAddCard } from "./add-cards-sheet";
 import { announceCollectionSaved } from "./edit-toast";
 
@@ -55,6 +65,15 @@ export function useAddCards(): ((open: OpenAddCards) => void) | null {
 type Shown = OpenAddCards & { n: number };
 
 export function AddCardsHost({ totalCards, children }: { totalCards: number; children: ReactNode }) {
+  // Not on the public card page, signed in or not (READINESS E6): the same scope that keeps card details' link off.
+  const inScope = useCollectionEditScope();
+  // The receipt's `4,492 → 4,493`. The shell's figure is server-rendered, and it moves after a save only because the
+  // close's `settleCollectionWrite` revalidates inside the action, which re-renders the current route, root layout and
+  // shell included, into the action's reply (`invalidateCollectionReaders` calls `revalidatePath`; Next's
+  // `02-guides/server-actions.md`, "re-renders the current route" in the same response). A settle that fails, or a sheet opened again before the reply lands, would read the old figure, so the
+  // copies saved since the shell last drew it are carried here, and dropped once the shell's figure moves.
+  const [carried, setCarried] = useState({ base: totalCards, added: 0 });
+  if (carried.base !== totalCards) setCarried({ base: totalCards, added: 0 });
   // Asked for, waiting on the opener's dialog to leave the history.
   const [asked, setAsked] = useState<Shown | null>(null);
   const [shown, setShown] = useState<Shown | null>(null);
@@ -67,18 +86,20 @@ export function AddCardsHost({ totalCards, children }: { totalCards: number; chi
   const open = useCallback(
     (o: OpenAddCards) => {
       // One sheet at a time: a second ask while one is up or on its way is the same press twice.
-      if (shown) return;
+      if (shown || !inScope) return;
       setAsked((a) => a ?? { ...o, n: ++count.current });
     },
-    [shown],
+    [shown, inScope],
   );
 
   useEffect(() => {
     if (!asked) return;
     return afterDialogsReleased(() => {
+      setAsked(null);
+      // Another modal is still up (a page's own sheet): the sheet would stand over it as a second modal.
+      if (dialogIsUp(document, null)) return;
       setSavedWhileOpen(false);
       setShown(asked);
-      setAsked(null);
     });
   }, [asked]);
 
@@ -125,13 +146,16 @@ export function AddCardsHost({ totalCards, children }: { totalCards: number; chi
           <AddCardsSheet
             key={shown.n}
             mode="add"
-            totalCards={totalCards}
+            totalCards={carried.base + carried.added}
             // The shipped sheet as /collection opens it: Scan beside its search, Precons I own in its empty state.
             scan
             preconPick
             initialCard={shown.initialCard}
             initialQuery={shown.initialQuery}
-            onSaved={() => setSavedWhileOpen(true)}
+            onSaved={(copies) => {
+              setSavedWhileOpen(true);
+              setCarried((c) => ({ ...c, added: c.added + copies }));
+            }}
             onClose={close}
           />
           <Opened key={`opened-${shown.n}`} onOpened={shown.onOpened} />

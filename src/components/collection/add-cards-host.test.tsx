@@ -16,7 +16,7 @@ vi.mock("./add-cards-sheet", () => ({
     sheetProps(p);
     return (
       <div role="dialog" aria-label="Add cards">
-        <button type="button" onClick={() => p.onSaved?.(1)}>save</button>
+        <button type="button" onClick={() => p.onSaved?.(2)}>save</button>
         <button type="button" onClick={() => p.onClose()}>done</button>
         <button type="button" onClick={() => p.onClose(true)}>history</button>
       </div>
@@ -25,6 +25,7 @@ vi.mock("./add-cards-sheet", () => ({
 }));
 
 const { AddCardsHost, useAddCards } = await import("./add-cards-host");
+const { CollectionEditScope } = await import("../cards/collection-edit-scope");
 type Open = NonNullable<ReturnType<typeof useAddCards>>;
 
 const grabbed: { open: Open | null } = { open: null };
@@ -37,13 +38,16 @@ function Grab() {
 }
 // What the host hands its children, as of the last commit.
 const open = (o: Parameters<Open>[0]) => grabbed.open!(o);
-function mount() {
-  const view = render(
-    <AddCardsHost totalCards={4492}>
+// The shell mounts the host inside the collection edit scope (shell.tsx).
+const tree = (total = 4492) => (
+  <CollectionEditScope>
+    <AddCardsHost totalCards={total}>
       <Grab />
-    </AddCardsHost>,
-  );
-  return view;
+    </AddCardsHost>
+  </CollectionEditScope>
+);
+function mount() {
+  return render(tree());
 }
 const sheet = () => screen.queryByRole("dialog", { name: "Add cards" });
 const press = (name: string) => act(async () => screen.getByRole("button", { name }).click());
@@ -121,11 +125,7 @@ describe("AddCardsHost", () => {
     await waitFor(() => expect(sheet()).toBeTruthy());
     await press("save");
     pathname = "/collection/replace";
-    view.rerender(
-      <AddCardsHost totalCards={4492}>
-        <Grab />
-      </AddCardsHost>,
-    );
+    view.rerender(tree());
     expect(sheet()).toBeNull();
     await waitFor(() => expect(settle).toHaveBeenCalledTimes(1));
     await act(async () => new Promise((r) => setTimeout(r, 20)));
@@ -141,5 +141,49 @@ describe("AddCardsHost", () => {
     await waitFor(() => expect(sheet()).toBeTruthy());
     expect(screen.getAllByRole("dialog", { name: "Add cards" })).toHaveLength(1);
     expect(sheetProps).toHaveBeenLastCalledWith(expect.objectContaining({ initialQuery: "a" }));
+  });
+
+  it("opens nothing on the public card page, signed in or not (READINESS E6)", async () => {
+    pathname = "/card/sol-ring";
+    mount();
+    const onOpened = vi.fn();
+    act(() => open({ onOpened }));
+    await act(async () => new Promise((r) => setTimeout(r, 20)));
+    expect(sheet()).toBeNull();
+    expect(onOpened).not.toHaveBeenCalled();
+  });
+
+  it("opens nothing over another live modal, such as a page's own sheet", async () => {
+    mount();
+    const page = document.createElement("div");
+    page.setAttribute("role", "dialog");
+    page.setAttribute("aria-modal", "true");
+    document.body.appendChild(page);
+    act(() => open({}));
+    await act(async () => new Promise((r) => setTimeout(r, 20)));
+    expect(sheet()).toBeNull();
+    page.remove();
+    // The ask was dropped, not held: a later one opens.
+    act(() => open({}));
+    await waitFor(() => expect(sheet()).toBeTruthy());
+  });
+
+  it("carries the copies a save added into the next open until the shell's figure moves", async () => {
+    const view = mount();
+    act(() => open({}));
+    await waitFor(() => expect(sheet()).toBeTruthy());
+    await press("save");
+    await press("done");
+    await waitFor(() => expect(sheet()).toBeNull());
+    // The shell has not redrawn (a settle that failed, or a reply still on its way): the next sheet still counts them.
+    await act(async () => new Promise((r) => setTimeout(r, 20)));
+    act(() => open({}));
+    await waitFor(() => expect(sheet()).toBeTruthy());
+    expect(sheetProps).toHaveBeenLastCalledWith(expect.objectContaining({ totalCards: 4494 }));
+    // Once the shell draws the settled figure, that is the one used, with nothing added twice.
+    view.rerender(tree(4494));
+    expect(sheetProps).toHaveBeenLastCalledWith(expect.objectContaining({ totalCards: 4494 }));
+    view.rerender(tree(4500));
+    expect(sheetProps).toHaveBeenLastCalledWith(expect.objectContaining({ totalCards: 4500 }));
   });
 });

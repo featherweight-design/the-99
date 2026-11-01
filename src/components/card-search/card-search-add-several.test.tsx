@@ -11,7 +11,8 @@ vi.mock("../../app/card-search-actions", () => ({
   searchAllCardsAction: vi.fn(async () => []),
   cardSignalsAction: vi.fn(async () => ({})),
 }));
-vi.mock("next/navigation", () => ({ usePathname: () => "/decks", useRouter: () => ({ refresh: () => {} }) }));
+let pathname = "/decks";
+vi.mock("next/navigation", () => ({ usePathname: () => pathname, useRouter: () => ({ refresh: () => {} }) }));
 // The results' half stands in with just the row under test, portalled into the frame's body as the real one is.
 vi.mock("./search-layer", () => ({
   SearchLayer: (p: SearchLayerProps) =>
@@ -31,12 +32,16 @@ vi.mock("../collection/add-cards-host", () => ({
 }));
 
 const { CardSearchRoot, CardSearchIcon } = await import("./card-search");
+const { CollectionEditScope } = await import("../cards/collection-edit-scope");
 
+// As the shell mounts it: inside the collection edit scope (shell.tsx).
 function mount() {
   render(
-    <CardSearchRoot userId="u1">
-      <CardSearchIcon />
-    </CardSearchRoot>,
+    <CollectionEditScope>
+      <CardSearchRoot userId="u1">
+        <CardSearchIcon />
+      </CardSearchRoot>
+    </CollectionEditScope>,
   );
   return screen.getByRole("button", { name: "Search all cards" });
 }
@@ -51,6 +56,7 @@ async function openWithLayer(icon: HTMLElement) {
 beforeEach(() => {
   asks.length = 0;
   hosted = true;
+  pathname = "/decks";
 });
 afterEach(() => {
   cleanup();
@@ -72,16 +78,30 @@ describe("Add several cards from the search", () => {
     expect(document.querySelector("[data-card-search-veil]")).toBeNull();
   });
 
-  it("comes back as it was once the sheet closes: the query kept and focus on the row", async () => {
+  it("comes back as it was once the sheet closes: focus on the row, the scroll kept", async () => {
     const icon = mount();
     await openWithLayer(icon);
-    await act(async () => fireEvent.change(field(), { target: { value: "x" } }));
+    expect(field().value).toBe("");
+    const body = way()!.parentElement!;
+    body.scrollTop = 120;
     await act(async () => fireEvent.click(way()!));
     await act(async () => asks[0].onOpened?.());
+    expect(screen.queryByRole("dialog", { name: "Search all cards" })).toBeNull();
+    // Whatever moved the body while it was hidden, the return puts it back where the press left it.
+    body.scrollTop = 0;
     await act(async () => asks[0].onClosed?.({ saved: true }));
     expect(screen.getByRole("dialog", { name: "Search all cards" })).toBeTruthy();
-    expect(field().value).toBe("x");
+    expect(field().value).toBe("");
     expect(document.activeElement).toBe(way());
+    expect(body.scrollTop).toBe(120);
+  });
+
+  it("is not offered on the public card page, signed in or not (READINESS E6)", async () => {
+    pathname = "/card/sol-ring";
+    const icon = mount();
+    await openWithLayer(icon);
+    expect(field()).toBeTruthy();
+    expect(way()).toBeNull();
   });
 
   it("is not offered where the shell mounted no Add cards host", async () => {

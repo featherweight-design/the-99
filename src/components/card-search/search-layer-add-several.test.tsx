@@ -73,17 +73,4 @@ describe("Add several cards", () => {
     expect(way()).toBeNull();
     expect(screen.getByText(cardSearchCopy.recent.heading)).toBeTruthy();
   });
-
-  it("takes the sheet's way-row shape: 52px on the phone, 44px in the desktop dropdown", () => {
-    draw({ recentsHeld: true, recentRows: [row] });
-    const cls = way()!.className.split(/\s+/);
-    for (const c of ["min-h-[52px]", "rounded-[10px]", "px-[14px]", "gap-3", "text-[14px]", "bg-[color:var(--bg)]", "border-[color:var(--border)]", "mx-4", "mt-3", "mb-[2px]"]) {
-      expect(cls).toContain(c);
-    }
-    for (const c of ["md:min-h-[44px]", "md:rounded-[9px]", "md:px-3", "md:gap-[10px]", "md:text-[13.5px]", "md:mx-[14px]", "md:mt-[6px]", "md:mb-1"]) {
-      expect(cls).toContain(c);
-    }
-    // The aside reads faint, after the lead.
-    expect(screen.getByText(cardSearchCopy.addSeveral.aside).className).toContain("text-[color:var(--fg-faint)]");
-  });
 });
