@@ -256,7 +256,7 @@ function AddSeveralRow({ onPress }: { onPress: () => void }) {
       {/* The board's --accent, as a stroke: a glyph, not text, so it needs 3:1 on the row's --bg, which --accent holds in
           all six themes (`contract.test.ts` pins it; Phyrexia's #52827A reads 4.51). READINESS E12. */}
       <span aria-hidden className="flex flex-none">
-        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="var(--accent)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" style={{ stroke: "var(--accent)" }} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
           <path d="M10 3.6v12.8M3.6 10h12.8" />
         </svg>
       </span>

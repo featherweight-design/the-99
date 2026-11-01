@@ -208,6 +208,10 @@ describe("Bought this card? beside Add to collection, inside the shell", () => {
     await press(screen.getByText("shop poly"));
     expect(links()).toHaveLength(1);
     rerender(<CollectionEditScope>{tree([])}</CollectionEditScope>);
+    // Still open, on the same card, and live: what is asserted below is that card's slot, not a closed dialog's.
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toHaveTextContent("Polyraptor");
+    expect(dialog.closest("[inert]")).toBeNull();
     expect(links()).toHaveLength(0);
     expect(edit()).toBeNull();
   });

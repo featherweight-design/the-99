@@ -127,6 +127,64 @@ describe("QuickAddBar — the bridge to Add cards", () => {
     expect(screen.getByRole("button", { name: addPanelCopy.quickAddEmpty.dropFilter })).toBeTruthy();
   });
 
+  /** The filter-off reads, each held until the test answers it, in the order they were asked. */
+  function holdUnfiltered() {
+    const held: { q: unknown; answer: (r: SearchResult[]) => void }[] = [];
+    searchCards.mockImplementation((...args: unknown[]) =>
+      args[2] ? Promise.resolve([]) : new Promise<SearchResult[]>((answer) => held.push({ q: args[0], answer })),
+    );
+    return held;
+  }
+  const listableRow: SearchResult = { ...ghalta, owned: false, ownedQty: 0 };
+
+  it("draws no press for a later query when an earlier query's read lands after the reader moved on", async () => {
+    const held = holdUnfiltered();
+    mount();
+    await typeAndMiss("ghalta");
+    expect(held.map((h) => h.q)).toEqual(["ghalta"]);
+    await typeAndMiss("zzyzx");
+    expect(held.map((h) => h.q)).toEqual(["ghalta", "zzyzx"]);
+    // The first query's answer arrives late, and says listable: it is filed under "ghalta", not the field's query.
+    await act(async () => held[0].answer([listableRow]));
+    expect(bridge()).toBeNull();
+    await act(async () => held[1].answer([]));
+    expect(bridge()).toBeNull();
+    // Back to the earlier miss: its kept answer draws the press, with no second read.
+    await typeAndMiss("ghalta");
+    expect(held).toHaveLength(2);
+    expect(bridge()).toBeTruthy();
+  });
+
+  it("draws no press when Owned only is turned off while the read is out", async () => {
+    const held = holdUnfiltered();
+    mount();
+    await typeAndMiss("ghalta");
+    fireEvent.click(toggle());
+    // The dock's own filter-off search is held too: answer it empty, so the all-cards miss is drawn.
+    await waitFor(() => expect(held).toHaveLength(2));
+    await act(async () => held[1].answer([]));
+    await waitFor(() => expect(screen.getByText(addPanelCopy.quickAddEmpty.bodyAllCards("ghalta", "Naya"))).toBeTruthy());
+    await act(async () => held[0].answer([listableRow]));
+    expect(bridge()).toBeNull();
+  });
+
+  it("draws no press when the read with the filter off is never answered", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const held = holdUnfiltered();
+      mount();
+      await typeAndMiss("ghalta");
+      expect(held).toHaveLength(1);
+      await act(async () => void vi.advanceTimersByTime(8_000));
+      expect(bridge()).toBeNull();
+      // A late answer after the timeout changes nothing.
+      await act(async () => held[0].answer([listableRow]));
+      expect(bridge()).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("draws no press when the read with the filter off fails", async () => {
     searchCards.mockImplementation(async (...args: unknown[]) => {
       if (args[2]) return [];

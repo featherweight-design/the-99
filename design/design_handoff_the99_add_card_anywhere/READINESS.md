@@ -294,12 +294,16 @@ boards are Design's and stay as dropped; these rulings govern the build.
   is no choice to make, so the step is not drawn.
 - **E15 · the dock's bridge only for a card the dock can list.** K2 offers *Add a card to your collection* on every
   owned-only miss. It is offered only when the same query with the filter off finds a card the dock would list (the
-  commander's identity, Commander-legal, a game card: the dock's own search, one read per missed query). A card the
-  dock can never list (*Abstract Iguanart* on the walk) would save and leave the dock reading the same miss with the
-  bridge offered again. A read that fails offers no bridge; *Search all cards instead* stands as shipped.
+  commander's identity, Commander-legal, a game card: the dock's own search). The answer is kept per query, identity
+  and deck, so a miss gone back to reads nothing again. A card the dock can never list (*Abstract Iguanart* on the
+  walk) would save and leave the dock reading the same miss with the bridge offered again. A read that fails, or is
+  unanswered after the search's own 8s timeout, offers no bridge; *Search all cards instead* stands as shipped. It asks
+  whether any match is listable, not whether the card the sheet saves is: the bridge carries the query, not a card.
 - **E16 · a Shopping-row open keeps the slot.** O2's "a card opened from a Shopping row keeps *Bought this card?*"
   holds whatever I got it answers for the card: a card a Shopping row opened never draws Add to collection while I got
-  it's link is registered, so a card the list no longer bills (a purchase took it off) draws neither link.
+  it's link is registered, so a card the list no longer bills (a purchase took it off) draws neither link. The open
+  stays a Shopping open while paging, so a paged-to card the list does not bill draws neither link either: an edge,
+  accepted.
 
 ---
 
