@@ -783,13 +783,13 @@ export const SHOTS = {
     "tool-suggested-changes": {
       "width": 780,
       "height": 520,
-      "bytes": 13576,
+      "bytes": 14760,
       "quality": 75,
       "halo": [
         0.041,
-        0.3263,
+        0.263,
         0.9179,
-        0.3481
+        0.4702
       ]
     },
     "tool-top-off": {
@@ -1661,13 +1661,13 @@ export const SHOTS = {
     "tool-suggested-changes": {
       "width": 780,
       "height": 520,
-      "bytes": 13158,
+      "bytes": 14586,
       "quality": 75,
       "halo": [
         0.041,
-        0.3263,
+        0.263,
         0.9179,
-        0.3481
+        0.4702
       ]
     },
     "tool-top-off": {
@@ -2539,13 +2539,13 @@ export const SHOTS = {
     "tool-suggested-changes": {
       "width": 780,
       "height": 520,
-      "bytes": 13630,
+      "bytes": 14826,
       "quality": 75,
       "halo": [
         0.041,
-        0.3263,
+        0.263,
         0.9179,
-        0.3481
+        0.4702
       ]
     },
     "tool-top-off": {
@@ -3417,13 +3417,13 @@ export const SHOTS = {
     "tool-suggested-changes": {
       "width": 780,
       "height": 520,
-      "bytes": 12962,
+      "bytes": 14486,
       "quality": 75,
       "halo": [
         0.041,
-        0.3263,
+        0.2662,
         0.9179,
-        0.3481
+        0.4702
       ]
     },
     "tool-top-off": {
@@ -4295,13 +4295,13 @@ export const SHOTS = {
     "tool-suggested-changes": {
       "width": 780,
       "height": 520,
-      "bytes": 13246,
+      "bytes": 14534,
       "quality": 75,
       "halo": [
         0.041,
-        0.3254,
+        0.263,
         0.9179,
-        0.3481
+        0.4702
       ]
     },
     "tool-top-off": {
@@ -5173,13 +5173,13 @@ export const SHOTS = {
     "tool-suggested-changes": {
       "width": 780,
       "height": 520,
-      "bytes": 13790,
+      "bytes": 14504,
       "quality": 75,
       "halo": [
         0.041,
-        0.3263,
+        0.263,
         0.9179,
-        0.3481
+        0.4702
       ]
     },
     "tool-top-off": {
