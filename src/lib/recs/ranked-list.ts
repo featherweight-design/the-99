@@ -3,7 +3,6 @@ import { loadBuiltCommanderIds } from "../decks/built";
 import { getCollectionStats } from "../home/summary";
 import { recommendCommanders, toListItem, type CommanderListItem } from "./recommend";
 import { collectionGeneration, indexGeneration, loadScores, persistScores } from "./store";
-import { labelRoleCountsEnabled } from "../decks/label-counts-flag";
 
 export type RankedList = {
   items: CommanderListItem[];
@@ -39,12 +38,11 @@ export type RankedList = {
  * scores stay whole: building a deck must not invalidate the cache, and must not
  * evict from it either.
  *
- * `env` is the reader's resolved switches (`requestSwitchEnv`): the role basis follows its
- * `LABEL_ROLE_COUNTS_ENABLED`, which takes an app-wide override (admin PR 6d-2). The per-request memo
- * is keyed on the user and that BASIS, never on the env object: React's `cache` compares arguments by
+ * `env` is the reader's resolved switches (`requestSwitchEnv`), handed on to the loads. Roles are
+ * always counted by label (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31), so the per-request memo is
+ * keyed on the user alone, never on the env object: React's `cache` compares arguments by
  * identity, and every `requestSwitchEnv` call builds a new object, so an env argument would turn each
  * of a render's several callers (the slug resolve, the rankings, the free ranking) into a recompute.
- * Two callers in one request that resolved different bases still get different lists.
  */
 const rankedListMemo = cache(() => new Map<string, Promise<RankedList>>());
 
@@ -53,7 +51,7 @@ export function getRankedList(
   env: NodeJS.ProcessEnv,
 ): Promise<RankedList> {
   const memo = rankedListMemo();
-  const key = `${userId}|${labelRoleCountsEnabled(env) ? "labels" : "classifier"}`;
+  const key = userId;
   let list = memo.get(key);
   if (!list) {
     list = loadRankedList(userId, env);

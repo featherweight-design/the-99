@@ -14,7 +14,6 @@ import { toFreeDelta, type FreeRankingDelta } from "../recs/free-delta";
 import { rankFree } from "../recs/free-ranking";
 import { withOwnedCardArt } from "../collection/owned-printings";
 import { getRankedList } from "../recs/ranked-list";
-import { roleBasisFromEnv } from "../decks/label-counts-flag";
 import { loadCollectionPool } from "../recs/recommend";
 import type { CommanderListItem } from "../recs/recommend";
 import { loadSupportMeta } from "../edhrec/support-read";
@@ -153,12 +152,11 @@ const PAYLOAD_VERSION = 11;
 
 /**
  * The cache key this payload is filed under: the version, and the role basis both rankings were
- * counted by. The basis follows the reader's `LABEL_ROLE_COUNTS_ENABLED`, which an app-wide override
- * flips without a deploy, and nothing else in this key moves when it does (admin PR 6d-2). `env` is
- * the reader's resolved switches, the same env `loadCommanderRankings` is handed.
+ * counted by. Roles are always counted by label (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31), so the
+ * basis segment is constant: it stays in the key so entries filed while the switch was live stay warm.
  */
-export function commanderRankingsKey(env: NodeJS.ProcessEnv): string[] {
-  return ["commander-rankings", `v${PAYLOAD_VERSION}`, `basis:${roleBasisFromEnv(env)}`];
+export function commanderRankingsKey(): string[] {
+  return ["commander-rankings", `v${PAYLOAD_VERSION}`, "basis:labels"];
 }
 
 export async function loadCommanderRankings(

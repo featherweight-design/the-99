@@ -1,5 +1,5 @@
 // The switch-to-loader handoff of labels-everywhere PR 8: `loadDeckProfileFromHead` decides the role
-// basis from the deployment and, on the labels basis, reads the labels and hands them to the builder.
+// basis (always labels since the switch was retired, Hugh 2026-10-31), reads the labels and hands them to the builder.
 // `label-basis.test.ts` builds profiles from a hand-made `ProfileInput.labels`, so it cannot see this
 // block removed. This drives the real loader over a fake database and a fake label reader.
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -45,17 +45,9 @@ afterEach(() => {
 });
 
 describe("loadDeckProfileFromHead and the role basis", () => {
-  it("switch OFF: classifier roles, no label read, no basis marker", async () => {
+  // LABEL_ROLE_COUNTS retired (Hugh 2026-10-31): the labels basis holds even with the old switch off.
+  it("reads labels for every card including the commander and counts by them, whatever the old switch says", async () => {
     vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "");
-    const p = await loadDeckProfileFromHead(head, ENV_VIEW);
-    expect(readLabelRoleSets).not.toHaveBeenCalled();
-    expect(p.skeleton.roleBasis).toBeUndefined();
-    expect(JSON.stringify(p)).not.toContain("roleBasis");
-    expect(p.roles.cards.ramp.map((c) => c.oracleId)).toEqual(["ramp-spell"]);
-  });
-
-  it("switch ON: reads labels for every card including the commander and counts by them", async () => {
-    vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "true");
     const p = await loadDeckProfileFromHead(head, ENV_VIEW);
     expect(readLabelRoleSets).toHaveBeenCalledTimes(1);
     expect([...readLabelRoleSets.mock.calls[0][0]].sort()).toEqual(["cmd", "ramp-spell"]);

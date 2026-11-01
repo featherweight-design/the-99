@@ -175,18 +175,14 @@ describe("loadDiscovery — wiring", () => {
     }
   });
 
-  // Admin PR 6d-2: the switch is decided from the env the reader resolved, never the environment
-  // alone. The environment has it off and the resolved env on, so a loader reading `process.env`
-  // asks for the classifier and one reading its env asks for the labels.
-  it("asks for the label read by the reader's resolved env, not the environment", async () => {
+  // LABEL_ROLE_COUNTS retired (Hugh 2026-10-31): the label read is always asked for, whatever the
+  // environment or the reader's env says about the old switch.
+  it("always asks for the label read, even with the old switch off everywhere", async () => {
     vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "false");
     try {
       basisMock.enabledSeen.length = 0;
-      await loadDiscovery("user-1", { sort: "fit" }, { LABEL_ROLE_COUNTS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv);
-      expect(basisMock.enabledSeen).toEqual([true]);
-      basisMock.enabledSeen.length = 0;
       await loadDiscovery("user-1", { sort: "fit" }, { LABEL_ROLE_COUNTS_ENABLED: "false" } as unknown as NodeJS.ProcessEnv);
-      expect(basisMock.enabledSeen).toEqual([false]);
+      expect(basisMock.enabledSeen).toEqual([true]);
     } finally {
       vi.unstubAllEnvs();
     }

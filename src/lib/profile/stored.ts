@@ -12,7 +12,6 @@ import { listFingerprint, profileFingerprint } from "./fingerprint";
 import { cachedDeckProfile, loadDeckProfile, readProfileHead, type ProfileHead } from "./load";
 import { readingMoved } from "../notices/read";
 import { PROFILE_VERSION } from "./version";
-import { roleBasisFromEnv } from "../decks/label-counts-flag";
 import type { RoleBasis } from "./build";
 import type { Bracket } from "../bracket/types";
 import { isReachablePermits } from "../bracket/verdict-head";
@@ -127,7 +126,8 @@ async function readHeadAndRow(tx: Tx, deckId: string, userId: string) {
 
 /**
  * Whether the deployment counts roles on another basis than the one a stored reading was built
- * under (`LABEL_ROLE_COUNTS_ENABLED`, labels-everywhere PR 8). `PROFILE_VERSION` deliberately does
+ * under (labels-everywhere PR 8; since LABEL_ROLE_COUNTS was retired, Hugh 2026-10-31, the deployment's
+ * basis is always labels, so this recomputes a press on a pre-switch classifier reading). `PROFILE_VERSION` deliberately does
  * not move with the switch, so without this a press on an unchanged list would answer from the
  * store and the reading would keep its old basis (a flip on, or a rollback) until the list was
  * edited. Like a moved change log, it makes a PRESS recompute; a commit's pin and a quiet rebuild
@@ -150,7 +150,7 @@ export async function pressMustRecompute(args: {
   sameAnswer: boolean;
   storedProfile: Pick<DeckProfile, "skeleton"> | null | undefined;
   logMoved: () => Promise<boolean>;
-  /** The reader's role basis (`roleBasisFromEnv(env)`). */
+  /** The reader's role basis: always `"labels"` since LABEL_ROLE_COUNTS was retired (Hugh 2026-10-31). */
   basis: RoleBasis;
 }): Promise<boolean> {
   if (!args.isPress || !args.sameAnswer) return false;
@@ -410,7 +410,7 @@ export async function computeAndStoreProfile(
     isPress,
     sameAnswer: Boolean(row && sameAnswer),
     storedProfile: row?.profile,
-    basis: roleBasisFromEnv(deps.env),
+    basis: "labels",
     // Read only when nothing cheaper already said yes, and only for a row that exists.
     logMoved: () => readingMoved({
       seenSeq: row!.seenSeq,

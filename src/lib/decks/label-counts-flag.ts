@@ -2,6 +2,15 @@ import type { RoleBasis } from "../profile/build";
 import { KILL } from "../switches/resolve";
 
 /**
+ * RETIRED (Hugh 2026-10-31): production has it on for everyone, and roles are always counted by
+ * label. Baked in as on across src/lib's recs, discovery, commanders, profile and precons readers
+ * (group 3, LABEL_ROLE_COUNTS part A). Readers that still call this or `roleBasisFromEnv` until part B:
+ * src/lib/decks/fill-plan.ts, src/lib/decks/suggestions-read.ts, src/lib/decks/tuning-read.ts,
+ * src/lib/tuning/mana-help-load.ts, src/lib/switches/flags.ts, src/app/decks/[id]/page.tsx and
+ * src/app/decks/[id]/changes/page.tsx (plus `envForPageBasis`/`parseRoleBasis` in
+ * src/app/api/discovery-fields/route.ts and src/app/commanders/[slug]/coverage-action.ts), and the
+ * scripts that read the variable.
+ *
  * Whether this deployment counts a deck's roles from its cards' LABELS (the Jobs card's own tally,
  * `jobTally`) and grades them against the index's `label_*` targets, instead of the classifier's
  * `card.role` against `avg_*` (labels-everywhere plan, PR 2).
