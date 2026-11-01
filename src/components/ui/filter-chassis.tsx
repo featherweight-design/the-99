@@ -67,9 +67,11 @@ export type FilterChassisProps = {
   /**
    * Row 1's trailing slot, past a hairline (decision 11). Sort is not a filter
    * and the separation says so, on every route and at both widths. A list is
-   * always in some order, so this slot is never empty.
+   * always in some order, so this slot is never empty, except on a route whose
+   * order is not the reader's to choose: the Games view is newest first and
+   * passes none, which also takes the hairline and the sort promise from Clear all.
    */
-  sort: React.ReactNode;
+  sort?: React.ReactNode;
   /** Row 2. Empty renders `No filters on` rather than collapsing. */
   chips: readonly FilterChip[];
   onClearAll: () => void;
@@ -284,13 +286,18 @@ export function FilterChassis({
         >
           {controls}
         </div>
-        {/* The hairline is the separation, and it is why sort reads as not-a-filter. */}
-        <div
-          aria-hidden
-          className="h-[20px] w-px flex-none bg-[color:var(--border)]"
-          data-chassis-hairline
-        />
-        <div className="flex flex-none items-center">{sort}</div>
+        {/* The hairline is the separation, and it is why sort reads as not-a-filter. A route with no order to
+            choose (the Games view: a history is always newest first) passes none, and draws neither. */}
+        {sort !== undefined && (
+          <>
+            <div
+              aria-hidden
+              className="h-[20px] w-px flex-none bg-[color:var(--border)]"
+              data-chassis-hairline
+            />
+            <div className="flex flex-none items-center">{sort}</div>
+          </>
+        )}
       </div>
 
       {/* Row 2 — present at rest, which is the invariant. Never conditionally
@@ -319,7 +326,7 @@ export function FilterChassis({
           type="button"
           disabled={chips.length === 0}
           onClick={onClearAll}
-          aria-label={chassisCopy.chips.clearAllAria}
+          aria-label={sort === undefined ? chassisCopy.chips.clearAllAriaNoSort : chassisCopy.chips.clearAllAria}
           className={[
             "relative ml-auto shrink-0 border-0 bg-transparent p-0",
             "font-mono text-[11px] leading-[14px] underline",

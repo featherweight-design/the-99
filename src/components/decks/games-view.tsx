@@ -1,20 +1,33 @@
 "use client";
 
-// The Games view on /decks (design handoff `design_handoff_the99_game_history`, build PR 2+3, filter-free): every game the
+// The Games view on /decks (design handoff `design_handoff_the99_game_history`, build PR 2+3, filters PR 4): every game the
 // reader has logged on every deck, newest first, grouped by month, under a summary in the Games tab's voice. A history,
 // not a tracker: read-only, and each row opens its deck's Games tab at that game. Fifty a read; `Show 50 more` asks the
-// server for the next window and keeps the rows already drawn when that fails. The filters (Played against, Result, deck)
-// are PR 4's. Month heads count the WHOLE month from the first read's aggregates, not the window.
+// server for the next window and keeps the rows already drawn when that fails. Deck, Result and Played against scope the
+// list AND the summary (`games-filter-controls.tsx`, held by `use-games-filters.ts`); filters that match nothing leave the
+// controls, the chips and the count and put one line and one way out in the list's place (Small items 9, A1). Month heads
+// count the WHOLE month under the filter from the first read's aggregates, not the window.
 
-import { useEffect, useMemo, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import { loadMoreGamesAction } from "../../app/decks/game-history-actions";
 import { gameHistoryCopy as copy } from "../../lib/copy/game-history";
 import { PATTERN_MIN } from "../../lib/copy/game-log";
-import { GAME_HISTORY_WINDOW } from "../../lib/games/history-rules";
+import { isEmptyGamesFilter, withGamesFilter } from "../../lib/games/history-filter";
+import { GAME_HISTORY_WINDOW, type GameHistoryFilter } from "../../lib/games/history-rules";
 import type { HistoryGame } from "../../lib/games/history";
 import type { GamesPayload } from "../../lib/games/history-wire";
+import { joinNames, PersonName } from "../../lib/person-name";
+import { CHASSIS_WIDE_MIN_PX, FilterChassis, type FilterChip } from "../ui/filter-chassis";
+import { FiltersBoxTrigger } from "../ui/filters-box-trigger";
 import { GhostButton, PrimaryButton } from "../ui/button";
+import { useMinWidth } from "../ui/use-min-width";
 import { DeckSelect } from "./lineup/deck-select";
+import {
+  AgainstWideTrigger, againstOptions, chosenAgainst, DeckPhonePicker, DeckWideTrigger, GamesFilterSheet, OptionName, ResultWideTrigger,
+  type AgainstOption, type DeckChoice,
+} from "./games-filter-controls";
+import { TrophyIcon } from "./trophy-icon";
+import { useGamesFilters } from "./use-games-filters";
 import { spanText } from "./lineup/recency-card";
 import { viewPanelId, viewTabId } from "./lineup/stats-view-switch";
 import { GameEntry } from "./game-entry";
@@ -38,16 +51,16 @@ export function groupByMonth(games: readonly HistoryGame[]): { key: string; game
   return out;
 }
 
-type DeckChoice = { id: string; name: string; identity: string[] };
-
 /** What the view has drawn beyond the first window: the rows, the position after them, and a failed ask. Tied to the payload it grew from. */
 export type GamesHeld = { seen: GamesPayload; games: HistoryGame[]; next: string | null; moreFailed: boolean };
 export const freshGames = (d: GamesPayload): GamesHeld => ({ seen: d, games: d.games, next: d.next, moreFailed: false });
 /** The parent's keeping of `GamesHeld`, so flipping to Decks and back does not discard the windows already drawn. */
 export type GamesHold = { value: GamesHeld | null; set: Dispatch<SetStateAction<GamesHeld | null>> };
 
-export function GamesView({ data, viewSwitch, decks, hold }: {
+export function GamesView({ data, viewSwitch, decks, hold, onData }: {
   data: GamesPayload;
+  /** A payload read under a new filter, or served back from this visit's cache: the parent draws it as the first window. */
+  onData: (next: GamesPayload) => void;
   viewSwitch: ReactNode;
   /** The reader's decks, for the empty state's `Log one on` select. */
   decks: readonly DeckChoice[];
@@ -79,7 +92,7 @@ export function GamesView({ data, viewSwitch, decks, hold }: {
       setStored((prev) => (prev && prev.seen === tag && prev.next === cursor ? f(prev) : prev));
     apply((h) => (h.moreFailed ? { ...h, moreFailed: false } : h));
     try {
-      const res = await loadMoreGamesAction(cursor);
+      const res = await loadMoreGamesAction(cursor, data.filter);
       if (!res.ok) {
         apply((h) => ({ ...h, moreFailed: true }));
         return;
@@ -112,25 +125,112 @@ export function GamesView({ data, viewSwitch, decks, hold }: {
   const monthCounts = useMemo(() => new Map(months.map((m) => [m.month, m.games])), [months]);
   const groups = useMemo(() => groupByMonth(games), [games]);
 
+  // The filters draw from PATTERN_MIN games of history on: under it the view is a count and a line on where games come from.
+  const filtersOn = total >= PATTERN_MIN;
+  const wide = useMinWidth(`(min-width: ${CHASSIS_WIDE_MIN_PX}px)`);
+  const gf = useGamesFilters(data, onData);
+  const f = gf.filter;
+  const options = useMemo(() => againstOptions(data), [data]);
+  const against = chosenAgainst(options, f);
+  const deckCounts = useMemo(() => new Map(data.aggregates.byDeck.map((d) => [d.deckId, d.games])), [data.aggregates.byDeck]);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  // Clear all takes off every filter on the wide form; on the phone the deck is the picker beside the switch (as the shelf
+  // is on Decks, "nav, not filter"), so it stays.
+  const clearAll = useCallback(
+    () => gf.change(wide ? {} : withGamesFilter(f, { result: undefined, friend: undefined, commander: undefined })),
+    [gf, wide, f],
+  );
+  const chips = useMemo((): FilterChip[] => {
+    const out: FilterChip[] = [];
+    const off = (change: Partial<GameHistoryFilter>) => () => gf.change(withGamesFilter(f, change));
+    const deck = decks.find((d) => d.id === f.deckId);
+    if (wide && f.deckId) out.push({ key: "deck", label: deck?.name ?? copy.filter.allDecks, onRemove: off({ deckId: undefined }) });
+    if (f.friend || f.commander) {
+      out.push({
+        key: "against",
+        label: against ? (typeof against.name === "string" ? against.name : joinNames([against.name])) : f.friend ? copy.filter.formerFriend : copy.filter.playedAgainst,
+        onRemove: off({ friend: undefined, commander: undefined }),
+      });
+    }
+    if (f.result) out.push({ key: "result", label: f.result === "win" || f.result === "loss" || f.result === "draw" ? copy.filter.results[f.result] : f.result, onRemove: off({ result: undefined }) });
+    return out;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `gf.change` is rebuilt with the cache; the chips read it when pressed
+  }, [wide, f, decks, against, gf.change]);
+
+  const pad = "px-[16px] md:px-[22px]";
   return (
     <div data-decks-games className="flex min-h-0 w-full flex-auto flex-col">
-      <div className="flex items-center gap-[8px] px-[16px] pt-[8px] pb-[10px] md:flex-wrap md:gap-[6px] md:border-t md:border-t-[color:var(--border)] md:px-[22px] md:py-[10px]">
-        {viewSwitch}
-      </div>
+      {filtersOn ? (
+        <FilterChassis
+          form={wide ? "wide" : "compact"}
+          controls={
+            wide ? (
+              <>
+                {viewSwitch}
+                <span aria-hidden className="h-[20px] w-px flex-none bg-[color:var(--border)]" />
+                <DeckWideTrigger decks={decks} filter={f} onChange={gf.change} />
+                <ResultWideTrigger filter={f} onChange={gf.change} />
+                <AgainstWideTrigger options={options} filter={f} onChange={gf.change} />
+              </>
+            ) : (
+              <div className="flex w-full min-w-0 flex-col items-start gap-[10px]">
+                <div className="flex w-full min-w-0 items-center gap-[8px]">
+                  {viewSwitch}
+                  <span className="flex-1" />
+                  <DeckPhonePicker decks={decks} filter={f} counts={deckCounts} onChange={gf.change} />
+                </div>
+                <FiltersBoxTrigger
+                  label={copy.filter.open}
+                  badge={(f.result ? 1 : 0) + (f.friend || f.commander ? 1 : 0)}
+                  onClick={() => setSheetOpen(true)}
+                  expanded={sheetOpen}
+                />
+              </div>
+            )
+          }
+          chips={chips}
+          onClearAll={clearAll}
+          resultLine={copy.count(summary.games)}
+          silentResult={sheetOpen}
+          revision={gf.pending ? "pending" : summary.games}
+          after={
+            wide ? null : (
+              <GamesFilterSheet
+                open={sheetOpen}
+                onDismiss={() => setSheetOpen(false)}
+                filter={f}
+                onChange={gf.change}
+                options={options}
+                byResult={data.aggregates.byResult}
+                shown={summary.games}
+              />
+            )
+          }
+        />
+      ) : (
+        <div className="flex items-center gap-[8px] px-[16px] pt-[8px] pb-[10px] md:flex-wrap md:gap-[6px] md:border-t md:border-t-[color:var(--border)] md:px-[22px] md:py-[10px]">
+          {viewSwitch}
+        </div>
+      )}
       <div
         role="tabpanel"
         id={viewPanelId("games")}
         aria-labelledby={viewTabId("games")}
-        className="flex flex-col px-[16px] pb-[22px] md:border-t md:border-t-[color:var(--border)] md:px-[22px]"
+        aria-busy={gf.pending || undefined}
+        className={`flex flex-col pb-[22px] ${pad} ${filtersOn ? "" : "md:border-t md:border-t-[color:var(--border)]"} ${gf.pending ? "opacity-60" : ""}`}
       >
-        <p data-games-count className="m-0 -mx-[16px] border-0 border-b border-solid border-b-[color:var(--border)] px-[16px] pt-[2px] pb-[14px] font-mono text-[12.5px] leading-[normal] text-fg-faint md:-mx-[22px] md:px-[22px] md:pt-[12px]">
-          {copy.count(summary.games)}
-        </p>
+        {filtersOn ? null : (
+          <p data-games-count className="m-0 -mx-[16px] border-0 border-b border-solid border-b-[color:var(--border)] px-[16px] pt-[2px] pb-[14px] font-mono text-[12.5px] leading-[normal] text-fg-faint md:-mx-[22px] md:px-[22px] md:pt-[12px]">
+            {copy.count(summary.games)}
+          </p>
+        )}
         {total === 0 ? (
           <Empty decks={decks} />
+        ) : summary.games === 0 ? (
+          <NoMatch onClear={clearAll} />
         ) : (
           <>
-            <Summary data={data} games={games} />
+            <Summary data={data} games={games} against={against} />
             {groups.map((g) => (
               <div key={g.key} data-games-month={g.key}>
                 <h3 className="mx-0 mt-[18px] mb-[10px] flex items-baseline gap-[10px] font-mono text-[10px] font-normal uppercase leading-[normal] tracking-[0.14em] text-fg-faint">
@@ -148,16 +248,19 @@ export function GamesView({ data, viewSwitch, decks, hold }: {
         )}
       </div>
       {moreFailed ? <GamesFailedToast kind="games-more-failed" title={copy.moreFailed} onRetry={more} onDone={() => setStored((prev) => (prev && prev.seen === data ? { ...prev, moreFailed: false } : prev))} /> : null}
+      {gf.failed ? <GamesFailedToast kind="games-failed" title={copy.failed} onRetry={gf.retry} onDone={gf.dismissFailed} /> : null}
     </div>
   );
 }
 
-function Summary({ data, games }: { data: GamesPayload; games: readonly HistoryGame[] }) {
+function Summary({ data, games, against }: { data: GamesPayload; games: readonly HistoryGame[]; against: AgainstOption | null }) {
   const s = data.aggregates.summary;
+  const f = data.filter;
   const first = s.firstPlayedAt && s.lastPlayedAt ? spanText(s.firstPlayedAt.toISOString(), s.lastPlayedAt.toISOString()) : null;
   // One deck holds every game: its own name stands in for `1 deck`.
   const lead = s.decks === 1 && games[0] ? games[0].deck.name : copy.decks(s.decks);
   const tail = [s.podMin !== null && s.podMax !== null ? copy.pods(s.podMin, s.podMax) : null, first].filter((x) => x !== null);
+  const won = against?.kind === "friend" && typeof against.name !== "string" ? s.friendWonLosses : null;
   return (
     <div data-games-summary className="flex flex-col gap-[7px] pt-[20px] pb-[6px]">
       <h2 className="m-0 font-display text-[17px] font-bold leading-[1.3] text-fg md:text-[20px]">
@@ -165,15 +268,40 @@ function Summary({ data, games }: { data: GamesPayload; games: readonly HistoryG
       </h2>
       <p className="m-0 font-mono text-[11px] leading-[1.6] text-fg-faint">
         <b className="font-normal text-fg-body">{lead}</b>
+        {against ? (
+          <> {copy.scoped.with} <b className="font-normal text-fg-body"><OptionName option={against} /></b> {copy.scoped.atTable}</>
+        ) : null}
         {tail.map((t) => ` · ${t}`).join("")}
       </p>
-      {s.games >= PATTERN_MIN && s.mostPlayed ? (
+      {won && won.losses > 0 && against && typeof against.name !== "string" ? (
+        <p data-games-beat-me className="m-0 flex items-center gap-[6px] font-mono text-[11px] leading-[1.6] text-fg-faint">
+          <TrophyIcon size={12} />
+          <span><PersonName n={against.name} />{copy.beatMe(won.won, won.losses)}</span>
+        </p>
+      ) : null}
+      {/* Most played says nothing under a deck filter (that deck leads its own list), so it goes with it. */}
+      {s.games >= PATTERN_MIN && s.mostPlayed && !f.deckId ? (
         <p className="m-0 font-mono text-[11px] leading-[1.6] text-fg-faint">
           {copy.mostPlayed.lead} <b className="font-normal text-fg-body">{s.mostPlayed.name}</b>
           {copy.mostPlayed.tail(s.mostPlayed.games, s.games)}
         </p>
       ) : null}
-      {s.games < PATTERN_MIN ? <p className="m-0 max-w-[620px] text-[13px] leading-[1.55] text-fg-muted">{copy.low}</p> : null}
+      {s.games < PATTERN_MIN && isEmptyGamesFilter(f) ? <p className="m-0 max-w-[620px] text-[13px] leading-[1.55] text-fg-muted">{copy.low}</p> : null}
+    </div>
+  );
+}
+
+/** Filters that match nothing (Small items 9, A1): one line and one way out, where the headline and the months were. */
+function NoMatch({ onClear }: { onClear: () => void }) {
+  return (
+    <div data-games-no-match className="flex flex-col items-start gap-[12px] pt-[22px]">
+      <h2 className="m-0 font-sans text-[15px] font-semibold leading-[1.3] text-fg">{copy.filter.noMatch}</h2>
+      <GhostButton
+        onClick={onClear}
+        className="inline-flex min-h-[44px] items-center justify-center rounded-[10px] px-[14px] text-[14px] font-normal md:min-h-[36px] md:rounded-[8px] md:text-[13px]"
+      >
+        {copy.filter.clearFilters}
+      </GhostButton>
     </div>
   );
 }

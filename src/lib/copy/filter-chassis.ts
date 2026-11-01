@@ -32,6 +32,8 @@ export const chassisCopy = {
      */
     clearAll: filterCopy.chips.clearAll,
     clearAllAria: "Clear all filters. The sort is unchanged.",
+    /** A route with no sort slot (the Games view) has no sort to promise is unchanged. */
+    clearAllAriaNoSort: "Clear all filters",
   },
 
   colour: {

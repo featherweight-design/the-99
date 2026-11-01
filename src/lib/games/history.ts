@@ -80,11 +80,15 @@ export type HistorySummary = {
   friendWonLosses: { won: number; losses: number } | null;
 };
 
-export type PlayedAgainstCommander = { oracleId: string; name: string; games: number };
+export type PlayedAgainstCommander = { oracleId: string; name: string; games: number; artCropUri: string | null };
 
 export type HistoryAggregates = {
   /** The viewer's whole history, unfiltered: the low-N ladder and the filtered-to-zero frame read it. */
   total: number;
+  /** Games per result under every filter BUT the result: the Result options' counts, so a zero option reads 0 and stays pressable. */
+  byResult: { wins: number; losses: number; draws: number };
+  /** Games per deck under every filter BUT the deck: the deck picker's counts. Decks with none under it are absent. */
+  byDeck: { deckId: string; games: number }[];
   /** Games per month under the filter, newest first, counting the WHOLE month (not just this window). */
   months: HistoryMonth[];
   summary: HistorySummary;
@@ -209,17 +213,27 @@ export function historyTopDecksQuery(viewerId: string, filter: GameHistoryFilter
     .limit(2);
 }
 
+/** Games per deck under the filter without its deck: what each choice in the deck picker would leave. */
+export function historyByDeckQuery(viewerId: string, filter: GameHistoryFilter, q: Reader = db) {
+  return q
+    .select({ deckId: decks.id, games: sql<number>`count(*)::int` })
+    .from(deckGames)
+    .innerJoin(decks, eq(decks.id, deckGames.deckId))
+    .where(and(ownedGames(viewerId), ...filterConditions(viewerId, { ...filter, deckId: undefined })))
+    .groupBy(decks.id);
+}
+
 /** Commanders the viewer has sat across from, with the games each was in, over the whole history. */
 export function playedAgainstCommandersQuery(viewerId: string, q: Reader = db) {
   const games = sql<number>`count(distinct ${deckGameOpponents.gameId})::int`;
   return q
-    .select({ oracleId: cards.oracleId, name: cards.name, games })
+    .select({ oracleId: cards.oracleId, name: cards.name, artCropUri: cards.artCropUri, games })
     .from(deckGameOpponents)
     .innerJoin(deckGames, eq(deckGames.id, deckGameOpponents.gameId))
     .innerJoin(decks, eq(decks.id, deckGames.deckId))
     .innerJoin(cards, or(eq(cards.oracleId, deckGameOpponents.commanderOracleId), eq(cards.oracleId, deckGameOpponents.partnerOracleId)))
     .where(ownedGames(viewerId))
-    .groupBy(cards.oracleId, cards.name)
+    .groupBy(cards.oracleId, cards.name, cards.artCropUri)
     .orderBy(desc(games), asc(cards.name), asc(cards.oracleId));
 }
 
@@ -235,17 +249,23 @@ export function historyTotalQuery(viewerId: string, q: Reader = db) {
 const asDate = (text: string | null): Date | null => (text === null ? null : new Date(`${text.replace(" ", "T")}Z`));
 
 async function readAggregates(viewerId: string, filter: GameHistoryFilter): Promise<HistoryAggregates> {
-  const [[total], months, [sum], top, friends, commanders] = await Promise.all([
+  const [[total], months, [sum], top, friends, commanders, byDeck, [others]] = await Promise.all([
     historyTotalQuery(viewerId),
     historyMonthsQuery(viewerId, filter),
     historySummaryQuery(viewerId, filter),
     historyTopDecksQuery(viewerId, filter),
     listPlayedAgainstFriends(viewerId),
     playedAgainstCommandersQuery(viewerId),
+    historyByDeckQuery(viewerId, filter),
+    // With no result filter on, the summary already counts every result; with one on, ask again without it.
+    filter.result === undefined ? Promise.resolve([undefined]) : historySummaryQuery(viewerId, { ...filter, result: undefined }),
   ]);
   const [lead, second] = top;
+  const across = others ?? sum;
   return {
     total: total?.total ?? 0,
+    byDeck: byDeck.map((d) => ({ deckId: d.deckId, games: d.games })),
+    byResult: { wins: across.wins, losses: across.losses, draws: across.draws },
     months: months.map((m) => ({ month: m.month, games: m.games })),
     summary: {
       games: sum.games,

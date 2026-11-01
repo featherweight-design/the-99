@@ -52,6 +52,12 @@ describe("playedAgainstFriendsQuery", () => {
     expect(q.sql).toContain(`"deck_games"."user_id" = $3`);
     expect(q.sql).toMatch(/group by "social_profiles"\."public_id", "social_profiles"\."display_name"/);
   });
+
+  it("draws the friend's face in the same statement as the grant: the profile's card and the printing it chose", () => {
+    expect(q.sql).toContain(`left join "cards" "commander_card" on "commander_card"."oracle_id" = "social_profiles"."commander_oracle_id"`);
+    expect(q.sql).toContain(`left join "printings" "face_printing" on`);
+    expect(q.sql).toContain(`coalesce("face_printing"."art_crop_uri", "commander_card"."art_crop_uri")`);
+  });
 });
 
 describe("seatsFromRows", () => {

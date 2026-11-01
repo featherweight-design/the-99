@@ -1,5 +1,5 @@
-// The cross-deck Games view (game history, build PR 2+3): rows per state, the summary, the month heads and the window
-// foot with its load-more success and failure. The filters are PR 4's and are not drawn.
+// The cross-deck Games view (game history, build PR 2+3, filters PR 4): rows per state, the summary, the month heads, the
+// window foot with its load-more success and failure, and the filters: chips, the no-match frame, the sheet and the panel.
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { HistoryGame } from "../../lib/games/history";
@@ -11,8 +11,11 @@ import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { named } from "../../lib/person-name/mint";
 import { GAME_HISTORY_WINDOW } from "../../lib/games/history-rules";
 
-const more = vi.hoisted(() => ({ load: vi.fn<(cursor: string) => Promise<unknown>>() }));
-vi.mock("../../app/decks/game-history-actions", () => ({ loadMoreGamesAction: (c: string) => more.load(c) }));
+const more = vi.hoisted(() => ({ load: vi.fn<(cursor: string, filter?: unknown) => Promise<unknown>>(), read: vi.fn<(filter: unknown) => Promise<unknown>>() }));
+vi.mock("../../app/decks/game-history-actions", () => ({
+  loadMoreGamesAction: (c: string, f?: unknown) => more.load(c, f),
+  readGameHistory: (f: unknown) => more.read(f),
+}));
 
 import { GamesView, groupByMonth } from "./games-view";
 
@@ -29,16 +32,25 @@ const summary = (over: Partial<GamesPayload["aggregates"]["summary"]> = {}): Gam
   mostPlayed: { deckId: "deck-dina", name: "HD - Dina", games: 8 }, friendWonLosses: null, ...over,
 });
 const payload = (games: HistoryGame[], over: Partial<GamesPayload> = {}, sum = summary()): GamesPayload => ({
+  filter: {},
   games, next: null,
-  aggregates: { total: sum.games, months: [{ month: "2026-10", games: 6 }, { month: "2026-09", games: 5 }], summary: sum },
+  aggregates: {
+    total: sum.games, months: [{ month: "2026-10", games: 6 }, { month: "2026-09", games: 5 }], summary: sum,
+    byResult: { wins: 9, losses: 12, draws: 2 }, byDeck: [{ deckId: "deck-sai", games: 5 }],
+    playedAgainst: {
+      friends: [{ publicId: "6f1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b", name: named("Colin"), games: 17, commander: null }],
+      commanders: [{ oracleId: "2121bcb4-f5fe-447f-9112-c7e5b5c45baf", name: "Ghalta, Primal Hunger", games: 12, artCropUri: null }],
+    },
+  },
   ...over,
 });
+const onData = vi.fn();
 const draw = (data: GamesPayload, decks: { id: string; name: string; identity: string[] }[] = [{ id: "deck-sai", name: "HD - Sai", identity: ["U"] }]) =>
-  render(<GamesView data={data} viewSwitch={<span>switch</span>} decks={decks} />);
+  render(<GamesView data={data} onData={onData} viewSwitch={<span>switch</span>} decks={decks} />);
 
 const TWO = [game("g1", "2026-10-30T12:00:00Z"), game("g2", "2026-09-19T12:00:00Z", { result: "loss", versionNumber: null, worked: [], hurt: [] })];
 
-beforeEach(() => more.load.mockReset());
+beforeEach(() => { more.load.mockReset(); more.read.mockReset(); onData.mockReset(); });
 
 describe("GamesView: the list", () => {
   it("groups by month the way the read does (UTC), newest first", () => {
@@ -115,7 +127,8 @@ describe("GamesView: the summary", () => {
     expect(screen.getByRole("heading", { level: 2, name: "23 games logged. 9–12–2." })).toBeInTheDocument();
     expect(document.querySelector("[data-games-summary]")).toHaveTextContent("6 decks · pods of 3–5 · Jul to Oct 2026");
     expect(document.querySelector("[data-games-summary]")).toHaveTextContent("most played HD - Dina, 8 of 23");
-    expect(document.querySelector("[data-games-count]")).toHaveTextContent("23 games");
+    // From three games of history on the count is the filter chassis's result line.
+    expect(document.querySelector('[data-chassis-row="result"]')).toHaveTextContent("23 games");
   });
 
   it("reuses the shipped one-game headline, names the deck, and says where games come from under three", () => {
@@ -238,11 +251,129 @@ describe("GamesView: the window", () => {
     const { rerender } = draw(first);
     fireEvent.click(screen.getByRole("button", { name: `Show ${GAME_HISTORY_WINDOW} more` }));
     const replaced = payload([game("n1", "2026-10-31T12:00:00Z")], { next: "2026-10-31 12:00:00|22222222-2222-4222-8222-222222222222" }, summary({ games: 212 }));
-    rerender(<GamesView data={replaced} viewSwitch={<span>switch</span>} decks={[]} />);
+    rerender(<GamesView data={replaced} onData={onData} viewSwitch={<span>switch</span>} decks={[]} />);
     expect(screen.getAllByRole("listitem")).toHaveLength(1);
     await act(async () => resolve({ ok: true, games: [game("old3", "2026-09-12T12:00:00Z")], next: null }));
     // The old window is not appended onto the new first one, and the new position is untouched.
     expect(screen.getAllByRole("listitem")).toHaveLength(1);
     expect(screen.getByRole("button", { name: `Show ${GAME_HISTORY_WINDOW} more` })).toBeInTheDocument();
+  });
+});
+
+const COLIN = "6f1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b";
+// A filtered window: the whole history is still 23 games, the list holds what the filter left.
+const filtered = (games: HistoryGame[], filter: GamesPayload["filter"], sum = summary({ games: games.length })): GamesPayload => {
+  const base = payload(games, { filter }, sum);
+  return { ...base, aggregates: { ...base.aggregates, total: 23 } };
+};
+
+describe("GamesView: the filters", () => {
+  it("draws none under three games of history, and every control from three", () => {
+    const { unmount } = draw(payload([TWO[0]], {}, summary({ games: 1, wins: 1, losses: 0, draws: 0, decks: 1, mostPlayed: null })));
+    expect(screen.queryByRole("button", { name: gameHistoryCopy.filter.open })).toBeNull();
+    unmount();
+    draw(payload(TWO));
+    expect(screen.getByRole("button", { name: gameHistoryCopy.filter.open })).toBeInTheDocument();
+    expect(screen.getByText("No filters on")).toBeInTheDocument();
+  });
+
+  it("names each active filter on a chip with its own way off, and the deck stays in its picker on the phone", () => {
+    draw(filtered(TWO, { deckId: "deck-sai", friend: COLIN, result: "win" }));
+    const chips = document.querySelector('[data-chassis-row="chips"]')!;
+    expect(chips).toHaveTextContent("Colin");
+    expect(chips).toHaveTextContent("Won");
+    // The phone's deck is the picker beside the switch, as the shelf is on Decks: not a chip.
+    expect(chips.textContent).not.toContain("HD - Sai");
+    expect(screen.getByRole("button", { name: gameHistoryCopy.filter.open })).toHaveTextContent("2");
+  });
+
+  it("asks for the list without a filter when its chip's ✕ is pressed, and keeps the others", async () => {
+    more.read.mockResolvedValue(payload(TWO));
+    draw(filtered(TWO, { friend: COLIN, result: "win" }));
+    fireEvent.click(screen.getByRole("button", { name: /Remove filter: Won/i }));
+    expect(more.read).toHaveBeenCalledWith({ friend: COLIN });
+    await waitFor(() => expect(onData).toHaveBeenCalledTimes(1));
+  });
+
+  it("serves a filter it has already read from the visit's cache, with no second ask", async () => {
+    const won = filtered(TWO, { result: "win" });
+    const all = payload(TWO);
+    more.read.mockResolvedValue(all);
+    const { rerender } = draw(won);
+    fireEvent.click(screen.getByRole("button", { name: /Remove filter: Won/i }));
+    await waitFor(() => expect(onData).toHaveBeenCalledWith(all));
+    // The parent draws what it was handed; Won was filed on its way past, so asking for it again reads nothing.
+    rerender(<GamesView data={all} onData={onData} viewSwitch={<span>switch</span>} decks={[]} />);
+    fireEvent.click(screen.getByRole("button", { name: gameHistoryCopy.filter.open }));
+    fireEvent.click(within(screen.getByRole("dialog", { name: gameHistoryCopy.filter.open })).getByRole("button", { name: /Won\s*9/ }));
+    expect(onData).toHaveBeenLastCalledWith(won);
+    expect(more.read).toHaveBeenCalledTimes(1);
+  });
+
+  it("draws the no-match frame in the list's place: no headline, no months, no foot, and a way out", async () => {
+    more.read.mockResolvedValue(payload(TWO));
+    draw(filtered([], { friend: COLIN, result: "win" }, summary({ games: 0, wins: 0, losses: 0, draws: 0, decks: 0, podMin: null, podMax: null, firstPlayedAt: null, lastPlayedAt: null, mostPlayed: null })));
+    expect(screen.getByRole("heading", { name: gameHistoryCopy.filter.noMatch })).toBeInTheDocument();
+    expect(document.querySelector("[data-games-summary]")).toBeNull();
+    expect(document.querySelector("[data-games-month]")).toBeNull();
+    expect(document.querySelector("[data-games-foot]")).toBeNull();
+    expect(document.querySelector('[data-chassis-row="result"]')).toHaveTextContent("0 games");
+    expect(document.querySelector('[data-chassis-row="chips"]')).toHaveTextContent("Won");
+    fireEvent.click(screen.getByRole("button", { name: gameHistoryCopy.filter.clearFilters }));
+    expect(more.read).toHaveBeenCalledWith({});
+  });
+
+  it("scopes the summary: the deck with the friend at the table, and the trophy line, with no most played", () => {
+    const sum = summary({ games: 5, wins: 2, losses: 3, draws: 0, decks: 1, podMin: 4, podMax: 4, friendWonLosses: { won: 2, losses: 3 }, mostPlayed: { deckId: "deck-sai", name: "HD - Sai", games: 5 } });
+    draw(filtered(TWO, { deckId: "deck-sai", friend: COLIN }, sum));
+    const box = document.querySelector("[data-games-summary]")!;
+    expect(box).toHaveTextContent("5 games logged. 2–3.");
+    expect(box).toHaveTextContent("HD - Sai with Colin at the table");
+    expect(box).toHaveTextContent("Colin won 2 of the 3 you lost");
+    expect(box.textContent).not.toContain("most played");
+    expect(box.textContent).not.toContain(gameHistoryCopy.low);
+  });
+
+  it("pages a filtered list under the filter it was read with", async () => {
+    more.load.mockResolvedValue({ ok: true, games: [], next: null } satisfies MoreGames);
+    const data = payload(TWO, { filter: { result: "loss" }, next: "2026-09-19 12:00:00|11111111-1111-4111-8111-111111111111" }, summary({ games: 212 }));
+    draw(data);
+    fireEvent.click(screen.getByRole("button", { name: `Show ${GAME_HISTORY_WINDOW} more` }));
+    await waitFor(() => expect(more.load).toHaveBeenCalledWith(data.next, { result: "loss" }));
+  });
+
+  it("opens the shared sheet with Result counts under the other filters, and a button that says what it would show", () => {
+    draw(payload(TWO));
+    fireEvent.click(screen.getByRole("button", { name: gameHistoryCopy.filter.open }));
+    const sheet = screen.getByRole("dialog", { name: gameHistoryCopy.filter.open });
+    expect(within(sheet).getByRole("button", { name: /Won\s*9/ })).toBeInTheDocument();
+    expect(within(sheet).getByRole("button", { name: /Drawn\s*2/ })).toBeInTheDocument();
+    expect(within(sheet).getByRole("button", { name: "Show 23 games" })).toBeInTheDocument();
+    expect(within(sheet).getByText("Colin")).toBeInTheDocument();
+    expect(within(sheet).getByText("Ghalta, Primal Hunger")).toBeInTheDocument();
+  });
+
+  it("never disables an option: a zero stays pressable", () => {
+    const base = payload(TWO);
+    draw({ ...base, aggregates: { ...base.aggregates, byResult: { wins: 2, losses: 3, draws: 0 } } });
+    fireEvent.click(screen.getByRole("button", { name: gameHistoryCopy.filter.open }));
+    expect(within(screen.getByRole("dialog", { name: gameHistoryCopy.filter.open })).getByRole("button", { name: /Drawn\s*0/ })).toBeEnabled();
+  });
+
+  it("searches friends and commanders in the sheet's list", () => {
+    draw(payload(TWO));
+    fireEvent.click(screen.getByRole("button", { name: gameHistoryCopy.filter.open }));
+    const sheet = screen.getByRole("dialog", { name: gameHistoryCopy.filter.open });
+    fireEvent.change(within(sheet).getByRole("searchbox", { name: gameHistoryCopy.filter.search }), { target: { value: "ghal" } });
+    expect(within(sheet).queryByText("Colin")).toBeNull();
+    expect(within(sheet).getByText("Ghalta, Primal Hunger")).toBeInTheDocument();
+  });
+
+  it("picks a friend in the sheet as one Played against choice", () => {
+    more.read.mockResolvedValue(payload(TWO));
+    draw(payload(TWO));
+    fireEvent.click(screen.getByRole("button", { name: gameHistoryCopy.filter.open }));
+    fireEvent.click(within(screen.getByRole("dialog", { name: gameHistoryCopy.filter.open })).getByRole("button", { name: /Colin/ }));
+    expect(more.read).toHaveBeenCalledWith({ friend: COLIN });
   });
 });

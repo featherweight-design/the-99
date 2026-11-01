@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   filterConditions, GAME_HISTORY_WINDOW, historyMonthsQuery, historyPageQuery, historySummaryQuery, historyTopDecksQuery,
-  historyTotalQuery, keysetAfter, playedAgainstCommandersQuery,
+  historyByDeckQuery, historyTotalQuery, keysetAfter, playedAgainstCommandersQuery,
 } from "./history";
 import { decodeCursor, encodeCursor } from "./history-rules";
 import { and, eq } from "drizzle-orm";
@@ -155,6 +155,22 @@ describe("aggregates", () => {
     const q = playedAgainstCommandersQuery(VIEWER).toSQL();
     expect(q.sql).toContain(`("cards"."oracle_id" = "deck_game_opponents"."commander_oracle_id" or "cards"."oracle_id" = "deck_game_opponents"."partner_oracle_id")`);
     expect(q.sql).toContain(`count(distinct "deck_game_opponents"."game_id")::int`);
+  });
+
+  it("each commander option carries its art, for the Played against list's thumbnail", () => {
+    const q = playedAgainstCommandersQuery(VIEWER).toSQL();
+    expect(q.sql).toContain(`"cards"."art_crop_uri"`);
+    expect(q.sql).toMatch(/group by "cards"\."oracle_id", "cards"\."name", "cards"\."art_crop_uri"/);
+  });
+});
+
+describe("the deck picker's counts", () => {
+  it("count per deck under every filter but the deck, scoped to the viewer's own games", () => {
+    const q = historyByDeckQuery(VIEWER, { deckId: DECK, result: "win" }).toSQL();
+    expect(q.sql).toMatch(/\("deck_games"\."user_id" = \$1 and "decks"\."user_id" = \$2\)/);
+    expect(q.sql).toContain(`group by "decks"."id"`);
+    expect(q.params).toContain("win");
+    expect(q.params).not.toContain(DECK);
   });
 });
 

@@ -29,7 +29,7 @@ const { DecksView } = await import("../../components/decks/decks-view");
 // The page draws the landing's mount beside the view (discovery R2·3): the view is the fragment's last child.
 const visit = async (searchParams: Record<string, string> = {}) => {
   const children = ((await DecksPage({ searchParams: Promise.resolve(searchParams) })) as ReactElement<{ children: ReactElement[] }>).props.children;
-  return children[children.length - 1] as ReactElement<{ helpMeChoose?: boolean; lineup?: { data: unknown; view: string; foldServer: string | null } | null; games?: { data: { games: unknown[]; next: string | null; aggregates: Record<string, unknown> } | null; failed: boolean } | null }>;
+  return children[children.length - 1] as ReactElement<{ helpMeChoose?: boolean; lineup?: { data: unknown; view: string; foldServer: string | null } | null; games?: { data: { games: unknown[]; next: string | null; aggregates: Record<string, unknown>; filter?: unknown } | null; failed: boolean } | null }>;
 };
 
 beforeEach(() => {
@@ -91,17 +91,26 @@ describe("/decks' games prop", () => {
     expect(history.load).not.toHaveBeenCalled();
   });
 
-  it("hands ?view=games the first window for the signed-in reader, without the filters' options, and draws no Stats", async () => {
+  it("hands ?view=games the first window for the signed-in reader, with the filters' options, and draws no Stats", async () => {
     history.load.mockResolvedValueOnce(FIRST);
     const page = await visit({ view: "games" });
     expect(history.load).toHaveBeenCalledTimes(1);
-    expect(history.load).toHaveBeenCalledWith("user_1");
+    expect(history.load).toHaveBeenCalledWith("user_1", { filter: {} });
     expect(page.props.games?.failed).toBe(false);
     expect(page.props.games?.data?.games).toEqual(FIRST.games);
     expect(page.props.games?.data?.next).toBe(FIRST.next);
-    expect(page.props.games?.data?.aggregates).toEqual({ total: 1, months: FIRST.aggregates.months, summary: FIRST.aggregates.summary });
+    expect(page.props.games?.data?.aggregates).toEqual(FIRST.aggregates);
+    expect(page.props.games?.data?.filter).toEqual({});
     expect(page.props.lineup).toEqual({ data: null, view: "tiles", foldServer: null });
     expect(lineup.read).not.toHaveBeenCalled();
+  });
+
+  it("reads the filters off the address and hands them to the read and to the view", async () => {
+    history.load.mockResolvedValueOnce(FIRST);
+    const page = await visit({ view: "games", deck: "d1", result: "win", friend: "f1", against: "c1" });
+    const filter = { deckId: "d1", result: "win", friend: "f1", commander: "c1" };
+    expect(history.load).toHaveBeenCalledWith("user_1", { filter });
+    expect(page.props.games?.data?.filter).toEqual(filter);
   });
 
   it("says the read failed, and still draws the tiles, when it returns no aggregates", async () => {

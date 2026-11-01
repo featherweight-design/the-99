@@ -35,10 +35,12 @@ const SHOPPING = { total: { copies: 0, cents: 0, pricedCopies: 0 }, byDeck: new 
 const LINEUP = { data: null, view: "tiles" as const, foldServer: null };
 const DECK_GAMES = { id: "d1", name: "HD - Gishath", identity: ["W", "R", "G"], commanderName: "Gishath", partnerName: null, commanderPrintedName: null, commanderImageUri: null, commanderArtCropUri: null };
 const PAYLOAD: GamesPayload = {
+  filter: {},
   games: [{ id: "g1", playedAt: new Date("2026-10-10T12:00:00Z"), result: "win", podSize: 4, versionNumber: null, note: null, worked: [], hurt: [], deck: DECK_GAMES, opponents: [] }],
   next: null,
   aggregates: {
-    total: 1, months: [{ month: "2026-10", games: 1 }],
+    total: 1, months: [{ month: "2026-10", games: 1 }], byResult: { wins: 1, losses: 0, draws: 0 }, byDeck: [{ deckId: "d1", games: 1 }],
+    playedAgainst: { friends: [], commanders: [] },
     summary: { games: 1, wins: 1, losses: 0, draws: 0, decks: 1, podMin: 4, podMax: 4, firstPlayedAt: new Date("2026-10-10T12:00:00Z"), lastPlayedAt: new Date("2026-10-10T12:00:00Z"), mostPlayed: null, friendWonLosses: null },
   },
 };

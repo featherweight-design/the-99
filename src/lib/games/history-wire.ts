@@ -1,13 +1,16 @@
-// What the Games view on /decks carries across the server boundary (build PR 2+3, filter-free). Types and one pure step:
-// no database import, so the client view and a test reach it. The read's `playedAgainst` options are the filters' (PR 4)
-// and hold friends' names, so they are left out here rather than shipped to a view that draws none of them.
+// What the Games view on /decks carries across the server boundary (build PR 2+3, filters PR 4). Types and one pure step:
+// no database import, so the client view and a test reach it. The read's `playedAgainst` options ride with every first
+// window now: the filters draw them (friends as `ThirdPartyName`s with a `public_id`, never an account id).
 
 import type { GameHistory, HistoryAggregates, HistoryGame } from "./history";
+import type { GameHistoryFilter } from "./history-rules";
 
-export type GamesAggregates = Omit<HistoryAggregates, "playedAgainst">;
+export type GamesAggregates = HistoryAggregates;
 
 /** The first window and what summarizes the whole history. */
 export type GamesPayload = {
+  /** The filter this window was read under: the payload names its own, so a held one can never be drawn under another's controls. */
+  filter: GameHistoryFilter;
   games: HistoryGame[];
   /** Pass to `loadMoreGamesAction` for the next window; null at the end. */
   next: string | null;
@@ -18,8 +21,7 @@ export type GamesPayload = {
 export type MoreGames = { ok: true; games: HistoryGame[]; next: string | null } | { ok: false };
 
 /** The first window as the view takes it; null when the read carried no aggregates (it was not a first window). */
-export function toGamesPayload(history: GameHistory): GamesPayload | null {
+export function toGamesPayload(history: GameHistory, filter: GameHistoryFilter = {}): GamesPayload | null {
   if (!history.aggregates) return null;
-  const { total, months, summary } = history.aggregates;
-  return { games: history.games, next: history.next, aggregates: { total, months, summary } };
+  return { filter, games: history.games, next: history.next, aggregates: history.aggregates };
 }
