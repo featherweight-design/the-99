@@ -23,7 +23,8 @@ describe("resolving seat notices", () => {
       { kind: "rule_zero_seat" as const, key: "table:not-an-id", batch: "x" },
     ];
     const { items, dropped } = await resolvePushItems("u1", refs, {} as NodeJS.ProcessEnv, NOW, never);
-    expect(m.unseenSeatNotices).toHaveBeenCalledWith("u1", [T1, T2]);
+    // The resolver's injected executor reaches the seat read too (Copilot, round 1): same reader for every resolution.
+    expect(m.unseenSeatNotices).toHaveBeenCalledWith("u1", [T1, T2], never);
     expect(items).toEqual([{ kind: "rule_zero_seat", key: `table:${T1}`, batch: `table:${T1}`, tableId: T1, host: "Colin", pod: "Thursday night", deck: "Atraxa" }]);
     expect(dropped.map((d) => d.key)).toEqual([`table:${T2}`, "table:not-an-id"]);
   });
