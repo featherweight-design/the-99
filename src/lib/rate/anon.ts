@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { isIP } from "node:net";
 import { after } from "next/server";
 import { resolveSwitchEnv } from "../switches/snapshot";
 import { rateLimitEnabled } from "./flag";
@@ -24,12 +25,32 @@ import { overLimit, RATE_RULES, type RateBucket } from "./rules";
 export const ANON_PREFIX = "anon:";
 export const UNKNOWN_KEY = `${ANON_PREFIX}unknown`;
 
-/** The visitor's network address from the platform's headers, or null. Vercel sets these itself; they are spoofable elsewhere, which an observe-only counter tolerates and an enforced one (`overAnonymousLimit`) bounds only on Vercel. The key carries the UTC day, so a window that straddles midnight counts twice. */
+/**
+ * One header value as a syntactically valid IPv4 or IPv6 address, or null. Brackets (`[::1]`) and a trailing port (`1.2.3.4:80`,
+ * `[::1]:80`) are dropped first, since a proxy may send either; a valid bare address comes back unchanged. Anything else (free
+ * text, a list, "unknown") is null, so header text an attacker controls cannot mint a fresh `rate_hits` key per request.
+ */
+function validAddress(raw: string | null | undefined): string | null {
+  let text = raw?.trim() ?? "";
+  if (!text) return null;
+  const bracketed = /^\[([^\]]+)\](?::\d{1,5})?$/.exec(text);
+  if (bracketed) text = bracketed[1];
+  else {
+    const withPort = /^(\d{1,3}(?:\.\d{1,3}){3}):\d{1,5}$/.exec(text);
+    if (withPort) text = withPort[1];
+  }
+  return isIP(text) !== 0 ? text : null;
+}
+
+/** The visitor's network address from the platform's headers, or null when absent or not a valid IP. Vercel sets these itself; they are spoofable elsewhere, which an observe-only counter tolerates and an enforced one (`overAnonymousLimit`) bounds only on Vercel. The key carries the UTC day, so a window that straddles midnight counts twice. */
 export function clientAddress(headers: Pick<Headers, "get">): string | null {
-  const direct = headers.get("x-real-ip") ?? headers.get("x-vercel-forwarded-for");
-  const first = direct ?? headers.get("x-forwarded-for")?.split(",")[0];
-  const address = first?.trim();
-  return address ? address : null;
+  // Platform headers first, then the first hop of x-forwarded-for. The first VALID one wins; an empty or malformed header is absent, so it cannot shadow a real one.
+  const candidates = [headers.get("x-real-ip"), headers.get("x-vercel-forwarded-for"), headers.get("x-forwarded-for")?.split(",")[0]];
+  for (const c of candidates) {
+    const ok = validAddress(c);
+    if (ok) return ok;
+  }
+  return null;
 }
 
 /** An IPv6 address as eight 16-bit groups, or null when it is not one (an embedded dotted IPv4 tail counts as two groups). */
@@ -69,7 +90,7 @@ export function networkOf(raw: string): string {
 
 /** The `rate_hits` key for a visitor on a UTC day. */
 export function anonKey(address: string | null, now: Date = new Date()): string {
-  if (address === null) return UNKNOWN_KEY;
+  if (address === null || validAddress(address) === null) return UNKNOWN_KEY;
   const day = now.toISOString().slice(0, 10);
   return ANON_PREFIX + createHash("sha256").update(`${networkOf(address)}|${day}`).digest("hex").slice(0, 16);
 }
@@ -100,17 +121,24 @@ export async function observeAnonymousHit(headers: Pick<Headers, "get">): Promis
   });
 }
 
+/** Hits a window the shared `UNKNOWN_KEY` is allowed in an enforced bucket (or the bucket's own limit, if lower). */
+export const UNKNOWN_CAP = 3;
+
 /**
  * An ENFORCED anonymous hit: counts one in `bucket` under the visitor's key and says whether it is over the rule. Unlike
  * `observeAnonymousHit` it counts before answering and does not look at `RATE_LIMIT_ENABLED`; the launch list is a stranger's
  * write. A counting failure lets the hit through (fail open): a database hiccup must not turn every reader away.
+ *
+ * A request with no valid address is counted under the shared `UNKNOWN_KEY` with a LOW cap (`UNKNOWN_CAP` a window), not let
+ * through uncounted: letting it through would make "send no address header" a way round every cap. The cap is low because the
+ * shared key pools every such visitor, and on Vercel a real visitor always has an address, so the pool is nearly all abuse; a
+ * few hits a window still lets a stray honest one in.
  */
 export async function overAnonymousLimit(headers: Pick<Headers, "get">, bucket: RateBucket): Promise<boolean> {
   const address = clientAddress(headers);
-  // No address to count under: a shared bucket would throttle every header-less visitor together, so let the hit through.
-  if (address === null) return false;
+  const rule = address === null ? { ...RATE_RULES[bucket], limit: Math.min(RATE_RULES[bucket].limit, UNKNOWN_CAP) } : RATE_RULES[bucket];
   try {
-    return overLimit(await recordHit(anonKey(address), bucket), RATE_RULES[bucket]);
+    return overLimit(await recordHit(anonKey(address), bucket), rule);
   } catch {
     return false;
   }

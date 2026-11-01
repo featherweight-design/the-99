@@ -51,6 +51,13 @@ export const RATE_RULES = {
    * eleventh in an hour is refused. An honest reader leaves one address, a household a few.
    */
   "launch-list": { limit: 10, windowMs: 3_600_000 },
+  /**
+   * A problem report filed SIGNED OUT, per VISITOR (`anon.ts`): 10 an hour, ENFORCED like `launch-list`. The daily cap is the
+   * next bucket, because a bucket holds one window.
+   */
+  "report-anon": { limit: 10, windowMs: 3_600_000 },
+  /** The same visitor's DAILY cap on signed-out reports (30 a day), ENFORCED; both buckets must pass. */
+  "report-anon-day": { limit: 30, windowMs: 86_400_000 },
   /** A problem report (flyer trial PR 5), per player. Observe-only: an honest reader sends one or two; dozens an hour is a loop. */
   feedback: { limit: 20, windowMs: 3_600_000 },
 } as const satisfies Record<string, RateRule>;
@@ -69,3 +76,8 @@ export function overLimit(hits: number, rule: RateRule): boolean {
 
 /** How long a window's row is kept, whoever it belongs to: the bound on a row written after its account was purged. */
 export const RETAIN_MS = 60 * 60 * 1000;
+
+/** How long a bucket's row must outlive its window start: `RETAIN_MS`, or the whole window when that is longer (a day cap's row starts at 00:00 and has to survive the day, or the sweep would reset the cap). */
+export function retainMs(bucket: RateBucket): number {
+  return Math.max(RETAIN_MS, RATE_RULES[bucket].windowMs);
+}

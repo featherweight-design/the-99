@@ -3,7 +3,7 @@ import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { requestSwitchEnv } from "../switches/request";
 import { rateLimitEnabled } from "./flag";
-import { overLimit, RETAIN_MS, RATE_RULES, windowStart, type RateBucket } from "./rules";
+import { overLimit, RATE_RULES, retainMs, windowStart, type RateBucket } from "./rules";
 
 /**
  * Counts one hit by `userId` in `bucket` and returns the window's count so far. ONE statement: it
@@ -12,7 +12,7 @@ import { overLimit, RETAIN_MS, RATE_RULES, windowStart, type RateBucket } from "
  * minute, and only the current one survives the next hit). The delete is a CTE, so it runs whether
  * or not the upsert conflicts.
  *
- * It ALSO deletes every row, anyone's, older than `RETAIN_MS` (an indexed range delete). That is a retention sweep,
+ * It ALSO deletes every row, anyone's, older than its bucket's `retainMs` (`RETAIN_MS`, or the bucket's whole window when longer, so a daily cap is not reset by the sweep; an indexed range delete). That is a retention sweep,
  * not a guarantee: it runs when the counter is next hit, by anyone. The write is deferred (`after()`), so one
  * scheduled before an account's deletion could land after the purge, and the row (an account id, a bucket, a minute
  * and a count) would then stay until the next hit and no longer. Closing that race outright needs a purge lock and a
@@ -22,11 +22,14 @@ import { overLimit, RETAIN_MS, RATE_RULES, windowStart, type RateBucket } from "
 export async function recordHit(userId: string, bucket: RateBucket, now: Date = new Date()): Promise<number> {
   const rule = RATE_RULES[bucket];
   const start = windowStart(now, rule.windowMs);
+  const aged = (Object.keys(RATE_RULES) as RateBucket[]).map(
+    (b) => sql`(bucket = ${b} and window_start < ${new Date(start.getTime() - retainMs(b)).toISOString()}::timestamp)`,
+  );
   const res = await db.execute(sql`
     with swept as (
       delete from rate_hits
       where (user_id = ${userId} and bucket = ${bucket} and window_start < ${start.toISOString()}::timestamp)
-         or window_start < ${new Date(start.getTime() - RETAIN_MS).toISOString()}::timestamp
+         or ${sql.join(aged, sql` or `)}
     )
     insert into rate_hits (user_id, bucket, window_start, hits)
     values (${userId}, ${bucket}, ${start.toISOString()}::timestamp, 1)

@@ -15,6 +15,7 @@ vi.mock("../../db", () => ({ db: { execute: async (q: unknown) => { h.executed.p
 
 import { PgDialect } from "drizzle-orm/pg-core";
 import { observeHit, recordHit } from "./observe";
+import { RETAIN_MS, retainMs } from "./rules";
 
 const flush = async () => { for (const fn of h.after.splice(0)) await fn(); };
 
@@ -35,11 +36,20 @@ describe("recordHit", () => {
     expect(sql).toMatch(/where \(user_id = \$\d+ and bucket = \$\d+ and window_start </);
     expect(sql).toContain("window_start <");
     // Anyone's rows past the retention go too, which bounds a row an in-flight hit writes after its account is purged.
-    expect(sql).toMatch(/or\s+window_start </);
+    expect(sql).toMatch(/or \(bucket = \$\d+ and window_start </);
     expect(params).toContain("2026-10-13T11:00:00.000Z");
     expect(sql).toContain("on conflict (user_id, bucket, window_start) do update set hits = rate_hits.hits + 1");
     expect(params).toContain("user_1");
     expect(params).toContain("2026-10-13T12:00:00.000Z");
+  });
+  it("keeps a daily bucket's row for the whole day: the sweep cutoff is the window, not the hour", async () => {
+    // A day row starts at 00:00 UTC; an hour-bucket hit at 03:00 must not delete it (it would reset the 30-a-day cap).
+    await recordHit("anon:abc", "report-anon", new Date("2026-10-13T03:10:00Z"));
+    const { params } = new PgDialect().sqlToQuery(h.executed[0] as never);
+    const cutoffs = params.filter((p) => typeof p === "string" && /^2026-10-1\dT/.test(p));
+    expect(cutoffs).toContain("2026-10-12T03:00:00.000Z");
+    expect(retainMs("report-anon-day")).toBe(86_400_000);
+    expect(retainMs("report-anon")).toBe(RETAIN_MS);
   });
   it("returns the window's count as a number", async () => {
     h.rows = [{ hits: "7" }];

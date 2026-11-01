@@ -8,6 +8,11 @@ describe("parseReport", () => {
     expect(parseReport({ ...ok, what: "  blank page  ", doing: "   " })).toMatchObject({ what: "blank page", doing: null, source: "error" });
   });
 
+  it("drops NUL characters, which the jsonb answers cannot hold, and refuses a box that was only NULs", () => {
+    expect(parseReport({ ...ok, what: "blank\u0000 page", doing: "\u0000" })).toMatchObject({ what: "blank page", doing: null });
+    expect(parseReport({ ...ok, what: "\u0000\u0000" })).toBeNull();
+  });
+
   it("refuses an empty first box, a non-string, and anything over its cap", () => {
     expect(parseReport({ ...ok, what: "   " })).toBeNull();
     expect(parseReport({ ...ok, what: 7 })).toBeNull();
@@ -17,7 +22,8 @@ describe("parseReport", () => {
     expect(parseReport({ ...ok, what: "x".repeat(WHAT_MAX), doing: "y".repeat(DOING_MAX) })).not.toBeNull();
   });
 
-  it("knows only the two doors", () => {
+  it("knows only the three doors", () => {
+    expect(parseReport({ ...ok, source: "report" })?.source).toBe("report");
     expect(parseReport({ ...ok, source: "about" })?.source).toBe("about");
     expect(parseReport({ ...ok, source: "elsewhere" })).toBeNull();
     expect(parseReport({ ...ok, source: undefined })).toBeNull();

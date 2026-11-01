@@ -13,7 +13,7 @@ vi.mock("next/server", () => ({ after: (fn: () => Promise<void>) => { h.after.pu
 vi.mock("../switches/snapshot", () => ({ resolveSwitchEnv: async (u: unknown) => { expect(u).toBeNull(); if (h.envThrows) throw new Error("db down"); return h.env; } }));
 vi.mock("./observe", () => ({ recordHit: async (key: string, bucket: string) => { if (h.recordThrows) throw new Error("x"); h.recorded.push([key, bucket]); return h.hits; } }));
 
-import { anonKey, ANON_PREFIX, clientAddress, networkOf, observeAnonymousHit, overAnonymousLimit, UNKNOWN_KEY } from "./anon";
+import { anonKey, ANON_PREFIX, clientAddress, networkOf, observeAnonymousHit, overAnonymousLimit, UNKNOWN_CAP, UNKNOWN_KEY } from "./anon";
 
 const hdr = (o: Record<string, string>) => ({ get: (k: string) => o[k.toLowerCase()] ?? null });
 const flush = async () => { for (const fn of h.after.splice(0)) await fn(); };
@@ -26,12 +26,40 @@ beforeEach(() => {
 });
 
 describe("clientAddress", () => {
+  it("reads an empty header as absent, so it cannot shadow the real address", () => {
+    expect(clientAddress(hdr({ "x-real-ip": "", "x-forwarded-for": "9.9.9.9" }))).toBe("9.9.9.9");
+    expect(clientAddress(hdr({ "x-real-ip": "", "x-vercel-forwarded-for": "5.6.7.8" }))).toBe("5.6.7.8");
+  });
+
   it("prefers x-real-ip, then x-vercel-forwarded-for, then the first hop of x-forwarded-for", () => {
     expect(clientAddress(hdr({ "x-real-ip": "1.2.3.4", "x-forwarded-for": "9.9.9.9" }))).toBe("1.2.3.4");
     expect(clientAddress(hdr({ "x-vercel-forwarded-for": "5.6.7.8", "x-forwarded-for": "9.9.9.9" }))).toBe("5.6.7.8");
     expect(clientAddress(hdr({ "x-forwarded-for": " 9.9.9.9 , 10.0.0.1" }))).toBe("9.9.9.9");
     expect(clientAddress(hdr({}))).toBeNull();
     expect(clientAddress(hdr({ "x-forwarded-for": " " }))).toBeNull();
+  });
+});
+
+describe("clientAddress validation", () => {
+  it("treats text that is not an IP as absent", () => {
+    for (const junk of ["unknown", "abc", "1.2.3", "999.1.1.1", "1.2.3.4, 5.6.7.8", "<script>", "a".repeat(300)]) {
+      expect(clientAddress(hdr({ "x-real-ip": junk })), junk).toBeNull();
+      // A list in x-forwarded-for is the proxy chain: its first hop is the address, so only the other junk is absent.
+      if (!junk.includes(",")) expect(clientAddress(hdr({ "x-forwarded-for": junk })), junk).toBeNull();
+    }
+    expect(clientAddress(hdr({ "x-forwarded-for": "1.2.3.4, 5.6.7.8" }))).toBe("1.2.3.4");
+    expect(anonKey("not-an-ip", DAY)).toBe(UNKNOWN_KEY);
+  });
+
+  it("skips an invalid platform header for a valid later one", () => {
+    expect(clientAddress(hdr({ "x-real-ip": "garbage", "x-forwarded-for": "9.9.9.9" }))).toBe("9.9.9.9");
+  });
+
+  it("accepts IPv6 and drops brackets and a port, leaving a valid bare address unchanged", () => {
+    expect(clientAddress(hdr({ "x-real-ip": "2001:db8::1" }))).toBe("2001:db8::1");
+    expect(clientAddress(hdr({ "x-real-ip": "::ffff:1.2.3.4" }))).toBe("::ffff:1.2.3.4");
+    expect(clientAddress(hdr({ "x-real-ip": "[2001:db8::1]:443" }))).toBe("2001:db8::1");
+    expect(clientAddress(hdr({ "x-real-ip": "1.2.3.4:5678" }))).toBe("1.2.3.4");
   });
 });
 
@@ -151,10 +179,23 @@ describe("overAnonymousLimit", () => {
     expect(await overAnonymousLimit(hdr({ "x-real-ip": "1.2.3.4" }), "launch-list")).toBe(true);
   });
 
-  it("lets a header-less request through without counting it under the shared key", async () => {
-    h.hits = 99;
+  it("counts a header-less request under the shared key with a low cap", async () => {
+    h.hits = UNKNOWN_CAP;
     expect(await overAnonymousLimit(hdr({}), "launch-list")).toBe(false);
-    expect(h.recorded).toHaveLength(0);
+    expect(h.recorded).toEqual([[UNKNOWN_KEY, "launch-list"]]);
+    h.hits = UNKNOWN_CAP + 1;
+    expect(await overAnonymousLimit(hdr({}), "launch-list")).toBe(true);
+  });
+
+  it("counts an invalid address under the shared key too, so header text cannot mint keys", async () => {
+    h.hits = 4;
+    expect(await overAnonymousLimit(hdr({ "x-real-ip": "not-an-ip" }), "report-anon")).toBe(true);
+    expect(h.recorded[0][0]).toBe(UNKNOWN_KEY);
+  });
+
+  it("fails open on a counting error for the unknown key", async () => {
+    h.recordThrows = true;
+    expect(await overAnonymousLimit(hdr({}), "launch-list")).toBe(false);
   });
 
   it("fails open when counting fails", async () => {
