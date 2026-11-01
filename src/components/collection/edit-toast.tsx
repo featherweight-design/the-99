@@ -2,10 +2,12 @@
 // The toast an Edit copies save or removal leaves behind (collection edit R2 §D), with its Undo: a
 // revert of that entry through the same confirmation History draws, so through §E.
 //
-// It lives in the place head, which the (list) layout keeps mounted, and not in the card modal's
-// provider: removing the LAST card turns /collection into its empty state, which unmounts the
-// provider and everything in it, and the toast carrying Undo for exactly that removal went with it.
-// The sheet's host announces a toast through `announceEditToast`, and this draws it.
+// It lives in the shell, drawn once for every page (add a card from anywhere, READINESS O1), and not in
+// the card modal's provider: removing the LAST card turns /collection into its empty state, which
+// unmounts the provider and everything in it, and the toast carrying Undo for exactly that removal
+// went with it. Card details adds from every page in the shell, so the toast cannot live in
+// /collection's place head either. The sheet's host announces a toast through `announceEditToast`,
+// and this draws it.
 //
 // The frame and its clock are shared: I got it's receipt on a deck page (`got-it-receipt.tsx`) is
 // this toast with a detail line, a body, History and an in-toast Undo, held on hover and focus.

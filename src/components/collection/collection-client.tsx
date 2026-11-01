@@ -28,7 +28,6 @@ export function CollectionClient({
   availabilityOk,
   pricesFailed = false,
   viewHint,
-  collectionEdit = false,
 }: {
   wire: CollectionWire;
   ownedSets: OwnedSetMeta[];
@@ -37,8 +36,6 @@ export function CollectionClient({
   pricesFailed?: boolean;
   /** The page's two view-cookie hints. Absent reads as no hint, as `CollectionBrowser` reads it. */
   viewHint?: ViewHint;
-  /** The card modal's receipt draws `Edit copies` (collection edit R2 §C); `/collection` always passes it. */
-  collectionEdit?: boolean;
 }) {
   // Decoded once per payload: the same wire identity is the same list, so everything below
   // that compares `cards` by identity keeps working.
@@ -87,7 +84,7 @@ export function CollectionClient({
   );
 
   return (
-    <CardDetailProvider onArtChange={onArtChange} collectionEdit={collectionEdit}>
+    <CardDetailProvider onArtChange={onArtChange}>
       <CollectionBrowser
         cards={patched}
         served={cards}

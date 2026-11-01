@@ -25,6 +25,7 @@ vi.mock("../collection/edit-copies-host", () => ({
 }));
 
 const { CardDetailProvider, CardDetailTrigger } = await import("./card-detail-provider");
+const { CollectionEditScope } = await import("./collection-edit-scope");
 // The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
 await (await import("./card-detail-provider")).warmCardModal();
 
@@ -36,13 +37,14 @@ const sol = (over: Partial<BrowseCard> = {}): BrowseCard => ({
 });
 const free = { owned: 5, hard: 0, soft: 0, free: 5, claims: [] } as unknown as BrowseCard["availability"];
 
-function mount(card: BrowseCard, props: { collectionEdit?: boolean; deckId?: string | null } = {}) {
+function mount(card: BrowseCard, props: { collectionEdit?: boolean; deckId?: string | null } = {}, { inShell = false } = {}) {
   const fetchCard = vi.fn(async () => card);
-  render(
+  const provider = (
     <CardDetailProvider fetchCard={fetchCard} {...props}>
       <CardDetailTrigger oracleId={card.oracleId} name={card.name}>open</CardDetailTrigger>
-    </CardDetailProvider>,
+    </CardDetailProvider>
   );
+  render(inShell ? <CollectionEditScope>{provider}</CollectionEditScope> : provider);
   return fetchCard;
 }
 async function openCard() {
@@ -69,18 +71,52 @@ describe("the receipt's Edit copies link", () => {
     expect(screen.getByTestId("edit-copies-link").textContent).toBe(copy.addToCollection);
   });
 
-  it("is absent when the switch is off, and a free card keeps NO receipt (the shipped tree)", async () => {
+  it("is absent outside the shell (a signed-out page), and a free card keeps NO receipt there", async () => {
     mount(sol({ availability: free }));
     await openCard();
     expect(screen.queryByTestId("edit-copies-link")).toBeNull();
     expect(screen.queryByText("In your collection")).toBeNull();
   });
 
-  it("is absent from a deck page's provider even with the prop, because a deck's modal is read-only", async () => {
-    // A deck page never passes `collectionEdit`; this pins that the prop is the only gate.
+  it("is absent from a deck page's provider outside the shell", async () => {
+    // Outside the shell nothing turns it on: the scope, or the prop, is the only gate.
     mount(sol({ availability: free }), { deckId: "deck-1" });
     await openCard();
     expect(screen.queryByTestId("edit-copies-link")).toBeNull();
+  });
+});
+
+// Add a card from anywhere, D (READINESS O3): every provider inside the shell draws the link by default.
+describe("the link inside the shell", () => {
+  const none = { owned: 0, hard: 0, soft: 0, free: 0, claims: [] } as unknown as BrowseCard["availability"];
+
+  it("draws Add to collection on a deck page's card the reader owns none of, with no prop passed", async () => {
+    mount(sol({ quantity: 0, availability: none }), { deckId: "deck-1" }, { inShell: true });
+    await openCard();
+    expect(screen.getByTestId("edit-copies-link").textContent).toBe(copy.addToCollection);
+    // The receipt draws with nothing to report, so the link has its label line (D2).
+    expect(screen.getByTestId("owned-receipt").textContent).toContain("In your collection");
+  });
+
+  it("draws Edit copies on any other surface's card the reader owns", async () => {
+    mount(sol({ availability: free }), {}, { inShell: true });
+    await openCard();
+    expect(screen.getByTestId("edit-copies-link").textContent).toBe(copy.edit);
+  });
+
+  it("is off where a provider inside the shell says so", async () => {
+    mount(sol({ availability: free }), { collectionEdit: false }, { inShell: true });
+    await openCard();
+    expect(screen.queryByTestId("edit-copies-link")).toBeNull();
+  });
+
+  it("opens the Edit copies host from a deck page, as it does on /collection", async () => {
+    mount(sol({ quantity: 0, availability: none }), { deckId: "deck-1" }, { inShell: true });
+    await openCard();
+    await act(async () => fireEvent.click(screen.getByTestId("edit-copies-link")));
+    await screen.findByTestId("host");
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(hostProps.mock.calls.at(-1)?.[0].card).toMatchObject({ oracleId: "o-sol", name: "Sol Ring" });
   });
 });
 

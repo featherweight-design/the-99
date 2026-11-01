@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { PublicCard, PublicPrinting } from "../../lib/public/card";
 import { PublicCardPage } from "./card-page";
 import { PHONE_PRINTINGS } from "./printings";
+import { CollectionEditScope } from "../cards/collection-edit-scope";
 
 const NO_BRACKET_FLAGS = { massLandDenial: false, massLandDenialSources: [], extraTurn: false, extraTurnSources: [], tutor: false };
 
@@ -146,5 +147,17 @@ describe("the public card page", () => {
     for (const a of search) {
       expect(a.className).toContain("min-h-[44px]");
     }
+  });
+});
+
+// Add a card from anywhere, D (READINESS O3): card details adds wherever the shell is, but not on the public card page.
+// A signed-in reader still gets the shell around it, so the page is drawn inside the scope here: it mounts no card
+// details, so nothing on it reads the scope and no link to the collection is drawn.
+describe("the public card page inside the signed-in shell", () => {
+  it("draws no Add to collection or Edit copies link", () => {
+    render(<CollectionEditScope><PublicCardPage card={rootha} commanderLinks /></CollectionEditScope>);
+    expect(screen.queryByTestId("edit-copies-link")).toBeNull();
+    expect(screen.queryByText("Add to collection")).toBeNull();
+    expect(screen.queryByText("Edit copies")).toBeNull();
   });
 });

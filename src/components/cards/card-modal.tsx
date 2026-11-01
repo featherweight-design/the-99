@@ -244,8 +244,9 @@ function OwnedLine({ card, deckPage }: { card: BrowseCard; deckPage: boolean }) 
 
 
 /**
- * The receipt's label line: its heading, and the one link it carries: on /collection the link that
- * edits what the reader owns (collection edit R2 §C1), or from a Shopping row I got it's (A11).
+ * The receipt's label line: its heading, and the one link it carries: inside the shell the link that
+ * edits what the reader owns (collection edit R2 §C1, add a card from anywhere D), or from a Shopping row
+ * I got it's (A11), which takes the slot from it there.
  */
 function ReceiptHeading({ owned, onEditCopies, link = null }: { owned: number; onEditCopies: (() => void) | null; link?: ReactNode }) {
   const c = availabilityCopy.collection;
@@ -282,7 +283,7 @@ function AvailabilityDetail({
   // The decks wanting it only in a draft (`loadDraftWants`). Not claims, so no figure below counts
   // them, but they are rows of "In your decks": a card mid-tune is wanted, never by nobody.
   const drafts = card.draftWants ?? [];
-  // From /collection, and from a Shopping row with I got it on, the receipt draws even when it has
+  // Inside the shell (the edit link), and from a Shopping row with I got it on, the receipt draws even when it has
   // nothing to report, because a link lives on its label line: a card with no claims would otherwise
   // have nowhere to put it. Anywhere else a receipt with nothing in it stays absent, as it was.
   if ((onEditCopies || receiptLink) && (!a || (state === "free" && a.claims.length === 0 && drafts.length === 0))) {

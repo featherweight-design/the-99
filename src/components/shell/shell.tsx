@@ -1,6 +1,9 @@
 import { shellUserId } from "./shell-session";
 import { DeckToastStackHost } from "../decks/deck-toast-stack";
 import { CartToastStackHost } from "../decks/cart/cart-toast-stack";
+import { CollectionEditToast } from "../collection/edit-toast";
+import { CollectionEditScope } from "../cards/collection-edit-scope";
+import { COVERED_WITH_MAIN } from "./covered-layer";
 import { after } from "next/server";
 import { NavRail, TabBar, MobileHeader, type NavBadges } from "./nav";
 import { getCollectionStats, hasAnyDeck } from "../../lib/home/summary";
@@ -141,6 +144,9 @@ export default async function Shell({
       {/* `navLocked`: the shell's own lock, which the tour taken again (R3·2) reads for its captions. */}
       <TargetsProvider navLocked={locked}>
       <MomentsProvider live={moments} spent={spentMoments}>
+      {/* Card details adds to the collection on every surface inside the shell, the search layer's own included
+          (add a card from anywhere D, READINESS O3). Around the search root, which mounts that layer. */}
+      <CollectionEditScope>
       <CardSearchRoot userId={userId}>
       <HelpRoot>
       {pushOn && <PushHeartbeat />}
@@ -177,9 +183,16 @@ export default async function Shell({
         <CartToastStackHost />
         {/* Rule 0's "seated you" toast (revisions item 6): reads the reader's unseen seat notices; none on Home or on its own table. */}
         <SeatNoticeHost />
+        {/* The Edit copies toast with its Undo (collection edit R2 §D), drawn once for every page: card details adds from
+            anywhere in the shell, so the save's toast cannot live in /collection's head (READINESS O1). It belongs to
+            the page, so a navigation's screen makes it inert with <main> and its clock stops. */}
+        <div {...{ [COVERED_WITH_MAIN]: "" }} className="contents">
+          <CollectionEditToast />
+        </div>
       </div>
       </HelpRoot>
       </CardSearchRoot>
+      </CollectionEditScope>
       </MomentsProvider>
       </TargetsProvider>
     </NavigationPendingProvider>
