@@ -3762,6 +3762,9 @@ export const ruleZeroTables = pgTable("rule_zero_tables", {
   setBy: text("set_by").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  // Closed by its setter before the morning end (`closeTable`); null while it runs to `expires_at`. `closed_by` is a user id.
+  closedAt: timestamp("closed_at", { withTimezone: true }),
+  closedBy: text("closed_by"),
 }, (t) => [
   index("rule_zero_tables_pod_idx").on(t.podId, t.expiresAt),
   index("rule_zero_tables_set_by_idx").on(t.setBy),

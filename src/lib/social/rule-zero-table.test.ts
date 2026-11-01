@@ -3,7 +3,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { db } from "../../db";
 import { PgDialect } from "drizzle-orm/pg-core";
-import { ON_THE_SPOT_MAX, loadTable, ownDecksQuery, readOnTheSpot, seatTargetQuery, seatsQuery, tableGrantQuery } from "./rule-zero-table";
+import { ON_THE_SPOT_MAX, closedHow, loadTable, ownDecksQuery, readOnTheSpot, seatTargetQuery, seatsQuery, tableGrantQuery } from "./rule-zero-table";
 
 const VIEWER = "user_viewer";
 const TABLE = "6f1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b";
@@ -38,7 +38,7 @@ describe("tableGrantQuery", () => {
   });
 
   it("decides open by the database's clock, qualified to the table", () => {
-    expect(q.sql).toMatch(/where \("rule_zero_tables"\."id" = \$3 and "rule_zero_tables"\."expires_at" > now\(\)\)$/);
+    expect(q.sql).toMatch(/where \("rule_zero_tables"\."id" = \$3 and \("rule_zero_tables"\."closed_at" is null and "rule_zero_tables"\."expires_at" > now\(\)\)\)$/);
     expect(q.params).toEqual([VIEWER, VIEWER, TABLE]);
   });
 
@@ -55,7 +55,15 @@ describe("tableGrantQuery, closed", () => {
   it("asks the same grant of a table whose night has ended, on the database's clock", () => {
     expect(q.sql).toContain(`inner join "rule_zero_seats" "viewer_seat" on ("viewer_seat"."table_id" = "rule_zero_tables"."id" and "viewer_seat"."user_id" = $1)`);
     expect(q.sql).toContain(`inner join "pod_members" "viewer_in" on ("viewer_in"."pod_id" = "rule_zero_tables"."pod_id" and "viewer_in"."user_id" = $2)`);
-    expect(q.sql).toMatch(/where \("rule_zero_tables"\."id" = \$3 and "rule_zero_tables"\."expires_at" <= now\(\)\)$/);
+    expect(q.sql).toMatch(/where \("rule_zero_tables"\."id" = \$3 and \("rule_zero_tables"\."closed_at" is not null or "rule_zero_tables"\."expires_at" <= now\(\)\)\)$/);
+  });
+
+  it("names who closed it and when, and whether the log is still open, never a closer's account", () => {
+    const projection = q.sql.slice(0, q.sql.indexOf(" from "));
+    expect(projection).toContain('"rule_zero_tables"."closed_at"');
+    expect(projection).toContain('"closer"."display_name"');
+    expect(projection).toContain('("rule_zero_tables"."expires_at" > now())');
+    expect(q.sql).toContain('left join "social_profiles" "closer" on "closer"."user_id" = "rule_zero_tables"."closed_by"');
   });
 });
 
@@ -66,7 +74,7 @@ describe("seatTargetQuery", () => {
     expect(q.sql).toContain(`inner join "rule_zero_seats" "viewer_seat" on ("viewer_seat"."table_id" = "rule_zero_tables"."id" and "viewer_seat"."user_id" = $1)`);
     expect(q.sql).toContain(`inner join "pod_members" "viewer_in" on ("viewer_in"."pod_id" = "rule_zero_tables"."pod_id" and "viewer_in"."user_id" = $2)`);
     expect(q.sql).toContain(`inner join "pod_members" on ("pod_members"."pod_id" = "rule_zero_tables"."pod_id" and "pod_members"."user_id" = "rule_zero_seats"."user_id")`);
-    expect(q.sql).toMatch(/where \("rule_zero_seats"\."table_id" = \$3 and "rule_zero_seats"\."seat" = \$4 and "rule_zero_tables"\."expires_at" > now\(\)\)$/);
+    expect(q.sql).toMatch(/where \("rule_zero_seats"\."table_id" = \$3 and "rule_zero_seats"\."seat" = \$4 and \("rule_zero_tables"\."closed_at" is null and "rule_zero_tables"\."expires_at" > now\(\)\)\)$/);
     expect(q.params).toEqual([VIEWER, VIEWER, TABLE, 2]);
   });
 });
@@ -112,5 +120,26 @@ describe("Closer to the table's decks (PR 7, decision 5)", () => {
     expect(q.sql).toContain("where d.user_id = $1 and d.id <> $2");
     expect(q.sql).toContain(`left join "deck_profiles" p on p.deck_id = d.id and p.user_id = d.user_id`);
     expect(q.params).toEqual(expect.arrayContaining(["user_viewer", "deck-seated"]));
+  });
+});
+
+describe("closedHow", () => {
+  const MORNING = new Date("2026-11-01T14:00:00Z");
+  const base = { closesAt: MORNING, closedAt: null, closedBy: null, closerName: null, loggable: false };
+
+  it("a table nobody closed ended the next morning, whatever the log says", () => {
+    expect(closedHow(VIEWER, base)).toEqual({ kind: "morning", at: MORNING });
+  });
+
+  it("a table the viewer closed names no one, and keeps the log while its morning has not come", () => {
+    const at = new Date("2026-11-01T03:00:00Z");
+    expect(closedHow(VIEWER, { ...base, closedAt: at, closedBy: VIEWER, closerName: "Me", loggable: true })).toEqual({ kind: "host", by: null, at, logOpen: true });
+  });
+
+  it("a table another player closed names them as a third-party name, and drops the log after the morning", () => {
+    const at = new Date("2026-11-01T03:00:00Z");
+    const how = closedHow(VIEWER, { ...base, closedAt: at, closedBy: "user_colin", closerName: "Colin", loggable: false });
+    expect(how).toMatchObject({ kind: "host", at, logOpen: false });
+    expect(how.kind === "host" && how.by).not.toBeNull();
   });
 });

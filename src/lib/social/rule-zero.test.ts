@@ -3,7 +3,8 @@
 // answers, including a table expiring between two reads.
 import { PgDialect } from "drizzle-orm/pg-core";
 import { describe, expect, it } from "vitest";
-import { markSeen, openTablesQuery, podSetup, tableFacesQuery, podSetupMembers, reseatTable, setSeatDeck, setTable, setupDecksQuery, startDeck, tableSetup } from "./rule-zero";
+import { tableEnded, tableLoggable, tableOpen } from "./rule-zero-open";
+import { closeTableWhere, closeTable, markSeen, openTablesQuery, podSetup, tableFacesQuery, podSetupMembers, reseatTable, setSeatDeck, setTable, setupDecksQuery, startDeck, tableSetup } from "./rule-zero";
 
 const VIEWER = "user_viewer";
 const POD = "6f1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b";
@@ -13,7 +14,7 @@ describe("openTablesQuery", () => {
   const q = openTablesQuery(VIEWER).toSQL();
 
   it("decides open by the database's clock, qualified to the table", () => {
-    expect(q.sql).toContain(`"rule_zero_tables"."expires_at" > now()`);
+    expect(q.sql).toContain(`("rule_zero_tables"."closed_at" is null and "rule_zero_tables"."expires_at" > now())`);
     expect(q.params).not.toContainEqual(expect.any(Date));
   });
 
@@ -99,5 +100,41 @@ describe("setup's decks (G2, G3, G8)", () => {
   it("takes only ids", async () => {
     expect(await podSetup(VIEWER, "x")).toBeNull();
     expect(await tableSetup(VIEWER, "x")).toBeNull();
+  });
+});
+
+describe("the open predicate (closeTable's lifecycle)", () => {
+  const render = (c: Parameters<PgDialect["sqlToQuery"]>[0]) => new PgDialect().sqlToQuery(c).sql;
+
+  it("is open only while the setter has not closed it AND the database's clock is before its morning", () => {
+    expect(render(tableOpen)).toBe(`("rule_zero_tables"."closed_at" is null and "rule_zero_tables"."expires_at" > now())`);
+  });
+
+  it("ends on either, the exact complement of open", () => {
+    expect(render(tableEnded)).toBe(`("rule_zero_tables"."closed_at" is not null or "rule_zero_tables"."expires_at" <= now())`);
+  });
+
+  it("keeps the game log on the clock alone, so a host-closed table logs until its morning", () => {
+    expect(render(tableLoggable)).toBe(`"rule_zero_tables"."expires_at" > now()`);
+    expect(render(tableLoggable)).not.toContain("closed_at");
+  });
+});
+
+describe("closeTable's guard", () => {
+  const q = new PgDialect().sqlToQuery(closeTableWhere(VIEWER, POD)!);
+
+  it("closes only the setter's own table, still open, with the setter seated: one WHERE, so a race has one winner", () => {
+    expect(q.sql).toContain(`"rule_zero_tables"."id" = $1`);
+    expect(q.sql).toContain(`"rule_zero_tables"."set_by" = $2`);
+    expect(q.sql).toContain(`("rule_zero_tables"."closed_at" is null and "rule_zero_tables"."expires_at" > now())`);
+    expect(q.sql).toContain("gs.user_id = $");
+    expect(q.sql).toContain("(gt.closed_at is null and gt.expires_at > now())");
+    expect(q.params).toContain(POD);
+    expect(q.params.filter((p) => p === VIEWER).length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("refuses a malformed id before writing anything", async () => {
+    expect(await closeTable(VIEWER, "not a uuid")).toBe(false);
+    expect(await closeTable(VIEWER, undefined)).toBe(false);
   });
 });
