@@ -187,4 +187,7 @@ export const creditsCopy = {
   link,
   /** The owner alone: their month's testing share is used. `month` is any instant in that month. */
   ownerShare: (month: Date) => `You’ve used your testing share for ${monthName(month)}. Friends aren’t affected.`,
+  /** Every reader: the app-wide model-call switch is off (`MODEL_CALLS_ENABLED`). Drawn where `ownerShare` is, and
+   *  as the refusal of a press. Nothing is charged. Copy-reviewed 2026-11-01. */
+  paused: "Anything that uses credits is paused right now. Try again later.",
 } as const;

@@ -11,7 +11,7 @@ import { SynopsisOverview } from "./synopsis-overview";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 // The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
 await (await import("../cards/card-detail-provider")).warmCardModal();
-import { clockTime } from "../../lib/copy/credits";
+import { clockTime, creditsCopy } from "../../lib/copy/credits";
 import { deckNoticesCopy } from "../../lib/copy/notices";
 import { synopsisCopy as copy } from "../../lib/copy/synopsis";
 import type { SynopsisState } from "../../lib/synopsis/read";
@@ -587,6 +587,19 @@ describe("the method-changed notice", () => {
     expect(within(n).getByText(m.withStale)).toBeTruthy();
     expect(within(n).queryByRole("button")).toBeNull();
     expect(screen.queryByRole("button", { name: copy.writeNew })).toBeNull();
+  });
+
+  // Paused (the model-call switch) refuses the free rewrite too: the notice never promises "free", even with the banner above.
+  it("paused: the notice says the pause, never the free note or withStale, and its press is held", () => {
+    const paused = { used: 0, limit: 3, reopensAt: null, nextAt: null, paused: true as const };
+    draw(old({ stale: true, pressWrites: true, allowance: paused } as never), { readingFresh: false });
+    expect(within(notice()).queryByText(m.withStale)).toBeNull();
+    expect(within(notice()).getByText(creditsCopy.paused)).toBeTruthy();
+    cleanup();
+    draw(old({ allowance: paused } as never));
+    expect(within(notice()).queryByText(m.note)).toBeNull();
+    expect(within(notice()).getByText(creditsCopy.paused)).toBeTruthy();
+    expect(inert(within(notice()).getByRole("button", { name: copy.writeNew }))).toBe(true);
   });
 
   it("1f does not apply where Re-analyze would write nothing: the notice keeps its own press, held until the reading is fresh", () => {

@@ -13,6 +13,7 @@ import {
   type SwitchRow,
 } from "../../lib/admin/switches-rule";
 import { adminCopy, switchCopy } from "../../lib/copy/admin";
+import { switchDefaultsOn, type SwitchName } from "../../lib/switches/registry";
 import { KILL } from "../../lib/switches/resolve";
 import { PendingReporter } from "../shell/pending-reporter";
 import { SegmentedSwitch } from "../ui/segmented-switch";
@@ -84,9 +85,11 @@ function overridesText(row: SwitchRow): string | null {
   return parts.join(", ");
 }
 
-function envClass(env: string | null) {
+/** On reads as `switchBits` does: `true`, or for a `defaultOn` switch anything but `false` and `off`, unset included. */
+function envClass(name: SwitchName, env: string | null) {
   if (env === KILL) return "font-semibold text-[color:var(--danger)]";
-  return env === "true" ? "text-[color:var(--fg-body)]" : "text-[color:var(--fg-muted)]";
+  const on = switchDefaultsOn(name) ? env !== "false" : env === "true";
+  return on ? "text-[color:var(--fg-body)]" : "text-[color:var(--fg-muted)]";
 }
 
 function Row({ row }: { row: SwitchRow }) {
@@ -121,7 +124,7 @@ function Row({ row }: { row: SwitchRow }) {
           <span className="whitespace-nowrap">{sub}</span>
         </span>
       </div>
-      <span className={`hidden font-mono text-[12.5px] md:inline ${envClass(row.env)}`}>
+      <span className={`hidden font-mono text-[12.5px] md:inline ${envClass(row.name, row.env)}`}>
         <span className="sr-only">{copy.cols.env} </span>
         {env}
       </span>

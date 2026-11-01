@@ -340,16 +340,19 @@ export function FitsView({
   // ── What the band draws ────────────────────────────────────────────
   const allowance = panel?.allowance;
   const spent = allowance ? !hasCredit(allowance) : false;
-  const closed = allowance?.ownerShare === true;
+  // Paused (the model-call switch is off) closes the band exactly as the owner's share does, with its own line.
+  const closed = allowance?.ownerShare === true || allowance?.paused === true;
   const blocked = !allowance || spent || closed || running !== null;
-  const standing = !allowance ? "" : allowance.ownerShare
+  const standing = !allowance ? "" : allowance.paused
+    ? creditsCopy.paused
+    : allowance.ownerShare
     ? creditsCopy.ownerShare(new Date())
     : spent
       ? creditSpent(allowance)
       : creditStanding(allowance);
   // The footers under a finished read state where the credits stand, never what the NEXT run will spend
   // (`creditStanding`'s L3 form says "this run uses 1 of N paid"): the count alone.
-  const footStanding = !allowance ? "" : allowance.ownerShare || spent ? standing : creditCount(allowance);
+  const footStanding = !allowance ? "" : closed || spent ? standing : creditCount(allowance);
   const stored = panel?.view.stored ?? null;
   // A stored read that has gone out of date is drawn marked so, never as current (lock 6): a note
   // names what moved and offers Read again, and a changed deck's row is dimmed with its actions off.

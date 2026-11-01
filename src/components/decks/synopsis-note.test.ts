@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { synopsisState } from "./__fixtures__/synopsis";
 import { pressNote } from "./synopsis-note";
+import { creditsCopy } from "../../lib/copy/credits";
 import { deckNoticesCopy } from "../../lib/copy/notices";
 import { synopsisCopy } from "../../lib/copy/synopsis";
 import type { SynopsisView } from "./synopsis-state";
@@ -69,6 +70,12 @@ describe("pressNote", () => {
     const n = pressNote(ready({ pressWrites: true, allowance: { used: 0, limit: 3, reopensAt: null, nextAt: null, ownerShare: true } }), "reanalyze")!;
     expect(n.writes).toBe(false);
     expect(n.text).toMatch(/^Reads the bracket only; you’ve used your testing share for \w+\.$/);
+  });
+
+  it("says model calls are paused, and writes nothing, a free try left included: the pause refuses the free rewrite too", () => {
+    const paused = { used: 0, limit: 3, reopensAt: null, nextAt: null, paused: true };
+    expect(pressNote(ready({ pressWrites: true, allowance: paused }), "analyze")).toEqual({ text: creditsCopy.paused, writes: false });
+    expect(pressNote(ready({ pressWrites: true, methodNotice: { attemptsLeft: 2 }, allowance: paused } as never), "reanalyze")).toEqual({ text: creditsCopy.paused, writes: false });
   });
 
   // Build rule 2: the method-change rewrite spends no credit, so Re-analyze writes it whatever the

@@ -22,6 +22,12 @@ describe("the lines that once named what shares the credits", () => {
   });
 });
 
+describe("the paused copy", () => {
+  it("says every credit spender is stopped, and to come back, without naming the machinery", () => {
+    expect(creditsCopy.paused).toBe("Anything that uses credits is paused right now. Try again later.");
+  });
+});
+
 describe("the owner's share copy", () => {
   it("names the owner's month, read in UTC", () => {
     // 00:00 UTC on October 1 is still September 30 in every US clock: the name must be October.

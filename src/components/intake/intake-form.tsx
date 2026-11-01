@@ -248,7 +248,12 @@ export function IntakeForm({
   const line = written && standing && hydrated ? formLine(standing) : null;
   // On the phone `Get more credits` sits under the box, where the credit is missing, not in the dock (R3 item 10).
   const phoneLine = line === null ? null : splitGetMore(line);
-  const caption = !written ? copy.intake.extra.caption : standing && closed !== null ? copy.intake.extra.captionSpent : copy.intake.extra.captionFilled;
+  // Paused (the model-call switch is off) is no credit gone, so never `captionSpent`; and the press's line already
+  // says the pause (`formLine`), so the box draws no caption at all rather than the same sentence twice.
+  const caption = !written ? copy.intake.extra.caption
+    : standing && closed === "paused" ? null
+    : standing && closed !== null ? copy.intake.extra.captionSpent
+    : copy.intake.extra.captionFilled;
 
   // Paid or not as the press WAS when pressed, while its request is in flight.
   const pressPaid = submitting && sent ? sent.paid : paid;
@@ -458,7 +463,8 @@ function Field({
   after?: ReactNode;
   htmlFor?: string;
   labelId?: string;
-  caption: string;
+  /** Null draws none. */
+  caption: string | null;
   children: ReactNode;
 }) {
   const labelClass = "font-mono text-[10px] tracking-[.14em] uppercase text-[color:var(--fg-faint)]";
@@ -477,9 +483,11 @@ function Field({
         {aside}
       </div>
       {children}
-      <p className={`m-0 text-[12px] leading-[1.5] ${captionTone === "muted" ? "text-[color:var(--fg-muted)]" : "text-[color:var(--fg-faint)]"}`}>
-        {caption}
-      </p>
+      {caption !== null && (
+        <p className={`m-0 text-[12px] leading-[1.5] ${captionTone === "muted" ? "text-[color:var(--fg-muted)]" : "text-[color:var(--fg-faint)]"}`}>
+          {caption}
+        </p>
+      )}
       {after}
     </div>
   );

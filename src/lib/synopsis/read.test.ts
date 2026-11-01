@@ -59,6 +59,11 @@ describe("synopsisStatus under the owner's share", () => {
     const allowance = { ...left, ownerShare: true };
     expect(synopsisStatus({ reading, synopsis: null, allowance, pending: false }).wouldSpend).toBe(false);
   });
+
+  it("would not spend while model calls are paused", () => {
+    const allowance = { ...left, paused: true };
+    expect(synopsisStatus({ reading, synopsis: null, allowance, pending: false }).wouldSpend).toBe(false);
+  });
 });
 
 describe("pressWrites", () => {

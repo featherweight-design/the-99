@@ -1,11 +1,23 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // The database is never reached: the limit's group read is handed a fake query.
 vi.mock("../../db", () => ({ db: {} }));
+// The model-call switch, resolved app-wide (no account): unset, so on, unless a test sets it.
+// A reservation reads it strictly (a failed read refuses, `strictThrows`); a panel reads it through the memo.
+const switches = vi.hoisted(() => ({ env: {} as Record<string, string>, asked: [] as unknown[], strictThrows: false }));
+vi.mock("../switches/snapshot", () => ({
+  resolveSwitchEnv: async (userId: unknown) => { switches.asked.push(userId); return switches.env; },
+  resolveSwitchEnvStrict: async (userId: unknown) => {
+    switches.asked.push(userId);
+    if (switches.strictThrows) throw new Error("switch overrides could not be read");
+    return switches.env;
+  },
+}));
 
 import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
-import { callMicroFor, dailyLimitFor, dailyLimitsFor, groupAllowanceQuery, groupPaidLimitQuery, joinBilled, ownerShareMicro, recordModelUsage, reserveModelCall, settleModelCall } from "./allowance";
+import { db } from "../../db";
+import { callMicroFor, readAllowance, dailyLimitFor, dailyLimitsFor, groupAllowanceQuery, groupPaidLimitQuery, joinBilled, ownerShareMicro, recordModelUsage, reserveModelCall, settleModelCall } from "./allowance";
 import { modelCallParts } from "../../db/schema";
 import { costMicroUsd } from "./prices";
 import type { ModelFeature } from "./allowance-rule";
@@ -484,5 +496,86 @@ describe("settleModelCall: what the row ends on, and why", () => {
   it("reports the status a late success ended on, and null for a row already settled", async () => {
     expect(await settleModelCall(fakeTx({ status: "refunded" }).tx, "call", "spent", undefined, now)).toBe("refunded");
     expect(await settleModelCall(fakeTx(null).tx, "call", "spent", undefined, now)).toBeNull();
+  });
+});
+
+describe("the model-call switch (MODEL_CALLS_ENABLED)", () => {
+  // Every reservation in the file asks; each test here counts its own.
+  beforeEach(() => {
+    switches.asked = [];
+  });
+  afterEach(() => {
+    switches.env = {};
+    switches.asked = [];
+    switches.strictThrows = false;
+  });
+  // A tx that fails the test on any read or write: a paused reservation must touch nothing.
+  const untouched = () => {
+    const fail = (what: string) => vi.fn(() => { throw new Error(`a paused reservation ${what}`); });
+    return { execute: fail("took the lock"), select: fail("read the ledger"), insert: fail("wrote a row") };
+  };
+
+  it("refuses a player call as paused, before the lock, any read or any row", async () => {
+    switches.env = { MODEL_CALLS_ENABLED: "false" };
+    const tx = untouched();
+    expect(await reserveModelCall(tx as never, "user_a", "tuning", "claude-sonnet-5")).toEqual({ refused: "paused" });
+    expect(tx.execute).not.toHaveBeenCalled();
+    expect(tx.select).not.toHaveBeenCalled();
+    expect(tx.insert).not.toHaveBeenCalled();
+    // Resolved app-wide: a plumbing switch takes no account's override.
+    expect(switches.asked).toEqual([null]);
+  });
+
+  it("refuses a system call as paused too, writing nothing", async () => {
+    switches.env = { MODEL_CALLS_ENABLED: "off" };
+    const tx = untouched();
+    expect(await reserveModelCall(tx as never, "user_a", "synopsis", "claude-sonnet-5", new Date(), "system")).toEqual({ refused: "paused" });
+    expect(tx.insert).not.toHaveBeenCalled();
+  });
+
+  it("fails closed: an override read that fails refuses as paused, with no lock, read or row", async () => {
+    switches.strictThrows = true;
+    const tx = untouched();
+    const quiet = vi.spyOn(console, "error").mockImplementation(() => {});
+    expect(await reserveModelCall(tx as never, "user_a", "tuning", "claude-sonnet-5")).toEqual({ refused: "paused" });
+    expect(await reserveModelCall(tx as never, "user_a", "synopsis", "claude-sonnet-5", new Date(), "system")).toEqual({ refused: "paused" });
+    quiet.mockRestore();
+    expect(tx.execute).not.toHaveBeenCalled();
+    expect(tx.select).not.toHaveBeenCalled();
+    expect(tx.insert).not.toHaveBeenCalled();
+  });
+
+  it("lets a call through while the variable is unset: on by default", async () => {
+    let inserted = false;
+    const tx = {
+      execute: vi.fn(async () => ({ rows: [] })),
+      select: vi.fn(),
+      insert: () => ({ values: () => { inserted = true; return { returning: async () => [{ id: "call-s" }] }; } }),
+    };
+    expect(await reserveModelCall(tx as never, "user_a", "synopsis", "claude-sonnet-5", new Date(), "system")).toEqual({ id: "call-s" });
+    expect(inserted).toBe(true);
+  });
+
+  describe("readAllowance", () => {
+    const fake = db as unknown as Record<string, unknown>;
+    afterEach(() => {
+      delete fake.select;
+      delete fake.execute;
+    });
+    const stubDb = () => {
+      fake.select = () => ({ from: () => ({ where: () => Promise.resolve([]) }) });
+      fake.execute = async () => ({ rows: [] });
+    };
+
+    it("reports paused while the switch is off, so a panel shows the stop before a press", async () => {
+      stubDb();
+      switches.env = { MODEL_CALLS_ENABLED: "false" };
+      expect((await readAllowance("user_a")).paused).toBe(true);
+    });
+
+    it("reports nothing paused while the variable is unset", async () => {
+      stubDb();
+      expect((await readAllowance("user_a")).paused).toBeUndefined();
+    });
   });
 });

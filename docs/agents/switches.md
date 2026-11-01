@@ -9,7 +9,17 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   redeploy), then the account's override, then its group's (OFF wins if two apply), then app-wide, then the variable.
   A `plumbing` switch (`LIST_CACHE_ENABLED`, `RATE_LIMIT_ENABLED`; `ABOUT_SHEET_ENABLED` was one until About
   visual PR 6b retired it with the sheet, and `LABEL_ROLE_COUNTS_ENABLED`, the role basis, until #2567 retired it)
-  takes the app-wide override alone. A compound switch names its parent as `needs`
+  takes the app-wide override alone. `MODEL_CALLS_ENABLED` (plumbing) is the model-call kill switch and the one switch
+  ON BY DEFAULT: on while unset, off for `false` or `off`. As for every switch, only `off` is the hard stop no override
+  raises; `false` is a soft off an app-wide On row overrides (an app-wide Off row resolves to `false`). For a hard stop
+  set the variable to `off`, or use the app-wide Off row without a deploy. It gates only runs reserved through
+  `reserveModelCall` (player runs and the Overview rewrite); background jobs are not gated yet. The registry marks it `defaultOn`
+  so `switchBits` encodes it the way its flag function reads it. Off, `reserveModelCall` refuses every new run, system
+  origin included, as `paused` (no row, no charge). It FAILS CLOSED, unlike every other switch read: the reservation
+  reads the overrides fresh (`resolveSwitchEnvStrict`), and a read that fails refuses as `paused`, so a database failure
+  never lets calls through under an app-wide Off row. `readAllowance` reports `paused` for display only (through the
+  memo, the environment deciding on a failed read), which every panel draws as it draws the owner's share, with
+  `creditsCopy.paused`. A compound switch names its parent as `needs`
   in the registry, and a switch is tagged `model` exactly when turning it on can let a reader spend (the Analysis
   tab and Swap tools are parents of spending switches); `src/lib/switches/flags.test.ts` holds both to the flag
   functions. An app-wide override still flips one without a deploy, so its readers

@@ -43,7 +43,7 @@ export type FitsReadPanel = {
 
 export type FitsReadPress =
   | { ok: true; panel: FitsReadPanel }
-  | { ok: false; reason: "notFound" | "noCandidates" | "tooBig" | "current" | "allowance" | "ownerShare" };
+  | { ok: false; reason: "notFound" | "noCandidates" | "tooBig" | "current" | "allowance" | "ownerShare" | "paused" };
 
 type Deps = {
   load: (userId: string, oracleId: string) => Promise<FitsReadLoad | null>;

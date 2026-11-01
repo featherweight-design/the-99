@@ -98,7 +98,7 @@ describe("the chips and the search", () => {
   it("puts features A to Z by name, then plumbing", () => {
     const { features, plumbing } = sections([...r.values()], (x) => x.name);
     expect(features.every((x) => x.kind !== "plumbing")).toBe(true);
-    expect(plumbing.map((x) => x.name)).toEqual(["LIST_CACHE_ENABLED", "NAV_STALL_LOG_ENABLED", "PUBLIC_PAGES_ENABLED", "RATE_LIMIT_ENABLED", "SCAN_LAB_ENABLED"]);
+    expect(plumbing.map((x) => x.name)).toEqual(["LIST_CACHE_ENABLED", "MODEL_CALLS_ENABLED", "NAV_STALL_LOG_ENABLED", "PUBLIC_PAGES_ENABLED", "RATE_LIMIT_ENABLED", "SCAN_LAB_ENABLED"]);
     // A to Z as the list sorts, by locale, where a code-point sort would put an underscore after a letter.
     expect(features.map((x) => x.name)).toEqual([...features.map((x) => x.name)].sort((a, b) => a.localeCompare(b, "en-US")));
   });

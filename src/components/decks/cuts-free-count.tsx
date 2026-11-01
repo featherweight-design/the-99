@@ -33,6 +33,7 @@ export const overWords = (n: number) => overCopy.trim.words[n] ?? String(n);
 /** The credit line under the offer, from the reader's allowance. */
 export function cutsStanding(panel: CutsPanel): string {
   const a = panel.allowance;
+  if (a.paused) return creditsCopy.paused;
   if (a.ownerShare) return creditsCopy.ownerShare(new Date());
   if (!hasCredit(a)) return creditSpent(a);
   return creditStanding(a);
@@ -41,12 +42,12 @@ export function cutsStanding(panel: CutsPanel): string {
 /** The credit line under a FINISHED result: where the credits stand, never what the next run will spend (L3's "this run uses 1 of N paid"). */
 export function cutsFootStanding(panel: CutsPanel): string {
   const a = panel.allowance;
-  return a.ownerShare || !hasCredit(a) ? cutsStanding(panel) : creditCount(a);
+  return a.paused || a.ownerShare || !hasCredit(a) ? cutsStanding(panel) : creditCount(a);
 }
 
-/** Look deeper cannot be pressed: no credit, the owner's share spent, or nothing it may name. */
+/** Look deeper cannot be pressed: no credit, the owner's share spent, model calls paused, or nothing it may name. */
 export function cutsBlocked(panel: CutsPanel): boolean {
-  return !hasCredit(panel.allowance) || panel.allowance.ownerShare === true || panel.allLocked;
+  return !hasCredit(panel.allowance) || panel.allowance.ownerShare === true || panel.allowance.paused === true || panel.allLocked;
 }
 
 export function CutsFreeCount({

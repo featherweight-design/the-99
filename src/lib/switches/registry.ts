@@ -16,6 +16,10 @@
  * - `plumbing`: infrastructure, or a surface no friend tries on its own. App-wide only: an account or group
  *   override of one is ignored by the resolver, so no reader runs on different plumbing.
  *
+ * `defaultOn`: on while the variable is unset, off for `false` or `off` (`switchDefaultsOn`). As for every
+ * switch, only `off` is the hard kill no override raises; `false` is a soft off an app-wide On row overrides. Only the
+ * model-call kill switch: a deployment that forgets the variable must keep serving model calls.
+ *
  * `needs`: the parent a compound switch's flag function also checks (`tuningEnabled` asks
  * `analysisTabEnabled`). The flag functions decide; this records it for the admin, and
  * `flags.test.ts` fails when the two disagree.
@@ -31,6 +35,9 @@ export const SWITCHES = [
   { name: "HELP_ME_CHOOSE_ENABLED", kind: "model" },
   { name: "FLYER_TRIAL_ENABLED", kind: "feature" },
   { name: "LIST_CACHE_ENABLED", kind: "plumbing" },
+  // The model-call kill switch, ON while unset, unlike every other switch (`defaultOn`). A hard stop: the variable set
+  // to `off`. Without a deploy: the app-wide Off row. `false` is a soft off an app-wide On row overrides.
+  { name: "MODEL_CALLS_ENABLED", kind: "plumbing", defaultOn: true },
   { name: "NAV_STALL_LOG_ENABLED", kind: "plumbing" },
   { name: "OVERVIEW_V2_ENABLED", kind: "model" },
   { name: "PAYMENTS_ENABLED", kind: "feature" },
@@ -43,7 +50,7 @@ export const SWITCHES = [
   { name: "SWAP_TOOLS_ENABLED", kind: "model" },
   { name: "TUNING_ENABLED", kind: "model", needs: "ANALYSIS_TAB_ENABLED" },
   { name: "WELCOME_CREDITS_ENABLED", kind: "feature", needs: "PAYMENTS_ENABLED" },
-] as const satisfies readonly { name: `${string}_ENABLED`; kind: SwitchKind; needs?: `${string}_ENABLED` }[];
+] as const satisfies readonly { name: `${string}_ENABLED`; kind: SwitchKind; needs?: `${string}_ENABLED`; defaultOn?: true }[];
 
 export type SwitchName = (typeof SWITCHES)[number]["name"];
 
@@ -59,6 +66,16 @@ const PARENTS = new Map<string, SwitchName>(
 
 /** The parent a compound switch needs, or null. */
 export const switchParent = (name: SwitchName): SwitchName | null => PARENTS.get(name) ?? null;
+
+const DEFAULT_ON = new Set<string>(SWITCHES.flatMap((s) => ("defaultOn" in s && s.defaultOn ? [s.name] : [])));
+
+/**
+ * A switch that is ON while its variable is unset (`MODEL_CALLS_ENABLED`): only `false` or the kill
+ * value `off` turns it off. Every other switch is on for the exact string `true` alone. Its flag
+ * function decides that way, and `switchBits` reads it the same way, so a page handed the proxy's bits
+ * sees the switch on exactly when the flag function would.
+ */
+export const switchDefaultsOn = (name: SwitchName): boolean => DEFAULT_ON.has(name);
 
 export const isSwitchName = (name: string): name is SwitchName => KINDS.has(name);
 

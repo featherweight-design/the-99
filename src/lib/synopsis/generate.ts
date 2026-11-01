@@ -68,10 +68,12 @@ export type WriteResult =
   /** No reading, or a stale one: a write needs a fresh analysis of the list it describes. Also what
    *  a write gets when the list moved on its way to the reservation: nothing was called or charged. */
   | { kind: "no_reading" }
-  /** Refused at the reservation: the player's allowance (`allowance`) or the owner's testing
-   *  share (`ownerShare`). Nothing was called or charged. */
+  /** Refused at the reservation: the player's allowance (`allowance`), the owner's testing
+   *  share (`ownerShare`), or the app-wide model-call switch (`paused`), which refuses a free
+   *  method-change rewrite (`origin = 'system'`) too. Nothing was called or charged. */
   | { kind: "allowance" }
   | { kind: "ownerShare" }
+  | { kind: "paused" }
   | { kind: "in_flight" }
   /** A press shown as FREE reached the lock after the free tries were spent (another tab used the
    *  last one): nothing was reserved or charged, and the client's re-read shows the paid fallback
@@ -463,7 +465,7 @@ export async function startRun(
    * takes the PLAYER path, allowance check included.
    */
   method: "free" | "paid" | null = null,
-): Promise<{ kind: "started"; runId: string; callId: string } | { kind: "allowance" } | { kind: "ownerShare" } | { kind: "in_flight" } | { kind: "free_gone" } | { kind: "reused"; synopsis: SynopsisRow } | { kind: "illegal" } | { kind: "no_reading" }> {
+): Promise<{ kind: "started"; runId: string; callId: string } | { kind: "allowance" } | { kind: "ownerShare" } | { kind: "paused" } | { kind: "in_flight" } | { kind: "free_gone" } | { kind: "reused"; synopsis: SynopsisRow } | { kind: "illegal" } | { kind: "no_reading" }> {
   // The reap COMMITS ON ITS OWN, before the reservation: a spent allowance rolls the reservation's
   // transaction back, and a reap inside it would roll back too, leaving an abandoned run locking
   // the deck for as long as the allowance stays spent.
