@@ -76,19 +76,19 @@ import { fulfilInvoice, syncSubscription } from "./subscribe";
 const MONTH1 = new Date("2026-11-01T00:00:00Z");
 const MONTH2 = new Date("2026-12-01T00:00:00Z");
 const MONTH3 = new Date("2027-01-01T00:00:00Z");
-const TAG = { app: "the-99", plan: "plan50", user_id: "user_a" };
+const TAG = { app: "the-99", plan: "monthly", user_id: "user_a" };
 
 type SubState = { status?: string; cancel?: boolean; end?: Date; meta?: Record<string, string>; customer?: string };
 const subscription = (s: SubState = {}) => ({
   id: "sub_1", status: s.status ?? "active", customer: s.customer ?? "cus_1", metadata: s.meta ?? TAG,
   cancel_at_period_end: s.cancel ?? false,
-  items: { data: [{ current_period_end: Math.floor((s.end ?? MONTH2).getTime() / 1000), price: { id: "price_plan50" } }] },
+  items: { data: [{ current_period_end: Math.floor((s.end ?? MONTH2).getTime() / 1000), price: { id: "price_plan_monthly" } }] },
 });
 const invoice = (id: string, reason = "subscription_create", over: Record<string, unknown> = {}) => ({
   id, status: "paid", billing_reason: reason, currency: "usd", amount_paid: 500, total: 500, total_excluding_tax: 500,
   customer: "cus_1", customer_address: { country: "US" },
   parent: { subscription_details: { subscription: "sub_1", metadata: TAG } },
-  lines: { data: [{ quantity: 1, pricing: { price_details: { price: "price_plan50" } } }] },
+  lines: { data: [{ quantity: 1, pricing: { price_details: { price: "price_plan_monthly" } } }] },
   payments: { data: [{ status: "paid", payment: { type: "payment_intent", payment_intent: `pi_${id}` } }] },
   ...over,
 });
@@ -110,7 +110,7 @@ beforeEach(() => {
   db.now = MONTH1;
   invoices = { in_1: invoice("in_1"), in_2: invoice("in_2", "subscription_cycle") };
   current = subscription();
-  vi.stubEnv("STRIPE_PRICE_PLAN_50", "price_plan50");
+  vi.stubEnv("STRIPE_PRICE_PLAN_MONTHLY", "price_plan_monthly");
 });
 
 describe("invoice.paid", () => {

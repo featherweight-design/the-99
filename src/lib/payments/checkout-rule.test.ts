@@ -91,11 +91,11 @@ describe("priceIdFor", () => {
 });
 
 describe("planCheckoutParams", () => {
-  const p = planCheckoutParams({ userId: "user_a", customerId: "cus_1", planId: "plan50", priceId: "price_plan50", origin: "https://the-99.dev" });
+  const p = planCheckoutParams({ userId: "user_a", customerId: "cus_1", planId: "monthly", priceId: "price_plan_monthly", origin: "https://the-99.dev" });
 
   it("is a subscription Session of the registry's Price, on the same customer, cards only, with tax", () => {
     expect(p.mode).toBe("subscription");
-    expect(p.line_items).toEqual([{ price: "price_plan50", quantity: 1 }]);
+    expect(p.line_items).toEqual([{ price: "price_plan_monthly", quantity: 1 }]);
     expect(p.customer).toBe("cus_1");
     expect(p.client_reference_id).toBe("user_a");
     expect(p.payment_method_types).toEqual(["card"]);
@@ -104,7 +104,7 @@ describe("planCheckoutParams", () => {
 
   // An invoice carries a snapshot of the SUBSCRIPTION's metadata, so that is where the tag must be.
   it("tags the Session and the subscription it creates as this app's, naming the plan and the account", () => {
-    const tag = { app: PAYMENTS_APP, plan: "plan50", user_id: "user_a" };
+    const tag = { app: PAYMENTS_APP, plan: "monthly", user_id: "user_a" };
     expect(p.metadata).toEqual(tag);
     expect(p.subscription_data?.metadata).toEqual(tag);
   });
@@ -114,8 +114,8 @@ describe("planCheckoutParams", () => {
     expect(p.cancel_url).toBe("https://the-99.dev/credits?checkout=cancelled");
   });
 
-  it("names its Price from STRIPE_PRICE_PLAN_50, or null while unset", () => {
-    expect(planPriceIdFor("plan50", { STRIPE_PRICE_PLAN_50: " price_plan50 " })).toBe("price_plan50");
-    expect(planPriceIdFor("plan50", {})).toBeNull();
+  it("names its Price from STRIPE_PRICE_PLAN_MONTHLY, or null while unset", () => {
+    expect(planPriceIdFor("monthly", { STRIPE_PRICE_PLAN_MONTHLY: " price_plan_monthly " })).toBe("price_plan_monthly");
+    expect(planPriceIdFor("monthly", {})).toBeNull();
   });
 });

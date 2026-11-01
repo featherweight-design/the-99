@@ -38,7 +38,7 @@ describe("decideReturn", () => {
 });
 
 describe("decideReturn: a plan's Session", () => {
-  const plan = { metadata: { app: "the-99", plan: "plan50", user_id: "user_a" }, paymentStatus: "paid" };
+  const plan = { metadata: { app: "the-99", plan: "monthly", user_id: "user_a" }, paymentStatus: "paid" };
   it("is processing, sized by the plan, until the first invoice's lot exists, then added at the lot's units", () => {
     expect(decideReturn(plan, "user_a", null)).toEqual({ kind: "processing", units: 50, plan: true });
     expect(decideReturn(plan, "user_a", 50)).toEqual({ kind: "added", units: 50, plan: true });

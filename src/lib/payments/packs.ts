@@ -55,9 +55,13 @@ export function packForPrice(priceId: string, env: Record<string, string | undef
  * gates every pack payment, and an unset plan Price must make the plan "not on sale", never stop pack payments.
  * `mode: "subscription"` is what Checkout is created with. $5 a month for 50 credits that roll over, with no
  * cap, while the plan is held (Hugh, the payments plan, K2). The webhook judges an invoice against this entry.
+ *
+ * The id is `monthly`, never a count: it is stamped into every subscription's Stripe metadata, and the webhook refuses a
+ * plan id or Price this registry does not name. Changing the credits a month is a change to `units` alone (60 became 50,
+ * Hugh 2026-11-01); a renewal then grants the new count. Renaming the id strands every live subscription.
  */
 export const PLANS = {
-  plan50: { units: 50, priceCents: 500, currency: "usd", priceEnv: "STRIPE_PRICE_PLAN_50", mode: "subscription" },
+  monthly: { units: 50, priceCents: 500, currency: "usd", priceEnv: "STRIPE_PRICE_PLAN_MONTHLY", mode: "subscription" },
 } as const;
 
 export type PlanId = keyof typeof PLANS;

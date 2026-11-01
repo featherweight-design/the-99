@@ -76,7 +76,7 @@ const RUN = `probe-pw-${Date.now()}`;
 const PRICE = `price_${RUN}`;
 process.env.STRIPE_PRICE_PACK_40 = PRICE;
 const PLAN_PRICE = `price_plan_${RUN}`;
-process.env.STRIPE_PRICE_PLAN_50 = PLAN_PRICE;
+process.env.STRIPE_PRICE_PLAN_MONTHLY = PLAN_PRICE;
 
 let failures = 0;
 const check = (label: string, actual: unknown, expected: unknown) => {
@@ -256,7 +256,7 @@ async function run() {
     ({ invoices: { retrieve: async (i: string) => state.invoices[i] }, subscriptions: { retrieve: async () => state.sub } }) as unknown as Stripe;
   const subObj = (customerId: string, userId: string, over: { cancel?: boolean; status?: string; end?: Date; app?: string } = {}) => ({
     id: subId, status: over.status ?? "active", customer: customerId, cancel_at_period_end: over.cancel ?? false,
-    metadata: { app: over.app ?? "the-99", plan: "plan50", user_id: userId },
+    metadata: { app: over.app ?? "the-99", plan: "monthly", user_id: userId },
     items: { data: [{ current_period_end: Math.floor((over.end ?? PERIOD1).getTime() / 1000), price: { id: PLAN_PRICE } }] },
   });
   const invObj = (iid: string, customerId: string, userId: string, reason: string) => {
@@ -264,7 +264,7 @@ async function run() {
     return {
       id: iid, status: "paid", billing_reason: reason, currency: "usd", amount_paid: 500, total: 500, total_excluding_tax: 500,
       customer: customerId, customer_address: { country: "US" },
-      parent: { subscription_details: { subscription: subId, metadata: { app: "the-99", plan: "plan50", user_id: userId } } },
+      parent: { subscription_details: { subscription: subId, metadata: { app: "the-99", plan: "monthly", user_id: userId } } },
       lines: { data: [{ quantity: 1, pricing: { price_details: { price: PLAN_PRICE } } }] },
       payments: { data: [{ status: "paid", payment: { type: "payment_intent", payment_intent: id("pi") } }] },
     };

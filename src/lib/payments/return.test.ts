@@ -26,7 +26,7 @@ import { readReturn } from "./return";
 const sessionOf = (over: Record<string, unknown>) => ({ payment_status: "paid", metadata: {}, ...over });
 const stripeServing = (s: unknown) => ({ checkout: { sessions: { retrieve: vi.fn(async () => s) } } }) as unknown as Stripe;
 const pack = sessionOf({ mode: "payment", metadata: { app: "the-99", pack: "pack40", user_id: "user_a" } });
-const plan = (invoice: unknown) => sessionOf({ mode: "subscription", invoice, metadata: { app: "the-99", plan: "plan50", user_id: "user_a" } });
+const plan = (invoice: unknown) => sessionOf({ mode: "subscription", invoice, metadata: { app: "the-99", plan: "monthly", user_id: "user_a" } });
 
 beforeEach(() => { state.lots.clear(); state.asked.length = 0; });
 

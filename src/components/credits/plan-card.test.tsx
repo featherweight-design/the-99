@@ -119,7 +119,7 @@ describe("Subscribe", () => {
     render(<PlanCard plan={plan("offer")} onToast={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: /^Subscribe/ }));
     await waitFor(() => expect(assign).toHaveBeenCalledWith("https://checkout.stripe.com/c/9"));
-    expect(m.buyPlan).toHaveBeenCalledWith("plan50", expect.stringMatching(/^[0-9a-f-]{36}$/));
+    expect(m.buyPlan).toHaveBeenCalledWith("monthly", expect.stringMatching(/^[0-9a-f-]{36}$/));
     vi.unstubAllGlobals();
   });
 

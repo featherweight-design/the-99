@@ -14,11 +14,11 @@ const NOW = new Date("2026-11-10T12:00:00Z");
 const decision = decideInvoice(
   {
     id: "in_1", status: "paid", billingReason: "subscription_create", currency: "usd", amountPaid: 500, total: 500, totalExcludingTax: 500,
-    customerId: "cus_1", subscriptionId: "sub_1", subscriptionMetadata: { app: "the-99", plan: "plan50", user_id: "user_a" },
-    lines: [{ priceId: "price_plan50", quantity: 1 }], paymentIntentId: "pi_inv1", country: "US",
+    customerId: "cus_1", subscriptionId: "sub_1", subscriptionMetadata: { app: "the-99", plan: "monthly", user_id: "user_a" },
+    lines: [{ priceId: "price_plan_monthly", quantity: 1 }], paymentIntentId: "pi_inv1", country: "US",
   },
-  { id: "sub_1", status: "active", customerId: "cus_1", metadata: { app: "the-99", plan: "plan50", user_id: "user_a" }, cancelAtPeriodEnd: false, currentPeriodEnd: NOW, priceIds: ["price_plan50"] },
-  "user_a", { STRIPE_PRICE_PLAN_50: "price_plan50" },
+  { id: "sub_1", status: "active", customerId: "cus_1", metadata: { app: "the-99", plan: "monthly", user_id: "user_a" }, cancelAtPeriodEnd: false, currentPeriodEnd: NOW, priceIds: ["price_plan_monthly"] },
+  "user_a", { STRIPE_PRICE_PLAN_MONTHLY: "price_plan_monthly" },
 );
 if (decision.kind !== "grant") throw new Error("fixture must grant");
 
