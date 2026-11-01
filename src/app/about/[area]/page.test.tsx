@@ -102,34 +102,32 @@ describe("/about/[area]", () => {
   });
 
   it("a label switched off for the reader has no line and no pin, and the numbers close up (Review Focus 2)", async () => {
-    // Suggested changes' switch carries two labels here, its own and Describe your deck's.
-    const GONE = ["decks/analysis/suggested", "decks/analysis/describe"];
+    // Every Analysis label hangs on the tab: Suggested changes' own switch (its label and Describe your deck's) and
+    // Proposed cuts' are retired, so their names set off move nothing, and the tab off takes every one of them.
+    const TOOLS = ["decks/analysis/suggested", "decks/analysis/describe", "decks/analysis/cuts"];
     const DESCRIBE = "in a sentence or two. Suggested changes uses it";
     const CUTS = "counts where a deck over 100 runs long";
     const analysis = async () => (await draw("decks")).props.sections.find((s) => s.id === "analysis")!;
     expect(renderToStaticMarkup(await draw("decks"))).toContain(DESCRIBE);
     const on = await analysis();
-    // Proposed cuts' own switch is retired: its name set off moves nothing, and the label stays with the tab.
-    m.env = env({ ...(ALL_ON as Record<string, string>), PROPOSED_CUTS_ENABLED: "off" });
+    m.env = env({ ...(ALL_ON as Record<string, string>), PROPOSED_CUTS_ENABLED: "off", TUNING_ENABLED: "off" });
     const retired = await analysis();
-    m.env = env({ ...(ALL_ON as Record<string, string>), TUNING_ENABLED: "off" });
+    m.env = env({ ...(ALL_ON as Record<string, string>), ANALYSIS_TAB_ENABLED: "off" });
     const off = await analysis();
     for (const width of ["phone", "desktop"] as const) {
-      expect(on[width].labels.map((l) => l.key)).toEqual(expect.arrayContaining([...GONE, "decks/analysis/cuts"]));
+      expect(on[width].labels.map((l) => l.key)).toEqual(expect.arrayContaining(TOOLS));
       expect(retired[width].labels.map((l) => l.key)).toEqual(on[width].labels.map((l) => l.key));
-      for (const key of GONE) {
+      for (const key of on[width].labels.map((l) => l.key)) {
         expect(off[width].labels.map((l) => l.key)).not.toContain(key);
         expect(off[width].shots.flatMap((s) => s.pins).map((p) => p.key)).not.toContain(key);
       }
-      expect(off[width].labels.map((l) => l.key)).toContain("decks/analysis/cuts");
       expect(off[width].labels.map((l) => l.n)).toEqual(off[width].labels.map((_, i) => i + 1));
-      expect(off[width].labels).toHaveLength(on[width].labels.length - GONE.length);
     }
-    // Nothing of them reaches the page, at either width; Proposed cuts, on the tab, still does.
+    // Nothing of them reaches the page, at either width.
     const html = renderToStaticMarkup(await draw("decks"));
-    for (const key of GONE) expect(html).not.toContain(key);
+    for (const key of TOOLS) expect(html).not.toContain(key);
     expect(html).not.toContain(DESCRIBE);
-    expect(html).toContain(CUTS);
+    expect(html).not.toContain(CUTS);
   });
 
   it("draws the reader's theme's captures, phone and desktop, never one width's in the other's place", async () => {
@@ -311,8 +309,9 @@ describe("/about/[area], reached by the ? (PR 6a)", () => {
   });
 
   it("a unit switched off for the reader lands on its section with nothing lit (Review Focus 2)", async () => {
-    // Suggested changes' label (Shopping's limit was the example until SWAP_TOOLS_ENABLED retired: it always draws now).
-    m.env = env({ ...ALL_ON, TUNING_ENABLED: "" });
+    // Suggested changes' label, with the Analysis tab off (Shopping's limit was the example until SWAP_TOOLS_ENABLED
+    // retired, then Suggested changes' own switch, until TUNING_ENABLED retired: it follows the tab now).
+    m.env = env({ ...ALL_ON, ANALYSIS_TAB_ENABLED: "" });
     const el = await draw("decks", { from: "/settings", lit: "decks/analysis/suggested" });
     expect(el.props.initialLit).toBeNull();
     expect(el.props.landable).not.toHaveProperty(["decks/analysis/suggested"]);

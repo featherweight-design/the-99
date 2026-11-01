@@ -57,10 +57,13 @@ function panelProps(suggestedChangesV2: boolean): { runFigures?: RunFigures; v2:
   render(
     <BuilderShell mix={recommendedMix(null, false)} deck={DECK} suggestions={[]} degraded={false} firstRun={false}
       commanderIdentity={["B", "R", "G"]} arrivedFromImport={false} newestAsOf={null}
-      analysisEnabled tuningEnabled suggestedChangesV2={suggestedChangesV2} initialView="analysis" />,
+      analysisEnabled suggestedChangesV2={suggestedChangesV2} initialView="analysis" />,
   );
-  const tuning = (seen.panel as unknown as { tuning: (permits: number[]) => ReactElement<{ runFigures?: RunFigures; v2: unknown }> }).tuning;
-  return tuning([2]).props;
+  // Suggested changes mounts inside the Tuning hub's tile (its own switch is retired): the first tool the hub is handed.
+  type Panel = ReactElement<{ runFigures?: RunFigures; v2: unknown }>;
+  const hub = (seen.panel as unknown as { hub: (permits: number[], drawn: boolean) => ReactElement<{ tools: { tool: string; panel?: Panel | null }[] }> }).hub;
+  const suggested = hub([2], true).props.tools.find((t) => t.tool === "suggested")!;
+  return suggested.panel!.props;
 }
 
 /** The By type head's count a stored run's Instants group draws, as the run view reads it. */

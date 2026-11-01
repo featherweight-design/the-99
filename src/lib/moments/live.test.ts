@@ -17,4 +17,9 @@ describe("liveMoments", () => {
     expect(liveMoments({ PROPOSED_CUTS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv)).not.toContain("proposed-cuts");
     expect(liveMoments({ ANALYSIS_TAB_ENABLED: "true" } as unknown as NodeJS.ProcessEnv)).toContain("proposed-cuts");
   });
+
+  it("follows the Analysis tab for Suggested changes: its retired switch alone raises nothing, and off lowers nothing", () => {
+    expect(liveMoments({ TUNING_ENABLED: "true" } as unknown as NodeJS.ProcessEnv)).not.toContain("suggested-changes");
+    expect(liveMoments({ ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "off" } as unknown as NodeJS.ProcessEnv)).toContain("suggested-changes");
+  });
 });

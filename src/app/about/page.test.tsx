@@ -154,10 +154,10 @@ describe("/about, the Reference (until PR 7b)", () => {
 describe("/about, the fits (E10)", () => {
   it("asks loadToolFits for the deck tools whose switches are on, and no other", async () => {
     vi.stubEnv("ANALYSIS_TAB_ENABLED", "true");
-    vi.stubEnv("TUNING_ENABLED", "true");
     await tabs();
     expect(m.loadToolFits).toHaveBeenCalledTimes(1);
-    // Proposed cuts and Mana Balance follow the Analysis tab (their own switches are retired), so the tab on asks for them too.
+    // Suggested changes, Proposed cuts and Mana Balance follow the Analysis tab (their own switches are retired), so the
+    // tab alone asks for all three.
     expect(m.loadToolFits.mock.calls[0]![1]).toEqual(["top-off", "proposed-cuts", "suggested-changes", "mana-balance", "stand-ins", "friend-spares", "matchups"]);
   });
 

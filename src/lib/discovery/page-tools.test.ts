@@ -42,10 +42,11 @@ describe("pageTools", () => {
     // The label alone gone, the tool's own switch still on: the card goes with it.
     const noCuts = all.map((s) => ({ ...s, labels: s.labels.filter((l) => l.key !== "decks/analysis/cuts") }));
     expect(placed(ALL_ON, noCuts).get("decks/analysis")).toEqual(["suggested-changes", "mana-balance"]);
-    // Suggested changes' switch off: both its label and its card go, and the other two stay.
-    expect(placed(without("TUNING_ENABLED")).get("decks/analysis")).toEqual(["proposed-cuts", "mana-balance"]);
-    // Proposed cuts has no switch but the Analysis tab's: its own retired name moves nothing.
+    // Suggested changes and Proposed cuts have no switch but the Analysis tab's: their own retired names move nothing.
+    expect(placed(without("TUNING_ENABLED")).get("decks/analysis")).toEqual(["suggested-changes", "proposed-cuts", "mana-balance"]);
     expect(placed(without("PROPOSED_CUTS_ENABLED")).get("decks/analysis")).toEqual(["suggested-changes", "proposed-cuts", "mana-balance"]);
+    // The tab off takes all three, labels and cards.
+    expect(placed(without("ANALYSIS_TAB_ENABLED")).has("decks/analysis")).toBe(false);
     // The swap tools have no switch (theirs is retired): its retired name moves nothing.
     expect(placed(without("SWAP_TOOLS_ENABLED"))).toEqual(placed(ALL_ON));
     // A section left with no card is absent.

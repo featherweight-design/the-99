@@ -77,8 +77,9 @@ describe("MODEL_CAPABILITIES", () => {
 
   // Retired model switches still in the registry until their removal PR: nothing gates on them, so turning one on raises
   // no capability. Proposed cuts' paid pass follows its parent, the Analysis tab (Hugh 2026-10-31). Swap tools has no
-  // parent: Find a deck's paid read is always offered, and only the model-call kill switch stops it.
-  const RETIRED = new Set<SwitchName>(["PROPOSED_CUTS_ENABLED", "SWAP_TOOLS_ENABLED"]);
+  // parent: Find a deck's paid read is always offered, and only the model-call kill switch stops it. Suggested changes'
+  // runs follow its parent, the Analysis tab (Hugh 2026-11-01).
+  const RETIRED = new Set<SwitchName>(["PROPOSED_CUTS_ENABLED", "SWAP_TOOLS_ENABLED", "TUNING_ENABLED"]);
 
   it("is raised by every model switch", () => {
     for (const name of SWITCH_NAMES.filter((n) => switchKind(n) === "model" && !RETIRED.has(n))) {

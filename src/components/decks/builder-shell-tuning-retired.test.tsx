@@ -1,8 +1,7 @@
-// With Analysis on and Tuning off (TUNING_ENABLED unset), the shell must withhold every surface
-// that spends a Suggested-changes credit: no tuning render-prop/section and no tuning-specific
-// prompt in the Analysis empty state. The credit lines name no feature since 2026-10-12 (Hugh,
-// link, never list: `src/lib/copy/credits.ts`), so no switch reaches them: the Overview takes no
-// `tuning` prop and the press notes take only the view and the press.
+// Suggested changes' own switch is retired (Hugh 2026-11-01): with the Analysis tab on, the shell mounts the Tuning hub,
+// which holds Suggested changes, and hands the panel no direct tool mounts and no Suggested changes switch. The credit
+// lines name no feature since 2026-10-12 (Hugh, link, never list: `src/lib/copy/credits.ts`), so no switch reaches
+// them: the Overview takes no `tuning` prop and the press notes take only the view and the press.
 import { render } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { DeckDetail } from "../../lib/decks/read";
@@ -55,30 +54,24 @@ function renderWithAnalysisOnly() {
   seen.panel = null;
   seen.notes = [];
   render(
-    // tuningEnabled omitted — defaults false, which is Tuning off.
     <BuilderShell mix={recommendedMix(null, false)} deck={DECK} suggestions={[]} degraded={false} firstRun={false}
       commanderIdentity={["B", "R", "G"]} arrivedFromImport={false} newestAsOf={null}
       analysisEnabled initialView="analysis" />,
   );
-  return seen.panel as unknown as {
-    tuning?: (permits: number[]) => unknown;
-    tuningEnabled?: boolean;
+  return seen.panel as unknown as Record<string, unknown> & {
+    hub?: unknown;
     overview: { props: { tuning?: boolean } } | null;
   };
 }
 
-describe("BuilderShell — Analysis on, Tuning off", () => {
-  it("mounts no tuning section, withholds the empty-state prompt, and hands no switch to any credit line", () => {
+describe("BuilderShell — Analysis on, Suggested changes retired", () => {
+  it("mounts the hub, hands no direct tool or Suggested changes switch, and hands no switch to any credit line", () => {
     const panel = renderWithAnalysisOnly();
 
-    // No tuning section/callback: `tuning={!tuningEnabled ? undefined : (permits) => (...)}` in
-    // builder-shell.tsx (~line 1594) is the gate; with it removed this reads a function instead.
-    expect(panel.tuning).toBeUndefined();
-
-    // The Analysis empty state's own help text promises "suggest more accurate card swaps", so
-    // `AnalysisPanel`'s `tuningEnabled` prop — which AnalysisEmpty uses to withhold that field
-    // entirely — must be false too.
-    expect(panel.tuningEnabled).toBe(false);
+    // Every Tuning tool lives in the hub, which draws wherever the tab does.
+    expect(typeof panel.hub).toBe("function");
+    // The direct mounts and the empty state's switch are gone: nothing to turn off.
+    for (const prop of ["tuning", "cuts", "mana", "tuningEnabled", "hubDraws"]) expect(panel, prop).not.toHaveProperty(prop);
 
     // The credit lines name no feature (Hugh, 2026-10-12: link, never list), so no switch reaches
     // them: the Overview takes no `tuning` prop, and the press notes take the view and the press.

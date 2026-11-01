@@ -56,7 +56,8 @@ export type ModelCapabilityKey = ModelFeature | "overview_v2";
 export const MODEL_CAPABILITIES: readonly { key: ModelCapabilityKey; on: (env: NodeJS.ProcessEnv) => boolean }[] = [
   { key: "synopsis", on: analysisTabEnabled },
   { key: "overview_v2", on: (env) => analysisTabEnabled(env) && overviewV2Enabled(env) },
-  { key: "tuning", on: tuningEnabled },
+  // Suggested changes' own switch is retired: its runs follow the Analysis tab, where it mounts.
+  { key: "tuning", on: analysisTabEnabled },
   { key: "suggested_changes_v2", on: suggestedChangesV2Enabled },
   // Proposed cuts' own switch is retired: its paid pass follows the Analysis tab, where it mounts.
   { key: "proposed_cuts", on: analysisTabEnabled },

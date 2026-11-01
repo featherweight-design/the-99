@@ -73,7 +73,7 @@ import { loadFriendDeckPrefs } from "../../../lib/social/deck-visibility";
 import { tablePrefill } from "../../../lib/social/rule-zero-log";
 import { logPrefillTable } from "../../../lib/rule-zero/table-view";
 import { gameLandingId } from "../../../lib/games/landing";
-import { suggestedChangesV2Enabled, tuningEnabled, tuningHubEnabled } from "../../../lib/tuning/flag";
+import { suggestedChangesV2Enabled } from "../../../lib/tuning/flag";
 import { loadDeckNotices } from "../../../lib/notices/read";
 import { NOTICES_PARAM, readNoticesArrival } from "../../../lib/notices/arrival";
 import { SwapToolsProvider } from "../../../lib/swaps/context";
@@ -146,8 +146,8 @@ export default async function DeckBuilderPage({
   // `measure:load`'s spans (PERF_TIMING=1 only; a pass-through otherwise).
   const perf = perfRoute("/decks/[id]");
   // Read up front, beside the other switches below, because it gates a Stage A read
-  // (`printedInSetsRead`) that must not start at all when Tuning is off.
-  const tuned = tuningEnabled(env);
+  // (`printedInSetsRead`) that must not start at all when the Analysis tab, where Suggested changes mounts, is off.
+  const tuned = analysisTabEnabled(env);
   // THE PRECON CARRY-OVER, INLINE ON THE ARRIVAL VISIT (small items 5, d9's ruling): the start's own landing
   // (`?from=precon`) stores the deck's first reading and attaches the precon's Overview before anything
   // reads the stored reading, so the header's bracket shows at once and no pending state is drawn. Started
@@ -279,7 +279,7 @@ export default async function DeckBuilderPage({
   // "Kept for this deck"'s Set picker (H35, PR 2) — the same cached, unscoped list
   // help-me-choose's intake form reads. Degrades to an empty picker rather than failing the page.
   // Tuning-only: the Set picker lives inside the tuning panel alone (`builder-shell.tsx`), so
-  // with Tuning off this read is never started and the page pays none of its catalog queries.
+  // with the Analysis tab off this read is never started and the page pays none of its catalog queries.
   const printedInSetsRead = tuned
     ? early(perf.timed("printedInSets", () => loadCommanderPrintings().then((x) => x.sets).catch(() => [])))
     : Promise.resolve([] as PrintedInSet[]);
@@ -727,12 +727,10 @@ export default async function DeckBuilderPage({
           quantity: 1,
         })),
       }}
-      tuningEnabled={tuned}
       strategy={strategy}
       gamePrefill={prefillRead ? await prefillRead : null}
       // The cross-deck Games view's rows land on a game (`?tab=games&game=<id>`): validated here, ringed by the Games tab.
       gameLanding={gameLandingId(query)}
-      tuningHubEnabled={tuningHubEnabled(env)}
       suggestedChangesV2={suggestedChangesV2Enabled(env)}
       initialNotices={notices}
       // The tile's `!` asks for the sheet (`noticesHref`). The shell opens it on arrival and strips

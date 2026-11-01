@@ -66,13 +66,19 @@ describe("welcomeSheet", () => {
 
 describe("welcomeSheetFor", () => {
   const ON = {
-    ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true",
-  } as unknown as NodeJS.ProcessEnv; // No PROPOSED_CUTS_ENABLED: Look deeper follows the Analysis tab (its own switch is retired).
-  // No SWAP_TOOLS_ENABLED: Find a deck's read is always on (swap tools retired).
+    ANALYSIS_TAB_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true",
+  } as unknown as NodeJS.ProcessEnv; // No TUNING_ENABLED or PROPOSED_CUTS_ENABLED: Suggested changes and Look deeper follow
+  // the Analysis tab (their own switches are retired). No SWAP_TOOLS_ENABLED: Find a deck's read is always on (swap tools retired).
 
   it("draws the rows whose caption lines survive the reader's switches", () => {
-    const s = welcomeSheetFor({ ...ON, TUNING_ENABLED: "off" }, { cards: 0, decks: [] })!;
-    expect(s.rows.map((r) => r.id)).toEqual(["overview", "look-deeper", "help-me-choose", "find-a-deck-read"]);
+    const s = welcomeSheetFor({ ...ON, HELP_ME_CHOOSE_ENABLED: "off" }, { cards: 0, decks: [] })!;
+    expect(s.rows.map((r) => r.id)).toEqual(["overview", "suggested", "look-deeper", "find-a-deck-read"]);
+  });
+
+  it("draws Suggested changes and Look deeper with the Analysis tab, whatever their retired switches say, and neither without it", () => {
+    const ids = (env: Record<string, string>) => welcomeSheetFor(env as unknown as NodeJS.ProcessEnv, { cards: 0, decks: [] })!.rows.map((r) => r.id);
+    expect(ids({ ...(ON as Record<string, string>), TUNING_ENABLED: "off", PROPOSED_CUTS_ENABLED: "off" })).toEqual(["overview", "suggested", "look-deeper", "help-me-choose", "find-a-deck-read"]);
+    expect(ids({ HELP_ME_CHOOSE_ENABLED: "true", TUNING_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true" })).toEqual(["help-me-choose", "find-a-deck-read"]);
   });
 
   it("follows SUGGESTED_CHANGES_V2_ENABLED: on, the Suggested changes row says v2's cost; off, the shipped one", () => {
@@ -84,8 +90,8 @@ describe("welcomeSheetFor", () => {
     expect(off.short).toBe(writtenForYouCopy.rows[1].short);
     expect(off.cost).toBe(writtenForYouCopy.rows[1].cost);
     expect(`${off.short} ${off.cost}`).not.toMatch(/\b2\b/);
-    // The kill switch beats it: TUNING off takes v2 with it (the row itself goes).
-    expect(welcomeSheetFor({ ...ON, TUNING_ENABLED: "off", SUGGESTED_CHANGES_V2_ENABLED: "true" }, { cards: 0, decks: [] })!.rows.map((r) => r.id))
+    // Its parent beats it: the Analysis tab off takes v2 with it (the row itself goes), whatever the retired TUNING_ENABLED says.
+    expect(welcomeSheetFor({ HELP_ME_CHOOSE_ENABLED: "true", TUNING_ENABLED: "true", SUGGESTED_CHANGES_V2_ENABLED: "true" } as unknown as NodeJS.ProcessEnv, { cards: 0, decks: [] })!.rows.map((r) => r.id))
       .not.toContain("suggested");
   });
 

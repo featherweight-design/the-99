@@ -1,6 +1,7 @@
-// Discovery R3·5: the nudges in the deck page's existing slots. N2 (`balance mana →`) and N2b (the over row's `Cuts`)
-// follow the Analysis tab (both tools' own switches are retired), with the hub on or off (R3 gap 7); N1 (`suggest swaps →`) offers Suggested changes on
-// a deck at its body size. A press with the hub off lands as Try it does, through `?tool=` (R2's landing).
+// Discovery R3·5: the nudges in the deck page's existing slots. N2 (`balance mana →`), N2b (the over row's `Cuts`) and
+// N1 (`suggest swaps →`, on a deck at its body size) follow the Analysis tab: every Tuning tool's own switch is retired,
+// so the hub draws wherever the tab does and N2 and N2b ask it for their tool. N1 lands as Try it does, through
+// `?tool=` (R2's landing), after asking the hub back to its tiles.
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { DeckDetail } from "../../lib/decks/read";
@@ -55,13 +56,11 @@ const deck = (built: number) =>
     unresolvedRows: [],
   }) as unknown as DeckDetail;
 
-function draw(props: { built?: number; hub?: boolean; analysis?: boolean; tuning?: boolean }) {
+function draw(props: { built?: number; analysis?: boolean }) {
   seen.strip = {};
   render(
     <BuilderShell mix={recommendedMix(null, false)} deck={deck(props.built ?? 99)} suggestions={[]} degraded={false} firstRun={false}
-      commanderIdentity={["G"]} arrivedFromImport={false} newestAsOf={null} analysisEnabled={props.analysis ?? true} initialView="deck"
-      tuningHubEnabled={props.hub ?? false}
-      tuningEnabled={props.tuning ?? false} />,
+      commanderIdentity={["G"]} arrivedFromImport={false} newestAsOf={null} analysisEnabled={props.analysis ?? true} initialView="deck" />,
   );
 }
 
@@ -81,27 +80,22 @@ beforeEach(() => {
 
 afterEach(() => vi.restoreAllMocks());
 
-describe("BuilderShell — nudges follow their own switch (discovery R3·5)", () => {
-  it("N2: draws balance mana → with the hub off, and lands on Mana Balance through ?tool=", () => {
+describe("BuilderShell — nudges follow the Analysis tab (discovery R3·5)", () => {
+  it("N2: draws balance mana → and keeps the hub's own request, writing no ?tool=", () => {
     draw({});
     expect(seen.strip.onBalanceMana).toBeTypeOf("function");
     act(() => seen.strip.onBalanceMana!());
-    expect(written).toEqual(["mana-balance"]);
+    expect(written).toEqual([]);
   });
 
-  it("N2b: draws the over row's Cuts with the hub off, and lands on Proposed cuts through ?tool=", () => {
+  it("N2b: draws the over row's Cuts and keeps the hub's own request, writing no ?tool=", () => {
     draw({ built: 101 });
     fireEvent.click(screen.getByRole("button", { name: tuningHubShortcutsCopy.proposedCutsAria }));
-    expect(written).toEqual(["proposed-cuts"]);
+    expect(written).toEqual([]);
   });
 
-  it("N2b: draws with the tab whatever the hub, since Proposed cuts' own switch is retired", () => {
-    draw({ hub: true, built: 101 });
-    expect(screen.getByRole("button", { name: tuningHubShortcutsCopy.proposedCutsAria })).toBeTruthy();
-  });
-
-  it("N2b: absent with the Analysis tab off, whatever the hub", () => {
-    draw({ analysis: false, hub: true, built: 101 });
+  it("N2b: absent with the Analysis tab off", () => {
+    draw({ analysis: false, built: 101 });
     expect(screen.queryByRole("button", { name: tuningHubShortcutsCopy.proposedCutsAria })).toBeNull();
   });
 
@@ -110,29 +104,17 @@ describe("BuilderShell — nudges follow their own switch (discovery R3·5)", ()
     expect(seen.strip.onBalanceMana).toBeUndefined();
   });
 
-  it("N2 with the hub on keeps the hub's own request, and writes no ?tool=", () => {
-    draw({ hub: true });
-    act(() => seen.strip.onBalanceMana!());
-    expect(written).toEqual([]);
-  });
-
-  it("N1: offers Suggested changes on a deck at its body size, landing through ?tool=", () => {
-    draw({ tuning: true });
+  it("N1: offers Suggested changes on a deck at its body size, asking the hub back to its tiles, then landing through ?tool=", () => {
+    draw({});
     expect(seen.strip.onSuggest).toBeTypeOf("function");
     act(() => seen.strip.onSuggest!());
     expect(written).toEqual(["suggested-changes"]);
   });
 
-  it("N1 with the hub on asks the hub back to its tiles, then lands", () => {
-    draw({ tuning: true, hub: true });
-    act(() => seen.strip.onSuggest!());
-    expect(written).toEqual(["suggested-changes"]);
-  });
-
-  it("N1: nothing under the body size, and nothing with Tuning off", () => {
-    draw({ tuning: true, built: 98 });
+  it("N1: nothing under the body size, and nothing with the Analysis tab off", () => {
+    draw({ built: 98 });
     expect(seen.strip.onSuggest).toBeUndefined();
-    draw({ tuning: false });
+    draw({ analysis: false });
     expect(seen.strip.onSuggest).toBeUndefined();
   });
 });

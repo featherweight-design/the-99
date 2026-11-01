@@ -16,7 +16,7 @@ export const MOMENTS = [
   { id: "help-me-choose", m: "M12", tool: "HELP_ME_CHOOSE_ENABLED" },
   { id: "top-off", m: "M1", tool: null },
   { id: "proposed-cuts", m: "M3", tool: "ANALYSIS_TAB_ENABLED" },
-  { id: "suggested-changes", m: "M2", tool: "TUNING_ENABLED" },
+  { id: "suggested-changes", m: "M2", tool: "ANALYSIS_TAB_ENABLED" },
   { id: "mana-balance", m: "M4", tool: "ANALYSIS_TAB_ENABLED", after: "suggested-changes" },
   { id: "card-assignments", m: "M7", tool: null },
   { id: "stand-ins", m: "M5", tool: null },
