@@ -61,7 +61,8 @@ export const MODEL_CAPABILITIES: readonly { key: ModelCapabilityKey; on: (env: N
   { key: "suggested_changes_v2", on: suggestedChangesV2Enabled },
   // Proposed cuts' own switch is retired: its paid pass follows the Analysis tab, where it mounts.
   { key: "proposed_cuts", on: analysisTabEnabled },
-  { key: "intake", on: helpMeChooseEnabled },
+  // Help me choose's read followed its own switch, which is retired (always on): only the model-call kill switch stops it.
+  { key: "intake", on: () => true },
   // Find a deck's read followed swap tools, whose switch is retired (always on): only the model-call kill switch stops it.
   { key: "fits_read", on: () => true },
 ];

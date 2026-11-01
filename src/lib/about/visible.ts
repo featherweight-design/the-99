@@ -6,7 +6,6 @@
 // new" is how the sheet announces an entry the page does not mark.
 
 import { analysisTabEnabled } from "../decks/analysis-flag";
-import { helpMeChooseEnabled } from "../intake/flag";
 import { suggestedChangesV2Enabled } from "../tuning/flag";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
 import { paymentsEnabled, welcomeCreditsEnabled } from "../payments/flag";
@@ -33,7 +32,8 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   NEVER_CUT_ENABLED: () => true,
   // Retired (always on): the swap tools. The name stays as the entries', pages' and sentences' historical identity.
   SWAP_TOOLS_ENABLED: () => true,
-  HELP_ME_CHOOSE_ENABLED: helpMeChooseEnabled,
+  // Retired (always on): Help me choose. The name stays as the entry's, lines' and sentences' historical identity.
+  HELP_ME_CHOOSE_ENABLED: () => true,
   // Retired (always on): Change commander. The name stays as the entry's historical identity.
   CHANGE_COMMANDER_ENABLED: () => true,
   ANALYSIS_TAB_ENABLED: analysisTabEnabled,

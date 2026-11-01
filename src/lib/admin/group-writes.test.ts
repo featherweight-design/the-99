@@ -190,11 +190,11 @@ describe("writeGroup", () => {
   });
 
   it("returns a preview instead of writing when a move raises model access, and writes once confirmed", async () => {
-    env = { HELP_ME_CHOOSE_ENABLED: "false" };
-    overrides = [{ switchName: "HELP_ME_CHOOSE_ENABLED", scope: "group", groupId: T, userId: null, value: "on" }];
+    env = { ANALYSIS_TAB_ENABLED: "true", SUGGESTED_CHANGES_V2_ENABLED: "false" };
+    overrides = [{ switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "group", groupId: T, userId: null, value: "on" }];
     members = [{ userId: "u_theo", groupId: F }];
     const r = await writeGroup("u_hugh", T, input({ members: ["u_theo"] }), deps());
-    expect(r).toMatchObject({ ok: false, error: "confirm", preview: { count: 1, names: ["Theo"], costs: [{ key: "intake" }] } });
+    expect(r).toMatchObject({ ok: false, error: "confirm", preview: { count: 1, names: ["Theo"], costs: [{ key: "suggested_changes_v2" }] } });
     // The check runs after the writes, so the rollback (the probe proves it) is what writes nothing.
     expect(kinds()).not.toContain("event");
     expect(afterCommit).not.toHaveBeenCalled();
@@ -206,8 +206,8 @@ describe("writeGroup", () => {
   it("refuses a member outside the universe, and while Clerk is down still counts a member the stored ids miss", async () => {
     expect(await writeGroup("u_hugh", T, input({ members: ["u_stranger"] }), deps())).toEqual({ ok: false, error: "members" });
     clerk = "down";
-    env = { HELP_ME_CHOOSE_ENABLED: "true" };
-    overrides = [{ switchName: "HELP_ME_CHOOSE_ENABLED", scope: "group", groupId: T, userId: null, value: "off" }];
+    env = { ANALYSIS_TAB_ENABLED: "true", SUGGESTED_CHANGES_V2_ENABLED: "true" };
+    overrides = [{ switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "group", groupId: T, userId: null, value: "off" }];
     // u_ghost never pressed, so the Clerk-down list lacks it; its membership of T names it. Removing it
     // lifts T's off, so the rise is counted and confirmed rather than written unasked.
     members = [{ userId: "u_ghost", groupId: T }];
@@ -365,8 +365,8 @@ describe("moveAccount (admin plan 9b, STATES G7)", () => {
   });
 
   it("returns the preview when the move raises model access, and writes once the count is confirmed", async () => {
-    env = { HELP_ME_CHOOSE_ENABLED: "false" };
-    overrides = [{ switchName: "HELP_ME_CHOOSE_ENABLED", scope: "group", groupId: T, userId: null, value: "on" }];
+    env = { ANALYSIS_TAB_ENABLED: "true", SUGGESTED_CHANGES_V2_ENABLED: "false" };
+    overrides = [{ switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "group", groupId: T, userId: null, value: "on" }];
     expect(await moveAccount("u_hugh", "u_theo", T, null, deps())).toMatchObject({ ok: false, error: "confirm", preview: { count: 1, names: ["Theo"] } });
     expect(kinds()).not.toContain("event");
     expect(afterCommit).not.toHaveBeenCalled();

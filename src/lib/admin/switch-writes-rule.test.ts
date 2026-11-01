@@ -11,7 +11,7 @@ const UNIVERSE = new Set(["u1", "u2"]);
 const G = "0b6f2c1e-3c1a-4d55-9a3e-1f2d3c4b5a69";
 const check = (op: "set" | "clear", input: object, env: Env = {}) => validate(op, input, envValues(env), UNIVERSE);
 const snap = (overrides: OverrideRow[] = [], groupOf: Record<string, string> = {}): SwitchSnapshot => ({ overrides, groupOf: new Map(Object.entries(groupOf)) });
-const write = (w: Partial<Write>): Write => ({ op: "set", name: "HELP_ME_CHOOSE_ENABLED", scope: "app", groupId: null, userId: null, value: "on", note: null, confirmed: null, ...w });
+const write = (w: Partial<Write>): Write => ({ op: "set", name: "ANALYSIS_TAB_ENABLED", scope: "app", groupId: null, userId: null, value: "on", note: null, confirmed: null, ...w });
 
 describe("validate", () => {
   it("normalizes a good set and a good clear", () => {
@@ -49,8 +49,8 @@ describe("validate", () => {
 
 describe("applyWrite and isNoop", () => {
   it("replaces the target's row on a set and removes it on a clear, leaving the rest", () => {
-    const other: OverrideRow = { switchName: "HELP_ME_CHOOSE_ENABLED", scope: "user", groupId: null, userId: "u1", value: "on" };
-    const app: OverrideRow = { switchName: "HELP_ME_CHOOSE_ENABLED", scope: "app", groupId: null, userId: null, value: "on" };
+    const other: OverrideRow = { switchName: "ANALYSIS_TAB_ENABLED", scope: "user", groupId: null, userId: "u1", value: "on" };
+    const app: OverrideRow = { switchName: "ANALYSIS_TAB_ENABLED", scope: "app", groupId: null, userId: null, value: "on" };
     expect(applyWrite(snap([app, other]), write({ value: "off" })).overrides).toEqual([other, { ...app, value: "off" }]);
     expect(applyWrite(snap([app, other]), write({ op: "clear", value: null })).overrides).toEqual([other]);
   });
@@ -76,25 +76,31 @@ describe("what a write raises", () => {
   });
 
   it("raises on clearing an app-wide off over an env var that is true", () => {
-    const before = snap([{ switchName: "HELP_ME_CHOOSE_ENABLED", scope: "app", groupId: null, userId: null, value: "off" }]);
-    const r = rise({ HELP_ME_CHOOSE_ENABLED: "true" }, before, write({ op: "clear", name: "HELP_ME_CHOOSE_ENABLED", value: null }));
-    expect(r).toMatchObject({ accounts: ["u1", "u2"], capabilities: ["intake"] });
+    const before = snap([{ switchName: "ANALYSIS_TAB_ENABLED", scope: "app", groupId: null, userId: null, value: "off" }]);
+    const r = rise({ ANALYSIS_TAB_ENABLED: "true" }, before, write({ op: "clear", name: "ANALYSIS_TAB_ENABLED", value: null }));
+    expect(r).toMatchObject({ accounts: ["u1", "u2"], capabilities: ["synopsis", "tuning", "proposed_cuts"] });
   });
 
   it("raises nothing for an account on under a kill, or for any off", () => {
-    expect(rise({ HELP_ME_CHOOSE_ENABLED: "off" }, snap(), write({ scope: "user", userId: "u1" })).accounts).toEqual([]);
-    expect(rise({ HELP_ME_CHOOSE_ENABLED: "true" }, snap(), write({ value: "off" })).accounts).toEqual([]);
+    expect(rise({ ANALYSIS_TAB_ENABLED: "off" }, snap(), write({ scope: "user", userId: "u1" })).accounts).toEqual([]);
+    expect(rise({ ANALYSIS_TAB_ENABLED: "true" }, snap(), write({ value: "off" })).accounts).toEqual([]);
   });
 
   it("counts the accounts whose About page gains an entry", () => {
-    expect(rise({}, snap(), write({ name: "HELP_ME_CHOOSE_ENABLED" })).whatsNew).toEqual(["u1", "u2"]);
-    expect(rise({ HELP_ME_CHOOSE_ENABLED: "true" }, snap(), write({ name: "HELP_ME_CHOOSE_ENABLED" })).whatsNew).toEqual([]);
+    expect(rise({}, snap(), write({ name: "ANALYSIS_TAB_ENABLED" })).whatsNew).toEqual(["u1", "u2"]);
+    expect(rise({ ANALYSIS_TAB_ENABLED: "true" }, snap(), write({ name: "ANALYSIS_TAB_ENABLED" })).whatsNew).toEqual([]);
   });
 
   // Swap tools is retired (always on): its entries already draw and Find a deck's paid read is always offered, so
   // turning its name on raises no account, no capability and no About entry.
   it("raises nothing for the retired swap tools", () => {
     expect(rise({}, snap(), write({ name: "SWAP_TOOLS_ENABLED" }))).toMatchObject({ accounts: [], capabilities: [], whatsNew: [] });
+  });
+
+  // Help me choose is retired (always on): its entries already draw and its paid read is always offered, so turning its
+  // name on raises no account, no capability and no About entry.
+  it("raises nothing for the retired Help me choose", () => {
+    expect(rise({}, snap(), write({ name: "HELP_ME_CHOOSE_ENABLED" }))).toMatchObject({ accounts: [], capabilities: [], whatsNew: [] });
   });
 
   // Suggested changes is retired: its entries and its paid runs follow the Analysis tab, so turning its own name on

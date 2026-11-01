@@ -94,6 +94,8 @@ describe("toolLanding", () => {
     // The swap tools' switch is retired: Stand-ins and Find a deck have none.
     expect(toolLanding("stand-ins", () => false)?.tool).toBe("stand-ins");
     expect(toolLanding("find-a-deck", () => false)?.tool).toBe("find-a-deck");
+    // Help me choose's switch is retired: it has none.
+    expect(toolLanding("help-me-choose", () => false)?.tool).toBe("help-me-choose");
   });
 
   it("is null for an unknown id, a repeated parameter, an absent one, and a tool whose switch is off", () => {
@@ -101,7 +103,7 @@ describe("toolLanding", () => {
     expect(toolLanding(["top-off", "top-off"], allOn)).toBeNull();
     expect(toolLanding(undefined, allOn)).toBeNull();
     expect(toolLanding("tour:banner", allOn)).toBeNull();
-    expect(toolLanding("help-me-choose", offFor("HELP_ME_CHOOSE_ENABLED"))).toBeNull();
+    expect(toolLanding("mana-balance", offFor("ANALYSIS_TAB_ENABLED"))).toBeNull();
     expect(isToolId("nope")).toBe(false);
   });
 });

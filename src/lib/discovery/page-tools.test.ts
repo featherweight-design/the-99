@@ -49,8 +49,12 @@ describe("pageTools", () => {
     expect(placed(without("ANALYSIS_TAB_ENABLED")).has("decks/analysis")).toBe(false);
     // The swap tools have no switch (theirs is retired): its retired name moves nothing.
     expect(placed(without("SWAP_TOOLS_ENABLED"))).toEqual(placed(ALL_ON));
-    // A section left with no card is absent.
-    expect(placed(without("HELP_ME_CHOOSE_ENABLED")).has("commanders/for-you")).toBe(false);
+    // Help me choose has no switch (its own is retired): its retired name moves nothing.
+    expect(placed(without("HELP_ME_CHOOSE_ENABLED"))).toEqual(placed(ALL_ON));
+    // A section left with no card is absent: Help me choose's labels gone, For you holds no card.
+    const HMC = TOOLS.find((t) => t.id === "help-me-choose")!.labels as readonly string[];
+    const noChoose = all.map((s) => ({ ...s, labels: s.labels.filter((l) => !HMC.includes(l.key)) }));
+    expect(placed(ALL_ON, noChoose).has("commanders/for-you")).toBe(false);
   });
 
   it("aims each card's Show me at its label: the label's page, lit, at its section", () => {

@@ -39,7 +39,7 @@ vi.mock("./fill", async (importActual) => ({
 import { buildFillPlan } from "./fill-plan";
 
 const commanders = [{ oracleId: "cmd", name: "C", colorIdentity: ["G"], manaCost: "{G}" }];
-const env = envViewWith({ HELP_ME_CHOOSE_ENABLED: "true" });
+const env = envViewWith({});
 const call = (sets?: string[], own = false) =>
   buildFillPlan("u", commanders, new Set(), {
     selected: [], env,

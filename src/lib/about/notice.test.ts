@@ -164,20 +164,20 @@ describe("aboutDismissal (the banner's ✕)", () => {
 
 // Review round 1: the ✕ writes what was RENDERED, intersected with what is announced now, never widened to it.
 describe("aboutDismissal, a switch turned on between the render and the ✕", () => {
-  // Commanders' places unit (its own switch retired, always drawn) with a sentence on HELP_ME_CHOOSE_ENABLED. Spare
-  // requests' sentence, then the wishlist's on a friend's page, were this case until each switch retired. The reader's
-  // floor sits under the unit (since 1), so the unit itself is a launch.
-  const UNIT = "commanders/for-you/places";
-  const SENTENCE = sentenceKey(UNIT, "HELP_ME_CHOOSE_ENABLED");
-  const HMC_ON = env({ HELP_ME_CHOOSE_ENABLED: "true" });
-  const HMC_OFF = env({});
+  // The credits rule (no switch of its own, always drawn) with its sentences on PAYMENTS_ENABLED. Spare requests'
+  // sentence, the wishlist's on a friend's page, then Help me choose's on Commanders' places were this case until each
+  // switch retired. The reader's floor sits under the unit (since 11), so the unit itself is a launch.
+  const UNIT = "rule/credits";
+  const SENTENCE = sentenceKey(UNIT, "PAYMENTS_ENABLED");
+  const PAY_ON = env({ PAYMENTS_ENABLED: "true" });
+  const PAY_OFF = env({});
   const reader: SeenState = { version: 0, ids: ["x"] };
 
-  it("a base unit drawn before HELP_ME_CHOOSE_ENABLED turned on does not take its new sentence's key", () => {
-    const line = aboutLine(reader, visibleSections(HMC_OFF));
+  it("a base unit drawn before PAYMENTS_ENABLED turned on does not take its new sentence's key", () => {
+    const line = aboutLine(reader, visibleSections(PAY_OFF));
     const drawn = line?.kind === "launches" ? line.launches.find((l) => l.key === UNIT) : undefined;
     expect(drawn?.ack).toEqual([UNIT]);
-    const now = visibleSections(HMC_ON);
+    const now = visibleSections(PAY_ON);
     const write = aboutDismissal(drawn!.ack, reader, now)!;
     expect(write.ids).toContain(UNIT);
     expect(write.ids).not.toContain(SENTENCE);
@@ -187,7 +187,7 @@ describe("aboutDismissal, a switch turned on between the render and the ✕", ()
   });
 
   it("writes the sentence's key when the render drew it", () => {
-    const now = visibleSections(HMC_ON);
+    const now = visibleSections(PAY_ON);
     const line = aboutLine(reader, now);
     const drawn = line?.kind === "launches" ? line.launches.find((l) => l.key === UNIT) : undefined;
     expect([...drawn!.ack].sort()).toEqual([UNIT, SENTENCE].sort());

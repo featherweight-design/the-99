@@ -9,7 +9,7 @@ import type { TargetId } from "./targets";
  * tools in group order. A tool's `id` is its moment's id where it has one, and the `?tool=` a Try it writes is this id.
  *
  * - `switch`: the switch the tool lives behind, or null for one with none (Top off; Stand-ins and Find a
- *   deck since `SWAP_TOOLS_ENABLED` retired). Off for a reader, the tool is
+ *   deck since `SWAP_TOOLS_ENABLED` retired; Help me choose since `HELP_ME_CHOOSE_ENABLED` retired). Off for a reader, the tool is
  *   absent: no card, and a `?tool=` naming it lands nowhere.
  * - `entry`: the About entry its `How it works ›` opens (`src/lib/copy/about-entries.ts`).
  * - `labels`: the labels on the About pages its `Show me ›` can light (`labelKey`, `src/lib/about/pages-visible.ts`), in
@@ -45,7 +45,7 @@ const hub = tuningHubCopy.tools;
 
 export const TOOLS = [
   // Start a deck
-  { id: "help-me-choose", group: "start", switch: "HELP_ME_CHOOSE_ENABLED", entry: "help-me-choose", labels: ["commanders/for-you/places", "decks/your-decks/new-deck"], target: "help-me-choose", lands: { kind: "route", href: "/decks/new/choose" }, credit: null, needsDeck: false },
+  { id: "help-me-choose", group: "start", switch: null, entry: "help-me-choose", labels: ["commanders/for-you/places", "decks/your-decks/new-deck"], target: "help-me-choose", lands: { kind: "route", href: "/decks/new/choose" }, credit: null, needsDeck: false },
   { id: "precons", group: "start", switch: null, entry: "precons", labels: ["decks/your-decks/precons"], target: "precons", lands: { kind: "route", href: "/decks/precons" }, credit: null, needsDeck: false },
   // Tune it
   { id: "top-off", group: "tune", switch: null, entry: "auto-fill", labels: ["decks/your-deck/mix"], target: "top-off", lands: { kind: "deck", tab: "deck" }, credit: null, needsDeck: true },

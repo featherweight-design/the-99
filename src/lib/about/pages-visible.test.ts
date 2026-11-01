@@ -72,7 +72,9 @@ describe("each sentence follows its own switch", () => {
     ["Ready to build is gone with the feed always on", {}, "home/home/ready", undefined, undefined],
     ["the feed's lead names no kind a switch can hide", {}, "home/whats-new/lead", "You choose what can lead in Settings", "precon"],
     ["the + with scanning (collection edit is retired)", {}, "collection/cards/add", "scan them", undefined],
-    ["the place strip without Help me choose", {}, "commanders/for-you/places", "two ways", "Help me choose"],
+    // Help me choose's switch is retired (always on): its sentences draw with nothing on, and its kill value hides none.
+    ["the place strip with Help me choose, its switch retired", {}, "commanders/for-you/places", "Help me choose asks a few questions", undefined],
+    ["the place strip keeps Help me choose with its retired name off", { HELP_ME_CHOOSE_ENABLED: "off" }, "commanders/for-you/places", "Help me choose asks a few questions", undefined],
     ["a game log without Suggested changes", {}, "decks/games/log", "fifteen seconds", "Suggested changes"],
     // Suggested changes' and Proposed cuts' own switches are retired: both draw with the Analysis tab alone.
     ["credits with Suggested changes, on the tab alone", { ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "off" }, "rule/credits", "Suggested changes run", undefined],
@@ -81,8 +83,8 @@ describe("each sentence follows its own switch", () => {
     ["credits with payments", { PAYMENTS_ENABLED: "true" }, "rule/credits", "Pack and gift credits never expire", "Overview"],
     ["credits with nothing on", {}, "rule/credits", "Anything written just for you", "never expire"],
     ["a proxy keeps its retired tokens sentence with nothing on", {}, "rule/proxy", "I have one", undefined],
-    ["a fill without Help me choose", {}, "rule/autofill", "then uses your Collection", "Help me choose"],
-    ["a fill with Help me choose", { HELP_ME_CHOOSE_ENABLED: "true" }, "rule/autofill", "any cards will do", undefined],
+    ["a fill with Help me choose, its switch retired", {}, "rule/autofill", "any cards will do", undefined],
+    ["a fill keeps Help me choose with its retired name off", { HELP_ME_CHOOSE_ENABLED: "off" }, "rule/autofill", "any cards will do", undefined],
     ["friends see the wishlist (its switch and friends' are retired)", {}, "rule/friends-see", "Your wishlist is theirs to read too", undefined],
     ["friends open decks", {}, "rule/friends-see", "can open the decks", "names, status"],
     ["bracket marks are explained with the Analysis tab off, as they are drawn", {}, "decks/your-deck/bracket-marks", "Game Changers", undefined],
@@ -360,9 +362,9 @@ describe("seen translation", () => {
     expect(unseenUnits(on, seen).map((u) => u.key)).toEqual([sentenceKey("home/home/fresh", "PUSH_ENABLED")]);
   });
 
-  it("keeps a Help me choose acknowledgement when the fill rule's sentence turns on", () => {
-    const hmcOn = env({ HELP_ME_CHOOSE_ENABLED: "true" });
-    const told = (ids: string[]) => unseenUnits(visibleSections(hmcOn), { version: 16, ids }).map((u) => u.key);
+  // Help me choose's switch is retired (always on): the fill rule's sentence draws with nothing set, under its old key.
+  it("keeps a Help me choose acknowledgement for the fill rule's sentence", () => {
+    const told = (ids: string[]) => unseenUnits(visibleSections(env({})), { version: 16, ids }).map((u) => u.key);
     expect(told(["x"])).toContain(sentenceKey("rule/autofill", "HELP_ME_CHOOSE_ENABLED"));
     expect(told(["help-me-choose"])).not.toContain(sentenceKey("rule/autofill", "HELP_ME_CHOOSE_ENABLED"));
   });
@@ -465,7 +467,7 @@ describe("a section's sub-line", () => {
 
   // Retired but still in the registry until their removal PR: Proposed cuts and Suggested changes follow their parent, the
   // Analysis tab, and the swap tools are always on, so any of these names set off moves nothing.
-  const BAKED_IN = new Set(["PROPOSED_CUTS_ENABLED", "SWAP_TOOLS_ENABLED", "TUNING_ENABLED"]);
+  const BAKED_IN = new Set(["HELP_ME_CHOOSE_ENABLED", "PROPOSED_CUTS_ENABLED", "SWAP_TOOLS_ENABLED", "TUNING_ENABLED"]);
 
   it("names no feature whose switch is off: a section emptied of labels by a switch says only that its screen is off", () => {
     for (const sec of ABOUT_SECTIONS) {
@@ -540,7 +542,7 @@ describe("resolveDiagram", () => {
   const rule = (e: NodeJS.ProcessEnv, id: string) => visibleSections(e).flatMap((s) => s.rules).find((r) => r.key === ruleKey(id as never))!;
 
   it("drops a part, a chip and an emptied column whose switch is off, as a sentence is cut", () => {
-    const off = env({ ...(ALL_ON as Record<string, string>), HELP_ME_CHOOSE_ENABLED: "off" });
+    const off = env({ ...(ALL_ON as Record<string, string>), PAYMENTS_ENABLED: "off" });
     const names = (d: ReturnType<typeof resolveDiagram>) =>
       parts(d).flatMap((p) => (p.part === "row" ? [p.name] : p.part === "caption" ? [p.text] : p.part === "chips" ? p.chips.map((c) => c.text) : []));
     // A retired switch's parts draw whatever the env says (the tokens switch is gone).
@@ -559,16 +561,16 @@ describe("resolveDiagram", () => {
     // The wishlist's switch is retired: its chip draws whatever the env says.
     expect(names(rule(env({ ...(ALL_ON as Record<string, string>), SOCIAL_WISHLIST_ENABLED: "off" }), "friends-see").diagram!)).toContain("Wishlist");
     const emptied = resolveDiagram(
-      { kind: "card-row", columns: [{ parts: [{ part: "row", name: "a", switch: "HELP_ME_CHOOSE_ENABLED" }] }, { parts: [{ part: "row", name: "b" }] }] },
+      { kind: "card-row", columns: [{ parts: [{ part: "row", name: "a", switch: "PAYMENTS_ENABLED" }] }, { parts: [{ part: "row", name: "b" }] }] },
       off,
     );
     expect(emptied.columns).toHaveLength(1);
   });
 
   it("keeps a negated part only while its live switch is off", () => {
-    const off = env({ ...(ALL_ON as Record<string, string>), HELP_ME_CHOOSE_ENABLED: "off" });
+    const off = env({ ...(ALL_ON as Record<string, string>), PAYMENTS_ENABLED: "off" });
     const negated = (e: NodeJS.ProcessEnv) => resolveDiagram(
-      { kind: "card-row", columns: [{ parts: [{ part: "row", name: "a", switch: "!HELP_ME_CHOOSE_ENABLED" }, { part: "row", name: "b", switch: "HELP_ME_CHOOSE_ENABLED" }] }] },
+      { kind: "card-row", columns: [{ parts: [{ part: "row", name: "a", switch: "!PAYMENTS_ENABLED" }, { part: "row", name: "b", switch: "PAYMENTS_ENABLED" }] }] },
       e,
     ).columns.flatMap((c) => c.parts).flatMap((p) => (p.part === "row" ? [p.name] : []));
     expect(negated(off)).toEqual(["a"]);

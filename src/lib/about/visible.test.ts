@@ -5,13 +5,13 @@ import { aboutEntries } from "../copy/about-entries";
 import { creditsEntryOf, drawnEntry, isFirstRun, isSeen, resolveEntry, switchedIds, unseenEntries, variantId, visibleEntries, type SeenState } from "./visible";
 
 // TUNING_ENABLED is retired: Suggested changes' entry and lines follow ANALYSIS_TAB_ENABLED, already "true" here.
-const ON = { HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", ADDED_COPY_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", HELP_PANEL_ENABLED: "true", FIRST_RUN_TOUR_ENABLED: "true", CARD_SCAN_ENABLED: "true", NEAR_COMBOS_ENABLED: "true", PUSH_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const ON = { SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", ADDED_COPY_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", HELP_PANEL_ENABLED: "true", FIRST_RUN_TOUR_ENABLED: "true", CARD_SCAN_ENABLED: "true", NEAR_COMBOS_ENABLED: "true", PUSH_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 const OFF = {} as unknown as NodeJS.ProcessEnv;
 
 /** Two switched entries, a and b, beside one plain one, shaped like the launch entries. */
 const plain: AboutEntry = { ...aboutEntries[0], id: "plain", since: 3 };
 const a: AboutEntry = { ...aboutEntries[0], id: "a", since: 10, switch: "ANALYSIS_TAB_ENABLED" };
-const b: AboutEntry = { ...aboutEntries[0], id: "b", since: 10, switch: "HELP_ME_CHOOSE_ENABLED" };
+const b: AboutEntry = { ...aboutEntries[0], id: "b", since: 10, switch: "PUSH_ENABLED" };
 const catalog = [plain, a, b];
 const seen = (version: number, ids: string[] = []): SeenState => ({ version, ids });
 
@@ -19,7 +19,7 @@ const seen = (version: number, ids: string[] = []): SeenState => ({ version, ids
 // are drawn like an unswitched entry, and a reader who "met every launch" has met them too.
 // Collection editing's entries, and the names that followed it (scanning, added copy, the way in without a collection, I got
 // it), are among them. `upload-choice` draws in its Sync variant, so its variant id is met too.
-const RETIRED = ["CARD_SEARCH_ENABLED", "FIRST_RUN_TOUR_ENABLED", "HELP_PANEL_ENABLED", "NEAR_COMBOS_ENABLED", "PRECONS_ENABLED", "UPCOMING_PRECONS_ENABLED", "DECK_TOKENS_ENABLED", "LINEUP_ENABLED", "COMMANDERS_PLACE_ENABLED", "HOME_FEED_ENABLED", "SOCIAL_WISHLIST_ENABLED", "COLLECTION_EDIT_ENABLED", "CARD_SCAN_ENABLED", "ADDED_COPY_ENABLED", "NO_COLLECTION_ENTRY_ENABLED", "SHOPPING_MARK_BOUGHT_ENABLED", "DECK_NOTES_ENABLED", "DECK_STATS_ENABLED", "DECK_PRINTINGS_ENABLED", "NEVER_CUT_ENABLED", "CHANGE_COMMANDER_ENABLED", "ALL_DECKS_CART_ENABLED", "SOCIAL_FRIENDS_ENABLED", "FRIEND_DECKS_ENABLED", "SOCIAL_INVITES_ENABLED", "RULE_ZERO_ENABLED", "SOCIAL_GAMES_ENABLED", "SWAP_TOOLS_ENABLED", "FIND_A_DECK_READ_ENABLED"];
+const RETIRED = ["CARD_SEARCH_ENABLED", "FIRST_RUN_TOUR_ENABLED", "HELP_PANEL_ENABLED", "NEAR_COMBOS_ENABLED", "PRECONS_ENABLED", "UPCOMING_PRECONS_ENABLED", "DECK_TOKENS_ENABLED", "LINEUP_ENABLED", "COMMANDERS_PLACE_ENABLED", "HOME_FEED_ENABLED", "SOCIAL_WISHLIST_ENABLED", "COLLECTION_EDIT_ENABLED", "CARD_SCAN_ENABLED", "ADDED_COPY_ENABLED", "NO_COLLECTION_ENTRY_ENABLED", "SHOPPING_MARK_BOUGHT_ENABLED", "DECK_NOTES_ENABLED", "DECK_STATS_ENABLED", "DECK_PRINTINGS_ENABLED", "NEVER_CUT_ENABLED", "CHANGE_COMMANDER_ENABLED", "ALL_DECKS_CART_ENABLED", "SOCIAL_FRIENDS_ENABLED", "FRIEND_DECKS_ENABLED", "SOCIAL_INVITES_ENABLED", "RULE_ZERO_ENABLED", "SOCIAL_GAMES_ENABLED", "SWAP_TOOLS_ENABLED", "FIND_A_DECK_READ_ENABLED", "HELP_ME_CHOOSE_ENABLED"];
 const retiredEntries = aboutEntries.filter((e) => e.switch && RETIRED.includes(e.switch));
 const retiredIds = switchedIds(retiredEntries.map((e) => resolveEntry(e, OFF)));
 
@@ -214,7 +214,7 @@ describe("an entry tied to a switch", () => {
 
   it("reads unseen when switched on after another was switched on and read (out of order)", () => {
     // Switch B on, and the reader visits: the visit records the switched ids it drew.
-    const bOn = visibleEntries({ HELP_ME_CHOOSE_ENABLED: "true" } as unknown as NodeJS.ProcessEnv, catalog);
+    const bOn = visibleEntries({ PUSH_ENABLED: "true" } as unknown as NodeJS.ProcessEnv, catalog);
     const afterVisit = seen(9, switchedIds(bOn));
     expect(unseenEntries(bOn, afterVisit)).toEqual([]);
     // Now switch A on. A version number would say the reader is current; A is still new.
@@ -332,7 +332,7 @@ describe("a negated line switch, and `import`'s two warnings (collection edit, r
   const imp = aboutEntries.find((e) => e.id === "import")!;
   const REPLACES = "Heads up: an import replaces your whole Collection, it doesn’t add to it.";
   const ASKS = "Already have a Collection here? The 99 asks whether the file replaces it or adds to it.";
-  const env = (v?: string) => (v === undefined ? {} : { HELP_ME_CHOOSE_ENABLED: v }) as unknown as NodeJS.ProcessEnv;
+  const env = (v?: string) => (v === undefined ? {} : { PUSH_ENABLED: v }) as unknown as NodeJS.ProcessEnv;
 
   it("always draws the question, never the replace warning, leaving no blank line behind", () => {
     const resolved = resolveEntry(imp, env());
@@ -341,7 +341,7 @@ describe("a negated line switch, and `import`'s two warnings (collection edit, r
   });
 
   it("keeps a `!` key while its switch is off and drops it while on, reading anything but 'true' as off", () => {
-    const e: AboutEntry = { ...aboutEntries[0], id: "neg", since: 3, keys: ["Old", "New"], keySwitches: { Old: "!HELP_ME_CHOOSE_ENABLED", New: "HELP_ME_CHOOSE_ENABLED" } };
+    const e: AboutEntry = { ...aboutEntries[0], id: "neg", since: 3, keys: ["Old", "New"], keySwitches: { Old: "!PUSH_ENABLED", New: "PUSH_ENABLED" } };
     expect(resolveEntry(e, env()).keys).toEqual(["Old"]);
     expect(resolveEntry(e, env("1")).keys).toEqual(["Old"]);
     expect(resolveEntry(e, env("true")).keys).toEqual(["New"]);
@@ -484,31 +484,28 @@ describe("a way in without a collection (no-collection entry PR 6: a switched en
   });
 });
 
-describe("Help me choose’s read (rework plan PR 5: the entry rewritten, no bump)", () => {
-  // A current reader who never met the entry: production, where the switch is off.
-  const behind = seen(ABOUT_VERSION, retiredIds);
+// HELP_ME_CHOOSE_ENABLED is retired (always on): the entry keeps the name as its identity and is always drawn.
+describe("Help me choose’s read (rework plan PR 5: the entry rewritten, no bump; its switch retired)", () => {
+  const OFF_ENVS = [{}, { HELP_ME_CHOOSE_ENABLED: "off" }] as unknown as NodeJS.ProcessEnv[];
+  // A current reader who never met the entry.
+  const behind = seen(ABOUT_VERSION, retiredIds.filter((id) => id !== "help-me-choose"));
 
-  it("shows a current reader no sheet while the switch is off", () => {
-    expect(unseenEntries(visibleEntries({} as NodeJS.ProcessEnv), behind)).toEqual([]);
+  it("is drawn whatever its retired switch says", () => {
+    for (const env of OFF_ENVS) expect(visibleEntries(env).map((e) => e.id)).toContain("help-me-choose");
   });
 
-  it("shows exactly the Help me choose entry once the switch is on, never an empty sheet", () => {
-    const on = { HELP_ME_CHOOSE_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
-    expect(unseenEntries(visibleEntries(on), behind).map((e) => e.id)).toEqual(["help-me-choose"]);
+  it("shows a current reader who never met it exactly the Help me choose entry, never an empty sheet", () => {
+    expect(unseenEntries(visibleEntries(OFF), behind).map((e) => e.id)).toEqual(["help-me-choose"]);
   });
 
   it("is seen by id, so a reader who met the entry before the rewrite is not shown it again", () => {
-    // No bump: an entry with a switch is announced by its switch flipping, and its id stays stable.
-    const on = { HELP_ME_CHOOSE_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
-    expect(unseenEntries(visibleEntries(on), seen(ABOUT_VERSION, ["help-me-choose", ...retiredIds]))).toEqual([]);
+    // No bump: the id stays stable.
+    expect(unseenEntries(visibleEntries(OFF), seen(ABOUT_VERSION, ["help-me-choose", ...retiredIds]))).toEqual([]);
   });
 
-  it("names the read’s credit in the credits entry only with the switch on", () => {
+  it("names the read’s credit in the credits entry whatever its retired switch says", () => {
     const bullet = "- Each new “Help me choose” search where you fill in “Anything else?”";
-    const credits = (env: Record<string, string>) =>
-      visibleEntries(env as unknown as NodeJS.ProcessEnv).find((e) => e.id === "credits")!.caption;
-    expect(credits({})).not.toContain(bullet);
-    expect(credits({ HELP_ME_CHOOSE_ENABLED: "true" })).toContain(bullet);
+    for (const env of OFF_ENVS) expect(visibleEntries(env).find((e) => e.id === "credits")!.caption).toContain(bullet);
   });
 });
 
@@ -612,7 +609,8 @@ describe("an entry drawn in another's place (`replaces`, the launch-end batch)",
 
 describe("whats-new's line switches, in every state of the live switch they name", () => {
   const entry = aboutEntries.find((e) => e.id === "whats-new")!;
-  // `SOCIAL_WISHLIST_ENABLED` and `SOCIAL_FRIENDS_ENABLED` are retired: their lines follow them as always on.
+  // `SOCIAL_WISHLIST_ENABLED`, `SOCIAL_FRIENDS_ENABLED` and `HELP_ME_CHOOSE_ENABLED` are retired: their lines follow them
+  // as always on. The one name left is swept anyway, to prove its line ignores it.
   const flags = ["HELP_ME_CHOOSE_ENABLED"] as const;
   // The renderer's own reading: a blank line starts a paragraph, an empty block is dropped (`EntryCaption`).
   const blocks = (caption: string) => caption.split(/\n\s*\n/).map((b) => b.trim()).filter((b) => b.length > 0);
@@ -620,7 +618,6 @@ describe("whats-new's line switches, in every state of the live switch they name
   it("draws clean text in both states: no gated line left behind, no orphaned heading, no empty paragraph", () => {
     for (let mask = 0; mask < 1 << flags.length; mask++) {
       const env = { ...Object.fromEntries(flags.map((f, i) => [f, mask & (1 << i) ? "true" : "false"])) } as unknown as NodeJS.ProcessEnv;
-      const on = (f: (typeof flags)[number]) => env[f] === "true";
       const { caption } = resolveEntry(entry, env);
       const paras = blocks(caption);
       expect(paras.every((b) => b.length > 0), `mask ${mask}`).toBe(true);
@@ -629,7 +626,7 @@ describe("whats-new's line switches, in every state of the live switch they name
       const hasTabs = /- For you:|- Discover:|- Help me choose:/.test(caption);
       expect(hasHeading, `mask ${mask}: the tabs heading is always drawn (the place is retired)`).toBe(true);
       expect(hasTabs, `mask ${mask}: tab lines only with the heading`).toBe(true);
-      expect(caption.includes("- Help me choose:"), `mask ${mask}`).toBe(on("HELP_ME_CHOOSE_ENABLED"));
+      expect(caption.includes("- Help me choose:"), `mask ${mask}`).toBe(true);
       expect(caption.includes("- A precon"), `mask ${mask}`).toBe(true);
       expect(caption.includes("- A price drop"), `mask ${mask}`).toBe(true);
       expect(caption.includes("- A friend with a spare"), `mask ${mask}`).toBe(true);

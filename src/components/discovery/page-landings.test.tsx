@@ -178,18 +178,9 @@ describe.each(PAGES)("Try it's landing on $tool's page", ({ tool, path, page, co
     expect(spendMomentAction).not.toHaveBeenCalled();
   });
 
-  // Precons, Find a deck, `lineup`, the wishlist, Collection Sync and Friends have no switch left (retired), so they
-  // have no off state to strip on.
-  it.skipIf(tool === "precons" || tool === "find-a-deck" || tool === "lineup" || tool === "wishlist" || tool === "collection-sync" || tool === "friends")("strips its own id with no halo while its switch is off for the reader", async () => {
-    window.history.replaceState(null, "", `${path}?tool=${tool}`);
-    mount(tool, page, false);
-    await flush();
-    open?.();
-    await flush();
-    expect(window.location.search).toBe("");
-    expect(haloed()).toEqual([]);
-    expect(spendMomentAction).not.toHaveBeenCalled();
-  });
+  // Every tool with a page landing (Help me choose, Precons, Find a deck, `lineup`, the wishlist, Collection Sync and
+  // Friends) has no switch left (each retired), so none has an off state to strip on. `tools.test.ts` holds that a tool
+  // with a live switch is not landed while it is off.
 });
 
 describe("the page targets' own registration", () => {
