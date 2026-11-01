@@ -84,10 +84,7 @@ const suggestions: DeckSuggestionWithFacts[] = [
 ];
 
 describe("coverage cell arrival", () => {
-  it.each([
-    ["Analysis off", false],
-    ["Analysis on", true],
-  ])("switches to Consider and lands focus on the role's shelf heading (%s)", async (_label, analysisEnabled) => {
+  it("switches to Consider and lands focus on the role's shelf heading", async () => {
     render(
       <BuilderShell mix={TEST_MIX}
         deck={deck}
@@ -96,7 +93,6 @@ describe("coverage cell arrival", () => {
         firstRun={false}
         commanderIdentity={["B", "R", "G"]}
         arrivedFromImport={false}
-        analysisEnabled={analysisEnabled}
        newestAsOf={null}/>,
     );
 
@@ -126,7 +122,6 @@ describe("coverage cell arrival", () => {
         firstRun={false}
         commanderIdentity={["B", "R", "G"]}
         arrivedFromImport={false}
-        analysisEnabled
         initialView="analysis"
        newestAsOf={null}/>,
     );

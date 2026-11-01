@@ -10,7 +10,6 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, preconSynopses } from "../../db/schema";
-import { analysisTabEnabled } from "../decks/analysis-flag";
 import { allEvidenceIds } from "../synopsis/based-on";
 import { synopsisPreconContractVersion } from "../synopsis/limits";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
@@ -77,7 +76,6 @@ async function evidenceNamesOf(content: CheckedSynopsis): Promise<Record<string,
 }
 
 export async function loadPreconOverview(fileName: string, env: NodeJS.ProcessEnv): Promise<PreconOverview | null> {
-  if (!analysisTabEnabled(env)) return null;
   const { contract, basis } = preconOverviewKey(env);
   const rows = await db.select({ content: preconSynopses.content, current: preconSynopses.current, listFingerprint: preconSynopses.listFingerprint, contractVersion: preconSynopses.contractVersion }).from(preconSynopses).where(and(
     eq(preconSynopses.preconFile, fileName),

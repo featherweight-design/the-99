@@ -70,16 +70,17 @@ describe("switchPage", () => {
   });
 
   it("raises the rungs that decide, and says for how many (F1)", () => {
-    const p = page("TUNING_ENABLED", { ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true" }, [
-      ov({ scope: "app", value: "off" }),
-      ov({ scope: "user", userId: "u1", value: "on" }),
+    // Welcome credits under payments: the one compound switch left once the Analysis tab's switch retired.
+    const p = page("WELCOME_CREDITS_ENABLED", { PAYMENTS_ENABLED: "true", WELCOME_CREDITS_ENABLED: "true" }, [
+      ov({ name: "WELCOME_CREDITS_ENABLED", scope: "app", value: "off" }),
+      ov({ name: "WELCOME_CREDITS_ENABLED", scope: "user", userId: "u1", value: "on" }),
     ]);
     expect(p.rungs.map((r) => r.key)).toEqual(["account", "group", "app", "env", "needs"]);
     expect(rung(p, "account")).toMatchObject({ value: "Hugh: on", decides: "decides for 1", deciding: true });
     expect(rung(p, "group")).toMatchObject({ value: "None", tone: "none", decides: "decides for none", deciding: false });
     expect(rung(p, "app")).toMatchObject({ value: "Off", decides: "decides for 2", deciding: true });
     expect(rung(p, "env")).toMatchObject({ value: "true", tone: "mono", deciding: false });
-    expect(rung(p, "needs")).toMatchObject({ value: "Analysis tab: on for all 3 accounts", decides: "allows all 3" });
+    expect(rung(p, "needs")).toMatchObject({ value: "Buying credits: on for all 3 accounts", decides: "allows all 3" });
     expect(p.result).toEqual({ state: "mixed", text: "On for 1 of 3: Hugh" });
     expect(p.banner).toBeNull();
   });
@@ -116,10 +117,11 @@ describe("switchPage", () => {
   });
 
   it("draws the compound banner when the parent is off for everyone (F4)", () => {
-    const p = page("PROPOSED_CUTS_ENABLED", { PROPOSED_CUTS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "false" });
-    expect(p.banner).toMatchObject({ kind: "compound", title: "Off: needs Analysis tab, which is off.", link: "Open Analysis tab ›", parent: "ANALYSIS_TAB_ENABLED" });
-    expect(rung(p, "needs")).toMatchObject({ value: "Analysis tab: off for all 3 accounts", decides: "decides for 3", deciding: true });
-    expect(p.explanations[0].source).toBe("Analysis tab is off");
+    // Welcome credits under payments: the live compound pair (the Analysis tab's children were the example until it retired).
+    const p = page("WELCOME_CREDITS_ENABLED", { WELCOME_CREDITS_ENABLED: "true", PAYMENTS_ENABLED: "false" });
+    expect(p.banner).toMatchObject({ kind: "compound", title: "Off: needs Buying credits, which is off.", link: "Open Buying credits ›", parent: "PAYMENTS_ENABLED" });
+    expect(rung(p, "needs")).toMatchObject({ value: "Buying credits: off for all 3 accounts", decides: "decides for 3", deciding: true });
+    expect(p.explanations[0].source).toBe("Buying credits is off");
   });
 
   it("gives a plumbing switch no Account or Group rung, and marks a row it ignores (F6)", () => {
@@ -171,8 +173,8 @@ describe("switchPage", () => {
   });
 
   it("never says the parent allows all when there are no accounts", () => {
-    const p = switchPage({ name: "TUNING_ENABLED", env: envValues({ TUNING_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true" }), overrides: [], verdicts: new Map(), accounts: [], groups: [], events: [], historyLimit: 100, viewerId: "u1" });
-    expect(p.rungs.find((r) => r.key === "needs")).toMatchObject({ value: "Analysis tab: off for all 0 accounts", decides: "decides for none" });
+    const p = switchPage({ name: "WELCOME_CREDITS_ENABLED", env: envValues({ WELCOME_CREDITS_ENABLED: "true", PAYMENTS_ENABLED: "true" }), overrides: [], verdicts: new Map(), accounts: [], groups: [], events: [], historyLimit: 100, viewerId: "u1" });
+    expect(p.rungs.find((r) => r.key === "needs")).toMatchObject({ value: "Buying credits: off for all 0 accounts", decides: "decides for none" });
   });
 
   it("formats times in UTC with a 24-hour clock", () => {

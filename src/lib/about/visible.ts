@@ -5,7 +5,6 @@
 // page's NEW marks all ask `unseenEntries`. Four readers each with their own copy of "is this
 // new" is how the sheet announces an entry the page does not mark.
 
-import { analysisTabEnabled } from "../decks/analysis-flag";
 import { suggestedChangesV2Enabled } from "../tuning/flag";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
 import { paymentsEnabled, welcomeCreditsEnabled } from "../payments/flag";
@@ -36,12 +35,13 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   HELP_ME_CHOOSE_ENABLED: () => true,
   // Retired (always on): Change commander. The name stays as the entry's historical identity.
   CHANGE_COMMANDER_ENABLED: () => true,
-  ANALYSIS_TAB_ENABLED: analysisTabEnabled,
+  // Retired (always on): the Analysis tab. The name stays as the entries', pages' and sentences' historical identity.
+  ANALYSIS_TAB_ENABLED: () => true,
   // Retired (always on): How the app reaches its answers. The name stays as the appendix's historical identity.
   HOW_IT_WORKS_ENABLED: () => true,
-  // Retired: Suggested changes follows its parent, the Analysis tab, where it mounts. The name stays as its entry's and
-  // lines' historical identity.
-  TUNING_ENABLED: analysisTabEnabled,
+  // Retired: Suggested changes followed its parent, the Analysis tab, which is retired too (always on). The name stays as
+  // its entry's and lines' historical identity.
+  TUNING_ENABLED: () => true,
   SUGGESTED_CHANGES_V2_ENABLED: suggestedChangesV2Enabled,
   // Retired (always on): Stats. The name stays as the entry's and the section's historical identity.
   DECK_STATS_ENABLED: () => true,
@@ -51,17 +51,17 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   // stays the variant's and the sentences' historical identity.
   COLLECTION_SYNC_ENABLED: () => true,
   OVERVIEW_V2_ENABLED: overviewV2Enabled,
-  // The block lives on the Analysis tab, so the entry needs the tab, as tuning's does: it
-  // would otherwise describe a tab that is off.
-  DECK_BENCHMARKS_ENABLED: analysisTabEnabled,
+  // The block lives on the Analysis tab, so the entry followed the tab, which is retired (always on).
+  DECK_BENCHMARKS_ENABLED: () => true,
   // I got it's switch is retired, and so is its parent's, collection editing: the name stays the entry's, the key's and
   // the label's historical identity.
   SHOPPING_MARK_BOUGHT_ENABLED: () => true,
   // Retired (always on): deck printings. The name stays as the entry's historical identity.
   DECK_PRINTINGS_ENABLED: () => true,
   DECK_TOKENS_ENABLED: () => true,
-  // Retired: Mana Balance follows its parent, the Analysis tab, where it mounts. The name stays as its lines' historical identity.
-  MANA_BALANCE_ENABLED: analysisTabEnabled,
+  // Retired: Mana Balance followed its parent, the Analysis tab, which is retired too (always on). The name stays as its
+  // lines' historical identity.
+  MANA_BALANCE_ENABLED: () => true,
   // Retired (always on): Shopping for all decks. The name stays as the entries', variants' and sentences' historical identity.
   ALL_DECKS_CART_ENABLED: () => true,
   // Retired (always on): Precons, and the Announced group and banner that lived under it.
@@ -69,11 +69,12 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   UPCOMING_PRECONS_ENABLED: () => true,
   // Retired (always on): Notes. The name stays as the entry's and the section's historical identity.
   DECK_NOTES_ENABLED: () => true,
-  // History, the lines naming it: the hub draws wherever the Analysis tab does (no Tuning tool has a switch of its own).
-  TUNING_HUB_ENABLED: analysisTabEnabled,
+  // History, the lines naming it: the hub draws wherever the Analysis tab does, and the tab is retired (always on).
+  TUNING_HUB_ENABLED: () => true,
   LINEUP_ENABLED: () => true,
-  // Retired: Proposed cuts follows its parent, the Analysis tab, where it mounts. The name stays as its lines' historical identity.
-  PROPOSED_CUTS_ENABLED: analysisTabEnabled,
+  // Retired: Proposed cuts followed its parent, the Analysis tab, which is retired too (always on). The name stays as its
+  // lines' historical identity.
+  PROPOSED_CUTS_ENABLED: () => true,
   // Retired (always on): Find a deck's read followed its parent, swap tools, which is retired too. The name stays as the entry's and lines' historical identity.
   FIND_A_DECK_READ_ENABLED: () => true,
   // Starting without a collection ended on exactly when collection edit was (retired, always on).
@@ -100,8 +101,8 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   SPARE_REQUESTS_ENABLED: () => true,
   // Combos one piece away (close-out): its own entry, and combo-awareness's card-details key.
   NEAR_COMBOS_ENABLED: () => true,
-  // The strategy focus ended on exactly when the Analysis tab is, where its ring mounts.
-  STRATEGY_FOCUS_ENABLED: analysisTabEnabled,
+  // The strategy focus ended on exactly when the Analysis tab is, where its ring mounts; the tab is retired (always on).
+  STRATEGY_FOCUS_ENABLED: () => true,
   // Push notifications (close-out): its own entry, and `whats-new`'s news key. The
   // switch alone, as its flag reads it: the VAPID check (`pushAvailable`) parses keys with `node:crypto`, and this module
   // is imported by `proxy.ts`.

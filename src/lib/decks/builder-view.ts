@@ -36,14 +36,10 @@ export function readBuilderView(value: string | string[] | undefined): BuilderVi
 export function initialBuilderView(
   view: BuilderView,
   versionCount: number,
-  /** Whether this deployment draws the Analysis tab at all — `ANALYSIS_TAB_ENABLED`. */
-  analysisEnabled = false,
 ): BuilderView {
   // A URL naming a tab the row does not draw would leave every cell unselected above an empty
-  // panel. Two ways that happens: `versions` on a deck with no history, and `analysis` where the
-  // flag is off — including a bookmark made on staging and opened against production.
+  // panel: `versions` on a deck with no history.
   if (view === "versions" && versionCount === 0) return "deck";
-  if (view === "analysis" && !analysisEnabled) return "deck";
   return view;
 }
 

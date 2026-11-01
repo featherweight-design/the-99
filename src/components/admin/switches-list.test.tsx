@@ -101,10 +101,10 @@ describe("SwitchesList", () => {
   });
 
   it("draws a compound row whose parent is off (L5), with its needs tag", () => {
-    draw({ PROPOSED_CUTS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "false" });
-    const r = rowOf("PROPOSED_CUTS_ENABLED");
-    expect(within(r).getByText("needs Analysis tab")).toBeInTheDocument();
-    expect(within(r).getByText("Analysis tab is off", { selector: "span.font-mono" })).toBeInTheDocument();
+    draw({ WELCOME_CREDITS_ENABLED: "true", PAYMENTS_ENABLED: "false" });
+    const r = rowOf("WELCOME_CREDITS_ENABLED");
+    expect(within(r).getByText("needs Buying credits")).toBeInTheDocument();
+    expect(within(r).getByText("Buying credits is off", { selector: "span.font-mono" })).toBeInTheDocument();
   });
 
   it("draws a mixed row with its count (L6), and the phone's meta line", () => {
@@ -138,8 +138,10 @@ describe("SwitchesList", () => {
   });
 
   // At 390 a row with two tags wrapped the pill onto a line of its own at the left (8a contact sheet).
-  // The pill must sit outside the wrapping name-and-tags group, as a fixed sibling after it.
-  it.each(["SUGGESTED_CHANGES_V2_ENABLED", "PROPOSED_CUTS_ENABLED", "TUNING_ENABLED"] as const)(
+  // The pill must sit outside the wrapping name-and-tags group, as a fixed sibling after it. No row carries two tags
+  // since the Analysis tab's switch retired (Proposed cuts and Suggested changes were model AND needs), so the shape is
+  // pinned on a model row and on the one compound row, a tag each.
+  it.each(["PROPOSED_CUTS_ENABLED", "TUNING_ENABLED", "WELCOME_CREDITS_ENABLED"] as const)(
     "keeps the phone's resolved pill out of %s's wrapping title group",
     (name) => {
       draw({});
@@ -149,7 +151,7 @@ describe("SwitchesList", () => {
       expect(title.className).toContain("flex-wrap");
       expect(title.className).toContain("flex-1");
       expect(title.contains(pill)).toBe(false);
-      expect(title.querySelectorAll("span.uppercase")).toHaveLength(2);
+      expect(title.querySelectorAll("span.uppercase")).toHaveLength(1);
       expect(pill.parentElement).toBe(title.parentElement);
       expect(pill.previousElementSibling).toBe(title);
       expect(pill.className).toContain("flex-none");

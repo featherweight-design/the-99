@@ -27,7 +27,7 @@ vi.mock("../switches/request", async () => {
 import { cacheForUser } from "./user-lists";
 import { requestSwitchEnv } from "../switches/request";
 import { switchBits } from "../switches/resolve";
-import { analysisTabEnabled } from "../decks/analysis-flag";
+import { paymentsEnabled } from "../payments/flag";
 import { userDataStamp } from "./user-data-stamp";
 import { cachePageForUser } from "./page-cache";
 import { recordSoftFailure } from "./soft-failure";
@@ -50,21 +50,22 @@ describe("cachePageForUser", () => {
   });
 
   it("hands the loader the env its key was built from, so the reader's override wins over the environment", async () => {
-    vi.stubEnv("ANALYSIS_TAB_ENABLED", "false");
-    switchEnv.value = { ANALYSIS_TAB_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+    // Payments, a live switch (the Analysis tab's was the example until it retired).
+    vi.stubEnv("PAYMENTS_ENABLED", "false");
+    switchEnv.value = { PAYMENTS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
     let seen: NodeJS.ProcessEnv | undefined;
     const value = await cachePageForUser("u1", "decks", [], async (env) => {
       seen = env;
-      return { value: { bracket: analysisTabEnabled(env) }, store: true };
+      return { value: { paid: paymentsEnabled(env) }, store: true };
     });
-    expect(value).toEqual({ bracket: true });
+    expect(value).toEqual({ paid: true });
     expect(requestSwitchEnv).toHaveBeenCalledWith("u1");
     // The key's switch bits are the loader's env, bit for bit.
     expect(vi.mocked(cacheForUser).mock.calls[0][1][2]).toBe(switchBits(seen!));
   });
 
   it("uses an env the page already resolved, and resolves nothing of its own", async () => {
-    const env = envViewWith({ ANALYSIS_TAB_ENABLED: "true" });
+    const env = envViewWith({ PAYMENTS_ENABLED: "true" });
     let seen: NodeJS.ProcessEnv | undefined;
     await cachePageForUser("u1", "decks", [], async (e) => ((seen = e), { value: 1, store: true }), env);
     expect(seen === env).toBe(true);

@@ -75,7 +75,7 @@ export function holdsOpening({
   overviewSettled: boolean;
   /** The Tuning hub's landing read, which stands in for its tools'. It needs no reading drawn, but
    *  like every hold only for an `analyzed` deck: a deck never analyzed opens at once and the hub
-   *  fills in. True with the Analysis tab off, where nothing is mounted. */
+   *  fills in. */
   cutsSettled?: boolean;
 }): boolean {
   if (!analyzed) return false;

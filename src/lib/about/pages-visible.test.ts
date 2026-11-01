@@ -24,10 +24,11 @@ function readerAt(floor: number, e = ALL_ON): SeenState {
 }
 
 describe("visibleSections", () => {
-  it("drops a label whose switch is off and keeps its section, never greyed", () => {
+  // No label is behind a live switch any more: the Analysis tab's, the last, is retired (always on, 2026-11-01).
+  it("keeps every section and its retired switches' labels with every switch off, never greyed", () => {
     const off = visibleSections(OFF);
     const analysis = off.find((s) => s.id === "analysis")!;
-    expect(analysis.labels.map((l) => l.key)).not.toContain("decks/analysis/bracket");
+    expect(analysis.labels.map((l) => l.key)).toContain("decks/analysis/bracket");
     // SWAP_TOOLS_ENABLED is retired (always on): Shopping's limit and stand-ins labels draw whatever the env.
     expect(off.find((s) => s.id === "deck-shopping")!.labels.map((l) => l.key)).toEqual(
       expect.arrayContaining(["shopping/deck-shopping/limit", "shopping/deck-shopping/standins"]),
@@ -75,13 +76,14 @@ describe("each sentence follows its own switch", () => {
     // Help me choose's switch is retired (always on): its sentences draw with nothing on, and its kill value hides none.
     ["the place strip with Help me choose, its switch retired", {}, "commanders/for-you/places", "Help me choose asks a few questions", undefined],
     ["the place strip keeps Help me choose with its retired name off", { HELP_ME_CHOOSE_ENABLED: "off" }, "commanders/for-you/places", "Help me choose asks a few questions", undefined],
-    ["a game log without Suggested changes", {}, "decks/games/log", "fifteen seconds", "Suggested changes"],
-    // Suggested changes' and Proposed cuts' own switches are retired: both draw with the Analysis tab alone.
-    ["credits with Suggested changes, on the tab alone", { ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "off" }, "rule/credits", "Suggested changes run", undefined],
-    ["credits with Proposed cuts, on the tab alone", { ANALYSIS_TAB_ENABLED: "true" }, "rule/credits", "Look deeper", undefined],
-    ["credits without Suggested changes, with the tab off", { TUNING_ENABLED: "true" }, "rule/credits", "Anything written just for you", "Suggested changes"],
-    ["credits with payments", { PAYMENTS_ENABLED: "true" }, "rule/credits", "Pack and gift credits never expire", "Overview"],
-    ["credits with nothing on", {}, "rule/credits", "Anything written just for you", "never expire"],
+    // Suggested changes', Proposed cuts' and the Analysis tab's switches are retired (always on): their sentences draw
+    // with nothing on, and their names set off hide none.
+    ["a game log with Suggested changes, its switch retired", {}, "decks/games/log", "Suggested changes reads your games", undefined],
+    ["credits with Suggested changes, its switches retired", { ANALYSIS_TAB_ENABLED: "off", TUNING_ENABLED: "off" }, "rule/credits", "Suggested changes run", undefined],
+    ["credits with Proposed cuts, its switches retired", { ANALYSIS_TAB_ENABLED: "off", PROPOSED_CUTS_ENABLED: "off" }, "rule/credits", "Look deeper", undefined],
+    ["credits with the bracket and the Overview, the tab's switch retired", { ANALYSIS_TAB_ENABLED: "off" }, "rule/credits", "Reading a bracket is free. Anything written just for you", undefined],
+    ["credits with payments", { PAYMENTS_ENABLED: "true" }, "rule/credits", "Pack and gift credits never expire", undefined],
+    ["credits with nothing on", {}, "rule/credits", "An Overview uses one.", "never expire"],
     ["a proxy keeps its retired tokens sentence with nothing on", {}, "rule/proxy", "I have one", undefined],
     ["a fill with Help me choose, its switch retired", {}, "rule/autofill", "any cards will do", undefined],
     ["a fill keeps Help me choose with its retired name off", { HELP_ME_CHOOSE_ENABLED: "off" }, "rule/autofill", "any cards will do", undefined],
@@ -99,7 +101,7 @@ describe("each sentence follows its own switch", () => {
   });
 });
 
-describe("Suggested changes v2 follows its own switch, and its parent's", () => {
+describe("Suggested changes v2 follows its own switch alone", () => {
   const V1 = "offers up to five cards to add and five to cut";
   const V2 = "asks how many cards to change and what you’re after";
   const OTHER_DECKS = "Include my other decks also offers cards your other decks hold";
@@ -107,10 +109,10 @@ describe("Suggested changes v2 follows its own switch, and its parent's", () => 
   const TWO = "So does each Suggested changes run, or two for more than 10 changes.";
   const textOf = (e: Record<string, string>, key: string) =>
     units(visibleSections(env(e))).find((u) => u.key === key)?.text;
-  // Suggested changes' own switch is retired: v2's one parent is the Analysis tab.
-  const PARENTS = { ANALYSIS_TAB_ENABLED: "true" };
+  // Suggested changes' own switch is retired, and so is the Analysis tab's, v2's parent until then: v2 needs nothing else.
+  const PARENTS = {};
 
-  it("draws v1's label and no refund sentence with v2 off and the tab on", () => {
+  it("draws v1's label and no refund sentence with v2 off", () => {
     const label = textOf(PARENTS, "decks/analysis/suggested")!;
     expect(label).toContain(V1);
     expect(label).not.toContain(V2);
@@ -122,7 +124,7 @@ describe("Suggested changes v2 follows its own switch, and its parent's", () => 
     expect(credits).not.toContain(REFUND);
   });
 
-  it("draws v2's label and the refund sentence with v2 and the tab on", () => {
+  it("draws v2's label and the refund sentence with v2 on", () => {
     const on = { ...PARENTS, SUGGESTED_CHANGES_V2_ENABLED: "true" };
     const label = textOf(on, "decks/analysis/suggested")!;
     expect(label).toContain(V2);
@@ -136,18 +138,16 @@ describe("Suggested changes v2 follows its own switch, and its parent's", () => 
     expect(credits).not.toContain("So does each Suggested changes run.");
   });
 
-  it("drops the label and the refund sentence with v2 on and the Analysis tab off, whatever the retired switch says", () => {
-    const e = { TUNING_ENABLED: "true", SUGGESTED_CHANGES_V2_ENABLED: "true" };
-    // The label rides TUNING_ENABLED, which resolves to the Analysis tab; v2 needs the tab too, so neither form is drawn.
-    expect(textOf(e, "decks/analysis/suggested")).toBeUndefined();
-    const credits = textOf(e, "rule/credits")!;
-    expect(credits).not.toContain(REFUND);
-    expect(credits).not.toContain("Suggested changes");
+  it("draws v2's label and the refund sentence with the retired switches off", () => {
+    const e = { ANALYSIS_TAB_ENABLED: "off", TUNING_ENABLED: "off", SUGGESTED_CHANGES_V2_ENABLED: "true" };
+    expect(textOf(e, "decks/analysis/suggested")).toContain(V2);
+    expect(textOf(e, "rule/credits")).toContain(REFUND);
   });
 });
 
 describe("Suggested changes v2's About errata (Small items 6, item 3)", () => {
-  const PARENTS = { ANALYSIS_TAB_ENABLED: "true" };
+  // The Analysis tab's switch is retired (always on): nothing else need be set.
+  const PARENTS = {};
   const analysis = (e: Record<string, string>) => visibleSections(env(e)).find((s) => s.id === "analysis")!;
   const creditRows = (e: Record<string, string>) =>
     analysis(e).rules.find((r) => r.key === "rule/credits")!.diagram!.columns
@@ -161,19 +161,17 @@ describe("Suggested changes v2's About errata (Small items 6, item 3)", () => {
   });
 
   it("swaps the credits card's empty-handed row for the two v2 rows with v2 on", () => {
-    // Look deeper rides the Analysis tab now Proposed cuts' own switch is retired, so it sits in both lists.
+    // Look deeper's switch and the Analysis tab's are retired (always on), so it sits in both lists.
     expect(creditRows(PARENTS)).toEqual(["Read the bracket", "Suggested changes run", "Look deeper", "Came back empty-handed"]);
     expect(creditRows({ ...PARENTS, SUGGESTED_CHANGES_V2_ENABLED: "true" }))
       .toEqual(["Read the bracket", "Suggested changes run", "Look deeper", "Came back short or empty", "Short by your price cap"]);
   });
 
-  it("keeps the shipped row when v2 is on but its parent is not, whatever the retired switch says", () => {
-    // v2's one parent is the Analysis tab now Suggested changes' own switch is retired: with the tab off, v2 resolves
-    // off, so the shipped row stays and neither v2 row draws, even with TUNING_ENABLED set.
-    const rows = creditRows({ TUNING_ENABLED: "true", SUGGESTED_CHANGES_V2_ENABLED: "true" });
-    expect(rows).toContain("Came back empty-handed");
-    expect(rows).not.toContain("Came back short or empty");
-    expect(rows).not.toContain("Short by your price cap");
+  it("swaps the rows with v2 on whatever the retired switches say: v2 has no parent left", () => {
+    const rows = creditRows({ ANALYSIS_TAB_ENABLED: "off", TUNING_ENABLED: "off", SUGGESTED_CHANGES_V2_ENABLED: "true" });
+    expect(rows).not.toContain("Came back empty-handed");
+    expect(rows).toContain("Came back short or empty");
+    expect(rows).toContain("Short by your price cap");
   });
 
   it("announces the pick card as new when v2 turns on, to a reader who has seen everything else", () => {
@@ -288,12 +286,14 @@ describe("seen translation", () => {
 
   it("treats a switch on only through an app-wide override as heard, as production resolves it", () => {
     const snapshot: SwitchSnapshot = {
-      overrides: [{ switchName: "ANALYSIS_TAB_ENABLED", scope: "app", groupId: null, userId: null, value: "on" }],
+      overrides: [{ switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "app", groupId: null, userId: null, value: "on" }],
       groupOf: new Map(),
     };
+    // Suggested changes v2's pick card (the Analysis tab's bracket label was the example until its switch retired).
+    expect(units(visibleSections(OFF)).find((u) => u.key === "rule/pick")).toBeUndefined();
     const reader = resolveEnv(OFF, snapshot, "u1");
     const visible = visibleSections(reader);
-    const limit = units(visible).find((u) => u.key === "decks/analysis/bracket");
+    const limit = units(visible).find((u) => u.key === "rule/pick");
     expect(limit).toBeDefined();
     expect(unitSeen(limit!, readerAt(16, reader))).toBe(true);
     expect(unitSeen(limit!, { version: limit!.since - 1, ids: ["anything"] })).toBe(false);
@@ -465,9 +465,9 @@ describe("a section's sub-line", () => {
     }
   });
 
-  // Retired but still in the registry until their removal PR: Proposed cuts and Suggested changes follow their parent, the
-  // Analysis tab, and the swap tools are always on, so any of these names set off moves nothing.
-  const BAKED_IN = new Set(["HELP_ME_CHOOSE_ENABLED", "PROPOSED_CUTS_ENABLED", "SWAP_TOOLS_ENABLED", "TUNING_ENABLED"]);
+  // Retired but still in the registry until their removal PR: the Analysis tab, Proposed cuts and Suggested changes (which
+  // followed the tab), Help me choose and the swap tools are always on, so any of these names set off moves nothing.
+  const BAKED_IN = new Set(["ANALYSIS_TAB_ENABLED", "HELP_ME_CHOOSE_ENABLED", "PROPOSED_CUTS_ENABLED", "SWAP_TOOLS_ENABLED", "TUNING_ENABLED"]);
 
   it("names no feature whose switch is off: a section emptied of labels by a switch says only that its screen is off", () => {
     for (const sec of ABOUT_SECTIONS) {
@@ -488,14 +488,11 @@ describe("a section's sub-line", () => {
     }
   });
 
-  it("describes each screen while its switch is on, and only says it is off while it is off", () => {
-    const cases: [string, string, string][] = [
-      ["analysis", "ANALYSIS_TAB_ENABLED", "bracket"],
-    ];
-    for (const [id, sw, phrase] of cases) {
-      expect(sub(ALL_ON, id), id).toContain(phrase);
-      expect(sub(ALL_ON, id), id).not.toContain(ABOUT_SCREEN_OFF.trim());
-      expect(sub(off(sw), id), id).toBe(ABOUT_SCREEN_OFF.trim());
+  it("describes each screen whatever its retired switch says, and never says it is off", () => {
+    // The Analysis tab's switch is retired (always on, 2026-11-01): its screen is described with the name set off.
+    for (const e of [ALL_ON, off("ANALYSIS_TAB_ENABLED"), OFF]) {
+      expect(sub(e, "analysis")).toContain("bracket");
+      expect(sub(e, "analysis")).not.toContain(ABOUT_SCREEN_OFF.trim());
     }
     // Shopping for all decks is retired (always on): its screen is described whatever the env, never said to be off.
     expect(sub(off("ALL_DECKS_CART_ENABLED"), "all-decks")).toContain("one cart");
@@ -507,10 +504,11 @@ describe("a section's sub-line", () => {
     expect(sub(off("SOCIAL_FRIENDS_ENABLED"), "friends")).not.toContain(ABOUT_SCREEN_OFF.trim());
   });
 
-  it("names Analysis's tuning tools wherever the tab draws, whatever their retired switches say", () => {
+  it("names Analysis's tuning tools, whatever their retired switches say", () => {
     const named = "Which bracket your deck sits in, and why. Suggested changes, Proposed cuts and Mana Balance help you tune it.";
     expect(sub(ALL_ON, "analysis")).toBe(named);
-    // Suggested changes', Mana Balance's and Proposed cuts' switches are retired (all follow the tab): set to off, they cut nothing.
+    // Suggested changes', Mana Balance's and Proposed cuts' switches are retired, as is the tab's: set to off, they cut nothing.
+    expect(sub(off("ANALYSIS_TAB_ENABLED"), "analysis")).toBe(named);
     expect(sub(off("TUNING_ENABLED"), "analysis")).toBe(named);
     expect(sub(off("MANA_BALANCE_ENABLED"), "analysis")).toBe(named);
     expect(sub(off("PROPOSED_CUTS_ENABLED"), "analysis")).toBe(named);
@@ -552,12 +550,14 @@ describe("resolveDiagram", () => {
     const hidden = rule(ALL_ON, "hidden-deck").diagram!.foot;
     expect(hidden && "parts" in hidden ? hidden.w : null).toBe(250);
     expect(names(rule(ALL_ON, "credits").diagram!)).toContain("Suggested changes run");
-    // Suggested changes follows the Analysis tab (its own switch is retired): its row stays while the tab is on.
-    expect(names(rule(env({ ...(ALL_ON as Record<string, string>), TUNING_ENABLED: "off" }), "credits").diagram!)).toContain("Suggested changes run");
-    expect(names(rule(env({ ...(ALL_ON as Record<string, string>), ANALYSIS_TAB_ENABLED: "off" }), "credits").diagram!)).not.toContain("Suggested changes run");
-    // Proposed cuts follows the Analysis tab (its own switch is retired): Look deeper stays while the tab is on.
-    expect(names(rule(env({ ...(ALL_ON as Record<string, string>), PROPOSED_CUTS_ENABLED: "off" }), "credits").diagram!)).toContain("Look deeper");
-    expect(names(rule(env({ ...(ALL_ON as Record<string, string>), ANALYSIS_TAB_ENABLED: "off" }), "credits").diagram!)).not.toContain("Look deeper");
+    // Suggested changes, Proposed cuts and the bracket followed the Analysis tab, whose switch is retired (always on) as
+    // their own are: their rows stay with any of those names set off.
+    for (const sw of ["TUNING_ENABLED", "PROPOSED_CUTS_ENABLED", "ANALYSIS_TAB_ENABLED"]) {
+      const drawn = names(rule(env({ ...(ALL_ON as Record<string, string>), [sw]: "off" }), "credits").diagram!);
+      expect(drawn, sw).toContain("Suggested changes run");
+      expect(drawn, sw).toContain("Look deeper");
+      expect(drawn, sw).toContain("Read the bracket");
+    }
     // The wishlist's switch is retired: its chip draws whatever the env says.
     expect(names(rule(env({ ...(ALL_ON as Record<string, string>), SOCIAL_WISHLIST_ENABLED: "off" }), "friends-see").diagram!)).toContain("Wishlist");
     const emptied = resolveDiagram(

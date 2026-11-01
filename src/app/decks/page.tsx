@@ -3,7 +3,6 @@
 import { perfRoute } from "../../lib/perf/timing";
 import { redirect } from "next/navigation";
 import { requireUserId } from "../../lib/auth";
-import { analysisTabEnabled } from "../../lib/decks/analysis-flag";
 import { readPreconSummary } from "../../lib/precons/summary";
 import { listDecksWithStats } from "../../lib/decks/read";
 import { listFolders } from "../../lib/decks/folders";
@@ -65,9 +64,6 @@ export default async function DecksPage({
   const lineupData = view === "stats"
     ? readLineupCached(userId, env)
     : null;
-  // The tile's bracket chip reads each deck's last analyzed bracket. Off with the Analysis tab's
-  // flag, because a chip that lands on a tab nobody can open is a promise the page cannot keep.
-  const includeBracket = analysisTabEnabled(env);
   // `measure:load`'s spans (PERF_TIMING=1 only; a pass-through otherwise).
   const perf = perfRoute("/decks");
   // The whole payload is cached for this reader, keyed on their data stamp: see page-cache.ts
@@ -93,9 +89,10 @@ export default async function DecksPage({
         // The tile's wash IS the commander's art, so this surface pays for the
         // copy the player owns rather than drawing another printing's.
         includeCommanderArt: true,
-        includeBracket,
-        // And the tile's notice, behind the same flag: a notice qualifies an analysis the tab draws.
-        includeNotice: includeBracket,
+        // The tile's bracket chip reads each deck's last analyzed bracket, which the Analysis tab explains.
+        includeBracket: true,
+        // And the tile's notice: a notice qualifies an analysis the tab draws.
+        includeNotice: true,
       })),
       // The tile's To buy figure reads its copies and its cost from the same
       // roll-up, so the count and the price always cover the same cards.

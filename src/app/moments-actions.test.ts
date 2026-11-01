@@ -25,11 +25,12 @@ describe("spendMomentAction", () => {
     expect(spendMoment).not.toHaveBeenCalled();
   });
 
-  it("spends nothing for a moment whose tool is off", async () => {
-    // Proposed cuts follows the Analysis tab, off here. (Stand-ins, then Help me choose, were examples until
-    // SWAP_TOOLS_ENABLED and HELP_ME_CHOOSE_ENABLED retired.)
+  // No moment has a tool switch any more: Proposed cuts' followed the Analysis tab, retired 2026-11-01 (always on), as
+  // Stand-ins' and Help me choose's did before it. So its moment spends whatever the retired switches say.
+  it("spends Proposed cuts' moment whatever the Analysis tab's retired switch says", async () => {
+    env = { ANALYSIS_TAB_ENABLED: "off", PROPOSED_CUTS_ENABLED: "off" };
     await spendMomentAction("proposed-cuts");
-    expect(spendMoment).not.toHaveBeenCalled();
+    expect(spendMoment).toHaveBeenCalledWith("user_1", "proposed-cuts");
   });
 
   it("spends Help me choose's moment whatever its retired switch says", async () => {

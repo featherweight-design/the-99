@@ -274,9 +274,6 @@ interface BuilderShellProps {
   initialView?: BuilderView;
   /** The body Your deck opens on (`?panel=`, the ?'s way back): applied only when the builder opens on the deck tab. */
   initialBody?: DeckBody | null;
-  /** `ANALYSIS_TAB_ENABLED` — whether this deployment draws the Analysis tab. Off is
-   *  today's layout, exactly. */
-  analysisEnabled?: boolean;
   notesData?: DeckNotesView | null;
   /** What the Stats panel needs beyond the card list: the commander row(s), which count toward the
    *  curve. The figures themselves are derived on the client from the optimistic list. */
@@ -292,7 +289,7 @@ interface BuilderShellProps {
   /** The stored analysis could not be read, so `storedPermits`' null says nothing about whether
    *  the deck was ever analyzed: the tab's opening then holds as it does for an analyzed deck. */
   storedPermitsUnknown?: boolean;
-  /** `loadDeckStrategy` for this reader: the strategy block on Analysis. Null with the Analysis tab off. */
+  /** `loadDeckStrategy` for this reader: the strategy block on Analysis. Null when the read failed. */
   strategy?: StrategyRead | null;
   /** A Rule 0 table's seats for the game log to open with (plan §PR 8), read per request by the page. */
   gamePrefill?: TablePrefill | null;
@@ -358,7 +355,6 @@ export function BuilderShell({
   versions = [],
   initialView = "deck",
   initialBody = null,
-  analysisEnabled = false,
   notesData = null,
   statsData = null,
   initialNotices = null,
@@ -404,7 +400,7 @@ export function BuilderShell({
   // first version IS v0 (`startVersionId`).
   const originApart = preconOrigin !== null && preconOrigin.startVersionId === null;
   const [view, setView] = useState<BuilderView>(
-    initialBuilderView(initialView, versions.length + (originApart ? 1 : 0), analysisEnabled),
+    initialBuilderView(initialView, versions.length + (originApart ? 1 : 0)),
   );
   // The benchmark ledger's Stats link (audit build rule 6): Your deck, its Stats panel, and the
   // card the ledger is built on. The Decklist opens the panel and scrolls once per request.
@@ -633,7 +629,7 @@ export function BuilderShell({
   const readingFresh = profile.state.kind === "ready" && Boolean(reading?.fresh);
   const synopsis = useDeckSynopsis(
     deck.id,
-    analysisEnabled && view === "analysis",
+    view === "analysis",
     `${listKey}|${reading?.analyzedAt ?? ""}|${readingFresh}`,
   );
   // ...AND UNTIL EVERYTHING ELSE THE TAB DRAWS HAS ANSWERED (Hugh's staging walk, 2026-09-25):
@@ -674,14 +670,14 @@ export function BuilderShell({
   const holding = holdsOpening({
     analyzed: deckAnalyzed({ storedPermits, hasReading: reading !== null, storedUnknown: storedPermitsUnknown }),
     peekPending: isOpening({ shown: true, kind: profile.state.kind, storedPermits, peekSettled: profile.peekSettled, storedUnknown: storedPermitsUnknown }),
-    overviewSettled: !analysisEnabled || synopsis.settled,
-    // The hub's landing read stands in for its tools'; with the tab off nothing is mounted to wait for.
-    cutsSettled: !analysisEnabled || hubSettledKey === visitKey,
+    overviewSettled: synopsis.settled,
+    // The hub's landing read stands in for its tools'.
+    cutsSettled: hubSettledKey === visitKey,
   });
   const opening = useOpeningGate(useOpenOnce(holding, visitKey, view === "analysis"), deck.id);
   // The credit note beside each press that also writes, and whether it does (`synopsis-note.ts`).
-  const analyzeNote = analysisEnabled ? pressNote(synopsis.view, "analyze") : null;
-  const reanalyzeNote = analysisEnabled ? pressNote(synopsis.view, "reanalyze") : null;
+  const analyzeNote = pressNote(synopsis.view, "analyze");
+  const reanalyzeNote = pressNote(synopsis.view, "reanalyze");
   // A PRESS WRITES ONLY WHAT ITS NOTE SAID IT WOULD. Recorded when the press is made, so a note
   // that was not drawn (the state not yet read, the list already written, no credit left) is a
   // press that spends nothing, whatever the state says by the time the reading lands.
@@ -744,7 +740,7 @@ export function BuilderShell({
     loading: profile.state.kind === "loading",
   });
   const headerBracket =
-    analysisEnabled && headerPermits
+    headerPermits
       ? { permits: headerPermits, answered: chipAnswer(headerPermits, declaration.declared) }
       : null;
 
@@ -773,7 +769,6 @@ export function BuilderShell({
   // skipped, since that read is what the tag is drawing.
   const peekedDeck = useRef<string | null>(null);
   useEffect(() => {
-    if (!analysisEnabled) return;
     const firstForDeck = peekedDeck.current !== deck.id;
     peekedDeck.current = deck.id;
     if (firstForDeck && initialNotices) return;
@@ -786,7 +781,7 @@ export function BuilderShell({
       setNoticesShown((shown) => (shown && n ? n : shown));
     }).catch(() => {});
     return () => { live = false; };
-  }, [analysisEnabled, deck.id, readingAt, listKey, initialNotices]);
+  }, [deck.id, readingAt, listKey, initialNotices]);
   // Which deck's sheet is open NOW (null: none), readable from the reply's continuation:
   // `openNotices` answers after the sheet draws, and a reply landing after a close, or after a move
   // to another deck, must not draw the sheet or the tag again.
@@ -1545,11 +1540,8 @@ export function BuilderShell({
   // Suggested changes v2 (plan 2026-10-27, UI PRs 5a and 5b), on this reader's switch: the 99 the tool keeps a deck at, the links
   // to the tools that bring a deck back there, and what the "What we noticed" chips read (README item 2, plan H5).
   // `at` is the deck on the tool's 99 scale: the built count, with a partner's second slot added back.
-  // Gated on the Analysis tab (`analysisEnabled`): Proposed cuts' own switch is retired (2026-10-31), so the press is
-  // offered wherever the tab is.
-  const proposedCutsPress = !analysisEnabled
-    ? undefined
-    : () => { setView("analysis"); setHubRequest({ tool: "cuts", nonce: (hubNonce.current += 1) }); };
+  // Always offered: Proposed cuts' own switch is retired (2026-10-31), and so is the Analysis tab's it mounts on (2026-11-01).
+  const proposedCutsPress = () => { setView("analysis"); setHubRequest({ tool: "cuts", nonce: (hubNonce.current += 1) }); };
   const topOffPress = () => {
     setView("deck");
     setDeckPanel("list");
@@ -1910,14 +1902,14 @@ export function BuilderShell({
               justFilled={deck.filled && autoCount > 0}
               wasCounts={wasCounts}
               labelRows={labelRows}
-              // N2 (discovery R3): wherever Mana Balance is, which is wherever the Analysis tab is.
-              onBalanceMana={!(analysisEnabled && coloredPip)
+              // N2 (discovery R3): wherever Mana Balance is, which is the always-drawn Analysis tab.
+              onBalanceMana={!coloredPip
                 ? undefined
                 : () => { setView("analysis"); setHubRequest({ tool: "mana", nonce: (hubNonce.current += 1) }); }}
               // N1 (discovery R3): a deck at its body size (98 with a partner) offers Suggested changes from a short
               // cell. It lands on Suggested changes' tile in the Tuning hub, which draws wherever the tab does, with or
               // without a reading held (R3 gap 8); it never runs anything.
-              onSuggest={analysisEnabled && atSize
+              onSuggest={atSize
                 ? () => {
                     // A hub tool left open hides the tiles: back to them first, so the tile is there to land on.
                     setHubRequest({ tool: null, nonce: (hubNonce.current += 1) });
@@ -1943,7 +1935,6 @@ export function BuilderShell({
                 gameCount: games.length,
                 versionCount: versions.length,
                 hasOrigin: originApart,
-                analysisEnabled,
               })}
               view={view}
               onViewChange={setView}
@@ -1973,7 +1964,7 @@ export function BuilderShell({
                   hold={hold}
                   overviewReady={synopsis.view.kind === "ready" && !synopsis.view.busy && !synopsis.view.state.stale && !!synopsis.view.state.synopsis?.content?.overview}
                   pressNote={{ analyze: analyzeNote?.text ?? null, reanalyze: reanalyzeNote?.text ?? null }}
-                  pressNotePending={analysisEnabled && !synopsis.settled}
+                  pressNotePending={!synopsis.settled}
                   pressSee={analyzeNote?.see ? { label: deckNoticesCopy.check.seeWhich, onPress: openNoticesSheet } : null}
                   description={deck.intent ?? null}
                   onSaveDescription={saveDescription}
@@ -2032,7 +2023,7 @@ export function BuilderShell({
                     ) : null
                   }
                   // The hub draws for any deck (Mana Balance needs no reading).
-                  hub={!analysisEnabled ? undefined : (permits) => (
+                  hub={(permits) => (
                     <TuningHub
                       // Per deck: the shell survives a move between decks, and the hub's open tool,
                       // tiles and first-read latch belong to the deck they were read for.

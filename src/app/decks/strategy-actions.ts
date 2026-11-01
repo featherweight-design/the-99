@@ -8,12 +8,10 @@ import { decks } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
 import { deckSurfaces } from "../../lib/decks/revalidate";
 import { parseStrategyKey } from "../../lib/strategy/focus";
-import { analysisTabEnabled } from "../../lib/decks/analysis-flag";
 import type { StrategyKey } from "../../lib/strategy/score";
-import { requestSwitchEnv } from "../../lib/switches/request";
 import { isUuid } from "../../lib/uuid";
 
-export type FocusResult = { ok: true; focus: StrategyKey | null } | { ok: false; reason: "not-found" | "invalid" | "off" };
+export type FocusResult = { ok: true; focus: StrategyKey | null } | { ok: false; reason: "not-found" | "invalid" };
 
 /**
  * Pick a deck's focus, or clear it with `null` ("Keep it balanced"). Free: no model call and no credit.
@@ -25,7 +23,6 @@ export type FocusResult = { ok: true; focus: StrategyKey | null } | { ok: false;
  */
 export async function setStrategyFocus(deckId: string, key: string | null): Promise<FocusResult> {
   const userId = await requireUserId();
-  if (!analysisTabEnabled(await requestSwitchEnv(userId))) return { ok: false, reason: "off" };
   // Before the id reaches a `uuid` column: a crafted argument would otherwise surface as a 22P02.
   if (!isUuid(deckId)) return { ok: false, reason: "not-found" };
   const focus = key === null ? null : parseStrategyKey(key);

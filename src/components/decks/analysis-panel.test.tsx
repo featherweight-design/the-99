@@ -105,9 +105,9 @@ describe("AnalysisPanel", () => {
     expect(within(permitted).getByText(deckAnalysisCopy.climb.rolePermitted)).toBeTruthy();
   });
 
-  // The flag off and a deck that cannot be read draw no reading at all.
-  it.each<ProfileState>([{ kind: "disabled" }, { kind: "missing" }])("draws nothing of its own when %s", (state) => {
-    draw(state);
+  // A deck that cannot be read draws no reading at all.
+  it("draws nothing of its own when missing", () => {
+    draw({ kind: "missing" });
     expect(screen.queryByTestId("analysis-empty")).toBeNull();
     expect(screen.queryByRole("region", { name: deckAnalysisCopy.verdict.heading })).toBeNull();
   });

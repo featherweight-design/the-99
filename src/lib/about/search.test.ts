@@ -91,10 +91,12 @@ describe("searchEntries", () => {
     expect(searchEntries([entry("a", "Plus (+1) counters")], "(+1")).toHaveLength(1);
   });
 
+  // Suggested changes v2's credits bullet follows its live switch (Suggested changes' own line was the example until its
+  // switch and the Analysis tab's retired).
   it("never matches a caption line its switch strips from the resolved entry", () => {
-    const off = visibleEntries({ TUNING_ENABLED: "false" } as unknown as NodeJS.ProcessEnv, aboutEntries);
-    const on = visibleEntries({ TUNING_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true" } as unknown as NodeJS.ProcessEnv, aboutEntries);
-    const q = "Each “Suggested changes” run";
+    const off = visibleEntries({} as unknown as NodeJS.ProcessEnv, aboutEntries);
+    const on = visibleEntries({ SUGGESTED_CHANGES_V2_ENABLED: "true" } as unknown as NodeJS.ProcessEnv, aboutEntries);
+    const q = "or two for more than 10 changes";
     expect(searchEntries(off, q).map((h) => h.entry.id)).not.toContain("credits");
     expect(searchEntries(on, q).map((h) => h.entry.id)).toContain("credits");
   });

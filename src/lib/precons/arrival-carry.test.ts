@@ -7,7 +7,8 @@ import type { StoredCarryResult } from "./stored-carry";
 vi.mock("next/server", () => ({ after: vi.fn() }));
 const { carryOnArrival } = await import("./arrival-carry");
 
-const env = { ANALYSIS_TAB_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+// The owner's resolved switches: a sentinel, passed through by identity.
+const env = { OWNER_SWITCHES: "resolved" } as unknown as NodeJS.ProcessEnv;
 const deps = (result: StoredCarryResult | Error) => {
   const later: (() => Promise<void>)[] = [];
   return {

@@ -1,8 +1,8 @@
 // Which tabs the builder draws, and in what order.
 //
-// A PURE SEAM, extracted from `builder-shell.tsx` when the Analysis tab arrived. Three of the
-// five cells are conditional — Versions is absent on a brew, Games drops its count at zero, and
-// Analysis exists only where `ANALYSIS_TAB_ENABLED` is set — and the shell is far too heavy to
+// A PURE SEAM, extracted from `builder-shell.tsx` when the Analysis tab arrived. Two of the
+// five cells are conditional — Versions is absent on a brew, and Games drops its count at zero
+// (Analysis was a third until `ANALYSIS_TAB_ENABLED` retired, always on) — and the shell is far too heavy to
 // mount in jsdom to find out which ones drew. The rules live here so a test can ask them
 // directly, exactly as `buildMarkKeyEntries` does for the mark key.
 
@@ -17,7 +17,6 @@ export function builderTabSpecs({
   gameCount,
   versionCount,
   hasOrigin = false,
-  analysisEnabled,
 }: {
   built: number;
   suggestionCount: number;
@@ -25,7 +24,6 @@ export function builderTabSpecs({
   versionCount: number;
   /** A linked deck's v0 (precons R3 K14): a row in the rail, so the tab draws on a linked brew. */
   hasOrigin?: boolean;
-  analysisEnabled: boolean;
 }): BuilderTabSpec[] {
   const rows = versionCount + (hasOrigin ? 1 : 0);
   return [
@@ -38,17 +36,13 @@ export function builderTabSpecs({
     // SECOND, per Round 0: the tab row is a reading order rather than a shelf, and analysis
     // answers the question between reading the list and going shopping. Fifth position would
     // put the newest tab behind the phone row's scroll.
-    ...(analysisEnabled
-      ? [
-          {
-            id: "analysis" as const,
-            label: addPanelCopy.tabs.analysis,
-            // No count. This tab carries a verdict rather than a number of things, and a
-            // figure beside it would be read as one of the counts inside it.
-            accessibleName: addPanelCopy.tabs.analysisAria,
-          },
-        ]
-      : []),
+    {
+      id: "analysis",
+      label: addPanelCopy.tabs.analysis,
+      // No count. This tab carries a verdict rather than a number of things, and a
+      // figure beside it would be read as one of the counts inside it.
+      accessibleName: addPanelCopy.tabs.analysisAria,
+    },
     {
       id: "consider",
       label: addPanelCopy.tabs.consider,

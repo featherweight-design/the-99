@@ -64,10 +64,13 @@ const draw = async (query: Record<string, string | string[]> = {}) =>
 const tabs = async (query: Record<string, string | string[]> = { tab: "reference" }) => find(await draw(query), AboutTabs)!.props;
 const tiles = async (query: Record<string, string | string[]> = {}) => find(await draw(query), AboutIndex)!.props.tiles as IndexTile[];
 
+// Every one retired (always on): stubbed unset, so a test proves its name moves nothing.
 const DECK_SWITCHES = [
   "TUNING_ENABLED", "SOCIAL_FRIENDS_ENABLED",
   "ANALYSIS_TAB_ENABLED",
 ];
+// Every deck tool, in the registry's order: none has a switch left (the Analysis tab's, the last, retired 2026-11-01).
+const DECK_TOOLS = ["top-off", "proposed-cuts", "suggested-changes", "mana-balance", "stand-ins", "friend-spares", "matchups"];
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -152,24 +155,23 @@ describe("/about, the Reference (until PR 7b)", () => {
 });
 
 describe("/about, the fits (E10)", () => {
-  it("asks loadToolFits for the deck tools whose switches are on, and no other", async () => {
-    vi.stubEnv("ANALYSIS_TAB_ENABLED", "true");
+  it("asks loadToolFits for every deck tool, once", async () => {
     await tabs();
     expect(m.loadToolFits).toHaveBeenCalledTimes(1);
-    // Suggested changes, Proposed cuts and Mana Balance follow the Analysis tab (their own switches are retired), so the
-    // tab alone asks for all three.
-    expect(m.loadToolFits.mock.calls[0]![1]).toEqual(["top-off", "proposed-cuts", "suggested-changes", "mana-balance", "stand-ins", "friend-spares", "matchups"]);
+    expect(m.loadToolFits.mock.calls[0]![1]).toEqual(DECK_TOOLS);
   });
 
-  it("with every deck tool's switch off, asks only for the ones with none: Top off, Stand-ins (swap tools retired) and the friends tools", async () => {
+  it("asks for every deck tool with the retired switches' names set off", async () => {
+    // Suggested changes, Proposed cuts and Mana Balance followed the Analysis tab, whose switch is retired like theirs.
+    for (const s of DECK_SWITCHES) vi.stubEnv(s, "off");
     await tabs();
-    expect(m.loadToolFits.mock.calls[0]![1]).toEqual(["top-off", "stand-ins", "friend-spares", "matchups"]);
+    expect(m.loadToolFits.mock.calls[0]![1]).toEqual(DECK_TOOLS);
   });
 
-  it("decides by the tool's own switch, even where its entry is drawn", async () => {
+  it("asks for the same tools when every entry is drawn: no tool has a switch of its own to decide by", async () => {
     m.everyEntry = true;
     await tabs();
-    expect(m.loadToolFits.mock.calls[0]![1]).toEqual(["top-off", "stand-ins", "friend-spares", "matchups"]);
+    expect(m.loadToolFits.mock.calls[0]![1]).toEqual(DECK_TOOLS);
   });
 
   // Collection Sync's switch and its parent's, collection editing, are retired: the sync base is always read.
@@ -233,7 +235,9 @@ describe("/about, the visit (R2 gap 10)", () => {
     // The swap tools' entries always draw (SWAP_TOOLS_ENABLED retired), so a current reader has met them too.
     const swapTools = ["stand-ins", "fits-your-decks", "find-a-deck-read"];
     // Help me choose's entry always draws (HELP_ME_CHOOSE_ENABLED retired), so a current reader has met it too.
-    m.seen = { version: 16, ids: [...swapTools, "help-me-choose", "locked-cards", "how-it-works", "card-search", "getting-help", "combos-one-away", "precons", "upcoming-precons", "decks-stats", "deck-tokens", "whats-new", "commander-lane", "wishlist", "notes", "deck-stats", "deck-printings", "change-commander", "all-decks-cart", ...collectionEdit, ...friends] };
+    // So do the Analysis tab's (ANALYSIS_TAB_ENABLED retired), and those that followed it.
+    const analysis = ["deck-analysis", "deck-benchmarks", "card-marks", "suggested-changes", "proposed-cuts", "mana-balance", "deck-focus"];
+    m.seen = { version: 16, ids: [...swapTools, ...analysis, "help-me-choose", "locked-cards", "how-it-works", "card-search", "getting-help", "combos-one-away", "precons", "upcoming-precons", "decks-stats", "deck-tokens", "whats-new", "commander-lane", "wishlist", "notes", "deck-stats", "deck-printings", "change-commander", "all-decks-cart", ...collectionEdit, ...friends] };
     const props = find(await draw({ tab: "reference" }), RecordVisit)!.props as { behind: boolean; answered: string[] };
     expect(props.behind).toBe(false);
     expect(props.answered).toContain("decks/your-deck/lock");

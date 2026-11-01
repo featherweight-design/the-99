@@ -4,13 +4,9 @@ import { NO_TAPPED_LANDS } from "../../lib/mana/lands-tapped";
 import type { ManaSupplyCardRow } from "../../lib/mana/supply";
 import { readManaBalance as engine, type ManaBalance } from "../../lib/tuning/mana-balance";
 
-// The proxy resolves each reader's switches onto a request header; here the reader's resolved env is
-// a SENTINEL, so an assertion on it compares a small object and never prints the process environment.
-const ENV = vi.hoisted(() => ({}) as unknown as NodeJS.ProcessEnv);
-vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () => ENV) }));
+// No switch is read: Mana Balance's and the Analysis tab's are retired (always on).
 
 const state = vi.hoisted(() => ({
-  enabled: true,
   deck: null as unknown,
   balance: null as unknown,
   recorded: [] as unknown[],
@@ -28,7 +24,6 @@ const state = vi.hoisted(() => ({
 }));
 
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
-vi.mock("../../lib/decks/analysis-flag", () => ({ analysisTabEnabled: () => state.enabled }));
 vi.mock("../../lib/decks/read", () => ({ getDeckDetail: async () => state.deck }));
 vi.mock("../../lib/profile/fingerprint", () => ({ listFingerprint: (list: unknown) => { state.fingerprinted = list; return "list-fp"; } }));
 vi.mock("../../lib/tuning/mana-balance-load", () => ({ loadManaBalance: async () => state.balance }));
@@ -58,7 +53,6 @@ const balance: ManaBalance = engine({
 });
 
 beforeEach(() => {
-  state.enabled = true;
   state.recorded = [];
   state.balance = balance;
   state.deck = {
@@ -75,10 +69,8 @@ beforeEach(() => {
 });
 
 describe("readManaBalance (the action)", () => {
-  it("refuses with the Analysis tab off or an id that is not a uuid, and records nothing", async () => {
-    state.enabled = false;
-    expect(await readManaBalance(DECK)).toBeNull();
-    state.enabled = true;
+  // The Analysis tab's switch is retired (always on, 2026-11-01): only a malformed id is refused.
+  it("refuses an id that is not a uuid, and records nothing", async () => {
     expect(await readManaBalance("not-a-deck")).toBeNull();
     expect(state.recorded).toEqual([]);
   });
@@ -145,12 +137,10 @@ describe("readManaHelpFor (the action)", () => {
     state.art = new Map();
   });
 
-  it("refuses anything but one of the five, a color outside the identity, the Analysis tab off, or a bad id", async () => {
+  it("refuses anything but one of the five, a color outside the identity, or a bad id", async () => {
     for (const c of ["X", "C", "g", "", "__proto__"]) expect(await readManaHelpFor(DECK, c)).toBeNull();
     expect(await readManaHelpFor(DECK, "R")).toBeNull();
     expect(await readManaHelpFor("nope", "G")).toBeNull();
-    state.enabled = false;
-    expect(await readManaHelpFor(DECK, "G")).toBeNull();
   });
 });
 
@@ -244,15 +234,5 @@ describe("readManaHelpReview (History's re-review)", () => {
   it("marks every trade stale when the color is outside the commander's identity now", async () => {
     state.helpRows = [{ summary: { color: "R", help: { ...past, color: "R" } } }];
     expect((await readManaHelpReview(DECK, COUNT))?.noLonger).toEqual(["s1", "s2"]);
-  });
-
-  it("is null with the Analysis tab off, for a valid id and a matching row", async () => {
-    state.helpRows = [{ summary: { color: "G", help: past } }];
-    state.enabled = false;
-    try {
-      expect(await readManaHelpReview(DECK, COUNT)).toBeNull();
-    } finally {
-      state.enabled = true;
-    }
   });
 });

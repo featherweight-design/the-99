@@ -117,7 +117,7 @@ describe("writeOverride", () => {
   });
 
   it("returns a preview instead of writing when a model capability rises unconfirmed, and writes once the count is confirmed", async () => {
-    env = { ANALYSIS_TAB_ENABLED: "true", SUGGESTED_CHANGES_V2_ENABLED: "true" };
+    env = { SUGGESTED_CHANGES_V2_ENABLED: "true" };
     overrides = [{ switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "app", groupId: null, userId: null, value: "off" }];
     current = { value: "off", note: null };
     const r = await writeOverride("u1", "clear", { switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "app" }, deps());
@@ -134,7 +134,7 @@ describe("writeOverride", () => {
   });
 
   it("refuses a write that raises model access for an unlisted account while Clerk is down", async () => {
-    env = { ANALYSIS_TAB_ENABLED: "true", SUGGESTED_CHANGES_V2_ENABLED: "true" };
+    env = { SUGGESTED_CHANGES_V2_ENABLED: "true" };
     overrides = [{ switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "app", groupId: null, userId: null, value: "off" }];
     current = { value: "off", note: null };
     const down = { ...deps(), accounts: async () => ({ accounts: [{ id: "u1", name: "Hugh", email: null, named: true }], clerk: "down" as const }) };
@@ -147,7 +147,7 @@ describe("writeOverride", () => {
   });
 
   it("counts a group member the fallback list misses while Clerk is down, naming it Account ·<tail>", async () => {
-    env = { ANALYSIS_TAB_ENABLED: "true", SUGGESTED_CHANGES_V2_ENABLED: "true" };
+    env = { SUGGESTED_CHANGES_V2_ENABLED: "true" };
     members = [{ userId: "u9", groupId: G }];
     overrides = [{ switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "app", groupId: null, userId: null, value: "off" }];
     const down = { ...deps(), accounts: async () => ({ accounts: [{ id: "u1", name: "Hugh", email: null, named: true }], clerk: "down" as const }) };

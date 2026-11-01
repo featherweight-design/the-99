@@ -1,4 +1,5 @@
 import { SWITCH_FLAGS } from "../switches/flags";
+import type { SwitchName } from "../switches/registry";
 import { MOMENTS, type MomentId } from "./registry";
 
 /**
@@ -6,5 +7,10 @@ import { MOMENTS, type MomentId } from "./registry";
  * that draws the tool does. Server-side by its imports.
  */
 export function liveMoments(env: NodeJS.ProcessEnv): MomentId[] {
-  return MOMENTS.filter((m) => m.tool === null || SWITCH_FLAGS[m.tool](env)).map((m) => m.id);
+  // Widened: no moment has a tool switch today (the last, the Analysis tab's, retired 2026-11-01), and the literal
+  // registry would narrow every `tool` to null.
+  return MOMENTS.filter((m) => {
+    const tool = m.tool as SwitchName | null;
+    return tool === null || SWITCH_FLAGS[tool](env);
+  }).map((m) => m.id);
 }

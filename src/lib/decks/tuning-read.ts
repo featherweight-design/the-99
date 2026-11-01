@@ -39,7 +39,6 @@ import { loadPrices } from "./price-query";
 import type { Availability } from "./availability";
 import { loadAvailability } from "./availability-query";
 import { liveLockedIds } from "./locks";
-import { analysisTabEnabled } from "./analysis-flag";
 import { parseStrategyKey } from "../strategy/focus";
 import type { StrategyKey } from "../strategy/score";
 
@@ -70,8 +69,12 @@ export type TuningInputs = {
   focus: StrategyKey | null;
 };
 
-/** Null when the deck is not the reader's. Ownership is in `loadProfileHead`'s `where`. */
-export async function tuningInputs(deckId: string, userId: string, env: NodeJS.ProcessEnv): Promise<TuningInputs | null> {
+/**
+ * Null when the deck is not the reader's. Ownership is in `loadProfileHead`'s `where`. `_env` is unread since the
+ * Analysis tab's switch retired (the focus is always read); it stays until the switch's delete PR, which updates the
+ * `scripts/` callers that still pass it.
+ */
+export async function tuningInputs(deckId: string, userId: string, _env: NodeJS.ProcessEnv): Promise<TuningInputs | null> {
   // The head and the version it belongs to, in ONE snapshot: read apart, a commit landing between
   // them would pair the list before the commit with the version after it.
   const snapshot = await db.transaction(async (tx) => {
@@ -107,7 +110,7 @@ export async function tuningInputs(deckId: string, userId: string, env: NodeJS.P
   ]);
   if (!deck) return null;
   const intent = deck.intent;
-  const focus = analysisTabEnabled(env) ? parseStrategyKey(deck.strategyFocus) : null;
+  const focus = parseStrategyKey(deck.strategyFocus);
   const limits = {
     capCents: deck.tuningCapCents,
     sets: deck.tuningSets ?? [],

@@ -60,13 +60,14 @@ describe("aboutLine", () => {
   });
 
   it("never names a unit switched off for the reader (Review Focus 2)", () => {
-    // The Analysis tab's bracket label follows ANALYSIS_TAB_ENABLED and is announced by its id alone. (Shopping's
-    // stand-ins label, the example here before, always draws now its switch, SWAP_TOOLS_ENABLED, is retired.)
+    // Payments' credits sentence follows PAYMENTS_ENABLED and is announced on its own key. (The Analysis tab's bracket
+    // label, the example here before, always draws now its switch, ANALYSIS_TAB_ENABLED, is retired.)
     const reader: SeenState = { version: 16, ids: ["something-else"] };
-    const on = aboutLine(reader, visibleSections(env({ ANALYSIS_TAB_ENABLED: "true" })));
-    expect(on?.ids).toContain("decks/analysis/bracket");
+    const PAYMENTS = sentenceKey("rule/credits", "PAYMENTS_ENABLED");
+    const on = aboutLine(reader, visibleSections(env({ PAYMENTS_ENABLED: "true" })));
+    expect(on?.ids).toContain(PAYMENTS);
     const off = aboutLine(reader, visibleSections(OFF));
-    expect(off?.ids ?? []).not.toContain("decks/analysis/bracket");
+    expect(off?.ids ?? []).not.toContain(PAYMENTS);
     for (const k of off?.ids ?? []) expect(units(visibleSections(OFF)).map((u) => u.key)).toContain(k.split("@")[0]);
   });
 
@@ -148,9 +149,17 @@ describe("aboutDismissal (the banner's ✕)", () => {
     expect(aboutDismissal(["home/home/ready"], readerAt(16), visible)).toBeNull();
   });
 
+  // Payments' credits sentence, told on its own to a reader who has the credits rule and its always-drawn sentences: the
+  // Analysis tab's bracket label was the example until its switch retired (always on).
   it("writes nothing for a unit switched off since the page rendered", () => {
-    const reader: SeenState = { version: 16, ids: ["x"] };
-    expect(aboutDismissal(["decks/analysis/bracket"], reader, visibleSections(OFF))).toBeNull();
+    const unit = "rule/credits";
+    const always = (["ANALYSIS_TAB_ENABLED", "TUNING_ENABLED", "PROPOSED_CUTS_ENABLED"] as const).map((sw) => sentenceKey(unit, sw));
+    const reader: SeenState = { version: 0, ids: ["x", unit, ...always] };
+    const paid = sentenceKey(unit, "PAYMENTS_ENABLED");
+    const on = visibleSections(env({ PAYMENTS_ENABLED: "true" }));
+    expect(unseenUnits(on, reader).map((u) => u.key)).toContain(paid);
+    expect(aboutDismissal([paid], reader, on)?.ids).toContain(paid);
+    expect(aboutDismissal([paid], reader, visibleSections(OFF))).toBeNull();
   });
 
   it("gives a first-run reader the baseline a first visit writes", () => {
@@ -172,11 +181,13 @@ describe("aboutDismissal, a switch turned on between the render and the ✕", ()
   const PAY_ON = env({ PAYMENTS_ENABLED: "true" });
   const PAY_OFF = env({});
   const reader: SeenState = { version: 0, ids: ["x"] };
+  // The sentences of the Analysis tab's retired switches (always on) are drawn whatever the env, and taken with the unit.
+  const ALWAYS = (["ANALYSIS_TAB_ENABLED", "TUNING_ENABLED", "PROPOSED_CUTS_ENABLED"] as const).map((sw) => sentenceKey(UNIT, sw));
 
   it("a base unit drawn before PAYMENTS_ENABLED turned on does not take its new sentence's key", () => {
     const line = aboutLine(reader, visibleSections(PAY_OFF));
     const drawn = line?.kind === "launches" ? line.launches.find((l) => l.key === UNIT) : undefined;
-    expect(drawn?.ack).toEqual([UNIT]);
+    expect(drawn?.ack).toEqual([UNIT, ...ALWAYS]);
     const now = visibleSections(PAY_ON);
     const write = aboutDismissal(drawn!.ack, reader, now)!;
     expect(write.ids).toContain(UNIT);
@@ -190,19 +201,21 @@ describe("aboutDismissal, a switch turned on between the render and the ✕", ()
     const now = visibleSections(PAY_ON);
     const line = aboutLine(reader, now);
     const drawn = line?.kind === "launches" ? line.launches.find((l) => l.key === UNIT) : undefined;
-    expect([...drawn!.ack].sort()).toEqual([UNIT, SENTENCE].sort());
+    expect([...drawn!.ack].sort()).toEqual([UNIT, ...ALWAYS, SENTENCE].sort());
     expect(aboutDismissal(drawn!.ack, reader, now)!.ids).toContain(SENTENCE);
   });
 
   it("a first-run ✕ takes only the baseline it rendered: a unit switched on since stays new", () => {
     const line = aboutLine(NEVER_SEEN, visibleSections(OFF));
     expect(line?.kind).toBe("firstRun");
-    const now = visibleSections(env({ ANALYSIS_TAB_ENABLED: "true" }));
+    // Payments' credits sentence (the Analysis tab's bracket label was the example until its switch retired).
+    const PAYMENTS = sentenceKey("rule/credits", "PAYMENTS_ENABLED");
+    const now = visibleSections(env({ PAYMENTS_ENABLED: "true" }));
     const write = aboutDismissal(line?.kind === "firstRun" ? line.ack : [], NEVER_SEEN, now)!;
-    expect(write.ids).not.toContain("decks/analysis/bracket");
+    expect(write.ids).not.toContain(PAYMENTS);
     const after: SeenState = { version: write.version, ids: write.ids };
     const told = unseenUnits(now, after).map((u) => u.key);
-    expect(told).toContain("decks/analysis/bracket");
+    expect(told).toContain(PAYMENTS);
   });
 
   it("cuts a claim past the bound, as a page never draws one that long", () => {

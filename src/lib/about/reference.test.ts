@@ -83,12 +83,16 @@ describe("an entry's marks", () => {
     expect(plain.tryIt).toBeNull();
   });
 
-  it("follows the Tools tab's switches: a tool switched off is not in Tools", () => {
-    // Proposed cuts lives behind the Analysis tab (its own switch is retired).
-    const off = tools({ isOn: (n) => n !== "ANALYSIS_TAB_ENABLED" });
+  it("follows the Tools tab: a tool not in Tools carries no Try it", () => {
+    // No tool has a switch left (the Analysis tab's, behind Proposed cuts, retired): its card is gone only when its
+    // entry is not drawn.
+    const off = tools({ visibleEntryIds: new Set(aboutEntries.map((x) => x.id).filter((id) => id !== "proposed-cuts")) });
     const e = referenceScreens(aboutEntries, off, undefined).flatMap((s) => s.entries).find((x) => x.id === "proposed-cuts")!;
     expect(e.inTools).toBe(false);
     expect(e.tryIt).toBeNull();
+    // Every switch off takes no card.
+    const allOff = referenceScreens(aboutEntries, tools({ isOn: () => false }), undefined).flatMap((s) => s.entries).find((x) => x.id === "proposed-cuts")!;
+    expect(allOff.inTools).toBe(true);
   });
 
   it("points at the How it works row that explains it, when one does", () => {

@@ -3,28 +3,25 @@
 import { requireUserId } from "../../lib/auth";
 import type { NoteCardHit } from "../../lib/decks/notes-store";
 import { searchNoteCards } from "../../lib/decks/notes-store";
-import { analysisTabEnabled } from "../../lib/decks/analysis-flag";
-import { requestSwitchEnv } from "../../lib/switches/request";
 
 /**
- * The boxes that can name a card, each behind its own feature's switch. `tuning` is Suggested changes' boxes, behind
- * the Analysis tab where it mounts (its own switch is retired). `intake` is Help me choose's box, behind no switch
- * since its own retired (always on). `description` is a deck's description box:
- * the header pencil that edits it is offered whatever the Analysis tab says, so its lookup is behind no switch
- * of its own (the reader still has to be signed in). `gameNote` is the log-a-game form's note, the same.
+ * The boxes that can name a card. None is behind a switch any more (the reader still has to be signed in): `tuning` is
+ * Suggested changes' boxes, on the Analysis tab, whose switch and Suggested changes' are retired (always on). `intake`
+ * is Help me choose's box, its switch retired too. `description` is a deck's description box, and `gameNote` is the
+ * log-a-game form's note.
  */
 export type TagSurface = "intake" | "tuning" | "description" | "gameNote";
 
-const SWITCHES: Record<TagSurface, (env: NodeJS.ProcessEnv) => boolean> = { intake: () => true, tuning: analysisTabEnabled, description: () => true, gameNote: () => true };
+const SURFACES: ReadonlySet<string> = new Set<TagSurface>(["intake", "tuning", "description", "gameNote"]);
 
 /**
  * The `[[` picker's "any card" lookup for a box outside a deck's notes (the same lookup the notes
- * use). Signed in, behind the surface's own switch, and a refusal or a failure answers null, which the
+ * use). Signed in, for a known surface, and a refusal or a failure answers null, which the
  * picker draws as "Couldn't search just now".
  */
 export async function searchTagCards(surface: TagSurface, query: string): Promise<NoteCardHit[] | null> {
-  const userId = await requireUserId();
-  if (!Object.hasOwn(SWITCHES, surface) || !SWITCHES[surface](await requestSwitchEnv(userId))) return null;
+  await requireUserId();
+  if (!SURFACES.has(surface)) return null;
   if (typeof query !== "string") return null;
   try {
     // A tag here is a requirement (or, in Suggested changes, a card to act on), and a card banned in Commander can have no deck: only legal cards are offered.

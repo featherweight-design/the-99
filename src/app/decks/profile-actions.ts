@@ -6,7 +6,6 @@ import { after } from "next/server";
 import { requireUserId } from "../../lib/auth";
 import { requestSwitchEnv } from "../../lib/switches/request";
 import { isUuid } from "../../lib/uuid";
-import { analysisTabEnabled } from "../../lib/decks/analysis-flag";
 import { readingBenchmarks } from "../../lib/benchmarks/reading";
 import type { BenchmarksWire } from "../../lib/benchmarks/wire";
 import { computeAndStoreProfile, readStoredReading, requestProfileDeps } from "../../lib/profile/stored";
@@ -28,8 +27,6 @@ export type ProfileFetch =
     }
   /** The deck is absent, not this reader's, or the id was malformed. */
   | { ok: false; reason: "not-found" }
-  /** The flag is off for this deployment. Distinct from a failure: nothing is wrong. */
-  | { ok: false; reason: "disabled" }
   /** The body is not a whole deck (ruling 1), so nothing was analyzed. */
   | { ok: false; reason: "illegal"; built: number; size: number };
 
@@ -57,16 +54,10 @@ export type ProfileFetch =
  * holds one answer for the visit, so an edit made without leaving the route does not retire it.
  * Nothing needs it to — the reader presses again, which is exactly the model Round 4 draws,
  * where a determined verdict goes stale and the control invites another pass.
- *
- * THE FLAG GATES THE LOADER AS WELL AS THE TAB. A hidden tab whose payload still loads is the
- * worst of both, so `disabled` is answered before any deck read: after the session and the
- * reader's own switches, which decide it, and before anything else. It is a distinct reason from
- * `not-found`, because nothing is wrong with the deck.
  */
 export async function fetchDeckProfile(deckId: string): Promise<ProfileFetch> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (!analysisTabEnabled(env)) return { ok: false, reason: "disabled" };
 
   // Before the id reaches a `uuid` column: Postgres answers a malformed one with 22P02, which
   // arrives as a rejected action rather than as the refusal this type promises.
@@ -114,7 +105,6 @@ export type StoredProfileFetch =
 export async function fetchStoredDeckProfile(deckId: string): Promise<StoredProfileFetch> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (!analysisTabEnabled(env)) return { ok: false, reason: "disabled" };
   if (!isUuid(deckId)) return { ok: false, reason: "not-found" };
   const stored = await readStoredReading(deckId, userId, requestProfileDeps(env));
   // A STALE reading is answered as one: the tab holds it under the banner (2i) rather than

@@ -56,7 +56,7 @@ function renderWithAnalysisOnly() {
   render(
     <BuilderShell mix={recommendedMix(null, false)} deck={DECK} suggestions={[]} degraded={false} firstRun={false}
       commanderIdentity={["B", "R", "G"]} arrivedFromImport={false} newestAsOf={null}
-      analysisEnabled initialView="analysis" />,
+      initialView="analysis" />,
   );
   return seen.panel as unknown as Record<string, unknown> & {
     hub?: unknown;

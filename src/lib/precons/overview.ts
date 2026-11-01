@@ -24,12 +24,11 @@ export type CarryOver =
   | {
     attach: false;
     /**
-     * `off`: the owner has no Analysis tab, so no overview is drawn for them at all.
      * `none`: this precon has no stored overview at the owner's contract.
      * `not_current`: its inputs moved since it was written, so Analyze would write something else.
      * `list_moved`: the deck is no longer the precon's list (edited before the carry-over ran).
      */
-    reason: "off" | "none" | "not_current" | "list_moved";
+    reason: "none" | "not_current" | "list_moved";
   };
 
 /**
@@ -39,11 +38,9 @@ export type CarryOver =
  * `listFingerprint` read after the start committed.
  */
 export function carryOverDecision(input: {
-  analysisTab: boolean;
   row: PreconOverviewHead | null;
   liveFingerprint: string;
 }): CarryOver {
-  if (!input.analysisTab) return { attach: false, reason: "off" };
   if (!input.row) return { attach: false, reason: "none" };
   if (!input.row.current) return { attach: false, reason: "not_current" };
   if (input.row.listFingerprint !== input.liveFingerprint) return { attach: false, reason: "list_moved" };

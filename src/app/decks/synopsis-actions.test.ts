@@ -1,20 +1,19 @@
-// The synopsis actions' wire contract: the flag and a malformed id are answered BEFORE any read or
-// write, and a deck the reader does not own reads as not found. `probe:synopsis` proves the
+// The synopsis actions' wire contract: a malformed id is answered BEFORE any read or write (the Analysis
+// tab's flag was too, until its switch retired, always on), and a deck the reader does not own reads as not found. `probe:synopsis` proves the
 // functions these call against a real Postgres.
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// The reader's resolved switches: a sentinel holding no variable (the flag is mocked below), so the profile
+// The reader's resolved switches: a sentinel holding no variable, so the profile
 // read is seen to receive exactly the env the action resolved, and a failing diff prints nothing real.
 const ENV = vi.hoisted(() => ({ SENTINEL: "resolved" }) as unknown as NodeJS.ProcessEnv);
 vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: vi.fn(async () => ENV) }));
 
-const stub = vi.hoisted(() => ({ enabled: true, calls: [] as string[], state: null as unknown, profileEnvs: [] as unknown[], envs: [] as unknown[] }));
+const stub = vi.hoisted(() => ({ calls: [] as string[], state: null as unknown, profileEnvs: [] as unknown[], envs: [] as unknown[] }));
 
 // Each action's profile reader, reduced to the env it was built under.
 vi.mock("../../lib/profile/stored", () => ({ requestProfileDeps: (env: unknown) => ({ env }) }));
 
-vi.mock("../../lib/decks/analysis-flag", () => ({ analysisTabEnabled: () => stub.enabled }));
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user-1" }));
 vi.mock("../../lib/synopsis/generate", () => ({
   defaultDeps: () => ({ modelName: "stub" }),
@@ -47,22 +46,12 @@ const DECK = "11111111-1111-4111-8111-111111111111";
 const RUN = "22222222-2222-4222-8222-222222222222";
 
 beforeEach(() => {
-  stub.enabled = true;
   stub.calls = [];
   stub.state = null;
   stub.profileEnvs = [];
 });
 
 describe("synopsis actions", () => {
-  it("answer disabled before any read or write while the tab is off", async () => {
-    stub.enabled = false;
-    expect(await writeSynopsis(DECK)).toEqual({ kind: "disabled" });
-    expect(await retrySynopsisSections(DECK, RUN)).toEqual({ kind: "disabled" });
-    expect(await fetchSynopsis(DECK)).toEqual({ kind: "disabled" });
-    expect(await fetchVersionSynopsis(RUN)).toEqual({ kind: "disabled" });
-    expect(stub.calls).toEqual([]);
-  });
-
   it("never pass a malformed id to a uuid column", async () => {
     expect(await writeSynopsis("nope")).toEqual({ kind: "not_found" });
     expect(await retrySynopsisSections(DECK, "nope")).toEqual({ kind: "not_found" });

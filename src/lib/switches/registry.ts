@@ -20,8 +20,8 @@
  * switch, only `off` is the hard kill no override raises; `false` is a soft off an app-wide On row overrides. Only the
  * model-call kill switch: a deployment that forgets the variable must keep serving model calls.
  *
- * `needs`: the parent a compound switch's flag function also checks (`suggestedChangesV2Enabled` asks
- * `analysisTabEnabled`). The flag functions decide; this records it for the admin, and
+ * `needs`: the parent a compound switch's flag function also checks (`welcomeCreditsEnabled` asks
+ * `paymentsEnabled`). The flag functions decide; this records it for the admin, and
  * `flags.test.ts` fails when the two disagree.
  *
  * Client-safe: no imports.
@@ -42,13 +42,13 @@ export const SWITCHES = [
   { name: "OVERVIEW_V2_ENABLED", kind: "model" },
   { name: "PAYMENTS_ENABLED", kind: "feature" },
   { name: "PUSH_ENABLED", kind: "feature" },
-  { name: "PROPOSED_CUTS_ENABLED", kind: "model", needs: "ANALYSIS_TAB_ENABLED" },
+  { name: "PROPOSED_CUTS_ENABLED", kind: "model" },
   { name: "PUBLIC_PAGES_ENABLED", kind: "plumbing" },
   { name: "RATE_LIMIT_ENABLED", kind: "plumbing" },
   { name: "SCAN_LAB_ENABLED", kind: "plumbing" },
-  { name: "SUGGESTED_CHANGES_V2_ENABLED", kind: "model", needs: "ANALYSIS_TAB_ENABLED" },
+  { name: "SUGGESTED_CHANGES_V2_ENABLED", kind: "model" },
   { name: "SWAP_TOOLS_ENABLED", kind: "model" },
-  { name: "TUNING_ENABLED", kind: "model", needs: "ANALYSIS_TAB_ENABLED" },
+  { name: "TUNING_ENABLED", kind: "model" },
   { name: "WELCOME_CREDITS_ENABLED", kind: "feature", needs: "PAYMENTS_ENABLED" },
 ] as const satisfies readonly { name: `${string}_ENABLED`; kind: SwitchKind; needs?: `${string}_ENABLED`; defaultOn?: true }[];
 

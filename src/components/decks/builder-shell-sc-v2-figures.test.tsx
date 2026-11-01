@@ -57,7 +57,7 @@ function panelProps(suggestedChangesV2: boolean): { runFigures?: RunFigures; v2:
   render(
     <BuilderShell mix={recommendedMix(null, false)} deck={DECK} suggestions={[]} degraded={false} firstRun={false}
       commanderIdentity={["B", "R", "G"]} arrivedFromImport={false} newestAsOf={null}
-      analysisEnabled suggestedChangesV2={suggestedChangesV2} initialView="analysis" />,
+      suggestedChangesV2={suggestedChangesV2} initialView="analysis" />,
   );
   // Suggested changes mounts inside the Tuning hub's tile (its own switch is retired): the first tool the hub is handed.
   type Panel = ReactElement<{ runFigures?: RunFigures; v2: unknown }>;

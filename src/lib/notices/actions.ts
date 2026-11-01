@@ -12,8 +12,6 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 
 import { requireUserId } from "../auth";
-import { analysisTabEnabled } from "../decks/analysis-flag";
-import { requestSwitchEnv } from "../switches/request";
 import { isUuid } from "../uuid";
 import { markNoticesRead } from "./mark";
 import { loadDeckNotices, type DeckNotices } from "./read";
@@ -23,15 +21,14 @@ import { loadDeckNotices, type DeckNotices } from "./read";
  * rather than by the deck page's loader, so a page that never draws a notice pays nothing for it.
  */
 export async function peekNotices(deckId: string): Promise<DeckNotices | null> {
-  // Behind the Analysis tab here too, not only in the page: an action is callable directly.
   const userId = await requireUserId();
-  if (!analysisTabEnabled(await requestSwitchEnv(userId)) || !isUuid(deckId)) return null;
+  if (!isUuid(deckId)) return null;
   return loadDeckNotices(deckId, userId);
 }
 
 export async function openNotices(deckId: string): Promise<DeckNotices | null> {
   const userId = await requireUserId();
-  if (!analysisTabEnabled(await requestSwitchEnv(userId)) || !isUuid(deckId)) return null;
+  if (!isUuid(deckId)) return null;
   const notices = await loadDeckNotices(deckId, userId);
   if (!notices) return null;
   const legalMarked = await markNoticesRead(deckId, userId, notices.readMarks);

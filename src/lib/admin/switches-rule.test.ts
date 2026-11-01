@@ -43,11 +43,12 @@ describe("switchRows", () => {
     expect(r.get("FLYER_TRIAL_ENABLED")).toMatchObject({ env: "off", on: 0, state: "off", refused: true, reason: { kind: "kill" } });
   });
 
+  // Welcome credits under payments: the live compound pair (the Analysis tab's children were the example until it retired).
   it("names the parent when it turns a child off for everyone (L5)", () => {
-    const r = rows({ PROPOSED_CUTS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "false" });
-    expect(r.get("PROPOSED_CUTS_ENABLED")).toMatchObject({ parent: "ANALYSIS_TAB_ENABLED", state: "off", reason: { kind: "parent", parent: "ANALYSIS_TAB_ENABLED" } });
+    const r = rows({ WELCOME_CREDITS_ENABLED: "true", PAYMENTS_ENABLED: "false" });
+    expect(r.get("WELCOME_CREDITS_ENABLED")).toMatchObject({ parent: "PAYMENTS_ENABLED", state: "off", reason: { kind: "parent", parent: "PAYMENTS_ENABLED" } });
     // Off by its own env var, not the parent: no reason, the count reads.
-    expect(rows({ ANALYSIS_TAB_ENABLED: "false" }).get("PROPOSED_CUTS_ENABLED")?.reason).toBeNull();
+    expect(rows({ PAYMENTS_ENABLED: "false" }).get("WELCOME_CREDITS_ENABLED")?.reason).toBeNull();
   });
 
   it("refuses an app-wide override under the kill switch, with no group or account row", () => {

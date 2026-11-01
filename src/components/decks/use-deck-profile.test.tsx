@@ -316,13 +316,6 @@ describe("useDeckProfile", () => {
     });
   });
 
-  it("reports disabled without treating it as a failure", async () => {
-    stub.reply = { ok: false, reason: "disabled" };
-    const c = render(<Harness />);
-    await ask(c);
-    expect(kind(c)).toBe("disabled");
-  });
-
   it("reports a deck it cannot read as missing", async () => {
     stub.reply = { ok: false, reason: "not-found" };
     const c = render(<Harness />);
@@ -429,14 +422,12 @@ describe("useDeckProfile peek", () => {
     expect(stub.peeks).toEqual([]);
   });
 
-  it.each([
-    ["disabled", "disabled"],
-    ["not-found", "missing"],
-  ])("reports a %s answer as %s rather than as a miss", async (reason, expected) => {
-    stub.stored = { ok: false, reason };
+  // `not-found` is the one refusal a peek draws (the action no longer answers `disabled`: the Analysis tab is always on).
+  it("reports a not-found answer as missing rather than as a miss", async () => {
+    stub.stored = { ok: false, reason: "not-found" };
     const c = render(<Harness />);
     await peek(c);
-    expect(kind(c)).toBe(expected);
+    expect(kind(c)).toBe("missing");
     expect(stub.calls).toEqual([]);
   });
 

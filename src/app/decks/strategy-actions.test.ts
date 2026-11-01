@@ -17,10 +17,8 @@ const stub = vi.hoisted(() => ({
   updateReturns: [{ id: DECK }] as { id: string }[],
   /** The ownership read after a write that matched nothing. */
   owned: [{ id: DECK }] as { id: string }[],
-  env: { ANALYSIS_TAB_ENABLED: "true" } as Record<string, string>,
 }));
 
-vi.mock("../../lib/switches/request", () => ({ requestSwitchEnv: async () => stub.env }));
 vi.mock("next/cache", () => ({ revalidatePath: (path: string) => void stub.paths.push(path) }));
 vi.mock("next/server", () => ({ after: (fn: () => void) => void stub.deferred.push(fn) }));
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user-1" }));
@@ -50,7 +48,6 @@ beforeEach(() => {
   stub.wheres = [];
   stub.updateReturns = [{ id: DECK }];
   stub.owned = [{ id: DECK }];
-  stub.env = { ANALYSIS_TAB_ENABLED: "true" };
 });
 
 const runDeferred = () => stub.deferred.forEach((fn) => fn());
@@ -89,12 +86,11 @@ describe("setStrategyFocus", () => {
     expect(stub.deferred).toEqual([]);
   });
 
-  it("refuses an unnamed key, a malformed id and a reader with the Analysis tab off before any write", async () => {
+  // The Analysis tab's switch is retired (always on, 2026-11-01): no reader is refused for it.
+  it("refuses an unnamed key and a malformed id before any write", async () => {
     expect(await setStrategyFocus(DECK, "typal:Equipment")).toEqual({ ok: false, reason: "invalid" });
     expect(await setStrategyFocus(DECK, "Tokens")).toEqual({ ok: false, reason: "invalid" });
     expect(await setStrategyFocus("not-a-uuid", "tokens")).toEqual({ ok: false, reason: "not-found" });
-    stub.env = {};
-    expect(await setStrategyFocus(DECK, "tokens")).toEqual({ ok: false, reason: "off" });
     expect(stub.updates).toEqual([]);
   });
 });

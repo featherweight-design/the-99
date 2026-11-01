@@ -9,7 +9,7 @@ import { labelGeneration } from "../labels/generation";
 import { LABEL_PROMPT_VERSION, labelInputHash } from "../labels/prompt";
 import type { Job } from "../labels/types";
 import {
-  baselineFromRows, catalogQuery, deckCardsQuery, freshThemes, loadDeckStrategy, loadStrategyBaseline, strategyRead, toStrategyCard,
+  baselineFromRows, catalogQuery, deckCardsQuery, freshThemes, loadStrategyBaseline, strategyRead, toStrategyCard,
   versionCardsQuery, type CardRow,
 } from "./load";
 
@@ -98,14 +98,6 @@ describe("loadStrategyBaseline", () => {
   it("builds the counts from the same rule the deck read uses", () => {
     const b = baselineFromRows([labelled(row("Artifact"), ["mill"]), labelled(row("Land — Island"), ["mill"])]);
     expect(b.themes.get("mill")).toBe(1);
-  });
-});
-
-describe("loadDeckStrategy", () => {
-  it("reads nothing with the Analysis tab off", async () => {
-    const spy = vi.spyOn(db, "select");
-    expect(await loadDeckStrategy("u", "d", {} as unknown as NodeJS.ProcessEnv)).toBeNull();
-    expect(spy).not.toHaveBeenCalled();
   });
 });
 
