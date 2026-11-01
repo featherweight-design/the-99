@@ -19,6 +19,16 @@ export function isSearchShortcut(e: KeyLike, mac: boolean): boolean {
 }
 
 /**
+ * Whether this key press is the search's keyboard add (add a card from anywhere, READINESS O4): ⌘↵ on a Mac, Ctrl ↵
+ * elsewhere, on the active row. Either modifier is taken on either platform (neither edits text in a field), but only
+ * one, and no Alt or Shift.
+ */
+export function isAddShortcut(e: KeyLike): boolean {
+  if (e.isComposing || e.altKey || e.shiftKey || e.key !== "Enter") return false;
+  return e.metaKey !== e.ctrlKey;
+}
+
+/**
  * Whether a dialog other than the search's own is up over the page. The search never opens over one: the dialog
  * is modal and the page behind it is inert. A dialog under `[hidden]` or `[inert]` (the About page's figures) is
  * a specimen, not a surface a reader can use. Read from the DOM because many surfaces lock nothing.

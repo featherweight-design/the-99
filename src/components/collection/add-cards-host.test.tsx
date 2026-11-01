@@ -132,22 +132,44 @@ describe("AddCardsHost", () => {
     expect(onClosed).not.toHaveBeenCalled();
   });
 
-  it("opens one sheet at a time", async () => {
+  it("opens one sheet at a time, and tells a dropped ask's opener at once so it comes back", async () => {
     mount();
+    const first = vi.fn();
+    const second = vi.fn();
+    const took: boolean[] = [];
     act(() => {
-      open({ initialQuery: "a" });
-      open({ initialQuery: "b" });
+      took.push(open({ initialQuery: "a", onClosed: first }));
+      took.push(open({ initialQuery: "b", onClosed: second }));
     });
+    expect(took).toEqual([true, false]);
+    expect(second).toHaveBeenCalledWith({ saved: false });
     await waitFor(() => expect(sheet()).toBeTruthy());
     expect(screen.getAllByRole("dialog", { name: "Add cards" })).toHaveLength(1);
     expect(sheetProps).toHaveBeenLastCalledWith(expect.objectContaining({ initialQuery: "a" }));
+    expect(first).not.toHaveBeenCalled();
+    // While the sheet is up, too.
+    const third = vi.fn();
+    act(() => {
+      took.push(open({ onClosed: third }));
+    });
+    expect(took[2]).toBe(false);
+    expect(third).toHaveBeenCalledWith({ saved: false });
+    // Once it has closed, the host takes asks again.
+    await press("done");
+    await waitFor(() => expect(first).toHaveBeenCalledWith({ saved: false }));
+    act(() => {
+      took.push(open({}));
+    });
+    expect(took[3]).toBe(true);
   });
 
   it("opens nothing on the public card page, signed in or not (READINESS E6)", async () => {
     pathname = "/card/sol-ring";
     mount();
     const onOpened = vi.fn();
-    act(() => open({ onOpened }));
+    act(() => {
+      open({ onOpened });
+    });
     await act(async () => new Promise((r) => setTimeout(r, 20)));
     expect(sheet()).toBeNull();
     expect(onOpened).not.toHaveBeenCalled();
@@ -159,9 +181,14 @@ describe("AddCardsHost", () => {
     page.setAttribute("role", "dialog");
     page.setAttribute("aria-modal", "true");
     document.body.appendChild(page);
-    act(() => open({}));
+    const onClosed = vi.fn();
+    act(() => {
+      open({ onClosed });
+    });
     await act(async () => new Promise((r) => setTimeout(r, 20)));
     expect(sheet()).toBeNull();
+    // The opener closed itself for the sheet: it hears the drop and comes back.
+    expect(onClosed).toHaveBeenCalledWith({ saved: false });
     page.remove();
     // The ask was dropped, not held: a later one opens.
     act(() => open({}));
