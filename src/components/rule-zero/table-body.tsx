@@ -4,6 +4,8 @@
 // desktop (R2) puts one seat per row on the left and the read with `Log this game` in a 392px column on the right,
 // placed by the grid rather than mounted twice.
 //
+// `Close the table` (revisions 5) sits under it, the setter's alone, and only where the page gives a way to close.
+//
 // `Log this game` is a plain link to the viewer's seated deck's Games tab (plan PR 8), absent with no space kept when
 // games are off (L3) or while the viewer's seat waits for a deck. Its URL carries the viewer's own deck id, the only
 // deck id the page holds (decision 5).
@@ -15,6 +17,7 @@ import { closesWhen } from "../../lib/social/when";
 import { GhostButton } from "../ui/button";
 import { useHydrated } from "../ui/hydrated-art";
 import { BackLink } from "./back-link";
+import { CloseTable } from "./close-table";
 import { ReadCard } from "./read-card";
 import { SeatsButton } from "./seats-button";
 import { TableSeat } from "./table-seat";
@@ -26,6 +29,7 @@ export function TableBody({
   now,
   updated,
   swappedTo = null,
+  onClose,
 }: {
   view: TableView;
   /** The server's clock at the draw: the close time is `today` or `tomorrow` against it. */
@@ -34,6 +38,8 @@ export function TableBody({
   updated?: string;
   /** The deck this visit's own swap seated (PR 7): the seat says `changed just now` and the read says so. */
   swappedTo?: string | null;
+  /** Closes the table and answers whether it closed. Given, the setter's `Close the table` is drawn at the foot (never a guest's). */
+  onClose?: () => Promise<boolean>;
 }) {
   const draw = drawTable(view, swappedTo);
   // The server's draw is in UTC, the reader's own zone after hydration, so the two first renders agree (`when.ts`).
@@ -71,9 +77,11 @@ export function TableBody({
               <TableSeat key={s.key} draw={s} now={now} tableId={view.tableId} />
             ))}
           </div>
-          {log ? (
-            <div className="xl:col-start-2 xl:row-start-2">
-              <LogGame href={log} />
+          {log || (view.setByYou && onClose) ? (
+            // The table's foot: Log this game, then the setter's Close the table under it (T1, D1); on desktop it closes the read's column.
+            <div className="flex flex-col xl:col-start-2 xl:row-start-2">
+              {log ? <LogGame href={log} /> : null}
+              {view.setByYou && onClose ? <CloseTable podName={view.podName} run={onClose} /> : null}
             </div>
           ) : null}
         </div>

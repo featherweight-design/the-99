@@ -4,10 +4,10 @@
 import { act, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const m = vi.hoisted(() => ({ refresh: vi.fn(), seen: vi.fn(async () => true) }));
+const m = vi.hoisted(() => ({ refresh: vi.fn(), seen: vi.fn(async () => true), close: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: m.refresh }) }));
 vi.mock("../../app/friends/table/actions", () => ({ markTableSeen: m.seen }));
-vi.mock("../../app/friends/table/setup-actions", () => ({ loadTableSetupAction: vi.fn(), reseatTableAction: vi.fn() }));
+vi.mock("../../app/friends/table/setup-actions", () => ({ loadTableSetupAction: vi.fn(), reseatTableAction: vi.fn(), closeTableAction: m.close }));
 
 import { TABLES } from "../../lib/social/rule-zero-fixtures";
 import type { TableView } from "../../lib/rule-zero/table-view";
@@ -156,7 +156,7 @@ describe("TableLive", () => {
     fetchMock.mockResolvedValueOnce(open(base));
     render(<TableLive initial={base} now={AT} />);
     await settle();
-    fetchMock.mockResolvedValueOnce(json(200, { kind: "closed", closed: { podName: named("Thursday night"), setBy: named("Colin"), how: { kind: "morning", at: AT.toISOString() }, faces: [] } }));
+    fetchMock.mockResolvedValueOnce(json(200, { kind: "closed", closed: { tableId: base.tableId, viewerDeckId: null, podName: named("Thursday night"), setBy: named("Colin"), how: { kind: "morning", at: AT.toISOString() }, faces: [] } }));
     await settle(POLL_MS);
     expect(screen.getByTestId("table-closed")).toBeInTheDocument();
     expect(screen.queryByTestId("table-body")).toBeNull();

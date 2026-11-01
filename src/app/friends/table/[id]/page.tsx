@@ -26,7 +26,7 @@ export default async function TablePage({ params }: { params: Promise<{ id: stri
   if (!closed) notFound();
   return (
     <div className="flex w-full flex-1 flex-col">
-      <TableClosed podName={closed.podName} setBy={closed.setBy} faces={closed.faces} />
+      <TableClosed closed={closed} />
     </div>
   );
 }

@@ -46,7 +46,7 @@ describe("TablePage", () => {
   });
 
   it("draws the expired page when the night has ended", async () => {
-    m.loadClosedTable.mockResolvedValue({ podName: named("Thursday night"), setBy: named("Colin"), faces: [{ name: named("Colin"), artCropUri: null }] });
+    m.loadClosedTable.mockResolvedValue({ tableId: ID, viewerDeckId: null, podName: named("Thursday night"), setBy: named("Colin"), how: { kind: "morning", at: new Date("2026-10-17T11:00:00Z") }, faces: [{ name: named("Colin"), artCropUri: null }] });
     await page();
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("This table has closed");
     expect(screen.getByText(/Thursday night’s table closed the morning after Colin set it/)).toBeInTheDocument();

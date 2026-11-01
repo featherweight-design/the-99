@@ -222,6 +222,27 @@ export const ruleZeroCopy = {
     title: "This table has closed",
     body: (pod: Said, setter: Said) => personText`${pod}’s table closed the morning after ${setter} set it. Games logged from it stay on each deck’s Games tab.`,
     back: "Back to Friends",
+    // DRAFT, goes through /copy-review: a table its host closed (Table board C3 to C5), in place of `body`.
+    bodyClosedByYou: (pod: Said, time: string) =>
+      personText`You closed ${pod}’s table at ${time}. Games logged from it stay on each deck’s Games tab.`,
+    // DRAFT, goes through /copy-review
+    bodyClosedBy: (closer: Said, pod: Said, time: string) =>
+      personText`${closer} closed ${pod}’s table at ${time}. Games logged from it stay on each deck’s Games tab.`,
+  },
+  // Close the table (Table board C1 to C5, T1, D1, D2). The setter's text button at the table's foot and its confirm.
+  close: {
+    // DRAFT, goes through /copy-review
+    action: "Close the table",
+    // DRAFT, goes through /copy-review
+    title: (pod: Said) => personText`Close ${pod}’s table?`,
+    // DRAFT, goes through /copy-review
+    body: "Everyone seated loses the table now, and it can’t be opened again. Games already logged stay on each deck’s Games tab.",
+    // DRAFT, goes through /copy-review
+    keep: "Keep it open",
+    // DRAFT, goes through /copy-review: the shared toast after a close the server refused or that did not arrive
+    failed: "We couldn’t close the table. Try again.",
+    retry: "Try again", // the shipped word the toast's action carries
+    dismiss: "Close", // the ✕'s name, as Change deck's
   },
 } as const;
 

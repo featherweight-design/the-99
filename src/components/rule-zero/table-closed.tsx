@@ -1,10 +1,17 @@
+"use client";
 // The expired table (L4, H3): `This table has closed`, why, and that logged games stay, over the seated faces
 // greyed round an empty table; `Back to Friends`. Centered in the page at both widths. The pod row and Home's card
 // are already gone by the time this draws, since every read applies the open predicate (not closed and not past `expires_at`);
-// a host-closed table keeps Log this game for its seated players until its original morning.
+// a host-closed table keeps Log this game for its seated players until its original morning (`how.logOpen`), over
+// Back to Friends in the board's 300px column (C3 to C5). How it ended is the sentence: the shipped morning one, or the
+// closer's with the time they closed it (revisions 5).
 
 import { ruleZeroCopy } from "../../lib/copy/rule-zero";
-import { PersonText, type ThirdPartyName } from "../../lib/person-name";
+import { PersonText } from "../../lib/person-name";
+import { logGameHref } from "../../lib/rule-zero/table-view";
+import type { ClosedTable } from "../../lib/social/rule-zero-table";
+import { closesWhen } from "../../lib/social/when";
+import { useHydrated } from "../ui/hydrated-art";
 import { Face } from "../social/face";
 import { BackLink } from "./back-link";
 import { GhostButton } from "../ui/button";
@@ -15,17 +22,20 @@ const copy = ruleZeroCopy.expired;
 const RX = 83;
 const RY = 44;
 
-export function TableClosed({
-  podName,
-  setBy,
-  faces,
-}: {
-  podName: ThirdPartyName;
-  /** The setter's display name, or null when the viewer set it. */
-  setBy: ThirdPartyName | null;
-  /** The seated players, drawn greyed: their names (for initials) and their decks' art. */
-  faces: readonly { name: string | ThirdPartyName; artCropUri: string | null }[];
-}) {
+export function TableClosed({ closed }: { closed: ClosedTable }) {
+  const { podName, setBy, faces, how } = closed;
+  // The time is the reader's own zone after hydration; the server draws UTC so the two first renders agree (`when.ts`).
+  const utc = !useHydrated();
+  const at = (d: Date) => closesWhen(d, d, utc ? "UTC" : undefined);
+  const closer = how.kind === "host" ? (how.byYou ? "you" : (how.by ?? setBy)) : null;
+  // A host close names who closed it; with no one to name (their profile is gone), the shipped sentence stands.
+  const body =
+    how.kind === "host" && closer === "you"
+      ? copy.bodyClosedByYou(podName, at(how.at))
+      : how.kind === "host" && closer !== null
+        ? copy.bodyClosedBy(closer, podName, at(how.at))
+        : copy.body(podName, setBy ?? "you");
+  const log = how.kind === "host" && how.logOpen ? logGameHref(closed) : null;
   return (
     // The phone keeps its `‹ Friends` row (L4); desktop draws the card alone, centered in the page (H3).
     // `flex-1` continues the shell's stretch chain, so the card centers in the height the shell leaves at either width.
@@ -49,11 +59,22 @@ export function TableClosed({
         </div>
         <h1 className="m-0 font-display text-[22px] font-bold">{copy.title}</h1>
         <p className="m-0 text-[14.5px] leading-[1.6] text-[color:var(--fg-muted)] [text-wrap:pretty]">
-          <PersonText text={copy.body(podName, setBy ?? "you")} />
+          <PersonText text={body} />
         </p>
-        <GhostButton href="/friends" className="inline-flex min-h-[44px] items-center justify-center rounded-[10px] px-[18px] text-[14.5px]">
-          {copy.back}
-        </GhostButton>
+        {log ? (
+          <div className="flex w-full max-w-[300px] flex-col items-center gap-[8px]">
+            <GhostButton href={log} className="flex min-h-[44px] w-full items-center justify-center rounded-[10px] px-[18px] text-[14.5px]">
+              {ruleZeroCopy.page.log}
+            </GhostButton>
+            <GhostButton href="/friends" className="flex min-h-[44px] w-full items-center justify-center rounded-[10px] border-transparent px-[18px] text-[14.5px]">
+              {copy.back}
+            </GhostButton>
+          </div>
+        ) : (
+          <GhostButton href="/friends" className="inline-flex min-h-[44px] items-center justify-center rounded-[10px] px-[18px] text-[14.5px]">
+            {copy.back}
+          </GhostButton>
+        )}
       </div>
     </div>
   );
