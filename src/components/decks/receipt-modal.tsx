@@ -148,7 +148,7 @@ export function ModalChrome({
   titleNode?: React.ReactNode;
   aside?: React.ReactNode;
   closeLabel: string;
-  /** The ✕ is held while an action is in flight (Rule 0 close, C7): dimmed and aria-disabled; its press is the caller's to ignore. */
+  /** The ✕ is held while an action is in flight (Rule 0 close, C7): dimmed, aria-disabled, and its press does nothing. */
   closeHeld?: boolean;
   onClose: () => void;
   width: 480 | 520 | 560 | 600 | 640 | 700 | 760 | 900;
@@ -348,7 +348,7 @@ export function ModalPanel({
   mark?: React.ReactNode;
   aside?: React.ReactNode;
   closeLabel: string;
-  /** The ✕ is held while an action is in flight (Rule 0 close, C7): dimmed and aria-disabled; its press is the caller's to ignore. */
+  /** The ✕ is held while an action is in flight (Rule 0 close, C7): dimmed, aria-disabled, and its press does nothing. */
   closeHeld?: boolean;
   onClose: () => void;
   overCard?: { name: string; backAria: string };
@@ -383,7 +383,7 @@ export function ModalPanel({
           </button>
           <button
             type="button"
-            onClick={onClose}
+            onClick={closeHeld ? undefined : onClose}
             aria-label={closeLabel}
             aria-disabled={closeHeld || undefined}
             className="aria-disabled:cursor-default aria-disabled:opacity-60 ml-auto flex flex-none h-[44px] w-[44px] items-center justify-center bg-transparent border-0 font-mono text-[15px] cursor-pointer text-[color:var(--fg-muted)]"
@@ -411,7 +411,7 @@ export function ModalPanel({
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={closeHeld ? undefined : onClose}
             aria-label={closeLabel}
             aria-disabled={closeHeld || undefined}
             className="aria-disabled:cursor-default aria-disabled:opacity-60 flex flex-none h-[44px] w-[44px] items-center justify-center bg-transparent border-0 font-mono text-[15px] cursor-pointer text-[color:var(--fg-muted)]"
@@ -458,7 +458,7 @@ export function ModalPanel({
         ) : (
           <button
             type="button"
-            onClick={onClose}
+            onClick={closeHeld ? undefined : onClose}
             aria-label={closeLabel}
             aria-disabled={closeHeld || undefined}
             className="aria-disabled:cursor-default aria-disabled:opacity-60 ml-auto -mr-[10px] md:-my-[14px] flex flex-none h-[44px] w-[44px] items-center justify-center bg-transparent border-0 font-mono text-[14px] cursor-pointer text-[color:var(--fg-faint)]"
