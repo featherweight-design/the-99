@@ -269,7 +269,8 @@ boards are Design's and stay as dropped; these rulings govern the build.
 - **E11 · the two rings (O9).** The dock row that the re-run brings back owned is ringed `inset 0 0 0 1.5px --success`
   (K6, `.qrow.lit`), and its `×1 owned` reads in `--success` (`.up`), until the reader types or flips the filter, as
   the search's ring lasts until the query changes. The deck row rings with the same edge (`.drow.lit`) when its dot
-  fills under it (D5, D-D3, S4), and when it lands owned for a card the bridge just saved and the dock then added (K7).
+  fills under it (D5, D-D3, S4), and when it is drawn owned for a card the bridge just saved and the dock then added,
+  once the deck has accepted the add and on that deck only (K7).
   "Briefly" is not drawn: the deck row holds it for 2s, as an edge with no animation, so reduced motion draws it the
   same. A proxied row never rings, since its dot never fills.
 

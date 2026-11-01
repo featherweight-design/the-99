@@ -2172,6 +2172,8 @@ describe("DecklistRow, inline touch hits", () => {
   });
 });
 
+import { forgetJustOwned, noteJustOwned } from "../../lib/decks/just-owned";
+
 // Add a card from anywhere, O9 (D5, S4): a row whose dot fills under it, after a collection save on the page, rings
 // briefly in --success; a proxied row's dot never fills, so it never rings.
 describe("DecklistRow — the owned ring", () => {
@@ -2188,6 +2190,17 @@ describe("DecklistRow — the owned ring", () => {
     rerender(ui(true));
     expect(rowEl()).toHaveAttribute("data-owned-ring");
     expect(rowEl().style.boxShadow).toContain("inset 0 0 0 1.5px var(--success)");
+  });
+
+  it("rings when the dock's note arrives for this deck's row, not another deck's (K7)", () => {
+    render(ui(true));
+    expect(rowEl()).not.toHaveAttribute("data-owned-ring");
+    act(() => noteJustOwned("d2", "sol-ring"));
+    expect(rowEl()).not.toHaveAttribute("data-owned-ring");
+    act(() => noteJustOwned("d1", "sol-ring"));
+    expect(rowEl()).toHaveAttribute("data-owned-ring");
+    forgetJustOwned("d1", "sol-ring");
+    forgetJustOwned("d2", "sol-ring");
   });
 
   it("does not ring a proxied row", () => {

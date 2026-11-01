@@ -311,7 +311,9 @@ export function QuickAddBar({
           onChange={(e) => {
             startComboMap();
             editGeneration.current += 1;
+            // A new search: no ring, and none for a re-run still on its way (its rows would answer the old text).
             setRinged(null);
+            setRingAfter(null);
             setQuery(e.target.value);
           }}
           onKeyDown={handleKeyDown}
@@ -329,6 +331,7 @@ export function QuickAddBar({
             checked={ownedOnly}
             onChange={(e) => {
               setRinged(null);
+              setRingAfter(null);
               setOwnedOnly(e.target.checked);
             }}
             aria-label={addPanelCopy.quickAdd.ownedToggleAria}
@@ -613,15 +616,18 @@ function QuickAddRow({
     // At the press, not after the flush: a search typed while the queue drains is a newer generation, and
     // completing this add must not clear it.
     const added = beginAdd();
-    // A card the bridge just saved: the deck row that lands for it rings too (K7, READINESS O9).
-    if (ringed) noteJustOwned(result.oracleId);
     // Settled BEFORE the add's own prediction: a step pressed while the queue drains then lands in the
     // stepper's figure, and the one copy this adds is counted once, on top of it.
     if (isBasicLand(result.typeLine)) await flushBasicCounts();
     run(
       async () => {
         const outcome = await addCardToDeck(deckId, result.oracleId);
-        if (!outcome || outcome.ok) added();
+        if (!outcome || outcome.ok) {
+          added();
+          // A card the bridge just saved, and the deck accepted: its row on this deck rings too (K7, READINESS O9).
+          // Not on a refusal, which leaves no row to ring.
+          if (ringed) noteJustOwned(deckId, result.oracleId);
+        }
         return outcome;
       },
       () =>

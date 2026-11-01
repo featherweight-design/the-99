@@ -86,7 +86,7 @@ beforeEach(() => {
   pathname = "/decks/deck-1";
   vi.clearAllMocks();
   searchCards.mockResolvedValue([]);
-  forgetJustOwned("ghalta");
+  forgetJustOwned("deck-1", "ghalta");
 });
 afterEach(() => cleanup());
 
@@ -164,7 +164,8 @@ describe("QuickAddBar — the bridge to Add cards", () => {
     await waitFor(() => expect(screen.getByRole("row")).not.toHaveAttribute("data-quick-add-ring"));
   });
 
-  it("notes a ringed card as it is added, so its deck row rings when it lands (K7)", async () => {
+  /** Typed, missed, bridged, saved and closed: the re-run's rows land ringed. */
+  async function returnRinged() {
     mount();
     await typeAndMiss();
     fireEvent.click(bridge()!);
@@ -173,10 +174,28 @@ describe("QuickAddBar — the bridge to Add cards", () => {
     await act(async () => screen.getByRole("button", { name: "save" }).click());
     await act(async () => screen.getByRole("button", { name: "done" }).click());
     await waitFor(() => expect(screen.getByRole("row")).toHaveAttribute("data-quick-add-ring"));
-    expect(isJustOwned("ghalta")).toBe(false);
+  }
+
+  it("notes a ringed card once the deck accepts it, for this deck only, so its deck row rings (K7)", async () => {
+    let answer!: (r: { ok: true }) => void;
+    addCardToDeck.mockImplementationOnce(() => new Promise((resolve) => (answer = resolve)));
+    await returnRinged();
+    expect(isJustOwned("deck-1", "ghalta")).toBe(false);
     await act(async () => fireEvent.click(screen.getByRole("row")));
     expect(addCardToDeck).toHaveBeenCalledWith("deck-1", "ghalta");
-    expect(isJustOwned("ghalta")).toBe(true);
+    // Not at the press: the add has not been accepted yet.
+    expect(isJustOwned("deck-1", "ghalta")).toBe(false);
+    await act(async () => answer({ ok: true }));
+    expect(isJustOwned("deck-1", "ghalta")).toBe(true);
+    expect(isJustOwned("deck-2", "ghalta")).toBe(false);
+  });
+
+  it("notes nothing when the deck refuses the add", async () => {
+    addCardToDeck.mockResolvedValueOnce({ ok: false, message: "Nope." } as never);
+    await returnRinged();
+    await act(async () => fireEvent.click(screen.getByRole("row")));
+    expect(addCardToDeck).toHaveBeenCalledWith("deck-1", "ghalta");
+    expect(isJustOwned("deck-1", "ghalta")).toBe(false);
   });
 
   it("notes nothing for an add from a row the bridge did not ring", async () => {
@@ -185,6 +204,33 @@ describe("QuickAddBar — the bridge to Add cards", () => {
     fireEvent.change(field(), { target: { value: "ghalta" } });
     await waitFor(() => expect(screen.getAllByRole("row").length).toBe(1));
     await act(async () => fireEvent.click(screen.getByRole("row")));
-    expect(isJustOwned("ghalta")).toBe(false);
+    expect(isJustOwned("deck-1", "ghalta")).toBe(false);
+  });
+
+  /** Typed, missed, bridged, saved and closed, with the re-run held so it never lands. */
+  async function returnWithRerunHeld() {
+    mount();
+    await typeAndMiss();
+    fireEvent.click(bridge()!);
+    await waitFor(() => expect(sheet()).toBeTruthy());
+    searchCards.mockImplementationOnce(() => new Promise<SearchResult[]>(() => {}));
+    searchCards.mockResolvedValue([ghalta]);
+    await act(async () => screen.getByRole("button", { name: "save" }).click());
+    await act(async () => screen.getByRole("button", { name: "done" }).click());
+    await waitFor(() => expect(sheet()).toBeNull());
+  }
+
+  it("rings nothing for a search typed before the re-run landed", async () => {
+    await returnWithRerunHeld();
+    fireEvent.change(field(), { target: { value: "ghalt" } });
+    await waitFor(() => expect(screen.getAllByRole("row").length).toBe(1));
+    expect(screen.getByRole("row")).not.toHaveAttribute("data-quick-add-ring");
+  });
+
+  it("rings nothing for a filter flipped before the re-run landed", async () => {
+    await returnWithRerunHeld();
+    fireEvent.click(toggle());
+    await waitFor(() => expect(screen.getAllByRole("row").length).toBe(1));
+    expect(screen.getByRole("row")).not.toHaveAttribute("data-quick-add-ring");
   });
 });
