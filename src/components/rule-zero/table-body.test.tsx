@@ -153,7 +153,11 @@ describe("TableBody", () => {
       const { unmount } = draw(view);
       expect(screen.getByText(copy.read.honest)).toBeInTheDocument();
       expect(screen.getByTestId("provenance-opener")).toHaveTextContent("How we make these decisions");
-      expect(screen.getByTestId("counts-key")).toBeInTheDocument();
+      const key = screen.getByRole("group", { name: copy.read.keyLabel });
+      // The shared key in two columns that stay two from md: the read sits in a 392px column on desktop too.
+      expect(key.className).toMatch(/grid grid-cols-2/);
+      expect(key.className).not.toMatch(/md:flex/);
+      expect(within(key).getAllByText(/./)).toHaveLength(5);
       unmount();
     }
   });

@@ -36,15 +36,21 @@ export function MarkKey({
   marks,
   regionAria = proxyCopy.key.regionAria,
   phoneColumns,
+  keepColumnsFromMd,
 }: {
   marks: MarkKeyEntry[];
   /**
    * Equal-width columns below `md` instead of the wrapping line (H7, Hugh's walk
    * 2026-10-02). Wrapped, the collection's key broke wherever its words happened to
    * end, so its entries sat at a different place on every line. Opt-in, so every
-   * other key is unchanged; from `md` it wraps as before.
+   * other key is unchanged; from `md` it wraps as before (unless `keepColumnsFromMd`).
    */
   phoneColumns?: 2 | 3;
+  /**
+   * Keep `phoneColumns` from `md` too, for a key in a column that stays narrow on desktop (Rule 0's read, a 392px column,
+   * small items: Rule 0 revisions item 1). Without `phoneColumns` it does nothing; every other key wraps from `md` as before.
+   */
+  keepColumnsFromMd?: boolean;
   /**
    * The group's own label, taken as data for the same reason the marks are: the
    * card view mounts a second instance over cards rather than rows, and its
@@ -61,9 +67,9 @@ export function MarkKey({
       // horizontally scrolling legend on a phone is a control nobody presses.
       className={[
         phoneColumns === 3
-          ? "grid grid-cols-3 md:flex md:flex-wrap"
+          ? keepColumnsFromMd ? "grid grid-cols-3" : "grid grid-cols-3 md:flex md:flex-wrap"
           : phoneColumns === 2
-            ? "grid grid-cols-2 md:flex md:flex-wrap"
+            ? keepColumnsFromMd ? "grid grid-cols-2" : "grid grid-cols-2 md:flex md:flex-wrap"
             : "flex flex-wrap",
         "items-center gap-x-[12px] gap-y-[6px] font-mono text-[10px] md:text-[10.5px]",
       ].join(" ")}
