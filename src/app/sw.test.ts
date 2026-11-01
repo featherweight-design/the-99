@@ -491,6 +491,40 @@ describe("push", () => {
     expect(showNotification).toHaveBeenCalledOnce();
   });
 
+  it("hands a seat push to the window in front and shows no notification (the page draws a toast)", async () => {
+    const front = win(`${ORIGIN}/decks`, true);
+    const behind = win(`${ORIGIN}/`, false);
+    windows = [behind, front];
+    await push({ ...payload, tag: "rule_zero_seat:t1", route: "/friends/table/t1", openCard: null, image: null });
+    expect(front.postMessage).toHaveBeenCalledWith({ type: "the99:seat-notice" });
+    expect(behind.postMessage).not.toHaveBeenCalled();
+    expect(showNotification).not.toHaveBeenCalled();
+  });
+
+  it("shows a seat push as a system notification when no window is in front, and messages nobody", async () => {
+    const away = win(`${ORIGIN}/decks`, false);
+    windows = [away];
+    await push({ ...payload, tag: "rule_zero_seat:t1", route: "/friends/table/t1", openCard: null, image: null });
+    expect(away.postMessage).not.toHaveBeenCalled();
+    expect(showNotification).toHaveBeenCalledOnce();
+  });
+
+  it("a push that is not a seat push never messages a window", async () => {
+    const front = win(`${ORIGIN}/decks`, true);
+    windows = [front];
+    await push(payload);
+    expect(front.postMessage).not.toHaveBeenCalled();
+  });
+
+  it("in Safari's WebKit a seat push both tells the window and shows the notification WebKit requires", async () => {
+    userAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148";
+    const front = win(`${ORIGIN}/decks`, true);
+    windows = [front];
+    await push({ ...payload, tag: "rule_zero_seat:t1", route: "/friends/table/t1", openCard: null, image: null });
+    expect(front.postMessage).toHaveBeenCalledWith({ type: "the99:seat-notice" });
+    expect(showNotification).toHaveBeenCalledOnce();
+  });
+
   it("shows it in Safari's WebKit even with a window focused: WebKit revokes a push that stays silent", async () => {
     windows = [win(`${ORIGIN}/`, true)];
     const shows = {

@@ -7,7 +7,8 @@
 
 import { requireUserId } from "../../../lib/auth";
 import { markSeen, setSeatDeck } from "../../../lib/social/rule-zero";
-import { markSeatNoticeSeen } from "../../../lib/social/rule-zero-notice";
+import type { ThirdPartyName } from "../../../lib/person-name";
+import { markSeatNoticeSeen, unseenSeatNotices } from "../../../lib/social/rule-zero-notice";
 import { loadDeckChoices, loadTable, type DeckChoice, type TableView } from "../../../lib/social/rule-zero-table";
 
 /** `revision` is the drawn snapshot's `revision` as an ISO string, never the time of the call. */
@@ -24,6 +25,19 @@ export async function markTableSeen(tableId: unknown, revision: unknown): Promis
 export async function markSeatNoticeSeenAction(tableId: unknown): Promise<boolean> {
   const userId = await requireUserId();
   return markSeatNoticeSeen(userId, tableId);
+}
+
+/** What the in-app seat toast draws: the table, and who seated the viewer where. Names stay branded; no Clerk id. */
+export type SeatToastNotice = { tableId: string; host: ThirdPartyName; podName: ThirdPartyName };
+
+/**
+ * The viewer's unseen seat notices, for the toast host in the shell (Rule 0 revisions, item 6). Read on mount, on a navigation, on
+ * focus and when the service worker hands over a seat push; scoped to the session's reader by `unseenSeatNotices`, which joins
+ * the seat, the open table and the pod membership on the viewer in one statement.
+ */
+export async function unseenSeatNoticesAction(): Promise<SeatToastNotice[]> {
+  const userId = await requireUserId();
+  return (await unseenSeatNotices(userId)).map(({ tableId, host, podName }) => ({ tableId, host, podName }));
 }
 
 export type SwapOutcome = { ok: true; view: TableView } | { ok: false };

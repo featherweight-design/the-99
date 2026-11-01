@@ -24,7 +24,7 @@
 // And it shows a PUSH (plan 2026-10-22-push.md, PR 3d): the server sends a small JSON payload (title, body, route, tag, and what
 // Home opens), and a tap lands on `route`. A payload is shown as sent and nothing of it is kept. A window the reader is looking at
 // gets no notification, except in Safari's WebKit (an installed iPhone or iPad, Safari on a Mac), which requires every push to
-// show one and revokes a subscription that stays silent. The tag is the kind (a spare request's own key), so a newer notification replaces an older one of its tag.
+// show one and revokes a subscription that stays silent. A seat push (tag `rule_zero_seat:<key>`) also tells the window in front, which draws a toast. The tag is the kind (a spare request's own key), so a newer notification replaces an older one of its tag.
 //
 // Hand-written rather than generated: the app builds with Turbopack, which the generators' plugins
 // do not support, and a worker this small is easier to read than to configure.
@@ -230,6 +230,9 @@ function landing(route) {
   }
 }
 
+// What a seat push says to the page in front of it (`SeatNoticeHost` listens for exactly this).
+const SEAT_NOTICE_MESSAGE = "the99:seat-notice";
+
 self.addEventListener("push", (event) => {
   event.waitUntil(showPush(event));
 });
@@ -242,10 +245,16 @@ async function showPush(event) {
     data = {};
   }
   if (data === null || typeof data !== "object") data = {};
-  if (!alwaysShows()) {
+  // A seat push (Rule 0 revisions, item 6): the page in front draws the notice as a toast, so the worker hands it the word.
+  const seat = typeof data.tag === "string" && data.tag.startsWith("rule_zero_seat:");
+  const mustShow = alwaysShows();
+  if (!mustShow || seat) {
     const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    const front = windows.filter((w) => w.focused);
+    // A message, not an address: the page is already open and is not being navigated. Best effort; the page also reads on focus.
+    if (seat) for (const w of front) { try { w.postMessage({ type: SEAT_NOTICE_MESSAGE }); } catch { /* the window went away */ } }
     // Looking at the app already: its own surfaces say it, and a notification on top would be noise.
-    if (windows.some((w) => w.focused)) return;
+    if (!mustShow && front.length > 0) return;
   }
   const title = typeof data.title === "string" && data.title ? data.title : "The 99";
   const options = {
