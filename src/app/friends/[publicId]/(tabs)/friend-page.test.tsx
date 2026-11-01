@@ -336,7 +336,7 @@ describe("FriendHead and the wishlist tab", () => {
   });
 
   it("stays, with the list's toast, when the removal fails", async () => {
-    m.unfriendAction.mockResolvedValue({ ok: false, reason: "off" });
+    m.unfriendAction.mockRejectedValue(new Error("down"));
     draw();
     fireEvent.click(screen.getByRole("button", { name: plain(socialCopy.friends.menuAria(named("Colin"))) }));
     fireEvent.click(screen.getByRole("button", { name: socialCopy.friends.remove }));

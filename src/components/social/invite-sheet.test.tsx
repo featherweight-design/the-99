@@ -165,7 +165,7 @@ describe("path 2, by email", () => {
     expect(screen.queryByRole("button", { name: t.again })).toBeNull();
   });
 
-  it.each([[{ ok: false, reason: "failed" }], [{ ok: false, reason: "off" }], [new Error("network")]])(
+  it.each([[{ ok: false, reason: "failed" }], [new Error("network")]])(
     "toasts %j with Try again, keeping the typed address (E6)",
     async (outcome) => {
       if (outcome instanceof Error) a.sendEmailInviteAction.mockRejectedValue(outcome);
@@ -338,7 +338,7 @@ describe("the invite QR", () => {
     expect(screen.getByRole("img", { name: q.aria })).toBeTruthy();
   });
 
-  it.each([[{ ok: false, reason: "unconfigured" }], [{ ok: false, reason: "noOrigin" }], [{ ok: false, reason: "off" }], [new Error("down")]])(
+  it.each([[{ ok: false, reason: "unconfigured" }], [{ ok: false, reason: "noOrigin" }], [new Error("down")]])(
     "toasts %j with Try again", async (outcome) => {
       if (outcome instanceof Error) a.showInviteQrAction.mockRejectedValue(outcome);
       else a.showInviteQrAction.mockResolvedValue(outcome);

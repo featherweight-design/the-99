@@ -27,6 +27,8 @@ import { plain } from "../../lib/person-name/testing";
 import type { Friend, Pod, PodMember } from "../../lib/social/access";
 
 const P = socialCopy.pods;
+/** No open table: each pod card draws its Rule 0 check row. */
+const NO_TABLES = { tables: [], now: new Date("2026-10-15T12:00:00Z") };
 const ART = "https://cards.scryfall.io/art_crop/x.jpg";
 const cmd = (name: string) => ({ oracleId: `o-${name}`, name, artCropUri: ART });
 const member = (over: Partial<Omit<PodMember, "displayName">> & { displayName: string }): PodMember => ({
@@ -64,26 +66,26 @@ afterEach(cleanup);
 
 describe("the section", () => {
   it("is not drawn for a reader with no friend and no pod (README 2)", () => {
-    render(<PodsPane pods={[]} sharedIds={[]} friends={[]} />);
+    render(<PodsPane pods={[]} sharedIds={[]} friends={[]} ruleZero={NO_TABLES} />);
     expect(screen.queryByTestId("pods-pane")).toBeNull();
   });
 
   it("draws its empty state for a reader with a friend and no pod", () => {
-    render(<PodsPane pods={[]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     expect(screen.getByRole("heading", { name: P.head(0) })).toBeTruthy();
     expect(screen.getByRole("region", { name: P.head(0) })).toBeTruthy();
     expect(screen.getByTestId("pods-empty").textContent).toContain(P.emptyTitle);
   });
 
   it("orders pods by name", () => {
-    render(<PodsPane pods={[mine(), theirs()]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[mine(), theirs()]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     expect(screen.getAllByTestId("pod-card").map((c) => c.querySelector("b")?.textContent)).toEqual(["Adventurers", "Thursday"]);
   });
 });
 
 describe("create", () => {
   it("opens a focused field over the empty state, held while empty, capped at 40, and creates the trimmed name", async () => {
-    render(<PodsPane pods={[]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     await press(screen.getByRole("button", { name: P.newPod }));
     expect(screen.queryByTestId("pods-empty")).toBeNull();
     const field = screen.getByLabelText(P.nameLabel) as HTMLInputElement;
@@ -101,7 +103,7 @@ describe("create", () => {
   });
 
   it("puts the empty state back on Escape", async () => {
-    render(<PodsPane pods={[]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     await press(screen.getByRole("button", { name: P.newPod }));
     fireEvent.keyDown(screen.getByLabelText(P.nameLabel), { key: "Escape" });
     expect(screen.getByTestId("pods-empty")).toBeTruthy();
@@ -109,7 +111,7 @@ describe("create", () => {
 
   it("keeps the field and says so when the write fails", async () => {
     m.create.mockRejectedValue(new Error("down"));
-    render(<PodsPane pods={[]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     await press(screen.getByRole("button", { name: P.newPod }));
     fireEvent.change(screen.getByLabelText(P.nameLabel), { target: { value: "Thursday" } });
     await press(screen.getByRole("button", { name: P.create }));
@@ -120,7 +122,7 @@ describe("create", () => {
 
 describe("the table", () => {
   it("seats owner, you and the rest, outlines you, and names who owns it", () => {
-    render(<PodsPane pods={[mine(), theirs()]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[mine(), theirs()]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     const own = card("Thursday");
     expect(own.textContent).toContain(P.metaOwn(3));
     expect(seatNames(own)).toEqual([P.you, "Dave", "Priya"]);
@@ -131,7 +133,7 @@ describe("the table", () => {
   });
 
   it("draws art for you and friends with a commander, initials otherwise, and a wash only from art", () => {
-    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     const c = card("Thursday");
     const [you, dave, priya] = within(c).getAllByTestId("pod-seat");
     expect(you.querySelector("img")).not.toBeNull();
@@ -139,19 +141,19 @@ describe("the table", () => {
     expect(within(priya).getByTestId("pod-seat-initials").textContent).toBe("PR");
     expect(c.querySelectorAll(".pod-wash img")).toHaveLength(2);
     cleanup();
-    render(<PodsPane pods={[mine({ members: [{ ...ME, isOwner: true, commander: null }, PRIYA] })]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[mine({ members: [{ ...ME, isOwner: true, commander: null }, PRIYA] })]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     expect(card("Thursday").querySelector(".pod-wash")).toBeNull();
   });
 
   it("tags the owner, and a member who is not your friend; the owner tag wins on an owner who is neither", () => {
-    render(<PodsPane pods={[theirs({ members: [{ ...SAM, isOwner: true }, ME, { ...PRIYA, isFriend: false }] })]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[theirs({ members: [{ ...SAM, isOwner: true }, ME, { ...PRIYA, isFriend: false }] })]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     const [sam, , priya] = within(card("Adventurers")).getAllByTestId("pod-seat");
     expect(sam.querySelector("small")?.textContent).toBe(P.ownerTag);
     expect(priya.querySelector("small")?.textContent).toBe(P.notFriendTag);
   });
 
   it("says it is just you on a pod of one", () => {
-    render(<PodsPane pods={[mine({ members: [{ ...ME, isOwner: true }] })]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[mine({ members: [{ ...ME, isOwner: true }] })]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     expect(card("Thursday").textContent).toContain(P.solo);
     expect(card("Thursday").textContent).toContain(P.metaOwn(1));
   });
@@ -159,7 +161,7 @@ describe("the table", () => {
 
 describe("the owner's ✕", () => {
   it("is drawn only for the owner, only while editing, and never on your own seat (small items item 7)", () => {
-    render(<PodsPane pods={[mine(), theirs()]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[mine(), theirs()]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     // At rest the seats carry no control; the owner's head has Edit, a member's has none.
     expect(within(card("Thursday")).queryAllByRole("button", { name: /^Remove / })).toHaveLength(0);
     expect(within(card("Adventurers")).queryByRole("button", { name: P.edit })).toBeNull();
@@ -171,7 +173,7 @@ describe("the owner's ✕", () => {
 
   it("removes at once, with no confirm, and keeps a member already out as done", async () => {
     m.remove.mockResolvedValue({ ok: true, changed: false });
-    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     fireEvent.click(within(card("Thursday")).getByRole("button", { name: P.edit }));
     await press(screen.getByRole("button", { name: plain(P.removeMemberAria(named("Dave"), named("Thursday"))) }));
     expect(m.remove).toHaveBeenCalledWith("pod-1", "p-Dave");
@@ -181,7 +183,7 @@ describe("the owner's ✕", () => {
 
   it("puts the seat back and says so when the write fails", async () => {
     m.remove.mockRejectedValue(new Error("down"));
-    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     fireEvent.click(within(card("Thursday")).getByRole("button", { name: P.edit }));
     await press(screen.getByRole("button", { name: plain(P.removeMemberAria(named("Dave"), named("Thursday"))) }));
     expect(seatNames(card("Thursday"))).toEqual([P.you, "Dave", "Priya"]);
@@ -189,18 +191,18 @@ describe("the owner's ✕", () => {
   });
 
   it("lets the server's redraw retire a held removal", async () => {
-    const { rerender } = render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
+    const { rerender } = render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     fireEvent.click(within(card("Thursday")).getByRole("button", { name: P.edit }));
     await press(screen.getByRole("button", { name: plain(P.removeMemberAria(named("Dave"), named("Thursday"))) }));
     // The redraw brings Dave back (someone re-added him): the server's truth wins.
-    rerender(<PodsPane pods={[mine({ members: [{ ...ME, isOwner: true }, DAVE, PRIYA, SAM] })]} sharedIds={[]} friends={FRIENDS} />);
+    rerender(<PodsPane pods={[mine({ members: [{ ...ME, isOwner: true }, DAVE, PRIYA, SAM] })]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     expect(seatNames(card("Thursday"))).toContain("Dave");
   });
 });
 
 describe("+ Add friends", () => {
   it("is the owner's empty seat at the end of the row", () => {
-    render(<PodsPane pods={[mine(), theirs()]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[mine(), theirs()]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     const own = card("Thursday");
     const items = within(own).getByRole("list").children;
     expect(items[items.length - 1].textContent).toBe(P.addFriends);
@@ -208,7 +210,7 @@ describe("+ Add friends", () => {
   });
 
   it("offers the friends not in the pod, by name, nothing ticked, and adds every ticked friend in one write", async () => {
-    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     await press(screen.getByRole("button", { name: P.addFriends }));
     const dialog = screen.getByRole("dialog", { name: plain(P.addTitle(named("Thursday"))) });
     const titles = within(dialog).getAllByText(plain(P.addTitle(named("Thursday"))));
@@ -227,7 +229,7 @@ describe("+ Add friends", () => {
 
   it("keeps the dialog and says so when the add is refused", async () => {
     m.add.mockResolvedValue({ ok: false, reason: "notFriend" });
-    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     await press(screen.getByRole("button", { name: P.addFriends }));
     fireEvent.click(within(screen.getByRole("dialog")).getAllByRole("checkbox")[0]);
     await press(screen.getByRole("button", { name: P.addConfirm(1) }));
@@ -239,7 +241,7 @@ describe("+ Add friends", () => {
     ["every friend is already in", [friend("Dave"), friend("Priya")], P.addAllIn],
     ["the reader has no friend", [], P.addNoFriends],
   ])("says so when %s", async (_n, friends, line) => {
-    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={friends} />);
+    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={friends} ruleZero={NO_TABLES} />);
     await press(screen.getByRole("button", { name: P.addFriends }));
     const dialog = screen.getByRole("dialog");
     expect(within(dialog).getByTestId("pod-add-empty").textContent).toBe(line);
@@ -251,7 +253,7 @@ describe("+ Add friends", () => {
     const invite = vi.fn();
     render(
       <FriendInviteContext.Provider value={{ invite, pending: false, held: false }}>
-        <PodsPane pods={[mine()]} sharedIds={[]} friends={[]} />
+        <PodsPane pods={[mine()]} sharedIds={[]} friends={[]} ruleZero={NO_TABLES} />
       </FriendInviteContext.Provider>,
     );
     await press(screen.getByRole("button", { name: P.addFriends }));
@@ -264,7 +266,7 @@ describe("+ Add friends", () => {
     const invite = vi.fn();
     const { unmount } = render(
       <FriendInviteContext.Provider value={{ invite, pending: false, held: true }}>
-        <PodsPane pods={[mine()]} sharedIds={[]} friends={[]} />
+        <PodsPane pods={[mine()]} sharedIds={[]} friends={[]} ruleZero={NO_TABLES} />
       </FriendInviteContext.Provider>,
     );
     await press(screen.getByRole("button", { name: P.addFriends }));
@@ -275,7 +277,7 @@ describe("+ Add friends", () => {
     unmount();
     render(
       <FriendInviteContext.Provider value={{ invite, pending: false, held: false }}>
-        <PodsPane pods={[mine()]} sharedIds={[]} friends={[friend("Dave"), friend("Priya")]} />
+        <PodsPane pods={[mine()]} sharedIds={[]} friends={[friend("Dave"), friend("Priya")]} ruleZero={NO_TABLES} />
       </FriendInviteContext.Provider>,
     );
     await press(screen.getByRole("button", { name: P.addFriends }));
@@ -285,7 +287,7 @@ describe("+ Add friends", () => {
 
 describe("the spares box", () => {
   it("reads the reader's own grant and writes a change", async () => {
-    render(<PodsPane pods={[mine(), theirs()]} sharedIds={["pod-2"]} friends={FRIENDS} />);
+    render(<PodsPane pods={[mine(), theirs()]} sharedIds={["pod-2"]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     const own = within(card("Thursday")).getByRole("checkbox", { name: P.share }) as HTMLInputElement;
     expect(own.checked).toBe(false);
     expect((within(card("Adventurers")).getByRole("checkbox", { name: P.share }) as HTMLInputElement).checked).toBe(true);
@@ -299,7 +301,7 @@ describe("the spares box", () => {
     ["throws", () => m.share.mockRejectedValue(new Error("down"))],
   ])("flips back and says so when the write %s", async (_n, arrange) => {
     arrange();
-    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     const box = screen.getByRole("checkbox", { name: P.share }) as HTMLInputElement;
     await press(box);
     expect(box.checked).toBe(false);
@@ -309,18 +311,18 @@ describe("the spares box", () => {
 
 describe("round 1: races and edges", () => {
   it("keeps a member removed and re-added before the redraw, by their new join", async () => {
-    const { rerender } = render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
+    const { rerender } = render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     fireEvent.click(within(card("Thursday")).getByRole("button", { name: P.edit }));
     await press(screen.getByRole("button", { name: plain(P.removeMemberAria(named("Dave"), named("Thursday"))) }));
     // Same ids, same order: only Dave's join moved.
-    rerender(<PodsPane pods={[mine({ members: [{ ...ME, isOwner: true }, { ...DAVE, joinedAt: new Date("2026-10-15") }, PRIYA] })]} sharedIds={[]} friends={FRIENDS} />);
+    rerender(<PodsPane pods={[mine({ members: [{ ...ME, isOwner: true }, { ...DAVE, joinedAt: new Date("2026-10-15") }, PRIYA] })]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     expect(seatNames(card("Thursday"))).toContain("Dave");
   });
 
   it("holds the spares box while its write is in flight, and puts back the saved value on a failure", async () => {
     let fail: (e: Error) => void = () => {};
     m.share.mockReturnValueOnce(new Promise((_, rej) => { fail = rej; }));
-    render(<PodsPane pods={[mine()]} sharedIds={["pod-1"]} friends={FRIENDS} />);
+    render(<PodsPane pods={[mine()]} sharedIds={["pod-1"]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     const box = screen.getByRole("checkbox", { name: P.share }) as HTMLInputElement;
     await press(box);
     expect(box.checked).toBe(false);
@@ -335,32 +337,32 @@ describe("round 1: races and edges", () => {
   it("reads a redraw that landed while a failed spares write was in flight", async () => {
     let fail: (e: Error) => void = () => {};
     m.share.mockReturnValueOnce(new Promise((_, rej) => { fail = rej; }));
-    const { rerender } = render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
+    const { rerender } = render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     await press(screen.getByRole("checkbox", { name: P.share }));
     // Another tab shared it: the redraw says shared before this write fails.
-    rerender(<PodsPane pods={[mine()]} sharedIds={["pod-1"]} friends={FRIENDS} />);
+    rerender(<PodsPane pods={[mine()]} sharedIds={["pod-1"]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     await act(async () => fail(new Error("down")));
     expect((screen.getByRole("checkbox", { name: P.share }) as HTMLInputElement).checked).toBe(true);
   });
 
   it("lets a redraw equal to the last one retire a held box all the same", async () => {
     const shared = ["pod-1"];
-    const { rerender } = render(<PodsPane pods={[mine()]} sharedIds={shared} friends={FRIENDS} />);
+    const { rerender } = render(<PodsPane pods={[mine()]} sharedIds={shared} friends={FRIENDS} ruleZero={NO_TABLES} />);
     await press(screen.getByRole("checkbox", { name: P.share }));
     expect(m.share).toHaveBeenCalledWith("pod-1", false);
     // Another tab shared it again before this page's revalidation read it: a fresh payload with the same values.
-    rerender(<PodsPane pods={[mine()]} sharedIds={["pod-1"]} friends={FRIENDS} />);
+    rerender(<PodsPane pods={[mine()]} sharedIds={["pod-1"]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     expect((screen.getByRole("checkbox", { name: P.share }) as HTMLInputElement).checked).toBe(true);
   });
 
   it("neither counts nor sends a ticked friend who left the list while it was open", async () => {
-    const { rerender } = render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
+    const { rerender } = render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     await press(screen.getByRole("button", { name: P.addFriends }));
     const [alex, zed] = within(screen.getByRole("dialog")).getAllByRole("checkbox");
     fireEvent.click(alex);
     fireEvent.click(zed);
     // The friendship with Alex ended: the redraw drops him from the offer.
-    rerender(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS.filter((f) => plain(f.displayName) !== "Alex")} />);
+    rerender(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS.filter((f) => plain(f.displayName) !== "Alex")} ruleZero={NO_TABLES} />);
     await press(screen.getByRole("button", { name: P.addConfirm(1) }));
     expect(m.add).toHaveBeenCalledWith("pod-1", ["p-Zed"]);
   });
@@ -368,7 +370,7 @@ describe("round 1: races and edges", () => {
   it("closes only the Add dialog that started a write, not one reopened since", async () => {
     let done: (v: unknown) => void = () => {};
     m.add.mockReturnValueOnce(new Promise((res) => { done = res; }));
-    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     await press(screen.getByRole("button", { name: P.addFriends }));
     fireEvent.click(within(screen.getByRole("dialog")).getAllByRole("checkbox")[0]);
     await press(screen.getByRole("button", { name: P.addConfirm(1) }));
@@ -381,7 +383,7 @@ describe("round 1: races and edges", () => {
 
   it("holds Add past the batch cap and says why", async () => {
     const many = Array.from({ length: 33 }, (_, i) => friend(`F${String(i).padStart(2, "0")}`));
-    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={many} />);
+    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={many} ruleZero={NO_TABLES} />);
     await press(screen.getByRole("button", { name: P.addFriends }));
     for (const box of within(screen.getByRole("dialog")).getAllByRole("checkbox")) fireEvent.click(box);
     const confirm = screen.getByRole("button", { name: P.addConfirm(33) });
@@ -394,7 +396,7 @@ describe("round 1: races and edges", () => {
   it("leaves a reopened create field and its new draft alone when an earlier create answers", async () => {
     let done: (v: unknown) => void = () => {};
     m.create.mockReturnValueOnce(new Promise((res) => { done = res; }));
-    render(<PodsPane pods={[]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     await press(screen.getByRole("button", { name: P.newPod }));
     fireEvent.change(screen.getByLabelText(P.nameLabel), { target: { value: "Thursday" } });
     await press(screen.getByRole("button", { name: P.create }));
@@ -406,27 +408,16 @@ describe("round 1: races and edges", () => {
   });
 
   it("lets Escape cancel a composition without closing the name field", async () => {
-    render(<PodsPane pods={[]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     await press(screen.getByRole("button", { name: P.newPod }));
     fireEvent.keyDown(screen.getByLabelText(P.nameLabel), { key: "Escape", isComposing: true });
     expect(screen.getByLabelText(P.nameLabel)).toBeTruthy();
   });
 });
 
-describe("the switch going off mid-visit", () => {
-  it("refreshes into not found rather than calling it a failure", async () => {
-    m.remove.mockResolvedValue({ ok: false, reason: "off" });
-    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
-    fireEvent.click(within(card("Thursday")).getByRole("button", { name: P.edit }));
-    await press(screen.getByRole("button", { name: plain(P.removeMemberAria(named("Dave"), named("Thursday"))) }));
-    expect(m.refresh).toHaveBeenCalled();
-    expect(screen.queryByRole("alert")).toBeNull();
-  });
-});
-
 describe("the Pods head beside the left column (small items item 6)", () => {
   it("holds the left heads' 32px from 1180: New pod drops its own minimum there, with a coarse pointer's 44px hit", () => {
-    render(<PodsPane pods={[]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     const cls = screen.getByRole("button", { name: P.newPod }).className.split(/\s+/);
     expect(cls).toEqual(expect.arrayContaining(["min-[73.75rem]:min-h-0", "pointer-coarse:after:h-[44px]"]));
   });

@@ -9,8 +9,6 @@ const a = vi.hoisted(() => ({
   createInviteAction: vi.fn(),
   revokeInviteAction: vi.fn(),
   unfriendAction: vi.fn(),
-  listDeckCommandersAction: vi.fn(),
-  searchFaceCommandersAction: vi.fn(),
   listDeckFacesAction: vi.fn(),
   searchFaceCardsAction: vi.fn(),
   listFacePrintingsAction: vi.fn(),
@@ -28,6 +26,8 @@ import { named } from "../../lib/person-name/mint";
 import { plain } from "../../lib/person-name/testing";
 
 const NOW = new Date("2026-10-15T21:41:00Z");
+/** No open table: each pod card draws its Rule 0 check row. */
+const NO_TABLES = { tables: [], now: NOW };
 const SOKKA = { oracleId: "o-sokka", name: "Sokka, Tenacious Tactician", artCropUri: "https://x/sokka.jpg", colorIdentity: ["W", "U"] };
 /** SOKKA as the player's own face: the own read also carries the pick behind it. */
 const OWN_SOKKA = { ...SOKKA, printingId: null, printingGone: false };
@@ -58,7 +58,7 @@ function draw(over: Partial<Parameters<typeof FriendsView>[0]> = {}) {
 
 beforeEach(() => {
   vi.resetAllMocks();
-  a.listDeckCommandersAction.mockResolvedValue({ ok: true, tiles: [] });
+  a.listDeckFacesAction.mockResolvedValue({ ok: true, tiles: [] });
   a.revokeInviteAction.mockResolvedValue({ ok: true, changed: true });
 });
 afterEach(cleanup);
@@ -66,18 +66,18 @@ afterEach(cleanup);
 const alert = () => screen.getByRole("alert");
 
 describe("the head", () => {
-  it("names you as friends see you, and offers the commander while none is set", () => {
+  it("names you as friends see you, and offers the signature card while none is set", () => {
     draw();
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(socialCopy.page.title);
     expect(screen.getByText("Hugh").tagName).toBe("B");
     // The dashed tile, the line's press at desktop and the line under the head at phone (one shown per width).
-    expect(screen.getAllByRole("button", { name: socialCopy.commander.choose })).toHaveLength(3);
+    expect(screen.getAllByRole("button", { name: socialCopy.signature.choose })).toHaveLength(3);
   });
 
   it("draws your face with its Change label once one is set, and no Choose", () => {
     draw({ profile: { publicId: "p-me", displayName: "Hugh", commander: OWN_SOKKA } });
-    expect(screen.getByRole("button", { name: socialCopy.commander.changeAria(SOKKA.name) })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: socialCopy.commander.choose })).toBeNull();
+    expect(screen.getByRole("button", { name: socialCopy.signature.changeAria(SOKKA.name) })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: socialCopy.signature.choose })).toBeNull();
   });
 
   it("saves a changed name, capped by code points, and draws it", async () => {
@@ -126,16 +126,17 @@ describe("the head", () => {
     expect(screen.getByText("Hugh").tagName).toBe("B");
   });
 
-  it("toasts a commander that could not be saved, and keeps the face it had", async () => {
-    a.listDeckCommandersAction.mockResolvedValue({ ok: true, tiles: [SOKKA] });
+  it("toasts a signature card that could not be saved, keeps the picker open and the face it had", async () => {
+    a.listDeckFacesAction.mockResolvedValue({ ok: true, tiles: [{ ...SOKKA, printingId: null }] });
     a.setCommanderAction.mockRejectedValue(new Error("down"));
     draw();
-    fireEvent.click(screen.getAllByRole("button", { name: socialCopy.commander.choose })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: socialCopy.signature.choose })[0]);
     const tile = await screen.findByRole("button", { name: SOKKA.name });
     await act(async () => fireEvent.click(tile));
-    expect(a.setCommanderAction).toHaveBeenCalledWith(SOKKA.oracleId);
-    expect(alert().textContent).toContain(socialCopy.commander.failed);
-    expect(screen.queryByRole("button", { name: socialCopy.commander.changeAria(SOKKA.name) })).toBeNull();
+    expect(a.setCommanderAction).toHaveBeenCalledWith(SOKKA.oracleId, null);
+    expect(alert().textContent).toContain(socialCopy.signature.failed);
+    expect(screen.getByRole("dialog", { name: socialCopy.signature.title })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: socialCopy.signature.changeAria(SOKKA.name) })).toBeNull();
   });
 
   it("cancels the name on a browser that focuses no clicked button (Safari), without a write", () => {
@@ -152,10 +153,10 @@ describe("the head", () => {
   });
 
   it("rings the face while the picker is open, and puts focus on it once a pick removes the opener", async () => {
-    a.listDeckCommandersAction.mockResolvedValue({ ok: true, tiles: [SOKKA] });
+    a.listDeckFacesAction.mockResolvedValue({ ok: true, tiles: [{ ...SOKKA, printingId: null }] });
     a.setCommanderAction.mockResolvedValue({ ok: true });
     draw();
-    const chooses = screen.getAllByRole("button", { name: socialCopy.commander.choose });
+    const chooses = screen.getAllByRole("button", { name: socialCopy.signature.choose });
     const face = chooses[0];
     // The line's press under the head: it is gone once a commander is set.
     fireEvent.click(chooses[2]);
@@ -164,7 +165,7 @@ describe("the head", () => {
     await act(async () => fireEvent.click(tile));
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(face.hasAttribute("data-picking")).toBe(false);
-    expect(face.getAttribute("aria-label")).toBe(socialCopy.commander.changeAria(SOKKA.name));
+    expect(face.getAttribute("aria-label")).toBe(socialCopy.signature.changeAria(SOKKA.name));
     expect(document.activeElement).toBe(face);
   });
 
@@ -185,30 +186,8 @@ describe("the head", () => {
     expect(screen.queryByText("Second")).toBeNull();
   });
 
-  it("refuses a second pick while one is in flight, and a failure puts back the saved face", async () => {
-    const AANG = { oracleId: "o-aang", name: "Avatar Aang", artCropUri: "https://x/aang.jpg", colorIdentity: ["W", "U", "B", "R", "G"] };
-    a.listDeckCommandersAction.mockResolvedValue({ ok: true, tiles: [SOKKA, AANG] });
-    const answers: ((v: unknown) => void)[] = [];
-    a.setCommanderAction.mockImplementation(() => new Promise((r) => answers.push(r)));
-    draw();
-    fireEvent.click(screen.getAllByRole("button", { name: socialCopy.commander.choose })[0]);
-    const sokka = await screen.findByRole("button", { name: SOKKA.name });
-    await act(async () => fireEvent.click(sokka));
-    fireEvent.click(screen.getByRole("button", { name: socialCopy.commander.changeAria(SOKKA.name) }));
-    const aang = await screen.findByRole("button", { name: AANG.name });
-    await act(async () => fireEvent.click(aang));
-    // The second pick is refused while the first is in flight: one write, and Sokka's face stands.
-    expect(a.setCommanderAction).toHaveBeenCalledTimes(1);
-    expect(screen.getByRole("button", { name: socialCopy.commander.changeAria(SOKKA.name) })).toBeTruthy();
-    await act(async () => answers[0]({ ok: false }));
-    // No commander was ever saved: the face is the dashed tile again.
-    expect(screen.queryByRole("button", { name: socialCopy.commander.changeAria(SOKKA.name) })).toBeNull();
-    expect(screen.getAllByRole("button", { name: socialCopy.commander.choose })).toHaveLength(3);
-  });
-
   it("leaves focus where the reader moved it when the name field blurs, and on Change only when it fell to the page", async () => {
     a.setDisplayNameAction.mockReturnValue(new Promise(() => {}));
-    a.listDeckCommandersAction.mockResolvedValue({ ok: true, tiles: [] });
     draw();
     const frame = async () => act(async () => {
       await new Promise((r) => requestAnimationFrame(() => r(null)));
@@ -222,11 +201,11 @@ describe("the head", () => {
     fireEvent.click(screen.getByRole("button", { name: "Change" }));
     const field = screen.getByLabelText(socialCopy.page.nameField.label);
     fireEvent.change(field, { target: { value: "New" } });
-    const face = screen.getAllByRole("button", { name: socialCopy.commander.choose })[0];
+    const face = screen.getAllByRole("button", { name: socialCopy.signature.choose })[0];
     face.focus();
     fireEvent.click(face);
     await frame();
-    const search = screen.getByRole("combobox", { name: socialCopy.commander.search });
+    const search = screen.getByRole("combobox", { name: socialCopy.signature.search });
     expect(document.activeElement).toBe(search);
   });
 
@@ -282,20 +261,6 @@ describe("the head", () => {
     }
   });
 
-  it("an equivalent redraw while a pick is pending still lets a failed pick put back the saved face", async () => {
-    let answer: (v: unknown) => void = () => {};
-    a.listDeckCommandersAction.mockResolvedValue({ ok: true, tiles: [SOKKA] });
-    a.setCommanderAction.mockReturnValue(new Promise((r) => { answer = r; }));
-    const { rerender } = draw();
-    fireEvent.click(screen.getAllByRole("button", { name: socialCopy.commander.choose })[0]);
-    const tile = await screen.findByRole("button", { name: SOKKA.name });
-    await act(async () => fireEvent.click(tile));
-    rerender(view({ profile: { publicId: "p-me", displayName: "Hugh", commander: null } }));
-    await act(async () => answer({ ok: false }));
-    expect(screen.queryByRole("button", { name: socialCopy.commander.changeAria(SOKKA.name) })).toBeNull();
-    expect(alert().textContent).toContain(socialCopy.commander.failed);
-  });
-
   it("a name save that answers after a newer redraw does not overwrite it", async () => {
     let answer: (v: unknown) => void = () => {};
     a.setDisplayNameAction.mockReturnValue(new Promise((r) => { answer = r; }));
@@ -309,32 +274,17 @@ describe("the head", () => {
     expect(screen.queryByText("First")).toBeNull();
   });
 
-  it("a commander save that answers after a newer redraw does not overwrite it", async () => {
-    const AANG = { oracleId: "o-aang", name: "Avatar Aang", artCropUri: "https://x/aang.jpg", colorIdentity: ["W", "U", "B", "R", "G"] };
-    let answer: (v: unknown) => void = () => {};
-    a.listDeckCommandersAction.mockResolvedValue({ ok: true, tiles: [SOKKA] });
-    a.setCommanderAction.mockReturnValue(new Promise((r) => { answer = r; }));
-    const { rerender } = draw();
-    fireEvent.click(screen.getAllByRole("button", { name: socialCopy.commander.choose })[0]);
-    const tile = await screen.findByRole("button", { name: SOKKA.name });
-    await act(async () => fireEvent.click(tile));
-    rerender(view({ profile: { publicId: "p-me", displayName: "Hugh", commander: { ...AANG, printingId: null, printingGone: false } } }));
-    await act(async () => answer({ ok: true }));
-    expect(screen.getByRole("button", { name: socialCopy.commander.changeAria(AANG.name) })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: socialCopy.commander.changeAria(SOKKA.name) })).toBeNull();
-  });
-
-  it("with the signature card on, names it so, and a save that answers after a newer redraw keeps the redraw", async () => {
+  it("names the signature card so, and a save that answers after a newer redraw keeps the redraw", async () => {
     const AANG = { oracleId: "o-aang", name: "Avatar Aang", artCropUri: "https://x/aang.jpg", colorIdentity: ["W", "U", "B", "R", "G"] };
     let answer: (v: unknown) => void = () => {};
     a.listDeckFacesAction.mockResolvedValue({ ok: true, tiles: [{ ...SOKKA, printingId: null }] });
     a.setCommanderAction.mockReturnValue(new Promise((r) => { answer = r; }));
-    const { rerender } = draw({ signature: true });
+    const { rerender } = draw();
     fireEvent.click(screen.getAllByRole("button", { name: socialCopy.signature.choose })[0]);
     expect(await screen.findByRole("dialog", { name: socialCopy.signature.title })).toBeTruthy();
     await act(async () => fireEvent.click(await screen.findByRole("button", { name: SOKKA.name })));
     expect(a.setCommanderAction).toHaveBeenCalledWith(SOKKA.oracleId, null);
-    rerender(view({ signature: true, profile: { publicId: "p-me", displayName: "Hugh", commander: { ...AANG, printingId: null, printingGone: false } } }));
+    rerender(view({ profile: { publicId: "p-me", displayName: "Hugh", commander: { ...AANG, printingId: null, printingGone: false } } }));
     await act(async () => answer({ ok: true }));
     expect(screen.queryByRole("dialog", { name: socialCopy.signature.title })).toBeNull();
     expect(screen.getByRole("button", { name: socialCopy.signature.changeAria(AANG.name) })).toBeTruthy();
@@ -354,7 +304,7 @@ describe("the head", () => {
     // The redraw lands, from this write or another tab's: the head takes it.
     rerender(view({ profile: { publicId: "p-me", displayName: "Hugh H.", commander: OWN_SOKKA } }));
     expect(screen.getByText("Hugh H.").tagName).toBe("B");
-    expect(screen.getByRole("button", { name: socialCopy.commander.changeAria(SOKKA.name) })).toBeTruthy();
+    expect(screen.getByRole("button", { name: socialCopy.signature.changeAria(SOKKA.name) })).toBeTruthy();
   });
 });
 
@@ -473,14 +423,12 @@ describe("friend links", () => {
     expect(document.querySelectorAll("[data-link-row]")).toHaveLength(0);
   });
 
-  it("puts a link back, with a toast, when the revoke fails or is refused", async () => {
-    a.revokeInviteAction.mockRejectedValueOnce(new Error("down")).mockResolvedValueOnce({ ok: false, reason: "off" });
+  it("puts a link back, with a toast, when the revoke fails", async () => {
+    a.revokeInviteAction.mockRejectedValueOnce(new Error("down"));
     draw({ links: [link(1)] });
-    for (let i = 0; i < 2; i++) {
-      await act(async () => fireEvent.click(screen.getByRole("button", { name: /^Revoke the link made/ })));
-      expect(document.querySelectorAll("[data-link-row]")).toHaveLength(1);
-      expect(alert().textContent).toContain(socialCopy.invites.revokeFailed);
-    }
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: /^Revoke the link made/ })));
+    expect(document.querySelectorAll("[data-link-row]")).toHaveLength(1);
+    expect(alert().textContent).toContain(socialCopy.invites.revokeFailed);
   });
 
   it("lets go of a held Add a friend when one of the ten expires while the page is open", async () => {
@@ -594,7 +542,7 @@ describe("friend links", () => {
     a.createInviteAction.mockResolvedValue({ ok: true, token: "t", url: "https://the-99.dev/friend/t", expiresAt: new Date("2026-10-22T21:41:00Z") });
     const me = { publicId: "p-me", displayName: named("Hugh"), joinedAt: NOW, isOwner: true, isYou: true, isFriend: false, commander: null };
     const pod = { id: "pod-1", name: named("Thursday"), isOwner: true, members: [me], nextOwner: null };
-    draw({ friends: [], pods: <PodsPane pods={[pod]} sharedIds={[]} friends={[]} /> });
+    draw({ friends: [], pods: <PodsPane pods={[pod]} sharedIds={[]} friends={[]} ruleZero={NO_TABLES} /> });
     await act(async () => fireEvent.click(screen.getByRole("button", { name: socialCopy.pods.addFriends })));
     const sheet = screen.getByRole("dialog");
     await act(async () => fireEvent.click(within(sheet).getByRole("button", { name: socialCopy.page.invite })));

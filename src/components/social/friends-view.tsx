@@ -16,9 +16,8 @@ import type { FriendDeckPrefs } from "../../lib/social/deck-visibility-rule";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import type { Friend } from "../../lib/social/access";
-import type { InviteOutcome, OpenInvite, OwnCommander, OwnProfile } from "../../lib/social/friends";
+import type { InviteOutcome, OpenInvite, OwnProfile } from "../../lib/social/friends";
 import { PersonText, type ThirdPartyName } from "../../lib/person-name";
-import type { CommanderTile } from "../../lib/decks/commander-picker";
 import { socialCopy } from "../../lib/copy/social";
 import { ACCEPTED_PARAM, INVITE_PARAM, invitePath } from "../../lib/social/client-rules";
 import { mirrorUrl } from "../../lib/url/mirror";
@@ -30,7 +29,6 @@ import { FriendsHead } from "./friends-head";
 import { FriendsList } from "./friends-list";
 import { OpenLinks } from "./open-links";
 import { AddFriendDialog } from "./add-friend-dialog";
-import { CommanderPicker } from "./commander-picker";
 import { SignaturePicker, type SignaturePick } from "./signature-picker";
 import { SocialToast, type SocialToastState } from "./social-toast";
 import { FriendInviteContext } from "./invite-context";
@@ -89,11 +87,9 @@ export function FriendsView({
   origin,
   nowMs,
   maxLinks,
-  friendPages = false,
   invites = null,
   openInviteNew = false,
   decksSeen = null,
-  signature = false,
 }: {
   profile: OwnProfile;
   /** The pods section (PR E), drawn between the friends and the open links. */
@@ -108,8 +104,6 @@ export function FriendsView({
   origin: string | null;
   /** The server's clock, so the first client render draws the same times. */
   nowMs: number;
-  /** Each friend row links to the friend's page (R2 P1), which needs the friends switch alone (menu and Home PR 7). */
-  friendPages?: boolean;
   maxLinks: number;
   /** The reader's invite count, with `SOCIAL_FRIENDS_ENABLED` on for them (invites follow friends); null when it is off. */
   invites?: InviteCount | null;
@@ -117,8 +111,6 @@ export function FriendsView({
   openInviteNew?: boolean;
   /** The reader's own friend deck rules with `SOCIAL_FRIENDS_ENABLED` on, for the head's privacy line; null while off. */
   decksSeen?: FriendDeckPrefs | null;
-  /** `SOCIAL_FRIENDS_ENABLED` on for the reader: the signature card picker and its words, in place of the commander's. */
-  signature?: boolean;
 }) {
   const hydrated = useHydrated();
   // Days and clock times in UTC until hydrated, as the server drew them, and the reader's own after.
@@ -232,7 +224,6 @@ export function FriendsView({
     if (id !== null) setToast((t) => (t?.id === id ? null : t));
   };
   const writeName = useFieldWrite(profile.displayName, setName);
-  const writeCommander = useFieldWrite<OwnCommander | null>(profile.commander, setCommander);
 
   const listed = friends.filter((f) => !gone.has(f.publicId));
   const open = links.filter((l) => !revoked.has(l.token) && l.expiresAt.getTime() > now.getTime());
@@ -320,13 +311,6 @@ export function FriendsView({
     // A second save while one is in flight is refused and changes nothing on screen.
     const done = await writeName(next, async () => (await setDisplayNameAction(next)).ok);
     if (done === "failed") say(p.nameField.failed);
-  }
-
-  async function pick(tile: CommanderTile | null) {
-    setPicking(false);
-    const shown: OwnCommander | null = tile && { ...tile, printingId: null, printingGone: false };
-    const done = await writeCommander(shown, async () => (await setCommanderAction(tile?.oracleId ?? null)).ok);
-    if (done === "failed") say(socialCopy.commander.failed);
   }
 
   /**
@@ -447,7 +431,6 @@ export function FriendsView({
           inviteRef={invite}
           inviteCount={invites ? <InviteCountLine count={invites} className="md:text-right" /> : undefined}
           decksSeen={decksSeen}
-          signature={signature}
         />
         <div data-friends-cols className="min-[73.75rem]:grid min-[73.75rem]:grid-cols-[minmax(0,1fr)_420px] min-[73.75rem]:items-start min-[73.75rem]:gap-x-[44px]">
           <div data-friends-col="left" className="min-w-0 min-[73.75rem]:flex min-[73.75rem]:flex-col">
@@ -459,7 +442,7 @@ export function FriendsView({
               fresh={receipt?.publicId ?? null}
               removing={removing}
               onRemove={remove}
-              linkable={friendPages}
+              linkable
             />
           </div>
           <div data-friends-col="right" className="min-w-0 min-[73.75rem]:flex min-[73.75rem]:flex-col">
@@ -512,12 +495,10 @@ export function FriendsView({
         />
       ) : null}
       {shown && !(invites && adding) ? <AddFriendDialog url={shown.url} expiresAt={shown.expiresAt} now={now} timeZone={timeZone} onClose={() => setShown(null)} returnFocusRef={dialogReturn} /> : null}
-      {picking && signature ? (
+      {picking ? (
         <SignaturePicker current={commander} onSave={saveFace} onClose={() => setPicking(false)} returnFocusRef={face} toast={toastEl} />
-      ) : picking ? (
-        <CommanderPicker current={commander?.oracleId ?? null} onPick={pick} onClose={() => setPicking(false)} returnFocusRef={face} />
       ) : null}
-      {(invites && adding) || (picking && signature) ? null : toastEl}
+      {(invites && adding) || picking ? null : toastEl}
     </FriendInviteContext.Provider>
   );
 }

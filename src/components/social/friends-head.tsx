@@ -40,7 +40,6 @@ export function FriendsHead({
   inviteRef,
   inviteCount,
   decksSeen = null,
-  signature = false,
 }: {
   name: string;
   commander: ProfileCommander | null;
@@ -67,10 +66,8 @@ export function FriendsHead({
    * rules let a friend open, and links to Settings. Null (off): the shipped line.
    */
   decksSeen?: FriendDeckPrefs | null;
-  /** `SOCIAL_FRIENDS_ENABLED` on for the reader: the face is named their signature card, not their commander. */
-  signature?: boolean;
 }) {
-  const c = signature ? socialCopy.signature : socialCopy.commander;
+  const c = socialCopy.signature;
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(name);
   const form = useRef<HTMLFormElement>(null);
@@ -208,7 +205,7 @@ export function FriendsHead({
                 }}
                 className="h-[44px] px-[12px] text-[16px] md:h-[40px] [@media(pointer:fine)]:md:text-[14px]"
               />
-              <p id={`${id}-hint`} className="m-0 font-mono text-[11px] text-[color:var(--fg-faint)]">{signature ? p.nameField.hintSignature : p.nameField.hint}</p>
+              <p id={`${id}-hint`} className="m-0 font-mono text-[11px] text-[color:var(--fg-faint)]">{p.nameField.hintSignature}</p>
               <div className="flex gap-[8px] max-md:[&>button]:h-[44px] max-md:[&>button]:flex-1 max-md:[&>button]:text-[14px]">
                 <button
                   type="button"

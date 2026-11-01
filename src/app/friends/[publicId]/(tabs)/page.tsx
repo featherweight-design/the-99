@@ -28,5 +28,5 @@ export default async function FriendDecksPage({
   const { publicId } = await params;
   const [friend, decks] = await Promise.all([loadFriend(userId, publicId), friendDecks(userId, publicId, true)]);
   if (!friend || decks === null) notFound();
-  return <FriendDecksTab name={friend.displayName} decks={decks} publicId={friend.publicId} open />;
+  return <FriendDecksTab name={friend.displayName} decks={decks} publicId={friend.publicId} />;
 }

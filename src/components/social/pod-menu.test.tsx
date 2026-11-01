@@ -30,6 +30,8 @@ import { folderCopy } from "../../lib/copy/folders";
 import type { Friend, Pod, PodMember } from "../../lib/social/access";
 
 const P = socialCopy.pods;
+/** No open table: each pod card draws its Rule 0 check row. */
+const NO_TABLES = { tables: [], now: new Date("2026-10-15T12:00:00Z") };
 const ART = "https://cards.scryfall.io/art_crop/x.jpg";
 const cmd = (name: string) => ({ oracleId: `o-${name}`, name, artCropUri: ART });
 const member = (over: Partial<Omit<PodMember, "displayName">> & { displayName: string }): PodMember => ({
@@ -73,7 +75,7 @@ afterEach(cleanup);
 
 describe("the menu", () => {
   it("gives the owner Rename, Leave and Delete, and a member Leave alone", async () => {
-    render(<PodsPane pods={[mine(), theirs()]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[mine(), theirs()]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     await openMenu("Thursday");
     expect(rows()).toEqual([P.rename, P.leave, P.del]);
     expect(trigger("Thursday").getAttribute("aria-expanded")).toBe("true");
@@ -82,7 +84,7 @@ describe("the menu", () => {
   });
 
   it("lands on the first row, moves with the arrows, and Escape hands focus back to the trigger", async () => {
-    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     await openMenu("Thursday");
     const items = within(screen.getByRole("menu")).getAllByRole("menuitem");
     expect(document.activeElement).toBe(items[0]);
@@ -98,7 +100,7 @@ describe("the menu", () => {
   });
 
   it("closes when the keyboard takes focus out of it, so a second pod's menu opens alone", async () => {
-    render(<PodsPane pods={[mine(), theirs()]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[mine(), theirs()]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     await openMenu("Thursday");
     const row = within(screen.getByRole("menu")).getAllByRole("menuitem")[0];
     await act(async () => { fireEvent.blur(row, { relatedTarget: trigger("Adventurers") }); });
@@ -109,7 +111,7 @@ describe("the menu", () => {
   });
 
   it("stays open when focus leaves for nowhere, as a Safari press on a row does", async () => {
-    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     await openMenu("Thursday");
     const row = within(screen.getByRole("menu")).getAllByRole("menuitem")[2];
     fireEvent.blur(row, { relatedTarget: null });
@@ -119,7 +121,7 @@ describe("the menu", () => {
   });
 
   it("closes on a press outside", async () => {
-    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     await openMenu("Thursday");
     fireEvent.pointerDown(document.body);
     expect(screen.queryByRole("menu")).toBeNull();
@@ -134,7 +136,7 @@ describe("rename", () => {
   };
 
   it("replaces the header with a focused field holding the name, and saves the trimmed new one", async () => {
-    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     const field = await startRename();
     expect(document.activeElement).toBe(field);
     expect(field.value).toBe("Thursday");
@@ -148,14 +150,14 @@ describe("rename", () => {
   });
 
   it("caps the field at 40 characters", async () => {
-    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     const field = await startRename();
     fireEvent.change(field, { target: { value: "x".repeat(45) } });
     expect(field.value).toHaveLength(40);
   });
 
   it("commits on a blur away, and reverts an empty or unchanged name without a write", async () => {
-    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     let field = await startRename();
     fireEvent.change(field, { target: { value: "Friday" } });
     await act(async () => { fireEvent.blur(field, { relatedTarget: document.body }); });
@@ -175,7 +177,7 @@ describe("rename", () => {
   });
 
   it("keeps focus in the field when Cancel or Save is pressed, as Safari never focuses a clicked button", () => {
-    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     return startRename().then(() => {
       for (const name of [P.cancel, P.save]) {
         // fireEvent returns false when the handler prevented the default, which is what holds focus.
@@ -185,7 +187,7 @@ describe("rename", () => {
   });
 
   it("does not commit an edit when focus moves onto Cancel", async () => {
-    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     const field = await startRename();
     fireEvent.change(field, { target: { value: "Friday" } });
     await act(async () => { fireEvent.blur(field, { relatedTarget: screen.getByRole("button", { name: P.cancel }) }); });
@@ -194,7 +196,7 @@ describe("rename", () => {
   });
 
   it("commits when focus leaves the form from Cancel or Save, as when the reader tabs through them", async () => {
-    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     const field = await startRename();
     fireEvent.change(field, { target: { value: "Friday" } });
     const save = screen.getByRole("button", { name: P.save });
@@ -205,7 +207,7 @@ describe("rename", () => {
   });
 
   it("drops the edit on Cancel and on Escape", async () => {
-    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     let field = await startRename();
     fireEvent.change(field, { target: { value: "Friday" } });
     const cancel = screen.getByRole("button", { name: P.cancel });
@@ -222,7 +224,7 @@ describe("rename", () => {
 
   it("puts the name back and says so when the write fails, and refreshes when the pod is no longer theirs", async () => {
     m.rename.mockRejectedValueOnce(new Error("down"));
-    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     let field = await startRename();
     fireEvent.change(field, { target: { value: "Friday" } });
     await press(screen.getByRole("button", { name: P.save }));
@@ -241,7 +243,7 @@ describe("leave and delete", () => {
   const confirmPane = () => screen.getByRole("dialog");
 
   it("asks with the hand-on sentence when the owner leaves a pod with others in it, Keep focused first", async () => {
-    render(<PodsPane pods={[mine({ nextOwner: { publicId: "p-Dave", displayName: named("Dave") } })]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[mine({ nextOwner: { publicId: "p-Dave", displayName: named("Dave") } })]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     await openMenu("Thursday");
     await press(screen.getByRole("menuitem", { name: P.leave }));
     expect(confirmPane().getAttribute("aria-label")).toBe(plain(P.leaveHeading(named("Thursday"))));
@@ -252,7 +254,7 @@ describe("leave and delete", () => {
 
   it("tells a member who can add them back, and the last member that leaving deletes it", async () => {
     const alone = mine({ id: "pod-3", name: named("Solo"), members: [{ ...ME, isOwner: true }] });
-    render(<PodsPane pods={[theirs(), alone]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[theirs(), alone]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     await openMenu("Adventurers");
     await press(screen.getByRole("menuitem", { name: P.leave }));
     // Sam is not the reader's friend, so the way back runs through a friendship first (C1).
@@ -266,7 +268,7 @@ describe("leave and delete", () => {
   });
 
   it("tells a member whose owner is their friend that the owner can add them back", async () => {
-    render(<PodsPane pods={[theirs({ members: [{ ...DAVE, isOwner: true }, ME] })]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[theirs({ members: [{ ...DAVE, isOwner: true }, ME] })]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     await openMenu("Adventurers");
     await press(screen.getByRole("menuitem", { name: P.leave }));
     expect(confirmPane().textContent).toContain(plain(P.leaveMemberBody(named("Dave"))));
@@ -275,7 +277,7 @@ describe("leave and delete", () => {
   it("holds Leave while the heir's removal waits for the redraw, and lets it go when the redraw lands", async () => {
     const pod = mine({ nextOwner: { publicId: "p-Dave", displayName: named("Dave") } });
     m.remove.mockReturnValue(new Promise(() => {}));
-    const { rerender } = render(<PodsPane pods={[pod]} sharedIds={[]} friends={FRIENDS} />);
+    const { rerender } = render(<PodsPane pods={[pod]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     // Seats carry their ✕ only in the edit state (small items item 7), and Done hands the menu back.
     await press(screen.getByRole("button", { name: P.edit }));
     await press(screen.getByRole("button", { name: plain(P.removeMemberAria(named("Dave"), named("Thursday"))) }));
@@ -285,14 +287,14 @@ describe("leave and delete", () => {
     expect(leave.getAttribute("aria-disabled")).toBe("true");
     await press(leave);
     expect(screen.queryByRole("dialog")).toBeNull();
-    rerender(<PodsPane pods={[mine({ members: pod.members.filter((x) => plain(x.displayName) !== "Dave"), nextOwner: { publicId: "p-Priya", displayName: named("Priya") } })]} sharedIds={[]} friends={FRIENDS} />);
+    rerender(<PodsPane pods={[mine({ members: pod.members.filter((x) => plain(x.displayName) !== "Dave"), nextOwner: { publicId: "p-Priya", displayName: named("Priya") } })]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     await press(screen.getByRole("menuitem", { name: P.leave }));
     expect(confirmPane().textContent).toContain(plain(P.leaveOwnerBody(named("Priya"))));
   });
 
   it("does not hold Leave for the removal of a member who is not the heir", async () => {
     m.remove.mockReturnValue(new Promise(() => {}));
-    render(<PodsPane pods={[mine({ nextOwner: { publicId: "p-Dave", displayName: named("Dave") } })]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[mine({ nextOwner: { publicId: "p-Dave", displayName: named("Dave") } })]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     // Seats carry their ✕ only in the edit state (small items item 7), and Done hands the menu back.
     await press(screen.getByRole("button", { name: P.edit }));
     await press(screen.getByRole("button", { name: plain(P.removeMemberAria(named("Priya"), named("Thursday"))) }));
@@ -302,7 +304,7 @@ describe("leave and delete", () => {
   });
 
   it("returns Keep to the row that opened the confirm, though a click never focused it", async () => {
-    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     await openMenu("Thursday");
     await press(screen.getByRole("menuitem", { name: P.del }));
     await press(screen.getByRole("button", { name: folderCopy.del.cancel }));
@@ -314,7 +316,7 @@ describe("leave and delete", () => {
     h1.id = "friends-title";
     h1.tabIndex = -1;
     document.body.appendChild(h1);
-    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={[]} />);
+    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={[]} ruleZero={NO_TABLES} />);
     await openMenu("Thursday");
     await press(screen.getByRole("menuitem", { name: P.del }));
     await press(screen.getByRole("button", { name: P.delConfirm }));
@@ -323,7 +325,7 @@ describe("leave and delete", () => {
   });
 
   it("removes the card once a leave lands, with no toast, and focus goes to New pod", async () => {
-    render(<PodsPane pods={[mine(), theirs()]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[mine(), theirs()]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     await openMenu("Adventurers");
     await press(screen.getByRole("menuitem", { name: P.leave }));
     await press(screen.getByRole("button", { name: P.leaveConfirm }));
@@ -336,7 +338,7 @@ describe("leave and delete", () => {
 
   it("takes a leave from a pod already left as done, and refreshes", async () => {
     m.leave.mockResolvedValueOnce({ ok: false, reason: "notMember" });
-    render(<PodsPane pods={[theirs()]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[theirs()]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     await openMenu("Adventurers");
     await press(screen.getByRole("menuitem", { name: P.leave }));
     await press(screen.getByRole("button", { name: P.leaveConfirm }));
@@ -347,7 +349,7 @@ describe("leave and delete", () => {
 
   it("deletes through its own sentence, and keeps a pod already gone as done", async () => {
     m.del.mockResolvedValueOnce({ ok: true, changed: false });
-    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     await openMenu("Thursday");
     await press(screen.getByRole("menuitem", { name: P.del }));
     expect(confirmPane().getAttribute("aria-label")).toBe(plain(P.delHeading(named("Thursday"))));
@@ -360,7 +362,7 @@ describe("leave and delete", () => {
   it("keeps the card and its pane, and says so, when the write fails; the pane holds while it waits", async () => {
     let fail!: (e: Error) => void;
     m.del.mockReturnValueOnce(new Promise((_, reject) => { fail = reject; }));
-    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} />);
+    render(<PodsPane pods={[mine()]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     await openMenu("Thursday");
     await press(screen.getByRole("menuitem", { name: P.del }));
     await press(screen.getByRole("button", { name: P.delConfirm }));
@@ -375,11 +377,11 @@ describe("leave and delete", () => {
   });
 
   it("lets the server's redraw retire a held leave", async () => {
-    const { rerender } = render(<PodsPane pods={[mine(), theirs()]} sharedIds={[]} friends={FRIENDS} />);
+    const { rerender } = render(<PodsPane pods={[mine(), theirs()]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     await openMenu("Adventurers");
     await press(screen.getByRole("menuitem", { name: P.leave }));
     await press(screen.getByRole("button", { name: P.leaveConfirm }));
-    rerender(<PodsPane pods={[mine(), theirs()]} sharedIds={[]} friends={FRIENDS} />);
+    rerender(<PodsPane pods={[mine(), theirs()]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     expect(names()).toEqual(["Adventurers", "Thursday"]);
   });
 });
