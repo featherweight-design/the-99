@@ -1074,6 +1074,8 @@ export const deckGames = pgTable("deck_games", {
   check("deck_games_note_length_check", sql`${t.note} is null or char_length(${t.note}) <= 140`),
   check("deck_games_pod_size_check", sql`${t.podSize} between 2 and 8`),
   index("deck_games_deck_played_idx").on(t.deckId, t.playedAt),
+  // The cross-deck history (`loadGameHistory`): one owner's games, newest first, read by keyset on (played_at, id).
+  index("deck_games_user_played_idx").on(t.userId, t.playedAt.desc().nullsFirst()),
 ]);
 
 /**
