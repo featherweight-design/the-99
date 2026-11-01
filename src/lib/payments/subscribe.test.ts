@@ -76,19 +76,19 @@ import { fulfilInvoice, syncSubscription } from "./subscribe";
 const MONTH1 = new Date("2026-11-01T00:00:00Z");
 const MONTH2 = new Date("2026-12-01T00:00:00Z");
 const MONTH3 = new Date("2027-01-01T00:00:00Z");
-const TAG = { app: "the-99", plan: "plan60", user_id: "user_a" };
+const TAG = { app: "the-99", plan: "monthly", user_id: "user_a" };
 
 type SubState = { status?: string; cancel?: boolean; end?: Date; meta?: Record<string, string>; customer?: string };
 const subscription = (s: SubState = {}) => ({
   id: "sub_1", status: s.status ?? "active", customer: s.customer ?? "cus_1", metadata: s.meta ?? TAG,
   cancel_at_period_end: s.cancel ?? false,
-  items: { data: [{ current_period_end: Math.floor((s.end ?? MONTH2).getTime() / 1000), price: { id: "price_plan60" } }] },
+  items: { data: [{ current_period_end: Math.floor((s.end ?? MONTH2).getTime() / 1000), price: { id: "price_plan_monthly" } }] },
 });
 const invoice = (id: string, reason = "subscription_create", over: Record<string, unknown> = {}) => ({
   id, status: "paid", billing_reason: reason, currency: "usd", amount_paid: 500, total: 500, total_excluding_tax: 500,
   customer: "cus_1", customer_address: { country: "US" },
   parent: { subscription_details: { subscription: "sub_1", metadata: TAG } },
-  lines: { data: [{ quantity: 1, pricing: { price_details: { price: "price_plan60" } } }] },
+  lines: { data: [{ quantity: 1, pricing: { price_details: { price: "price_plan_monthly" } } }] },
   payments: { data: [{ status: "paid", payment: { type: "payment_intent", payment_intent: `pi_${id}` } }] },
   ...over,
 });
@@ -110,13 +110,13 @@ beforeEach(() => {
   db.now = MONTH1;
   invoices = { in_1: invoice("in_1"), in_2: invoice("in_2", "subscription_cycle") };
   current = subscription();
-  vi.stubEnv("STRIPE_PRICE_PLAN_60", "price_plan60");
+  vi.stubEnv("STRIPE_PRICE_PLAN_MONTHLY", "price_plan_monthly");
 });
 
 describe("invoice.paid", () => {
-  it("grants 60 plan credits with the billing reason, stores the subscription and records the payment under the invoice id", async () => {
+  it("grants 50 plan credits with the billing reason, stores the subscription and records the payment under the invoice id", async () => {
     expect((await pay("in_1")).outcome).toBe("grant");
-    expect(db.lots).toEqual([expect.objectContaining({ userId: "user_a", source: "plan", units: 60, externalId: "in_1", billingReason: "subscription_create", expiresAt: null })]);
+    expect(db.lots).toEqual([expect.objectContaining({ userId: "user_a", source: "plan", units: 50, externalId: "in_1", billingReason: "subscription_create", expiresAt: null })]);
     expect(db.subs.get("sub_1")).toMatchObject({ userId: "user_a", status: "active", currentPeriodEnd: MONTH2, cancelAtPeriodEnd: false });
     expect(db.records.get("pi_in_1")).toMatchObject({ checkoutSessionId: "in_1", amountCents: 500, status: "granted" });
     // The subscription's own lock first, then the player's allowance lock before the expiry is written.
