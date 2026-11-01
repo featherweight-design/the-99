@@ -1398,4 +1398,33 @@ describe("DiscoveryView · hiding a row", () => {
     expect(rowLink("Bravo")).toBeInTheDocument();
     expect(undo("Bravo")).toBeNull();
   });
+
+  it("never sends a superseded Undo's unhide after a newer Hide of the same row", async () => {
+    let answerFirstHide: (ok: boolean) => void = () => {};
+    hide.mockReturnValueOnce(new Promise<boolean>((r) => (answerFirstHide = r)));
+    hide.mockResolvedValue(true);
+    unhide.mockResolvedValue(true);
+    render(<DiscoveryView basis="classifier" encoded={shipped({ items: rows3, candidateCount: 3 })} />);
+    await act(async () => {
+      fireEvent.click(glyph("Bravo"));
+    });
+    // Undo while the first hide is still in flight: the row comes back at once.
+    await act(async () => {
+      fireEvent.click(undo("Bravo")!);
+    });
+    expect(rowLink("Bravo")).toBeInTheDocument();
+    // Hide again, and only then does the first hide answer.
+    await act(async () => {
+      fireEvent.click(glyph("Bravo"));
+    });
+    await act(async () => {
+      answerFirstHide(true);
+    });
+    expect(hide).toHaveBeenCalledTimes(2);
+    expect(unhide).not.toHaveBeenCalled();
+    // The newer hide governs: the Undo row stands.
+    expect(rowLink("Bravo")).toBeNull();
+    expect(screen.getByText("Bravo hidden")).toBeInTheDocument();
+    expect(undo("Bravo")).toBeInTheDocument();
+  });
 });

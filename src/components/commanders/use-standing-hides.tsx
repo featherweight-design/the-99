@@ -162,9 +162,13 @@ export function useStandingHides<T extends { slug: string }>() {
       };
       // A hide still in flight is waited on: its answer is the id to unhide. A refused one hid nothing, so there is
       // nothing to undo and nothing changed: the row is already back, and its entry goes (no count to refresh).
+      // A newer press while the hide was in flight (Hide again) supersedes this Undo before it writes anything: its
+      // unhide would queue behind that newer hide and leave the row unhidden under an Undo row, so it is never sent,
+      // and the newer hide's own answer governs the row.
       void entry.settled.then((id) => {
+        if (!isLatest(tickets.current, slug, ticket)) return;
         if (id === null) {
-          if (isLatest(tickets.current, slug, ticket)) drop(slug);
+          drop(slug);
           return;
         }
         return unhideCommanderAction(id).then((ok) => {
