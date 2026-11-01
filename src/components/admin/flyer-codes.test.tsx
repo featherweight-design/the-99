@@ -341,7 +341,7 @@ describe("Download CSV failure line", () => {
   });
 
   it.each([
-    ["failed", { ok: false, error: "failed" }, "The server refused the download. Reload the page and try again."],
+    ["failed", { ok: false, error: "failed" }, "The server couldn’t build the download. Reload the page and try again."],
     ["off", { ok: false, error: "off" }, "The flyer trial is off now, so there\u2019s nothing to download. Reload to see the page as it is."],
   ])("draws the %s line with no Try again", async (_kind, reply, line) => {
     exportLaunchList.mockResolvedValue(reply);
