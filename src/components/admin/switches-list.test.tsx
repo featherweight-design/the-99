@@ -177,11 +177,11 @@ describe("SwitchesList", () => {
 describe("AdminHead on /admin/switches", () => {
   it("marks the Switches tab, after Costs, and titles the page", () => {
     render(<AdminHead env="staging" />);
-    expect(screen.getByRole("heading", { level: 1, name: "Switches" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Feature flags" })).toBeInTheDocument();
     const tabs = within(screen.getByRole("navigation", { name: "Admin pages" })).getAllByRole("link");
     expect(tabs.map((t) => [t.textContent, t.getAttribute("aria-current")])).toEqual([
       ["Costs", null],
-      ["Switches", "page"],
+      ["Feature flags", "page"],
       ["Groups", null],
       ["Accounts", null],
       ["Models", null],

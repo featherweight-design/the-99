@@ -3,12 +3,12 @@ import { notFound } from "next/navigation";
 import { SwitchPageView } from "../../../../components/admin/switch-page";
 import { adminMetadata, requireAdmin } from "../../../../lib/admin/access";
 import { loadSwitchPage } from "../../../../lib/admin/switches";
-import { switchCopy } from "../../../../lib/copy/admin";
+import { adminCopy, switchCopy } from "../../../../lib/copy/admin";
 import { isSwitchName } from "../../../../lib/switches/registry";
 
 type Props = { params: Promise<{ name: string }>; searchParams: Promise<{ account?: string | string[] }> };
 
-const titleOf = (name: string) => (isSwitchName(name) ? switchCopy[name].label : "Switches");
+const titleOf = (name: string) => (isSwitchName(name) ? switchCopy[name].label : adminCopy.tabs.switches);
 
 export const generateMetadata = async ({ params }: Props): Promise<Metadata> => adminMetadata<Metadata>({ title: titleOf((await params).name) });
 

@@ -106,14 +106,14 @@ describe("AdminHead on a switch's page", () => {
     expect(screen.getByText("TUNING_ENABLED")).toBeInTheDocument();
     expect(screen.getByText("model")).toBeInTheDocument();
     expect(screen.getByText("needs Analysis tab")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "‹ Switches" })).toHaveAttribute("href", "/admin/switches");
-    expect(screen.getByRole("link", { name: "Switches" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "‹ Feature flags" })).toHaveAttribute("href", "/admin/switches");
+    expect(screen.getByRole("link", { name: "Feature flags" })).toHaveAttribute("aria-current", "page");
   });
 
   it("stays the list's head for an unknown name", () => {
     path.current = "/admin/switches/NOPE_ENABLED";
     render(<AdminHead env="staging" />);
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Switches");
-    expect(screen.queryByRole("link", { name: "‹ Switches" })).toBeNull();
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Feature flags");
+    expect(screen.queryByRole("link", { name: "‹ Feature flags" })).toBeNull();
   });
 });
