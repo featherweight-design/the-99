@@ -1,6 +1,6 @@
 "use client";
 // The signature card picker (avatar handoff 20, calls 2, 3 and 7; boards P1 to P8 and D1 to D2), drawn in place of
-// `CommanderPicker` wherever a signature card is named. The same `SocialModal` (a tall sheet at phone, 520 at
+// the retired commander picker wherever a signature card is named. The same `SocialModal` (a tall sheet at phone, 520 at
 // desktop), the same search field and the same From your decks row, each deck's lead in the printing that deck holds.
 // The search finds ANY game card, its type line under the name. A card with one printing saves on press; one with
 // more reads `N printings ›` and opens a second screen in the same modal: a preview of the face, the printing tiles
@@ -23,13 +23,17 @@ import { OVERFLOW_THRESHOLD } from "../cards/printing-region";
 import { SearchField } from "../ui/text-field";
 import { FadingImg } from "../ui/hydrated-art";
 import { SocialModal } from "./social-modal";
-import { tileName } from "./commander-picker";
 
 const s = socialCopy.signature;
 const c = socialCopy.commander;
 /** The catalog search asks for nothing under two characters (`nameSearch`). */
 const MIN_QUERY = 2;
 const DEBOUNCE_MS = 180;
+
+/** The deck tile's short name: up to the first comma ("Omnath, Locus of Creation" is "Omnath"). */
+function tileName(name: string): string {
+  return name.split(",")[0];
+}
 
 /** A pick, as the caller saves it and then draws it. */
 export type SignaturePick = { oracleId: string; printingId: string | null; face: OwnCommander };
@@ -117,7 +121,7 @@ export function SignaturePicker({
   const fresh = results !== null && results.q === q;
   const failed = fresh && results.failed && !busy;
 
-  // The highlighted row is kept in view inside the modal's body only (as `CommanderPicker` does).
+  // The highlighted row is kept in view inside the modal's body only (as the retired commander picker did).
   const active = fresh && hits.length > 0 ? Math.min(hl, hits.length - 1) : -1;
   useEffect(() => {
     if (active < 0 || printings) return;

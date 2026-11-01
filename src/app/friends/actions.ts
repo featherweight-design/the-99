@@ -25,8 +25,8 @@ import { shareSparesWith } from "../../lib/social/spares";
 import { cleanDisplayName, cleanPodName } from "../../lib/social/rules";
 import { invitePath, isInviteToken, originFrom } from "../../lib/social/client-rules";
 import {
-  listFacePrintings, listOwnDeckCommanders, listOwnDeckFaces, searchFaceCards, searchFaceCommanders,
-  type CommanderTile, type FaceCardHit, type FacePrintings, type FaceTile,
+  listFacePrintings, listOwnDeckFaces, searchFaceCards,
+  type FaceCardHit, type FacePrintings, type FaceTile,
 } from "../../lib/decks/commander-picker";
 import { isUuid } from "../../lib/social/rules";
 import { skipFacePrompt } from "../../lib/discovery/face-prompt";
@@ -61,20 +61,6 @@ export async function setCommanderAction(oracleId: unknown, printingId: unknown 
   if (!result.ok) return result;
   refreshFriends();
   return { ok: true };
-}
-
-export type PickerTilesOutcome = { ok: true; tiles: CommanderTile[] };
-
-/** The picker's first row: the commanders of the reader's own decks, newest deck first (E2). A read, so nothing revalidates. */
-export async function listDeckCommandersAction(): Promise<PickerTilesOutcome> {
-  const userId = await requireUserId();
-  return { ok: true, tiles: await listOwnDeckCommanders(userId) };
-}
-
-/** The picker's search: any commander the catalog lists, by name, with its art (E2). Too short a query finds nothing. */
-export async function searchFaceCommandersAction(query: unknown): Promise<PickerTilesOutcome> {
-  await requireUserId();
-  return { ok: true, tiles: await searchFaceCommanders(query) };
 }
 
 // --- The signature card (plan `2026-10-27-signature-card.md`; its own switch is retired) ---------------------------

@@ -10,8 +10,6 @@ const a = vi.hoisted(() => ({
   createInviteAction: vi.fn(),
   revokeInviteAction: vi.fn(),
   unfriendAction: vi.fn(),
-  listDeckCommandersAction: vi.fn(),
-  searchFaceCommandersAction: vi.fn(),
 }));
 const nav = vi.hoisted(() => ({ refresh: vi.fn(), push: vi.fn() }));
 vi.mock("../../app/friends/actions", () => a);

@@ -215,4 +215,22 @@ describe("SignaturePicker", () => {
     expect(onSave).toHaveBeenCalledWith({ oracleId: TUTOR, printingId: P_STA, face: expect.objectContaining({ printingId: P_STA }) });
     await act(async () => {});
   });
+  it("saves once when a second tile is pressed while the first save is pending", async () => {
+    a.listDeckFacesAction.mockResolvedValue({
+      ok: true,
+      tiles: [
+        { oracleId: TUTOR, name: "Mystical Tutor", artCropUri: "https://x/STA-crop.jpg", colorIdentity: ["U"], printingId: P_STA },
+        { oracleId: BOLT, name: "Lightning Bolt", artCropUri: "https://x/bolt-crop.jpg", colorIdentity: ["R"], printingId: null },
+      ],
+    });
+    let land!: (ok: boolean) => void;
+    const onSave = vi.fn(() => new Promise<boolean>((r) => (land = r)));
+    render(<SignaturePicker current={null} onSave={onSave} onClose={() => {}} />);
+    fireEvent.click(await screen.findByRole("button", { name: "Mystical Tutor" }));
+    fireEvent.click(screen.getByRole("button", { name: "Lightning Bolt" }));
+    expect(onSave).toHaveBeenCalledTimes(1);
+    expect(onSave).toHaveBeenCalledWith({ oracleId: TUTOR, printingId: P_STA, face: expect.objectContaining({ oracleId: TUTOR }) });
+    await act(async () => land(true));
+    expect(onSave).toHaveBeenCalledTimes(1);
+  });
 });
