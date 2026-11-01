@@ -17,6 +17,9 @@ const { requireUserId, resolveCommanderSlug, scoreOneCommander, loadAvailability
 
 vi.mock("../../../lib/auth", () => ({ requireUserId }));
 vi.mock("../../../lib/discovery/resolve-slug", () => ({ resolveCommanderSlug }));
+// The resolver reads the hidden ids on a fallback; it is mocked whole above, and the hidden read is
+// mocked too so nothing on this path can reach a database.
+vi.mock("../../../lib/commanders/hidden", () => ({ loadHiddenIds: async () => [] }));
 vi.mock("../../../lib/recs/recommend", () => ({ scoreOneCommander }));
 vi.mock("../../../lib/recs/free-ranking", () => ({ loadFreePool }));
 vi.mock("../../../lib/decks/availability-query", () => ({ loadAvailability }));

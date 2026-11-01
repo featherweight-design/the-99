@@ -31,8 +31,8 @@ const labelRead = vi.hoisted(() => ({ sets: new Map<string, string[]>() }));
 vi.mock("../labels/read", () => ({ readLabelRoleSets: async () => labelRead.sets }));
 
 import { roleSetFingerprint } from "../labels/role-sets";
+import { findScoredCommander } from "./scored-commander";
 import {
-  findScoredCommander,
   INDEX_UNREADABLE,
   indexGeneration,
   isSchemaLagError,
@@ -755,7 +755,7 @@ describe("findScoredCommander when the schema is behind the code", () => {
   // The ranked CTE columns are consumed by eq() and by the select builder, so they
   // are stubbed with real SQL fragments rather than bare objects.
   const col = sql`x`;
-  const rankedStub = { oracleId: col, rank: col, anyDegraded: col, slug: col };
+  const rankedStub = { oracleId: col, rank: col, hidden: col, anyDegraded: col, slug: col };
 
   function stubWith(err: unknown) {
     const limit = vi.fn(() => Promise.reject(err));
@@ -780,5 +780,32 @@ describe("findScoredCommander when the schema is behind the code", () => {
     await expect(findScoredCommander("user_1", "atraxa-praetors-voice", ENV_VIEW)).rejects.toThrow(
       "pg error 53300",
     );
+  });
+});
+
+describe("findScoredCommander passes the row through", () => {
+  const col = sql`x`;
+  const rankedStub = { oracleId: col, rank: col, hidden: col, anyDegraded: col, slug: col };
+
+  function stubRow(row: unknown) {
+    stub.db.$with = () => ({ as: () => rankedStub });
+    stub.db.select = () => ({ from: () => ({ where: () => ({}) }) });
+    stub.db.with = () => ({
+      select: () => ({ from: () => ({ where: () => ({ limit: () => Promise.resolve([row]) }) }) }),
+    });
+  }
+
+  // A stubbed row, so these pin only the pass-through: `hidden` and a null rank come back as the query
+  // returned them, not read as a miss. The window that computes them is `scored-commander.sql.test.ts`.
+  it("hands back a hidden row's `hidden` flag and null rank unchanged", async () => {
+    stubRow({ oracleId: "a", rank: null, hidden: true, anyDegraded: false });
+    await expect(findScoredCommander("user_1", "atraxa-praetors-voice", ENV_VIEW)).resolves.toEqual({
+      oracleId: "a", rank: null, hidden: true, anyDegraded: false,
+    });
+  });
+
+  it("hands back a shown row's rank and `hidden: false` unchanged", async () => {
+    stubRow({ oracleId: "b", rank: 1, hidden: false, anyDegraded: false });
+    await expect(findScoredCommander("user_1", "kess", ENV_VIEW)).resolves.toMatchObject({ rank: 1, hidden: false });
   });
 });

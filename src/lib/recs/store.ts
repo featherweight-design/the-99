@@ -477,60 +477,6 @@ export function rankableScoreRows(userId: string, env: NodeJS.ProcessEnv) {
   );
 }
 
-/**
- * Resolves a persisted slug to its commander and rank in one query, returning a
- * single row rather than pulling the user's whole scored list into memory.
- * Rank comes from the stored ordering, so it matches the list the user clicked
- * from — including the oracleId tie-break that recommendCommanders applies.
- */
-export async function findScoredCommander(
-  userId: string,
-  slug: string,
-  /** The reader's resolved switches, as `loadScores` takes them: the rank window is the list's. */
-  env: NodeJS.ProcessEnv,
-): Promise<{ oracleId: string; rank: number; anyDegraded: boolean } | null> {
-  try {
-    const ranked = db.$with("ranked").as(
-      db
-        .select({
-          oracleId: commanderScores.oracleId,
-          slug: commanderScores.slug,
-          rank: sql<number>`(row_number() over (order by ${commanderScores.rankScore} desc, ${commanderScores.oracleId}))::int`.as("rank"),
-          // Same window pass, so the caller learns whether these ranks came from an
-          // outage-era compute without paying a second round trip.
-          anyDegraded: sql<boolean>`bool_or(${commanderScores.synergyState} = 'degraded') over ()`.as("any_degraded"),
-        })
-        .from(commanderScores)
-        // The window runs over the UNBUILT rows, the same population the list
-        // shows. The store holds every scored commander, built ones included —
-        // it is what `persistScores` writes from, and dropping them there is what
-        // used to evict a commander permanently when a deck was built around it
-        // — but a rank counted over rows the list does not draw is a rank that
-        // disagrees with the list: the commander at the top of the page would
-        // read `Rank #2` because a built commander outscored it.
-        //
-        // A built commander therefore resolves nowhere here, which is where it
-        // resolved before this store held it at all: `resolveCommanderSlug` falls
-        // through to the owned list (which excludes it) and then to discovery
-        // (which excludes what the player owns). Its detail page 404s, exactly as
-        // it did before — a separate question from this one, and not one to
-        // settle by handing out a rank no list agrees with.
-        .where(rankableScoreRows(userId, env)),
-    );
-    const [row] = await db
-      .with(ranked)
-      .select({ oracleId: ranked.oracleId, rank: ranked.rank, anyDegraded: ranked.anyDegraded })
-      .from(ranked)
-      .where(eq(ranked.slug, slug))
-      .limit(1);
-    return row ?? null;
-  } catch (err) {
-    if (!isSchemaLagError(err)) throw err;
-    // not a fallback: only the commander detail route asks for one rank, and it caches nothing.
-    return null;
-  }
-}
-
 export async function deleteAllScores(userId: string): Promise<void> {
   await db.delete(commanderScores).where(eq(commanderScores.userId, userId));
 }

@@ -57,7 +57,18 @@ export async function loadHiddenIds(userId: string): Promise<string[]> {
  * The subquery's own table is aliased and qualified by hand for the same reason.
  */
 export function notHiddenBy(userId: string, oracleIdColumn: SQLWrapper): SQL {
-  return sql`not exists (
+  return sql`not ${hiddenBy(userId, oracleIdColumn)}`;
+}
+
+/**
+ * "This player has hidden this commander": the one definition of the subquery, which `notHiddenBy`
+ * negates. Read directly where a read has to keep the hidden rows and tell them apart (the commander
+ * page's rank window, `scoredCommanderQuery`).
+ *
+ * The same qualification rule holds: pass the column QUALIFIED, or it resolves to the hidden row's own.
+ */
+export function hiddenBy(userId: string, oracleIdColumn: SQLWrapper): SQL {
+  return sql`exists (
     select 1 from ${hiddenCommanders} hc
     where hc.user_id = ${userId}
       and hc.oracle_id = ${oracleIdColumn}
