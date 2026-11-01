@@ -74,7 +74,7 @@ export function DecksZero({
  * Home passes no `buildable`, so its line never draws there (Hugh's ruling, 2026-09-28).
  *
  * One quiet line under everything names Help me choose, the tool that fills the empty state (discovery
- * R3 E1, C10). Its switch, `HELP_ME_CHOOSE_ENABLED`, is retired (always on).
+ * R3 E1, C10). Its switch is deleted (always on).
  */
 export function DecksZeroActions({
   buildable = 0,

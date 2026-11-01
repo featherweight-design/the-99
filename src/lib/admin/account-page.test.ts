@@ -133,7 +133,7 @@ describe("loadAccountPage", () => {
 
   it("draws an account known only by an account override", async () => {
     readSwitchSnapshot.mockResolvedValue({
-      overrides: [{ switchName: "SWAP_TOOLS_ENABLED", scope: "user", groupId: null, userId: "user_ghost", value: "on" }],
+      overrides: [{ switchName: "PUSH_ENABLED", scope: "user", groupId: null, userId: "user_ghost", value: "on" }],
       groupOf: new Map(),
     });
     expect(await loadAccountPage("user_ghost", "user_viewer")).toMatchObject({ id: "user_ghost" });

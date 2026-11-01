@@ -53,7 +53,7 @@ const PAGE: AccountPage = {
   group: { id: F, name: "friends" },
   groups: [{ id: F, name: "friends" }, { id: T, name: "testers" }],
   switches: {
-    override: [{ name: "SWAP_TOOLS_ENABLED", label: "Swap tools", on: true, source: "group friends", kill: false }],
+    override: [{ name: "PUSH_ENABLED", label: "Push notifications", on: true, source: "group friends", kill: false }],
     rule: [
       { name: "FLYER_TRIAL_ENABLED", label: "Flyer trial", on: false, source: "env var is off", kill: true },
       { name: "WELCOME_CREDITS_ENABLED", label: "Welcome credits", on: false, source: "Buying credits is off", kill: false },

@@ -10,7 +10,7 @@ describe("switchReadsIn", () => {
   it("finds process.env handed to a flag function, or to any call", () => {
     expect(lines("const on = feedbackEnabled(process.env);")).toEqual([1]);
     expect(lines("x;\nawait loadThing(u, process.env, tx);")).toEqual([2]);
-    expect(lines('const on = tuningEnabled(process["env"]);')).toEqual([1]);
+    expect(lines('const on = suggestedChangesV2Enabled(process["env"]);')).toEqual([1]);
   });
 
   it("finds a spread or copy of it, and a fallback to it", () => {
@@ -50,7 +50,7 @@ describe("switchReadsIn", () => {
   });
 
   it("reports a call made INSIDE a default, which is a call like any other", () => {
-    expect(lines("export function f(on = tuningEnabled(process.env)) {}")).toEqual([1]);
+    expect(lines("export function f(on = suggestedChangesV2Enabled(process.env)) {}")).toEqual([1]);
   });
 });
 

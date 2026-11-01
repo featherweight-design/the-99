@@ -2,7 +2,7 @@
 
 /**
  * What a deck page's swap surfaces need to know: that the tools are on, which deck this is, and the
- * limit it marks against. Mounted by every deck page (its switch, `SWAP_TOOLS_ENABLED`, is retired:
+ * limit it marks against. Mounted by every deck page (its switch is deleted:
  * always on), so a surface reading `null` is outside a deck page and draws nothing of the swap
  * tools. That is how the deck reaches a row without threading a prop through every component.
  */

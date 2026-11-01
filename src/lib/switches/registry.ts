@@ -9,8 +9,8 @@
  *
  * `kind`:
  * - `feature`: a surface a reader sees. Overridable app-wide, per group and per account.
- * - `model`: as `feature`, and turning it on can let a reader spend model calls: the switch itself,
- *   or a parent of one (the Analysis tab gates the Overview; Swap tools gates Find a deck's read).
+ * - `model`: as `feature`, and turning it on changes what a reader can spend model calls on (Overview v2
+ *   moves the Overview's model; Suggested changes v2 opens its own credit).
  *   The Switches list marks it; the confirm fires on the capabilities a write raises, not on this tag.
  *   `flags.test.ts` holds the tag to exactly that.
  * - `plumbing`: infrastructure, or a surface no friend tries on its own. App-wide only: an account or group
@@ -29,10 +29,8 @@
 export type SwitchKind = "feature" | "model" | "plumbing";
 
 export const SWITCHES = [
-  { name: "ANALYSIS_TAB_ENABLED", kind: "model" },
   { name: "ANNOUNCEMENTS_ENABLED", kind: "feature" },
   { name: "FEEDBACK_ENABLED", kind: "feature" },
-  { name: "HELP_ME_CHOOSE_ENABLED", kind: "model" },
   { name: "FLYER_TRIAL_ENABLED", kind: "feature" },
   { name: "LIST_CACHE_ENABLED", kind: "plumbing" },
   // The model-call kill switch, ON while unset, unlike every other switch (`defaultOn`). A hard stop: the variable set
@@ -42,13 +40,10 @@ export const SWITCHES = [
   { name: "OVERVIEW_V2_ENABLED", kind: "model" },
   { name: "PAYMENTS_ENABLED", kind: "feature" },
   { name: "PUSH_ENABLED", kind: "feature" },
-  { name: "PROPOSED_CUTS_ENABLED", kind: "model" },
   { name: "PUBLIC_PAGES_ENABLED", kind: "plumbing" },
   { name: "RATE_LIMIT_ENABLED", kind: "plumbing" },
   { name: "SCAN_LAB_ENABLED", kind: "plumbing" },
   { name: "SUGGESTED_CHANGES_V2_ENABLED", kind: "model" },
-  { name: "SWAP_TOOLS_ENABLED", kind: "model" },
-  { name: "TUNING_ENABLED", kind: "model" },
   { name: "WELCOME_CREDITS_ENABLED", kind: "feature", needs: "PAYMENTS_ENABLED" },
 ] as const satisfies readonly { name: `${string}_ENABLED`; kind: SwitchKind; needs?: `${string}_ENABLED`; defaultOn?: true }[];
 

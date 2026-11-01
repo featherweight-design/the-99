@@ -42,15 +42,6 @@ describe("pageTools", () => {
     // The label alone gone, the tool's own switch still on: the card goes with it.
     const noCuts = all.map((s) => ({ ...s, labels: s.labels.filter((l) => l.key !== "decks/analysis/cuts") }));
     expect(placed(ALL_ON, noCuts).get("decks/analysis")).toEqual(["suggested-changes", "mana-balance"]);
-    // Suggested changes, Proposed cuts and the Analysis tab they mount on have no switch (theirs are retired): their
-    // retired names move nothing.
-    expect(placed(without("TUNING_ENABLED")).get("decks/analysis")).toEqual(["suggested-changes", "proposed-cuts", "mana-balance"]);
-    expect(placed(without("PROPOSED_CUTS_ENABLED")).get("decks/analysis")).toEqual(["suggested-changes", "proposed-cuts", "mana-balance"]);
-    expect(placed(without("ANALYSIS_TAB_ENABLED"))).toEqual(placed(ALL_ON));
-    // The swap tools have no switch (theirs is retired): its retired name moves nothing.
-    expect(placed(without("SWAP_TOOLS_ENABLED"))).toEqual(placed(ALL_ON));
-    // Help me choose has no switch (its own is retired): its retired name moves nothing.
-    expect(placed(without("HELP_ME_CHOOSE_ENABLED"))).toEqual(placed(ALL_ON));
     // A section left with no card is absent: Help me choose's labels gone, For you holds no card.
     const HMC = TOOLS.find((t) => t.id === "help-me-choose")!.labels as readonly string[];
     const noChoose = all.map((s) => ({ ...s, labels: s.labels.filter((l) => !HMC.includes(l.key)) }));

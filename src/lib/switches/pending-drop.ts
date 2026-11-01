@@ -13,18 +13,31 @@
  *
  * Client-safe: no imports.
  */
-export const PENDING_DROP_SWITCHES: readonly string[] = [];
+/**
+ * Each pending name with the name it followed in the registry (`null`: it came first). The registry is not
+ * sorted, so a sort rule cannot put a name back where it sat; the anchor can. An anchor may itself be pending,
+ * listed earlier here. Group 3's held five go this way, as the six did.
+ */
+const PENDING_DROPS: readonly { name: string; after: string | null }[] = [
+  { name: "ANALYSIS_TAB_ENABLED", after: null },
+  { name: "HELP_ME_CHOOSE_ENABLED", after: "FEEDBACK_ENABLED" },
+  { name: "PROPOSED_CUTS_ENABLED", after: "PUSH_ENABLED" },
+  { name: "SWAP_TOOLS_ENABLED", after: "SUGGESTED_CHANGES_V2_ENABLED" },
+  { name: "TUNING_ENABLED", after: "SWAP_TOOLS_ENABLED" },
+];
+
+export const PENDING_DROP_SWITCHES: readonly string[] = PENDING_DROPS.map((d) => d.name);
 
 /**
- * The names the CHECK accepts: `names` with each pending name placed before the first name that sorts
- * after it, which is where it sat in the registry, so the constraint reads exactly as the one in force
- * and `db:generate` finds no change.
+ * The names the CHECK accepts: `names` with each pending name placed right after its anchor, which is where
+ * it sat in the registry, so the constraint reads exactly as the one in force and `db:generate` finds no
+ * change. A missing anchor puts the name last.
  */
 export function withPendingDrops(names: readonly string[]): string[] {
   const out = [...names];
-  for (const p of PENDING_DROP_SWITCHES) {
-    const at = out.findIndex((n) => n > p && !PENDING_DROP_SWITCHES.includes(n));
-    out.splice(at === -1 ? out.length : at, 0, p);
+  for (const { name, after } of PENDING_DROPS) {
+    const anchor = after === null ? -1 : out.indexOf(after);
+    out.splice(after === null ? 0 : anchor === -1 ? out.length : anchor + 1, 0, name);
   }
   return out;
 }

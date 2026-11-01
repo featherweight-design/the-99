@@ -8,7 +8,7 @@ import { switchCopy } from "../../lib/copy/admin";
 import { explainAccounts } from "../../lib/switches/explain";
 import { SWITCH_NAMES, type SwitchName } from "../../lib/switches/registry";
 
-const path = vi.hoisted(() => ({ current: "/admin/switches/TUNING_ENABLED" }));
+const path = vi.hoisted(() => ({ current: "/admin/switches/OVERVIEW_V2_ENABLED" }));
 vi.mock("next/navigation", () => ({ usePathname: () => path.current, useRouter: () => ({ refresh: vi.fn() }) }));
 vi.mock("../../app/admin/switches/actions", () => ({ setSwitchOverride: vi.fn(), clearSwitchOverride: vi.fn() }));
 
@@ -80,19 +80,19 @@ describe("SwitchPageView", () => {
   });
 
   it("says when there is no history, with the UTC footnote (F13)", () => {
-    draw("TUNING_ENABLED", {});
+    draw("OVERVIEW_V2_ENABLED", {});
     expect(screen.getByTestId("switch-history").textContent).toBe("No overrides yet. UTC. Env var changes ship with a deploy and aren’t listed.");
   });
 
   it("lists history newest first, as handed in, with notes", () => {
     const ev: SwitchEvent = { at: AT, actorId: "u2", kind: "override_set", scope: "app", groupId: null, userId: null, oldValue: null, newValue: "on", note: "Try it" };
-    draw("TUNING_ENABLED", {}, [], [ev, { ...ev, actorId: "u1", kind: "override_cleared", oldValue: "on", newValue: null, note: null }]);
+    draw("OVERVIEW_V2_ENABLED", {}, [], [ev, { ...ev, actorId: "u1", kind: "override_cleared", oldValue: "on", newValue: null, note: null }]);
     const items = within(screen.getByTestId("switch-history")).getAllByRole("listitem");
     expect(items.map((i) => i.textContent)).toEqual(["Oct 11 · 14:02Mara set app-wide: not set → onNote: “Try it”", "Oct 11 · 14:02You cleared app-wide (was on)"]);
   });
 
   it("warns when Clerk or the overrides could not be read", () => {
-    draw("TUNING_ENABLED", {}, [], [], { clerk: "down", overridesRead: false });
+    draw("OVERVIEW_V2_ENABLED", {}, [], [], { clerk: "down", overridesRead: false });
     expect(screen.getByText("Names didn’t load from Clerk.")).toBeInTheDocument();
     expect(screen.getByText("Overrides didn’t load. Every row shows the env var alone.")).toBeInTheDocument();
   });

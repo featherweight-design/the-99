@@ -90,32 +90,6 @@ describe("what a write raises", () => {
     expect(rise({}, snap(), write({ name: "PAYMENTS_ENABLED" })).whatsNew).toEqual(["u1", "u2"]);
     expect(rise({ PAYMENTS_ENABLED: "true" }, snap(), write({ name: "PAYMENTS_ENABLED" })).whatsNew).toEqual([]);
   });
-
-  // The Analysis tab is retired (always on): its entries already draw and the Overview's, Suggested changes' and
-  // Proposed cuts' paid runs are always offered, so turning its name on raises no account, no capability and no entry.
-  it("raises nothing for the retired Analysis tab", () => {
-    expect(rise({}, snap(), write({ name: "ANALYSIS_TAB_ENABLED" }))).toMatchObject({ accounts: [], capabilities: [], whatsNew: [] });
-  });
-
-  // Swap tools is retired (always on): its entries already draw and Find a deck's paid read is always offered, so
-  // turning its name on raises no account, no capability and no About entry.
-  it("raises nothing for the retired swap tools", () => {
-    expect(rise({}, snap(), write({ name: "SWAP_TOOLS_ENABLED" }))).toMatchObject({ accounts: [], capabilities: [], whatsNew: [] });
-  });
-
-  // Help me choose is retired (always on): its entries already draw and its paid read is always offered, so turning its
-  // name on raises no account, no capability and no About entry.
-  it("raises nothing for the retired Help me choose", () => {
-    expect(rise({}, snap(), write({ name: "HELP_ME_CHOOSE_ENABLED" }))).toMatchObject({ accounts: [], capabilities: [], whatsNew: [] });
-  });
-
-  // Suggested changes is retired, and so is the Analysis tab its entries and its paid runs followed: turning its own
-  // name on raises nothing, whatever the tab's retired name says.
-  it("raises nothing for the retired Suggested changes", () => {
-    for (const env of [{}, { ANALYSIS_TAB_ENABLED: "true" }]) {
-      expect(rise(env, snap(), write({ name: "TUNING_ENABLED" }))).toMatchObject({ accounts: [], capabilities: [], whatsNew: [] });
-    }
-  });
 });
 
 // All features (2026-10-15): the reserved name is written at account scope alone, On only, and its rise

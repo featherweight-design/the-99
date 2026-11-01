@@ -98,7 +98,7 @@ export function aboutLine(seen: SeenState, visible: readonly VisibleSection[]): 
  * The reader's announcements are read again, and the two are INTERSECTED (`claimWrite`): only the claimed ones still
  * announced are written, and of each only the ack keys that were rendered, so a client can drop a key but never add
  * one, and neither a unit nor a sentence switched on after the page rendered is marked seen unread (a base unit drawn
- * before `HELP_ME_CHOOSE_ENABLED` turned on does not take its Commanders sentence's key with it).
+ * before Help me choose's switch turned on does not take its Commanders sentence's key with it).
  *
  * The floor rises to `ABOUT_VERSION` when every announcement now standing was claimed whole, else only to just under
  * the oldest one not claimed whole (`claimWrite`). A first-run reader's ✕ writes the baseline a first visit writes

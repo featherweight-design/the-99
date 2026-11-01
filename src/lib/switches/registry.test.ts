@@ -45,8 +45,6 @@ describe("the switch registry", () => {
   });
 
   // RATE_LIMIT counts requests (payments scope PR S), and NAV_STALL_LOG reports stuck loaders; no reader sees a difference.
-  // ANALYSIS_TAB gated every Overview press (READINESS audit finding 2) and SWAP_TOOLS Find a deck's read; both are
-  // retired, as are PROPOSED_CUTS, TUNING and HELP_ME_CHOOSE, and keep the tag until their deletion.
   // PUBLIC_PAGES is the public card and commander pages (launch epic F3): a stranger has no account, so only the
   // app-wide answer can decide it, and the page never varies by visitor.
   // SCAN_LAB is the card-scan spike's measuring page (staging only, never linked).
@@ -56,12 +54,7 @@ describe("the switch registry", () => {
       "LIST_CACHE_ENABLED", "MODEL_CALLS_ENABLED", "NAV_STALL_LOG_ENABLED", "PUBLIC_PAGES_ENABLED",
       "RATE_LIMIT_ENABLED", "SCAN_LAB_ENABLED",
     ]);
-    expect(SWITCH_NAMES.filter((n) => switchKind(n) === "model").sort()).toEqual(
-      [
-        "ANALYSIS_TAB_ENABLED", "HELP_ME_CHOOSE_ENABLED", "OVERVIEW_V2_ENABLED", "PROPOSED_CUTS_ENABLED",
-        "SUGGESTED_CHANGES_V2_ENABLED", "SWAP_TOOLS_ENABLED", "TUNING_ENABLED",
-      ],
-    );
+    expect(SWITCH_NAMES.filter((n) => switchKind(n) === "model").sort()).toEqual(["OVERVIEW_V2_ENABLED", "SUGGESTED_CHANGES_V2_ENABLED"]);
   });
 });
 

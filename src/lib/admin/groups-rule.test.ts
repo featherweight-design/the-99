@@ -117,11 +117,11 @@ describe("groupEvents", () => {
 });
 
 describe("what an account gains or loses", () => {
-  const env = { OVERVIEW_V2_ENABLED: "false", SWAP_TOOLS_ENABLED: "false", FEEDBACK_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+  const env = { OVERVIEW_V2_ENABLED: "false", PUSH_ENABLED: "false", FEEDBACK_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
   const snapshot: SwitchSnapshot = {
     overrides: [
       { switchName: "OVERVIEW_V2_ENABLED", scope: "group", groupId: T, userId: null, value: "on" },
-      { switchName: "SWAP_TOOLS_ENABLED", scope: "group", groupId: T, userId: null, value: "on" },
+      { switchName: "PUSH_ENABLED", scope: "group", groupId: T, userId: null, value: "on" },
       { switchName: "FEEDBACK_ENABLED", scope: "group", groupId: F, userId: null, value: "off" },
     ],
     groupOf: new Map([
@@ -133,10 +133,10 @@ describe("what an account gains or loses", () => {
 
   it("names the switches a move turns on and off, and a removal's losses", () => {
     const fx = memberEffects(snapshot, T, ["u_hugh", "u_theo", "u_jun"], explain);
-    expect(fx.get("u_theo")!.toThis.gains).toEqual(expect.arrayContaining(["Overview v2", "Swap tools", "Feedback"]));
+    expect(fx.get("u_theo")!.toThis.gains).toEqual(expect.arrayContaining(["Overview v2", "Push notifications", "Feedback"]));
     expect(fx.get("u_theo")!.toThis.losses).toEqual([]);
     expect(fx.get("u_hugh")!.toThis).toEqual({ gains: [], losses: [] });
-    expect(fx.get("u_hugh")!.toNone.losses).toEqual(expect.arrayContaining(["Overview v2", "Swap tools"]));
+    expect(fx.get("u_hugh")!.toNone.losses).toEqual(expect.arrayContaining(["Overview v2", "Push notifications"]));
     expect(fx.get("u_jun")!.toNone).toEqual({ gains: [], losses: [] });
   });
 
@@ -182,7 +182,7 @@ describe("pendingSummary", () => {
   const draft = { name: "testers", description: "", credits: "", paidLimit: "" };
   const rows = [
     row("u_mara", "Mara", { id: T, name: "testers" }, [], ["Overview v2"]),
-    row("u_theo", "Theo", { id: F, name: "friends" }, ["Overview v2", "Swap tools"]),
+    row("u_theo", "Theo", { id: F, name: "friends" }, ["Overview v2", "Push notifications"]),
     row("u_jun", "Jun", null),
   ];
 
@@ -193,7 +193,7 @@ describe("pendingSummary", () => {
   it("names a move and what it gains, with no pronoun", () => {
     const p = pendingSummary({ saved, draft, rows, selected: new Set(["u_mara", "u_theo"]) })!;
     expect(p.title).toBe("Theo selected, not saved");
-    expect(p.body).toBe("Theo moves from friends to testers, and gains Overview v2 and Swap tools.");
+    expect(p.body).toBe("Theo moves from friends to testers, and gains Overview v2 and Push notifications.");
     expect(p.body).not.toMatch(/\b(he|she|his|her)\b/i);
   });
 
@@ -255,9 +255,9 @@ describe("pendingSummary", () => {
 describe("groupsList and memberRows", () => {
   const snapshot: SwitchSnapshot = {
     overrides: [
-      { switchName: "SWAP_TOOLS_ENABLED", scope: "group", groupId: T, userId: null, value: "on" },
+      { switchName: "PUSH_ENABLED", scope: "group", groupId: T, userId: null, value: "on" },
       { switchName: "OVERVIEW_V2_ENABLED", scope: "group", groupId: T, userId: null, value: "on" },
-      { switchName: "SWAP_TOOLS_ENABLED", scope: "app", groupId: null, userId: null, value: "off" },
+      { switchName: "PUSH_ENABLED", scope: "app", groupId: null, userId: null, value: "off" },
     ],
     groupOf: new Map([
       ["u_mara", T],
@@ -274,7 +274,7 @@ describe("groupsList and memberRows", () => {
       ["friends", "1 member", "Account ·gone"],
       ["testers", "2 members", "Hugh, Mara"],
     ]);
-    expect(list.cards[1].overrides.map((o) => `${o.label}: ${o.value}`)).toEqual(["Overview v2: on", "Swap tools: on"]);
+    expect(list.cards[1].overrides.map((o) => `${o.label}: ${o.value}`)).toEqual(["Overview v2: on", "Push notifications: on"]);
   });
 
   it("lists every account, then a member the universe misses as Account ·<tail>, with its saved group", () => {
@@ -314,8 +314,8 @@ describe("groupHistory", () => {
         ev("group_paid_limit_set", { newValue: "3" }),
         ev("member_added", { userId: "u_theo" }),
         ev("member_removed", { userId: "u_x" }),
-        ev("override_set", { switchName: "SWAP_TOOLS_ENABLED", newValue: "on" }),
-        ev("override_cleared", { switchName: "SWAP_TOOLS_ENABLED", oldValue: "on" }),
+        ev("override_set", { switchName: "PUSH_ENABLED", newValue: "on" }),
+        ev("override_cleared", { switchName: "PUSH_ENABLED", oldValue: "on" }),
         ev("setting_set"),
       ],
       accounts,
@@ -332,8 +332,8 @@ describe("groupHistory", () => {
       "You set daily paid runs: default → 3",
       "You added Theo",
       "You removed Account ·u_x",
-      "You set Swap tools: not set → on",
-      "You cleared Swap tools (was on)",
+      "You set Push notifications: not set → on",
+      "You cleared Push notifications (was on)",
     ]);
     expect(items[0].when).toBe("Oct 3 · 11:02");
   });

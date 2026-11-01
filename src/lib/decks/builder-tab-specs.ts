@@ -2,7 +2,7 @@
 //
 // A PURE SEAM, extracted from `builder-shell.tsx` when the Analysis tab arrived. Two of the
 // five cells are conditional — Versions is absent on a brew, and Games drops its count at zero
-// (Analysis was a third until `ANALYSIS_TAB_ENABLED` retired, always on) — and the shell is far too heavy to
+// (Analysis was a third until its switch retired, always on) — and the shell is far too heavy to
 // mount in jsdom to find out which ones drew. The rules live here so a test can ask them
 // directly, exactly as `buildMarkKeyEntries` does for the mark key.
 

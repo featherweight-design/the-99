@@ -17,8 +17,8 @@ import { setShoppingLimit, takeStandIn, undoSwap, type TakeResult } from "./take
 
 /**
  * The swap tools' server actions. Every one is a PUBLIC ENDPOINT, so every gate the surface applies
- * is re-applied here: the session and the shape of every id. (Their switch, `SWAP_TOOLS_ENABLED`, is
- * retired: always on.)
+ * is re-applied here: the session and the shape of every id. (Their switch is deleted:
+ * always on.)
  *
  * REVALIDATED IN THE ACTION, deliberately. A take changes what the deck claims, and the page that
  * called it is the deck page, which has to redraw its Shopping list with the cut gone and the add

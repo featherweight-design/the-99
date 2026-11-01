@@ -26,7 +26,7 @@ describe("resolveEnv", () => {
     expect(resolveEnv(e({}), s, "u2").FEEDBACK_ENABLED).toBe("true");
     expect(resolveEnv(e({ FEEDBACK_ENABLED: "true" }), s, "u3").FEEDBACK_ENABLED).toBe("false");
     expect(resolveEnv(e({ FEEDBACK_ENABLED: "true" }), s, null).FEEDBACK_ENABLED).toBe("false");
-    expect(resolveEnv(e({ SWAP_TOOLS_ENABLED: "true" }), s, "u3").SWAP_TOOLS_ENABLED).toBe("true");
+    expect(resolveEnv(e({ PUSH_ENABLED: "true" }), s, "u3").PUSH_ENABLED).toBe("true");
   });
 
   it("lets OFF win when two group rows apply", () => {
@@ -124,13 +124,13 @@ describe("All features", () => {
   it("loses to the env kill and to the account's own Off, and beats group and app-wide", () => {
     const s = snap([
       all(),
-      row({ switchName: "HELP_ME_CHOOSE_ENABLED", scope: "user", userId: "u1", value: "off" }),
+      row({ switchName: "PUSH_ENABLED", scope: "user", userId: "u1", value: "off" }),
       row({ switchName: "FLYER_TRIAL_ENABLED", scope: "group", groupId: "g1", value: "off" }),
       row({ switchName: "ANNOUNCEMENTS_ENABLED", scope: "app", value: "off" }),
     ], { u1: "g1" });
-    const env = resolveEnv(e({ SWAP_TOOLS_ENABLED: "off" }), s, "u1");
-    expect(env.SWAP_TOOLS_ENABLED).toBe("off");
-    expect(env.HELP_ME_CHOOSE_ENABLED).toBe("false");
+    const env = resolveEnv(e({ OVERVIEW_V2_ENABLED: "off" }), s, "u1");
+    expect(env.OVERVIEW_V2_ENABLED).toBe("off");
+    expect(env.PUSH_ENABLED).toBe("false");
     expect(env.FLYER_TRIAL_ENABLED).toBe("true");
     expect(env.ANNOUNCEMENTS_ENABLED).toBe("true");
     expect(decide("FLYER_TRIAL_ENABLED", "feature", e({}), s, "u1").source).toEqual({ kind: "all" });
@@ -142,7 +142,7 @@ describe("All features", () => {
   });
 
   it("does nothing as an Off row, or at a scope other than an account", () => {
-    expect(resolveEnv(e({}), snap([all("u1"), row({ switchName: ALL_FEATURES, scope: "user", userId: "u2", value: "off" })]), "u2").HELP_ME_CHOOSE_ENABLED).toBeUndefined();
-    expect(resolveEnv(e({}), snap([row({ switchName: ALL_FEATURES, scope: "app", value: "on" })]), "u1").HELP_ME_CHOOSE_ENABLED).toBeUndefined();
+    expect(resolveEnv(e({}), snap([all("u1"), row({ switchName: ALL_FEATURES, scope: "user", userId: "u2", value: "off" })]), "u2").PUSH_ENABLED).toBeUndefined();
+    expect(resolveEnv(e({}), snap([row({ switchName: ALL_FEATURES, scope: "app", value: "on" })]), "u1").PUSH_ENABLED).toBeUndefined();
   });
 });

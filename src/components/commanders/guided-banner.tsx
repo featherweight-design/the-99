@@ -31,7 +31,7 @@ import { useMomentAnchor } from "../moments/moments-provider";
 type GuidedBannerProps = {
   uniqueCardsRead: number;
   candidateCount: number;
-  /** `HELP_ME_CHOOSE_ENABLED`, resolved on the server for this reader. */
+  /** Whether to draw Help me choose's door here. */
   helpMeChoose?: boolean;
 };
 

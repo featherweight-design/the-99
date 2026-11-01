@@ -36,8 +36,8 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   never lets calls through under an app-wide Off row. `readAllowance` reports `paused` for display only (through the
   memo, the environment deciding on a failed read), which every panel draws as it draws the owner's share, with
   `creditsCopy.paused`. A compound switch names its parent as `needs`
-  in the registry, and a switch is tagged `model` exactly when turning it on can let a reader spend (the Analysis
-  tab and Swap tools are parents of spending switches); `src/lib/switches/flags.test.ts` holds both to the flag
+  in the registry, and a switch is tagged `model` exactly when turning it on changes what a reader can spend
+  (Overview v2 and Suggested changes v2); `src/lib/switches/flags.test.ts` holds both to the flag
   functions. An app-wide override still flips one without a deploy, so its readers
   are handed the resolved env too, and a cache whose payload depends on it carries it in its key:
   `discoveryKey` and `commanderRankingsKey` take the basis, the stored scores' `writer_version` carries it

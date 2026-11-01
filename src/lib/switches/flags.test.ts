@@ -75,39 +75,18 @@ describe("MODEL_CAPABILITIES", () => {
   const raisedBy = (name: SwitchName) =>
     MODEL_CAPABILITIES.filter((c) => !c.on(all("true", { [name]: "false" })) && c.on(all("true"))).map((c) => c.key);
 
-  // Retired model switches still in the registry until their removal PR: nothing gates on them, so turning one on raises
-  // no capability. Proposed cuts' paid pass follows its parent, the Analysis tab (Hugh 2026-10-31). Swap tools has no
-  // parent: Find a deck's paid read is always offered, and only the model-call kill switch stops it. Suggested changes'
-  // runs follow its parent, the Analysis tab (Hugh 2026-11-01). Help me choose has no parent: its paid read is always
-  // offered, and only the model-call kill switch stops it (Hugh 2026-11-01). The Analysis tab, parent of the Overview,
-  // Suggested changes and Proposed cuts, is retired too (Hugh 2026-11-01): their paid runs are always offered, and only
-  // the model-call kill switch stops them.
-  const RETIRED = new Set<SwitchName>(["ANALYSIS_TAB_ENABLED", "HELP_ME_CHOOSE_ENABLED", "PROPOSED_CUTS_ENABLED", "SWAP_TOOLS_ENABLED", "TUNING_ENABLED"]);
-
   it("is raised by every model switch", () => {
-    for (const name of SWITCH_NAMES.filter((n) => switchKind(n) === "model" && !RETIRED.has(n))) {
+    for (const name of SWITCH_NAMES.filter((n) => switchKind(n) === "model")) {
       expect(raisedBy(name).length, name).toBeGreaterThan(0);
     }
   });
 
-  it("is raised by no retired switch", () => {
-    for (const name of RETIRED) expect(raisedBy(name), name).toEqual([]);
-  });
-
-  it("offers the paid read with every switch off, now swap tools is retired", () => {
-    const fitsRead = MODEL_CAPABILITIES.find((c) => c.key === "fits_read");
-    expect(fitsRead?.on(all("false"))).toBe(true);
-  });
-
-  it("offers the Overview's, Suggested changes' and Proposed cuts' paid runs with every switch off, now the Analysis tab's is retired", () => {
-    for (const key of ["synopsis", "tuning", "proposed_cuts"] as const) {
+  // The paid runs no switch gates (their switches are deleted): always offered, and only the model-call kill switch
+  // (`reserveModelCall`) stops them.
+  it("offers the ungated paid runs with every switch off", () => {
+    for (const key of ["synopsis", "tuning", "proposed_cuts", "intake", "fits_read"] as const) {
       expect(MODEL_CAPABILITIES.find((c) => c.key === key)?.on(all("false")), key).toBe(true);
     }
-  });
-
-  it("offers Help me choose's paid read with every switch off, now its switch is retired", () => {
-    const intake = MODEL_CAPABILITIES.find((c) => c.key === "intake");
-    expect(intake?.on(all("false"))).toBe(true);
   });
 
   it("is raised by no switch that is not a model switch", () => {
