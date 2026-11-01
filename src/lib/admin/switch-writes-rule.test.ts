@@ -67,10 +67,11 @@ describe("applyWrite and isNoop", () => {
 describe("what a write raises", () => {
   const rise = (env: Env, before: SwitchSnapshot, w: Write, ids = ["u1", "u2"]) => riseBetween(env as NodeJS.ProcessEnv, before, applyWrite(before, w), ids);
 
-  it("raises the synopsis, and Suggested changes where it is on, when the Analysis tab turns on for a group", () => {
+  it("raises the synopsis, Proposed cuts, and Suggested changes where it is on, when the Analysis tab turns on for a group", () => {
     const r = rise({ TUNING_ENABLED: "true" }, snap([], { u1: G }), write({ name: "ANALYSIS_TAB_ENABLED", scope: "group", groupId: G }));
     expect(r.accounts).toEqual(["u1"]);
-    expect(r.capabilities).toEqual(["synopsis", "tuning"]);
+    // Proposed cuts' own switch is retired: its paid pass rides the tab, so the tab's flip raises it too.
+    expect(r.capabilities).toEqual(["synopsis", "tuning", "proposed_cuts"]);
   });
 
   it("raises on clearing an app-wide off over an env var that is true", () => {
