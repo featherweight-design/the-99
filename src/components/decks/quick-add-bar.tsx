@@ -16,7 +16,6 @@
 // Replaced search-pane.tsx and search-result-row.tsx, both now deleted.
 
 import { useCallback, useId, useLayoutEffect, useRef, useState } from "react";
-import { usePathname } from "next/navigation";
 import type { SearchResult } from "../../app/decks/[id]/search-action";
 import { addCardToDeck } from "../../app/decks/actions";
 import { DECK_ADD_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
@@ -41,7 +40,7 @@ import { type CardSearchColumn, type CardSearchInput, useCardSearch } from "./us
 import { QuickAddFailedToast } from "./quick-add-failed-toast";
 import { type DeckComboMap, useDeckComboMap } from "./use-deck-combo-map";
 import { useDeckMutation } from "./use-deck-mutation";
-import { useAddCards } from "../collection/add-cards-host";
+import { useAddCards, useAddCardsUp } from "../collection/add-cards-host";
 import { useCollectionEditScope } from "../cards/collection-edit-scope";
 import { noteJustOwned } from "../../lib/decks/just-owned";
 import { OWNED_RING_EDGE } from "./use-owned-ring";
@@ -143,13 +142,14 @@ export function QuickAddBar({
     setInputEpoch(inputRef.current);
   }, []);
   // The bridge's Add cards sheet is up (add a card from anywhere, Dock K3 to K5): every press in it is outside the bar,
-  // and none of them is the reader putting the search down. The query waits for the sheet to close (K6). Kept as the
-  // page it was opened on, so a close the host does not report (one on the way to another route) cannot leave the
-  // dismiss off: on another page, or another deck, it is no longer up.
-  const pathname = usePathname();
-  const here = `${deckId} ${pathname ?? ""}`;
-  const [bridgingOn, setBridgingOn] = useState<string | null>(null);
-  const bridging = bridgingOn === here;
+  // and none of them is the reader putting the search down. The query waits for the sheet to close (K6). Followed
+  // through the host's own state: "asked" until the host takes the ask, "up" while it holds it, and let go when the
+  // host lets go, so a close the host does not report (one on the way to another route) cannot leave the dismiss off.
+  const hostUp = useAddCardsUp();
+  const [bridgeState, setBridgeState] = useState<"asked" | "up" | null>(null);
+  if (bridgeState === "asked" && hostUp) setBridgeState("up");
+  else if (bridgeState === "up" && !hostUp) setBridgeState(null);
+  const bridging = bridgeState !== null;
   const { ref: rootRef, onEscape, insideProps } = useSearchDismiss<HTMLDivElement>(
     query.length > 0 && !detailUp && !bridging,
     () => {
@@ -199,7 +199,7 @@ export function QuickAddBar({
   const ringedIds = ringed !== null && ringed.epoch === inputEpoch && ringed.key === ringKey ? ringed.ids : null;
   const bridge = useCallback(() => {
     if (!addCards) return;
-    setBridgingOn(here);
+    setBridgeState("asked");
     setRinged(null);
     // The sheet leaves the page a beat before the close reaches here (its history entry goes first), and the field is
     // live again in that beat. Input changed then is the reader's own new search, already running: nothing is re-run
@@ -209,7 +209,7 @@ export function QuickAddBar({
     addCards({
       initialQuery: trimmed,
       onClosed: ({ saved }) => {
-        setBridgingOn(null);
+        setBridgeState(null);
         if (inputRef.current !== at) return;
         if (saved) {
           setRingAfter({ epoch: at, key, after: landingsRef.current });
@@ -218,7 +218,7 @@ export function QuickAddBar({
         fieldRef.current?.focus();
       },
     });
-  }, [addCards, here, trimmed, ringKey, retry]);
+  }, [addCards, trimmed, ringKey, retry]);
 
   // Keyed on the COMMITTED list, which is what this prop is (see its doc): the re-read after an
   // add must see the deck the add produced, and the optimistic list moves before that exists.

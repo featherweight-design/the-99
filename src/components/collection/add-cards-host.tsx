@@ -63,10 +63,19 @@ export type OpenAddCards = {
 export type AskAddCards = (open: OpenAddCards) => boolean;
 
 const AddCardsContext = createContext<AskAddCards | null>(null);
+// Whether an ask is in hand: on its way, its sheet drawn, or its close not yet reported. An opener that holds its own
+// state while the sheet is up (the dock's dismiss) reads this to let go when the host drops the sheet without a close
+// (a navigation).
+const AddCardsUpContext = createContext(false);
 
 /** Opens the shell's Add cards sheet, or null where no shell host is mounted (signed out, a test). */
 export function useAddCards(): AskAddCards | null {
   return useContext(AddCardsContext);
+}
+
+/** True while the shell's Add cards sheet is asked for, up, or closing. False with no host. */
+export function useAddCardsUp(): boolean {
+  return useContext(AddCardsUpContext);
 }
 
 type Shown = OpenAddCards & { n: number };
@@ -166,6 +175,7 @@ export function AddCardsHost({ totalCards, children }: { totalCards: number; chi
 
   return (
     <AddCardsContext.Provider value={open}>
+      <AddCardsUpContext.Provider value={asked !== null || shown !== null || closed !== null}>
       {children}
       {shown ? (
         <Suspense fallback={null}>
@@ -187,6 +197,7 @@ export function AddCardsHost({ totalCards, children }: { totalCards: number; chi
           <Opened key={`opened-${shown.n}`} onOpened={shown.onOpened} />
         </Suspense>
       ) : null}
+      </AddCardsUpContext.Provider>
     </AddCardsContext.Provider>
   );
 }
