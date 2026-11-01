@@ -35,7 +35,7 @@ export const opponentsWire = (read: DeckOpponents): DeckOpponentsWire => ({
  * one the seat picker drew when the seat was filled). Fail-soft: a failed art read leaves the seats
  * with initials and the matchups with pips, and never costs the opponents themselves.
  */
-async function withArt(opponents: Map<string, GameOpponent[]>): Promise<Map<string, GameOpponent[]>> {
+export async function withArt<T extends GameOpponent>(opponents: Map<string, T[]>): Promise<Map<string, T[]>> {
   const ids = new Set<string>();
   for (const seats of opponents.values()) {
     for (const s of seats) for (const c of [s.commander, s.partner]) if (c) ids.add(c.oracleId);
