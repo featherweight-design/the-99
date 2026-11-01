@@ -2,6 +2,7 @@ import "./lib/env.mjs";
 import { generateCommanderProse } from "../src/lib/prose/generate";
 import { costUsd, rates, type Usage } from "./eval/lib/pricing.mjs";
 import { recordSystemSpend } from "./lib/system-spend";
+import { assertModelCallsOn } from "./lib/model-calls-gate.mjs";
 
 // Sonnet 5.5 since 2026-10-30 (Hugh: the 5.5 model wherever one exists); it was Sonnet 4.6.
 export const MODEL = "claude-sonnet-5-5";
@@ -92,10 +93,13 @@ async function recordSpend() {
   await recordSystemSpend({ feature: "prose", model: MODEL, usd: spentUsd });
 }
 
-generateCommanderProse({
-  complete, dryRun, maxCommanders, attempts: ATTEMPTS,
-  shouldStop: () => spentUsd + worstCommanderUsd > maxUsd,
-})
+// The app-wide model-call switch, before any call (`model-calls-gate.mjs`); it exits 0 when model
+// calls are paused. A dry run calls nothing, so it still counts while the switch is off.
+(dryRun ? Promise.resolve() : assertModelCallsOn())
+  .then(() => generateCommanderProse({
+    complete, dryRun, maxCommanders, attempts: ATTEMPTS,
+    shouldStop: () => spentUsd + worstCommanderUsd > maxUsd,
+  }))
   .then(async (r) => {
     if (dryRun) {
       console.log(`Dry run: ${r.deferred} commanders need a sentence (${r.fresh} already current, ` +

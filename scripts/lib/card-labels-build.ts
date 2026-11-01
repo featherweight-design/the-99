@@ -120,6 +120,12 @@ export type BuildOptions = {
   /** The highest report line a dispatch can ask for, so a pause can say whether one can resume. */
   dispatchCeilingUsd: number;
   dryRun: boolean;
+  /**
+   * Called before a wave is submitted, after every paid batch has been collected: the app-wide
+   * model-call switch (`model-calls-gate.mjs`), which exits 0 when model calls are paused. Only the
+   * submit spends, so a run paused mid-backfill still collects and publishes what it paid for.
+   */
+  beforeSubmit?: () => Promise<void>;
   /** Which cards the run labels (`LABEL_SCOPE`); `src/lib/labels/scope.ts` states the trade. */
   scope: LabelScope;
   /**
@@ -871,6 +877,7 @@ async function build(opts: BuildOptions): Promise<number> {
     return EXIT_DONE;
   }
 
+  await opts.beforeSubmit?.();
   await submit(opts, wave, new Map(cards.map((c) => [c.name, c])));
   console.log(`\nSubmitted wave of ${wave.length}. Batches are asynchronous: re-run with `
     + `LABEL_RUN_ID=${runId} to collect it and submit the next wave.`);

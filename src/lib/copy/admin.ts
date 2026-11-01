@@ -786,7 +786,7 @@ export const switchCopy: Readonly<Record<SwitchName, { label: string; descriptio
   ANNOUNCEMENTS_ENABLED: { label: "Announcements", description: "Wizards announcements on Home, in Settings and as pushes. No surface yet." },
   HELP_ME_CHOOSE_ENABLED: { label: "Help me choose", description: "Find a commander from a few words, and Look deeper." },
   LIST_CACHE_ENABLED: { label: "List cache", description: "Home and /decks cached per reader." },
-  MODEL_CALLS_ENABLED: { label: "Model calls", description: "Model calls the app starts: player runs and the Overview rewrite. Background jobs aren’t covered yet. Off refuses each new run before it charges; runs already going finish. On unless set off." },
+  MODEL_CALLS_ENABLED: { label: "Model calls", description: "Model calls the app starts: player runs and the Overview rewrite. Background jobs check it before they start. Off refuses each new run before it charges; runs already going finish. On unless set off." },
   NAV_STALL_LOG_ENABLED: { label: "Stuck-loader reports", description: "Logs a report when a loading screen stays up 8 seconds. Changes nothing on screen." },
   OVERVIEW_V2_ENABLED: { label: "Overview v2", description: "The Overview on contract 8, Sonnet 5.5." },
   PAYMENTS_ENABLED: { label: "Buying credits", description: "Buy credit packs. Off stops new purchases; payments already made still settle." },

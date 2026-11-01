@@ -12,8 +12,13 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   takes the app-wide override alone. `MODEL_CALLS_ENABLED` (plumbing) is the model-call kill switch and the one switch
   ON BY DEFAULT: on while unset, off for `false` or `off`. As for every switch, only `off` is the hard stop no override
   raises; `false` is a soft off an app-wide On row overrides (an app-wide Off row resolves to `false`). For a hard stop
-  set the variable to `off`, or use the app-wide Off row without a deploy. It gates only runs reserved through
-  `reserveModelCall` (player runs and the Overview rewrite); background jobs are not gated yet. The registry marks it `defaultOn`
+  set the variable to `off`, or use the app-wide Off row without a deploy. It gates the runs reserved through
+  `reserveModelCall` (player runs and the Overview rewrite) and, through `/api/health`, the background jobs: health
+  reports `modelCalls: "on" | "off"` (the app-wide resolution, fresh, "off" when the read fails), and
+  `assertModelCallsOn` (`scripts/lib/model-calls-gate.mjs`) asks PRODUCTION's health (`MODEL_CALLS_HEALTH_URL`,
+  default `https://the-99.dev/api/health`, even for a staging-catalog job) before a job spends, and exits 0 with one
+  line on "off" or on anything it cannot confirm. Gated: `check:tuning`, `db:build:prose`, `db:build:labels` (before
+  each wave's submit; collecting paid batches still runs) and `db:build:precon-overviews` (a live run; not `--collect`). The registry marks it `defaultOn`
   so `switchBits` encodes it the way its flag function reads it. Off, `reserveModelCall` refuses every new run, system
   origin included, as `paused` (no row, no charge). It FAILS CLOSED, unlike every other switch read: the reservation
   reads the overrides fresh (`resolveSwitchEnvStrict`), and a read that fails refuses as `paused`, so a database failure

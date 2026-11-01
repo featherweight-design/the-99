@@ -102,6 +102,13 @@ async function main(): Promise<number> {
   const live = !DRY && !STUB && !READINGS_ONLY;
   if (COLLECT && (DRY || STUB)) throw new Error("--collect collects a real batch: not with --dry-run or --stub");
   if (live) requireEnv(["ANTHROPIC_API_KEY"]);
+  // The app-wide model-call switch, before a live run counts tokens or submits a batch
+  // (`model-calls-gate.mjs`). Not for `--collect`: that batch is already paid for, and collecting it
+  // spends nothing new. A dry run, a stub and `--readings-only` call no model.
+  if (live && !COLLECT) {
+    const { assertModelCallsOn } = await import("./lib/model-calls-gate.mjs");
+    await assertModelCallsOn();
+  }
   // A stub's Overview is a fixture: written only to a scratch branch, never where a real one belongs.
   if (STUB) {
     const { assertScratchBranch } = await import("./lib/scratch-branch.mjs");
