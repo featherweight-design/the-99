@@ -136,6 +136,8 @@ function ChoicesModal({ choices, failed, onRetry, onClose }: { choices: DeckChoi
   return (
     <ModalChrome
       title={copy.sheetTitle}
+      // The chrome draws a lead only in its eyebrow header; an empty eyebrow takes no height, so the board's title-over-lead header draws.
+      eyebrow=""
       lead={<span className="block text-[13px] leading-[1.55] text-[color:var(--fg-muted)]">{copy.sheetSub}</span>}
       closeLabel={copy.close}
       onClose={onClose}
