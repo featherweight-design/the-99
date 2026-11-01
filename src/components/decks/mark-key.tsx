@@ -43,7 +43,7 @@ export function MarkKey({
    * Equal-width columns below `md` instead of the wrapping line (H7, Hugh's walk
    * 2026-10-02). Wrapped, the collection's key broke wherever its words happened to
    * end, so its entries sat at a different place on every line. Opt-in, so every
-   * other key is unchanged; from `md` it wraps as before.
+   * other key is unchanged; from `md` it wraps as before (unless `keepColumnsFromMd`).
    */
   phoneColumns?: 2 | 3;
   /**
@@ -67,9 +67,9 @@ export function MarkKey({
       // horizontally scrolling legend on a phone is a control nobody presses.
       className={[
         phoneColumns === 3
-          ? `grid grid-cols-3 ${keepColumnsFromMd ? "" : "md:flex md:flex-wrap"}`
+          ? keepColumnsFromMd ? "grid grid-cols-3" : "grid grid-cols-3 md:flex md:flex-wrap"
           : phoneColumns === 2
-            ? `grid grid-cols-2 ${keepColumnsFromMd ? "" : "md:flex md:flex-wrap"}`
+            ? keepColumnsFromMd ? "grid grid-cols-2" : "grid grid-cols-2 md:flex md:flex-wrap"
             : "flex flex-wrap",
         "items-center gap-x-[12px] gap-y-[6px] font-mono text-[10px] md:text-[10.5px]",
       ].join(" ")}
