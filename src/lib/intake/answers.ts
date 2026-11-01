@@ -92,6 +92,7 @@ export type AnswerColumns = {
   answerOwnedOnly?: boolean;
   answerBracketBuys?: boolean;
   answerBudgetRaised?: boolean;
+  answerSets?: string[];
 };
 
 /**
@@ -113,6 +114,7 @@ export function answerColumnsFor(
     answerOwnedOnly: asked.pool === "own",
     // The ask as validated; `createDeck` writes what it honored on the filled path.
     answerBracketBuys: asked.bracketBuys,
+    answerSets: asked.sets,
   };
 }
 
@@ -124,6 +126,8 @@ export type StoredAnswers = {
   answerCardOracleId: string | null;
   answerBracketBuys: boolean;
   answerBudgetRaised: boolean;
+  /** Absent on a row read before the column existed, or a fixture that predates it. */
+  answerSets?: string[];
 };
 
 /**
@@ -143,5 +147,7 @@ export function retryAnswersOf(deck: StoredAnswers): DeckAnswers | null {
     // *Hit bracket N*, as the create stored it, so the retry places the same set to buy.
     bracketBuys: deck.answerBracketBuys === true,
     budgetRaised: deck.answerBudgetRaised === true,
+    // The sets asked, so the retry leads with the same owned cards the create would have.
+    ...(deck.answerSets && deck.answerSets.length > 0 ? { sets: deck.answerSets } : {}),
   };
 }

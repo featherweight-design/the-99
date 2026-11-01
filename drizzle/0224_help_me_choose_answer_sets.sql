@@ -1,0 +1,1 @@
+ALTER TABLE "decks" ADD COLUMN "answer_sets" text[] DEFAULT '{}'::text[] NOT NULL;
