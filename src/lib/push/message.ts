@@ -103,7 +103,12 @@ export function toMessage(group: readonly PushItem[]): PushMessage {
     }
     case "rule_zero_seat": {
       // Never collapsed (one table, one reader): the table's own page, tagged by its key so two tables never replace each other.
-      return home(`rule_zero_seat:${first.key}`, keys, c.one.seat.title(first.host, first.pod), c.one.seat.body(first.deck), { route: `/friends/table/${first.tableId}` });
+      const seat = c.one.seat;
+      const full = seat.title(first.host, first.pod);
+      const [title, body] = Array.from(full).length <= seat.titleMax
+        ? [full, seat.body(first.deck)]
+        : [fitTitle(seat.splitTitle, first.host, seat.titleMax), seat.splitBody(first.pod, first.deck)];
+      return home(`rule_zero_seat:${first.key}`, keys, title, body, { route: `/friends/table/${first.tableId}` });
     }
     case "combo": {
       if (n === 1) return home("combo", keys, c.one.combo.title, c.one.combo.body(first.a, first.b, first.added), { openCard: first.oracleId, openCombo: true, image: first.image });
@@ -119,6 +124,14 @@ export function toMessage(group: readonly PushItem[]): PushMessage {
     }
   }
 }
+
+/** A title built from a host name, cut with an ellipsis (U+2026) on the host only when it runs past `max` characters (code points, as `clip` counts). */
+const fitTitle = (make: (host: string) => string, host: string, max: number): string => {
+  const whole = make(host);
+  if (Array.from(whole).length <= max) return whole;
+  const room = max - Array.from(make("")).length - 1;
+  return make(`${Array.from(host).slice(0, Math.max(room, 0)).join("")}\u2026`);
+};
 
 /** An image the device may fetch: https only (the worker refuses anything else too). */
 const httpsOnly = (url: string | null): string | null => (url && url.startsWith("https://") ? url : null);

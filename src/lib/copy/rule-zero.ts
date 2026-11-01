@@ -236,6 +236,8 @@ export const ruleZeroCopy = {
   close: {
     // Copy-reviewed (Close UI).
     action: "Close the table",
+    /** The confirm's label while the close is in flight (Rule 0 defaults, C6/C7). */
+    closing: "Closing\u2026",
     // Copy-reviewed (Close UI).
     title: (pod: Said) => personText`Close ${pod}’s table?`,
     // Copy-reviewed (Close UI).

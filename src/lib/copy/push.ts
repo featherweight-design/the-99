@@ -31,10 +31,15 @@ export const pushCopy = {
     // Copy-reviewed (seat push). The board's words (Rule 0 revisions, Notice board, item 6), kept verbatim: the toast's sentence
     // is the title; the body is the deck the seat holds, or the nudge to pick one. Host and pod are the readers' own words.
     // The push title has no trailing period, as the board's lock-screen and banner drawings show (the in-app toast keeps its own).
-    // Fixed text is 23 of the title's 25; a long host or pod name runs past 40 and the push layer clips it at payloadFor.
+    // A title of 40 characters or fewer is the shipped one. Longer, the title is `{host} seated you` and the pod moves to the body
+    // (copy-reviewed bodies below); a host alone past 40 is cut with an ellipsis, the only cut. payloadFor (send.ts) still clips titles at 120.
     seat: {
       title: (host: string, pod: string) => `${host} seated you at ${pod}\u2019s table`,
+      /** The title when the full one runs past `titleMax`: the pod and deck move to `splitBody`. */
+      splitTitle: (host: string) => `${host} seated you`,
+      titleMax: 40,
       body: (deck: string | null) => (deck === null ? "Pick your deck at the table." : `You\u2019re seated with ${deck}.`),
+      splitBody: (pod: string, deck: string | null) => (deck === null ? `At ${pod}\u2019s table. Pick your deck there.` : `At ${pod}\u2019s table, with ${deck}.`),
     },
     /** A Wizards post (Announcements UI 3b): its own title, and its summary, or where a tap goes when it has none. */
     post: { title: (title: string) => title, body: (excerpt: string | null) => excerpt ?? "Read it on Wizards." },

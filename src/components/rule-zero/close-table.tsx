@@ -70,7 +70,7 @@ export function CloseTable({ podName, run }: { podName: ThirdPartyName; run: () 
           <div className="flex justify-end gap-[8px] px-[20px] pb-[20px] pt-[16px]">{actions}</div>
         </ModalChrome>
       ) : null}
-      {open && !wide ? <ConfirmSheet podName={podName} anchorRef={anchorRef} onDismiss={leave}>{actions}</ConfirmSheet> : null}
+      {open && !wide ? <ConfirmSheet podName={podName} anchorRef={anchorRef} onDismiss={leave} busy={busy}>{actions}</ConfirmSheet> : null}
     </>
   );
 }
@@ -79,8 +79,10 @@ function ConfirmSheet({
   podName,
   anchorRef,
   onDismiss,
+  busy,
   children,
 }: {
+  busy: boolean;
   podName: ThirdPartyName;
   anchorRef: React.RefObject<HTMLElement | null>;
   onDismiss: () => void;
@@ -111,9 +113,12 @@ function ConfirmSheet({
           </h2>
           <button
             type="button"
-            onClick={onDismiss}
+            aria-disabled={busy || undefined}
+            onClick={() => {
+              if (!busy) onDismiss();
+            }}
             aria-label={copy.dismiss}
-            className="flex h-[44px] w-[44px] flex-none cursor-pointer items-center justify-center border-0 bg-transparent font-mono text-[15px] text-[color:var(--fg-muted)]"
+            className="flex h-[44px] w-[44px] flex-none cursor-pointer aria-disabled:cursor-default aria-disabled:opacity-60 items-center justify-center border-0 bg-transparent font-mono text-[15px] text-[color:var(--fg-muted)]"
           >
             ×
           </button>
@@ -156,7 +161,7 @@ function Actions({ busy, wide, onKeep, onConfirm }: { busy: boolean; wide: boole
       }}
       className={`${size} ${held} cursor-pointer border-0 bg-[color:var(--danger)] font-sans font-semibold text-[#fff]`}
     >
-      {copy.action}
+      {busy ? copy.closing : copy.action}
     </button>
   );
   return wide ? [keep, danger] : [danger, keep];
