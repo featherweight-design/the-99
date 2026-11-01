@@ -260,9 +260,12 @@ export function presentationFailures(
   // A count spelled as a word needs its denominator too: `three games` is `3 games`. `one` and
   // `none` are left out of the counted side only, where they read as "a" and "no" far more often
   // than as counts ("the one card that", "none of it").
+  // A month-first date puts its day or year straight in front of the next word (`Sep 6 game`,
+  // `Dec 31, 2025 game`), which this scan would read as a count, so dates are blanked first.
+  const scanned = repaired.replace(DATE_FORM, "DATE");
   const counted = new RegExp(`\\b(\\d+|${COUNT_WORDS})\\s+${COUNTED}\\b`, "gi");
-  for (const m of repaired.matchAll(counted)) {
-    const before = repaired.slice(0, m.index);
+  for (const m of scanned.matchAll(counted)) {
+    const before = scanned.slice(0, m.index);
     if (!new RegExp(`(?:\\d+|${NUMBER_WORDS})\\s+of\\s+(?:your\\s+|the\\s+)?$`, "i").test(before)) {
       broken.push("denominator");
       break;
@@ -271,6 +274,9 @@ export function presentationFailures(
 
   return { broken, text: repaired };
 }
+
+/** A month-first date as a note is quoted: `Sep 6`, `September 6`, `Dec 31, 2025`. */
+const DATE_FORM = /\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.? \d{1,2}(?:,? \d{4})?\b/g;
 
 /** Whether `span` is found, as whole words, inside `source` — the direction a genuine
  *  part-quote must satisfy; the reverse (a span that merely contains the source, plus

@@ -20,6 +20,12 @@ describe("presentationFailures", () => {
 
   it("catches a bare count with no denominator", () => {
     expect(fails("Mana hurt in 3 games.", notes)).toContain("denominator");
+    expect(fails("Mana hurt in 3 games on Sep 6.", notes)).toContain("denominator");
+  });
+
+  it("does not read a month-first date as a count", () => {
+    expect(fails("In your Sep 6 game you flooded, 3 of 5 games.", notes)).not.toContain("denominator");
+    expect(fails("In your Dec 31, 2025 game you flooded, 3 of 5 games.", notes)).not.toContain("denominator");
   });
 
   it("does not ask a card count for a denominator", () => {
