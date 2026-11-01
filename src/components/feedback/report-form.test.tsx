@@ -87,6 +87,7 @@ describe("ReportForm", () => {
     await waitFor(() => expect(screen.getByText(copy.sentBody)).toBeTruthy());
     expect(screen.queryByText(copy.sentSignedOut)).toBeNull();
     expect(screen.queryByTestId("report-code")).toBeNull();
+    expect(send).toHaveBeenCalledWith(expect.objectContaining({ page: window.location.pathname }));
   });
 
   it("a send that throws reads as failed too", async () => {
