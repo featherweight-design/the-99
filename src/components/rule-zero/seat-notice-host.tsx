@@ -13,6 +13,7 @@
 // on that table's own page (the page marks the notice seen). `Open` and the table page both end in `markSeatNoticeSeenAction`
 // on the table; ✕ calls it directly.
 
+import { PendingReporter } from "../shell/pending-reporter";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -145,7 +146,7 @@ export function SeatNoticeHost() {
           data-seat-notice={n.tableId}
           className="pointer-events-auto flex min-h-[56px] items-center gap-[10px] rounded-[12px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--elevated)] py-[8px] pl-[10px] pr-[4px] text-[13.5px] leading-[1.4] text-[color:var(--fg-body)] shadow-[0_16px_40px_rgba(0,0,0,0.6)]"
         >
-          <span aria-hidden className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-[8px] border border-solid border-[color:color-mix(in_srgb,var(--accent)_40%,transparent)] bg-[color:color-mix(in_srgb,var(--accent)_12%,transparent)] text-[color:var(--accent)]">
+          <span aria-hidden className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-[8px] border border-solid border-[color:color-mix(in_srgb,var(--accent)_40%,transparent)] bg-[color:color-mix(in_srgb,var(--accent)_12%,transparent)] text-[color:var(--accent-text)]">
             <TableGlyph size={18} />
           </span>
           <span className="min-w-0 flex-1">
@@ -164,6 +165,7 @@ export function SeatNoticeHost() {
             className="flex min-h-[40px] flex-none items-center px-[8px] font-semibold text-[color:var(--accent-text)] underline decoration-[color:color-mix(in_oklab,var(--accent)_50%,transparent)] underline-offset-4"
           >
             {copy.open}
+            <PendingReporter href={tablePath(n.tableId)} />
           </Link>
           <button
             type="button"
