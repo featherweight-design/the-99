@@ -1,5 +1,5 @@
 // Discovery R3·5: the nudges in the deck page's existing slots. N2 (`balance mana →`) and N2b (the over row's `Cuts`)
-// follow their own tool's switch, with the hub on or off (R3 gap 7); N1 (`suggest swaps →`) offers Suggested changes on
+// follow the Analysis tab (both tools' own switches are retired), with the hub on or off (R3 gap 7); N1 (`suggest swaps →`) offers Suggested changes on
 // a deck at its body size. A press with the hub off lands as Try it does, through `?tool=` (R2's landing).
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -55,12 +55,12 @@ const deck = (built: number) =>
     unresolvedRows: [],
   }) as unknown as DeckDetail;
 
-function draw(props: { built?: number; hub?: boolean; analysis?: boolean; cuts?: boolean; tuning?: boolean }) {
+function draw(props: { built?: number; hub?: boolean; analysis?: boolean; tuning?: boolean }) {
   seen.strip = {};
   render(
     <BuilderShell mix={recommendedMix(null, false)} deck={deck(props.built ?? 99)} suggestions={[]} degraded={false} firstRun={false}
       commanderIdentity={["G"]} arrivedFromImport={false} newestAsOf={null} analysisEnabled={props.analysis ?? true} initialView="deck"
-      tuningHubEnabled={props.hub ?? false} proposedCutsEnabled={props.cuts ?? false}
+      tuningHubEnabled={props.hub ?? false}
       tuningEnabled={props.tuning ?? false} />,
   );
 }
@@ -90,13 +90,18 @@ describe("BuilderShell — nudges follow their own switch (discovery R3·5)", ()
   });
 
   it("N2b: draws the over row's Cuts with the hub off, and lands on Proposed cuts through ?tool=", () => {
-    draw({ cuts: true, built: 101 });
+    draw({ built: 101 });
     fireEvent.click(screen.getByRole("button", { name: tuningHubShortcutsCopy.proposedCutsAria }));
     expect(written).toEqual(["proposed-cuts"]);
   });
 
-  it("N2b: absent with its own switch off, whatever the hub", () => {
+  it("N2b: draws with the tab whatever the hub, since Proposed cuts' own switch is retired", () => {
     draw({ hub: true, built: 101 });
+    expect(screen.getByRole("button", { name: tuningHubShortcutsCopy.proposedCutsAria })).toBeTruthy();
+  });
+
+  it("N2b: absent with the Analysis tab off, whatever the hub", () => {
+    draw({ analysis: false, hub: true, built: 101 });
     expect(screen.queryByRole("button", { name: tuningHubShortcutsCopy.proposedCutsAria })).toBeNull();
   });
 

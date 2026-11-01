@@ -49,7 +49,8 @@ vi.mock("../../lib/tuning/tool-counts", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../lib/tuning/tool-counts")>()),
   recordToolCount: async (row: { listFingerprint: string; tool: string }) => { calls.recorded.push(row); },
 }));
-vi.mock("../../lib/tuning/flag", () => ({ proposedCutsEnabled: () => calls.enabled }));
+// Proposed cuts has no switch but the Analysis tab's (its own retired 2026-10-31).
+vi.mock("../../lib/decks/analysis-flag", () => ({ analysisTabEnabled: () => calls.enabled }));
 vi.mock("next/cache", () => ({ revalidatePath: () => undefined, updateTag: () => undefined }));
 // `after()` runs the run's model call and settle once the response is sent: tests collect them and
 // wait for them where the real server would have finished them.
@@ -174,7 +175,7 @@ beforeEach(() => {
 });
 
 describe("runProposedCuts refuses before any credit is reserved", () => {
-  it("with the switch off, without reading the deck", async () => {
+  it("with the Analysis tab off, without reading the deck", async () => {
     calls.enabled = false;
     expect(await runProposedCuts(DECK)).toEqual({ ok: false, message: deckCutsCopy.run.refused });
     expect(calls.inputsReads).toBe(0);
@@ -475,7 +476,7 @@ describe("the cut verdicts", () => {
     expect(await undoProposedCut(ITEM)).toEqual({ ok: false, message: deckCutsCopy.panel.refusals.moved });
   });
 
-  it("refuses with the switch off or an id that is not a uuid, before any write", async () => {
+  it("refuses with the Analysis tab off or an id that is not a uuid, before any write", async () => {
     calls.enabled = false;
     expect((await cutProposed(ITEM)).ok).toBe(false);
     calls.enabled = true;
@@ -559,7 +560,7 @@ describe("readCutsPanel", () => {
     expect(report.chips).toBeDefined();
   });
 
-  it("is null with the switch off", async () => {
+  it("is null with the Analysis tab off", async () => {
     calls.enabled = false;
     expect(await readCutsPanel(DECK)).toBeNull();
   });

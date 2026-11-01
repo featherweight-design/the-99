@@ -501,7 +501,8 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     sub: `Which bracket your deck sits in, and why. Suggested changes, Proposed cuts and Mana Balance help you tune it.${ABOUT_SCREEN_OFF}`,
     subSentences: {
       "Which bracket your deck sits in, and why.": "ANALYSIS_TAB_ENABLED",
-      " Suggested changes, Proposed cuts and Mana Balance help you tune it.": ["TUNING_ENABLED", "PROPOSED_CUTS_ENABLED", "MANA_BALANCE_ENABLED"],
+      // Proposed cuts follows the Analysis tab (its own switch is retired), which Mana Balance already needs.
+      " Suggested changes, Proposed cuts and Mana Balance help you tune it.": ["TUNING_ENABLED", "MANA_BALANCE_ENABLED"],
       [ABOUT_SCREEN_OFF]: "!ANALYSIS_TAB_ENABLED",
     },
     screens: [{ screen: "deck", view: "analysis" }],

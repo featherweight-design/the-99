@@ -75,10 +75,18 @@ describe("MODEL_CAPABILITIES", () => {
   const raisedBy = (name: SwitchName) =>
     MODEL_CAPABILITIES.filter((c) => !c.on(all("true", { [name]: "false" })) && c.on(all("true"))).map((c) => c.key);
 
+  // Retired model switches still in the registry until their removal PR: nothing gates on them, so turning one on raises
+  // no capability. Proposed cuts' paid pass follows its parent, the Analysis tab (Hugh 2026-10-31).
+  const RETIRED = new Set<SwitchName>(["PROPOSED_CUTS_ENABLED"]);
+
   it("is raised by every model switch", () => {
-    for (const name of SWITCH_NAMES.filter((n) => switchKind(n) === "model")) {
+    for (const name of SWITCH_NAMES.filter((n) => switchKind(n) === "model" && !RETIRED.has(n))) {
       expect(raisedBy(name).length, name).toBeGreaterThan(0);
     }
+  });
+
+  it("is raised by no retired switch", () => {
+    for (const name of RETIRED) expect(raisedBy(name), name).toEqual([]);
   });
 
   it("decides the paid read from swap tools", () => {

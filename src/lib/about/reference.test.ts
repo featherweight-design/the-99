@@ -84,7 +84,8 @@ describe("an entry's marks", () => {
   });
 
   it("follows the Tools tab's switches: a tool switched off is not in Tools", () => {
-    const off = tools({ isOn: (n) => n !== "PROPOSED_CUTS_ENABLED" });
+    // Proposed cuts lives behind the Analysis tab (its own switch is retired).
+    const off = tools({ isOn: (n) => n !== "ANALYSIS_TAB_ENABLED" });
     const e = referenceScreens(aboutEntries, off, undefined).flatMap((s) => s.entries).find((x) => x.id === "proposed-cuts")!;
     expect(e.inTools).toBe(false);
     expect(e.tryIt).toBeNull();

@@ -1562,8 +1562,9 @@ export const aboutEntries: readonly AboutEntry[] = [
     route: '/decks',
     opens: 'opens a deck’s Analysis tab',
     width: 'plate',
-    // 2026-10-15 (`design_handoff_the99_proposed_cuts_about`, R1, approved): follows PROPOSED_CUTS_ENABLED,
-    // so turning the tool on is what announces it. NO BUMP, as `mana-balance` and `deck-tokens`: a switched
+    // 2026-10-15 (`design_handoff_the99_proposed_cuts_about`, R1, approved): follows PROPOSED_CUTS_ENABLED, which
+    // is retired and resolves through `visible.ts` to the Analysis tab (ANALYSIS_TAB_ENABLED), so turning the tab
+    // on is what announces it. NO BUMP, as `mana-balance` and `deck-tokens`: a switched
     // entry is seen by its id, and `since` is the current version. Caption and keys are placeholders owed to
     // /copy-review. The specimen is the panel's own free count (`CutsFreeCount`) from HD - Zombies.
     switch: 'PROPOSED_CUTS_ENABLED',

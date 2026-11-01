@@ -65,7 +65,7 @@ const tabs = async (query: Record<string, string | string[]> = { tab: "reference
 const tiles = async (query: Record<string, string | string[]> = {}) => find(await draw(query), AboutIndex)!.props.tiles as IndexTile[];
 
 const DECK_SWITCHES = [
-  "PROPOSED_CUTS_ENABLED", "TUNING_ENABLED", "SWAP_TOOLS_ENABLED", "SOCIAL_FRIENDS_ENABLED",
+  "TUNING_ENABLED", "SWAP_TOOLS_ENABLED", "SOCIAL_FRIENDS_ENABLED",
   "ANALYSIS_TAB_ENABLED",
 ];
 
@@ -157,8 +157,8 @@ describe("/about, the fits (E10)", () => {
     vi.stubEnv("TUNING_ENABLED", "true");
     await tabs();
     expect(m.loadToolFits).toHaveBeenCalledTimes(1);
-    // Mana Balance follows the Analysis tab (its own switch is retired), so the tab on asks for it too.
-    expect(m.loadToolFits.mock.calls[0]![1]).toEqual(["top-off", "suggested-changes", "mana-balance", "friend-spares", "matchups"]);
+    // Proposed cuts and Mana Balance follow the Analysis tab (their own switches are retired), so the tab on asks for them too.
+    expect(m.loadToolFits.mock.calls[0]![1]).toEqual(["top-off", "proposed-cuts", "suggested-changes", "mana-balance", "friend-spares", "matchups"]);
   });
 
   it("with every deck tool's switch off, asks only for the ones with none: Top off and the friends tools", async () => {

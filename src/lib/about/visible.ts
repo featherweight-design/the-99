@@ -8,7 +8,7 @@
 import { analysisTabEnabled } from "../decks/analysis-flag";
 import { helpMeChooseEnabled } from "../intake/flag";
 import { swapToolsEnabled } from "../swaps/flag";
-import { proposedCutsEnabled, suggestedChangesV2Enabled, tuningEnabled, tuningHubEnabled } from "../tuning/flag";
+import { suggestedChangesV2Enabled, tuningEnabled, tuningHubEnabled } from "../tuning/flag";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
 import { paymentsEnabled, welcomeCreditsEnabled } from "../payments/flag";
 import { type AboutEntry, type AboutLineSwitch, type AboutLineSwitchOne, type AboutSwitch } from "../copy/about";
@@ -70,8 +70,8 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   // History, the lines naming it: the hub's own rule, two or more Tuning tools on.
   TUNING_HUB_ENABLED: tuningHubEnabled,
   LINEUP_ENABLED: () => true,
-  // Already reads ANALYSIS_TAB_ENABLED: Look deeper lives in the tab's Tuning hub.
-  PROPOSED_CUTS_ENABLED: proposedCutsEnabled,
+  // Retired: Proposed cuts follows its parent, the Analysis tab, where it mounts. The name stays as its lines' historical identity.
+  PROPOSED_CUTS_ENABLED: analysisTabEnabled,
   // Find a deck's read follows its parent, swap tools (its own switch is retired). The name stays as the entry's and lines' historical identity.
   FIND_A_DECK_READ_ENABLED: swapToolsEnabled,
   // Starting without a collection ended on exactly when collection edit was (retired, always on).

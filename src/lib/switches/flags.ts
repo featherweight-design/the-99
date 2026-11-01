@@ -58,7 +58,8 @@ export const MODEL_CAPABILITIES: readonly { key: ModelCapabilityKey; on: (env: N
   { key: "overview_v2", on: (env) => analysisTabEnabled(env) && overviewV2Enabled(env) },
   { key: "tuning", on: tuningEnabled },
   { key: "suggested_changes_v2", on: suggestedChangesV2Enabled },
-  { key: "proposed_cuts", on: proposedCutsEnabled },
+  // Proposed cuts' own switch is retired: its paid pass follows the Analysis tab, where it mounts.
+  { key: "proposed_cuts", on: analysisTabEnabled },
   { key: "intake", on: helpMeChooseEnabled },
   // Find a deck's read follows its parent, swap tools.
   { key: "fits_read", on: swapToolsEnabled },
