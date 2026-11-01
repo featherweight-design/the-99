@@ -15,8 +15,8 @@
 //
 // Replaced search-pane.tsx and search-result-row.tsx, both now deleted.
 
-import { useCallback, useId, useLayoutEffect, useRef, useState } from "react";
-import type { SearchResult } from "../../app/decks/[id]/search-action";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { searchCards, type SearchResult } from "../../app/decks/[id]/search-action";
 import { addCardToDeck } from "../../app/decks/actions";
 import { DECK_ADD_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { cardDetailCopy, useCardDetailIfAny, useCardIntentIfAny } from "../cards/card-detail-provider";
@@ -178,7 +178,33 @@ export function QuickAddBar({
   // About figure, a test with no host), where there is no sheet to open.
   const addCards = useAddCards();
   const addInScope = useCollectionEditScope();
-  const canBridge = addCards !== null && addInScope;
+  const canBridgeHere = addCards !== null && addInScope;
+  // Only for a query the dock could list once its card is owned. The owned-only miss says nothing about that: a card
+  // outside the commander's identity, or not Commander-legal (an Un-set acorn), is never listed, so saving it would
+  // leave the dock reading the same miss with the bridge offered again. One read of the same query with the filter
+  // off answers it, through the dock's own search and so its own identity and legality rules; it is made only on an
+  // owned-only miss, once per query, and the bridge waits for it. A read that fails offers nothing: the shipped
+  // escape below still stands.
+  const listableKey = `${commanderIdentity.join(",")} ${deckId} ${trimmed}`;
+  const [listable, setListable] = useState<{ key: string; any: boolean } | null>(null);
+  const probeListable = canBridgeHere && ownedOnly && noResults && listable?.key !== listableKey;
+  useEffect(() => {
+    if (!probeListable) return;
+    let cancelled = false;
+    (search ?? searchCards)(trimmed, commanderIdentity, false, deckId)
+      .then((found) => {
+        if (!cancelled) setListable({ key: listableKey, any: found.length > 0 });
+      })
+      .catch(() => {
+        if (!cancelled) setListable({ key: listableKey, any: false });
+      });
+    return () => {
+      cancelled = true;
+    };
+    // `search` is a constant at every call site (see use-card-search.ts); the key carries the rest.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [probeListable, listableKey]);
+  const canBridge = canBridgeHere && listable?.key === listableKey && listable.any;
   // The request the ring answers: the same text and filter. With the epoch, any way the input moves clears it.
   const ringKey = `${ownedOnly ? "owned" : "all"} ${trimmed}`;
   // A saving sheet closed: the re-run's landing (the first to land after the close) rings its owned rows. A failed or

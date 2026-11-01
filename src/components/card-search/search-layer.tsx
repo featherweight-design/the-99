@@ -253,8 +253,10 @@ function AddSeveralRow({ onPress }: { onPress: () => void }) {
       onClick={onPress}
       className="mx-4 mt-3 mb-[2px] flex min-h-[52px] w-[calc(100%-32px)] cursor-pointer items-center gap-3 rounded-[10px] border border-solid border-[color:var(--border)] bg-[color:var(--bg)] px-[14px] text-left text-[14px] text-[color:var(--fg)] md:mx-[14px] md:mt-[6px] md:mb-1 md:min-h-[44px] md:w-[calc(100%-28px)] md:gap-[10px] md:rounded-[9px] md:px-3 md:text-[13.5px]"
     >
-      <span aria-hidden className="flex flex-none text-[color:var(--accent-text)]">
-        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      {/* The board's --accent, as a stroke: a glyph, not text, so it needs 3:1 on the row's --bg, which --accent holds in
+          all six themes (`contract.test.ts` pins it; Phyrexia's #52827A reads 4.51). READINESS E12. */}
+      <span aria-hidden className="flex flex-none">
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="var(--accent)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
           <path d="M10 3.6v12.8M3.6 10h12.8" />
         </svg>
       </span>

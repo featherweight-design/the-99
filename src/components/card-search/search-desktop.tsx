@@ -123,8 +123,9 @@ function DesktopFrame() {
     return () => window.removeEventListener("keydown", onKey);
   }, [mac, isOpen, veiled, openSearch, warmSearch, inputRef]);
 
-  // The foot line is D4's alone: results are up (D2, D2n and DD2 draw none).
-  const showFoot = searching && list.length > 0;
+  // The foot line is D4's: results are up (D2, D2n and DD2 draw none). With the rows' + on it also stands over Recent
+  // cards, whose rows carry the + and take ⌘↵ too (add a card from anywhere C-D1).
+  const showFoot = list.length > 0 && (searching || canAdd);
 
   return (
     <>

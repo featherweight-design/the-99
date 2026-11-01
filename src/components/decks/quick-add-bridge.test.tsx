@@ -80,12 +80,15 @@ const toggle = () => screen.getByRole("checkbox", { name: /only cards you own/i 
 async function typeAndMiss(q = "ghalta") {
   fireEvent.change(field(), { target: { value: q } });
   await waitFor(() => expect(screen.getByText(addPanelCopy.quickAddEmpty.heading)).toBeTruthy());
+  // The miss's one read with the filter off (could the dock list this card once owned?) lands.
+  await act(async () => {});
 }
 
 beforeEach(() => {
   pathname = "/decks/deck-1";
   vi.clearAllMocks();
-  searchCards.mockResolvedValue([]);
+  // Nothing owned matches; with the filter off the dock would list the card (it is in identity and Commander-legal).
+  searchCards.mockImplementation(async (...args: unknown[]) => (args[2] ? [] : [{ ...ghalta, owned: false, ownedQty: 0 }]));
   forgetJustOwned("deck-1", "ghalta");
 });
 afterEach(() => cleanup());
@@ -103,6 +106,34 @@ describe("QuickAddBar — the bridge to Add cards", () => {
 
     fireEvent.click(toggle());
     await waitFor(() => expect(screen.getByText(addPanelCopy.quickAddEmpty.bodyAllCards("ghalta", "Naya"))).toBeTruthy());
+    expect(bridge()).toBeNull();
+  });
+
+  it("asks once, with the filter off and the dock's identity, whether the dock could list the card", async () => {
+    mount();
+    await typeAndMiss();
+    expect(bridge()).toBeTruthy();
+    const unfiltered = searchCards.mock.calls.filter((c) => c[2] === false);
+    expect(unfiltered).toEqual([["ghalta", ["R", "G", "W"], false, "deck-1"]]);
+  });
+
+  it("draws no press for a card the dock can never list: off-identity or not Commander-legal", async () => {
+    searchCards.mockImplementation(async () => []);
+    mount();
+    await typeAndMiss("abstract iguanart");
+    expect(searchCards.mock.calls.some((c) => c[2] === false)).toBe(true);
+    expect(bridge()).toBeNull();
+    // The shipped escape still stands.
+    expect(screen.getByRole("button", { name: addPanelCopy.quickAddEmpty.dropFilter })).toBeTruthy();
+  });
+
+  it("draws no press when the read with the filter off fails", async () => {
+    searchCards.mockImplementation(async (...args: unknown[]) => {
+      if (args[2]) return [];
+      throw new Error("boom");
+    });
+    mount();
+    await typeAndMiss();
     expect(bridge()).toBeNull();
   });
 
@@ -220,7 +251,8 @@ describe("QuickAddBar — the bridge to Add cards", () => {
     await waitFor(() => expect(sheet()).toBeNull());
     // The close reaches the dock once the sheet's history entry has gone: it hands focus back and starts the re-run.
     await waitFor(() => expect(document.activeElement).toBe(field()));
-    await waitFor(() => expect(searchCards).toHaveBeenCalledTimes(2));
+    // The owned-only miss, its read with the filter off, and the re-run.
+    await waitFor(() => expect(searchCards).toHaveBeenCalledTimes(3));
   }
 
   it("rings nothing for a search typed before the re-run landed", async () => {

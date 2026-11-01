@@ -172,7 +172,7 @@ describe("Bought this card? in card details (A11)", () => {
 });
 
 // Add a card from anywhere (READINESS O2): inside the shell every card details draws Add to collection, except a card
-// a Shopping row opened whose row bills it, which keeps `Bought this card?` in the receipt's one link slot.
+// a Shopping row opened, which keeps the receipt's one link slot for `Bought this card?` whatever the list bills.
 describe("Bought this card? beside Add to collection, inside the shell", () => {
   const drawInShell = () => render(<CollectionEditScope>{tree()}</CollectionEditScope>);
   const edit = () => screen.queryByTestId("edit-copies-link");
@@ -194,11 +194,21 @@ describe("Bought this card? beside Add to collection, inside the shell", () => {
     expect(edit()).toHaveTextContent("Add to collection");
   });
 
-  it("draws Add to collection on a card a Shopping row opened but does not bill, which has no I got it link", async () => {
+  it("draws no Add to collection on a card a Shopping row opened that the list does not bill (the slot stays Shopping's)", async () => {
     drawInShell();
     await press(screen.getByText("shop sol"));
     expect(await screen.findByRole("dialog")).toBeTruthy();
     expect(links()).toHaveLength(0);
-    expect(edit()).toHaveTextContent("Add to collection");
+    expect(edit()).toBeNull();
+  });
+
+  it("keeps the slot when the purchase takes the card off the list while it is open", async () => {
+    reads["o-poly"] = browse("o-poly", "Polyraptor");
+    const { rerender } = render(<CollectionEditScope>{tree([POLY])}</CollectionEditScope>);
+    await press(screen.getByText("shop poly"));
+    expect(links()).toHaveLength(1);
+    rerender(<CollectionEditScope>{tree([])}</CollectionEditScope>);
+    expect(links()).toHaveLength(0);
+    expect(edit()).toBeNull();
   });
 });
