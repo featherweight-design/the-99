@@ -1,0 +1,267 @@
+{
+  "feature": "Hide a commander, PR 4: the Hidden tab and /commanders/hidden (README section 3, Hidden board states 4, 6 and 12)",
+  "note": "Needs the signed-in account to have hidden exactly Preston Garvey, Minuteman (owned), Wernog, Rider's Chaplain (unowned, an index candidate), Krenko, Mob Boss (a deck is built around it) and Kotis, Sibsig Champion (owned), on a scratch branch. Each width's rows leave the data as they found it: every Unhide is followed by its Undo, and the refused Undo is put back from the commander's page. The empty state (board state 5) is hide-commander-hidden-empty.json, run with no hidden rows.",
+  "shares": [
+    {
+      "binding": "CommanderUndoRow",
+      "module": "src/components/commanders/commander-undo-row.tsx"
+    },
+    {
+      "binding": "PlaceStrip",
+      "module": "src/components/place/place-strip.tsx"
+    },
+    {
+      "binding": "EyeOff",
+      "module": "src/components/commanders/eye-off.tsx"
+    },
+    {
+      "binding": "RefusalToast",
+      "module": "src/components/commanders/hide-commander.tsx"
+    }
+  ],
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "label": "desktop",
+      "width": 1300,
+      "height": 900
+    }
+  ],
+  "rows": [
+    {
+      "id": "hidden-list",
+      "label": "Hidden tab: four hidden, newest first, with the tab's count",
+      "view": "src/components/commanders/hidden-list.tsx",
+      "steps": [
+        {
+          "goto": "/commanders/hidden",
+          "wait": "[data-hidden-row]",
+          "settle": 1500
+        }
+      ],
+      "binding": "CommanderUndoRow"
+    },
+    {
+      "id": "foryou-strip",
+      "label": "For you: the fourth tab and its count in the strip",
+      "view": "src/components/commanders/commanders-place-head.tsx",
+      "steps": [
+        {
+          "goto": "/commanders",
+          "wait": "[data-testid=commanders-tab-hidden]",
+          "settle": 1500
+        }
+      ],
+      "binding": "PlaceStrip"
+    },
+    {
+      "id": "unhide-foryou",
+      "label": "Unhide an owned commander: the Undo row says back in For you",
+      "view": "src/components/commanders/hidden-list.tsx",
+      "steps": [
+        {
+          "goto": "/commanders/hidden",
+          "wait": "[data-hidden-row]",
+          "settle": 1000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Unhide Preston",
+          "wait": "[data-commander-undo-row]",
+          "settle": 1500
+        }
+      ],
+      "binding": "CommanderUndoRow"
+    },
+    {
+      "id": "undo-foryou",
+      "label": "Undo of that Unhide: the row is hidden again",
+      "view": "src/components/commanders/hidden-list.tsx",
+      "steps": [
+        {
+          "clickRole": "button",
+          "name": "^Undo unhiding Preston",
+          "wait": "button[aria-label^=\"Unhide Preston\"]",
+          "settle": 1500
+        }
+      ],
+      "binding": "CommanderUndoRow"
+    },
+    {
+      "id": "unhide-discover",
+      "label": "Unhide an unowned commander: the Undo row says back in Discover",
+      "view": "src/components/commanders/hidden-list.tsx",
+      "steps": [
+        {
+          "goto": "/commanders/hidden",
+          "wait": "[data-hidden-row]",
+          "settle": 1000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Unhide Wernog",
+          "wait": "[data-commander-undo-row]",
+          "settle": 1500
+        }
+      ],
+      "binding": "CommanderUndoRow"
+    },
+    {
+      "id": "undo-discover",
+      "label": "Undo of that Unhide",
+      "view": "src/components/commanders/hidden-list.tsx",
+      "steps": [
+        {
+          "clickRole": "button",
+          "name": "^Undo unhiding Wernog",
+          "wait": "button[aria-label^=\"Unhide Wernog\"]",
+          "settle": 1500
+        }
+      ],
+      "binding": "CommanderUndoRow"
+    },
+    {
+      "id": "unhide-built",
+      "label": "Unhide a built commander: the neutral line (neither list shows it)",
+      "view": "src/components/commanders/hidden-list.tsx",
+      "steps": [
+        {
+          "goto": "/commanders/hidden",
+          "wait": "[data-hidden-row]",
+          "settle": 1000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Unhide Krenko",
+          "wait": "[data-commander-undo-row]",
+          "settle": 1500
+        }
+      ],
+      "binding": "CommanderUndoRow"
+    },
+    {
+      "id": "undo-built",
+      "label": "Undo of that Unhide",
+      "view": "src/components/commanders/hidden-list.tsx",
+      "steps": [
+        {
+          "clickRole": "button",
+          "name": "^Undo unhiding Krenko",
+          "wait": "button[aria-label^=\"Unhide Krenko\"]",
+          "settle": 1500
+        }
+      ],
+      "binding": "CommanderUndoRow"
+    },
+    {
+      "id": "built-opens-deck",
+      "label": "A built commander's row opens its deck",
+      "view": "src/components/commanders/hidden-list.tsx",
+      "steps": [
+        {
+          "goto": "/commanders/hidden",
+          "wait": "[data-hidden-row]",
+          "settle": 1000
+        },
+        {
+          "clickRole": "link",
+          "name": "^Open your Krenko",
+          "wait": "h1",
+          "settle": 2500
+        }
+      ],
+      "binding": "CommanderUndoRow"
+    },
+    {
+      "id": "owned-opens-page",
+      "label": "An unbuilt commander's row opens its page, saying Hidden",
+      "view": "src/components/commanders/hidden-list.tsx",
+      "steps": [
+        {
+          "goto": "/commanders/hidden",
+          "wait": "[data-hidden-row]",
+          "settle": 1000
+        },
+        {
+          "click": "[data-hidden-row] a:has-text(\"Preston\")",
+          "wait": "[data-hidden-note]:visible",
+          "settle": 2000
+        }
+      ],
+      "binding": "CommanderUndoRow"
+    },
+    {
+      "id": "unhide-refused",
+      "label": "Unhide refused (offline): the row stays, the shared toast with Try again",
+      "view": "src/components/commanders/hidden-list.tsx",
+      "steps": [
+        {
+          "goto": "/commanders/hidden",
+          "wait": "[data-hidden-row]",
+          "settle": 1000
+        },
+        {
+          "offline": true
+        },
+        {
+          "clickRole": "button",
+          "name": "^Unhide Kotis",
+          "wait": "button:has-text(\"Try again\")",
+          "settle": 1500
+        }
+      ],
+      "binding": "RefusalToast"
+    },
+    {
+      "id": "undo-refused",
+      "label": "The Undo of an Unhide refused (offline): one line under the row",
+      "view": "src/components/commanders/hidden-list.tsx",
+      "steps": [
+        {
+          "goto": "/commanders/hidden",
+          "wait": "[data-hidden-row]",
+          "settle": 1000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Unhide Kotis",
+          "wait": "[data-commander-undo-row]",
+          "settle": 1500
+        },
+        {
+          "offline": true
+        },
+        {
+          "clickRole": "button",
+          "name": "^Undo unhiding Kotis",
+          "wait": "p[role=alert]:visible",
+          "settle": 1000
+        }
+      ],
+      "binding": "CommanderUndoRow"
+    },
+    {
+      "id": "restore-kotis",
+      "label": "Kotis hidden again from its page, as the refused line says",
+      "view": "src/components/commanders/hide-commander.tsx",
+      "steps": [
+        {
+          "goto": "/commanders/kotis-sibsig-champion",
+          "wait": "button:has-text(\"Hide from lists\"):visible",
+          "settle": 1000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Hide from lists$",
+          "wait": "[data-hidden-note]:visible",
+          "settle": 1500
+        }
+      ],
+      "binding": "EyeOff"
+    }
+  ]
+}

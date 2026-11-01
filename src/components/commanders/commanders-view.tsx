@@ -42,6 +42,7 @@ import { ZERO_PRIMARY, ZeroState } from "../ui/zero-state";
 import { PrimaryButton } from "../ui/button";
 import { SearchPending } from "./discovery-empty";
 import { AllHiddenEmpty } from "./all-hidden-empty";
+import { HIDDEN_PATH } from "../../lib/commanders/place-paths";
 import { CommanderRow } from "./commander-row";
 import { CommanderUndoRow } from "./commander-undo-row";
 import { useStandingHides } from "./use-standing-hides";
@@ -807,8 +808,7 @@ export function CommandersView({
         ) : hiddenPending ? (
           <SearchPending />
         ) : allHidden ? (
-          // Hidden (PR 4) adds the route `See hidden` opens; until then the state draws no button.
-          <AllHiddenEmpty lane="owned" hidden={hiddenCount} />
+          <AllHiddenEmpty lane="owned" hidden={hiddenCount} hiddenHref={HIDDEN_PATH} />
         ) : filtered.length === 0 && colors.length === 0 && setCodes.length === 0 && sleevedByFree ? (
           <FreeEmpty
             query={params.q.trim() || undefined}

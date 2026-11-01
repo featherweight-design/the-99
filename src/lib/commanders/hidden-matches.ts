@@ -80,21 +80,39 @@ export async function loadHiddenSlugs(
   /** The reader's resolved switches: the stored set is read under its writer version. */
   env: NodeJS.ProcessEnv,
 ): Promise<Map<string, string>> {
+  return (await loadHiddenPages(userId, oracleIds, collectionOracleIds, env)).slugs;
+}
+
+/**
+ * `loadHiddenSlugs`, and also which of the ids For you ranks: those with a row in the reader's rankable
+ * stored scores (`rankableScoreRows`, the set `/commanders` draws from). The Hidden list needs both, and
+ * the slug lookup already reads exactly that set, so asking it again would be the same statement twice.
+ */
+export async function loadHiddenPages(
+  userId: string,
+  oracleIds: string[],
+  collectionOracleIds: string[],
+  env: NodeJS.ProcessEnv,
+): Promise<{ slugs: Map<string, string>; ranked: Set<string> }> {
   const slugs = new Map<string, string>();
-  if (oracleIds.length === 0) return slugs;
+  const ranked = new Set<string>();
+  if (oracleIds.length === 0) return { slugs, ranked };
 
   const scored = await db
     .select({ oracleId: commanderScores.oracleId, slug: commanderScores.slug })
     .from(commanderScores)
     .where(and(rankableScoreRows(userId, env), inArray(commanderScores.oracleId, oracleIds)));
-  for (const r of scored) slugs.set(r.oracleId, r.slug);
+  for (const r of scored) {
+    slugs.set(r.oracleId, r.slug);
+    ranked.add(r.oracleId);
+  }
 
   const owned = new Set(collectionOracleIds);
   const unowned = oracleIds.filter((id) => !slugs.has(id) && !owned.has(id));
-  if (unowned.length === 0) return slugs;
+  if (unowned.length === 0) return { slugs, ranked };
 
   const population = await loadCandidateSlugRows(userId, [], collectionOracleIds);
   const wanted = new Set(unowned);
   for (const r of assignDiscoverySlugs(population)) if (wanted.has(r.oracleId)) slugs.set(r.oracleId, r.slug);
-  return slugs;
+  return { slugs, ranked };
 }

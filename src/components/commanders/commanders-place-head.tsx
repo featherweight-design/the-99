@@ -1,7 +1,7 @@
 // The head every route of the Commanders place starts with: the title on desktop, then the strip of
 // place tabs (menu and Home, PR 1). The Collection place's strip, reused (`PlaceStrip`).
 //
-// MOUNTED ONCE from `commanders/(list)/layout.tsx`, a route group holding the three tab routes and
+// MOUNTED ONCE from `commanders/(list)/layout.tsx`, a route group holding the four tab routes and
 // leaving `/commanders/[slug]` outside it, so a tab press swaps the page below and never remounts
 // the strip. Each tab keeps its own title and line under the strip (the page's `h1`), so "Commanders"
 // here is a `<p>` and every route has exactly one h1. On the phone the title collapses to nothing
@@ -12,26 +12,39 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { PlaceStrip, type PlaceTab } from "../place/place-strip";
 import { refreshCommanderCounts } from "../../app/commanders/actions";
+import type { CommanderCounts } from "../../lib/commanders/counts";
+import { HIDDEN_PATH } from "../../lib/commanders/place-paths";
 import { commandersPlaceCopy } from "../../lib/copy/commanders-place";
 import { COMMANDER_COUNTS_STALE_EVENT } from "./counts-event";
 
-export type CommandersPlace = "foryou" | "discover" | "choose";
+export type CommandersPlace = "foryou" | "discover" | "choose" | "hidden";
 
-const TABS: readonly (PlaceTab & { place: CommandersPlace })[] = [
-  { place: "foryou", href: "/commanders", label: commandersPlaceCopy.tabs.foryou },
-  { place: "discover", href: "/commanders/discover", label: commandersPlaceCopy.tabs.discover },
-  { place: "choose", href: "/commanders/choose", label: commandersPlaceCopy.tabs.choose },
-];
+/**
+ * The strip's four tabs (hide-commander README §3): Hidden sits beside the lists it takes from and is there before
+ * anything is hidden, so its empty state is real. It carries the strip's shipped count once something is hidden,
+ * and none at 0. Four fit a 390 phone at the strip's own spacing: `PlaceStrip` closes up only from five.
+ */
+export function commandersTabs(hidden: number): readonly (PlaceTab & { place: CommandersPlace })[] {
+  return [
+    { place: "foryou", href: "/commanders", label: commandersPlaceCopy.tabs.foryou },
+    { place: "discover", href: "/commanders/discover", label: commandersPlaceCopy.tabs.discover },
+    { place: "choose", href: "/commanders/choose", label: commandersPlaceCopy.tabs.choose },
+    { place: "hidden", href: HIDDEN_PATH, label: commandersPlaceCopy.tabs.hidden, count: hidden > 0 ? hidden : undefined },
+  ];
+}
 
-/** The three routes the head mounts on and nothing past them (`/commanders/[slug]` is outside the group). */
+/** The four routes the head mounts on and nothing past them (`/commanders/[slug]` is outside the group). A path
+    the group holds and this does not know is a 500 (the head throws), so each new tab route adds its case here. */
 export function commandersPlaceFromPathname(pathname: string): CommandersPlace | null {
   if (pathname === "/commanders") return "foryou";
   if (pathname === "/commanders/discover") return "discover";
   if (pathname === "/commanders/choose") return "choose";
+  if (pathname === HIDDEN_PATH) return "hidden";
   return null;
 }
 
-type Counts = { owned: number; discover: number } | null;
+/** Null only for a caller with nothing to say yet; the layout always reads them (`loadPlaceCounts`). */
+type Counts = CommanderCounts | null;
 
 export function CommandersPlaceHead({ counts: initialCounts }: { counts: Counts }) {
   const pathname = usePathname();
@@ -40,7 +53,7 @@ export function CommandersPlaceHead({ counts: initialCounts }: { counts: Counts 
     throw new Error(`CommandersPlaceHead rendered on an unrecognised path: ${pathname}`);
   }
   // The layout that mounts this does not re-run on a sibling navigation, so the figures are re-read here on every
-  // tab switch, on window focus and after a row's hide or undo, and only the latest of several in-flight reads may apply. A failed read leaves
+  // tab switch, on window focus and after a row's hide, unhide or undo, and only the latest of several in-flight reads may apply. A failed read leaves
   // the line as it was. The first pass is skipped: the layout's props are already fresh.
   const [counts, setCounts] = useState<Counts>(initialCounts);
   const latest = useRef(0);
@@ -87,7 +100,7 @@ export function CommandersPlaceHead({ counts: initialCounts }: { counts: Counts 
         </p>
       </div>
       <PlaceStrip
-        tabs={TABS}
+        tabs={commandersTabs(counts?.hidden ?? 0)}
         current={current}
         ariaLabel={commandersPlaceCopy.regionAria}
         testIdPrefix="commanders-tab"

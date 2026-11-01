@@ -1001,8 +1001,8 @@ describe("DiscoveryView", () => {
     );
     expect(container.textContent).toContain(planeCopy.allHidden.heading);
     expect(container.textContent).toContain(planeCopy.allHidden.discover(2));
-    // The Hidden list's route does not exist yet, so there is no button to it.
-    expect(screen.queryByRole("link", { name: planeCopy.allHidden.cta })).toBeNull();
+    // **See hidden** opens the Hidden list.
+    expect(screen.getByRole("link", { name: planeCopy.allHidden.cta })).toHaveAttribute("href", "/commanders/hidden");
   });
 
   it("keeps the all-hidden state off a list with candidates still in it", () => {

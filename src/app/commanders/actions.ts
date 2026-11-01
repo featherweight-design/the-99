@@ -8,9 +8,8 @@ import { loadBuiltCommanderIds } from "../../lib/decks/built";
 import { loadNameMatches } from "../../lib/discovery/candidates";
 import { classifyMatches, type ExcludedMatch } from "../../lib/discovery/excluded-match";
 import { loadDiscoveryPool } from "../../lib/discovery/list";
-import { loadCommanderCounts, type CommanderCounts } from "../../lib/commanders/counts";
+import { loadPlaceCounts, type CommanderCounts } from "../../lib/commanders/counts";
 import { deleteAllScores } from "../../lib/recs/store";
-import { getCollectionStats } from "../../lib/home/summary";
 import { hideCommander, isHideable, loadHiddenIds, unhideCommander } from "../../lib/commanders/hidden";
 import { loadHiddenSlugs, loadOwnedHiddenNameMatches } from "../../lib/commanders/hidden-matches";
 import { requestSwitchEnv } from "../../lib/switches/request";
@@ -147,13 +146,14 @@ export async function rememberCommandersAvail(avail: unknown): Promise<void> {
 }
 
 /**
- * The Commanders place head's two figures, re-read on a tab switch and on window focus: the place's layout does not
- * re-run on a sibling navigation, so a deck built or a collection changed since its first render would leave them stale.
+ * The Commanders place head's figures (the title line's two and the Hidden tab's count), re-read on a tab switch, on
+ * window focus and after a hide or unhide settles: the place's layout does not re-run on a sibling navigation, so a
+ * deck built or a collection changed since its first render would leave them stale. The no-cards rule is
+ * `loadPlaceCounts`'s, the same one the layout reads.
  */
-export async function refreshCommanderCounts(): Promise<CommanderCounts | null> {
+export async function refreshCommanderCounts(): Promise<CommanderCounts> {
   const userId = await requireUserId();
-  const stats = await getCollectionStats(userId);
-  return stats.uniqueCards === 0 ? null : loadCommanderCounts(userId);
+  return loadPlaceCounts(userId);
 }
 
 /**

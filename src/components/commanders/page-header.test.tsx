@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { PageHeader } from "./page-header";
 import { commandersCopy, discoverCopy } from "../../lib/copy/lanes";
+import { hiddenListCopy } from "../../lib/copy/commanders-hidden";
 
 // One subtree, so every string appears exactly once: the header used to ship a
 // mobile branch beside a desktop one and matched twice.
@@ -16,6 +17,12 @@ describe("PageHeader", () => {
     render(<PageHeader lane="discover" />);
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(discoverCopy.title);
     screen.getByText(discoverCopy.subtitle);
+  });
+
+  it("names the Hidden tab's page and glosses it", () => {
+    render(<PageHeader lane="hidden" />);
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(hiddenListCopy.title);
+    screen.getByText(hiddenListCopy.subtitle);
   });
 
   // The scope is the route now. A control here would be a second switch beside

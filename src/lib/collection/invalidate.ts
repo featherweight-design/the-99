@@ -100,6 +100,8 @@ export const COLLECTION_ROUTES: CollectionRoute[] = [
   // The Commanders place (menu and Home, PR 1): the same lists at their tab addresses.
   { path: "/commanders/choose", dynamic: false },
   { path: "/commanders/discover", dynamic: false },
+  // The Hidden tab (hide-commander PR 4): each row says which list an Unhide puts it back in, by ownership.
+  { path: "/commanders/hidden", dynamic: false },
   { path: "/decks/shopping", dynamic: false },
   { path: "/decks/precons", dynamic: false },
   { path: "/decks/precons/[fileName]", dynamic: true },

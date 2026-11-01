@@ -16,5 +16,7 @@ export const commandersPlaceCopy = {
     foryou: "For you",
     discover: "Discover",
     choose: "Help me choose",
+    /** The fourth tab (hide-commander README §3): the commanders the reader hid, and the way back. */
+    hidden: "Hidden",
   },
 } as const;
