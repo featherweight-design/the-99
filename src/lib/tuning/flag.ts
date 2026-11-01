@@ -1,3 +1,5 @@
+import { analysisTabEnabled } from "../decks/analysis-flag";
+
 /**
  * Whether this deployment draws "Suggested changes" (deck tuning): the empty state's Analyze-time
  * description field, the limits box, Additional notes, and the server actions that run and act
@@ -39,7 +41,10 @@ export function proposedCutsEnabled(env: NodeJS.ProcessEnv): boolean {
 }
 
 /**
- * Whether this deployment offers Mana Balance (tier 1, free): the counted read of a deck's colors
+ * RETIRED (Hugh 2026-10-31): nothing gates on this. Mana Balance follows the Analysis tab
+ * (`analysisTabEnabled`), and only the admin switch registry reads this until the switch is deleted.
+ *
+ * Was: whether this deployment offers Mana Balance (tier 1, free): the counted read of a deck's colors
  * and its suggestions. The same shape as `proposedCutsEnabled`: server-side, per request, OFF for
  * anything but the exact string `'true'`, and it needs the Analysis tab, where the tool mounts.
  * Independent of `TUNING_ENABLED` and `PROPOSED_CUTS_ENABLED`. It gates the surface and not a
@@ -54,12 +59,13 @@ export type HubTool = "suggested" | "mana" | "cuts";
 
 /**
  * The tools the Tuning hub would draw, read from each tool's own switch: no switch of its own
- * (orchestrator, 2026-10-11). Each of these already needs the Analysis tab.
+ * (orchestrator, 2026-10-11). Each of these already needs the Analysis tab. Mana Balance is retired
+ * as a switch (always on), so it is a tool whenever the Analysis tab is on.
  */
 export function hubTools(env: NodeJS.ProcessEnv): HubTool[] {
   return [
     ...(tuningEnabled(env) ? ["suggested" as const] : []),
-    ...(manaBalanceEnabled(env) ? ["mana" as const] : []),
+    ...(analysisTabEnabled(env) ? ["mana" as const] : []),
     ...(proposedCutsEnabled(env) ? ["cuts" as const] : []),
   ];
 }

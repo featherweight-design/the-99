@@ -16,10 +16,11 @@
 // production.
 //
 // Suggested changes depends on the Tuning hub, so PROBE_HUB states which the server runs (and the run
-// fails when the page disagrees). OFF (TUNING_ENABLED alone of TUNING_ENABLED, MANA_BALANCE_ENABLED and
-// PROPOSED_CUTS_ENABLED): Suggested changes' own section paints with the verdict. ON (two or more of
-// them, MANA_BALANCE_ENABLED among them): the hub stands from the tab's first frame instead (#1809), so that
-// check is replaced by the hub
+// fails when the page disagrees). OFF is now reached only with ANALYSIS_TAB_ENABLED on and neither
+// TUNING_ENABLED nor PROPOSED_CUTS_ENABLED, so Mana Balance mounts alone and no Suggested changes
+// section paints. ON (ANALYSIS_TAB_ENABLED plus TUNING_ENABLED or PROPOSED_CUTS_ENABLED, beside Mana
+// Balance, always on with the tab): the hub stands from the tab's first frame (#1809), so the check is
+// the hub
 // staying put, as the same node, from its first frame (the credit note landing under the empty state
 // included) through the press to the frame the verdict lands. See `hubStaysPut`.
 // Mana Balance is a PREREQUISITE of ON, not a convenience: it is what lets the hub draw on a deck with no
@@ -47,8 +48,8 @@ const TARGET = process.env.PROBE_TARGET_URL;
 const EMAIL = process.env.PROBE_EMAIL ?? E2E_AUDIT_USER_EMAIL;
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const MODE = process.env.PROBE_HOLD;
-// Whether the server has the Tuning hub on (two or more of TUNING_ENABLED, MANA_BALANCE_ENABLED and
-// PROPOSED_CUTS_ENABLED): stated, never read off the page, so a hub that failed to draw fails the run
+// Whether the server has the Tuning hub on (ANALYSIS_TAB_ENABLED plus TUNING_ENABLED or
+// PROPOSED_CUTS_ENABLED, beside Mana Balance, always on with the tab): stated, never read off the page, so a hub that failed to draw fails the run
 // instead of switching it to the hub-off checks.
 const HUB = process.env.PROBE_HUB;
 if (!TARGET) throw new Error("Set PROBE_TARGET_URL to a scratch branch or local-dev.");

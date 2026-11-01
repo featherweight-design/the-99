@@ -74,7 +74,7 @@ import { socialFriendsEnabled } from "../../../lib/social/flag";
 import { loadFriendDeckPrefs } from "../../../lib/social/deck-visibility";
 import { tablePrefill } from "../../../lib/social/rule-zero-log";
 import { logPrefillTable } from "../../../lib/rule-zero/table-view";
-import { manaBalanceEnabled, proposedCutsEnabled, suggestedChangesV2Enabled, tuningEnabled, tuningHubEnabled } from "../../../lib/tuning/flag";
+import { proposedCutsEnabled, suggestedChangesV2Enabled, tuningEnabled, tuningHubEnabled } from "../../../lib/tuning/flag";
 import { loadDeckNotices } from "../../../lib/notices/read";
 import { NOTICES_PARAM, readNoticesArrival } from "../../../lib/notices/arrival";
 import { SwapToolsProvider } from "../../../lib/swaps/context";
@@ -748,7 +748,6 @@ export default async function DeckBuilderPage({
       socialGames={socialFriendsEnabled(env)}
       gamePrefill={prefillRead ? await prefillRead : null}
       proposedCutsEnabled={proposedCutsEnabled(env)}
-      manaBalanceEnabled={manaBalanceEnabled(env)}
       tuningHubEnabled={tuningHubEnabled(env)}
       suggestedChangesV2={suggestedChangesV2Enabled(env)}
       initialNotices={notices}

@@ -5,7 +5,7 @@ import { aboutEntries } from "../copy/about-entries";
 import { creditsEntryOf, drawnEntry, isFirstRun, isSeen, resolveEntry, switchedIds, unseenEntries, variantId, visibleEntries, type SeenState } from "./visible";
 
 // TUNING_ENABLED also requires ANALYSIS_TAB_ENABLED (`tuningEnabled()`), already "true" here.
-const ON = { HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", MANA_BALANCE_ENABLED: "true", ADDED_COPY_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", HELP_PANEL_ENABLED: "true", FIRST_RUN_TOUR_ENABLED: "true", CARD_SCAN_ENABLED: "true", NEAR_COMBOS_ENABLED: "true", PUSH_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const ON = { HELP_ME_CHOOSE_ENABLED: "true", SWAP_TOOLS_ENABLED: "true", ANALYSIS_TAB_ENABLED: "true", TUNING_ENABLED: "true", ADDED_COPY_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true", SOCIAL_FRIENDS_ENABLED: "true", HELP_PANEL_ENABLED: "true", FIRST_RUN_TOUR_ENABLED: "true", CARD_SCAN_ENABLED: "true", NEAR_COMBOS_ENABLED: "true", PUSH_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 const OFF = {} as unknown as NodeJS.ProcessEnv;
 
 /** Two switched entries, a and b, beside one plain one, shaped like the launch entries. */
@@ -526,17 +526,27 @@ describe("the History lines follow the Tuning hub, not one tool", () => {
   const HISTORY_KEY = "Every run is kept in History, under Tuning. Open one and its changes come back, each checked against the deck as it is now.";
   const HISTORY_LINE = "Each color you pick is kept in History too. Reopen it and each trade is checked against today’s deck.";
   const entry = (env: NodeJS.ProcessEnv, id: string) => visibleEntries(env).find((e) => e.id === id);
-  const tools = (on: { tuning?: boolean; mana?: boolean; cuts?: boolean }) =>
-    ({ ...ON, TUNING_ENABLED: on.tuning ? "true" : "false", MANA_BALANCE_ENABLED: on.mana ? "true" : "false", PROPOSED_CUTS_ENABLED: on.cuts ? "true" : "false" }) as unknown as NodeJS.ProcessEnv;
+  const tools = (on: { tuning?: boolean; cuts?: boolean }) =>
+    ({ ...ON, TUNING_ENABLED: on.tuning ? "true" : "false", PROPOSED_CUTS_ENABLED: on.cuts ? "true" : "false" }) as unknown as NodeJS.ProcessEnv;
 
-  it("drops them with one tool on: that tool mounts directly, with no History", () => {
-    expect(entry(tools({ tuning: true }), "suggested-changes")?.keys).not.toContain(HISTORY_KEY);
-    expect(entry(tools({ mana: true }), "mana-balance")?.caption).not.toContain(HISTORY_LINE);
+  it("drops them with Mana Balance the only tool: it mounts directly, with no History", () => {
+    expect(entry(tools({}), "mana-balance")?.caption).not.toContain(HISTORY_LINE);
   });
 
-  it("keeps them once a second tool draws the hub", () => {
-    expect(entry(tools({ tuning: true, cuts: true }), "suggested-changes")?.keys).toContain(HISTORY_KEY);
-    expect(entry(tools({ mana: true, cuts: true }), "mana-balance")?.caption).toContain(HISTORY_LINE);
+  it("keeps them once a second tool beside Mana Balance draws the hub", () => {
+    expect(entry(tools({ tuning: true }), "suggested-changes")?.keys).toContain(HISTORY_KEY);
+    expect(entry(tools({ tuning: true }), "mana-balance")?.caption).toContain(HISTORY_LINE);
+    expect(entry(tools({ cuts: true }), "mana-balance")?.caption).toContain(HISTORY_LINE);
+  });
+});
+
+describe("mana-balance follows the Analysis tab (its own switch is retired)", () => {
+  const ids = (e: Record<string, string>) => visibleEntries(e as unknown as NodeJS.ProcessEnv).map((x) => x.id);
+
+  it("draws with the tab on and its own switch unset or off, and never with the tab off", () => {
+    expect(ids({ ANALYSIS_TAB_ENABLED: "true" })).toContain("mana-balance");
+    expect(ids({ ANALYSIS_TAB_ENABLED: "true", MANA_BALANCE_ENABLED: "off" })).toContain("mana-balance");
+    expect(ids({ MANA_BALANCE_ENABLED: "true" })).not.toContain("mana-balance");
   });
 });
 
@@ -554,11 +564,8 @@ describe("proposed-cuts follows PROPOSED_CUTS_ENABLED, and its hub paragraph the
     expect(on[on.indexOf("suggested-changes") + 1]).toBe("proposed-cuts");
   });
 
-  it("drops the third paragraph while it is the only tool, and keeps it once the hub draws", () => {
-    const alone = caption(env({ PROPOSED_CUTS_ENABLED: "true" }))!;
-    expect(alone).not.toContain(HUB);
-    expect(alone.endsWith("the tool closes.\n")).toBe(true);
-    expect(caption(env({ PROPOSED_CUTS_ENABLED: "true", MANA_BALANCE_ENABLED: "true" }))).toContain(HUB);
+  it("keeps the third paragraph: Mana Balance, always on with the tab, draws the hub beside it", () => {
+    expect(caption(env({ PROPOSED_CUTS_ENABLED: "true" }))).toContain(HUB);
     expect(caption(env({ PROPOSED_CUTS_ENABLED: "true", TUNING_ENABLED: "true" }))).toContain(HUB);
   });
 });

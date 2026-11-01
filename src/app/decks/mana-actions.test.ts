@@ -29,7 +29,7 @@ const state = vi.hoisted(() => ({
 }));
 
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
-vi.mock("../../lib/tuning/flag", () => ({ manaBalanceEnabled: () => state.enabled }));
+vi.mock("../../lib/decks/analysis-flag", () => ({ analysisTabEnabled: () => state.enabled }));
 vi.mock("../../lib/decks/read", () => ({ getDeckDetail: async () => state.deck }));
 vi.mock("../../lib/profile/fingerprint", () => ({ listFingerprint: (list: unknown) => { state.fingerprinted = list; return "list-fp"; } }));
 vi.mock("../../lib/tuning/mana-balance-load", () => ({ loadManaBalance: async () => state.balance }));
@@ -76,7 +76,7 @@ beforeEach(() => {
 });
 
 describe("readManaBalance (the action)", () => {
-  it("refuses with the switch off or an id that is not a uuid, and records nothing", async () => {
+  it("refuses with the Analysis tab off or an id that is not a uuid, and records nothing", async () => {
     state.enabled = false;
     expect(await readManaBalance(DECK)).toBeNull();
     state.enabled = true;
@@ -149,7 +149,7 @@ describe("readManaHelpFor (the action)", () => {
     state.art = new Map();
   });
 
-  it("refuses anything but one of the five, a color outside the identity, the switch off, or a bad id", async () => {
+  it("refuses anything but one of the five, a color outside the identity, the Analysis tab off, or a bad id", async () => {
     for (const c of ["X", "C", "g", "", "__proto__"]) expect(await readManaHelpFor(DECK, c)).toBeNull();
     expect(await readManaHelpFor(DECK, "R")).toBeNull();
     expect(await readManaHelpFor("nope", "G")).toBeNull();
@@ -253,7 +253,7 @@ describe("readManaHelpReview (History's re-review)", () => {
     expect((await readManaHelpReview(DECK, COUNT))?.noLonger).toEqual(["s1", "s2"]);
   });
 
-  it("is null with the switch off, for a valid id and a matching row", async () => {
+  it("is null with the Analysis tab off, for a valid id and a matching row", async () => {
     state.helpRows = [{ summary: { color: "G", help: past } }];
     state.enabled = false;
     try {

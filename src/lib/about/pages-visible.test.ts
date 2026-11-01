@@ -452,15 +452,16 @@ describe("a section's sub-line", () => {
     }
   });
 
-  // Retired (always on) but still in the registry until its removal PR: Shopping for all decks.
-  const BAKED_IN = new Set(["ALL_DECKS_CART_ENABLED"]);
+  // Retired but still in the registry until their removal PRs: Shopping for all decks (always on), and Mana Balance,
+  // which follows its parent, the Analysis tab (whose own off state this test already covers).
+  const BAKED_IN = new Set(["ALL_DECKS_CART_ENABLED", "MANA_BALANCE_ENABLED"]);
 
   it("names no feature whose switch is off: a section emptied of labels by a switch says only that its screen is off", () => {
     for (const sec of ABOUT_SECTIONS) {
       // With every switch on, every screen is on, and no sub says otherwise.
       expect(sub(ALL_ON, sec.id), sec.id).not.toContain(ABOUT_SCREEN_OFF.trim());
-      // A retired switch is always on: there is no off state to assert. Most are gone from the registry; one retired
-      // ahead of its registry removal is named in `BAKED_IN`.
+      // A retired switch has no off state of its own to assert. Most are gone from the registry; those retired ahead
+      // of their registry removal are named in `BAKED_IN`.
       for (const sw of switchesOfSection(sec).filter((n) => (SWITCH_NAMES as readonly string[]).includes(n) && !BAKED_IN.has(n))) {
         const e = off(sw);
         const drawn = visibleSections(e).find((s) => s.id === sec.id)!;
@@ -490,11 +491,14 @@ describe("a section's sub-line", () => {
     expect(sub(off("ALL_DECKS_CART_ENABLED"), "all-decks")).not.toContain(ABOUT_SCREEN_OFF.trim());
   });
 
-  it("names Analysis's tuning tools only while all three are on, and keeps the bracket while they are off", () => {
-    expect(sub(ALL_ON, "analysis")).toBe("Which bracket your deck sits in, and why. Suggested changes, Proposed cuts and Mana Balance help you tune it.");
-    for (const sw of ["TUNING_ENABLED", "PROPOSED_CUTS_ENABLED", "MANA_BALANCE_ENABLED"]) {
+  it("names Analysis's tuning tools only while both paid tools are on, and keeps the bracket while they are off", () => {
+    const named = "Which bracket your deck sits in, and why. Suggested changes, Proposed cuts and Mana Balance help you tune it.";
+    expect(sub(ALL_ON, "analysis")).toBe(named);
+    for (const sw of ["TUNING_ENABLED", "PROPOSED_CUTS_ENABLED"]) {
       expect(sub(off(sw), "analysis"), sw).toBe("Which bracket your deck sits in, and why.");
     }
+    // Mana Balance's switch is retired (always on with the tab): set to off, it cuts nothing.
+    expect(sub(off("MANA_BALANCE_ENABLED"), "analysis")).toBe(named);
   });
 
   it("cuts a sentence naming a switched feature while that switch is off, and keeps the rest (Small items 3, item 4)", () => {

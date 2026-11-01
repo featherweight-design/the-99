@@ -1594,7 +1594,8 @@ export const aboutEntries: readonly AboutEntry[] = [
     opens: 'opens a deck’s Analysis tab',
     width: 'plate',
     // 2026-10-11 (Tuning line close-out; R3 M10 in `design_handoff_the99_tuning_hub/mana-balance R3 ·
-    // copy strings.ts`): follows MANA_BALANCE_ENABLED, so turning the tool on is what announces it.
+    // copy strings.ts`): follows MANA_BALANCE_ENABLED, now retired (always on wherever the Analysis tab is); the name
+    // stays as the entry's historical identity.
     // NO BUMP, as `deck-stats`: a switched entry is seen by its id, and `since` is the current version.
     switch: 'MANA_BALANCE_ENABLED',
     caption:

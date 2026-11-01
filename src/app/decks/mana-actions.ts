@@ -7,7 +7,7 @@ import { chainArt } from "../../lib/cards/chain-art";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { getDeckDetail, type DeckDetail } from "../../lib/decks/read";
 import { revalidateClaims } from "../../lib/decks/revalidate-claims";
-import { manaBalanceEnabled } from "../../lib/tuning/flag";
+import { analysisTabEnabled } from "../../lib/decks/analysis-flag";
 import { BALANCE_COLORS, type BalanceColor } from "../../lib/tuning/mana-balance";
 import { loadManaBalance } from "../../lib/tuning/mana-balance-load";
 import { reviewHelp, type ManaHelp } from "../../lib/tuning/mana-help";
@@ -30,7 +30,7 @@ function listFingerprintOf(deck: Pick<DeckDetail, "commander" | "partner" | "car
 
 /**
  * Mana Balance's free count (tier 1): the evidence for one of the reader's decks, read fresh on
- * every open. No credit and no model call. Null when the switch is off, the deck is not the
+ * every open. No credit and no model call. Null when the Analysis tab is off, the deck is not the
  * reader's, or a catalog read failed: the panel draws its count-failed state.
  *
  * A count that lands is recorded once per version of the LIST for History (`deck_tool_counts`),
@@ -41,7 +41,7 @@ function listFingerprintOf(deck: Pick<DeckDetail, "commander" | "partner" | "car
 export async function readManaBalance(deckId: string): Promise<ManaPanelData | null> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (!manaBalanceEnabled(env) || !isUuid(deckId)) return null;
+  if (!analysisTabEnabled(env) || !isUuid(deckId)) return null;
   const deck = await getDeckDetail(deckId, userId, undefined);
   if (!deck) return null;
   const balance = await loadManaBalance(deck);
@@ -109,7 +109,7 @@ export async function readManaHelpFor(deckId: string, color: string): Promise<Ma
 export async function readManaHelpReview(deckId: string, countId: string): Promise<ManaHelp | null> {
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (!manaBalanceEnabled(env) || !isUuid(deckId) || !isUuid(countId)) return null;
+  if (!analysisTabEnabled(env) || !isUuid(deckId) || !isUuid(countId)) return null;
   const [row] = await db.select({ summary: deckToolCounts.summary }).from(deckToolCounts)
     .where(helpReadWhere(countId, deckId, userId)).limit(1);
   if (!row || !isManaHelpSummary(row.summary)) return null;
@@ -128,7 +128,7 @@ export async function readManaHelpReview(deckId: string, countId: string): Promi
 /** Improve my mana for one of the reader's decks, read fresh, with the key of the list it was read from:
  *  null on any refusal or failed read. */
 async function helpFor(deckId: string, color: string, userId: string, env: NodeJS.ProcessEnv): Promise<(ManaHelp & { deckId: string; listKey: string }) | null> {
-  if (!manaBalanceEnabled(env) || !isUuid(deckId) || !(BALANCE_COLORS as readonly string[]).includes(color)) return null;
+  if (!analysisTabEnabled(env) || !isUuid(deckId) || !(BALANCE_COLORS as readonly string[]).includes(color)) return null;
   const deck = await getDeckDetail(deckId, userId, undefined);
   if (!deck) return null;
   const identity = [deck.commander, ...(deck.partner ? [deck.partner] : [])].flatMap((c) => c.colorIdentity);
@@ -169,7 +169,7 @@ export async function undoManaTrade(applyId: string): Promise<DeckMutationResult
   const refused = { ok: false as const, message: deckTuningCopy.card.undoRefused };
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
-  if (!manaBalanceEnabled(env) || !isUuid(applyId)) return refused;
+  if (!analysisTabEnabled(env) || !isUuid(applyId)) return refused;
   const deckId = await undoTrade(applyId, userId);
   if (!deckId) return refused;
   revalidateClaims(deckId, userId);

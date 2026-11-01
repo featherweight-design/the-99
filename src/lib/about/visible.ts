@@ -8,7 +8,7 @@
 import { analysisTabEnabled } from "../decks/analysis-flag";
 import { helpMeChooseEnabled } from "../intake/flag";
 import { swapToolsEnabled } from "../swaps/flag";
-import { manaBalanceEnabled, proposedCutsEnabled, suggestedChangesV2Enabled, tuningEnabled, tuningHubEnabled } from "../tuning/flag";
+import { proposedCutsEnabled, suggestedChangesV2Enabled, tuningEnabled, tuningHubEnabled } from "../tuning/flag";
 import {
   socialFriendsEnabled,
 } from "../social/flag";
@@ -61,8 +61,8 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   // Retired (always on): deck printings. The name stays as the entry's historical identity.
   DECK_PRINTINGS_ENABLED: () => true,
   DECK_TOKENS_ENABLED: () => true,
-  // Already reads ANALYSIS_TAB_ENABLED: the tool lives in the tab's Tuning hub.
-  MANA_BALANCE_ENABLED: manaBalanceEnabled,
+  // Retired: Mana Balance follows its parent, the Analysis tab, where it mounts. The name stays as its lines' historical identity.
+  MANA_BALANCE_ENABLED: analysisTabEnabled,
   // Retired (always on): Shopping for all decks. The name stays as the entries', variants' and sentences' historical identity.
   ALL_DECKS_CART_ENABLED: () => true,
   // Retired (always on): Precons, and the Announced group and banner that lived under it.

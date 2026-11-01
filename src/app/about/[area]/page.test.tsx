@@ -102,23 +102,23 @@ describe("/about/[area]", () => {
   });
 
   it("a label switched off for the reader has no line and no pin, and the numbers close up (Review Focus 2)", async () => {
-    const MANA = "counts every source of each color against what your spells ask for";
+    const CUTS = "counts where a deck over 100 runs long";
     const analysis = async () => (await draw("decks")).props.sections.find((s) => s.id === "analysis")!;
-    expect(renderToStaticMarkup(await draw("decks"))).toContain(MANA);
+    expect(renderToStaticMarkup(await draw("decks"))).toContain(CUTS);
     const on = await analysis();
-    m.env = env({ ...(ALL_ON as Record<string, string>), MANA_BALANCE_ENABLED: "off" });
+    m.env = env({ ...(ALL_ON as Record<string, string>), PROPOSED_CUTS_ENABLED: "off" });
     const off = await analysis();
     for (const width of ["phone", "desktop"] as const) {
-      expect(on[width].labels.map((l) => l.key)).toContain("decks/analysis/mana");
-      expect(off[width].labels.map((l) => l.key)).not.toContain("decks/analysis/mana");
-      expect(off[width].shots.flatMap((s) => s.pins).map((p) => p.key)).not.toContain("decks/analysis/mana");
+      expect(on[width].labels.map((l) => l.key)).toContain("decks/analysis/cuts");
+      expect(off[width].labels.map((l) => l.key)).not.toContain("decks/analysis/cuts");
+      expect(off[width].shots.flatMap((s) => s.pins).map((p) => p.key)).not.toContain("decks/analysis/cuts");
       expect(off[width].labels.map((l) => l.n)).toEqual(off[width].labels.map((_, i) => i + 1));
       expect(off[width].labels).toHaveLength(on[width].labels.length - 1);
     }
     // Nothing of it reaches the page, at either width.
     const html = renderToStaticMarkup(await draw("decks"));
-    expect(html).not.toContain("decks/analysis/mana");
-    expect(html).not.toContain(MANA);
+    expect(html).not.toContain("decks/analysis/cuts");
+    expect(html).not.toContain(CUTS);
   });
 
   it("draws the reader's theme's captures, phone and desktop, never one width's in the other's place", async () => {

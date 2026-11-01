@@ -96,31 +96,26 @@ describe("the Tuning hub", () => {
   const env = (vars: Record<string, string | undefined>) => vars as unknown as NodeJS.ProcessEnv;
   const on = { ANALYSIS_TAB_ENABLED: "true" };
 
-  it("is off with no tool on: the tab as it was", () => {
-    expect(hubTools(env(on))).toEqual([]);
+  it("holds Mana Balance alone with no other tool on, which then mounts directly", () => {
+    expect(hubTools(env(on))).toEqual(["mana"]);
     expect(tuningHubEnabled(env(on))).toBe(false);
   });
 
-  it("is off with exactly one tool on, which then mounts directly", () => {
-    expect(hubTools(env({ ...on, TUNING_ENABLED: "true" }))).toEqual(["suggested"]);
-    expect(tuningHubEnabled(env({ ...on, TUNING_ENABLED: "true" }))).toBe(false);
-    expect(tuningHubEnabled(env({ ...on, PROPOSED_CUTS_ENABLED: "true" }))).toBe(false);
-  });
-
-  it("is on with two tools on, a tile for each", () => {
-    const both = env({ ...on, TUNING_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true" });
-    expect(hubTools(both)).toEqual(["suggested", "cuts"]);
-    expect(tuningHubEnabled(both)).toBe(true);
+  it("is on with one more tool on, beside Mana Balance", () => {
+    expect(hubTools(env({ ...on, TUNING_ENABLED: "true" }))).toEqual(["suggested", "mana"]);
+    expect(tuningHubEnabled(env({ ...on, TUNING_ENABLED: "true" }))).toBe(true);
+    expect(hubTools(env({ ...on, PROPOSED_CUTS_ENABLED: "true" }))).toEqual(["mana", "cuts"]);
+    expect(tuningHubEnabled(env({ ...on, PROPOSED_CUTS_ENABLED: "true" }))).toBe(true);
   });
 
   it("draws Mana Balance between the other two, in the hub's fixed order", () => {
-    const all = env({ ...on, TUNING_ENABLED: "true", MANA_BALANCE_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true" });
+    const all = env({ ...on, TUNING_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true" });
     expect(hubTools(all)).toEqual(["suggested", "mana", "cuts"]);
-    expect(tuningHubEnabled(env({ ...on, MANA_BALANCE_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true" }))).toBe(true);
-    expect(tuningHubEnabled(env({ ...on, MANA_BALANCE_ENABLED: "true" }))).toBe(false);
+    expect(tuningHubEnabled(all)).toBe(true);
   });
 
   it("is off whenever Analysis is off, whatever the tools say", () => {
+    expect(hubTools(env({ TUNING_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true" }))).toEqual([]);
     expect(tuningHubEnabled(env({ TUNING_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true" }))).toBe(false);
   });
 });

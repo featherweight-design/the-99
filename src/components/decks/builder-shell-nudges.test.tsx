@@ -55,12 +55,12 @@ const deck = (built: number) =>
     unresolvedRows: [],
   }) as unknown as DeckDetail;
 
-function draw(props: { built?: number; hub?: boolean; mana?: boolean; cuts?: boolean; tuning?: boolean }) {
+function draw(props: { built?: number; hub?: boolean; analysis?: boolean; cuts?: boolean; tuning?: boolean }) {
   seen.strip = {};
   render(
     <BuilderShell mix={recommendedMix(null, false)} deck={deck(props.built ?? 99)} suggestions={[]} degraded={false} firstRun={false}
-      commanderIdentity={["G"]} arrivedFromImport={false} newestAsOf={null} analysisEnabled initialView="deck"
-      tuningHubEnabled={props.hub ?? false} manaBalanceEnabled={props.mana ?? false} proposedCutsEnabled={props.cuts ?? false}
+      commanderIdentity={["G"]} arrivedFromImport={false} newestAsOf={null} analysisEnabled={props.analysis ?? true} initialView="deck"
+      tuningHubEnabled={props.hub ?? false} proposedCutsEnabled={props.cuts ?? false}
       tuningEnabled={props.tuning ?? false} />,
   );
 }
@@ -83,7 +83,7 @@ afterEach(() => vi.restoreAllMocks());
 
 describe("BuilderShell — nudges follow their own switch (discovery R3·5)", () => {
   it("N2: draws balance mana → with the hub off, and lands on Mana Balance through ?tool=", () => {
-    draw({ mana: true });
+    draw({});
     expect(seen.strip.onBalanceMana).toBeTypeOf("function");
     act(() => seen.strip.onBalanceMana!());
     expect(written).toEqual(["mana-balance"]);
@@ -95,14 +95,18 @@ describe("BuilderShell — nudges follow their own switch (discovery R3·5)", ()
     expect(written).toEqual(["proposed-cuts"]);
   });
 
-  it("N2 and N2b: absent with their own switch off, whatever the hub", () => {
+  it("N2b: absent with its own switch off, whatever the hub", () => {
     draw({ hub: true, built: 101 });
-    expect(seen.strip.onBalanceMana).toBeUndefined();
     expect(screen.queryByRole("button", { name: tuningHubShortcutsCopy.proposedCutsAria })).toBeNull();
   });
 
+  it("N2: absent with the Analysis tab off, where Mana Balance mounts", () => {
+    draw({ analysis: false });
+    expect(seen.strip.onBalanceMana).toBeUndefined();
+  });
+
   it("N2 with the hub on keeps the hub's own request, and writes no ?tool=", () => {
-    draw({ hub: true, mana: true });
+    draw({ hub: true });
     act(() => seen.strip.onBalanceMana!());
     expect(written).toEqual([]);
   });
@@ -115,7 +119,7 @@ describe("BuilderShell — nudges follow their own switch (discovery R3·5)", ()
   });
 
   it("N1 with the hub on asks the hub back to its tiles, then lands", () => {
-    draw({ tuning: true, mana: true, hub: true });
+    draw({ tuning: true, hub: true });
     act(() => seen.strip.onSuggest!());
     expect(written).toEqual(["suggested-changes"]);
   });
