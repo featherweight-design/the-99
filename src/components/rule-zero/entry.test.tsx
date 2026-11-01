@@ -110,6 +110,18 @@ describe("Home's table card (E3, F3)", () => {
     expect(within(card).getByRole("link", { name: e.homeOpen }).getAttribute("href")).toBe("/friends/table/t1");
   });
 
+  it("is one row from xl: the kicker, pod and faces in one block, then the sentence, then the button", () => {
+    render(<HomeTableCard table={TABLE} now={NOW} />);
+    const card = screen.getByRole("region", { name: e.homeKicker });
+    expect(card.className).toContain("xl:flex-row");
+    const [block, sentence, open] = [...card.children].filter((c) => !c.hasAttribute("aria-hidden"));
+    expect(block.className).toContain("xl:w-[230px]");
+    expect(block.querySelector("h3")).not.toBeNull();
+    expect(block.querySelectorAll("[data-face]")).toHaveLength(6);
+    expect(sentence.tagName).toBe("P");
+    expect(open.getAttribute("href")).toBe("/friends/table/t1");
+  });
+
   it("says you're seated when you set it, and where to pick when your seat waits", () => {
     render(<HomeTableCard table={{ ...TABLE, setByYou: true }} now={NOW} />);
     expect(screen.getByRole("region").querySelector("p")?.textContent).toBe(plain(e.homeBodyOwn("Ghalta Stompy", 6, CLOSES)));

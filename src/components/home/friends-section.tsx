@@ -37,8 +37,6 @@ export type FriendsSectionProps = {
   invites?: InviteCount | null;
   /** The dashboard's `order` classes for the phone placement. */
   className?: string;
-  /** Drawn under the section's label, ahead of the seats: Rule 0's `Tonight's table` (readiness gap 1). */
-  head?: React.ReactNode;
 };
 
 /** The seats the row draws: faces, the overflow count, and empty seats to the row's end. Pure, for tests. */
@@ -48,7 +46,7 @@ export function seatPlan(friends: number): { faces: number; more: number; empty:
   return { faces: friends, more: 0, empty: SEATS - friends };
 }
 
-export function FriendsSection({ you, friends, links, now, invites = null, className = "", head }: FriendsSectionProps) {
+export function FriendsSection({ you, friends, links, now, invites = null, className = "" }: FriendsSectionProps) {
   // Add a friend, Show, the dialog, the chooser, the invite watch, the clock and the toast: shared with the first-run
   // checklist's Friends row (`useAddFriend`).
   const { nowDate, timeZone, open, soonest, msLeft, making, add, showLink, returnRef, overlays } = useAddFriend({ friends, links, now, invites });
@@ -73,7 +71,6 @@ export function FriendsSection({ you, friends, links, now, invites = null, class
           </Link>
         )}
       </div>
-      {head}
 
       <ul className="m-0 flex list-none items-start justify-between p-0">
         {friends.length === 0 && (

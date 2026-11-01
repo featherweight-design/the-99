@@ -127,13 +127,9 @@ export function Dashboard(props: DashboardProps) {
   // Both arrive at the copy module pre-formatted: it formats no numbers by
   // contract, and the greeting's freshness figure is a word, not a date.
   const noDecks = props.decks.length === 0;
-  const tableCards = props.tables && props.tables.length > 0 ? (
-    <>
-      {props.tables.map((t) => (
-        <HomeTableCard key={t.tableId} table={t} now={new Date(props.now)} />
-      ))}
-    </>
-  ) : null;
+  // Rule 0's cards lead the body (revisions Home), in the order the loader gave (soonest closing first), and nothing at all,
+  // no wrapper and no gap, without one.
+  const tables = props.tables ?? [];
   const when = formatWhen(props.lastUpdated, new Date(props.now));
   const kicker = refreshCopy.home.kicker(props.stats.totalCards.toLocaleString("en-US"), when);
   const noCards = props.noCards === true;
@@ -258,6 +254,15 @@ export function Dashboard(props: DashboardProps) {
             every width, which this layout already accepts for Commitments. */}
         {/* The lead's ✕ hands focus on to What's new's first row (`nextDismiss`); the rows keep their own section's scope. */}
         <div data-dismiss-scope className="contents min-[1180px]:flex min-[1180px]:min-w-0 min-[1180px]:flex-auto min-[1180px]:flex-col min-[1180px]:gap-[11px]">
+          {/* Rule 0's cards head the main column (board H6-H8): the right rail starts level with them from 1180, and below it
+              they are first in the one column. Drawn once. 10px apart; 12px to the next block (the column's 11px gap + 1). */}
+          {tables.length > 0 && (
+            <div data-home-tables className="flex flex-col gap-[10px] sm:max-w-[392px] min-[1180px]:mb-[1px] xl:max-w-none">
+              {tables.map((t) => (
+                <HomeTableCard key={t.tableId} table={t} now={new Date(props.now)} />
+              ))}
+            </div>
+          )}
           {props.signature}
           {props.welcome}
           {/* Direction B: the lead story where Ready to build stood, which leaves Home. */}
@@ -289,14 +294,13 @@ export function Dashboard(props: DashboardProps) {
           {feed && <WhatsNew feed={feed} now={props.now} faces={faces} className="order-3 min-[1180px]:order-none" />}
         </div>
 
-        {/* The column exists only when the card does. Null when the availability
+        {/* The column exists only when a card in it does. Null when the availability
             read failed — three zeroes after a failed query is a lie, so the card
             leaves rather than guessing — and an empty column reserving 316px
             would leave a blank rail squeezing the resume rows beside it for a
             block that is not there. */}
-        {/* It renders when Commitments, Friends or Rule 0's table card does (G7): with Commitments absent, Friends (or the
-            card alone, when the friends read failed) tops the column. */}
-        {(props.commitments !== null || props.friends || tableCards) && (
+        {/* It renders when Commitments or Friends does (G7): with Commitments absent, Friends tops the column. */}
+        {(props.commitments !== null || props.friends) && (
           <div className="contents min-[1180px]:flex min-[1180px]:w-[316px] min-[1180px]:flex-none min-[1180px]:flex-col min-[1180px]:gap-[11px]">
             {props.commitments !== null && (
               <div className={`${feed ? "order-5" : "order-3"} flex flex-col min-[1180px]:order-none`}>
@@ -311,14 +315,8 @@ export function Dashboard(props: DashboardProps) {
               <FriendsSection
                 {...props.friends}
                 now={props.now}
-                head={tableCards}
                 className={`${feed ? "order-4" : "order-1"} mt-[6px] min-[1180px]:order-none ${props.commitments ? "min-[1180px]:mt-[4px]" : "min-[1180px]:mt-0"}`}
               />
-            ) : tableCards ? (
-              // A failed friends read still draws the card, alone at the section's place, with no heading.
-              <div className={`${feed ? "order-4" : "order-1"} mt-[6px] flex flex-col gap-[12px] min-[1180px]:order-none ${props.commitments ? "min-[1180px]:mt-[4px]" : "min-[1180px]:mt-0"}`}>
-                {tableCards}
-              </div>
             ) : null}
           </div>
         )}
