@@ -675,8 +675,14 @@ describe("CartView, By card's row facts (v2 PR 4)", () => {
     expect(readNames(own)).toBeNull();
   });
 
-  it("draws no own fact and no spare fact on a row with nothing owned and no friend's spare", () => {
-    render(<CartView cart={held} provenance={provenance} />);
+  it("draws no own fact and no spare fact on a row with nothing owned and no friend's spare", async () => {
+    // The spares read lands with none: the row's spare cell leaves its reading state and draws nothing.
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ spares: [], asks: [] }) }));
+    try {
+      await act(async () => { render(<CartView cart={held} provenance={provenance} />); });
+    } finally {
+      vi.unstubAllGlobals();
+    }
     const tower = list().getAllByRole("listitem").find((li) => li.textContent?.includes("Command Tower"))!;
     expect(factOf(tower, "need")).not.toBeNull();
     expect(factOf(tower, "own")).toBeNull();
