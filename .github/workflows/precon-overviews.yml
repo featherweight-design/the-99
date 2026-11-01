@@ -62,12 +62,8 @@ jobs:
       PRECON_OVERVIEW_FORCE: ${{ github.event.inputs.force }}
       NODE_OPTIONS: --max-old-space-size=4096
     steps:
-      - name: Fail loudly without the model key
-        run: |
-          if [ -z "$ANTHROPIC_API_KEY" ]; then
-            echo "::error::ANTHROPIC_API_KEY is not set in the catalog-staging environment."
-            exit 1
-          fi
+      # No separate key check here: the script requires ANTHROPIC_API_KEY itself, and only once the
+      # model-call switch reads on, so a paused run (MODEL_CALLS_ENABLED off) skips green without one.
       - uses: actions/checkout@v4
         with:
           # A staging leg runs the commit staging has deployed and migrated (`staging-deployed`, moved by `Staging

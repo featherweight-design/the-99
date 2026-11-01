@@ -2,7 +2,7 @@ import "./lib/env.mjs";
 import { generateCommanderProse } from "../src/lib/prose/generate";
 import { costUsd, rates, type Usage } from "./eval/lib/pricing.mjs";
 import { recordSystemSpend } from "./lib/system-spend";
-import { assertModelCallsOn } from "./lib/model-calls-gate.mjs";
+import { assertModelCallsOn, readModelCalls } from "./lib/model-calls-gate.mjs";
 
 // Sonnet 5.5 since 2026-10-30 (Hugh: the 5.5 model wherever one exists); it was Sonnet 4.6.
 export const MODEL = "claude-sonnet-5-5";
@@ -90,6 +90,23 @@ async function recordSpend() {
   await recordSystemSpend({ feature: "prose", model: MODEL, usd: spentUsd });
 }
 
+/**
+ * The model-call switch, RE-READ while the run goes: a run can take hours, and the read before it
+ * starts must not authorize every call after. Polled every minute (health holds its answer 30s), and
+ * once it reads anything but on, `shouldStop` stops before the next commander, as the spend cap does.
+ */
+const SWITCH_POLL_MS = 60_000;
+let halted: { state: "off" | "unconfirmed"; line: string } | null = null;
+let poll: ReturnType<typeof setInterval> | undefined;
+function watchSwitch() {
+  poll = setInterval(() => {
+    void readModelCalls().then((v) => {
+      if (v.state !== "on" && halted === null) halted = v;
+    });
+  }, SWITCH_POLL_MS);
+  poll.unref();
+}
+
 // The app-wide model-call switch, before the key is required and before any call
 // (`model-calls-gate.mjs`): off exits 0, unconfirmed exits non-zero. A dry run calls nothing, so it
 // still counts while the switch is off.
@@ -99,12 +116,14 @@ async function recordSpend() {
       console.error("generate-commander-prose: ANTHROPIC_API_KEY is not set.");
       process.exit(1);
     }
+    if (!dryRun) watchSwitch();
     return generateCommanderProse({
       complete, dryRun, maxCommanders, attempts: ATTEMPTS,
-      shouldStop: () => spentUsd + worstCommanderUsd > maxUsd,
+      shouldStop: () => halted !== null || spentUsd + worstCommanderUsd > maxUsd,
     });
   })
   .then(async (r) => {
+    clearInterval(poll);
     if (dryRun) {
       console.log(`Dry run: ${r.deferred} commanders need a sentence (${r.fresh} already current, ` +
         `${r.restamped} would be re-stamped, ${r.suppressed} suppressed); at most ${r.deferred * 3} calls. Nothing was called.`);
@@ -127,6 +146,16 @@ async function recordSpend() {
       .map(([reason, n]) => `${reason} ${n}`)
       .join(", ");
     console.log(`Rejected attempts by rule: ${byRule}.`);
+    // Stopped mid-run by the switch: what was written stays; off is a pause, unconfirmed a failure to look at.
+    const stoppedBy = halted as { state: "off" | "unconfirmed"; line: string } | null;
+    if (stoppedBy) {
+      if (stoppedBy.state === "off") console.log(`Stopped early: ${stoppedBy.line}`);
+      else {
+        console.error(`Stopped early: ${stoppedBy.line}`);
+        process.exit(1);
+      }
+      return;
+    }
     // A run where the model was reachable for nobody is a broken run wearing a green tick.
     if (r.written === 0 && r.failed > 0) {
       console.error("Every generation failed — the model was unreachable.");
@@ -134,6 +163,7 @@ async function recordSpend() {
     }
   })
   .catch(async (err) => {
+    clearInterval(poll);
     console.error(err);
     await recordSpend();
     process.exit(1);

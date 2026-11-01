@@ -163,3 +163,36 @@ describe("runBuild", () => {
     expect(r.deferred).toEqual(["a"]);
   });
 });
+
+describe("runBuild beforeSend (the model-call switch)", () => {
+  it("is asked before every batch, and a halt before the first sends nothing and defers every precon", async () => {
+    const jobs = [job("a", 100, "ok"), job("b", 100, "ok")];
+    const { send, sent } = sender(jobs, 1);
+    let asked = 0;
+    const r = await runBuild({
+      jobs, send, capMicro: 1_000, store: async () => {}, log: () => {},
+      beforeSend: async () => { asked += 1; return { state: "off", line: "paused" }; },
+    });
+    expect(asked).toBe(1);
+    expect(sent).toEqual([]);
+    expect(r.deferred).toEqual(["a", "b"]);
+    expect(r.halted).toEqual({ state: "off", line: "paused" });
+  });
+
+  it("re-reads before the repair batch: a switch turned off mid-run sends no repair, and an advisory-only first answer is still stored", async () => {
+    const advisory = { ...job("a", 100, "ok"), extra: () => ["overview"] } as unknown as Job<string>;
+    const jobs = [advisory, job("b", 100, "refused"), job("c", 100, "ok")];
+    const { send, sent } = sender(jobs, 1);
+    const stored: string[] = [];
+    let asked = 0;
+    const r = await runBuild({
+      jobs, send, capMicro: 1_000, store: async (s) => { stored.push(s.file); }, log: () => {},
+      beforeSend: async () => (++asked === 1 ? null : { state: "unconfirmed", line: "could not confirm" }),
+    });
+    expect(asked).toBe(2);
+    expect(sent).toEqual([["a", "b", "c"]]);
+    expect(stored.sort()).toEqual(["a", "c"]);
+    expect(r.deferred).toEqual(["b"]);
+    expect(r.halted?.state).toBe("unconfirmed");
+  });
+});

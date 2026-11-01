@@ -20,11 +20,13 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   `https://the-99.dev/api/health`, empty counts as unset, even for a staging-catalog job) before a job spends: "off"
   skips with exit 0; anything it cannot confirm (unreachable, not JSON, no field) sends nothing and exits NON-ZERO, so
   the run goes red. Each script reads it before requiring `ANTHROPIC_API_KEY`, so a paused run needs no key, except
-  `db:build:labels`, which needs the key to collect. Gated: `check:tuning`, `db:build:prose` (not `--dry-run`),
+  `db:build:labels`, which needs the key to collect. A verdict is never held across slow work: each spend point reads it fresh. Gated: `check:tuning`,
+  `db:build:prose` (not `--dry-run`; re-read every minute during the run, stopping before the next commander),
   `db:build:labels` (before each wave's submit, after every paid batch is collected; paused returns
   `EXIT_CALLS_PAUSED` 76, which ends `card-labels.yml`'s loop green with the resume hint) and
-  `db:build:precon-overviews` (a live run, after the no-model readings and not-current marks, before tokens are
-  counted or a batch submitted; not `--collect`).
+  `db:build:precon-overviews` (a live run: read fresh before the first token count and again before EVERY batch,
+  first answers and repairs, via `runBuild`'s `beforeSend`; the no-model readings and not-current marks run
+  either way; not `--collect`).
   **A deliberate exception to per-reader resolution:** `reserveModelCall` and `/api/health` resolve this switch
   app-wide with no user (`resolveSwitchEnvStrict(null)`), not from `requestSwitchEnv(userId)`. It is plumbing, so no
   account's override applies, and health is public and must carry no user data. The registry marks it `defaultOn`
