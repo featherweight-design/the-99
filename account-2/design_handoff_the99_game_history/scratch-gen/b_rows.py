@@ -4,10 +4,10 @@ import ghlib as G, lib8 as L, fx
 R = [
     ('A', 'opponents logged, one won', G.game('goblins', 'loss', 4, 'Oct 30', 2, (), ('mana',), (fx.COLIN(True), fx.PETER(), fx.MAX()))),
     ('B', 'no opponents, no marks (an old game)', G.game('aang', 'loss', 4, 'Mar 14, 2025', None)),
-    ('C', 'a note', G.game('gishath', 'win', 4, 'Oct 30', 3, ('speed', 'board'), (), (fx.COLIN(), fx.PETER()), 'Turn-5 Gishath, flipped two dinos. Colin had no answer.')),
+    ('C', 'a note', G.game('gishath', 'win', 4, 'Oct 30', 3, ('speed', 'board'), (), (fx.COLIN(), fx.PETER()), 'Turn-5 Sai, a sky full of thopters. Colin had no answer.')),
     ('D', 'its version since deleted', G.game('elves', 'draw', 5, 'Oct 9', None, ('board',), ('interaction',), (fx.COLIN(), fx.MAX()))),
     ('E', 'a friend’s deck since deleted, a friend removed', G.game('gishath', 'loss', 4, 'Sep 5', 2, (), ('card_flow',), (G.seat('Peter', 'Gisa’s Graveyard', 'gisa', True), G.seat('Sam', 'Miku', 'miku'), fx.MAX()))),
-    ('F', 'an anyone seat with a label, a pair', G.game('kratos', 'loss', 3, 'Sep 12', 2, (), (), (G.seat('Dana', 'Atraxa', 'giada', True), G.seat('Lee', 'Killian + Ashling', 'killian')))),
+    ('F', 'an anyone seat with a label, a pair', G.game('kratos', 'loss', 3, 'Sep 12', 2, (), (), (G.seat('Dana', 'Atraxa', 'giada', True), G.seat('Lee', 'Miku + Jace', 'miku')))),
 ]
 
 CAPS = {

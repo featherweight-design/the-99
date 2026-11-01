@@ -10,11 +10,11 @@ LOW = 'Games from every deck land here, newest first.' + G.DRAFT
 def ph(n):
     gs = {1: G1, 2: G2, 3: G3}[n]
     if n == 1:
-        top = G.filt_phone(show=False, cnt='1 game') + G.summary('1 game logged.', ['<b>HD - Goblins</b> · pod of 4 · Oct 2026'], LOW)
+        top = G.filt_phone(show=False, cnt='1 game') + G.summary('1 game logged.', ['<b>HD - Lathliss</b> · pod of 4 · Oct 2026'], LOW)
     elif n == 2:
         top = G.filt_phone(show=False, cnt='2 games') + G.summary('2 games logged. 1–1.', ['<b>2 decks</b> · pod of 4 · Oct 2026'], LOW)
     else:
-        top = G.filt_phone('All decks', 2, cnt='3 games') + G.summary('3 games logged. 1–2.', ['<b>2 decks</b> · pod of 4 · Oct 2026', 'most played <b>HD - Gishath</b>, 2 of 3'])
+        top = G.filt_phone('All decks', 2, cnt='3 games') + G.summary('3 games logged. 1–2.', ['<b>2 decks</b> · pod of 4 · Oct 2026', 'most played <b>HD - Sai</b>, 2 of 3'])
     b = G.head(False) + top + G.month('October 2026', f'{n} game{"s" if n > 1 else ""}') + G.glist(gs)
     return G.phone(b, {1: 1000, 2: 1140, 3: 1420}[n])
 
@@ -22,11 +22,11 @@ def ph(n):
 def dk(n):
     gs = {1: G1, 2: G2, 3: G3}[n]
     if n == 1:
-        top = G.filt_desk(show=False, cnt='1 game') + G.summary('1 game logged.', ['<b>HD - Goblins</b> · pod of 4 · Oct 2026'], LOW)
+        top = G.filt_desk(show=False, cnt='1 game') + G.summary('1 game logged.', ['<b>HD - Lathliss</b> · pod of 4 · Oct 2026'], LOW)
     elif n == 2:
         top = G.filt_desk(show=False, cnt='2 games') + G.summary('2 games logged. 1–1.', ['<b>2 decks</b> · pod of 4 · Oct 2026'], LOW)
     else:
-        top = G.filt_desk(cnt='3 games') + G.summary('3 games logged. 1–2.', ['<b>2 decks</b> · pod of 4 · Oct 2026', 'most played <b>HD - Gishath</b>, 2 of 3'])
+        top = G.filt_desk(cnt='3 games') + G.summary('3 games logged. 1–2.', ['<b>2 decks</b> · pod of 4 · Oct 2026', 'most played <b>HD - Sai</b>, 2 of 3'])
     b = G.head(True) + top + G.month('October 2026', f'{n} game{"s" if n > 1 else ""}') + G.glist(gs, True)
     return G.desk(b, {1: 600, 2: 680, 3: 800}[n])
 

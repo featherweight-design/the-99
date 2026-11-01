@@ -202,6 +202,7 @@ CSS = r"""<style>
 .spin{display:inline-block;width:12px;height:12px;border-radius:50%;border:2px solid var(--border-strong);border-top-color:var(--fg-muted);margin-right:8px}
 .q-fc{overflow:hidden}.q-fc img{width:100%;height:100%;object-fit:cover;object-position:50% 20%;display:block}
 .capx{overflow:hidden;position:relative}.capx img{position:absolute;display:block}
+.q-cf{flex:none;width:26px;height:26px;border-radius:6px;overflow:hidden;background:var(--elevated)}.q-cf img{width:100%;height:100%;object-fit:cover;object-position:50% 25%;display:block}
 .legend{font:10.5px 'IBM Plex Mono';color:var(--fg-faint);margin-top:4px}
 </style>"""
 
@@ -230,8 +231,8 @@ def idm(colors):
 
 
 # --- fixtures ---
-DECKS = {'gishath': ('HD - Gishath', 'RGW'), 'goblins': ('HD - Goblins', 'R'), 'aang': ('HD - Avatar Aang', 'WUBRG'),
-         'elves': ('HD - Elves', 'G'), 'scrappy': ('HD Tune - Scrappy Survivors', 'RGW'), 'kratos': ('HD - Gods (Kratos + Atreus)', 'URW')}
+DECKS = {'gishath': ('HD - Sai', 'U', 'sai'), 'goblins': ('HD - Lathliss', 'R', 'lathliss'), 'aang': ('HD - Dina', 'BG', 'dina'),
+         'elves': ('HD - Ashling', 'R', 'ashling'), 'scrappy': ('HD Tune - Zada', 'R', 'zada'), 'kratos': ('HD - Killian', 'WB', 'killian')}
 AX = {'speed': 'Speed', 'card_flow': 'Cards in hand', 'mana': 'Mana', 'interaction': 'Answers', 'board': 'Board presence',
       'resilience': 'Comebacks', 'engine': 'The deck’s plan', 'closing': 'Closing the game'}
 ORDER = list(AX)
@@ -265,7 +266,8 @@ def vsline(seats):
 
 
 def row(g, desk=False, social=True, cls=''):
-    name, col = DECKS[g['deck']]
+    name, col, face = DECKS[g['deck']]
+    cf = f'<span class="q-cf"><img src="art/{face}.jpg" alt=""></span>'
     rs = {'win': ('q-w', 'W'), 'loss': ('', 'L'), 'draw': ('', 'D')}[g['res']]
     sq = f'<span class="rs {rs[0]}">{rs[1]}</span>'
     meta = f'<span class="q-mt">{g["pod"]}-player · {g["date"]}</span>'
@@ -275,9 +277,9 @@ def row(g, desk=False, social=True, cls=''):
     vs = vsline(g['seats']) if social else ''
     nt = f'<div class="q-nt"><i></i><span>“{g["note"]}”</span></div>' if g['note'] else ''
     if desk:
-        dc = f'<span class="dc">{idm(col)}<span class="q-dn">{name}</span></span>'
+        dc = f'<span class="dc">{cf}<span class="q-dn">{name}</span></span>'
         return f'<li class="q-gr {cls}"><div class="r1">{dc}{sq}{meta}{vn}{mk}{chev}</div>{vs}{nt}</li>'
-    dl = f'<div class="dl">{idm(col)}<span class="q-dn">{name}</span>{chev}</div>'
+    dl = f'<div class="dl">{cf}<span class="q-dn">{name}</span>{chev}</div>'
     return f'<li class="q-gr {cls}">{dl}<div class="r1">{sq}{meta}{vn}{mk}</div>{vs}{nt}</li>'
 
 
@@ -353,4 +355,4 @@ DRAFT = '<span class="draft8">DRAFT</span>'
 
 
 def build_doc(title, body, width=2000):
-    return L.doc(title, HELM + CSS, body, width)
+    return L.doc(title, HELM + CSS, body.replace('<span class="tag">R1</span>', '<span class="tag">R1b</span>'), width)

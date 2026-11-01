@@ -16,7 +16,7 @@ for row in rows:
         boards[f'{n}.dc.html'] = {'x': x, 'y': y, 'w': w, 'h': h, 'title': t}; order.append(f'{n}.dc.html')
         x += w + 80; hmax = max(hmax, h)
     y += hmax + 120
-idx = {'v': 3, 'createdOnFiles': {'v': 1, 'at': datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')}, 'title': 'The 99 · Game history',
+idx = {'v': 3, 'createdOnFiles': json.load(open('canvas/project/canvas.json'))['createdOnFiles'] if os.path.exists('canvas/project/canvas.json') else {'v': 1, 'at': datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')}, 'title': 'The 99 · Game history',
        'launch': {'view': 'canvas'}, 'pages': [], 'boards': boards, 'order': order, 'notes': {}}
 json.dump(idx, open('canvas/project/canvas.json', 'w'), indent=1)
 print(json.dumps(boards))

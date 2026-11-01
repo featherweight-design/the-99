@@ -17,5 +17,5 @@ OCT = [
 SEP = [
     game('scrappy', 'win', 4, 'Sep 26', 4, ('card_flow',), (), (COLIN(), MAX(), CHRIS())),
     game('aang', 'loss', 4, 'Sep 19', 1, (), ('mana',), (PETER(True), MAX(), CHRIS())),
-    game('kratos', 'loss', 3, 'Sep 12', 2, (), (), (seat('Dana', 'Atraxa', 'giada', True), seat('Lee', 'Killian', 'killian'))),
+    game('kratos', 'loss', 3, 'Sep 12', 2, (), (), (seat('Dana', 'Atraxa', 'giada', True), seat('Lee', 'Miku', 'miku'))),
 ]

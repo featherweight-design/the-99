@@ -1,10 +1,10 @@
 """Board 1 · Where it lives: a third segment on /decks, a door from Stats, and the landing on a deck's Games tab."""
 import ghlib as G, lib8 as L
 
-LANES = [('HD - Gishath', 'RGW', '1 day ago', 'won 3 of 7 · pod of 4', [(.08, 'L'), (.31, 'W'), (.55, 'L'), (.9, 'L'), (.995, 'W')]),
-         ('HD - Goblins', 'R', '1 day ago', 'won 1 of 3 · pod of 4', [(.4, 'W'), (.7, 'L'), (.995, 'L')]),
-         ('HD - Avatar Aang', 'WUBRG', '7 days ago', 'won 2 of 8 · pods of 3–4', [(.12, 'L'), (.2, 'L'), (.45, 'W'), (.63, 'L'), (.82, 'L'), (.9, 'W'), (.93, 'L')]),
-         ('HD - Elves', 'G', '22 days ago', 'won 0 of 2 · pod of 5', [(.5, 'L'), (.8, 'D')])]
+LANES = [('HD - Sai', 'U', '1 day ago', 'won 3 of 7 · pod of 4', [(.08, 'L'), (.31, 'W'), (.55, 'L'), (.9, 'L'), (.995, 'W')]),
+         ('HD - Lathliss', 'R', '1 day ago', 'won 1 of 3 · pod of 4', [(.4, 'W'), (.7, 'L'), (.995, 'L')]),
+         ('HD - Dina', 'BG', '7 days ago', 'won 2 of 8 · pods of 3–4', [(.12, 'L'), (.2, 'L'), (.45, 'W'), (.63, 'L'), (.82, 'L'), (.9, 'W'), (.93, 'L')]),
+         ('HD - Ashling', 'R', '22 days ago', 'won 0 of 2 · pod of 5', [(.5, 'L'), (.8, 'D')])]
 
 
 def recency(desk, door=True):

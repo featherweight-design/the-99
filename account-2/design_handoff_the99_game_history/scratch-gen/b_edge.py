@@ -4,7 +4,7 @@ import ghlib as G, lib8 as L, fx, b_pop
 
 def empty(desk):
     r0 = ('<div class="r0"><span>Playing with a pod? Its <b>Rule 0 check</b> seats the table, and <i>Log this game</i> fills in every seat for you.</span><u>Your pods ›</u></div>')
-    sel = f'<span class="dsl">{G.idm("RGW")}<span>HD - Gishath</span><i>&#9662;</i></span>'
+    sel = f'<span class="dsl">{G.idm("U")}<span>HD - Sai</span><i>&#9662;</i></span>'
     e = (f'<div class="emp"><h3>No games logged yet.</h3><p>Every game you log, on any deck, lands here: who won, the pod, the date, who sat across the table.{G.DRAFT}</p>'
          f'<div class="pk"><small>Log one on</small><div class="q-pr">{sel}<span class="bp">Log a game</span></div></div>{r0}</div>')
     if desk:
@@ -33,7 +33,7 @@ def foot(state):
 
 
 def long_phone(state, toast=False):
-    b = G.head(False)[:0] + G.filt_phone(cnt='212 games') + G.summary('212 games logged. 81–118–13.', ['<b>14 decks</b> · pods of 2–6 · Jan 2024 to Oct 2026', 'most played <b>HD - Avatar Aang</b>, 41 of 212'])
+    b = G.head(False)[:0] + G.filt_phone(cnt='212 games') + G.summary('212 games logged. 81–118–13.', ['<b>14 decks</b> · pods of 2–6 · Jan 2024 to Oct 2026', 'most played <b>HD - Dina</b>, 41 of 212'])
     b += '<div class="fold" style="position:relative;margin:34px -16px 10px"><span>… 46 games scrolled past …</span></div>'
     b += long_list(False, foot(state))
     ex = G.toast('We couldn’t load more games.', bottom=90) if toast else ''
@@ -41,7 +41,7 @@ def long_phone(state, toast=False):
 
 
 def long_desk(state, toast=False):
-    b = G.filt_desk(cnt='212 games') + G.summary('212 games logged. 81–118–13.', ['<b>14 decks</b> · pods of 2–6 · Jan 2024 to Oct 2026', 'most played <b>HD - Avatar Aang</b>, 41 of 212'])
+    b = G.filt_desk(cnt='212 games') + G.summary('212 games logged. 81–118–13.', ['<b>14 decks</b> · pods of 2–6 · Jan 2024 to Oct 2026', 'most played <b>HD - Dina</b>, 41 of 212'])
     b += '<div class="fold" style="position:relative;margin:34px -22px 10px"><span>… 44 games scrolled past …</span></div>'
     b += long_list(True, foot(state))
     ex = G.toast('We couldn’t load more games.', bottom=22) if toast else ''
@@ -63,7 +63,7 @@ def fail_desk():
 
 def deleted(desk):
     gs = [g for g in fx.OCT if g['deck'] != 'goblins']
-    lines = ['<b>5 decks</b> · pods of 3–5 · Jul to Oct 2026', 'most played <b>HD - Avatar Aang</b>, 8 of 22']
+    lines = ['<b>5 decks</b> · pods of 3–5 · Jul to Oct 2026', 'most played <b>HD - Dina</b>, 8 of 22']
     if desk:
         b = G.head(True) + G.filt_desk(cnt='22 games') + G.summary('22 games logged. 9–11–2.', lines) + G.month('October 2026', '5 games') + G.glist(gs, True)
         return G.desk(b, 900, fade=True)
@@ -87,8 +87,8 @@ def build():
     body += '</div><div class="frames" style="gap:56px">'
     body += L.fr('<b>X2</b> · 1300 · the same', fail_desk(), '')
     body += '</div><div class="frames" style="gap:56px">'
-    body += L.fr('<b>D1</b> · 390 · after HD - Goblins was deleted', deleted(False),
-                 'Games cascade with their deck today, and the shipped delete confirm already says so (<i>Its list, its versions and its game log go with it.</i>). The view assumes that: Goblins’ game is gone, and every count drops by it. No tombstone row.')
+    body += L.fr('<b>D1</b> · 390 · after HD - Lathliss was deleted', deleted(False),
+                 'Games cascade with their deck today, and the shipped delete confirm already says so (<i>Its list, its versions and its game log go with it.</i>). The view assumes that: Lathliss’ game is gone, and every count drops by it. No tombstone row.')
     body += L.fr('<b>D2</b> · 1300 · the same', deleted(True), 'A friend’s deck deleted on their side is a different case: it lives on in the reader’s rows as its snapshot (row E).')
     body += '</div>'
     return G.build_doc('Game history · The edges', body)
