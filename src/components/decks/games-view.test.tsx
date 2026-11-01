@@ -247,9 +247,11 @@ describe("GamesView: the window", () => {
   });
 
   it("reads a request that never arrived as the same failed state", async () => {
-    more.load.mockImplementation(async () => { throw new Error("offline"); });
+    more.load.mockImplementation(() => Promise.reject(new Error("offline")));
     draw(first);
-    fireEvent.click(screen.getByRole("button", { name: `Show ${GAME_HISTORY_WINDOW} more` }));
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: `Show ${GAME_HISTORY_WINDOW} more` }));
+    });
     expect(await screen.findByRole("alert")).toHaveTextContent(gameHistoryCopy.moreFailed);
     expect(screen.getAllByRole("listitem")).toHaveLength(2);
   });
