@@ -24,6 +24,12 @@ describe("the filters on the address", () => {
     expect(cleanGamesFilter({ deckId: up })).toEqual({ deckId: up.toLowerCase() });
   });
 
+  it("keeps one Played against: a friend wins over a commander, in the address and across the wire", () => {
+    expect(gamesFilterFromParams(read("friend=f&against=c"))).toEqual({ friend: "f" });
+    expect(gamesFilterFromParams(read("against=c"))).toEqual({ commander: "c" });
+    expect(cleanGamesFilter({ friend: "F", commander: "c" })).toEqual({ friend: "f" });
+  });
+
   it("writes defaults as absences and round-trips", () => {
     expect(gamesFilterToParams({}).toString()).toBe("");
     const f = { deckId: "d", result: "loss", commander: "c" };

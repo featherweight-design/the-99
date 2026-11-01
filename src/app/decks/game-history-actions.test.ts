@@ -1,6 +1,7 @@
 // The Games view's two server actions (game history, build PR 2+3): the first window for a press on `Games`, and the next
 // window for `Show 50 more`. The viewer is the session's, never an argument; a cursor the read did not write is refused as
 // the failed state rather than answered with the first window again; later windows carry no aggregates.
+import type { HistoryAggregates } from "../../lib/games/history";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
@@ -18,15 +19,21 @@ vi.mock("../../lib/games/history", () => ({ loadGameHistory: (viewerId: string, 
 const { loadMoreGamesAction, readGameHistory } = await import("./game-history-actions");
 
 const CURSOR = "2026-09-19 12:00:00.123456|11111111-1111-4111-8111-111111111111";
+const AGGREGATES: HistoryAggregates = {
+  total: 60,
+  byResult: { wins: 30, losses: 20, draws: 10 },
+  byDeck: [{ deckId: "11111111-1111-4111-8111-111111111111", games: 60 }],
+  months: [{ month: "2026-09", games: 60 }],
+  summary: {
+    games: 60, wins: 30, losses: 20, draws: 10, decks: 1, podMin: 4, podMax: 4, firstPlayedAt: null, lastPlayedAt: null,
+    mostPlayed: null, friendWonLosses: null,
+  },
+  playedAgainst: { friends: [], commanders: [] },
+};
 const FIRST = {
   games: [{ id: "g1" }],
   next: CURSOR,
-  aggregates: {
-    total: 60,
-    months: [{ month: "2026-09", games: 60 }],
-    summary: { games: 60 },
-    playedAgainst: { friends: [{ publicId: "p1" }], commanders: [] },
-  },
+  aggregates: AGGREGATES,
 };
 
 beforeEach(() => {
@@ -41,6 +48,9 @@ describe("readGameHistory", () => {
     expect(state.load).toHaveBeenCalledTimes(1);
     expect(state.load).toHaveBeenCalledWith("user_1", { filter: {} });
     expect(res).toEqual({ filter: {}, games: FIRST.games, next: CURSOR, aggregates: FIRST.aggregates });
+    // The new wire fields ride the first window: Result counts and per-deck counts.
+    expect(res?.aggregates.byResult).toEqual({ wins: 30, losses: 20, draws: 10 });
+    expect(res?.aggregates.byDeck).toEqual(AGGREGATES.byDeck);
   });
 
   it("reads under a filter the caller sent, keeping a string for each of the four fields and nothing else", async () => {

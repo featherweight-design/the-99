@@ -26,8 +26,10 @@ export function gamesFilterFromParams(read: Read): GameHistoryFilter {
   const commander = id(one(read("against")));
   if (deckId) out.deckId = deckId;
   if (result) out.result = result;
+  // Played against is one choice, and a friend wins, as `playedAgainstOf` reads it: a hand-edited address naming both
+  // must not leave a condition the chips cannot show.
   if (friend) out.friend = friend;
-  if (commander) out.commander = commander;
+  else if (commander) out.commander = commander;
   return out;
 }
 
@@ -71,5 +73,6 @@ export function cleanGamesFilter(raw: unknown): GameHistoryFilter {
     const v = f[key];
     if (typeof v === "string" && v !== "") out[key] = key === "result" ? v : v.toLowerCase();
   }
+  if (out.friend) delete out.commander;
   return out;
 }

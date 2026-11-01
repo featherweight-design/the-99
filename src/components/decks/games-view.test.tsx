@@ -334,6 +334,13 @@ describe("GamesView: the filters", () => {
     expect(box.textContent).not.toContain(gameHistoryCopy.low);
   });
 
+  it("takes every filter off from the no-match frame, a deck with no games included", () => {
+    more.read.mockResolvedValue(payload(TWO));
+    draw(filtered([], { deckId: "deck-sai" }, summary({ games: 0, wins: 0, losses: 0, draws: 0, decks: 0, podMin: null, podMax: null, firstPlayedAt: null, lastPlayedAt: null, mostPlayed: null })));
+    fireEvent.click(screen.getByRole("button", { name: gameHistoryCopy.filter.clearFilters }));
+    expect(more.read).toHaveBeenCalledWith({});
+  });
+
   it("scopes the summary to the payload drawn, not the filter being read for", () => {
     more.read.mockReturnValue(new Promise(() => {}));
     const sum = summary({ games: 5, wins: 2, losses: 3, draws: 0, decks: 1, friendWonLosses: { won: 2, losses: 3 } });

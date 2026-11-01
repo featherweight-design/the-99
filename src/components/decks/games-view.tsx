@@ -227,7 +227,7 @@ export function GamesView({ data, viewSwitch, decks, hold, onData }: {
         {total === 0 ? (
           <Empty decks={decks} />
         ) : summary.games === 0 ? (
-          <NoMatch onClear={clearAll} />
+          <NoMatch onClear={() => gf.change({})} />
         ) : (
           <>
             <Summary data={data} games={games} against={chosenAgainst(options, data.filter)} />
@@ -291,7 +291,7 @@ function Summary({ data, games, against }: { data: GamesPayload; games: readonly
   );
 }
 
-/** Filters that match nothing (Small items 9, A1): one line and one way out, where the headline and the months were. */
+/** Filters that match nothing (Small items 9, A1): one line and one way out, where the headline and the months were. Z2: Clear filters takes off ALL of them, the deck included, so it can never be inert (a deck with no games is a choice the picker offers). */
 function NoMatch({ onClear }: { onClear: () => void }) {
   return (
     <div data-games-no-match className="flex flex-col items-start gap-[12px] pb-[8px] pt-[26px]">

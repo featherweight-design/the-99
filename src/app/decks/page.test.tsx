@@ -2,6 +2,7 @@
 // between the page and DecksZeroActions. Every loader is stubbed; what is asserted is the element the page returns.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReactElement } from "react";
+import type { HistoryAggregates } from "../../lib/games/history";
 
 const stub = vi.hoisted(() => ({ env: {} as Record<string, string> }));
 
@@ -74,10 +75,21 @@ describe("/decks' lineup prop", () => {
 // The cross-deck Games view (game history, build PR 2+3): read for `?view=games` alone, per request and outside the cached
 // payload, and a read that throws draws the tiles with a failed flag instead of an empty history.
 describe("/decks' games prop", () => {
+  const aggregates: HistoryAggregates = {
+    total: 1,
+    byResult: { wins: 1, losses: 0, draws: 0 },
+    byDeck: [{ deckId: "11111111-1111-4111-8111-111111111111", games: 1 }],
+    months: [{ month: "2026-09", games: 1 }],
+    summary: {
+      games: 1, wins: 1, losses: 0, draws: 0, decks: 1, podMin: 4, podMax: 4, firstPlayedAt: null, lastPlayedAt: null,
+      mostPlayed: null, friendWonLosses: null,
+    },
+    playedAgainst: { friends: [], commanders: [] },
+  };
   const FIRST = {
     games: [{ id: "g1" }],
     next: "2026-09-19 12:00:00|11111111-1111-4111-8111-111111111111",
-    aggregates: { total: 1, months: [{ month: "2026-09", games: 1 }], summary: { games: 1 }, playedAgainst: { friends: [], commanders: [] } },
+    aggregates,
   };
 
   it("offers the Games segment on a bare visit and reads no history", async () => {
@@ -100,6 +112,8 @@ describe("/decks' games prop", () => {
     expect(page.props.games?.data?.games).toEqual(FIRST.games);
     expect(page.props.games?.data?.next).toBe(FIRST.next);
     expect(page.props.games?.data?.aggregates).toEqual(FIRST.aggregates);
+    // The wire carries the filters' counts: Result and deck options read them.
+    expect(page.props.games?.data?.aggregates).toMatchObject({ byResult: { wins: 1, losses: 0, draws: 0 }, byDeck: [{ games: 1 }] });
     expect(page.props.games?.data?.filter).toEqual({});
     expect(page.props.lineup).toEqual({ data: null, view: "tiles", foldServer: null });
     expect(lineup.read).not.toHaveBeenCalled();
