@@ -51,7 +51,7 @@ def long_desk(state, toast=False):
 def fail_phone():
     b = G.head(False) + '<div class="vrw">' + G.switch('tiles') + '<span class="q-shp">All decks<small>24</small><i>&#9662;</i></span></div>'
     b += '<div class="cnt" style="margin-top:12px">24 decks</div>'
-    b += '<div class="capx" style="margin:0 -16px;height:520px"><img src="art/p-decks.webp" alt="" style="width:390px;left:0;top:-459px"></div>'
+    b += '<div class="capx" style="margin:0 -16px;height:300px"><img src="art/p-decks.webp" alt="" style="width:390px;left:0;top:-459px"></div>'
     return G.phone(b, 844, extra=G.toast('We couldn’t load your games.', bottom=90))
 
 

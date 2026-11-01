@@ -2,8 +2,8 @@ import json, re, os, datetime
 B = json.load(open('blobs.json'))
 os.makedirs('canvas/project', exist_ok=True)
 L = [('Main', 'Game history · the calls'), ('Place', '1 · Where it lives'), ('Populated', '2 · Every game, every deck'),
-     ('Rows', '3 · The row'), ('Few', '4 · A few games'), ('Edges', '5 · Empty, long, failure, deleted deck')]
-rows = [L[:3], L[3:]]
+     ('Rows', '3 · The row'), ('Few', '4 · A few games'), ('Edges', '5 · Empty, long, failure, deleted deck'), ('A1', 'A1 · Audit: no matches, pending, next fifty failed')]
+rows = [L[:3], L[3:6], L[6:]]
 boards = {}; order = []; y = 0
 for row in rows:
     x = 0; hmax = 0

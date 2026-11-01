@@ -354,5 +354,5 @@ def toast(text, act='Try again', bottom=90):
 DRAFT = '<span class="draft8">DRAFT</span>'
 
 
-def build_doc(title, body, width=2000):
-    return L.doc(title, HELM + CSS, body.replace('<span class="tag">R1</span>', '<span class="tag">R1c</span>'), width)
+def build_doc(title, body, width=2000, extra_css=''):
+    return L.doc(title, HELM + CSS + extra_css, body.replace('<span class="tag">R1</span>', '<span class="tag">R1c</span>'), width)
