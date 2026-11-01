@@ -250,8 +250,8 @@ describe("loadCommanderRankings · hidden commanders", () => {
   it("drops a hidden commander and keeps the others in rank order, slugs untouched", async () => {
     const out = await loadCommanderRankings("user_1", ENV_VIEW);
     expect(out.items.map((i) => [i.oracleId, i.slug])).toEqual([["a", "a"], ["c", "c"]]);
-    expect(out.hiddenCount).toBe(1);
-    expect(out.candidateCount).toBe(3);
+    // "N can lead" counts what is shown: a hidden commander is in no figure.
+    expect(out.candidateCount).toBe(2);
   });
 
   // The free mode re-ranks what it is handed; given the hidden row it could bring it back.
@@ -261,13 +261,11 @@ describe("loadCommanderRankings · hidden commanders", () => {
     expect((canonical as { oracleId: string }[]).map((c) => c.oracleId)).toEqual(["a", "c"]);
   });
 
-  // The page tells "nothing to rank" from "everything is hidden" by these two counts.
-  it("reports every row hidden as an empty list with candidates", async () => {
+  it("reports every row hidden as an empty list with nothing to count", async () => {
     vi.mocked(loadHiddenIds).mockResolvedValue(["a", "b", "c"]);
     const out = await loadCommanderRankings("user_1", ENV_VIEW);
     expect(out.items).toEqual([]);
-    expect(out.hiddenCount).toBe(3);
-    expect(out.candidateCount).toBe(3);
+    expect(out.candidateCount).toBe(0);
   });
 });
 

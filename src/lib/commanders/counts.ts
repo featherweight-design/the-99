@@ -1,13 +1,13 @@
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { cards, collectionItems, commanderScores, commanderSupport, hiddenCommanders } from "../../db/schema";
+import { cards, collectionItems, commanderScores, commanderSupport } from "../../db/schema";
 import { notBuiltBy } from "../decks/built";
 import { notHiddenBy } from "./hidden";
 
-export type CommanderCounts = { owned: number; discover: number; hidden: number };
+export type CommanderCounts = { owned: number; discover: number };
 
 /**
- * The figures on the Commanders place's title line (menu and Home, PR 1): the commanders the reader owns and has
+ * The two figures on the Commanders place's title line (menu and Home, PR 1): the commanders the reader owns and has
  * not built, and the ones they could discover. Two COUNT statements, so the place's layout never loads the 3,000-row
  * discovery payload to read a number off it.
  *
@@ -16,14 +16,13 @@ export type CommanderCounts = { owned: number; discover: number; hidden: number 
  * stored, and the head then leaves it out rather than say "0 yours". `discover` is `/discover`'s candidate set
  * (`discoverCandidates`: legal, unbuilt, unowned) counted in the database, so the two agree by construction.
  *
- * Neither counts a commander the reader has hidden: each list leaves those out, so its figure does. `hidden` is the
- * third figure, the Hidden tab's: every commander the reader has hidden, whichever list it came from.
+ * Neither counts a commander the reader has hidden: each list leaves those out, so its figure does.
  *
- * All three are per reader and read live, as a count over indexed rows is cheaper than a cache entry the reader's decks
+ * Both are per reader and read live, as a count over indexed rows is cheaper than a cache entry the reader's decks
  * would have to invalidate: building a deck moves both figures, and no tag drops on a deck write.
  */
 export async function loadCommanderCounts(userId: string): Promise<CommanderCounts> {
-  const [owned, discover, hidden] = await Promise.all([
+  const [owned, discover] = await Promise.all([
     db
       .select({ n: sql<number>`count(*)::int` })
       .from(commanderScores)
@@ -50,10 +49,6 @@ export async function loadCommanderCounts(userId: string): Promise<CommanderCoun
           )`,
         ),
       ),
-    db
-      .select({ n: sql<number>`count(*)::int` })
-      .from(hiddenCommanders)
-      .where(eq(hiddenCommanders.userId, userId)),
   ]);
-  return { owned: owned[0]?.n ?? 0, discover: discover[0]?.n ?? 0, hidden: hidden[0]?.n ?? 0 };
+  return { owned: owned[0]?.n ?? 0, discover: discover[0]?.n ?? 0 };
 }

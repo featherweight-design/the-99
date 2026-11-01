@@ -105,9 +105,6 @@ export type DiscoveryList = {
       novelty sort's two, and the client's colour filter. `items.length` is the
       same number under `fit` and a smaller one under `new`. */
   candidateCount: number;
-  /** Of `candidateCount`, how many the player has hidden. They are in no other figure: not ranked,
-   *  not floor-excluded, not unmeasured. */
-  hiddenCount: number;
   /** Collection size the subtitle reads against. */
   cardsRead: number;
   /** Cards in the pool this ranking actually scored — now always `cardsRead`,
@@ -129,8 +126,8 @@ export type DiscoveryList = {
   poolExcluded: number;
   /** Candidates the floor could not measure at all — no tags, or no EDHREC
       denominator. Neither ranked nor floor-excluded, and the third term the
-      exclusion line needs for `candidateCount - hiddenCount - items -
-      floorExcluded - unmeasured` to come to zero. Always 0 under `fit`, which excludes nothing. */
+      exclusion line needs for `candidateCount - items - floorExcluded -
+      unmeasured` to come to zero. Always 0 under `fit`, which excludes nothing. */
   unmeasured: number;
   hasDecks: boolean;
   /** False when the price read failed. The rows still carry a `price` slot —
@@ -306,14 +303,14 @@ export function assembleDiscoveryWithIds(input: AssembleInput): { list: Discover
       fitRoles: c.fitRoles,
       fitSynergy: c.fitSynergy,
     })),
-    candidateCount: input.candidates.length,
-    hiddenCount: withSlugs.length - shown.length,
+    // A hidden candidate is in none of the figures: not this one, not floor-excluded, not unmeasured.
+    candidateCount: shown.length,
     cardsRead: input.cardsRead,
     freePoolSize: input.freePoolSize,
     bestPct,
     floorExcluded: excluded.length,
     poolExcluded,
-    unmeasured: input.candidates.length - active.length - excluded.length,
+    unmeasured: shown.length - active.length - excluded.length,
     hasDecks: input.playedTags.length > 0,
     priceOk: input.priceOk,
     availOk: input.availOk,

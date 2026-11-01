@@ -400,18 +400,25 @@ describe("assembleDiscoveryWithIds · hidden commanders", () => {
     expect(slugOf(after, "other")).toBe(slugOf(before, "other"));
   });
 
-  it("counts a hidden row as hidden and in no other figure", () => {
+  // The empty states print `candidateCount` ("none of the N"), and the place head's count leaves hidden
+  // commanders out, so the two agree only if this does too.
+  it("counts a hidden row in no figure", () => {
     const { list } = assembleDiscoveryWithIds(input(new Set(["first", "other"])));
-    expect(list.candidateCount).toBe(3);
-    expect(list.hiddenCount).toBe(2);
+    expect(list.candidateCount).toBe(1);
     expect(list.items.map((i) => i.rank)).toEqual([1]);
     expect(list.floorExcluded + list.unmeasured).toBe(0);
+  });
+
+  it("counts a hidden row as neither floor-excluded nor unmeasured under the novelty sort", () => {
+    const { list } = assembleDiscoveryWithIds(input(new Set(["first", "other"]), "new"));
+    expect(list.candidateCount).toBe(1);
+    expect(list.candidateCount - list.items.length - list.floorExcluded - list.unmeasured).toBe(0);
   });
 
   it("hides nothing when the set is empty", () => {
     const { list } = assembleDiscoveryWithIds(input(new Set()));
     expect(list.items).toHaveLength(3);
-    expect(list.hiddenCount).toBe(0);
+    expect(list.candidateCount).toBe(3);
   });
 });
 

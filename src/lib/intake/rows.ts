@@ -96,9 +96,12 @@ export async function loadResultsPage(
   // The search already leaves hidden commanders out, so a hidden pick is unlisted; it is subtracted
   // here rather than reported as gone. Read only when there are picks to judge.
   const unlisted = (picks?.picks ?? []).filter((p) => !listed.has(p.oracleId)).map((p) => p.oracleId);
-  const hidden = unlisted.length > 0 ? new Set(await loadHiddenIds(userId)) : new Set<string>();
+  const [hiddenIds, rows] = await Promise.all([
+    unlisted.length > 0 ? loadHiddenIds(userId) : Promise.resolve([]),
+    decorate(userId, slice, answers.sets ?? []),
+  ]);
+  const hidden = new Set(hiddenIds);
   const gone = unlisted.filter((id) => !hidden.has(id));
-  const rows = await decorate(userId, slice, answers.sets ?? []);
   return {
     order: outcome.order,
     tooNarrow: outcome.tooNarrow,

@@ -5,7 +5,7 @@ const env = vi.hoisted(() => ({ value: {} as unknown as NodeJS.ProcessEnv }));
 vi.mock("../../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("../../../lib/switches/request", () => ({ requestSwitchEnv: async () => env.value }));
 vi.mock("../../../lib/home/summary", () => ({ getCollectionStats: async () => ({ totalCards: 3, uniqueCards: 3 }) }));
-vi.mock("../../../lib/commanders/counts", () => ({ loadCommanderCounts: async () => ({ owned: 1, discover: 2, hidden: 0 }) }));
+vi.mock("../../../lib/commanders/counts", () => ({ loadCommanderCounts: async () => ({ owned: 1, discover: 2 }) }));
 
 const { default: Layout } = await import("./layout");
 

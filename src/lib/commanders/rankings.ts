@@ -57,9 +57,6 @@ export type CommanderRankings = {
   degraded: boolean;
   uniqueCardsRead: number;
   candidateCount: number;
-  /** How many of the ranked commanders the player has hidden, and so are not in `items`. It is what lets
-   *  the page tell "nothing to rank" (`candidateCount === 0`) from "everything here is hidden". */
-  hiddenCount: number;
   freeRanking: FreeRankingDelta | null;
   availOk: boolean;
   /** Either ranking was counted by the classifier only because the label read failed under a labels
@@ -188,6 +185,7 @@ export async function loadCommanderRankings(
   // `rankFree` then re-ranks only what is shown, so the free mode cannot bring a hidden row back.
   const hiddenIds = new Set(hiddenList);
   const shown = hiddenIds.size === 0 ? ranked : ranked.filter((r) => !hiddenIds.has(r.oracleId));
+  // Out of the count the page prints as well ("N can lead"): a hidden commander is in no figure.
   const hiddenCount = ranked.length - shown.length;
   const items = await withOwnedCardArt(userId, shown);
 
@@ -199,7 +197,7 @@ export async function loadCommanderRankings(
     // and the three reads below are skipped rather than made against an empty
     // id list.
     return {
-      items: [], degraded, uniqueCardsRead, candidateCount, hiddenCount,
+      items: [], degraded, uniqueCardsRead, candidateCount,
       freeRanking: null, availOk: true,
     };
   }
@@ -274,7 +272,7 @@ export async function loadCommanderRankings(
   });
 
   return {
-    items: rows, degraded, uniqueCardsRead, candidateCount, hiddenCount, freeRanking, availOk,
+    items: rows, degraded, uniqueCardsRead, candidateCount: candidateCount - hiddenCount, freeRanking, availOk,
     ...(labelFallback ? { labelFallback: true as const } : {}),
   };
 }
