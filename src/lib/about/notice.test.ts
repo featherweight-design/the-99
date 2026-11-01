@@ -60,12 +60,13 @@ describe("aboutLine", () => {
   });
 
   it("never names a unit switched off for the reader (Review Focus 2)", () => {
-    // Shopping's stand-ins label follows SWAP_TOOLS_ENABLED and is announced by its id alone.
+    // The Analysis tab's bracket label follows ANALYSIS_TAB_ENABLED and is announced by its id alone. (Shopping's
+    // stand-ins label, the example here before, always draws now its switch, SWAP_TOOLS_ENABLED, is retired.)
     const reader: SeenState = { version: 16, ids: ["something-else"] };
-    const on = aboutLine(reader, visibleSections(env({ SWAP_TOOLS_ENABLED: "true" })));
-    expect(on?.ids).toContain("shopping/deck-shopping/standins");
+    const on = aboutLine(reader, visibleSections(env({ ANALYSIS_TAB_ENABLED: "true" })));
+    expect(on?.ids).toContain("decks/analysis/bracket");
     const off = aboutLine(reader, visibleSections(OFF));
-    expect(off?.ids ?? []).not.toContain("shopping/deck-shopping/standins");
+    expect(off?.ids ?? []).not.toContain("decks/analysis/bracket");
     for (const k of off?.ids ?? []) expect(units(visibleSections(OFF)).map((u) => u.key)).toContain(k.split("@")[0]);
   });
 
@@ -149,7 +150,7 @@ describe("aboutDismissal (the banner's ✕)", () => {
 
   it("writes nothing for a unit switched off since the page rendered", () => {
     const reader: SeenState = { version: 16, ids: ["x"] };
-    expect(aboutDismissal(["shopping/deck-shopping/standins"], reader, visibleSections(OFF))).toBeNull();
+    expect(aboutDismissal(["decks/analysis/bracket"], reader, visibleSections(OFF))).toBeNull();
   });
 
   it("gives a first-run reader the baseline a first visit writes", () => {
@@ -196,12 +197,12 @@ describe("aboutDismissal, a switch turned on between the render and the ✕", ()
   it("a first-run ✕ takes only the baseline it rendered: a unit switched on since stays new", () => {
     const line = aboutLine(NEVER_SEEN, visibleSections(OFF));
     expect(line?.kind).toBe("firstRun");
-    const now = visibleSections(env({ SWAP_TOOLS_ENABLED: "true" }));
+    const now = visibleSections(env({ ANALYSIS_TAB_ENABLED: "true" }));
     const write = aboutDismissal(line?.kind === "firstRun" ? line.ack : [], NEVER_SEEN, now)!;
-    expect(write.ids).not.toContain("shopping/deck-shopping/standins");
+    expect(write.ids).not.toContain("decks/analysis/bracket");
     const after: SeenState = { version: write.version, ids: write.ids };
     const told = unseenUnits(now, after).map((u) => u.key);
-    expect(told).toContain("shopping/deck-shopping/standins");
+    expect(told).toContain("decks/analysis/bracket");
   });
 
   it("cuts a claim past the bound, as a page never draws one that long", () => {

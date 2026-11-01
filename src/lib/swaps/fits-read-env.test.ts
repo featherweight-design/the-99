@@ -11,8 +11,6 @@ const stub = vi.hoisted(() => ({
 vi.mock("../../db", () => ({ db: {} }));
 vi.mock("../auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("../switches/request", () => ({ requestSwitchEnv: async () => ENV.value }));
-const flag = vi.hoisted(() => ({ swapTools: true }));
-vi.mock("./flag", () => ({ swapToolsEnabled: () => flag.swapTools }));
 vi.mock("./fits-read-run", () => ({ readFitsRead: stub.read, pressFitsRead: stub.press }));
 
 const { pressFitsReadAction, readFitsReadAction } = await import("./fits-read-actions");
@@ -21,7 +19,6 @@ const CARD = "11111111-1111-4111-8111-111111111111";
 
 beforeEach(() => {
   ENV.value = envViewWith({});
-  flag.swapTools = true;
   stub.read.mockClear();
   stub.press.mockClear();
 });
@@ -38,11 +35,19 @@ describe("Fits your decks' env", () => {
     expect(press[3] === ENV.value).toBe(true);
   });
 
-  // The read follows swap tools, its parent: with them off, both actions answer nothing and never reach the run.
-  it("answers nothing with swap tools off", async () => {
-    flag.swapTools = false;
-    expect(await readFitsReadAction(CARD)).toBeNull();
-    expect(await pressFitsReadAction(CARD)).toEqual({ ok: false, reason: "notFound" });
+  // Swap tools, the read's parent, is retired (always on): a reader whose env sets it false still reaches the run, where
+  // only the model-call kill switch stops a spend.
+  it("reaches the run whatever SWAP_TOOLS_ENABLED says", async () => {
+    ENV.value = envViewWith({ SWAP_TOOLS_ENABLED: "false" });
+    await readFitsReadAction(CARD);
+    await pressFitsReadAction(CARD);
+    expect(stub.read).toHaveBeenCalledTimes(1);
+    expect(stub.press).toHaveBeenCalledTimes(1);
+  });
+
+  it("answers nothing for a malformed id, never reaching the run", async () => {
+    expect(await readFitsReadAction("x")).toBeNull();
+    expect(await pressFitsReadAction("x")).toEqual({ ok: false, reason: "notFound" });
     expect(stub.read).not.toHaveBeenCalled();
     expect(stub.press).not.toHaveBeenCalled();
   });

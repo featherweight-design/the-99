@@ -26,8 +26,12 @@ function readerAt(floor: number, e = ALL_ON): SeenState {
 describe("visibleSections", () => {
   it("drops a label whose switch is off and keeps its section, never greyed", () => {
     const off = visibleSections(OFF);
-    const shopping = off.find((s) => s.id === "deck-shopping")!;
-    expect(shopping.labels.map((l) => l.key)).not.toContain("shopping/deck-shopping/standins");
+    const analysis = off.find((s) => s.id === "analysis")!;
+    expect(analysis.labels.map((l) => l.key)).not.toContain("decks/analysis/bracket");
+    // SWAP_TOOLS_ENABLED is retired (always on): Shopping's limit and stand-ins labels draw whatever the env.
+    expect(off.find((s) => s.id === "deck-shopping")!.labels.map((l) => l.key)).toEqual(
+      expect.arrayContaining(["shopping/deck-shopping/limit", "shopping/deck-shopping/standins"]),
+    );
     // ALL_DECKS_CART_ENABLED and SOCIAL_FRIENDS_ENABLED are retired (always on): the cart's labels, Ask included, draw
     // whatever the env.
     expect(off.find((s) => s.id === "all-decks")!.labels.map((l) => l.key)).toEqual([
@@ -278,12 +282,12 @@ describe("seen translation", () => {
 
   it("treats a switch on only through an app-wide override as heard, as production resolves it", () => {
     const snapshot: SwitchSnapshot = {
-      overrides: [{ switchName: "SWAP_TOOLS_ENABLED", scope: "app", groupId: null, userId: null, value: "on" }],
+      overrides: [{ switchName: "ANALYSIS_TAB_ENABLED", scope: "app", groupId: null, userId: null, value: "on" }],
       groupOf: new Map(),
     };
     const reader = resolveEnv(OFF, snapshot, "u1");
     const visible = visibleSections(reader);
-    const limit = units(visible).find((u) => u.key === "shopping/deck-shopping/limit");
+    const limit = units(visible).find((u) => u.key === "decks/analysis/bracket");
     expect(limit).toBeDefined();
     expect(unitSeen(limit!, readerAt(16, reader))).toBe(true);
     expect(unitSeen(limit!, { version: limit!.since - 1, ids: ["anything"] })).toBe(false);
@@ -455,9 +459,9 @@ describe("a section's sub-line", () => {
     }
   });
 
-  // Retired but still in the registry until its removal PR: Proposed cuts follows its parent, the Analysis tab, so its
-  // own name set off moves nothing.
-  const BAKED_IN = new Set(["PROPOSED_CUTS_ENABLED"]);
+  // Retired but still in the registry until their removal PR: Proposed cuts follows its parent, the Analysis tab, and the
+  // swap tools are always on, so either name set off moves nothing.
+  const BAKED_IN = new Set(["PROPOSED_CUTS_ENABLED", "SWAP_TOOLS_ENABLED"]);
 
   it("names no feature whose switch is off: a section emptied of labels by a switch says only that its screen is off", () => {
     for (const sec of ABOUT_SECTIONS) {
@@ -490,6 +494,8 @@ describe("a section's sub-line", () => {
     // Shopping for all decks is retired (always on): its screen is described whatever the env, never said to be off.
     expect(sub(off("ALL_DECKS_CART_ENABLED"), "all-decks")).toContain("one cart");
     expect(sub(off("ALL_DECKS_CART_ENABLED"), "all-decks")).not.toContain(ABOUT_SCREEN_OFF.trim());
+    // So are the swap tools: Shopping's stand-ins sentence draws with their name set off.
+    expect(sub(off("SWAP_TOOLS_ENABLED"), "deck-shopping")).toContain("Cheaper stand-ins are a press away.");
     // So is friends.
     expect(sub(off("SOCIAL_FRIENDS_ENABLED"), "friends")).toContain("pods");
     expect(sub(off("SOCIAL_FRIENDS_ENABLED"), "friends")).not.toContain(ABOUT_SCREEN_OFF.trim());

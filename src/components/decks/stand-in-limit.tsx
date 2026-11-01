@@ -6,8 +6,8 @@
  * provenance and the limit must still show (a deck with no price feed marks nothing, and says so).
  *
  * The figure is a button that swaps in a `$` field with Save and cancel. A deck that has not set a
- * limit shows the `default` chip; one that has shows `reset to $10` in its place. Draws nothing when
- * the swap tools are off, or when the Shopping list is empty.
+ * limit shows the `default` chip; one that has shows `reset to $10` in its place. Draws nothing outside
+ * a deck page (no swap tools' provider), or when the Shopping list is empty.
  */
 import { useId, useState, useTransition, type FormEvent } from "react";
 

@@ -1254,7 +1254,7 @@ export function CardDetailProvider({
 
   // Fits your decks (swap tools PR 5b): the card the picker is open for, stacked over that card. The
   // door is drawn for a Commander-legal card and a reader with a deck, both off the card's own payload,
-  // which leaves them absent while the swap tools are off (`fitsGate`), so no door is drawn then.
+  // which leaves them absent when the gate's read fails (`fitsGate`), so no door is drawn then.
   const [fitsFor, setFitsFor] = useState<BrowseCard | null>(null);
   // COMBOS ONE PIECE AWAY (UI-3, OPEN-8): the combo a card's combo line opened, over that card. Owned
   // here, like the picker, because a sheet inside the card would be inside the card it lifts into the

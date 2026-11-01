@@ -449,35 +449,21 @@ describe("loadCardDetail availability", () => {
 // both fields absent, which keeps the door shut. The wiring into both branches of `loadCardDetail`
 // is `probe:swap-fits-data`'s, against a real database.
 describe("fitsGate", () => {
-  // The reader's resolved switches, as sentinels: the gate decides from these and never the environment.
-  const ON = { SWAP_TOOLS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
-  const OFF = { SWAP_TOOLS_ENABLED: "false" } as unknown as NodeJS.ProcessEnv;
-
-  // Find a deck's read follows swap tools, so wherever the gate is read the door opens the view.
+  // The swap tools and Find a deck's read are retired (always on), so wherever the gate is read the door opens the view.
   it("reads both flags off one row, with the read on beside them", async () => {
     const { fitsGate } = await import("./card-detail");
     const on = { execute: async () => ({ rows: [{ commander_legal: true, has_decks: false }] }) };
-    expect(await fitsGate("user_1", "o-1", on, ON)).toEqual({ commanderLegal: true, hasDecks: false, fitsRead: true });
+    expect(await fitsGate("user_1", "o-1", on)).toEqual({ commanderLegal: true, hasDecks: false, fitsRead: true });
   });
 
-  it("reads nothing while the swap tools are off", async () => {
-    const { fitsGate } = await import("./card-detail");
-    const execute = vi.fn(async () => ({ rows: [{ commander_legal: true, has_decks: true }] }));
-    expect(await fitsGate("user_1", "o-1", { execute }, OFF)).toEqual({});
-    expect(execute).not.toHaveBeenCalled();
-  });
-
-  // Admin adoption 6d: the reader's resolved switches win over the environment, both ways round.
-  it("decides from the env it is handed, never the environment", async () => {
+  // Retired switch: the variable set to false in the environment no longer shuts the door.
+  it("reads the gate whatever SWAP_TOOLS_ENABLED says", async () => {
     const { fitsGate } = await import("./card-detail");
     const execute = vi.fn(async () => ({ rows: [{ commander_legal: true, has_decks: true }] }));
     try {
       vi.stubEnv("SWAP_TOOLS_ENABLED", "false");
-      expect(await fitsGate("user_1", "o-1", { execute }, ON)).toEqual({ commanderLegal: true, hasDecks: true, fitsRead: true });
-      vi.stubEnv("SWAP_TOOLS_ENABLED", "true");
-      execute.mockClear();
-      expect(await fitsGate("user_1", "o-1", { execute }, OFF)).toEqual({});
-      expect(execute).not.toHaveBeenCalled();
+      expect(await fitsGate("user_1", "o-1", { execute })).toEqual({ commanderLegal: true, hasDecks: true, fitsRead: true });
+      expect(execute).toHaveBeenCalledTimes(1);
     } finally {
       vi.unstubAllEnvs();
     }
@@ -485,8 +471,8 @@ describe("fitsGate", () => {
 
   it("is absent for a card it cannot find, and when the read fails", async () => {
     const { fitsGate } = await import("./card-detail");
-    expect(await fitsGate("user_1", "o-1", { execute: async () => ({ rows: [] }) }, ON)).toEqual({});
-    expect(await fitsGate("user_1", "o-1", { execute: async () => { throw new Error("down"); } }, ON)).toEqual({});
+    expect(await fitsGate("user_1", "o-1", { execute: async () => ({ rows: [] }) })).toEqual({});
+    expect(await fitsGate("user_1", "o-1", { execute: async () => { throw new Error("down"); } })).toEqual({});
   });
 });
 
@@ -614,9 +600,9 @@ describe("loadCardDetail's round trips", () => {
     } finally { done(); }
   });
 
-  // Admin adoption 6d: the Fits door's gate is decided from the env the loader is HANDED, never the
-  // environment. Sentinel envs, compared by identity, so no assertion prints the process environment.
-  it("hands the reader's env to the Fits gate, whatever the environment says", async () => {
+  // The swap tools' switch is retired: the Fits door's gate is read for every reader, whatever the
+  // env handed in or the environment says. Sentinel envs, so no assertion prints the process environment.
+  it("reads the Fits gate whatever the reader's env or the environment says", async () => {
     const ON = { SWAP_TOOLS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
     const OFF = { SWAP_TOOLS_ENABLED: "false" } as unknown as NodeJS.ProcessEnv;
     selectCollectionRows.mockResolvedValue([ownedRow]);
@@ -631,7 +617,7 @@ describe("loadCardDetail's round trips", () => {
       expect([on?.commanderLegal, on?.hasDecks, on?.fitsRead]).toEqual([true, true, true]);
       vi.stubEnv("SWAP_TOOLS_ENABLED", "true");
       const off = await load("user_1", "o-1", undefined, OFF);
-      expect([off?.commanderLegal, off?.hasDecks, off?.fitsRead]).toEqual([undefined, undefined, undefined]);
+      expect([off?.commanderLegal, off?.hasDecks, off?.fitsRead]).toEqual([true, true, true]);
     } finally {
       vi.unstubAllEnvs();
       done();

@@ -86,8 +86,14 @@ describe("what a write raises", () => {
   });
 
   it("counts the accounts whose About page gains an entry", () => {
-    expect(rise({}, snap(), write({ name: "SWAP_TOOLS_ENABLED" })).whatsNew).toEqual(["u1", "u2"]);
-    expect(rise({ SWAP_TOOLS_ENABLED: "true" }, snap(), write({ name: "SWAP_TOOLS_ENABLED" })).whatsNew).toEqual([]);
+    expect(rise({}, snap(), write({ name: "HELP_ME_CHOOSE_ENABLED" })).whatsNew).toEqual(["u1", "u2"]);
+    expect(rise({ HELP_ME_CHOOSE_ENABLED: "true" }, snap(), write({ name: "HELP_ME_CHOOSE_ENABLED" })).whatsNew).toEqual([]);
+  });
+
+  // Swap tools is retired (always on): its entries already draw and Find a deck's paid read is always offered, so
+  // turning its name on raises no account, no capability and no About entry.
+  it("raises nothing for the retired swap tools", () => {
+    expect(rise({}, snap(), write({ name: "SWAP_TOOLS_ENABLED" }))).toMatchObject({ accounts: [], capabilities: [], whatsNew: [] });
   });
 });
 

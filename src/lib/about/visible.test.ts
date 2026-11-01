@@ -10,7 +10,7 @@ const OFF = {} as unknown as NodeJS.ProcessEnv;
 
 /** Two switched entries, a and b, beside one plain one, shaped like the launch entries. */
 const plain: AboutEntry = { ...aboutEntries[0], id: "plain", since: 3 };
-const a: AboutEntry = { ...aboutEntries[0], id: "a", since: 10, switch: "SWAP_TOOLS_ENABLED" };
+const a: AboutEntry = { ...aboutEntries[0], id: "a", since: 10, switch: "ANALYSIS_TAB_ENABLED" };
 const b: AboutEntry = { ...aboutEntries[0], id: "b", since: 10, switch: "HELP_ME_CHOOSE_ENABLED" };
 const catalog = [plain, a, b];
 const seen = (version: number, ids: string[] = []): SeenState => ({ version, ids });
@@ -19,7 +19,7 @@ const seen = (version: number, ids: string[] = []): SeenState => ({ version, ids
 // are drawn like an unswitched entry, and a reader who "met every launch" has met them too.
 // Collection editing's entries, and the names that followed it (scanning, added copy, the way in without a collection, I got
 // it), are among them. `upload-choice` draws in its Sync variant, so its variant id is met too.
-const RETIRED = ["CARD_SEARCH_ENABLED", "FIRST_RUN_TOUR_ENABLED", "HELP_PANEL_ENABLED", "NEAR_COMBOS_ENABLED", "PRECONS_ENABLED", "UPCOMING_PRECONS_ENABLED", "DECK_TOKENS_ENABLED", "LINEUP_ENABLED", "COMMANDERS_PLACE_ENABLED", "HOME_FEED_ENABLED", "SOCIAL_WISHLIST_ENABLED", "COLLECTION_EDIT_ENABLED", "CARD_SCAN_ENABLED", "ADDED_COPY_ENABLED", "NO_COLLECTION_ENTRY_ENABLED", "SHOPPING_MARK_BOUGHT_ENABLED", "DECK_NOTES_ENABLED", "DECK_STATS_ENABLED", "DECK_PRINTINGS_ENABLED", "NEVER_CUT_ENABLED", "CHANGE_COMMANDER_ENABLED", "ALL_DECKS_CART_ENABLED", "SOCIAL_FRIENDS_ENABLED", "FRIEND_DECKS_ENABLED", "SOCIAL_INVITES_ENABLED", "RULE_ZERO_ENABLED", "SOCIAL_GAMES_ENABLED"];
+const RETIRED = ["CARD_SEARCH_ENABLED", "FIRST_RUN_TOUR_ENABLED", "HELP_PANEL_ENABLED", "NEAR_COMBOS_ENABLED", "PRECONS_ENABLED", "UPCOMING_PRECONS_ENABLED", "DECK_TOKENS_ENABLED", "LINEUP_ENABLED", "COMMANDERS_PLACE_ENABLED", "HOME_FEED_ENABLED", "SOCIAL_WISHLIST_ENABLED", "COLLECTION_EDIT_ENABLED", "CARD_SCAN_ENABLED", "ADDED_COPY_ENABLED", "NO_COLLECTION_ENTRY_ENABLED", "SHOPPING_MARK_BOUGHT_ENABLED", "DECK_NOTES_ENABLED", "DECK_STATS_ENABLED", "DECK_PRINTINGS_ENABLED", "NEVER_CUT_ENABLED", "CHANGE_COMMANDER_ENABLED", "ALL_DECKS_CART_ENABLED", "SOCIAL_FRIENDS_ENABLED", "FRIEND_DECKS_ENABLED", "SOCIAL_INVITES_ENABLED", "RULE_ZERO_ENABLED", "SOCIAL_GAMES_ENABLED", "SWAP_TOOLS_ENABLED", "FIND_A_DECK_READ_ENABLED"];
 const retiredEntries = aboutEntries.filter((e) => e.switch && RETIRED.includes(e.switch));
 const retiredIds = switchedIds(retiredEntries.map((e) => resolveEntry(e, OFF)));
 
@@ -114,17 +114,17 @@ describe("with every switch off, nothing changes (the invariance Hugh’s ruling
 describe("an entry tied to a switch", () => {
   it("draws only while its switch is on", () => {
     expect(visibleEntries(OFF, catalog)).toEqual([plain]);
-    expect(visibleEntries({ SWAP_TOOLS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv, catalog)).toEqual([plain, a]);
+    expect(visibleEntries({ ANALYSIS_TAB_ENABLED: "true" } as unknown as NodeJS.ProcessEnv, catalog)).toEqual([plain, a]);
     // The feature's own flag rule: anything but the exact string 'true' is off.
-    expect(visibleEntries({ SWAP_TOOLS_ENABLED: "1" } as unknown as NodeJS.ProcessEnv, catalog)).toEqual([plain]);
+    expect(visibleEntries({ ANALYSIS_TAB_ENABLED: "1" } as unknown as NodeJS.ProcessEnv, catalog)).toEqual([plain]);
   });
 
-  // FIND_A_DECK_READ_ENABLED is retired: Find a deck's read draws wherever swap tools, its parent, are on.
-  it("draws Find a deck's read exactly while swap tools are on", () => {
+  // FIND_A_DECK_READ_ENABLED and its parent SWAP_TOOLS_ENABLED are retired: the swap tools' entries always draw.
+  it("always draws the swap tools' entries and Find a deck's read, whatever their retired switches say", () => {
     const ids = (env: Record<string, string>) => visibleEntries(env as unknown as NodeJS.ProcessEnv).map((e) => e.id);
-    expect(ids({ SWAP_TOOLS_ENABLED: "true" })).toContain("find-a-deck-read");
-    expect(ids({ SWAP_TOOLS_ENABLED: "true", FIND_A_DECK_READ_ENABLED: "false" })).toContain("find-a-deck-read");
-    expect(ids({})).not.toContain("find-a-deck-read");
+    for (const env of [{}, { SWAP_TOOLS_ENABLED: "off" }, { SWAP_TOOLS_ENABLED: "false", FIND_A_DECK_READ_ENABLED: "false" }] as Record<string, string>[]) {
+      expect(ids(env)).toEqual(expect.arrayContaining(["fits-your-decks", "find-a-deck-read", "stand-ins"]));
+    }
   });
 
   it("reads unseen for a returning reader at the current version, in the shipped catalog", () => {
@@ -390,7 +390,7 @@ describe("the collection home epic’s two entries (one bump, 14)", () => {
   // Friend spares (always on, SOCIAL_FRIENDS_ENABLED retired) sits between them.
   it("always draws I got it, after stand-ins and friend spares", () => {
     expect(ids({})).toContain("shopping-got-it");
-    const on = ids({ SWAP_TOOLS_ENABLED: "true" });
+    const on = ids({});
     const at = on.indexOf("stand-ins");
     expect(on.slice(at + 1, at + 3)).toEqual(["friend-spares", "shopping-got-it"]);
   });

@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 
 import { requireUserId } from "../auth";
-import { requestSwitchEnv } from "../switches/request";
 import { addCardToDeckFor, revalidateAdd } from "../decks/add-card";
 import { requireDeck } from "../decks/read";
 import { removeOneCopy } from "../decks/remove-card";
@@ -12,15 +11,14 @@ import { DECK_ADD_FALLBACK_MESSAGE, type DeckMutationResult } from "../decks/mut
 import { deckSurfaces } from "../decks/revalidate";
 import { revalidateClaims } from "../decks/revalidate-claims";
 import { isUuid } from "../uuid";
-import { swapToolsEnabled } from "./flag";
 import { loadFits, type FitsRead } from "./fits";
 import { loadStandIns, type StandInsRead } from "./gather";
 import { setShoppingLimit, takeStandIn, undoSwap, type TakeResult } from "./take";
 
 /**
  * The swap tools' server actions. Every one is a PUBLIC ENDPOINT, so every gate the surface applies
- * is re-applied here: the flag (a production deploy without `SWAP_TOOLS_ENABLED` answers nothing),
- * the session, and the shape of every id.
+ * is re-applied here: the session and the shape of every id. (Their switch, `SWAP_TOOLS_ENABLED`, is
+ * retired: always on.)
  *
  * REVALIDATED IN THE ACTION, deliberately. A take changes what the deck claims, and the page that
  * called it is the deck page, which has to redraw its Shopping list with the cut gone and the add
@@ -31,8 +29,7 @@ import { setShoppingLimit, takeStandIn, undoSwap, type TakeResult } from "./take
 
 export async function takeStandInAction(deckId: string, cutOracleId: string, addOracleId: string): Promise<TakeResult> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
-  if (!swapToolsEnabled(env) || ![deckId, cutOracleId, addOracleId].every(isUuid)) {
+  if (![deckId, cutOracleId, addOracleId].every(isUuid)) {
     return { ok: false, reason: "notFound" };
   }
   const result = await takeStandIn(deckId, userId, cutOracleId, addOracleId);
@@ -42,8 +39,7 @@ export async function takeStandInAction(deckId: string, cutOracleId: string, add
 
 export async function undoSwapAction(swapId: string): Promise<{ ok: boolean }> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
-  if (!swapToolsEnabled(env) || !isUuid(swapId)) return { ok: false };
+  if (!isUuid(swapId)) return { ok: false };
   const deckId = await undoSwap(swapId, userId);
   if (deckId) revalidateClaims(deckId, userId);
   return { ok: deckId !== null };
@@ -51,8 +47,7 @@ export async function undoSwapAction(swapId: string): Promise<{ ok: boolean }> {
 
 export async function setShoppingLimitAction(deckId: string, cents: number | null): Promise<{ ok: boolean }> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
-  if (!swapToolsEnabled(env) || !isUuid(deckId)) return { ok: false };
+  if (!isUuid(deckId)) return { ok: false };
   const ok = await setShoppingLimit(deckId, userId, cents);
   // A limit moves marks, not claims: the deck's own surfaces only.
   if (ok) for (const path of deckSurfaces(deckId)) revalidatePath(path);
@@ -62,13 +57,12 @@ export async function setShoppingLimitAction(deckId: string, cents: number | nul
 /**
  * The stand-ins for one Shopping row, read when the sheet opens rather than shipped with the page:
  * the gather is several queries per card and most rows are never pressed. A read, so it revalidates
- * nothing. Null covers every refusal alike (flag off, a bad id, a deck that is not the reader's),
+ * nothing. Null covers every refusal alike (a bad id, a deck that is not the reader's),
  * because the sheet draws one `failed` state for all of them.
  */
 export async function loadStandInsAction(deckId: string, cutOracleId: string, full = false): Promise<StandInsRead | null> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
-  if (!swapToolsEnabled(env) || !isUuid(deckId) || !isUuid(cutOracleId)) return null;
+  if (!isUuid(deckId) || !isUuid(cutOracleId)) return null;
   return loadStandIns(deckId, userId, cutOracleId, full === true);
 }
 
@@ -78,8 +72,7 @@ export async function loadStandInsAction(deckId: string, cutOracleId: string, fu
  */
 export async function loadFitsAction(oracleId: string): Promise<FitsRead | null> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
-  if (!swapToolsEnabled(env) || !isUuid(oracleId)) return null;
+  if (!isUuid(oracleId)) return null;
   return loadFits(userId, oracleId);
 }
 
@@ -95,8 +88,7 @@ export async function addFromFits(
   oracleId: string,
 ): Promise<DeckMutationResult & { held?: boolean }> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
-  if (!swapToolsEnabled(env) || !isUuid(deckId) || !isUuid(oracleId)) return { ok: false, message: DECK_ADD_FALLBACK_MESSAGE };
+  if (!isUuid(deckId) || !isUuid(oracleId)) return { ok: false, message: DECK_ADD_FALLBACK_MESSAGE };
   const outcome = await addCardToDeckFor(userId, deckId, oracleId, { relock: false });
   after(() => revalidateAdd(deckId, userId, outcome));
   // `held`: the deck already had it (another tab got there first), so nothing was written and no copy
@@ -112,8 +104,7 @@ export async function addFromFits(
  */
 export async function swapFromReadAction(deckId: string, cutOracleId: string, addOracleId: string): Promise<TakeResult> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
-  if (!swapToolsEnabled(env) || ![deckId, cutOracleId, addOracleId].every(isUuid)) return { ok: false, reason: "notFound" };
+  if (![deckId, cutOracleId, addOracleId].every(isUuid)) return { ok: false, reason: "notFound" };
   const result = await takeStandIn(deckId, userId, cutOracleId, addOracleId);
   if (result.ok) after(() => revalidateClaims(deckId, userId));
   return result;
@@ -121,8 +112,7 @@ export async function swapFromReadAction(deckId: string, cutOracleId: string, ad
 
 export async function undoReadSwapAction(swapId: string): Promise<{ ok: boolean }> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
-  if (!swapToolsEnabled(env) || !isUuid(swapId)) return { ok: false };
+  if (!isUuid(swapId)) return { ok: false };
   const deckId = await undoSwap(swapId, userId);
   if (deckId) after(() => revalidateClaims(deckId, userId));
   return { ok: deckId !== null };
@@ -131,8 +121,7 @@ export async function undoReadSwapAction(swapId: string): Promise<{ ok: boolean 
 /** Takes back an `Add only`: one copy of the card out of the deck's draft (G10). */
 export async function undoReadAddAction(deckId: string, oracleId: string): Promise<{ ok: boolean }> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
-  if (!swapToolsEnabled(env) || !isUuid(deckId) || !isUuid(oracleId)) return { ok: false };
+  if (!isUuid(deckId) || !isUuid(oracleId)) return { ok: false };
   try {
     await requireDeck(deckId, userId);
   } catch {

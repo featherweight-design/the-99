@@ -177,15 +177,9 @@ export async function fitsGate(
   userId: string,
   oracleId: string,
   on: GateReader | undefined,
-  /** The reader's resolved switches (`requestSwitchEnv`); a probe, outside a request, passes `process.env`. */
-  env: NodeJS.ProcessEnv,
 ): Promise<{ commanderLegal?: boolean; hasDecks?: boolean; fitsRead?: boolean }> {
-  // Nothing reads the gate while the swap tools are off, so a reader without them pays no
-  // round trip for it: the fields stay absent, which is also the door's closed state.
-  const flags = await import("../swaps/flag");
-  if (!flags.swapToolsEnabled(env)) return {};
-  // Find a deck's read follows swap tools, so wherever the gate is read the door opens the in-dialog
-  // view rather than the stacked picker.
+  // The swap tools and Find a deck's read are retired (always on), so the door always opens the
+  // in-dialog view rather than the stacked picker.
   const read = { fitsRead: true };
   try {
     const reader = on ?? ((await import("../../db")).db as unknown as GateReader);
@@ -318,8 +312,11 @@ export const loadCardDetail = cache(async function loadCardDetail(
   oracleId: string,
   /** The deck the modal was opened from, if any. See `withCardCombos`. */
   deckOracleIds: readonly string[] | undefined,
-  /** The reader's resolved switches (`requestSwitchEnv`): the Fits door's gate. A probe passes `process.env`. */
-  env: NodeJS.ProcessEnv,
+  /**
+   * The reader's resolved switches (`requestSwitchEnv`). Read by nothing since the swap tools' switch retired (it was
+   * the Fits door's gate); kept positional so callers and probes need no change until the switch is deleted.
+   */
+  _env: NodeJS.ProcessEnv,
   /**
    * That deck's commanders, apart from `deckOracleIds` (which already lists them): `loadCardCombos`
    * holds a command-zone-only piece only as a commander, and reads the deck's colors from them.
@@ -388,7 +385,7 @@ export const loadCardDetail = cache(async function loadCardDetail(
   // Both branches, not only the owned one: a card the player owns no copy of is the
   // COMMONEST proxy — the Ozolith case the spec is written around.
   const proxiedBy = proxyingDecks(userId, oracleId);
-  const gate = fitsGate(userId, oracleId, undefined, env);
+  const gate = fitsGate(userId, oracleId, undefined);
   const flags = settle(async () => (await import("../bracket/flags-read")).loadBracketFlags([oracleId]));
   // ONE combo read: the block's lines come from `loadCardCombos` (two-card combos only, combos close E3).
   const combos = settle(async () => {

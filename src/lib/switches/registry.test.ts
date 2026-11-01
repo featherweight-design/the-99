@@ -45,8 +45,8 @@ describe("the switch registry", () => {
   });
 
   // RATE_LIMIT counts requests (payments scope PR S), and NAV_STALL_LOG reports stuck loaders; no reader sees a difference.
-  // ANALYSIS_TAB spends: it gates every Overview press (READINESS audit finding 2), and SWAP_TOOLS
-  // gates Find a deck's read the same way.
+  // ANALYSIS_TAB spends: it gates every Overview press (READINESS audit finding 2). SWAP_TOOLS gated
+  // Find a deck's read the same way; it and PROPOSED_CUTS are retired and keep the tag until their deletion.
   // PUBLIC_PAGES is the public card and commander pages (launch epic F3): a stranger has no account, so only the
   // app-wide answer can decide it, and the page never varies by visitor.
   // SCAN_LAB is the card-scan spike's measuring page (staging only, never linked).

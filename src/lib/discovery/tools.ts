@@ -8,7 +8,8 @@ import type { TargetId } from "./targets";
  * The tool registry (discovery R2, plan `2026-10-16-discovery-r2-r3.md`, decision 3): README-r2's C2 showcase, its 14
  * tools in group order. A tool's `id` is its moment's id where it has one, and the `?tool=` a Try it writes is this id.
  *
- * - `switch`: the switch the tool lives behind, or null for one with none (Top off). Off for a reader, the tool is
+ * - `switch`: the switch the tool lives behind, or null for one with none (Top off; Stand-ins and Find a
+ *   deck since `SWAP_TOOLS_ENABLED` retired). Off for a reader, the tool is
  *   absent: no card, and a `?tool=` naming it lands nowhere.
  * - `entry`: the About entry its `How it works ›` opens (`src/lib/copy/about-entries.ts`).
  * - `labels`: the labels on the About pages its `Show me ›` can light (`labelKey`, `src/lib/about/pages-visible.ts`), in
@@ -52,10 +53,10 @@ export const TOOLS = [
   { id: "suggested-changes", group: "tune", switch: "TUNING_ENABLED", entry: "suggested-changes", labels: ["decks/analysis/suggested"], target: "suggested-changes", lands: { kind: "deck", tab: "analysis" }, credit: hub.suggested.cost, needsDeck: true },
   { id: "mana-balance", group: "tune", switch: "ANALYSIS_TAB_ENABLED", entry: "mana-balance", labels: ["decks/analysis/mana"], target: "mana-balance", lands: { kind: "deck", tab: "analysis" }, credit: hub.mana.cost, needsDeck: true },
   // Buy smarter
-  { id: "stand-ins", group: "buy", switch: "SWAP_TOOLS_ENABLED", entry: "stand-ins", labels: ["shopping/deck-shopping/standins"], target: "stand-ins", lands: { kind: "deck", tab: "deck", view: "shopping" }, credit: null, needsDeck: true },
+  { id: "stand-ins", group: "buy", switch: null, entry: "stand-ins", labels: ["shopping/deck-shopping/standins"], target: "stand-ins", lands: { kind: "deck", tab: "deck", view: "shopping" }, credit: null, needsDeck: true },
   { id: "friend-spares", group: "buy", switch: null, entry: "friend-spares", labels: ["shopping/deck-shopping/spare"], target: "friend-spares", lands: { kind: "deck", tab: "deck", view: "shopping" }, credit: null, needsDeck: true },
   // Use what you own
-  { id: "find-a-deck", group: "own", switch: "SWAP_TOOLS_ENABLED", entry: "fits-your-decks", labels: ["collection/cards/taken"], target: "find-a-deck", lands: { kind: "route", href: "/collection?avail=free" }, credit: null, needsDeck: true },
+  { id: "find-a-deck", group: "own", switch: null, entry: "fits-your-decks", labels: ["collection/cards/taken"], target: "find-a-deck", lands: { kind: "route", href: "/collection?avail=free" }, credit: null, needsDeck: true },
   { id: "wishlist", group: "own", switch: null, entry: "wishlist", labels: ["collection/cards/tabs"], target: "wishlist", lands: { kind: "route", href: "/collection/wishlist" }, credit: null, needsDeck: false },
   { id: "collection-sync", group: "own", switch: null, entry: "upload-choice", labels: ["collection/upload/drop"], target: "collection-sync", lands: { kind: "route", href: "/collection/replace" }, credit: null, needsDeck: false },
   // Play

@@ -46,13 +46,13 @@ beforeEach(() => {
   stored.ids = [...stored.ids, ...unseenUnits(visibleSections(process.env), { version: stored.version, ids: stored.ids }).flatMap((u) => u.ack)];
 });
 afterEach(() => {
-  delete process.env.SWAP_TOOLS_ENABLED;
   delete process.env.ANALYSIS_TAB_ENABLED;
+  delete process.env.TUNING_ENABLED;
 });
 
 describe("a switch flipped on", () => {
   const line = () => aboutLine({ version: stored.version, ids: [...stored.ids] }, visibleSections(process.env));
-  const visit = (area: "shopping") => {
+  const visit = (area: "decks") => {
     const after = afterVisit(visibleSections(process.env), area, { version: stored.version, ids: [...stored.ids] });
     stored.version = Math.max(stored.version, after.version);
     stored.ids = [...new Set([...stored.ids, ...after.ids])];
@@ -62,22 +62,23 @@ describe("a switch flipped on", () => {
     expect(line()).toBeNull();
     quiet(await load());
 
-    // The swap tools switched on: Home names their units, and the proxy still redirects nowhere.
-    process.env.SWAP_TOOLS_ENABLED = "true";
+    // The Analysis tab switched on: Home names its units, and the proxy still redirects nowhere. (The swap tools were the
+    // example here until SWAP_TOOLS_ENABLED retired: their units now draw for every reader.)
+    process.env.ANALYSIS_TAB_ENABLED = "true";
     const first = line();
     expect(first?.kind).toBe("launches");
-    expect(first?.ids).toContain("shopping/deck-shopping/standins");
+    expect(first?.ids).toContain("decks/analysis/bracket");
     quiet(await load());
 
-    // The reader opens Shopping (Show me lands there), which records that page's keys.
-    visit("shopping");
+    // The reader opens Decks (Show me lands there), which records that page's keys.
+    visit("decks");
     expect(line()).toBeNull();
 
-    // The Analysis tab switched on LATER. The floor would call this reader current; the unit is still new.
-    process.env.ANALYSIS_TAB_ENABLED = "true";
+    // Suggested changes switched on LATER. The floor would call this reader current; the unit is still new.
+    process.env.TUNING_ENABLED = "true";
     const second = line();
-    expect(second?.ids.length).toBeGreaterThan(0);
-    expect(second?.ids.some((k) => k.startsWith("shopping/deck-shopping/standins"))).toBe(false);
+    expect(second?.ids).toContain("decks/analysis/suggested");
+    expect(second?.ids.some((k) => k.startsWith("decks/analysis/bracket"))).toBe(false);
     quiet(await load());
   });
 });

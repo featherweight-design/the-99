@@ -8,8 +8,10 @@ import { visibleSections } from "../../../lib/about/pages-visible";
 const env = (o: Record<string, string>) => o as unknown as NodeJS.ProcessEnv;
 
 /**
- * The cart alone, and every switch on. Shopping for all decks is retired (always on), so the cart alone is every live
- * switch off; the reader with the cart off, the snapshot's old `off`, no longer exists and its entries were dropped.
+ * Every live switch off (named `cart` for the reader it once was), and every switch on. Shopping for all decks is retired
+ * (always on), so `cart` is every live switch off; the reader with the cart off, the snapshot's old `off`, no longer
+ * exists and its entries were dropped. The swap tools are retired too (always on), so `cart` draws Shopping's limit and
+ * stand-ins labels and the sub line's stand-ins sentence.
  */
 export const PROOF_ENVS: Record<string, NodeJS.ProcessEnv> = {
   cart: env({}),

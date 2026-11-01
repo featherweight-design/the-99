@@ -2,9 +2,15 @@ import { describe, expect, it } from "vitest";
 import { liveMoments } from "./live";
 
 describe("liveMoments", () => {
-  it("is each moment whose tool is on, and the nine with no tool (the friends moments since SOCIAL_FRIENDS_ENABLED retired)", () => {
+  it("is each moment whose tool is on, and the eleven with no tool (the friends moments since SOCIAL_FRIENDS_ENABLED retired, the swap tools' since SWAP_TOOLS_ENABLED did)", () => {
     const live = liveMoments({} as unknown as NodeJS.ProcessEnv);
-    expect(live).toEqual(["precons", "top-off", "card-assignments", "friend-spares", "wishlist", "collection-sync", "lineup", "matchups", "friends-after-game"]);
+    expect(live).toEqual(["precons", "top-off", "card-assignments", "stand-ins", "friend-spares", "find-a-deck", "wishlist", "collection-sync", "lineup", "matchups", "friends-after-game"]);
+  });
+
+  it("keeps the swap tools' moments with their retired switch off", () => {
+    const live = liveMoments({ SWAP_TOOLS_ENABLED: "off" } as unknown as NodeJS.ProcessEnv);
+    expect(live).toContain("stand-ins");
+    expect(live).toContain("find-a-deck");
   });
 
   it("follows the Analysis tab for Proposed cuts: its retired switch alone raises nothing", () => {

@@ -76,8 +76,9 @@ describe("MODEL_CAPABILITIES", () => {
     MODEL_CAPABILITIES.filter((c) => !c.on(all("true", { [name]: "false" })) && c.on(all("true"))).map((c) => c.key);
 
   // Retired model switches still in the registry until their removal PR: nothing gates on them, so turning one on raises
-  // no capability. Proposed cuts' paid pass follows its parent, the Analysis tab (Hugh 2026-10-31).
-  const RETIRED = new Set<SwitchName>(["PROPOSED_CUTS_ENABLED"]);
+  // no capability. Proposed cuts' paid pass follows its parent, the Analysis tab (Hugh 2026-10-31). Swap tools has no
+  // parent: Find a deck's paid read is always offered, and only the model-call kill switch stops it.
+  const RETIRED = new Set<SwitchName>(["PROPOSED_CUTS_ENABLED", "SWAP_TOOLS_ENABLED"]);
 
   it("is raised by every model switch", () => {
     for (const name of SWITCH_NAMES.filter((n) => switchKind(n) === "model" && !RETIRED.has(n))) {
@@ -89,8 +90,9 @@ describe("MODEL_CAPABILITIES", () => {
     for (const name of RETIRED) expect(raisedBy(name), name).toEqual([]);
   });
 
-  it("decides the paid read from swap tools", () => {
-    expect(raisedBy("SWAP_TOOLS_ENABLED")).toContain("fits_read");
+  it("offers the paid read with every switch off, now swap tools is retired", () => {
+    const fitsRead = MODEL_CAPABILITIES.find((c) => c.key === "fits_read");
+    expect(fitsRead?.on(all("false"))).toBe(true);
   });
 
   it("is raised by no switch that is not a model switch", () => {
