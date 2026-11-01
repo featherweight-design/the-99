@@ -43,6 +43,7 @@ type RawState = {
   members: { userId: string; groupId: string }[];
   groups: GroupInfo[];
   events: (Omit<SwitchEvent, "at"> & { at: string })[];
+  deletedGroups: { id: string; name: string }[];
 };
 
 // A timestamp inside json_build_object arrives as text, without a zone; the columns hold UTC.
@@ -65,7 +66,11 @@ async function readSwitchState(name: SwitchName) {
       ) order by e.at desc, e.id desc) from (
         -- One past the limit, so the page can say the list is cut.
         select * from admin_events where "switch" = ${name} order by at desc, id desc limit ${HISTORY_LIMIT + 1}
-      ) e), '[]'::json) as events`);
+      ) e), '[]'::json) as events,
+      -- A deleted group's name, from its \`group_deleted\` event, so History still names it (small items 9, item 7).
+      coalesce((select json_agg(json_build_object('id', d.group_id, 'name', d.old_value)) from admin_events d
+        where d.kind = 'group_deleted' and d.group_id in (select x.group_id from admin_events x where x."switch" = ${name} and x.group_id is not null)
+      ), '[]'::json) as "deletedGroups"`);
     const [row] = rows;
     // The resolver's snapshot keeps an All features row (`isOverrideName`), so the page's verdicts read
     // an account it raises as the request path does; the rows the page lists are switches alone.
@@ -79,6 +84,7 @@ async function readSwitchState(name: SwitchName) {
       overrides,
       groups: row.groups,
       events: row.events.map((e) => ({ ...e, at: utc(e.at) })),
+      deletedGroups: new Map(row.deletedGroups.map((d) => [d.id, d.name])),
     };
   } catch (error) {
     console.error("admin: switch overrides could not be read; drawing the env var alone", error);
@@ -102,6 +108,7 @@ export async function loadSwitchPage(name: SwitchName, viewerId: string): Promis
     accounts,
     groups: state?.groups ?? [],
     events: state?.events ?? [],
+    deletedGroups: state?.deletedGroups,
     historyLimit: HISTORY_LIMIT,
     viewerId,
   });

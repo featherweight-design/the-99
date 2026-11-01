@@ -217,3 +217,51 @@ export async function moveAccount(
   if (wrote) deps.afterCommit();
   return { ok: true };
 }
+
+/**
+ * A group's delete (small items 9, item 7). Only an empty group can go: no members and no LIVE flyer code (a revoked
+ * code keeps its row and loses its group, `set null`). One transaction under the switch writes' lock, and the
+ * emptiness is checked in the delete's own statement, so a member who joins or a code made since the page was drawn
+ * leaves the group standing (`not_empty`). Members and overrides cascade from `flag_groups`. The `group_deleted`
+ * event carries the name (`old_value`), so History still names the group once its row is gone; `admin_events`
+ * carries no foreign key, so the group's past events stay. The memo clear and the revalidation run after the commit.
+ */
+export type GroupDeleteResult = { ok: true; name: string } | { ok: false; error: "group" | "not_empty" | "failed" };
+
+/** The delete, with its emptiness check: exported so a test can pin both `not exists` clauses. */
+export const deleteEmptyGroupSql = (groupId: string) => sql`
+  delete from flag_groups g where g.id = ${groupId}::uuid
+    and not exists (select 1 from flag_group_members m where m.group_id = g.id)
+    and not exists (select 1 from flyer_codes c where c.group_id = g.id and c.revoked_at is null)
+  returning g.name`;
+
+export async function removeEmptyGroup(
+  actorId: string,
+  groupId: string,
+  deps: Pick<GroupWriteDeps, "transaction" | "afterCommit"> = DEPS,
+): Promise<GroupDeleteResult> {
+  if (typeof groupId !== "string" || !isGroupId(groupId)) return { ok: false, error: "group" };
+  let name: string;
+  try {
+    name = await deps.transaction(async (tx) => {
+      await lockSwitchWrites(tx);
+      const { rows } = await tx.execute<{ name: string }>(deleteEmptyGroupSql(groupId));
+      const [row] = rows;
+      if (!row) {
+        // Nothing deleted: the group is gone, or it is not empty now. The lock holds, so this read is the same instant.
+        const { rows: still } = await tx.execute(sql`select id from flag_groups where id = ${groupId}::uuid`);
+        throw new Abort<GroupDeleteResult>({ ok: false, error: still.length ? "not_empty" : "group" });
+      }
+      await tx.execute(sql`
+        insert into admin_events (actor_id, kind, group_id, old_value)
+        values (${actorId}, ${"group_deleted"}, ${groupId}::uuid, ${row.name})`);
+      return row.name;
+    });
+  } catch (error) {
+    if (error instanceof Abort) return error.result as GroupDeleteResult;
+    console.error("admin: the group delete failed");
+    return { ok: false, error: "failed" };
+  }
+  deps.afterCommit();
+  return { ok: true, name };
+}

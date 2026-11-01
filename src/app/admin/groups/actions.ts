@@ -1,7 +1,7 @@
 "use server";
 
 import { requireAdmin } from "../../../lib/admin/access";
-import { writeGroup, type GroupWriteResult } from "../../../lib/admin/group-writes";
+import { removeEmptyGroup, writeGroup, type GroupDeleteResult, type GroupWriteResult } from "../../../lib/admin/group-writes";
 import type { GroupInput } from "../../../lib/admin/groups-rule";
 
 // The Groups writes (admin plan 9a). Every export calls `requireAdmin()` on its first line, so a
@@ -19,4 +19,10 @@ export async function createGroup(input: GroupInput): Promise<GroupWriteResult> 
 export async function saveGroup(id: string, input: GroupInput): Promise<GroupWriteResult> {
   const { userId } = await requireAdmin();
   return writeGroup(userId, typeof id === "string" ? id : "", input);
+}
+
+/** Delete an empty group (small items 9, item 7). The lib re-checks emptiness in the delete's own statement. */
+export async function deleteGroup(id: string): Promise<GroupDeleteResult> {
+  const { userId } = await requireAdmin();
+  return removeEmptyGroup(userId, typeof id === "string" ? id : "");
 }

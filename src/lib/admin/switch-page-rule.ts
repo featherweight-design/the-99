@@ -47,6 +47,8 @@ export type SwitchPageInput = {
   groups: readonly GroupInfo[];
   /** Newest first. One more than `historyLimit` means older events exist and the list is cut. */
   events: readonly SwitchEvent[];
+  /** Deleted groups' names, from their `group_deleted` events, for History's lines that name them. */
+  deletedGroups?: ReadonlyMap<string, string>;
   historyLimit: number;
   viewerId: string;
 };
@@ -118,8 +120,8 @@ export function switchPage(input: SwitchPageInput): SwitchPage {
   const killed = env[name] === KILL;
   const parent = switchParent(name);
   const groupById = new Map(groups.map((g) => [g.id, g]));
-  // A group deleted since an event names it reads as its id's first 8 characters.
-  const groupName = (id: string) => groupById.get(id)?.name ?? id.slice(0, 8);
+  // A group deleted since an event names it reads as the name its `group_deleted` event kept, else its id's first 8 characters.
+  const groupName = (id: string) => groupById.get(id)?.name ?? input.deletedGroups?.get(id) ?? id.slice(0, 8);
   const { userName, actor } = accountNames(accounts, viewerId);
   const maskedEmail = new Map(accounts.map((a) => [a.id, a.email ?? ""]));
 

@@ -154,6 +154,13 @@ describe("switchPage", () => {
     ]);
   });
 
+  it("names a deleted group by the name its group_deleted event kept, before falling back to the id", () => {
+    const ev: SwitchEvent = { at: AT, actorId: "u1", kind: "override_cleared", scope: "group", groupId: "0123456789abcdef", userId: null, oldValue: "on", newValue: null, note: null };
+    const base = { name: "FEEDBACK_ENABLED" as const, env: envValues({}), overrides: [], verdicts: new Map(), accounts: ACCOUNTS, groups: GROUPS, events: [ev], viewerId: "u1", historyLimit: 100 };
+    expect(switchPage({ ...base, deletedGroups: new Map([["0123456789abcdef", "testers"]]) }).history[0].what).toBe("You cleared group testers (was on)");
+    expect(switchPage(base).history[0].what).toBe("You cleared group 01234567 (was on)");
+  });
+
   it("lists at most the history limit, and says when older events were cut", () => {
     const ev = (n: number): SwitchEvent => ({ at: AT, actorId: "u1", kind: "override_set", scope: "app", groupId: null, userId: null, oldValue: null, newValue: String(n), note: null });
     const base = { name: "FEEDBACK_ENABLED" as const, env: envValues({}), overrides: [], verdicts: new Map(), accounts: [], groups: [], viewerId: "u1", historyLimit: 2 };
