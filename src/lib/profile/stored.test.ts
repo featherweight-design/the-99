@@ -75,8 +75,8 @@ describe("pressMustRecompute", () => {
   });
 });
 
-// Admin adoption 6c: the stored-read path builds under the reader's resolved switches, so the cached build
-// keys on the reader's switch bits, the same key `profileOfHead` files under. A sentinel env, compared by
+// Admin adoption 6c: the stored-read path builds under the reader's resolved switches and carries them for
+// the press; the cached build files under the same key `profileOfHead` does. A sentinel env, compared by
 // identity, so a failing diff prints nothing real.
 describe("requestProfileDeps", () => {
   const ENV = { SENTINEL: "resolved" } as unknown as NodeJS.ProcessEnv;

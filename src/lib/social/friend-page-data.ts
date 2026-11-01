@@ -15,8 +15,7 @@ import { loadFriendWishlist } from "./wishlist";
 
 export const friendSpareList = cache((viewerId: string, publicId: string, wishlist: boolean) => loadFriendSpareList(viewerId, publicId, wishlist));
 export const friendWishlist = cache((viewerId: string, publicId: string) => loadFriendWishlist(viewerId, publicId));
-/** `viewerOpen` is always `true` now that the friends switch is retired; the layout and the tab pass the same, so they share one read. */
-export const friendDecks = cache((viewerId: string, publicId: string, viewerOpen: boolean) => loadFriendDecks(viewerId, publicId, viewerOpen));
+export const friendDecks = cache((viewerId: string, publicId: string) => loadFriendDecks(viewerId, publicId));
 
 /**
  * A card's name by oracle id, from the CATALOG only (no social table): the toast a `?spare=` landing draws when the

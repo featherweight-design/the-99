@@ -2,8 +2,8 @@
 
 The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section's rules; this file keeps the history, measurements and derivations behind them.
 
-- **Social foundation** (plan `boards/plan-social-foundation-2026-10-12.md`, Hugh's rulings 2026-10-12), behind
-  `SOCIAL_FRIENDS_ENABLED` (`'true'` on staging, unset on production; dark until the first UI PR). Friends are added
+- **Social foundation** (plan `boards/plan-social-foundation-2026-10-12.md`, Hugh's rulings 2026-10-12), always on
+  (it shipped behind `SOCIAL_FRIENDS_ENABLED`, retired 2026-10-31). Friends are added
   by a single-use invite link or its QR code and never by search; a friendship is two directed `friend_links` rows,
   written in user id order so two readers' stamps lock the same way round; a pod's members are added only from its owner's own friends,
   and a pod passes to the longest-standing member when the owner leaves (so after a hand-on, a member need not be
@@ -53,33 +53,32 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   snapshot that re-checks that friend's grant first, so a grant revoked mid-read reads nothing. A spare is
   `owned − hard − soft`, so a copy only a draft wants is not spare. Each row's friend carries their face and the names of
   the pods the grant holds through (Social R2 PR 2), and the spares are served by `GET /api/friend-spares?ids=` (signed in,
-  `SOCIAL_FRIENDS_ENABLED` re-checked for the reader, at most `MAX_SPARES_BATCH` card ids, `private, no-store`), so no
+  at most `MAX_SPARES_BATCH` card ids, `private, no-store`), so no
   cached key carries them. `loadFriend` reads one friend by public id through the viewer's own link row (R2's friend page).
   **A friend's write never moves the viewer's stamp**, so friend data stays out of cached payloads by default; a cached
   page that must draw it puts `await friendGeneration(viewer)` as a bare element of EVERY `cachePageForUser` key on that
   page, for that call's own reader, and `check:list-cache` fails a cached page whose loaders reach `src/lib/social/`
   (the switch module aside) without it. `pnpm measure:friend-spares` times the per-friend cost (read-only).
 
-- **Opponents in the game log** (scope §4, Feature C; Hugh's ruling Q15), behind `SOCIAL_FRIENDS_ENABLED` (its own
-  switch, `SOCIAL_GAMES_ENABLED`, retired 2026-10-30; opponents follow friends). `deck_game_opponents`
+- **Opponents in the game log** (scope §4, Feature C; Hugh's ruling Q15), always on
+  (its own switch, `SOCIAL_GAMES_ENABLED`, retired 2026-10-30, and `SOCIAL_FRIENDS_ENABLED`, which it then followed,
+  retired 2026-10-31). `deck_game_opponents`
   holds the seats of a game, seat 1 upward and fewer than its pod size: a friend, a friend's deck, or anyone by a
   catalog commander and an optional label, plus an optional `won` on a loss (one at most). The rows are the game
   owner's and SNAPSHOT the friend's name and the deck's name and commanders at log time, so every read draws the
-  snapshot and none depends on a friend's live rows or cache. `logGame` refuses opponents while friends are off, and
-  resolves a friend seat in the game's own transaction: a friend's deck is offered and seated only through the
+  snapshot and none depends on a friend's live rows or cache. `logGame` resolves a friend seat in the game's own transaction: a friend's deck is offered and seated only through the
   viewer's own friendship (`src/lib/social/games.ts`, held FOR SHARE until the game commits), and a pod only seats its
   members who are also friends. `pnpm probe:game-opponents` proves it. The live friend link is never sent to a client and is
   UNLINKED by the account purge (`SOCIAL_UNLINKED`), keeping the snapshot. The label is player-typed and no prompt
   reads the table (`game-opponents.test.ts` pins who may). `summarizeMatchups` splits a deck's games by commander,
   color identity and friend as `GameSummary` cells: counts with denominators, no rate.
-  The picker's reads sit behind the same switch (R3 PR 1, plan `2026-10-15-social-r3-opponents-and-matchups.md`):
+  The picker's reads (R3 PR 1, plan `2026-10-15-social-r3-opponents-and-matchups.md`):
   `searchOpponentCommandersAction`, `listFriendDecksAction` and `listPodSeatsAction` (`src/app/decks/[id]/opponent-actions.ts`)
-  each re-check `socialFriendsEnabled` for the signed-in reader and answer an empty list when it is off, and
-  `loadDeckOpponents` returns a deck's seats and matchups, or null when friends are off, there are no games or the read
-  failed (logged, never thrown). None has a caller beyond its tests and the probe until the form (PR 2) and the Games tab (PR 4).
+  each read for the signed-in reader, and `loadDeckOpponents` returns a deck's seats and matchups, or null when there
+  are no games or the read failed (logged, never thrown). None has a caller beyond its tests and the probe until the form (PR 2) and the Games tab (PR 4).
 
-- **Invites** (plan `2026-10-16-invites.md`), behind `SOCIAL_FRIENDS_ENABLED` (its own
-  switch, `SOCIAL_INVITES_ENABLED`, retired 2026-10-30; invites follow friends). PR 1 is the data and the pure rules (`src/lib/invites/rules.ts`, `tokens.ts`, `read.ts`). PR 2 is
+- **Invites** (plan `2026-10-16-invites.md`), always on (its own switch, `SOCIAL_INVITES_ENABLED`, retired
+  2026-10-30, and `SOCIAL_FRIENDS_ENABLED`, which it then followed, retired 2026-10-31). PR 1 is the data and the pure rules (`src/lib/invites/rules.ts`, `tokens.ts`, `read.ts`). PR 2 is
   the sender's writes: `sendEmailInvite` and `showInviteQr` (`send.ts`) and the admin's `setInvites`,
   `topUpGroupInvites` and `revokeReservation` (`admin.ts`), each under the sender's advisory lock
   (`lockSenderIn`, `invites:<sender>`). Every one but the revoke re-reads what is left through `readCountIn` (a revoke
@@ -109,8 +108,8 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   (else it mints one, the cookies-blocked fallback). A first Send code whose response is lost therefore leaves the
   cookie behind: the retry is a `wait`, not an ended claim holding its invite for 7 days.
 - **Spare requests** (G5; plan `2026-10-22-spare-requests.md`; workshop `boards/me-page-workshop-2026-10-21.md` rounds
-  4, 5 and 8), shipped behind `SPARE_REQUESTS_ENABLED`, since retired: spare requests follow `SOCIAL_FRIENDS_ENABLED`
-  alone. A player asks a friend for one spare card with a deliberate press; the friend answers Yes or No and the asker is
+  4, 5 and 8), shipped behind `SPARE_REQUESTS_ENABLED`, since retired, as is `SOCIAL_FRIENDS_ENABLED`: spare requests are
+  always on. A player asks a friend for one spare card with a deliberate press; the friend answers Yes or No and the asker is
   told; a Yes changes nothing else in the app. `spare_requests` is read and written only by
   `src/lib/social/spare-requests.ts` (`check:social-reads`); the rules are pure in `spare-request-rules.ts`.
   EXPIRY IS DERIVED: an open ask older than `SPARE_REQUEST_DAYS` (14) reads as expired everywhere and cannot be
@@ -150,7 +149,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   the asker's per-card states for Shopping are `GET /api/spare-requests?ids=` (`loadAskStates`, 404 off, `private,
   no-store`). Proof: `pnpm probe:spare-requests`.
 
-## Friend decks (always on where `SOCIAL_FRIENDS_ENABLED` is)
+## Friend decks (always on)
 
 **Tab order and default (Hugh, 2026-10-30, no Design round):** a friend's page opens on Decks, and its strip reads Decks,
 Wishlist, Spares on every width. The routes follow: `/friends/[publicId]` is Decks, `/wishlist`, and `/spares` (Spares moved
@@ -168,17 +167,14 @@ from friends (`decks.hidden_from_friends`, from its ⋯ menu).
 - **Unfinished is a phase.** `New` and `Draft` (no committed version) and `Building` (committed, short of its body
   size). `Unresolved` is a committed deck at its size, so friends see it on the defaults, as `Over`, `To buy` and
   `Complete`.
-- **Whose switch.** The filter is decided under the owner's resolved switches (their privacy); the page route and the
-  tile's link under the viewer's. With Friends off for the owner, `loadFriendDecks` returns every deck as it shipped and
-  carries no id, and `loadFriendDeck` is null. The open tile (`OpenFriendDeck`: an id, and no status or to-buy figure, so
-  nothing of the owner's money is sent; the stats read still reads Shopping for the status) needs Friends on for BOTH
-  (`FRIEND_DECKS_ENABLED`, retired 2026-10-29, was the second switch): `loadFriendDecks(viewer, publicId, viewerOpen)` returns it only then, and the tab draws open tiles only when the read carried ids, so a mixed pair draws the tab as it shipped rather
-  than tiles under "Open one" with nothing to open. With the viewer's off and the owner's on, that shipped tab is
-  already filtered by the owner's rules (the owner's privacy wins) while its line still names drafts: a state only
-  per-account overrides can reach.
-- **Retired switch.** `FRIEND_DECKS_ENABLED` is gone (flag cleanup): every site reads `socialFriendsEnabled`, which the
-  switch needed anyway. The name stays in the `friend-decks` About entry and the `friends` and `opponents` key pairs as
-  their historical identity (About's seen-state keys by it); `src/lib/about/visible.ts` maps it to `socialFriendsEnabled`.
+- **Every tile opens.** No switch decides the tab any more (`FRIEND_DECKS_ENABLED` retired 2026-10-29,
+  `SOCIAL_FRIENDS_ENABLED` 2026-10-31). The filter is the owner's rules; `loadFriendDecks(viewer, publicId)` returns
+  every visible deck as an open tile (`FriendDeck`: an id, and no status or to-buy figure, so nothing of the owner's
+  money is sent; the stats read still reads Shopping for the status), and `loadFriendDeck` reads the page. The tab's
+  shipped form (view-only tiles with the status and the to-buy figure, no press) and its `viewerOpen` read are gone.
+- **Retired switches.** `FRIEND_DECKS_ENABLED` and `SOCIAL_FRIENDS_ENABLED` are gone. Their names stay in the
+  `friend-decks` and `friends` About entries and the `friends` and `opponents` key pairs as their historical identity
+  (About's seen-state keys by it); `src/lib/about/visible.ts` maps each to always on.
 - **The page's read.** The owner's own `getDeckDetail`, run as its owner with `Promise.resolve(null)` in place of the
   shared availability read, so the owner's claim model never runs for a friend; then cut field by field to
   `FriendDeckCard` (catalog facts and the owner's printing; no price, availability, proxy, lock, auto tag or combo
@@ -199,7 +195,7 @@ from friends (`decks.hidden_from_friends`, from its ⋯ menu).
 
 ## The face: any card, any printing (backend, 2026-10-27)
 
-The backend landed behind `SOCIAL_FRIENDS_ENABLED` alone (#2263): the column is nullable and every existing row reads null, so an unchanged profile draws exactly what it drew. The surfaces that offer any card shipped behind `SIGNATURE_CARD_ENABLED`, since retired: they follow `SOCIAL_FRIENDS_ENABLED` alone; see the next section.
+The backend landed behind `SOCIAL_FRIENDS_ENABLED` alone (#2263; since retired, always on): the column is nullable and every existing row reads null, so an unchanged profile draws exactly what it drew. The surfaces that offer any card shipped behind `SIGNATURE_CARD_ENABLED`, since retired: they are always on; see the next section.
 
 - **`social_profiles.commander_oracle_id`** is any catalog card (the "must be able to lead a deck" refusal is gone; `canBeFace` moved to `lib/decks/commander-picker.ts` as `canLeadADeck`, which the existing picker still filters by). **`commander_printing_id`** is the player's chosen printing, a FK to `printings.scryfall_id` with `ON DELETE SET NULL`.
 - **`setCommander(viewer, oracleId, printingId?)`** is the one writer. Refusals: `noCard` (not a catalog card), `badPrinting` (not a uuid, not a printing OF that card, or a printing with no card), `noProfile`. Every write sets both columns, so changing the card drops the old pick. A card or printing deleted between the check and the write comes back as the same refusal (FK violation), not a 500.
@@ -209,12 +205,12 @@ The backend landed behind `SOCIAL_FRIENDS_ENABLED` alone (#2263): the column is 
 
 ## Signature card (handoff 20, 2026-10-27)
 
-Shipped behind `SIGNATURE_CARD_ENABLED`, since retired: the surfaces follow `SOCIAL_FRIENDS_ENABLED` alone. The line's Spares tab work follows its own switch (below). Plan `docs/superpowers/plans/2026-10-27-signature-card.md`.
+Shipped behind `SIGNATURE_CARD_ENABLED`, since retired: the surfaces are always on, as is the line's Spares tab work (below). Plan `docs/superpowers/plans/2026-10-27-signature-card.md`.
 
 - **The picker** (`src/components/social/signature-picker.tsx`, from the `/friends` head): any card, by `searchFaceCards` (`lib/decks/commander-picker.ts`), then its printings (`listFacePrintings`, usual art first), saved through `setCommanderAction(oracleId, printingId?)`. With nothing typed it offers the faces of the player's own decks (`listOwnDeckFaces`); a deck's pick is saved as a printing only when its `(oracle_id, set_code, collector_number)` names exactly one printing, else null (the usual art). The own-profile read returns the pick (`OwnCommander.printingId`, `printingGone`), and a pick whose printing left the catalog draws the P8 note.
 - **The ask, once** (Home's first-run row and the strip, `src/components/home/signature-ask.tsx`): decided per request from `loadHomeFriends`, never from the cached payload. `user_prefs.face_prompt_done_at` (migration 0176) is set by a pick or by Skip, written only while null (the stamp trigger); the rule is `faceAskPlaces` in `src/lib/discovery/face-prompt.ts`, which sits there, not in `lib/social`, so the cached Home payload does not read a social table.
-- **Spares outside Shopping** (shipped in this line; spare requests follow `SOCIAL_FRIENDS_ENABLED`): a friend's Spares tile opens `SparesSheet` for that card with the page's friend first (`orderSparesFirst`), the wishlist kicker and the card's price; the tile's count line carries THIS friend's ask. An ask from the tab is stored `standalone` (it is for no deck's list), so Your requests never reads it as no longer needed. `?spare=<oracle id>` opens the sheet on landing or, for a spare gone since, draws a toast; either way it is stripped through `mirrorUrl`. A single-card trade-match push, its Home feed item and its Waiting row link there. With spare requests on for the reader each of them is marked `askable` (`lookups` and `loadWaitingOnYou` decide it), so the press reads "Ask {friend}" and the push body adds "Ask {friend} for it."; off, they read as shipped and the tab opens card details.
-- **About:** the `friends` entry's face sentence is a `captionLineSwitches` pair keyed on `SIGNATURE_CARD_ENABLED` (the retired name stays its historical identity; `visible.ts` resolves it to `SOCIAL_FRIENDS_ENABLED`), riding the next batched `ABOUT_VERSION` bump with no halo; key 2 names the face the same way in four forms, one per (friend decks, `SIGNATURE_CARD_ENABLED`) pair, friend decks now always on with Friends. The `/friends` name hint and the friend link landing's rules and empty credit follow `SOCIAL_FRIENDS_ENABLED` too (READINESS call 1).
+- **Spares outside Shopping** (shipped in this line; spare requests are always on): a friend's Spares tile opens `SparesSheet` for that card with the page's friend first (`orderSparesFirst`), the wishlist kicker and the card's price; the tile's count line carries THIS friend's ask. An ask from the tab is stored `standalone` (it is for no deck's list), so Your requests never reads it as no longer needed. `?spare=<oracle id>` opens the sheet on landing or, for a spare gone since, draws a toast; either way it is stripped through `mirrorUrl`. A single-card trade-match push, its Home feed item and its Waiting row link there. Each of them is marked `askable` (always, now that spare requests are always on), so the press reads "Ask {friend}" and the push body adds "Ask {friend} for it.".
+- **About:** the `friends` entry's face sentence is a `captionLineSwitches` pair keyed on `SIGNATURE_CARD_ENABLED` (the retired name stays its historical identity; `visible.ts` resolves it to always on), riding the next batched `ABOUT_VERSION` bump with no halo; key 2 names the face the same way in four forms, one per (friend decks, `SIGNATURE_CARD_ENABLED`) pair, friend decks now always on with Friends. The `/friends` name hint and the friend link landing's rules and empty credit followed `SOCIAL_FRIENDS_ENABLED` too (READINESS call 1) and now always draw their friends-on forms.
 
 ## Hiding a feed item (✕, 2026-10-27)
 
@@ -232,7 +228,7 @@ Hugh's ruling (the menu-home plan's product call 6). No switch of its own: the �
 
 ## Ask in place (2026-10-27)
 
-Hugh's ruling (the menu-home plan's product call 8). No switch of its own: it follows `SOCIAL_FRIENDS_ENABLED` (spare requests' switch is retired), read as each trade match's `askable`.
+Hugh's ruling (the menu-home plan's product call 8). No switch: always on (spare requests' and friends' switches are retired), read as each trade match's `askable`.
 
 - **The page's read**: `loadTradeAsk` (`src/lib/social/trade-ask.ts`) takes the trade-match cards the page draws with an Ask (Home's lead and rows, /friends' Waiting on you) and prices them through `loadPrices`. A failed price read draws the sheet's bare tag, never an error. No card, no read.
 - **The provider**: `TradeAskFrame` / `TradeAskProvider` (`src/components/social/trade-ask.tsx`) mount `FriendSparesProvider` with the friend's Spares tab's settings (`requests`, `standalone`, `sparesOnOpen`) and host the sheet with the pressed row's friend `first`. Home mounts it inside the feed's `CardDetailProvider`; /friends wraps Waiting on you in its own, since the sheet's name opens card details.
@@ -245,9 +241,9 @@ Hugh's ruling (the menu-home plan's product call 8). No switch of its own: it fo
 
 The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbatim. Where they and the text above differ in wording, both are current.
 
-- **Social foundation** (`SOCIAL_FRIENDS_ENABLED`). Friends are added by single-use invite link or QR, never search; a friendship is two directed `friend_links` rows written in user id order. **Every cross-user read lives in `src/lib/social/`** and joins the grant on the session's viewer in the same statement; client payloads carry `social_profiles.public_id`, never a Clerk id. `pnpm check:social-reads` fails when a module outside that directory touches a social table. Spares are view-only, per pod (`loadFriendSpares`, `GET /api/friend-spares`). A friend's write never moves the viewer's stamp, so a cached page that draws friend data puts `await friendGeneration(viewer)` in EVERY `cachePageForUser` key (`check:list-cache` enforces it), and a page drawing spares must also key each friend's resolved switches.
-- **Invites** (behind `SOCIAL_FRIENDS_ENABLED`; `SOCIAL_INVITES_ENABLED` retired). Every write that holds, spends or sets a sender's invites takes `lockSenderIn` and keeps `held` ≥ the rows holding. The email path answers every outcome after its reservation commits as a success, at `SEND_FLOOR_MS`. `src/lib/invites/clerk.ts` is the one Clerk invitations caller; `mail.ts` (Resend) fails closed. Proof: `pnpm probe:invites`.
-- **Spare requests** (their switch `SPARE_REQUESTS_ENABLED` is retired; they follow `SOCIAL_FRIENDS_ENABLED`). `spare_requests` is read and written only by `src/lib/social/spare-requests.ts`. An open ask EXPIRES by derivation after 14 days (no job); one open ask per asker and card across every friend (a partial unique index; the next ask writes `expired` over a stale row first); after a No that friend is held back 14 days, the next asked at once. An ask needs a spare the friend offers (`loadFriendSpares`) and locks both friendship rows FOR SHARE in the purge's order; an answer is one conditional UPDATE, and when it lands the same transaction writes the asker a `spare-request` feed item marked with the answer (`data.answer`), which queues its push. ✕ withdraws an open ask (holds nothing) or clears an answered one (never a delete: a cleared No keeps its cooldown); Ask instead is one transaction. The `spare-request` feed kind is on by default (`feed_kinds_declined`, `kindEnabledAt`). An ANSWER is seen by the asker's Friends cursor or one by one (`asker_seen_at`, set by `markAnswerSeen` when it is opened over Home), and the Friends badge, Your requests and Home's count all read both. Proofs: `pnpm probe:spare-requests`, `pnpm probe:answer-seen`.
-- **Signature card** (its switch `SIGNATURE_CARD_ENABLED` is retired; follows `SOCIAL_FRIENDS_ENABLED`). A player's face is any card in any printing, picked from the `/friends` head (`signature-picker.tsx`) and saved by `setCommander` alone; Home asks once (`user_prefs.face_prompt_done_at`, set by a pick or Skip, written only while null; rule `faceAskPlaces` in `src/lib/discovery/face-prompt.ts`), decided per request and never from the cached payload. Shipped in the same line but behind `SPARE_REQUESTS_ENABLED` alone, a friend's Spares tile opens `SparesSheet` with that friend first, and `?spare=<oracle id>` opens it on landing, stripped through `mirrorUrl`. Proof: `pnpm probe:face-printing`.
-- **Friend decks** (no switch of its own: on wherever `SOCIAL_FRIENDS_ENABLED` is; its About entry is `friend-decks`). What a friend sees of a player's decks is ONE rule, `friendCanSeeDeck` (`src/lib/social/deck-visibility.ts`), over the OWNER's three inputs: `user_prefs.friends_see_decks` (default on), `friends_see_unfinished` (default off; unfinished is `New`, `Draft` or `Building`) and `decks.hidden_from_friends`. `loadFriendDecks` (the tab) and `loadFriendDeck` (the friend's deck page, `/friends/[publicId]/decks/[deckId]`, `FriendDeckView`: the open precon page's anatomy through `read-only-list.tsx`) both filter through it, decided under the OWNER's switches; off for the owner, the tab is as it shipped and the page is null. The tab's open tiles (an id for the press, no status or to-buy figure) need the VIEWER's switch as well. On those two reads a hidden deck is the same null as a deleted one. The page's cards are the owner's `getDeckDetail` with no availability read, cut field by field to `FriendDeckCard`, with `owned` the VIEWER's. Both writes change only on a change (the stamp trigger) and hiding never touches `last_edited_at`, a table or a logged game (G4). The game log's picker offers a friend's deck by the same owner rules except the unfinished one (drafts stay pickable), and, for every friend whose switch is on (hidden decks or none), offers A deck not listed, which seats the friend with no deck and says nothing of whether, how many or which. Rule 0 setup (`setupDecksQuery`) and `setTable`/`resolveSeatsIn` follow the picker's rule (`pickerSeesDeck`) under the OWNER's switch, and a friend's deck hidden since the pick reads as no deck on the setter's `Seats`, the table page (`seatsQuery`) and the game log's prefill and save (`tableSeatsQuery`), all through `seatDeckVisible`; the viewer's own decks are never filtered. Proof: `pnpm probe:friend-decks`.
-- **Opponents in the game log** (behind `SOCIAL_FRIENDS_ENABLED`; `SOCIAL_GAMES_ENABLED` retired). `deck_game_opponents` rows SNAPSHOT the friend's and deck's names at log time, and `logGame` refuses opponents while friends are off. The live friend link is never sent to a client and is unlinked by the purge. The player-typed label reaches no prompt.  Proof: `pnpm probe:game-opponents`.
+- **Social foundation** (always on; `SOCIAL_FRIENDS_ENABLED` retired). Friends are added by single-use invite link or QR, never search; a friendship is two directed `friend_links` rows written in user id order. **Every cross-user read lives in `src/lib/social/`** and joins the grant on the session's viewer in the same statement; client payloads carry `social_profiles.public_id`, never a Clerk id. `pnpm check:social-reads` fails when a module outside that directory touches a social table. Spares are view-only, per pod (`loadFriendSpares`, `GET /api/friend-spares`). A friend's write never moves the viewer's stamp, so a cached page that draws friend data puts `await friendGeneration(viewer)` in EVERY `cachePageForUser` key (`check:list-cache` enforces it).
+- **Invites** (always on; `SOCIAL_INVITES_ENABLED` and `SOCIAL_FRIENDS_ENABLED` retired). Every write that holds, spends or sets a sender's invites takes `lockSenderIn` and keeps `held` ≥ the rows holding. The email path answers every outcome after its reservation commits as a success, at `SEND_FLOOR_MS`. `src/lib/invites/clerk.ts` is the one Clerk invitations caller; `mail.ts` (Resend) fails closed. Proof: `pnpm probe:invites`.
+- **Spare requests** (always on; `SPARE_REQUESTS_ENABLED` and `SOCIAL_FRIENDS_ENABLED` retired). `spare_requests` is read and written only by `src/lib/social/spare-requests.ts`. An open ask EXPIRES by derivation after 14 days (no job); one open ask per asker and card across every friend (a partial unique index; the next ask writes `expired` over a stale row first); after a No that friend is held back 14 days, the next asked at once. An ask needs a spare the friend offers (`loadFriendSpares`) and locks both friendship rows FOR SHARE in the purge's order; an answer is one conditional UPDATE, and when it lands the same transaction writes the asker a `spare-request` feed item marked with the answer (`data.answer`), which queues its push. ✕ withdraws an open ask (holds nothing) or clears an answered one (never a delete: a cleared No keeps its cooldown); Ask instead is one transaction. The `spare-request` feed kind is on by default (`feed_kinds_declined`, `kindEnabledAt`). An ANSWER is seen by the asker's Friends cursor or one by one (`asker_seen_at`, set by `markAnswerSeen` when it is opened over Home), and the Friends badge, Your requests and Home's count all read both. Proofs: `pnpm probe:spare-requests`, `pnpm probe:answer-seen`.
+- **Signature card** (always on; `SIGNATURE_CARD_ENABLED` and `SOCIAL_FRIENDS_ENABLED` retired). A player's face is any card in any printing, picked from the `/friends` head (`signature-picker.tsx`) and saved by `setCommander` alone; Home asks once (`user_prefs.face_prompt_done_at`, set by a pick or Skip, written only while null; rule `faceAskPlaces` in `src/lib/discovery/face-prompt.ts`), decided per request and never from the cached payload. Shipped in the same line but behind `SPARE_REQUESTS_ENABLED` alone, a friend's Spares tile opens `SparesSheet` with that friend first, and `?spare=<oracle id>` opens it on landing, stripped through `mirrorUrl`. Proof: `pnpm probe:face-printing`.
+- **Friend decks** (always on; its About entry is `friend-decks`). What a friend sees of a player's decks is ONE rule, `friendCanSeeDeck` (`src/lib/social/deck-visibility.ts`), over the OWNER's three inputs: `user_prefs.friends_see_decks` (default on), `friends_see_unfinished` (default off; unfinished is `New`, `Draft` or `Building`) and `decks.hidden_from_friends`. `loadFriendDecks` (the tab) and `loadFriendDeck` (the friend's deck page, `/friends/[publicId]/decks/[deckId]`, `FriendDeckView`: the open precon page's anatomy through `read-only-list.tsx`) both filter through it. Every tab tile is open (an id for the press, no status or to-buy figure). On those two reads a hidden deck is the same null as a deleted one. The page's cards are the owner's `getDeckDetail` with no availability read, cut field by field to `FriendDeckCard`, with `owned` the VIEWER's. Both writes change only on a change (the stamp trigger) and hiding never touches `last_edited_at`, a table or a logged game (G4). The game log's picker offers a friend's deck by the same owner rules except the unfinished one (drafts stay pickable), and, for every friend (hidden decks or none), offers A deck not listed, which seats the friend with no deck and says nothing of whether, how many or which. Rule 0 setup (`setupDecksQuery`) and `setTable`/`resolveSeatsIn` follow the picker's rule (`pickerSeesDeck`), and a friend's deck hidden since the pick reads as no deck on the setter's `Seats`, the table page (`seatsQuery`) and the game log's prefill and save (`tableSeatsQuery`), all through `seatDeckVisible`; the viewer's own decks are never filtered. Proof: `pnpm probe:friend-decks`.
+- **Opponents in the game log** (always on; `SOCIAL_GAMES_ENABLED` and `SOCIAL_FRIENDS_ENABLED` retired). `deck_game_opponents` rows SNAPSHOT the friend's and deck's names at log time. The live friend link is never sent to a client and is unlinked by the purge. The player-typed label reaches no prompt.  Proof: `pnpm probe:game-opponents`.

@@ -1,6 +1,6 @@
 // A friend's decks for the friend page's Decks tab (menu and Home PR 7, G4): the grant is the viewer's own friendship, a
-// stranger reads nothing, and what comes back is a name, a commander, a status and a count: an id only with
-// `viewerOpen`, and never a list. And one friend's deck, read-only (friend decks G1).
+// stranger reads nothing, and what comes back is a name, a commander, a count and the deck's id for the press: no
+// status, no money, never a list. And one friend's deck, read-only (friend decks G1).
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const m = vi.hoisted(() => ({
@@ -65,28 +65,19 @@ describe("loadFriendDecks", () => {
     expect(m.listDecksWithStats).toHaveBeenCalledWith("user_friend", "newest", expect.objectContaining({ includeProxyStats: true }));
   });
 
-  it("returns name, commander, status and count, and nothing else of a deck", async () => {
+  it("returns the id, name, commander and count, and nothing else of a deck", async () => {
     const [deck] = (await loadFriendDecks("user_viewer", "x"))!;
     expect(deck).toEqual({
-      id: null, name: named("Thopter Factory"), commanderName: "Sai, Master Thopterist", partnerName: null, colorIdentity: ["U"],
-      artCropUri: "https://cards.example/sai.jpg", status: "To buy", built: 99, bodySize: 99, toBuy: 8,
+      id: "deck-secret-id", name: named("Thopter Factory"), commanderName: "Sai, Master Thopterist", partnerName: null, colorIdentity: ["U"],
+      artCropUri: "https://cards.example/sai.jpg", built: 99, bodySize: 99,
     });
-    expect(JSON.stringify(deck)).not.toMatch(/deck-secret-id|private note|Shelf/);
+    expect(JSON.stringify(deck)).not.toMatch(/To buy|private note|Shelf/);
   });
 
   it("counts a pair against 98, with the pair's whole identity", async () => {
     m.listDecksWithStats.mockResolvedValue([{ ...ROW, partnerName: "Tymna", commanderColorIdentity: ["U"], partnerColorIdentity: ["W", "B"] }]);
     const [deck] = (await loadFriendDecks("user_viewer", "x"))!;
     expect([deck.bodySize, deck.partnerName, deck.colorIdentity]).toEqual([98, "Tymna", ["W", "U", "B"]]);
-  });
-
-  // A fully owned junior deck whose copies senior decks hold reads To buy with toBuyCount 0: the figure is what the
-  // friend's Shopping buys for it, as their own tile draws it.
-  it("counts To buy from the friend's Shopping rows, not toBuyCount (seniority, no basics)", async () => {
-    m.listDecksWithStats.mockResolvedValue([{ ...ROW, toBuyCount: 0 }, { ...ROW, id: "owned-deck", statusPill: "Complete", toBuyCount: 0 }]);
-    const decks = (await loadFriendDecks("user_viewer", "x"))!;
-    expect(decks.map((d) => d.toBuy)).toEqual([8, 0]);
-    expect(m.loadDeckBuyRows).toHaveBeenCalledWith("user_friend");
   });
 
   it("returns nothing when the friendship ends while the decks are read", async () => {
@@ -97,21 +88,12 @@ describe("loadFriendDecks", () => {
 
 describe("loadFriendDecks by the owner's rules", () => {
 
-  it("carries each deck's id with viewerOpen, and reads nothing of the owner's money for it", async () => {
+  it("carries each deck's id, and reads nothing of the owner's money for it", async () => {
     m.loadDeckBuyRows.mockClear();
-    const [deck] = (await loadFriendDecks("user_viewer", "x", true))!;
+    const [deck] = (await loadFriendDecks("user_viewer", "x"))!;
     expect(deck.id).toBe("deck-secret-id");
-    expect(deck.status).toBeNull();
-    expect(deck.toBuy).toBeNull();
     expect(m.loadDeckBuyRows).not.toHaveBeenCalled();
     expect(m.loadFriendDeckPrefs).toHaveBeenCalledWith("user_friend");
-  });
-
-  // Close-out: an id is a press, and `viewerOpen` decides whether one is drawn.
-  it("carries no id without viewerOpen, but still filters by the owner's rules", async () => {
-    m.listDecksWithStats.mockResolvedValue([{ ...ROW, id: "shown", statusPill: "Complete" }, { ...ROW, id: "draft", statusPill: "Draft" }]);
-    const decks = (await loadFriendDecks("user_viewer", "x"))!;
-    expect(decks.map((d) => [d.id, d.status])).toEqual([[null, "Complete"]]);
   });
 
   it("keeps only the decks the owner's rules let friends see", async () => {
@@ -123,11 +105,11 @@ describe("loadFriendDecks by the owner's rules", () => {
       { ...ROW, id: "building", statusPill: "Building" },
       { ...ROW, id: "unresolved", statusPill: "Unresolved" },
     ]);
-    expect((await loadFriendDecks("user_viewer", "x", true))!.map((d) => d.id)).toEqual(["shown", "unresolved"]);
+    expect((await loadFriendDecks("user_viewer", "x"))!.map((d) => d.id)).toEqual(["shown", "unresolved"]);
     m.loadFriendDeckPrefs.mockResolvedValue({ seeDecks: true, seeUnfinished: true });
-    expect((await loadFriendDecks("user_viewer", "x", true))!.map((d) => d.id)).toEqual(["shown", "draft", "new", "building", "unresolved"]);
+    expect((await loadFriendDecks("user_viewer", "x"))!.map((d) => d.id)).toEqual(["shown", "draft", "new", "building", "unresolved"]);
     m.loadFriendDeckPrefs.mockResolvedValue({ seeDecks: false, seeUnfinished: true });
-    expect(await loadFriendDecks("user_viewer", "x", true)).toEqual([]);
+    expect(await loadFriendDecks("user_viewer", "x")).toEqual([]);
   });
 });
 

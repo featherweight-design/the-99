@@ -69,7 +69,7 @@ async function main() {
       ).length;
     }
 
-    const { suggestions } = await loadDeckSuggestions(deck.id, deck.userId, process.env);
+    const { suggestions } = await loadDeckSuggestions(deck.id, deck.userId);
     const unownedFromLoader = suggestions.filter((s) => !s.owned).length;
 
     console.log(

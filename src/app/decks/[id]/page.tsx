@@ -88,7 +88,6 @@ import { isUuid } from "../../../lib/uuid";
 import { requestSwitchEnv } from "../../../lib/switches/request";
 import { SWITCH_FLAGS } from "../../../lib/switches/flags";
 import { TOOL_PARAM, deckToolLanding } from "../../../lib/discovery/tools";
-import { switchBits } from "../../../lib/switches/resolve";
 
 // The two reads below are the builder's expensive half — measured against the
 // largest deck in the database, `loadDeckSuggestions` took 543ms and
@@ -225,10 +224,9 @@ export default async function DeckBuilderPage({
     perf.timed("nearCombos", () => loadNearCombos({ userId, deckId: id, maxPieces: 2, cap: Number.POSITIVE_INFINITY })).catch(() => null),
   );
   const suggestionsRead = early(indexGenRead.then((indexGen) =>
-    // The mix is always counted by label now (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31), so no switch
-    // decides it; `switchBits` stays in the key only until the switch's delete PR.
-    perf.timed("suggestions", () => cacheForUser(userId, [...SUGGESTIONS_KEY, id, indexGen, switchBits(env)], () =>
-      loadDeckSuggestions(id, userId, env),
+    // The mix is always counted by label, so no switch decides it and none rides in the key.
+    perf.timed("suggestions", () => cacheForUser(userId, [...SUGGESTIONS_KEY, id, indexGen], () =>
+      loadDeckSuggestions(id, userId),
     ))));
   // The move-card picker lists every other deck by name, as it always has.
   // The notes read is its own, uncached read, outside the two cached ones above (a write revalidates the

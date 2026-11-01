@@ -175,30 +175,23 @@ describe("loadDiscovery — wiring", () => {
     }
   });
 
-  // LABEL_ROLE_COUNTS retired (Hugh 2026-10-31): the label read is always asked for, whatever the
-  // environment or the reader's env says about the old switch.
-  it("always asks for the label read, even with the old switch off everywhere", async () => {
-    vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "false");
-    try {
-      basisMock.reads = 0;
-      await loadDiscovery("user-1", { sort: "fit" }, { LABEL_ROLE_COUNTS_ENABLED: "false" } as unknown as NodeJS.ProcessEnv);
-      expect(basisMock.reads).toBe(1);
-    } finally {
-      vi.unstubAllEnvs();
-    }
+  // Roles are always counted by label: every list asks for the label read, once.
+  it("asks for the label read once per list", async () => {
+    basisMock.reads = 0;
+    await loadDiscovery("user-1", { sort: "fit" }, ENV_VIEW);
+    expect(basisMock.reads).toBe(1);
   });
 
   // Admin PR 6d-2 (Copilot round 5): the list reports the basis it was COUNTED by, which is not the
   // requested one when the label read failed. The page hands the view this basis, and the payload
   // refuses to file a fallback under the labels key.
   it("reports the basis the list was counted by, and a fallback as one", async () => {
-    const on = { LABEL_ROLE_COUNTS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
     try {
       basisMock.value = { basis: "classifier", roleSets: undefined, fellBack: true };
-      const fell = await loadDiscoveryWithIds("user-1", { sort: "fit" }, on);
+      const fell = await loadDiscoveryWithIds("user-1", { sort: "fit" }, ENV_VIEW);
       expect([fell.basis, fell.fellBack]).toEqual(["classifier", true]);
       basisMock.value = { basis: "labels", roleSets: new Map(), fellBack: false };
-      const read = await loadDiscoveryWithIds("user-1", { sort: "fit" }, on);
+      const read = await loadDiscoveryWithIds("user-1", { sort: "fit" }, ENV_VIEW);
       expect([read.basis, read.fellBack]).toEqual(["labels", false]);
     } finally {
       basisMock.value = { basis: "classifier", roleSets: undefined, fellBack: false };

@@ -29,7 +29,8 @@ vi.mock("../../lib/social/your-requests", () => ({ loadAnsweredRequest: m.loadAn
 
 import { answerSpareAction, askInsteadAction, askSpareAction, closeSpareAction, openAnswerAction } from "./spare-actions";
 
-const ENV = { SOCIAL_FRIENDS_ENABLED: "true" };
+// The reader's resolved switches, a sentinel compared by identity: the actions hand it on, and read no switch of their own.
+const ENV = { SENTINEL: "reader" };
 const FRIEND = "22222222-2222-4222-8222-222222222222";
 const CARD = "33333333-3333-4333-8333-333333333333";
 const REQ = "44444444-4444-4444-8444-444444444444";

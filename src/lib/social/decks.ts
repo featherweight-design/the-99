@@ -1,27 +1,20 @@
 /**
  * A friend's decks, for the friend page's Decks tab (menu and Home plan, PR 7; handoff G4), and one friend's deck,
- * read-only, for its own page (friend decks handoff, G1). On the tab a friend sees the name, the commander, the status
- * and the count of each deck: no card, no note, no folder, no bracket, no play date. The tab carries each deck's id, for
- * the press to its page, and both reads keep only the decks the owner lets friends see (`friendCanSeeDeck`,
+ * read-only, for its own page (friend decks handoff, G1). On the tab a friend sees the name, the commander and the count
+ * of each deck: no status, no money, no card, no note, no folder, no bracket, no play date. The tab carries each deck's
+ * id, for the press to its page, and both reads keep only the decks the owner lets friends see (`friendCanSeeDeck`,
  * `deck-visibility.ts`).
  *
  * The grant is the viewer's own friendship row, read in `resolveFriend`'s statement: a public id that is not
  * the viewer's current friend resolves to nothing, whoever it names, and nothing is read for it. The decks are
- * then read (filtered by the FRIEND's own deck rules) by the same
- * `listDecksWithStats` the friend's own `/decks` draws its pills from, so the status a friend sees on their
- * own tile is the status the viewer sees here. It derives from the friend's collection, which a count of
- * spares already shows more of (product call 1 of the plan).
- *
- * The figure beside `To buy` is the copies the friend's Shopping would buy for that deck (`loadDeckBuyRows`, the
- * roll-up their own deck tile draws), never `toBuyCount`: that one counts basics and knows nothing of seniority.
+ * then read (filtered by the FRIEND's own deck rules) by the same `listDecksWithStats` the friend's own `/decks`
+ * draws from, so the count a friend sees on their own tile is the count the viewer sees here.
  *
  * The reads after the grant run on their own snapshots, so the grant is read AGAIN after them: a friendship
  * removed while they ran returns nothing rather than what was read past its end.
  */
-import { loadDeckBuyRows } from "../decks/availability-query";
 import { deckBodySize } from "../decks/deck-size";
 import { deckIdentity } from "../decks/format";
-import type { StatusPill } from "../decks/status";
 import { and, eq, inArray } from "drizzle-orm";
 import { db } from "../../db";
 import { collectionItems, decks, printings } from "../../db/schema";
@@ -36,7 +29,7 @@ import { readReaderDecks } from "../precons/list-read";
 import { isBasicType } from "../decks/basic-type";
 import { sharedWith } from "../precons/shared";
 
-/** What both kinds of friend tile draw. */
+/** What a friend's deck tile draws. */
 type FriendDeckBase = {
   /** The owner's deck name: another reader's text. */
   name: ThirdPartyName;
@@ -58,52 +51,29 @@ type FriendDeckBase = {
  * reads the owner's Shopping inside its status work (`canFlip`), which the filter needs; only the tab's own per-deck
  * to-buy read is skipped.
  */
-export type OpenFriendDeck = FriendDeckBase & { id: string; status: null; toBuy: null };
-
-/** The tile as it shipped, while `viewerOpen` is false: no press, the status and the to-buy figure. */
-export type ShippedFriendDeck = FriendDeckBase & {
-  id: null;
-  status: StatusPill;
-  /** Copies the friend's Shopping would buy for this deck; the tile names it beside `To buy` only. */
-  toBuy: number;
-};
-
-/** Every tile of one read is the same kind: `viewerOpen` decides it once, for the whole tab. */
-export type FriendDeck = OpenFriendDeck | ShippedFriendDeck;
+export type FriendDeck = FriendDeckBase & { id: string };
 
 /**
  * The friend's decks, newest first, or null when `publicId` is not the viewer's current friend. The OWNER's rules decide
- * which decks pass; the tiles are the open kind only while `viewerOpen` is on (every caller passes true since
- * `SOCIAL_FRIENDS_ENABLED` retired), since a tile with no press under the open tab's "Open one" would promise one that
- * is not there (close-out).
+ * which decks pass, and every tile carries its deck's id for the press to its page. The tile draws no money, so no to-buy
+ * read runs (the shared stats read still runs its own).
  */
-export async function loadFriendDecks(viewerId: string, publicId: unknown, viewerOpen = false): Promise<FriendDeck[] | null> {
+export async function loadFriendDecks(viewerId: string, publicId: unknown): Promise<FriendDeck[] | null> {
   const friendId = await resolveFriend(viewerId, publicId);
   if (friendId === null) return null;
-  const open = viewerOpen;
-  const [rows, buys] = await Promise.all([
-    visibleDecks(friendId),
-    // The open tile draws no money, so the tab's own to-buy read is skipped (the shared stats read still runs its own).
-    open ? Promise.resolve([]) : loadDeckBuyRows(friendId),
-  ]);
+  const rows = await visibleDecks(friendId);
   if ((await resolveFriend(viewerId, publicId)) !== friendId) return null;
-  const toBuy = new Map<string, number>();
-  for (const b of buys) toBuy.set(b.deckId, (toBuy.get(b.deckId) ?? 0) + b.quantity);
-  return rows.map((d): FriendDeck => {
-    const base: FriendDeckBase = {
-      name: named(d.name),
-      commanderName: d.commanderName,
-      partnerName: d.partnerName,
-      // The pair's whole identity, as the owner's tile and the deck page draw it.
-      colorIdentity: deckIdentity(d.commanderColorIdentity, d.partnerColorIdentity),
-      artCropUri: d.commanderArtCropUri,
-      built: d.built,
-      bodySize: deckBodySize(d.partnerName !== null),
-    };
-    return open
-      ? { ...base, id: d.id, status: null, toBuy: null }
-      : { ...base, id: null, status: d.statusPill, toBuy: toBuy.get(d.id) ?? 0 };
-  });
+  return rows.map((d): FriendDeck => ({
+    id: d.id,
+    name: named(d.name),
+    commanderName: d.commanderName,
+    partnerName: d.partnerName,
+    // The pair's whole identity, as the owner's tile and the deck page draw it.
+    colorIdentity: deckIdentity(d.commanderColorIdentity, d.partnerColorIdentity),
+    artCropUri: d.commanderArtCropUri,
+    built: d.built,
+    bodySize: deckBodySize(d.partnerName !== null),
+  }));
 }
 
 /**

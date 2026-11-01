@@ -20,6 +20,7 @@ vi.mock("../../../lib/invites/spend", async (orig) => ({
 vi.mock("../../../lib/flyer/spend", () => ({ spendFlyerOnSignUp: flyer }));
 
 import { POST } from "./route";
+import { SWITCH_NAMES } from "../../../lib/switches/registry";
 
 const req = () => new NextRequest("https://the99.test/api/clerk-webhook", { method: "POST", body: "{}" });
 const report = { social: { podsLeft: 0, podsHandedOn: 0, podsDeleted: 0, friendLinks: 2 }, rows: { decks: 3 }, stamp: 1 };
@@ -231,12 +232,16 @@ describe("POST /api/clerk-webhook", () => {
 
     it("reads no feature switch: an invitation already accepted is honored", async () => {
       verify.mockResolvedValue(created({ inviteReservation: RES }));
-      process.env.SOCIAL_FRIENDS_ENABLED = "off";
+      // Every registry switch off, in the environment and in the reader's resolved env, so a switch read added to
+      // the path cannot hide behind one left on.
+      const off = Object.fromEntries(SWITCH_NAMES.map((name) => [name, "off"]));
+      for (const name of SWITCH_NAMES) vi.stubEnv(name, "off");
+      switchEnv.mockResolvedValue(off);
       try {
         expect((await POST(req())).status).toBe(200);
         expect(spend).toHaveBeenCalledTimes(1);
       } finally {
-        delete process.env.SOCIAL_FRIENDS_ENABLED;
+        vi.unstubAllEnvs();
       }
     });
   });

@@ -1,23 +1,17 @@
-// A friend's Decks tab (menu and Home PR 7; handoff G4; friend decks handoff call 6). With `SOCIAL_FRIENDS_ENABLED` on for
-// the reader, each tile is the owner's /decks tile read-only: the same art band and identity block (`DeckTileArt`), no ⋯,
-// no status, the card count alone, and the whole tile a press to the deck's own page when the owner's read carried its
-// id. Off, the tab is as it shipped: view-only tiles with the status and the count, and no press.
+// A friend's Decks tab (menu and Home PR 7; handoff G4; friend decks handoff call 6). Each tile is the owner's /decks
+// tile read-only: the same art band and identity block (`DeckTileArt`), no ⋯, no status, the card count alone, and the
+// whole tile a press to the deck's own page.
 
 import Link from "next/link";
-import type { CSSProperties } from "react";
-import type { FriendDeck, OpenFriendDeck, ShippedFriendDeck } from "../../lib/social/decks";
-import { PersonName, PersonText, personAttrs, type ThirdPartyName } from "../../lib/person-name";
+import type { FriendDeck } from "../../lib/social/decks";
+import { PersonText, personAttrs, type ThirdPartyName } from "../../lib/person-name";
 import { socialCopy } from "../../lib/copy/social";
 import { commanderRepeats } from "../../lib/decks/commander-repeats";
 import { colorLabel } from "../../lib/decks/format";
-import { statusPillStyle } from "../../lib/decks/status-style";
-import { StatusPillBadge } from "../decks/status-pill";
 import { DeckTileArt } from "../decks/deck-tile-art";
 import { PendingReporter } from "../shell/pending-reporter";
-import type { StatusPill } from "../../lib/decks/status";
 
 const p = socialCopy.friendPage;
-const PILL_IN_FLOW = "inline-flex h-[19px] items-center self-start rounded-[5px] px-[7px] font-mono text-[10px]";
 
 export function FriendDecksTab({ name, decks, publicId }: {
   name: ThirdPartyName;
@@ -33,55 +27,15 @@ export function FriendDecksTab({ name, decks, publicId }: {
       </div>
     );
   }
-  const opened = decks.filter((d): d is OpenFriendDeck => d.id !== null);
-  if (opened.length === decks.length) {
-    return (
-      <>
-        <p className="m-0 mt-[12px] font-mono text-[11px] text-[color:var(--fg-faint)]">{p.decks.lineOpen}</p>
-        <ul className="m-0 mt-[12px] grid list-none grid-cols-1 gap-[12px] p-0 md:grid-cols-3 md:gap-[14px]">
-          {opened.map((d, i) => (
-            <li key={d.id} data-testid="friend-deck" className="sm:h-full">
-              <FriendDeckTile deck={d} href={publicId ? `/friends/${publicId}/decks/${d.id}` : null} deferArt={i >= 4} />
-            </li>
-          ))}
-        </ul>
-      </>
-    );
-  }
   return (
     <>
-      <p className="m-0 mt-[12px] font-mono text-[11px] text-[color:var(--fg-faint)]"><PersonText text={p.decks.line(name)} /></p>
-      <ul className="m-0 mt-[12px] grid list-none grid-cols-1 gap-[12px] p-0 md:grid-cols-4 md:gap-[16px]">
-        {decks.filter((d): d is ShippedFriendDeck => d.id === null).map((d, i) => {
-          const fill = Math.min(100, Math.round((d.built / d.bodySize) * 100));
-          const pill = friendPillStyle(d.status);
-          const color = pill.color as string;
-          return (
-            <li key={i} data-testid="friend-deck" className="overflow-hidden rounded-[12px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-inset)]">
-              <div className="relative h-[120px]" style={{ background: "var(--surface-sunken)" }}>
-                {d.artCropUri && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={d.artCropUri} alt="" loading={i < 4 ? "eager" : "lazy"} className="block h-full w-full object-cover" />
-                )}
-                <span aria-hidden className="absolute inset-0" style={{ background: "linear-gradient(180deg, transparent 40%, color-mix(in oklab, var(--bg) 90%, transparent))" }} />
-                <b className="absolute bottom-[8px] left-[12px] right-[12px] z-[2] truncate font-display text-[14px] font-bold text-[color:var(--fg)]"><PersonName n={d.name} /></b>
-              </div>
-              <div className="flex flex-col gap-[8px] px-[12px] pb-[12px] pt-[10px]">
-                <span className="truncate font-mono text-[10.5px] text-[color:var(--fg-body)]">
-                  {d.commanderName}
-                  {d.partnerName ? ` + ${d.partnerName}` : ""}
-                </span>
-                <StatusPillBadge status={d.status} className={PILL_IN_FLOW} style={pill} />
-                <span className="flex items-center gap-[10px]">
-                  <span className="h-[3px] flex-1 overflow-hidden rounded-[2px] bg-[color:var(--border-strong)]">
-                    <i className="block h-full" style={{ width: `${fill}%`, background: color }} />
-                  </span>
-                  <small className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{p.decks.figure(d.built, d.bodySize, d.status === "To buy" ? d.toBuy : 0)}</small>
-                </span>
-              </div>
-            </li>
-          );
-        })}
+      <p className="m-0 mt-[12px] font-mono text-[11px] text-[color:var(--fg-faint)]">{p.decks.lineOpen}</p>
+      <ul className="m-0 mt-[12px] grid list-none grid-cols-1 gap-[12px] p-0 md:grid-cols-3 md:gap-[14px]">
+        {decks.map((d, i) => (
+          <li key={d.id} data-testid="friend-deck" className="sm:h-full">
+            <FriendDeckTile deck={d} href={publicId ? `/friends/${publicId}/decks/${d.id}` : null} deferArt={i >= 4} />
+          </li>
+        ))}
       </ul>
     </>
   );
@@ -92,7 +46,7 @@ export function FriendDecksTab({ name, decks, publicId }: {
  * draws the commander gradient there, never the full card image: G5), the card count alone below, and the whole tile a
  * press to the deck's page. The identity block is presentation; the press names the same things in order.
  */
-function FriendDeckTile({ deck, href, deferArt }: { deck: OpenFriendDeck; href: string | null; deferArt: boolean }) {
+function FriendDeckTile({ deck, href, deferArt }: { deck: FriendDeck; href: string | null; deferArt: boolean }) {
   const colour = colorLabel(deck.colorIdentity);
   const hidden = commanderRepeats(deck.name, deck.commanderName, deck.partnerName);
   const commanderLine = deck.partnerName ? `${deck.commanderName} + ${deck.partnerName}` : deck.commanderName;
@@ -132,22 +86,4 @@ function FriendDeckTile({ deck, href, deferArt }: { deck: OpenFriendDeck; href: 
       )}
     </article>
   );
-}
-
-/**
- * The board's pill on a friend's deck tile (`Friends` 1e), on this surface only, for the three statuses the board
- * draws (Complete, To buy, Building): no hairline edge, and Building in
- * `--fg-body` on its own 18% plate. Every other value is the app's own (`statusPillStyle`), which already draws what
- * the board draws (Complete in `--success`, To buy in `--accent`, each on its 18% plate); the app-wide pills are
- * unchanged (d9, 2026-10-22).
- */
-const BOARD_DRAWN: ReadonlySet<StatusPill> = new Set(["Complete", "To buy", "Building"]);
-
-export function friendPillStyle(status: StatusPill): CSSProperties {
-  const base = statusPillStyle(status);
-  const building = status === "Building"
-    ? { color: "var(--fg-body)", background: "color-mix(in srgb, var(--fg-body) 18%, var(--bg))" }
-    : {};
-  // Only the statuses the board draws lose the edge: Over's red and Draft's dashed edge carry their status in it.
-  return BOARD_DRAWN.has(status) ? { ...base, ...building, border: "none" } : base;
 }

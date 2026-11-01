@@ -16,7 +16,6 @@ import { loadBracketFlags } from "../bracket/flags-read";
 import { EXTRA_TURN_DETECTION, MLD_DETECTION } from "../bracket/oracle-rules";
 import { classifySearches, tutorReaches } from "../bracket/tutor-targets";
 import { cacheForUser } from "../cache/user-lists";
-import { switchBits } from "../switches/resolve";
 import { canonicalPair } from "../edhrec/pair";
 import { COMBO_DETECTION, isInfiniteOrGameEnding } from "../spellbook/combo-features";
 import { countCondition, identityCondition } from "../staples/condition";
@@ -284,8 +283,11 @@ function compositionFrom(row: CompositionRow | undefined) {
  * ceiling expires. The head already holds `(oracleId, quantity)`, so this joins `cards` by
  * those ids.
  *
- * `_env` is unread since roles are always counted by label (LABEL_ROLE_COUNTS retired, Hugh
- * 2026-10-31); kept so every caller hands the reader's switches, which the cached build keys on.
+ * `_env` is unread: the build reads no switch (roles are always counted by label since
+ * LABEL_ROLE_COUNTS retired, Hugh 2026-10-31), which is why the `deck-profile` cache key
+ * (`cachedDeckProfile`, `profileOfHead`) carries no switch bits. If a switch read is ever added
+ * below, the key must take `switchBits(env)` back, or a build under one reader's switches is
+ * served to another's. `profile-key.test.ts` pins that this body reads no env.
  */
 export async function loadDeckProfileFromHead(head: ProfileHead, _env: NodeJS.ProcessEnv): Promise<DeckProfile> {
   const commanderIds = [
@@ -607,9 +609,9 @@ export async function cachedDeckProfile(
   const head = await loadProfileHead(deckId, userId);
   if (!head) return null;
   const fingerprint = profileFingerprint(head);
-  // The resolved switches ride in the key: the role basis is a per-reader switch, and a profile built
-  // on one basis must never be served to a reader on the other (`profileOfHead` files under the same key).
-  return cacheForUser(userId, ["deck-profile", deckId, fingerprint, switchBits(env)], () =>
+  // No switch rides in the key: the build reads none (roles are always counted by label), so every reader
+  // of this deck shares one entry. `profileOfHead` files under the same key.
+  return cacheForUser(userId, ["deck-profile", deckId, fingerprint], () =>
     loadDeckProfileFromHead(head, env),
   );
 }

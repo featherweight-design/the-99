@@ -41,9 +41,6 @@ export async function loadManaHelp(
   deck: DeckDetail,
   userId: string,
   color: BalanceColor,
-  /** The reader's resolved switches (`requestSwitchEnv`). Unread since the mix's targets are always the
-   *  label ones (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31). An eval script passes `process.env` itself. */
-  _env: NodeJS.ProcessEnv,
 ): Promise<ManaHelp | null> {
   const inputs = await loadManaInputs(deck);
   if (!inputs) return null;

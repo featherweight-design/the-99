@@ -28,7 +28,7 @@ export default async function FriendPageLayout({
     loadFriend(userId, publicId),
     friendSpareList(userId, publicId, true),
     friendWishlist(userId, publicId),
-    friendDecks(userId, publicId, true),
+    friendDecks(userId, publicId),
   ]);
   if (!friend) notFound();
   return (
