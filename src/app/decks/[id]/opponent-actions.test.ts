@@ -2,17 +2,21 @@
 // A component test mocks these away, so a read that skipped the session would pass everywhere else.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { requireUserId, searchOpponentCommanders, listFriendDecks, listPodSeats } = vi.hoisted(() => ({
+const { requireUserId, searchOpponentCommanders, listFriendDecks, listPodSeats, listPickerFriends, listPickerPods } = vi.hoisted(() => ({
   requireUserId: vi.fn(),
   searchOpponentCommanders: vi.fn(),
   listFriendDecks: vi.fn(),
   listPodSeats: vi.fn(),
+  listPickerFriends: vi.fn(),
+  listPickerPods: vi.fn(),
 }));
 vi.mock("../../../lib/auth", () => ({ requireUserId }));
 vi.mock("../../../lib/decks/opponent-commanders", () => ({ searchOpponentCommanders }));
-vi.mock("../../../lib/social/games", () => ({ listFriendDecks, listPodSeats }));
+vi.mock("../../../lib/social/games", () => ({ listFriendDecks, listPodSeats, listPickerFriends, listPickerPods }));
 
-import { listFriendDecksAction, listPodSeatsAction, searchOpponentCommandersAction } from "./opponent-actions";
+import {
+  listFriendDecksAction, listPickerFriendsAction, listPickerPodsAction, listPodSeatsAction, searchOpponentCommandersAction,
+} from "./opponent-actions";
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -20,6 +24,8 @@ beforeEach(() => {
   searchOpponentCommanders.mockResolvedValue([{ oracleId: "y" }]);
   listFriendDecks.mockResolvedValue([{ deckId: "d" }]);
   listPodSeats.mockResolvedValue([{ publicId: "p" }]);
+  listPickerFriends.mockResolvedValue([{ publicId: "f", deckCount: 2 }]);
+  listPickerPods.mockResolvedValue([{ id: "pod", name: "Thursday", size: 4 }]);
 });
 
 describe("the opponent picker's actions", () => {
@@ -29,6 +35,10 @@ describe("the opponent picker's actions", () => {
     expect(await listPodSeatsAction("p")).toEqual([{ publicId: "p" }]);
     expect(listFriendDecks).toHaveBeenCalledWith("user_1", "f");
     expect(listPodSeats).toHaveBeenCalledWith("user_1", "p");
+    expect(await listPickerFriendsAction()).toEqual([{ publicId: "f", deckCount: 2 }]);
+    expect(await listPickerPodsAction()).toEqual([{ id: "pod", name: "Thursday", size: 4 }]);
+    expect(listPickerFriends).toHaveBeenCalledWith("user_1");
+    expect(listPickerPods).toHaveBeenCalledWith("user_1");
   });
 
   it("read nothing without a signed-in reader", async () => {
@@ -36,8 +46,12 @@ describe("the opponent picker's actions", () => {
     await expect(searchOpponentCommandersAction("yur")).rejects.toThrow();
     await expect(listFriendDecksAction("f")).rejects.toThrow();
     await expect(listPodSeatsAction("p")).rejects.toThrow();
+    await expect(listPickerFriendsAction()).rejects.toThrow();
+    await expect(listPickerPodsAction()).rejects.toThrow();
     expect(searchOpponentCommanders).not.toHaveBeenCalled();
     expect(listFriendDecks).not.toHaveBeenCalled();
     expect(listPodSeats).not.toHaveBeenCalled();
+    expect(listPickerFriends).not.toHaveBeenCalled();
+    expect(listPickerPods).not.toHaveBeenCalled();
   });
 });

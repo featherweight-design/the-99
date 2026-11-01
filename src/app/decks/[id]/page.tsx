@@ -254,7 +254,7 @@ export default async function DeckBuilderPage({
   // The game log's seats from a Rule 0 table (plan §PR 8), when `Log this game` brought the reader here. Read per
   // request and outside every cached payload: it is one table's seating right now. Any mismatch (not seated, the
   // table closed, another deck in the seat) or a failed read is null, and the Games tab opens as it always has.
-  const prefillTable = logPrefillTable(query, true);
+  const prefillTable = logPrefillTable(query);
   const prefillRead = prefillTable === null
     ? null
     : early(perf.timed("tablePrefill", () => tablePrefill(userId, prefillTable, id)).catch(() => null));

@@ -36,17 +36,19 @@ export default async function AllDecksShoppingPage({
   // `?view=friend` is By friend (spare requests PR 3c). Any other value is By card.
   const friendView = params.view === "friend";
   const initialView = params.view === "deck" || deck ? "deck" : friendView ? "friend" : "card";
+  // Whether the reader has a friend decides By friend's empty block (v2 Empty-One B or C) and whether the spares read
+  // is made at all (addendum R3 §4: no friend, no spare key, column, clause or toast). Read per request beside the cart
+  // (`PER_REQUEST_READS`), and started before it so the two run together, so the cached payload carries no friend data
+  // and its key no friend stamp. One row at most, on the viewer's own link rows. A failed read counts as having a
+  // friend: the page never tells a reader they have none on a guess, and the spares route answers under its own grant.
+  const friendsRead = hasFriend(userId).catch(() => true);
   // Cached per reader on the database's stamp, as `/decks` is, so a write anywhere retires it.
   // A cart whose prices could not be read is served and never stored: the next visit reads again.
   const cart = await cachePageForUser(userId, "cart", [], async () => {
     const value = await loadCart(userId);
     return { value, store: value.priced };
   }, env);
-  // Whether the reader has a friend decides By friend's empty block (v2 Empty-One B or C) and whether the spares read
-  // is made at all (addendum R3 §4: no friend, no spare key, column, clause or toast). Read per request beside the cart
-  // (`PER_REQUEST_READS`), so the cached payload carries no friend data and its key no friend stamp. One row at most,
-  // on the viewer's own link rows.
-  const friends = await hasFriend(userId);
+  const friends = await friendsRead;
   // The provenance line is built here, once, as PriceStrip's caller builds it: the locale and the
   // clock are the server's, so the client never re-derives a date that could hydrate differently.
   const newest = cart.newestAsOf ? new Date(cart.newestAsOf) : null;

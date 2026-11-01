@@ -8,7 +8,7 @@ vi.mock("../cards/opening-printing", () => ({ loadOpeningArt: (ids: readonly str
 
 vi.mock("./catalog-art", () => ({ loadCatalogArt: async (ids: readonly string[]) => new Map(ids.filter((i) => i === "c").map((i) => [i, "catalog.jpg"])) }));
 
-const ON = { SOCIAL_FRIENDS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const ENV = {} as NodeJS.ProcessEnv;
 const game = (id: string): DeckGame => ({
   id, result: "loss", podSize: 4, playedAt: new Date("2026-10-01"), versionNumber: null, note: null, worked: [], hurt: [],
 });
@@ -18,22 +18,15 @@ const seat: GameOpponent = {
 };
 
 describe("loadDeckOpponents", () => {
-  it("reads nothing and answers null while friends are off, whatever the retired opponents switch says", async () => {
-    const read = vi.fn();
-    expect(await loadDeckOpponents("d", "u", [game("g1")], {} as NodeJS.ProcessEnv, read)).toBeNull();
-    expect(await loadDeckOpponents("d", "u", [game("g1")], { SOCIAL_GAMES_ENABLED: "true" } as unknown as NodeJS.ProcessEnv, read)).toBeNull();
-    expect(read).not.toHaveBeenCalled();
-  });
-
   it("reads nothing for a deck with no games", async () => {
     const read = vi.fn();
-    expect(await loadDeckOpponents("d", "u", [], ON, read)).toBeNull();
+    expect(await loadDeckOpponents("d", "u", [], ENV, read)).toBeNull();
     expect(read).not.toHaveBeenCalled();
   });
 
   it("returns the seats and the matchups drawn from them", async () => {
     const read = vi.fn().mockResolvedValue(new Map([["g1", [seat]]]));
-    const out = await loadDeckOpponents("d", "u", [game("g1"), game("g2")], ON, read);
+    const out = await loadDeckOpponents("d", "u", [game("g1"), game("g2")], ENV, read);
     expect(read).toHaveBeenCalledWith("d", "u");
     // The commander arrives dressed with the art the catalog opens it on.
     expect(out?.opponents.get("g1")).toEqual([{ ...seat, commander: { ...seat.commander, imageUri: "y.jpg" } }]);
@@ -43,7 +36,7 @@ describe("loadDeckOpponents", () => {
   it("degrades a failed read to null and logs it, never throwing into the deck page", async () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
     const read = vi.fn().mockRejectedValue(new Error("neon is down"));
-    await expect(loadDeckOpponents("d", "u", [game("g1")], ON, read)).resolves.toBeNull();
+    await expect(loadDeckOpponents("d", "u", [game("g1")], ENV, read)).resolves.toBeNull();
     expect(error).toHaveBeenCalledTimes(1);
     error.mockRestore();
   });
@@ -52,22 +45,22 @@ describe("loadDeckOpponents", () => {
 describe("the art and the wire", () => {
   it("falls back to the catalog's own image for a commander the opening printing has none for", async () => {
     const read = vi.fn().mockResolvedValue(new Map([["g1", [{ ...seat, commander: { oracleId: "c", name: "Cee" } }]]]));
-    const out = await loadDeckOpponents("d", "u", [game("g1")], ON, read);
+    const out = await loadDeckOpponents("d", "u", [game("g1")], ENV, read);
     expect(out?.opponents.get("g1")?.[0].commander?.imageUri).toBe("catalog.jpg");
   });
 
   it("gives a commander the catalog has no art for a null image, and a failed art read costs only the art", async () => {
     const read = vi.fn().mockResolvedValue(new Map([["g1", [{ ...seat, commander: { oracleId: "z", name: "Zed" } }]]]));
-    const none = await loadDeckOpponents("d", "u", [game("g1")], ON, read);
+    const none = await loadDeckOpponents("d", "u", [game("g1")], ENV, read);
     expect(none?.opponents.get("g1")?.[0].commander).toEqual({ oracleId: "z", name: "Zed", imageUri: null });
     loadOpeningArt.mockRejectedValueOnce(new Error("art is down"));
-    const failed = await loadDeckOpponents("d", "u", [game("g1")], ON, vi.fn().mockResolvedValue(new Map([["g1", [seat]]])));
+    const failed = await loadDeckOpponents("d", "u", [game("g1")], ENV, vi.fn().mockResolvedValue(new Map([["g1", [seat]]])));
     expect(failed?.opponents.get("g1")?.[0].commander?.imageUri).toBeNull();
     expect(failed?.matchups.recorded).toBe(1);
   });
 
   it("sends the seats as a plain record", async () => {
-    const out = await loadDeckOpponents("d", "u", [game("g1")], ON, vi.fn().mockResolvedValue(new Map([["g1", [seat]]])));
+    const out = await loadDeckOpponents("d", "u", [game("g1")], ENV, vi.fn().mockResolvedValue(new Map([["g1", [seat]]])));
     const wire = opponentsWire(out!);
     expect(Object.keys(wire.opponents)).toEqual(["g1"]);
     expect(JSON.parse(JSON.stringify(wire)).matchups.recorded).toBe(1);

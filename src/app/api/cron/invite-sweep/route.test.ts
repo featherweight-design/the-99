@@ -39,10 +39,15 @@ describe("GET /api/cron/invite-sweep", () => {
     expect(sweep).not.toHaveBeenCalled();
   });
 
-  it("sweeps on the cron's bearer token and answers its counts", async () => {
-    const res = await call("Bearer s3cret");
-    expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ returned: 2, revoked: 1, reconciled: 0, kept: 0, flyer: { released: 3, kept: 1 }, launchList: { due: false, deleted: 0 }, anonReports: { deleted: 0 } });
+  it("sweeps on the cron's bearer token, reads no switch, and answers its counts", async () => {
+    process.env.SOCIAL_FRIENDS_ENABLED = "off";
+    try {
+      const res = await call("Bearer s3cret");
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({ returned: 2, revoked: 1, reconciled: 0, kept: 0, flyer: { released: 3, kept: 1 }, launchList: { due: false, deleted: 0 }, anonReports: { deleted: 0 } });
+    } finally {
+      delete process.env.SOCIAL_FRIENDS_ENABLED;
+    }
   });
 
   it("answers the launch-list purge's report beside the others", async () => {
