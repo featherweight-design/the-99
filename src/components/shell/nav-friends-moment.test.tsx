@@ -17,7 +17,8 @@ const calls = vi.hoisted(() => [] as Call[]);
 vi.mock("../moments/moments-provider", () => ({
   useMomentAnchor: (id: string, o: { eligible: boolean; copy: { line: string } }) => {
     calls.push({ id, eligible: o.eligible, line: o.copy.line });
-    return { ref: () => {} };
+    // Marks the element an eligible anchor is spread on, so the test can read where the moment sits in the DOM.
+    return { ref: () => {}, ...(o.eligible ? { "data-moment": id } : {}) };
   },
 }));
 
@@ -37,6 +38,12 @@ describe("M11 with Friends in the bar", () => {
     expect(lines).toEqual(new Set([momentsCopy.friendsAfterGameBar.line]));
     // One eligible anchor per slot: the rail's and the tab bar's (a render may run each hook more than once).
     expect(eligibleAfterGame().length).toBeGreaterThanOrEqual(2);
+    // In the DOM: exactly the two Friends slots carry it, and neither account trigger (rail and header) does.
+    const anchored = [...document.querySelectorAll('[data-moment="friends-after-game"]')];
+    expect(anchored.map((el) => el.getAttribute("href"))).toEqual(["/friends", "/friends"]);
+    const triggers = document.querySelectorAll("[data-account-trigger]");
+    expect(triggers).toHaveLength(2);
+    for (const t of triggers) expect(t).not.toHaveAttribute("data-moment");
   });
 
   it("is eligible nowhere when the reader's condition does not hold", () => {

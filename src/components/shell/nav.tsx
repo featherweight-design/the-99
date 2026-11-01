@@ -653,17 +653,13 @@ function NavBadge({ count, rail }: { count: number; rail: boolean }) {
 // No `title`: the pointer rail draws its own tag (desktop nav labels R2, audit E3), and a native
 // tooltip would show beside it.
 function NavSlot({ href, name, active, pip, className, handlers, moment = false, badge = 0, children }: NavSlotProps) {
-  // M12 (discovery R1): Discover carries Help me choose, beside the rail's slot and above the tab bar's. From R3 on
-  // its own anchor is the door in /commanders' guided banner (E2), so this slot is a FALLBACK: it counts only while
-  // that door is not drawn (a reader with cards and no deck whose collection leads no commander, so no banner).
-  // M11 (Friends after a game) sits on the Friends slot once Friends is in the bar, as its own anchor (menu and Home
-  // audit, erratum 5). A slot's href never changes, so each slot asks for one moment for its whole life.
-  const friendsSlot = href === "/friends";
-  const slotMoment = useMomentAnchor(friendsSlot ? "friends-after-game" : "help-me-choose", {
+  // M11 (Friends after a game) sits on the Friends slot, as its own anchor (menu and Home audit, erratum 5), beside the
+  // rail's slot and above the tab bar's. M12 (Help me choose) is not the bar's: its anchor is the door in /commanders'
+  // guided banner (discovery R3 E2). Every slot calls the hook; only the Friends slot is ever eligible.
+  const slotMoment = useMomentAnchor("friends-after-game", {
     eligible: moment,
-    copy: friendsSlot ? momentsCopy.friendsAfterGameBar : momentsCopy.helpMeChoose,
+    copy: momentsCopy.friendsAfterGameBar,
     place: pip === "rail" ? "right" : "below",
-    fallback: !friendsSlot,
   });
   const counted = badge > 0;
   // The rail names its slot by `aria-label`, which hides any text inside, so the count joins the name there; the tab
@@ -745,15 +741,9 @@ function slotBadge(badges: NavBadges | undefined, href: NavHref): number {
   return href === "/" ? (badges?.home ?? 0) : href === "/friends" ? (badges?.friends ?? 0) + (badges?.friendsWaiting ?? 0) : 0;
 }
 
-/** The slot that carries a moment: M12 on Discover on the `/commanders` list, or M11 on Friends. */
-function momentOnSlot(helpMoment: boolean, friendsMoment: boolean, pathname: string, href: string): boolean {
-  return href === "/friends" ? friendsMoment : helpOnSlot(helpMoment, pathname, href);
-}
-
-/** M12 (discovery R1): the reader has no deck, so on the `/commanders` list Discover carries Help me choose. */
-function helpOnSlot(helpMoment: boolean, pathname: string, href: string): boolean {
-  // The list itself, never a commander's own page under it: the tip is about where to start.
-  return helpMoment && href === "/discover" && pathname === "/commanders";
+/** The one slot that carries a moment: M11 on Friends. */
+function momentOnSlot(friendsMoment: boolean, href: string): boolean {
+  return href === "/friends" && friendsMoment;
 }
 
 export function NavRail({
@@ -764,9 +754,8 @@ export function NavRail({
   adminEnv,
   credits,
   friendsMoment,
-  helpMoment = false,
   badges,
-}: { locked: boolean; openLock?: OpenLock; theme: ThemeKey; helpMoment?: boolean; badges?: NavBadges } & AdminDoorProps) {
+}: { locked: boolean; openLock?: OpenLock; theme: ThemeKey; badges?: NavBadges } & AdminDoorProps) {
   const pathname = usePathname();
   const shown = useSeenBadges(badges, pathname);
   const items = ITEMS;
@@ -838,7 +827,7 @@ export function NavRail({
               active={active}
               pip="rail"
               handlers={bind(href, label)}
-              moment={momentOnSlot(helpMoment, !!friendsMoment, pathname, href)}
+              moment={momentOnSlot(!!friendsMoment, href)}
               badge={slotBadge(shown, href)}
               // No `transition-colors`: the pending fill below must clear the frame the new page
               // lands, not fade out over it (audit correction 4).
@@ -885,13 +874,11 @@ export function NavRail({
 export function TabBar({
   locked,
   openLock = null,
-  helpMoment = false,
   friendsMoment = false,
   badges,
 }: {
   locked: boolean;
   openLock?: OpenLock;
-  helpMoment?: boolean;
   /** M11's condition, resolved by the shell; drawn on the Friends slot. */
   friendsMoment?: boolean;
   badges?: NavBadges;
@@ -912,7 +899,7 @@ export function TabBar({
         // 13 reserves colour for status. One `color` on the slot serves both
         // the icon (currentColor) and the label.
         pip="tab"
-        moment={momentOnSlot(helpMoment, friendsMoment, pathname, href)}
+        moment={momentOnSlot(friendsMoment, href)}
         badge={slotBadge(shown, href)}
         className={`flex h-[52px] flex-1 flex-col items-center justify-center gap-[3px] rounded-[12px] ${
           active

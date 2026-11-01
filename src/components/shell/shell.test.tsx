@@ -117,6 +117,16 @@ describe("Shell and the Friends badge (menu and Home PR 7)", () => {
     await feed.after.mock.calls[0][0]();
     expect(feed.noticeTradeMatches).toHaveBeenCalledWith("user_1", expect.anything());
   });
+
+  it("draws no Friends count when the read fails, and the page still renders", async () => {
+    navProps.length = 0;
+    feed.unseenFriendsCount.mockRejectedValueOnce(new Error("down"));
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    await renderShell();
+    expect(screen.getByText("page")).toBeTruthy();
+    for (const p of navProps.filter((n) => "badges" in n)) expect(p.badges).toEqual({ friends: 0, friendsAt: expect.any(String) });
+    err.mockRestore();
+  });
 });
 
 // The Fan Content notice (launch epic A1): two mounts, one per branch, and nowhere else.

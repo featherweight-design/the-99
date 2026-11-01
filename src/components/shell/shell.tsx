@@ -90,13 +90,8 @@ export default async function Shell({
     moments.includes("friends-after-game") && !spentMoments.includes("friends-after-game")
       ? await perfRead("shell.friendsAfterGame", () => friendsAfterGameDue(userId))
       : false;
-  // M12's condition (no deck yet) is read only while that moment is live and unspent.
-  const helpMoment =
-    moments.includes("help-me-choose") && !spentMoments.includes("help-me-choose")
-      ? !(await perfRead("shell.hasAnyDeck", () => hasAnyDeck(userId)))
-      : false;
   // The bar's unseen counts (menu and Home handoff, R1 Menu 8): Home's from the feed, Friends' from what waits on the
-  // reader. An absent count draws no badge. Home's is one statement over the feed's union; a failed read draws no badge rather than breaking every page. Friends' is the unseen trade
+  // reader. An absent count draws no badge. Home's is one statement over the feed's union; a failed read of either count draws no badge rather than breaking every page. Friends' is the unseen trade
   // matches (product call 2) and unseen answers to the reader's spare requests, cleared by a /friends visit, plus the
   // spare requests waiting on the reader's answer, cleared only by answering (plan `2026-10-22-spare-requests.md`). A trade
   // match is noticed after the response (`noticeTradeMatches`, after() only), so one that appears is counted on the next
@@ -110,8 +105,14 @@ export default async function Shell({
   // Taken BEFORE the read, so an answer that lands during it is never taken off a count that may not hold it.
   badges.friendsAt = new Date().toISOString();
   const [seenHalf, waiting] = await Promise.all([
-    perfRead("shell.friendsBadge", () => unseenFriendsCount(userId, env)),
-    perfRead("shell.friendsWaiting", () => waitingAsksCount(userId, env)),
+    perfRead("shell.friendsBadge", () => unseenFriendsCount(userId, env)).catch((error: unknown) => {
+      console.error("shell: the Friends unseen count could not be read", error instanceof Error ? error.message : "");
+      return 0;
+    }),
+    perfRead("shell.friendsWaiting", () => waitingAsksCount(userId, env)).catch((error: unknown) => {
+      console.error("shell: the Friends waiting count could not be read", error instanceof Error ? error.message : "");
+      return 0;
+    }),
   ]);
   badges.friends = seenHalf;
   if (waiting > 0) badges.friendsWaiting = waiting;
@@ -143,7 +144,7 @@ export default async function Shell({
       <HelpRoot>
       {pushOn && <PushHeartbeat />}
       <div className="flex min-h-dvh flex-1">
-        <NavRail locked={locked} openLock={openLock} theme={theme} {...door} friendsMoment={friendsMoment} helpMoment={helpMoment} badges={badges} />
+        <NavRail locked={locked} openLock={openLock} theme={theme} {...door} friendsMoment={friendsMoment} badges={badges} />
         {/* The tab-bar reserve is on this column, not on <main>, so the Fan Content notice (a sibling of <main>, a
             `contentinfo` landmark) sits above it and clears the bar and the sheets by the same figure (launch epic A1). */}
         <div className="flex min-w-0 flex-1 flex-col pb-[var(--tabbar-h)] md:pb-0">
@@ -164,7 +165,6 @@ export default async function Shell({
         <TabBar
           locked={locked}
           openLock={openLock}
-          helpMoment={helpMoment}
           friendsMoment={friendsMoment}
           badges={badges}
         />
