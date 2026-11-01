@@ -426,3 +426,64 @@ export function groupHistory(events: readonly GroupEvent[], accounts: readonly A
     return [{ when: fmtWhen(e.at), what, note: e.note }];
   });
 }
+
+// ---------- delete a group (small items 9, item 7) ----------
+
+/** One of the group's flyer codes. Only a live one (`revoked` false) keeps the group from being deleted. */
+export type GroupCode = { code: string; revoked: boolean };
+
+/** What stands in the delete's way, from the SAVED state: an unsaved unselect still reads as a member. */
+export type DeleteState =
+  | { kind: "open" }
+  | { kind: "members"; members: number }
+  | { kind: "code"; code: string }
+  | { kind: "both"; members: number; code: string };
+
+export function deleteState(members: number, codes: readonly GroupCode[]): DeleteState {
+  const live = codes.find((c) => !c.revoked)?.code ?? null;
+  if (members > 0 && live !== null) return { kind: "both", members, code: live };
+  if (members > 0) return { kind: "members", members };
+  if (live !== null) return { kind: "code", code: live };
+  return { kind: "open" };
+}
+
+/** The line under the press: the hint when it can go, else the reason, and whether it links to the flyer codes. */
+export function deleteLine(state: DeleteState): { text: string; refused: boolean; codesLink: boolean } {
+  const d = copy.delete;
+  switch (state.kind) {
+    case "open":
+      return { text: d.hint, refused: false, codesLink: false };
+    case "members":
+      return { text: d.refusedMembers(state.members), refused: true, codesLink: false };
+    case "code":
+      return { text: d.refusedCode(state.code), refused: true, codesLink: true };
+    case "both":
+      return { text: d.refusedBoth(state.members, state.code), refused: true, codesLink: true };
+  }
+}
+
+/** The confirm's title, lead and facts. It only opens on an empty group, so Members is always None. */
+export function deleteConfirm(name: string, overrides: GroupCard["overrides"], codes: readonly GroupCode[]) {
+  const d = copy.delete;
+  const revoked = codes.filter((c) => c.revoked).map((c) => c.code);
+  const set = overrides.map((o) => `${o.label} ${o.value}`);
+  return {
+    title: d.title(name),
+    lead: d.lead(overrides.length),
+    facts: [
+      [d.facts.members, d.none],
+      [d.facts.codes, revoked.length ? d.codesRevoked(joinAnd(revoked), revoked.length) : d.none],
+      [d.facts.overrides, set.length ? d.overridesGo(joinAnd(set), set.length) : d.none],
+      [d.facts.history, d.historyFact],
+    ] as const,
+  };
+}
+
+
+/**
+ * `/admin/groups?deleted=<name>`, the landed delete's toast: a name only when it is one a group could have held
+ * (`GROUP_NAME`, at most 40 characters), so the parameter can never draw arbitrary text.
+ */
+export function deletedParam(raw: string | string[] | undefined): string | null {
+  return typeof raw === "string" && GROUP_NAME.test(raw) ? raw : null;
+}

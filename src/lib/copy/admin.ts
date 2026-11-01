@@ -15,6 +15,10 @@ const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one :
 /** A sentence ending on a name: a masked name already ends in its initial's period (`Colin R.`), so it takes no second. */
 const endOn = (name: string) => (name.endsWith(".") ? name : `${name}.`);
 
+const WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
+/** A small count in words, as the boards draw it (`Its two feature-flag settings`); 10 and up stay figures. */
+const countWord = (n: number) => WORDS[n] ?? String(n);
+
 /** Admin R3, D14: a masked name is all a search field can match, so every account search says so. */
 const FIND_BY_NAME = "Find an account by name";
 
@@ -359,6 +363,40 @@ export const adminCopy = {
       overrideCleared: (who: string, label: string, from: string) => `${who} cleared ${label} (was ${from})`,
     },
     confirmLead: (g: string) => `Saving changes who is in ${g}, and so which overrides apply to them.`,
+    /** Delete a group (small items 9, item 7; `Groups-Delete` D1 to D8). Only an empty group can go. */
+    delete: {
+      action: "Delete this group",
+      hint: "Only an empty group can go: no members, no flyer codes.",
+      refusedMembers: (n: number) => `It still has ${plural(n, "member", "members")}. Unselect them above and save, then delete it.`,
+      // Only a live code blocks (READINESS, closed with the approval, 4): a revoked code loses its group instead.
+      refusedCode: (code: string) => `It has the live flyer code ${code}. Revoke it on Invites first.`,
+      refusedBoth: (n: number, code: string) =>
+        `It still has ${plural(n, "member", "members")} and the live flyer code ${code}. Only an empty group can go: no members, no flyer codes.`,
+      codesLink: "Flyer codes ›",
+      title: (g: string) => `Delete ${g}?`,
+      lead: (n: number) =>
+        `It’s empty, so deleting it changes nothing for any account. ${
+          n === 0
+            ? "It has no feature-flag settings"
+            : n === 1
+              ? "Its one feature-flag setting is removed with it"
+              : `Its ${countWord(n)} feature-flag settings are removed with it`
+        }, and the name is free to use again.`,
+      facts: { members: "Members", codes: "Flyer codes", overrides: "Overrides", history: "History" },
+      none: "None.",
+      /** The group's revoked codes, already joined (`MOXB7K and K2P9QX`): they stay on Invites with no group. */
+      codesRevoked: (list: string, n: number) => `${list}, revoked. ${n === 1 ? "It stays" : "They stay"} on Invites with no group.`,
+      /** The overrides, already joined, each a flag's label and value (`Overview v2 on and Suggested changes v2 on`). */
+      overridesGo: (list: string, n: number) => (n === 1 ? `${list} goes with it. It reaches nobody now.` : `${list} go with it. They reach nobody now.`),
+      historyFact: "Kept in the admin log, under the group’s name.",
+      keep: "Keep it",
+      confirm: "Delete the group",
+      raced: (g: string) => `${g} isn’t empty now. Nothing was deleted.`,
+      failed: "Couldn’t delete the group. Nothing was deleted.",
+      lost: "Lost touch with the server, so it may have deleted. Reload the page before pressing again.",
+      toast: (g: string) => `Deleted ${g}.`,
+      toastDismiss: "Dismiss",
+    },
   },
 
   // The Accounts pages (admin STATES A1 to A7, plan 9b), from the handoff's `accounts` keys. The

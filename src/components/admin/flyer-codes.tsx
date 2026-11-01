@@ -91,7 +91,7 @@ export function FlyerCodes({ view, groups = [] }: { view: FlyersView; groups?: r
   const live = revokingCode === null ? undefined : view.rows.find((r) => r.code === revokingCode);
   const revoking: RevokeTarget | null = live ? { id: live.id, store: live.store, code: live.code, taken: live.taken } : null;
   return (
-    <section aria-label={copy.section} data-testid="flyer-codes" className="flex flex-col gap-[12px] px-[16px] pt-[16px] md:px-[28px] md:pt-[22px]">
+    <section id="flyer-codes" aria-label={copy.section} data-testid="flyer-codes" className="scroll-mt-[16px] flex flex-col gap-[12px] px-[16px] pt-[16px] md:px-[28px] md:pt-[22px]">
       <div className="flex flex-wrap items-baseline gap-x-[10px] gap-y-[2px] pt-[10px]">
         <h2 className="m-0 text-[15px] font-semibold text-[color:var(--fg)]">{copy.section}</h2>
         <small className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{view.meta}</small>

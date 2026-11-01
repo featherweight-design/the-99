@@ -3,13 +3,14 @@ import type { GroupPage } from "../../lib/admin/groups";
 import { adminCopy } from "../../lib/copy/admin";
 import { PendingReporter } from "../shell/pending-reporter";
 import { SectionHead } from "./costs-detail";
+import { GroupDelete } from "./group-delete";
 import { GroupEditor } from "./group-editor";
 import { GroupTopUp } from "./invites-section";
 import { HistoryList } from "./switch-page";
 import { ResolvedDot } from "./switches-list";
 
 // One group's page (admin STATES G2 to G4; design table, Groups), or the new-group page (G3): the
-// editor, then the overrides the group carries and its history. The head (name, description, back
+// editor, then the overrides the group carries, its history and, across a hairline, Delete. The head (name, description, back
 // link) is `AdminHead`'s detail mode.
 
 const copy = adminCopy.groups;
@@ -62,6 +63,15 @@ export function GroupPageView({ page }: { page: GroupPage }) {
             meta={page.historyCut ? adminCopy.switch.historyLatest(page.history.length) : adminCopy.switch.historyCount(page.history.length)}
           />
           <HistoryList items={page.history} foot={copy.historyFoot} empty={copy.noHistory} testId="group-history" />
+          {/* Delete, at the foot of a saved group only (small items 9, item 7). Not keyed: a refused delete's refresh
+              must leave its dialog and alert standing while the foot redraws refused. */}
+          <GroupDelete
+            id={saved.id}
+            name={saved.name}
+            members={page.memberCount}
+            codes={page.codes}
+            overrides={page.overrides}
+          />
         </>
       )}
     </div>
