@@ -39,7 +39,6 @@ import { listDeckGames, type DeckGame } from "./games";
 import { loadPrices } from "./price-query";
 import type { Availability } from "./availability";
 import { loadAvailability } from "./availability-query";
-import { labelRoleCountsEnabled } from "./label-counts-flag";
 import { liveLockedIds } from "./locks";
 import { analysisTabEnabled } from "./analysis-flag";
 import { parseStrategyKey } from "../strategy/focus";
@@ -311,11 +310,11 @@ export async function readTuningState(
   // replaced on screen, still open (STATES-tuning-panel.md :42): the failure is about the new
   // run, and nothing the player had was changed by it.
   const { items, newestPriceAsOf } = lastOk
-    ? await readItems(lastOk.id, deckId, userId, env, lastOk.requestedCount !== null)
+    ? await readItems(lastOk.id, deckId, userId, lastOk.requestedCount !== null)
     : { items: [], newestPriceAsOf: null };
   // A v2 run still being made (plan P3): the lines it has saved so far, drawn by the panel's poll beside the last set.
   const live = run?.status === "pending" && newest?.requestedCount != null
-    ? liveOf(run.id, newest.validationReport, await readItems(run.id, deckId, userId, env, true), askOf(newest))
+    ? liveOf(run.id, newest.validationReport, await readItems(run.id, deckId, userId, true), askOf(newest))
     : null;
 
   return {
@@ -427,7 +426,6 @@ async function readItems(
   runId: string,
   deckId: string,
   userId: string,
-  env: NodeJS.ProcessEnv,
   /** A v2 run's lines: each also carries its type group and shelf role (H5). */
   v2 = false,
 ): Promise<{ items: TuningItem[]; newestPriceAsOf: Date | null }> {
@@ -504,9 +502,9 @@ async function readItems(
   // chain, not the catalog's arbitrary one (`chainArt`).
   const [art, jobRows] = await Promise.all([
     chainArt(userId, deckId, rows.rows.flatMap((r) => [r.add_oracle_id, r.cut_oracle_id])),
-    // The labels the strip counts by, read only while the strip counts by them (`LABEL_ROLE_COUNTS_ENABLED`); off, or a
-    // failed read, falls back to the classifier, as the strip's does (null).
-    v2 && rows.rows.length > 0 && labelRoleCountsEnabled(env)
+    // The labels the strip counts by (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31); a failed read falls back
+    // to the classifier, as the strip's does (null).
+    v2 && rows.rows.length > 0
       ? loadJobRows(rows.rows.map((r) => ({ oracleId: (r.add_oracle_id ?? r.cut_oracle_id)!, typeLine: r.card_type_line ?? "" })))
         .catch(() => null)
       : null,

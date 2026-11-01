@@ -257,9 +257,9 @@ interface BuilderShellProps {
   /** The role counts the newest version held, for the mix cells' `was n` line.
       Derived by the route from the same `computeRoleCounts` the strip uses. */
   wasCounts?: Record<MixRole, number>;
-  /** The deck's label rows when the page counts roles by label (`LABEL_ROLE_COUNTS_ENABLED`): the
-   *  strip, the Changed strip, the Consider shelves and the toast below all count through them. Absent
-   *  or null counts by `card.role`, exactly as before. */
+  /** The deck's label rows (roles are always counted by label; LABEL_ROLE_COUNTS retired, Hugh
+   *  2026-10-31): the strip, the Changed strip, the Consider shelves and the toast below all count
+   *  through them. Absent or null (the read failed) counts by `card.role`. */
   labelRows?: JobRowsByCard | null;
   /** The ids that read covered. The map is sparse, so this is what tells an unlabeled card from a
    *  search result the page never asked about. */

@@ -294,7 +294,7 @@ export async function recommendCommanders(
   // the role chips keep the fresher figures, and an EDHREC outage still has to
   // be describable. What moved to the index is the SCORE — Ruling D.
   // The labels are read first: the targets follow the basis they come back under.
-  const { basis, roleSets, fellBack, labelCheck } = await loadSharedPoolRoleBasis(userId, collection, true);
+  const { basis, roleSets, fellBack, labelCheck } = await loadSharedPoolRoleBasis(userId, collection);
   const [edhrecCache, supportLists, roleTargets] = await Promise.all([
     readEdhrecCache(candidates.map((c) => c.oracleId)),
     loadSupportLists(candidates.map((c) => c.oracleId)),
@@ -389,7 +389,7 @@ export async function scoreOneCommander(
   if (!commander) return null;
 
   // The collection's labels, whichever pool is scored: a free pool is a subset of it.
-  const { basis, roleSets } = await loadSharedPoolRoleBasis(userId, collection, true);
+  const { basis, roleSets } = await loadSharedPoolRoleBasis(userId, collection);
   const [edhrecCache, supportLists, roleTargets] = await Promise.all([
     readEdhrecCache([oracleId]),
     loadSupportLists([oracleId]),

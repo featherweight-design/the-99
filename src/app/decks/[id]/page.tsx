@@ -58,7 +58,6 @@ import { deckBodySize } from "../../../lib/decks/deck-size";
 import { hasChanges, loadDraftState, loadVersionShape } from "../../../lib/decks/draft-state";
 import { listVersions } from "../../../lib/decks/versions";
 import type { JobRowsByCard } from "../../../lib/decks/job-tally";
-import { labelRoleCountsEnabled } from "../../../lib/decks/label-counts-flag";
 import { roleCounterFor } from "../../../lib/decks/label-role-counts";
 import { analysisTabEnabled } from "../../../lib/decks/analysis-flag";
 import { readDeckNotes } from "../../../lib/decks/notes-read";
@@ -228,8 +227,8 @@ export default async function DeckBuilderPage({
     perf.timed("nearCombos", () => loadNearCombos({ userId, deckId: id, maxPieces: 2, cap: Number.POSITIVE_INFINITY })).catch(() => null),
   );
   const suggestionsRead = early(indexGenRead.then((indexGen) =>
-    // The reader's switches are in the key: the payload's mix follows LABEL_ROLE_COUNTS_ENABLED, and
-    // an override flipping it must not be served the entry built under the other basis.
+    // The mix is always counted by label now (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31), so no switch
+    // decides it; `switchBits` stays in the key only until the switch's delete PR.
     perf.timed("suggestions", () => cacheForUser(userId, [...SUGGESTIONS_KEY, id, indexGen, switchBits(env)], () =>
       loadDeckSuggestions(id, userId, env),
     ))));
@@ -627,37 +626,33 @@ export default async function DeckBuilderPage({
   // Spellbook aggregation, tutor classification and the staples join to produce five integers
   // the page was already holding.
 
-  // THE STRIP COUNTS BY LABEL when `LABEL_ROLE_COUNTS_ENABLED` is on: the Jobs card's own tally, over
+  // THE STRIP COUNTS BY LABEL (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31): the Jobs card's own tally, over
   // the rows it reads. The map covers the cards the page holds (a search result or a resolved row is not among them, and falls back to card.role in the toast): the deck's (already read), the
   // version a draft compares to, and the suggestions and candidates a reader can add, which the
   // toast and the shelves count against. One more read for the cards the deck's does not cover. Null
-  // (switch off, or the deck's read failed) counts by `card.role`, exactly as before.
-  let labelRows: JobRowsByCard | null = null;
-  // The ids that read covered. The map is sparse (an unlabeled card has no entry), so this is what
-  // tells a card with no label from a search result the page never asked about.
-  let labelQueried: string[] | null = null;
-  // The switch is on but the read failed: the counts fall back to the classifier, so the targets must
+  // (the deck's read failed) counts by `card.role`.
+  // The read failed: the counts fall back to the classifier, so the targets must
   // too, or the strip grades classifier counts against `label_*` targets.
   let shellMix = mix;
-  if (labelRoleCountsEnabled(env)) {
-    const base = await (statsJobsRead ?? early(perf.timed("labelRows", () => loadJobRows(detail.cards))));
-    const extra: { oracleId: string; typeLine: string }[] = [];
-    const wanted = [...(versionShape ?? []), ...pricedSuggestions, ...candidates];
-    if (base) {
-      const known = new Set(Object.keys(base));
-      for (const c of wanted) {
-        if (c.oracleId !== undefined && !known.has(c.oracleId)) extra.push({ oracleId: c.oracleId, typeLine: c.typeLine });
-      }
+  const base = await statsJobsRead;
+  const extra: { oracleId: string; typeLine: string }[] = [];
+  const wanted = [...(versionShape ?? []), ...pricedSuggestions, ...candidates];
+  if (base) {
+    const known = new Set(Object.keys(base));
+    for (const c of wanted) {
+      if (c.oracleId !== undefined && !known.has(c.oracleId)) extra.push({ oracleId: c.oracleId, typeLine: c.typeLine });
     }
-    const more = base && extra.length > 0 ? await perf.timed("labelRowsExtra", () => loadJobRows(extra)) : {};
-    const settled = settleLabelRead(true, [base, more], [
-      ...detail.cards.map((c) => c.oracleId),
-      ...wanted.map((c) => c.oracleId).filter((id): id is string => id !== undefined),
-    ]);
-    labelRows = settled.rows;
-    labelQueried = settled.queried;
-    if (settled.classifierTargets) shellMix = await loadDeckMix(id, userId, "classifier");
   }
+  const more = base && extra.length > 0 ? await perf.timed("labelRowsExtra", () => loadJobRows(extra)) : {};
+  const settled = settleLabelRead([base, more], [
+    ...detail.cards.map((c) => c.oracleId),
+    ...wanted.map((c) => c.oracleId).filter((id): id is string => id !== undefined),
+  ]);
+  const labelRows: JobRowsByCard | null = settled.rows;
+  // The ids that read covered. The map is sparse (an unlabeled card has no entry), so this is what
+  // tells a card with no label from a search result the page never asked about.
+  const labelQueried: string[] | null = settled.queried;
+  if (settled.classifierTargets) shellMix = await loadDeckMix(id, userId, "classifier");
   const wasCounts = versionShape ? roleCounterFor(labelRows)(versionShape) : undefined;
 
   const thisDeck = allDecks.find((d) => d.id === id);

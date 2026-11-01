@@ -8,17 +8,10 @@ import { loadPoolRoleBasis, loadSharedPoolRoleBasis, type PoolRoleBasis } from "
 const cards = [{ oracleId: "a" }, { oracleId: "b" }];
 
 describe("loadPoolRoleBasis", () => {
-  it("reads nothing and counts by the classifier when the switch is off", async () => {
-    const read = vi.fn();
-    const got = await loadPoolRoleBasis(cards, false, read);
-    expect(got).toEqual({ basis: "classifier", roleSets: undefined, fellBack: false });
-    expect(read).not.toHaveBeenCalled();
-  });
-
-  it("returns the label sets and the labels basis together when on", async () => {
+  it("returns the label sets and the labels basis together", async () => {
     const sets = new Map([["a", ["ramp" as const]]]);
     const read = vi.fn().mockResolvedValue(sets);
-    const got = await loadPoolRoleBasis(cards, true, read);
+    const got = await loadPoolRoleBasis(cards, read);
     expect(got.basis).toBe("labels");
     expect(got.roleSets).toBe(sets);
     expect(got.fellBack).toBe(false);
@@ -27,7 +20,7 @@ describe("loadPoolRoleBasis", () => {
 
   it("falls to the classifier on BOTH sides when the read fails", async () => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
-    const got = await loadPoolRoleBasis(cards, true, vi.fn().mockRejectedValue(new Error("down")));
+    const got = await loadPoolRoleBasis(cards, vi.fn().mockRejectedValue(new Error("down")));
     expect(got).toEqual({ basis: "classifier", roleSets: undefined, fellBack: true });
   });
 });
@@ -39,9 +32,9 @@ describe("loadSharedPoolRoleBasis", () => {
     const m = memo();
     const read = vi.fn().mockResolvedValue(new Map([["a", ["ramp" as const]]]));
     const [list, free, detail] = await Promise.all([
-      loadSharedPoolRoleBasis("u1", cards, true, read, m),
-      loadSharedPoolRoleBasis("u1", cards, true, read, m),
-      loadSharedPoolRoleBasis("u1", [...cards], true, read, m),
+      loadSharedPoolRoleBasis("u1", cards, read, m),
+      loadSharedPoolRoleBasis("u1", cards, read, m),
+      loadSharedPoolRoleBasis("u1", [...cards], read, m),
     ]);
     expect(read).toHaveBeenCalledTimes(1);
     expect(free).toBe(list);
@@ -52,24 +45,22 @@ describe("loadSharedPoolRoleBasis", () => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
     const m = memo();
     const read = vi.fn().mockRejectedValueOnce(new Error("down")).mockResolvedValue(new Map());
-    const first = await loadSharedPoolRoleBasis("u1", cards, true, read, m);
-    const second = await loadSharedPoolRoleBasis("u1", cards, true, read, m);
+    const first = await loadSharedPoolRoleBasis("u1", cards, read, m);
+    const second = await loadSharedPoolRoleBasis("u1", cards, read, m);
     expect(first.fellBack).toBe(true);
     expect(second.fellBack).toBe(true);
     expect(read).toHaveBeenCalledTimes(1);
   });
 
-  it("keeps a different user, a different basis and a different pool apart", async () => {
+  it("keeps a different user and a different pool apart", async () => {
     const m = memo();
     const read = vi.fn().mockResolvedValue(new Map());
-    await loadSharedPoolRoleBasis("u1", cards, true, read, m);
-    await loadSharedPoolRoleBasis("u2", cards, true, read, m);
-    await loadSharedPoolRoleBasis("u1", cards, false, read, m);
-    await loadSharedPoolRoleBasis("u1", [{ oracleId: "a" }], true, read, m);
-    expect(read).toHaveBeenCalledTimes(3); // the classifier basis never reads
-    // And a switch-off caller never gets the labels answer a switch-on caller of the same user stored.
-    expect((await loadSharedPoolRoleBasis("u1", cards, false, read, m)).basis).toBe("classifier");
-    expect((await loadSharedPoolRoleBasis("u1", cards, true, read, m)).basis).toBe("labels");
+    await loadSharedPoolRoleBasis("u1", cards, read, m);
+    await loadSharedPoolRoleBasis("u2", cards, read, m);
+    await loadSharedPoolRoleBasis("u1", [{ oracleId: "a" }], read, m);
+    expect(read).toHaveBeenCalledTimes(3);
+    expect((await loadSharedPoolRoleBasis("u1", cards, read, m)).basis).toBe("labels");
+    expect(read).toHaveBeenCalledTimes(3);
   });
 
   it("is what the ranked list, the free ranking, the detail score and the discovery list call, never the raw read", () => {

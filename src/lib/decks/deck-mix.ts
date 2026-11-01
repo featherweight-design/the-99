@@ -28,7 +28,7 @@ import { recommendedMix, type RecommendedMix } from "./mix";
 export async function loadDeckMix(
   deckId: string,
   userId: string,
-  /** The basis the targets come from: `roleBasisFromEnv` of the reader's resolved switches. A caller
+  /** The basis the targets come from: "labels" (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31). A caller
    *  whose label read failed asks for "classifier", so its classifier counts are graded against
    *  classifier targets rather than `label_*` ones. */
   basis: RoleBasis,

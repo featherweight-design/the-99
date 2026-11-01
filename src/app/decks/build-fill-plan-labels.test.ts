@@ -58,16 +58,9 @@ const planArgs = () => m.planFill.mock.calls[0][1];
 const basisOf = (callIndex: number) => m.loadSkeleton.mock.calls[callIndex][4]?.roleBasis ?? "classifier";
 
 describe("buildFillPlan by label", () => {
-  it("with the switch off reads no labels and plans on the classifier", async () => {
+  // LABEL_ROLE_COUNTS retired (Hugh 2026-10-31): the old switch off everywhere changes nothing.
+  it("asks for the label targets and hands the plan the label sets, even with the old switch off", async () => {
     vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "");
-    await call();
-    expect(m.readLabels).not.toHaveBeenCalled();
-    expect(basisOf(0)).toBe("classifier");
-    expect(planArgs().labelRoles).toBeUndefined();
-  });
-
-  it("with the switch on asks for the label targets and hands the plan the label sets", async () => {
-    vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "true");
     await call();
     expect(m.loadSkeleton).toHaveBeenCalledTimes(1);
     expect(basisOf(0)).toBe("labels");
@@ -76,7 +69,6 @@ describe("buildFillPlan by label", () => {
   });
 
   it("falls to the classifier on BOTH sides when the label read rejects: the skeleton is reloaded, no labels reach the plan", async () => {
-    vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "true");
     m.readLabels.mockRejectedValue(new Error("down"));
     await call();
     expect(m.loadSkeleton).toHaveBeenCalledTimes(2);
@@ -87,7 +79,6 @@ describe("buildFillPlan by label", () => {
   });
 
   it("reads no labels when the skeleton read throws: the plan builds to the asserted classifier bars", async () => {
-    vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "true");
     m.loadSkeleton.mockRejectedValue(new Error("no skeleton"));
     await call();
     expect(m.readLabels).not.toHaveBeenCalled();

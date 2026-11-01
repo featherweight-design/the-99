@@ -465,9 +465,9 @@ export async function loadDiscoveryWithIds(
   // read is the classifier on both sides), so it cannot be left dangling.
   let basisStarted: ReturnType<typeof loadSharedPoolRoleBasis> | undefined;
   const { collection, availability, availOk } = await perfRead("discovery.pool", () => loadDiscoveryPool(userId, (c) => {
-    basisStarted = loadSharedPoolRoleBasis(userId, c, true);
+    basisStarted = loadSharedPoolRoleBasis(userId, c);
   }));
-  const basisRead = basisStarted ?? loadSharedPoolRoleBasis(userId, collection, true);
+  const basisRead = basisStarted ?? loadSharedPoolRoleBasis(userId, collection);
   // One oracle-id set, so the second support aggregate has nothing to add: the
   // ranked pool and the collection are the same pool.
   const candidates = await perfRead("discovery.candidates", () => loadCandidates(

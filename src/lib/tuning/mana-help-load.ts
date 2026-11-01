@@ -3,7 +3,6 @@ import { db } from "../../db";
 import { cards, deckCutItems, deckSuggestionItems, deckSuggestionRuns } from "../../db/schema";
 import { readCutSupport } from "../decks/cuts-read";
 import { loadDeckMix } from "../decks/deck-mix";
-import { roleBasisFromEnv } from "../decks/label-counts-flag";
 import { liveLockedIds } from "../decks/locks";
 import type { DeckDetail } from "../decks/read";
 import type { BalanceColor } from "./mana-balance";
@@ -42,9 +41,9 @@ export async function loadManaHelp(
   deck: DeckDetail,
   userId: string,
   color: BalanceColor,
-  /** The reader's resolved switches (`requestSwitchEnv`): the basis the mix's targets come from. An eval
-   *  script, outside a request, passes `process.env` itself. */
-  env: NodeJS.ProcessEnv,
+  /** The reader's resolved switches (`requestSwitchEnv`). Unread since the mix's targets are always the
+   *  label ones (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31). An eval script passes `process.env` itself. */
+  _env: NodeJS.ProcessEnv,
 ): Promise<ManaHelp | null> {
   const inputs = await loadManaInputs(deck);
   if (!inputs) return null;
@@ -58,7 +57,7 @@ export async function loadManaHelp(
     readNamedCuts(deck.id, userId),
     // The rarest off-plan land goes first; with no list every one reads 0 and they go by name.
     readCutSupport(deck.commander.oracleId, deck.partner?.oracleId ?? null).catch(() => null),
-    loadDeckMix(deck.id, userId, roleBasisFromEnv(env)),
+    loadDeckMix(deck.id, userId, "labels"),
   ]);
   if (!candidates) return null;
   const identity = [deck.commander, ...(deck.partner ? [deck.partner] : [])].flatMap((c) => c.colorIdentity);
