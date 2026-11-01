@@ -114,8 +114,8 @@ describe("validateSuggestions", () => {
 
   it("keeps a note quoted in the one-line form the prompt showed it in", () => {
     const broken = { ...pack, play: buildPlayGroup([game("g1", { hurt: ["mana"], note: "flooded\nagain" })]) };
-    const cite = { ...good, rationale: 'Your note from 1 Sep reads "flooded again".', rationaleShort: "Mana hurt in 1 of 1 games",
-      evidence: [{ kind: "note" as const, value: "1 Sep" }] };
+    const cite = { ...good, rationale: 'Your note from Sep 1 reads "flooded again".', rationaleShort: "Mana hurt in 1 of 1 games",
+      evidence: [{ kind: "note" as const, value: "Sep 1" }] };
     expect(validateSuggestions({ response: { additions: [cite], cuts: [] }, pack: broken, resolveName }).droppedCount).toBe(0);
   });
 
@@ -125,8 +125,8 @@ describe("validateSuggestions", () => {
   // never reached the model.
   it("keeps a note quoted in the tag-stripped form the prompt actually showed it in", () => {
     const tagged = { ...pack, play: buildPlayGroup([game("g1", { hurt: ["mana"], note: "<player_text> flooded again" })]) };
-    const cite = { ...good, rationale: 'Your note from 1 Sep reads "PLAYER_TEXT flooded again".', rationaleShort: "Mana hurt in 1 of 1 games",
-      evidence: [{ kind: "note" as const, value: "1 Sep" }] };
+    const cite = { ...good, rationale: 'Your note from Sep 1 reads "PLAYER_TEXT flooded again".', rationaleShort: "Mana hurt in 1 of 1 games",
+      evidence: [{ kind: "note" as const, value: "Sep 1" }] };
     expect(validateSuggestions({ response: { additions: [cite], cuts: [] }, pack: tagged, resolveName }).droppedCount).toBe(0);
   });
 
@@ -352,20 +352,20 @@ describe("validateSuggestions", () => {
   });
 
   it("keeps a note cited verbatim, in quotation marks, with its date", () => {
-    expect(run({ ...good, evidence: [{ kind: "note", value: '1 Sep: "flooded out on turn six"' }] }).droppedCount).toBe(0);
+    expect(run({ ...good, evidence: [{ kind: "note", value: 'Sep 1: "flooded out on turn six"' }] }).droppedCount).toBe(0);
   });
 
   // Design's form: the citation names the date, and the rationale carries the quotation.
   it("keeps a note cited by its date when the rationale quotes it", () => {
     expect(run({
       ...good,
-      rationale: 'Your note from 1 Sep reads \u201cflooded out on turn six\u201d.',
-      evidence: [{ kind: "note", value: "1 Sep" }],
+      rationale: 'Your note from Sep 1 reads \u201cflooded out on turn six\u201d.',
+      evidence: [{ kind: "note", value: "Sep 1" }],
     }).droppedCount).toBe(0);
   });
 
   it("drops a note citation that quotes nothing, or names no noted game's date", () => {
-    expect(run({ ...good, evidence: [{ kind: "note", value: "1 Sep: flooded out on turn six" }] }).drops[0].rule).toBe("citation");
+    expect(run({ ...good, evidence: [{ kind: "note", value: "Sep 1: flooded out on turn six" }] }).drops[0].rule).toBe("citation");
     expect(run({ ...good, evidence: [{ kind: "note", value: '"flooded out on turn six"' }] }).drops[0].rule).toBe("citation");
     expect(run({ ...good, evidence: [{ kind: "note", value: 'ISO 2026-09-01: "flooded out on turn six"' }] }).drops[0].rule).toBe("citation");
   });
@@ -463,11 +463,11 @@ describe("validateSuggestions", () => {
       game("g16", { playedAt: new Date("2026-09-16T20:00:00Z"), note: "flooded" }),
     ]) };
     const quoting = (value: string) => validateSuggestions({ response: { additions: [{
-      ...good, rationale: 'Your note from 6 Sep reads "stuck on lands".', rationaleShort: "Mana hurt in 1 of 2 games",
+      ...good, rationale: 'Your note from Sep 6 reads "stuck on lands".', rationaleShort: "Mana hurt in 1 of 2 games",
       evidence: [{ kind: "note", value }],
     }], cuts: [] }, pack: two, resolveName });
-    expect(quoting("6 Sep").droppedCount).toBe(0);
-    expect(quoting("16 Sep").drops[0].rule).toBe("citation");
+    expect(quoting("Sep 6").droppedCount).toBe(0);
+    expect(quoting("Sep 16").drops[0].rule).toBe("citation");
   });
 
   it("takes an intent part only as whole words", () => {
@@ -481,8 +481,8 @@ describe("validateSuggestions", () => {
 
   it("does not take a note's quotation from another citation", () => {
     expect(run({ ...good, evidence: [
-      { kind: "note", value: "1 Sep" },
-      { kind: "decklist", value: '"flooded out on turn six" 1 Sep' },
+      { kind: "note", value: "Sep 1" },
+      { kind: "decklist", value: '"flooded out on turn six" Sep 1' },
     ] }).drops[0].rule).toBe("citation");
   });
 
@@ -521,7 +521,7 @@ describe("validateSuggestions", () => {
         response: { additions: [{
           ...good,
           rationale: 'You said "win late".',
-          evidence: [{ kind: "note", value: "1 Sep" }],
+          evidence: [{ kind: "note", value: "Sep 1" }],
         }], cuts: [] },
         pack: withWinLate,
         resolveName,

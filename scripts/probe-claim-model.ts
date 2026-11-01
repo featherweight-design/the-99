@@ -303,7 +303,7 @@ async function reservationSection() {
     await clearAssignments();
     check("with the reservation cleared the surplus returns", await free(a), 1);
 
-    // 7. The stamp the chooser draws its order and its `v7 · 2 Aug` from.
+    // 7. The stamp the chooser draws its order and its `v7 · Aug 2` from.
     const senior = await claimOn(b, a);
     check("a committed claim carries its version number", senior?.versionNumber, 1);
     // The EXACT value, not just its type. `since` is promised as epoch millis, and a

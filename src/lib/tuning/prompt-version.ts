@@ -36,7 +36,10 @@
 // 10 (2026-10-27, the lopsided run): the reply schema's citation kinds gain `focus`, for every deck, and a deck with a focus
 // is told to cite it as `focus`, never as `intent`. With no kind for it the model filed the focus under `intent`, which a deck
 // with no intent fails, and HD - Goblins lost all five additions. A deck with a run stored at version 9 reopens the gate.
-export const PROMPT_VERSION = 10;
+// 11 (2026-11-01, US date order): a note's date is quoted month first, `Aug 26` and `Dec 31, 2025`, as the game log
+// writes it, and the note citation line's example says so. The validator reads the same form. A deck with a run stored at
+// version 10 reopens the gate.
+export const PROMPT_VERSION = 11;
 
 // Suggested changes v2's OWN number (plan 2026-10-27, P1), stamped on a v2 run beside v10's unchanged `PROMPT_VERSION`, and
 // compared against a run of its own path. 11 (2026-10-27): the count and the two-call wording (additions, then cuts that make
@@ -53,4 +56,6 @@ export const PROMPT_VERSION = 10;
 // 14 (2026-10-30, numbered lines): every ask (additions, cuts, both refills) adds "Number the lines 1 to {ask}; stop only
 // after line {ask}." after "This step", and the one reply schema gains each line's `n`. A reply had closed its list early, far
 // under its token cap (a cut call asked 30 stopped at 4); the number is a counting aid, never read. The cached prefix is unchanged.
-export const PROMPT_VERSION_V2 = 14;
+// 15 (2026-11-01, US date order): the note citation's example date and every note's date read month first, `Aug 26`, as the
+// game log does. The cached prefix changes with it.
+export const PROMPT_VERSION_V2 = 15;

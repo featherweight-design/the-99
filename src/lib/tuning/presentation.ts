@@ -215,8 +215,8 @@ export function presentationFailures(
   // A whole quotation's own sourcing can be invalidated by a repair ELSEWHERE in the line: a
   // dated note is sourced by its date appearing somewhere in the surrounding text, and stripping
   // a nearby partial's quote marks can change what sits next to that date (e.g. a quoted date
-  // immediately followed by a year, `"6 Sep" 2025`, reads differently once unquoted,
-  // `6 Sep 2025`). Every whole range is RECHECKED against the repaired text; one that no longer
+  // immediately followed by a year, `"Sep 6" 2025`, reads differently once unquoted,
+  // `Sep 6, 2025`). Every whole range is RECHECKED against the repaired text; one that no longer
   // sources is rejected rather than kept on the strength of a check the player's own text no
   // longer passes.
   for (const r of wholeRanges) {
