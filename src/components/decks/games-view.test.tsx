@@ -201,7 +201,8 @@ describe("GamesView: the window", () => {
     // Held, not removed: the button stays enabled and focusable (aria-disabled), so focus is not thrown out of the page.
     expect(busy).not.toBeDisabled();
     expect(busy).toHaveAttribute("aria-disabled", "true");
-    expect(screen.getByRole("status")).toHaveTextContent(gameHistoryCopy.loading);
+    // The chassis's result line is a live region too: the window's own is the one inside its foot.
+    expect(within(document.querySelector<HTMLElement>("[data-games-foot]")!).getByRole("status")).toHaveTextContent(gameHistoryCopy.loading);
     // A second press while it runs is swallowed by the guard: the action is asked once.
     fireEvent.click(busy);
     fireEvent.click(busy);
