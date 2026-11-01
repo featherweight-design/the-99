@@ -66,3 +66,11 @@ Not explored: an Add row in the account menu (Hugh's rule keeps rows out of the 
 `scratch-gen/` holds the generator: `lib.py` plus one module per board; `python3 build.py out m:Main a:A-Nav …`, then
 `node render.js <abs out> Main …` sets each board's preview size and reports broken images and overflow; `canvas.py`
 swaps `art/` for the canvas's `/_blob/` urls (`blobs.json`).
+
+## Errata (Small items 9, B2, 2026-11-01)
+
+Confirmed as built; the shared pieces win over this handoff's boards:
+
+- The save toast is the shared toast, centred, with Undo underlined.
+- The receipt's Add to collection / Edit copies link is regular weight, underline offset 2, 44px tall.
+- The ring timing, Remove, desktop reopen and deck-page toasts are settled in `design_handoff_the99_small_items_9/Add-Card.dc.html`.

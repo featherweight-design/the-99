@@ -55,3 +55,12 @@ To view a board, open `Main.dc.html` or the board's own page, with `support.js` 
 - `games.filter`: "Filter games", "All decks", "Any result", "Played against", "Friend or commander", "Won", "Lost", "Drawn", "Show N games", "Clear all"
 - `games.count(n)`: "N games"; `games.window(k, n)`: "Showing k of n games"; `games.more`: "Show 50 more"; `games.loading`: "Loading…"; `games.all(n)`: "All n games"
 - `games.failed`: "We couldn’t load your games."; `games.moreFailed`: "We couldn’t load more games." (+ "Try again")
+
+## Errata (Small items 9, B1, 2026-11-01)
+
+Confirmed as built; the shared pieces win over this handoff's boards:
+
+- The Decks · Games · Stats switch is the shared compact `SegmentedSwitch`, 195×46 at 13px, with a hairline before the deck select (boards: 207×46, 14px, no hairline).
+- The failed-read toast is the shared `ToastFrame`, centred, 358×54 (boards: pinned right, 356×58).
+- Filter games uses the shared Sheet; the deck select is 16px below `md`.
+- Filters that match nothing: see `design_handoff_the99_small_items_9/Games-NoMatch.dc.html`.
