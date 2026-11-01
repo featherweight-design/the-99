@@ -4,10 +4,12 @@ const h = vi.hoisted(() => ({
   reads: [] as unknown[][],
   writes: [] as { op: string; table: unknown; values?: unknown }[],
   welcome: vi.fn(),
+  selected: [] as unknown[],
 }));
 function chain(result: () => unknown[]) {
   const c: Record<string, unknown> = {};
-  for (const m of ["from", "innerJoin", "where", "for"]) c[m] = () => c;
+  for (const m of ["innerJoin", "where", "for"]) c[m] = () => c;
+  c.from = (table: unknown) => { h.selected.push(table); return c; };
   c.then = (res: (v: unknown) => unknown, rej: (e: unknown) => unknown) => Promise.resolve().then(result).then(res, rej);
   return c;
 }
@@ -26,7 +28,7 @@ vi.mock("../account/purge", () => ({ tombstoneHash: (id: string) => `hash:${id}`
 vi.mock("./send", () => ({ lockSenderIn: async (_tx: unknown, _id: string, given?: Date) => given ?? new Date() }));
 vi.mock("../social/friends", () => ({ welcomeInvitedIn: h.welcome }));
 
-import { flagGroupMembers, inviteEdges } from "../../db/schema";
+import { flagGroupMembers, flyerClaims, flyerCodes, inviteEdges } from "../../db/schema";
 import { reservationIdFrom, spendInviteOnSignUp } from "./spend";
 
 const ID = "0b3f2c9e-6a41-4d8e-9c53-1f0a7e2d4b68";
@@ -53,6 +55,7 @@ describe("spendInviteOnSignUp: the invitee joins no group", () => {
   beforeEach(() => {
     h.reads = [];
     h.writes = [];
+    h.selected = [];
     h.welcome.mockReset();
   });
 
@@ -60,7 +63,7 @@ describe("spendInviteOnSignUp: the invitee joins no group", () => {
     script();
     expect(await spendInviteOnSignUp("user_new", ID, "Ana", { now })).toEqual({ spent: true });
     expect(groupWrites()).toHaveLength(0);
-    expect(h.writes.some((w) => w.table === inviteEdges && (w.values as { inviteeUserId: string }).inviteeUserId === "user_new")).toBe(true);
+    expect(h.writes.find((w) => w.table === inviteEdges)?.values).toMatchObject({ inviterUserId: "inviter", inviteeUserId: "user_new", kind: "email" });
     expect(h.welcome).toHaveBeenCalledWith(expect.anything(), "inviter", "user_new", "Ana");
   });
 
@@ -69,7 +72,9 @@ describe("spendInviteOnSignUp: the invitee joins no group", () => {
     script();
     h.reads.push([{ admin: "hugh" }], [{ groupId: "g1" }]);
     await spendInviteOnSignUp("user_new", ID, "Ana", { now });
-    expect(h.reads).toHaveLength(2);
+    expect(h.selected).not.toContain(flyerClaims);
+    expect(h.selected).not.toContain(flyerCodes);
+    expect(h.selected).not.toContain(flagGroupMembers);
     expect(groupWrites()).toHaveLength(0);
   });
 });
