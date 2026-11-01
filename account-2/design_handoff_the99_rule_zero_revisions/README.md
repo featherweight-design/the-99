@@ -1,13 +1,13 @@
 # The 99 · Rule 0 revisions (account 2, 2026-10-31)
 
 Canvas: https://claude.ai/artifact/KStZsiuUarNmPT4yXBnRjN
-Status: **R1, awaiting Hugh's audit.**
+Status: **Approved by Hugh, 2026-11-01** ("This LGTM, please open a PR"), at R1. The three recommendations put to him with R1 are taken as approved with it (see Closed with the approval).
 
 Revisions to Rule 0 after Hugh's first real game with a friend (brief `docs/superpowers/design-briefs/2026-10-31-rule-zero-revisions.md`). Extends `design/design_handoff_the99_rule_zero/`; its decisions not named here are not reopened. Every changed state is drawn at 390 and desktop over the shipped boards, redrawn in the Low Sun theme the captures use, with the shipped shell (tab bar and rail end on Friends, ? beside search). Strings marked DRAFT go through `/copy-review`.
 
 To view a board, open `Main.dc.html` or the board's own page with `support.js` and `art/` beside it. `scratch-gen/` holds the generator: `lib.py` plus one module per board, each lifting frames from main's `design/` (`DESIGN` env var); `python3 build.py out m:Main k:Key p:Picker h:Home n:Notice c:Table e:Errata`, then `node render.js <abs out> Main …` sets each board's preview size and reports broken images, overflow and clipped frames. `canvas.py out <root>` swaps `art/` for the canvas's `/_blob/` urls (`blobs.json`).
 
-Sources read: main @150e10d (brief, `design_handoff_the99_rule_zero`, `design_handoff_the99_menu_home`, `design_handoff_the99_push`, `about_visual` captures; `src/components/rule-zero/*`, `decks/mark-key.tsx`, `decks/receipt-modal.tsx` (ModalChrome), `home/dashboard.tsx`, `app/page.tsx`, `lib/copy/rule-zero.ts`).
+Sources read: main @150e10d, rechecked at @80c4498 (brief, `design_handoff_the99_rule_zero`, `design_handoff_the99_menu_home`, `design_handoff_the99_push`, `about_visual` captures; `src/components/rule-zero/*`, `decks/mark-key.tsx`, `decks/receipt-modal.tsx` (ModalChrome), `home/dashboard.tsx`, `app/page.tsx`, `lib/copy/rule-zero.ts`).
 
 | Board | Ruling |
 |---|---|
@@ -58,8 +58,14 @@ Sources read: main @150e10d (brief, `design_handoff_the99_rule_zero`, `design_ha
 
 The brief's four places (README line 150, copy strings line 131, `R1 - Log-Phone` and `R2 - Log-Desktop` line 573) plus README line 9 and the R1 calls board, from 24 hours to the morning after. Applied to `design/design_handoff_the99_rule_zero/` in the handoff PR.
 
-## Open for Hugh
+## Closed with the approval
 
-1. Log this game on a host-closed table until the morning time.
-2. The seat push through quiet hours, no tick.
-3. MarkKey's opt-in to keep columns from `md`.
+R1 recommended yes on all three; Hugh approved R1 as drawn.
+
+1. A host-closed table keeps *Log this game* for its seated players until the morning time it would have reached.
+2. The seat push skips the 21:00–09:00 hold and adds no Settings tick.
+3. MarkKey gains an opt-in that keeps its columns from `md`; the read passes it.
+
+## Errata status
+
+Lane a6 already shipped the new `expired.body` in `src/lib/copy/rule-zero.ts` (main @80c4498). This PR brings the handoff's own copies in line.
