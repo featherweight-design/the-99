@@ -149,11 +149,16 @@ describe("aboutDismissal (the banner's ✕)", () => {
     expect(aboutDismissal(["home/home/ready"], readerAt(16), visible)).toBeNull();
   });
 
-  // Payments' credits sentence: the Analysis tab's bracket label was the example until its switch retired (always on).
+  // Payments' credits sentence, told on its own to a reader who has the credits rule and its always-drawn sentences: the
+  // Analysis tab's bracket label was the example until its switch retired (always on).
   it("writes nothing for a unit switched off since the page rendered", () => {
-    const reader: SeenState = { version: 0, ids: ["x"] };
-    const paid = sentenceKey("rule/credits", "PAYMENTS_ENABLED");
-    expect(aboutDismissal([paid], reader, visibleSections(ALL_ON))?.ids).toContain(paid);
+    const unit = "rule/credits";
+    const always = (["ANALYSIS_TAB_ENABLED", "TUNING_ENABLED", "PROPOSED_CUTS_ENABLED"] as const).map((sw) => sentenceKey(unit, sw));
+    const reader: SeenState = { version: 0, ids: ["x", unit, ...always] };
+    const paid = sentenceKey(unit, "PAYMENTS_ENABLED");
+    const on = visibleSections(env({ PAYMENTS_ENABLED: "true" }));
+    expect(unseenUnits(on, reader).map((u) => u.key)).toContain(paid);
+    expect(aboutDismissal([paid], reader, on)?.ids).toContain(paid);
     expect(aboutDismissal([paid], reader, visibleSections(OFF))).toBeNull();
   });
 
