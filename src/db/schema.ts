@@ -1348,6 +1348,27 @@ export const commanderScores = pgTable("commander_scores", {
 ]);
 
 /**
+ * The commanders a player has hidden from every list that answers "what should I build next": For you,
+ * Discover and Help me choose. A row stays until the player undoes it; there is no expiry.
+ *
+ * Keyed on the card, never the slug: slugs carry rank-order dedup suffixes and drift when the list
+ * reorders, and a hide must keep meaning the same commander. A two-faced commander is one row; partners
+ * are two cards and are hidden one at a time.
+ *
+ * `commander_scores` is deliberately left whole: a hide filters the lists at read time and never changes
+ * what was scored, so unhiding needs no recompute.
+ */
+export const hiddenCommanders = pgTable("hidden_commanders", {
+  userId: text("user_id").notNull(),
+  oracleId: uuid("oracle_id").notNull().references(() => cards.oracleId),
+  hiddenAt: timestamp("hidden_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.userId, t.oracleId] }),
+  // The Hidden list, newest first.
+  index("hidden_commanders_user_hidden_at_idx").on(t.userId, t.hiddenAt.desc()),
+]);
+
+/**
  * One player's decision that a particular deck gets a particular copy of a card,
  * overriding seniority.
  *
