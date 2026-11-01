@@ -21,7 +21,7 @@ vi.mock("../../components/feedback/report-page", () => ({ ReportPage: () => null
 
 import ReportRoute from "./page";
 import { ReportPage } from "../../components/feedback/report-page";
-import { NEWCOMER_MAIN } from "../../components/join/newcomer-column";
+import { REPORT_MAIN } from "../../components/join/newcomer-column";
 
 const render = (q: Record<string, string | string[] | undefined> = {}) => ReportRoute({ searchParams: Promise.resolve(q) });
 const pageOf = (el: ReactElement) => {
@@ -53,14 +53,14 @@ describe("/report", () => {
 
   it("draws the newcomer's frame for a signed-out reader, with the signed-out door and no promise of a reply", async () => {
     const el = (await render({ ref: "7f3a91c2", from: "/decks/abc?x=1" })) as ReactElement;
-    expect((el.props as { className: string }).className).toBe(NEWCOMER_MAIN);
+    expect((el.props as { className: string }).className).toBe(REPORT_MAIN);
     expect(pageOf(el)).toEqual({ source: "report", signedOut: true, digest: "7f3a91c2", page: "/decks/abc" });
   });
 
   it("draws the same frame for a signed-in reader, who cannot claim the signed-out door", async () => {
     stub.userId = "user_1";
     const withRef = (await render({ ref: "d1" })) as ReactElement;
-    expect((withRef.props as { className: string }).className).toBe(NEWCOMER_MAIN);
+    expect((withRef.props as { className: string }).className).toBe(REPORT_MAIN);
     expect(pageOf(withRef)).toMatchObject({ source: "error", signedOut: false, digest: "d1" });
     expect(pageOf((await render()) as ReactElement)).toMatchObject({ source: "about", signedOut: false, digest: null, page: null });
   });

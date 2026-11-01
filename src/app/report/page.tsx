@@ -11,7 +11,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { CrashWordmark } from "../../components/feedback/crash-wordmark";
 import { ReportPage } from "../../components/feedback/report-page";
-import { NEWCOMER_MAIN } from "../../components/join/newcomer-column";
+import { REPORT_MAIN } from "../../components/join/newcomer-column";
 import { currentUserId } from "../../lib/auth";
 import { reportCopy } from "../../lib/copy/report";
 import { feedbackEnabled } from "../../lib/feedback/flag";
@@ -33,7 +33,7 @@ export default async function ReportRoute({
   return (
     // A <main> of its own: signed out, the shell draws none. Signed out there is no tab bar either, so the failed-send toast
     // sits 24px above the bottom as the board draws it (16px + this 8px); a signed-in reader keeps the shell's own.
-    <main className={NEWCOMER_MAIN} style={userId ? undefined : ({ "--tabbar-h": "8px" } as React.CSSProperties)}>
+    <main className={REPORT_MAIN} style={userId ? undefined : ({ "--tabbar-h": "8px" } as React.CSSProperties)}>
       <CrashWordmark />
       <ReportPage
         // A signed-in caller cannot claim the signed-out door (`sendProblemReport`); the action forces `report` for the rest.

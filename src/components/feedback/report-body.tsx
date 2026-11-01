@@ -123,7 +123,7 @@ export function ReportBody({
   if (phase === "sent") {
     return (
       <div
-        className={`flex flex-col items-center gap-[8px] text-center ${page ? "px-[0px] pb-[42px] pt-[42px]" : "px-[24px] pb-[42px] pt-[42px] md:px-[18px] md:pb-[36px]"}`}
+        className={`flex flex-col items-center gap-[8px] text-center ${page ? "px-[8px] pb-[18px] pt-[26px]" : "px-[24px] pb-[42px] pt-[42px] md:px-[18px] md:pb-[36px]"}`}
         data-testid="report-sent"
       >
         <span aria-hidden className="flex h-[44px] w-[44px] items-center justify-center rounded-full border-[1.5px] border-solid border-[color:var(--success)] text-[19px] font-bold text-[color:var(--success)]">
@@ -191,7 +191,7 @@ export function ReportBody({
             type="submit"
             disabled={!ready || phase === "sending"}
             data-testid="report-send"
-            className={`${BUTTON} flex-1 border-transparent bg-[color:var(--fg)] font-medium text-[color:var(--bg)] ${page ? "min-w-[110px]" : "md:min-w-[110px] md:flex-none"} ${
+            className={`${BUTTON} flex-1 border-transparent bg-[color:var(--fg)] font-medium text-[color:var(--bg)] ${page ? "min-w-[110px] md:flex-none" : "md:min-w-[110px] md:flex-none"} ${
               phase === "sending" ? "opacity-75" : !ready ? "opacity-[0.45]" : ""
             }`}
           >

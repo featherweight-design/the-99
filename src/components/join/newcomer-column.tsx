@@ -12,6 +12,9 @@ import { Emphasis } from "./emphasis";
 export const NEWCOMER_MAIN =
   "flex min-h-dvh flex-col items-center bg-[color:var(--bg)] bg-[radial-gradient(600px_360px_at_50%_18%,color-mix(in_oklab,var(--accent)_12%,transparent),transparent_70%)] px-[24px] pb-[24px] pt-[44px] text-center";
 
+/** /report's frame (small items 8, board 6: `.cr7` over `.rp7`): the newcomer's wash, with no padding of its own; the wordmark and the column carry theirs. */
+export const REPORT_MAIN = NEWCOMER_MAIN.replace("items-center ", "").replace("px-[24px] pb-[24px] pt-[44px] ", "");
+
 /**
  * The flyer's landing frame (boards `Join-Phone` and `Join-Desktop`): the join frame, and from `md` the desktop frame's wash
  * (1000×520 at 50% 8%, the accent at 10%) with the column 72px under the top.
