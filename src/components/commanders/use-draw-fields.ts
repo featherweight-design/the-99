@@ -4,9 +4,10 @@
 // gap line and the fit parts ship for the URL's first window only, and the rest arrive from
 // `/api/discovery-fields` through the shared loop in `ui/use-withheld-fields.ts`, which holds the
 // rules. Keyed by slug; the ranking's sort AND role basis ride in the request, because `rank` and
-// the fit figures belong to a ranking. The basis is the one the page's payload was counted by, never
-// re-resolved by the route: an app-wide flip of LABEL_ROLE_COUNTS_ENABLED between the render and a
-// batch would otherwise merge the other basis's figures into this ranking (admin PR 6d-2).
+// the fit figures belong to a ranking. The basis is the one the page's payload was counted by. The
+// route always reads the labels entry (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31), and a `b` it
+// does not match (a classifier page, or a labels page whose read fell back) gets `{fields:{}}`, so
+// no other basis's figures are merged into this ranking (admin PR 6d-2).
 import { useMemo } from "react";
 import { isDrawn, type DiscoveryRow } from "../../lib/discovery/encode";
 import { MAX_FIELDS_BATCH } from "../../lib/discovery/fields-batch";

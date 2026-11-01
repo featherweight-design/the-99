@@ -93,8 +93,9 @@ export function DiscoveryView({
   basis,
 }: {
   encoded: EncodedDiscovery;
-  /** The role basis `encoded` was counted by (the reader's LABEL_ROLE_COUNTS_ENABLED at render). The
-      fields fetch asks for that basis's payload, so a later batch never mixes in the other's figures. */
+  /** The role basis `encoded` was counted by: always labels (LABEL_ROLE_COUNTS retired, Hugh
+      2026-10-31), unless the label read fell back to the classifier. The fields fetch names it, so a
+      later batch never mixes in the other's figures. */
   basis: RoleBasis;
   /** `Printed in ▾`'s index for `encoded`'s rows, aligned by position. Absent when the read
       failed, and then the control is not drawn and a `?p=` is not applied. */
