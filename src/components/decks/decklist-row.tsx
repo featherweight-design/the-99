@@ -43,6 +43,7 @@ import { useMomentAnchor } from "../moments/moments-provider";
 import { TwoFacedMark } from "../cards/two-faced-mark";
 import { usePreviewRow } from "./hover-preview";
 import { MutationError } from "./mutation-error";
+import { UndoShell } from "../ui/undo-row";
 import {
   useMarkSlotSpent,
   useRemoveOptimisticCard,
@@ -1067,41 +1068,24 @@ function UndoRow({
   const { isPending, error, undo: handleUndo } = useSpentSlotUndo(deckId, card);
 
   return (
-    <div>
-      <div
-        // Same marker a live row carries, for the same reason: a probe can
-        // address a receipt without matching a composed class list (H29).
-        data-decklist-row
-        className={`${rowShell} bg-surface-sunken border border-dashed border-border-strong`}
-      >
-        {/* No dot on a spent slot — the spacer keeps the name aligned with the
-            live rows above and below it. */}
-        <span className="flex-none w-[8px] h-[8px]" aria-hidden />
-        <span className="flex-1 min-w-0 whitespace-nowrap overflow-hidden text-ellipsis font-mono text-[12px] text-fg-locked">
-          {/* The name the reader's own copy prints, exactly as the row this
-              receipt replaces does — and as the list's own order does. A
-              receipt calling a renamed printing by its oracle name sits in the
-              list by one name and announces itself by another. */}
-          {addPanelCopy.undo.removed(deckRowName(card))}
-        </span>
-        {/* Absent once the undo has been refused: the message below tells the
-            player where to go instead. */}
-        {!error && (
-          <button
-            type="button"
-            onClick={handleUndo}
-            disabled={isPending}
-            className={`flex-none flex items-center px-0 ${TOUCH_HIT}
-              bg-transparent border-0 border-b border-b-accent-shadow border-accent-shadow
-              text-[12.5px] font-semibold leading-[1.4]
-              text-accent-text hover:text-accent-hover cursor-pointer disabled:opacity-50 disabled:cursor-default transition-colors`}
-            aria-label={addPanelCopy.undo.actionAria(deckRowName(card))}
-          >
-            {addPanelCopy.undo.action}
-          </button>
-        )}
-      </div>
-      {error && <MutationError message={error} />}
-    </div>
+    <UndoShell
+      // Same marker a live row carries, for the same reason: a probe can
+      // address a receipt without matching a composed class list (H29).
+      marks={{ "data-decklist-row": "" }}
+      shell={rowShell}
+      // No dot on a spent slot — the spacer keeps the name aligned with the
+      // live rows above and below it.
+      lead={<span className="flex-none w-[8px] h-[8px]" aria-hidden />}
+      // The name the reader's own copy prints, exactly as the row this
+      // receipt replaces does — and as the list's own order does. A
+      // receipt calling a renamed printing by its oracle name sits in the
+      // list by one name and announces itself by another.
+      label={addPanelCopy.undo.removed(deckRowName(card))}
+      action={addPanelCopy.undo.action}
+      actionAria={addPanelCopy.undo.actionAria(deckRowName(card))}
+      onUndo={handleUndo}
+      pending={isPending}
+      error={error}
+    />
   );
 }

@@ -238,6 +238,26 @@ describe("DecklistRow undo row (#185)", () => {
       pending.resolve({ ok: true });
     });
   });
+
+  // The receipt's look is now the shared `UndoShell` (hide a commander, README §2, reuses it): drawn exactly as it
+  // shipped. The row's marker, its sunken dashed shell over the caller's own row shell, the dot-width spacer, the
+  // mono name, and the accent Undo with its touch hit.
+  it("draws the receipt as it shipped", () => {
+    renderRow(<DecklistRow deckId="d1" card={card} spent newestAsOf={null} />);
+
+    const label = screen.getByText(addPanelCopy.undo.removed("Sol Ring"));
+    expect(label).toHaveClass("font-mono", "text-[12px]", "text-fg-locked", "flex-1", "text-ellipsis");
+    const row = label.parentElement as HTMLElement;
+    expect(row).toHaveAttribute("data-decklist-row");
+    expect(row).toHaveClass("bg-surface-sunken", "border", "border-dashed", "border-border-strong");
+    expect(row.firstElementChild).toHaveAttribute("aria-hidden", "true");
+    expect(row.firstElementChild).toHaveClass("w-[8px]", "h-[8px]");
+    const undo = within(row).getByRole("button", { name: addPanelCopy.undo.actionAria("Sol Ring") });
+    expect(undo).toHaveTextContent(addPanelCopy.undo.action);
+    expect(undo).toHaveClass("text-accent-text", "border-b-accent-shadow", "relative");
+    // The frame takes no focus of its own: only the commander row's refusal moves focus to it.
+    expect(row.parentElement).not.toHaveAttribute("tabindex");
+  });
 });
 
 // #43 — the marker rides the row it annotates and never gates it.

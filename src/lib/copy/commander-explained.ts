@@ -408,4 +408,17 @@ export const hideCommanderCopy = {
   /** The shared toast, when the write is refused and the page goes back. */
   hideRefused: (name: string) => `We couldn’t hide ${name}. Try again.`,
   unhideRefused: (name: string) => `We couldn’t unhide ${name}. Try again.`,
+  /** A list row's refusal toast (README §2): its Try again button carries the retry, so the line does not repeat it. */
+  rowHideRefused: (name: string) => `We couldn’t hide ${name}.`,
+  /** The refusal toast's action: the same hide, asked again. */
+  retry: "Try again",
+  /** The glyph on a For you or Discover row (README §1): its `aria-label` and its `title`. DRAFT. */
+  rowHide: (name: string) => `Hide ${name}`,
+  /** The in-place Undo row the glyph leaves (README §2), in the deck builder's receipt voice. DRAFT. */
+  undoRow: {
+    label: (name: string) => `${name} hidden`,
+    actionAria: (name: string) => `Undo hiding ${name}`,
+    /** The undo was refused: the commander is still hidden, so the Hidden tab is the way back. DRAFT. */
+    refused: "Couldn’t bring that back. Unhide it from Hidden.",
+  },
 } as const;

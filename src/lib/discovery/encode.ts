@@ -227,6 +227,13 @@ export function cutToWindow(encoded: EncodedDiscovery, keep: ReadonlySet<string>
 }
 
 /** The draw fields of the rows named, decoded, for the fields route. Rows not in the list answer nothing. */
+/** Where the row with this slug stands in the payload, or -1. Rows keep their order, so this indexes the payload's
+    server-side `oracleIds` too. */
+export function rowIndexOfSlug(encoded: EncodedDiscovery, slug: string): number {
+  const slugAt = encoded.keys.indexOf("slug");
+  return encoded.rows.findIndex((row) => row[slugAt] === slug);
+}
+
 export function drawFieldsFor(encoded: EncodedDiscovery, slugs: ReadonlySet<string>): Record<string, DrawFields> {
   const { keys, gapKinds, strings, rows } = encoded;
   const slugAt = keys.indexOf("slug");

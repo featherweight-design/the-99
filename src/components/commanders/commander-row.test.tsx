@@ -459,3 +459,49 @@ describe("the row’s art and its position", () => {
     }
   });
 });
+
+// Hide a commander (design_handoff_the99_hide_commander README §1, R1c option A): a bare eye-off glyph beside the
+// Fit bar, a real button above the stretched link, and a SIBLING of the bar's `aria-hidden` wrapper, never in it.
+describe("CommanderRow · the Hide glyph", () => {
+  it("draws a labelled button beside the bar, outside the bar's aria-hidden wrapper", () => {
+    const onHide = vi.fn();
+    const { container } = render(<CommanderRow item={view()} onHide={onHide} />);
+
+    const glyph = screen.getByRole("button", { name: "Hide Atraxa, Praetors' Voice" });
+    expect(glyph).toHaveAttribute("title", "Hide Atraxa, Praetors' Voice");
+    // Reachable at all: a button under `aria-hidden` is in no accessibility tree.
+    expect(glyph.closest("[aria-hidden='true']")).toBeNull();
+    // Above the row's stretched link (`z-[1]`), so a press never opens the page.
+    expect(glyph).toHaveClass("z-[2]", "w-[44px]", "h-[44px]", "text-[color:var(--fg-faint)]");
+    expect(container.querySelector("a")).toHaveClass("z-[1]");
+
+    // On the bar's own line: the bar's wrapper and the glyph share one parent.
+    const track = container.querySelector("div.rounded-full.overflow-hidden")!;
+    const wrapper = track.closest("[aria-hidden='true']")!;
+    expect(wrapper.parentElement).toBe(glyph.parentElement);
+    // Phone: the bar takes what the target leaves. Desktop: it keeps its 520px and the glyph sits at the right edge.
+    expect(wrapper).toHaveClass("flex-1", "sm:flex-[0_1_520px]");
+    expect(glyph).toHaveClass("sm:ml-auto");
+
+    // Drawn at 16px, the eye with a slash.
+    const svg = glyph.querySelector("svg")!;
+    expect(svg).toHaveAttribute("width", "16");
+    expect(svg).toHaveAttribute("aria-hidden", "true");
+
+    glyph.click();
+    expect(onHide).toHaveBeenCalledTimes(1);
+  });
+
+  it("names the copy the reader owns", () => {
+    render(<CommanderRow item={view({ printedName: "Atraxa, Grand Unifier" })} onHide={() => {}} />);
+    expect(screen.getByRole("button", { name: "Hide Atraxa, Grand Unifier" })).toBeInTheDocument();
+  });
+
+  it("draws no glyph, and the bar as it shipped, for a caller that hands no onHide", () => {
+    const { container } = row();
+    expect(screen.queryByRole("button")).toBeNull();
+    const wrapper = container.querySelector("div.rounded-full.overflow-hidden")!.closest("[aria-hidden='true']")!;
+    expect(wrapper).toHaveClass("w-full");
+    expect((wrapper as HTMLElement).style.maxWidth).toBe("520px");
+  });
+});

@@ -14,6 +14,8 @@ import { useRouter } from "next/navigation";
 import { hideCommanderAction, unhideCommanderAction } from "../../app/commanders/actions";
 import { explainedCopy, hideCommanderCopy } from "../../lib/copy/commander-explained";
 import { ToastFrame, useToastClock } from "../collection/edit-toast";
+import { EyeOff } from "./eye-off";
+import { TOUCH_HIT } from "../ui/touch-hit";
 
 type Control = "hide" | "unhide";
 
@@ -113,7 +115,19 @@ export function CommanderHideProvider({
   );
 }
 
-function RefusalToast({ title, onDone }: { title: string; onDone: () => void }) {
+/**
+ * The shared refusal toast: `ToastFrame` in the centre slot, role alert, on the shared clock. The page draws
+ * it bare; a list row passes `onRetry`, the Undo board's *Try again*, which asks the same hide again.
+ */
+export function RefusalToast({
+  title,
+  onDone,
+  onRetry,
+}: {
+  title: string;
+  onDone: () => void;
+  onRetry?: () => void;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState(false);
   const [focus, setFocus] = useState(false);
@@ -125,31 +139,21 @@ function RefusalToast({ title, onDone }: { title: string; onDone: () => void }) 
       placement="center"
       kind="hide-refused"
       title={title}
+      actions={
+        onRetry ? (
+          <button
+            type="button"
+            onClick={onRetry}
+            // The Undo board's `.ta`: a 36px outlined button in `--fg`, 600 13px, radius 8, 12px in; the
+            // shared hit area lifts it to 44 under a coarse pointer.
+            className={`${TOUCH_HIT} inline-flex h-[36px] flex-none cursor-pointer items-center rounded-[8px] bg-transparent px-[12px] font-sans text-[13px] font-semibold text-[color:var(--fg)] [border:1px_solid_var(--border-strong)]`}
+          >
+            {hideCommanderCopy.retry}
+          </button>
+        ) : undefined
+      }
       onHold={(which, on) => (which === "hover" ? setHover : setFocus)(on)}
     />
-  );
-}
-
-/** The eye with a slash through it: the Page board's glyph, drawn by the note and by the Hide line. */
-function EyeOff({ size, style }: { size: number; style?: React.CSSProperties }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.8}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      style={{ flex: "none", ...style }}
-    >
-      <path d="M10.7 5.1A10.7 10.7 0 0 1 21.9 11.7a1 1 0 0 1 0 .7 10.7 10.7 0 0 1-1.4 2.5" />
-      <path d="M14.1 14.2a3 3 0 0 1-4.2-4.2" />
-      <path d="M17.5 17.5A10.8 10.8 0 0 1 2.1 12.3a1 1 0 0 1 0-.7 10.8 10.8 0 0 1 4.4-5.1" />
-      <path d="m2 2 20 20" />
-    </svg>
   );
 }
 

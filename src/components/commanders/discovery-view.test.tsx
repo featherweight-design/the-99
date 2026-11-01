@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { DiscoveryList } from "../../lib/discovery/list";
 import { cutToWindow, encodeDiscovery, type EncodedDiscovery } from "../../lib/discovery/encode";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
@@ -24,8 +24,17 @@ vi.mock("next/navigation", () => ({
 // out of the payload. Mocked rather than stubbed at the fetch layer, because the
 // action IS the boundary — it reaches the database, and importing it for real
 // would pull the driver into a component test.
-const { findExcluded } = vi.hoisted(() => ({ findExcluded: vi.fn() }));
-vi.mock("../../app/commanders/actions", () => ({ findExcludedMatches: findExcluded }));
+const { findExcluded, hideDiscover, unhide } = vi.hoisted(() => ({
+  findExcluded: vi.fn(),
+  // The row's hide and its undo (hide a commander, README §2): the real actions reach the database.
+  hideDiscover: vi.fn<(slug: string, sort: string) => Promise<string | null>>(),
+  unhide: vi.fn<(oracleId: string) => Promise<boolean>>(),
+}));
+vi.mock("../../app/commanders/actions", () => ({
+  findExcludedMatches: findExcluded,
+  hideDiscoverCommanderAction: hideDiscover,
+  unhideCommanderAction: unhide,
+}));
 
 // The rack mounts exactly one treatment, chosen in JS off `CHASSIS_WIDE_MIN_PX`, so a
 // test that does not say which width it is at gets the phone — where the pips
@@ -1199,5 +1208,119 @@ describe("DiscoveryView — the rows' art and their place in the list", () => {
     } finally {
       vi.unstubAllGlobals();
     }
+  });
+});
+
+// Hide a commander on Discover (design_handoff_the99_hide_commander README §1-2): the same glyph and Undo row as For
+// you, and a client cache of rankings that must not hand a hidden row back on a sort flip.
+describe("DiscoveryView · hiding a row", () => {
+  beforeEach(() => {
+    stubWidth(true);
+    replace.mockClear();
+    findExcluded.mockReset();
+    findExcluded.mockResolvedValue([]);
+    hideDiscover.mockReset();
+    unhide.mockReset();
+    window.history.replaceState(null, "", "/discover");
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  const rows3 = [
+    item({ slug: "a", name: "Alpha", rank: 1 }),
+    item({ slug: "b", name: "Bravo", rank: 2 }),
+    item({ slug: "c", name: "Charlie", rank: 3 }),
+  ];
+  const cardsNow = () => screen.getAllByRole("listitem");
+  const glyph = (name: string) => screen.getByRole("button", { name: `Hide ${name}` });
+  const undo = (name: string) => screen.queryByRole("button", { name: `Undo hiding ${name}` });
+  const rowLink = (name: string) => screen.queryByRole("link", { name: new RegExp(`^${name} · `) });
+  const flip = (label: string) => {
+    fireEvent.click(screen.getByRole("button", { name: /^Order · / }));
+    fireEvent.click(screen.getByRole("menuitemradio", { name: label }));
+  };
+
+  it("hides by slug against the drawn sort, and keeps the Undo row and the ranks below through the next payload", async () => {
+    hideDiscover.mockResolvedValue("oracle-b");
+    const { rerender } = render(
+      <DiscoveryView basis="classifier" encoded={list({ items: rows3, candidateCount: 3 })} />,
+    );
+
+    await act(async () => {
+      fireEvent.click(glyph("Bravo"));
+    });
+    expect(hideDiscover).toHaveBeenCalledWith("b", "fit");
+    expect(cardsNow()[1]).toHaveTextContent("Bravo hidden");
+    expect(undo("Bravo")).toHaveFocus();
+    expect(rowLink("Bravo")).toBeNull();
+
+    // The server's next payload leaves Bravo out and ranks Charlie 2. The Undo row stands where Bravo was, and
+    // Charlie keeps the 3 the reader saw until the next load.
+    rerender(
+      <DiscoveryView
+        basis="classifier"
+        encoded={list({ items: [rows3[0], { ...rows3[2], rank: 2 }], candidateCount: 2 })}
+      />,
+    );
+    expect(cardsNow()[1]).toHaveTextContent("Bravo hidden");
+    expect(within(cardsNow()[2]).getAllByText("3").length).toBeGreaterThan(0);
+
+    // Undo hands back the oracle id the hide answered: no payload carries the slug any longer.
+    unhide.mockResolvedValue(true);
+    await act(async () => {
+      fireEvent.click(undo("Bravo")!);
+    });
+    expect(unhide).toHaveBeenCalledWith("oracle-b");
+    expect(rowLink("Bravo")).toBeInTheDocument();
+    expect(within(cardsNow()[1]).getAllByText("2").length).toBeGreaterThan(0);
+    expect(glyph("Bravo")).toHaveFocus();
+  });
+
+  it("never brings a hidden row back from a ranking cached before the hide", async () => {
+    hideDiscover.mockResolvedValue("oracle-b");
+    const fit = list({ items: rows3, candidateCount: 3 });
+    const fresh = list({
+      items: [item({ slug: "b", name: "Bravo", rank: 1 }), item({ slug: "a", name: "Alpha", rank: 2 })],
+      candidateCount: 2,
+      sort: "new",
+    });
+    const { rerender } = render(<DiscoveryView basis="classifier" encoded={fit} />);
+    // Rank `new` once, so it sits in the client cache with Bravo in it.
+    flip(discoverCopy.order.somethingNew);
+    window.history.replaceState(null, "", "/discover?o=new");
+    rerender(<DiscoveryView basis="classifier" encoded={fresh} />);
+    flip(discoverCopy.order.bestFit);
+    expect(replace).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      fireEvent.click(glyph("Bravo"));
+    });
+
+    // Served again from the cache, no request: Bravo is the Undo row there too, never the row.
+    flip(discoverCopy.order.somethingNew);
+    expect(replace).toHaveBeenCalledTimes(1);
+    expect(rowLink("Bravo")).toBeNull();
+    expect(cardsNow()[0]).toHaveTextContent("Bravo hidden");
+  });
+
+  it("brings a refused hide's row back with the shared toast, and points to Hidden when the undo is refused", async () => {
+    hideDiscover.mockResolvedValue(null);
+    render(<DiscoveryView basis="classifier" encoded={list({ items: rows3, candidateCount: 3 })} />);
+    await act(async () => {
+      fireEvent.click(glyph("Alpha"));
+    });
+    expect(rowLink("Alpha")).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("We couldn’t hide Alpha.");
+
+    hideDiscover.mockResolvedValue("oracle-c");
+    unhide.mockRejectedValue(new Error("down"));
+    await act(async () => {
+      fireEvent.click(glyph("Charlie"));
+    });
+    await act(async () => {
+      fireEvent.click(undo("Charlie")!);
+    });
+    expect(screen.getByText("Charlie hidden")).toBeInTheDocument();
+    expect(undo("Charlie")).toBeNull();
+    expect(screen.getByText("Couldn’t bring that back. Unhide it from Hidden.")).toHaveAttribute("role", "alert");
   });
 });

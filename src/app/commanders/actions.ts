@@ -13,6 +13,12 @@ import { deleteAllScores } from "../../lib/recs/store";
 import { getCollectionStats } from "../../lib/home/summary";
 import { hideCommander, isHideable, unhideCommander } from "../../lib/commanders/hidden";
 import { isUuid } from "../../lib/uuid";
+import { loadDiscoveryPayload } from "../../lib/discovery/payload";
+import { rowIndexOfSlug } from "../../lib/discovery/encode";
+import { requestSwitchEnv } from "../../lib/switches/request";
+
+/** A list row's slug, as `/api/discovery-fields` validates one. */
+const ROW_SLUG = /^[a-z0-9-]{1,200}$/;
 
 /**
  * Retry action for the commanders recommendations page.
@@ -117,6 +123,27 @@ export async function hideCommanderAction(oracleId: unknown): Promise<boolean> {
   await hideCommander(userId, oracleId as string);
   revalidateUserLists(userId);
   return true;
+}
+
+/**
+ * Hide a commander from a Discover row, which ships no oracle id (it was a sizable share of the payload): the slug is
+ * read against the reader's own cached payload of the sort the row was drawn from, whose rows the server-side
+ * `oracleIds` align with by position. That is the page's own loader, so one cache hit.
+ *
+ * Answers the oracle id it hid, which is what the row's Undo hands `unhideCommanderAction`: once the hide drops the
+ * list cache, no payload carries the slug to read it from. Null is a refusal: a slug or sort that is not one, a slug
+ * the payload does not hold, or no card behind it.
+ */
+export async function hideDiscoverCommanderAction(slug: unknown, sort: unknown): Promise<string | null> {
+  const userId = await requireUserId();
+  if (typeof slug !== "string" || !ROW_SLUG.test(slug) || (sort !== "fit" && sort !== "new")) return null;
+  const { encoded, oracleIds } = await loadDiscoveryPayload(userId, sort, await requestSwitchEnv(userId));
+  const at = rowIndexOfSlug(encoded, slug);
+  const oracleId = at === -1 ? undefined : oracleIds[at];
+  if (!oracleId || !(await isHideable(oracleId))) return null;
+  await hideCommander(userId, oracleId);
+  revalidateUserLists(userId);
+  return oracleId;
 }
 
 /**
