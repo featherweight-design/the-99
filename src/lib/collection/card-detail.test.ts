@@ -522,6 +522,12 @@ describe("loadCardDetail's round trips", () => {
       loadTokenDetail: async (id: string) => { asked.token.push(id); return opts.token ?? null; },
     }));
     vi.resetModules();
+    // Settle the mocked db (and drizzle-orm) into the fresh registry before the loader runs. The
+    // loader's reads import `../../db` lazily and concurrently (`proxyingDecks` and `fitsGate` in the
+    // same tick), and a second concurrent first import of a `doMock`ed module can be handed its
+    // still-empty exports, so the gate read `undefined.execute`, threw, and was swallowed to `{}`.
+    await import("../../db");
+    await import("drizzle-orm");
     const mod = await import("./card-detail");
     return { load: mod.loadCardDetail, asked };
   }
