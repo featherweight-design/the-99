@@ -103,8 +103,9 @@ async function main() {
           throw new CopyRefused("the target's catalog moved while the copy built its requests: nothing was written; run the copy again");
         }
         const now = new Date();
-        // The log head under the lock this publish holds, the check's mark (`checked_seen_seq`).
-        const checkedSeenSeq = await readLogHead(tx);
+        // The check's mark (`checked_seen_seq`): the log head read before any request was built, a lower bound on what
+        // the check saw. Read before the transaction, since a failed read inside it would abort the publish.
+        const checkedSeenSeq = seenSeq;
         for (const r of plan.install) {
           const row = {
             preconFile: r.file, contractVersion: contract, roleBasis: basis, listFingerprint: r.listFingerprint, inputHash: r.inputHash, model: r.model,

@@ -130,8 +130,10 @@ async function main(): Promise<number> {
   // a catalog write or a change log entry landing during the run is past them, so the reading it might
   // have changed is judged not current (or the entry still reported) rather than hidden. Unreadable,
   // the log head is never guessed: no reading is written this run.
-  // THE OVERVIEW'S OWN CHECK MARK (`checked_seen_seq`): the log head under the ingest lock, read BEFORE the inputs it vouches
-  // for are hashed, so a start copies exactly what this check saw. Unreadable is null, which readers take as no mark.
+  // THE OVERVIEW'S OWN CHECK MARK (`checked_seen_seq`): the log head under the ingest lock, read once at the start of
+  // the run, BEFORE any input is hashed or re-checked, so it is a lower bound on what the check saw (a later entry
+  // reads as unseen, never the reverse), even for a row a batch stores hours on. Unreadable is null, which readers
+  // take as no mark. A dry run writes nothing, so takes none.
   const checkMark = () => withCatalogIngestLock(process.env.DATABASE_URL!, () => readLogHead(db));
   const readingStamps = async () => ({ catalog: await readCatalogGeneration(), seenSeq: await readLogHead(db) });
   const stamps = await readingStamps();
@@ -278,14 +280,13 @@ async function main(): Promise<number> {
     // stored either way (it is paid for), but current only when this database still builds the very
     // request it answered; otherwise the next run, or the copy, writes or checks it again.
     const at = await readingStamps();
-    const checkedAtStore = await checkMark();
     const now = await buildPreconRequest(s.file);
     const fits = now.ok && now.hash === m.hash && now.list === m.list;
     if (!fits) moved.push(s.file);
     if (withAlternate.has(s.file) && s.content.alternate === undefined) console.log(`  ${s.file}: stored without its alternate line (the box has alternates; the reply's line failed its check or was absent)`);
     const row = {
       preconFile: s.file, contractVersion: contract, roleBasis: basis, listFingerprint: m.list, inputHash: m.hash, model, content: s.content,
-      inputTokens: s.usage.input, outputTokens: s.usage.output, costMicroUsd: s.micro, current: fits, createdAt: new Date(), checkedAt: new Date(), checkedSeenSeq: checkedAtStore,
+      inputTokens: s.usage.input, outputTokens: s.usage.output, costMicroUsd: s.micro, current: fits, createdAt: new Date(), checkedAt: new Date(), checkedSeenSeq: checked,
       // The reading of the request this database builds NOW, whatever the Overview's fit: judged by its own key.
       ...(now.ok ? readingFor(now, at) : NO_PRECON_READING),
     };
