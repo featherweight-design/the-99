@@ -157,6 +157,14 @@ describe("an exception's message", () => {
       "If you've verified your configuration and are still seeing this error, there may be a runtime issue or a problem communicating with Clerk.",
       "For more details, see https://clerk.com/err/auth-middleware",
     ]) expect(source).toContain(line);
+    // The step line and the file reference come from two other files of the package.
+    const auth = readFileSync(join(process.cwd(), "node_modules/@clerk/nextjs/dist/esm/app-router/server/auth.js"), "utf8");
+    for (const line of [
+      '"middleware.(ts|js) or proxy.(ts|js)"',
+      "`Your ${middlewareFileReference} file exists at ./${isSrcAppDir ? \"src/\" : \"\"}${fileName}`",
+    ]) expect(auth).toContain(line);
+    const versions = readFileSync(join(process.cwd(), "node_modules/@clerk/nextjs/dist/esm/utils/sdk-versions.js"), "utf8");
+    expect(versions).toContain('isNext16OrHigher ? "middleware or proxy" : "middleware"');
   });
 });
 
