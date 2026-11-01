@@ -56,11 +56,6 @@ export const ALLOWED = [
  */
 /** @type {Record<string, { pr: string, reason?: string, uses: Record<string, number> }>} */
 export const DEFAULTS_PENDING = {
-  "src/lib/decks/label-counts-flag.ts": {
-    pr: "keep",
-    reason: "`envForPageBasis`'s `environment`: it reads the ENVIRONMENT's kill switch (`off`) on purpose, which no resolved env carries",
-    uses: { "envForPageBasis:default:environment": 1 },
-  },
   "src/lib/intake/stub.ts": {
     pr: "keep",
     reason: "reads only `NODE_ENV`, `INTAKE_LIVE`, `INTAKE_STUB` and `INTAKE_STUB_DELAY_MS`: deployment settings for the model stand-in, none of them a registry switch, so `resolveEnv` passes each through unchanged and a reader's env could not differ",

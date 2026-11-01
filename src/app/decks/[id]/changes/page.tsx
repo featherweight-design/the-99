@@ -195,7 +195,7 @@ export default async function ChangesPage({
     ...rows.out.map((r) => ({ oracleId: r.oracleId, typeLine: r.typeLine })),
   ].filter((c): c is { oracleId: string; typeLine: string } => c.oracleId !== undefined));
   // The read failed: counts fall back to the classifier, so the targets do too.
-  const settled = settleLabelRead(true, [labelRead], []);
+  const settled = settleLabelRead([labelRead], []);
   const labelRows = settled.rows;
   const shownMix = settled.classifierTargets ? await loadDeckMix(id, userId, "classifier") : mix;
 
