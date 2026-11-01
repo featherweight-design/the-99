@@ -16,7 +16,7 @@
 // list, loading AGAIN, then the results, because the settled read remounted the results' Suspense.
 //
 // Run it against a dev server with the stub held long enough to see the reading phase
-// (`INTAKE_STUB_DELAY_MS=5000`, `HELP_ME_CHOOSE_ENABLED=true`). It writes reads to the server's
+// (`INTAKE_STUB_DELAY_MS=5000`). It writes reads to the server's
 // database, so that must be local-dev or a scratch branch; it deletes the reads it made.
 //
 //   PROBE_TARGET_URL=<scratch> E2E_AUDIT_USER_EMAIL=... PROBE_BASE=http://localhost:3417 \

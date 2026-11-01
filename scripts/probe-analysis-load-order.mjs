@@ -14,8 +14,7 @@
 //        comparison cannot prove that, since a fast response lands in the empty state's own frame on
 //        a correct build. On a second, unheld load the note must arrive within 2.5s of the empty state.
 //        On the held load the Tuning hub under the empty state must not move, from its first frame
-//        through the note's landing (PROBE_HUB=on, the default), for a note of up to two lines: two of
-//        its lines are reserved. A longer note may move it by its extra lines, and is named.
+//        through the note's landing, for a note of up to two lines: two of its lines are reserved. A longer note may move it by its extra lines, and is named.
 //   d.   The tab row stays one line with Analysis selected, on a deck with versions.
 //
 // It WRITES, on the deck it walks, only what the deck lacked: a reading (Analyze) and an overview
@@ -52,11 +51,6 @@ const sql = neon(TARGET);
 // How long after a never-analyzed deck's empty state its credit note may land (#1465: measured at
 // about 0.7 to 2s, the note's own read).
 const NOTE_BOUND_MS = 2_500;
-// Whether the server has the Tuning hub on (Mana Balance, always on with ANALYSIS_TAB_ENABLED, plus
-// TUNING_ENABLED or PROPOSED_CUTS_ENABLED; Mana Balance lets it draw on a deck with no reading). On by default:
-// the hub must then stay put while the credit note lands. PROBE_HUB=off skips that one check, saying so.
-const HUB = process.env.PROBE_HUB ?? "on";
-if (HUB !== "on" && HUB !== "off") throw new Error("Set PROBE_HUB to on or off, matching the server's Tuning switches.");
 
 let failures = 0;
 function report(label, ok, detail) {
@@ -300,17 +294,14 @@ async function run() {
       // late, well after the hub's first frame, so a move cannot hide in one frame.
       await held.waitForTimeout(1_000);
       const hubTops = await held.evaluate(() => window.__hubTops);
-      if (HUB === "on") {
-        const shape = await held.evaluate(NOTE_SHAPE, PAGE);
-        const judged = judgeHubMove(hubTops.map((t) => t.top), shape);
-        report(at(judged.strict
-          ? `the Tuning hub stays put from its first frame through the ${judged.variant} note's landing`
-          : `the Tuning hub moves by at most the ${judged.variant} note's lines past the reserved two`),
-          noteAfter && judged.ok,
-          JSON.stringify({ variant: judged.variant, moved: judged.moved, allowed: judged.allowed, lines: shape?.lines ?? null, tops: hubTops, noteAt: (await held.evaluate(() => window.__parts.pressNote ?? null)) }));
-      } else {
-        console.log(`  info  ${at("PROBE_HUB=off: the hub's stillness is not checked")} — ${JSON.stringify(hubTops)}`);
-      }
+      // The Tuning hub is always on, and Mana Balance lets it draw on a deck with no reading.
+      const shape = await held.evaluate(NOTE_SHAPE, PAGE);
+      const judged = judgeHubMove(hubTops.map((t) => t.top), shape);
+      report(at(judged.strict
+        ? `the Tuning hub stays put from its first frame through the ${judged.variant} note's landing`
+        : `the Tuning hub moves by at most the ${judged.variant} note's lines past the reserved two`),
+        noteAfter && judged.ok,
+        JSON.stringify({ variant: judged.variant, moved: judged.moved, allowed: judged.allowed, lines: shape?.lines ?? null, tops: hubTops, noteAt: (await held.evaluate(() => window.__parts.pressNote ?? null)) }));
       await held.unrouteAll({ behavior: "ignoreErrors" });
       await held.close();
 

@@ -16,8 +16,8 @@
  * the staple case (H4): its stand-ins include Sol Ring, a universal staple, whose row names it as
  * one, and sorts last in its type group (v2 D1). Each group shows five rows; every `Show all` is
  * PRESSED and read back for the count it names, `aria-expanded` and its height. An unowned
- * card is a Shopping row. The deck is deleted in a `finally`, and the account's About row is put back as the run found it. Needs a server with
- * `SWAP_TOOLS_ENABLED=true`. Point it at `local-dev`, never production.
+ * card is a Shopping row. The deck is deleted in a `finally`, and the account's About row is put back as the run found it.
+ * Point it at `local-dev`, never production.
  */
 import { readFileSync } from "node:fs";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";

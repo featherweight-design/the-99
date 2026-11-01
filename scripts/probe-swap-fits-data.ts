@@ -38,9 +38,6 @@ import { loadUniversalStaples } from "../src/lib/staples/universal";
 // No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
 neonConfig.webSocketConstructor = ws;
-// The card payload's Fits gate reads only with the swap tools on, as a deployment with them on does.
-process.env.SWAP_TOOLS_ENABLED = "true";
-
 const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);
 const pool = new Pool({ connectionString: DATABASE_URL });
 const fixture = drizzle(pool);

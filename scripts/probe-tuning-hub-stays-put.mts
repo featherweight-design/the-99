@@ -39,9 +39,7 @@
 // is a stand-in (`scripts/lib/model-stand-in.mjs`). A dummy ANTHROPIC_API_KEY on the server as well
 // makes a mistake fail instead of spending.
 //
-// The same switches must be given to the server: ANALYSIS_TAB_ENABLED, TUNING_ENABLED and
-// PROPOSED_CUTS_ENABLED all `true` (Mana Balance is always on with the tab), and SYNOPSIS_STUB_DELAY_MS=3000 so the
-// running state lasts long enough to be seen. Local-dev or a scratch branch only: it refuses
+// Start the server with SYNOPSIS_STUB_DELAY_MS=3000 so the running state lasts long enough to be seen. Local-dev or a scratch branch only: it refuses
 // staging and production by `neon.branch_id`, and a non-loopback PROBE_BASE.
 //
 //   PROBE_BASE=http://localhost:3462 pnpm probe:tuning-hub-stays-put
@@ -73,9 +71,6 @@ const WIDTHS = (process.env.PROBE_WIDTH ? [Number(process.env.PROBE_WIDTH)] : [1
 const sql = neon(DATABASE_URL);
 // PROBE_CASES=walk or =cuts runs one case; both by default.
 const CASES = (process.env.PROBE_CASES ?? "walk,cuts").split(",");
-// No signed-in reader here: the run store's switch reads take the environment itself (`process.env`).
-process.env.PROPOSED_CUTS_ENABLED = "true";
-process.env.ANALYSIS_TAB_ENABLED = "true";
 const { readProposedCuts } = await import("../src/lib/decks/cuts-read");
 const { persistCutsRun, startCutsRun } = await import("../src/lib/tuning/cuts-run-store");
 

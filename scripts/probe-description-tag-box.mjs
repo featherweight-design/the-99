@@ -6,7 +6,7 @@
 // 3. THE SAVE STORES PLAIN WORDS. Blurring the box (or pressing Save in the Suggested changes editor) saves; the
 //    deck's `intent` column then holds the card's name and no `[[`.
 //
-// Needs a server with TUNING_ENABLED, ANALYSIS_TAB_ENABLED true, signed in as E2E_AUDIT_USER_EMAIL, and one of that
+// Needs a server signed in as E2E_AUDIT_USER_EMAIL, and one of that
 // account's decks (DESCRIPTION_DECK) on which the description box is offered (no analysis run yet, or one that has the
 // "Describe your deck" row). It WRITES the deck's `intent` and puts it back, so it FAILS CLOSED: the server must be on
 // this machine, and the database the worktree's .env names must not report the production or staging Neon branch.

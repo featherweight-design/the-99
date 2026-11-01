@@ -45,7 +45,7 @@
 // writes the overview when its credit note says so (#916), through the stand-in, and that row is deleted
 // again with its ledger unit after each width and in the `finally` (`lib/overview-drop.mjs`). It touches
 // no deck, no collection and no catalog row. Signs in through Clerk's dev instance — see the local-auth note in memory.
-// Needs a server with ANALYSIS_TAB_ENABLED=true. Point it at `local-dev`, never production.
+// Point it at `local-dev`, never production.
 //
 //   PROBE_BASE=http://localhost:3010 node scripts/probe-verdict-block.mjs
 import { readFileSync } from "node:fs";
@@ -633,7 +633,7 @@ async function run() {
       const analysisAt = tabs.findIndex((t) => /analysis/i.test(t));
       if (!report(`${label}px · the Analysis tab is drawn`, analysisAt !== -1,
           analysisAt === -1
-            ? "absent — is ANALYSIS_TAB_ENABLED set on the server this port is serving?"
+            ? "absent — is this port serving this worktree?"
             : "present")) {
         await ctx.close();
         continue;

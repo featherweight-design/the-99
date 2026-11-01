@@ -12,7 +12,7 @@
 //   PROBE_BASE=http://localhost:3410 node scripts/probe-card-swipe-steady.mjs
 //
 // PROBE_SHOPPING=1 opens from the Shopping tab of the account's deck with the most cards to buy,
-// where the stand-ins door draws (needs a server with SWAP_TOOLS_ENABLED on). PROBE_MIN=1 swipes
+// where the stand-ins door draws. PROBE_MIN=1 swipes
 // the sheet to its min snap first. PROBE_HEIGHT sets the phone's height (default 844; 664 is a
 // phone browser with its bars showing, where the card is sized from the band). PROBE_ENGINE=webkit
 // runs WebKit, with PROBE_MOUSE=1 since it takes no CDP touch. PROBE_DECK_ID picks the deck.
@@ -160,7 +160,7 @@ try {
   const strip = await page.locator("[data-testid=card-sheet] [data-testid=stand-in-door]").count();
   // The Shopping run exists for the strip: without one it measures the case that was already steady.
   if (process.env.PROBE_SHOPPING === "1" && strip === 0)
-    throw new Error("PROBE_SHOPPING=1 opened a card with no stand-ins strip: run a server with SWAP_TOOLS_ENABLED on, and a deck whose second Shopping row is an unlocked card.");
+    throw new Error("PROBE_SHOPPING=1 opened a card with no stand-ins strip: pick a deck whose second Shopping row is an unlocked card.");
   console.log(`  phone: door strip ${strip ? "drawn" : "absent"}`);
   if (process.env.PROBE_MIN === "1") {
     await drag(page, [195, 200], [195, 520], 12);

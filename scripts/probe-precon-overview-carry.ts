@@ -12,7 +12,6 @@
 //   fresh copies nothing and says to fall back.
 //   THE FIRST EDIT: one card added through `touchDeck` makes the same read call it stale.
 //   NOT CURRENT: a deck started from a precon whose row is not current gets the reading, no Overview.
-//   SWITCH OFF: with the Analysis tab off, nothing at all.
 // It writes decks under a per-run user id and deletes them, and the precon row it wrote, in a
 // `finally`. Scratch branch only (`assertScratchBranch`), named by `PROBE_DB_URL`.
 //
@@ -26,10 +25,9 @@ requireEnv(["PROBE_DB_URL"]);
 process.env.DATABASE_URL = process.env.PROBE_DB_URL;
 
 const USER = `probe-precon-carry-${Date.now()}`;
-// The owner's switches: the Analysis tab, and contract 13 (the stages shape), what production writes.
+// The owner's switch: contract 13 (the stages shape), what production writes.
 // The build below writes the labels role basis, the only one the carry-over attaches.
-const ON = { ...process.env, ANALYSIS_TAB_ENABLED: "true", OVERVIEW_V2_ENABLED: "true" } as NodeJS.ProcessEnv;
-const OFF = { ...ON, ANALYSIS_TAB_ENABLED: "" } as NodeJS.ProcessEnv;
+const ON = { ...process.env, OVERVIEW_V2_ENABLED: "true" } as NodeJS.ProcessEnv;
 
 let failures = 0;
 const check = (label: string, ok: boolean, detail: string) => {
@@ -157,12 +155,6 @@ async function main() {
     check("a precon whose row is not current: the reading, no Overview", !nc.attached && nc.reason === "not_current" && !!ncReading, `${JSON.stringify(nc)}, reading ${!!ncReading}`);
     const [ncSrc] = await db.select({ createdAt: preconSynopses.createdAt }).from(preconSynopses).where(and(mine, eq(preconSynopses.preconFile, files[1])));
     check("with no Overview attached the reading keeps its own date", !!ncReading && ncReading.computedAt.getTime() !== ncSrc.createdAt.getTime() && Date.now() - ncReading.computedAt.getTime() < 10 * 60_000, `reading ${ncReading?.computedAt.toISOString()}, precon ${ncSrc.createdAt.toISOString()}`);
-
-    const third = await start(files[0]);
-    const off = await carryOverPreconOverview(third, USER, OFF);
-    const [offReading] = await db.select().from(deckProfiles).where(eq(deckProfiles.deckId, third));
-    const [offRow] = await db.select().from(deckSynopses).where(eq(deckSynopses.deckId, third));
-    check("with the Analysis tab off, nothing at all", !off.attached && off.reason === "off" && !offReading && !offRow, JSON.stringify(off));
   } finally {
     if (made.length > 0) await db.delete(decks).where(inArray(decks.id, made));
     if (logged.length > 0) await db.delete(deckDataChanges).where(inArray(deckDataChanges.seq, logged));

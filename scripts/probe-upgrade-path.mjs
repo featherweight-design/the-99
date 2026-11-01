@@ -21,8 +21,8 @@
 //
 // TWO FIXTURES, built and deleted in a `finally`: five game changers beside a two-card combo
 // (Sanguine Bond and Exquisite Blood), and a game-changer commander over nothing else.
-// Seeds `user_prefs.about_version_seen` forward, as every probe on this surface does. Needs a
-// server with ANALYSIS_TAB_ENABLED=true. Point it at `local-dev`, never production.
+// Seeds `user_prefs.about_version_seen` forward, as every probe on this surface does.
+// Point it at `local-dev`, never production.
 //
 //   PROBE_BASE=http://localhost:3023 node scripts/probe-upgrade-path.mjs
 import { readFileSync } from "node:fs";
@@ -141,7 +141,7 @@ async function openAnalysis(p, deckId, label) {
   if (!report(`${label}px · the deck page rendered`, up, up ? "tablist is up" : "no tablist")) return false;
   const tab = onPageRole(p, "tab", /Analysis/);
   if (!report(`${label}px · the Analysis tab is drawn`, (await tab.count()) > 0,
-      "absent means ANALYSIS_TAB_ENABLED is off on this server")) return false;
+      "absent: the tab is always on, so the page failed to draw it")) return false;
   await tab.first().click();
   await onPageRole(p, "button", /^(Re-)?[Aa]nalyze$/).first().click();
   const ready = await onPage(p, 'section[aria-label="Your bracket"]')

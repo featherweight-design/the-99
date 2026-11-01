@@ -26,7 +26,7 @@
 // a set the account made. The ok run's `read_version` is the deck's newest version, so the set
 // reads as current rather than retired.
 //
-// Needs a server with ANALYSIS_TAB_ENABLED=true. Signs in through Clerk's dev instance. Point it
+// Signs in through Clerk's dev instance. Point it
 // at `local-dev`, NEVER production.
 //
 //   PROBE_BASE=http://localhost:3047 node scripts/probe-tuning-panel.mjs

@@ -13,7 +13,7 @@
 // reading; that row is held ON DISK first (`profile-hold.mjs`) and put back in a `finally`, since
 // the press rewrites it. A press with a credit left also writes an overview and spends that credit,
 // so any overview the run added is deleted in the same `finally` with its ledger unit, which hands
-// the credit back. Needs a server with ANALYSIS_TAB_ENABLED=true. Point it at `local-dev`,
+// the credit back. Point it at `local-dev`,
 // never production.
 //
 //   PROBE_BASE=http://localhost:3018 node scripts/probe-banner-busy.mjs

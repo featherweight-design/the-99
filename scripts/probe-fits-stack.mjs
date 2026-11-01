@@ -18,7 +18,7 @@
 // the last word, since the picker's own rules decide which reasons it draws, so it tries up to
 // eight candidates and FAILS when none of them draws a partner to press. Its one write is the
 // About row `clearAboutSheet` sets for the account (every entry marked seen), which it leaves set.
-// Needs a server with SWAP_TOOLS_ENABLED=true. Point it at `local-dev`.
+// Point it at `local-dev`.
 //
 //   PROBE_BASE=http://localhost:3019 node scripts/probe-fits-stack.mjs
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";

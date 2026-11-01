@@ -350,8 +350,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   cuts run: it presses the tool, waits for the pending row, CLOSES the browser context while the model
   call is held, and watches the run settle on its own, refunded, and later than the close. The model
   is the held stand-in in `src/lib/tuning/stub.ts`, so the server must be started with
-  `TUNING_STUB_DELAY_MS=8000` (and `TUNING_ENABLED`, `PROPOSED_CUTS_ENABLED`, `ANALYSIS_TAB_ENABLED`
-  true); the stub never exists in a production build and costs no call. The cuts leg clones an
+  `TUNING_STUB_DELAY_MS=8000`; the stub never exists in a production build and costs no call. The cuts leg clones an
   over-100 deck under the account and deletes it; every run and unit it made is deleted in a
   `finally`. Point it at `local-dev`. **It does not distinguish `after()` from an in-request run**:
   with the call put back inside the action it still passes on a dev server (measured), so it proves
@@ -581,8 +580,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
 - `pnpm probe:tool-landing` opens each deck tool's Try it address, `/decks/<id>?tool=<tool>`, in a real browser at
   390 and 1300 (discovery R2·2, E11). For each of Top off, Proposed cuts, Suggested changes, Mana Balance, Cheaper
   stand-ins, Friends' spares and Matchups it tries the account's decks (up to `PROBE_DECKS`, default 12) until one
-  draws the tool's target, and asserts the halo on that target alone (a Tuning hub tile, or the panel's head with the
-  hub off; the first other-ways press holding that tool's glyph, ⇄ or the spare, on a Shopping row; the Matchups
+  draws the tool's target, and asserts the halo on that target alone (a Tuning hub tile, or the panel's head where no
+  tile draws; the first other-ways press holding that tool's glyph, ⇄ or the spare, on a Shopping row; the Matchups
   split; the Top off door), `?tool=` stripped with the rest of the address kept, no bubble at all on a haloed landing
   (then and 1.5s on, inside the halo) and the visit taken, since the halo is the visit's one guide (d9), nothing pressed, and the tool's moment spent. A deck that does not draw the target must strip with no halo, spend nothing and leave the visit untouched (taken only
   when a bubble arrived on it); each landing starts on a fresh visit (R1's visit record cleared); a tool no
@@ -590,8 +589,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   writes nothing, and a deck id that does not exist (a deleted deck's) lands on `/decks` with no `?tool` and no halo (the route
   streams behind `loading.tsx`, so the redirect answers 200 and the address is the proof). It WRITES only the account's `user_prefs.moments_spent`
   (each tool's id taken out first, so the spend is seen), put back exactly in a `finally`, and refuses production,
-  staging and local-dev by `neon.branch_id` (`assertScratchBranch`). Run against `next start` with the deck tools'
-  switches on, then off.
+  staging and local-dev by `neon.branch_id` (`assertScratchBranch`). Run against `next start`; every deck tool it
+  lands is always on.
   Since R2·3 it also lands each tool that has a page of its own, at both widths: Help me choose (the form's first
   answer), Precons and Wishlist (each page's search), Collection Sync (the drop zone, G14), Stats for your decks (the
   Tiles · Stats switch on `/decks?view=stats`) and Friends and pods (Add a friend), each by its `?tool=` on that page,
@@ -599,9 +598,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `/collection?avail=free` is stripped at once, nothing haloes, and the probe then presses the first row open so the
   card details' `Find a deck for it` is haloed once. A control the page does not draw even without `?tool=` is SKIP;
   one it draws without the landing but not with it is FAIL. Stale ids on a page (unknown, another page's tool, a deck
-  tool) strip with no halo and write nothing. Run with `PROBE_SWITCHES=off` against a server with the page tools'
-  switches off too, where every page landing must draw no halo and write nothing (a route gone for the reader is its
-  not-found page).
+  tool) strip with no halo and write nothing. No page tool has a switch any more, so a route gone for the reader (its
+  not-found page) fails.
 
 - `pnpm probe:tour` runs the first-run tour (discovery R3·1b) in a real browser at 1300x900 and 390x844, signed in as
   the dedicated first-run account (`onboard-probe+clerk_test@the99.app`) (About's sheet and the gate's redirect to `/about` retired in About visual PR 6b, so no
@@ -1113,16 +1111,17 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   since #877 is the deck header's chip on the hidden desktop copy. That read `chip at 0x0` and
   failed a correct build.
 
-  Needs a server with `ANALYSIS_TAB_ENABLED=true`. Five mutations were run against it and all
+  Five mutations were run against it and all
   five fail; the counts are in its header. Besides the `deck_profiles` row above, it writes only
   that one `user_prefs` row. Point it at `local-dev`, **never production**.
 
-- `pnpm probe:analysis-tab` walks the Analysis tab at 1300x900 and 390x844 against a STATED
-  expectation, `PROBE_ANALYSIS_EXPECT=on|off`, never against what it finds: the tab second in the
+- `pnpm probe:analysis-tab` walks the Analysis tab at 1300x900 and 390x844. The tab is always on, so a
+  page that does not draw it fails, never read as another layout: the tab second in the
   row, the row inside the viewport, the action calls the tab and its Analyze press make, the
   overview slot, and the Recommended mix strip. **Each action call is NAMED** from the dev server's
   own manifest (`.next/dev/server/server-reference-manifest.json`, id to export), so PROBE_BASE must
-  be a `next dev` started in this worktree, with the Tuning switches off. What ships: opening the tab
+  be a `next dev` started in this worktree. The counts were set with the Tuning switches off, which no server
+  reaches any more, so Suggested changes' own reads show as extra named calls. What ships: opening the tab
   calls `fetchStoredDeckProfile` (#874) and `fetchSynopsis` (#912); the Analyze press calls
   `fetchDeckProfile` once and `fetchSynopsis` again, because the overview's read is keyed on the
   reading's `analyzedAt` and freshness (#912; its `wouldSpend` reads false before the reading and true
@@ -1178,8 +1177,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   (used up, owner share) still grows past the frame, so it may move the hub by its lines past
   two and no more, and the line names the variant. The variant is read from the note's words
   (`scripts/lib/note-variant.mjs`, pinned against the shipped copy by its test), and a note it does not
-  recognise fails. The held read makes the landing ~3s late, so a move cannot hide in one frame. `PROBE_HUB=off` (the default is on) skips that check and says so, for a server
-  whose hub waits for a reading. Measured 2026-10-15: 0px at both widths; with the reservation
+  recognise fails. The held read makes the landing ~3s late, so a move cannot hide in one frame. The Tuning hub is
+  always on, so the check always runs. Measured 2026-10-15: 0px at both widths; with the reservation
   removed it fails with 56px at 1300 and 35.4px at 390. It also reads the
   tab row: one line with Analysis selected, and where five tabs are wider than a phone the ROW
   scrolls rather than the page.
@@ -1216,14 +1215,9 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   deck that had neither and deletes both, with the overview's ledger unit, in a `finally`. Point
   it at `local-dev` or a scratch branch, **never production**.
 
-  **`PROBE_HUB=on|off` states whether the server runs the Tuning hub** (Mana Balance, always on
-  with `ANALYSIS_TAB_ENABLED`, plus `TUNING_ENABLED` or `PROPOSED_CUTS_ENABLED`), and a page that
-  disagrees fails the run. Mana Balance is what lets the hub draw on a deck with no reading yet
-  (`drawn` in `builder-shell.tsx`), so the hub stands on the unread deck this probe opens. Off is
-  reached only with `ANALYSIS_TAB_ENABLED` on and neither `TUNING_ENABLED` nor `PROPOSED_CUTS_ENABLED`
-  (Mana Balance alone draws no hub), so no Suggested changes section paints and the probe checks only
-  that no hub draws. On, the hub
-  stands from the tab's first frame (#1809), so that check becomes: the hub is drawn from the tab's
+  **The Tuning hub is always on.** Mana Balance is what lets the hub draw on a deck with no reading yet
+  (`drawn` in `builder-shell.tsx`), so the hub stands on the unread deck this probe opens. The hub
+  stands from the tab's first frame (#1809), so the check is: the hub is drawn from the tab's
   first frame, is one node never missing (a whole panel gone counts as a missing hub), keeps its top within 1px from the press to the frame the
   verdict lands, and after that moves only on a landing frame: the verdict's (the reading draws
   above it, as #1809's own probe asserts) and, on the fallback, the overview's, which grows in
@@ -2355,8 +2349,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   **Run it against `next dev`, never `next start`**: the overview's model stand-in answers only
   outside production (`synopsisLive`), so a production server makes a REAL model call on the first
   press; the spend guard (above) refuses before any press otherwise. At the line it also reads
-  C8's box head, `Back to 99 / 99. You cut N.` for the N cuts it pressed. Start the server with `ANALYSIS_TAB_ENABLED`, `TUNING_ENABLED` and
-  `PROPOSED_CUTS_ENABLED` all `true`, `SYNOPSIS_STUB_DELAY_MS=3000`, and `ANTHROPIC_API_KEY` set to a
+  C8's box head, `Back to 99 / 99. You cut N.` for the N cuts it pressed. Start the server with
+  `SYNOPSIS_STUB_DELAY_MS=3000`, and `ANTHROPIC_API_KEY` set to a
   dummy value so a mistake fails instead of spending. Loopback `PROBE_BASE` only; it refuses staging
   and production by `neon.branch_id`. `PROBE_WIDTH=390` runs one width.
 
@@ -2562,7 +2556,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   rung of its own), and Back returns to the search with the query standing and focus on the row that opened it, then
   closes the search on the page, then reaches the route before. It walks that on `/collection`, again with two
   handovers before the Backs, and on a deck page, and checks Escape (clears the query, then closes, focus back on the
-  icon). Find a deck needs `SWAP_TOOLS_ENABLED` on the server too (its read follows it). It writes nothing but
+  icon). It writes nothing but
   the browser's own recent cards. `PROBE_SHOT` names a file for a screenshot when it stops.
 - `pnpm probe:card-search-followups` proves card search's three staging follow-ups at 390 and at 1300, against a server
   at `PROBE_BASE` (`PROBE_QUERY`, default `sol`). It presses Close (or a press outside, on the desktop), Escape and Back with a query
@@ -2933,7 +2927,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   precons' Overviews, and runs the carry-over: the deck gets a fresh bracket reading with its permits and the carried
   Overview as its shown synopsis (`precon_file` set, no allowance unit), `readSynopsisState` calls it fresh, v0 names it,
   a second carry-over attaches nothing, and one card added through `touchDeck` makes the same read call it stale. A precon
-  whose row is not current gets the reading and no Overview; with the Analysis tab off, nothing at all. The stub writes,
+  whose row is not current gets the reading and no Overview (its Analysis-tab-off check went when that switch retired,
+  2026-11-01). The stub writes,
   and the probe reads, `labels` rows, the only role basis since `LABEL_ROLE_COUNTS_ENABLED` retired (its other-basis check
   went with it, 2026-11-01). It deletes its
   decks, its data stamp and its precon rows. No model call. Scratch branch only (`assertScratchBranch`), `PROBE_DB_URL`.
@@ -2994,7 +2989,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   read settled). The retry's new `r` is not part of the results' Suspense key (`resultsKey`), so its free list
   must never give way to the loading state, even for a moment: the probe fails on any skeleton sample
   in the retry's timeline (Hugh, 2026-10-12: no sudden visual jumps). It records a video of each press to `PROBE_VIDEO_DIR` when it is set.
-  Run it against a dev server with `HELP_ME_CHOOSE_ENABLED=true` and `INTAKE_STUB_DELAY_MS=5000`;
+  Run it against a dev server with `INTAKE_STUB_DELAY_MS=5000`;
   it writes reads (three per width, one of them then marked failed), so
   `PROBE_TARGET_URL` must be local-dev or a scratch branch (it refuses staging and production by
   `neon.branch_id`), and it deletes the reads it made. A killed run leaves its reads behind. The
@@ -3016,7 +3011,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   /decks/new a commander picked from a filtered list clears the search and is left pressed, in view and painted
   on top (the phone dock covers the foot of the window), and Escape clears the search. Quick add's clear after an add is pinned by its unit test instead,
   since an add writes a card. It writes the account's About row and puts it back; run it against a dev
-  server with `HELP_ME_CHOOSE_ENABLED=true`, on local-dev. It refuses staging and production by
+  server on local-dev. It refuses staging and production by
   `neon.branch_id` and a non-localhost `PROBE_BASE`. `PROBE_DECK` names the deck, otherwise the account's
   newest. In Chromium a `type="search"` field also clears on Escape natively, so the Escape check cannot
   fail on its own there; the unit tests hold it.
@@ -3026,8 +3021,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   downward would sit under it) and the option painted at its centre is the list's own, inside the window;
   and pressing Find commanders sends the picked card as `[[<oracle id>|Name]]` in the server action's
   request, which the probe ABORTS in the browser, so no read runs and no credit is spent. It writes the
-  account's About row through `clearAboutSheet` and nothing else, and puts it back in its `finally` (`captureAboutSeen`, `restoreAboutSeen`); run it against a dev server with
-  `HELP_ME_CHOOSE_ENABLED=true`, on local-dev. It refuses staging and production by `neon.branch_id` of its
+  account's About row through `clearAboutSheet` and nothing else, and puts it back in its `finally` (`captureAboutSeen`, `restoreAboutSeen`); run it against a dev server
+  on local-dev. It refuses staging and production by `neon.branch_id` of its
   `DATABASE_URL` before the first write, and refuses a `PROBE_BASE` that is not localhost. It also grows the box a few pixels
   under the open list and requires the list's max height to follow (a resize handle emits no scroll or resize event). At 390 it also opens the list in a 480px-tall window, where the room between the box and the dock is
   short, and requires the list to end above the dock's top (the list is held to that room and scrolls
@@ -3043,8 +3038,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   when the open list had its room (`LIST_ROOM_PX`) under the field, or left the field centered in the visible band
   (visual viewport above any foot bar) when it did not, not pinned to the top (Hugh, 2026-10-22). `TAG_SCROLL_ROOM=1` adds 2000px under `<main>` so a short page's end cannot hide a jump;
   `TAG_SCROLL_DECK` names the deck (else the first on `/decks`). It submits nothing; the description box saves on blur,
-  so it puts back the words the box held, and it refuses a `PROBE_BASE` that is not localhost. Needs
-  `HELP_ME_CHOOSE_ENABLED`, `TUNING_ENABLED` and `ANALYSIS_TAB_ENABLED` true. Measured 2026-10-21
+  so it puts back the words the box held, and it refuses a `PROBE_BASE` that is not localhost. Measured 2026-10-21
   on local-dev: all checks pass in both modes; on the previous picker four failed (the page moved 374 to 482px with the
   list's room to spare).
 
@@ -3053,7 +3047,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   checks what jsdom cannot: the list opens with Sol Ring painted on top, inside the window; the box draws the name and
   never the stored `[[<id>|` form; and the deck's `intent` column then holds `Rocks: Sol Ring`, plain words, with no
   `[[`. It needs `DESCRIPTION_DECK` (a deck owned by `E2E_AUDIT_USER_EMAIL`'s account; it refuses another account's)
-  and a dev server with `TUNING_ENABLED` and `ANALYSIS_TAB_ENABLED` true. It WRITES that deck's `intent`, `intent_seeded`
+  and a dev server. It WRITES that deck's `intent`, `intent_seeded`
   and `last_edited_at` and puts them back in its `finally`; it refuses staging and production by `neon.branch_id` of its
   `DATABASE_URL` and a `PROBE_BASE` that is not localhost. `PROBE_SHOTS=<dir>` leaves a picture of the open list at each width.
   It also drives the header pencil's editor (which commits on blur and Enter), at 768 too, the desktop layout's floor. The
@@ -3194,8 +3188,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   touch pointer (CDP touch events), it swipes to the next card, back, and four times quickly, sampling the
   sheet's top and the card's laid-out width every frame; both must hold the teaser's values on every frame. A
   press on the grip must still ease the sheet to full, with frames between. At 1300 ArrowRight pages with the
-  dialog's box unmoved. `PROBE_SHOPPING=1` opens from the Shopping tab, where the stand-ins door draws (a server
-  with `SWAP_TOOLS_ENABLED` on): that is the case that failed, a 45px dip and the card growing and shrinking on
+  dialog's box unmoved. `PROBE_SHOPPING=1` opens from the Shopping tab, where the stand-ins door draws:
+  that is the case that failed, a 45px dip and the card growing and shrinking on
   every page, because the strip's height is measured after each remount. `PROBE_MIN=1`, `PROBE_HEIGHT` (664 for a
   phone browser with its bars showing), `PROBE_ENGINE=webkit` with `PROBE_MOUSE=1`, and `PROBE_DECK_ID` vary it.
   Local servers only; it refuses the production and staging branches and writes only the About row, restored.
@@ -3237,8 +3231,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `WELCOME_PROBE_KEEP=1` keeps the account for a contact sheet (`WELCOME_PROBE_STAGE=first-run` stops before the
   collection rows) and prints its address; `WELCOME_PROBE_CLEAN=<address>` removes a kept one. The database is the
   worktree's `.env` (local-dev or a scratch branch; production and staging refused by branch id). Needs a server on
-  `PROBE_BASE` (loopback with a port) with `PAYMENTS_ENABLED TUNING_ENABLED HELP_ME_CHOOSE_ENABLED PROPOSED_CUTS_ENABLED
-  SWAP_TOOLS_ENABLED ANALYSIS_TAB_ENABLED` all `true`; stop it by its own PID.
+  `PROBE_BASE` (loopback with a port) with `PAYMENTS_ENABLED=true`; stop it by its own PID.
 - `pnpm probe:deck-tile-export` proves Export from a `/decks` tile's ⋯ menu, in a browser at 1300x900 and 390x844: the
   first tile's menu, then Export, opens the deck page's own export dialog (`Export deck`) over `/decks`, its preview
   naming the deck and counting its cards, drawn above the tiles (what is painted at the dialog's own title belongs to
@@ -3337,10 +3330,10 @@ ANTHROPIC_ADMIN_KEY`. With no key it prints `no_key: ANTHROPIC_ADMIN_KEY is not 
   public not-found (C3) in its payload with no card or commander page, under both prefixes, and no `View decks` in the drawn markup (the 404 is an empty shell the browser draws, so `Back home` itself is proved by the contact sheet's C3 row in a real browser, not here), and its image a bare 404. No response may carry
   `Set-Cookie`. Exits 1 on any failure, after a summary.
 
-- `pnpm probe:fan-content-notice` (launch epic A1) reads the Fan Content notice's RESOLVED geometry at 390 and 1300: on `/`, `/sign-up`, `/join/<token>`, `/friend/<token>` and `/offline` signed out, and, when `E2E_AUDIT_USER_EMAIL` names the read-only audit account on Clerk's development instance, on `/`, `/decks` and `/collection` signed in. Read-only. Point it at a server serving THIS worktree. Signed in it also opens the pages with a `fixed` bottom dock (the deck picker, the Help me choose form, a precon, About's gate bar; a deck's top-off bar through `PROBE_TOPOFF_PATH`, opened by pressing the strip's door) and checks the notice's last line clears the topmost dock at the scroll end (A1b, `useDockClearance`). A page that draws no dock at that width reports SKIP, never PASS: serve with `HELP_ME_CHOOSE_ENABLED=true` to reach three of them; the gate bar needs a reader behind on About with the sheet switch off.
+- `pnpm probe:fan-content-notice` (launch epic A1) reads the Fan Content notice's RESOLVED geometry at 390 and 1300: on `/`, `/sign-up`, `/join/<token>`, `/friend/<token>` and `/offline` signed out, and, when `E2E_AUDIT_USER_EMAIL` names the read-only audit account on Clerk's development instance, on `/`, `/decks` and `/collection` signed in. Read-only. Point it at a server serving THIS worktree. Signed in it also opens the pages with a `fixed` bottom dock (the deck picker, the Help me choose form, a precon, About's gate bar; a deck's top-off bar through `PROBE_TOPOFF_PATH`, opened by pressing the strip's door) and checks the notice's last line clears the topmost dock at the scroll end (A1b, `useDockClearance`). A page that draws no dock at that width reports SKIP, never PASS; the gate bar needs a reader behind on About with the sheet switch off.
 
 
-- `pnpm probe:r3-addendum` closes out three R3 addendum changes in a real browser at 390 and 1300: the support link's `--fg` words and `--accent` underline on `/credits` (item 4, computed values against the resolved properties), Help me choose's phone dock for a spent reader (item 10: the dock 92px with no `Get more credits` in it, the link 44px under the `Anything else?` caption on the field's left edge, the dock clear of the Sets field, and at 1300 the credit line's link with the phone copy not displayed), and the Find a deck landing (item 12: `/collection?avail=free&tool=find-a-deck` opens the first card at `data-sheet="full"` at 390 with the door in the viewport and `data-target-halo` held about 2.4s, the next card at the teaser; at 1300 the door is haloed with no snap change). It runs as ONE per-run Clerk development-instance user (`+clerk_test`, code 424242) with its own spent `model_calls`, three owned cards and a deck, and removes every row keyed to that id by schema (each `user_id` table, retried for foreign keys; `purgeAccount` reads tables a migration-behind local-dev lacks) and deletes the Clerk user in a `finally`. It never signs in as the audit account. `PROBE_DB_BRANCH` must name the reported branch and is refused on production and staging. Serve THIS worktree from the same `.env` with `PAYMENTS_ENABLED=true HELP_ME_CHOOSE_ENABLED=true SWAP_TOOLS_ENABLED=true`, and set `PROBE_BASE`; screenshots go to `PROBE_SHOTS`.
+- `pnpm probe:r3-addendum` closes out three R3 addendum changes in a real browser at 390 and 1300: the support link's `--fg` words and `--accent` underline on `/credits` (item 4, computed values against the resolved properties), Help me choose's phone dock for a spent reader (item 10: the dock 92px with no `Get more credits` in it, the link 44px under the `Anything else?` caption on the field's left edge, the dock clear of the Sets field, and at 1300 the credit line's link with the phone copy not displayed), and the Find a deck landing (item 12: `/collection?avail=free&tool=find-a-deck` opens the first card at `data-sheet="full"` at 390 with the door in the viewport and `data-target-halo` held about 2.4s, the next card at the teaser; at 1300 the door is haloed with no snap change). It runs as ONE per-run Clerk development-instance user (`+clerk_test`, code 424242) with its own spent `model_calls`, three owned cards and a deck, and removes every row keyed to that id by schema (each `user_id` table, retried for foreign keys; `purgeAccount` reads tables a migration-behind local-dev lacks) and deletes the Clerk user in a `finally`. It never signs in as the audit account. `PROBE_DB_BRANCH` must name the reported branch and is refused on production and staging. Serve THIS worktree from the same `.env` with `PAYMENTS_ENABLED=true`, and set `PROBE_BASE`; screenshots go to `PROBE_SHOTS`.
 
 - `pnpm probe:push-subscriptions` (push PR 2) proves push's device rows and choices against a real database: one row per endpoint and a re-subscribe refreshes it; a browser that signs in as another account takes the row over; a reader keeps at most 10 devices and the oldest go; a removal deletes only the reader's own row; the push choice follows the feed's rule (spare-request on by default, a tick stamps it, an unchanged save writes nothing, the feed's own choice untouched); the account purge takes every row. It WRITES: `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports and never staging, production or local-dev; its accounts are made-up ids and it removes every row it wrote.
 
@@ -3348,7 +3341,7 @@ ANTHROPIC_ADMIN_KEY`. With no key it prints `no_key: ANTHROPIC_ADMIN_KEY is not 
 
 A deck's strategy focus is picked from the strategy block's legend on Analysis and cleared by Keep it balanced, in a real
 browser at 390 and 1300, and each press survives a reload: the write landed, not only the optimistic draw. Needs
-`ANALYSIS_TAB_ENABLED` on, and `SF_DECK` naming an analyzed deck of the signed-in account
+`SF_DECK` naming an analyzed deck of the signed-in account
 with a strategy. It WRITES that deck's `strategy_focus` and puts back what it found in a `finally`, verified. It refuses
 before the first press unless the checkout's `DATABASE_URL` (the database a server started from the same worktree
 reads) is a scratch branch (`assertScratchBranch`): run the server from that worktree. Mutation-checked: an action that answers without writing fails the reload.

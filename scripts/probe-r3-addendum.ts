@@ -23,7 +23,7 @@
 // must report a branch that is neither production nor staging, and `PROBE_DB_BRANCH` must name it. The dev server this
 // drives reads the same `.env` `DATABASE_URL` (`.env` overrides an exported value), so start it from this worktree:
 //
-//   PAYMENTS_ENABLED=true HELP_ME_CHOOSE_ENABLED=true SWAP_TOOLS_ENABLED=true next dev -p <port>
+//   PAYMENTS_ENABLED=true next dev -p <port>
 //   PROBE_BASE=http://localhost:<port> PROBE_DB_BRANCH=br-patient-hall-a6nbonvo pnpm probe:r3-addendum
 //
 // Screenshots go to PROBE_SHOTS (default: ./probe-r3-addendum-shots).

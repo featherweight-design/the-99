@@ -52,10 +52,9 @@ async function main() {
       await pool.query("select oracle_id, name, color_identity, mana_cost from cards where oracle_id = $1", [fixture.commander])
     ).rows[0];
     const commanders = [{ oracleId: cmd.oracle_id, name: cmd.name, colorIdentity: cmd.color_identity, manaCost: cmd.mana_cost }];
-    const env = { ...process.env, HELP_ME_CHOOSE_ENABLED: "true" };
     // Any cards, no budget, no bracket: the answers the measured deck was made with.
     const plan = await buildFillPlan(FIXTURE_USER, commanders, new Set(), {
-      selected: [], env, answers: { budgetCents: null, bracket: null, cardOracleId: null },
+      selected: [], env: process.env, answers: { budgetCents: null, bracket: null, cardOracleId: null },
     });
 
     const placed = new Set(plan.rows.map((r) => r.oracleId));

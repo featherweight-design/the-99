@@ -33,7 +33,7 @@
 //
 // IT WRITES ONE ROW: `user_prefs.about_version_seen`, raised with `greatest(...)`, exactly as
 // `probe:verdict-block` does and for the same reason. No deck, collection or catalog row.
-// Needs a server with ANALYSIS_TAB_ENABLED=true. Point it at `local-dev`, never production.
+// Point it at `local-dev`, never production.
 //
 //   PROBE_BASE=http://localhost:3010 node scripts/probe-verdict-findings.mjs
 import { readFileSync } from "node:fs";

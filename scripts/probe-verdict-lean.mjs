@@ -10,8 +10,8 @@
 // when none of the first twelve does. A lean exists only where a combo decided a single bracket;
 // `deck-lean.json` names the two local-dev decks built for it.
 //
-// IT WRITES ONE ROW: `user_prefs.about_version_seen`, as `probe:verdict-block` does. Needs a server
-// with ANALYSIS_TAB_ENABLED=true. Point it at `local-dev`, never production.
+// IT WRITES ONE ROW: `user_prefs.about_version_seen`, as `probe:verdict-block` does.
+// Point it at `local-dev`, never production.
 //
 //   PROBE_BASE=http://localhost:3010 node scripts/probe-verdict-lean.mjs
 import { readFileSync } from "node:fs";

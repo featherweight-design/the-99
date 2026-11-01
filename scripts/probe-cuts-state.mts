@@ -23,8 +23,6 @@ import { Pool } from "@neondatabase/serverless";
 import { randomUUID } from "node:crypto";
 // No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
-process.env.PROPOSED_CUTS_ENABLED = "true";
-process.env.ANALYSIS_TAB_ENABLED = "true";
 
 const { DATABASE_URL } = requireEnv(["DATABASE_URL"]);
 const { readCutsState, readProposedCuts } = await import("../src/lib/decks/cuts-read");

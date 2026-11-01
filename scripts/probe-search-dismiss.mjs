@@ -13,7 +13,7 @@
 //
 // Quick add's clear-after-an-add is pinned by its unit test rather than pressed here: an add writes a
 // card to the deck. This probe writes the account's About row (`clearAboutSheet`) and nothing else,
-// and restores it. Needs a server with HELP_ME_CHOOSE_ENABLED=true; point it at local-dev, never
+// and restores it. Point it at local-dev, never
 // staging or production. PROBE_DECK names the deck; otherwise the account's newest.
 
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";

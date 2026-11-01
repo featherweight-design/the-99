@@ -15,8 +15,6 @@
 // width and in the `finally`, with the planted entry deleted. It refuses staging and production.
 //
 //   PROBE_BASE=http://localhost:3050 pnpm probe:notices-open
-//
-// Needs a server with ANALYSIS_TAB_ENABLED=true.
 
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { readFileSync, rmSync, writeFileSync } from "node:fs";

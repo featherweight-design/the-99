@@ -14,8 +14,7 @@
 // THE FIXTURE IS A STORED RESULT, never a model call. It clones an over-100 deck under the probe
 // account (the first one on the database, or PROBE_CUTS_DECK), writes one ok run with three cuts
 // through the real run store (locks are in the fingerprint, and Never cut is always on, so the server reads the same ones), and deletes the clone in a `finally`. Local-dev or a scratch branch
-// only, NEVER staging or production: it writes. Needs a server with ANALYSIS_TAB_ENABLED and
-// PROPOSED_CUTS_ENABLED on, signed in through Clerk's dev instance.
+// only, NEVER staging or production: it writes. Signs in through Clerk's dev instance.
 //
 //   PROBE_BASE=http://localhost:3347 pnpm probe:cuts-panel
 //   PROBE_WIDTH=390 runs one width. PROBE_SHOTS=<dir> also saves the panel at each width and phase.
@@ -26,7 +25,6 @@ import { randomUUID } from "node:crypto";
 import { chromium, type Page } from "playwright";
 // No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
-process.env.PROPOSED_CUTS_ENABLED = "true";
 const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL, CLERK_SECRET_KEY } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "DATABASE_URL"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const SHOTS = process.env.PROBE_SHOTS;
