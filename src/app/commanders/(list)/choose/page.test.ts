@@ -11,7 +11,6 @@ vi.mock("../../../../lib/switches/request", async () => {
   const { ENV_VIEW } = await import("@/test/env-view");
   return { requestSwitchEnv: async () => ENV_VIEW };
 });
-vi.mock("../../../../lib/intake/flag", () => ({ helpMeChooseEnabled: () => true }));
 vi.mock("../../../../lib/intake/search", () => ({ loadIntakeThemes: stub.themes, loadIntakeCatalog: vi.fn() }));
 vi.mock("../../../../lib/intake/rows", () => ({ loadCardChip: stub.chip, loadResultsPage: stub.page }));
 vi.mock("../../../../lib/model/allowance", () => ({ readAllowance: stub.allowance }));

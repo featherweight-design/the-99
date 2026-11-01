@@ -1,8 +1,6 @@
 "use server";
 
 import { requireUserId } from "../../../../lib/auth";
-import { requestSwitchEnv } from "../../../../lib/switches/request";
-import { helpMeChooseEnabled } from "../../../../lib/intake/flag";
 import { plainText, tagCount } from "../../../../lib/decks/notes-body";
 import { resolveTaggedText } from "../../../../lib/cards/tagged-text";
 import { READ_TAGS_MAX, READ_WORDS_MAX_CHARS, READ_WORDS_URL_MAX, wordsLength } from "../../../../lib/intake/limits";
@@ -35,8 +33,6 @@ import { loadTheRead, type TheReadState } from "../../../../lib/intake/run-store
  */
 export async function submitChoose(query: string, from: "form" | "results" = "form"): Promise<{ kind: "refused" }> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
-  if (!helpMeChooseEnabled(env)) throw new Error("not found");
   const path = choosePath(true);
   // A bound on what a caller may send, far past any real form: 800 words percent-encoded as three
   // bytes each run to 7,200 characters, and every theme and set comes on top.
@@ -95,8 +91,6 @@ async function filtersKnown(themes: readonly string[], sets: readonly string[]):
  */
 export async function theReadState(readId: string): Promise<TheReadState> {
   const userId = await requireUserId();
-  const env = await requestSwitchEnv(userId);
-  if (!helpMeChooseEnabled(env)) throw new Error("not found");
   if (typeof readId !== "string" || !isUuid(readId)) return { kind: "none" };
   return loadTheRead(readId, userId);
 }

@@ -66,19 +66,25 @@ describe("welcomeSheet", () => {
 
 describe("welcomeSheetFor", () => {
   const ON = {
-    ANALYSIS_TAB_ENABLED: "true", HELP_ME_CHOOSE_ENABLED: "true",
+    ANALYSIS_TAB_ENABLED: "true",
   } as unknown as NodeJS.ProcessEnv; // No TUNING_ENABLED or PROPOSED_CUTS_ENABLED: Suggested changes and Look deeper follow
-  // the Analysis tab (their own switches are retired). No SWAP_TOOLS_ENABLED: Find a deck's read is always on (swap tools retired).
+  // the Analysis tab (their own switches are retired). No SWAP_TOOLS_ENABLED or HELP_ME_CHOOSE_ENABLED: Find a deck's read
+  // and Help me choose are always on (their switches retired).
 
   it("draws the rows whose caption lines survive the reader's switches", () => {
+    const s = welcomeSheetFor(ON, { cards: 0, decks: [] })!;
+    expect(s.rows.map((r) => r.id)).toEqual(["overview", "suggested", "look-deeper", "help-me-choose", "find-a-deck-read"]);
+  });
+
+  it("draws Help me choose's row whatever its retired switch says", () => {
     const s = welcomeSheetFor({ ...ON, HELP_ME_CHOOSE_ENABLED: "off" }, { cards: 0, decks: [] })!;
-    expect(s.rows.map((r) => r.id)).toEqual(["overview", "suggested", "look-deeper", "find-a-deck-read"]);
+    expect(s.rows.map((r) => r.id)).toContain("help-me-choose");
   });
 
   it("draws Suggested changes and Look deeper with the Analysis tab, whatever their retired switches say, and neither without it", () => {
     const ids = (env: Record<string, string>) => welcomeSheetFor(env as unknown as NodeJS.ProcessEnv, { cards: 0, decks: [] })!.rows.map((r) => r.id);
     expect(ids({ ...(ON as Record<string, string>), TUNING_ENABLED: "off", PROPOSED_CUTS_ENABLED: "off" })).toEqual(["overview", "suggested", "look-deeper", "help-me-choose", "find-a-deck-read"]);
-    expect(ids({ HELP_ME_CHOOSE_ENABLED: "true", TUNING_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true" })).toEqual(["help-me-choose", "find-a-deck-read"]);
+    expect(ids({ TUNING_ENABLED: "true", PROPOSED_CUTS_ENABLED: "true" })).toEqual(["help-me-choose", "find-a-deck-read"]);
   });
 
   it("follows SUGGESTED_CHANGES_V2_ENABLED: on, the Suggested changes row says v2's cost; off, the shipped one", () => {
@@ -91,15 +97,15 @@ describe("welcomeSheetFor", () => {
     expect(off.cost).toBe(writtenForYouCopy.rows[1].cost);
     expect(`${off.short} ${off.cost}`).not.toMatch(/\b2\b/);
     // Its parent beats it: the Analysis tab off takes v2 with it (the row itself goes), whatever the retired TUNING_ENABLED says.
-    expect(welcomeSheetFor({ HELP_ME_CHOOSE_ENABLED: "true", TUNING_ENABLED: "true", SUGGESTED_CHANGES_V2_ENABLED: "true" } as unknown as NodeJS.ProcessEnv, { cards: 0, decks: [] })!.rows.map((r) => r.id))
+    expect(welcomeSheetFor({ TUNING_ENABLED: "true", SUGGESTED_CHANGES_V2_ENABLED: "true" } as unknown as NodeJS.ProcessEnv, { cards: 0, decks: [] })!.rows.map((r) => r.id))
       .not.toContain("suggested");
   });
 
-  // Find a deck's read has no live switch (swap tools retired), so with every live switch off it is the one row left.
-  it("draws Find a deck's read alone with every live switch off", () => {
+  // Help me choose and Find a deck's read have no live switch (both retired), so with every live switch off they are the rows left.
+  it("draws Help me choose and Find a deck's read alone with every live switch off", () => {
     const s = welcomeSheetFor({} as unknown as NodeJS.ProcessEnv, { cards: 0, decks: [] })!;
     expect(s.shape).toBe("locked");
-    expect(s.rows.map((r) => r.id)).toEqual(["find-a-deck-read"]);
+    expect(s.rows.map((r) => r.id)).toEqual(["help-me-choose", "find-a-deck-read"]);
   });
 });
 

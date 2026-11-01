@@ -1,18 +1,12 @@
 // /decks/new's two readings of a commander URL: a Help me choose result's press (the results' own
-// params beside `commander`) draws the hand-off, and only while the feature is on. Off, the same
-// URL draws today's page and the picker draws no door.
+// params beside `commander`) draws the hand-off. Help me choose's switch is retired (always on), so the
+// picker always draws its door.
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const COMMANDER = "0000aaaa-0000-4000-8000-00000000000c";
-const stub = vi.hoisted(() => ({ on: true, answers: vi.fn(), listable: vi.fn() }));
+const stub = vi.hoisted(() => ({ answers: vi.fn(), listable: vi.fn() }));
 vi.mock("../../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
-// The reader's resolved switches: the environment, so `vi.stubEnv` still sets them.
-vi.mock("../../../lib/switches/request", async () => {
-  const { ENV_VIEW } = await import("@/test/env-view");
-  return { requestSwitchEnv: async () => ENV_VIEW };
-});
-vi.mock("../../../lib/intake/flag", () => ({ helpMeChooseEnabled: () => stub.on }));
 vi.mock("../../../lib/decks/pre-filled-commander", () => ({
   loadPreFilledCommander: async (_u: string, id: string) => ({ oracleId: id, name: "Gishath", typeLine: "Legendary Creature", colorIdentity: ["R", "G", "W"], imageUri: null }),
 }));
@@ -29,7 +23,6 @@ type Props = { handOff?: { resultsHref: string; drawBlock: boolean; create: unkn
 const props = async (sp: Record<string, string>) => ((await NewDeckPage({ searchParams: Promise.resolve(sp) })) as { props: Props }).props;
 
 beforeEach(() => {
-  stub.on = true;
   stub.listable.mockReset().mockResolvedValue(true);
   stub.answers.mockReset().mockResolvedValue({ themes: [{ slug: "dinosaurs", label: "Dinosaurs", pct: 14 }], themeJoin: "all", sets: [], pool: "any", card: null, budgetDollars: 150, bracket: null });
 });
@@ -78,25 +71,18 @@ describe("/decks/new", () => {
     expect(stub.answers).not.toHaveBeenCalled();
   });
 
-  it("with the feature off, draws today's page for the same URL, and the picker no door", async () => {
-    stub.on = false;
-    expect((await props({ commander: COMMANDER, t: "dinosaurs", b: "150", v: "results" })).handOff).toBeUndefined();
-    expect(stub.answers).not.toHaveBeenCalled();
-    expect((await props({})).helpDoor).toBe(false);
+  it("always offers Help me choose's door to the picker, its switch retired", async () => {
+    expect((await props({})).helpDoor).toBe(true);
   });
 
   it("always offers the precon door to the picker", async () => {
     expect((await props({})).preconDoor).toBe(true);
   });
 
-  it("adds the door's past-runs link only for a player with a run to list, and never reads with the feature off", async () => {
+  it("adds the door's past-runs link only for a player with a run to list", async () => {
     expect((await props({})).pastRuns).toBe(true);
     stub.listable.mockResolvedValue(false);
     expect((await props({})).pastRuns).toBe(false);
-    stub.listable.mockClear();
-    stub.on = false;
-    expect((await props({})).pastRuns).toBe(false);
-    expect(stub.listable).not.toHaveBeenCalled();
   });
 
   it("draws the door without the link when the read fails, rather than failing the page", async () => {

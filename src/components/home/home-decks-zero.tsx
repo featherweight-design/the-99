@@ -18,9 +18,9 @@ import { DecksZeroActions } from "@/components/decks/decks-zero";
  * 16px on desktop (audit correction 8). The section gap is ResumeDecks' own (correction 10),
  * and the card is drawn at R2's stated padding and gap (correction 9).
  *
- * `helpMeChoose` (`HELP_ME_CHOOSE_ENABLED`, from the page) draws the shared door line (discovery R3 E1).
+ * The shared group always draws Help me choose's door line (discovery R3 E1; its switch is retired).
  */
-export function HomeDecksZero({ helpMeChoose = false }: { helpMeChoose?: boolean }) {
+export function HomeDecksZero() {
   const c = refreshCopy.zero;
   return (
     <section className="flex flex-col gap-[12px] min-[1180px]:gap-[11px]">
@@ -39,7 +39,7 @@ export function HomeDecksZero({ helpMeChoose = false }: { helpMeChoose?: boolean
         </p>
         {/* DecksZero's column gives the group these gaps; this column gives the same. */}
         <div className="flex flex-col gap-[15px] sm:gap-[16px]">
-          <DecksZeroActions helpMeChoose={helpMeChoose} />
+          <DecksZeroActions />
         </div>
       </div>
     </section>

@@ -117,41 +117,41 @@ describe("writeOverride", () => {
   });
 
   it("returns a preview instead of writing when a model capability rises unconfirmed, and writes once the count is confirmed", async () => {
-    env = { HELP_ME_CHOOSE_ENABLED: "true" };
-    overrides = [{ switchName: "HELP_ME_CHOOSE_ENABLED", scope: "app", groupId: null, userId: null, value: "off" }];
+    env = { ANALYSIS_TAB_ENABLED: "true", SUGGESTED_CHANGES_V2_ENABLED: "true" };
+    overrides = [{ switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "app", groupId: null, userId: null, value: "off" }];
     current = { value: "off", note: null };
-    const r = await writeOverride("u1", "clear", { switchName: "HELP_ME_CHOOSE_ENABLED", scope: "app" }, deps());
-    expect(r).toMatchObject({ ok: false, error: "confirm", preview: { count: 2, names: ["Hugh", "Mara"], credits: [3, 5], costs: [{ key: "intake", meanMicroUsd: null }] } });
+    const r = await writeOverride("u1", "clear", { switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "app" }, deps());
+    expect(r).toMatchObject({ ok: false, error: "confirm", preview: { count: 2, names: ["Hugh", "Mara"], credits: [3, 5], costs: [{ key: "suggested_changes_v2", meanMicroUsd: null }] } });
     expect(kinds()).not.toContain("delete");
     expect(afterCommit).not.toHaveBeenCalled();
 
     log.length = 0;
     // A stale count (the dialog said 1) gets a fresh preview, not a write.
-    expect(await writeOverride("u1", "clear", { switchName: "HELP_ME_CHOOSE_ENABLED", scope: "app", confirmed: 1 }, deps())).toMatchObject({ error: "confirm" });
+    expect(await writeOverride("u1", "clear", { switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "app", confirmed: 1 }, deps())).toMatchObject({ error: "confirm" });
     log.length = 0;
-    expect(await writeOverride("u1", "clear", { switchName: "HELP_ME_CHOOSE_ENABLED", scope: "app", confirmed: 2 }, deps())).toEqual({ ok: true });
+    expect(await writeOverride("u1", "clear", { switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "app", confirmed: 2 }, deps())).toEqual({ ok: true });
     expect(kinds()).toEqual(["lock", "snapshot", "target", "delete", "event"]);
   });
 
   it("refuses a write that raises model access for an unlisted account while Clerk is down", async () => {
-    env = { HELP_ME_CHOOSE_ENABLED: "true" };
-    overrides = [{ switchName: "HELP_ME_CHOOSE_ENABLED", scope: "app", groupId: null, userId: null, value: "off" }];
+    env = { ANALYSIS_TAB_ENABLED: "true", SUGGESTED_CHANGES_V2_ENABLED: "true" };
+    overrides = [{ switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "app", groupId: null, userId: null, value: "off" }];
     current = { value: "off", note: null };
     const down = { ...deps(), accounts: async () => ({ accounts: [{ id: "u1", name: "Hugh", email: null, named: true }], clerk: "down" as const }) };
-    expect(await writeOverride("u1", "clear", { switchName: "HELP_ME_CHOOSE_ENABLED", scope: "app", confirmed: 1 }, down)).toEqual({ ok: false, error: "accounts" });
+    expect(await writeOverride("u1", "clear", { switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "app", confirmed: 1 }, down)).toEqual({ ok: false, error: "accounts" });
     expect(kinds()).not.toContain("delete");
     // An account's own override touches only that listed account, so it is counted and confirmed as usual.
     log.length = 0;
     current = null;
-    expect(await writeOverride("u1", "set", { switchName: "HELP_ME_CHOOSE_ENABLED", scope: "user", targetUserId: "u1", value: "on", confirmed: 1 }, down)).toEqual({ ok: true });
+    expect(await writeOverride("u1", "set", { switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "user", targetUserId: "u1", value: "on", confirmed: 1 }, down)).toEqual({ ok: true });
   });
 
   it("counts a group member the fallback list misses while Clerk is down, naming it Account ·<tail>", async () => {
-    env = { HELP_ME_CHOOSE_ENABLED: "true" };
+    env = { ANALYSIS_TAB_ENABLED: "true", SUGGESTED_CHANGES_V2_ENABLED: "true" };
     members = [{ userId: "u9", groupId: G }];
-    overrides = [{ switchName: "HELP_ME_CHOOSE_ENABLED", scope: "app", groupId: null, userId: null, value: "off" }];
+    overrides = [{ switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "app", groupId: null, userId: null, value: "off" }];
     const down = { ...deps(), accounts: async () => ({ accounts: [{ id: "u1", name: "Hugh", email: null, named: true }], clerk: "down" as const }) };
-    const r = await writeOverride("u1", "set", { switchName: "HELP_ME_CHOOSE_ENABLED", scope: "group", groupId: G, value: "on" }, down);
+    const r = await writeOverride("u1", "set", { switchName: "SUGGESTED_CHANGES_V2_ENABLED", scope: "group", groupId: G, value: "on" }, down);
     expect(r).toMatchObject({ ok: false, error: "confirm", preview: { count: 1, names: ["Account ·u9"] } });
   });
 

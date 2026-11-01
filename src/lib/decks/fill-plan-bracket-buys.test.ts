@@ -52,7 +52,7 @@ import { buildFillPlan, byInclusion } from "./fill-plan";
 import { getEdhrecData } from "../edhrec/client";
 
 const commanders = [{ oracleId: "cmd", name: "C", colorIdentity: ["U"], manaCost: "{U}" }];
-const ON = envViewWith({ HELP_ME_CHOOSE_ENABLED: "true" });
+const ON = envViewWith({});
 const RHYSTIC = { oracleId: "rhystic", name: "Rhystic Study", typeLine: "Enchantment", oracleText: "Whenever an opponent casts a spell", keywords: [], manaCost: "{2}{U}", layout: "normal" };
 const short = (buyCents: number) => ({
   target: 3, kind: "short", collectionPermits: [1, 2], collectionRaisers: [],
@@ -145,7 +145,7 @@ describe("buildFillPlan's Hit bracket N", () => {
   it("reads the label of a bought raiser no pool carries (own-only), so it is counted by label", async () => {
     m.skeleton.mockResolvedValue({ skeleton: { roleTargets: { of: "labels", targets: {} }, composition: null, staples: [] } });
     await buildFillPlan("u", commanders, new Set(), {
-      selected: [], env: envViewWith({ HELP_ME_CHOOSE_ENABLED: "true" }),
+      selected: [], env: ON,
       pool: "sleeveable", failClosed: true,
       answers: { budgetCents: 5000, bracket: 3, cardOracleId: null, bracketBuys: true },
     });
@@ -175,10 +175,19 @@ describe("buildFillPlan's Hit bracket N", () => {
     expect(planArgs().pool).toBe("sleeveable");
   });
 
-  it("reads no top cards under own-only with Help me choose off", async () => {
+  // HELP_ME_CHOOSE_ENABLED is retired (always on): only a bracket answer decides the reach's buying half.
+  it("reads the top cards under own-only with a bracket answer, whatever Help me choose's retired variable says", async () => {
     await buildFillPlan("u", commanders, new Set(), {
-      selected: [], env: envViewWith({ HELP_ME_CHOOSE_ENABLED: "" }), pool: "sleeveable", failClosed: true,
+      selected: [], env: envViewWith({ HELP_ME_CHOOSE_ENABLED: "off" }), pool: "sleeveable", failClosed: true,
       answers: { budgetCents: null, bracket: 3, cardOracleId: null },
+    });
+    expect(m.topCards).toHaveBeenCalled();
+  });
+
+  it("reads no top cards under own-only with no bracket answer", async () => {
+    await buildFillPlan("u", commanders, new Set(), {
+      selected: [], env: ON, pool: "sleeveable", failClosed: true,
+      answers: { budgetCents: null, bracket: null, cardOracleId: null },
     });
     expect(m.topCards).not.toHaveBeenCalled();
     expect(m.bracketReach).not.toHaveBeenCalled();

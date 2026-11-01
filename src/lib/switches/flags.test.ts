@@ -78,8 +78,9 @@ describe("MODEL_CAPABILITIES", () => {
   // Retired model switches still in the registry until their removal PR: nothing gates on them, so turning one on raises
   // no capability. Proposed cuts' paid pass follows its parent, the Analysis tab (Hugh 2026-10-31). Swap tools has no
   // parent: Find a deck's paid read is always offered, and only the model-call kill switch stops it. Suggested changes'
-  // runs follow its parent, the Analysis tab (Hugh 2026-11-01).
-  const RETIRED = new Set<SwitchName>(["PROPOSED_CUTS_ENABLED", "SWAP_TOOLS_ENABLED", "TUNING_ENABLED"]);
+  // runs follow its parent, the Analysis tab (Hugh 2026-11-01). Help me choose has no parent: its paid read is always
+  // offered, and only the model-call kill switch stops it (Hugh 2026-11-01).
+  const RETIRED = new Set<SwitchName>(["HELP_ME_CHOOSE_ENABLED", "PROPOSED_CUTS_ENABLED", "SWAP_TOOLS_ENABLED", "TUNING_ENABLED"]);
 
   it("is raised by every model switch", () => {
     for (const name of SWITCH_NAMES.filter((n) => switchKind(n) === "model" && !RETIRED.has(n))) {
@@ -94,6 +95,11 @@ describe("MODEL_CAPABILITIES", () => {
   it("offers the paid read with every switch off, now swap tools is retired", () => {
     const fitsRead = MODEL_CAPABILITIES.find((c) => c.key === "fits_read");
     expect(fitsRead?.on(all("false"))).toBe(true);
+  });
+
+  it("offers Help me choose's paid read with every switch off, now its switch is retired", () => {
+    const intake = MODEL_CAPABILITIES.find((c) => c.key === "intake");
+    expect(intake?.on(all("false"))).toBe(true);
   });
 
   it("is raised by no switch that is not a model switch", () => {

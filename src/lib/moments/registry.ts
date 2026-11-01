@@ -5,7 +5,7 @@ import type { SwitchName } from "../switches/registry";
  * deck is made (handoff README, Q2). M16, the Friends Home card, is not a moment (Hugh, 2026-10-16): Home gets a
  * permanent Friends section instead, in a PR of its own. `tool` is the switch the moment's tool lives behind, or null
  * for a surface that has none (Top off, Card assignments; the friends moments since `SOCIAL_FRIENDS_ENABLED` retired; Stand-ins and Find a
- * deck since `SWAP_TOOLS_ENABLED` retired):
+ * deck since `SWAP_TOOLS_ENABLED` retired; Help me choose since `HELP_ME_CHOOSE_ENABLED` retired):
  * off for a reader, the moment is absent. `after` names a moment that must be spent first, which is how Mana Balance
  * always takes a later visit than Suggested changes.
  *
@@ -13,7 +13,7 @@ import type { SwitchName } from "../switches/registry";
  */
 export const MOMENTS = [
   { id: "precons", m: "M14", tool: null },
-  { id: "help-me-choose", m: "M12", tool: "HELP_ME_CHOOSE_ENABLED" },
+  { id: "help-me-choose", m: "M12", tool: null },
   { id: "top-off", m: "M1", tool: null },
   { id: "proposed-cuts", m: "M3", tool: "ANALYSIS_TAB_ENABLED" },
   { id: "suggested-changes", m: "M2", tool: "ANALYSIS_TAB_ENABLED" },

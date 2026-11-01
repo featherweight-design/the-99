@@ -26,9 +26,15 @@ describe("spendMomentAction", () => {
   });
 
   it("spends nothing for a moment whose tool is off", async () => {
-    await spendMomentAction("help-me-choose");
-    // Proposed cuts follows the Analysis tab, off here. (Stand-ins was the example until SWAP_TOOLS_ENABLED retired.)
+    // Proposed cuts follows the Analysis tab, off here. (Stand-ins, then Help me choose, were examples until
+    // SWAP_TOOLS_ENABLED and HELP_ME_CHOOSE_ENABLED retired.)
     await spendMomentAction("proposed-cuts");
     expect(spendMoment).not.toHaveBeenCalled();
+  });
+
+  it("spends Help me choose's moment whatever its retired switch says", async () => {
+    env = { HELP_ME_CHOOSE_ENABLED: "off" };
+    await spendMomentAction("help-me-choose");
+    expect(spendMoment).toHaveBeenCalledWith("user_1", "help-me-choose");
   });
 });

@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { helpMeChooseEnabled } from "../lib/intake/flag";
 import type { ComponentProps } from "react";
 import { perfRoute } from "../lib/perf/timing";
 import { auth } from "@clerk/nextjs/server";
@@ -388,7 +387,6 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       about={about}
       welcome={welcome && <WelcomeStrip facts={welcome} sheet={welcomeSheet} place="dashboard" />}
       signature={signatureStrip}
-      helpMeChoose={helpMeChooseEnabled(env)}
       noCards={data.stats.uniqueCards === 0}
       feed={feed}
       tradeAsk={tradeAsk}
