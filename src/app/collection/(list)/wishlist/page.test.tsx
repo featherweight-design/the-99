@@ -1,8 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReactElement } from "react";
 
-// /collection/wishlist: absent with the reader's switch off, and with it on, the view gets plain props (ISO dates) and
-// a friends line only when friends is on and the reader has one.
+// /collection/wishlist: the view gets plain props (ISO dates) and a friends line only when the reader has a friend.
 const m = vi.hoisted(() => ({
   notFound: vi.fn(() => {
     throw new Error("NEXT_NOT_FOUND");
@@ -48,7 +47,6 @@ const props = async () => (await view()).props;
 
 describe("/collection/wishlist", () => {
   it("hands the view plain props, with dates as ISO strings", async () => {
-    vi.stubEnv("SOCIAL_FRIENDS_ENABLED", "true");
     expect(await props()).toEqual({
       tiles: [{ oracleId: CARD, name: "Sol Ring", imageUri: "https://img", want: 2, have: 1, addedAt: AT }],
       notices: [{ oracleId: CARD, name: "Sol Ring", collectedAt: AT }],
@@ -56,13 +54,18 @@ describe("/collection/wishlist", () => {
     });
   });
 
-  it("says no friend without one, and never reads friends with friends off", async () => {
-    vi.stubEnv("SOCIAL_FRIENDS_ENABLED", "true");
+  it("says no friend without one", async () => {
     m.listFriends.mockResolvedValue([]);
     expect((await props()).hasFriend).toBe(false);
-    vi.stubEnv("SOCIAL_FRIENDS_ENABLED", "");
-    m.listFriends.mockClear();
-    expect((await props()).hasFriend).toBe(false);
-    expect(m.listFriends).not.toHaveBeenCalled();
+    expect(m.listFriends).toHaveBeenCalledWith("u1");
+  });
+
+  it("says no friend when the friends read fails, and still draws the list", async () => {
+    m.listFriends.mockRejectedValue(new Error("down"));
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const got = await props();
+    warn.mockRestore();
+    expect(got.hasFriend).toBe(false);
+    expect(got.tiles).toHaveLength(1);
   });
 });

@@ -46,6 +46,7 @@ vi.mock("../lib/precons/banner", () => ({ loadArrivalsBanner: stub.arrivals }));
 vi.mock("../lib/precons/pick-receipt-read", () => ({ readPickReceipt: stub.receipt }));
 vi.mock("../lib/social/home-friends", () => ({ loadHomeFriends: stub.homeFriends }));
 vi.mock("../lib/invites/read", () => ({ loadInviteCount: stub.inviteCount }));
+vi.mock("../lib/social/rule-zero-home", () => ({ loadHomeTables: async () => [] }));
 vi.mock("../lib/discovery/tour", async (orig) => ({
   ...(await orig<object>()),
   readTourSeen: async () => stub.tourSeen,
@@ -166,9 +167,8 @@ describe("The first-run checklist's Friends row (Discovery R3·3)", () => {
   type Row = { friends: unknown[]; links: unknown[]; now: string; invites: unknown } | null;
   const visit = async () => (await HomePage({ searchParams: Promise.resolve({}) })) as ReactElement<{ friends?: Row }>;
 
-  it("hands first run the friends and links read per request, with SOCIAL_FRIENDS_ENABLED on", async () => {
+  it("hands first run the friends and links read per request", async () => {
     stub.uniqueCards = 0;
-    stub.env = { SOCIAL_FRIENDS_ENABLED: "true" };
     stub.homeFriends.mockResolvedValue(FRIENDS);
     stub.inviteCount.mockResolvedValue(null);
     const page = await visit();
@@ -181,9 +181,8 @@ describe("The first-run checklist's Friends row (Discovery R3·3)", () => {
     expect(stub.inviteCount).toHaveBeenCalledWith("user_1", expect.any(Date));
   });
 
-  it("hands first run the invite count with SOCIAL_FRIENDS_ENABLED on (addendum G4), and none when it cannot be read", async () => {
+  it("hands first run the invite count (addendum G4), and none when it cannot be read", async () => {
     stub.uniqueCards = 0;
-    stub.env = { SOCIAL_FRIENDS_ENABLED: "true" };
     stub.homeFriends.mockResolvedValue(FRIENDS);
     const count = { left: 3, waiting: 0, liveQr: false, qrUntil: null, out: false };
     stub.inviteCount.mockResolvedValue(count);
@@ -194,18 +193,8 @@ describe("The first-run checklist's Friends row (Discovery R3·3)", () => {
     warn.mockRestore();
   });
 
-  it("draws no row with the switch off, and reads nothing", async () => {
-    stub.uniqueCards = 0;
-    stub.env = {};
-    const page = await visit();
-    expect(page.type).toBe(FirstRunChecklist);
-    expect(page.props.friends).toBeNull();
-    expect(stub.homeFriends).not.toHaveBeenCalled();
-  });
-
   it("draws no row when the read fails", async () => {
     stub.uniqueCards = 0;
-    stub.env = { SOCIAL_FRIENDS_ENABLED: "true" };
     stub.homeFriends.mockRejectedValue(new Error("down"));
     const err = vi.spyOn(console, "error").mockImplementation(() => {});
     const page = await visit();

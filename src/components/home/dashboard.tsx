@@ -65,9 +65,9 @@ export type DashboardProps = {
   decks: DeckListItem[];
   /** Null when the availability read failed. The card renders nothing, not a zero. */
   commitments: Commitments | null;
-  /** Friends on Home, read per request outside the cached payload. Null with SOCIAL_FRIENDS_ENABLED off or a failed read. */
+  /** Friends on Home, read per request outside the cached payload. Null with a failed read. */
   friends?: (Omit<FriendsSectionProps, "className" | "now" | "head">) | null;
-  /** Rule 0's open tables the reader sits at, read per request (plan decision 1); empty with the switch off. */
+  /** Rule 0's open tables the reader sits at, read per request (plan decision 1); empty with a failed read. */
   tables?: OpenTable[];
   shopping: ShoppingRollup;
   /**

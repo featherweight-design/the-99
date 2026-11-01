@@ -36,8 +36,6 @@ const BASE = {
     you: { displayName: "Hugh", commander: null },
     friends: [{ publicId: "p1", displayName: named("Colin"), commander: { oracleId: "x", name: "X", artCropUri: "colin.jpg" } }],
     links: [],
-    games: false,
-    friendPages: true,
     invites: null,
   },
   now: NOW,

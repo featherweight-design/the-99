@@ -165,7 +165,7 @@ describe("FirstRunFriendsRow", () => {
 });
 
 describe("FirstRunChecklist · the Friends row", () => {
-  it("draws no row with the switch off, and the kicker says Step 1 of 3", () => {
+  it("draws no row without a friends read, and the kicker says Step 1 of 3", () => {
     const { container } = render(<FirstRunChecklist />);
     expect(container.querySelector("[data-friends-row]")).toBeNull();
     expect(screen.getByText(refreshCopy.firstRun.step(1, 3))).toBeTruthy();

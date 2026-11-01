@@ -244,12 +244,10 @@ describe("Friends on Home", () => {
     you: { displayName: "Hugh", commander: null },
     friends: [{ publicId: "p1", displayName: named("Colin"), commander: null }],
     links: [],
-    games: true,
-    friendPages: true,
   };
   const section = () => screen.getByRole("region", { name: "Friends · 1" });
 
-  it("is absent, with no space kept, when the page hands no friends (switch off or a failed read)", () => {
+  it("is absent, with no space kept, when the page hands no friends (a failed read)", () => {
     render(<Dashboard {...BASE} friends={null} />);
     expect(screen.queryByRole("region", { name: /^Friends/ })).toBeNull();
   });

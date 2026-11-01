@@ -1,14 +1,13 @@
 // /collection/wishlist — cards wanted outside any deck (Social R2 PR 4, boards W1–W5 and WP1–WP5).
 //
 // The fifth tab of the place strip, always drawn (its switch, `SOCIAL_WISHLIST_ENABLED`, is retired). The page reads the reader's own lines as tiles, the one-time collected strip's notices
-// and, with friends on, whether the reader has a friend (the meta line's `Your friends can see this list`); the view
+// and whether the reader has a friend (the meta line's `Your friends can see this list`); the view
 // owns the search and every write.
 
 import { requireUserId } from "../../../../lib/auth";
 import { requestSwitchEnv } from "../../../../lib/switches/request";
 import { loadWishlistTiles } from "../../../../lib/wishlist/wishlist";
 import { loadCollectedNotices } from "../../../../lib/wishlist/collected";
-import { socialFriendsEnabled } from "../../../../lib/social/flag";
 import { listFriends } from "../../../../lib/social/access";
 import { WishlistView } from "../../../../components/wishlist/wishlist-view";
 import { pageLanding } from "../../../../lib/discovery/page-landing";
@@ -16,7 +15,7 @@ import { TOOL_PARAM } from "../../../../lib/discovery/tool-param";
 import { ToolLandingMount } from "../../../../components/discovery/tool-landing-mount";
 
 export default async function CollectionWishlistPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  // The reader first: friends and the landing are decided from their switches (`requestSwitchEnv`).
+  // The reader first: the landing is decided from their switches (`requestSwitchEnv`).
   const userId = await requireUserId();
   const env = await requestSwitchEnv(userId);
   // Try it's landing (discovery R2·3): `?tool=wishlist` haloes the search; anything else is stripped.
@@ -24,7 +23,12 @@ export default async function CollectionWishlistPage({ searchParams }: { searchP
   const [{ tiles }, notices, hasFriend] = await Promise.all([
     loadWishlistTiles(userId),
     loadCollectedNotices(userId),
-    socialFriendsEnabled(env) ? listFriends(userId).then((f) => f.length > 0) : Promise.resolve(false),
+    // A friends read that fails draws the meta line without `Your friends can see this list`, never a broken page. The
+    // page is read per request (not a `cachePageForUser` page), so nothing stale can be kept.
+    listFriends(userId).then((f) => f.length > 0, (error: unknown) => {
+      console.warn("[wishlist] friends unreadable; drawing the list without the friends line", error instanceof Error ? error.message : "");
+      return false;
+    }),
   ]);
   return (
     <>

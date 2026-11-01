@@ -1,12 +1,11 @@
 "use client";
-// Settings' "Your decks" section (friend decks handoff, README 4b; `SOCIAL_FRIENDS_ENABLED`), last, after Spares: what a
+// Settings' "Your decks" section (friend decks handoff, README 4b), last, after Spares: what a
 // friend's Decks tab shows of the reader's. Two boxes, drawn as the news section's rows, each saved as it changes
 // (`setFriendDeckPrefsAction`, both rules at once). The second sits under the first, indented, and with the first off
 // it dims, reads unticked and cannot be pressed: there is nothing for it to include. A write that fails puts both back
 // to what was last saved and says so in the shared social toast, as the news and Spares sections do.
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { setFriendDeckPrefsAction } from "../../app/settings/actions";
 import { settingsCopy } from "../../lib/copy/settings";
 import type { FriendDeckPrefs } from "../../lib/social/deck-visibility-rule";
@@ -17,7 +16,6 @@ import { Checkbox } from "../ui/checkbox";
 const c = settingsCopy.decks;
 
 export function FriendDecksSection({ prefs }: { prefs: FriendDeckPrefs }) {
-  const router = useRouter();
   const [toast, setToast] = useState<SocialToastState | null>(null);
   const toastSeq = useRef(0);
 
@@ -49,8 +47,7 @@ export function FriendDecksSection({ prefs }: { prefs: FriendDeckPrefs }) {
       if (r.ok) {
         saved.current = next;
         setOn(next);
-      } else if (r.reason === "off") router.refresh();
-      else fail();
+      } else fail();
     } catch {
       fail();
     } finally {

@@ -1,7 +1,7 @@
 "use client";
 // Home's Friends section (Social R3 addendum, `design/design_handoff_the99_social_r3/addendum-friends-home/`): a mono
 // label, a row of five seats that always spans the width, a line, and Add a friend. A section, not a card: no surface,
-// border, ✕ or shadow, and no dismissal. Permanent while SOCIAL_FRIENDS_ENABLED is on.
+// border, ✕ or shadow, and no dismissal. Permanent.
 //
 // The seats: up to five faces, else four and `+N` (a count, not a press: the heading carries the total and `All friends ›`
 // is the one way to the rest). Empty seats fill the row; with no friends, your own seat leads it. While a friend link is
@@ -32,12 +32,8 @@ export type FriendsSectionProps = {
   links: { token: string; createdAt: Date; expiresAt: Date }[];
   /** The render's one clock, from the server. */
   now: string;
-  /** SOCIAL_FRIENDS_ENABLED (opponents follow friends since their own switch retired): the no-friends line names seating friends in a game only while it is on (G5). */
-  games: boolean;
-  /** A face opens the friend's own page, which needs the friends switch alone (menu and Home PR 7); false opens /friends. */
-  friendPages: boolean;
-  /** SOCIAL_FRIENDS_ENABLED (invites follow friends), with the reader's invite count: Add a friend opens /friends' chooser (addendum G4).
-   *  Null with invites off, or with a count that could not be read: Add a friend makes a link, as shipped. */
+  /** The reader's invite count: Add a friend opens /friends' chooser (addendum G4).
+   *  Null with a count that could not be read: Add a friend makes a link, as shipped. */
   invites?: InviteCount | null;
   /** The dashboard's `order` classes for the phone placement. */
   className?: string;
@@ -52,13 +48,13 @@ export function seatPlan(friends: number): { faces: number; more: number; empty:
   return { faces: friends, more: 0, empty: SEATS - friends };
 }
 
-export function FriendsSection({ you, friends, links, now, games, friendPages, invites = null, className = "", head }: FriendsSectionProps) {
+export function FriendsSection({ you, friends, links, now, invites = null, className = "", head }: FriendsSectionProps) {
   // Add a friend, Show, the dialog, the chooser, the invite watch, the clock and the toast: shared with the first-run
   // checklist's Friends row (`useAddFriend`).
   const { nowDate, timeZone, open, soonest, msLeft, making, add, showLink, returnRef, overlays } = useAddFriend({ friends, links, now, invites });
   const plan = seatPlan(friends.length);
 
-  const faceHref = (publicId: string) => (friendPages ? `/friends/${publicId}` : "/friends");
+  const faceHref = (publicId: string) => `/friends/${publicId}`;
   return (
     <section aria-labelledby="home-friends-head" className={`flex flex-col gap-[12px] text-[color:var(--fg-body)] min-[1180px]:gap-[11px] ${className}`}>
       <div className="flex min-h-[24px] items-center justify-between gap-[12px] min-[1180px]:min-h-[14px]">
@@ -131,7 +127,7 @@ export function FriendsSection({ you, friends, links, now, games, friendPages, i
 
       {friends.length === 0 && (
         <p className="m-0 text-[13px] leading-[1.5] text-[color:var(--fg-body)] min-[1180px]:text-[12.5px]">
-          {h.invite} {h.inviteMore(games)}
+          {h.invite} {h.inviteMore(true)}
         </p>
       )}
 

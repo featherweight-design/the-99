@@ -1,4 +1,4 @@
-// /settings (menu and Home PR 3 and 4): Notifications comes first, Spares only with Friends on; the collection list is
+// /settings (menu and Home PR 3 and 4): Notifications comes first, then Spares and Your decks; the collection list is
 // read only when a card is kept back.
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
@@ -39,23 +39,13 @@ beforeEach(() => {
 });
 
 describe("/settings", () => {
-  it("draws the news section alone with Friends off, reading nothing for Spares", async () => {
-    m.env = {};
-    const el = await SettingsPage();
-    expect(sections(el).map((c) => c.type)).toEqual([NewsSection]);
-    expect(news(el)!.props.kinds).toEqual([{ kind: "new-set", on: true }]);
-    expect(m.readSpareMin).not.toHaveBeenCalled();
-    expect(m.loadKeptBack).not.toHaveBeenCalled();
-  });
-
-  it("draws news first, then Spares, then Your decks, with Friends on", async () => {
-    m.env = { SOCIAL_FRIENDS_ENABLED: "true" };
+  it("draws news first, then Spares, then Your decks", async () => {
     const el = await SettingsPage();
     expect(sections(el).map((c) => c.type)).toEqual([NewsSection, SparesSection, FriendDecksSection]);
+    expect(news(el)!.props.kinds).toEqual([{ kind: "new-set", on: true }]);
   });
 
   it("draws the Spares section with the reader's threshold and shared pods", async () => {
-    m.env = { SOCIAL_FRIENDS_ENABLED: "true" };
     const el = await SettingsPage();
     const section = spares(el)!;
     expect(section.props.spareMin).toBe(2);
@@ -64,7 +54,6 @@ describe("/settings", () => {
   });
 
   it("reads the collection list when a card is kept back", async () => {
-    m.env = { SOCIAL_FRIENDS_ENABLED: "true" };
     m.loadKeptBack.mockResolvedValue([{
       oracleId: "11111111-1111-4111-8111-111111111111", name: "Sol Ring", typeLine: "Artifact", manaCost: "{1}",
       rarity: "uncommon", colorIdentity: [], imageUri: null, layout: "normal",
