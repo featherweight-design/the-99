@@ -21,7 +21,7 @@ import { discoveryKey, loadDiscoveryWithIds } from "./list";
 export function loadDiscoveryPayload(userId: string, sort: "fit" | "new", env: NodeJS.ProcessEnv) {
   return cacheForUser(
     userId,
-    discoveryKey(sort, env),
+    discoveryKey(sort),
     async () => {
       const { list, oracleIds, basis, fellBack } = await loadDiscoveryWithIds(userId, { sort }, env);
       return { encoded: encodeDiscovery(list), oracleIds, basis, fellBack };

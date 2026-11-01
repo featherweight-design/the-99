@@ -13,7 +13,6 @@ import { cache } from "react";
 import { loadSupportLists } from "../edhrec/support-read";
 import { loadRoleTargetsForCommanders } from "../profile/role-targets";
 import { loadSharedPoolRoleBasis } from "./pool-role-basis";
-import { labelRoleCountsEnabled } from "../decks/label-counts-flag";
 import { type Availability } from "../decks/availability";
 import { loadAvailability } from "../decks/availability-query";
 import {
@@ -172,9 +171,8 @@ export async function rankFree(
     collection: PoolCard[];
     availability: Map<string, Availability>;
   } | undefined,
-  /** The reader's resolved switches: the role basis follows its `LABEL_ROLE_COUNTS_ENABLED`, as the
-   *  canonical list's does, or the two modes would count one collection two ways. */
-  env: NodeJS.ProcessEnv,
+  /** The reader's resolved switches. Unread since roles are always counted by label (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31): both modes count one collection by label. */
+  _env: NodeJS.ProcessEnv,
 ): Promise<{ items: CommanderListItem[]; ok: boolean; labelFallback?: true }> {
   // Slugs come only from the canonical list, so an empty one can only ever
   // produce an empty ranking. `ok` is still true: nothing failed, there is just
@@ -257,7 +255,7 @@ export async function rankFree(
   // `inclusionByName`, which only feeds `roleCards`, and `toListItem` drops those before this
   // function returns: a cache read here pulled every buildable commander's whole EDHREC page
   // (~94KB each) for figures nothing drew.
-  const { basis, roleSets, fellBack } = await loadSharedPoolRoleBasis(userId, collection, labelRoleCountsEnabled(env));
+  const { basis, roleSets, fellBack } = await loadSharedPoolRoleBasis(userId, collection, true);
   // The canonical list this one is carried against may have been persisted under the labels basis.
   // With the label read down this list would count by the classifier, and the toggle would draw
   // two bases as one ranking. The control is disabled for this response instead, like any other

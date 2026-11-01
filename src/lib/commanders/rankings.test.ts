@@ -228,40 +228,17 @@ describe("loadCommanderRankings · the owned printing", () => {
 });
 
 describe("the list caches' payload versions", () => {
+  // Pinned to the labels basis: roles are always counted by label (LABEL_ROLE_COUNTS retired, Hugh
+  // 2026-10-31), and the key keeps the segment entries filed while the switch was live carry.
   it("pins both, so a pair bumped half-way fails", () => {
-    const off = { LABEL_ROLE_COUNTS_ENABLED: "false" } as unknown as NodeJS.ProcessEnv;
-    expect(commanderRankingsKey(off)).toEqual(["commander-rankings", "v11", "basis:classifier"]);
-    expect(discoveryKey("fit", off)).toEqual(["discovery", "fit", "v9", "basis:classifier"]);
-  });
-
-  // Admin PR 6d-2. Both payloads are counted by the reader's role basis, which an app-wide override
-  // of LABEL_ROLE_COUNTS_ENABLED flips without a deploy, and nothing else in either key moves when it
-  // does. So each key carries the basis: two bases never share an entry, and two envs that agree on
-  // the basis (whatever else they say) always do. The environment is the opposite of both, so a key
-  // read off `process.env` fails the first half.
-  it("files each payload under the reader's role basis, and nothing else of the env", () => {
-    vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "false");
-    try {
-      const on = { LABEL_ROLE_COUNTS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
-      const onToo = { LABEL_ROLE_COUNTS_ENABLED: "true", FEEDBACK_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
-      const off = { LABEL_ROLE_COUNTS_ENABLED: "false" } as unknown as NodeJS.ProcessEnv;
-      expect(commanderRankingsKey(on)).not.toEqual(commanderRankingsKey(off));
-      expect(commanderRankingsKey(on)).toEqual(commanderRankingsKey(onToo));
-      expect(commanderRankingsKey(on)).toContain("basis:labels");
-      for (const sort of ["fit", "new"]) {
-        expect(discoveryKey(sort, on)).not.toEqual(discoveryKey(sort, off));
-        expect(discoveryKey(sort, on)).toEqual(discoveryKey(sort, onToo));
-        expect(discoveryKey(sort, on)).toContain("basis:labels");
-      }
-    } finally {
-      vi.unstubAllEnvs();
-    }
+    expect(commanderRankingsKey()).toEqual(["commander-rankings", "v11", "basis:labels"]);
+    expect(discoveryKey("fit")).toEqual(["discovery", "fit", "v9", "basis:labels"]);
   });
 
   // The sort rides in the key beside the version, so two sorts cannot share an
   // entry — a property of the key's shape rather than of either number.
   it("keeps the two discovery sorts apart at the same version", () => {
-    expect(discoveryKey("new", ENV_VIEW)).not.toEqual(discoveryKey("fit", ENV_VIEW));
-    expect(discoveryKey("new", ENV_VIEW)).toContain("v9");
+    expect(discoveryKey("new")).not.toEqual(discoveryKey("fit"));
+    expect(discoveryKey("new")).toContain("v9");
   });
 });

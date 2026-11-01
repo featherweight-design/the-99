@@ -25,7 +25,6 @@ import { and, asc, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { deckDataChanges, deckProfiles, deckSynopses, deckVersionSynopses, deckVersions, decks, preconSynopses } from "../../db/schema";
 import { analysisTabEnabled } from "../decks/analysis-flag";
-import { roleBasisFromEnv } from "../decks/label-counts-flag";
 import { holdsIllegalCard } from "../notices/read";
 import { listFingerprint } from "../profile/fingerprint";
 import { readProfileHead } from "../profile/load";
@@ -65,9 +64,10 @@ export async function carryOverPreconOverview(deckId: string, userId: string, en
   if (await holdsIllegalCard(deckId, userId)) return { attached: false, reason: "illegal" };
   const v2 = overviewV2Enabled(env);
   const contract = synopsisPreconContractVersion(v2);
-  // At the OWNER's contract AND role basis: the reading's roles reach the prompt, so an Overview built at
-  // the other basis is not what this owner's Analyze would write, and none is attached.
-  const keyFor = (c: number) => and(eq(preconSynopses.preconFile, deck.precon!), eq(preconSynopses.contractVersion, c), eq(preconSynopses.roleBasis, roleBasisFromEnv(env)));
+  // At the OWNER's contract AND the labels basis (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31): the
+  // reading's roles reach the prompt, so an Overview built by the classifier is not what this owner's
+  // Analyze would write, and none is attached.
+  const keyFor = (c: number) => and(eq(preconSynopses.preconFile, deck.precon!), eq(preconSynopses.contractVersion, c), eq(preconSynopses.roleBasis, "labels"));
   const [row] = await db.select().from(preconSynopses).where(keyFor(contract));
   const key = keyFor(contract);
   const decision = carryOverDecision({ analysisTab: true, row: row ?? null, liveFingerprint: list });

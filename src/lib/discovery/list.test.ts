@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { ENV_VIEW } from "@/test/env-view";
 import { buildPoolRollup } from "../recs/pool-rollup";
 import { ROLES_WEIGHT, type PoolCard } from "../recs/score";
 import { assembleDiscovery, assembleDiscoveryWithIds, discoveryKey } from "./list";
@@ -371,12 +370,11 @@ describe("assembleDiscoveryWithIds", () => {
 });
 
 describe("discoveryKey", () => {
-  it("files a payload under its sort, its version and the reader's role basis", () => {
-    const off = { LABEL_ROLE_COUNTS_ENABLED: "false" } as unknown as NodeJS.ProcessEnv;
-    expect(discoveryKey("fit", off)).toEqual(["discovery", "fit", "v9", "basis:classifier"]);
+  it("files a payload under its sort, its version and the labels basis", () => {
+    expect(discoveryKey("fit")).toEqual(["discovery", "fit", "v9", "basis:labels"]);
   });
 
   it("keeps two sorts apart", () => {
-    expect(discoveryKey("new", ENV_VIEW)).not.toEqual(discoveryKey("fit", ENV_VIEW));
+    expect(discoveryKey("new")).not.toEqual(discoveryKey("fit"));
   });
 });

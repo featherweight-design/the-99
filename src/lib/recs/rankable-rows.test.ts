@@ -51,16 +51,10 @@ describe("rankableScoreRows", () => {
 describe("rankableScoreRows by role basis", () => {
   afterEach(() => vi.unstubAllEnvs());
 
-  it("compares with <> and the classifier version with the switch off", () => {
+  // LABEL_ROLE_COUNTS retired (Hugh 2026-10-31): the labels version is the only one, even with the
+  // old switch off, so a classifier set is always refused.
+  it("compares with <> and the NEGATED version, so a classifier set is refused", () => {
     vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "");
-    const { sql, params } = emitted();
-    expect(sql).toMatch(/stale\.writer_version <> \$\d+/);
-    expect(params).toContain(SCORE_WRITER_CURRENT);
-    expect(params).not.toContain(-SCORE_WRITER_CURRENT);
-  });
-
-  it("compares with <> and the NEGATED version with the switch on, so a classifier set is refused", () => {
-    vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "true");
     const { sql, params } = emitted();
     expect(sql).toMatch(/stale\.writer_version <> \$\d+/);
     expect(params).toContain(-SCORE_WRITER_CURRENT);

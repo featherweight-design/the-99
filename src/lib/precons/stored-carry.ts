@@ -30,7 +30,6 @@ import { db } from "../../db";
 import { deckCards, deckDataChanges, deckProfiles, deckSynopses, deckVersionSynopses, deckVersions, decks, preconSynopses } from "../../db/schema";
 import type { CheckedSynopsis } from "../synopsis/types";
 import { analysisTabEnabled } from "../decks/analysis-flag";
-import { roleBasisFromEnv } from "../decks/label-counts-flag";
 import { liveOffendingIds } from "../notices/read";
 import { listFingerprint, profileFingerprint } from "../profile/fingerprint";
 import { PROFILE_VERSION } from "../profile/version";
@@ -60,7 +59,7 @@ export async function carryStoredOnArrival(deckId: string, userId: string, env: 
   const contract = synopsisPreconContractVersion(v2);
   const [[deck], stored] = await Promise.all([
     arrivalDeckQuery(deckId, userId),
-    readPreconCarry({ deckId, userId }, contract, roleBasisFromEnv(env)),
+    readPreconCarry({ deckId, userId }, contract, "labels"),
   ]);
   if (!deck?.precon || deck.hasReading) return { kind: "nothing" };
   const head = { commanderOracleId: deck.commanderOracleId, partnerOracleId: deck.partnerOracleId, cards: deck.cards };
@@ -94,7 +93,7 @@ export async function carryStoredOnArrival(deckId: string, userId: string, env: 
     // ONE REVISION OF THE SOURCE ROW, under a shared lock, as the computing carry-over takes it: a build or
     // copy cannot mark it not current or rewrite it between this decision and the write, and the content,
     // dates and change log mark all come from this revision.
-    const [row] = await sourceRowQuery(tx, deck.precon!, stored.overview.contractVersion, roleBasisFromEnv(env));
+    const [row] = await sourceRowQuery(tx, deck.precon!, stored.overview.contractVersion, "labels");
     const src = row;
     const plan = lockedCarry({ wantsOverview: wantsOverview && !illegal, readAt: reading.at, readingSeenSeq: reading.seenSeq, list, src: src ?? null });
     if (plan.kind === "fallback") return plan;

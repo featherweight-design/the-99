@@ -9,7 +9,6 @@ import { supportOverlap } from "../edhrec/support-overlap";
 import { loadSupportLists } from "../edhrec/support-read";
 import { loadRoleTargetsForCommanders } from "../profile/role-targets";
 import { loadSharedPoolRoleBasis, type LabelCheck } from "./pool-role-basis";
-import { labelRoleCountsEnabled } from "../decks/label-counts-flag";
 import type { ProfileRoleTargets } from "../profile/types";
 import type { RoleBasis } from "../profile/build";
 import { scoringSynergyState, type SynergyState } from "./synergy-state";
@@ -270,9 +269,9 @@ async function loadPoolCard(oracleId: string): Promise<PoolCard | null> {
 
 export async function recommendCommanders(
   userId: string,
-  /** The reader's resolved switches (`requestSwitchEnv`): the role basis follows its
-   *  `LABEL_ROLE_COUNTS_ENABLED`. A script, outside a request, passes `process.env`. */
-  env: NodeJS.ProcessEnv,
+  /** The reader's resolved switches (`requestSwitchEnv`); a script, outside a request, passes
+   *  `process.env`. Unread since roles are always counted by label (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31). */
+  _env: NodeJS.ProcessEnv,
 ): Promise<RecommendResult> {
   const { collection, uniqueCardsRead } = await loadCollectionPool(userId);
 
@@ -295,7 +294,7 @@ export async function recommendCommanders(
   // the role chips keep the fresher figures, and an EDHREC outage still has to
   // be describable. What moved to the index is the SCORE — Ruling D.
   // The labels are read first: the targets follow the basis they come back under.
-  const { basis, roleSets, fellBack, labelCheck } = await loadSharedPoolRoleBasis(userId, collection, labelRoleCountsEnabled(env));
+  const { basis, roleSets, fellBack, labelCheck } = await loadSharedPoolRoleBasis(userId, collection, true);
   const [edhrecCache, supportLists, roleTargets] = await Promise.all([
     readEdhrecCache(candidates.map((c) => c.oracleId)),
     loadSupportLists(candidates.map((c) => c.oracleId)),
@@ -377,8 +376,8 @@ export async function scoreOneCommander(
   oracleId: string,
   slug: string,
   pool: PoolCard[] | undefined,
-  /** The reader's resolved switches, as `recommendCommanders` takes them. */
-  env: NodeJS.ProcessEnv,
+  /** The reader's resolved switches, as `recommendCommanders` takes them. Unread since roles are always counted by label (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31). */
+  _env: NodeJS.ProcessEnv,
 ): Promise<CommanderDetailScore | null> {
   const { collection } = await loadCollectionPool(userId);
   // A discovery commander is by definition one the player may not own, so a
@@ -390,7 +389,7 @@ export async function scoreOneCommander(
   if (!commander) return null;
 
   // The collection's labels, whichever pool is scored: a free pool is a subset of it.
-  const { basis, roleSets } = await loadSharedPoolRoleBasis(userId, collection, labelRoleCountsEnabled(env));
+  const { basis, roleSets } = await loadSharedPoolRoleBasis(userId, collection, true);
   const [edhrecCache, supportLists, roleTargets] = await Promise.all([
     readEdhrecCache([oracleId]),
     loadSupportLists([oracleId]),

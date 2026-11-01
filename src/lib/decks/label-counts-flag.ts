@@ -2,13 +2,22 @@ import type { RoleBasis } from "../profile/build";
 import { KILL } from "../switches/resolve";
 
 /**
+ * RETIRED (Hugh 2026-10-31): production has it on for everyone, and roles are always counted by
+ * label. Baked in as on across src/lib's recs, discovery, commanders, profile and precons readers
+ * (group 3, LABEL_ROLE_COUNTS part A). Readers that still call this or `roleBasisFromEnv` until part B:
+ * src/lib/decks/fill-plan.ts, src/lib/decks/suggestions-read.ts, src/lib/decks/tuning-read.ts,
+ * src/lib/decks/deck-mix.ts, src/lib/tuning/mana-help-load.ts, src/lib/switches/flags.ts, src/app/decks/[id]/page.tsx and
+ * src/app/decks/[id]/changes/page.tsx (plus `envForPageBasis`/`parseRoleBasis` in
+ * src/app/api/discovery-fields/route.ts and src/app/commanders/[slug]/coverage-action.ts), and the
+ * scripts that read the variable.
+ *
  * Whether this deployment counts a deck's roles from its cards' LABELS (the Jobs card's own tally,
  * `jobTally`) and grades them against the index's `label_*` targets, instead of the classifier's
  * `card.role` against `avg_*` (labels-everywhere plan, PR 2).
  *
  * Server-side, like `analysisTabEnabled`: read on the server, never `NEXT_PUBLIC_*`. Defaults off:
- * absent, empty or any string but `'true'` renders exactly what shipped before. Turning it off is
- * the rollback, and no data moves back. A `plumbing` switch (admin PR 6d-2): an app-wide override
+ * absent, empty or any string but `'true'` renders exactly what shipped before. Retired: its `off`
+ * no longer reverts the label basis in src/lib, and rollback is a redeploy. A `plumbing` switch (admin PR 6d-2): an app-wide override
  * flips it without a deploy, so a reader passes the resolved env, and a cached payload that depends
  * on it carries the basis in its own key (`discoveryKey`, `commanderRankingsKey`, the scores'
  * `writer_version`) rather than relying on the deployment.

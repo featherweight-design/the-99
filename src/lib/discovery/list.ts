@@ -2,7 +2,6 @@ import type { Availability } from "../decks/availability";
 import { loadAvailability } from "../decks/availability-query";
 import { loadCollectionPool } from "../recs/recommend";
 import { loadSharedPoolRoleBasis } from "../recs/pool-role-basis";
-import { labelRoleCountsEnabled, roleBasisFromEnv } from "../decks/label-counts-flag";
 import type { RoleBasis } from "../profile/build";
 import { buildPoolRollup, rollupFor, type PoolRollup } from "../recs/pool-rollup";
 import { loadCandidates, type CandidateRow } from "./candidates";
@@ -385,13 +384,11 @@ export function assembleDiscoveryWithIds(input: AssembleInput): { list: Discover
 const PAYLOAD_VERSION = 9;
 
 /** The cache key a discovery payload is filed under: its sort, the version of the code that
-    produced it, and the role basis it was counted by. The basis follows the reader's
-    `LABEL_ROLE_COUNTS_ENABLED`, which an app-wide override flips without a deploy, and nothing else
-    in this key moves when it does: without it an entry counted by one basis would be served under
-    the other for up to the hour ceiling (admin PR 6d-2). `env` is the reader's resolved switches,
-    the same env the load is handed. */
-export function discoveryKey(sort: string, env: NodeJS.ProcessEnv): string[] {
-  return ["discovery", sort, `v${PAYLOAD_VERSION}`, `basis:${roleBasisFromEnv(env)}`];
+    produced it, and the role basis it was counted by. Roles are always counted by label
+    (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31), so the basis segment is constant: it stays in the
+    key so entries filed while the switch was live stay warm. */
+export function discoveryKey(sort: string): string[] {
+  return ["discovery", sort, `v${PAYLOAD_VERSION}`, "basis:labels"];
 }
 
 /**
@@ -459,18 +456,18 @@ export async function loadDiscovery(
 export async function loadDiscoveryWithIds(
   userId: string,
   opts: { sort: "fit" | "new" },
-  /** The reader's resolved switches: the role basis follows its `LABEL_ROLE_COUNTS_ENABLED`. */
-  env: NodeJS.ProcessEnv,
+  /** The reader's resolved switches. Unread since roles are always counted by label
+   *  (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31); kept so callers hand one env to every loader. */
+  _env: NodeJS.ProcessEnv,
 ): Promise<{ list: DiscoveryList; oracleIds: string[]; basis: RoleBasis; fellBack: boolean }> {
   // The label read starts the moment the collection resolves, beside the availability read and then
   // the candidate query: it needs only the collection. `loadSharedPoolRoleBasis` never rejects (a failed
   // read is the classifier on both sides), so it cannot be left dangling.
-  const labelsOn = labelRoleCountsEnabled(env);
   let basisStarted: ReturnType<typeof loadSharedPoolRoleBasis> | undefined;
   const { collection, availability, availOk } = await perfRead("discovery.pool", () => loadDiscoveryPool(userId, (c) => {
-    basisStarted = loadSharedPoolRoleBasis(userId, c, labelsOn);
+    basisStarted = loadSharedPoolRoleBasis(userId, c, true);
   }));
-  const basisRead = basisStarted ?? loadSharedPoolRoleBasis(userId, collection, labelsOn);
+  const basisRead = basisStarted ?? loadSharedPoolRoleBasis(userId, collection, true);
   // One oracle-id set, so the second support aggregate has nothing to add: the
   // ranked pool and the collection are the same pool.
   const candidates = await perfRead("discovery.candidates", () => loadCandidates(

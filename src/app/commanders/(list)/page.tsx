@@ -45,13 +45,13 @@ export default async function CommandersPage({
   // Started now so it runs beside the rankings; a failure is handled where it is read.
   const printings = loadCommanderPrintings();
   printings.catch(() => {});
-  // The reader's resolved switches: the rankings' key and their load decide the role basis
-  // (`LABEL_ROLE_COUNTS_ENABLED`) from this one env.
+  // The reader's resolved switches, handed to the rankings' load. The key's role basis is always
+  // labels (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31).
   const env = await requestSwitchEnv(userId);
   const [rankings, decks, savedAvail] = await Promise.all([
     // A ranking counted by the classifier only because the label read failed is served and never
     // filed under the labels key (admin PR 6d-2).
-    perf.timed("rankings", () => cacheForUser(userId, commanderRankingsKey(env), () => loadCommanderRankings(userId, env), {
+    perf.timed("rankings", () => cacheForUser(userId, commanderRankingsKey(), () => loadCommanderRankings(userId, env), {
       store: (r) => !r.labelFallback,
     })),
     perfRead("commanders.recentDeck", () => listRecentDecks(userId, 1)),

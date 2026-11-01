@@ -20,7 +20,6 @@ import { switchBits } from "../switches/resolve";
 import { canonicalPair } from "../edhrec/pair";
 import { COMBO_DETECTION, isInfiniteOrGameEnding } from "../spellbook/combo-features";
 import { countCondition, identityCondition } from "../staples/condition";
-import { roleBasisFromEnv } from "../decks/label-counts-flag";
 import { readLabelRoleSets } from "../labels/read";
 import { buildDeckProfile, pickRoleTargets, type ProfileCardRow, type ProfileInput, type RoleBasis } from "./build";
 import { labelRoleRow, roleTargetsFrom } from "./role-targets";
@@ -284,8 +283,11 @@ function compositionFrom(row: CompositionRow | undefined) {
  * built from the NEW contents under the OLD fingerprint — a wrong answer served until the
  * ceiling expires. The head already holds `(oracleId, quantity)`, so this joins `cards` by
  * those ids.
+ *
+ * `_env` is unread since roles are always counted by label (LABEL_ROLE_COUNTS retired, Hugh
+ * 2026-10-31); kept so every caller hands the reader's switches, which the cached build keys on.
  */
-export async function loadDeckProfileFromHead(head: ProfileHead, env: NodeJS.ProcessEnv): Promise<DeckProfile> {
+export async function loadDeckProfileFromHead(head: ProfileHead, _env: NodeJS.ProcessEnv): Promise<DeckProfile> {
   const commanderIds = [
     head.commanderOracleId,
     ...(head.partnerOracleId ? [head.partnerOracleId] : []),
@@ -354,12 +356,12 @@ export async function loadDeckProfileFromHead(head: ProfileHead, env: NodeJS.Pro
   // THE BASIS CHAIN, as four cheap keyed reads. First hit wins, and the discriminant travels
   // with the data — see `ProfileSkeleton`.
   //
-  // THE ROLE BASIS is the deployment's (`LABEL_ROLE_COUNTS_ENABLED`, labels-everywhere PR 8): with
-  // it on, the deck's roles are its cards' labels and the targets are the index's `label_*`, both
+  // THE ROLE BASIS is always labels (labels-everywhere PR 8; LABEL_ROLE_COUNTS retired, Hugh
+  // 2026-10-31): the deck's roles are its cards' labels and the targets are the index's `label_*`, both
   // from one decision so the profile never grades one count against the other's targets. A label
   // read that fails throws rather than quietly building a classifier profile that the cache would
   // file under the same key: the labels sit in the database every other read here uses.
-  const roleBasis = roleBasisFromEnv(env);
+  const roleBasis = "labels" as const;
   const { skeleton: skeletonFor, candidates, condition, staples, commanderDeckCount } =
     await loadSkeletonForCommanders(
       head.commanderOracleId, head.partnerOracleId ?? null, combinedIdentity,
@@ -368,9 +370,7 @@ export async function loadDeckProfileFromHead(head: ProfileHead, env: NodeJS.Pro
       { pairRow, commanderRow },
       { roleBasis },
     );
-  const labels = roleBasis === "labels"
-    ? { sets: await readLabelRoleSets(rows.map((r) => r.oracleId)), roleTargets: skeletonFor.roleTargets }
-    : undefined;
+  const labels = { sets: await readLabelRoleSets(rows.map((r) => r.oracleId)), roleTargets: skeletonFor.roleTargets };
 
   const mldFlags = new Map<string, FlagSource[]>();
   const extraTurnFlags = new Map<string, FlagSource[]>();
@@ -400,7 +400,7 @@ export async function loadDeckProfileFromHead(head: ProfileHead, env: NodeJS.Pro
     // reads them — so the CREATE path and this one cannot drift about what a deck is measured
     // against. The first-hit selection is still `build.ts`'s `skeleton()`.
     ...candidates,
-    ...(labels ? { labels } : {}),
+    labels,
     staples,
     commanderDeckCount,
     population: populationFrom(pairRow, commanderRow),

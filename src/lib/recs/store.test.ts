@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ENV_VIEW } from "@/test/env-view";
 import { sql } from "drizzle-orm";
 
@@ -94,15 +94,15 @@ describe("toScoreRow", () => {
     expect(row).not.toHaveProperty("oracleText");
   });
 
-  // Admin PR 6d-2: the writer version carries the role basis, and the basis is the reader's resolved
-  // `LABEL_ROLE_COUNTS_ENABLED`. The environment has it off and the env handed in has it on, so a row
-  // stamped from `process.env` would claim the classifier for scores counted by label.
-  it("stamps the writer version of the env it is handed, not the environment's", () => {
+  // The writer version carries the role basis, which is always labels (LABEL_ROLE_COUNTS retired,
+  // Hugh 2026-10-31): a row is stamped with the negated version even with the old switch off
+  // everywhere, in the environment and in the env handed in.
+  it("stamps the labels writer version whatever the old switch says", () => {
     vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "false");
     try {
-      const on = { LABEL_ROLE_COUNTS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
-      expect(toScoreRow("user_1", ranked(), on).writerVersion).toBe(-SCORE_WRITER_CURRENT);
-      expect(toScoreRow("user_1", ranked(), ENV_VIEW).writerVersion).toBe(SCORE_WRITER_CURRENT);
+      const off = { LABEL_ROLE_COUNTS_ENABLED: "false" } as unknown as NodeJS.ProcessEnv;
+      expect(toScoreRow("user_1", ranked(), off).writerVersion).toBe(-SCORE_WRITER_CURRENT);
+      expect(toScoreRow("user_1", ranked(), ENV_VIEW).writerVersion).toBe(-SCORE_WRITER_CURRENT);
     } finally {
       vi.unstubAllEnvs();
     }
@@ -536,7 +536,7 @@ describe("persistScores generation guard", () => {
     const announced = fake.executed().join(" ");
     expect(announced).toContain("set_config");
     expect(announced).toContain("app.writer_version");
-    expect(announced).toContain(String(SCORE_WRITER_CURRENT));
+    expect(announced).toContain(String(-SCORE_WRITER_CURRENT));
   });
 
   // THE LOCK AND THE VERSION ARE ONE FIX, and this is the half no other case
@@ -660,7 +660,7 @@ describe("loadScores and the rows a mid-deploy write left behind", () => {
     name: "Atraxa, Praetors' Voice",
     colorIdentity: ["W", "U", "B", "G"],
     imageUri: "https://x.test/a.jpg",
-    writerVersion: SCORE_WRITER_CURRENT,
+    writerVersion: -SCORE_WRITER_CURRENT,
     ...over,
   });
 
@@ -707,37 +707,26 @@ describe("loadScores and the rows a mid-deploy write left behind", () => {
     expect(items).toEqual([]);
   });
 
-  it("names the current writer on every row it writes", () => {
-    expect(toScoreRow("user_1", ranked(), ENV_VIEW).writerVersion).toBe(SCORE_WRITER_CURRENT);
+  // The role basis rides in the version (labels-everywhere PR 5), and the basis is always labels
+  // (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31): every row is stamped with the negated version.
+  it("names the current labels writer on every row it writes", () => {
+    expect(toScoreRow("user_1", ranked(), ENV_VIEW).writerVersion).toBe(-SCORE_WRITER_CURRENT);
   });
 
-  // The role basis rides in the version (labels-everywhere PR 5): the switch flipping either way
-  // must make the other basis's persisted set a miss, never serve it as current.
-  describe("by role basis", () => {
-    afterEach(() => vi.unstubAllEnvs());
+  // A classifier-counted set left from before the switch was retired is a miss, never served as current.
+  it("reads a classifier-counted set as a miss", async () => {
+    stub.db.select = resolvingSelect([row({ writerVersion: SCORE_WRITER_CURRENT })]);
+    await expect(loadScores("user_1", ENV_VIEW)).resolves.toEqual({ items: [], degradedOracleIds: [] });
+  });
 
-    it("stamps a label-counted row with the negated writer version", () => {
-      vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "true");
-      expect(toScoreRow("user_1", ranked(), ENV_VIEW).writerVersion).toBe(-SCORE_WRITER_CURRENT);
-    });
-
-    it("reads a classifier-counted set as a miss with the switch on", async () => {
-      vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "true");
-      stub.db.select = resolvingSelect([row({ writerVersion: SCORE_WRITER_CURRENT })]);
-      await expect(loadScores("user_1", ENV_VIEW)).resolves.toEqual({ items: [], degradedOracleIds: [] });
-    });
-
-    it("serves a label-counted set with the switch on", async () => {
-      vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "true");
+  it("serves a label-counted set even with the old switch off", async () => {
+    vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "");
+    try {
       stub.db.select = resolvingSelect([row({ writerVersion: -SCORE_WRITER_CURRENT })]);
       expect((await loadScores("user_1", ENV_VIEW)).items).toHaveLength(1);
-    });
-
-    it("reads a label-counted set as a miss with the switch off, so a rollback restores the classifier", async () => {
-      vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "");
-      stub.db.select = resolvingSelect([row({ writerVersion: -SCORE_WRITER_CURRENT })]);
-      await expect(loadScores("user_1", ENV_VIEW)).resolves.toEqual({ items: [], degradedOracleIds: [] });
-    });
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 });
 

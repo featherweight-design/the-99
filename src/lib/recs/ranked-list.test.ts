@@ -62,11 +62,10 @@ beforeEach(() => {
 
 
 describe("getRankedList", () => {
-  // Admin PR 6d-2 (Copilot round 1): one request's memo is keyed on the user AND the role basis.
-  // Two callers asking for the same basis share one load, whatever env OBJECT each holds (every
-  // `requestSwitchEnv` builds a new one); two bases in one request are two lists, never one served
-  // as the other.
-  it("shares one load per basis within a request, and keeps the two bases apart", async () => {
+  // Admin PR 6d-2 (Copilot round 1): one request's memo is keyed on the user, never the env OBJECT
+  // (every `requestSwitchEnv` builds a new one). Roles are always counted by label (LABEL_ROLE_COUNTS
+  // retired, Hugh 2026-10-31), so even envs that disagree about the old switch share one load.
+  it("shares one load per user within a request, whatever env each caller holds", async () => {
     loadScores.mockResolvedValue({ items: [item("a", 90)], degradedOracleIds: [] });
     const labels = () => ({ LABEL_ROLE_COUNTS_ENABLED: "true" }) as unknown as NodeJS.ProcessEnv;
     const classifier = { LABEL_ROLE_COUNTS_ENABLED: "false" } as unknown as NodeJS.ProcessEnv;
@@ -74,13 +73,13 @@ describe("getRankedList", () => {
     const first = getRankedList("user_1", labels());
     const again = getRankedList("user_1", labels());
     const other = getRankedList("user_1", classifier);
+    const otherUser = getRankedList("user_2", labels());
 
     expect(again).toBe(first);
-    expect(other).not.toBe(first);
-    await Promise.all([first, again, other]);
+    expect(other).toBe(first);
+    expect(otherUser).not.toBe(first);
+    await Promise.all([first, again, other, otherUser]);
     expect(loadScores).toHaveBeenCalledTimes(2);
-    expect(loadScores.mock.calls.map((c) => (c as unknown[])[1] as NodeJS.ProcessEnv).map((e) => e.LABEL_ROLE_COUNTS_ENABLED))
-      .toEqual(["true", "false"]);
   });
 
   // Admin PR 6d-2: the stored set is read, the list computed and the set stored under the reader's

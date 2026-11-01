@@ -28,7 +28,7 @@ describe("unplayedCountsSql", () => {
   it("condemns a stale score set the way loadScores does", async () => {
     const { SCORE_WRITER_CURRENT } = await import("../../db/schema");
     expect(sql).toContain("stale.rank_score < 0 or stale.writer_version <>");
-    expect(params).toContain(SCORE_WRITER_CURRENT);
+    expect(params).toContain(-SCORE_WRITER_CURRENT);
   });
 
   // `assemble` also recomputes on a visible degraded row; a built commander's does not count.
@@ -61,16 +61,14 @@ describe("loadUnplayedCounts", () => {
 describe("unplayedCountsSql by role basis", () => {
   afterEach(() => vi.unstubAllEnvs());
 
-  it("refuses any set not written under this basis: <> and the negated version with the switch on", async () => {
+  // LABEL_ROLE_COUNTS retired (Hugh 2026-10-31): the labels basis is the only one, so a classifier set
+  // is refused even with the old switch off.
+  it("refuses any set not written by label: <> and the negated version, whatever the old switch says", async () => {
     const { SCORE_WRITER_CURRENT } = await import("../../db/schema");
-    vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "true");
-    const on = new PgDialect().sqlToQuery(unplayedCountsSql("user_1", undefined, ENV_VIEW));
-    expect(on.sql).toMatch(/stale\.writer_version <> \$\d+/);
-    expect(on.params).toContain(-SCORE_WRITER_CURRENT);
-    expect(on.params).not.toContain(SCORE_WRITER_CURRENT);
     vi.stubEnv("LABEL_ROLE_COUNTS_ENABLED", "");
-    const off = new PgDialect().sqlToQuery(unplayedCountsSql("user_1", undefined, ENV_VIEW));
-    expect(off.params).toContain(SCORE_WRITER_CURRENT);
-    expect(off.params).not.toContain(-SCORE_WRITER_CURRENT);
+    const got = new PgDialect().sqlToQuery(unplayedCountsSql("user_1", undefined, ENV_VIEW));
+    expect(got.sql).toMatch(/stale\.writer_version <> \$\d+/);
+    expect(got.params).toContain(-SCORE_WRITER_CURRENT);
+    expect(got.params).not.toContain(SCORE_WRITER_CURRENT);
   });
 });

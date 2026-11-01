@@ -11,7 +11,6 @@ import { and, eq, inArray } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, preconSynopses } from "../../db/schema";
 import { analysisTabEnabled } from "../decks/analysis-flag";
-import { roleBasisFromEnv } from "../decks/label-counts-flag";
 import { allEvidenceIds } from "../synopsis/based-on";
 import { synopsisPreconContractVersion } from "../synopsis/limits";
 import { overviewV2Enabled } from "../synopsis/overview-v2";
@@ -55,9 +54,10 @@ export function overviewForList<T extends { listFingerprint: string }>(overview:
   return overview && overview.listFingerprint === list ? overview : null;
 }
 
-/** The row's key at the reader's switches: which contract and basis an Analyze press would write at. */
+/** The row's key at the reader's switches: which contract and basis an Analyze press would write at.
+ *  The basis is always labels (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31). */
 export function preconOverviewKey(env: NodeJS.ProcessEnv) {
-  return { contract: synopsisPreconContractVersion(overviewV2Enabled(env)), basis: roleBasisFromEnv(env) };
+  return { contract: synopsisPreconContractVersion(overviewV2Enabled(env)), basis: "labels" as const };
 }
 
 /** Pure: whether a stored row is shown at all. */
