@@ -29,7 +29,6 @@ import { loadIncomingAsks, type IncomingAsk } from "../social/spare-requests";
 import { loadFriendSpares, type FriendSpare } from "../social/spares";
 import { noticeTradeMatches } from "../social/trade-match";
 import { availableFeedKinds } from "./flag";
-import { socialFriendsEnabled } from "../social/flag";
 import type { FeedFriend } from "../social/feed-items";
 import { leadStory, type FeedKind } from "./kinds";
 import { effectiveKinds, markFeedSeen, neverChose, readFeedPrefs } from "./prefs";
@@ -93,8 +92,8 @@ export type FeedView = {
    */
   answer: Answer | null;
   /**
-   * A trade match whose press opens the card's spares sheet with Ask: `SOCIAL_FRIENDS_ENABLED` for the reader. False on
-   * every other item, and on a trade match with spare requests off (the press then opens the friend's Spares tab).
+   * A trade match whose press opens the card's spares sheet with Ask (always, since `SOCIAL_FRIENDS_ENABLED` retired).
+   * False on every other item.
    */
   askable: boolean;
   /** Home only (`withAnswerDetails`): what the answer's line says. Absent on a push. */
@@ -231,7 +230,7 @@ export function toViews(
     precons: Map<string, FeedCard>;
     owned: Map<string, { owned: number; of: number }>;
     cards: Map<string, FeedCard>;
-    /** `SOCIAL_FRIENDS_ENABLED` for the reader: a trade match's press asks. */
+    /** A trade match's press asks (always, since `SOCIAL_FRIENDS_ENABLED` retired). */
     askable?: boolean;
   },
 ): FeedView[] {
@@ -301,7 +300,7 @@ export function toViews(
  * chain card details uses (\`chainArt\`: the reader's own printing, else the one details opens on), so its hover preview
  * and its press show one picture; the catalog's representative stays where the chain has none.
  */
-export async function lookups(userId: string, items: readonly FeedItem[], q: Executor, env: NodeJS.ProcessEnv) {
+export async function lookups(userId: string, items: readonly FeedItem[], q: Executor, _env: NodeJS.ProcessEnv) {
   const codes = items.flatMap((i) => (i.kind === "new-set" ? [i.code] : []));
   const files = items.flatMap((i) => (i.kind === "new-precon" ? [i.fileName] : []));
   const ids = [
@@ -326,7 +325,7 @@ export async function lookups(userId: string, items: readonly FeedItem[], q: Exe
     precons: new Map(preconRows.map((r) => [r.file_name, toCard(r)])),
     owned: new Map(ownedRows.map((r) => [r.file_name, { owned: Number(r.owned), of: Number(r.total) }])),
     cards: new Map(cardRows.map((r) => [r.oracle_id, { ...toCard(r), image: art.get(r.oracle_id) ?? r.image }])),
-    askable: socialFriendsEnabled(env),
+    askable: true,
   };
 }
 

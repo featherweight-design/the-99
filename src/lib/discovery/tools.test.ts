@@ -90,6 +90,7 @@ describe("toolLanding", () => {
 
   it("lands a tool with no switch whatever the switches say", () => {
     expect(toolLanding("top-off", () => false)?.tool).toBe("top-off");
+    expect(toolLanding("matchups", () => false)?.tool).toBe("matchups");
   });
 
   it("is null for an unknown id, a repeated parameter, an absent one, and a tool whose switch is off", () => {
@@ -98,7 +99,6 @@ describe("toolLanding", () => {
     expect(toolLanding(undefined, allOn)).toBeNull();
     expect(toolLanding("tour:banner", allOn)).toBeNull();
     expect(toolLanding("stand-ins", offFor("SWAP_TOOLS_ENABLED"))).toBeNull();
-    expect(toolLanding("matchups", offFor("SOCIAL_FRIENDS_ENABLED"))).toBeNull();
     expect(isToolId("nope")).toBe(false);
   });
 });

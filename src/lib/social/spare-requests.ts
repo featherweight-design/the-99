@@ -3,7 +3,7 @@
  * friend answers Yes or No. The rules are `spare-request-rules.ts`; this module is every read and write of
  * `spare_requests`, and it lives here because each one reaches another account (`check:social-reads`).
  *
- * - An ask needs `SOCIAL_FRIENDS_ENABLED` for the asker, a current friendship, and the card to be one of that friend's
+ * - An ask needs a current friendship, and the card to be one of that friend's
  *   spares OFFERED to the asker by the one rule every surface reads (`loadFriendSpares`: the pod grant, the friend's
  *   `spare_min` and `spare_keep`). That read runs before the write, in its own snapshots, as the stand-ins modal's
  *   does: a spare that stops being offered a moment later still leaves an ask the friend can answer No to.
@@ -35,7 +35,6 @@ import { resolveFriend } from "./access";
 import { MAX_SPARES_BATCH } from "./client-rules";
 import type { ProfileCommander } from "./commander";
 import { recordFeedItem } from "./feed-write";
-import { socialFriendsEnabled } from "./flag";
 import { isUuid } from "./rules";
 import {
   answerData, askRefusal, askShown, askerState, capCopies, daysLeft, declineFloor, isAnswer, openFloor, requestState, shownFloor,
@@ -46,9 +45,9 @@ import { loadFriendSpares, loadOwnOffered } from "./spares";
 type Executor = Pick<typeof db, "execute">;
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-export type AskOutcome = { ok: true; id: string } | { ok: false; reason: "off" | "not-friend" | "not-spare" | "gone" | AskRefusal };
-export type AnswerOutcome = { ok: true } | { ok: false; reason: "off" | "gone" };
-export type CloseOutcome = { ok: true; closed: "withdrawn" | "cleared" } | { ok: false; reason: "off" | "gone" };
+export type AskOutcome = { ok: true; id: string } | { ok: false; reason: "not-friend" | "not-spare" | "gone" | AskRefusal };
+export type AnswerOutcome = { ok: true } | { ok: false; reason: "gone" };
+export type CloseOutcome = { ok: true; closed: "withdrawn" | "cleared" } | { ok: false; reason: "gone" };
 
 /** What an ask may carry beyond the card (G2): both re-validated on the server, both display only. */
 export type AskExtras = { copies?: unknown; deckId?: unknown; standalone?: unknown };
@@ -139,13 +138,12 @@ export async function askIn(tx: Tx, a: Asking): Promise<AskOutcome> {
 }
 
 /**
- * The checks every ask runs before its transaction: the switch, the friend, and the card one of that friend's spares
+ * The checks every ask runs before its transaction: the friend, and the card one of that friend's spares
  * offered to the asker, whose count caps the copies. A refusal here writes nothing.
  */
 async function prepareAsk(
-  askerId: string, friendPublicId: unknown, oracleId: unknown, env: NodeJS.ProcessEnv, now: Date, extras: AskExtras,
+  askerId: string, friendPublicId: unknown, oracleId: unknown, now: Date, extras: AskExtras,
 ): Promise<Asking | Extract<AskOutcome, { ok: false }>> {
-  if (!socialFriendsEnabled(env)) return { ok: false, reason: "off" };
   if (!isUuid(oracleId)) return { ok: false, reason: "not-spare" };
   const holderId = await resolveFriend(askerId, friendPublicId);
   if (!holderId) return { ok: false, reason: "not-friend" };
@@ -182,9 +180,9 @@ async function inAskTransaction(body: (tx: Tx) => Promise<AskOutcome>): Promise<
  * the deck (G2).
  */
 export async function askForSpare(
-  askerId: string, friendPublicId: unknown, oracleId: unknown, env: NodeJS.ProcessEnv, now = new Date(), extras: AskExtras = {},
+  askerId: string, friendPublicId: unknown, oracleId: unknown, _env: NodeJS.ProcessEnv, now = new Date(), extras: AskExtras = {},
 ): Promise<AskOutcome> {
-  const asking = await prepareAsk(askerId, friendPublicId, oracleId, env, now, extras);
+  const asking = await prepareAsk(askerId, friendPublicId, oracleId, now, extras);
   if ("ok" in asking) return asking;
   return inAskTransaction((tx) => askIn(tx, asking));
 }
@@ -208,10 +206,10 @@ export function withdrawForInsteadQuery(askerId: string, requestId: string, orac
  * friend; any refusal of the new ask rolls the withdraw back, so the first ask stays open.
  */
 export async function askInsteadForSpare(
-  askerId: string, fromRequestId: unknown, friendPublicId: unknown, oracleId: unknown, env: NodeJS.ProcessEnv,
+  askerId: string, fromRequestId: unknown, friendPublicId: unknown, oracleId: unknown, _env: NodeJS.ProcessEnv,
   now = new Date(), extras: AskExtras = {},
 ): Promise<AskOutcome> {
-  const asking = await prepareAsk(askerId, friendPublicId, oracleId, env, now, extras);
+  const asking = await prepareAsk(askerId, friendPublicId, oracleId, now, extras);
   if ("ok" in asking) return asking;
   if (!isUuid(fromRequestId)) return { ok: false, reason: "gone" };
   return inAskTransaction(async (tx) => {
@@ -251,9 +249,8 @@ export function clearQuery(askerId: string, requestId: string, now: Date): SQL {
 
 /** The asker's ✕ on one of their asks: withdraws it while open, else clears it from their list. */
 export async function closeSpareRequest(
-  askerId: string, requestId: unknown, env: NodeJS.ProcessEnv, now = new Date(), q: Executor = db,
+  askerId: string, requestId: unknown, _env: NodeJS.ProcessEnv, now = new Date(), q: Executor = db,
 ): Promise<CloseOutcome> {
-  if (!socialFriendsEnabled(env)) return { ok: false, reason: "off" };
   if (!isUuid(requestId)) return { ok: false, reason: "gone" };
   const landed = (r: { rowCount?: number | null; rows: unknown[] }) => (r.rowCount ?? r.rows.length) > 0;
   if (landed(await q.execute(withdrawQuery(askerId, requestId, now)))) return { ok: true, closed: "withdrawn" };
@@ -284,9 +281,8 @@ export function answerQuery(holderId: string, requestId: string, answer: "yes" |
  * written for an answer that changed no row.
  */
 export async function answerSpareRequest(
-  holderId: string, requestId: unknown, answer: unknown, env: NodeJS.ProcessEnv, now = new Date(),
+  holderId: string, requestId: unknown, answer: unknown, _env: NodeJS.ProcessEnv, now = new Date(),
 ): Promise<AnswerOutcome> {
-  if (!socialFriendsEnabled(env)) return { ok: false, reason: "off" };
   if (!isUuid(requestId) || !isAnswer(answer)) return { ok: false, reason: "gone" };
   return db.transaction(async (tx) => {
     // Both friendship rows first, in the purge's order (`lockFriendshipQuery`), as every ask path takes them: the answer
@@ -371,10 +367,9 @@ type IncomingRow = Face & {
 /**
  * Waiting on you's spare-request rows. An ask for a card the holder NO LONGER OFFERS (kept back, under their
  * threshold, or claimed by their decks since; `loadOwnOffered`, the rule friends read their spares by) is left out:
- * it is not theirs to answer any more (G3). `env` is the holder's own resolved switches.
+ * it is not theirs to answer any more (G3). `_env` is unread since `SOCIAL_FRIENDS_ENABLED` retired (always on).
  */
-export async function loadIncomingAsks(holderId: string, env: NodeJS.ProcessEnv, now = new Date(), q: Executor = db): Promise<IncomingAsk[]> {
-  if (!socialFriendsEnabled(env)) return [];
+export async function loadIncomingAsks(holderId: string, _env: NodeJS.ProcessEnv, now = new Date(), q: Executor = db): Promise<IncomingAsk[]> {
   const rows = (await q.execute<IncomingRow>(incomingAsksQuery(holderId, now))).rows as IncomingRow[];
   if (rows.length === 0) return [];
   const offered = await loadOwnOffered(holderId, rows.map((r) => r.oracle_id));
@@ -527,9 +522,8 @@ export function canAskAgain(ask: MyAsk, asks: readonly MyAsk[], now: Date, offer
  * per `stillNeeded` (`askerState`).
  */
 export async function loadMyAsks(
-  askerId: string, env: NodeJS.ProcessEnv, now = new Date(), opts: MyAsksOptions = {}, q: Executor = db,
+  askerId: string, _env: NodeJS.ProcessEnv, now = new Date(), opts: MyAsksOptions = {}, q: Executor = db,
 ): Promise<MyAsk[]> {
-  if (!socialFriendsEnabled(env)) return [];
   const shown = await readShownAsks(askerId, now, opts, q);
   const openCards = openAskCards(shown, now);
   const offered = new Set(
@@ -622,9 +616,8 @@ export function markAnswerSeenQuery(askerId: string, requestId: string, now: Dat
       and asr.asker_seen_at is null`;
 }
 
-/** Marks one answer seen; whether it wrote. Nothing while the switch is off. */
-export async function markAnswerSeen(askerId: string, requestId: string, env: NodeJS.ProcessEnv, now = new Date(), q: Executor = db): Promise<boolean> {
-  if (!socialFriendsEnabled(env)) return false;
+/** Marks one answer seen; whether it wrote. */
+export async function markAnswerSeen(askerId: string, requestId: string, _env: NodeJS.ProcessEnv, now = new Date(), q: Executor = db): Promise<boolean> {
   const done = await q.execute(markAnswerSeenQuery(askerId, requestId, now));
   return (done.rowCount ?? 0) > 0;
 }
@@ -635,24 +628,22 @@ async function countOf(query: SQL, q: Executor): Promise<number> {
 }
 
 /**
- * Open asks waiting on this holder's answer; 0 while the switch is off. The SQL count runs first (the shell reads it
+ * Open asks waiting on this holder's answer. The SQL count runs first (the shell reads it
  * on every page) and only when it finds one are the rows loaded and filtered by what the holder still offers (G3), so
  * the badge and Waiting on you always agree.
  */
 export async function waitingAsksCount(holderId: string, env: NodeJS.ProcessEnv, now = new Date(), q: Executor = db): Promise<number> {
-  if (!socialFriendsEnabled(env)) return 0;
   if ((await countOf(waitingAsksCountQuery(holderId, now), q)) === 0) return 0;
   return (await loadIncomingAsks(holderId, env, now, q)).length;
 }
 
-/** Answers this asker has not seen on `/friends`; 0 while the switch is off. */
-export async function unseenAnswersCount(askerId: string, env: NodeJS.ProcessEnv, now = new Date(), q: Executor = db): Promise<number> {
-  return socialFriendsEnabled(env) ? countOf(unseenAnswersCountQuery(askerId, now), q) : 0;
+/** Answers this asker has not seen on `/friends`. */
+export async function unseenAnswersCount(askerId: string, _env: NodeJS.ProcessEnv, now = new Date(), q: Executor = db): Promise<number> {
+  return countOf(unseenAnswersCountQuery(askerId, now), q);
 }
 
 /** Marks this asker's answers seen; whether it wrote. */
-export async function markAnswersSeen(askerId: string, env: NodeJS.ProcessEnv, now = new Date(), q: Executor = db): Promise<boolean> {
-  if (!socialFriendsEnabled(env)) return false;
+export async function markAnswersSeen(askerId: string, _env: NodeJS.ProcessEnv, now = new Date(), q: Executor = db): Promise<boolean> {
   const done = await q.execute(markAnswersSeenQuery(askerId, now));
   return (done.rowCount ?? 0) > 0;
 }

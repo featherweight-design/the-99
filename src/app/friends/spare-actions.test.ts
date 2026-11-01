@@ -63,8 +63,8 @@ describe("askSpareAction", () => {
   });
 
   it("passes a refusal through, never as done", async () => {
-    m.askForSpare.mockResolvedValue({ ok: false, reason: "off" });
-    expect(await askSpareAction({ friendPublicId: FRIEND, oracleId: CARD })).toEqual({ ok: false, reason: "off" });
+    m.askForSpare.mockResolvedValue({ ok: false, reason: "not-friend" });
+    expect(await askSpareAction({ friendPublicId: FRIEND, oracleId: CARD })).toEqual({ ok: false, reason: "not-friend" });
   });
 });
 
@@ -90,9 +90,9 @@ describe("closeSpareAction and answerSpareAction", () => {
 
   it("revalidate nothing when refused", async () => {
     m.closeSpareRequest.mockResolvedValue({ ok: false, reason: "gone" });
-    m.answerSpareRequest.mockResolvedValue({ ok: false, reason: "off" });
+    m.answerSpareRequest.mockResolvedValue({ ok: false, reason: "gone" });
     expect(await closeSpareAction(REQ)).toEqual({ ok: false, reason: "gone" });
-    expect(await answerSpareAction(REQ, "no")).toEqual({ ok: false, reason: "off" });
+    expect(await answerSpareAction(REQ, "no")).toEqual({ ok: false, reason: "gone" });
     expect(m.revalidatePath).not.toHaveBeenCalled();
   });
 });

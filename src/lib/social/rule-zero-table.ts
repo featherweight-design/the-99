@@ -159,7 +159,7 @@ export function seatsQuery(viewerId: string, tableId: string, q: Pick<typeof db,
     .orderBy(asc(ruleZeroSeats.seat));
 }
 
-/** The seats, with each owner's `SOCIAL_FRIENDS_ENABLED` decided first (the seats' players are read ahead of it). */
+/** The seats, with the owners whose deck rules apply decided first (the seats' players are read ahead of it). */
 async function readSeats(viewerId: string, tableId: string, q: Tx) {
   return seatsQuery(viewerId, tableId, q, await ruledSeatOwnersOf(viewerId, tableId, q));
 }

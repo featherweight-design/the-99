@@ -9,9 +9,9 @@
  * people (quick-seat): its members are offered only where each is also the viewer's friend, because a pod
  * grants no visibility by itself (a hand-on can leave a member who is not the new owner's friend).
  *
- * **What the picker offers follows the owner's deck rules** (friend decks, PR 5; Hugh's ruling 2026-10-22). With
- * `SOCIAL_FRIENDS_ENABLED` on for the OWNER, `friendDecksQuery` and the picker's count leave out a deck the owner hid
- * from friends, and every deck while their "Friends can see my decks" is off. Drafts stay: the unfinished rule is the
+ * **What the picker offers follows the owner's deck rules** (friend decks, PR 5; Hugh's ruling 2026-10-22).
+ * `friendDecksQuery` and the picker's count leave out a deck the owner hid from friends, and every deck while their
+ * "Friends can see my decks" is off. Drafts stay: the unfinished rule is the
  * Decks tab's, not the picker's. The picker offers "A deck not listed", which seats the friend with no deck, for EVERY friend
  * whose rules apply (`PickerFriend.withheld`), not only one who hid something: offered only then, its presence would say a
  * hidden deck exists. `friendDecksIn`, the
@@ -24,10 +24,8 @@ import { and, asc, desc, eq, inArray, notInArray, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
 import { decks, friendLinks, podMembers, socialProfiles, userPrefs } from "../../db/schema";
-import { resolveSwitchEnv } from "../switches/snapshot";
 import { listFriends, listPods, resolveFriend, type Reader } from "./access";
 import { commanderCard } from "./commander";
-import { socialFriendsEnabled } from "./flag";
 import { isUuid } from "./rules";
 import type { ThirdPartyName } from "../person-name/brand";
 import { named } from "../person-name/mint";
@@ -53,7 +51,7 @@ export const pickerSeesDeck = sql`(not ${decks.hiddenFromFriends} and coalesce($
 
 /**
  * A friend's decks, by name, only while the two are friends. `ruledOwners` names the owners (account ids, never sent
- * on) whose `SOCIAL_FRIENDS_ENABLED` is on: their decks pass `pickerSeesDeck`, everyone else's are listed as shipped.
+ * on) whose deck rules apply: their decks pass `pickerSeesDeck`, everyone else's are listed as shipped.
  * Apart so a test can render its SQL.
  */
 export function friendDecksQuery(viewerId: string, friendPublicIds: readonly string[], ruledOwners: readonly string[] = [], q: Reader = db) {
@@ -88,15 +86,14 @@ const deckOf = (r: Omit<FriendDeck, "name"> & { name: string }): FriendDeck => (
 });
 
 /**
- * The decks a friend can be seated with, by the friend's own deck rules while their `SOCIAL_FRIENDS_ENABLED` is on. A
+ * The decks a friend can be seated with, by the friend's own deck rules. A
  * stranger, a former friend or a forged id reads nothing. The deck read still joins the viewer's link itself.
  */
 export async function listFriendDecks(viewerId: string, friendPublicId: unknown): Promise<FriendDeck[]> {
   if (!isUuid(friendPublicId)) return [];
   const ownerId = await resolveFriend(viewerId, friendPublicId);
   if (ownerId === null) return [];
-  const ruled = socialFriendsEnabled(await resolveSwitchEnv(ownerId));
-  const rows = await friendDecksQuery(viewerId, [friendPublicId], ruled ? [ownerId] : []);
+  const rows = await friendDecksQuery(viewerId, [friendPublicId], [ownerId]);
   return rows.map(deckOf);
 }
 
@@ -245,12 +242,11 @@ export function pickerDeckFigures(row: { count: number; visible: number }, ruled
 
 /**
  * The viewer's friends with a deck count each, read when the picker OPENS (G7). Their live face, never persisted. Each
- * friend's count follows their OWN `SOCIAL_FRIENDS_ENABLED`, as `listFriendDecks` does, so the count and the list agree.
+ * friend's count follows their OWN deck rules, as `listFriendDecks` does, so the count and the list agree.
  */
 export async function listPickerFriends(viewerId: string): Promise<PickerFriend[]> {
   const [friends, counts] = await Promise.all([listFriends(viewerId), friendDeckCountsQuery(viewerId)]);
-  const ruled = await Promise.all(counts.map(async (c) => socialFriendsEnabled(await resolveSwitchEnv(c.ownerId))));
-  const byFriend = new Map(counts.map((c, i) => [c.publicId, pickerDeckFigures(c, ruled[i])]));
+  const byFriend = new Map(counts.map((c) => [c.publicId, pickerDeckFigures(c, true)]));
   return friends.map((f) => ({
     publicId: f.publicId,
     displayName: f.displayName,

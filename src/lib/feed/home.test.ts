@@ -18,7 +18,7 @@ import type { IncomingAsk } from "../social/spare-requests";
 import type { FeedItem } from "./read";
 import { named } from "../person-name/mint";
 
-const ON = { SOCIAL_FRIENDS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
+const ON = {} as unknown as NodeJS.ProcessEnv;
 const NOW = new Date("2026-10-22T12:00:00Z");
 const text = (q: SQL) => new PgDialect().sqlToQuery(q).sql;
 
@@ -45,23 +45,11 @@ const row = (o: Record<string, unknown>) => ({
 });
 
 describe("loadHomeFeed", () => {
-  it("answers the offer alone while every kind the reader can be offered is off, reading no feed", async () => {
-    const q = fake({}, {});
-    // Friends off: spare requests (default on) follow friends since SPARE_REQUESTS_ENABLED retired, and trade matches need them.
-    const feed = await loadHomeFeed("u1", { ...ON, SOCIAL_FRIENDS_ENABLED: "" } as NodeJS.ProcessEnv, NOW, q);
-    expect(feed).toEqual({ chosen: false, offer: ["new-set", "new-precon", "price-drop", "combo"], on: [] });
-    expect((q as unknown as { execute: ReturnType<typeof vi.fn> }).execute).not.toHaveBeenCalled();
-  });
-
   it("with every kind off after a choice, answers the off box, never the offer, and reads no feed (small items 6, item 6)", async () => {
-    const env = { ...ON, SOCIAL_FRIENDS_ENABLED: "" } as NodeJS.ProcessEnv;
-    // The offer's ✕ saved an empty choice.
-    const closed = fake({}, {}, { offerClosedAt: new Date("2026-10-20T00:00:00Z") });
-    expect(await loadHomeFeed("u1", env, NOW, closed)).toEqual({ chosen: true, on: [], items: [], unseen: 0, lead: null });
-    expect((closed as unknown as { execute: ReturnType<typeof vi.fn> }).execute).not.toHaveBeenCalled();
-    // Every kind turned off in Settings.
-    const declined = fake({}, {}, { declined: ["new-set", "new-precon", "price-drop", "combo"] });
-    expect(await loadHomeFeed("u1", env, NOW, declined)).toEqual({ chosen: true, on: [], items: [], unseen: 0, lead: null });
+    // Every kind turned off in Settings, the default-on spare requests included.
+    const declined = fake({}, {}, { declined: ["new-set", "new-precon", "price-drop", "trade-match", "spare-request", "combo"] });
+    expect(await loadHomeFeed("u1", ON, NOW, declined)).toEqual({ chosen: true, on: [], items: [], unseen: 0, lead: null });
+    expect((declined as unknown as { execute: ReturnType<typeof vi.fn> }).execute).not.toHaveBeenCalled();
   });
 
   describe("the offer line (announcements call 3)", () => {
@@ -364,9 +352,9 @@ describe("a Wizards post", () => {
     const data = { title: "Magic’s 2027 release schedule", excerpt: "Every set.", hero: null, url: URL_OK, promised: null, lists: 0 };
     const q = fake({}, { feed: [row({ kind: "wizards-news", key: "post:n1", created_at: NOW.toISOString(), name: data.title, data })] });
     const feed = await loadHomeFeed("u1", env, NOW, q);
-    expect(feed).toMatchObject({ chosen: true, on: ["secret-lair", "commander-decklists", "wizards-news"], lead: null, unseen: 1 });
+    expect(feed).toMatchObject({ chosen: true, on: ["secret-lair", "commander-decklists", "wizards-news", "spare-request"], lead: null, unseen: 1 });
     // The post does not end the offer (announcements call 3): the kinds still off ride under it.
-    expect(feed?.chosen && feed.offer).toEqual(["new-set", "new-precon", "price-drop", "combo"]);
+    expect(feed?.chosen && feed.offer).toEqual(["new-set", "new-precon", "price-drop", "trade-match", "combo"]);
     expect(feed?.chosen && feed.items.map((i) => [i.kind, i.outbound])).toEqual([["wizards-news", "/out/wizards/n1"]]);
   });
 
@@ -399,7 +387,7 @@ describe("a Wizards post", () => {
 
   it("offers nothing of Wizards' with ANNOUNCEMENTS_ENABLED off", async () => {
     const feed = await loadHomeFeed("u1", {} as unknown as NodeJS.ProcessEnv, NOW, fake({}, {}));
-    expect(feed).toEqual({ chosen: false, offer: ["new-set", "new-precon", "price-drop", "combo"], on: [] });
+    expect(feed).toEqual({ chosen: false, offer: ["new-set", "new-precon", "price-drop", "trade-match", "combo"], on: ["spare-request"] });
   });
 });
 
