@@ -58,6 +58,7 @@ const list = (over: Partial<DiscoveryList> = {}): EncodedDiscovery =>
   encodeDiscovery({
     items: [],
     candidateCount: 0,
+    hiddenCount: 0,
     cardsRead: 2805,
     freePoolSize: 2805,
     bestPct: null,
@@ -935,6 +936,80 @@ describe("DiscoveryView", () => {
     // No `avail` in the ask: this lane scores the whole collection, so the
     // lookup has only one pool it could be asking about.
     expect(findExcluded).toHaveBeenCalledWith("atraxa", { sort: "fit" });
+  });
+
+  // Hide a commander, README §4: a hidden commander is out of the list, so typing its name lands here,
+  // and its page still opens.
+  it("names a match the player hid, and opens its page", async () => {
+    findExcluded.mockResolvedValue([
+      { oracleId: "g", name: "Ghalta, Primal Hunger", cause: "hidden", pct: null, slug: "ghalta-primal-hunger" },
+    ]);
+    const { container } = render(
+      <DiscoveryView basis="classifier" encoded={list({ items: named(), candidateCount: 2 })} />,
+    );
+    fireEvent.change(field(), { target: { value: "ghal" } });
+    await waitFor(() =>
+      expect(container.textContent).toContain("Ghalta, Primal Hunger is here. You hid it"),
+    );
+    expect(container.textContent).toContain(
+      "It matches, but you hid it, so it stays out of your lists.",
+    );
+    expect(container.textContent).toContain("1 match, 0 shown");
+    expect(screen.getByRole("link", { name: "Open its page" })).toHaveAttribute(
+      "href",
+      "/commanders/ghalta-primal-hunger",
+    );
+  });
+
+  it("offers no page for a hidden match no list holds a slug for", async () => {
+    findExcluded.mockResolvedValue([
+      { oracleId: "g", name: "Ghalta, Primal Hunger", cause: "hidden", pct: null, slug: null },
+    ]);
+    const { container } = render(
+      <DiscoveryView basis="classifier" encoded={list({ items: named(), candidateCount: 2 })} />,
+    );
+    fireEvent.change(field(), { target: { value: "ghal" } });
+    await waitFor(() =>
+      expect(container.textContent).toContain(excluded.heldHiddenHeading("Ghalta, Primal Hunger")),
+    );
+    expect(screen.queryByRole("link", { name: excluded.hiddenCta })).toBeNull();
+    expect(screen.queryByRole("button", { name: excluded.hiddenCta })).toBeNull();
+  });
+
+  it("says a hidden match in one sentence above a live list, linking its page", async () => {
+    findExcluded.mockResolvedValue([
+      { oracleId: "g", name: "Ghalta, the Desecrated", cause: "hidden", pct: null, slug: "ghalta-the-desecrated" },
+    ]);
+    const { container } = render(
+      <DiscoveryView basis="classifier" encoded={list({ items: named(), candidateCount: 2 })} />,
+    );
+    fireEvent.change(field(), { target: { value: "the" } });
+    await waitFor(() =>
+      expect(container.textContent).toContain(excluded.hiddenAlso("Ghalta, the Desecrated")),
+    );
+    expect(screen.getByRole("link", { name: excluded.hiddenCta })).toHaveAttribute(
+      "href",
+      "/commanders/ghalta-the-desecrated",
+    );
+    expect(screen.getAllByText("Yarok, the Desecrated").length).toBeGreaterThan(0);
+  });
+
+  // Edges state 11: every candidate this lane would show is hidden.
+  it("says everything here is hidden when the player hid every candidate", () => {
+    const { container } = render(
+      <DiscoveryView basis="classifier" encoded={list({ items: [], candidateCount: 0, hiddenCount: 2 })} />,
+    );
+    expect(container.textContent).toContain(planeCopy.allHidden.heading);
+    expect(container.textContent).toContain(planeCopy.allHidden.discover(2));
+    // The Hidden list's route does not exist yet, so there is no button to it.
+    expect(screen.queryByRole("link", { name: planeCopy.allHidden.cta })).toBeNull();
+  });
+
+  it("keeps the all-hidden state off a list with candidates still in it", () => {
+    const { container } = render(
+      <DiscoveryView basis="classifier" encoded={list({ items: named(), candidateCount: 2, hiddenCount: 3 })} />,
+    );
+    expect(container.textContent).not.toContain(planeCopy.allHidden.heading);
   });
 
   // The same correction above a live list, where the aside draws it rather than

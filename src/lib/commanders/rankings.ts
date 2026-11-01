@@ -57,6 +57,10 @@ export type CommanderRankings = {
   degraded: boolean;
   uniqueCardsRead: number;
   candidateCount: number;
+  /** How many of the ranked rows the player has hidden, which `candidateCount` and `items` leave out.
+      Read only to tell a list the player emptied by hiding ("Everything here is hidden") from one with
+      no candidates at all: no figure on the page prints it. */
+  hiddenCount: number;
   freeRanking: FreeRankingDelta | null;
   availOk: boolean;
   /** Either ranking was counted by the classifier only because the label read failed under a labels
@@ -143,13 +147,18 @@ export type CommanderRankings = {
  * reaches that check, so without this a reader who writes nothing goes on seeing
  * Brisela or Hanweir ranked for up to the hour ceiling.
  *
+ * 12: `hiddenCount` joins the payload, for the all-hidden state. A warm v11 entry has none, and a
+ * reader served one whose every row is hidden would draw the no-candidates state instead of
+ * "Everything here is hidden" for up to the hour ceiling. Bumped with its sibling in
+ * `discovery/list.ts`.
+ *
  * 6 AND 7 ARE TWO RELEASES, not one renumbered. #702 took 6 while this branch
  * was in review and both had claimed it; taking 6 here would have left every
  * reader whose entry was written by #702 being served a payload with no
  * sentence, no gap slot and no headline figure, because the key would have
  * matched.
  */
-const PAYLOAD_VERSION = 11;
+const PAYLOAD_VERSION = 12;
 
 /**
  * The cache key this payload is filed under: the version, and the role basis both rankings were
@@ -192,12 +201,15 @@ export async function loadCommanderRankings(
   // No candidates means the page draws its empty state, which reads none of
   // what follows. The pool query is the expensive one and is skipped rather
   // than made and discarded.
-  if (candidateCount === 0) {
+  //
+  // A list the player emptied by hiding takes the same exit: nothing below has a row to read, and the
+  // page draws the all-hidden state off `hiddenCount` instead of the list.
+  if (candidateCount === 0 || (items.length === 0 && hiddenCount > 0)) {
     // `items` is empty here, so it satisfies the row type without enrichment —
     // and the three reads below are skipped rather than made against an empty
     // id list.
     return {
-      items: [], degraded, uniqueCardsRead, candidateCount,
+      items: [], degraded, uniqueCardsRead, candidateCount: Math.max(0, candidateCount - hiddenCount), hiddenCount,
       freeRanking: null, availOk: true,
     };
   }
@@ -272,7 +284,7 @@ export async function loadCommanderRankings(
   });
 
   return {
-    items: rows, degraded, uniqueCardsRead, candidateCount: candidateCount - hiddenCount, freeRanking, availOk,
+    items: rows, degraded, uniqueCardsRead, candidateCount: Math.max(0, candidateCount - hiddenCount), hiddenCount, freeRanking, availOk,
     ...(labelFallback ? { labelFallback: true as const } : {}),
   };
 }

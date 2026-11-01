@@ -407,6 +407,15 @@ describe("assembleDiscoveryWithIds · hidden commanders", () => {
     expect(list.candidateCount).toBe(1);
     expect(list.items.map((i) => i.rank)).toEqual([1]);
     expect(list.floorExcluded + list.unmeasured).toBe(0);
+    // Counted once, on its own, for the all-hidden state alone.
+    expect(list.hiddenCount).toBe(2);
+  });
+
+  it("counts every candidate hidden, with none left to show", () => {
+    const { list } = assembleDiscoveryWithIds(input(new Set(["first", "second", "other"]), "new"));
+    expect(list.items).toEqual([]);
+    expect(list.candidateCount).toBe(0);
+    expect(list.hiddenCount).toBe(3);
   });
 
   it("counts a hidden row as neither floor-excluded nor unmeasured under the novelty sort", () => {
@@ -419,12 +428,13 @@ describe("assembleDiscoveryWithIds · hidden commanders", () => {
     const { list } = assembleDiscoveryWithIds(input(new Set()));
     expect(list.items).toHaveLength(3);
     expect(list.candidateCount).toBe(3);
+    expect(list.hiddenCount).toBe(0);
   });
 });
 
 describe("discoveryKey", () => {
   it("files a payload under its sort, its version and the labels basis", () => {
-    expect(discoveryKey("fit")).toEqual(["discovery", "fit", "v9", "basis:labels"]);
+    expect(discoveryKey("fit")).toEqual(["discovery", "fit", "v10", "basis:labels"]);
   });
 
   it("keeps two sorts apart", () => {

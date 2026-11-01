@@ -251,7 +251,7 @@ export async function loadNameMatches(
  * index — a wrong answer rather than an injection, since the pattern is still a
  * bound parameter.
  */
-function escapeLike(value: string) {
+export function escapeLike(value: string) {
   return value.replace(/[\\%_]/g, (c) => `\\${c}`);
 }
 

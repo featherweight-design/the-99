@@ -7,16 +7,20 @@ import { clearsFloor, floorPct } from "./novelty";
  * colour pips and the join mode narrow rows the client already holds, so asking
  * the server about them would be a round trip for an answer in memory.
  */
-export type ExcludedCause = "built" | "floor" | "unmeasured";
+export type ExcludedCause = "built" | "hidden" | "floor" | "unmeasured";
 
 export type ExcludedMatch = {
   oracleId: string;
   name: string;
   cause: ExcludedCause;
   /** The row's own support percentage, printed by the floor sentence as the
-      distance the row fell short by. Null for `built` and `unmeasured`, which
-      have no figure to carry. */
+      distance the row fell short by. Null for every other cause, which has no
+      figure to carry. */
   pct: number | null;
+  /** The page a `hidden` match's **Open its page** opens: the slug the commander page resolves back
+      to this commander. Set by the action after classification, so absent from what `classifyMatches`
+      returns, and null when no list holds a slug for it (the state then offers no page). */
+  slug?: string | null;
 };
 
 /**
@@ -28,18 +32,27 @@ export type ExcludedMatch = {
  */
 export function classifyMatches(
   rows: NameMatchRow[],
-  opts: { sort: "fit" | "new"; builtOracleIds: Set<string> },
+  opts: { sort: "fit" | "new"; builtOracleIds: ReadonlySet<string>; hiddenOracleIds: ReadonlySet<string> },
 ): ExcludedMatch[] {
   const out: ExcludedMatch[] = [];
   for (const row of rows) {
     const base = { oracleId: row.oracleId, name: row.name };
     // Tier 1. Outermost: a built commander belongs to the other lane and is not
-    // a candidate here at all, whatever the sort would have made of it.
+    // a candidate here at all, whatever the sort would have made of it. It
+    // outranks a hide too: no list would draw it unhidden, so "you hid it" would
+    // name a control that does not bring it back.
     if (opts.builtOracleIds.has(row.oracleId)) {
       out.push({ ...base, cause: "built", pct: null });
       continue;
     }
-    // `fit` excludes nothing else — the floor is the novelty sort's instrument.
+    // Tier 1b. The player's own hide, under either sort: it leaves the list
+    // before the floor is measured, so the floor never had a say, and under `fit`
+    // it is the one thing that removed the row, which the client cannot see.
+    if (opts.hiddenOracleIds.has(row.oracleId)) {
+      out.push({ ...base, cause: "hidden", pct: null });
+      continue;
+    }
+    // `fit` excludes nothing else: the floor is the novelty sort's instrument.
     if (opts.sort === "fit") continue;
 
     const pct = floorPct(row);

@@ -26,6 +26,7 @@ function listOf(items: DiscoveryItem[]): DiscoveryList {
   return {
     items,
     candidateCount: 12,
+    hiddenCount: 2,
     cardsRead: 2733,
     freePoolSize: 2733,
     bestPct: 27,

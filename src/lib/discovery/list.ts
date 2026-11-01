@@ -105,6 +105,9 @@ export type DiscoveryList = {
       novelty sort's two, and the client's colour filter. `items.length` is the
       same number under `fit` and a smaller one under `new`. */
   candidateCount: number;
+  /** Candidates the player has hidden, which every other figure here leaves out. Read only to tell a
+      list emptied by hiding ("Everything here is hidden") from one with no candidates at all. */
+  hiddenCount: number;
   /** Collection size the subtitle reads against. */
   cardsRead: number;
   /** Cards in the pool this ranking actually scored — now always `cardsRead`,
@@ -305,6 +308,7 @@ export function assembleDiscoveryWithIds(input: AssembleInput): { list: Discover
     })),
     // A hidden candidate is in none of the figures: not this one, not floor-excluded, not unmeasured.
     candidateCount: shown.length,
+    hiddenCount: withSlugs.length - shown.length,
     cardsRead: input.cardsRead,
     freePoolSize: input.freePoolSize,
     bestPct,
@@ -387,8 +391,12 @@ export function assembleDiscoveryWithIds(input: AssembleInput): { list: Discover
  * 9 — the cached value is `{ encoded, oracleIds }` rather than the encoded list alone, so the
  * page can build `Printed in ▾`'s index aligned to the rows by position (decision 9). A warm
  * version-8 entry is the bare list, and reading `.encoded` off it would be undefined.
+ *
+ * 10: `hiddenCount` rides in the payload's meta, for the all-hidden state. A warm v9 entry has none,
+ * so a reader whose every candidate is hidden would draw the bare empty list instead of "Everything
+ * here is hidden". Moves with rankings' v12, for version 3's reason.
  */
-const PAYLOAD_VERSION = 9;
+const PAYLOAD_VERSION = 10;
 
 /** The cache key a discovery payload is filed under: its sort, the version of the code that
     produced it, and the role basis it was counted by. Roles are always counted by label

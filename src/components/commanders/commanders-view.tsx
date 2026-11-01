@@ -29,10 +29,23 @@ import { filePrintedIn, isPrintedIn, type LanePrintedIn } from "../../lib/sets/p
 import { printedInLabel } from "./rack/chip-line";
 import { filterCopy } from "../../lib/copy/lanes";
 import { availabilityCopy } from "../../lib/copy/availability";
-import { hideCommanderAction, rememberCommandersAvail } from "../../app/commanders/actions";
+import {
+  findOwnedExcludedMatches,
+  hideCommanderAction,
+  rememberCommandersAvail,
+} from "../../app/commanders/actions";
+// Type-only: the module defining it also exports `classifyMatches`, which the
+// server action uses and the client has no business bundling.
+import type { ExcludedMatch } from "../../lib/discovery/excluded-match";
+import { resolveExcludedReport } from "../../lib/commanders/excluded-report";
+import { ZERO_PRIMARY, ZeroState } from "../ui/zero-state";
+import { PrimaryButton } from "../ui/button";
+import { SearchPending } from "./discovery-empty";
+import { AllHiddenEmpty } from "./all-hidden-empty";
 import { CommanderRow } from "./commander-row";
 import { CommanderUndoRow } from "./commander-undo-row";
 import { useStandingHides } from "./use-standing-hides";
+import { COMMANDER_COUNTS_STALE_EVENT } from "./counts-event";
 import { commanderDetailHref } from "./list-nav";
 import { FilterRack } from "./rack/filter-rack";
 import { GuidedBanner } from "./guided-banner";
@@ -102,6 +115,9 @@ export type CommandersViewProps = {
   degraded: boolean;
   uniqueCardsRead: number;
   candidateCount: number;
+  /** Ranked rows the player has hidden, left out of `results` and `candidateCount`. Non-zero with
+      `results` empty is the all-hidden state. */
+  hiddenCount?: number;
   firstRun: boolean;
   /** The same commanders re-scored against the free pool, as a diff against
       `results` — the two lists share most of their bytes. Null when unreadable. */
@@ -126,6 +142,7 @@ export function CommandersView({
   degraded,
   uniqueCardsRead,
   candidateCount,
+  hiddenCount = 0,
   firstRun,
   freeRanking,
   availOk,
@@ -562,6 +579,84 @@ export function CommandersView({
   // rule means "you've revealed everything", not "the list ended".
   const wasWindowed = filtered.length > REVEAL_STEP;
 
+  // ── A search that names a commander the player hid (hide-commander READINESS Y4) ──
+  // A hidden commander is not in this payload, so a search for one would read "not in your
+  // collection" and send the reader to Discover. The server is asked, once per query the reader has
+  // stopped typing and only when the query names nothing this list holds, the same 350ms settle and the
+  // same two-character floor Discover's lookup keeps. Read against the canonical list rather than the
+  // one on screen: a match free mode or a pip removed is the client's to explain, and it does.
+  const trimmedQuery = params.q.trim();
+  const [settledQuery, setSettledQuery] = useState(trimmedQuery);
+  useEffect(() => {
+    const timer = setTimeout(() => setSettledQuery(trimmedQuery), 350);
+    return () => clearTimeout(timer);
+  }, [trimmedQuery]);
+  // A hide or an Undo the server took in this visit (`announceCommanderCountsStale`): the set of hidden
+  // commanders moved, so an answer read before it may name one that is back, or miss one just hidden.
+  // Counted, and the count is in the answer's key, so no answer outlives the hides it was read against.
+  const [hidesSettled, setHidesSettled] = useState(0);
+  useEffect(() => {
+    const bumpHides = () => setHidesSettled((n) => n + 1);
+    window.addEventListener(COMMANDER_COUNTS_STALE_EVENT, bumpHides);
+    return () => window.removeEventListener(COMMANDER_COUNTS_STALE_EVENT, bumpHides);
+  }, []);
+  // Nothing on this list is hidden, by the payload and by this visit: no search can find a hidden
+  // match here, so none is asked about and none waits on an answer. `hiddenCount` counts the hidden
+  // rows among this ranking's own, which is the population the lookup reports.
+  const mayHoldHidden = hiddenCount > 0 || hidesSettled > 0;
+  const namesNothingHeld = useCallback(
+    (q: string) => {
+      if (!mayHoldHidden || q.length < 2) return false;
+      const lower = q.toLowerCase();
+      return !canonical.some((r) => matchesQuery(r, lower));
+    },
+    [canonical, mayHoldHidden],
+  );
+  // Stamped with the query it answers, and read back only while the two agree, as Discover does: an
+  // out-of-date answer is never paired with the query on screen.
+  const [hiddenAnswer, setHiddenAnswer] = useState<{ key: string; matches: ExcludedMatch[] } | null>(
+    null,
+  );
+  const asksServer = namesNothingHeld(settledQuery);
+  // The query and the hides it was read against.
+  const answerKey = `${hidesSettled}|${settledQuery}`;
+  useEffect(() => {
+    if (!asksServer) return;
+    let live = true;
+    const key = answerKey;
+    const query = settledQuery;
+    findOwnedExcludedMatches(query)
+      // Null (past the cap) and a failure both leave the question unanswered, and an unanswered
+      // question draws the list's own search state, as it did before this lookup existed.
+      .then((matches) => {
+        if (live) setHiddenAnswer({ key, matches: matches ?? [] });
+      })
+      .catch(() => {
+        if (live) setHiddenAnswer({ key, matches: [] });
+      });
+    return () => {
+      live = false;
+    };
+  }, [asksServer, answerKey, settledQuery]);
+  // Only for the query on screen, once it has settled into the one the answer is for.
+  const lookupLive = asksServer && settledQuery === trimmedQuery;
+  const hiddenMatches = lookupLive && hiddenAnswer?.key === answerKey ? hiddenAnswer.matches : null;
+  const hiddenReport = useMemo(
+    () =>
+      hiddenMatches && hiddenMatches.length > 0
+        ? resolveExcludedReport({ server: hiddenMatches, colour: [], colors, listHasRows: false })
+        : null,
+    [hiddenMatches, colors],
+  );
+  // The query names nothing here and the answer is not in yet: every sentence this surface could
+  // draw is the one still being checked, so it holds the space instead (Discover's `SearchPending`).
+  const hiddenPending =
+    filtered.length === 0 && namesNothingHeld(trimmedQuery) && (!lookupLive || hiddenMatches === null);
+  // Every row this list would show is hidden (Edges state 11). A search naming one of them is the held
+  // state's, which says which; any other control lit over an empty list has nothing to narrow, so the
+  // hide is the cause either way.
+  const allHidden = results.length === 0 && hiddenCount > 0;
+
   const [announcement, setAnnouncement] = useState("");
   // The banner is raised when ANY row lost its synergy data; it says "some" unless every row did.
   const partialSynergy = degraded && !results.every((r) => r.synergyState === "degraded");
@@ -643,7 +738,9 @@ export function CommandersView({
       )}
 
       {/* ── First-run guided banner ── */}
-      {firstRun && (
+      {/* Not over the all-hidden state: its line counts the commanders that can lead, and "0 can
+          lead. I ranked them." would contradict the sentence below it. */}
+      {firstRun && !allHidden && (
         <div className="px-[14px] pt-[12px] sm:px-0 sm:pt-0">
           <GuidedBanner
             uniqueCardsRead={uniqueCardsRead}
@@ -682,7 +779,37 @@ export function CommandersView({
             when the query really did match commanders that free mode then hid. Zero with nothing lit at all is not a filtered result —
             the reader owns no commanders — and the list's own emptiness is the
             honest thing to show. */}
-        {filtered.length === 0 && colors.length === 0 && setCodes.length === 0 && sleevedByFree ? (
+        {filtered.length === 0 && hiddenReport ? (
+          // The held state (READINESS Y4): the shared zero state, naming the hidden commander and
+          // opening its page, which still opens while it is hidden. The aside keeps its figures
+          // beside the button, inert, as Discover's does.
+          <ZeroState
+            heading={hiddenReport.heading ?? ""}
+            body={hiddenReport.body}
+            primary={
+              hiddenReport.slug ? (
+                <PrimaryButton
+                  href={commanderDetailHref(hiddenReport.slug, avail)}
+                  className={ZERO_PRIMARY}
+                >
+                  {hiddenReport.cta}
+                </PrimaryButton>
+              ) : undefined
+            }
+            secondary={
+              hiddenReport.aside ? (
+                <span className="self-center font-mono text-[11.5px] text-[color:var(--fg-faint)]">
+                  {hiddenReport.aside}
+                </span>
+              ) : undefined
+            }
+          />
+        ) : hiddenPending ? (
+          <SearchPending />
+        ) : allHidden ? (
+          // Hidden (PR 4) adds the route `See hidden` opens; until then the state draws no button.
+          <AllHiddenEmpty lane="owned" hidden={hiddenCount} />
+        ) : filtered.length === 0 && colors.length === 0 && setCodes.length === 0 && sleevedByFree ? (
           <FreeEmpty
             query={params.q.trim() || undefined}
             onShowAll={() => update({ ...params, avail: "all" })}

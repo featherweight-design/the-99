@@ -1,0 +1,22 @@
+{
+  "feature": "Hide a commander, PR 6: Everything here is hidden (README section 5, Edges board state 11)",
+  "note": "Needs the signed-in account to have hidden every commander both lists would show (every commander_support commander and every scored one), on a scratch branch; delete those hidden_commanders rows afterwards. See hidden is not drawn until the Hidden route exists.",
+  "widths": [
+    { "label": "phone", "width": 390, "height": 844 },
+    { "label": "desktop", "width": 1300, "height": 900 }
+  ],
+  "rows": [
+    {
+      "id": "foryou-all-hidden",
+      "label": "For you, every row hidden",
+      "view": "src/components/commanders/all-hidden-empty.tsx",
+      "steps": [{ "goto": "/commanders", "wait": "h2:has-text(\"Everything here is hidden\")", "settle": 1500 }]
+    },
+    {
+      "id": "discover-all-hidden",
+      "label": "Discover, every row hidden",
+      "view": "src/components/commanders/all-hidden-empty.tsx",
+      "steps": [{ "goto": "/commanders/discover", "wait": "h2:has-text(\"Everything here is hidden\")", "settle": 1500 }]
+    }
+  ]
+}

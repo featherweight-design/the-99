@@ -58,13 +58,14 @@ export default async function CommandersPage({
     perfRead("commanders.availPref", () => readCommandersAvail(userId)),
   ]);
 
-  const { items, degraded, uniqueCardsRead, candidateCount, freeRanking, availOk } = rankings;
+  const { items, degraded, uniqueCardsRead, candidateCount, hiddenCount, freeRanking, availOk } = rankings;
   // `Printed in ▾`'s index, aligned to these rows. The free ranking re-orders the same
   // commanders, so one index covers both lists.
   const printedIn = await perf.timed("printedIn", () => lanePrintedInFor(items, printings));
 
-  // No commander candidates in the collection.
-  if (candidateCount === 0) {
+  // No commander candidates in the collection. A list the player emptied by hiding is not this: it
+  // has candidates, all of them hidden, and the view draws "Everything here is hidden" under its rack.
+  if (candidateCount === 0 && hiddenCount === 0) {
     return (
       <section>
         {/* Page header (mobile + desktop) */}
@@ -211,6 +212,7 @@ export default async function CommandersPage({
         degraded={degraded}
         uniqueCardsRead={uniqueCardsRead}
         candidateCount={candidateCount}
+        hiddenCount={hiddenCount}
         firstRun={firstRun}
         freeRanking={freeRanking}
         availOk={availOk}

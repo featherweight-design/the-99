@@ -252,6 +252,8 @@ describe("loadCommanderRankings · hidden commanders", () => {
     expect(out.items.map((i) => [i.oracleId, i.slug])).toEqual([["a", "a"], ["c", "c"]]);
     // "N can lead" counts what is shown: a hidden commander is in no figure.
     expect(out.candidateCount).toBe(2);
+    // The one place the hidden rows are counted, and only to tell an all-hidden list from an empty one.
+    expect(out.hiddenCount).toBe(1);
   });
 
   // The free mode re-ranks what it is handed; given the hidden row it could bring it back.
@@ -266,6 +268,18 @@ describe("loadCommanderRankings · hidden commanders", () => {
     const out = await loadCommanderRankings("user_1", ENV_VIEW);
     expect(out.items).toEqual([]);
     expect(out.candidateCount).toBe(0);
+    // Not "no candidates": the page draws "Everything here is hidden" off this.
+    expect(out.hiddenCount).toBe(3);
+    // Nothing is left to rank, so the reads only a shown row needs are not made.
+    expect(rankFree).not.toHaveBeenCalled();
+    expect(loadSupportMeta).not.toHaveBeenCalled();
+  });
+
+  it("counts nothing hidden when nothing is", async () => {
+    vi.mocked(loadHiddenIds).mockResolvedValue([]);
+    const out = await loadCommanderRankings("user_1", ENV_VIEW);
+    expect(out.hiddenCount).toBe(0);
+    expect(out.candidateCount).toBe(3);
   });
 });
 
@@ -273,14 +287,14 @@ describe("the list caches' payload versions", () => {
   // Pinned to the labels basis: roles are always counted by label (LABEL_ROLE_COUNTS retired, Hugh
   // 2026-10-31), and the key keeps the segment entries filed while the switch was live carry.
   it("pins both, so a pair bumped half-way fails", () => {
-    expect(commanderRankingsKey()).toEqual(["commander-rankings", "v11", "basis:labels"]);
-    expect(discoveryKey("fit")).toEqual(["discovery", "fit", "v9", "basis:labels"]);
+    expect(commanderRankingsKey()).toEqual(["commander-rankings", "v12", "basis:labels"]);
+    expect(discoveryKey("fit")).toEqual(["discovery", "fit", "v10", "basis:labels"]);
   });
 
   // The sort rides in the key beside the version, so two sorts cannot share an
   // entry — a property of the key's shape rather than of either number.
   it("keeps the two discovery sorts apart at the same version", () => {
     expect(discoveryKey("new")).not.toEqual(discoveryKey("fit"));
-    expect(discoveryKey("new")).toContain("v9");
+    expect(discoveryKey("new")).toContain("v10");
   });
 });

@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { availabilityCopy } from "../../lib/copy/availability";
 import type { CommanderRowItem } from "../../lib/commanders/rankings";
@@ -51,8 +51,11 @@ const rememberCommandersAvail = vi.fn();
 // database through `lib/commanders/hidden`.
 const hideCommanderAction = vi.fn<(oracleId: string) => Promise<boolean>>();
 const unhideCommanderAction = vi.fn<(oracleId: string) => Promise<boolean>>();
+// The search's hidden-match lookup (hide a commander, READINESS Y4): the real one reads the database.
+const findOwnedExcludedMatches = vi.fn<(query: string) => Promise<unknown[] | null>>(async () => []);
 vi.mock("../../app/commanders/actions", () => ({
   retryRecs: vi.fn(),
+  findOwnedExcludedMatches: (q: string) => findOwnedExcludedMatches(q),
   rememberCommandersAvail: (...a: unknown[]) => rememberCommandersAvail(...a),
   hideCommanderAction: (id: string) => hideCommanderAction(id),
   unhideCommanderAction: (id: string) => unhideCommanderAction(id),
@@ -102,6 +105,8 @@ type Over = {
   availOk?: boolean;
   degraded?: boolean;
   printedIn?: LanePrintedIn;
+  /** Ranked rows the player has hidden, which the list leaves out. */
+  hiddenCount?: number;
 };
 
 // The mode is the URL's alone now, so a test that opens in `free` says so by
@@ -127,6 +132,7 @@ function el(list: CommanderRowItem[], over: Over = {}) {
       degraded={degraded}
       uniqueCardsRead={1418}
       candidateCount={list.length}
+      hiddenCount={over.hiddenCount}
       firstRun={false}
       // The tests state the free ranking as the list it is, and it reaches the
       // view the way the server sends it — through the diff. Every free-mode
@@ -370,6 +376,8 @@ describe("CommandersView zero states", () => {
   const zeroState = () =>
     within(screen.getByText("No commander by that name").parentElement!);
 
+  // Nothing on this list is hidden, so there is no hidden match to wait on: the state draws at once,
+  // with no lookup and no loading mark (a reader with hides waits on one; see the hidden block below).
   it("explains a search that matched nothing, and offers the other lane", () => {
     view(results(40));
     searchFor("jodah");
@@ -382,9 +390,10 @@ describe("CommandersView zero states", () => {
     );
   });
 
-  it("clears the search from the state’s own primary", () => {
+  it("clears the search from the state’s own primary", async () => {
     view(results(40));
     searchFor("jodah");
+    await screen.findByText("No commander by that name");
     fireEvent.click(zeroState().getByRole("button", { name: "Clear search" }));
     expect(cards()).toHaveLength(REVEAL_STEP);
   });
@@ -417,6 +426,110 @@ describe("CommandersView zero states", () => {
     view(results(0));
     expect(screen.queryByText("Nothing in the pile matches")).toBeNull();
     expect(screen.queryByText("No commander by that name")).toBeNull();
+    expect(screen.queryByText("Everything here is hidden")).toBeNull();
+  });
+});
+
+// Hide a commander on For you: a search for a hidden one (READINESS Y4), and a list the player emptied
+// by hiding (Edges state 11).
+describe("CommandersView · hidden commanders", () => {
+  const searchFor = (q: string) =>
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: q } });
+
+  beforeEach(() => {
+    findOwnedExcludedMatches.mockReset();
+    findOwnedExcludedMatches.mockResolvedValue([]);
+  });
+
+  it("names a hidden commander the search found, and opens its page", async () => {
+    findOwnedExcludedMatches.mockResolvedValue([
+      { oracleId: "g", name: "Ghalta, Primal Hunger", cause: "hidden", pct: null, slug: "ghalta-primal-hunger" },
+    ]);
+    view(results(3), { hiddenCount: 1 });
+    searchFor("ghal");
+    expect(await screen.findByText("Ghalta, Primal Hunger is here. You hid it")).toBeInTheDocument();
+    expect(
+      screen.getByText("It matches, but you hid it, so it stays out of your lists."),
+    ).toBeInTheDocument();
+    expect(screen.getByText("1 match, 0 shown")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Open its page" })).toHaveAttribute(
+      "href",
+      "/commanders/ghalta-primal-hunger",
+    );
+    // One request for the settled query, never one per keystroke.
+    expect(findOwnedExcludedMatches).toHaveBeenCalledTimes(1);
+    expect(findOwnedExcludedMatches).toHaveBeenCalledWith("ghal");
+    expect(screen.queryByText("No commander by that name")).toBeNull();
+  });
+
+  it("does not ask the server about a name the list already holds", async () => {
+    view(results(3), { hiddenCount: 1 });
+    searchFor("general 1");
+    expect(screen.getAllByRole("listitem")).toHaveLength(1);
+    // Past the 350ms settle, so a lookup that was going to fire has.
+    await new Promise((r) => setTimeout(r, 400));
+    expect(findOwnedExcludedMatches).not.toHaveBeenCalled();
+  });
+
+  it("falls back to the list's own search state when nothing hidden is named that", async () => {
+    view(results(3), { hiddenCount: 1 });
+    searchFor("jodah");
+    expect(await screen.findByText("No commander by that name")).toBeInTheDocument();
+    expect(findOwnedExcludedMatches).toHaveBeenCalledWith("jodah");
+  });
+
+  // Nothing hidden on this list: no search can find a hidden match, so nothing is asked and nothing
+  // waits on an answer.
+  it("asks nothing, and draws the miss at once, when nothing on the list is hidden", async () => {
+    view(results(3));
+    searchFor("jodah");
+    expect(screen.getByText("No commander by that name")).toBeInTheDocument();
+    await new Promise((r) => setTimeout(r, 400));
+    expect(findOwnedExcludedMatches).not.toHaveBeenCalled();
+  });
+
+  // A hide or an Undo the server took in this visit moves the hidden set, so the answer read before it
+  // is not reused for the same query.
+  it("asks again for the same query after a hide or an Undo settles", async () => {
+    view(results(3), { hiddenCount: 1 });
+    searchFor("jodah");
+    await waitFor(() => expect(findOwnedExcludedMatches).toHaveBeenCalledTimes(1));
+    act(() => {
+      window.dispatchEvent(new Event("the99:commander-counts-stale"));
+    });
+    await waitFor(() => expect(findOwnedExcludedMatches).toHaveBeenCalledTimes(2));
+    expect(findOwnedExcludedMatches).toHaveBeenLastCalledWith("jodah");
+  });
+
+  it("falls back to the list's own search state when the lookup fails", async () => {
+    findOwnedExcludedMatches.mockRejectedValue(new Error("down"));
+    view(results(3), { hiddenCount: 1 });
+    searchFor("jodah");
+    expect(await screen.findByText("No commander by that name")).toBeInTheDocument();
+  });
+
+  it("says everything here is hidden when every row is", () => {
+    view([], { hiddenCount: 3 });
+    expect(screen.getByText("Everything here is hidden")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "You hid all 3 commanders you own and haven’t built. Bring one back from Hidden, or find one to build in Discover.",
+      ),
+    ).toBeInTheDocument();
+    // The Hidden list's route does not exist yet, so there is no button to it.
+    expect(screen.queryByRole("link", { name: "See hidden" })).toBeNull();
+  });
+
+  it("names the hidden one over the all-hidden state when the search finds it", async () => {
+    findOwnedExcludedMatches.mockResolvedValue([
+      { oracleId: "g", name: "Ghalta, Primal Hunger", cause: "hidden", pct: null, slug: "ghalta-primal-hunger" },
+    ]);
+    view([], { hiddenCount: 3 });
+    searchFor("ghal");
+    await waitFor(() =>
+      expect(screen.getByText("Ghalta, Primal Hunger is here. You hid it")).toBeInTheDocument(),
+    );
+    expect(screen.queryByText("Everything here is hidden")).toBeNull();
   });
 });
 

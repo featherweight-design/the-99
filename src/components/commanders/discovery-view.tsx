@@ -51,6 +51,7 @@ import { resolveExclusionLine } from "../../lib/commanders/exclusion-line";
 import { ZERO_PRIMARY, ZERO_SECONDARY, ZeroState } from "../ui/zero-state";
 import { GhostButton, PrimaryButton } from "../ui/button";
 import { ExcludedMatchAside } from "./excluded-match";
+import { AllHiddenEmpty } from "./all-hidden-empty";
 import { FLOOR_PCT } from "../../lib/discovery/floor";
 import { findExcludedMatches, hideCommanderAction } from "../../app/commanders/actions";
 // Type-only for the same reason `DiscoveryList` is: the module it comes from is
@@ -549,9 +550,20 @@ export function DiscoveryView({
   // Neither yet. The typing has not settled, or the round trip is in flight, and
   // every conclusion below is one more render away.
   const pending = trimmedQuery !== "" && !indexChecked && !indexUnchecked;
+  // Every candidate this lane would show is hidden (Edges state 11). Read off the server's figures,
+  // never `filtered`: a pip that empties a list with candidates in it is the filtered state's, not
+  // this one's. A search naming one of them is the held state's, which says which; one still being
+  // checked waits for the answer rather than flashing this first.
+  const showAllHidden =
+    !showFloorEmpty &&
+    !showHeldEmpty &&
+    !pending &&
+    discovery.candidateCount === 0 &&
+    discovery.hiddenCount > 0;
   const showSearchEmpty =
     !showFloorEmpty &&
     !showHeldEmpty &&
+    !showAllHidden &&
     indexChecked &&
     trimmedQuery !== "" &&
     filtered.length === 0 &&
@@ -565,6 +577,7 @@ export function DiscoveryView({
   const showFilteredEmpty =
     !showFloorEmpty &&
     !showHeldEmpty &&
+    !showAllHidden &&
     !showSearchEmpty &&
     !pending &&
     (trimmedQuery === "" || nameMatchesAny) &&
@@ -590,6 +603,7 @@ export function DiscoveryView({
   const showUnknownEmpty =
     !showFloorEmpty &&
     !showHeldEmpty &&
+    !showAllHidden &&
     !showSearchEmpty &&
     !showFilteredEmpty &&
     indexUnchecked &&
@@ -623,6 +637,11 @@ export function DiscoveryView({
   // the other route — so its correction is a link rather than a control, and
   // `correct` below has no case for it.
   const ownedHref = laneHref("owned", trimmedQuery, place);
+  // The hidden cause's correction is the commander's own page, which opens while it is hidden. A
+  // route, so a link. Absent when no list holds a slug for it: the state then offers no page. The
+  // default scope, as every row link here carries: this lane has no availability control.
+  const hiddenHref =
+    report?.cause === "hidden" && report.slug ? commanderDetailHref(report.slug, "all") : undefined;
 
   // The one control that would bring the named row back, per cause. One each,
   // because the report names one cause: a correction that flipped two controls
@@ -716,6 +735,12 @@ export function DiscoveryView({
                 <PrimaryButton href={ownedHref} className={ZERO_PRIMARY}>
                   {report.cta}
                 </PrimaryButton>
+              ) : report.cause === "hidden" ? (
+                hiddenHref ? (
+                  <PrimaryButton href={hiddenHref} className={ZERO_PRIMARY}>
+                    {report.cta}
+                  </PrimaryButton>
+                ) : undefined
               ) : (
                 <PrimaryButton onClick={correct} className={ZERO_PRIMARY}>
                   {report.cta}
@@ -730,6 +755,9 @@ export function DiscoveryView({
               ) : undefined
             }
           />
+        ) : showAllHidden ? (
+          // Hidden (PR 4) adds the route `See hidden` opens; until then the state draws no button.
+          <AllHiddenEmpty lane="discover" hidden={discovery.hiddenCount} />
         ) : showSearchEmpty ? (
           // D5. The candidate count, not the ranked one: this state fires only
           // once the server has looked past the rows on screen and found nothing
@@ -827,7 +855,7 @@ export function DiscoveryView({
                 <ExcludedMatchAside
                   report={report}
                   onCorrect={correct}
-                  href={report.cause === "built" ? ownedHref : undefined}
+                  href={report.cause === "built" ? ownedHref : report.cause === "hidden" ? hiddenHref : undefined}
                 />
               </div>
             ) : null}
