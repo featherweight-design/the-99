@@ -7,7 +7,7 @@ import { purgeRuleZeroIn } from "./rule-zero";
 const dialect = new PgDialect();
 type Q = Parameters<PgDialect["sqlToQuery"]>[0];
 
-/** A tx whose deletes answer `returned` in call order: seats, then tables set/closed, then short tables. */
+/** A tx whose deletes answer `returned` in call order: seats, seen marks, tables set/closed, then short tables. */
 function fakeTx(returned: unknown[][]) {
   const executed: string[] = [];
   const deleted: string[] = [];
@@ -29,27 +29,28 @@ function fakeTx(returned: unknown[][]) {
 
 describe("purgeRuleZeroIn", () => {
   it("locks and deletes every table the account set OR closed, in the same OR form", async () => {
-    const { tx, executed, deleted } = fakeTx([[{ tableId: "t1" }], [{ id: "a" }, { id: "b" }], []]);
+    const { tx, executed, deleted } = fakeTx([[{ tableId: "t1" }], [], [{ id: "a" }, { id: "b" }], []]);
     await purgeRuleZeroIn(tx as never, "user_gone");
     expect(executed[0]).toMatch(/t\.set_by = \$\d+ or t\.closed_by = \$\d+ or t\.id in/);
-    // The second delete (tables) is the set_by OR closed_by one; the first (seats) names neither.
+    // The third delete (tables) is the set_by OR closed_by one; the seats and seen deletes name neither.
     expect(deleted[0]).not.toContain("closed_by");
-    expect(deleted[1]).toMatch(/"set_by" = \$\d+ or "closed_by" = \$\d+/);
+    expect(deleted[1]).not.toContain("closed_by");
+    expect(deleted[2]).toMatch(/"set_by" = \$\d+ or "closed_by" = \$\d+/);
   });
 
   it("also deletes a table the account's seat leaves with fewer than two seats, and counts both", async () => {
-    const { tx, deleted } = fakeTx([[{ tableId: "t1" }, { tableId: "t1" }, { tableId: "t2" }], [{ id: "a" }], [{ id: "t2" }]]);
+    const { tx, deleted } = fakeTx([[{ tableId: "t1" }, { tableId: "t1" }, { tableId: "t2" }], [], [{ id: "a" }], [{ id: "t2" }]]);
     const out = await purgeRuleZeroIn(tx as never, "user_gone");
-    expect(deleted).toHaveLength(3);
-    expect(deleted[2]).toContain("select count(*) from");
-    expect(deleted[2]).toContain("rs.table_id =");
+    expect(deleted).toHaveLength(4);
+    expect(deleted[3]).toContain("select count(*) from");
+    expect(deleted[3]).toContain("rs.table_id =");
     expect(out).toEqual({ seats: 3, tables: 2 });
   });
 
   it("runs no short-table delete when the account held no seat", async () => {
-    const { tx, deleted } = fakeTx([[], [{ id: "a" }]]);
+    const { tx, deleted } = fakeTx([[], [], [{ id: "a" }]]);
     const out = await purgeRuleZeroIn(tx as never, "user_gone");
-    expect(deleted).toHaveLength(2);
+    expect(deleted).toHaveLength(3);
     expect(out).toEqual({ seats: 0, tables: 1 });
   });
 });
