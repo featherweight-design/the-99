@@ -18,7 +18,6 @@ import { analysisTabEnabled } from "../lib/decks/analysis-flag";
 import { cachePageForUser, type PageLoad } from "../lib/cache/page-cache";
 import { recordSoftFailure } from "../lib/cache/soft-failure";
 import { requestSwitchEnv } from "../lib/switches/request";
-import { socialFriendsEnabled } from "../lib/social/flag";
 import { faceAskPlaces, facePromptDone } from "../lib/discovery/face-prompt";
 import { SignatureRow, SignatureStrip } from "../components/home/signature-ask";
 import { loadHomeTables } from "../lib/social/rule-zero-home";
@@ -262,31 +261,27 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   // a rename and an expiry show on the next request. A failed read draws no card. Read
   // before the first-run return: a reader with no cards and no decks can still sit at a table, their seat waiting.
   let homeTables: Awaited<ReturnType<typeof loadHomeTables>> = [];
-  if (socialFriendsEnabled(env)) {
-    try {
-      homeTables = await loadHomeTables(userId);
-    } catch (error) {
-      // not a fallback: this read runs after the cached load and is never stored, so nothing stale can be kept.
-      console.error("home: tonight's table could not be read", error);
-    }
+  try {
+    homeTables = await loadHomeTables(userId);
+  } catch (error) {
+    // not a fallback: this read runs after the cached load and is never stored, so nothing stale can be kept.
+    console.error("home: tonight's table could not be read", error);
   }
   // Friends on Home (Social R3 addendum, readiness gap 1): read per request, outside the cached payload, because a
   // friend's rename, a link made or revoked and a link's expiry move nothing its key carries. A failed read draws no
   // section, as a failed Commitments read draws no card. Read before the first-run return, so the checklist's Friends
   // row (Discovery R3·3) draws from the same read, and a failed read draws no row there either.
   let homeFriends: HomeFriends | null = null;
-  if (socialFriendsEnabled(env)) {
-    try {
-      homeFriends = await loadHomeFriends(userId, now);
-    } catch (error) {
-      // not a fallback: this read runs after the cached load and is never stored, so nothing stale can be kept.
-      console.error("home: the friends section could not be read", error);
-    }
+  try {
+    homeFriends = await loadHomeFriends(userId, now);
+  } catch (error) {
+    // not a fallback: this read runs after the cached load and is never stored, so nothing stale can be kept.
+    console.error("home: the friends section could not be read", error);
   }
-  // With friends on (invites follow friends), Add a friend opens /friends' chooser (addendum G4), which shows the reader's invite count. Read
+  // Add a friend opens /friends' chooser (addendum G4), which shows the reader's invite count. Read
   // per request like the rest of the section; a count that cannot be read draws Add a friend as a plain link, as
   // /friends does.
-  const invites = homeFriends && socialFriendsEnabled(env)
+  const invites = homeFriends
     ? await loadInviteCount(userId, now).catch((error: unknown) => {
         // not a fallback: read after the cached load and never stored.
         console.warn("[invites] count unreadable; drawing Home's Add a friend without it", error instanceof Error ? error.message : "");
@@ -298,7 +293,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   // beside the friends read it draws from, never inside the cached payload: the face is a friends-table read the
   // stamp does not cover. The flag is `user_prefs`, so Skip, ✕ and a pick all move the stamp too. A failed friends read
   // asks nothing, as it draws no Friends row; a flag that cannot be read asks nothing either.
-  const ask = homeFriends && socialFriendsEnabled(env)
+  const ask = homeFriends
     ? await facePromptDone(userId).then(
         (done) => ({ face: homeFriends.you?.commander ?? null, name: homeFriends.you?.displayName ?? null, done }),
         (error: unknown) => {
@@ -400,7 +395,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       pushVisit={pushVisit}
       commandersPlace
       tables={homeTables}
-      friends={homeFriends && { you: homeFriends.you, friends: homeFriends.friends, links: homeFriends.links, games: socialFriendsEnabled(env), friendPages: true, invites }}
+      friends={homeFriends && { you: homeFriends.you, friends: homeFriends.friends, links: homeFriends.links, invites }}
       // One clock for the whole page, read on the server, so every relative
       // date below agrees.
       now={now.toISOString()}

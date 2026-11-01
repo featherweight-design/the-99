@@ -2,8 +2,8 @@
 // whole page: step 1 live, steps 2 and 3 stated and locked. The import foot
 // that once sat under them is gone (first-run ruling 1, 2026-09-28); step 1's
 // ways group is how a player with no file
-// reaches Precons I own, Import a deck and Add cards by hand. With
-// SOCIAL_FRIENDS_ENABLED an unnumbered Friends row sits last, under step 3.
+// reaches Precons I own, Import a deck and Add cards by hand. An unnumbered
+// Friends row sits last, under step 3.
 //
 // Property table: docs/superpowers/design-tables/ui-refresh-home.md
 // §HomeFirstRun. Where the plan and that table disagree on a value the table
@@ -144,7 +144,7 @@ export function FirstRunChecklist({
   about?: AboutLine | null;
   /** The welcome-credits strip (welcome credits D2), read per request, or null: drawn under About's line. */
   welcome?: React.ReactNode;
-  /** SOCIAL_FRIENDS_ENABLED, read: the Friends row after step 3 (Discovery R3·3). Null: no row. */
+  /** The Friends row after step 3 (Discovery R3·3), read per request. Null (a failed read): no row. */
   friends?: FirstRunFriendsProps | null;
   /** The signature card row (avatar handoff 20, call 4), or null: unnumbered, after step 3 and before Add your friends. */
   signature?: React.ReactNode;

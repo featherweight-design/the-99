@@ -32,8 +32,6 @@ const props = (over: Partial<FriendsSectionProps> = {}): FriendsSectionProps => 
   friends: [],
   links: [],
   now: NOW,
-  games: true,
-  friendPages: true,
   ...over,
 });
 const inDays = (d: number) => new Date(Date.parse(NOW) + d * 86_400_000);
@@ -61,11 +59,6 @@ describe("FriendsSection", () => {
     expect(screen.queryByRole("link", { name: /All friends/ })).toBeNull();
   });
 
-  it("drops the game clause with Opponents off (G5)", () => {
-    render(<FriendsSection {...props({ games: false })} />);
-    expect(screen.getByText(`${socialCopy.home.invite} See their spares when you shop.`)).toBeTruthy();
-  });
-
   it("with one friend: the count, All friends, their face opening their page, and four empty seats", () => {
     const { container } = render(<FriendsSection {...props({ friends: [friend("Colin")] })} />);
     expect(screen.getByRole("heading", { name: "Friends · 1" })).toBeTruthy();
@@ -74,11 +67,6 @@ describe("FriendsSection", () => {
     expect(screen.getByRole("link", { name: plain(socialCopy.friends.openAria(named("Colin"))) }).classList.contains("ph-no-capture")).toBe(true);
     expect(seats(container)).toHaveLength(4);
     expect(screen.queryByText(socialCopy.home.you)).toBeNull();
-  });
-
-  it("opens /friends from a face when a friend's own page is off", () => {
-    render(<FriendsSection {...props({ friends: [friend("Colin")], friendPages: false })} />);
-    expect(screen.getByRole("link", { name: plain(socialCopy.friends.openAria(named("Colin"))) }).getAttribute("href")).toBe("/friends");
   });
 
   it("with seven friends: four faces and +3, a count the screen reader skips", () => {

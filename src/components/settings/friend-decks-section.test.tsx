@@ -67,11 +67,4 @@ describe("Your decks", () => {
     expect(drafts().checked).toBe(false);
     expect(screen.getByRole("alert").textContent).toContain(C.failed);
   });
-
-  it("redraws from the server when the switch went off under it", async () => {
-    m.save.mockResolvedValue({ ok: false, reason: "off" });
-    render(<FriendDecksSection prefs={{ seeDecks: true, seeUnfinished: false }} />);
-    await act(async () => fireEvent.click(see()));
-    expect(m.refresh).toHaveBeenCalled();
-  });
 });

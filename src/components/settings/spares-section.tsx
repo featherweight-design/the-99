@@ -9,7 +9,6 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import type { BrowseListCard } from "../../lib/collection/browse";
 import { printedNameOf } from "../../lib/collection/browse";
 import { settingsCopy } from "../../lib/copy/settings";
@@ -32,10 +31,7 @@ const c = settingsCopy.spares;
 const SEARCH_DEBOUNCE_MS = 150;
 const SEARCH_MIN_CHARS = 2;
 
-const off = (r: { ok: boolean; reason?: string }) => !r.ok && r.reason === "off";
-
 export function SparesSection({ spareMin, pods, kept }: { spareMin: number; pods: ThirdPartyName[]; kept: BrowseListCard[] }) {
-  const router = useRouter();
   const [toast, setToast] = useState<SocialToastState | null>(null);
   const toastSeq = useRef(0);
   // Stable, so the search's effect does not re-run (and re-ask) on every redraw of the section.
@@ -62,7 +58,6 @@ export function SparesSection({ spareMin, pods, kept }: { spareMin: number; pods
     try {
       const r = await setSpareMinAction(next);
       if (r.ok) confirmedMin.current = next;
-      else if (off(r)) router.refresh();
       else {
         setMin(confirmedMin.current);
         fail();
@@ -91,8 +86,7 @@ export function SparesSection({ spareMin, pods, kept }: { spareMin: number; pods
     });
     try {
       const r = await releaseCardAction(oracleId);
-      if (off(r)) router.refresh();
-      else if (!r.ok) {
+      if (!r.ok) {
         back();
         fail();
       }
@@ -193,7 +187,6 @@ function WhoSees({ pods }: { pods: ThirdPartyName[] }) {
 
 /** Keep a card back (`.kpf`): a search over the reader's own spare cards; a press keeps the card back. */
 function KeepSearch({ keptKey, onFail }: { keptKey: string; onFail: () => void }) {
-  const router = useRouter();
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState<{ for: string; items: SpareSearchHit[] } | null>(null);
   const [keeping, setKeeping] = useState<string | null>(null);
@@ -205,9 +198,7 @@ function KeepSearch({ keptKey, onFail }: { keptKey: string; onFail: () => void }
     const timer = setTimeout(async () => {
       try {
         const r = await searchSpareCardsAction(trimmed);
-        if (!live) return;
-        if (r.ok) setHits({ for: trimmed, items: r.hits });
-        else router.refresh();
+        if (live) setHits({ for: trimmed, items: r.hits });
       } catch {
         if (live) onFail();
       }
@@ -216,15 +207,14 @@ function KeepSearch({ keptKey, onFail }: { keptKey: string; onFail: () => void }
       live = false;
       clearTimeout(timer);
     };
-  }, [trimmed, active, keptKey, router, onFail]);
+  }, [trimmed, active, keptKey, onFail]);
 
   async function keep(hit: SpareSearchHit) {
     if (keeping) return;
     setKeeping(hit.oracleId);
     try {
       const r = await keepCardAction(hit.oracleId);
-      if (off(r)) router.refresh();
-      else if (r.ok) {
+      if (r.ok) {
         setQuery("");
         setHits(null);
       } else onFail();
