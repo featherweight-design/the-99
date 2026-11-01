@@ -1,7 +1,7 @@
 // Admin adoption 6c: the deck profile's cache key. `cachedDeckProfile` (the analysis tab, a commit, a
 // declaration) and `profileOfHead` (Suggested changes, Proposed cuts) file under ONE key, so an analysis
-// already pressed is reused by the tools, and that key carries the reader's resolved switch bits, so a
-// profile built on one role basis is never served to a reader on the other. The cache layer is mocked to
+// already pressed is reused by the tools. The build reads no switch (roles are always counted by label), so
+// the key carries none: readers on different switches share the entry. The cache layer is mocked to
 // capture the keys; nothing is built.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -34,14 +34,15 @@ describe("the deck profile's cache key", () => {
     expect(keys.seen[0]).toEqual(keys.seen[1]);
   });
 
-  it("differs when the reader's switches differ, from either reader", async () => {
+  it("is the same key whatever the reader's switches, from either reader", async () => {
     await cachedDeckProfile(HEAD.deckId, HEAD.userId, ON);
     await cachedDeckProfile(HEAD.deckId, HEAD.userId, OFF);
     await profileOfHead(HEAD, ON);
     await profileOfHead(HEAD, OFF);
     const [cachedOn, cachedOff, headOn, headOff] = keys.seen;
-    expect(cachedOn).not.toEqual(cachedOff);
-    expect(headOn).not.toEqual(headOff);
+    expect(cachedOn).toEqual(cachedOff);
+    expect(headOn).toEqual(headOff);
     expect(cachedOff).toEqual(headOff);
+    expect(cachedOn).toEqual(["deck-profile", HEAD.deckId, expect.any(String)]);
   });
 });

@@ -16,7 +16,6 @@ import { loadBracketFlags } from "../bracket/flags-read";
 import { EXTRA_TURN_DETECTION, MLD_DETECTION } from "../bracket/oracle-rules";
 import { classifySearches, tutorReaches } from "../bracket/tutor-targets";
 import { cacheForUser } from "../cache/user-lists";
-import { switchBits } from "../switches/resolve";
 import { canonicalPair } from "../edhrec/pair";
 import { COMBO_DETECTION, isInfiniteOrGameEnding } from "../spellbook/combo-features";
 import { countCondition, identityCondition } from "../staples/condition";
@@ -607,9 +606,9 @@ export async function cachedDeckProfile(
   const head = await loadProfileHead(deckId, userId);
   if (!head) return null;
   const fingerprint = profileFingerprint(head);
-  // The resolved switches ride in the key: the role basis is a per-reader switch, and a profile built
-  // on one basis must never be served to a reader on the other (`profileOfHead` files under the same key).
-  return cacheForUser(userId, ["deck-profile", deckId, fingerprint, switchBits(env)], () =>
+  // No switch rides in the key: the build reads none (roles are always counted by label), so every reader
+  // of this deck shares one entry. `profileOfHead` files under the same key.
+  return cacheForUser(userId, ["deck-profile", deckId, fingerprint], () =>
     loadDeckProfileFromHead(head, env),
   );
 }

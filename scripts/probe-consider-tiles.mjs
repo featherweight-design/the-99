@@ -373,8 +373,7 @@ async function buildComboFixture(userId, deckId, commanderOracleId, existingOrac
       // `reasonType === "edhrec"` sidesteps that regardless of how real that risk is.
       let onList = false;
       try {
-        // No signed-in reader here: the probe reads under the environment's switches.
-        const { suggestions } = await loadDeckSuggestions(deckId, userId, process.env);
+        const { suggestions } = await loadDeckSuggestions(deckId, userId);
         onList = suggestions.some((s) => s.oracleId === suggested.oracle_id && s.reasonType === "edhrec");
       } catch {
         onList = false;

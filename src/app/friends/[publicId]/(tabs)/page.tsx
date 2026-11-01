@@ -1,5 +1,5 @@
 // /friends/[publicId]: a friend's Decks tab, the first and the page's default (Hugh, 2026-10-30; it was Spares), view only
-// (menu and Home PR 7; handoff G4): name, commander, status and count, never the list. The tab answers
+// (menu and Home PR 7; handoff G4): each tile the owner's /decks tile read-only, a press to the deck's own page. The tab answers
 // the friendship itself: a tab press reuses the mounted layout, which does not run again.
 import { notFound, redirect } from "next/navigation";
 import { requireUserId } from "../../../../lib/auth";
@@ -26,7 +26,7 @@ export default async function FriendDecksPage({
   }
   const userId = await requireUserId();
   const { publicId } = await params;
-  const [friend, decks] = await Promise.all([loadFriend(userId, publicId), friendDecks(userId, publicId, true)]);
+  const [friend, decks] = await Promise.all([loadFriend(userId, publicId), friendDecks(userId, publicId)]);
   if (!friend || decks === null) notFound();
   return <FriendDecksTab name={friend.displayName} decks={decks} publicId={friend.publicId} />;
 }

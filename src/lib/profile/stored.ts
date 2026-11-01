@@ -57,9 +57,9 @@ export type StoredProfileDeps = {
 };
 
 /**
- * The request's readers under the reader's resolved switches. Both builds take that env, so the
- * profile cache files and finds an entry under the reader's switch bits (`cachedDeckProfile`), the
- * same key `profileOfHead` uses, and a pressed analysis is reused by every other reader of it.
+ * The request's readers under the reader's resolved switches. The cached build (`cachedDeckProfile`)
+ * files under the same key `profileOfHead` uses, so a pressed analysis is reused by every other reader
+ * of it; the env rides along for the press's switches.
  */
 export function requestProfileDeps(env: NodeJS.ProcessEnv): StoredProfileDeps {
   return {

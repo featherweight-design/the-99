@@ -84,7 +84,8 @@ import { SpendFriendLink } from "../../components/social/spend-friend-link";
 import { named } from "../../lib/person-name/mint";
 import { plain } from "../../lib/person-name/testing";
 
-const ON = { SOCIAL_FRIENDS_ENABLED: "true" };
+// The reader's resolved switches, a sentinel compared by identity: Friends reads no switch of its own.
+const READER_ENV = { SENTINEL: "reader" };
 const PUB = "00000000-0000-4000-8000-000000000001";
 const DAVE = { publicId: "00000000-0000-4000-8000-000000000002", displayName: named("Dave"), since: new Date("2026-10-02T12:00:00Z"), commander: null };
 const query = (q: Record<string, string> = {}) => Promise.resolve(q);
@@ -98,7 +99,7 @@ beforeEach(() => {
   vi.resetAllMocks();
   m.requireUserId.mockResolvedValue("user_1");
   m.auth.mockResolvedValue({ userId: "user_1" });
-  m.requestSwitchEnv.mockResolvedValue(ON);
+  m.requestSwitchEnv.mockResolvedValue(READER_ENV);
   m.spendFriendLinkAction.mockResolvedValue({ ok: true, spent: true });
   m.currentUser.mockResolvedValue({ firstName: "Hugh" });
   m.ensureProfile.mockResolvedValue({ publicId: PUB, displayName: "Hugh", commander: null });
@@ -112,7 +113,7 @@ beforeEach(() => {
   m.pendingReceipt.mockResolvedValue(null);
   m.spendInviteOnSignUp.mockResolvedValue({ spent: false, reason: "unknown" });
   m.spendFlyerOnSignUp.mockResolvedValue({ spent: false, reason: "unknown" });
-  m.resolveSwitchEnv.mockResolvedValue(ON);
+  m.resolveSwitchEnv.mockResolvedValue(READER_ENV);
   m.friendPublicId.mockResolvedValue(null);
 });
 afterEach(cleanup);
@@ -154,8 +155,8 @@ describe("/friends", () => {
     }]);
     m.loadYourRequests.mockResolvedValue([]);
     const sam = render(await FriendsPage({ searchParams: query() }));
-    expect(m.loadWaitingOnYou).toHaveBeenLastCalledWith("user_sam", ON, expect.any(Date));
-    expect(m.loadYourRequests).toHaveBeenLastCalledWith("user_sam", ON, expect.any(Date));
+    expect(m.loadWaitingOnYou).toHaveBeenLastCalledWith("user_sam", READER_ENV, expect.any(Date));
+    expect(m.loadYourRequests).toHaveBeenLastCalledWith("user_sam", READER_ENV, expect.any(Date));
     expect(screen.getByTestId("waiting-on-you")).toBeTruthy();
     expect(screen.getByRole("button", { name: plain(spareCopy.request.yesAria("Peter", card.name)) })).toBeTruthy();
     expect(screen.queryByTestId("your-requests")).toBeNull();
@@ -169,7 +170,7 @@ describe("/friends", () => {
       createdAt: at, answeredAt: null, unseen: false, othersWithSpare: [],
     }]);
     render(await FriendsPage({ searchParams: query() }));
-    expect(m.loadYourRequests).toHaveBeenLastCalledWith("user_peter", ON, expect.any(Date));
+    expect(m.loadYourRequests).toHaveBeenLastCalledWith("user_peter", READER_ENV, expect.any(Date));
     expect(screen.queryByTestId("waiting-on-you")).toBeNull();
     const mine = screen.getByTestId("your-requests");
     expect(mine.textContent).toContain(plain(spareCopy.request.mine.asked("Sam", card.name)));

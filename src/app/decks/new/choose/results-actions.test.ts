@@ -64,7 +64,7 @@ describe("trialFillRows", () => {
   it("hands the trial the reader's resolved switches, not the environment", async () => {
     // `trialFill` defaults its env to `process.env`, so a dropped argument still compiles and the
     // fill would plan under the deployment's switches rather than this reader's.
-    const resolved = envViewWith({ LABEL_ROLE_COUNTS_ENABLED: "resolved-for-user_1" });
+    const resolved = envViewWith({ SENTINEL: "resolved-for-user_1" });
     vi.mocked(requestSwitchEnv).mockResolvedValueOnce(resolved);
     await trialFillRows([LEGAL], "?t=dinosaurs");
     expect(stub.trial.mock.calls[0][3] === resolved).toBe(true);

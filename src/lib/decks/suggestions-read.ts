@@ -188,9 +188,6 @@ export async function resolveSuggestionBasis(
 export async function loadDeckSuggestions(
   deckId: string,
   userId: string,
-  /** The reader's resolved switches (`requestSwitchEnv`). Unread since roles are always counted by
-   *  label (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31); a caller that caches this payload keys it on them. */
-  _env: NodeJS.ProcessEnv,
 ): Promise<DeckSuggestionsPayload> {
   const deck = await requireDeck(deckId, userId);
   const [commander] = await db.select().from(cards).where(eq(cards.oracleId, deck.commanderOracleId));
