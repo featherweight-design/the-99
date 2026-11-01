@@ -133,13 +133,23 @@ describe("closedHow", () => {
 
   it("a table the viewer closed names no one, and keeps the log while its morning has not come", () => {
     const at = new Date("2026-11-01T03:00:00Z");
-    expect(closedHow(VIEWER, { ...base, closedAt: at, closedBy: VIEWER, closerName: "Me", loggable: true })).toEqual({ kind: "host", by: null, at, logOpen: true });
+    expect(closedHow(VIEWER, { ...base, closedAt: at, closedBy: VIEWER, closerName: "Me", loggable: true })).toEqual({ kind: "host", byYou: true, by: null, at, logOpen: true });
   });
 
   it("a table another player closed names them as a third-party name, and drops the log after the morning", () => {
     const at = new Date("2026-11-01T03:00:00Z");
     const how = closedHow(VIEWER, { ...base, closedAt: at, closedBy: "user_colin", closerName: "Colin", loggable: false });
-    expect(how).toMatchObject({ kind: "host", at, logOpen: false });
+    expect(how).toMatchObject({ kind: "host", byYou: false, at, logOpen: false });
     expect(how.kind === "host" && how.by).not.toBeNull();
+  });
+
+  it("a closer whose profile is gone is not the viewer: byYou false and no name, never read as 'you closed it'", () => {
+    const at = new Date("2026-11-01T03:00:00Z");
+    expect(closedHow(VIEWER, { ...base, closedAt: at, closedBy: "user_gone", closerName: null, loggable: true })).toEqual({ kind: "host", byYou: false, by: null, at, logOpen: true });
+  });
+
+  it("the viewer's own close stays byYou even when their profile name is missing", () => {
+    const at = new Date("2026-11-01T03:00:00Z");
+    expect(closedHow(VIEWER, { ...base, closedAt: at, closedBy: VIEWER, closerName: null, loggable: true })).toMatchObject({ byYou: true, by: null });
   });
 });

@@ -8,8 +8,11 @@
  * session's viewer in the same statement. Seats whose player has left the pod are omitted from what others see.
  *
  * **One open table per pod** (G7) is the check in `setTable`, under the pod row's `FOR UPDATE`; nothing else may
- * enforce it, so dropping it is how several tables per pod arrive later. Expired tables are never swept by a job:
- * every read filters `expires_at > now()` on the database's clock, and a pod's next setup deletes its expired rows.
+ * enforce it, so dropping it is how several tables per pod arrive later. Ended tables are never swept by a job: every
+ * read applies the shared open predicate (not closed by its setter AND `expires_at > now()`, the database's clock), and
+ * a pod's next setup deletes its clock-expired rows. A host-closed row stays until its morning so its seated players
+ * keep Log this game (`tableLoggable`, the clock alone); every pod-table lookup filters on `tableOpen`, so such a row
+ * can never be picked over a new open table.
  *
  * Nothing returned carries a Clerk id or another player's deck id (decision 5). Setup addresses every pod member by
  * `publicId`, the client-safe id, because it seats them; a player's face here is a display name and a commander.
@@ -180,7 +183,9 @@ export async function setTable(viewerId: string, podId: unknown, rawSeats: unkno
     }
     const seats = await resolveSeatsIn(tx, viewerId, podId, asks);
     if (typeof seats === "string") return { kind: "refused", reason: seats } as const;
-    // The pod's expired tables go only now, after the picked decks are held: deleting them locks their seats, and a
+    // The pod's clock-expired tables go only now. Deliberately `expires_at <= now()` and NOT `tableEnded`: a host-closed
+    // table is kept until its original morning so its seated players can still log (`tableLoggable`); it cannot shadow
+    // the new table, since every read of a pod's table filters `tableOpen`. After the picked decks are held: deleting them locks their seats, and a
     // deck delete locks its deck before its `set null` reaches a seat, so the seats must come after the decks here too.
     await tx.delete(ruleZeroTables).where(and(eq(ruleZeroTables.podId, podId), sql`${ruleZeroTables.expiresAt} <= now()`));
     const [table] = await tx
@@ -376,7 +381,7 @@ const mineDeck = alias(decks, "mine_deck");
 
 /**
  * The open tables the viewer sits at, of pods they are still in. Apart so a test can render its SQL: the clock is
- * the database's (`expires_at > now()`), never one passed in, so an expired table leaves on the next read.
+ * the database's (`expires_at > now()`), never one passed in, so a closed or expired table leaves on the next read.
  */
 export function openTablesQuery(viewerId: string, q: Reader = db) {
   return q

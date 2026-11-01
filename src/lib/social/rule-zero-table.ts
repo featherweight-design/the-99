@@ -513,11 +513,13 @@ function readUnderLock(viewerId: string, tableId: string, seat: number, ownerDep
 }
 
 /**
- * How a closed table ended. `host`: its setter closed it at `at` (`by` is null when the viewer did); the seated keep
- * Log this game while `logOpen`, until the morning it would have reached. `morning`: it ran out its night.
+ * How a closed table ended. `host`: its setter closed it at `at`; `byYou` says the viewer did, otherwise `by` names the
+ * closer (null only when the viewer did not close it and the closer's profile is gone). The seated keep Log this game
+ * while `logOpen`, until the morning it would have reached. `morning`: it ran out its night. Every `at` is a Date: the
+ * route's JSON turns it into an ISO string, so the UI layer revives it (`new Date(at)`) before calling a Date method.
  */
 export type ClosedHow =
-  | { kind: "host"; by: ThirdPartyName | null; at: Date; logOpen: boolean }
+  | { kind: "host"; byYou: boolean; by: ThirdPartyName | null; at: Date; logOpen: boolean }
   | { kind: "morning"; at: Date };
 
 /** What the closed page (L4, H3) draws: the pod, who set the table (null when the viewer did), how it ended, and the seated faces. */
@@ -525,10 +527,11 @@ export type ClosedTable = { podName: ThirdPartyName; setBy: ThirdPartyName | nul
 
 type ClosedGrant = { closesAt: Date; closedAt: Date | null; closedBy: string | null; closerName: string | null; loggable: boolean };
 
-/** How the table ended, from its grant row: closed by its host (the viewer's own close names no one), else it ran out its night. */
+/** How the table ended, from its grant row: closed by its host (the viewer's own close is `byYou`, naming no one), else it ran out its night. */
 export function closedHow(viewerId: string, table: ClosedGrant): ClosedHow {
   if (!table.closedAt) return { kind: "morning", at: table.closesAt };
-  return { kind: "host", by: table.closedBy === viewerId || table.closerName === null ? null : named(table.closerName), at: table.closedAt, logOpen: table.loggable };
+  const byYou = table.closedBy === viewerId;
+  return { kind: "host", byYou, by: byYou || table.closerName === null ? null : named(table.closerName), at: table.closedAt, logOpen: table.loggable };
 }
 
 /**

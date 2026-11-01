@@ -1,10 +1,12 @@
 /**
  * When a Rule 0 table is open, in ONE place. A table is OPEN iff its setter has not closed it (`closed_at is null`)
  * and its morning has not come (`expires_at > now()`, the database's clock, never one passed in). Every read that
- * decides "open" uses `tableOpen`; none spells `expires_at > now()` on its own.
+ * decides "open" uses `tableOpen`/`tableOpenAs`; none spells `expires_at > now()` on its own.
  *
- * One deliberate exception: `tableLoggable` (the game log's seats). A table its host closed keeps *Log this game* for
- * its seated players until the morning it would have reached (`expires_at`), so the log gate is the clock alone.
+ * Two deliberate exceptions, both about a host-closed table's seated players keeping *Log this game* until the morning:
+ * `tableLoggable` below, and `setTable`'s cleanup, which deletes only clock-expired rows (`expires_at <= now()`) so a
+ * host-closed row lingers until its morning. Neither can shadow a new table: every pod-table lookup filters `tableOpen`.
+ *
  */
 import { sql } from "drizzle-orm";
 import { ruleZeroTables } from "../../db/schema";

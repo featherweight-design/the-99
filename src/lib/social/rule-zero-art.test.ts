@@ -33,7 +33,7 @@ describe("grantedDecksQuery", () => {
     expect(flat).toMatch(/join "rule_zero_seats" vs on vs\.table_id = s\.table_id and vs\.user_id = \$\d+/);
     expect(flat).toMatch(/join "pod_members" vm on vm\.pod_id = t\.pod_id and vm\.user_id = \$\d+/);
     expect(flat).toContain("join \"pod_members\" sm on sm.pod_id = t.pod_id and sm.user_id = s.user_id");
-    expect(flat).toContain("where s.deck_id = d.id and s.user_id = d.user_id");
+    expect(flat).toContain("where s.deck_id = d.id and s.user_id = d.user_id and (t.closed_at is null and t.expires_at > now())");
     // The friend branch: a friend link FROM the viewer, a shared pod, and the owner's deck rules.
     expect(flat).toContain("not d.hidden_from_friends and coalesce(up.friends_see_decks, true)");
     expect(flat).toMatch(/where fl\.user_id = \$\d+ and fl\.friend_user_id = d\.user_id/);
